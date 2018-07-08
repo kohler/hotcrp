@@ -8,7 +8,6 @@ class PaperContactInfo {
     public $conflictType = 0;
     public $reviewType = 0;
     public $reviewSubmitted = 0;
-    public $reviewNeedsSubmit = 1;
     public $review_status = 0;
 
     public $rights_forced = null;
@@ -47,39 +46,32 @@ class PaperContactInfo {
         $ci->conflictType = (int) $object->conflictType;
         if (($ci->reviewType = (int) $object->myReviewType)) {
             $ci->reviewSubmitted = (int) $object->myReviewSubmitted;
-            $ci->reviewNeedsSubmit = (int) $object->myReviewNeedsSubmit;
+            if ($object->myReviewSubmitted > 0
+                || $object->myReviewNeedsSubmit == 0)
+                $ci->review_status = 1;
+            else if ($ci->review_status == 0)
+                $ci->review_status = -1;
         }
-        $ci->update_review_status();
         return $ci;
     }
 
-    function update_review_status() {
-        if ($this->reviewType > 0) {
-            if ($this->reviewSubmitted <= 0 && $this->reviewNeedsSubmit != 0)
-                $this->review_status = -1;
-            else
-                $this->review_status = 1;
-        }
+    function mark_review(ReviewInfo $rrow) {
+        $this->reviewType = max($rrow->reviewType, $this->reviewType);
+        $this->reviewSubmitted = max((int) $rrow->reviewSubmitted, $this->reviewSubmitted);
+        if ($rrow->reviewSubmitted > 0 || $rrow->reviewNeedsSubmit == 0)
+            $this->review_status = 1;
+        else if ($this->review_status == 0)
+            $this->review_status = -1;
     }
 
-    function merge_review(ReviewInfo $rrow) {
-        foreach (["reviewType", "reviewSubmitted", "reviewNeedsSubmit"] as $k)
-            $this->$k = $rrow->$k;
-        $this->update_review_status();
-    }
-
-    private function merge() {
-        if (isset($this->paperId))
-            $this->paperId = (int) $this->paperId;
-        $this->contactId = (int) $this->contactId;
-        $this->conflictType = (int) $this->conflictType;
-        $this->reviewType = (int) $this->reviewType;
-        $this->reviewSubmitted = (int) $this->reviewSubmitted;
-        if ($this->reviewNeedsSubmit !== null)
-            $this->reviewNeedsSubmit = (int) $this->reviewNeedsSubmit;
-        else
-            $this->reviewNeedsSubmit = 1;
-        $this->update_review_status();
+    private function mark_local($local) {
+        $this->conflictType = max((int) $local[0], $this->conflictType);
+        $this->reviewType = max((int) $local[1], $this->reviewType);
+        $this->reviewSubmitted = max((int) $local[2], $this->reviewSubmitted);
+        if ($local[2] > 0 || ($local[1] > 0 && $local[3] == 0))
+            $this->review_status = 1;
+        else if ($local[1] > 0 && $this->review_status == 0)
+            $this->review_status = -1;
     }
 
     static function load_into(PaperInfo $prow, $cid, $rev_tokens) {
@@ -87,58 +79,62 @@ class PaperContactInfo {
         $conf = $prow->conf;
         $pid = $prow->paperId;
         $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit";
-        if ($cid && !$rev_tokens
-            && $prow->_row_set && $prow->_row_set->size() > 1) {
-            $result = $conf->qe("$q, Paper.paperId paperId, $cid contactId
+        if ($cid
+            && !$rev_tokens
+            && ($row_set = $prow->_row_set)
+            && $row_set->size() > 1) {
+            $result = $conf->qe("$q, Paper.paperId paperId, ? contactId
                 from Paper
-                left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$cid)
-                left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$cid)
-                where Paper.paperId?a", $prow->_row_set->paper_ids());
-            $found = false;
-            $map = [];
-            while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
-                $ci->merge();
-                $map[$ci->paperId] = $ci;
+                left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=?)
+                left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
+                where Paper.paperId?a",
+                $cid, $cid, $cid, $row_set->paper_ids());
+            foreach ($row_set->all() as $row)
+                $row->_clear_contact_info($cid);
+            while ($result && ($local = $result->fetch_row())) {
+                $row = $row_set->get($local[4]);
+                $ci = $row->_get_contact_info($local[5]);
+                $ci->mark_local($local);
             }
             Dbl::free($result);
-            foreach ($prow->_row_set->all() as $row)
-                $row->_add_contact_info($map[$row->paperId]);
-            if ($prow->_get_contact_info($cid))
-                return;
-            $result = null;
+            return;
         }
-        if ($cid && !$rev_tokens
+        if ($cid
+            && !$rev_tokens
             && (!$Me || ($Me->contactId != $cid
                          && ($Me->privChair || $Me->contactId == $prow->managerContactId)))
-            && ($pcm = $conf->pc_members()) && isset($pcm[$cid])) {
+            && ($pcm = $conf->pc_members())
+            && isset($pcm[$cid])) {
             $cids = array_keys($pcm);
-            $result = $conf->qe_raw("$q, $pid paperId, ContactInfo.contactId
-                from (select $pid paperId) P
-                join ContactInfo
-                left join PaperReview on (PaperReview.paperId=$pid and PaperReview.contactId=ContactInfo.contactId)
-                left join PaperConflict on (PaperConflict.paperId=$pid and PaperConflict.contactId=ContactInfo.contactId)
-                where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0");
+            $result = $conf->qe("$q, ContactInfo.contactId
+                from ContactInfo
+                left join PaperConflict on (PaperConflict.paperId=? and PaperConflict.contactId=ContactInfo.contactId)
+                left join PaperReview on (PaperReview.paperId=? and PaperReview.contactId=ContactInfo.contactId)
+                where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0",
+                $pid, $pid);
         } else {
             $cids = [$cid];
             if ($cid) {
-                $q = "$q, $pid paperId, $cid contactId
-                from (select $pid paperId) P
-                left join PaperReview on (PaperReview.paperId=P.paperId and (PaperReview.contactId=$cid";
-                if ($rev_tokens)
-                    $q .= " or PaperReview.reviewToken in (" . join(",", $rev_tokens) . ")";
-                $result = $conf->qe_raw("$q))
-                    left join PaperConflict on (PaperConflict.paperId=$pid and PaperConflict.contactId=$cid)");
+                $q = "$q, ? contactId
+                from (select ? paperId) P
+                left join PaperConflict on (PaperConflict.paperId=? and PaperConflict.contactId=?)
+                left join PaperReview on (PaperReview.paperId=? and (PaperReview.contactId=?";
+                $qv = [$cid, $pid, $pid, $cid, $pid, $cid];
+                if ($rev_tokens) {
+                    $q .= " or PaperReview.reviewToken?a";
+                    $qv[] = $rev_tokens;
+                }
+                $result = $conf->qe_apply("$q))", $qv);
             } else
                 $result = null;
         }
-        while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
-            $ci->merge();
-            $prow->_add_contact_info($ci);
+        foreach ($cids as $cid)
+            $prow->_clear_contact_info($cid);
+        while ($result && ($local = $result->fetch_row())) {
+            $ci = $prow->_get_contact_info($local[4]);
+            $ci->mark_local($local);
         }
         Dbl::free($result);
-        foreach ($cids as $cid)
-            if (!$prow->_get_contact_info($cid))
-                $prow->_add_contact_info(PaperContactInfo::make_empty($prow, $cid));
     }
 
     function get_forced_rights() {
@@ -321,8 +317,8 @@ class PaperInfo {
         return get($this->_contact_info, $cid);
     }
 
-    function _add_contact_info(PaperContactInfo $ci) {
-        $this->_contact_info[$ci->contactId] = $ci;
+    function _clear_contact_info($cid) {
+        $this->_contact_info[$cid] = PaperContactInfo::make_empty($this, $cid);
     }
 
     private function update_rights_version() {
@@ -352,14 +348,12 @@ class PaperInfo {
                 $ci = PaperContactInfo::make_empty($this, $cid);
                 if (($c = get($this->conflicts(), $cid)))
                     $ci->conflictType = $c->conflictType;
-                $have_rrow = null;
                 foreach ($this->reviews_by_id() as $rrow)
                     if ($rrow->contactId == $cid
-                        || ($rev_tokens && !$have_rrow && $rrow->reviewToken
+                        || ($rev_tokens
+                            && $rrow->reviewToken
                             && in_array($rrow->reviewToken, $rev_tokens)))
-                        $have_rrow = $rrow;
-                if ($have_rrow)
-                    $ci->merge_review($have_rrow);
+                        $ci->mark_review($rrow);
                 $this->_contact_info[$cid] = $ci;
             } else
                 PaperContactInfo::load_into($this, $cid, $rev_tokens);
@@ -375,7 +369,8 @@ class PaperInfo {
     }
 
     function load_my_contact_info($cid, $object) {
-        $this->_add_contact_info(PaperContactInfo::make_my($this, $cid, $object));
+        $ci = PaperContactInfo::make_my($this, $cid, $object);
+        $this->_contact_info[$cid] = $ci;
     }
 
 
