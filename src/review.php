@@ -1732,7 +1732,9 @@ class ReviewValues extends MessageSet {
             // Don't combine preparations unless you can see all submitted
             // reviewer identities
             if (!$this->_mailer_always_combine
-                && !$minic->can_view_review_identity($prow, $rrow))
+                && !$prow->has_author($minic)
+                && (!$prow->has_reviewer($minic)
+                    || !$minic->can_view_review_identity($prow, $rrow)))
                 $p->unique_preparation = true;
             $this->_mailer_preps[] = $p;
         }
@@ -2019,6 +2021,7 @@ class ReviewValues extends MessageSet {
             && ($diffinfo->notify || $diffinfo->notify_author)) {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
+            $this->_mailer_info["combination_type"] = 1;
             $this->_mailer_diff_view_score = $diffinfo->view_score;
             $prow->notify_reviews([$this, "review_watch_callback"], $user);
         } else if (!$new_rrow->reviewSubmitted
@@ -2033,9 +2036,9 @@ class ReviewValues extends MessageSet {
             else
                 $this->_mailer_template = "@reviewapprovalupdate";
             $this->_mailer_always_combine = true;
+            $this->_mailer_info["combination_type"] = 1;
             $this->_mailer_diff_view_score = null;
             $this->_mailer_info["rrow_unsubmitted"] = true;
-            $this->_mailer_info["combination_type"] = 1;
             $prow->notify_reviews([$this, "review_watch_callback"], $user);
         }
         if (!empty($this->_mailer_preps))

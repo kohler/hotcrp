@@ -1637,7 +1637,7 @@ class PaperInfo {
         or reviewType is not null
         or exists (select * from PaperComment where paperId=$this->paperId and contactId=ContactInfo.contactId)
         group by ContactInfo.contactId
-        order by conflictType desc" /* group authors together */);
+        order by conflictType desc, reviewType desc" /* group authors together */);
 
         $watchers = [];
         $lastContactId = 0;
@@ -1675,7 +1675,7 @@ class PaperInfo {
         left join PaperReview on (PaperReview.paperId=$this->paperId and PaperReview.contactId=ContactInfo.contactId)
         where (defaultWatch&" . (Contact::WATCH_FINAL_SUBMIT_ALL) . ")!=0
         group by ContactInfo.contactId
-        order by conflictType desc" /* group authors together */);
+        order by conflictType desc, reviewType desc" /* group authors together */);
 
         $watchers = [];
         $lastContactId = 0;

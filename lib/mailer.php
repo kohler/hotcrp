@@ -11,6 +11,7 @@ class MailPreparation {
     public $sendable = false;
     public $headers = array();
     public $errors = array();
+    public $unique_preparation = false;
 
     function __construct($conf) {
         $this->conf = $conf;
@@ -20,7 +21,9 @@ class MailPreparation {
             && $this->body == $p->body
             && get($this->headers, "cc") == get($p->headers, "cc")
             && get($this->headers, "reply-to") == get($p->headers, "reply-to")
-            && $this->preparation_owner == $p->preparation_owner;
+            && $this->preparation_owner == $p->preparation_owner
+            && !$this->unique_preparation
+            && !$p->unique_preparation;
     }
     function add_recipients($to) {
         if (count($to) != 1

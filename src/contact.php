@@ -2787,7 +2787,8 @@ class Contact {
         else {
             if ($rights->conflictType && !$rights->can_administer)
                 $whyNot["conflict"] = 1;
-            else if ($rights->allow_review && !$this->rights_owned_review($rights, $rrow)
+            else if ($rights->allow_review
+                     && !$this->rights_owned_review($rights, $rrow)
                      && (!$rrow || $rrow_cid == $this->contactId))
                 $whyNot["reviewNotAssigned"] = 1;
             else if ($this->can_review($prow, $rrow, false)
