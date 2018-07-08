@@ -729,4 +729,20 @@ assert_search_papers($user_chair, "ovemer:1-3", "");
 assert_search_papers($user_chair, "ovemer:2..1", "17 18");
 assert_search_papers($user_chair, "ovemer:3..1", "1 17 18");
 
+// `r` vs. `rout`
+assert_search_papers($user_mgbaker, ["t" => "r", "q" => ""], "1 13 17");
+assert_search_papers($user_mgbaker, ["t" => "rout", "q" => ""], "13");
+assert_search_papers($user_mgbaker, ["t" => "r", "q" => "internet OR datagram"], "13");
+assert_search_papers($user_mgbaker, ["t" => "rout", "q" => "internet OR datagram"], "13");
+
+xassert_assign($user_chair, "paper,action,user\n19,review,new-anonymous");
+$user_mgbaker->change_review_token($Conf->fetch_ivalue("select reviewToken from PaperReview where paperId=19 and reviewToken!=0"), true);
+assert_search_papers($user_mgbaker, ["t" => "r", "q" => ""], "1 13 17 19");
+assert_search_papers($user_mgbaker, ["t" => "rout", "q" => ""], "13 19");
+assert_search_papers($user_mgbaker, ["t" => "r", "q" => "internet"], "13");
+assert_search_papers($user_mgbaker, ["t" => "rout", "q" => "internet"], "13");
+assert_search_papers($user_mgbaker, ["t" => "r", "q" => "internet OR datagram"], "13 19");
+assert_search_papers($user_mgbaker, ["t" => "rout", "q" => "internet OR datagram"], "13 19");
+assert_search_papers($user_mgbaker, "(internet OR datagram) 13 19", "13 19");
+
 xassert_exit();
