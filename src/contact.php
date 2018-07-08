@@ -1591,7 +1591,7 @@ class Contact {
                 $qs[] = "0";
             $result = $this->conf->qe_apply("select " . join(", ", $qs), $qv);
         }
-        $row = edb_row($result);
+        $row = $result ? $result->fetch_row() : null;
         $this->db_roles_ = ($row && $row[0] > 0 ? self::ROLE_AUTHOR : 0)
             | ($row && $row[1] > 0 ? self::ROLE_REVIEWER : 0)
             | ($row && $row[2] > 0 ? self::ROLE_REQUESTER : 0);
@@ -1653,19 +1653,8 @@ class Contact {
     function has_outstanding_review() {
         $this->check_rights_version();
         if ($this->has_outstanding_review_ === null) {
-            // Load from database
-            $result = null;
-            if ($this->contactId > 0) {
-                $qr = $this->review_tokens_ ? " or r.reviewToken?a" : "";
-                $result = $this->conf->qe("select r.reviewId from PaperReview r
-                    join Paper p on (p.paperId=r.paperId and p.timeSubmitted>0)
-                    where (r.contactId=?$qr)
-                    and r.reviewNeedsSubmit!=0 limit 1",
-                    $this->contactId, $this->review_tokens_);
-            }
-            $row = edb_row($result);
-            $this->has_outstanding_review_ = !!$row;
-            Dbl::free($result);
+            $this->has_outstanding_review_ = $this->has_review()
+                && $this->conf->fetch_ivalue("select exists (select * from PaperReview join Paper using (paperId) where Paper.timeSubmitted>0 and " . $this->act_reviewer_sql("PaperReview") . " and reviewNeedsSubmit!=0)");
         }
         return $this->has_outstanding_review_;
     }
