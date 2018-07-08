@@ -94,11 +94,9 @@ class Contact {
     private $aucollab_general_pregexes_ = null;
 
     // Per-paper DB information, usually null
-    public $myReviewType = null;
-    public $myReviewSubmitted = null;
-    public $myReviewNeedsSubmit = null;
-    public $conflictType = null;
-    public $watch = null;
+    public $conflictType;
+    public $myReviewPermissions;
+    public $watch;
 
     static private $status_info_cache = array();
 
@@ -2019,6 +2017,13 @@ class Contact {
             return empty($m) ? "false" : $m[0];
     }
 
+    function act_reviewer_sql($table) {
+        $sql = $this->contactId ? "$table.contactId={$this->contactId}" : "false";
+        if (($rev_tokens = $this->review_tokens()))
+            $sql = "($sql or $table.reviewToken in (" . join(",", $rev_tokens) . "))";
+        return $sql;
+    }
+
     function can_start_paper() {
         return $this->email
             && ($this->conf->timeStartPaper()
@@ -2618,9 +2623,7 @@ class Contact {
             $rtype = $this->is_reviewer() ? REVIEW_EXTERNAL : 0;
         $prow = new PaperInfo([
             "conflictType" => 0, "managerContactId" => 0,
-            "myReviewType" => $rtype,
-            "myReviewSubmitted" => 1,
-            "myReviewNeedsSubmit" => 0,
+            "myReviewPermissions" => "$rtype 1 0",
             "paperId" => 1, "timeSubmitted" => 1,
             "blind" => false, "outcome" => 1,
             "paperTags" => $tags

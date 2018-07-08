@@ -41,37 +41,51 @@ class PaperContactInfo {
         return $ci;
     }
 
-    static function make_my(PaperInfo $prow, $cid, $object) {
+    static function make_my(PaperInfo $prow, $contact, $object) {
+        $cid = is_object($contact) ? $contact->contactId : $contact;
         $ci = PaperContactInfo::make_empty($prow, $cid);
         $ci->conflictType = (int) $object->conflictType;
-        if (($ci->reviewType = (int) $object->myReviewType)) {
-            $ci->reviewSubmitted = (int) $object->myReviewSubmitted;
-            if ($object->myReviewSubmitted > 0
-                || $object->myReviewNeedsSubmit == 0)
-                $ci->review_status = 1;
-            else if ($ci->review_status == 0)
-                $ci->review_status = -1;
+        if (property_exists($object, "myReviewPermissions")) {
+            $ci->mark_my_review_permissions($object->myReviewPermissions);
+        } else if ($object instanceof PaperInfo
+                   && property_exists($object, "reviewSignatures")) {
+            $rev_tokens = is_object($contact) ? $contact->review_tokens() : null;
+            foreach ($object->reviews_by_id() as $rrow)
+                if ($rrow->contactId == $cid
+                    || ($rev_tokens
+                        && $rrow->reviewToken
+                        && in_array($rrow->reviewToken, $rev_tokens)))
+                    $ci->mark_review($rrow);
         }
         return $ci;
     }
 
-    function mark_review(ReviewInfo $rrow) {
-        $this->reviewType = max($rrow->reviewType, $this->reviewType);
-        $this->reviewSubmitted = max((int) $rrow->reviewSubmitted, $this->reviewSubmitted);
-        if ($rrow->reviewSubmitted > 0 || $rrow->reviewNeedsSubmit == 0)
-            $this->review_status = 1;
-        else if ($this->review_status == 0)
-            $this->review_status = -1;
+    private function mark_conflict($ct) {
+        $this->conflictType = max($ct, $this->conflictType);
     }
 
-    private function mark_local($local) {
-        $this->conflictType = max((int) $local[0], $this->conflictType);
-        $this->reviewType = max((int) $local[1], $this->reviewType);
-        $this->reviewSubmitted = max((int) $local[2], $this->reviewSubmitted);
-        if ($local[2] > 0 || ($local[1] > 0 && $local[3] == 0))
-            $this->review_status = 1;
-        else if ($local[1] > 0 && $this->review_status == 0)
-            $this->review_status = -1;
+    private function mark_review_type($rt, $rs, $rns) {
+        $this->reviewType = max($rt, $this->reviewType);
+        $this->reviewSubmitted = max($rs, $this->reviewSubmitted);
+        if ($rt > 0) {
+            if ($rs > 0 || $rns == 0)
+                $this->review_status = 1;
+            else if ($this->review_status == 0)
+                $this->review_status = -1;
+        }
+    }
+
+    function mark_review(ReviewInfo $rrow) {
+        $this->mark_review_type($rrow->reviewType, (int) $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit);
+    }
+
+    private function mark_my_review_permissions($sig) {
+        if ((string) $sig !== "") {
+            foreach (explode(",", $sig) as $r) {
+                list($rt, $rs, $rns) = explode(" ", $r);
+                $this->mark_review_type((int) $rt, (int) $rs, (int) $rns);
+            }
+        }
     }
 
     static function load_into(PaperInfo $prow, $cid, $rev_tokens) {
@@ -94,7 +108,8 @@ class PaperContactInfo {
             while ($result && ($local = $result->fetch_row())) {
                 $row = $row_set->get($local[4]);
                 $ci = $row->_get_contact_info($local[5]);
-                $ci->mark_local($local);
+                $ci->mark_conflict((int) $local[0]);
+                $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3]);
             }
             Dbl::free($result);
             return;
@@ -132,7 +147,8 @@ class PaperContactInfo {
             $prow->_clear_contact_info($cid);
         while ($result && ($local = $result->fetch_row())) {
             $ci = $prow->_get_contact_info($local[4]);
-            $ci->mark_local($local);
+            $ci->mark_conflict((int) $local[0]);
+            $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3]);
         }
         Dbl::free($result);
     }
@@ -256,25 +272,19 @@ class PaperInfo {
     }
 
     private function merge($p, $contact, $conf) {
-        global $Conf;
         assert($contact === null ? $conf !== null : $contact instanceof Contact);
-        if ($contact)
-            $conf = $contact->conf;
-        $this->conf = $conf ? : $Conf;
+        $this->conf = $contact ? $contact->conf : $conf;
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
         $this->paperId = (int) $this->paperId;
         $this->managerContactId = (int) $this->managerContactId;
-        if ($contact && property_exists($this, "myReviewType")) {
-            if ($contact === true)
-                $cid = property_exists($this, "contactId") ? $this->contactId : null;
-            else
-                $cid = is_object($contact) ? $contact->contactId : $contact;
+        if ($contact && (property_exists($this, "myReviewPermissions")
+                         || property_exists($this, "reviewSignatures"))) {
             $this->_rights_version = Contact::$rights_version;
-            $this->load_my_contact_info($cid, $this);
+            $this->load_my_contact_info($contact, $this);
         } else if ($contact && property_exists($this, "conflictType")) {
-            //error_log("conflictType exists but myReviewType does not " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            error_log("conflictType exists but myReviewPermissions does not " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         }
         foreach (["paperTags", "optionIds"] as $k)
             if (property_exists($this, $k) && $this->$k === null)
@@ -298,6 +308,10 @@ class PaperInfo {
 
     static function comment_table_name() {
         return "PaperComment";
+    }
+
+    static function my_review_permissions_sql($prefix = "") {
+        return "group_concat({$prefix}reviewType, ' ', coalesce({$prefix}reviewSubmitted,0), ' ', reviewNeedsSubmit)";
     }
 
     function make_whynot($rest = []) {
@@ -333,10 +347,12 @@ class PaperInfo {
         }
     }
 
-    function contact_info($contact = null) {
+    function contact_info($contact) {
         global $Me;
         $this->update_rights_version();
         $rev_tokens = null;
+        if (!$contact || !is_object($contact))
+            error_log("PaperInfo::contact_info bad argument: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         if (!$contact || is_object($contact)) {
             $contact = $contact ? : $Me;
             $rev_tokens = $contact->review_tokens();
@@ -368,9 +384,9 @@ class PaperInfo {
         return $old_cimap;
     }
 
-    function load_my_contact_info($cid, $object) {
-        $ci = PaperContactInfo::make_my($this, $cid, $object);
-        $this->_contact_info[$cid] = $ci;
+    function load_my_contact_info($contact, $object) {
+        $ci = PaperContactInfo::make_my($this, $contact, $object);
+        $this->_contact_info[$ci->contactId] = $ci;
     }
 
 
@@ -569,12 +585,12 @@ class PaperInfo {
         return $this->review_type($contact) > 0;
     }
 
-    function review_not_incomplete($contact = null) {
+    function review_not_incomplete($contact) {
         $ci = $this->contact_info($contact);
         return $ci && $ci->review_status > 0;
     }
 
-    function review_submitted($contact = null) {
+    function review_submitted($contact) {
         $ci = $this->contact_info($contact);
         return $ci && $ci->reviewType > 0 && $ci->reviewSubmitted > 0;
     }
@@ -1609,9 +1625,7 @@ class PaperInfo {
     function notify_reviews($callback, $sending_user) {
         $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
                 password, contactTags, roles, defaultWatch,
-                PaperReview.reviewType myReviewType,
-                PaperReview.reviewSubmitted myReviewSubmitted,
-                PaperReview.reviewNeedsSubmit myReviewNeedsSubmit,
+                " . self::my_review_permissions_sql() . " myReviewPermissions,
                 conflictType, watch, preferredEmail, disabled
         from ContactInfo
         left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)
@@ -1622,7 +1636,8 @@ class PaperInfo {
         or conflictType>=" . CONFLICT_AUTHOR . "
         or reviewType is not null
         or exists (select * from PaperComment where paperId=$this->paperId and contactId=ContactInfo.contactId)
-        order by conflictType desc, reviewType desc" /* group authors together */);
+        group by ContactInfo.contactId
+        order by conflictType desc" /* group authors together */);
 
         $watchers = [];
         $lastContactId = 0;
@@ -1652,16 +1667,15 @@ class PaperInfo {
     function notify_final_submit($callback, $sending_user) {
         $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
                 password, contactTags, roles, defaultWatch,
-                PaperReview.reviewType myReviewType,
-                PaperReview.reviewSubmitted myReviewSubmitted,
-                PaperReview.reviewNeedsSubmit myReviewNeedsSubmit,
+                " . self::my_review_permissions_sql() . " myReviewPermissions,
                 conflictType, watch, preferredEmail, disabled
         from ContactInfo
         left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)
         left join PaperWatch on (PaperWatch.paperId=$this->paperId and PaperWatch.contactId=ContactInfo.contactId)
         left join PaperReview on (PaperReview.paperId=$this->paperId and PaperReview.contactId=ContactInfo.contactId)
         where (defaultWatch&" . (Contact::WATCH_FINAL_SUBMIT_ALL) . ")!=0
-        order by conflictType desc, reviewType desc" /* group authors together */);
+        group by ContactInfo.contactId
+        order by conflictType desc" /* group authors together */);
 
         $watchers = [];
         $lastContactId = 0;

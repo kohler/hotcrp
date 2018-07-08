@@ -953,6 +953,8 @@ class SearchQueryInfo {
         $this->user = $srch->user;
     }
     function add_table($table, $joiner = false) {
+        // * All added tables must match at most one Paper row each,
+        //   except MyReviews and Limiter.
         assert($joiner || !count($this->tables));
         $this->tables[$table] = $joiner;
     }
@@ -963,27 +965,27 @@ class SearchQueryInfo {
     function add_conflict_columns() {
         if ($this->user->contactId) {
             if (!isset($this->tables["PaperConflict"]))
-                $this->add_table("PaperConflict", array("left join", "PaperConflict", "PaperConflict.contactId={$this->user->contactId}"));
+                $this->add_table("PaperConflict", ["left join", "PaperConflict", "PaperConflict.contactId={$this->user->contactId}"]);
             $this->columns["conflictType"] = "PaperConflict.conflictType";
         } else
             $this->columns["conflictType"] = "null";
     }
     function add_reviewer_columns() {
-        if ($this->_has_my_review)
-            return;
         $this->_has_my_review = true;
-        $this->add_conflict_columns();
-        $tokens = $this->user->review_tokens();
-        if (!$tokens && !$this->user->contactId) {
-            $this->add_column("myReviewType", "null");
-        } else {
-            if (($tokens = $this->user->review_tokens()))
-                $this->add_table("MyReview", ["left join", "(select paperId, max(reviewType) reviewType, max(reviewNeedsSubmit) reviewNeedsSubmit, max(reviewSubmitted) reviewSubmitted from PaperReview where contactId={$this->user->contactId} or reviewToken in (" . join(",", $tokens) . ") group by paperId)"]);
-            else
-                $this->add_table("MyReview", ["left join", "PaperReview", "(MyReview.contactId={$this->user->contactId})"]);
-            $this->add_column("myReviewType", "MyReview.reviewType");
-            $this->add_column("myReviewNeedsSubmit", "MyReview.reviewNeedsSubmit");
-            $this->add_column("myReviewSubmitted", "MyReview.reviewSubmitted");
+    }
+    function finish_reviewer_columns() {
+        if ($this->_has_my_review) {
+            $this->add_conflict_columns();
+            if (isset($this->columns["reviewSignatures"])) {
+                /* use that */
+            } else if (isset($this->tables["MyReviews"])) {
+                $this->add_column("myReviewPermissions", PaperInfo::my_review_permissions_sql("MyReviews."));
+            } else if (!isset($this->tables["Limiter"])) {
+                $this->add_table("MyReviews", ["left join", "PaperReview", $this->user->act_reviewer_sql("MyReviews")]);
+                $this->add_column("myReviewPermissions", PaperInfo::my_review_permissions_sql("MyReviews."));
+            } else {
+                $this->add_column("myReviewPermissions", "(select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and " . $this->user->act_reviewer_sql("PaperReview") . " group by paperId)");
+            }
         }
     }
     function add_review_signature_columns() {
@@ -1984,17 +1986,18 @@ class PaperSearch {
         if ($limit === "a")
             $filters[] = $this->user->act_author_view_sql("PaperConflict");
         else if ($limit === "r")
-            $filters[] = "MyReview.reviewType is not null";
-        else if ($limit === "ar")
-            $filters[] = "(" . $this->user->act_author_view_sql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and MyReview.reviewType is not null))";
-        else if ($limit === "rout")
-            $filters[] = "MyReview.reviewNeedsSubmit!=0";
+            $sqi->add_table("MyReviews", ["join", "PaperReview", $this->user->act_reviewer_sql("MyReviews")]);
+        else if ($limit === "ar") {
+            $sqi->add_table("MyReviews", ["left join", "PaperReview", $this->user->act_reviewer_sql("MyReviews")]);
+            $filters[] = "(" . $this->user->act_author_view_sql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and MyReviews.reviewType is not null))";
+        } else if ($limit === "rout")
+            $sqi->add_table("Limiter", ["join", "PaperReview", $this->user->act_reviewer_sql("Limiter") . " and reviewNeedsSubmit!=0"]);
         else if ($limit === "req")
-            $sqi->add_table("Limiter", array("join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType=" . REVIEW_EXTERNAL));
+            $sqi->add_table("Limiter", ["join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType=" . REVIEW_EXTERNAL]);
         else if ($limit === "unm")
             $filters[] = "Paper.managerContactId=0";
         else if ($this->q === "re:me")
-            $filters[] = "MyReview.reviewType is not null";
+            $sqi->add_table("MyReviews", ["join", "PaperReview", $this->user->act_reviewer_sql("MyReviews")]);
 
         if ($limit === "a" || $limit === "ar")
             $sqi->add_conflict_columns();
@@ -2034,6 +2037,7 @@ class PaperSearch {
             $sqi->add_column("blind", "Paper.blind");
 
         // create query
+        $sqi->finish_reviewer_columns();
         $q = "select ";
         foreach ($sqi->columns as $colname => $value)
             $q .= $value . " " . $colname . ", ";

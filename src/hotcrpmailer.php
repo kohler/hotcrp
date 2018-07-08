@@ -403,7 +403,7 @@ class HotCRPMailer extends Mailer {
         $result = $row->conf->qe("select ContactInfo.contactId,
                 firstName, lastName, email, preferredEmail, password,
                 roles, disabled, contactTags,
-                conflictType, 0 myReviewType
+                conflictType, '' myReviewPermissions
                 from ContactInfo join PaperConflict using (contactId)
                 where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
                 group by ContactInfo.contactId");

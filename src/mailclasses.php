@@ -321,10 +321,13 @@ class MailRecipients {
                 Paper.managerContactId";
         else
             $q .= ", -1 as paperId";
-        if ($needreview)
-            $q .= ", PaperReview.reviewType, PaperReview.reviewType as myReviewType, PaperReview.reviewSubmitted as myReviewSubmitted, PaperReview.reviewNeedsSubmit as myReviewNeedsSubmit";
-        else
-            $q .= ", 0 as myReviewType";
+        if ($needreview) {
+            if (!$revmatch || $this->type === "rev")
+                $q .= ", " . PaperInfo::my_review_permissions_sql("PaperReview.") . " myReviewPermissions";
+            else
+                $q .= ", (select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId group by paperId) myReviewPermissions";
+        } else
+            $q .= ", '' myReviewPermissions";
         if ($needconflict)
             $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
         $q .= "\nfrom " . join("\n", $joins) . "\nwhere "
