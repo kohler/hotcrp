@@ -2668,18 +2668,12 @@ class Conf {
         if (get($options, "reviewSignatures")
             || get($options, "scores")
             || get($options, "reviewWordCounts")) {
-            $cols[] = "R_alls.reviewSignatures";
-            $j = "";
+            $cols[] = "(select " . ReviewInfo::review_signature_sql() . " from PaperReview r where r.paperId=Paper.paperId) reviewSignatures";
             foreach (get($options, "scores", []) as $fid)
-                if (($f = $this->review_field($fid)) && $f->main_storage) {
-                    $cols[] = "R_alls.{$fid}Signature";
-                    $j .= ", group_concat({$f->main_storage} order by reviewId) {$fid}Signature";
-                }
-            if (get($options, "reviewWordCounts")) {
-                $cols[] = "R_alls.reviewWordCountSignature";
-                $j .= ", group_concat(coalesce(reviewWordCount,'.') order by reviewId) reviewWordCountSignature";
-            }
-            $joins[] = "left join (select paperId, " . ReviewInfo::review_signature_sql() . " reviewSignatures$j from PaperReview r where {$papersel}true group by paperId) R_alls on (R_alls.paperId=Paper.paperId)";
+                if (($f = $this->review_field($fid)) && $f->main_storage)
+                    $cols[] = "(select group_concat({$f->main_storage} order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId) {$fid}Signature";
+            if (get($options, "reviewWordCounts"))
+                $cols[] = "(select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId) reviewWordCountSignature";
         } else if ($contact) {
             // need myReviewPermissions
             if ($no_paperreview)

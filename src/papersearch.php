@@ -991,26 +991,20 @@ class SearchQueryInfo {
         }
     }
     function add_review_signature_columns() {
-        if (!isset($this->columns["reviewSignatures"])) {
-            $this->add_table("R_sigs", ["left join", "(select paperId, " . ReviewInfo::review_signature_sql() . " reviewSignatures from PaperReview r group by paperId)"]);
-            $this->add_column("reviewSignatures", "R_sigs.reviewSignatures");
-        }
+        if (!isset($this->columns["reviewSignatures"]))
+            $this->add_column("reviewSignatures", "(select " . ReviewInfo::review_signature_sql() . " from PaperReview r where r.paperId=Paper.paperId)");
     }
     function add_score_columns($fid) {
         $this->add_review_signature_columns();
         if (!isset($this->columns["{$fid}Signature"])
             && ($f = $this->conf->review_field($fid))
-            && $f->main_storage) {
-            $this->tables["R_sigs"][1] = str_replace(" from PaperReview", ", group_concat({$f->main_storage} order by reviewId) {$fid}Signature from PaperReview", $this->tables["R_sigs"][1]);
-            $this->add_column("{$fid}Signature", "R_sigs.{$fid}Signature");
-        }
+            && $f->main_storage)
+            $this->add_column("{$fid}Signature", "(select group_concat({$f->main_storage} order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId)");
     }
     function add_review_word_count_columns() {
         $this->add_review_signature_columns();
-        if (!isset($this->columns["reviewWordCountSignature"])) {
-            $this->tables["R_sigs"][1] = str_replace(" from PaperReview", ", group_concat(coalesce(reviewWordCount,'.') order by reviewId) reviewWordCountSignature from PaperReview", $this->tables["R_sigs"][1]);
-            $this->add_column("reviewWordCountSignature", "R_sigs.reviewWordCountSignature");
-        }
+        if (!isset($this->columns["reviewWordCountSignature"]))
+            $this->add_column("reviewWordCountSignature", "(select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId)");
     }
     function add_rights_columns() {
         if (!isset($this->columns["managerContactId"]))
