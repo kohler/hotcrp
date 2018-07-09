@@ -50,12 +50,8 @@ class PaperContactInfo {
         } else if ($object instanceof PaperInfo
                    && property_exists($object, "reviewSignatures")) {
             $rev_tokens = is_object($contact) ? $contact->review_tokens() : null;
-            foreach ($object->reviews_by_id() as $rrow)
-                if ($rrow->contactId == $cid
-                    || ($rev_tokens
-                        && $rrow->reviewToken
-                        && in_array($rrow->reviewToken, $rev_tokens)))
-                    $ci->mark_review($rrow);
+            foreach ($object->reviews_of_user($cid, $rev_tokens) as $rrow)
+                $ci->mark_review($rrow);
         }
         return $ci;
     }
@@ -364,12 +360,8 @@ class PaperInfo {
                 $ci = PaperContactInfo::make_empty($this, $cid);
                 if (($c = get($this->conflicts(), $cid)))
                     $ci->conflictType = $c->conflictType;
-                foreach ($this->reviews_by_id() as $rrow)
-                    if ($rrow->contactId == $cid
-                        || ($rev_tokens
-                            && $rrow->reviewToken
-                            && in_array($rrow->reviewToken, $rev_tokens)))
-                        $ci->mark_review($rrow);
+                foreach ($this->reviews_of_user($cid, $rev_tokens) as $rrow)
+                    $ci->mark_review($rrow);
                 $this->_contact_info[$cid] = $ci;
             } else
                 PaperContactInfo::load_into($this, $cid, $rev_tokens);
@@ -1202,11 +1194,14 @@ class PaperInfo {
         return null;
     }
 
-    function reviews_of_user($contact) {
+    function reviews_of_user($contact, $rev_tokens = null) {
         $cid = self::contact_to_cid($contact);
         $rrows = [];
         foreach ($this->reviews_by_id() as $rrow)
-            if ($rrow->contactId == $cid)
+            if ($rrow->contactId == $cid
+                || ($rev_tokens
+                    && $rrow->reviewToken
+                    && in_array($rrow->reviewToken, $rev_tokens)))
                 $rrows[] = $rrow;
         return $rrows;
     }

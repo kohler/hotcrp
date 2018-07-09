@@ -296,14 +296,9 @@ class CommentInfo {
             if (!$idable)
                 $cj->author_hidden = true;
             if (Contact::is_anonymous_email($cj->author_email)
-                && $contact->review_tokens()) {
-                foreach ($this->prow->reviews_by_id() as $rrow)
-                    if ($rrow->reviewToken
-                        && in_array($rrow->reviewToken, $contact->review_tokens())) {
-                        $cj->review_token = encode_token((int) $rrow->reviewToken);
-                        break;
-                    }
-            }
+                && $contact->review_tokens()
+                && ($rrows = $this->prow->reviews_of_user(-1, $contact->review_tokens())))
+                $cj->review_token = encode_token((int) $rrows[0]->reviewToken);
         }
         if ((!$idable
              || ($this->commentType & (COMMENTTYPE_VISIBILITY | COMMENTTYPE_BLIND)) == (COMMENTTYPE_AUTHOR | COMMENTTYPE_BLIND))

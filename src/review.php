@@ -1583,12 +1583,8 @@ class ReviewValues extends MessageSet {
             $rrow = $prow->fresh_review_of_user($reviewer);
         if (!$rrow && $user->review_tokens()) {
             $prow->ensure_full_reviews();
-            foreach ($prow->reviews_by_id() as $xrrow)
-                if ($xrrow->reviewToken
-                    && in_array($xrrow->reviewToken, $user->review_tokens())) {
-                    $rrow = $xrrow;
-                    break;
-                }
+            if (($xrrows = $prow->reviews_of_user(-1, $user->review_tokens())))
+                $rrow = $xrrows[0];
         }
 
         // maybe create review

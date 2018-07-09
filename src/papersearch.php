@@ -2208,14 +2208,9 @@ class PaperSearch {
             return $this->user->act_author_view($prow)
                 || ($prow->timeWithdrawn <= 0 && $prow->has_reviewer($this->user));
         case "rout":
-            $rrow = $prow->review_of_user($this->user);
-            if ($rrow && $rrow->reviewNeedsSubmit != 0)
-                return true;
-            foreach ($this->user->review_tokens() as $token) {
-                $rrow = $prow->review_of_token($token);
-                if ($rrow && $rrow->reviewNeedsSubmit != 0)
+            foreach ($prow->reviews_of_user($this->user, $this->user->review_tokens()) as $rrow)
+                if ($rrow->reviewNeedsSubmit != 0)
                     return true;
-            }
             return false;
         case "req":
             if ($prow->timeSubmitted <= 0)
