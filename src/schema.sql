@@ -63,9 +63,8 @@ CREATE TABLE `ContactInfo` (
   `gender` varbinary(24) DEFAULT NULL,
   `data` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`contactId`),
-  UNIQUE KEY `rolesContactId` (`roles`,`contactId`),
   UNIQUE KEY `email` (`email`),
-  KEY `fullName` (`lastName`,`firstName`,`email`)
+  KEY `roles` (`roles`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -286,9 +285,7 @@ CREATE TABLE `PaperReview` (
 
   PRIMARY KEY (`paperId`,`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
-  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
-  KEY `paperId` (`paperId`,`reviewOrdinal`),
-  KEY `reviewNeedsSubmit` (`reviewNeedsSubmit`),
+  KEY `contactId` (`contactId`),
   KEY `reviewType` (`reviewType`),
   KEY `reviewRound` (`reviewRound`),
   KEY `requestedBy` (`requestedBy`)
@@ -485,7 +482,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 194);
+insert into Settings (name, value) values ('allowPaperOption', 195);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

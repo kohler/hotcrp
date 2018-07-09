@@ -1373,6 +1373,15 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table Settings add primary key (`name`)")
         && $conf->ql("alter table Settings drop key `name`"))
         $conf->update_schema_version(194);
+    if ($conf->sversion == 194
+        && $conf->ql("alter table ContactInfo drop key `rolesContactId`")
+        && $conf->ql("alter table ContactInfo add key `roles` (`roles`)")
+        && $conf->ql("alter table ContactInfo drop key `fullName`")
+        && $conf->ql("alter table PaperReview drop key `contactPaper`")
+        && $conf->ql("alter table PaperReview add key `contactId` (`contactId`)")
+        && $conf->ql("alter table PaperReview drop key `reviewNeedsSubmit`")
+        && $conf->ql("alter table PaperReview drop key `paperId`"))
+        $conf->update_schema_version(195);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
