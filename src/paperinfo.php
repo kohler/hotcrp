@@ -317,10 +317,11 @@ class PaperInfo {
 
     static private function contact_to_cid($contact) {
         global $Me;
+        assert($contact !== null);
         if ($contact && is_object($contact))
             return $contact->contactId;
         else
-            return $contact ? : $Me->contactId;
+            return $contact !== null ? $contact : $Me->contactId;
     }
 
     function _get_contact_info($cid) {
@@ -451,7 +452,7 @@ class PaperInfo {
         return $info;
     }
 
-    function conflict_type($contact = null) {
+    function conflict_type($contact) {
         $cid = self::contact_to_cid($contact);
         if (array_key_exists($cid, $this->_contact_info))
             return $this->_contact_info[$cid]->conflictType;
