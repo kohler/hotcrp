@@ -246,6 +246,39 @@ emailReplyTo, and docstore.
 4. Each conference needs its own database. Create one using the
    `lib/createdb.sh` script (the `-c CONFIGFILE` option will be useful).
 
+
+Docker
+-------
+
+Start hotcrp in docker-environment
+
+1) Start docker compse
+
+`docker-compose up`
+
+2) Only on first run: Initialize database
+
+```
+# attach to mysql docker 
+docker exec -i -t hotcrp-database /bin/bash
+
+# create database
+# select no when asked for database creation, only fill database with scheme!!!!!
+# ok -> hotcrp -> n -> Y
+./lib/createdb.sh --dbuser=hotcrp,hotcrppwd --user=root --password=rootpwd
+```
+
+3) control conf/options.php may add:
+
+```$xslt
+$Opt["dsn"] = "mysql://hotcrp:hotcrppwd@hotcrp-mysql:3306/hotcrp";
+```
+
+5) Check connection 
+
+`http://localhost:9000` 
+
+
 License
 -------
 
