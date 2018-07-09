@@ -1622,6 +1622,19 @@ class PaperInfo {
     }
 
 
+    static function notify_user_compare($a, $b) {
+        // group authors together, then reviewers
+        $act = (int) $a->conflictType;
+        $bct = (int) $b->conflictType;
+        if (($act >= CONFLICT_AUTHOR) !== ($bct >= CONFLICT_AUTHOR))
+            return $act >= CONFLICT_AUTHOR ? -1 : 1;
+        $arp = $a->myReviewPermissions;
+        $brp = $b->myReviewPermissions;
+        if ((bool) $arp !== (bool) $brp)
+            return (bool) $arp ? -1 : 1;
+        return Contact::compare($a, $b);
+    }
+
     function notify_reviews($callback, $sending_user) {
         $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
                 password, contactTags, roles, defaultWatch,
@@ -1636,8 +1649,7 @@ class PaperInfo {
         or conflictType>=" . CONFLICT_AUTHOR . "
         or reviewType is not null
         or exists (select * from PaperComment where paperId=$this->paperId and contactId=ContactInfo.contactId)
-        group by ContactInfo.contactId
-        order by conflictType desc, reviewType desc" /* group authors together */);
+        group by ContactInfo.contactId");
 
         $watchers = [];
         $lastContactId = 0;
@@ -1651,6 +1663,7 @@ class PaperInfo {
                 $watchers[$minic->contactId] = $minic;
         }
         Dbl::free($result);
+        usort($watchers, "PaperInfo::notify_user_compare");
 
         // save my current contact info map -- we are replacing it with another
         // map that lacks review token information and so forth
@@ -1674,8 +1687,7 @@ class PaperInfo {
         left join PaperWatch on (PaperWatch.paperId=$this->paperId and PaperWatch.contactId=ContactInfo.contactId)
         left join PaperReview on (PaperReview.paperId=$this->paperId and PaperReview.contactId=ContactInfo.contactId)
         where (defaultWatch&" . (Contact::WATCH_FINAL_SUBMIT_ALL) . ")!=0
-        group by ContactInfo.contactId
-        order by conflictType desc, reviewType desc" /* group authors together */);
+        group by ContactInfo.contactId");
 
         $watchers = [];
         $lastContactId = 0;
@@ -1688,6 +1700,7 @@ class PaperInfo {
             $watchers[$minic->contactId] = $minic;
         }
         Dbl::free($result);
+        usort($watchers, "PaperInfo::notify_user_compare");
 
         // save my current contact info map -- we are replacing it with another
         // map that lacks review token information and so forth

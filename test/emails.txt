@@ -1452,7 +1452,7 @@ Comments for author
 Bye
 
 ******** test06-17lixia
-To: Mary Baker <mgbaker@cs.stanford.edu>, External Reviewer <external@_.com>
+To: External Reviewer <external@_.com>, Mary Baker <mgbaker@cs.stanford.edu>
 Subject: [Testconf I] Submitted review #17C "Network Text Editor (NTE): A
  Scalable..."
 X-Landmark: test/test06.php:622
