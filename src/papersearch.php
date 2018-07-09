@@ -382,7 +382,8 @@ class Not_SearchTerm extends Op_SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->negated = !$sqi->negated;
         $ff = $this->child[0]->sqlexpr($sqi);
-        if ($sqi->negated && !$this->child[0]->trivial_rights($sqi->user, $sqi->srch))
+        if ($sqi->negated
+            && !$this->child[0]->trivial_rights($sqi->user, $sqi->srch))
             $ff = "false";
         $sqi->negated = !$sqi->negated;
         return "not ($ff)";
@@ -990,7 +991,7 @@ class SearchQueryInfo {
     }
     function add_review_signature_columns() {
         if (!isset($this->columns["reviewSignatures"])) {
-            $this->add_table("R_sigs", ["left join", "(select paperId, count(*) count, " . ReviewInfo::review_signature_sql() . " reviewSignatures from PaperReview r group by paperId)"]);
+            $this->add_table("R_sigs", ["left join", "(select paperId, " . ReviewInfo::review_signature_sql() . " reviewSignatures from PaperReview r group by paperId)"]);
             $this->add_column("reviewSignatures", "R_sigs.reviewSignatures");
         }
     }

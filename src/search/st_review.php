@@ -427,16 +427,20 @@ class Review_SearchTerm extends SearchTerm {
         if ($this->rsm->has_wordcount())
             $sqi->add_review_word_count_columns();
 
-        if (!$sqi->negated && ($wheres = $this->rsm->useful_sqlexpr("r"))) {
-            $thistab = "Reviews_" . count($sqi->tables);
-            $sqi->add_table($thistab, ["left join", "(select r.paperId, count(r.reviewId) count from PaperReview r where $wheres group by paperId)"]);
-        } else
-            $thistab = "R_sigs";
-
         // Make the database query conservative (so change equality
         // constraints to >= constraints, and ignore <=/</!= constraints).
         // We'll do the precise query later.
-        return "coalesce($thistab.count,0)" . $this->rsm->conservative_nonnegative_countexpr();
+        // ">=0" is a useless constraint in SQL-land.
+        $cexpr = $this->rsm->conservative_nonnegative_countexpr();
+        if ($cexpr === ">=0" || $sqi->negated)
+            return "true";
+        else {
+            $wheres = $this->rsm->useful_sqlexpr("r") ? : "true";
+            if ($cexpr === ">0")
+                return "exists (select * from PaperReview r where r.paperId=Paper.paperId and $wheres)";
+            else
+                return "(select count(*) from PaperReview r where r.paperId=Paper.paperId and $wheres)" . $cexpr;
+        }
     }
     function exec(PaperInfo $prow, PaperSearch $srch) {
         $n = 0;
