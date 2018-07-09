@@ -37,10 +37,7 @@ class Filer {
         if (is_array($doc) && count($doc) == 1) {
             $doc = $doc[0];
             $downloadname = null;
-        }
-        if (!$doc || (is_object($doc) && isset($doc->size) && $doc->size == 0))
-            return (object) ["error" => true, "error_html" => "Empty file."];
-        if (is_array($doc)) {
+        } else if (is_array($doc)) {
             $z = new ZipDocument($downloadname);
             foreach ($doc as $d)
                 $z->add($d);
@@ -53,6 +50,8 @@ class Filer {
                 $error_html = $doc->error_html;
             return (object) ["error" => true, "error_html" => $error_html];
         }
+        if ($doc->size == 0 && !$doc->ensure_size())
+            return (object) ["error" => true, "error_html" => "Empty file."];
 
         // Print paper
         header("Content-Type: " . Mimetype::type_with_charset($doc->mimetype));
