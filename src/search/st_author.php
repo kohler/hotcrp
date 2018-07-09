@@ -31,25 +31,18 @@ class Author_SearchTerm extends SearchTerm {
         return new Author_SearchTerm($count, $cids, $word, $sword->quoted);
     }
     function trivial_rights(Contact $user, PaperSearch $srch) {
-        return $this->csm->has_sole_contact($user->contactId);
+        return $this->csm->has_sole_contact($user->contactId)
+            && !$this->csm->test(0);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if ($this->csm->has_contacts() && $this->csm->countexpr() === ">0") {
-            $thistab = "AuthorConflict_" . count($sqi->tables);
-            $sqi->add_table($thistab, ["left join", "(select paperId, 1 present from PaperConflict where " . $this->csm->contact_match_sql("contactId") . " and conflictType>=" . CONFLICT_AUTHOR . " group by paperId)"]);
-            return "$thistab.present is not null";
+        if ($this->csm->has_contacts() && !$this->csm->test(0)) {
+            return "exists (select * from PaperConflict where PaperConflict.paperId=Paper.paperId and " . $this->csm->contact_match_sql("contactId") . " and conflictType>=" . CONFLICT_AUTHOR . ")";
         } else if ($this->csm->has_contacts()) {
             $sqi->add_allConflictType_column();
-            if ($this->csm->test(0))
-                return "true";
-            else
-                return "AllConflict.allConflictType is not null";
+            return "true";
         } else {
             $sqi->add_column("authorInformation", "Paper.authorInformation");
-            if ($this->csm->test(0))
-                return "true";
-            else
-                return "Paper.authorInformation!=''";
+            return $this->csm->test(0) ? "true" : "Paper.authorInformation!=''";
         }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {

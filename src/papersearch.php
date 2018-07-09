@@ -915,7 +915,8 @@ class ContactCountMatcher extends CountMatcher {
         return $this->_contacts !== null;
     }
     function has_sole_contact($cid) {
-        return $this->_contacts !== null && count($this->_contacts) == 1
+        return $this->_contacts !== null
+            && count($this->_contacts) == 1
             && $this->_contacts[0] == $cid;
     }
     function contact_match_sql($fieldname) {
