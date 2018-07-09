@@ -853,7 +853,7 @@ class DocumentInfo implements JsonSerializable {
                 $x[$k] = substr($v, 0, 50) . "…";
             else if ($k === "sha1" && is_string($v))
                 $x[$k] = Filer::hash_as_text($v);
-            else if ($k !== "conf" && $v !== null)
+            else if ($k !== "conf" && $k !== "prow" && $v !== null)
                 $x[$k] = $v;
         return $x;
     }
