@@ -9,13 +9,22 @@ function change_email_by_capability($Qreq) {
     global $Conf, $Me;
     $capmgr = $Conf->capability_manager();
     $capdata = $capmgr->check($Qreq->changeemail);
-    if (!$capdata || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
+    if (!$capdata
+        || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
         || !($capdata->data = json_decode($capdata->data))
         || !get($capdata->data, "uemail"))
         error_go(false, "That email change code has expired, or you didn’t enter it correctly.");
-    $Acct = $Conf->user_by_id($capdata->contactId);
+
+    if ($capdata->contactId)
+        $Acct = $Conf->user_by_id($capdata->contactId);
+    else
+        error_go(false, "That email change code was created improperly due to a server error. Please create another email change code, or sign out of your current account and create a new account using your preferred email address.");
+
     if (!$Acct)
         error_go(false, "No such account.");
+    else if (isset($capdata->data->oldemail)
+             && strcasecmp($Acct->email, $capdata->data->oldemail))
+        error_go(false, "You have changed your email address since creating that email change code.");
 
     $email = $capdata->data->uemail;
     if ($Conf->user_id_by_email($email))
@@ -129,7 +138,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
     }
 
     // check email
-    if ($newProfile || $cj->email != $Acct->email) {
+    if ($newProfile || strcasecmp($cj->email, $Acct->email)) {
         if ($Acct && $Acct->data("locked"))
             return $user_status->error_at("email", "This account is locked, so you can’t change its email address.");
         else if (($new_acct = $Conf->user_by_email($cj->email))) {
@@ -146,15 +155,18 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
         } else if ($Conf->external_login()) {
             if ($cj->email === "")
                 return $user_status->error_at("email", "Not a valid username.");
-        } else if ($cj->email === "")
+        } else if ($cj->email === "") {
             return $user_status->error_at("email", "You must supply an email address.");
-        else if (!validate_email($cj->email))
+        } else if (!validate_email($cj->email)) {
             return $user_status->error_at("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
+        } else if ($Acct && !$Acct->has_database_account()) {
+            return $user_status->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
+        }
         if (!$newProfile && !$Me->privChair) {
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
             $capmgr = $Conf->capability_manager();
-            $rest = array("capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => $Now + 259200, "data" => json_encode_db(array("uemail" => $cj->email)))));
+            $rest = array("capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => $Now + 259200, "data" => json_encode_db(array("oldemail" => $Acct->email, "uemail" => $cj->email)))));
             $mailer = new HotCRPMailer($Conf, $Acct, null, $rest);
             $prep = $mailer->make_preparation("@changeemail", $rest);
             if ($prep->sendable) {

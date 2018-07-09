@@ -1047,6 +1047,7 @@ class Contact {
     }
 
     function change_email($email) {
+        assert($this->has_database_account());
         $aupapers = self::email_authored_papers($this->conf, $email, $this);
         $this->conf->ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
         $this->save_authored_papers($aupapers);
