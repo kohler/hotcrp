@@ -2725,11 +2725,9 @@ class Conf {
             $joins[] = "left join ($subq) as APRP on (APRP.paperId=Paper.paperId)";
         }
 
-        if (get($options, "allConflictType")) {
+        if (get($options, "allConflictType"))
             // See also SearchQueryInfo::add_allConflictType_column
-            $joins[] = "left join (select paperId, group_concat(contactId,' ',conflictType) as allConflictType from PaperConflict where {$papersel}conflictType>0 group by paperId) as AllConflict on (AllConflict.paperId=Paper.paperId)";
-            $cols[] = "AllConflict.allConflictType";
-        }
+            $cols[] = "(select group_concat(contactId, ' ', conflictType) from PaperConflict where PaperConflict.paperId=Paper.paperId) allConflictType";
 
         if (get($options, "watch") && $contactId) {
             $joins[] = "left join PaperWatch on (PaperWatch.paperId=Paper.paperId and PaperWatch.contactId=$contactId)";

@@ -1016,10 +1016,8 @@ class SearchQueryInfo {
         $this->add_reviewer_columns();
     }
     function add_allConflictType_column() {
-        if (!isset($this->tables["AllConflict"])) {
-            $this->add_table("AllConflict", ["left join", "(select paperId, group_concat(concat(contactId,' ',conflictType) separator ',') as allConflictType from PaperConflict where conflictType>0 group by paperId)"]);
-            $this->add_column("allConflictType", "AllConflict.allConflictType");
-        }
+        if (!isset($this->columns["allConflictType"]))
+            $this->add_column("allConflictType", "(select group_concat(contactId, ' ', conflictType) from PaperConflict where PaperConflict.paperId=Paper.paperId)");
     }
 }
 
