@@ -2161,7 +2161,7 @@ class PaperSearch {
             return false;
         else if ($limit === "und" || $limit === "acc" || $limit === "vis")
             return $this->privChair;
-        else if ($limit === "rable")
+        else if ($limit === "rable" || $limit === "manager")
             return false;
         else
             return true;
