@@ -987,7 +987,9 @@ class SearchQueryInfo {
             } else {
                 $this->add_column("myReviewPermissions", "(select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and " . $this->user->act_reviewer_sql("PaperReview") . " group by paperId)");
             }
-        }
+        } else if (isset($this->columns["conflictType"])
+                   && !isset($this->columns["reviewSignatures"]))
+            $this->columns["myReviewPermissions"] = "null";
     }
     function add_review_signature_columns() {
         if (!isset($this->columns["reviewSignatures"])) {
