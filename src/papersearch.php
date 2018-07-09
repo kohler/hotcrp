@@ -963,13 +963,13 @@ class SearchQueryInfo {
         assert(!isset($this->columns[$name]) || $this->columns[$name] === $expr);
         $this->columns[$name] = $expr;
     }
+    function add_conflict_table() {
+        if (!isset($this->tables["PaperConflict"]))
+            $this->add_table("PaperConflict", ["left join", "PaperConflict", "PaperConflict.contactId=" . ($this->user->contactId ? : -100)]);
+    }
     function add_conflict_columns() {
-        if ($this->user->contactId) {
-            if (!isset($this->tables["PaperConflict"]))
-                $this->add_table("PaperConflict", ["left join", "PaperConflict", "PaperConflict.contactId={$this->user->contactId}"]);
-            $this->columns["conflictType"] = "PaperConflict.conflictType";
-        } else
-            $this->columns["conflictType"] = "null";
+        $this->add_conflict_table();
+        $this->columns["conflictType"] = "PaperConflict.conflictType";
     }
     function add_reviewer_columns() {
         $this->_has_my_review = true;
@@ -987,9 +987,7 @@ class SearchQueryInfo {
             } else {
                 $this->add_column("myReviewPermissions", "(select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and " . $this->user->act_reviewer_sql("PaperReview") . " group by paperId)");
             }
-        } else if (isset($this->columns["conflictType"])
-                   && !isset($this->columns["reviewSignatures"]))
-            $this->columns["myReviewPermissions"] = "null";
+        }
     }
     function add_review_signature_columns() {
         if (!isset($this->columns["reviewSignatures"])) {
@@ -1976,7 +1974,7 @@ class PaperSearch {
             else
                 $filters[] = "Paper.managerContactId=" . $this->cid;
             $filters[] = "Paper.timeSubmitted>0";
-            $sqi->add_conflict_columns();
+            $sqi->add_conflict_table();
         }
 
         // decision limitation parts
@@ -2003,7 +2001,7 @@ class PaperSearch {
             $sqi->add_table("MyReviews", ["join", "PaperReview", $this->user->act_reviewer_sql("MyReviews")]);
 
         if ($limit === "a" || $limit === "ar")
-            $sqi->add_conflict_columns();
+            $sqi->add_conflict_table();
         if ($limit === "r" || $limit === "ar" || $limit === "rout" || $this->q === "re:me")
             $sqi->add_reviewer_columns();
 
