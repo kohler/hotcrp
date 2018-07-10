@@ -1054,8 +1054,8 @@ class PaperInfo {
         }
 
         if ($this->_document_array === null) {
-            $result = $this->conf->qe("select " . $this->_document_sql() . " from PaperStorage where paperId=? and (inactive=0 or paperStorageId=?)", $this->paperId, $did);
-            $this->_document_array = [$did => null];
+            $result = $this->conf->qe("select " . $this->_document_sql() . " from PaperStorage where paperId=? and inactive=0", $this->paperId);
+            $this->_document_array = [];
             while (($di = DocumentInfo::fetch($result, $this->conf, $this)))
                 $this->_document_array[$di->paperStorageId] = $di;
             Dbl::free($result);
