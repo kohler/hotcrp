@@ -1021,24 +1021,8 @@ class PaperInfo {
             $this->load_options(true, true);
     }
 
-    private function _add_documents($dids) {
-        if ($this->_document_array === null)
-            $this->_document_array = [];
-        $result = $this->conf->qe("select paperStorageId, paperId, timestamp, mimetype, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperId=? and paperStorageId?a", $this->paperId, $dids);
-        $loaded_dids = [];
-        while (($di = DocumentInfo::fetch($result, $this->conf, $this))) {
-            $this->_document_array[$di->paperStorageId] = $di;
-            $loaded_dids[] = $di->paperStorageId;
-        }
-        Dbl::free($result);
-        // rarely might refer to a doc owned by a different paper
-        if (count($loaded_dids) != count($dids)
-            && ($dids = array_diff($dids, $loaded_dids))) {
-            $result = $this->conf->qe("select paperStorageId, paperId, timestamp, mimetype, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperStorageId?a", $dids);
-            while (($di = DocumentInfo::fetch($result, $this->conf, $this)))
-                $this->_document_array[$di->paperStorageId] = $di;
-            Dbl::free($result);
-        }
+    private function _document_sql() {
+        return "paperId, paperStorageId, timestamp, mimetype, sha1, documentType, filename, infoJson, size, filterType, originalStorageId, inactive";
     }
 
     function document($dtype, $did = 0, $full = false) {
@@ -1055,7 +1039,8 @@ class PaperInfo {
         if ($did <= 1)
             return null;
 
-        if ($this->_document_array !== null && isset($this->_document_array[$did]))
+        if ($this->_document_array !== null
+            && array_key_exists($did, $this->_document_array))
             return $this->_document_array[$did];
 
         if ((($dtype == DTYPE_SUBMISSION
@@ -1069,20 +1054,18 @@ class PaperInfo {
         }
 
         if ($this->_document_array === null) {
-            $x = [];
-            if ($this->paperStorageId > 0)
-                $x[] = $this->paperStorageId;
-            if ($this->finalPaperStorageId > 0)
-                $x[] = $this->finalPaperStorageId;
-            foreach ($this->options() as $oa)
-                if ($oa->option->has_document())
-                    $x = array_merge($x, $oa->unsorted_values());
-            $x[] = $did;
-            $this->_add_documents($x);
+            $result = $this->conf->qe("select " . $this->_document_sql() . " from PaperStorage where paperId=? and (inactive=0 or paperStorageId=?)", $this->paperId, $did);
+            $this->_document_array = [$did => null];
+            while (($di = DocumentInfo::fetch($result, $this->conf, $this)))
+                $this->_document_array[$di->paperStorageId] = $di;
+            Dbl::free($result);
         }
-        if (!isset($this->_document_array[$did]))
-            $this->_add_documents([$did]);
-        return get($this->_document_array, $did);
+        if (!array_key_exists($did, $this->_document_array)) {
+            $result = $this->conf->qe("select " . $this->_document_sql() . " from PaperStorage where paperStorageId=?", $did);
+            $this->_document_array[$did] = DocumentInfo::fetch($result, $this->conf, $this);
+            Dbl::free($result);
+        }
+        return $this->_document_array[$did];
     }
     function joindoc() {
         return $this->document($this->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION);
