@@ -1382,6 +1382,13 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperReview drop key `reviewNeedsSubmit`")
         && $conf->ql("alter table PaperReview drop key `paperId`"))
         $conf->update_schema_version(195);
+    if ($conf->sversion == 195
+        && $conf->ql("alter table PaperStorage add `inactive` tinyint(1) NOT NULL DEFAULT '0'")
+        && $conf->ql("update PaperStorage set inactive=1")
+        && $conf->ql("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.paperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
+        && $conf->ql("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.finalPaperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
+        && $conf->ql("update PaperStorage join PaperOption on (PaperOption.paperId=PaperStorage.paperId and PaperOption.value=PaperStorage.paperStorageId) set PaperStorage.inactive=0"))
+        $conf->update_schema_version(196);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

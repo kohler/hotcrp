@@ -226,6 +226,14 @@ class PaperOptionList {
         return $nonfinal ? $this->nonfinal_option_list() : $this->option_list();
     }
 
+    function full_option_list() {
+        $list = [];
+        foreach ($this->option_json_list() as $id => $oj)
+            if (($o = $this->get($id)))
+                $list[$id] = $o;
+        return $list;
+    }
+
     function invalidate_option_list() {
         $this->jlist = $this->list = $this->nonfinal_list = $this->nonpaper_am = null;
         $this->jmap = [];

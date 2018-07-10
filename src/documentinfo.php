@@ -20,6 +20,7 @@ class DocumentInfo implements JsonSerializable {
     public $size;
     public $filterType;
     public $originalStorageId;
+    public $inactive = 0;
 
     public $content;
     public $content_file;
@@ -69,6 +70,7 @@ class DocumentInfo implements JsonSerializable {
             $this->infoJson = null;
         $this->filterType = (int) $this->filterType ? : null;
         $this->originalStorageId = (int) $this->originalStorageId ? : null;
+        $this->inactive = (int) $this->inactive;
         if ($this->sourceHash != "")
             $this->sourceHash = Filer::hash_as_binary($this->sourceHash);
         if (isset($this->paper) && !isset($this->content)) {
@@ -209,7 +211,7 @@ class DocumentInfo implements JsonSerializable {
         $this->ensure_size();
         if (!$this->timestamp)
             $this->timestamp = time();
-        $upd = ["sha1" => $this->binary_hash()];
+        $upd = ["sha1" => $this->binary_hash(), "inactive" => 0];
         foreach (["paperId", "timestamp", "size", "mimetype", "documentType"] as $k)
             $upd[$k] = $this->$k;
         foreach (["filename", "filterType", "originalStorageId"] as $k)
@@ -386,9 +388,11 @@ class DocumentInfo implements JsonSerializable {
     function save() {
         // look for an existing document with same sha1
         if ($this->binary_hash() !== false && $this->paperId != 0) {
-            $id = Dbl::fetch_ivalue($this->conf->dblink, "select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
-            if ($id) {
-                $this->paperStorageId = $id;
+            $row = $this->conf->fetch_first_row("select paperStorageId, inactive from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
+            if ($row) {
+                $this->paperStorageId = (int) $row[0];
+                if ($row[1])
+                    $this->conf->qe("update PaperStorage set inactive=0 where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
                 return true;
             }
         }

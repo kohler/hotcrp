@@ -1051,14 +1051,18 @@ class PaperInfo {
                      && $oa->option->is_document())
                 return $oa->document(0);
         }
+
         if ($did <= 1)
             return null;
 
         if ($this->_document_array !== null && isset($this->_document_array[$did]))
             return $this->_document_array[$did];
 
-        if ((($dtype == DTYPE_SUBMISSION && $did == $this->paperStorageId && $this->finalPaperStorageId <= 0)
-             || ($dtype == DTYPE_FINAL && $did == $this->finalPaperStorageId))
+        if ((($dtype == DTYPE_SUBMISSION
+              && $did == $this->paperStorageId
+              && $this->finalPaperStorageId <= 0)
+             || ($dtype == DTYPE_FINAL
+                 && $did == $this->finalPaperStorageId))
             && !$full) {
             $infoJson = get($this, $dtype == DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson");
             return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => get($this, "timestamp"), "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => get($this, "size"), "infoJson" => $infoJson, "is_partial" => true], $this->conf, $this);
@@ -1099,6 +1103,17 @@ class PaperInfo {
             return $oa->documents();
         else
             return [];
+    }
+    function mark_inactive_documents() {
+        $dids = [];
+        if ($this->paperStorageId > 1)
+            $dids[] = $this->paperStorageId;
+        if ($this->finalPaperStorageId > 1)
+            $dids[] = $this->finalPaperStorageId;
+        foreach ($this->options() as $oa)
+            if ($oa->option->has_document())
+                $dids = array_merge($dids, $oa->unsorted_values());
+        $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
     }
 
     function attachment($dtype, $name) {

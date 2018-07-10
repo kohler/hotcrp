@@ -205,7 +205,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 195) {
+        if ($this->sversion < 196) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -1944,6 +1944,24 @@ class Conf {
         $any = $this->invariantq("select topicId from TopicArea limit 1");
         if (!$any !== !$this->setting("has_topics"))
             trigger_error("$this->dbname invariant error: has_topics setting incorrect");
+
+        $this->check_document_inactive_invariants();
+    }
+
+    function check_document_inactive_invariants() {
+        $any = $this->invariantq("select p.paperId, s.paperStorageId from Paper p join PaperStorage s on (s.paperId=p.paperId and (s.paperStorageId=p.paperStorageId or s.paperStorageId=p.finalPaperStorageId)) where s.inactive limit 1");
+        if ($any)
+            trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " document " . self::$invariant_row[1] . " is inappropriately inactive");
+
+        $oids = [];
+        foreach ($this->paper_opts->full_option_list() as $o)
+            if ($o->has_document())
+                $oids[] = $o->id;
+        if (!empty($oids)) {
+            $any = $this->invariantq("select s.paperId, o.optionId, s.paperStorageId from PaperStorage s join PaperOption o on (o.value=s.paperStorageId and o.optionId?a) where s.inactive limit 1", $oids);
+            if ($any)
+                trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " option " . self::$invariant_row[1] . " document " . self::$invariant_row[2] . " is inappropriately inactive");
+        }
     }
 
 

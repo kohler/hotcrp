@@ -1637,7 +1637,7 @@ class Contact {
     function is_metareviewer() {
         if (!isset($this->is_metareviewer_)) {
             if ($this->isPC && $this->conf->setting("metareviews"))
-                $this->is_metareviewer_ = !!$this->conf->fetch_ivalue("select paperId from PaperReview where contactId={$this->contactId} and reviewType=" . REVIEW_META . " limit 1");
+                $this->is_metareviewer_ = !!$this->conf->fetch_ivalue("select exists (select * from PaperReview where contactId={$this->contactId} and reviewType=" . REVIEW_META . ")");
             else
                 $this->is_metareviewer_ = false;
         }

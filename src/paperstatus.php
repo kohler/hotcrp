@@ -27,6 +27,7 @@ class PaperStatus extends MessageSet {
     private $_new_conflicts;
     private $_conflict_ins;
     private $_paper_submitted;
+    private $_document_change;
 
     function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
@@ -50,7 +51,7 @@ class PaperStatus extends MessageSet {
         $this->_topic_ins = null;
         $this->_option_delid = $this->_option_ins = [];
         $this->_new_conflicts = $this->_conflict_ins = null;
-        $this->_paper_submitted = null;
+        $this->_paper_submitted = $this->_document_change = null;
     }
 
     function on_document_export($cb) {
@@ -966,8 +967,9 @@ class PaperStatus extends MessageSet {
 
             // save difference
             if ($ov !== $nv || $od !== $nd) {
+                $opt = $ps->conf->paper_opts->get($id);
                 $ps->_option_delid[] = $id;
-                $ps->diffs[$ps->conf->paper_opts->get($id)->json_key()] = true;
+                $ps->diffs[$opt->json_key()] = true;
                 for ($i = 0; $i < count($nv); ++$i) {
                     $qv0 = [-1, $id, $nv[$i], null, null];
                     if ($nd[$i] !== null) {
@@ -975,6 +977,8 @@ class PaperStatus extends MessageSet {
                     }
                     $ps->_option_ins[] = $qv0;
                 }
+                if ($opt->has_document())
+                    $ps->_document_change = true;
             }
         }
     }
@@ -1213,6 +1217,8 @@ class PaperStatus extends MessageSet {
 
             $new_final_docid = get($this->_paper_upd, "finalPaperStorageId");
             $new_sub_docid = get($this->_paper_upd, "paperStorageId");
+            if ($new_final_docid !== null || $new_sub_docid !== null)
+                $this->_document_change = true;
 
             if ($new_final_docid > 0)
                 $new_joindoc = $pj->final;
@@ -1281,6 +1287,13 @@ class PaperStatus extends MessageSet {
 
         // update autosearch
         $this->conf->update_autosearch_tags($this->paperId);
+
+        // update document inactivity
+        if ($this->_document_change) {
+            $pset = $this->conf->paper_set(null, ["paperId" => $this->paperId, "options" => true]);
+            foreach ($pset as $prow)
+                $prow->mark_inactive_documents();
+        }
 
         return true;
     }
