@@ -85,6 +85,21 @@ CREATE TABLE `DeletedContactInfo` (
 
 
 --
+-- Table structure for table `DocumentLink`
+--
+
+DROP TABLE IF EXISTS `DocumentLink`;
+CREATE TABLE `DocumentLink` (
+  `paperId` int(11) NOT NULL,
+  `linkId` int(11) NOT NULL,
+  `linkType` int(11) NOT NULL,
+  `documentId` int(11) NOT NULL,
+  PRIMARY KEY (`paperId`,`linkId`,`linkType`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+--
 -- Table structure for table `FilteredDocument`
 --
 
@@ -483,7 +498,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 196);
+insert into Settings (name, value) values ('allowPaperOption', 197);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

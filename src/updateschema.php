@@ -1389,6 +1389,16 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.finalPaperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
         && $conf->ql("update PaperStorage join PaperOption on (PaperOption.paperId=PaperStorage.paperId and PaperOption.value=PaperStorage.paperStorageId) set PaperStorage.inactive=0"))
         $conf->update_schema_version(196);
+    if ($conf->sversion == 196
+        && $conf->ql("drop table if exists `DocumentLink`")
+        && $conf->ql("create table `DocumentLink` (
+  `paperId` int(11) NOT NULL,
+  `linkId` int(11) NOT NULL,
+  `linkType` int(11) NOT NULL,
+  `documentId` int(11) NOT NULL,
+  PRIMARY KEY (`paperId`,`linkId`,`linkType`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
+        $conf->update_schema_version(197);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

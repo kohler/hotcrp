@@ -205,7 +205,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 196) {
+        if ($this->sversion < 197) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -1949,7 +1949,7 @@ class Conf {
     }
 
     function check_document_inactive_invariants() {
-        $any = $this->invariantq("select p.paperId, s.paperStorageId from Paper p join PaperStorage s on (s.paperId=p.paperId and (s.paperStorageId=p.paperStorageId or s.paperStorageId=p.finalPaperStorageId)) where s.inactive limit 1");
+        $any = $this->invariantq("select p.paperId, s.paperStorageId from Paper p join PaperStorage s on (s.paperStorageId>1 and (s.paperStorageId=p.paperStorageId or s.paperStorageId=p.finalPaperStorageId)) where s.inactive limit 1");
         if ($any)
             trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " document " . self::$invariant_row[1] . " is inappropriately inactive");
 
@@ -1958,10 +1958,14 @@ class Conf {
             if ($o->has_document())
                 $oids[] = $o->id;
         if (!empty($oids)) {
-            $any = $this->invariantq("select s.paperId, o.optionId, s.paperStorageId from PaperStorage s join PaperOption o on (o.value=s.paperStorageId and o.optionId?a) where s.inactive limit 1", $oids);
+            $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.inactive) where o.optionId?a limit 1", $oids);
             if ($any)
                 trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " option " . self::$invariant_row[1] . " document " . self::$invariant_row[2] . " is inappropriately inactive");
         }
+
+        $any = $this->invariantq("select l.paperId, l.linkId, s.paperStorageId from DocumentLink l join PaperStorage s on (l.documentId=s.paperStorageId and s.inactive) limit 1");
+        if ($any)
+            trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " link " . self::$invariant_row[1] . " document " . self::$invariant_row[2] . " is inappropriately inactive");
     }
 
 
