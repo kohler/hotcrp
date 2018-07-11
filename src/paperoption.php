@@ -41,22 +41,13 @@ class PaperOptionValue {
         assert($this->prow || empty($this->_values));
         assert($this->option->has_document());
         if ($this->_documents === null) {
-            $this->_documents = $by_unique_filename = array();
             $this->option->refresh_documents($this);
+            $this->_documents = [];
             foreach ($this->sorted_values() as $docid)
-                if ($docid > 1 && ($d = $this->prow->document($this->id, $docid))) {
-                    $d->unique_filename = $d->filename;
-                    while (get($by_unique_filename, $d->unique_filename)) {
-                        if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $d->unique_filename, $m))
-                            $d->unique_filename = $m[1] . ($m[2] + 1) . $m[3];
-                        else if (preg_match('/\A(.*?)(\.\w+|)\z/', $d->unique_filename, $m) && $m[1] !== "")
-                            $d->unique_filename = $m[1] . " (1)" . $m[2];
-                        else
-                            $d->unique_filename .= " (1)";
-                    }
-                    $by_unique_filename[$d->unique_filename] = true;
+                if ($docid > 1
+                    && ($d = $this->prow->document($this->id, $docid)))
                     $this->_documents[] = $d;
-                }
+            DocumentInfo::assign_unique_filenames($this->_documents);
         }
         return $this->_documents;
     }

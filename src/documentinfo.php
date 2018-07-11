@@ -706,6 +706,22 @@ class DocumentInfo implements JsonSerializable {
         return $fn;
     }
 
+    static function assign_unique_filenames($docs) {
+        $by_unique_filename = [];
+        foreach ($docs as $d) {
+            $d->unique_filename = $d->filename;
+            while (get($by_unique_filename, $d->unique_filename)) {
+                if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $d->unique_filename, $m))
+                    $d->unique_filename = $m[1] . ($m[2] + 1) . $m[3];
+                else if (preg_match('/\A(.*?)(\.\w+|)\z/', $d->unique_filename, $m) && $m[1] !== "")
+                    $d->unique_filename = $m[1] . " (1)" . $m[2];
+                else
+                    $d->unique_filename .= " (1)";
+            }
+            $by_unique_filename[$d->unique_filename] = true;
+        }
+    }
+
     function url($filters = null, $rest = null) {
         if ($filters === null)
             $filters = $this->filters_applied;
