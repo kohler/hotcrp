@@ -27,17 +27,6 @@ define("DTYPE_SUBMISSION", 0);
 define("DTYPE_FINAL", -1);
 define("DTYPE_COMMENT", -2);
 
-define("OPTIONTYPE_CHECKBOX", 0);
-define("OPTIONTYPE_SELECTOR", 1); /* see also script.js:doopttype */
-define("OPTIONTYPE_NUMERIC", 2);
-define("OPTIONTYPE_TEXT", 3);
-define("OPTIONTYPE_PDF", 4);    /* order matters */
-define("OPTIONTYPE_SLIDES", 5);
-define("OPTIONTYPE_VIDEO", 6);
-define("OPTIONTYPE_FINALPDF", 100);
-define("OPTIONTYPE_FINALSLIDES", 101);
-define("OPTIONTYPE_FINALVIDEO", 102);
-
 define("VIEWSCORE_FALSE", -3);
 define("VIEWSCORE_ADMINONLY", -2);
 define("VIEWSCORE_REVIEWERONLY", -1);
