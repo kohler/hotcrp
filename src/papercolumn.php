@@ -738,52 +738,6 @@ class ReviewerList_PaperColumn extends PaperColumn {
     }
 }
 
-class ConflictMatch_PaperColumn extends PaperColumn {
-    private $field;
-    private $highlight;
-    function __construct(Conf $conf, $cj) {
-        parent::__construct($conf, $cj);
-        if ($cj->name === "authorsmatch")
-            $this->field = "authorInformation";
-        else
-            $this->field = "collaborators";
-    }
-    function prepare(PaperList $pl, $visible) {
-        $this->contact = $pl->reviewer_user();
-        $this->highlight = $pl->search->field_highlighter($this->field);
-        $general_pregexes = $this->contact->aucollab_general_pregexes();
-        return $pl->user->is_manager() && !empty($general_pregexes);
-    }
-    function header(PaperList $pl, $is_text) {
-        $what = $this->field == "authorInformation" ? "authors" : "collaborators";
-        if ($is_text)
-            return "Potential conflict in $what";
-        else
-            return "<strong>Potential conflict in $what</strong>";
-    }
-    function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->allow_administer($row);
-    }
-    function content(PaperList $pl, PaperInfo $row) {
-        $field = $this->field;
-        if (!$row->field_match_pregexes($this->contact->aucollab_general_pregexes(), $field))
-            return "";
-        $text = [];
-        $aus = $field === "collaborators" ? $row->collaborator_list() : $row->author_list();
-        foreach ($aus as $au) {
-            $matchers = [];
-            foreach ($this->contact->aucollab_matchers() as $matcher)
-                if ($matcher->test($au, $matcher->nonauthor))
-                    $matchers[] = $matcher;
-            if (!empty($matchers))
-                $text[] = AuthorMatcher::highlight_all($au, $matchers);
-        }
-        if (!empty($text))
-            unset($row->folded);
-        return join("; ", $text);
-    }
-}
-
 class TagList_PaperColumn extends PaperColumn {
     private $editable;
     function __construct(Conf $conf, $cj, $editable = false) {
