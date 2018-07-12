@@ -71,7 +71,7 @@ class BanalSettings {
         $cfs = new FormatSpec($sv->oldv("sub_banal_data$suffix"));
         $old_unparse = $cfs->unparse_banal();
         $cfs->papersize = [];
-        if (($s = trim(defval($sv->req, "sub_banal_papersize$suffix", ""))) != ""
+        if (($s = trim(get($sv->req, "sub_banal_papersize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
             foreach ($ses as $ss)
@@ -86,7 +86,7 @@ class BanalSettings {
         }
 
         $cfs->pagelimit = null;
-        if (($s = trim(defval($sv->req, "sub_banal_pagelimit$suffix", ""))) != ""
+        if (($s = trim(get($sv->req, "sub_banal_pagelimit$suffix", ""))) != ""
             && strcasecmp($s, "N/A") != 0) {
             if (($sx = cvtint($s, -1)) > 0)
                 $cfs->pagelimit = [0, $sx];
@@ -100,7 +100,7 @@ class BanalSettings {
         }
 
         $cfs->columns = 0;
-        if (($s = trim(defval($sv->req, "sub_banal_columns$suffix", ""))) != ""
+        if (($s = trim(get($sv->req, "sub_banal_columns$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             if (($sx = cvtint($s, -1)) >= 0)
                 $cfs->columns = $sx;
@@ -111,7 +111,7 @@ class BanalSettings {
         }
 
         $cfs->textblock = null;
-        if (($s = trim(defval($sv->req, "sub_banal_textblock$suffix", ""))) != ""
+        if (($s = trim(get($sv->req, "sub_banal_textblock$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             // change margin specifications into text block measurements
             if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
@@ -152,7 +152,7 @@ class BanalSettings {
         }
 
         $cfs->bodyfontsize = null;
-        if (($s = trim(defval($sv->req, "sub_banal_bodyfontsize$suffix", ""))) != ""
+        if (($s = trim(get($sv->req, "sub_banal_bodyfontsize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             $cfs->bodyfontsize = FormatSpec::parse_range($s);
             if (!$cfs->bodyfontsize) {
@@ -162,7 +162,7 @@ class BanalSettings {
         }
 
         $cfs->bodylineheight = null;
-        if (($s = trim(defval($sv->req, "sub_banal_bodylineheight$suffix", ""))) != ""
+        if (($s = trim(get($sv->req, "sub_banal_bodylineheight$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             $cfs->bodylineheight = FormatSpec::parse_range($s);
             if (!$cfs->bodylineheight) {

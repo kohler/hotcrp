@@ -34,7 +34,7 @@ class Options_SettingRenderer {
                     "position" => get($sv->req, "optfp_$oxpos", 1),
                     "display" => get($sv->req, "optdt_$oxpos")), $sv->conf);
                 if ($o->has_selector())
-                    $o->selector = explode("\n", rtrim(defval($sv->req, "optv_$oxpos", "")));
+                    $o->selector = explode("\n", rtrim(get($sv->req, "optv_$oxpos", "")));
             }
         }
 
@@ -243,7 +243,7 @@ class Options_SettingParser extends SettingParser {
         $jtype = $sv->conf->option_type($oarg["type"]);
         if ($jtype && get($jtype, "has_selector")) {
             $oarg["selector"] = array();
-            $seltext = trim(cleannl(defval($sv->req, "optv_$xpos", "")));
+            $seltext = trim(cleannl(get($sv->req, "optv_$xpos", "")));
             if ($seltext != "") {
                 foreach (explode("\n", $seltext) as $t)
                     $oarg["selector"][] = $t;
@@ -251,13 +251,13 @@ class Options_SettingParser extends SettingParser {
                 $sv->error_at("optv_$xpos", "Enter selectors one per line.");
         }
 
-        $oarg["visibility"] = defval($sv->req, "optp_$xpos", "rev");
+        $oarg["visibility"] = get($sv->req, "optp_$xpos", "rev");
         if ($oarg["final"])
             $oarg["visibility"] = "rev";
 
-        $oarg["position"] = (int) defval($sv->req, "optfp_$xpos", 1);
+        $oarg["position"] = (int) get($sv->req, "optfp_$xpos", 1);
 
-        $oarg["display"] = defval($sv->req, "optdt_$xpos");
+        $oarg["display"] = get($sv->req, "optdt_$xpos");
         if ($oarg["type"] === "pdf" && $oarg["final"])
             $oarg["display"] = "submission";
 

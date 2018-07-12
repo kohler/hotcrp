@@ -37,7 +37,7 @@ class Topics_SettingRenderer {
                     Ht::entry("top$tid", $tname, ["size" => 80, "class" => "need-autogrow wide" . ($sv->has_problem_at("top$tid") ? " has-error" : "")]),
                     '</td>';
                 if (!empty($interests)) {
-                    $tinterests = defval($interests, $tid, array());
+                    $tinterests = get($interests, $tid, array());
                     echo '<td class="fx rpentry">', (get($tinterests, 0) ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
                         '<td class="fx rpentry">', (get($tinterests, 1) ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
                 }

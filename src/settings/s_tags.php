@@ -172,8 +172,8 @@ class Tags_SettingParser extends SettingParser {
                         $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for paper #$row[0].");
                         $negative = true;
                     } else {
-                        $pvals[$row[0]] = defval($pvals, $row[0], 0) + $row[2];
-                        $cvals[$who] = defval($cvals, $who, 0) + $row[2];
+                        $pvals[$row[0]] = get($pvals, $row[0], 0) + $row[2];
+                        $cvals[$who] = get($cvals, $who, 0) + $row[2];
                     }
                 }
 
@@ -206,7 +206,7 @@ class Tags_SettingParser extends SettingParser {
                         $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for paper #$row[0].");
                         $negative = true;
                     } else
-                        $pvals[$row[0]] = defval($pvals, $row[0], 0) + 1;
+                        $pvals[$row[0]] = get($pvals, $row[0], 0) + 1;
                 }
 
                 $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
