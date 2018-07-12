@@ -1237,7 +1237,10 @@ class PaperStatus extends MessageSet {
             $new_joinid = $new_joindoc ? $new_joindoc->paperStorageId : 0;
 
             if ($new_joindoc && $new_joinid != $old_joinid) {
-                $this->save_paperf("size", $new_joindoc->size);
+                if ($new_joindoc->ensure_size())
+                    $this->save_paperf("size", $new_joindoc->size);
+                else
+                    $this->save_paperf("size", 0);
                 $this->save_paperf("mimetype", $new_joindoc->mimetype);
                 $this->save_paperf("sha1", $new_joindoc->binary_hash());
                 $this->save_paperf("timestamp", $new_joindoc->timestamp);
