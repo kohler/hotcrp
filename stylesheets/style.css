@@ -706,6 +706,7 @@ span.hastitle {
 	float: right;
 	position: relative;
 	width: 18em;
+	z-index: 1;
 }
 .homeinside {
 	background-color: #fffdf0;
