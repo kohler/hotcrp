@@ -206,9 +206,8 @@ class HotCRPMailer extends Mailer {
             $args .= "rev_soft";
         else if ($uf->is_review) {
             assert(!$this->row || !isset($this->row->roles));
-            if ($this->row && $this->row->reviewType > 0)
-                $rt = $this->row->reviewType;
-            else {
+            if (!$this->row
+                || !($rt = $this->row->review_type($this->permissionContact))) {
                 $p = $this->conf->setting("pcrev_soft");
                 $e = $this->conf->setting("extrev_soft");
                 if ($p == $e)
