@@ -360,7 +360,7 @@ class FormulaGraph {
                     continue;
                 $rrow = $rcid ? $prow->review_of_user($rcid) : null;
                 if ($ps === self::REVIEWER_COLOR)
-                    $s = get($this->reviewer_color, $d[0]) ? : "";
+                    $s = get($this->reviewer_color, $x) ? : "";
                 $d = [$x, $fytrack($prow, $rcid, $this->user), $prow->paperId, $s];
                 if ($rrow && $rrow->reviewOrdinal)
                     $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
