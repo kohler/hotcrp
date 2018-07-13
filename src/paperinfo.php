@@ -236,29 +236,30 @@ class PaperInfo {
     // $allConflictTypes: DO NOT LIST (property_exists() is meaningful)
     // $reviewSignatures: DO NOT LIST (property_exists() is meaningful)
 
-    private $_unaccented_title = null;
-    private $_contact_info = array();
+    private $_unaccented_title;
+    private $_contact_info = [];
     private $_rights_version = 0;
-    private $_author_array = null;
-    private $_collaborator_array = null;
-    private $_prefs_array = null;
-    private $_prefs_cid = null;
-    private $_topics_array = null;
-    private $_topic_interest_score_array = null;
-    private $_option_values = null;
-    private $_option_data = null;
-    private $_option_array = null;
-    private $_all_option_array = null;
-    private $_document_array = null;
-    private $_conflict_array = null;
+    private $_author_array;
+    private $_collaborator_array;
+    private $_prefs_array;
+    private $_prefs_cid;
+    private $_topics_array;
+    private $_topic_interest_score_array;
+    private $_option_values;
+    private $_option_data;
+    private $_option_array;
+    private $_all_option_array;
+    private $_document_array;
+    private $_conflict_array;
     private $_conflict_array_email;
-    private $_review_array = null;
+    private $_review_array;
     private $_review_array_version = 0;
     private $_reviews_have = [];
-    private $_full_review = null;
-    private $_full_review_key = null;
-    private $_comment_array = null;
-    private $_comment_skeleton_array = null;
+    private $_full_review;
+    private $_full_review_key;
+    private $_comment_array;
+    private $_comment_skeleton_array;
+    private $_potential_conflicts;
     public $_row_set;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
@@ -480,25 +481,17 @@ class PaperInfo {
         return $this->_collaborator_array;
     }
 
-    function potential_conflict(Contact $user, $full_info = false) {
-        $details = [];
-        $problems = 0;
+    function potential_conflict_callback(Contact $user, $callback) {
+        $nproblems = $auproblems = 0;
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
             foreach ($this->author_list() as $n => $au)
                 foreach ($user->aucollab_matchers() as $matcher) {
                     if (($why = $matcher->test($au, $matcher->nonauthor))) {
-                        if (!$full_info)
+                        if (!$callback)
                             return true;
-                        $who = "#" . ($n + 1);
-                        $problems |= $why;
-                        if ($matcher->nonauthor) {
-                            $aumatcher = new AuthorMatcher($au);
-                            $what = "PC’s collaborator " . $aumatcher->highlight($matcher) . "<br>matches author $who " . $matcher->highlight($au);
-                        } else if ($why == AuthorMatcher::MATCH_AFFILIATION)
-                            $what = "PC affiliation matches author $who affiliation " . $matcher->highlight($au->affiliation);
-                        else
-                            $what = "PC name matches author $who name " . $matcher->highlight($au->name());
-                        $details[] = ["#" . ($n + 1), '<div class="mmm">' . $what . '</div>'];
+                        $auproblems |= $why;
+                        ++$nproblems;
+                        call_user_func($callback, $user, $matcher, $au, $n + 1, $why);
                     }
                 }
         }
@@ -507,28 +500,50 @@ class PaperInfo {
             if (Text::match_pregexes($aum->general_pregexes(), $this->collaborators, UnicodeHelper::deaccent($this->collaborators))) {
                 foreach ($this->collaborator_list() as $co)
                     if (($co->lastName !== ""
-                         || !($problems & AuthorMatcher::MATCH_AFFILIATION))
+                         || !($auproblems & AuthorMatcher::MATCH_AFFILIATION))
                         && ($why = $aum->test($co, true))) {
-                        if (!$full_info)
+                        if (!$callback)
                             return true;
-                        if ($why == AuthorMatcher::MATCH_AFFILIATION)
-                            $what = "PC affiliation matches declared conflict ";
-                        else
-                            $what = "PC name matches declared conflict ";
-                        $details[] = ["other conflicts", '<div class="mmm">' . $what . $aum->highlight($co) . '</div>'];
+                        ++$nproblems;
+                        call_user_func($callback, $user, $aum, $co, 0, $why);
                     }
             }
         }
-        return $details;
+        return $nproblems > 0;
+    }
+
+    function potential_conflict(Contact $user) {
+        return $this->potential_conflict_callback($user, null);
+    }
+
+    function _potential_conflict_html_callback($user, $matcher, $conflict, $aunum, $why) {
+        if ($aunum) {
+            if ($matcher->nonauthor) {
+                $aumatcher = new AuthorMatcher($conflict);
+                $what = "PC collaborator " . $aumatcher->highlight($matcher) . "<br>matches author #$aunum " . $matcher->highlight($conflict);
+            } else if ($why == AuthorMatcher::MATCH_AFFILIATION)
+                $what = "PC affiliation matches author #$aunum affiliation " . $matcher->highlight($conflict->affiliation);
+            else
+                $what = "PC name matches author #$aunum name " . $matcher->highlight($conflict->name());
+            $this->_potential_conflicts[] = ["#$aunum", '<div class="mmm">' . $what . '</div>'];
+        } else {
+            if ($why == AuthorMatcher::MATCH_AFFILIATION)
+                $what = "PC affiliation matches paper collaborator ";
+            else
+                $what = "PC name matches paper collaborator ";
+            $this->_potential_conflicts[] = ["other conflicts", '<div class="mmm">' . $what . $matcher->highlight($conflict) . '</div>'];
+        }
     }
 
     function potential_conflict_html(Contact $user, $highlight = false) {
-        if (!($details = $this->potential_conflict($user, true)))
+        $this->_potential_conflicts = [];
+        if (!$this->potential_conflict_callback($user, [$this, "_potential_conflict_html_callback"]))
             return false;
-        usort($details, function ($a, $b) { return strnatcmp($a[0], $b[0]); });
-        $authors = array_unique(array_map(function ($x) { return $x[0]; }, $details));
+        usort($this->_potential_conflicts, function ($a, $b) { return strnatcmp($a[0], $b[0]); });
+        $authors = array_unique(array_map(function ($x) { return $x[0]; }, $this->_potential_conflicts));
         $authors = array_filter($authors, function ($f) { return $f !== "other conflicts"; });
-        $messages = join("", array_map(function ($x) { return $x[1]; }, $details));
+        $messages = join("", array_map(function ($x) { return $x[1]; }, $this->_potential_conflicts));
+        $this->_potential_conflicts = null;
         return ['<div class="pcconfmatch'
             . ($highlight ? " pcconfmatch-highlight" : "")
             . '">Possible conflict'
