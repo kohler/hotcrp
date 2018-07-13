@@ -124,7 +124,7 @@ class SelectorPaperColumn extends PaperColumn {
             unset($row->folded);
         }
         return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
-            . '<input type="checkbox" class="js-range-click" name="pap[]" value="' . $row->paperId . '"' . $c . ' />';
+            . '<input type="checkbox" class="uix js-range-click" name="pap[]" value="' . $row->paperId . '"' . $c . ' />';
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";
@@ -951,7 +951,7 @@ class EditTag_PaperColumn extends Tag_PaperColumn {
         if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0))
             return $this->is_value ? (string) $v : ($v === false ? "" : "&#x2713;");
         if (!$this->is_value) {
-            return "<input type=\"checkbox\" class=\"edittag js-range-click\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\""
+            return "<input type=\"checkbox\" class=\"uix js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\""
                 . ($v !== false ? ' checked="checked"' : '') . " />";
         }
         $t = '<input type="text" class="edittagval';

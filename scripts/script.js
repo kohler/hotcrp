@@ -865,11 +865,11 @@ handle_ui.on = function (className, callback) {
 };
 return handle_ui;
 })($);
-$(document).on("click", ".ui", handle_ui);
+$(document).on("click", ".ui, .uix", handle_ui);
 
 
 // rangeclick
-$(document).on("click", ".js-range-click", function (event) {
+handle_ui.on("js-range-click", function (event) {
     var $f = $(this).closest("form");
     if ($f[0].hasAttribute("data-range-clicking"))
         return;

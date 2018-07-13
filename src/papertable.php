@@ -1347,7 +1347,7 @@ class PaperTable {
             $pchecked = isset($ptopics[$tid]);
             $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
             echo '<div class="ctelt"><label><div class="ctelti checki"><span class="checkc">',
-                Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked, "data-range-type" => "topic", "class" => "js-range-click"]),
+                Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked, "data-range-type" => "topic", "class" => "uix js-range-click"]),
                 ' </span>', $tname, '</div></label></div>';
         }
         echo "</div></div></div>\n\n";
@@ -1434,7 +1434,7 @@ class PaperTable {
                 $js["disabled"] = $disabled;
                 $js["data-default-checked"] = $pct > 0;
                 $js["data-range-type"] = "pcc";
-                $js["class"] = "js-range-click";
+                $js["class"] = "uix js-range-click";
                 echo '<span class="checkc">',
                     Ht::checkbox("pcc$id", $ct > 0 ? $ct : CONFLICT_AUTHORMARK,
                                  $ct > 0, $js),

@@ -832,7 +832,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             $ival = (float) get($reqj_topics, $id);
             for ($j = -2; $j <= 2; ++$j) {
                 $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
-                echo '<td class="ti_interest">', Ht::radio("ti$id", $j, $checked, ["class" => "js-range-click", "data-range-type" => "topicinterest$j"]), "</td>";
+                echo '<td class="ti_interest">', Ht::radio("ti$id", $j, $checked, ["class" => "uix js-range-click", "data-range-type" => "topicinterest$j"]), "</td>";
             }
             echo "</tr>\n";
         }
