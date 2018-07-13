@@ -136,11 +136,10 @@ static function render(SettingValues $sv) {
     static function render_pc(SettingValues $sv) {
         echo '<div class="has-fold fold2c">';
         echo '<div class="settings-g has-fold foldo">';
-        $sv->echo_checkbox('pcrev_any', "PC members can review any submission", ["class" => "js-foldup"]);
+        $sv->echo_checkbox('pcrev_any', "PC members can review any submission", ["class" => "uich js-foldup"]);
         if ($sv->conf->setting("pcrev_any")
             && $sv->conf->check_track_sensitivity(Track::UNASSREV))
             echo '<p class="f-h fx">', Ht::link("Current track settings", hoturl("settings", "group=tracks")), ' may restrict self-assigned reviews.</p>';
-        Ht::stash_script('$("#cbpcrev_any").change()');
         echo "</div>\n";
 
         $hint = "";
@@ -170,8 +169,7 @@ static function render(SettingValues $sv) {
 
 
         echo '<div class="settings-g">';
-        $sv->echo_checkbox('cmt_revid', "PC can see comments when reviews are anonymous", ["class" => "js-foldup", "data-fold-target" => "2", "hint_class" => "fx2"], "Commenter names are hidden when reviews are anonymous.");
-        Ht::stash_script('$("#cbcmt_revid").change()');
+        $sv->echo_checkbox('cmt_revid', "PC can see comments when reviews are anonymous", ["class" => "uich js-foldup", "data-fold-target" => "2", "hint_class" => "fx2"], "Commenter names are hidden when reviews are anonymous.");
         echo "</div></div>\n";
     }
 

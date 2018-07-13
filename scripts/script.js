@@ -866,6 +866,7 @@ handle_ui.on = function (className, callback) {
 return handle_ui;
 })($);
 $(document).on("click", ".ui, .uix", handle_ui);
+$(document).on("change", ".uich", handle_ui);
 
 
 // rangeclick
@@ -2181,9 +2182,11 @@ function foldup(event, opts) {
 }
 
 handle_ui.on("js-foldup", foldup);
-$(document).on("change", "input.js-foldup", foldup);
 $(document).on("fold", ".js-fold-focus", function (event, opts) {
     focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
+});
+$(function () {
+    $("input.uich.js-foldup").each(function () { foldup.call(this, null); });
 });
 
 

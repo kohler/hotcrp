@@ -27,11 +27,10 @@ static function render(SettingValues $sv) {
 
 
     echo '<div class="settings-g foldo" id="foldpc_seeall">';
-    $sv->echo_checkbox("pc_seeall", "PC can see <i>all registered papers</i> until submission deadline", ["class" => "js-foldup"], "Check this box to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.");
+    $sv->echo_checkbox("pc_seeall", "PC can see <i>all registered papers</i> until submission deadline", ["class" => "uich js-foldup"], "Check this box to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.");
     echo '<div class="fx">';
     $sv->echo_checkbox("pc_seeallpdf", "PC can see submitted PDFs before submission deadline");
     echo "</div></div>\n";
-    Ht::stash_script("fold('pc_seeall',!$('#cbpc_seeall').is(':checked'))");
 }
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sub_open")

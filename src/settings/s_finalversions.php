@@ -6,7 +6,7 @@ class FinalVersions_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
         $sv->echo_messages_near("final_open");
         echo '<div class="has-fold fold2o">';
-        $sv->echo_checkbox('final_open', '<strong>Collect final versions of accepted papers</strong>', ["class" => "js-foldup", "item_class" => "settings-g"]);
+        $sv->echo_checkbox('final_open', '<strong>Collect final versions of accepted papers</strong>', ["class" => "uich js-foldup", "item_class" => "settings-g"]);
         echo '<div class="fx2"><div class="settings-g">';
         $sv->echo_entry_group("final_soft", "Deadline", ["horizontal" => true]);
         $sv->echo_entry_group("final_done", "Hard deadline", ["horizontal" => true]);
@@ -18,7 +18,6 @@ class FinalVersions_SettingParser extends SettingParser {
         echo "</div>",
             "<p class=\"settingtext\">To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</p>",
             "</div>\n\n";
-        Ht::stash_script("foldup.call(\$\$('cbfinal_open'), null)");
     }
 
     static function crosscheck(SettingValues $sv) {
