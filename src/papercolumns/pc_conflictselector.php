@@ -9,11 +9,7 @@ class ConflictSelector_PaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $pl->reviewer_user();
-        if (!$pl->user->is_manager())
-            return false;
-        if (($tid = $pl->table_id()))
-            $pl->add_header_script('paperlist_ui.prepare_assrev(' . json_encode_browser("#$tid") . ')');
-        return true;
+        return $pl->user->is_manager();
     }
     function header(PaperList $pl, $is_text) {
         return "Conflict?";
@@ -36,8 +32,9 @@ class ConflictSelector_PaperColumn extends PaperColumn {
             $c .= ' checked="checked"';
             unset($row->folded);
         }
-        return '<input type="checkbox" class="assrev" '
-            . 'name="assrev' . $row->paperId . 'u' . $this->contact->contactId
+        return '<input type="checkbox" class="uix js-range-click uich js-assign-review" '
+            . 'data-range-type="assrevu' . $this->contact->contactId
+            . '" name="assrev' . $row->paperId . 'u' . $this->contact->contactId
             . '" value="-1"' . $c . ' />';
     }
     function text(PaperList $pl, PaperInfo $row) {

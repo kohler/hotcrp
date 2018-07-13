@@ -279,7 +279,7 @@ if ($reviewer) {
     $paperList->set_table_id_class("foldpl", "pltable_full");
     $paperList->set_view("allrevtopicpref", false);
     echo '<div class="aabut aabutsp"><label>',
-        Ht::checkbox(false, false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),
+        Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),
         "&nbsp;Automatically save assignments</label></div></div>\n",
         $paperList->table_html(($Qreq->kind == "c" ? "conflict" : "reviewAssignment"),
                                ["header_links" => true, "nofooter" => true, "list" => true]),

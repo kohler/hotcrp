@@ -2033,8 +2033,8 @@ function form_defaults(form, values) {
 }
 
 function form_highlight(form, elt) {
-    var $f = $(form);
-    $f.toggleClass("alert", (elt && form_differs(elt)) || form_differs($f));
+    (form instanceof HTMLElement) || (form = $(form)[0]);
+    toggleClass(form, "alert", (elt && form_differs(elt)) || form_differs(form));
 }
 
 function hiliter_children(form, on_unload) {
@@ -6692,34 +6692,6 @@ handle_ui.on("js-annotate-order", function (event) {
 });
 
 var paperlist_ui = (function ($) {
-
-function assrev_change(event) {
-    var self = this, m = /^assrev(\d+)u(\d+)$/.exec(this.name);
-    if (m) {
-        var immediate = $$("assrevimmediate"), data, value;
-        if (!immediate || immediate.checked) {
-            if (self.tagName === "SELECT") {
-                var round = $$("assrevround");
-                data = {kind: "a", rev_round: round ? round.value : ""};
-                value = self.value;
-            } else {
-                data = {kind: "c"};
-                value = self.checked ? -1 : 0;
-            }
-            data["pcs" + m[2]] = value;
-            $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
-                data, function (rv) {
-                    if (self.tagName === "SELECT")
-                        self.setAttribute("data-default-value", value);
-                    else
-                        self.setAttribute("data-default-checked", !!value);
-                    setajaxcheck(self, rv);
-                    form_highlight($(self).closest("form"), self);
-                });
-        }
-    }
-}
-
 function paperlist_submit(event) {
     // analyze why this is being submitted
     var $self = $(this), fn = $self.data("submitFn");
@@ -6766,10 +6738,6 @@ function paperlist_ui(event) {
     if (event.type === "submit")
         paperlist_submit.call(this, event);
 }
-paperlist_ui.prepare_assrev = function (selector) {
-    $(selector).off(".assrev")
-        .on("change.assrev", "select.assrev, input.assrev", assrev_change);
-};
 paperlist_ui.prepare_tag_listaction = function () {
     $("input.js-submit-action-info-tag").each(function () {
         this.name === "tag" && suggest(this, taghelp_tset);
@@ -6787,6 +6755,35 @@ paperlist_ui.prepare_tag_listaction = function () {
 };
 return paperlist_ui;
 })($);
+
+handle_ui.on("js-assign-review", function (event) {
+    var form, m;
+    if (event.type !== "change"
+        || !(m = /^assrev(\d+)u(\d+)$/.exec(this.name))
+        || ((form = $(this).closest("form")[0])
+            && form.autosave
+            && !form.autosave.checked))
+        return;
+    var self = this, data, value;
+    if (self.tagName === "SELECT") {
+        var round = form.rev_round;
+        data = {kind: "a", rev_round: round ? round.value : ""};
+        value = self.value;
+    } else {
+        data = {kind: "c"};
+        value = self.checked ? -1 : 0;
+    }
+    data["pcs" + m[2]] = value;
+    $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
+        data, function (rv) {
+            if (self.tagName === "SELECT")
+                self.setAttribute("data-default-value", value);
+            else
+                self.setAttribute("data-default-checked", value ? "1" : "");
+            setajaxcheck(self, rv);
+            form_highlight(form, self);
+        });
+});
 
 
 // list management, conflict management

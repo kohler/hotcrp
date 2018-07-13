@@ -565,11 +565,7 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!parent::prepare($pl, $visible) || !$pl->user->is_manager())
-            return false;
-        if ($visible > 0 && ($tid = $pl->table_id()))
-            $pl->add_header_script("paperlist_ui.prepare_assrev(" . json_encode_browser("#$tid") . ")");
-        return true;
+        return parent::prepare($pl, $visible) && $pl->user->is_manager();
     }
     function header(PaperList $pl, $is_text) {
         if ($is_text)
@@ -599,7 +595,7 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         else
             $options = array(0 => "None", -1 => "Conflict");
         return Ht::select("assrev{$row->paperId}u{$this->contact->contactId}",
-                          $options, $rt, ["class" => "assrev", "tabindex" => 2]);
+                          $options, $rt, ["class" => "uich js-assign-review", "tabindex" => 2]);
     }
 }
 
