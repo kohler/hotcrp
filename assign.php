@@ -400,19 +400,19 @@ if (($rrow = $prow->review_of_user($Me))
 echo '<div class="papertext g">',
     '<div class="', Ht::control_class("email", "f-i"), '">',
     Ht::label("Email", "revreq_email"),
-    Ht::entry("email", (string) $Qreq->email, ["id" => "revreq_email", "size" => 52, "class" => "fullw"]),
+    Ht::entry("email", (string) $Qreq->email, ["id" => "revreq_email", "size" => 52, "class" => "fullw", "autocomplete" => "off", "type" => "email"]),
     '</div>',
     '<div class="f-2col">',
     '<div class="', Ht::control_class("firstName", "f-i"), '">',
     Ht::label("First name (given name)", "revreq_firstName"),
-    Ht::entry("firstName", (string) $Qreq->firstName, ["id" => "revreq_firstName", "size" => 24, "class" => "fullw"]),
+    Ht::entry("firstName", (string) $Qreq->firstName, ["id" => "revreq_firstName", "size" => 24, "class" => "fullw", "autocomplete" => "off"]),
     '</div><div class="', Ht::control_class("lastName", "f-i"), '">',
     Ht::label("Last name (family name)", "revreq_lastName"),
-    Ht::entry("lastName", (string) $Qreq->lastName, ["id" => "revreq_lastName", "size" => 24, "class" => "fullw"]),
+    Ht::entry("lastName", (string) $Qreq->lastName, ["id" => "revreq_lastName", "size" => 24, "class" => "fullw", "autocomplete" => "off"]),
     '</div></div>',
     '<div class="', Ht::control_class("affiliation", "f-i"), '">',
     Ht::label("Affiliation", "revreq_affiliation"),
-    Ht::entry("affiliation", (string) $Qreq->affiliation, ["id" => "revreq_affiliation", "size" => 52, "class" => "fullw"]),
+    Ht::entry("affiliation", (string) $Qreq->affiliation, ["id" => "revreq_affiliation", "size" => 52, "class" => "fullw", "autocomplete" => "off"]),
     '</div>';
 
 // reason area

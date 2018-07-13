@@ -188,13 +188,14 @@ if (!$Me->has_email() || isset($Qreq->signin)) {
         $password_reset = null;
         $Conf->save_session("password_reset", null);
     }
+    $is_external_login = $Conf->external_login();
     echo '<div class="', Ht::control_class("email", "f-i"), '">',
-        Ht::label($Conf->opt("ldapLogin") ? "Username" : "Email", "signin_email"),
+        Ht::label($is_external_login ? "Username" : "Email", "signin_email"),
         Ht::entry("email", $Qreq->get("email", $password_reset ? $password_reset->email : ""),
-                  ["size" => 36, "id" => "signin_email", "class" => "fullw", "autocomplete" => "username", "tabindex" => 1]),
+                  ["size" => 36, "id" => "signin_email", "class" => "fullw", "autocomplete" => "username", "tabindex" => 1, "type" => $is_external_login ? "text" : "email"]),
         '</div>
 <div class="', Ht::control_class("password", "f-i fx"), '">';
-    if (!$Conf->opt("ldapLogin"))
+    if (!$is_external_login)
         echo '<div class="floatright"><a href="" class="n x small ui js-forgot-password">Forgot your password?</a></div>';
     echo Ht::label("Password", "signin_password"),
         Ht::password("password", "",
@@ -202,7 +203,7 @@ if (!$Me->has_email() || isset($Qreq->signin)) {
         "</div>\n";
     if ($password_reset)
         echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
-    if ($Conf->opt("ldapLogin"))
+    if ($is_external_login)
         echo Ht::hidden("action", "login");
     echo '<div class="popup-actions">',
         Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn btn-primary"]),

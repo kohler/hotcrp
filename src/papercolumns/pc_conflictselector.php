@@ -27,9 +27,9 @@ class ConflictSelector_PaperColumn extends PaperColumn {
         $pl->mark_has("sel");
         $c = "";
         if ($disabled)
-            $c .= ' disabled="disabled"';
+            $c .= ' disabled';
         if ($this->checked($pl, $row)) {
-            $c .= ' checked="checked"';
+            $c .= ' checked';
             unset($row->folded);
         }
         return '<input type="checkbox" class="uix js-range-click uich js-assign-review" '

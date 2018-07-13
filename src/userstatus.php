@@ -665,17 +665,17 @@ class UserStatus extends MessageSet {
         echo "<div class=\"profile-g\">\n";
         if (!$us->conf->external_login()) {
             $us->render_field("uemail", "Email" . $actas,
-                Ht::entry("uemail", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "data-default-value" => get_s($cj, "email")]));
+                Ht::entry("uemail", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "data-default-value" => get_s($cj, "email"), "type" => "email"]));
         } else if (!$us->user->is_empty()) {
             $us->render_field(false, "Username" . $actas,
                 htmlspecialchars(get_s($cj, "email")));
             $us->render_field("preferredEmail", "Email",
-                Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail", "data-default-value" => get_s($cj, "preferred_email")]));
+                Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail", "data-default-value" => get_s($cj, "preferred_email"), "type" => "email"]));
         } else {
             $us->render_field("uemail", "Username",
                 Ht::entry("newUsername", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "data-default-value" => get_s($cj, "email")]));
             $us->render_field("preferredEmail", "Email",
-                      Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "data-default-value" => get_s($cj, "preferred_email")]));
+                      Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "data-default-value" => get_s($cj, "preferred_email"), "type" => "email"]));
         }
 
         echo '<div class="f-2col">';
