@@ -349,13 +349,12 @@ class Text {
         if (empty($regex))
             return false;
         $a = $b = [];
-        foreach ($regex as $x) {
-            if (!is_object($x))
-                error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            $a[] = $x->preg_utf8;
-            if (isset($x->preg_raw))
-                $b[] = $x->preg_raw;
-        }
+        foreach ($regex as $x)
+            if ($x) {
+                $a[] = $x->preg_utf8;
+                if (isset($x->preg_raw))
+                    $b[] = $x->preg_raw;
+            }
         $x = (object) ["preg_utf8" => join("|", $a)];
         if (count($a) == count($b))
             $x->preg_raw = join("|", $b);
