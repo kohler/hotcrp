@@ -88,8 +88,10 @@ class AuthorMatcher extends Author {
                     }
             }
 
-            $rex = '{\b(?:' . str_replace('&', '\\&', join("|", $rs)) . ')\b}';
-            $this->affiliation_matcher = [$directs, $any_weak, $rex];
+            if (!empty($rs)) {
+                $rex = '{\b(?:' . str_replace('&', '\\&', join("|", $rs)) . ')\b}';
+                $this->affiliation_matcher = [$directs, $any_weak, $rex];
+            }
         }
 
         $content = join("|", $any);
@@ -158,7 +160,7 @@ class AuthorMatcher extends Author {
         }
         if ($this->affiliation_matcher
             && $au->affiliation !== ""
-            && (!$prefer_name || $au->lastName === "")
+            && (!$prefer_name || $this->lastName === "" || $au->lastName === "")
             && $this->test_affiliation($au->deaccent(2))) {
             return self::MATCH_AFFILIATION;
         }

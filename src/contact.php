@@ -3378,7 +3378,7 @@ class Contact {
         return $this->aucollab_matchers_[0];
     }
 
-    function au_general_regexes() {
+    function au_general_pregexes() {
         return $this->full_matcher()->general_pregexes();
     }
 

@@ -105,9 +105,8 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         if (!$row->field_match_pregexes($this->matcher->general_pregexes(), $field))
             return false;
         $l = $this->type === "aumatch" ? $row->author_list() : $row->collaborator_list();
-        $prefer_name = $this->matcher->lastName !== "";
         foreach ($l as $au)
-            if ($this->matcher->test($au, $prefer_name))
+            if ($this->matcher->test($au, true))
                 return true;
         return false;
     }

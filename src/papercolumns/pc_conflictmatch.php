@@ -23,7 +23,10 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         if ($aunum) {
             $pfx = "<em>author #$aunum</em> ";
             if ($matcher->nonauthor) {
-                $this->_potconf[$aunum][] = [$pfx . $matcher->highlight($conflict), "Author matches PC collaborator " . $aumatcher->highlight($matcher)];
+                $match = $aumatcher->highlight($matcher);
+                if (!$matcher->name())
+                    $match = "All " . $match;
+                $this->_potconf[$aunum][] = [$pfx . $matcher->highlight($conflict), "Author matches PC collaborator " . $match];
             } else if ($why == AuthorMatcher::MATCH_AFFILIATION) {
                 $this->_potconf[$aunum][] = [$pfx . htmlspecialchars($conflict->name()) . " (" . $matcher->highlight($conflict->affiliation) . ")", "Author matches PC affiliation " . $aumatcher->highlight($user->affiliation)];
             } else {
@@ -32,18 +35,17 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         } else {
             $num = "x" . count($this->_potconf);
             $pfx = "<em>collaborator</em> ";
+            if (!$conflict->name())
+                $pfx .= "All ";
+            $pfx .= $matcher->highlight($conflict);
             if ($why == AuthorMatcher::MATCH_AFFILIATION) {
-                $this->_potconf[$num][] = [$pfx . $matcher->highlight($conflict), "Paper collaborator matches PC affiliation " . $aumatcher->highlight($user->affiliation)];
+                $this->_potconf[$num][] = [$pfx, "Paper collaborator matches PC affiliation " . $aumatcher->highlight($user->affiliation)];
             } else {
-                $this->_potconf[$num][] = [$pfx . $matcher->highlight($conflict), "Paper collaborator matches PC " . $aumatcher->highlight($user)];
+                $this->_potconf[$num][] = [$pfx, "Paper collaborator matches PC " . $aumatcher->highlight($user)];
             }
         }
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if (!$row->field_match_pregexes($this->contact->aucollab_general_pregexes(), "authorInformation")
-            && (!$row->collaborators
-                || !$row->field_match_pregexes($this->contact->au_general_pregexes(), "collaborators")))
-            return "";
         $this->_potconf = [];
         if (!$row->potential_conflict_callback($this->contact, [$this, "_conflict_match"]))
             return "";
