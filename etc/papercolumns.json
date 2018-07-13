@@ -162,7 +162,7 @@
         "synonym": "au", "position": 150
     },
     {
-        "name": "authorsmatch",
+        "name": "potentialconflict",
         "row": true, "callback": "+ConflictMatch_PaperColumn",
         "position": 155
     },
@@ -171,11 +171,6 @@
         "row": true, "fold": true, "completion": true, "callback": "+Collab_PaperColumn",
         "synonym": ["collaborators", "co"],
         "position": 160
-    },
-    {
-        "name": "collabmatch",
-        "row": true, "callback": "+ConflictMatch_PaperColumn",
-        "position": 161
     },
     {
         "name": "topics",

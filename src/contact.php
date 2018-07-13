@@ -3378,6 +3378,10 @@ class Contact {
         return $this->aucollab_matchers_[0];
     }
 
+    function au_general_regexes() {
+        return $this->full_matcher()->general_pregexes();
+    }
+
 
     // following / email notifications
 

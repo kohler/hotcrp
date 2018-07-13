@@ -640,10 +640,10 @@ class PaperList {
             return "id title revdelegation revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
-            return "id title revpref topicscore desirability assrev authors authorsmatch collabmatch topics allrevtopicpref reviewers tags scores formulas";
+            return "id title revpref topicscore desirability assrev authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";
         case "conflict":
             $this->_default_linkto("assign");
-            return "selconf id title abstract authors authorsmatch collabmatch tags foldall";
+            return "selconf id title abstract authors potentialconflict tags foldall";
         case "editpref":
             $this->_default_linkto("paper");
             return "sel id title topicscore revtype editpref authors abstract topics";

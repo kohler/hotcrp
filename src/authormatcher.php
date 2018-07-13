@@ -169,7 +169,10 @@ class AuthorMatcher extends Author {
         if (is_object($au)) {
             if ($au->affiliation)
                 $aff_suffix = "(" . htmlspecialchars($au->affiliation) . ")";
-            $au = $au->nameaff_text();
+            if ($au instanceof Contact)
+                $au = Text::name_text($au) . ($aff_suffix !== null ? " " . $aff_suffix : "");
+            else
+                $au = $au->nameaff_text();
         }
         $pregexes = [];
         foreach ($matchers as $matcher)
@@ -180,7 +183,7 @@ class AuthorMatcher extends Author {
             $au = Text::highlight($au, $pregexes[0]);
         if ($aff_suffix && str_ends_with($au, $aff_suffix))
             $au = substr($au, 0, -strlen($aff_suffix))
-                . ' <span class="auaff">' . $aff_suffix . '</span>';
+                . '<span class="auaff">' . $aff_suffix . '</span>';
         return $au;
     }
     function highlight($au) {
