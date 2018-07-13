@@ -17,7 +17,7 @@
     {
         "name": "id",
         "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+IdPaperColumn",
-        "position": 100
+        "position": 50
     },
     {
         "name": "title",

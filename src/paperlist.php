@@ -1057,7 +1057,7 @@ class PaperList {
             $jscol[] = $j;
             if ($fdef->fold)
                 $classes[] = "fold" . $fdef->fold . ($fdef->is_visible ? "o" : "c");
-            if (isset($fdef->is_selector))
+            if ($fdef instanceof SelectorPaperColumn)
                 $has_sel = true;
         }
         // authorship requires special handling
@@ -1420,7 +1420,7 @@ class PaperList {
         // count non-callout columns
         $skipcallout = 0;
         foreach ($fieldDef as $fdef)
-            if ($fdef->name != "id" && !isset($fdef->is_selector))
+            if ($fdef->position === null || $fdef->position >= 100)
                 break;
             else
                 ++$skipcallout;
