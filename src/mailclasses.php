@@ -331,7 +331,10 @@ class MailRecipients {
         if ($needconflict)
             $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
         $q .= "\nfrom " . join("\n", $joins) . "\nwhere "
-            . join("\n    and ", $where) . "\norder by ";
+            . join("\n    and ", $where) . "\ngroup by ContactInfo.contactId";
+        if ($needpaper)
+            $q .= ", Paper.paperId";
+        $q .= "\norder by ";
         if (!$needpaper)
             $q .= "email";
         else if ($paper_sensitive)
