@@ -167,6 +167,10 @@
         "position": 155
     },
     {
+        "match": "potentialconflict:(.+?)", "priority": -1, "allow_if": "manager",
+        "expand_callback": "ConflictMatch_PaperColumn::expand"
+    },
+    {
         "name": "collab",
         "row": true, "fold": true, "completion": true, "callback": "+Collab_PaperColumn",
         "synonym": ["collaborators", "co"],

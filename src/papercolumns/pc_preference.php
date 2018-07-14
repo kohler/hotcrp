@@ -13,7 +13,7 @@ class Preference_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
         $this->editable = !!get($cj, "edit");
-        if ($conf && isset($cj->user))
+        if (isset($cj->user))
             $this->contact = $conf->pc_member_by_email($cj->user);
     }
     function make_editable(PaperList $pl) {
