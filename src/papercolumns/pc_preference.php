@@ -16,11 +16,8 @@ class Preference_PaperColumn extends PaperColumn {
         if (isset($cj->user))
             $this->contact = $conf->pc_member_by_email($cj->user);
     }
-    function make_editable(PaperList $pl) {
-        if (!($fj = (array) $pl->conf->basic_paper_column("editpref", $pl->user)))
-            return $this;
-        $fj["name"] = $this->name;
-        return new Preference_PaperColumn($pl->conf, (object) $fj);
+    function mark_editable(PaperList $pl) {
+        $this->editable = true;
     }
     function prepare(PaperList $pl, $visible) {
         $this->viewer_contact = $pl->user;

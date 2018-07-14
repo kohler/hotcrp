@@ -27,8 +27,7 @@ class PaperColumn extends Column {
     }
 
 
-    function make_editable(PaperList $pl) {
-        return $this;
+    function mark_editable(PaperList $pl) {
     }
 
     function prepare(PaperList $pl, $visible) {
@@ -700,8 +699,8 @@ class TagList_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_ALWAYS;
         $this->editable = $editable;
     }
-    function make_editable(PaperList $pl) {
-        return new TagList_PaperColumn($pl->conf, $this->column_json(), true);
+    function mark_editable(PaperList $pl) {
+        $this->editable = true;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_tags(null))
@@ -726,15 +725,10 @@ class TagList_PaperColumn extends PaperColumn {
         return !$pl->user->can_view_tags($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($pl->row_tags_overridable) {
-            $viewable = trim($pl->row_tags_overridable);
-            $pl->row_attr["data-tags-conflicted"] = trim($pl->row_tags);
-        } else
-            $viewable = trim($pl->row_tags);
-        $pl->row_attr["data-tags"] = $viewable;
+        $pl->need_tag_attr = true;
         if ($this->editable)
             $pl->row_attr["data-tags-editable"] = 1;
-        if ($viewable !== "" || $this->editable) {
+        if ($this->editable || $pl->row_tags || $pl->row_tags_overridable) {
             $pl->need_render = true;
             return '<span class="need-tags"></span>';
         } else
@@ -746,22 +740,23 @@ class TagList_PaperColumn extends PaperColumn {
 }
 
 class Tag_PaperColumn extends PaperColumn {
-    protected $is_value;
-    protected $dtag;
-    protected $ltag;
-    protected $ctag;
-    protected $editable = false;
-    protected $emoji = false;
+    private $is_value;
+    private $dtag;
+    private $ltag;
+    private $ctag;
+    private $editable = false;
+    private $emoji = false;
+    private $editsort;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
         $this->dtag = $cj->tag;
         $this->is_value = get($cj, "tagvalue");
     }
-    function make_editable(PaperList $pl) {
-        $is_value = $this->is_value || $this->is_value === null;
-        $cj = $this->column_json() + ["tagvalue" => $is_value, "tag" => $this->dtag];
-        return new EditTag_PaperColumn($pl->conf, (object) $cj);
+    function mark_editable(PaperList $pl) {
+        $this->editable = true;
+        if ($this->is_value === null)
+            $this->is_value = true;
     }
     function sorts_my_tag($sorter, Contact $user) {
         return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->ltag) == 0;
@@ -776,11 +771,25 @@ class Tag_PaperColumn extends PaperColumn {
         $this->ctag = " {$this->ltag}#";
         if ($visible)
             $pl->qopts["tags"] = 1;
-        $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
-        if ($this->ltag[0] == ":" && !$this->is_value
+        if ($this->ltag[0] == ":"
+            && !$this->is_value
             && ($dt = $pl->user->conf->tags()->check($this->dtag))
             && count($dt->emoji) == 1)
             $this->emoji = $dt->emoji[0];
+        if ($this->editable && $visible > 0 && ($tid = $pl->table_id())) {
+            $sorter = get($pl->sorters, 0);
+            if ($this->sorts_my_tag($sorter, $pl->user)
+                && !$sorter->reverse
+                && (!$pl->search->thenmap || $pl->search->is_order_anno)
+                && $this->is_value) {
+                $this->editsort = true;
+                $pl->tbody_attr["data-drag-tag"] = $this->dtag;
+            }
+            $pl->has_editable_tags = true;
+            $pl->add_header_script("plinfo_tags(" . json_encode_browser("#$tid") . ")", "plinfo_tags");
+        }
+        $this->className = ($this->editable ? "pl_edit" : "pl_")
+            . ($this->is_value ? "tagval" : "tag");
         return true;
     }
     function completion_name() {
@@ -823,7 +832,11 @@ class Tag_PaperColumn extends PaperColumn {
         return !$pl->user->can_view_tag($row, $this->ltag);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if (($v = $row->tag_value($this->ltag)) === false)
+        $v = $row->tag_value($this->ltag);
+        if ($this->editable
+            && ($t = $this->edit_content($pl, $row, $v)))
+            return $t;
+        else if ($v === false)
             return "";
         else if ($v >= 0.0 && $this->emoji)
             return Tagger::unparse_emoji_html($this->emoji, $v);
@@ -831,6 +844,23 @@ class Tag_PaperColumn extends PaperColumn {
             return "✓";
         else
             return $v;
+    }
+    private function edit_content($pl, $row, $v) {
+        if ($this->editsort)
+            $pl->need_tag_attr = true;
+        if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0))
+            return false;
+        if (!$this->is_value) {
+            return "<input type=\"checkbox\" class=\"uix js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\""
+                . ($v !== false ? ' checked="checked"' : '') . " />";
+        }
+        $t = '<input type="text" class="edittagval';
+        if ($this->editsort) {
+            $t .= " need-draghandle";
+            $pl->need_render = true;
+        }
+        return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
+            . ($v !== false ? htmlspecialchars($v) : "") . '" tabindex="2" />';
     }
     function text(PaperList $pl, PaperInfo $row) {
         if (($v = $row->tag_value($this->ltag)) === false)
@@ -871,51 +901,6 @@ class Tag_PaperColumnFactory {
             }
         }
         return $rs;
-    }
-}
-
-class EditTag_PaperColumn extends Tag_PaperColumn {
-    private $editsort;
-    function __construct(Conf $conf, $cj) {
-        parent::__construct($conf, $cj);
-        $this->editable = true;
-    }
-    function prepare(PaperList $pl, $visible) {
-        $this->editsort = false;
-        if (!parent::prepare($pl, $visible))
-            return false;
-        if ($visible > 0 && ($tid = $pl->table_id())) {
-            $sorter = get($pl->sorters, 0);
-            if ($this->sorts_my_tag($sorter, $pl->user)
-                && !$sorter->reverse
-                && (!$pl->search->thenmap || $pl->search->is_order_anno)
-                && $this->is_value) {
-                $this->editsort = true;
-                $pl->tbody_attr["data-drag-tag"] = $this->dtag;
-            }
-            $pl->has_editable_tags = true;
-            $pl->add_header_script("plinfo_tags(" . json_encode_browser("#$tid") . ")", "plinfo_tags");
-        }
-        $this->className = $this->is_value ? "pl_edittagval" : "pl_edittag";
-        return true;
-    }
-    function content(PaperList $pl, PaperInfo $row) {
-        $v = $row->tag_value($this->ltag);
-        if ($this->editsort && !isset($pl->row_attr["data-tags"]) && $v !== false)
-            $pl->row_attr["data-tags"] = $this->ltag . "#" . $v;
-        if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0))
-            return $this->is_value ? (string) $v : ($v === false ? "" : "&#x2713;");
-        if (!$this->is_value) {
-            return "<input type=\"checkbox\" class=\"uix js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\""
-                . ($v !== false ? ' checked="checked"' : '') . " />";
-        }
-        $t = '<input type="text" class="edittagval';
-        if ($this->editsort) {
-            $t .= " need-draghandle";
-            $pl->need_render = true;
-        }
-        return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
-            . ($v !== false ? htmlspecialchars($v) : "") . '" tabindex="2" />';
     }
 }
 

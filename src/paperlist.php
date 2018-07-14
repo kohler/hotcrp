@@ -104,6 +104,7 @@ class PaperList {
     public $row_tags;
     public $row_tags_overridable;
     public $need_render;
+    public $need_tag_attr;
     public $has_editable_tags = false;
 
     private $sortable;
@@ -860,6 +861,7 @@ class PaperList {
             } else
                 $this->row_tags = $row->viewable_tags($this->user);
         }
+        $this->need_tag_attr = false;
     }
 
     private function _row_content($rstate, PaperInfo $row, $fieldDef) {
@@ -936,6 +938,16 @@ class PaperList {
             }
             if ($fdef->is_visible ? $content !== "" : !$empty)
                 $fdef->has_content = !$empty;
+        }
+
+        // tags
+        if ($this->need_tag_attr) {
+            if ($this->row_tags_overridable
+                && $this->row_tags_overridable !== $this->row_tags) {
+                $this->row_attr["data-tags"] = trim($this->row_tags_overridable);
+                $this->row_attr["data-tags-conflicted"] = trim($this->row_tags);
+            } else
+                $this->row_attr["data-tags"] = trim($this->row_tags);
         }
 
         if (isset($row->folded) && $row->folded) {
@@ -1184,11 +1196,10 @@ class PaperList {
         }
         foreach ($viewmap_add as $k => $v)
             $this->_view_fields[$k] = $v;
-        foreach ($field_list as $fi => &$f) {
+        foreach ($field_list as $fi => $f) {
             if (get($this->_view_fields, $f->name) === "edit")
-                $f = $f->make_editable($this);
+                $f->mark_editable($this);
         }
-        unset($f);
 
         // remove deselected columns;
         // in compactcolumns view, remove non-minimal columns
