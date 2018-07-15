@@ -4,7 +4,6 @@
 
 class PaperColumn extends Column {
     const OVERRIDE_NONE = 0;
-    const OVERRIDE_FOLD = 1;
     const OVERRIDE_FOLD_IFEMPTY = 1;
     const OVERRIDE_FOLD_BOTH = 2;
     const OVERRIDE_ALWAYS = 3;

@@ -56,8 +56,12 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $this->_potconf = [];
-        if (!$row->potential_conflict_callback($this->contact, [$this, "_conflict_match"]))
+        $pref = $row->reviewer_preference($this->contact);
+        if (!$row->potential_conflict_callback($this->contact, [$this, "_conflict_match"])
+            && $pref[0] > -100)
             return "";
+        if ($pref[0] <= -100)
+            $this->_potconf["pref"][] = ["<em>reviewer preference</em>", "PC entered preference " . unparse_preference($pref)];
         $ch = [];
         $nconf = count($this->_potconf);
         foreach ($this->_potconf as &$cx) {
