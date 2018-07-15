@@ -5904,22 +5904,24 @@ plinfo.set_tags = function (pid, rv) {
     var $pr = pidrow(pid);
     if (!$pr.length)
         return;
+    var $ptr = $("tr.pl, tr.plx").filter("[data-pid='" + pid + "']");
 
     // set attributes
     $pr.removeAttr("data-tags data-tags-conflicted data-color-classes data-color-classes-conflicted")
         .attr("data-tags", $.isArray(rv.tags) ? rv.tags.join(" ") : rv.tags);
     if ("tags_conflicted" in rv)
         $pr.attr("data-tags-conflicted", rv.tags_conflicted);
-    if ("color_classes_conflicted" in rv)
+    if ("color_classes_conflicted" in rv) {
         $pr.attr("data-color-classes", rv.color_classes)
             .attr("data-color-classes-conflicted", rv.color_classes_conflicted);
+        $ptr.addClass("colorconflict");
+    }
 
     // set color classes
-    var $ptr = $("tr.pl, tr.plx").filter("[data-pid='" + pid + "']");
     var cc = rv.color_classes;
     if (/ tagbg$/.test(rv.color_classes || ""))
         $ptr.removeClass("k0 k1").closest("tbody").addClass("pltable_colored");
-    if ($pr.closest("tbody").hasClass("fold5c")
+    if ($pr.closest("table").hasClass("fold5c")
         && "color_classes_conflicted" in rv)
         cc = rv.color_classes_conflicted;
     if (cc)
