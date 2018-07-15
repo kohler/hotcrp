@@ -702,18 +702,33 @@ class PaperInfo {
     }
 
     function add_tag_info_json($pj, Contact $user) {
-        if (!property_exists($this, "paperTags"))
-            $this->load_tags();
         $tagger = new Tagger($user);
+        if (($can_override = $user->can_meaningfully_override($this)))
+            $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $editable = $this->editable_tags($user);
         $viewable = $this->viewable_tags($user);
-        $tags_view_html = $tagger->unparse_and_link($viewable);
         $pj->tags = TagInfo::split($viewable);
         $pj->tags_edit_text = $tagger->unparse($editable);
-        $pj->tags_view_html = $tags_view_html;
-        if (($td = $tagger->unparse_decoration_html($viewable)))
-            $pj->tag_decoration_html = $td;
-        $pj->color_classes = $this->conf->tags()->color_classes($viewable);
+        $pj->tags_view_html = $tagger->unparse_and_link($viewable);
+        if (($decor = $tagger->unparse_decoration_html($viewable)))
+            $pj->tag_decoration_html = $decor;
+        $tagmap = $this->conf->tags();
+        $pj->color_classes = $tagmap->color_classes($viewable);
+        if ($can_override && $viewable) {
+            $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+            $viewable_c = $this->viewable_tags($user);
+            if ($viewable_c !== $viewable) {
+                $pj->tags_conflicted = TagInfo::split($viewable_c);
+                if ($decor
+                    && ($decor_c = $tagger->unparse_decoration_html($viewable_c)) !== $decor)
+                    $pj->tag_decoration_html_conflicted = $decor_c;
+                if ($pj->color_classes
+                    && ($cc_c = $tagmap->color_classes($viewable_c)) !== $pj->color_classes)
+                    $pj->color_classes_conflicted = $cc_c;
+            }
+        }
+        if ($can_override)
+            $user->set_overrides($overrides);
     }
 
     private function load_topics() {

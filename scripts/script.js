@@ -5901,27 +5901,50 @@ plinfo.set_scoresort = function (ss) {
 
 plinfo.render_needed = render_needed;
 plinfo.set_tags = function (pid, rv) {
-    if (pidrow(pid).length) {
-        var tags = rv.tags, cclasses = rv.color_classes;
-        pidattr(pid, "data-tags", $.isArray(tags) ? tags.join(" ") : tags);
-        if (cclasses)
-            make_pattern_fill(cclasses);
-        var $ptr = $("tr.pl, tr.plx").filter("[data-pid='" + pid + "']");
-        if (/\b(?:red|orange|yellow|green|blue|purple|gray|white)tag\b/.test(cclasses)) {
-            $ptr.closest("tbody").addClass("pltable_colored");
-            $ptr.removeClass("k0 k1");
+    var $pr = pidrow(pid);
+    if (!$pr.length)
+        return;
+
+    // set attributes
+    $pr.removeAttr("data-tags data-tags-conflicted data-color-classes data-color-classes-conflicted")
+        .attr("data-tags", $.isArray(rv.tags) ? rv.tags.join(" ") : rv.tags);
+    if ("tags_conflicted" in rv)
+        $pr.attr("data-tags-conflicted", rv.tags_conflicted);
+    if ("color_classes_conflicted" in rv)
+        $pr.attr("data-color-classes", rv.color_classes)
+            .attr("data-color-classes-conflicted", rv.color_classes_conflicted);
+
+    // set color classes
+    var $ptr = $("tr.pl, tr.plx").filter("[data-pid='" + pid + "']");
+    var cc = rv.color_classes;
+    if (/ tagbg$/.test(rv.color_classes || ""))
+        $ptr.removeClass("k0 k1").closest("tbody").addClass("pltable_colored");
+    if ($pr.closest("tbody").hasClass("fold5c")
+        && "color_classes_conflicted" in rv)
+        cc = rv.color_classes_conflicted;
+    if (cc)
+        make_pattern_fill(cc);
+    $ptr.removeClass(function (i, klass) {
+        return (klass.match(/(?:^| )(?:\S*tag)(?= |$)/g) || []).join(" ");
+    }).addClass(cc);
+
+    // set tag decoration
+    $ptr.find(".tagdecoration").remove();
+    if (rv.tag_decoration_html) {
+        var decor = rv.tag_decoration_html;
+        if ("tag_decoration_html_conflicted" in rv) {
+            decor = '<span class="fx5">' + decor + '</span>';
+            if (rv.tag_decoration_html_conflicted)
+                decor = '<span class="fn5">' + rv.tag_decoration_html_conflicted + '</span>' + decor;
         }
-        $ptr.removeClass(function (i, klass) {
-            return (klass.match(/(?:^| )(?:\S+tag)(?= |$)/g) || []).join(" ");
-        }).addClass(cclasses);
-        $ptr.find(".tagdecoration").remove();
-        if (rv.tag_decoration_html)
-            $ptr.find(".pl_title").append(rv.tag_decoration_html);
-        if (fields.tags && !fields.tags.missing)
-            render_row_tags(pidfield(pid, fields.tags)[0]);
-        for (var i in set_tags_callbacks)
-            set_tags_callbacks[i](pid, rv);
+        $ptr.find(".pl_title").append(decor);
     }
+
+    // set actual tags
+    if (fields.tags && !fields.tags.missing)
+        render_row_tags(pidfield(pid, fields.tags)[0]);
+    for (var i in set_tags_callbacks)
+        set_tags_callbacks[i](pid, rv);
 };
 plinfo.on_set_tags = function (f) {
     set_tags_callbacks.push(f);
@@ -5937,7 +5960,11 @@ function fold_override(checkbox) {
             var pl = this;
             while (pl.nodeType !== 1 || /^plx/.test(pl.className))
                 pl = pl.previousSibling;
-            var a = pl.getAttribute("data-color-classes" + (on ? "" : "-conflicted")) || "";
+            var a;
+            if (!on && pl.hasAttribute("data-color-classes-conflicted"))
+                a = pl.getAttribute("data-color-classes-conflicted");
+            else
+                a = pl.getAttribute("data-color-classes");
             this.className = this.className.replace(/(?:^|\s+)(?:\S*tag|k[01]|tagbg)(?= |$)/g, "").trim() + (a ? " " + a : "");
         });
     });

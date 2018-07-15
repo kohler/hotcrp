@@ -128,6 +128,7 @@ class PaperApi {
         $assigner->parse(join("\n", $x));
         $error = join("<br />", $assigner->errors_html());
         $ok = $assigner->execute();
+        $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
 
         // exit
         if ($ok && $prow) {
