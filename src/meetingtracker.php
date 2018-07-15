@@ -163,16 +163,18 @@ class MeetingTracker {
             $pcm = $acct->conf->pc_members();
         }
 
-        $result = $acct->conf->qe_raw("select p.paperId, p.title, p.paperFormat, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType{$col}
+        $result = $acct->conf->qe_raw("select p.paperId, p.title, p.paperFormat, p.leadContactId, p.managerContactId, " . PaperInfo::my_review_permissions_sql("r.") . " myReviewPermissions, conf.conflictType{$col}
             from Paper p
             left join PaperReview r on (r.paperId=p.paperId and " . ($acct->contactId ? "r.contactId=$acct->contactId" : "false") . ")
             left join PaperConflict conf on (conf.paperId=p.paperId and " . ($acct->contactId ? "conf.contactId=$acct->contactId" : "false") . ")
-            ${j}where p.paperId in (" . join(",", $pids) . ")");
+            ${j}where p.paperId in (" . join(",", $pids) . ")
+            group by p.paperId");
 
         $papers = array();
         while (($row = PaperInfo::fetch($result, $acct))) {
             $papers[$row->paperId] = $p = (object) array();
-            if (($acct->privChair || !$row->conflictType
+            if (($acct->privChair
+                 || !$row->conflictType
                  || !get($status, "hide_conflicts"))
                 && $acct->tracker_kiosk_state != 1) {
                 $p->pid = (int) $row->paperId;
@@ -180,16 +182,16 @@ class MeetingTracker {
                 if (($format = $row->title_format()))
                     $p->format = $format;
             }
-            if ($acct->contactId > 0
-                && $row->managerContactId == $acct->contactId)
-                $p->is_manager = true;
-            if ($row->reviewType)
-                $p->is_reviewer = true;
-            if ($row->conflictType)
-                $p->is_conflict = true;
-            if ($acct->contactId > 0
-                && $row->leadContactId == $acct->contactId)
-                $p->is_lead = true;
+            if ($acct->contactId > 0) {
+                if ($row->managerContactId == $acct->contactId)
+                    $p->is_manager = true;
+                if ($row->has_reviewer($acct))
+                    $p->is_reviewer = true;
+                if ($row->conflictType)
+                    $p->is_conflict = true;
+                if ($row->leadContactId == $acct->contactId)
+                    $p->is_lead = true;
+            }
             if ($pc_conflicts) {
                 $p->pc_conflicts = array();
                 foreach (explode(",", (string) $row->conflictIds) as $cid)
