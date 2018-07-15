@@ -915,7 +915,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         return $this->name . ($score_sort ? " $score_sort" : "");
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $pl->context_user();
+        $this->contact = $pl->reviewer_user();
         $this->not_me = $this->contact->contactId !== $pl->user->contactId;
         if ($visible && $this->not_me
             && (!$pl->user->privChair || $pl->conf->has_any_manager()))

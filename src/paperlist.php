@@ -430,10 +430,6 @@ class PaperList {
         return $this->search->reviewer_user();
     }
 
-    function context_user() {
-        return $this->search->context_user();
-    }
-
     function _content_pc($contactId) {
         $pc = $this->conf->pc_member_by_id($contactId);
         return $pc ? $this->user->reviewer_html_for($pc) : "";

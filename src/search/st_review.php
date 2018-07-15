@@ -449,11 +449,4 @@ class Review_SearchTerm extends SearchTerm {
             $n += $this->rsm->test_review($srch->user, $prow, $rrow, $srch);
         return $this->rsm->test_finish($n);
     }
-    function extract_metadata($top, PaperSearch $srch) {
-        parent::extract_metadata($top, $srch);
-        if ($top) {
-            $v = $this->rsm->contact_set();
-            $srch->mark_context_user($v !== null && count($v) == 1 ? $v[0] : null);
-        }
-    }
 }

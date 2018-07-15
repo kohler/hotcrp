@@ -1032,7 +1032,6 @@ class PaperSearch {
     private $limitName;
     private $fields;
     private $_reviewer_user = false;
-    private $_context_user = false;
     private $_active_limit;
     private $urlbase;
     public $warnings = array();
@@ -1169,7 +1168,7 @@ class PaperSearch {
             } else if (!is_object($reviewer) || !($reviewer instanceof Contact))
                 $reviewer = null;
             if ($reviewer)
-                $this->_reviewer_user = $this->_context_user = $reviewer;
+                $this->_reviewer_user = $reviewer;
         }
 
         // URL base
@@ -2311,24 +2310,6 @@ class PaperSearch {
             $url .= (strpos($url, "?") === false ? "?" : "&")
                 . "q=" . urlencode($q);
         return $url;
-    }
-
-    function context_user() {
-        return $this->_context_user ? : $this->user;
-    }
-
-    function mark_context_user($cid) {
-        if (!$this->_reviewer_user) {
-            if ($cid && $this->_context_user && $this->_context_user->contactId == $cid)
-                /* have correct reviewer */;
-            else if ($cid && $this->_context_user === false) {
-                if ($this->cid == $cid)
-                    $this->_context_user = $this->user;
-                else
-                    $this->_context_user = $this->conf->user_by_id($cid);
-            } else
-                $this->_context_user = null;
-        }
     }
 
     private function _tag_description() {
