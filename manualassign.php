@@ -259,7 +259,7 @@ if ($reviewer) {
                                     "reviewer" => $reviewer]);
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
-    $paperList = new PaperList($search, ["sort" => true, "display" => ($Qreq->kind == "c" ? "show:topics" : "show:topics show:reviewers")], $Qreq);
+    $paperList = new PaperList($search, ["sort" => true, "display" => ($Qreq->kind == "c" ? "" : "show:topics show:reviewers")], $Qreq);
     echo "<form class='assignpc ignore-diff' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "kind" => $Qreq->kind, "sort" => $Qreq->sort]),
         "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
         Ht::hidden("t", $Qreq->t),

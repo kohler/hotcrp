@@ -1278,9 +1278,8 @@ class PaperList {
 
     private function _columns($field_list, $table_html) {
         $field_list = $this->_canonicalize_columns($field_list);
-        if ($table_html) {
+        if ($table_html)
             $field_list = $this->_view_columns($field_list);
-        }
         $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
         return $this->_prepare_columns($field_list);
     }
