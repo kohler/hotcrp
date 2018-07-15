@@ -154,20 +154,20 @@ assert_search_papers($user_shenker, "au:n*@*u", "3 10");
 // correct conflict information returned
 $psearch = new PaperSearch($user_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_mgbaker]);
 $pl = new PaperList($psearch);
-$j = $pl->text_json("id selconf");
+$j = $pl->text_json("id conf");
 xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
-xassert_eqq($j[3]->selconf, "Y");
-xassert_eqq($j[18]->selconf, "Y");
+xassert_eqq($j[3]->conf, "Y");
+xassert_eqq($j[18]->conf, "Y");
 foreach ([1, 2, 4, 5, 15, 16, 17] as $i)
-    xassert_eqq($j[$i]->selconf, "N");
+    xassert_eqq($j[$i]->conf, "N");
 
 $psearch = new PaperSearch($user_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_jon]);
 $pl = new PaperList($psearch);
-$j = $pl->text_json("id selconf");
+$j = $pl->text_json("id conf");
 xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
-xassert_eqq($j[17]->selconf, "Y");
+xassert_eqq($j[17]->conf, "Y");
 foreach ([1, 2, 3, 4, 5, 15, 16, 18] as $i)
-    xassert_eqq($j[$i]->selconf, "N");
+    xassert_eqq($j[$i]->conf, "N");
 
 assert_search_papers($user_chair, "re:estrin", "4 8 18");
 assert_search_papers($user_shenker, "re:estrin", "4 8 18");

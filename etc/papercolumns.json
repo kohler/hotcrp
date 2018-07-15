@@ -10,11 +10,6 @@
         "position": 10
     },
     {
-        "name": "selconf",
-        "column": true, "minimal": true, "className": "pl_confsel", "callback": "+ConflictSelector_PaperColumn",
-        "position": 10
-    },
-    {
         "name": "id",
         "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+IdPaperColumn",
         "position": 50
@@ -81,6 +76,21 @@
         "name": "assignment",
         "column": true, "sort": true, "completion": true, "callback": "+AssignReview_PaperColumn",
         "position": 840, "synonym": ["assrev", "assign"]
+    },
+    {
+        "name": "conf",
+        "column": true, "sort": true, "completion": false, "className": "plc", "callback": "+Conflict_PaperColumn",
+        "position": 855, "synonym": "conflict", "is_pc": false
+    },
+    {
+        "name": "editconf",
+        "column": true, "minimal": true, "className": "plc", "callback": "+Conflict_PaperColumn",
+        "position": 855, "is_pc": true, "edit": true
+    },
+    {
+        "name": "confdesc",
+        "column": true, "sort": true, "completion": false, "className": "plc", "callback": "+Conflict_PaperColumn",
+        "position": 856, "synonym": ["conflictdesc", "confdescription", "conflictdescription"], "is_pc": false, "show_description": true
     },
     {
         "name": "status",
@@ -182,9 +192,9 @@
         "position": 420
     },
     {
-        "name": "pcconf",
+        "name": "pcconflicts",
         "row": true, "fold": true, "completion": "pcconflicts", "callback": "+PCConflicts_PaperColumn",
-        "synonym": ["conf", "conflicts", "pcconflicts", "pc-conflicts"],
+        "synonym": ["conflicts", "pc-conflicts"],
         "position": 450
     },
     {

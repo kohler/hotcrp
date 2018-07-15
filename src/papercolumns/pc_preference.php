@@ -16,7 +16,7 @@ class Preference_PaperColumn extends PaperColumn {
         if (isset($cj->user))
             $this->contact = $conf->pc_member_by_email($cj->user);
     }
-    function mark_editable(PaperList $pl) {
+    function mark_editable() {
         $this->editable = true;
     }
     function prepare(PaperList $pl, $visible) {
@@ -76,7 +76,7 @@ class Preference_PaperColumn extends PaperColumn {
         else if ($is_text)
             return $pl->user->name_text_for($this->contact) . " preference";
         else
-            return $pl->user->name_html_for($this->contact) . "<br />preference";
+            return $pl->user->name_html_for($this->contact) . "<br>preference";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return $this->not_me && !$pl->user->can_administer($row);

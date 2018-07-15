@@ -1946,7 +1946,7 @@ th.pll {
 	text-align: left;
 }
 
-th.plc, th.plrd, th.pl_id, th.pl_sel, th.pl_confsel,
+th.plc, th.plrd, th.pl_id, th.pl_sel,
 th.pl_revtype, th.pl_revstat, th.pl_topicscore, th.pl_desirability,
 th.pl_score, th.pl_uscores, th.pl_tag, th.pl_tagval, th.pl_formula {
 	text-align: center;
@@ -1962,12 +1962,12 @@ td.pl_tag, td.pl_tagval, td.pl_formula {
 	text-align: right;
 }
 
-td.plc, td.pl_revtype, td.pl_revstat, td.pl_confsel, td.pl_score,
+td.plc, td.pl_revtype, td.pl_revstat, td.pl_score,
 td.pl_uscores, td.pl_edittag {
 	text-align: center;
 }
 
-td.pl_id, td.pl_sel, td.pl_confsel,
+td.pl_id, td.pl_sel,
 td.pl_revtype, td.pl_assrev, td.pl_editrevpref,
 td.pl_score, td.pl_uscores, td.pl_formula,
 td.pl_tag, td.pl_edittag, td.pl_tagval, td.pl_edittagval {

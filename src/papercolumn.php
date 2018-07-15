@@ -27,7 +27,7 @@ class PaperColumn extends Column {
     }
 
 
-    function mark_editable(PaperList $pl) {
+    function mark_editable() {
     }
 
     function prepare(PaperList $pl, $visible) {
@@ -699,7 +699,7 @@ class TagList_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_ALWAYS;
         $this->editable = $editable;
     }
-    function mark_editable(PaperList $pl) {
+    function mark_editable() {
         $this->editable = true;
     }
     function prepare(PaperList $pl, $visible) {
@@ -753,7 +753,7 @@ class Tag_PaperColumn extends PaperColumn {
         $this->dtag = $cj->tag;
         $this->is_value = get($cj, "tagvalue");
     }
-    function mark_editable(PaperList $pl) {
+    function mark_editable() {
         $this->editable = true;
         if ($this->is_value === null)
             $this->is_value = true;

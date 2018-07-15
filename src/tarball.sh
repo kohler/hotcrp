@@ -223,8 +223,8 @@ src/paperapi.php
 src/papercolumn.php
 src/papercolumns/pc_administrator.php
 src/papercolumns/pc_commenters.php
+src/papercolumns/pc_conflict.php
 src/papercolumns/pc_conflictmatch.php
-src/papercolumns/pc_conflictselector.php
 src/papercolumns/pc_desirability.php
 src/papercolumns/pc_formula.php
 src/papercolumns/pc_formulagraph.php

@@ -231,7 +231,7 @@ class Keywords_HelpTopic {
         }
 
         echo $hth->tgroup("Display");
-        echo $hth->search_trow("show:tags show:conflicts", "show tags and PC conflicts in the results");
+        echo $hth->search_trow("show:tags show:pcconflicts", "show tags and PC conflicts in the results");
         echo $hth->search_trow("hide:title", "hide title in the results");
         if (count($farr[0])) {
             $r = $farr[0][0];

@@ -644,7 +644,7 @@ class PaperList {
             return "id title revpref topicscore desirability assrev authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";
         case "conflict":
             $this->_default_linkto("assign");
-            return "selconf id title abstract authors potentialconflict tags foldall";
+            return "id title abstract authors potentialconflict editconf tags foldall";
         case "editpref":
             $this->_default_linkto("paper");
             return "sel id title topicscore revtype editpref authors abstract topics";
@@ -1198,7 +1198,7 @@ class PaperList {
             $this->_view_fields[$k] = $v;
         foreach ($field_list as $fi => $f) {
             if (get($this->_view_fields, $f->name) === "edit")
-                $f->mark_editable($this);
+                $f->mark_editable();
         }
 
         // remove deselected columns;
