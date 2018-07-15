@@ -1050,16 +1050,16 @@ class PaperSearch {
     public $_has_review_adjustment = false;
     private $_ssRecursion = array();
     private $_allow_deleted = false;
-    public $thenmap = null;
-    public $groupmap = null;
+    public $thenmap;
+    public $groupmap;
     public $is_order_anno = false;
-    public $highlightmap = null;
+    public $highlightmap;
     public $viewmap;
     public $sorters = [];
-    private $_default_sort = null; // XXX should be used more often
-    private $_highlight_tags = null;
+    private $_default_sort; // XXX should be used more often
+    private $_highlight_tags;
 
-    private $_matches = null; // list of ints
+    private $_matches; // list of ints
 
     static private $_sort_keywords = ["by" => "by", "up" => "up", "down" => "down",
                  "reverse" => "down", "reversed" => "down", "score" => ""];
@@ -2133,7 +2133,7 @@ class PaperSearch {
 
     function paper_ids() {
         $this->_prepare();
-        return $this->_matches ? : array();
+        return $this->_matches ? : [];
     }
 
     function sorted_paper_ids() {
@@ -2145,7 +2145,16 @@ class PaperSearch {
             return $this->paper_ids();
     }
 
-    function trivial_limit() {
+    function filter($callback) {
+        $m = [];
+        foreach ($this->paper_ids() as $pid)
+            if (call_user_func($callback, $pid))
+                $m[] = $pid;
+        if ($this->_matches !== false)
+            $this->_matches = $m;
+    }
+
+    private function trivial_limit() {
         $limit = $this->limit();
         if ($this->user->has_hidden_papers())
             return false;
@@ -2230,8 +2239,9 @@ class PaperSearch {
         if ($this->q === "re:me"
             && ($xlimit === "s" || $xlimit === "act" || $xlimit === "rout" || $xlimit === "rable"))
             $xlimit = "r";
-        if (($this->q !== ""
-             && ($this->q !== "re:me" || $xlimit !== "r"))
+        if ($this->_matches !== null
+            || ($this->q !== ""
+                && ($this->q !== "re:me" || $xlimit !== "r"))
             || (!$this->privChair
                 && $this->reviewer_user() !== $this->user)
             || ($this->conf->has_tracks()

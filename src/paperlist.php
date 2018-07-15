@@ -125,7 +125,6 @@ class PaperList {
     private $report_id;
     private $_row_id_pattern;
     private $_selection;
-    private $_only_selected;
 
     public $qopts; // set by PaperColumn::prepare
     private $_header_script = "";
@@ -271,9 +270,8 @@ class PaperList {
         }
     }
 
-    function set_selection(SearchSelection $ssel, $only_selected = false) {
+    function set_selection(SearchSelection $ssel) {
         $this->_selection = $ssel;
-        $this->_only_selected = $only_selected;
     }
     function is_selected($paperId, $default = false) {
         return $this->_selection ? $this->_selection->is_selected($paperId) : $default;
@@ -682,11 +680,10 @@ class PaperList {
         if (!$result)
             return null;
         $rowset = new PaperInfoSet;
-        while (($row = PaperInfo::fetch($result, $this->user)))
-            if (!$this->_only_selected || $this->is_selected($row->paperId)) {
-                assert(!$rowset->get($row->paperId));
-                $rowset->add($row);
-            }
+        while (($row = PaperInfo::fetch($result, $this->user))) {
+            assert(!$rowset->get($row->paperId));
+            $rowset->add($row);
+        }
         Dbl::free($result);
 
         // analyze rows (usually noop)
@@ -1371,7 +1368,7 @@ class PaperList {
             return null;
         // need tags for row coloring
         if ($this->user->can_view_tags(null))
-            $this->qopts["tags"] = 1;
+            $this->qopts["tags"] = true;
 
         // get column list
         if (isset($options["field_list"]))

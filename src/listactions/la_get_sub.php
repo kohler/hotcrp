@@ -283,8 +283,8 @@ class GetTopics_ListAction extends ListAction {
 class GetCSV_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $search = new PaperSearch($user, $qreq);
+        $search->filter([$ssel, "is_selected"]);
         $pl = new PaperList($search, ["sort" => true, "report" => "pl", "display" => $qreq->display], $qreq);
-        $pl->set_selection($ssel, true);
         $pl->set_view("sel", false);
         list($header, $data) = $pl->text_csv($qreq->t);
         return $user->conf->make_csvg("data", CsvGenerator::FLAG_ITEM_COMMENTS)
