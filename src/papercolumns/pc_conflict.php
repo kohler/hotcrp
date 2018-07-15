@@ -90,7 +90,7 @@ class Conflict_PaperColumn extends PaperColumn {
             . '" value="-1"' . ($ct ? " checked" : "") . ' />';
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $t = $this->conflict_type($pl, $row);
+        $ct = $this->conflict_type($pl, $row);
         if (!$ct)
             return "N";
         else if (!$this->show_description || $ct == 1)
