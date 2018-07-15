@@ -64,9 +64,6 @@ class PaperColumn extends Column {
     function sort_name($score_sort) {
         return $this->name;
     }
-    function alternate_display_name() {
-        return false;
-    }
 
     function content_empty(PaperList $pl, PaperInfo $row) {
         return false;
@@ -996,9 +993,6 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     }
     function header(PaperList $pl, $is_text) {
         return $is_text ? $this->format_field->search_keyword() : $this->format_field->web_abbreviation();
-    }
-    function alternate_display_name() {
-        return $this->format_field->id;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         // Do not use score_values to determine content emptiness, since

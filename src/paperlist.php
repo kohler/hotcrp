@@ -761,11 +761,7 @@ class PaperList {
             $fname = "au";
         if (!$fname || $this->_unfold_all || $this->qreq["show$fname"])
             return false;
-        $x = get($this->_view_fields, $fname);
-        if ($x === null && is_object($fdef)
-            && ($fname = $fdef->alternate_display_name()))
-            $x = get($this->_view_fields, $fname);
-        return !$x;
+        return !get($this->_view_fields, $fname);
     }
 
     private function _check_option_presence(PaperInfo $row) {
@@ -1200,7 +1196,9 @@ class PaperList {
         $field_list2 = array();
         foreach ($field_list as $fdef) {
             $v = get($this->_view_fields, $fdef->name);
-            if ($v || $fdef->fold || ($v !== false && (!$minimal || $fdef->minimal)))
+            if ($v
+                || $fdef->fold
+                || ($v !== false && (!$minimal || $fdef->minimal)))
                 $field_list2[] = $fdef;
         }
         return $field_list2;
