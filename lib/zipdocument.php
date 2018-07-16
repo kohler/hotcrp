@@ -201,7 +201,7 @@ class ZipDocument {
         if (!($zipcmd = $this->conf->opt("zipCommand", "zip")))
             return $this->_make_document("<code>zip</code> is not supported on this installation.");
 
-        DocumentInfo::prefetch_content($this->_docs);
+        DocumentInfo::prefetch_content(array_slice($this->_docs, $this->_saveindex));
         while ($this->_saveindex < count($this->_docs))
             $this->_save_one();
 
