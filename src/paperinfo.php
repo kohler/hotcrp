@@ -243,6 +243,7 @@ class PaperInfo {
     private $_collaborator_array;
     private $_prefs_array;
     private $_prefs_cid;
+    private $_desirability;
     private $_topics_array;
     private $_topic_interest_score_array;
     private $_option_values;
@@ -907,7 +908,7 @@ class PaperInfo {
             $row_set = new PaperInfoSet($this);
         foreach ($row_set as $prow) {
             $prow->allReviewerPreference = null;
-            $prow->_prefs_array = $prow->_prefs_cid = null;
+            $prow->_prefs_array = $prow->_prefs_cid = $prow->_desirability = null;
         }
         $result = $this->conf->qe("select paperId, " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId?a group by paperId", $row_set->paper_ids());
         while ($result && ($row = $result->fetch_row())) {
@@ -955,6 +956,20 @@ class PaperInfo {
         if ($include_topic_score)
             $pref[] = $this->topic_interest_score($contact);
         return $pref;
+    }
+
+    function desirability() {
+        if ($this->_desirability === null) {
+            $prefs = $this->reviewer_preferences();
+            $this->_desirability = 0;
+            foreach ($prefs as $pf) {
+                if ($pf[0] > 0)
+                    $this->_desirability += 1;
+                else if ($pf[0] > -100 && $pf[0] < 0)
+                    $this->_desirability -= 1;
+            }
+        }
+        return $this->_desirability;
     }
 
     private function load_options($only_me, $need_data) {

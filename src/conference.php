@@ -2737,19 +2737,8 @@ class Conf {
             $cols[] = "PaperReviewPreference.expertise as reviewerExpertise";
         }
 
-        if (get($options, "allReviewerPreference") || get($options, "desirability")) {
-            $subq = "select paperId";
-            if (get($options, "allReviewerPreference")) {
-                $subq .= ", " . $this->query_all_reviewer_preference() . " as allReviewerPreference";
-                $cols[] = "APRP.allReviewerPreference";
-            }
-            if (get($options, "desirability")) {
-                $subq .= ", sum(if(preference<=-100,0,greatest(least(preference,1),-1))) as desirability";
-                $cols[] = "coalesce(APRP.desirability,0) as desirability";
-            }
-            $subq .= " from PaperReviewPreference where {$papersel}true group by paperId";
-            $joins[] = "left join ($subq) as APRP on (APRP.paperId=Paper.paperId)";
-        }
+        if (get($options, "allReviewerPreference"))
+            $cols[] = "(select " . $this->query_all_reviewer_preference() . " from PaperReviewPreference where PaperReviewPreference.paperId=Paper.paperId) allReviewerPreference";
 
         if (get($options, "allConflictType"))
             // See also SearchQueryInfo::add_allConflictType_column

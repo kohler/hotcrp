@@ -606,9 +606,9 @@ class PreferenceList_PaperColumn extends PaperColumn {
         if (!$pl->user->is_manager())
             return false;
         if ($visible) {
-            $pl->qopts["allReviewerPreference"] = $pl->qopts["allConflictType"] = 1;
+            $pl->qopts["allReviewerPreference"] = true;
             if ($this->topics)
-                $pl->qopts["topics"] = 1;
+                $pl->qopts["topics"] = true;
         }
         $pl->conf->stash_hotcrp_pc($pl->user);
         return true;
