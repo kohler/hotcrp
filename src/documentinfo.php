@@ -485,7 +485,8 @@ class DocumentInfo implements JsonSerializable {
 
     function content_text_signature() {
         $s = false;
-        if (($path = $this->available_content_file()))
+        if ($this->content === null
+            && ($path = $this->available_content_file()))
             $s = file_get_contents($path, false, null, 0, 16);
         if ($s === false)
             $s = $this->content();
@@ -508,6 +509,16 @@ class DocumentInfo implements JsonSerializable {
             }
             return "starts with “{$t}”";
         }
+    }
+
+    function content_mimetype() {
+        $s = false;
+        if ($this->content === null
+            && ($path = $this->available_content_file()))
+            $s = file_get_contents($path, false, null, 0, 1024);
+        if ($s === false)
+            $s = $this->content();
+        return Mimetype::content_type($s, $this->mimetype);
     }
 
 

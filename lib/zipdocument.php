@@ -136,7 +136,8 @@ class ZipDocument {
         $this->_docs[] = $doc;
         if ($doc->content !== null)
             $this->_docmem += strlen($doc->content);
-        while ($this->_saveindex < count($this->_docs) && $this->_docmem > 4000000)
+        while ($this->_saveindex < count($this->_docs)
+               && $this->_docmem > 4000000)
             $this->_save_one();
 
         return true;
