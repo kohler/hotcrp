@@ -611,7 +611,7 @@ class PaperList {
             return "id title statusfull";
         case "act":
         case "all":
-            return "sel id title revtype revstat statusfull authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
+            return "sel id title revtype revstat statusfull authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reviewerHome":
             $this->_default_linkto("finishreview");
             return "id title revtype status";
@@ -625,14 +625,14 @@ class PaperList {
         case "manager":
         case "s":
         case "vis":
-            return "sel id title revtype revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
         case "req":
         case "rout":
             $this->_default_linkto("review");
-            return "sel id title revtype revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reqrevs":
             $this->_default_linkto("review");
-            return "id title revdelegation revstat status authors collab abstract topics pcconf allpref reviewers tags tagreports lead shepherd scores formulas";
+            return "id title revdelegation revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
             return "id title revpref topicscore desirability assrev authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";

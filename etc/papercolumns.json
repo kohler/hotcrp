@@ -194,7 +194,7 @@
     {
         "name": "pcconflicts",
         "row": true, "fold": true, "completion": "pcconflicts", "callback": "+PCConflicts_PaperColumn",
-        "synonym": ["conflicts", "pc-conflicts"],
+        "synonym": ["conflicts", "pc-conflicts", "pcconf"],
         "position": 450
     },
     {

@@ -125,7 +125,7 @@ class Conflict_Assigner extends Assigner {
         ];
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
-        $aset->show_column("pcconf");
+        $aset->show_column("pcconflicts");
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperConflict"] = "write";
