@@ -1399,6 +1399,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
   PRIMARY KEY (`paperId`,`linkId`,`linkType`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
         $conf->update_schema_version(197);
+    if ($conf->sversion == 197
+        && $conf->ql("alter table PaperConflict add key `paperId` (`paperId`)"))
+        $conf->update_schema_version(198);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

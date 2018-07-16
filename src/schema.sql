@@ -232,7 +232,8 @@ CREATE TABLE `PaperConflict` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `conflictType` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`contactId`,`paperId`)
+  PRIMARY KEY (`contactId`,`paperId`),
+  KEY `paperId` (`paperId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -498,7 +499,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 197);
+insert into Settings (name, value) values ('allowPaperOption', 198);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);
