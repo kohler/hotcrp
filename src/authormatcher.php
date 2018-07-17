@@ -274,7 +274,7 @@ class AuthorMatcher extends Author {
                                 break;
                             }
                     }
-                    if ($saw_w)
+                    if (!$saw_w)
                         break;
                 }
             }

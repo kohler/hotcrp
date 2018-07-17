@@ -449,7 +449,8 @@
             {"word": "uc", "if": "university"},
             {"word": "caltech", "if": "institute technology"},
             {"word": "csu", "if": "state"}
-        ]
+        ],
+        "sync": "southern usc"
     },
     "caltech": {
         "alternate": ["california institute technology"]
@@ -551,6 +552,10 @@
     "ibm": {
         "nameish": false
     },
+    "iiit": {
+        "weak": true,
+        "alternate": ["indian institute information technology"]
+    },
     "iisc": {
         "alternate": ["indian institute science"]
     },
@@ -606,7 +611,7 @@
             {"word": "cuhk", "if": "chinese hong university"},
             {"word": "uhk", "if": "hong university", "if_not": "chinese science"}
         ],
-        "sync": "chinese cuhk science hkust"
+        "sync": ["chinese cuhk", "science hkust", "polytechnic"]
     },
     "korea": {
         "alternate": [{"word": "kaist", "if": "advanced institute science technology"}]

@@ -54,6 +54,7 @@ buzzer.php
 cacheable.php
 checkupdates.php
 comment.php
+conflictassign.php
 deadlines.php
 doc.php
 graph.php

@@ -85,7 +85,7 @@ class Conflict_PaperColumn extends PaperColumn {
         if ($ct >= CONFLICT_AUTHOR)
             return "Author";
         return '<input type="checkbox" class="uix js-range-click uich js-assign-review" '
-            . 'data-range-type="assrevu' . $this->contact->contactId
+            . 'data-range-type="assrevu' . ($this->show_user ? $this->contact->contactId : "")
             . '" name="assrev' . $row->paperId . 'u' . $this->contact->contactId
             . '" value="-1"' . ($ct ? " checked" : "") . ' />';
     }

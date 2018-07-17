@@ -16,30 +16,6 @@ echo '<div class="psmode">',
     '</div><hr class="c" />';
 
 
-// Help list
-echo "<div class='helpside'><div class='helpinside'>
-Assignment methods:
-<ul><li><a href='", hoturl("autoassign"), "'>Automatic</a></li>
- <li><a href='", hoturl("manualassign"), "' class='q'><strong>Manual by PC member</strong></a></li>
- <li><a href='", hoturl("assign"), "'>Manual by paper</a></li>
- <li><a href='", hoturl("bulkassign"), "'>Bulk update</a></li>
-</ul>
-<hr class='hr' />\n";
-if ($Qreq->kind == "a")
-    echo "Types of PC review:
-<dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory review</dd>
-  <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>May be delegated to external reviewers</dd>
-  <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd>
-  <dt>" . review_type_icon(REVIEW_META) . " Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
-<hr class='hr' />\n";
-echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
-if ($Qreq->kind == "a")
-    echo "<dt>Preference</dt><dd><a href='", hoturl("reviewprefs"), "'>Review preference</a></dd>
-  <dt>Topic score</dt><dd>High value means PC member has interest in many paper topics</dd>
-  <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
-echo "</dl>\nClick a heading to sort.\n</div></div>";
-
-
 echo "<h2 style='margin-top:1em'>Potential missing conflicts</h2>\n";
 
 
@@ -67,7 +43,7 @@ foreach ($Conf->full_pc_members() as $pc) {
     $paperlist->set_reviewer_user($pc);
     $paperlist->set_row_filter($filter);
     $paperlist->set_table_id_class(null, "pltable_full");
-    $th = $paperlist->table_html("conflict", ["header_links" => false, "nofooter" => true, "list" => true]);
+    $th = $paperlist->table_html("conflict", ["header_links" => false, "nofooter" => true]);
     if (!isset($args["rowset"]))
         $args["rowset"] = $paperlist->rowset();
     if ($paperlist->count > 0)
