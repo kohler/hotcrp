@@ -138,7 +138,6 @@ class PaperList {
     public $groups;
     public $any;
     private $_has;
-    private $_any_option_checks;
     public $error_html = array();
 
     static public $include_stash = true;
@@ -172,7 +171,6 @@ class PaperList {
         if ($this->qopts === false)
             $this->qopts = ["paperId" => $this->search->paper_ids()];
         $this->qopts["scores"] = [];
-        $this->qopts["options"] = true;
         // NB that actually processed the search, setting PaperSearch::viewmap
 
         foreach ($this->search->sorters ? : [] as $sorter)
@@ -283,11 +281,56 @@ class PaperList {
         $this->_unfold_all = true;
     }
 
-    function has($key) {
-        return isset($this->_has[$key]);
+    function mark_has($key, $value = true) {
+        if ($value)
+            $this->_has[$key] = true;
+        else if (!isset($this->_has[$key]))
+            $this->_has[$key] = false;
     }
-    function mark_has($key) {
-        $this->_has[$key] = true;
+    function has($key) {
+        if (!isset($this->_has[$key]))
+            $this->_has[$key] = $this->_compute_has($key);
+        return $this->_has[$key];
+    }
+    private function _compute_has($key) {
+        // paper options
+        if ($key === "paper" || $key === "final") {
+            $opt = $this->conf->paper_opts->find($key);
+            return $this->user->can_view_some_paper_option($opt)
+                && $this->_rowset->any(function ($row) use ($opt) {
+                    return ($opt->id == DTYPE_SUBMISSION ? $row->paperStorageId : $row->finalPaperStorageId) > 1
+                        && $this->user->can_view_paper_option($row, $opt);
+                });
+        }
+        if (str_starts_with($key, "opt")
+            && ($opt = $this->conf->paper_opts->find($key))) {
+            return $this->user->can_view_some_paper_option($opt)
+                && $this->_rowset->any(function ($row) use ($opt) {
+                    return ($ov = $row->option($opt->id))
+                        && (!$opt->has_document() || $ov->value > 1)
+                        && $this->user->can_view_paper_option($row, $opt);
+                });
+        }
+        // other features
+        if ($key === "abstract")
+            return $this->_rowset->any(function ($row) {
+                return (string) $row->abstract !== "";
+            });
+        if ($key === "openau")
+            return $this->has("authors")
+                && (!$this->user->is_manager()
+                    || $this->_rowset->any(function ($row) {
+                           return $this->user->can_view_authors($row);
+                       }));
+        if ($key === "anonau")
+            return $this->has("authors")
+                && $this->user->is_manager()
+                && $this->_rowset->any(function ($row) {
+                       return $this->user->allow_view_authors($row)
+                           && !$this->user->can_view_authors($row);
+                   });
+        error_log("unexpected PaperList::_compute_has({$key})");
+        return false;
     }
 
 
@@ -394,9 +437,6 @@ class PaperList {
         if ($row->size == 0 || !$this->user->can_view_pdf($row))
             return "";
         $dtype = $row->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
-        if ($dtype == DTYPE_FINAL)
-            $this->mark_has("final");
-        $this->mark_has("paper");
         return "&nbsp;" . $row->document($dtype)->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
     }
 
@@ -700,20 +740,6 @@ class PaperList {
         if (!empty($this->sorters))
             $rows = $this->_sort($rows);
 
-        // set `any->optID`
-        if (($nopts = $this->conf->paper_opts->count_option_list())) {
-            foreach ($rows as $prow) {
-                foreach ($prow->options() as $o)
-                    if (!$this->has("opt$o->id")
-                        && $this->user->can_view_paper_option($prow, $o->option)) {
-                        $this->mark_has("opt$o->id");
-                        --$nopts;
-                    }
-                if (!$nopts)
-                    break;
-            }
-        }
-
         // set `ids`
         $this->ids = [];
         foreach ($rows as $prow)
@@ -769,23 +795,6 @@ class PaperList {
         return !get($this->_view_fields, $fname);
     }
 
-    private function _check_option_presence(PaperInfo $row) {
-        for ($i = 0; $i < count($this->_any_option_checks); ) {
-            $opt = $this->_any_option_checks[$i];
-            if ($opt->id == DTYPE_SUBMISSION)
-                $got = $row->paperStorageId > 1;
-            else if ($opt->id == DTYPE_FINAL)
-                $got = $row->finalPaperStorageId > 1;
-            else
-                $got = ($ov = $row->option($opt->id)) && $ov->value > 1;
-            if ($got && $this->user->can_view_paper_option($row, $opt)) {
-                $this->mark_has($opt->field_key());
-                array_splice($this->_any_option_checks, $i, 1);
-            } else
-                ++$i;
-        }
-    }
-
     private function _wrap_conflict($main_content, $override_content, PaperColumn $fdef) {
         if ($main_content === $override_content)
             return $main_content;
@@ -837,10 +846,6 @@ class PaperList {
 
     private function _row_setup(PaperInfo $row) {
         ++$this->count;
-        if ((string) $row->abstract !== "")
-            $this->mark_has("abstract");
-        if (!empty($this->_any_option_checks))
-            $this->_check_option_presence($row);
         $this->row_attr = [];
         $this->row_overridable = $this->user->can_meaningfully_override($row);
 
@@ -1433,11 +1438,6 @@ class PaperList {
 
         // create render state
         $rstate = new PaperListRenderState($ncol, $titlecol, $skipcallout);
-        $this->_any_option_checks = [$this->conf->paper_opts->get(DTYPE_SUBMISSION),
-                                     $this->conf->paper_opts->get(DTYPE_FINAL)];
-        foreach ($this->user->user_option_list() as $o)
-            if ($o->is_document())
-                $this->_any_option_checks[] = $o;
 
         // collect row data
         $body = array();
@@ -1462,19 +1462,7 @@ class PaperList {
 
         // analyze `has`, including authors
         foreach ($fieldDef as $fdef)
-            if ($fdef->has_content)
-                $this->mark_has($fdef->name);
-        if ($this->has("authors")) {
-            if (!$this->user->is_manager())
-                $this->mark_has("openau");
-            else {
-                foreach ($rows as $row)
-                    if ($this->user->can_view_authors($row))
-                        $this->mark_has("openau");
-                    else if ($this->user->allow_view_authors($row))
-                        $this->mark_has("anonau");
-            }
-        }
+            $this->mark_has($fdef->name, $fdef->has_content);
 
         // statistics rows
         $statistics_rows = "";
@@ -1643,8 +1631,7 @@ class PaperList {
                 $m[ScoreInfo::$stat_keys[$stat]] = $fdef->statistic($this, $stat);
             $data["{$fdef->name}.stat.html"] = $m;
         }
-        if ($fdef->has_content)
-            $this->mark_has($fdef->name);
+        $this->mark_has($fdef->name, $fdef->has_content);
 
         // restore forceShow
         $this->user->set_overrides($overrides);

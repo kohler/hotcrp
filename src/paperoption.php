@@ -239,14 +239,19 @@ class PaperOptionList {
         if ($iname === (string) DTYPE_SUBMISSION
             || $iname === "paper"
             || $iname === "submission")
-            return array(DTYPE_SUBMISSION => $this->get(DTYPE_SUBMISSION));
+            return [DTYPE_SUBMISSION => $this->get(DTYPE_SUBMISSION)];
         else if ($iname === (string) DTYPE_FINAL
                  || $iname === "final")
-            return array(DTYPE_FINAL => $this->get(DTYPE_FINAL));
+            return [DTYPE_FINAL => $this->get(DTYPE_FINAL)];
         if ($iname === "" || $iname === "none")
-            return array();
+            return [];
         if ($iname === "any")
             return $this->option_list();
+        if (substr($iname, 0, 3) === "opt"
+            && ctype_digit(substr($iname, 3))) {
+            $o = $this->get((int) substr($iname, 3));
+            return $o ? [$o->id => $o] : [];
+        }
         if (substr($iname, 0, 4) === "opt-")
             $name = substr($name, 4);
         $omap = [];

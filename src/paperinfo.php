@@ -216,6 +216,12 @@ class PaperInfoSet implements IteratorAggregate {
                 $next_set->add($prow, true);
         return $next_set;
     }
+    function any($func) {
+        foreach ($this as $prow)
+            if (($x = call_user_func($func, $prow)))
+                return $x;
+        return false;
+    }
     function getIterator() {
         return new ArrayIterator($this->prows);
     }

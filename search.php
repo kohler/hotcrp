@@ -152,6 +152,7 @@ if (isset($Qreq->forceShow))
 if (isset($Qreq->q)) {
     $pl->set_table_id_class("foldpl", "pltable_full", "p#");
     $pl->set_selection($SSel);
+    $pl->qopts["options"] = true; // get efficient access to `has(OPTION)`
     $pl_text = $pl->table_html($Qreq->t, ["fold_session_prefix" => "pldisplay.", "list" => true]);
     unset($Qreq->atab);
 } else
