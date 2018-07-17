@@ -40,60 +40,12 @@ if ($Qreq->kind == "a")
 echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 
-if ($reviewer)
-    echo "<h2 style='margin-top:1em'>Assignments for ", $Me->name_html_for($reviewer), ($reviewer->affiliation ? " (" . htmlspecialchars($reviewer->affiliation) . ")" : ""), "</h2>\n";
-else
-    echo "<h2 style='margin-top:1em'>Assignments by PC member</h2>\n";
+echo "<h2 style='margin-top:1em'>Potential missing conflicts</h2>\n";
 
 
 // Change PC member
 echo "<table><tr><td><div class='assignpc_pcsel'>",
     Ht::form(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
-Ht::stash_script('hiliter_children("#selectreviewerform")');
-
-$result = $Conf->qe_raw("select ContactInfo.contactId, count(reviewId)
-                from ContactInfo
-                left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
-                where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0
-                group by ContactInfo.contactId");
-$rev_count = array();
-while (($row = edb_row($result)))
-    $rev_count[$row[0]] = $row[1];
-
-$rev_opt = array();
-if (!$reviewer)
-    $rev_opt[0] = "(Select a PC member)";
-$textarg = ["lastFirst" => $Conf->sort_by_last];
-foreach ($Conf->pc_members() as $pc)
-    $rev_opt[$pc->email] = Text::name_html($pc, $textarg) . " ("
-        . plural(defval($rev_count, $pc->contactId, 0), "assignment") . ")";
-
-echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
-    "<td>", Ht::select("reviewer", $rev_opt, $reviewer ? $reviewer->email : 0), "</td></tr>",
-    "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
-
-// Paper selection
-echo "<tr><td>Paper selection: &nbsp;</td><td>",
-    Ht::entry("q", $Qreq->q,
-              ["id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
-               "title" => "Paper numbers or search terms"]),
-    " &nbsp;in &nbsp;";
-if (count($tOpt) > 1)
-    echo Ht::select("t", $tOpt, $Qreq->t);
-else
-    echo join("", $tOpt);
-echo "</td></tr>\n",
-    "<tr><td colspan='2'><div class='g'></div>\n";
-
-echo Ht::radio("kind", "a", $Qreq->kind == "a"),
-    "&nbsp;", Ht::label("Assign reviews and/or conflicts"), "<br />\n",
-    Ht::radio("kind", "c", $Qreq->kind == "c"),
-    "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
-
-echo '<tr><td colspan="2"><div class="aab aabr">',
-    '<div class="aabut">', Ht::submit("Go", ["class" => "btn btn-primary"]), '</div>',
-    '</div></td></tr>',
-    "</table>\n</form></div></td></tr></table>\n";
 
 
 $search = new PaperSearch($Me, ["t" => "manager", "q" => "",
