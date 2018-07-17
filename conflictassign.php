@@ -43,11 +43,6 @@ echo "</dl>\nClick a heading to sort.\n</div></div>";
 echo "<h2 style='margin-top:1em'>Potential missing conflicts</h2>\n";
 
 
-// Change PC member
-echo "<table><tr><td><div class='assignpc_pcsel'>",
-    Ht::form(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
-
-
 $search = new PaperSearch($Me, ["t" => "manager", "q" => "",
                                 "urlbase" => hoturl_site_relative_raw("conflictassign")]);
 
