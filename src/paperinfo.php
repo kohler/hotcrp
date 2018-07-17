@@ -200,6 +200,9 @@ class PaperInfoSet implements IteratorAggregate {
     function size() {
         return count($this->prows);
     }
+    function is_empty() {
+        return empty($this->prows);
+    }
     function paper_ids() {
         return array_keys($this->by_pid);
     }

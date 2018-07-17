@@ -214,10 +214,20 @@ class SearchTerm {
 
 
     static function andjoin_sqlexpr($q, $default = "false") {
-        return empty($q) ? $default : "(" . join(" and ", $q) . ")";
+        if (empty($q))
+            return $default;
+        else if (in_array("false", $q))
+            return "false";
+        else
+            return "(" . join(" and ", $q) . ")";
     }
     static function orjoin_sqlexpr($q, $default = "false") {
-        return empty($q) ? $default : "(" . join(" or ", $q) . ")";
+        if (empty($q))
+            return $default;
+        else if (in_array("true", $q))
+            return "true";
+        else
+            return "(" . join(" or ", $q) . ")";
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -1917,19 +1927,7 @@ class PaperSearch {
         return ($this->_qe = $qe);
     }
 
-    private function _prepare() {
-        if ($this->_matches !== null)
-            return;
-
-        if ($this->limit() === "x") {
-            $this->_matches = array();
-            return true;
-        }
-
-        $qe = $this->prepare_term();
-        //Conf::msg_debugt(json_encode($qe->debug_json()));
-
-        // collect clauses into tables, columns, and filters
+    private function _prepare_result($qe) {
         $sqi = new SearchQueryInfo($this);
         $sqi->add_table("Paper");
         $sqi->add_column("paperId", "Paper.paperId");
@@ -1939,9 +1937,11 @@ class PaperSearch {
         $sqi->add_column("outcome", "Paper.outcome");
         if ($this->conf->has_any_lead_or_shepherd())
             $sqi->add_column("leadContactId", "Paper.leadContactId");
-        $filters = array();
-        $filters[] = $qe->sqlexpr($sqi);
+
+        $filters = [$qe->sqlexpr($sqi)];
         //Conf::msg_debugt(var_export($filters, true));
+        if ($filters[0] === "false")
+            return [null, false];
 
         // status limitation parts
         $limit = $this->limit();
@@ -1997,13 +1997,6 @@ class PaperSearch {
         if ($limit === "r" || $limit === "ar" || $limit === "rout" || $this->q === "re:me")
             $sqi->add_reviewer_columns();
 
-        // check for annotated order
-        $sole_qe = null;
-        if ($qe->type !== "then")
-            $sole_qe = $qe;
-        else if ($qe->nthen == 1)
-            $sole_qe = $qe->child[0];
-
         // add permissions tables if we will filter the results
         $need_filter = !$qe->trivial_rights($this->user, $this)
             || !$this->trivial_limit()
@@ -2054,13 +2047,23 @@ class PaperSearch {
         //error_log($q);
 
         // actually perform query
-        $result = $this->conf->qe_raw($q);
-        if (!$result) {
-            $this->_matches = false;
+        return [$this->conf->qe_raw($q), $need_filter];
+    }
+
+    private function _prepare() {
+        if ($this->_matches !== null)
             return;
+
+        if ($this->limit() === "x") {
+            $this->_matches = [];
+            return true;
         }
 
+        $qe = $this->prepare_term();
+        //Conf::msg_debugt(json_encode($qe->debug_json()));
+
         // collect papers
+        list($result, $need_filter) = $this->_prepare_result($qe);
         $rowset = new PaperInfoSet;
         while (($row = PaperInfo::fetch($result, $this->user)))
             $rowset->add($row);
@@ -2115,6 +2118,9 @@ class PaperSearch {
 
         // group information
         $this->groupmap = [];
+        $sole_qe = $qe;
+        if ($qe->type === "then")
+            $sole_qe = $qe->nthen == 1 ? $qe->child[0] : null;
         if (!$sole_qe) {
             for ($i = 0; $i < $qe->nthen; ++$i) {
                 $h = $qe->child[$i]->get_float("heading");
