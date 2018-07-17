@@ -2324,6 +2324,7 @@ $(document).on("focus", "input.js-autosubmit", function (event) {
     var $self = $(event.target);
     $self.closest("form").data("autosubmitType", $self.data("autosubmitType") || false);
 });
+
 $(document).on("keypress", "input.js-autosubmit", function (event) {
     if (event_modkey(event) || event_key(event) !== "Enter")
         return;
@@ -2339,6 +2340,10 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
         event.stopPropagation();
         event_prevent(event);
     }
+});
+
+handle_ui.on("js-submit-mark", function (event) {
+    $(this).closest("form").data("submitMark", event.target.value);
 });
 
 
@@ -6727,8 +6732,8 @@ handle_ui.on("js-annotate-order", function (event) {
 var paperlist_ui = (function ($) {
 function paperlist_submit(event) {
     // analyze why this is being submitted
-    var $self = $(this), fn = $self.data("submitFn");
-    $self.removeData("submitFn");
+    var $self = $(this), fn = $self.data("submitMark");
+    $self.removeData("submitMark");
     if (!fn && this.defaultact)
         fn = $(this.defaultact).val();
     if (!fn && document.activeElement) {

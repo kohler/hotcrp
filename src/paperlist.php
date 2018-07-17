@@ -658,7 +658,6 @@ class PaperList {
             }
         }
 
-        $this->add_header_script('$("#plact").on("click", "input[type=submit], button[type=submit]", function (evt) { $(this).closest("form").data("submitFn", evt.target.value); })');
         $footsel_ncol = $this->_view_columns ? 0 : 1;
         return self::render_footer_row($footsel_ncol, $ncol - $footsel_ncol,
             "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
