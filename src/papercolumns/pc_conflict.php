@@ -81,8 +81,6 @@ class Conflict_PaperColumn extends PaperColumn {
         if (!$pl->user->allow_administer($row))
             return false;
         $ct = $row->conflict_type($this->contact);
-        if ($ct)
-            unset($row->folded);
         if ($ct >= CONFLICT_AUTHOR)
             return "Author";
         return '<input type="checkbox" class="uix uikd js-range-click uich js-assign-review" '

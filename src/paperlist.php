@@ -14,7 +14,6 @@ class PaperListTableRender {
     public $ncol;
     public $titlecol;
 
-    public $row_folded = null;
     public $colorindex = 0;
     public $hascolors = false;
     public $skipcallout;
@@ -1018,12 +1017,6 @@ class PaperList {
         $rstate->colorindex = 1 - $rstate->colorindex;
         $rstate->last_trclass = $trclass;
 
-        if (isset($row->folded) && $row->folded) {
-            $trclass .= " fx3";
-            $rstate->row_folded = true;
-        } else if ($rstate->row_folded)
-            $rstate->row_folded = false;
-
         $t = "  <tr";
         if ($this->_row_id_pattern)
             $t .= " id=\"" . str_replace("#", $row->paperId, $this->_row_id_pattern) . "\"";
@@ -1141,9 +1134,7 @@ class PaperList {
         // authorship requires special handling
         if ($this->has("anonau"))
             $classes[] = "fold2" . ($this->is_folded("anonau") ? "c" : "o");
-        // total folding, row number folding
-        if (isset($rstate->row_folded))
-            $classes[] = "fold3c";
+        // row number folding
         if ($has_sel)
             $classes[] = "fold6" . ($this->_view_row_numbers ? "o" : "c");
         if ($this->user->is_track_manager())
@@ -1157,8 +1148,6 @@ class PaperList {
 
     private function _make_title_header_extra($rstate, $fieldDef, $show_links) {
         $titleextra = "";
-        if (isset($rstate->row_folded))
-            $titleextra .= '<span class="sep"></span><a class="ui js-foldup" href="#" data-fold-target="3"><span class="fn3">Show all papers</span><span class="fx3">Hide unlikely conflicts</span></a>';
         if ($show_links && $this->has("authors")) {
             $titleextra .= '<span class="sep"></span>';
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)

@@ -248,8 +248,5 @@
         "name": "commenters",
         "row": true, "fold": true, "completion": true, "callback": "+Commenters_PaperColumn",
         "position": 2000
-    },
-    {
-        "name": "foldall", "callback": "+FoldAll_PaperColumn"
     }
 ]

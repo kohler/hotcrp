@@ -2749,9 +2749,6 @@ class Conf {
             $cols[] = "PaperWatch.watch";
         }
 
-        if (get($options, "foldall"))
-            $cols[] = "1 as folded";
-
         // conditions
         if (!empty($paperset))
             $where[] = "Paper.paperId" . sql_in_numeric_set($paperset[0]);

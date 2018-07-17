@@ -113,10 +113,8 @@ class SelectorPaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $pl->mark_has("sel");
         $c = "";
-        if ($this->checked($pl, $row)) {
+        if ($this->checked($pl, $row))
             $c .= ' checked="checked"';
-            unset($row->folded);
-        }
         return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
             . '<input type="checkbox" class="uix js-range-click" name="pap[]" value="' . $row->paperId . '"' . $c . ' />';
     }
@@ -1037,15 +1035,5 @@ class NumericOrderPaperColumn extends PaperColumn {
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         return +get($this->order, $a->paperId) - +get($this->order, $b->paperId);
-    }
-}
-
-class FoldAll_PaperColumn extends PaperColumn {
-    function __construct(Conf $conf, $cj) {
-        parent::__construct($conf, $cj);
-    }
-    function prepare(PaperList $pl, $visible) {
-        $pl->qopts["foldall"] = true;
-        return true;
     }
 }

@@ -83,7 +83,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
             $cn = array_map(function ($c) { return $c[1]; }, $cx);
             $ch[] = '<div class="potentialconflict"><p>' . $cx[0][0] . '</p><ul><li>' . join('</li><li>', $cn) . '</li></ul></div>';
         }
-        unset($cx, $row->folded);
+        unset($cx);
         return join(" ", $ch);
     }
 
