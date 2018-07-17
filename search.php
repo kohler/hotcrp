@@ -327,7 +327,6 @@ echo Ht::form(hoturl("search"), ["method" => "get"]),
     "<table><tr>
   <td class=\"rxcaption\">Search</td>
   <td class=\"lentry\">$tselect</td>
-  <td></td>
 </tr>
 <tr>
   <td class=\"rxcaption\">Using these fields</td>
@@ -353,7 +352,6 @@ if ($Me->isPC) {
 }
 echo Ht::select("qt", $qtOpt, $Qreq->get("qt", "n")),
     "</td>
-  <td></td>
 </tr>
 <tr><td colspan=\"2\"><div class='g'></div></td></tr>
 <tr>

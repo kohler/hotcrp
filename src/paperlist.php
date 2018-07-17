@@ -2,19 +2,34 @@
 // paperlist.php -- HotCRP helper class for producing paper lists
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
-class PaperListRenderState {
+class PaperListTableRender {
+    public $table_start;
+    public $thead;
+    public $tbody_class;
+    public $body_rows;
+    public $tfoot;
+    public $table_end;
+    public $error;
+
+    public $ncol;
+    public $titlecol;
+
     public $row_folded = null;
     public $colorindex = 0;
     public $hascolors = false;
     public $skipcallout;
-    public $ncol;
-    public $titlecol;
     public $last_trclass = "";
-    public $groupstart = array(0);
+    public $groupstart = [0];
+
     function __construct($ncol, $titlecol, $skipcallout) {
         $this->ncol = $ncol;
         $this->titlecol = $titlecol;
         $this->skipcallout = $skipcallout;
+    }
+    static function make_error($error) {
+        $tr = new PaperListTableRender(0, 0, 0);
+        $tr->error = $error;
+        return $tr;
     }
 }
 
@@ -1401,9 +1416,9 @@ class PaperList {
         return $this->search->create_session_list_object($this->ids, $this->_listDescription(), $this->sortdef());
     }
 
-    function table_html($report_id, $options = array()) {
+    function table_render($report_id, $options = array()) {
         if (!$this->_prepare($report_id))
-            return null;
+            return PaperListTableRender::make_error("Internal error");
         // need tags for row coloring
         if ($this->user->can_view_tags(null))
             $this->qopts["tags"] = true;
@@ -1413,10 +1428,8 @@ class PaperList {
             $field_list = $options["field_list"];
         else
             $field_list = $this->_list_columns();
-        if (!$field_list) {
-            Conf::msg_error("There is no paper list query named “" . htmlspecialchars($this->report_id) . "”.");
-            return null;
-        }
+        if (!$field_list)
+            return PaperListTableRender::make_error("No matching report");
 
         // turn off forceShow
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
@@ -1434,9 +1447,9 @@ class PaperList {
                 $url = $this->search->url_site_relative_raw($altq);
                 if (substr($url, 0, 5) == "search")
                     $altqh = "<a href=\"" . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $altqh . "</a>";
-                return "No matching papers. Did you mean “{$altqh}”?";
+                return PaperListTableRender::make_error("No matching papers. Did you mean “{$altqh}”?");
             }
-            return "No matching papers";
+            return PaperListTableRender::make_error("No matching papers");
         }
 
         // get field array
@@ -1469,7 +1482,7 @@ class PaperList {
         }
 
         // create render state
-        $rstate = new PaperListRenderState($ncol, $titlecol, $skipcallout);
+        $rstate = new PaperListTableRender($ncol, $titlecol, $skipcallout);
 
         // collect row data
         $body = array();
@@ -1492,16 +1505,16 @@ class PaperList {
         if ($grouppos >= 0 && $grouppos < count($this->groups))
             $this->_groups_for($grouppos, $rstate, $body, true);
         if ($this->count === 0)
-            return "No matching papers";
+            return PaperListTableRender::make_error("No matching papers");
 
         // analyze `has`, including authors
         foreach ($fieldDef as $fdef)
             $this->mark_has($fdef->name, $fdef->has_content);
 
         // statistics rows
-        $statistics_rows = "";
+        $tfoot = "";
         if (!$this->_view_columns)
-            $statistics_rows = $this->_statistics_rows($rstate, $fieldDef);
+            $tfoot = $this->_statistics_rows($rstate, $fieldDef);
 
         // restore forceShow
         $this->user->set_overrides($overrides);
@@ -1586,39 +1599,53 @@ class PaperList {
         $enter .= "\">\n";
         if (self::$include_stash)
             $enter .= Ht::unstash();
-        $exit = "</table>";
+        $rstate->table_start = $enter;
+        $rstate->table_end = "</table>";
 
         // maybe make columns, maybe not
         $tbody_class = "pltable";
         if ($this->_view_columns && !empty($this->ids)
             && $this->_column_split($rstate, $colhead, $body)) {
-            $enter = '<div class="plsplit_col_ctr_ctr"><div class="plsplit_col_ctr">' . $enter;
-            $exit = $exit . "</div></div>";
+            $rstate->table_start = '<div class="plsplit_col_ctr_ctr"><div class="plsplit_col_ctr">' . $rstate->table_start;
+            $rstate->table_end .= "</div></div>";
             $ncol = $rstate->split_ncol;
             $tbody_class = "pltable_split";
         } else {
-            $enter .= $colhead;
+            $rstate->thead = $colhead;
             $tbody_class .= $rstate->hascolors ? " pltable_colored" : "";
         }
 
         // footer
-        $foot = $statistics_rows;
         reset($fieldDef);
         if (current($fieldDef) instanceof SelectorPaperColumn
             && !get($options, "nofooter"))
-            $foot .= $this->_footer($ncol, get_s($options, "footer_extra"));
-        if ($foot)
-            $exit = ' <tfoot class="pltable' . ($rstate->hascolors ? ' pltable_colored' : "")
-                . "\">" . $foot . "</tfoot>\n" . $exit;
+            $tfoot .= $this->_footer($ncol, get_s($options, "footer_extra"));
+        if ($tfoot)
+            $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable_colored" : "") . '">' . $tfoot . "</tfoot>\n";
 
         // body
-        $enter .= " <tbody class=\"$tbody_class\">\n";
+        $rstate->tbody_class = $tbody_class;
 
         // header scripts to set up delegations
         if ($this->_header_script)
-            $enter .= '  ' . Ht::script($this->_header_script) . "\n";
+            $rstate->thead .= '  ' . Ht::script($this->_header_script) . "\n";
 
-        return $enter . join("", $body) . " </tbody>\n" . $exit;
+        $rstate->body_rows = $body;
+        return $rstate;
+    }
+
+    function table_html($report_id, $options = array()) {
+        $render = $this->table_render($report_id, $options);
+        if ($render->error)
+            return $render->error;
+        else
+            return $render->table_start
+                . ($render->thead ? : "")
+                . "  <tbody class=\"{$render->tbody_class}\">\n"
+                . join("", $render->body_rows)
+                . "  </tbody>\n"
+                . ($render->tfoot ? : "")
+                . "</table>";
     }
 
     function column_json($fieldId) {
