@@ -743,7 +743,7 @@ class PaperList {
             return "id title revpref topicscore desirability assrev authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";
         case "conflictassign":
             $this->_default_linkto("assign");
-            return "id title abstract authors potentialconflict editconf tags foldall";
+            return "id title abstract authors potentialconflict revtype editconf tags";
         case "editpref":
             $this->_default_linkto("paper");
             return "sel id title topicscore revtype editpref authors abstract topics";

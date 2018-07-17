@@ -504,7 +504,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         return $b->$k - $a->$k;
     }
     function header(PaperList $pl, $is_text) {
-        if (!$this->not_me)
+        if (!$this->not_me || $pl->report_id() === "conflictassign")
             return "Review";
         else if ($is_text)
             return $pl->user->name_text_for($this->contact) . " review";

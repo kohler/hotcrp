@@ -136,16 +136,12 @@ form also can include:</p>
   been submitted.</p></li>\n";
 
         } else if ($gj->index === 7) {
-            echo "<li><p><strong><a href='" . hoturl("manualassign", "kind=c") . "'>Assign
-  conflicts.</a></strong> HotCRP automatically installs the authors’ declared
-  conflicts. HotCRP <i>does not</i> automatically install other conflicts, such
+            echo "<li><p><strong><a href='" . hoturl("conflictassign") . "'>Check for
+  missing conflicts.</a></strong> HotCRP does not automatically confirm all conflicts, such
   as conflicts indicated by PC members’ “Collaborators and other affiliations”
   or their review preferences. Use <a href='" .
-  hoturl("manualassign", "kind=c") . "'>the manual assignment tool</a> to
-  search for potential missing conflicts, and use <a href='" .
-  hoturl("autoassign", "a=prefconflict") . "'>the automatic assigner</a>
-  to assign conflicts when PC members have entered preferences of &minus;100
-  or less.</p></li>\n";
+  hoturl("conflictassign") . "'>the conflict assignment tool</a> to search for and
+  confirm such conflicts.</p></li>\n";
 
         } else if ($gj->index === 8) {
             echo "<li><p><strong><a href='" . hoturl("manualassign") . "'>Assign

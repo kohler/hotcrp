@@ -43,7 +43,7 @@ if ($Qreq->neg) {
             && $fields["potentialconflict"]->nonempty;
     };
 }
-$args = [];
+$args = ["display" => "show:authors show:aufull"];
 
 $any = false;
 foreach ($Conf->full_pc_members() as $pc) {

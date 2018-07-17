@@ -15,7 +15,7 @@ if (!$Qreq->t || !isset($tOpt[$Qreq->t])) {
     $Qreq->t = key($tOpt);
 }
 
-if ($Qreq->kind != "a" && $Qreq->kind != "c")
+if ($Qreq->kind !== "a" && $Qreq->kind !== "c")
     $Qreq->kind = "a";
 
 if (!$Qreq->q || trim($Qreq->q) == "(All)")
@@ -89,7 +89,7 @@ function saveAssignments($qreq, $reviewer) {
             $del .= " or paperId=$row->paperId";
         if ($type < 0 && $conflict_type < CONFLICT_CHAIRMARK)
             $ins .= ", ($row->paperId, {$reviewer->contactId}, " . CONFLICT_CHAIRMARK . ")";
-        if ($qreq->kind == "a") {
+        if ($qreq->kind === "a") {
             $type = max((int) $type, 0);
             $old_type = $row->review_type($reviewer);
             if ($type != $old_type
@@ -145,16 +145,14 @@ Assignment methods:
  <li><a href='", hoturl("bulkassign"), "'>Bulk update</a></li>
 </ul>
 <hr class='hr' />\n";
-if ($Qreq->kind == "a")
-    echo "Types of PC review:
+echo "Types of PC review:
 <dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory review</dd>
   <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>May be delegated to external reviewers</dd>
   <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd>
   <dt>" . review_type_icon(REVIEW_META) . " Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
 <hr class='hr' />\n";
 echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
-if ($Qreq->kind == "a")
-    echo "<dt>Preference</dt><dd><a href='", hoturl("reviewprefs"), "'>Review preference</a></dd>
+echo "<dt>Preference</dt><dd><a href='", hoturl("reviewprefs"), "'>Review preference</a></dd>
   <dt>Topic score</dt><dd>High value means PC member has interest in many paper topics</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
 echo "</dl>\nClick a heading to sort.\n</div></div>";
@@ -205,11 +203,6 @@ else
 echo "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
 
-echo Ht::radio("kind", "a", $Qreq->kind == "a"),
-    "&nbsp;", Ht::label("Assign reviews and/or conflicts"), "<br />\n",
-    Ht::radio("kind", "c", $Qreq->kind == "c"),
-    "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
-
 echo '<tr><td colspan="2"><div class="aab aabr">',
     '<div class="aabut">', Ht::submit("Go", ["class" => "btn btn-primary"]), '</div>',
     '</div></td></tr>',
@@ -231,11 +224,11 @@ if ($reviewer) {
     $interest = [[], []];
     foreach ($reviewer->topic_interest_map() as $topic => $ti)
         $interest[$ti > 0 ? 1 : 0][$topic] = $ti;
-    if (!empty($interest[1]) && $Qreq->kind !== "c")
+    if (!empty($interest[1]))
         echo '<div class="f-i"><label>High interest topics</label>',
             PaperInfo::unparse_topic_list_html($Conf, $interest[1]),
             "</div>";
-    if (!empty($interest[0]) && $Qreq->kind !== "c")
+    if (!empty($interest[0]))
         echo '<div class="f-i"><label>Low interest topics</label>',
             PaperInfo::unparse_topic_list_html($Conf, $interest[0]),
             "</div>";
@@ -250,9 +243,10 @@ if ($reviewer) {
         echo join("; ", $cos), '</div>';
     }
 
+    $show = " show:au" . ($Conf->setting("sub_collab") ? " show:co" : "");
     echo '<div class="f-i">',
-        '<a href="', hoturl("search", "q=" . urlencode(join(" OR ", $hlsearch) . " show:au" . ($Conf->setting("sub_collab") ? " show:co" : "")) . '&amp;linkto=assign'),
-        '">Search for potential conflicts</a></div>';
+        '<a href="', hoturl("search", "q=" . urlencode(join(" OR ", $hlsearch) . " OR conf:" . $reviewer->email . $show) . '&amp;linkto=assign&amp;reviewer=' . urlencode($reviewer->email)),
+        '">Search for current and potential conflicts</a></div>';
 
     // main assignment form
     $search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q,
@@ -260,29 +254,27 @@ if ($reviewer) {
                                     "reviewer" => $reviewer]);
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
-    $paperList = new PaperList($search, ["sort" => true, "display" => ($Qreq->kind == "c" ? "" : "show:topics show:reviewers")], $Qreq);
-    echo "<form class='assignpc ignore-diff' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "kind" => $Qreq->kind, "sort" => $Qreq->sort]),
+    $paperList = new PaperList($search, ["sort" => true, "display" => "show:topics show:reviewers"], $Qreq);
+    echo "<form class='assignpc ignore-diff' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]),
         "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
         Ht::hidden("t", $Qreq->t),
         Ht::hidden("q", $Qreq->q),
         Ht::hidden("papx", join(" ", $search->paper_ids())),
         "<div class=\"aab aabr aabig\">",
         '<div class="aabut aabutsp">', Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]), '</div>';
-    if ($Qreq->kind != "c") {
-        $rev_rounds = $Conf->round_selector_options(false);
-        if (count($rev_rounds) > 1)
-            echo '<div class="aabut aabutsp">Review round: &nbsp;',
-                Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed", ["id" => "assrevround", "class" => "ignore-diff"]),
-                '</div>';
-        else if (!get($rev_rounds, "unnamed"))
-            echo '<div class="aabut aabutsp">Review round: ', $Conf->assignment_round_name(false), '</div>';
-    }
+    $rev_rounds = $Conf->round_selector_options(false);
+    if (count($rev_rounds) > 1)
+        echo '<div class="aabut aabutsp">Review round: &nbsp;',
+            Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed", ["id" => "assrevround", "class" => "ignore-diff"]),
+            '</div>';
+    else if (!get($rev_rounds, "unnamed"))
+        echo '<div class="aabut aabutsp">Review round: ', $Conf->assignment_round_name(false), '</div>';
     $paperList->set_table_id_class("foldpl", "pltable_full");
     $paperList->set_view("allrevtopicpref", false);
     echo '<div class="aabut aabutsp"><label>',
         Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),
         "&nbsp;Automatically save assignments</label></div></div>\n",
-        $paperList->table_html(($Qreq->kind == "c" ? "conflictassign" : "reviewAssignment"),
+        $paperList->table_html("reviewAssignment",
                                ["header_links" => true, "nofooter" => true, "list" => true]),
         '<div class="aab aabr aabig"><div class="aabut">',
         Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]),
