@@ -4372,10 +4372,10 @@ function tagannorow_fill(row, anno) {
         if (anno.tag)
             row.setAttribute("data-tags", anno.annoid === null ? "" : anno.tag + "#" + anno.tagval);
         var heading = anno.heading === null ? "" : anno.heading;
-        var $g = $(row).find(".plheading_group").attr({"data-format": anno.format || 0, "data-title": heading});
+        var $g = $(row).find(".plheading-group").attr({"data-format": anno.format || 0, "data-title": heading});
         $g.text(heading === "" ? heading : heading + " ");
         anno.format && render_text.on.call($g[0]);
-        // `plheading_count` is taken care of in `searchbody_postreorder`
+        // `plheading-count` is taken care of in `searchbody_postreorder`
     }
 }
 
@@ -4389,19 +4389,19 @@ function tagannorow_add(tbl, tbody, before, anno) {
 
     var h;
     if (anno.empty)
-        h = '<tr class="plheading_blank"><td class="plheading_blank" colspan="' + ncol + '"></td></tr>';
+        h = '<tr class="plheading-blank"><td class="plheading" colspan="' + ncol + '"></td></tr>';
     else {
         h = '<tr class="plheading"';
         if (anno.tag)
             h += ' data-anno-tag="' + anno.tag + '"';
         if (anno.annoid)
-            h += ' data-anno-id="' + anno.annoid + '"';
+            h += ' data-anno-id="' + anno.annoid + '" data-tags="' + anno.tag + "#" + anno.annoId + '"';
         h += '>';
         if (titlecol)
-            h += '<td class="plheading_spacer" colspan="' + titlecol + '"></td>';
+            h += '<td class="plheading-spacer" colspan="' + titlecol + '"></td>';
         h += '<td class="plheading" colspan="' + (ncol - titlecol) + '">' +
-            '<span class="plheading_group"></span>' +
-            '<span class="plheading_count"></span></td></tr>';
+            '<span class="plheading-group"></span>' +
+            '<span class="plheading-count"></span></td></tr>';
     }
 
     var row = $(h)[0];
@@ -4435,7 +4435,7 @@ function searchbody_postreorder(tbody) {
                         np += /^plx/.test(sub.className) ? 0 : 1;
                     }
                 var np_html = plural(np, "paper");
-                var $np = $(cur).find(".plheading_count");
+                var $np = $(cur).find(".plheading-count");
                 if ($np.html() !== np_html)
                     $np.html(np_html);
             }
@@ -4708,7 +4708,7 @@ PaperRow.prototype.right = function () {
     return $(plt_tbody.childNodes[this.l]).geometry().right;
 };
 PaperRow.prototype.titlehint = function () {
-    var tg = $(plt_tbody.childNodes[this.l]).find("a.ptitle, span.plheading_group"),
+    var tg = $(plt_tbody.childNodes[this.l]).find("a.ptitle, span.plheading-group"),
         titletext = null, m;
     if (tg.length) {
         titletext = tg[0].getAttribute("data-title");
@@ -5058,8 +5058,8 @@ function rowcompar(a, b) {
     if (aid !== bid)
         return aid < bid ? -1 : 1;
     var rows = plt_tbody.childNodes;
-    var at = $(rows[rowanal[a].l]).find(".plheading_group").attr("data-title"),
-        bt = $(rows[rowanal[b].l]).find(".plheading_group").attr("data-title"),
+    var at = $(rows[rowanal[a].l]).find(".plheading-group").attr("data-title"),
+        bt = $(rows[rowanal[b].l]).find(".plheading-group").attr("data-title"),
         cmp = strnatcmp(at, bt);
     if (cmp)
         return cmp;

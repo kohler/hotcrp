@@ -31,6 +31,28 @@ class PaperListTableRender {
         $tr->error = $error;
         return $tr;
     }
+    function tbody_start() {
+        return "  <tbody class=\"{$this->tbody_class}\">\n";
+    }
+    function heading_row($heading, $attr = []) {
+        if (!$heading) {
+            return "  <tr class=\"plheading-blank\"><td class=\"plheading\" colspan=\"{$this->ncol}\"></td></tr>\n";
+        } else {
+            $x = "  <tr class=\"plheading\"";
+            foreach ($attr as $k => $v)
+                if ($k !== "no_titlecol")
+                    $x .= " $k=\"" . str_replace("\"", "&quot;", $v) . "\"";
+            $x .= ">";
+            $titlecol = get($attr, "no_titlecol") ? 0 : $this->titlecol;
+            if ($titlecol)
+                $x .= "<td class=\"plheading-spacer\" colspan=\"{$titlecol}\"></td>";
+            $x .= "<td class=\"plheading\" colspan=\"" . ($this->ncol - $titlecol) . "\">";
+            return $x . $heading . "</td></tr>\n";
+        }
+    }
+    function heading_separator_row() {
+        return "  <tr class=\"plheading\"><td class=\"plheading-separator\" colspan=\"{$this->ncol}\"></td></tr>\n";
+    }
 }
 
 class PaperListReviewAnalysis {
@@ -1029,18 +1051,16 @@ class PaperList {
                 $rstate->groupstart[] = $did_groupstart = count($body);
             $ginfo = $this->groups[$grouppos];
             if ($ginfo->is_empty()) {
-                $body[] = "  <tr class=\"plheading_blank\"><td class=\"plheading_blank\" colspan=\"$rstate->ncol\"></td></tr>\n";
+                $body[] = $rstate->heading_row(null);
             } else {
-                $x = "  <tr class=\"plheading\"";
+                $attr = [];
                 if ($ginfo->tag)
-                    $x .= " data-anno-tag=\"{$ginfo->tag}\"";
-                if ($ginfo->annoId)
-                    $x .= " data-anno-id=\"{$ginfo->annoId}\" data-tags=\"{$ginfo->tag}#{$ginfo->tagIndex}\"";
-                $x .= ">";
-                if ($rstate->titlecol)
-                    $x .= "<td class=\"plheading_spacer\" colspan=\"$rstate->titlecol\"></td>";
-                $x .= "<td class=\"plheading\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\">";
-                $x .= "<span class=\"plheading_group";
+                    $attr["data-anno-tag"] = $ginfo->tag;
+                if ($ginfo->annoId) {
+                    $attr["data-anno-id"] = $ginfo->annoId;
+                    $attr["data-tags"] = "{$ginfo->tag}#{$ginfo->tagIndex}";
+                }
+                $x = "<span class=\"plheading-group";
                 if ($ginfo->heading !== ""
                     && ($format = $this->conf->check_format($ginfo->annoFormat, $ginfo->heading))) {
                     $x .= " need-format\" data-format=\"$format";
@@ -1049,9 +1069,9 @@ class PaperList {
                 $x .= "\" data-title=\"" . htmlspecialchars($ginfo->heading)
                     . "\">" . htmlspecialchars($ginfo->heading)
                     . ($ginfo->heading !== "" ? " " : "")
-                    . "</span><span class=\"plheading_count\">"
-                    . plural($ginfo->count, "paper") . "</span></td></tr>";
-                $body[] = $x;
+                    . "</span><span class=\"plheading-count\">"
+                    . plural($ginfo->count, "paper") . "</span>";
+                $body[] = $rstate->heading_row($x, $attr);
                 $rstate->colorindex = 0;
             }
         }
@@ -1186,7 +1206,7 @@ class PaperList {
                     $pos += strlen($rownum_marker);
                     $x = substr($x, 0, $pos) . preg_replace('/\A\d+/', $number, substr($x, $pos));
                     ++$number;
-                } else if (strpos($x, "<tr class=\"plheading_blank") !== false)
+                } else if (strpos($x, "<tr class=\"plheading-blank") !== false)
                     $x = "";
                 $nbody[] = $x;
             }
@@ -1641,7 +1661,7 @@ class PaperList {
         else
             return $render->table_start
                 . ($render->thead ? : "")
-                . "  <tbody class=\"{$render->tbody_class}\">\n"
+                . $render->tbody_start()
                 . join("", $render->body_rows)
                 . "  </tbody>\n"
                 . ($render->tfoot ? : "")

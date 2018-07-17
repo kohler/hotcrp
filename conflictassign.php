@@ -8,10 +8,11 @@ if (!$Me->is_manager())
     $Me->escape();
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 
-$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Conflict</strong>", "assignpc");
+$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Conflicts</strong>", "assignpc");
 echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
-    '<div class="papmodex"><a href="', hoturl("manualassign"), '">Manual</a></div>',
+    '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
+    '<div class="papmodex"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
     '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c" />';
 
@@ -38,17 +39,30 @@ if ($Qreq->neg) {
 }
 $args = [];
 
+$any = false;
 foreach ($Conf->full_pc_members() as $pc) {
     $paperlist = new PaperList($search, $args, $Qreq);
     $paperlist->set_reviewer_user($pc);
     $paperlist->set_row_filter($filter);
     $paperlist->set_table_id_class(null, "pltable_full");
-    $th = $paperlist->table_html("conflict", ["header_links" => false, "nofooter" => true]);
+    $tr = $paperlist->table_render("conflict", ["header_links" => false, "nofooter" => true]);
     if (!isset($args["rowset"]))
         $args["rowset"] = $paperlist->rowset();
-    if ($paperlist->count > 0)
-        echo $th;
+    if ($paperlist->count > 0) {
+        if (!$any)
+            echo Ht::form(hoturl("conflictassign")),
+                $tr->table_start, ($tr->thead ? : ""), $tr->tbody_start();
+        else
+            echo $tr->heading_separator_row();
+        $t = $Me->reviewer_html_for($pc);
+        if ($pc->affiliation)
+            $t .= " <span class=\"auaff\">(" . htmlspecialchars($pc->affiliation) . ")</span>";
+        echo $tr->heading_row($t, ["no_titlecol" => true]), join("", $tr->body_rows);
+        $any = true;
+    }
 }
+if ($any)
+    echo "  </tbody>\n</table></form>";
 
 echo '<hr class="c" />';
 $Conf->footer();

@@ -1866,24 +1866,30 @@ div.plsplit_col { /* NOT td */
 	overflow-x: hidden;
 }
 
-td.plheading, td.plheading_spacer {
+td.plheading, td.plheading-spacer {
 	font-weight: bold;
 	padding: 0.5ex 0 0.2ex;
 	background: #f0f0f0;
 	border-top: 1px solid #cccccc;
 }
-tr.plheading:first-child > td.plheading, tr.plheading:first-child > td.plheading_spacer {
-	border-top: 0px none;
-}
-span.plheading_count {
+span.plheading-count {
 	font-weight: normal;
 	font-size: smaller;
 	color: #555555;
 }
-td.plheading_blank {
+td.plheading-blank {
 	height: 0.7ex;
 	background: #f0f0f0;
 	border-top: 1px solid #cccccc;
+}
+td.plheading-separator {
+	height: 1.5em;
+}
+td.plheading:first-child {
+	padding-left: 0.5em;
+}
+tr.plheading:first-child > td {
+	border-top: 0px none;
 }
 
 th.pl {
