@@ -62,7 +62,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         $this->nonempty = $row->potential_conflict_callback($this->contact, [$this, "_conflict_match"])
             || $pref[0] <= -100;
         if (!$this->nonempty)
-            return "<em>none found</em>";
+            return "";
         if ($pref[0] <= -100)
             $this->_potconf["pref"][] = ["<em>reviewer preference</em>", "PC entered preference " . unparse_preference($pref)];
         $ch = [];

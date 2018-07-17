@@ -98,14 +98,13 @@ class PaperList {
     public $search;
     private $_reviewer_user;
     public $tagger;
-    public $check_format;
+    public $need_tag_attr;
     public $tbody_attr;
     public $row_attr;
     public $row_overridable;
     public $row_tags;
     public $row_tags_overridable;
     public $need_render;
-    public $need_tag_attr;
     public $has_editable_tags = false;
 
     private $sortable;
@@ -887,7 +886,6 @@ class PaperList {
             } else
                 $this->row_tags = $row->viewable_tags($this->user);
         }
-        $this->need_tag_attr = false;
     }
 
     private function _row_content($rstate, PaperInfo $row, $fieldDef) {
@@ -1140,8 +1138,8 @@ class PaperList {
                     . '<a class="ui js-plinfo fx1 fn2" href="#" data-plinfo-field="anonau">Show all authors</a>'
                     . '<a class="ui js-plinfo fx1 fx2" href="#" data-plinfo-field="au anonau">Hide authors</a>';
             else
-                $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="tags">'
-                    . '<span class="fn1">Show non-anonymous authors</span><span class="fx1">Hide authors</span></a>';
+                $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="au">'
+                    . '<span class="fn1">Show authors</span><span class="fx1">Hide authors</span></a>';
         }
         if ($show_links && $this->has("tags")) {
             $tagfold = $this->find_column("tags")->fold;
@@ -1149,10 +1147,8 @@ class PaperList {
             $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="tags">'
                 . '<span class="fn' . $tagfold . '">Show tags</span><span class="fx' . $tagfold . '">Hide tags</span></a>';
         }
-        if ($titleextra) {
-            $titleextra = '<span id="plheaderlinks" class="pl_titleextra">' . $titleextra . '</span>';
-            $this->add_header_script('$("#plheaderlinks").on("click", "a.js-plinfo", plinfo.a_click)');
-        }
+        if ($titleextra)
+            $titleextra = '<span class="pl_titleextra">' . $titleextra . '</span>';
         return $titleextra;
     }
 
@@ -1290,6 +1286,7 @@ class PaperList {
 
     private function _prepare_columns($field_list) {
         $field_list2 = [];
+        $this->need_tag_attr = false;
         $this->tbody_attr = [];
         foreach ($field_list as $fdef) {
             if ($fdef) {

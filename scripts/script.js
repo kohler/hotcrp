@@ -5890,6 +5890,7 @@ plinfo.initialize = function (sel, fo) {
     if (fields.authors)
         fields.au = fields.anonau = fields.aufull = fields.authors;
 };
+
 plinfo.set_scoresort = function (ss) {
     var re = / (?:counts|average|median|variance|minmax|my)$/;
     for (var i = 0; i < field_order.length; ++i) {
@@ -5984,7 +5985,7 @@ plinfo.checkbox_change = function (event) {
     }
 };
 
-plinfo.a_click = function (event) {
+handle_ui.on("js-plinfo", function (event) {
     var type = this.getAttribute("data-plinfo-field");
     if (type) {
         type = type.split(/\s+/);
@@ -5994,7 +5995,7 @@ plinfo.a_click = function (event) {
         event.stopPropagation();
         event_prevent(event);
     }
-};
+});
 
 return plinfo;
 })();

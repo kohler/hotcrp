@@ -700,6 +700,7 @@ class TagList_PaperColumn extends PaperColumn {
             $pl->add_header_script("plinfo_tags(" . json_encode_browser("#$tid") . ")", "plinfo_tags");
         if ($this->editable)
             $pl->has_editable_tags = true;
+        $pl->need_tag_attr = true;
         return true;
     }
     function annotate_field_js(PaperList $pl, &$fjs) {
@@ -714,7 +715,6 @@ class TagList_PaperColumn extends PaperColumn {
         return !$pl->user->can_view_tags($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $pl->need_tag_attr = true;
         if ($this->editable)
             $pl->row_attr["data-tags-editable"] = 1;
         if ($this->editable || $pl->row_tags || $pl->row_tags_overridable) {
@@ -779,6 +779,7 @@ class Tag_PaperColumn extends PaperColumn {
         }
         $this->className = ($this->editable ? "pl_edit" : "pl_")
             . ($this->is_value ? "tagval" : "tag");
+        $pl->need_tag_attr = true;
         return true;
     }
     function completion_name() {
@@ -835,8 +836,6 @@ class Tag_PaperColumn extends PaperColumn {
             return $v;
     }
     private function edit_content($pl, $row, $v) {
-        if ($this->editsort)
-            $pl->need_tag_attr = true;
         if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0))
             return false;
         if (!$this->is_value) {
