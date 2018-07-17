@@ -6,6 +6,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     private $contact;
     private $show_user;
     private $_potconf;
+    public $nonempty;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         if (($this->show_user = isset($cj->user)))
@@ -25,6 +26,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         return $is_text ? $t : "<strong>$t</strong>";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
+        $this->nonempty = false;
         return !$pl->user->allow_administer($row);
     }
     function _conflict_match($user, $matcher, $conflict, $aunum, $why) {
@@ -57,9 +59,10 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $this->_potconf = [];
         $pref = $row->reviewer_preference($this->contact);
-        if (!$row->potential_conflict_callback($this->contact, [$this, "_conflict_match"])
-            && $pref[0] > -100)
-            return "";
+        $this->nonempty = $row->potential_conflict_callback($this->contact, [$this, "_conflict_match"])
+            || $pref[0] <= -100;
+        if (!$this->nonempty)
+            return "<em>none found</em>";
         if ($pref[0] <= -100)
             $this->_potconf["pref"][] = ["<em>reviewer preference</em>", "PC entered preference " . unparse_preference($pref)];
         $ch = [];

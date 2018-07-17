@@ -121,6 +121,9 @@
     "de": {
         "weak": true, "nameish": true
     },
+    "di": {
+        "weak": true, "nameish": true
+    },
     "jr": {
         "weak": true, "nameish": true
     },
@@ -150,6 +153,9 @@
         "weak": true
     },
     "association": {
+        "weak": true
+    },
+    "business": {
         "weak": true
     },
     "bv": {
@@ -204,6 +210,9 @@
         "weak": true
     },
     "dept": {
+        "weak": true
+    },
+    "east": {
         "weak": true
     },
     "ecole": {
@@ -276,6 +285,9 @@
     "ltd": {
         "weak": true
     },
+    "management": {
+        "weak": true
+    },
     "mobile": {
         "weak": true
     },
@@ -291,10 +303,16 @@
     "new": {
         "weak": true
     },
+    "north": {
+        "weak": true
+    },
     "phd": {
         "weak": true
     },
     "politecnico": {
+        "weak": true
+    },
+    "polytechnic": {
         "weak": true
     },
     "project": {
@@ -322,6 +340,9 @@
         "weak": true
     },
     "software": {
+        "weak": true
+    },
+    "south": {
         "weak": true
     },
     "standard": {
@@ -380,6 +401,9 @@
     "university": {
         "weak": true, "alternate": ["u"]
     },
+    "west": {
+        "weak": true
+    },
 
     "america": {
         "weak": true
@@ -389,6 +413,9 @@
     },
     "anu": {
         "alternate": ["australian national university"]
+    },
+    "arizona": {
+        "sync": "state"
     },
     "arvind": {
         "nameish": true
@@ -435,11 +462,15 @@
     },
     "carolina": {
         "nameish": true,
-        "alternate": [{"word": "ncsu", "if": "north state university"}]
+        "alternate": [{"word": "ncsu", "if": "north state university"}],
+        "sync": "state"
     },
     "china": {
         "weak": true, "nameish": true,
         "alternate": [{"word": "ustc", "if": "university science technology"}]
+    },
+    "chinese": {
+        "weak": true
     },
     "cmu": {
         "alternate": ["carnegie mellon"]
@@ -489,6 +520,10 @@
         "weak": true, "nameish": true,
         "alternate": [{"word": "gwu", "if": "washington"}]
     },
+    "georgia": {
+        "weak": true,
+        "sync": "tech"
+    },
     "google": {
         "nameish": false
     },
@@ -520,6 +555,7 @@
         "alternate": ["indian institute science"]
     },
     "iit": {
+        "weak": true,
         "alternate": ["indian institute technology"]
     },
     "illinois": {
@@ -547,8 +583,18 @@
     "irvine": {
         "alternate": [{"word": "uci", "if": "university california"}]
     },
+    "italy": {
+        "weak": true
+    },
     "iu": {
         "alternate": ["indiana university"]
+    },
+    "jiao": {
+        "alternate": [{"word": "jiaotong", "if": "tong"}]
+    },
+    "jiaotong": {
+        "alternate": ["jiao tong"],
+        "sync": "beijing"
     },
     "kaist": {
         "alternate": ["korea advanced institute science technology"]
@@ -577,6 +623,9 @@
             {"word": "m", "if": "institute technology"}
         ]
     },
+    "michigan": {
+        "sync": "state"
+    },
     "microsoft": {
         "nameish": false,
         "alternate": [{"word": "msr", "if": "research"}]
@@ -595,6 +644,9 @@
     },
     "nist": {
         "alternate": ["national institute standards technology"]
+    },
+    "nus": {
+        "alternate": ["national university singapore"]
     },
     "nyu": {
         "alternate": ["new york university"]
@@ -615,6 +667,12 @@
     "planck": {
         "alternate": [{"word": "mpi", "if": "max institute"}]
     },
+    "rensselaer": {
+        "alternate": [{"word": "rpi", "if": "polytechnic institute"}]
+    },
+    "rpi": {
+        "alternate": ["rensselaer polytechnic institute"]
+    },
     "san": {
         "weak": true
     },
@@ -623,6 +681,9 @@
     },
     "shanghai": {
         "weak": true, "alternate": [{"word": "sjtu", "if": "jiao tong"}]
+    },
+    "singapore": {
+        "weak": true, "alternate": [{"word": "nus", "if": "national university"}]
     },
     "sjtu": {
         "alternate": ["shanghai jiao tong"]
@@ -744,7 +805,7 @@
         "alternate": [
             {"word": "uva", "if": "university"}
         ],
-        "sync": "commonwealth"
+        "sync": ["commonwealth", "rensselaer"]
     },
     "wales": {
         "alternate": [

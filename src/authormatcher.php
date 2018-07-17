@@ -68,8 +68,12 @@ class AuthorMatcher extends Author {
                     else
                         $alts[] = $aw->alternate;
                 }
-                if ($aw && isset($aw->sync))
-                    $alts[] = $aw->sync;
+                if ($aw && isset($aw->sync)) {
+                    if (is_array($aw->sync))
+                        $alts = array_merge($alts, $aw->sync);
+                    else
+                        $alts[] = $aw->sync;
+                }
             }
 
             $rs = $directs;
@@ -80,6 +84,8 @@ class AuthorMatcher extends Author {
                         continue;
                     $alt = $alt->word;
                 }
+                if (!is_string($alt))
+                    echo var_export($alt, true);
                 foreach (explode(" ", $alt) as $altw)
                     if ($altw !== "") {
                         $any[] = preg_quote($altw);
@@ -239,22 +245,37 @@ class AuthorMatcher extends Author {
                     }
                 }
             }
-            // Check for sync words: e.g., "penn state university" ≠ "university penn".
-            // If *any* sync word is in matcher, then *some* sync word must be in subject.
-            // If *no* sync word is in matcher, then *no* sync word allowed in subject.
+            // Check for sync words: e.g., "penn state university" ≠
+            // "university penn". For each sync word string, if *any* sync word
+            // is in matcher, then *some* sync word must be in subject;
+            // otherwise *no* sync word allowed in subject.
             if ($saw_w && $aw && isset($aw->sync) && $aw->sync !== "") {
-                $syncws = explode(" ", $aw->sync);
-                $has_any_syncs = false;
-                foreach ($syncws as $syncw)
-                    $has_any_syncs = $has_any_syncs || in_array($syncw, $am_words);
-                if ($has_any_syncs) {
-                    $saw_w = false;
+                $synclist = is_array($aw->sync) ? $aw->sync : [$aw->sync];
+                foreach ($synclist as $syncws) {
+                    $syncws = explode(" ", $syncws);
+                    $has_any_syncs = false;
                     foreach ($syncws as $syncw)
-                        $saw_w = $saw_w || in_array($syncw, $m[0]);
-                } else {
-                    $saw_w = true;
-                    foreach ($syncws as $syncw)
-                        $saw_w = $saw_w && !in_array($syncw, $m[0]);
+                        if ($syncw !== "" && in_array($syncw, $am_words)) {
+                            $has_any_syncs = true;
+                            break;
+                        }
+                    if ($has_any_syncs) {
+                        $saw_w = false;
+                        foreach ($syncws as $syncw)
+                            if ($syncw !== "" && in_array($syncw, $m[0])) {
+                                $saw_w = true;
+                                break;
+                            }
+                    } else {
+                        $saw_w = true;
+                        foreach ($syncws as $syncw)
+                            if ($syncw !== "" && in_array($syncw, $m[0])) {
+                                $saw_w = false;
+                                break;
+                            }
+                    }
+                    if ($saw_w)
+                        break;
                 }
             }
             if ($saw_w) {

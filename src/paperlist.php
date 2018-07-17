@@ -96,6 +96,7 @@ class PaperList {
     private $_columns_by_name;
     private $_column_errors_by_name = [];
     public $search;
+    private $_reviewer_user;
     public $tagger;
     public $check_format;
     public $tbody_attr;
@@ -128,6 +129,7 @@ class PaperList {
 
     public $qopts; // set by PaperColumn::prepare
     private $_rowset;
+    private $_row_filter;
 
     private $_header_script = "";
     private $_header_script_map = [];
@@ -151,6 +153,7 @@ class PaperList {
         if (!$qreq || !($qreq instanceof Qrequest))
             $qreq = new Qrequest("GET", $qreq);
         $this->qreq = $qreq;
+        $this->_reviewer_user = $search->reviewer_user();
 
         $this->sortable = isset($args["sort"]) && $args["sort"];
         $this->foldable = $this->sortable || !!get($args, "foldable")
@@ -200,6 +203,8 @@ class PaperList {
             $this->_view_fields["anonau"] = true;
 
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
+
+        $this->_rowset = get($args, "rowset");
     }
 
     // begin changing contactId to cid
@@ -222,6 +227,10 @@ class PaperList {
     }
     function set_report($report) {
         $this->report_id = $report;
+    }
+
+    function set_row_filter($filter) {
+        $this->_row_filter = $filter;
     }
 
     function add_column($name, PaperColumn $col) {
@@ -467,7 +476,10 @@ class PaperList {
     }
 
     function reviewer_user() {
-        return $this->search->reviewer_user();
+        return $this->_reviewer_user;
+    }
+    function set_reviewer_user(Contact $user) {
+        $this->_reviewer_user = $user;
     }
 
     function _content_pc($contactId) {
@@ -710,29 +722,28 @@ class PaperList {
     }
 
 
-    private function _make_rowset() {
-        $this->qopts["scores"] = array_keys($this->qopts["scores"]);
-        if (empty($this->qopts["scores"]))
-            unset($this->qopts["scores"]);
-        $result = $this->conf->paper_result($this->user, $this->qopts);
-        $this->_rowset = new PaperInfoSet;
-        while (($row = PaperInfo::fetch($result, $this->user))) {
-            assert(!$this->_rowset->get($row->paperId));
-            $this->_rowset->add($row);
+    function rowset() {
+        if ($this->_rowset === null) {
+            $this->qopts["scores"] = array_keys($this->qopts["scores"]);
+            if (empty($this->qopts["scores"]))
+                unset($this->qopts["scores"]);
+            $result = $this->conf->paper_result($this->user, $this->qopts);
+            $this->_rowset = new PaperInfoSet;
+            while (($row = PaperInfo::fetch($result, $this->user))) {
+                assert(!$this->_rowset->get($row->paperId));
+                $this->_rowset->add($row);
+            }
+            Dbl::free($result);
         }
-        Dbl::free($result);
+        return $this->_rowset;
     }
 
     private function _rows($field_list) {
         if (!$field_list)
             return null;
 
-        // make query, fetch rows
-        if ($this->_rowset === null)
-            $this->_make_rowset();
-
         // analyze rows (usually noop)
-        $rows = $this->_rowset->all();
+        $rows = $this->rowset()->all();
         foreach ($field_list as $fdef)
             $fdef->analyze($this, $rows, $field_list);
 
@@ -864,34 +875,6 @@ class PaperList {
     }
 
     private function _row_content($rstate, PaperInfo $row, $fieldDef) {
-        $trclass = [];
-        $cc = "";
-        if (get($row, "paperTags")) {
-            if ($this->row_tags_overridable
-                && ($cco = $row->conf->tags()->color_classes($this->row_tags_overridable))) {
-                $ccx = $row->conf->tags()->color_classes($this->row_tags);
-                if ($cco !== $ccx) {
-                    $this->row_attr["data-color-classes"] = $cco;
-                    $this->row_attr["data-color-classes-conflicted"] = $ccx;
-                    $trclass[] = "colorconflict";
-                }
-                $cc = $this->_view_force ? $cco : $ccx;
-                $rstate->hascolors = $rstate->hascolors || str_ends_with($cco, " tagbg");
-            } else if ($this->row_tags)
-                $cc = $row->conf->tags()->color_classes($this->row_tags);
-        }
-        if ($cc) {
-            $trclass[] = $cc;
-            $rstate->hascolors = $rstate->hascolors || str_ends_with($cc, " tagbg");
-        }
-        if (!$cc || !$rstate->hascolors)
-            $trclass[] = "k" . $rstate->colorindex;
-        if (($highlightclass = get($this->search->highlightmap, $row->paperId)))
-            $trclass[] = $highlightclass[0] . "highlightmark";
-        $trclass = join(" ", $trclass);
-        $rstate->colorindex = 1 - $rstate->colorindex;
-        $rstate->last_trclass = $trclass;
-
         // main columns
         $tm = "";
         foreach ($fieldDef as $fdef) {
@@ -939,6 +922,13 @@ class PaperList {
                 $fdef->has_content = !$empty;
         }
 
+        // filter
+        if ($this->_row_filter
+            && !call_user_func($this->_row_filter, $this, $row, $fieldDef, $tm, $tt)) {
+            --$this->count;
+            return "";
+        }
+
         // tags
         if ($this->need_tag_attr) {
             if ($this->row_tags_overridable
@@ -948,6 +938,35 @@ class PaperList {
             } else
                 $this->row_attr["data-tags"] = trim($this->row_tags);
         }
+
+        // row classes
+        $trclass = [];
+        $cc = "";
+        if (get($row, "paperTags")) {
+            if ($this->row_tags_overridable
+                && ($cco = $row->conf->tags()->color_classes($this->row_tags_overridable))) {
+                $ccx = $row->conf->tags()->color_classes($this->row_tags);
+                if ($cco !== $ccx) {
+                    $this->row_attr["data-color-classes"] = $cco;
+                    $this->row_attr["data-color-classes-conflicted"] = $ccx;
+                    $trclass[] = "colorconflict";
+                }
+                $cc = $this->_view_force ? $cco : $ccx;
+                $rstate->hascolors = $rstate->hascolors || str_ends_with($cco, " tagbg");
+            } else if ($this->row_tags)
+                $cc = $row->conf->tags()->color_classes($this->row_tags);
+        }
+        if ($cc) {
+            $trclass[] = $cc;
+            $rstate->hascolors = $rstate->hascolors || str_ends_with($cc, " tagbg");
+        }
+        if (!$cc || !$rstate->hascolors)
+            $trclass[] = "k" . $rstate->colorindex;
+        if (($highlightclass = get($this->search->highlightmap, $row->paperId)))
+            $trclass[] = $highlightclass[0] . "highlightmark";
+        $trclass = join(" ", $trclass);
+        $rstate->colorindex = 1 - $rstate->colorindex;
+        $rstate->last_trclass = $trclass;
 
         if (isset($row->folded) && $row->folded) {
             $trclass .= " fx3";
@@ -1403,7 +1422,7 @@ class PaperList {
                 $url = $this->search->url_site_relative_raw($altq);
                 if (substr($url, 0, 5) == "search")
                     $altqh = "<a href=\"" . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $altqh . "</a>";
-                return "No matching papers. Did you mean “${altqh}”?";
+                return "No matching papers. Did you mean “{$altqh}”?";
             }
             return "No matching papers";
         }
@@ -1416,7 +1435,7 @@ class PaperList {
         $next_fold = 9;
         foreach ($field_list as $fdef) {
             if ($fdef->viewable()) {
-                $fieldDef[] = $fdef;
+                $fieldDef[$fdef->name] = $fdef;
                 if ($fdef->fold === true) {
                     $fdef->fold = $next_fold;
                     ++$next_fold;
@@ -1430,11 +1449,12 @@ class PaperList {
 
         // count non-callout columns
         $skipcallout = 0;
-        foreach ($fieldDef as $fdef)
+        foreach ($fieldDef as $fdef) {
             if ($fdef->position === null || $fdef->position >= 100)
                 break;
             else
                 ++$skipcallout;
+        }
 
         // create render state
         $rstate = new PaperListRenderState($ncol, $titlecol, $skipcallout);
@@ -1459,6 +1479,8 @@ class PaperList {
         }
         if ($grouppos >= 0 && $grouppos < count($this->groups))
             $this->_groups_for($grouppos, $rstate, $body, true);
+        if ($this->count === 0)
+            return "No matching papers";
 
         // analyze `has`, including authors
         foreach ($fieldDef as $fdef)
@@ -1569,7 +1591,8 @@ class PaperList {
 
         // footer
         $foot = $statistics_rows;
-        if ($fieldDef[0] instanceof SelectorPaperColumn
+        reset($fieldDef);
+        if (current($fieldDef) instanceof SelectorPaperColumn
             && !get($options, "nofooter"))
             $foot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($foot)
