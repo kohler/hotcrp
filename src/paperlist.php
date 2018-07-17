@@ -353,7 +353,7 @@ class PaperList {
                            && $this->user->can_view_decision($row)
                            && $row->timeFinalSubmitted <= 0;
                    });
-        if (!in_array($key, ["collab", "lead", "shepherd", "topics", "sel", "need_review", "authors"]))
+        if (!in_array($key, ["collab", "lead", "shepherd", "topics", "sel", "need_review", "authors", "tags"]))
             error_log("unexpected PaperList::_compute_has({$key})");
         return false;
     }
