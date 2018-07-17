@@ -213,13 +213,6 @@ class StatusPaperColumn extends PaperColumn {
         return "Status";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
-            $pl->mark_has("need_submit");
-        if ($row->outcome > 0 && $pl->user->can_view_decision($row))
-            $pl->mark_has("accepted");
-        if ($row->outcome > 0 && $row->timeFinalSubmitted <= 0
-            && $pl->user->can_view_decision($row))
-            $pl->mark_has("need_final");
         $status_info = $pl->user->paper_status_info($row, !$pl->search->limit_author() && $pl->user->can_administer($row));
         if (!$this->is_long && $status_info[0] == "pstat_sub")
             return "";

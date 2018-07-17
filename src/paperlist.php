@@ -338,6 +338,21 @@ class PaperList {
                        return $this->user->allow_view_authors($row)
                            && !$this->user->can_view_authors($row);
                    });
+        if ($key === "need_submit")
+            return $this->_rowset->any(function ($row) {
+                return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
+            });
+        if ($key === "accepted")
+            return $this->_rowset->any(function ($row) {
+                return $row->outcome > 0 && $this->user->can_view_decision($row);
+            });
+        if ($key === "need_final")
+            return $this->has("accepted")
+                && $this->_rowset->any(function ($row) {
+                       return $row->outcome > 0
+                           && $this->user->can_view_decision($row)
+                           && $row->timeFinalSubmitted <= 0;
+                   });
         error_log("unexpected PaperList::_compute_has({$key})");
         return false;
     }
