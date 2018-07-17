@@ -29,8 +29,6 @@ class Preference_PaperColumn extends PaperColumn {
             return false;
         if ($visible)
             $pl->qopts["topics"] = 1;
-        if ($this->editable && $visible > 0 && ($tid = $pl->table_id()))
-            $pl->add_header_script("add_revpref_ajax(" . json_encode_browser("#$tid") . ")", "revpref_ajax_$tid");
         $this->prefix =  "";
         if ($this->row)
             $this->prefix = $pl->user->reviewer_html_for($this->contact);
@@ -98,7 +96,7 @@ class Preference_PaperColumn extends PaperColumn {
             $iname = "revpref" . $row->paperId;
             if ($this->not_me)
                 $iname .= "u" . $this->contact->contactId;
-            return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($this->show_conflict && $has_cflt ? "&nbsp;" . review_type_icon(-1) : "");
+            return '<input name="' . $iname . '" class="uikd uich revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($this->show_conflict && $has_cflt ? "&nbsp;" . review_type_icon(-1) : "");
         } else
             return $ptext;
     }

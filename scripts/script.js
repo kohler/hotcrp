@@ -867,6 +867,7 @@ return handle_ui;
 })($);
 $(document).on("click", ".ui, .uix", handle_ui);
 $(document).on("change", ".uich", handle_ui);
+$(document).on("keydown", ".uikd", handle_ui);
 
 
 // rangeclick
@@ -4324,6 +4325,17 @@ var add_revpref_ajax = (function () {
             || $(":focus").is("input.revpref"))
             wstorage(true, "revpref_focus", blurred_at || now_msec());
     }
+
+    handle_ui.on("revpref", function (event) {
+        if (event.type === "keydown") {
+            if (!event_modkey(event) && event_key(event) === "Enter") {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                rp_change.call(this);
+            }
+        } else if (event.type === "change")
+            rp_change.call(this);
+    });
 
     return rp;
 })();
