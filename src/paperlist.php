@@ -36,7 +36,7 @@ class PaperListTableRender {
     }
     function heading_row($heading, $attr = []) {
         if (!$heading) {
-            return "  <tr class=\"plheading-blank\"><td class=\"plheading\" colspan=\"{$this->ncol}\"></td></tr>\n";
+            return "  <tr class=\"plheading\"><td class=\"plheading-blank\" colspan=\"{$this->ncol}\"></td></tr>\n";
         } else {
             $x = "  <tr class=\"plheading\"";
             foreach ($attr as $k => $v)
@@ -741,7 +741,7 @@ class PaperList {
         case "reviewAssignment":
             $this->_default_linkto("assign");
             return "id title revpref topicscore desirability assrev authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";
-        case "conflict":
+        case "conflictassign":
             $this->_default_linkto("assign");
             return "id title abstract authors potentialconflict editconf tags foldall";
         case "editpref":
@@ -1206,7 +1206,7 @@ class PaperList {
                     $pos += strlen($rownum_marker);
                     $x = substr($x, 0, $pos) . preg_replace('/\A\d+/', $number, substr($x, $pos));
                     ++$number;
-                } else if (strpos($x, "<tr class=\"plheading-blank") !== false)
+                } else if (strpos($x, "<td class=\"plheading-blank") !== false)
                     $x = "";
                 $nbody[] = $x;
             }
@@ -1419,8 +1419,6 @@ class PaperList {
         switch ($this->report_id) {
         case "reviewAssignment":
             return "Review assignments";
-        case "conflict":
-            return "Potential conflicts";
         case "editpref":
             return "Review preferences";
         case "reviewers":

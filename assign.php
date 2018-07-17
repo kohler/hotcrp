@@ -312,8 +312,6 @@ if ($Me->can_administer($prow)) {
         $rrow = $prow->review_of_user($pc);
         if ($conflict_type >= CONFLICT_AUTHOR)
             $revtype = -2;
-        else if ($conflict_type > 0)
-            $revtype = -1;
         else
             $revtype = $rrow ? $rrow->reviewType : 0;
         $pcconfmatch = null;
@@ -325,6 +323,8 @@ if ($Me->can_administer($prow)) {
             '<div class="ctelti', ($color ? " $color" : ""), ' has-assignment has-fold foldc" data-pid="', $prow->paperId,
             '" data-uid="', $pc->contactId,
             '" data-review-type="', $revtype;
+        if ($conflict_type)
+            echo '" data-conflict-type="1';
         if (!$revtype && $p->refused)
             echo '" data-assignment-refused="', htmlspecialchars($p->refused);
         if ($rrow && $rrow->reviewRound && ($rn = $rrow->round_name()))

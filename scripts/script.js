@@ -872,8 +872,11 @@ $(document).on("keydown", ".uikd", handle_ui);
 
 // rangeclick
 handle_ui.on("js-range-click", function (event) {
-    var $f = $(this).closest("form");
-    if ($f[0].hasAttribute("data-range-clicking"))
+    var $f = $(this).closest("form"), key = false;
+    if (event.type === "keydown" && !event_modkey(event))
+        key = event_key(event);
+    if ($f[0].hasAttribute("data-range-clicking")
+        || (event.type === "keydown" && key !== "ArrowDown" && key !== "ArrowUp"))
         return;
 
     var kind = this.getAttribute("data-range-type"),
@@ -888,6 +891,17 @@ handle_ui.on("js-range-click", function (event) {
         if ($cbs[i] == lastelt)
             lastpos = i;
     }
+
+    if (key) {
+        if (thispos !== 0 && key === "ArrowUp")
+            --thispos;
+        else if (thispos < $cbs.length - 1 && key === "ArrowDown")
+            ++thispos;
+        $($cbs[thispos]).focus().scrollIntoView();
+        event.preventDefault();
+        return;
+    }
+
     rangeclick_last[kindsearch] = this;
     $f.data("rangeClickLast", rangeclick_last);
 
@@ -2425,6 +2439,7 @@ handle_ui.on("js-assignment-fold", function (event) {
         if (!$x.length) {
             var name = $a.attr("data-pid") + "u" + $a.attr("data-uid"),
                 revtype = +$a.attr("data-review-type"),
+                conftype = +$a.attr("data-conflict-type"),
                 revinprogress = $a[0].hasAttribute("data-review-in-progress");
             $x = $('<div class="has-assignment-ui fold2' + (revtype > 0 ? "o" : "c") + '">'
                 + '<div class="assignment-ui-options">'
@@ -2433,8 +2448,8 @@ handle_ui.on("js-assignment-fold", function (event) {
                 + make_radio(name, 2, "Optional", revtype)
                 + make_radio(name, 5, "Metareview", revtype)
                 + (revinprogress ? "" :
-                   make_radio(name, -1, "Conflict", revtype)
-                   + make_radio(name, 0, "None", revtype))
+                   make_radio(name, -1, "Conflict", conftype > 0 ? -1 : 0)
+                   + make_radio(name, 0, "None", revtype || conftype ? -1 : 0))
                 + '</div>'
                 + make_round_selector(name, revtype, $a)
                 + '</div>').appendTo($a);
@@ -5706,7 +5721,7 @@ function render_needed() {
 
 function add_column(f) {
     var index = field_index(f), $j = $(self);
-    $j.find("tr.plx > td.plx, td.pl_footer, td.plheading:last-child, " +
+    $j.find("tr.plx > td.plx, td.pl_footer, tr.plheading > td:last-child, " +
             "thead > tr.pl_headrow.pl_annorow > td:last-child, " +
             "tfoot > tr.pl_statheadrow > td:last-child").each(function () {
         this.setAttribute("colspan", +this.getAttribute("colspan") + 1);
@@ -6960,12 +6975,22 @@ function unload_list() {
 }
 function row_click(evt) {
     var $tgt = $(evt.target);
-    if (evt.target.tagName !== "A"
-        && hasClass(this.parentElement, "pltable")
-        && ($tgt.hasClass("pl_id")
-            || $tgt.hasClass("pl_title")
-            || $tgt.closest("td").hasClass("pl_rowclick"))) {
-        var $a = $(this).find("a.pnum").first(),
+    if (evt.target.tagName === "A"
+        || evt.target.tagName === "INPUT"
+        || evt.target.tagName === "TEXTAREA"
+        || evt.target.tagName === "SELECT"
+        || !hasClass(this.parentElement, "pltable"))
+        return;
+    var pl = this;
+    while (pl.nodeType !== 1 || /^plx/.test(pl.className))
+        pl = pl.previousSibling;
+    if (hasClass(this.parentElement.parentElement, "pltable-focus-checkbox")) {
+        $(pl).find("input[type=checkbox]").focus().scrollIntoView();
+        evt.preventDefault();
+    } else if (hasClass(evt.target, "pl_id")
+               || hasClass(evt.target, "pl_title")
+               || $(evt.target).closest("td").hasClass("pl_rowclick")) {
+        var $a = $(pl).find("a.pnum").first(),
             href = $a[0].getAttribute("href");
         handle_list($a[0], href);
         if (event_key.is_default_a(evt))
@@ -6975,7 +7000,7 @@ function row_click(evt) {
             w.blur();
             window.focus();
         }
-        event_prevent(evt);
+        evt.preventDefault();
     }
 }
 handle_ui.on("js-edit-comment", function (event) {

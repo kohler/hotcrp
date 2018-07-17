@@ -131,6 +131,7 @@ $Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Manual</strong>", "assig
 echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmodex"><a href="', hoturl("manualassign"), '">Manual</a></div>',
+    '<div class="papmode"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
     '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c" />';
 
@@ -281,7 +282,7 @@ if ($reviewer) {
     echo '<div class="aabut aabutsp"><label>',
         Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),
         "&nbsp;Automatically save assignments</label></div></div>\n",
-        $paperList->table_html(($Qreq->kind == "c" ? "conflict" : "reviewAssignment"),
+        $paperList->table_html(($Qreq->kind == "c" ? "conflictassign" : "reviewAssignment"),
                                ["header_links" => true, "nofooter" => true, "list" => true]),
         '<div class="aab aabr aabig"><div class="aabut">',
         Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]),

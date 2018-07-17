@@ -16,8 +16,14 @@ echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c" />';
 
+echo '<div class="settingstext">';
 
-echo "<h2 style='margin-top:1em'>Potential missing conflicts</h2>\n";
+if ($Qreq->neg) {
+} else {
+    echo '<p>This table lists unconfirmed potential conflicts indicated using reviewer preferences, or detected by fuzzy matching between PC affiliations and collaborator lists and authors. Confirm any true conflicts using the checkboxes.</p>';
+}
+
+echo "</div>\n";
 
 
 $search = new PaperSearch($Me, ["t" => "manager", "q" => "",
@@ -42,10 +48,11 @@ $args = [];
 $any = false;
 foreach ($Conf->full_pc_members() as $pc) {
     $paperlist = new PaperList($search, $args, $Qreq);
+    $paperlist->set_report("conflictassign");
     $paperlist->set_reviewer_user($pc);
     $paperlist->set_row_filter($filter);
-    $paperlist->set_table_id_class(null, "pltable_full");
-    $tr = $paperlist->table_render("conflict", ["header_links" => false, "nofooter" => true]);
+    $paperlist->set_table_id_class(null, "pltable_full pltable-focus-checkbox");
+    $tr = $paperlist->table_render("conflictassign", ["header_links" => false, "nofooter" => true]);
     if (!isset($args["rowset"]))
         $args["rowset"] = $paperlist->rowset();
     if ($paperlist->count > 0) {

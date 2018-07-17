@@ -32,7 +32,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     function _conflict_match($user, $matcher, $conflict, $aunum, $why) {
         $aumatcher = new AuthorMatcher($conflict);
         if ($aunum) {
-            $pfx = "<em>author #$aunum</em> ";
+            $pfx = "<em>Author #$aunum</em> ";
             if ($matcher->nonauthor) {
                 $match = $aumatcher->highlight($matcher);
                 if (!$matcher->name())
@@ -45,7 +45,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
             }
         } else {
             $num = "x" . count($this->_potconf);
-            $pfx = "<em>collaborator</em> ";
+            $pfx = "<em>Collaborator</em> ";
             if (!$conflict->name())
                 $pfx .= "All ";
             $pfx .= $matcher->highlight($conflict);
@@ -80,10 +80,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
                 $cx[0][0] = $n;
             }
             $cn = array_map(function ($c) { return $c[1]; }, $cx);
-            $ch[] = '<span class="nb need-tooltip" data-tooltip-class="gray" data-tooltip="'
-                . htmlspecialchars('<div class="mmm">' . join('</div><div class="mmm">', $cn) . '</div>')
-                . '">' . $cx[0][0]
-                . (count($ch) === $nconf - 1 ? '</span>' : ';</span>');
+            $ch[] = '<div class="potentialconflict"><p>' . $cx[0][0] . '</p><ul><li>' . join('</li><li>', $cn) . '</li></ul></div>';
         }
         unset($cx, $row->folded);
         return join(" ", $ch);

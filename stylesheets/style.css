@@ -1163,10 +1163,10 @@ th.settings-simplehead {
 	padding-right: 16px;
 }
 .profiletext, .settingstext {
-	max-width: 640px;
+	max-width: 800px;
 }
 .profile-g {
-	max-width: 640px;
+	max-width: 800px;
 	margin: 2em 0 3em;
 }
 .profile-g.wide, input.wide {
@@ -1177,16 +1177,16 @@ h3 + .profile-g {
 	margin-top: 1em;
 }
 #helpcontent > p, #helpcontent > dl {
-	max-width: 640px;
+	max-width: 800px;
 }
 #helpcontent > ul, #helpcontent > ol {
-	max-width: 612px;
+	max-width: 772px;
 }
 #helpcontent > ul, #helpcontent > ol {
 	padding-left: 28px;
 }
 #helpcontent > ul.xd {
-	max-width: 640px;
+	max-width: 800px;
 	padding-left: 0;
 }
 .helplist-item {
@@ -2005,6 +2005,24 @@ td.plgreen {
 	margin-top: 0;
 }
 .pl_longtext > p:last-child, .pl_shorttext > p:last-child {
+	margin-bottom: 0;
+}
+
+.pl_potentialconflict {
+	-webkit-columns: 33rem 3;
+	columns: 33rem 3;
+	-webkit-column-gap: 18px;
+	column-gap: 18px;
+	margin-bottom: 4px;
+}
+.potentialconflict {
+	margin-bottom: 0.75em;
+	-webkit-column-break-inside: avoid;
+	page-break-inside: avoid;
+	break-inside: avoid;
+}
+.potentialconflict > p, .potentialconflict > ul {
+	margin-top: 0;
 	margin-bottom: 0;
 }
 

@@ -132,6 +132,7 @@ $Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Automatic</strong>", "au
 echo '<div class="psmode">',
     '<div class="papmodex"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
+    '<div class="papmode"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
     '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c" />';
 
@@ -448,9 +449,10 @@ echo Ht::form(hoturl_post("autoassign", array("profile" => $Qreq->profile, "seed
     "<div class='helpside'><div class='helpinside'>
 Assignment methods:
 <ul><li><a href='", hoturl("autoassign"), "' class='q'><strong>Automatic</strong></a></li>
- <li><a href='", hoturl("manualassign"), "'>Manual by PC member</a></li>
- <li><a href='", hoturl("assign") . "'>Manual by paper</a></li>
- <li><a href='", hoturl("bulkassign"), "'>Bulk update</a></li>
+ <li><a href=\"", hoturl("manualassign"), "\">Manual by PC member</a></li>
+ <li><a href=\"", hoturl("assign") . "\">Manual by paper</a></li>
+ <li><a href=\"", hoturl("conflictassign"), "\">Potential conflicts</a></li>
+ <li><a href=\"", hoturl("bulkassign"), "\">Bulk update</a></li>
 </ul>
 <hr class='hr' />
 Types of PC review:

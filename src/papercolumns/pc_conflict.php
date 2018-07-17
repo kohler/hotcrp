@@ -47,7 +47,8 @@ class Conflict_PaperColumn extends PaperColumn {
             return ($bct ? 1 : 0) - ($act ? 1 : 0);
     }
     function header(PaperList $pl, $is_text) {
-        if (!$this->show_user && !$this->not_me && !$this->editable)
+        if ((!$this->show_user && !$this->not_me && !$this->editable)
+            || $pl->report_id() === "conflictassign")
             return "Conflict";
         else if ($is_text)
             return $pl->user->name_text_for($this->contact) . " conflict";
@@ -84,7 +85,7 @@ class Conflict_PaperColumn extends PaperColumn {
             unset($row->folded);
         if ($ct >= CONFLICT_AUTHOR)
             return "Author";
-        return '<input type="checkbox" class="uix js-range-click uich js-assign-review" '
+        return '<input type="checkbox" class="uix uikd js-range-click uich js-assign-review" '
             . 'data-range-type="assrevu' . ($this->show_user ? $this->contact->contactId : "")
             . '" name="assrev' . $row->paperId . 'u' . $this->contact->contactId
             . '" value="-1"' . ($ct ? " checked" : "") . ' />';
