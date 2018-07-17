@@ -262,6 +262,11 @@ class Text {
             if (strpos($ret[0], " ") !== false
                 && preg_match('{\A(\S.*?)((?: (?:v[ao]n|d[aeiu]|de[nr]|l[ae]))+)\z}i', $ret[0], $m))
                 list($ret[0], $ret[1]) = [$m[1], ltrim($m[2]) . " " . $ret[1]];
+        } else if ($m[1] !== ""
+                   && $m[2] !== ""
+                   && preg_match('{\A((?: Junior| Senior| Esquire)*)(.*)\z}i', $m[2], $mm)) {
+            $ret[0] = $m[1];
+            $ret[1] = ltrim($m[2]) . $paren;
         } else
             $ret[1] = $name . $paren;
 
