@@ -24,6 +24,7 @@ class FormulaGraph {
     public $fx_type = 0;
     private $queries = [];
     private $query_styles = [];
+    private $searches = [];
     private $papermap = [];
     private $reviewers = [];
     private $reviewer_color = false;
@@ -132,6 +133,7 @@ class FormulaGraph {
             if ($fieldname)
                 $this->errf[$fieldname] = true;
         }
+        $this->searches[] = $q !== "" ? $psearch : null;
     }
 
     function fx_expression() {
@@ -156,6 +158,16 @@ class FormulaGraph {
         }
     }
 
+    private function _filter_queries($prow, $rrow) {
+        $queries = [];
+        foreach ($this->papermap[$prow->paperId] as $q)
+            if (!$rrow
+                || !$this->searches[$q]
+                || $this->searches[$q]->test_review($prow, $rrow))
+                $queries[] = $q;
+        return $queries;
+    }
+
     private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
         $data = [];
 
@@ -166,9 +178,11 @@ class FormulaGraph {
 
         foreach ($rowset->all() as $prow) {
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
-            $queries = get($this->papermap, $prow->paperId);
+            $queries = $this->papermap[$prow->paperId];
             foreach ($revs as $rcid)
                 if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
+                    if ($rcid)
+                        $queries = $this->_filter_queries($prow, $prow->review_of_user($rcid));
                     if ($this->fx_type === self::X_QUERY) {
                         foreach ($queries as $q)
                             $data[0][] = $q;
@@ -311,7 +325,7 @@ class FormulaGraph {
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $d[0]) ? : "";
                 if ($this->fx_type === self::X_QUERY) {
-                    foreach ($this->papermap[$prow->paperId] as $q) {
+                    foreach ($this->_filter_queries($prow, $rrow) as $q) {
                         $d[0] = $q;
                         $data[$s][] = $d;
                     }
@@ -359,6 +373,8 @@ class FormulaGraph {
                 if (($x = $fxf($prow, $rcid, $this->user)) === null)
                     continue;
                 $rrow = $rcid ? $prow->review_of_user($rcid) : null;
+                if ($rrow)
+                    $queries = $this->_filter_queries($prow, $rrow);
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $x) ? : "";
                 $d = [$x, $fytrack($prow, $rcid, $this->user), $prow->paperId, $s];

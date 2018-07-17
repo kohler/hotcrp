@@ -1049,6 +1049,7 @@ class PaperSearch {
 
     public $q;
     private $_qe;
+    public $test_review;
 
     public $regex = [];
     public $contradictions = [];
@@ -2236,6 +2237,16 @@ class PaperSearch {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $qe = $this->prepare_term();
         $x = $this->test_limit($prow) && $qe->exec($prow, $this);
+        $this->user->set_overrides($old_overrides);
+        return $x;
+    }
+
+    function test_review(PaperInfo $prow, ReviewInfo $rrow) {
+        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        $qe = $this->prepare_term();
+        $this->test_review = $rrow;
+        $x = $this->test_limit($prow) && $qe->exec($prow, $this);
+        $this->test_review = null;
         $this->user->set_overrides($old_overrides);
         return $x;
     }

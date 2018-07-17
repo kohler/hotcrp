@@ -10,8 +10,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
 
     private $review_type = 0;
     private $completeness = 0;
-    public $view_score = null;
-    public $round = null;
+    public $view_score;
+    public $round;
+    public $review_testable = true;
     private $tokens;
     private $wordcountexpr;
     private $rfield;
@@ -294,6 +295,7 @@ class Review_SearchTerm extends SearchTerm {
             } else if (preg_match('/\A((?:[=!<>]=?|≠|≤|≥|)\d+|any|none|yes|no)' . $tailre, $qword, $m)) {
                 $count = PaperSearch::unpack_comparison($m[1], false);
                 $rsm->set_countexpr($count[1]);
+                $rsm->review_testable = false;
                 $qword = $m[2];
             } else if (preg_match('/\A(?:au)?words((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
                 $wordcount = new CountMatcher($m[1]);
@@ -445,8 +447,12 @@ class Review_SearchTerm extends SearchTerm {
     function exec(PaperInfo $prow, PaperSearch $srch) {
         $n = 0;
         $this->rsm->prepare_reviews($prow);
-        foreach ($prow->reviews_by_id() as $rrow)
-            $n += $this->rsm->test_review($srch->user, $prow, $rrow, $srch);
-        return $this->rsm->test_finish($n);
+        if ($this->rsm->review_testable && $srch->test_review)
+            return $this->rsm->test_review($srch->user, $prow, $srch->test_review, $srch);
+        else {
+            foreach ($prow->reviews_by_id() as $rrow)
+                $n += $this->rsm->test_review($srch->user, $prow, $rrow, $srch);
+            return $this->rsm->test_finish($n);
+        }
     }
 }
