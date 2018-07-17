@@ -127,6 +127,8 @@ class PaperList {
     private $_selection;
 
     public $qopts; // set by PaperColumn::prepare
+    private $_rowset;
+
     private $_header_script = "";
     private $_header_script_map = [];
 
@@ -668,26 +670,29 @@ class PaperList {
     }
 
 
+    private function _make_rowset() {
+        $this->qopts["scores"] = array_keys($this->qopts["scores"]);
+        if (empty($this->qopts["scores"]))
+            unset($this->qopts["scores"]);
+        $result = $this->conf->paper_result($this->user, $this->qopts);
+        $this->_rowset = new PaperInfoSet;
+        while (($row = PaperInfo::fetch($result, $this->user))) {
+            assert(!$this->_rowset->get($row->paperId));
+            $this->_rowset->add($row);
+        }
+        Dbl::free($result);
+    }
+
     private function _rows($field_list) {
         if (!$field_list)
             return null;
 
         // make query, fetch rows
-        $this->qopts["scores"] = array_keys($this->qopts["scores"]);
-        if (empty($this->qopts["scores"]))
-            unset($this->qopts["scores"]);
-        $result = $this->conf->paper_result($this->user, $this->qopts);
-        if (!$result)
-            return null;
-        $rowset = new PaperInfoSet;
-        while (($row = PaperInfo::fetch($result, $this->user))) {
-            assert(!$rowset->get($row->paperId));
-            $rowset->add($row);
-        }
-        Dbl::free($result);
+        if ($this->_rowset === null)
+            $this->_make_rowset();
 
         // analyze rows (usually noop)
-        $rows = $rowset->all();
+        $rows = $this->_rowset->all();
         foreach ($field_list as $fdef)
             $fdef->analyze($this, $rows, $field_list);
 
