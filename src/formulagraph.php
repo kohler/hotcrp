@@ -217,7 +217,7 @@ class FormulaGraph {
         $nneed_anal = 0;
         foreach ($qcolors as $qi => $q) {
             if ($qcolors[$qi] === "" || $qcolors[$qi] === "plain") {
-                $qcolors[$qi] = null;
+                $qcolors[$qi] = [];
                 $need_anal[$qi] = true;
                 ++$nneed_anal;
             }
