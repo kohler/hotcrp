@@ -121,28 +121,11 @@ class PaperListReviewAnalysis {
 }
 
 class PaperList {
-    // creator can set to change behavior
-    public $papersel = null;
-
-    // columns access
     public $conf;
     public $user;
     public $qreq;
-    private $contact;
-    public $sorters = [];
-    private $_columns_by_name;
-    private $_column_errors_by_name = [];
     public $search;
     private $_reviewer_user;
-    public $tagger;
-    public $need_tag_attr;
-    public $table_attr;
-    public $row_attr;
-    public $row_overridable;
-    public $row_tags;
-    public $row_tags_overridable;
-    public $need_render;
-    public $has_editable_tags = false;
 
     private $sortable;
     private $foldable;
@@ -163,12 +146,27 @@ class PaperList {
     private $_row_id_pattern;
     private $_selection;
 
-    public $qopts; // set by PaperColumn::prepare
     private $_rowset;
     private $_row_filter;
+    private $_columns_by_name;
+    private $_column_errors_by_name = [];
 
     private $_header_script = "";
     private $_header_script_map = [];
+
+    // columns access
+    public $qopts; // set by PaperColumn::prepare
+    public $sorters = [];
+    public $tagger;
+    public $need_tag_attr;
+    public $table_attr;
+    public $row_attr;
+    public $row_overridable;
+    public $row_tags;
+    public $row_tags_overridable;
+    public $need_render;
+    public $has_editable_tags = false;
+    public $check_format;
 
     // collected during render and exported to caller
     public $count; // also exported to columns access: 1 more than row index
@@ -243,7 +241,6 @@ class PaperList {
         $this->_rowset = get($args, "rowset");
     }
 
-    // begin changing contactId to cid
     function __get($name) {
         error_log("PaperList::$name " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $name === "contact" ? $this->user : null;
