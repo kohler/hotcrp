@@ -4847,8 +4847,7 @@ function analyze_rows(e) {
             }
             lv = rowanal[i].tagvalue;
         }
-    s2d = Math.sqrt(s2d);
-    if (nd >= 3 && sd >= 0.9 * nd && sd <= 1.1 * nd && s2d >= 0.9 * nd && s2d <= 1.1 * nd)
+    if (nd >= 4 && sd >= 0.9 * nd && sd <= 1.1 * nd && s2d >= 0.9 * nd && s2d <= 1.1 * nd)
         rowanal.gapf = function () { return 1; };
     else
         rowanal.gapf = make_gapf();
@@ -5008,10 +5007,11 @@ function calculate_shift(si, di) {
                 newval = 1;
             else if (rowanal[i - 1].tagvalue === false)
                 newval = false;
-            else if (i == 1)
+            else if (i == 1
+                     || (j = rowanal[i-1].tagvalue - rowanal[i-2].tagvalue) <= 4)
                 newval += rowanal.gapf();
             else
-                newval += rowanal[i - 1].tagvalue - rowanal[i - 2].tagvalue;
+                newval += j;
         } else {
             if (i > 0
                 && rowanal[i].tagvalue > rowanal[i - 1].tagvalue + rowanal.gapf()
