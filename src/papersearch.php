@@ -396,7 +396,12 @@ class Not_SearchTerm extends Op_SearchTerm {
             && !$this->child[0]->trivial_rights($sqi->user, $sqi->srch))
             $ff = "false";
         $sqi->negated = !$sqi->negated;
-        return "not ($ff)";
+        if ($ff === "false")
+            return "true";
+        else if ($ff === "true")
+            return "false";
+        else
+            return "not ($ff)";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return !$this->child[0]->exec($row, $srch);
