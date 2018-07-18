@@ -694,9 +694,7 @@ class TagList_PaperColumn extends PaperColumn {
             return false;
         if ($visible)
             $pl->qopts["tags"] = 1;
-        if ($visible && $this->editable && ($tid = $pl->table_id()))
-            $pl->add_header_script("plinfo_tags(" . json_encode_browser("#$tid") . ")", "plinfo_tags");
-        if ($this->editable)
+        if ($visible && $this->editable)
             $pl->has_editable_tags = true;
         $pl->need_tag_attr = true;
         return true;
@@ -770,10 +768,9 @@ class Tag_PaperColumn extends PaperColumn {
                 && (!$pl->search->thenmap || $pl->search->is_order_anno)
                 && $this->is_value) {
                 $this->editsort = true;
-                $pl->tbody_attr["data-drag-tag"] = $this->dtag;
+                $pl->table_attr["data-drag-tag"] = $this->dtag;
             }
             $pl->has_editable_tags = true;
-            $pl->add_header_script("plinfo_tags(" . json_encode_browser("#$tid") . ")", "plinfo_tags");
         }
         $this->className = ($this->editable ? "pl_edit" : "pl_")
             . ($this->is_value ? "tagval" : "tag");

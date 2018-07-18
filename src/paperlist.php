@@ -39,13 +39,14 @@ class PaperListTableRender {
         } else {
             $x = "  <tr class=\"plheading\"";
             foreach ($attr as $k => $v)
-                if ($k !== "no_titlecol")
+                if ($k !== "no_titlecol" && $k !== "tdclass")
                     $x .= " $k=\"" . str_replace("\"", "&quot;", $v) . "\"";
             $x .= ">";
             $titlecol = get($attr, "no_titlecol") ? 0 : $this->titlecol;
             if ($titlecol)
                 $x .= "<td class=\"plheading-spacer\" colspan=\"{$titlecol}\"></td>";
-            $x .= "<td class=\"plheading\" colspan=\"" . ($this->ncol - $titlecol) . "\">";
+            $tdclass = get($attr, "tdclass");
+            $x .= "<td class=\"plheading" . ($tdclass ? " $tdclass" : "") . "\" colspan=\"" . ($this->ncol - $titlecol) . "\">";
             return $x . $heading . "</td></tr>\n";
         }
     }
@@ -135,7 +136,7 @@ class PaperList {
     private $_reviewer_user;
     public $tagger;
     public $need_tag_attr;
-    public $tbody_attr;
+    public $table_attr;
     public $row_attr;
     public $row_overridable;
     public $row_tags;
@@ -1052,6 +1053,8 @@ class PaperList {
                 if ($ginfo->annoId) {
                     $attr["data-anno-id"] = $ginfo->annoId;
                     $attr["data-tags"] = "{$ginfo->tag}#{$ginfo->tagIndex}";
+                    if (get($this->table_attr, "data-drag-tag"))
+                        $attr["tdclass"] = "need-draghandle";
                 }
                 $x = "<span class=\"plheading-group";
                 if ($ginfo->heading !== ""
@@ -1310,7 +1313,7 @@ class PaperList {
     private function _prepare_columns($field_list) {
         $field_list2 = [];
         $this->need_tag_attr = false;
-        $this->tbody_attr = [];
+        $this->table_attr = [];
         foreach ($field_list as $fdef) {
             if ($fdef) {
                 $fdef->is_visible = !$this->is_folded($fdef);
@@ -1559,8 +1562,8 @@ class PaperList {
             $colhead .= "</tr>\n";
 
             if ($this->search->is_order_anno
-                && isset($this->tbody_attr["data-drag-tag"])) {
-                $drag_tag = $this->tagger->check($this->tbody_attr["data-drag-tag"]);
+                && isset($this->table_attr["data-drag-tag"])) {
+                $drag_tag = $this->tagger->check($this->table_attr["data-drag-tag"]);
                 if (strcasecmp($drag_tag, $this->search->is_order_anno) == 0
                     && $this->user->can_change_tag_anno($drag_tag)) {
                     $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
@@ -1595,7 +1598,7 @@ class PaperList {
             $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
         if ($this->groups)
             $enter .= "\" data-groups=\"" . htmlspecialchars(json_encode_browser($this->groups));
-        foreach ($this->tbody_attr as $k => $v)
+        foreach ($this->table_attr as $k => $v)
             $enter .= "\" $k=\"" . htmlspecialchars($v);
         if (get($options, "list"))
             $enter .= "\" data-hotlist=\"" . htmlspecialchars($this->session_list_object()->info_string());
@@ -1610,17 +1613,18 @@ class PaperList {
         $rstate->table_end = "</table>";
 
         // maybe make columns, maybe not
-        $tbody_class = "pltable";
         if ($this->_view_columns && !empty($this->ids)
             && $this->_column_split($rstate, $colhead, $body)) {
             $rstate->table_start = '<div class="plsplit_col_ctr_ctr"><div class="plsplit_col_ctr">' . $rstate->table_start;
             $rstate->table_end .= "</div></div>";
             $ncol = $rstate->split_ncol;
-            $tbody_class = "pltable_split";
+            $rstate->tbody_class = "pltable_split";
         } else {
             $rstate->thead = $colhead;
-            $tbody_class .= $rstate->hascolors ? " pltable_colored" : "";
+            $rstate->tbody_class = "pltable" . ($rstate->hascolors ? " pltable_colored" : "");
         }
+        if ($this->has_editable_tags)
+            $rstate->tbody_class .= " need-editable-tags";
 
         // footer
         reset($fieldDef);
@@ -1629,9 +1633,6 @@ class PaperList {
             $tfoot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($tfoot)
             $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable_colored" : "") . '">' . $tfoot . "</tfoot>\n";
-
-        // body
-        $rstate->tbody_class = $tbody_class;
 
         // header scripts to set up delegations
         if ($this->_header_script)

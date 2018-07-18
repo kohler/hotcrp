@@ -4671,7 +4671,6 @@ if ("pushState" in window.history) {
     });
 }
 
-
 function add_draghandle() {
     var x = document.createElement("span");
     x.className = "dragtaghandle";
@@ -4686,16 +4685,14 @@ function add_draghandle() {
     $(this).removeClass("need-draghandle");
 }
 
-
-var plt_tbody, full_ordertag, dragtag, full_dragtag;
-
-function PaperRow(tbody, l, r, index) {
-    var rows = plt_tbody.childNodes, i;
+function PaperRow(tbody, l, r, index, full_ordertag, dragtag) {
+    this.tbody = tbody;
     this.l = l;
     this.r = r;
     this.index = index;
-    this.tagvalue = false;
+    var rows = tbody.childNodes, i;
     var tags = rows[l].getAttribute("data-tags"), m;
+    this.tagvalue = false;
     if (tags && (m = new RegExp("(?:^| )" + regexp_quote(full_ordertag) + "#(\\S+)", "i").exec(tags)))
         this.tagvalue = tagvalue_parse(m[1]);
     this.isgroup = false;
@@ -4711,19 +4708,19 @@ function PaperRow(tbody, l, r, index) {
     }
 }
 PaperRow.prototype.top = function () {
-    return $(plt_tbody.childNodes[this.l]).offset().top;
+    return $(this.tbody.childNodes[this.l]).offset().top;
 };
 PaperRow.prototype.bottom = function () {
-    return $(plt_tbody.childNodes[this.r]).geometry().bottom;
+    return $(this.tbody.childNodes[this.r]).geometry().bottom;
 };
 PaperRow.prototype.middle = function () {
     return (this.top() + this.bottom()) / 2;
 };
 PaperRow.prototype.right = function () {
-    return $(plt_tbody.childNodes[this.l]).geometry().right;
+    return $(this.tbody.childNodes[this.l]).geometry().right;
 };
 PaperRow.prototype.titlehint = function () {
-    var tg = $(plt_tbody.childNodes[this.l]).find("a.ptitle, span.plheading-group"),
+    var tg = $(this.tbody.childNodes[this.l]).find("a.ptitle, span.plheading-group"),
         titletext = null, m;
     if (tg.length) {
         titletext = tg[0].getAttribute("data-title");
@@ -4737,8 +4734,20 @@ PaperRow.prototype.titlehint = function () {
     return titletext;
 };
 
+function make_gapf() {
+    var gaps = [], gappos = 0;
+    while (gaps.length < 4)
+        gaps.push([1, 1, 1, 1, 1, 2, 2, 2, 3, 4][Math.floor(Math.random() * 10)]);
+    return function (reset) {
+        reset && (gappos = 3);
+        ++gappos;
+        return gaps[gappos & 3];
+    };
+}
 
-var rowanal, highlight_entries,
+
+var plt_tbody, full_ordertag, dragtag, full_dragtag,
+    rowanal, highlight_entries,
     dragging, srcindex, dragindex, dragger,
     scroller, mousepos, scrolldelta;
 
@@ -4754,10 +4763,8 @@ function set_plt_tbody(e) {
         .on("click.edittag_ajax", "input.edittag", tag_save)
         .on("change.edittag_ajax", "input.edittagval", tag_save)
         .on("keydown.edittag_ajax", "input.edittagval", make_onkey("Enter", tag_save));
-    if (full_dragtag) {
+    if (full_dragtag)
         table.on("mousedown.edittag_ajax", "span.dragtaghandle", tag_mousedown);
-        $(function () { $(plt_tbody).find("tr.plheading").filter("[data-anno-id]").find("td.plheading").each(add_draghandle); });
-    }
 }
 
 function make_tag_save_callback(elt) {
@@ -4798,17 +4805,6 @@ function tag_save() {
            {addtags: ch}, make_tag_save_callback(this));
 }
 
-function make_gapf() {
-    var gaps = [], gappos = 0;
-    while (gaps.length < 4)
-        gaps.push([1, 1, 1, 1, 1, 2, 2, 2, 3, 4][Math.floor(Math.random() * 10)]);
-    return function (reset) {
-        reset && (gappos = 3);
-        ++gappos;
-        return gaps[gappos & 3];
-    };
-}
-
 function analyze_rows(e) {
     var rows = plt_tbody.childNodes, i, l, r, e, eindex = null;
     while (e && typeof e !== "number" && e.nodeName != "TR")
@@ -4822,14 +4818,14 @@ function analyze_rows(e) {
                 r = i;
             else {
                 if (l !== null)
-                    rowanal.push(new PaperRow(plt_tbody, l, r, rowanal.length));
+                    rowanal.push(new PaperRow(plt_tbody, l, r, rowanal.length, full_ordertag, dragtag));
                 l = r = i;
             }
             if (e == rows[i])
                 eindex = rowanal.length;
         }
     if (l !== null)
-        rowanal.push(new PaperRow(plt_tbody, l, r, rowanal.length));
+        rowanal.push(new PaperRow(plt_tbody, l, r, rowanal.length, full_ordertag, dragtag));
 
     // search for paper
     if (typeof e === "number")
@@ -5273,9 +5269,10 @@ function edit_anno(locator) {
     $.get(hoturl_post("api/taganno", {tag: mytag}), show_dialog);
 }
 
-function plinfo_tags(selector) {
-    plt_tbody || set_plt_tbody($(selector));
-};
+function plinfo_tags() {
+    plt_tbody || set_plt_tbody(this);
+    removeClass(this, "need-editable-tags");
+}
 
 plinfo_tags.edit_anno = edit_anno;
 plinfo_tags.add_draghandle = add_draghandle;
@@ -5715,6 +5712,7 @@ function render_needed() {
     $(".need-tags").each(function () {
         render_row_tags(this.parentNode);
     });
+    $(".need-editable-tags").each(plinfo_tags);
     $(".need-draghandle").each(plinfo_tags.add_draghandle);
     render_text.on_page();
 }
