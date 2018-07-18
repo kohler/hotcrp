@@ -75,6 +75,17 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         } else
             return false;
     }
+    function apply_countexpr($word, $default_op = "=") {
+        if (preg_match('/\A(?:(?:[=!<>]=?|≠|≤|≥|)\d+|any|none|yes|no)\z/', $word)) {
+            if (ctype_digit($word))
+                $word = $default_op . $word;
+            $count = PaperSearch::unpack_comparison($word, false);
+            $this->set_countexpr($count[1]);
+            $this->review_testable = false;
+            return true;
+        } else
+            return false;
+    }
     function adjust_round_list($rounds) {
         if ($this->round === null)
             $this->round = $rounds;
@@ -290,12 +301,8 @@ class Review_SearchTerm extends SearchTerm {
             if (preg_match('/\A(.+?)' . $tailre, $qword, $m)
                 && ($rsm->apply_review_type($m[1])
                     || $rsm->apply_completeness($m[1])
-                    || $rsm->apply_round($m[1], $srch->conf))) {
-                $qword = $m[2];
-            } else if (preg_match('/\A((?:[=!<>]=?|≠|≤|≥|)\d+|any|none|yes|no)' . $tailre, $qword, $m)) {
-                $count = PaperSearch::unpack_comparison($m[1], false);
-                $rsm->set_countexpr($count[1]);
-                $rsm->review_testable = false;
+                    || $rsm->apply_round($m[1], $srch->conf)
+                    || $rsm->apply_countexpr($m[1]))) {
                 $qword = $m[2];
             } else if (preg_match('/\A(?:au)?words((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
                 $wordcount = new CountMatcher($m[1]);
@@ -341,11 +348,11 @@ class Review_SearchTerm extends SearchTerm {
         $rsm->view_score = $f->view_score;
 
         $contactword = "";
-        while (preg_match('/\A(.+?)([:=<>!]|≠|≤|≥)(.*)\z/s', $word, $m)
-               && !ctype_digit($m[1])) {
+        while (preg_match('/\A([^<>].*?|[<>].+?)([:=!<>]|≠|≤|≥)(.*)\z/s', $word, $m)) {
             if ($rsm->apply_review_type($m[1])
                 || $rsm->apply_completeness($m[1])
-                || $rsm->apply_round($m[1], $srch->conf))
+                || $rsm->apply_round($m[1], $srch->conf)
+                || $rsm->apply_countexpr($m[1], ">="))
                 /* OK */;
             else
                 $rsm->set_contacts($srch->matching_users($m[1], $sword->quoted, false));
@@ -391,20 +398,17 @@ class Review_SearchTerm extends SearchTerm {
     private static function parse_score_field(ReviewSearchMatcher $rsm, $word, ReviewField $f, PaperSearch $srch) {
         if ($word === "any") {
             $rsm->apply_score_field($f, 0, 0, 4);
-        } else if ($word === "none") {
-            $rsm->set_countexpr("=0");
+        } else if ($word === "none" && $rsm->review_testable) {
+            $rsm->apply_countexpr("=0");
             $rsm->apply_score_field($f, 0, 0, 4);
-        } else if (preg_match('/\A(\d*?)\s*([=!<>]=?|≠|≤|≥)?\s*([A-Z]|\d+|none)\z/si', $word, $m)) {
-            if ($m[1] === "")
-                $m[1] = "1";
+        } else if (preg_match('/\A([=!<>]=?|≠|≤|≥|)\s*([A-Z]|\d+|none)\z/si', $word, $m)) {
             if ($f->option_letter && !$srch->conf->opt("smartScoreCompare"))
-                $m[2] = CountMatcher::flip_countexpr_string($m[2]);
-            $score = self::parse_score($f, $m[3]);
+                $m[1] = CountMatcher::flip_countexpr_string($m[1]);
+            $score = self::parse_score($f, $m[2]);
             if ($score === false)
                 return self::impossible_score_match($f);
-            $rsm->set_countexpr((int) $m[1] ? ">=" . $m[1] : "=0");
-            $rsm->apply_score_field($f, $score, 0, CountMatcher::$opmap[$m[2]]);
-        } else if (preg_match('/\A\s*(\d+|[A-Z]|none)\s*(|-|–|—|\.\.\.?|…)\s*(\d+|[A-Z]|none)\s*\z/si', $word, $m)) {
+            $rsm->apply_score_field($f, $score, 0, CountMatcher::$opmap[$m[1]]);
+        } else if (preg_match('/\A(\d+|[A-Z]|none)\s*(|-|–|—|\.\.\.?|…)\s*(\d+|[A-Z]|none)\s*\z/si', $word, $m)) {
             $score1 = self::parse_score($f, $m[1]);
             $score2 = self::parse_score($f, $m[3]);
             if ($score1 === false || $score2 === false)
@@ -439,9 +443,9 @@ class Review_SearchTerm extends SearchTerm {
         else {
             $wheres = $this->rsm->useful_sqlexpr("r") ? : "true";
             if ($cexpr === ">0")
-                return "exists (select * from PaperReview r where r.paperId=Paper.paperId and $wheres)";
+                return "exists (select * from PaperReview r where paperId=Paper.paperId and $wheres)";
             else
-                return "(select count(*) from PaperReview r where r.paperId=Paper.paperId and $wheres)" . $cexpr;
+                return "(select count(*) from PaperReview r where paperId=Paper.paperId and $wheres)" . $cexpr;
         }
     }
     function exec(PaperInfo $prow, PaperSearch $srch) {
