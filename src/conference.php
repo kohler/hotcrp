@@ -1894,8 +1894,7 @@ class Conf {
             if ($ox->type === "text")
                 $text_options[] = $ox->id;
         if (count($text_options)) {
-            $q = Dbl::format_query($this->dblink, "select paperId from PaperOption where optionId ?a and data='' limit 1", $text_options);
-            $any = $this->invariantq($q);
+            $any = $this->invariantq("select paperId from PaperOption where optionId?a and data='' limit 1", [$text_options]);
             if ($any)
                 trigger_error("$this->dbname invariant error: text option with empty text");
         }
@@ -1958,7 +1957,7 @@ class Conf {
                 $pids[] = (int) $row[1];
         }
         sort($pids);
-        $any = $this->invariantq("select s.paperId, s.paperStorageId from PaperStorage s where s.paperStorageId?a and s.inactive limit 1", $pids);
+        $any = $this->invariantq("select s.paperId, s.paperStorageId from PaperStorage s where s.paperStorageId?a and s.inactive limit 1", [$pids]);
         if ($any)
             trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " document " . self::$invariant_row[1] . " is inappropriately inactive");
 
@@ -1967,15 +1966,15 @@ class Conf {
             if ($o->has_document())
                 $oids[] = $o->id;
         if (!empty($oids)) {
-            $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.inactive and s.paperStorageId>1) where o.optionId?a limit 1", $oids);
+            $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.inactive and s.paperStorageId>1) where o.optionId?a limit 1", [$oids]);
             if ($any)
                 trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " option " . self::$invariant_row[1] . " document " . self::$invariant_row[2] . " is inappropriately inactive");
 
-            $any = $this->invariantq("select o.paperId, o.optionId from PaperOption o where o.optionId?a and o.value<=1 limit 1", $oids);
+            $any = $this->invariantq("select o.paperId, o.optionId from PaperOption o where o.optionId?a and o.value<=1 limit 1", [$oids]);
             if ($any)
                 trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " option " . self::$invariant_row[1] . " links to empty document");
 
-            $any = $this->invariantq("select o.paperId, o.optionId, s.paperId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.paperStorageId>1 and s.paperId!=o.paperId) where o.optionId?a limit 1", $oids);
+            $any = $this->invariantq("select o.paperId, o.optionId, s.paperId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.paperStorageId>1 and s.paperId!=o.paperId) where o.optionId?a limit 1", [$oids]);
             if ($any)
                 trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " option " . self::$invariant_row[1] . " document belongs to different paper " . self::$invariant_row[2]);
         }
