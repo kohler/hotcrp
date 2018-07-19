@@ -629,7 +629,7 @@ class Dbl {
             }
             $qlog .= "query_log: total: " . json_encode($t) . "\n";
             if (self::$query_log_file)
-                file_put_contents(self::$query_log_file, $qlog, FILE_APPEND);
+                @file_put_contents(self::$query_log_file, $qlog, FILE_APPEND);
             else
                 error_log($qlog);
         }
