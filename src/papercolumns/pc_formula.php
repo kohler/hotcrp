@@ -98,19 +98,19 @@ class Formula_PaperColumn extends PaperColumn {
         return $this->formula->unparse_html($x, $this->real_format);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $v = $this->results[$row->paperId];
+        $v = $vv = $this->results[$row->paperId];
         $t = $this->unparse($v);
         if (isset($this->override_results[$row->paperId])) {
             $vv = $this->override_results[$row->paperId];
             $tt = $this->unparse($vv);
             if (!$this->override_statistics)
                 $this->override_statistics = clone $this->statistics;
-            $this->override_statistics->add($vv);
             if ($t !== $tt)
                 $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
-        } else if ($this->override_statistics)
-            $this->override_statistics->add($v);
+        }
         $this->statistics->add($v);
+        if ($this->override_statistics)
+            $this->override_statistics->add($vv);
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
