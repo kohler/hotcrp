@@ -751,4 +751,28 @@ assert_search_papers($user_mgbaker, ["t" => "r", "q" => "internet OR datagram"],
 assert_search_papers($user_mgbaker, ["t" => "rout", "q" => "internet OR datagram"], "13 19");
 assert_search_papers($user_mgbaker, "(internet OR datagram) 13 19", "13 19");
 
+// paper options
+assert_search_papers($user_mgbaker, "has:calories", "1 2 3 4 5");
+$sv = SettingValues::make_request($user_chair, [
+    "has_options" => 1,
+    "optn_1" => "Fudge",
+    "optid_1" => 1,
+    "optfp_1" => 1,
+    "optvt_1" => "numeric"
+]);
+xassert($sv->execute());
+xassert_eqq(join(" ", $sv->changes()), "options");
+assert_search_papers($user_mgbaker, "has:fudge", "1 2 3 4 5");
+
+$sv = SettingValues::make_request($user_chair, [
+    "has_options" => 1,
+    "optn_1" => "Fudge",
+    "optid_1" => 1,
+    "optfp_1" => 1,
+    "optvt_1" => "checkbox"
+]);
+xassert($sv->execute());
+xassert_eqq(join(" ", $sv->changes()), "options");
+assert_search_papers($user_mgbaker, "has:fudge", "");
+
 xassert_exit();
