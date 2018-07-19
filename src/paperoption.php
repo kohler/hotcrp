@@ -565,6 +565,10 @@ class PaperOption implements Abbreviator {
                    "opt:{$this->search_keyword()}");
     }
 
+    function change_type(PaperOption $o, $upgrade, $change_values) {
+        return false;
+    }
+
     function value_compare($av, $bv) {
         return 0;
     }
@@ -706,6 +710,10 @@ class SelectorPaperOption extends PaperOption {
         return $x;
     }
 
+    function change_type(PaperOption $o, $upgrade, $change_values) {
+        return $o instanceof SelectorPaperOption;
+    }
+
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
@@ -796,6 +804,10 @@ class DocumentPaperOption extends PaperOption {
             return [Mimetype::lookup(".mp4"), Mimetype::lookup(".avi")];
         else
             return null;
+    }
+
+    function change_type(PaperOption $o, $upgrade, $change_values) {
+        return $o instanceof DocumentPaperOption;
     }
 
     function value_compare($av, $bv) {
@@ -974,10 +986,8 @@ class TextPaperOption extends PaperOption {
     }
 
     function value_compare($av, $bv) {
-        $av = $av ? $av->data() : null;
-        $av = $av !== null ? $av : "";
-        $bv = $bv ? $bv->data() : null;
-        $bv = $bv !== null ? $bv : "";
+        $av = $av ? (string) $av->data() : "";
+        $bv = $bv ? (string) $bv->data() : "";
         if ($av !== "" && $bv !== "")
             return strcasecmp($av, $bv);
         else

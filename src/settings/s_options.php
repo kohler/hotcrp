@@ -301,9 +301,14 @@ class Options_SettingParser extends SettingParser {
         $sv->save("options", empty($newj) ? null : json_encode_db($newj));
 
         $deleted_ids = array();
-        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $o)
-            if (!isset($this->stashed_options[$o->id]))
+        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $o) {
+            $newo = get($this->stashed_options, $o->id);
+            if (!$newo
+                || ($newo->type !== $o->type
+                    && !$newo->change_type($o, true, true)
+                    && !$o->change_type($newo, false, true)))
                 $deleted_ids[] = $o->id;
+        }
         if (!empty($deleted_ids))
             $sv->conf->qe("delete from PaperOption where optionId?a", $deleted_ids);
 
