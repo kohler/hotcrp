@@ -560,10 +560,17 @@ class Mailer {
         $prep->sendable = self::allow_send($recipient->email);
 
         // parse headers
-        if (!$this->conf->opt("emailFromHeader"))
-            $this->conf->set_opt("emailFromHeader", MimeText::encode_email_header("From: ", $this->conf->opt("emailFrom")));
+        $fromHeader = $this->conf->opt("emailFromHeader");
+        if ($fromHeader === null) {
+            $fromHeader = MimeText::encode_email_header("From: ", $this->conf->opt("emailFrom"));
+            $this->conf->set_opt("emailFromHeader", $fromHeader);
+        }
         $eol = self::eol();
-        $prep->headers = array("from" => $this->conf->opt("emailFromHeader") . $eol, "subject" => $subject . $eol, "to" => "");
+        $prep->headers = [];
+        if ($fromHeader)
+            $prep->headers["from"] = $fromHeader . $eol;
+        $prep->headers["subject"] = $subject . $eol;
+        $prep->headers["to"] = "";
         foreach (self::$email_fields as $lcfield => $field)
             if (($text = get_s($mail, $lcfield)) !== "" && $text !== "<none>") {
                 if (($hdr = MimeText::encode_email_header($field . ": ", $text)))
