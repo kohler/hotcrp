@@ -1949,7 +1949,16 @@ class Conf {
     }
 
     function check_document_inactive_invariants() {
-        $any = $this->invariantq("select p.paperId, s.paperStorageId from Paper p join PaperStorage s on (s.paperStorageId>1 and (s.paperStorageId=p.paperStorageId or s.paperStorageId=p.finalPaperStorageId)) where s.inactive limit 1");
+        $result = $this->ql("select paperStorageId, finalPaperStorageId from Paper");
+        $pids = [];
+        while ($result && ($row = $result->fetch_row())) {
+            if ($row[0] > 1)
+                $pids[] = (int) $row[0];
+            if ($row[1] > 1)
+                $pids[] = (int) $row[1];
+        }
+        sort($pids);
+        $any = $this->invariantq("select s.paperId, s.paperStorageId from PaperStorage s where s.paperStorageId?a and s.inactive limit 1", $pids);
         if ($any)
             trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " document " . self::$invariant_row[1] . " is inappropriately inactive");
 
