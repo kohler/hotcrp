@@ -190,7 +190,8 @@ class Dbl {
     static private function format_query_args($dblink, $qstr, $argv) {
         $original_qstr = $qstr;
         $strpos = $argpos = 0;
-        $usedargs = array();
+        $usedargs = [];
+        $simpleargs = true;
         while (($strpos = strpos($qstr, "?", $strpos)) !== false) {
             // argument name
             $nextpos = $strpos + 1;
@@ -206,10 +207,12 @@ class Dbl {
                     --$thisarg;
                 $nextpos = $rbracepos + 1;
                 $nextch = substr($qstr, $nextpos, 1);
+                $simpleargs = false;
             } else {
-                while (get($usedargs, $argpos))
+                do {
+                    $thisarg = $argpos;
                     ++$argpos;
-                $thisarg = $argpos;
+                } while (isset($usedargs[$thisarg]));
             }
             if (!array_key_exists($thisarg, $argv))
                 trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
@@ -299,6 +302,8 @@ class Dbl {
             $qstr = substr($qstr, 0, $strpos) . $arg . $suffix;
             $strpos = strlen($qstr) - strlen($suffix);
         }
+        if ($simpleargs && $argpos !== count($argv))
+            trigger_error(self::landmark() . ": query '$original_qstr' unused arguments");
         return $qstr;
     }
 
