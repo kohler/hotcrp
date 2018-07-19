@@ -108,7 +108,8 @@ class Formula_PaperColumn extends PaperColumn {
             $this->override_statistics->add($vv);
             if ($t !== $tt)
                 $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
-        }
+        } else if ($this->override_statistics)
+            $this->override_statistics->add($v);
         $this->statistics->add($v);
         return $t;
     }
