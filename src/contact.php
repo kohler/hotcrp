@@ -1964,11 +1964,11 @@ class Contact {
     }
 
     function can_view_pc() {
-        if ($this->is_manager())
-            return true;
         $this->check_rights_version();
         if ($this->can_view_pc_ === null) {
-            if ($this->isPC)
+            if ($this->is_manager())
+                $this->can_view_pc_ = 2;
+            else if ($this->isPC)
                 $this->can_view_pc_ = $this->conf->opt("secretPC") ? 0 : 2;
             else
                 $this->can_view_pc_ = $this->conf->opt("privatePC") ? 0 : 1;
@@ -1976,10 +1976,8 @@ class Contact {
         return $this->can_view_pc_ > 0;
     }
     function can_view_contact_tags() {
-        if ($this->privChair)
-            return true;
-        $this->can_view_pc();
-        return $this->can_view_pc_ > 1;
+        return $this->privChair
+            || ($this->can_view_pc() && $this->can_view_pc_ > 1);
     }
 
     function can_view_tracker() {
