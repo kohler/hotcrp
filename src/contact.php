@@ -3436,12 +3436,13 @@ class Contact {
             $dlresps = [];
             foreach ($this->conf->resp_round_list() as $i => $rname) {
                 $isuf = $i ? "_$i" : "";
-                $dlresps[$rname] = $dlresp = (object) [
-                    "open" => +$this->conf->setting("resp_open$isuf"),
-                    "done" => +$this->conf->setting("resp_done$isuf")
-                ];
-                if ($dlresp->open)
+                $open = +$this->conf->setting("resp_open$isuf");
+                $done = +$this->conf->setting("resp_done$isuf");
+                if ($open && ($this->isPC || $open < $Now)) {
+                    $dlresp = (object) ["open" => $open, "done" => $done];
+                    $dlresps[$rname] = $dlresp;
                     $graces[] = [$dlresp, "resp_grace$isuf"];
+                }
             }
             if (!empty($dlresps))
                 $dl->resps = $dlresps;

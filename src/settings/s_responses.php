@@ -33,7 +33,8 @@ class Responses_SettingParser extends SettingParser {
                 echo ' hidden';
             echo '">';
             $sv->echo_entry_group("resp_roundname$isuf", "Response name", ["horizontal" => true]);
-            if ($sv->curv("resp_open$isuf") === 1 && ($x = $sv->curv("resp_done$isuf")))
+            if ($sv->curv("resp_open$isuf") === 1
+                && ($x = $sv->curv("resp_done$isuf")))
                 $sv->conf->settings["resp_open$isuf"] = $x - 7 * 86400;
             $sv->echo_entry_group("resp_open$isuf", "Start time", ["horizontal" => true]);
             $sv->echo_entry_group("resp_done$isuf", "Hard deadline", ["horizontal" => true]);
