@@ -2228,7 +2228,7 @@ class Conf {
     }
     function timeUpdatePaper($prow = null) {
         return $this->deadlinesBetween("sub_open", "sub_update", "sub_grace")
-            && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
+            && (!$prow || $prow->timeSubmitted <= 0 || $this->setting("sub_freeze") <= 0);
     }
     function timeFinalizePaper($prow = null) {
         return $this->deadlinesBetween("sub_open", "sub_sub", "sub_grace")
