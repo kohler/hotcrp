@@ -1541,7 +1541,7 @@ function display_main(is_initial) {
     if (!dlname && dl.is_author && dl.resps)
         for (i in dl.resps) {
             x = dl.resps[i];
-            if (x.open && checkdl(now, +x.done, x.ingrace)) {
+            if (x.open && +x.open < now && checkdl(now, +x.done, x.ingrace)) {
                 dlname = (i == "1" ? "Response" : i + " response");
                 break;
             }
