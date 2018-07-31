@@ -995,7 +995,8 @@ class PaperTable {
                     $x .= '<div class="pavb">' . $p . '</div>';
                 $ts[] = $x . "</div>\n";
             }
-        } else if ($o->display() !== PaperOption::DISP_TOPICS) {
+        } else if ($o->display() !== PaperOption::DISP_TOPICS
+                   && $o->display() >= 0) {
             $div = $aufold ? '<div class="pgsm fx8">' : '<div class="pgsm">';
             if ($phtype === PaperOption::PAGE_HTML_NAME) {
                 foreach ($phtml as $p)
