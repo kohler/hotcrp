@@ -505,6 +505,10 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
+    function allow_empty_document() {
+        return false;
+    }
+
     function mimetypes() {
         return null;
     }
