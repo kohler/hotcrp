@@ -317,6 +317,7 @@ class PaperOption implements Abbreviator {
     public $visibility; // "rev", "nonblind", "admin"
     private $display;
     public $display_space;
+    public $internal;
     public $selector;
     private $form_position;
     public $allow_if; // public for PaperOptionList
@@ -368,6 +369,7 @@ class PaperOption implements Abbreviator {
             $this->position = 999;
         $this->final = !!get($args, "final");
         $this->nonpaper = !!get($args, "nonpaper");
+        $this->internal = !!get($args, "internal");
         if ($this->id <= 0)
             $this->formid = $this->_json_key;
         else

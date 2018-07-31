@@ -995,8 +995,7 @@ class PaperTable {
                     $x .= '<div class="pavb">' . $p . '</div>';
                 $ts[] = $x . "</div>\n";
             }
-        } else if ($o->display() !== PaperOption::DISP_TOPICS
-                   && $o->display() >= 0) {
+        } else if ($o->display() !== PaperOption::DISP_TOPICS) {
             $div = $aufold ? '<div class="pgsm fx8">' : '<div class="pgsm">';
             if ($phtype === PaperOption::PAGE_HTML_NAME) {
                 foreach ($phtml as $p)
@@ -2125,7 +2124,8 @@ class PaperTable {
 
         $ofields = [];
         foreach ($this->conf->paper_opts->option_list_type(!$this->canUploadFinal) as $opt)
-            if (!$this->prow || get($this->view_options, $opt->id))
+            if ((!$this->prow || get($this->view_options, $opt->id))
+                && !$opt->internal)
                 $ofields[] = $this->make_echo_editable_option($opt);
         $gxt = new GroupedExtensions($this->user, ["etc/submissioneditgroups.json"], $this->conf->opt("submissionEditGroups"), $ofields);
         $this->edit_fields = array_values($gxt->groups());
