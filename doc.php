@@ -100,8 +100,10 @@ class DocumentRequest {
         while ((string) $dtname !== "" && $this->opt === null) {
             if (($dtnum = cvtint($dtname, null)) !== null)
                 $this->opt = $conf->paper_opts->get($dtnum);
+            else if ($this->paperId >= 0)
+                $this->opt = $conf->paper_opts->find($dtname);
             else
-                $this->opt = $conf->paper_opts->find($dtname, $this->paperId < 0);
+                $this->opt = $conf->paper_opts->find_nonpaper($dtname);
             if ($this->opt !== null) {
                 $dtname = "";
                 break;

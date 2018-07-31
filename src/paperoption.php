@@ -261,13 +261,10 @@ class PaperOptionList {
     }
 
     function find($name, $nonpaper = false) {
-        if ($nonpaper)
-            return $this->find_nonpaper($name);
-        else {
-            $omap = $this->find_all($name);
-            reset($omap);
-            return count($omap) == 1 ? current($omap) : null;
-        }
+        assert(!$nonpaper);
+        $omap = $this->find_all($name);
+        reset($omap);
+        return count($omap) == 1 ? current($omap) : null;
     }
 
     function nonpaper_abbrev_matcher() {
