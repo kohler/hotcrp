@@ -317,6 +317,15 @@ function update_schema_missing_sha1($conf) {
     $cleanf(true);
 }
 
+function update_schema_selector_options($conf) {
+    $oids = [];
+    foreach ($conf->paper_opts->full_option_list() as $opt)
+        if ($opt->has_selector())
+            $oids[] = $opt->id;
+    return empty($oids)
+        || $conf->ql("update PaperOption set value=value+1 where optionId?a", $oids);
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1402,6 +1411,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 197
         && $conf->ql("alter table PaperConflict add key `paperId` (`paperId`)"))
         $conf->update_schema_version(198);
+    if ($conf->sversion == 198
+        && update_schema_selector_options($conf))
+        $conf->update_schema_version(199);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

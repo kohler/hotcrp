@@ -132,49 +132,33 @@ class Option_SearchTerm extends SearchTerm {
         // Conf::msg_debugt(var_export($omatches, true));
         if (!empty($omatches)) {
             foreach ($omatches as $o) {
-                // selectors handle “yes”, “”, and “no” specially
                 if ($o->has_selector()) {
-                    $xval = array();
-                    if ($oval === "") {
-                        foreach ($o->selector as $k => $v)
-                            if (strcasecmp($v, "yes") == 0)
-                                $xval[$k] = $v;
-                        if (count($xval) == 0)
-                            $xval = $o->selector;
-                    } else
-                        $xval = Text::simple_search($oval, $o->selector);
-                    if (empty($xval))
-                        $warn[] = "“" . htmlspecialchars($oval) . "” doesn’t match any " . htmlspecialchars($oname) . " values.";
-                    else if (count($xval) == 1) {
-                        reset($xval);
-                        $qo[] = new OptionMatcher($o, $ocompar, key($xval));
-                    } else if ($ocompar !== "=" && $ocompar !== "!=")
-                        $warn[] = "Submission option “" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($ocompar) . ".";
+                    $x = $o->parse_selector_search($oname, $ocompar, $oval);
+                    if (is_string($x))
+                        $warn[] = $x;
                     else
-                        $qo[] = new OptionMatcher($o, $ocompar, array_keys($xval));
-                    continue;
-                }
-
-                if ($oval === "" || $oval === "yes")
-                    $qo[] = new OptionMatcher($o, "!=", null);
-                else if ($oval === "no")
-                    $qo[] = new OptionMatcher($o, "=", null);
-                else if ($o->type === "numeric") {
-                    if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
-                        $qo[] = new OptionMatcher($o, $ocompar, $m[1]);
-                    else
-                        $warn[] = "Submission option “" . htmlspecialchars($o->title) . "” takes integer values.";
-                } else if ($o->type === "text") {
-                    $qo[] = new OptionMatcher($o, "~=", $oval, "text");
-                } else if ($o->has_attachments()) {
-                    if ($oval === "any")
+                        $qo[] = $x;
+                } else {
+                    if ($oval === "" || $oval === "yes")
                         $qo[] = new OptionMatcher($o, "!=", null);
-                    else if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
-                        $qo[] = new OptionMatcher($o, $ocompar, $m[1], "attachment-count");
-                    else
-                        $qo[] = new OptionMatcher($o, "~=", $oval, "attachment-name");
-                } else
-                    continue;
+                    else if ($oval === "no")
+                        $qo[] = new OptionMatcher($o, "=", null);
+                    else if ($o->type === "numeric") {
+                        if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
+                            $qo[] = new OptionMatcher($o, $ocompar, $m[1]);
+                        else
+                            $warn[] = "Submission field “" . htmlspecialchars($o->title) . "” takes integer values.";
+                    } else if ($o->type === "text") {
+                        $qo[] = new OptionMatcher($o, "~=", $oval, "text");
+                    } else if ($o->has_attachments()) {
+                        if ($oval === "any")
+                            $qo[] = new OptionMatcher($o, "!=", null);
+                        else if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
+                            $qo[] = new OptionMatcher($o, $ocompar, $m[1], "attachment-count");
+                        else
+                            $qo[] = new OptionMatcher($o, "~=", $oval, "attachment-name");
+                    }
+                }
             }
         } else if (($ocompar === "=" || $ocompar === "!=") && $oval === "")
             foreach ($conf->paper_opts->option_list() as $o)
@@ -184,7 +168,7 @@ class Option_SearchTerm extends SearchTerm {
                 }
 
         if (empty($qo) && empty($warn))
-            $warn[] = "“" . htmlspecialchars($word) . "” doesn’t match a submission option.";
+            $warn[] = "“" . htmlspecialchars($word) . "” doesn’t match a submission field.";
         return (object) array("os" => $qo, "warn" => $warn, "negate" => strcasecmp($oname, "none") === 0, "value_word" => $oval);
     }
 

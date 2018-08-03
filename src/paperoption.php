@@ -318,7 +318,6 @@ class PaperOption implements Abbreviator {
     private $display;
     public $display_space;
     public $internal;
-    public $selector;
     private $form_position;
     public $allow_if; // public for PaperOptionList
 
@@ -395,7 +394,6 @@ class PaperOption implements Abbreviator {
 
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;
-        $this->selector = get($args, "selector");
     }
 
     static function make($args, $conf) {
@@ -556,8 +554,6 @@ class PaperOption implements Abbreviator {
             $j->visibility = $this->visibility;
         if ($this->display_space)
             $j->display_space = $this->display_space;
-        if ($this->selector)
-            $j->selector = $this->selector;
         return $j;
     }
 
@@ -697,12 +693,27 @@ class CheckboxPaperOption extends PaperOption {
 }
 
 class SelectorPaperOption extends PaperOption {
+    private $selector;
+
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        $this->selector = get($args, "selector");
     }
 
     function has_selector() {
         return true;
+    }
+    function selector_options() {
+        return $this->selector;
+    }
+    function set_selector_options($selector) {
+        $this->selector = $selector;
+    }
+
+    function unparse() {
+        $j = parent::unparse();
+        $j->selector = $this->selector;
+        return $j;
     }
 
     function example_searches() {
@@ -714,6 +725,43 @@ class SelectorPaperOption extends PaperOption {
                 $x["selector"] = array("{$this->search_keyword()}:\"{$this->selector[1]}\"", $this);
         }
         return $x;
+    }
+    function example_selector_option() {
+        return count($this->selector) > 1 ? $this->selector[1] : null;
+    }
+    function parse_selector_search($oname, $compar, $oval) {
+        // Special-case handling for 'yes'/'no'.
+        if ($oval === "" || strcasecmp($oval, "yes") == 0 || strcasecmp($oval, "no") == 0) {
+            $oyes = $ono = 0;
+            foreach ($this->selector as $k => $v) {
+                if (strcasecmp($v, "yes") == 0)
+                    $oyes = $k + 1;
+                else if (strcasecmp($v, "no") == 0)
+                    $ono = $k + 1;
+            }
+            if ($oval === "" || strcasecmp($oval, "yes") == 0) {
+                if ($oyes)
+                    return new OptionMatcher($this, $compar, $oyes);
+                else
+                    return new OptionMatcher($this, "!=", null);
+            } else {
+                if ($ono)
+                    return new OptionMatcher($this, $compar, $ono);
+                else
+                    return new OptionMatcher($this, "=", null);
+            }
+        }
+
+        $xval = Text::simple_search($oval, $this->selector);
+        if (empty($xval))
+            return "“" . htmlspecialchars($oval) . "” doesn’t match any " . htmlspecialchars($oname) . " values.";
+        else if (count($xval) == 1) {
+            reset($xval);
+            return new OptionMatcher($this, $compar, key($xval) + 1);
+        } else if ($compar !== "=" && $compar !== "!=")
+            return "“" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($compar) . ".";
+        else
+            return new OptionMatcher($this, $compar, array_map(function ($x) { return $x + 1; }, array_keys($xval)));
     }
 
     function change_type(PaperOption $o, $upgrade, $change_values) {
@@ -735,15 +783,15 @@ class SelectorPaperOption extends PaperOption {
         else
             foreach ($this->selector as $val => $text) {
                 echo '<div class="checki"><label><span class="checkc">',
-                    Ht::radio($this->formid, $val, $val == $reqv,
-                        ["data-default-checked" => $val == $ov->value]),
+                    Ht::radio($this->formid, $val + 1, $val + 1 == $reqv,
+                        ["data-default-checked" => $val + 1 == $ov->value]),
                     ' </span>', htmlspecialchars($text), '</label></div>';
             }
         echo "</div></div>\n\n";
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
-        return get($this->selector, $ov->value, null);
+        return get($this->selector, $ov->value - 1, null);
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
@@ -751,7 +799,7 @@ class SelectorPaperOption extends PaperOption {
         if ($v === "")
             return null;
         else if (ctype_digit($v)) {
-            $iv = intval($v);
+            $iv = intval($v) - 1;
             if (isset($this->selector[$iv]))
                 return $this->selector[$iv];
         }
@@ -761,8 +809,8 @@ class SelectorPaperOption extends PaperOption {
     function store_json($pj, PaperStatus $ps) {
         if (is_string($pj)
             && ($v = array_search($pj, $this->selector)) !== false)
-            $pj = $v;
-        if ((is_int($pj) && isset($this->selector[$pj])) || $pj === null)
+            $pj = $v + 1;
+        if ((is_int($pj) && isset($this->selector[$pj - 1])) || $pj === null)
             return $pj;
         $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
     }
@@ -771,7 +819,7 @@ class SelectorPaperOption extends PaperOption {
         return true;
     }
     private function unparse_value(PaperOptionValue $ov = null) {
-        return $ov ? get($this->selector, $ov->value, "") : "";
+        return $ov ? get($this->selector, $ov->value - 1, "") : "";
     }
     function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
         return htmlspecialchars($this->unparse_value($row->option($this->id)));

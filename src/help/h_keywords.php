@@ -64,7 +64,7 @@ class Keywords_HelpTopic {
                 else if ($extype === "numeric")
                     $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” field has value &gt; 100";
                 else if ($extype === "selector")
-                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” field has value “" . htmlspecialchars($oex[1]->selector[1]) . "”";
+                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” field has value “" . htmlspecialchars($oex[1]->example_selector_option()) . "”";
                 else if ($extype === "attachment-count")
                     $desc = "paper has more than 2 “" . htmlspecialchars($oex[1]->title) . "” attachments";
                 else if ($extype === "attachment-filename")

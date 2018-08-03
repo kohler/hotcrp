@@ -56,7 +56,7 @@ class PaperTable {
             && $this->prow->outcome > 0
             && $this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_submit_final_paper", $this->prow);
 
-        if ($this->prow == null) {
+        if (!$this->prow) {
             $this->mode = "edit";
             return;
         }
@@ -434,7 +434,8 @@ class PaperTable {
     private function entryData($fieldName, $table_type = false) {
         $this->entryMatches = 0;
         $text = $this->prow ? $this->prow->$fieldName : "";
-        if ($this->matchPreg && isset(self::$textAreaRows[$fieldName])
+        if ($this->matchPreg
+            && isset(self::$textAreaRows[$fieldName])
             && isset($this->matchPreg[$fieldName]))
             $text = Text::highlight($text, $this->matchPreg[$fieldName], $this->entryMatches);
         else
@@ -701,7 +702,8 @@ class PaperTable {
         echo '<div class="paperinfo-cl"><div class="paperinfo-abstract"><div class="pg">',
             $this->papt("abstract", "Abstract", $extra),
             '<div class="pavb abstract';
-        if ($this->prow && !$this->entryMatches
+        if ($this->prow
+            && !$this->entryMatches
             && ($format = $this->prow->format_of($text))) {
             echo ' need-format" data-format="', $format, '.abs">', $text;
             Ht::stash_script('$(render_text.on_page)', 'render_on_page');
@@ -720,16 +722,16 @@ class PaperTable {
     private function editable_author_component_entry($n, $pfx, $au) {
         $auval = "";
         if ($pfx === "auname") {
-            $js = ["size" => "35", "placeholder" => "Name"];
+            $js = ["size" => "35", "placeholder" => "Name", "autocomplete" => "off"];
             if ($au && $au->firstName && $au->lastName && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au->lastName))
                 $auval = $au->lastName . ", " . $au->firstName;
             else if ($au)
                 $auval = $au->name();
         } else if ($pfx === "auemail") {
-            $js = ["size" => "30", "placeholder" => "Email"];
+            $js = ["size" => "30", "placeholder" => "Email", "autocomplete" => "off"];
             $auval = $au ? $au->email : "";
         } else {
-            $js = ["size" => "32", "placeholder" => "Affiliation"];
+            $js = ["size" => "32", "placeholder" => "Affiliation", "autocomplete" => "off"];
             $auval = $au ? $au->affiliation : "";
         }
 
@@ -783,7 +785,7 @@ class PaperTable {
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
             'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', null, $max_authors)), '">';
 
-        $aulist = $this->prow ? $this->prow->author_list() : array();
+        $aulist = $this->prow ? $this->prow->author_list() : [];
         if ($this->useRequest) {
             $n = $nonempty_n = 0;
             while (1) {
@@ -1144,9 +1146,9 @@ class PaperTable {
         return '<div class="checki"><span class="checkc">'
                 . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => 1])
                 . ' </span>'
-                . Ht::entry("newcontact_name_{$num}", $name, ["size" => 30, "placeholder" => "Name", "class" => ($cerror ? "has-error " : "") . "want-focus js-autosubmit"])
+                . Ht::entry("newcontact_name_{$num}", $name, ["size" => 30, "placeholder" => "Name", "class" => ($cerror ? "has-error " : "") . "want-focus js-autosubmit", "autocomplete" => "off"])
                 . '  '
-                . Ht::entry("newcontact_email_{$num}", $email, ["size" => 20, "placeholder" => "Email", "class" => ($cerror ? "has-error " : "") . "js-autosubmit"])
+                . Ht::entry("newcontact_email_{$num}", $email, ["size" => 20, "placeholder" => "Email", "class" => ($cerror ? "has-error " : "") . "js-autosubmit", "autocomplete" => "off"])
                 . '</div>';
     }
 

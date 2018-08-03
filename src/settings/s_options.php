@@ -34,7 +34,7 @@ class Options_SettingRenderer {
                     "position" => get($sv->req, "optfp_$oxpos", 1),
                     "display" => get($sv->req, "optdt_$oxpos")), $sv->conf);
                 if ($o->has_selector())
-                    $o->selector = explode("\n", rtrim(get($sv->req, "optv_$oxpos", "")));
+                    $o->set_selector_options(explode("\n", rtrim(get($sv->req, "optv_$oxpos", ""))));
             }
         }
 
@@ -133,9 +133,9 @@ class Options_SettingRenderer {
         echo "</div>\n\n";
 
         $rows = 3;
-        if ($jtype && get($jtype, "has_selector") && count($o->selector)) {
-            $value = join("\n", $o->selector) . "\n";
-            $rows = max(count($o->selector), 3);
+        if ($jtype && get($jtype, "has_selector") && count($o->selector_options())) {
+            $value = join("\n", $o->selector_options()) . "\n";
+            $rows = max(count($o->selector_options()), 3);
         } else
             $value = "";
         echo '<div class="', $sv->sclass("optv_$xpos", "f-i fx4"), '">',
