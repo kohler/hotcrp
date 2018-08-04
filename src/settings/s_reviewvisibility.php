@@ -7,9 +7,9 @@ class ReviewVisibility_SettingParser extends SettingParser {
         $no_text = "No, unless authors can edit responses";
         if (!$sv->conf->setting("au_seerev", 0)) {
             if ($sv->conf->timeAuthorViewReviews())
-                $no_text .= '<div class="hint">Authors can edit responses and see reviews now.</div>';
+                $no_text .= '<div class="f-hx">Authors can edit responses and see reviews now.</div>';
             else if ($sv->conf->setting("resp_active"))
-                $no_text .= '<div class="hint">Authors cannot edit responses now.</div>';
+                $no_text .= '<div class="f-hx">Authors cannot edit responses now.</div>';
         }
         $opts = array(Conf::AUSEEREV_NO => $no_text,
                       Conf::AUSEEREV_YES => "Yes");

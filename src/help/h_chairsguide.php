@@ -57,11 +57,11 @@ form also can include:</p>
   may still be submitted, since the checker itself can make mistakes, but the
   automated checker leaves cheating authors no excuse.</p></li>
 
-  <li><p><strong>Options</strong> such as checkboxes, selectors, freeform
-  text, and uploaded attachments. Checkbox options might include “Consider
+  <li><p><strong>Additional fields</strong> such as checkboxes, selectors, freeform
+  text, and uploaded attachments. Checkbox fields might include “Consider
   this paper for the Best Student Paper award” or “Provide this paper to the
-  European shadow PC.” Attachment options might include supplemental material.
-  You can search for papers with or without each option.</p></li>
+  European shadow PC.” Attachment fields might include supplemental material.
+  You can search for papers with or without each field.</p></li>
 
   <li><p><strong>Topics.</strong> Authors can select topics, such as
   “Applications” or “Network databases,” that characterize their paper’s

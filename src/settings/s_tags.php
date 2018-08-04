@@ -127,7 +127,7 @@ class Tags_SettingParser extends SettingParser {
         if ($si->name == "tag_rank" && isset($sv->req["tag_rank"])) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             if (count($ts) > 1)
-                $sv->error_at("tag_rank", "At most one rank tag is currently supported.");
+                $sv->error_at("tag_rank", "Multiple ranking tags are not supported yet.");
             else
                 $sv->update("tag_rank", join(" ", $ts));
         }

@@ -49,22 +49,22 @@ class Keywords_HelpTopic {
         foreach ($hth->conf->paper_opts->option_list() as $o)
             $oex = array_merge($oex, $o->example_searches());
         if (!empty($oex)) {
-            echo $hth->tgroup("Options");
+            echo $hth->tgroup("Submission fields");
             foreach ($oex as $extype => $oex) {
                 if ($extype === "has") {
-                    $desc = "paper has “" . htmlspecialchars($oex[1]->title) . "” submission option";
+                    $desc = "paper has “" . htmlspecialchars($oex[1]->title) . "” submission field";
                     $oabbr = array();
                     foreach ($hth->conf->paper_opts->option_list() as $ox)
                         if ($ox !== $oex[1])
                             $oabbr[] = "“has:" . htmlspecialchars($ox->search_keyword()) . "”";
                     if (count($oabbr))
-                        $desc .= '<div class="hint">Other option ' . pluralx(count($oabbr), "search") . ': ' . commajoin($oabbr) . '</div>';
+                        $desc .= '<div class="hint">Other field ' . pluralx(count($oabbr), "search") . ': ' . commajoin($oabbr) . '</div>';
                 } else if ($extype === "yes")
                     $desc = "same meaning; abbreviations also accepted";
                 else if ($extype === "numeric")
-                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” option has value &gt; 100";
+                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” field has value &gt; 100";
                 else if ($extype === "selector")
-                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” option has value “" . htmlspecialchars($oex[1]->selector[1]) . "”";
+                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” field has value “" . htmlspecialchars($oex[1]->selector[1]) . "”";
                 else if ($extype === "attachment-count")
                     $desc = "paper has more than 2 “" . htmlspecialchars($oex[1]->title) . "” attachments";
                 else if ($extype === "attachment-filename")

@@ -37,7 +37,7 @@ function settings_option_move() {
                     $(this).remove();
             });
             $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
-            $(odiv).append('<div class="f-i"><em>(Option deleted)</em></div></div>');
+            $(odiv).append('<div class="f-i"><em>(Field deleted)</em></div></div>');
         }
     } else if ($(this).hasClass("settings-opt-new")) {
         var h = $("#settings_newopt").html();

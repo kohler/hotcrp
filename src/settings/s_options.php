@@ -15,7 +15,7 @@ class Options_SettingRenderer {
     private function render_option(SettingValues $sv, PaperOption $o = null, $xpos) {
         if (!$o) {
             $o = PaperOption::make(array("id" => 0,
-                    "name" => "(Enter new option)",
+                    "name" => "Field name",
                     "description" => "",
                     "type" => "checkbox",
                     "position" => count($sv->conf->paper_opts->nonfixed_option_list()) + 1,
@@ -52,8 +52,8 @@ class Options_SettingRenderer {
 
         echo '<div class="f-ig">',
             '<div class="', $sv->sclass("optn_$xpos", "f-i"), '">',
-            $sv->label("optn_$xpos", "Option name"),
-            Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "(Enter new option)", "size" => 50, "id" => "optn_$xpos"))),
+            $sv->label("optn_$xpos", "Field name"),
+            Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos"))),
             Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings-opt-id"]),
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div>';
@@ -97,11 +97,11 @@ class Options_SettingRenderer {
         $otypes = [];
         if ($sotypes) {
             if ($show_final)
-                $otypes["__submission_options__"] = ["optgroup", "Options for submissions"];
+                $otypes["__submission_options__"] = ["optgroup", "Fields for submissions"];
             $otypes = array_merge($otypes, $sotypes);
         }
         if ($fotypes && $show_final) {
-            $otypes["__final_options__"] = ["optgroup", "Options for final versions"];
+            $otypes["__final_options__"] = ["optgroup", "Fields for final versions"];
             foreach ($fotypes as $name => $title)
                 $otypes["{$name}:final"] = "{$title} (final version)";
         }
@@ -128,7 +128,7 @@ class Options_SettingRenderer {
             "</div>";
 
         if (isset($otypes["pdf:final"]))
-            echo '<hr class="c fx2"><div class="f-h fx2">Final version options are set by accepted authors during the final version submission period. They are always visible to PC and reviewers.</div>';
+            echo '<hr class="c fx2"><div class="f-h fx2">Final version fields are set by accepted authors during the final version submission period. They are always visible to PC and reviewers.</div>';
 
         echo "</div>\n\n";
 
@@ -164,8 +164,8 @@ class Options_SettingRenderer {
     }
 
     static function render(SettingValues $sv) {
-        echo "<h3 class=\"settings\">Options and attachments</h3>\n";
-        echo "<p class=\"settingtext\">Options and attachments are additional data entered by authors at submission time. Option names should be brief (“PC paper,” “Supplemental material”). The optional HTML description can explain further.</p>\n";
+        echo "<h3 class=\"settings\">Submission fields</h3>\n";
+        echo "<p class=\"settingtext\">These additional fields are entered by authors at submission time (or final-version submission time). Field names should be brief (“PC paper,” “Supplemental material”). The optional HTML description can explain further.</p>\n";
         echo "<div class='g'></div>\n",
             Ht::hidden("has_options", 1), "\n\n";
         $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
@@ -176,7 +176,7 @@ class Options_SettingRenderer {
             $self->render_option($sv, $o, ++$pos);
         echo "</div>\n",
             '<div style="margin-top:2em">',
-            Ht::button("Add option", ["class" => "settings-opt-new btn"]),
+            Ht::button("Add field", ["class" => "settings-opt-new btn"]),
             "</div>\n<div id=\"settings_newopt\" style=\"display:none\">";
         Ht::stash_script('$("button.settings-opt-new").on("click", settings_option_move)');
         $self->render_option($sv, null, 0);
@@ -190,7 +190,7 @@ class Options_SettingRenderer {
             usort($options, function ($a, $b) { return $a->position - $b->position; });
             foreach ($options as $pos => $o)
                 if (get($o, "visibility") === "nonblind")
-                    $sv->warning_at("optp_" . ($pos + 1), "The “" . htmlspecialchars($o->name) . "” option is “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”");
+                    $sv->warning_at("optp_" . ($pos + 1), "The “" . htmlspecialchars($o->name) . "” field is “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”");
         }
     }
 }
@@ -202,7 +202,7 @@ class Options_SettingParser extends SettingParser {
 
     function option_request_to_json(SettingValues $sv, $xpos) {
         $name = simplify_whitespace(get($sv->req, "optn_$xpos", ""));
-        if ($name === "" || $name === "New option" || $name === "(Enter new option)")
+        if ($name === "" || $name === "(Enter new option)" || $name === "Field name")
             return null;
         if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name))
             $sv->error_at("optn_$xpos", "Option name “" . htmlspecialchars($name) . "” is reserved. Please pick another name.");
