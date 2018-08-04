@@ -6562,7 +6562,7 @@ if (hotcrp_paperid) {
                 if (data.tags[i].substr(0, t.length) == t)
                     res = data.tags[i].substr(t.length);
             if (this.tagName !== "INPUT") {
-                $j.text(res).closest(".is-nonempty-tags").toggle(res !== "");
+                $j.text(res).closest(".is-nonempty-tags").toggleClass("hidden", res === "");
             } else if (this.type === "checkbox") {
                 this.checked = res !== "";
             } else if (document.activeElement !== this) {

@@ -1632,26 +1632,27 @@ class PaperTable {
     }
 
     private function papstrip_tag_float($tag, $kind, $type) {
-        if (($totval = $this->prow->tag_value($tag)) === false)
-            $totval = "";
-        $reverse = $type !== "rank";
         $class = "is-nonempty-tags floatright";
+        if (($totval = $this->prow->tag_value($tag)) === false) {
+            $totval = "";
+            $class .= " hidden";
+        }
+        $reverse = $type !== "rank";
         $extradiv = "";
         if ($type === "vote" || $type === "approval") {
             $class .= " need-tooltip";
             $extradiv = ' data-tooltip-dir="h" data-tooltip-info="votereport" data-tag="' . htmlspecialchars($tag) . '"';
         }
-        return '<div class="' . $class . '" style="display:' . ($totval ? "block" : "none")
-            . '"' . $extradiv
+        return '<div class="' . $class . '"' . $extradiv
             . '><a class="qq" href="' . hoturl("search", "q=" . urlencode("show:#$tag sort:" . ($reverse ? "-" : "") . "#$tag")) . '">'
             . '<span class="is-tag-index" data-tag-base="' . $tag . '">' . $totval . '</span> ' . $kind . '</a></div>';
     }
 
     private function papstrip_tag_entry_title($start, $tag, $value) {
-        $title = $start . '<span class="fn is-nonempty-tags"';
+        $title = $start . '<span class="fn is-nonempty-tags';
         if ($value === "")
-            $title .= ' style="display:none"';
-        return $title . '>: <span class="is-tag-index" data-tag-base="' . $tag . '">' . $value . '</span></span>';
+            $title .= ' hidden';
+        return $title . '">: <span class="is-tag-index" data-tag-base="' . $tag . '">' . $value . '</span></span>';
     }
 
     private function papstripRank($tag) {
