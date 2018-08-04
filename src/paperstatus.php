@@ -309,7 +309,7 @@ class PaperStatus extends MessageSet {
                     $pcs[] = Text::name_html($p);
             }
             if (!empty($pcs)) {
-                $this->warning_at("pcconf", $this->_("You may have missed conflicts of interest for %s. These conflicts are highlighted below; hover for more information. Please verify that all conflicts are correctly marked.", commajoin($pcs, "and"))
+                $this->warning_at("pcconf", $this->_("<p>You may have missed conflicts of interest for %s. These conflicts are highlighted below; hover for more information. Please verify that all conflicts are correctly marked.</p>", commajoin($pcs, "and"))
                     . $this->_('<p class="hint">This warning will not prevent submission.</p>'));
             }
         }

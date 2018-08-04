@@ -1500,6 +1500,9 @@ pre.email {
 .pcconfaff, .pcconfmatch, .pcrevsum {
 	font-size: 69%;
 }
+.pcconfaff {
+	display: block;
+}
 .pcconfmatch {
 	color: #aa4400;
 }
@@ -1520,13 +1523,14 @@ pre.email {
 	color: #800000;
 }
 
-.pctb_editconf_sconf {
+.pcconf-editselector {
 	float: right;
 	padding: 1px 2px 0 8px;
 	font-size: smaller;
 	white-space: nowrap;
+	display: block;
 }
-.pctbconfselector {
+.pcconf-selector {
 	font-size: 69%;
 }
 

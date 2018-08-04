@@ -458,8 +458,14 @@ class Ht {
             $type = substr($type, 1);
         if ($type === "merror")
             $type = "error";
-        if (is_array($content))
-            $content = '<p>' . join('</p><p>', $content) . '</p>';
+        if (is_array($content)) {
+            $content = join("", array_map(function ($x) {
+                if (str_starts_with($x, "<p") || str_starts_with($x, "<div"))
+                    return $x;
+                else
+                    return "<p>{$x}</p>";
+            }, $content));
+        }
         if ($content === "")
             return "";
         return '<div class="msg msg-' . $type . '">' . $content . '</div>';

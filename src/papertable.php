@@ -338,13 +338,15 @@ class PaperTable {
         return $this->has_problem_at($f) ? " has-error" : "";
     }
 
-    private function editable_papt($what, $heading, $extra = array()) {
-        $id = get($extra, "id");
-        return '<div class="papeg">'
-            . '<div class="papet' . $this->error_class($what)
-            . ($id ? "\" id=\"$id" : "") . '">'
-            . Ht::label($heading, get($extra, "for", false), ["class" => "papfn"])
-            . '</div>';
+    private function editable_papt($what, $heading, $extra = []) {
+        $for = get($extra, "for", false);
+        $t = '<div class="papeg">'
+            . '<div class="papet' . $this->error_class($what);
+        if ($for === "checkbox")
+            $t .= ' checki';
+        if (($id = get($extra, "id")))
+            $t .= '" id="' . $id;
+        return $t . '">' . Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => "papfn"]) . '</div>';
     }
 
     function messages_for($field) {
@@ -1210,13 +1212,13 @@ class PaperTable {
                     . Ht::checkbox("contact_active_{$cidx}", 1, $this->useRequest && isset($req_cemail[strtolower($au->email)]), ["data-default-checked" => ""]);
             } else
                 continue;
-            echo '<label><div class="checki"><span class="checkc">', $ctl, ' </span>',
+            echo '<div class="checki"><label><span class="checkc">', $ctl, ' </span>',
                 Text::user_html_nolink($au),
                 ($au->nonauthor ? " (<em>non-author</em>)" : "");
             if ($this->user->privChair && $au->contactId
                 && $au->contactId != $this->user->contactId)
                 echo '&nbsp;', actas_link($au);
-            echo '</div></label>';
+            echo '</label></div>';
             ++$cidx;
         }
         echo '</div><div data-row-template="',
@@ -1237,8 +1239,8 @@ class PaperTable {
             return;
         $pblind = !$this->prow || $this->prow->blind;
         $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
-        $heading = Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "&nbsp;" . $this->field_name("Anonymous submission");
-        echo $this->editable_papt("blind", $heading, ["for" => false]),
+        $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . " </span>" . $this->field_name("Anonymous submission");
+        echo $this->editable_papt("blind", $heading, ["for" => "checkbox"]),
             $this->field_hint("Anonymous submission", "Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"),
             $this->messages_for("blind"),
             "</div>\n\n";
@@ -1346,9 +1348,9 @@ class PaperTable {
         foreach ($this->conf->topic_map() as $tid => $tname) {
             $pchecked = isset($ptopics[$tid]);
             $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
-            echo '<div class="ctelt"><label><div class="ctelti checki"><span class="checkc">',
+            echo '<div class="ctelt"><div class="ctelti checki"><label><span class="checkc">',
                 Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked, "data-range-type" => "topic", "class" => "uix js-range-click"]),
-                ' </span>', $tname, '</div></label></div>';
+                ' </span>', $tname, '</label></div></div>';
         }
         echo "</div></div></div>\n\n";
     }
@@ -1376,7 +1378,7 @@ class PaperTable {
 
         if ($selectors) {
             $ctypes = Conflict::$type_descriptions;
-            $extra = array("class" => "pctbconfselector");
+            $extra = array("class" => "pcconf-selector");
             if ($this->admin) {
                 $ctypes["xsep"] = null;
                 $ctypes[CONFLICT_CHAIRMARK] = "Confirmed conflict";
@@ -1402,11 +1404,9 @@ class PaperTable {
 
             $label = '<span class="taghl">' . $this->user->name_html_for($p) . '</span>';
             if ($p->affiliation)
-                $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
-            if ($pcconfmatch)
-                $label .= $pcconfmatch[0];
+                $label .= '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</span>';
 
-            echo '<div class="ctelt"><label><div class="ctelti';
+            echo '<div class="ctelt"><div class="ctelti';
             if (!$selectors)
                 echo ' checki';
             echo ' clearfix';
@@ -1416,20 +1416,20 @@ class PaperTable {
                 echo ' boldtag';
             if ($pcconfmatch)
                 echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', $pcconfmatch[1]);
-            echo '">';
+            echo '"><label>';
 
             $js = ["id" => "pcc$id"];
             $disabled = $pct >= CONFLICT_AUTHOR
                 || ($pct > 0 && !$this->admin && !Conflict::is_author_mark($pct));
             if ($selectors) {
-                echo '<div class="pctb_editconf_sconf">';
+                echo '<span class="pcconf-editselector">';
                 if ($disabled)
                     echo '<strong>', ($pct >= CONFLICT_AUTHOR ? "Author" : "Conflict"), '</strong>';
                 else {
                     $js["data-default-value"] = Conflict::constrain_editable($pct, $this->admin);
                     echo Ht::select("pcc$id", $ctypes, Conflict::constrain_editable($ct, $this->admin), $js);
                 }
-                echo '</div>', $label;
+                echo '</span>', $label;
             } else {
                 $js["disabled"] = $disabled;
                 $js["data-default-checked"] = $pct > 0;
@@ -1440,7 +1440,10 @@ class PaperTable {
                                  $ct > 0, $js),
                     ' </span>', $label;
             }
-            echo "</div></label></div>";
+            echo "</label>";
+            if ($pcconfmatch)
+                echo $pcconfmatch[0];
+            echo "</div></div>";
         }
         echo "</div>\n</div></div>\n\n";
     }

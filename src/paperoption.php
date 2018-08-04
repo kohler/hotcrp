@@ -651,7 +651,7 @@ class CheckboxPaperOption extends PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
         $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->formid, "data-default-checked" => !!$ov->value]);
-        $pt->echo_editable_option_papt($this, $cb . "&nbsp;" . htmlspecialchars($this->title), true);
+        $pt->echo_editable_option_papt($this, '<span class="checkc">' . $cb . " </span>" . htmlspecialchars($this->title), "checkbox");
         echo "</div>\n\n";
         Ht::stash_script("jQuery('#{$this->formid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
@@ -731,10 +731,10 @@ class SelectorPaperOption extends PaperOption {
                 ["id" => $this->formid, "data-default-value" => $ov->value]);
         else
             foreach ($this->selector as $val => $text) {
-                echo '<label><div class="checki"><span class="checkc">',
+                echo '<div class="checki"><label><span class="checkc">',
                     Ht::radio($this->formid, $val, $val == $reqv,
                         ["data-default-checked" => $val == $ov->value]),
-                    ' </span>', htmlspecialchars($text), '</div></label>';
+                    ' </span>', htmlspecialchars($text), '</label></div>';
             }
         echo "</div></div>\n\n";
     }
