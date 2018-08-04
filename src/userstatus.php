@@ -679,14 +679,14 @@ class UserStatus extends MessageSet {
         }
 
         echo '<div class="f-2col">';
-        $t = Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => $this->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]) . $us->global_profile_difference($cj, "firstName");
+        $t = Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => $us->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]) . $us->global_profile_difference($cj, "firstName");
         $us->render_field("firstName", "First name (given name)", $t);
 
-        $t = Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => $this->autocomplete("family-name"), "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]) . $us->global_profile_difference($cj, "lastName");
+        $t = Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => $us->autocomplete("family-name"), "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]) . $us->global_profile_difference($cj, "lastName");
         $us->render_field("lastName", "Last name (family name)", $t);
         echo '</div>';
 
-        $t = Ht::entry("affiliation", get_s($reqj, "affiliation"), ["size" => 52, "autocomplete" => $this->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => get_s($cj, "affiliation")]) . $us->global_profile_difference($cj, "affiliation");
+        $t = Ht::entry("affiliation", get_s($reqj, "affiliation"), ["size" => 52, "autocomplete" => $us->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => get_s($cj, "affiliation")]) . $us->global_profile_difference($cj, "affiliation");
         $us->render_field("affiliation", "Affiliation", $t);
 
         echo "</div>\n\n"; // .profile-g
@@ -710,16 +710,16 @@ class UserStatus extends MessageSet {
             || !strcasecmp($us->user->email, $us->viewer->email)) {
             echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
             echo '<div class="', $us->control_class("password", "f-i"), '"><div class="f-c">Current password</div>',
-                Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => $this->autocomplete("current-password")]),
+                Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => $us->autocomplete("current-password")]),
                 '</div>';
         }
         if ($us->conf->opt("contactdb_dsn") && $us->conf->opt("contactdb_loginFormHeading"))
             echo $us->conf->opt("contactdb_loginFormHeading");
         echo '<div class="', $us->control_class("password", "f-i"), '">
       <div class="f-c">New password</div>',
-            Ht::password("upassword", $pws[0], ["size" => 52, "class" => "fn", "autocomplete" => $this->autocomplete("new-password")]);
+            Ht::password("upassword", $pws[0], ["size" => 52, "class" => "fn", "autocomplete" => $us->autocomplete("new-password")]);
         if ($us->user->plaintext_password() && $us->viewer->privChair) {
-            echo Ht::entry("upasswordt", $pws[2], ["size" => 52, "class" => "fx", "autocomplete" => $this->autocomplete("new-password")]);
+            echo Ht::entry("upasswordt", $pws[2], ["size" => 52, "class" => "fx", "autocomplete" => $us->autocomplete("new-password")]);
         }
         echo '</div>
     <div class="', $us->control_class("password", "f-i"), ' fn">
@@ -741,7 +741,7 @@ class UserStatus extends MessageSet {
     }
 
     static function render_demographics(UserStatus $us, $cj, $reqj, $uf) {
-        $t = Countries::selector("country", get_s($reqj, "country"), ["id" => "country", "data-default-value" => get_s($cj, "country"), "autocomplete" => $this->autocomplete("country")]) . $us->global_profile_difference($cj, "country");
+        $t = Countries::selector("country", get_s($reqj, "country"), ["id" => "country", "data-default-value" => get_s($cj, "country"), "autocomplete" => $us->autocomplete("country")]) . $us->global_profile_difference($cj, "country");
         $us->render_field("country", "Country", $t);
     }
 
@@ -804,7 +804,7 @@ class UserStatus extends MessageSet {
     }
 
     static function render_collaborators(UserStatus $us, $cj, $reqj, $uf) {
-        if (!$this->user->isPC && !$this->viewer->privChair)
+        if (!$us->user->isPC && !$us->viewer->privChair)
             return;
         echo '<div class="profile-g fx2"><h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
             "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
