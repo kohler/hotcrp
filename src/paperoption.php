@@ -489,10 +489,13 @@ class PaperOption implements Abbreviator {
     function form_position() {
         if ($this->form_position)
             return $this->form_position;
-        else if ($this->display == self::DISP_SUBMISSION)
-            return 15000 + $this->position;
+        $d = $this->display();
+        if ($d === self::DISP_SUBMISSION)
+            return 12000 + $this->position;
+        else if ($d === self::DISP_PROMINENT)
+            return 32000 + $this->position;
         else
-            return 50000 + $this->position;
+            return 36000 + $this->position;
     }
 
     function has_selector() {

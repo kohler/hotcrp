@@ -1,11 +1,11 @@
 [
-    {"name": "title", "position": 0, "callback": "*echo_editable_title"},
-    {"name": "submission", "position": 10000, "callback": "*echo_editable_submission"},
-    {"name": "authors", "position": 20000, "callback": "*echo_editable_authors"},
-    {"name": "anonymity", "position": 21000, "callback": "*echo_editable_anonymity"},
-    {"name": "contact_author", "position": 22000, "callback": "*echo_editable_contact_author"},
-    {"name": "abstract", "position": 30000, "callback": "*echo_editable_abstract"},
-    {"name": "topics", "position": 40000, "callback": "*echo_editable_topics"},
-    {"name": "pc_conflicts", "position": 60000, "callback": "*echo_editable_pc_conflicts"},
-    {"name": "collaborators", "position": 61000, "callback": "*echo_editable_collaborators"}
+    {"name": "title", "position": 1000, "callback": "*echo_editable_title"},
+    {"name": "submission", "position": 11000, "callback": "*echo_editable_submission"},
+    {"name": "authors", "position": 20500, "callback": "*echo_editable_authors"},
+    {"name": "anonymity", "position": 20600, "callback": "*echo_editable_anonymity"},
+    {"name": "contact_author", "position": 20700, "callback": "*echo_editable_contact_author"},
+    {"name": "abstract", "position": 21000, "callback": "*echo_editable_abstract"},
+    {"name": "topics", "position": 35000, "callback": "*echo_editable_topics"},
+    {"name": "pc_conflicts", "position": 100000, "callback": "*echo_editable_pc_conflicts"},
+    {"name": "collaborators", "position": 101000, "callback": "*echo_editable_collaborators"}
 ]
