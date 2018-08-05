@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Options_SettingRenderer {
+    private $option_classes = [];
     private $have_options = null;
     static private function find_option_req(SettingValues $sv, PaperOption $o, $xpos) {
         if ($o->id) {
@@ -11,6 +12,78 @@ class Options_SettingRenderer {
                     return $i;
         }
         return $xpos;
+    }
+    function add_option_class($class) {
+        $this->option_classes[] = $class;
+    }
+    static function render_type_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
+        $optvt = $o->type;
+        if ($optvt === "text" && $o->display_space > 3)
+            $optvt .= ":ds_" . $o->display_space;
+
+        $self->add_option_class("fold4" . ($o->has_selector() ? "o" : "c"));
+
+        $jtypes = $sv->conf->option_type_map();
+        if (!isset($jtypes[$optvt])
+            && ($made_type = $sv->conf->option_type($optvt)))
+            $jtypes[$optvt] = $made_type;
+        uasort($jtypes, "Conf::xt_position_compare");
+
+        $otypes = [];
+        foreach ($jtypes as $uf) {
+            if (!isset($uf->display_if)
+                || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)
+                || $uf->name === $optvt)
+                $otypes[$uf->name] = get($uf, "title", $uf->name);
+        }
+
+        $t = '<div class="' . $sv->sclass("optvt_$xpos", "entryi short")
+            . '">' . $sv->label("optvt_$xpos", "Type")
+            . Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"])
+            . "</div>\n";
+
+        $rows = 3;
+        $value = "";
+        if ($o->has_selector() && count($o->selector_options())) {
+            $value = join("\n", $o->selector_options()) . "\n";
+            $rows = max(count($o->selector_options()), 3);
+        }
+        return $t . '<div class="' . $sv->sclass("optv_$xpos", "entryi fx4")
+            . '">' . $sv->label("optv_$xpos", "Choices")
+            . Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "reviewtext need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"]))
+            . "</div>\n";
+    }
+    static function render_description_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
+        $self->add_option_class("fold3" . ((string) $o->description === "" ? "c" : "o"));
+        return '<div class="' . $sv->sclass("optd_$xpos", "entryi fx3")
+            . '">' . $sv->label("optd_$xpos", "Description")
+            . Ht::textarea("optd_$xpos", $o->description, ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "reviewtext settings-opt-description need-autogrow"])
+            . '</div>';
+    }
+    static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
+        $self->add_option_class("fold5" . ($o->final ? "o" : "c"));
+        return '<div class="' . $sv->sclass("optec_$xpos", "entryi short fx5")
+            . '">' . $sv->label("optec_$xpos", "Presence")
+            . '<span class="sep">'
+            . Ht::select("optec_$xpos", ["" => "All submissions", "final" => "Final versions"], $o->final ? "final" : "", ["class" => "uich js-settings-option-condition settings-opt-presence", "id" => "optec_$xpos"])
+            . "</span></div>";
+    }
+    static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
+        $self->add_option_class("fold6" . ($o->visibility === "rev" ? "c" : "o"));
+        return '<div class="' . $sv->sclass("optp_$xpos", "entryi short fx6")
+            . '">' . $sv->label("optp_$xpos", "Visibility")
+            . Ht::select("optp_$xpos", ["rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible", "admin" => "Administrators only"], $o->visibility, ["id" => "optp_$xpos", "class" => "settings-opt-visibility"])
+            . '</div>';
+    }
+    static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
+        $self->add_option_class("fold7" . ($o->display() === PaperOption::DISP_PROMINENT ? "c" : "o"));
+        return '<div class="' . $sv->sclass("optdt_$xpos", "entryi short fx7")
+            . '">' . $sv->label("optdt_$xpos", "Display")
+            . Ht::select("optdt_$xpos", ["prominent" => "Normal",
+                                         "topics" => "Grouped with topics",
+                                         "submission" => "Near submission"],
+                         $o->display_name(), ["id" => "optdt_$xpos", "class" => "settings-opt-display"])
+            . "</div>";
     }
     private function render_option(SettingValues $sv, PaperOption $o = null, $xpos) {
         if (!$o) {
@@ -43,14 +116,18 @@ class Options_SettingRenderer {
             }
         }
 
-        $optvt = $o->type;
-        if ($optvt === "text" && $o->display_space > 3)
-            $optvt .= ":ds_" . $o->display_space;
-        $jtype = $sv->conf->option_type($optvt) ? : (object) [];
+        $this->option_classes = ["settings-opt", "has-fold", "fold2o"];
 
-        echo '<div class="settings-opt has-fold fold2o',
-            ' fold4', (get($jtype, "has_selector") ? "o" : "c"),
-            '<a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
+        $t = "";
+        foreach ($sv->group_members("options/properties") as $gj) {
+            if (isset($gj->render_option_property_callback)) {
+                Conf::xt_resolve_require($gj);
+                $t .= call_user_func($gj->render_option_property_callback, $sv, $o, $xpos, $this, $gj);
+            }
+        }
+
+        echo '<div class="', join(" ", $this->option_classes),
+            '"><a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
 
         echo '<div class="', $sv->sclass("optn_$xpos", "f-i"), '">',
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "style" => "font-weight:bold", "class" => "need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"])),
@@ -58,84 +135,29 @@ class Options_SettingRenderer {
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div>';
 
-        echo '<div class="', $sv->sclass("optd_$xpos", "f-i"), '">',
-            $sv->label("optd_$xpos", "Description"),
-            Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "reviewtext need-autogrow")),
-            '</div>';
-
-        $show_final = $sv->conf->collectFinalPapers();
-        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $ox)
-            $show_final = $show_final || $ox->final;
-
-        $jtypes = $sv->conf->option_type_map();
-        if (isset($jtype->name)
-            && (!isset($jtypes[$jtype->name])
-                || Conf::xt_priority_compare($jtype, $jtypes[$jtype->name]) <= 0))
-            $jtypes[$jtype->name] = $jtype;
-        uasort($jtypes, "Conf::xt_position_compare");
-
-        $otypes = [];
-        foreach ($jtypes as $uf) {
-            if (!isset($uf->display_if)
-                || $this->conf->xt_check($uf->display_if, $uf, $sv->user))
-                $otypes[$uf->name] = get($uf, "title", $uf->name);
-        }
-
         Ht::stash_script('$(function () { settings_option_move_enable(); $(".js-settings-option-type, .js-settings-option-condition").change(); })', 'settings_optvt');
         Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_options" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
 
-        echo '<div class="f-horizontal">';
-        echo '<div class="', $sv->sclass("optvt_$xpos", "f-i"), '">',
-            $sv->label("optvt_$xpos", "Type"),
-            Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"]),
-            "</div>\n";
+        echo $t;
 
-        echo '<div class="', $sv->sclass("optec_$xpos", "f-i"), '">',
-            $sv->label("optec_$xpos", "Presence"),
-            Ht::select("optec_$xpos", ["" => "All submissions", "final" => "Final versions"], $o->final ? "final" : "", ["class" => "uich js-settings-option-condition", "id" => "optec_$xpos"]),
-            "</div>\n";
-
-        echo '<div class="', $sv->sclass("optp_$xpos", "f-i"), '">',
-            $sv->label("optp_$xpos", "Visibility"),
-            Ht::select("optp_$xpos", ["admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"], $o->visibility, ["id" => "optp_$xpos"]),
-            "</div>\n";
-
-        echo '<div class="', $sv->sclass("optdt_$xpos", "f-i"), '">',
-            $sv->label("optdt_$xpos", "Display"),
-            Ht::select("optdt_$xpos", ["prominent" => "Normal",
-                                       "submission" => "Near submission",
-                                       "topics" => "Grouped with topics"],
-                       $o->display_name(), ["id" => "optdt_$xpos"]),
-            "</div>";
-
-        echo "</div>\n\n";
-
-        $rows = 3;
-        if ($jtype && get($jtype, "has_selector") && count($o->selector_options())) {
-            $value = join("\n", $o->selector_options()) . "\n";
-            $rows = max(count($o->selector_options()), 3);
-        } else
-            $value = "";
-        echo '<div class="', $sv->sclass("optv_$xpos", "f-i fx4"), '">',
-            $sv->label("optv_$xpos", "Choices"),
-            Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "reviewtext need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"])),
-            "</div>\n";
-
-        $delete_text = "Delete from form";
-        if ($o->id) {
-            if ($this->have_options === null) {
-                $this->have_options = [];
-                foreach ($sv->conf->fetch_rows("select distinct optionId from PaperOption") as $row)
-                    $this->have_options[$row[0]] = true;
-            }
-            if (isset($this->have_options[$o->id]))
-                $delete_text = "Delete from form and submissions";
+        if ($o->id && $this->have_options === null) {
+            $this->have_options = [];
+            foreach ($sv->conf->fetch_rows("select optionId, count(distinct paperId) from PaperOption group by optionId") as $row)
+                $this->have_options[$row[0]] = $row[1];
         }
 
-        echo '<div class="f-i">',
-            Ht::button("Move up", ["class" => "btn btn-sm ui js-settings-option-move moveup"]),
-            Ht::button("Move down", ["class" => "btn btn-sm ui js-settings-option-move movedown", "style" => "margin-left: 1em"]),
-            Ht::button($delete_text, ["class" => "btn btn-sm ui js-settings-option-move delete", "style" => "margin-left: 1em"]),
+        echo '<div class="f-i btnp">',
+            '<span class="btnbox">',
+            Ht::button(Icons::ui_description(), ["class" => "btn btn-licon ui js-settings-option-description need-tooltip", "data-tooltip" => "Description"]),
+            Ht::button(Icons::ui_edit_hide(), ["class" => "btn btn-licon ui js-settings-option-presence need-tooltip", "data-tooltip" => "Presence on form"]),
+            Ht::button(Icons::ui_visibility_hide(), ["class" => "btn btn-licon ui js-settings-option-visibility need-tooltip", "data-tooltip" => "Reviewer visibility"]),
+            Ht::button(Icons::ui_display(), ["class" => "btn btn-licon ui js-settings-option-display need-tooltip", "data-tooltip" => "Display type"]),
+            '</span>',
+            '<span class="btnbox">',
+            Ht::button(Icons::ui_movearrow(0), ["class" => "btn btn-licon ui js-settings-option-move moveup need-tooltip", "data-tooltip" => "Change display order"]),
+            Ht::button(Icons::ui_movearrow(2), ["class" => "btn btn-licon ui js-settings-option-move movedown need-tooltip", "data-tooltip" => "Change display order"]),
+            '</span>',
+            Ht::button(Icons::ui_trash(), ["class" => "btn btn-licon ui js-settings-option-move delete need-tooltip", "data-tooltip" => "Delete", "data-option-exists" => get($this->have_options, $o->id)]),
             "</div>\n";
 
         echo '</div>';
@@ -145,18 +167,23 @@ class Options_SettingRenderer {
         echo "<h3 class=\"settings\">Submission fields</h3>\n";
         echo "<div class='g'></div>\n",
             Ht::hidden("has_options", 1), "\n\n";
-        $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
+
         echo '<div id="settings_opts" class="c">';
         $self = new Options_SettingRenderer;
         $pos = 0;
+        $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
         foreach ($all_options as $o)
             $self->render_option($sv, $o, ++$pos);
-        echo "</div>\n",
-            '<div style="margin-top:2em">',
-            Ht::button("Add submission field", ["class" => "btn ui js-settings-option-new"]),
-            "</div>\n<div id=\"settings_newopt\" style=\"display:none\">";
+        echo "</div>\n";
+
+        ob_start();
         $self->render_option($sv, null, 0);
-        echo "</div>\n\n";
+        $newopt = ob_get_clean();
+
+        echo '<div style="margin-top:2em" id="settings_newopt" data-template="',
+            htmlspecialchars($newopt), '">',
+            Ht::button("Add submission field", ["class" => "btn ui js-settings-option-new"]),
+            "</div>\n";
     }
     static function crosscheck(SettingValues $sv) {
         if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))

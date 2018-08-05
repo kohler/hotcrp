@@ -265,6 +265,9 @@ span.nb {
 	content: "";
 	line-height: 1.8;
 }
+.entryi.short > label:before {
+	line-height: 1;
+}
 .checki, .entryi {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
@@ -801,6 +804,10 @@ a.closebtn {
 .btn.btn-sm {
 	font-size: smaller;
 }
+.btn.btn-licon {
+	padding: 1px 4px;
+	font-size: 120%;
+}
 .btn:hover {
 	border: 1px solid #cccccc;
 	background-image: linear-gradient(#eeeeee, #dddddd);
@@ -899,6 +906,9 @@ a.closebtn {
 .licon {
 	vertical-align: -0.05em;
 	fill: currentColor;
+}
+.btn > .licon {
+	vertical-align: -0.15em;
 }
 .licon-s {
 	vertical-align: -0.05em;

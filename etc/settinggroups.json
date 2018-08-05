@@ -103,6 +103,26 @@
         "render_callback": "Options_SettingRenderer::render"
     },
     {
+        "name": "options/properties/type", "position": 10,
+        "render_option_property_callback": "Options_SettingRenderer::render_type_property"
+    },
+    {
+        "name": "options/properties/description", "position": 20,
+        "render_option_property_callback": "Options_SettingRenderer::render_description_property"
+    },
+    {
+        "name": "options/properties/presence", "position": 30,
+        "render_option_property_callback": "Options_SettingRenderer::render_presence_property"
+    },
+    {
+        "name": "options/properties/visibility", "position": 40,
+        "render_option_property_callback": "Options_SettingRenderer::render_visibility_property"
+    },
+    {
+        "name": "options/properties/display", "position": 50,
+        "render_option_property_callback": "Options_SettingRenderer::render_display_property"
+    },
+    {
         "name": "topics", "group": "subform", "position": 480,
         "render_callback": "Topics_SettingRenderer::render"
     },

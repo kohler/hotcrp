@@ -14,13 +14,46 @@ function next_lexicographic_permutation(i, size) {
 
 
 handle_ui.on("js-settings-option-type", function (event) {
-    foldup.call(this, null, {n: 4, f: !/^(?:selector|radio)/.test(this.value)});
+    var issel = /^(?:selector|radio)/.test(this.value);
+    foldup.call(this, null, {n: 4, f: !issel});
+    // ensure display and visibility are shown
+    var which = this.id.replace(/^.*_/, "_");
+    if ($("#optd" + which).val())
+        foldup.call(this, null, {n: 3, f: false});
+    if ($("#optp" + which).val() !== "rev")
+        foldup.call(this, null, {n: 6, f: false});
+    if ($("#optdt" + which).val() !== "prominent")
+        foldup.call(this, null, {n: 7, f: false});
+    /* if (document.activeElement === this && issel)
+        $("#optv" + which).focus(); */
+});
+
+handle_ui.on("js-settings-option-description", function () {
+    foldup.call(this, null, {n: 3, f: false});
+    if (document.activeElement === this)
+        $(this).closest(".settings-opt").find(".settings-opt-description").focus();
+});
+
+handle_ui.on("js-settings-option-presence", function (event) {
+    foldup.call(this, null, {n: 5, f: false});
+    if (document.activeElement === this)
+        $(this).closest(".settings-opt").find(".settings-opt-presence").focus();
 });
 
 handle_ui.on("js-settings-option-condition", function (event) {
-    foldup.call(this, null, {n: 5, f: !/^search/.test(this.value)});
+    foldup.call(this, null, {n: 8, f: !/^search/.test(this.value)});
+});
+
+handle_ui.on("js-settings-option-visibility", function (event) {
+    foldup.call(this, null, {n: 6, f: false});
     if (document.activeElement === this)
-        $("#" + this.id.replace(/optec/, "optecs")).focus();
+        $(this).closest(".settings-opt").find(".settings-opt-visibility").focus();
+});
+
+handle_ui.on("js-settings-option-display", function (event) {
+    foldup.call(this, null, {n: 7, f: false});
+    if (document.activeElement === this)
+        $(this).closest(".settings-opt").find(".settings-opt-display").focus();
 });
 
 handle_ui.on("js-settings-option-move", function (event) {
@@ -30,30 +63,36 @@ handle_ui.on("js-settings-option-move", function (event) {
     else if (hasClass(this, "movedown") && odiv.nextSibling)
         odiv.parentNode.insertBefore(odiv, odiv.nextSibling.nextSibling);
     else if (hasClass(this, "delete")) {
-        if ($(odiv).find(".settings-opt-id").val() === "new")
-            $(odiv).remove();
+        var $odiv = $(odiv), x;
+        if ($odiv.find(".settings-opt-id").val() === "new")
+            $odiv.remove();
         else {
-            $(odiv).find(".settings-opt-fp").val("deleted").change();
-            $(odiv).find(".f-i").each(function () {
+            tooltip.erase.call(this);
+            $odiv.find(".settings-opt-fp").val("deleted").change();
+            $odiv.find(".f-i, .entryi").each(function () {
                 if (!$(this).find(".settings-opt-fp").length)
                     $(this).remove();
             });
-            $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
-            $(odiv).append('<div class="f-i"><em>(Field deleted)</em></div></div>');
+            $odiv.find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
+            if ((x = this.getAttribute("data-option-exists")))
+                $odiv.append('<div class="f-i"><em>This field will be deleted from the submission form and from ' + plural(x, 'submission') + '.</em></div>');
+            else
+                $odiv.append('<div class="f-i"><em>This field will be deleted from the submission form.</em></div>');
         }
     }
     settings_option_move_enable();
 });
 
 handle_ui.on("js-settings-option-new", function (event) {
-    var h = $("#settings_newopt").html();
+    var h = $("#settings_newopt").attr("data-template");
     var next = 1;
     while ($("#optn_" + next).length)
         ++next;
     h = h.replace(/_0/g, "_" + next);
-    odiv = $(h).appendTo("#settings_opts");
+    var odiv = $(h).appendTo("#settings_opts");
     mktemptext(odiv);
-    odiv.find("textarea").autogrow();
+    odiv.find(".need-autogrow").autogrow();
+    odiv.find(".need-tooltip").each(tooltip);
     $("#optn_" + next)[0].focus();
     settings_option_move_enable();
 });
