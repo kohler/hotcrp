@@ -110,6 +110,8 @@ class Options_SettingRenderer {
                 ];
                 if (get($sv->req, "optec_$oxpos") === "final")
                     $args["final"] = true;
+                else if (get($sv->req, "optec_$oxpos") === "search")
+                    $args["edit_condition"] = get($sv->req, "optecs_$oxpos");
                 $o = PaperOption::make($args, $sv->conf);
                 if ($o->has_selector())
                     $o->set_selector_options(explode("\n", rtrim(get($sv->req, "optv_$oxpos", ""))));
@@ -202,6 +204,7 @@ class Options_SettingParser extends SettingParser {
     private $next_optionid;
     private $req_optionid;
     private $stashed_options = false;
+    private $fake_prow;
 
     function option_request_to_json(SettingValues $sv, $xpos) {
         $name = simplify_whitespace(get($sv->req, "optn_$xpos", ""));
@@ -244,6 +247,20 @@ class Options_SettingParser extends SettingParser {
         if (($optec = get($sv->req, "optec_$xpos"))) {
             if ($optec === "final")
                 $oarg["final"] = true;
+            else if ($optec === "search") {
+                $optecs = (string) get($sv->req, "optecs_$xpos");
+                if ($optecs !== "" && $optecs !== "(All)") {
+                    $ps = new PaperSearch($sv->conf->site_contact(), $optecs);
+                    if (!$this->fake_prow)
+                        $this->fake_prow = new PaperInfo(null, null, $sv->conf);
+                    if ($ps->term()->compile_edit_condition($this->fake_prow, $ps) === null)
+                        $sv->error_at("optecs_$xpos", "Invalid search term for field condition. (Only simple searches are allowed, such as “has:OPTION” or “#TAG OR topic:TOPICNAME”.)");
+                    else
+                        $oarg["edit_condition"] = $optecs;
+                    if (!empty($ps->warnings))
+                        $sv->warning_at("optecs_$xpos", join("<br>", $ps->warnings));
+                }
+            }
         }
 
         $jtype = $sv->conf->option_type($oarg["type"]);
