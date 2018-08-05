@@ -792,7 +792,7 @@ a.closebtn {
 .btn {
 	border-radius: 4px;
 	display: inline-block;
-	border: 1px solid #d5d5d5;
+	border: 1px solid #b5b5b5;
 	background: white;
 	background-image: linear-gradient(#fcfcfc, #f0f0f0);
 	padding: 2px 6px 3px;
@@ -809,7 +809,7 @@ a.closebtn {
 	font-size: 120%;
 }
 .btn:hover {
-	border: 1px solid #cccccc;
+	border: 1px solid #a5a5a5;
 	background-image: linear-gradient(#eeeeee, #dddddd);
 }
 .btn:active {
@@ -850,7 +850,7 @@ a.closebtn {
 .alert .btn.btn-alertable:disabled, .alert .btn.btn-alertable:disabled:hover,
 .btn.btn-highlight:disabled, .alert .btn.btn-highlight:disabled:hover {
 	color: rgba(102, 102, 102, 0.5);
-	border-color: #d5d5d5;
+	border-color: #c5c5c5;
 	background: rgba(222, 222, 222, 0.5);
 }
 .aabig .btn {
