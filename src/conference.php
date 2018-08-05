@@ -87,6 +87,7 @@ class Conf {
     private $_pc_members_fully_loaded = false;
     private $_user_cache = null;
     private $_user_cache_missing = null;
+    private $_site_contact;
     private $_review_form_cache = null;
     private $_abbrev_matcher = null;
     private $_date_format_initialized = false;
@@ -519,6 +520,7 @@ class Conf {
         $this->_api_map = null;
         $this->_list_action_map = $this->_list_action_renderers = $this->_list_action_factories = null;
         $this->_file_filters = null;
+        $this->_site_contact = null;
     }
 
     function has_setting($name) {
@@ -1476,22 +1478,29 @@ class Conf {
     }
 
     function site_contact() {
-        $contactEmail = $this->opt("contactEmail");
-        if (!$contactEmail || $contactEmail == "you@example.com") {
-            $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
-            if ($result && ($row = $result->fetch_object())) {
-                $this->set_opt("defaultSiteContact", true);
-                $this->set_opt("contactName", Text::name_text($row));
-                $this->set_opt("contactEmail", $row->email);
+        if (!$this->_site_contact) {
+            $args = [
+                "fullName" => $this->opt("contactName"),
+                "email" => $this->opt("contactEmail"),
+                "isChair" => true, "isPC" => true, "is_site_contact" => true,
+                "contactTags" => null
+            ];
+            if (!$args["email"] || $args["email"] === "you@example.com") {
+                $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
+                if ($result && ($row = $result->fetch_object())) {
+                    $this->set_opt("defaultSiteContact", true);
+                    $this->set_opt("contactName", Text::name_text($row));
+                    $this->set_opt("contactEmail", $row->email);
+                    unset($args["fullName"]);
+                    $args["email"] = $row->email;
+                    $args["firstName"] = $row->firstName;
+                    $args["lastName"] = $row->lastName;
+                }
+                Dbl::free($result);
             }
-            Dbl::free($result);
+            $this->_site_contact = new Contact((object) $args, $this);
         }
-        return new Contact((object) array("fullName" => $this->opt["contactName"],
-                                          "email" => $this->opt["contactEmail"],
-                                          "isChair" => true,
-                                          "isPC" => true,
-                                          "is_site_contact" => true,
-                                          "contactTags" => null), $this);
+        return $this->_site_contact;
     }
 
     function user_by_id($id) {
