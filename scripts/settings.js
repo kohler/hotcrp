@@ -13,21 +13,23 @@ function next_lexicographic_permutation(i, size) {
 }
 
 
-function settings_option_type() {
-    var v = this.value;
-    foldup.call(this, null, {n: 2, f: !/:final/.test(v)});
-    foldup.call(this, null, {n: 3, f: v != "pdf:final"});
-    foldup.call(this, null, {n: 4, f: !/^(?:selector|radio)/.test(v)});
-    return true;
-}
+handle_ui.on("js-settings-option-type", function (event) {
+    foldup.call(this, null, {n: 4, f: !/^(?:selector|radio)/.test(this.value)});
+});
 
-function settings_option_move() {
+handle_ui.on("js-settings-option-condition", function (event) {
+    foldup.call(this, null, {n: 5, f: !/^search/.test(this.value)});
+    if (document.activeElement === this)
+        $("#" + this.id.replace(/optec/, "optecs")).focus();
+});
+
+handle_ui.on("js-settings-option-move", function (event) {
     var odiv = $(this).closest(".settings-opt")[0];
-    if ($(this).hasClass("settings-opt-moveup") && odiv.previousSibling)
+    if (hasClass(this, "moveup") && odiv.previousSibling)
         odiv.parentNode.insertBefore(odiv, odiv.previousSibling);
-    else if ($(this).hasClass("settings-opt-movedown") && odiv.nextSibling)
+    else if (hasClass(this, "movedown") && odiv.nextSibling)
         odiv.parentNode.insertBefore(odiv, odiv.nextSibling.nextSibling);
-    else if ($(this).hasClass("settings-opt-delete")) {
+    else if (hasClass(this, "delete")) {
         if ($(odiv).find(".settings-opt-id").val() === "new")
             $(odiv).remove();
         else {
@@ -39,25 +41,27 @@ function settings_option_move() {
             $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
             $(odiv).append('<div class="f-i"><em>(Field deleted)</em></div></div>');
         }
-    } else if ($(this).hasClass("settings-opt-new")) {
-        var h = $("#settings_newopt").html();
-        var next = 1;
-        while ($("#optn_" + next).length)
-            ++next;
-        h = h.replace(/_0/g, "_" + next);
-        odiv = $(h).appendTo("#settings_opts");
-        mktemptext(odiv);
-        odiv.find("textarea").autogrow();
-        $("#optn_" + next)[0].focus();
     }
     settings_option_move_enable();
-    return false;
-}
+});
+
+handle_ui.on("js-settings-option-new", function (event) {
+    var h = $("#settings_newopt").html();
+    var next = 1;
+    while ($("#optn_" + next).length)
+        ++next;
+    h = h.replace(/_0/g, "_" + next);
+    odiv = $(h).appendTo("#settings_opts");
+    mktemptext(odiv);
+    odiv.find("textarea").autogrow();
+    $("#optn_" + next)[0].focus();
+    settings_option_move_enable();
+});
 
 function settings_option_move_enable() {
-    $(".settings-opt-moveup, .settings-opt-movedown").prop("disabled", false);
-    $(".settings-opt:first-child .settings-opt-moveup").prop("disabled", true);
-    $(".settings-opt:last-child .settings-opt-movedown").prop("disabled", true);
+    $(".settings-opt .moveup, .settings-opt .movedown").prop("disabled", false);
+    $(".settings-opt:first-child .moveup").prop("disabled", true);
+    $(".settings-opt:last-child .movedown").prop("disabled", true);
     var index = 0;
     $(".settings-opt-fp").each(function () {
         if (this.value !== "deleted" && this.name !== "optfp_0") {
@@ -300,10 +304,10 @@ function remove() {
     fill_order();
 }
 
-var revfield_template = '<table id="revfield_$" class="settings-revfield f-contain has-fold fold2c errloc_$" data-revfield="$"><tbody>\
-<tr><td class="nw"><a href="#" class="q revfield-folder">\
+var revfield_template = '<div id="revfield_$" class="settings-revfield f-contain has-fold fold2c errloc_$" data-revfield="$">\
+<a href="" class="q settings-field-folder">\
 <span class="expander"><span class="in0 fx2">▼</span><span class="in1 fn2 need-tooltip" data-tooltip="Edit field" data-tooltip-dir="r">▶</span></span>\
-</a></td><td>\
+</a>\
 <div id="revfieldview_$" class="settings-revfieldview fn2 ui js-foldup"></div>\
 <div id="revfieldedit_$" class="settings-revfieldedit fx2">\
   <div class="f-i">\
@@ -341,8 +345,7 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
 <button id="remove_$" class="btn btn-sm revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
 <input type="hidden" name="order_$" id="order_$" class="revfield_order" value="0" />\
   </div>\
-</div>\
-</td></tr></tbody></table>';
+</div></div>';
 
 var revfieldview_template = '<div style="line-height:1.35">\
 <span class="settings-revfn"></span>\
@@ -358,9 +361,12 @@ tooltip.add_builder("settings-review-form", function (info) {
 });
 
 tooltip.add_builder("settings-option", function (info) {
-    return $.extend({
-        dir: "h", content: $(/^optn/.test(this.name) ? "#option_caption_name" : "#option_caption_options").html()
-    }, info);
+    var x = "#option_caption_options";
+    if (/^optn/.test(this.name))
+        x = "#option_caption_name";
+    else if (/^optecs/.test(this.name))
+        x = "#option_caption_condition_search";
+    return $.extend({dir: "h", content: $(x).html()}, info);
 });
 
 function option_value_html(fieldj, value) {
@@ -511,7 +517,7 @@ function rfs(data) {
     // construct form
     for (i = 0; i != fieldorder.length; ++i)
         append_field(fieldorder[i], i + 1);
-    $("#reviewform_container").on("click", "a.revfield-folder", view_unfold);
+    $("#reviewform_container").on("click", "a.settings-field-folder", view_unfold);
     $("#reviewform_container").on("fold", ".settings-revfield", function (evt, opts) {
         if (!opts.f) {
             $(this).find("textarea").css("height", "auto").autogrow();

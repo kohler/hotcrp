@@ -1910,7 +1910,7 @@ class PaperSearch {
         }
     }
 
-    function prepare_term() {
+    function term() {
         if ($this->_qe !== null)
             return $this->_qe;
 
@@ -1931,6 +1931,9 @@ class PaperSearch {
             $this->warn($contradiction);
 
         return ($this->_qe = $qe);
+    }
+    function prepare_term() { // XXX backwards compat
+        return $this->term();
     }
 
     private function _prepare_result($qe) {
@@ -2065,7 +2068,7 @@ class PaperSearch {
             return true;
         }
 
-        $qe = $this->prepare_term();
+        $qe = $this->term();
         //Conf::msg_debugt(json_encode($qe->debug_json()));
 
         // collect papers
@@ -2240,7 +2243,7 @@ class PaperSearch {
 
     function test(PaperInfo $prow) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $qe = $this->prepare_term();
+        $qe = $this->term();
         $x = $this->test_limit($prow) && $qe->exec($prow, $this);
         $this->user->set_overrides($old_overrides);
         return $x;
@@ -2248,7 +2251,7 @@ class PaperSearch {
 
     function test_review(PaperInfo $prow, ReviewInfo $rrow) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $qe = $this->prepare_term();
+        $qe = $this->term();
         $this->test_review = $rrow;
         $x = $this->test_limit($prow) && $qe->exec($prow, $this);
         $this->test_review = null;
@@ -2440,7 +2443,7 @@ class PaperSearch {
     function field_highlighters() {
         if ($this->_match_preg === null) {
             $this->_match_preg = [];
-            $this->prepare_term();
+            $this->term();
             if (!empty($this->regex)) {
                 foreach (TextMatch_SearchTerm::$map as $k => $v)
                     if (isset($this->regex[$k]) && !empty($this->regex[$k]))

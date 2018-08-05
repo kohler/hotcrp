@@ -26,13 +26,18 @@ class Options_SettingRenderer {
             $oxpos = self::find_option_req($sv, $o, $xpos);
             if (isset($sv->req["optn_$oxpos"])) {
                 $id = cvtint($sv->req["optid_$oxpos"]);
-                $o = PaperOption::make(array("id" => $id <= 0 ? 0 : $id,
+                $args = [
+                    "id" => $id <= 0 ? 0 : $id,
                     "name" => $sv->req["optn_$oxpos"],
                     "description" => get($sv->req, "optd_$oxpos"),
                     "type" => get($sv->req, "optvt_$oxpos", "checkbox"),
                     "visibility" => get($sv->req, "optp_$oxpos", ""),
                     "position" => get($sv->req, "optfp_$oxpos", 1),
-                    "display" => get($sv->req, "optdt_$oxpos")), $sv->conf);
+                    "display" => get($sv->req, "optdt_$oxpos")
+                ];
+                if (get($sv->req, "optec_$oxpos") === "final")
+                    $args["final"] = true;
+                $o = PaperOption::make($args, $sv->conf);
                 if ($o->has_selector())
                     $o->set_selector_options(explode("\n", rtrim(get($sv->req, "optv_$oxpos", ""))));
             }
@@ -42,11 +47,10 @@ class Options_SettingRenderer {
         if ($optvt === "text" && $o->display_space > 3)
             $optvt .= ":ds_" . $o->display_space;
         $jtype = $sv->conf->option_type($optvt) ? : (object) [];
-        if ($o->final)
-            $optvt .= ":final";
 
-        echo '<div class="settings-opt has-fold fold2c fold3o ',
-            (get($jtype, "has_selector") ? "fold4o" : "fold4c"), '">';
+        echo '<div class="settings-opt has-fold fold2o',
+            ' fold4', (get($jtype, "has_selector") ? "o" : "c"),
+            '<a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
 
         echo '<div class="', $sv->sclass("optn_$xpos", "f-i"), '">',
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "style" => "font-weight:bold", "class" => "need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"])),
@@ -70,52 +74,39 @@ class Options_SettingRenderer {
             $jtypes[$jtype->name] = $jtype;
         uasort($jtypes, "Conf::xt_position_compare");
 
-        $sotypes = $fotypes = [];
+        $otypes = [];
         foreach ($jtypes as $uf) {
-            if (isset($uf->display_if)
-                && !$this->conf->xt_check($uf->display_if, $uf, $sv->user))
-                continue;
-            if (get($uf, "submission") !== false)
-                $sotypes[$uf->name] = get($uf, "title", $uf->name);
-            if (get($uf, "final") !== false)
-                $fotypes[$uf->name] = get($uf, "title", $uf->name);
+            if (!isset($uf->display_if)
+                || $this->conf->xt_check($uf->display_if, $uf, $sv->user))
+                $otypes[$uf->name] = get($uf, "title", $uf->name);
         }
 
-        $otypes = [];
-        if ($sotypes) {
-            if ($show_final)
-                $otypes["__submission_options__"] = ["optgroup", "Fields for submissions"];
-            $otypes = array_merge($otypes, $sotypes);
-        }
-        if ($fotypes && $show_final) {
-            $otypes["__final_options__"] = ["optgroup", "Fields for final versions"];
-            foreach ($fotypes as $name => $title)
-                $otypes["{$name}:final"] = "{$title} (final version)";
-        }
-        Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings-optvt", settings_option_type); $("#settings_opts").on("click", "button", settings_option_move); settings_option_move_enable(); $("select.settings-optvt").each(settings_option_type); })', 'settings_optvt');
-        Ht::stash_html('<div class="hidden" id="option_caption_name">Field names should be short and memorable (they are used as search keywords).</div><div class="hidden" id="option_caption_options">Enter choices one per line.</div>', 'settings_option_caption');
+        Ht::stash_script('$(function () { settings_option_move_enable(); $(".js-settings-option-type, .js-settings-option-condition").change(); })', 'settings_optvt');
+        Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_options" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
 
         echo '<div class="f-horizontal">';
         echo '<div class="', $sv->sclass("optvt_$xpos", "f-i"), '">',
             $sv->label("optvt_$xpos", "Type"),
-            Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "settings-optvt", "id" => "optvt_$xpos"]),
+            Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"]),
             "</div>\n";
 
-        echo '<div class="', $sv->sclass("optp_$xpos", "f-i fn2"), '">',
+        echo '<div class="', $sv->sclass("optec_$xpos", "f-i"), '">',
+            $sv->label("optec_$xpos", "Presence"),
+            Ht::select("optec_$xpos", ["" => "All submissions", "final" => "Final versions"], $o->final ? "final" : "", ["class" => "uich js-settings-option-condition", "id" => "optec_$xpos"]),
+            "</div>\n";
+
+        echo '<div class="', $sv->sclass("optp_$xpos", "f-i"), '">',
             $sv->label("optp_$xpos", "Visibility"),
             Ht::select("optp_$xpos", ["admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"], $o->visibility, ["id" => "optp_$xpos"]),
             "</div>\n";
 
-        echo '<div class="', $sv->sclass("optdt_$xpos", "f-i fn3"), '">',
+        echo '<div class="', $sv->sclass("optdt_$xpos", "f-i"), '">',
             $sv->label("optdt_$xpos", "Display"),
             Ht::select("optdt_$xpos", ["prominent" => "Normal",
                                        "submission" => "Near submission",
                                        "topics" => "Grouped with topics"],
                        $o->display_name(), ["id" => "optdt_$xpos"]),
             "</div>";
-
-        if (isset($otypes["pdf:final"]))
-            echo '<hr class="c fx2"><div class="f-h fx2">Final version fields are set by accepted authors during the final version submission period. They are always visible to PC and reviewers.</div>';
 
         echo "</div>\n\n";
 
@@ -142,9 +133,9 @@ class Options_SettingRenderer {
         }
 
         echo '<div class="f-i">',
-            Ht::button("Move up", ["class" => "btn btn-sm settings-opt-moveup"]),
-            Ht::button("Move down", ["class" => "btn btn-sm settings-opt-movedown", "style" => "margin-left: 1em"]),
-            Ht::button($delete_text, ["class" => "btn btn-sm settings-opt-delete", "style" => "margin-left: 1em"]),
+            Ht::button("Move up", ["class" => "btn btn-sm ui js-settings-option-move moveup"]),
+            Ht::button("Move down", ["class" => "btn btn-sm ui js-settings-option-move movedown", "style" => "margin-left: 1em"]),
+            Ht::button($delete_text, ["class" => "btn btn-sm ui js-settings-option-move delete", "style" => "margin-left: 1em"]),
             "</div>\n";
 
         echo '</div>';
@@ -162,9 +153,8 @@ class Options_SettingRenderer {
             $self->render_option($sv, $o, ++$pos);
         echo "</div>\n",
             '<div style="margin-top:2em">',
-            Ht::button("Add submission field", ["class" => "settings-opt-new btn"]),
+            Ht::button("Add submission field", ["class" => "btn ui js-settings-option-new"]),
             "</div>\n<div id=\"settings_newopt\" style=\"display:none\">";
-        Ht::stash_script('$("button.settings-opt-new").on("click", settings_option_move)');
         $self->render_option($sv, null, 0);
         echo "</div>\n\n";
     }
@@ -217,14 +207,17 @@ class Options_SettingParser extends SettingParser {
         if (($optvt = get($sv->req, "optvt_$xpos"))) {
             if (($pos = strpos($optvt, ":")) !== false) {
                 $oarg["type"] = substr($optvt, 0, $pos);
-                if (preg_match('/:final/', $optvt))
-                    $oarg["final"] = true;
                 if (preg_match('/:ds_(\d+)/', $optvt, $m))
                     $oarg["display_space"] = (int) $m[1];
             } else
                 $oarg["type"] = $optvt;
         } else
             $oarg["type"] = "checkbox";
+
+        if (($optec = get($sv->req, "optec_$xpos"))) {
+            if ($optec === "final")
+                $oarg["final"] = true;
+        }
 
         $jtype = $sv->conf->option_type($oarg["type"]);
         if ($jtype && get($jtype, "has_selector")) {
@@ -238,14 +231,8 @@ class Options_SettingParser extends SettingParser {
         }
 
         $oarg["visibility"] = get($sv->req, "optp_$xpos", "rev");
-        if ($oarg["final"])
-            $oarg["visibility"] = "rev";
-
         $oarg["position"] = (int) get($sv->req, "optfp_$xpos", 1);
-
         $oarg["display"] = get($sv->req, "optdt_$xpos");
-        if ($oarg["type"] === "pdf" && $oarg["final"])
-            $oarg["display"] = "submission";
 
         $o = PaperOption::make($oarg, $sv->conf);
         $o->req_xpos = $xpos;
