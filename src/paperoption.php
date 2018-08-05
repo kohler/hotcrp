@@ -320,6 +320,8 @@ class PaperOption implements Abbreviator {
     public $internal;
     private $form_position;
     public $allow_if; // public for PaperOptionList
+    private $edit_condition;
+    private $_ecs;
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -397,6 +399,11 @@ class PaperOption implements Abbreviator {
 
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;
+
+        if (($x = get($args, "edit_condition"))) {
+            $this->edit_condition = $x;
+            $this->_ecs = new PaperSearch($this->conf->site_contact(), $x);
+        }
     }
 
     static function make($args, $conf) {
@@ -485,6 +492,16 @@ class PaperOption implements Abbreviator {
             return 36000 + $this->position;
     }
 
+    function edit_condition() {
+        return $this->edit_condition;
+    }
+    function test_edit_condition(PaperInfo $prow) {
+        return $this->_ecs->test($prow);
+    }
+    function compile_edit_condition(PaperInfo $prow) {
+        return $this->_ecs->term()->compile_edit_condition($prow, $this->_ecs);
+    }
+
     function has_selector() {
         return false;
     }
@@ -543,6 +560,8 @@ class PaperOption implements Abbreviator {
             $j->visibility = $this->visibility;
         if ($this->display_space)
             $j->display_space = $this->display_space;
+        if ($this->edit_condition)
+            $j->edit_condition = $this->edit_condition;
         return $j;
     }
 

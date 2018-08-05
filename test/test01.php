@@ -506,6 +506,12 @@ assert_search_papers($user_chair, "calories:<1000", "2 5");
 assert_search_papers($user_chair, "calories:1040", "3 4");
 assert_search_papers($user_chair, "calories≥200", "1 2 3 4");
 
+// option searches with edit condition
+$Conf->save_setting("options", 1, '[{"id":1,"name":"Calories","abbr":"calories","type":"numeric","position":1,"display":"default"},{"id":2,"name":"Fattening","type":"numeric","position":2,"display":"default","edit_condition":"calories>200"}]');
+$Conf->invalidate_caches(["options" => true]);
+$Conf->qe("insert into PaperOption (paperId,optionId,value) values (1,2,1),(2,2,1),(3,2,1),(4,2,1),(5,2,1)");
+assert_search_papers($user_chair, "has:fattening", "1 3 4");
+
 // Check all tags
 assert_search_papers($user_chair, "#none", "9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
 xassert_assign($Admin, "paper,tag\n9,~private\n10,~~chair\n");

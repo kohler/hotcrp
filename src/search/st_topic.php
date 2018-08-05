@@ -52,4 +52,7 @@ class Topic_SearchTerm extends SearchTerm {
             return false;
         }
     }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        return (object) ["type" => "topic", "topics" => $this->topics];
+    }
 }

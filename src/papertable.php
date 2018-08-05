@@ -5,6 +5,7 @@
 class PaperTable {
     public $conf;
     public $prow;
+    private $_prow;
     public $user;
     private $all_rrows = null;
     public $viewable_rrows = null;
@@ -47,6 +48,7 @@ class PaperTable {
 
         $this->conf = $Conf;
         $this->prow = $prow;
+        $this->_prow = $this->prow ? : new PaperInfo(null, null, $this->conf);
         $this->user = $user = $Me;
         $this->allow_admin = $user->allow_administer($prow);
         $this->admin = $user->can_administer($prow);
@@ -63,8 +65,12 @@ class PaperTable {
 
         // calculate visibility of authors and options
         // 0: not visible; 1: fold (admin only); 2: visible
+        $new_overrides = 0;
         if ($this->allow_admin)
-            $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+            $new_overrides |= Contact::OVERRIDE_CONFLICT;
+        if ($this->mode === "edit")
+            $new_overrides |= Contact::OVERRIDE_EDIT_CONDITIONS;
+        $overrides = $user->add_overrides($new_overrides);
 
         if ($user->can_view_authors($prow))
             $this->view_authors = 2;
@@ -82,8 +88,9 @@ class PaperTable {
                 if (isset($this->view_options[$o->id])
                     && !$user->can_view_paper_option($prow, $o))
                     $this->view_options[$o->id] = 1;
-            $user->set_overrides($overrides);
         }
+
+        $user->set_overrides($overrides);
 
         // enumerate allowed modes
         $ms = array();
@@ -338,10 +345,17 @@ class PaperTable {
         return $this->has_problem_at($f) ? " has-error" : "";
     }
 
-    private function editable_papt($what, $heading, $extra = []) {
+    private function editable_papt($what, $heading, $extra = [], PaperOption $opt = null) {
         $for = get($extra, "for", false);
-        $t = '<div class="papeg">'
-            . '<div class="papet' . $this->error_class($what);
+        $t = '<div class="papeg';
+        if ($opt && $opt->edit_condition()) {
+            $t .= ' has-edit-condition';
+            if (!$opt->test_edit_condition($this->_prow))
+                $t .= ' hidden';
+            $t .= '" data-edit-condition="' . htmlspecialchars(json_encode($opt->compile_edit_condition($this->_prow)));
+            Ht::stash_script('$(edit_paper_ui.edit_condition)', 'edit_condition');
+        }
+        $t .= '"><div class="papet' . $this->error_class($what);
         if ($for === "checkbox")
             $t .= ' checki';
         if (($id = get($extra, "id")))
@@ -606,9 +620,9 @@ class PaperTable {
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
         $heading = $this->field_name(htmlspecialchars($docx->title)) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
-        echo $this->editable_papt($field, $heading, ["for" => $doc ? false : $inputid]);
-        echo $this->field_hint(htmlspecialchars($docx->title), $docx->description);
-        echo $this->messages_for($field);
+        echo $this->editable_papt($field, $heading, ["for" => $doc ? false : $inputid], $docx),
+            $this->field_hint(htmlspecialchars($docx->title), $docx->description),
+            $this->messages_for($field);
 
         echo '<div class="papev has-document" data-dtype="', $dtype,
             '" data-document-name="', $docx->field_key(), '"';
@@ -1351,7 +1365,7 @@ class PaperTable {
             $pchecked = isset($ptopics[$tid]);
             $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
             echo '<div class="ctelt"><div class="ctelti checki"><label><span class="checkc">',
-                Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked, "data-range-type" => "topic", "class" => "uix js-range-click"]),
+                Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked, "data-range-type" => "topic", "class" => "uix js-range-click topic-entry"]),
                 ' </span>', $tname, '</label></div></div>';
         }
         echo "</div></div></div>\n\n";
@@ -1362,9 +1376,9 @@ class PaperTable {
             $heading = $this->field_name(htmlspecialchars($o->title));
         if ($for === null || $for === true)
             $for = $o->formid;
-        echo $this->editable_papt($o->formid, $heading, ["id" => "{$o->formid}_div", "for" => $for]);
-        echo $this->field_hint(htmlspecialchars($o->title), $o->description);
-        echo $this->messages_for($o->formid), Ht::hidden("has_{$o->formid}", 1);
+        echo $this->editable_papt($o->formid, $heading, ["id" => "{$o->formid}_div", "for" => $for], $o),
+            $this->field_hint(htmlspecialchars($o->title), $o->description),
+            $this->messages_for($o->formid), Ht::hidden("has_{$o->formid}", 1);
     }
 
     private function echo_editable_pc_conflicts() {
@@ -1425,9 +1439,11 @@ class PaperTable {
                 || ($pct > 0 && !$this->admin && !Conflict::is_author_mark($pct));
             if ($selectors) {
                 echo '<span class="pcconf-editselector">';
-                if ($disabled)
-                    echo '<strong>', ($pct >= CONFLICT_AUTHOR ? "Author" : "Conflict"), '</strong>';
-                else {
+                if ($disabled) {
+                    echo '<strong>', ($pct >= CONFLICT_AUTHOR ? "Author" : "Conflict"), '</strong>',
+                        Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry"]);
+                } else {
+                    $js["class"] = "conflict-entry";
                     $js["data-default-value"] = Conflict::constrain_editable($pct, $this->admin);
                     echo Ht::select("pcc$id", $ctypes, Conflict::constrain_editable($ct, $this->admin), $js);
                 }
@@ -1436,7 +1452,7 @@ class PaperTable {
                 $js["disabled"] = $disabled;
                 $js["data-default-checked"] = $pct > 0;
                 $js["data-range-type"] = "pcc";
-                $js["class"] = "uix js-range-click";
+                $js["class"] = "uix js-range-click conflict-entry";
                 echo '<span class="checkc">',
                     Ht::checkbox("pcc$id", $ct > 0 ? $ct : CONFLICT_AUTHORMARK,
                                  $ct > 0, $js),
@@ -2105,6 +2121,9 @@ class PaperTable {
             "position" => $o->form_position(),
             "option" => $o,
             "callback" => function () use ($o) {
+                if ($o->edit_condition()
+                    && !$o->compile_edit_condition($this->_prow))
+                    return;
                 $ov = $this->_prow->option($o->id);
                 $ov = $ov ? : new PaperOptionValue($this->prow, $o);
                 $o->echo_editable_html($ov, $this->useRequest ? $this->qreq[$o->formid] : null, $this);

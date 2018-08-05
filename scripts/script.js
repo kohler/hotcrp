@@ -6320,6 +6320,9 @@ handle_ui.on("js-follow-change", function (event) {
 });
 
 var edit_paper_ui = (function ($) {
+
+var edit_conditions = {};
+
 function check_still_ready(event) {
     var sub = this.submitpaper;
     if (sub && sub.type === "checkbox" && !this.submitpaper.checked) {
@@ -6531,6 +6534,78 @@ function save_pstagindex(event) {
             {"addtags": tags.join(" ")}, done);
 }
 
+function evaluate_compar(x, compar, y) {
+    if ($.isArray(y)) {
+        var r = y.indexOf(x) >= 0;
+        return compar === "=" ? r : !r;
+    } else {
+        var compar_map = {"=": 2, "!=": 5, "<": 1, "<=": 3, ">=": 6, ">": 4};
+        compar = compar_map[compar];
+        if (x > y)
+            return (compar & 4) !== 0;
+        else if (x == y)
+            return (compar & 2) !== 0;
+        else
+            return (compar & 1) !== 0;
+    }
+}
+
+function evaluate_edit_condition(ec, form) {
+    if (ec === false || ec === true) {
+        return ec;
+    } else if (edit_conditions[ec.type]) {
+        return edit_conditions[ec.type](ec, form);
+    } else {
+        throw new Error("unknown edit condition");
+    }
+}
+
+edit_conditions.and = function (ec, form) {
+    for (var i = 0; i !== ec.child.length; ++i)
+        if (!evaluate_edit_condition(ec.child[i], form))
+            return false;
+    return true;
+};
+edit_conditions.or = function (ec, form) {
+    for (var i = 0; i !== ec.child.length; ++i)
+        if (evaluate_edit_condition(ec.child[i], form))
+            return true;
+    return false;
+};
+edit_conditions.not = function (ec, form) {
+    return !evaluate_edit_condition(ec.child[0], form);
+};
+edit_conditions.option = function (ec, form) {
+    var fs = form["opt" + ec.id], v;
+    if (fs instanceof HTMLInputElement) {
+        if (fs.type === "radio" || fs.type === "checkbox")
+            v = fs.checked ? fs.value : 0;
+        else
+            v = fs.value;
+    } else if ("value" in fs)
+        v = fs.value;
+    return evaluate_compar(+v, ec.compar, ec.value);
+};
+edit_conditions.topic = function (ec, form) {
+    if (ec.topics === false || ec.topics === true) {
+        var has_topics = $(form).find(".topic-entry").filter(":checked").length > 0;
+        return has_topics === ec.topics;
+    }
+    for (var i = 0; i !== ec.topics.length; ++i)
+        if (form["top" + ec.topics[i]].checked)
+            return true;
+    return false;
+};
+
+function run_edit_conditions() {
+    $(".has-edit-condition").each(function () {
+        var $f = $(this).closest("form"),
+            ec = JSON.parse(this.getAttribute("data-edit-condition"));
+        toggleClass(this, "hidden", !evaluate_edit_condition(ec, $f[0]));
+    });
+}
+
+
 function edit_paper_ui(event) {
     if (event.type === "submit")
         check_still_ready.call(this, event);
@@ -6538,6 +6613,10 @@ function edit_paper_ui(event) {
 edit_paper_ui.prepare_psedit = prepare_psedit;
 edit_paper_ui.prepare_pstags = prepare_pstags;
 edit_paper_ui.prepare_pstagindex = prepare_pstagindex;
+edit_paper_ui.edit_condition = function () {
+    run_edit_conditions();
+    $("#paperform").on("change click", "input, select, textarea", run_edit_conditions);
+};
 return edit_paper_ui;
 })($);
 

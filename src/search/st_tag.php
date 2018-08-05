@@ -180,6 +180,13 @@ class Tag_SearchTerm extends SearchTerm {
             $this->tag1nz = $row->tag_value($this->tag1) != 0;
         return $ok;
     }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        if (!$this->tag1
+            || $srch->conf->tags()->is_autosearch($this->tag1))
+            return null;
+        else
+            return $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
+    }
     function default_sorter($top, $thenmap, PaperSearch $srch) {
         if ($top && $this->tag1) {
             $dt = $srch->conf->tags()->check(TagInfo::base($this->tag1));

@@ -185,4 +185,10 @@ class Option_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $this->om->exec($row, $srch->user);
     }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        if ($this->om->kind)
+            return null;
+        else
+            return (object) ["type" => "option", "id" => $this->om->option->id, "compar" => $this->om->compar, "value" => $this->om->value];
+    }
 }

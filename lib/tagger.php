@@ -358,6 +358,9 @@ class TagMap implements IteratorAggregate {
     function is_emoji($tag) {
         return !!$this->check_property($tag, "emoji");
     }
+    function is_autosearch($tag) {
+        return !!$this->check_property($tag, "autosearch");
+    }
 
     function sitewide_regex_part() {
         if ($this->sitewide_re_part === null) {

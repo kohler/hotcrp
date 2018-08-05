@@ -240,6 +240,10 @@ class SearchTerm {
         return false;
     }
 
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        return null;
+    }
+
 
     function extract_metadata($top, PaperSearch $srch) {
         if ($top && ($x = $this->get_float("contradiction_warning")))
@@ -266,6 +270,9 @@ class False_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return false;
     }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        return false;
+    }
 }
 
 class True_SearchTerm extends SearchTerm {
@@ -285,6 +292,9 @@ class True_SearchTerm extends SearchTerm {
         return "true";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
+        return true;
+    }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
         return true;
     }
 }
@@ -406,6 +416,15 @@ class Not_SearchTerm extends Op_SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return !$this->child[0]->exec($row, $srch);
     }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        $x = $this->child[0]->compile_edit_condition($row, $srch);
+        if ($x === null)
+            return null;
+        else if ($x === false || $x === true)
+            return !$x;
+        else
+            return (object) ["type" => "not", "child" => [$x]];
+    }
 }
 
 class And_SearchTerm extends Op_SearchTerm {
@@ -466,6 +485,23 @@ class And_SearchTerm extends Op_SearchTerm {
                 return false;
         return true;
     }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        $ch = [];
+        $ok = true;
+        foreach ($this->child as $subt) {
+            $x = $subt->compile_edit_condition($row, $srch);
+            if ($x === null)
+                return null;
+            else if ($x === false)
+                $ok = false;
+            else if ($x !== true)
+                $ch[] = $x;
+        }
+        if (!$ok || empty($ch))
+            return $ok;
+        else
+            return (object) ["type" => "and", "child" => $ch];
+    }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
         foreach ($this->child as $qv)
@@ -521,6 +557,26 @@ class Or_SearchTerm extends Op_SearchTerm {
             if ($subt->exec($row, $srch))
                 return true;
         return false;
+    }
+    static function compile_or_edit_condition($child, PaperInfo $row, PaperSearch $srch) {
+        $ch = [];
+        $ok = false;
+        foreach ($child as $subt) {
+            $x = $subt->compile_edit_condition($row, $srch);
+            if ($x === null)
+                return null;
+            else if ($x === true)
+                $ok = true;
+            else if ($x !== false)
+                $ch[] = $x;
+        }
+        if ($ok || empty($ch))
+            return $ok;
+        else
+            return (object) ["type" => "or", "child" => $ch];
+    }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        return self::compile_or_edit_condition($this->child, $row, $srch);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
@@ -593,6 +649,9 @@ class Then_SearchTerm extends Op_SearchTerm {
             if ($this->child[$i]->exec($row, $srch))
                 return true;
         return false;
+    }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        return Or_SearchTerm::compile_or_edit_condition(array_slice($this->child, 0, $this->nthen), $row, $srch);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);

@@ -88,6 +88,7 @@ class Contact {
     const OVERRIDE_CONFLICT = 1;
     const OVERRIDE_TIME = 2;
     const OVERRIDE_TAG_CHECKS = 4;
+    const OVERRIDE_EDIT_CONDITIONS = 8;
     private $overrides_ = 0;
     public $hidden_papers = null;
     private $aucollab_matchers_ = null;
@@ -2362,6 +2363,10 @@ class Contact {
             && ($opt->id === DTYPE_FINAL
                 ? $prow->finalPaperStorageId <= 1
                 : !$prow->option($opt->id)))
+            return false;
+        if ($opt->edit_condition()
+            && !($this->overrides_ & self::OVERRIDE_EDIT_CONDITIONS)
+            && !$opt->test_edit_condition($prow))
             return false;
         $rights = $this->rights($prow);
         $oview = $opt->visibility;

@@ -26,4 +26,7 @@ class EditFinal_SearchTerm extends SearchTerm {
             && $srch->conf->time_submit_final_version()
             && Contact::can_some_author_view_decision($row);
     }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        return $this->exec($row, $srch);
+    }
 }
