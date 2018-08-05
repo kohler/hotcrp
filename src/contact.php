@@ -2351,12 +2351,11 @@ class Contact {
     }
 
     function can_view_paper_option(PaperInfo $prow, $opt) {
-        if (!is_object($opt) && !($opt = $this->conf->paper_opts->get($opt)))
+        if (!is_object($opt)
+            && !($opt = $this->conf->paper_opts->get($opt)))
             return false;
         if (!$this->can_view_paper($prow, $opt->has_document()))
             return false;
-        $rights = $this->rights($prow);
-        $oview = $opt->visibility;
         if ($opt->final
             && ($prow->outcome <= 0
                 || !$this->can_view_decision($prow))
@@ -2364,6 +2363,8 @@ class Contact {
                 ? $prow->finalPaperStorageId <= 1
                 : !$prow->option($opt->id)))
             return false;
+        $rights = $this->rights($prow);
+        $oview = $opt->visibility;
         if ($rights->allow_administer)
             return $oview !== "nonblind" || $this->can_view_authors($prow);
         else
