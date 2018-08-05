@@ -3549,8 +3549,9 @@ class Conf {
             $m = ["?etc/msgs.json"];
             if (($lang = $this->opt("lang")))
                 $m[] = "?etc/msgs.$lang.json";
-            expand_json_includes_callback($m, [$this->_ims, "addj"],
-                                          ["priority" => -1.0], true);
+            $this->_ims->set_default_priority(-1.0);
+            expand_json_includes_callback($m, [$this->_ims, "addj"]);
+            $this->_ims->clear_default_priority();
             if (($mlist = $this->opt("messageOverrides")))
                 expand_json_includes_callback($mlist, [$this->_ims, "addj"]);
         }

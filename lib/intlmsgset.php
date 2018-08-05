@@ -59,6 +59,13 @@ class IntlMsgSet {
     private $_ctx;
     private $_default_priority;
 
+    function set_default_priority($p) {
+        $this->_default_priority = (float) $p;
+    }
+    function clear_default_priority() {
+        $this->_default_priority = null;
+    }
+
     function add($m, $ctx = null) {
         if (is_string($m))
             $x = $this->addj(func_get_args());
@@ -89,20 +96,28 @@ class IntlMsgSet {
         if ($this->_default_priority !== null)
             $im->priority = $this->_default_priority;
         if (is_array($m)) {
-            $i = 0;
             $n = count($m);
-            if ($n >= 3 && is_string($m[2]))
-                $im->context = $m[$i++];
-            if ($n < 2 || !is_string($m[$i]) || !is_string($m[$i+1]))
+            $p = false;
+            while ($n > 0 && !is_string($m[$n - 1])) {
+                if ((is_int($m[$n - 1]) || is_float($m[$n - 1])) && $p === false)
+                    $p = $im->priority = (float) $m[$n - 1];
+                else if (is_array($m[$n - 1]) && $im->require === null)
+                    $im->require = $m[$n - 1];
+                else
+                    return false;
+                --$n;
+            }
+            if ($n < 2 || $n > 3 || !is_string($m[0]) || !is_string($m[1])
+                || ($n === 3 && !is_string($m[2])))
                 return false;
-            $itext = $m[$i++];
-            $im->otext = $m[$i++];
-            if ($i < $n && (is_int($m[$i]) || is_float($m[$i])))
-                $im->priority = $m[$i++];
-            if ($i < $n && is_array($m[$i]))
-                $im->require = $m[$i++];
-            if ($i != $n)
-                return false;
+            if ($n === 3) {
+                $im->context = $m[0];
+                $itext = $m[1];
+                $im->otext = $m[2];
+            } else {
+                $itext = $m[0];
+                $im->otext = $m[1];
+            }
         } else if (is_object($m)) {
             if (isset($m->context) && is_string($m->context))
                 $im->context = $m->context;
@@ -119,7 +134,7 @@ class IntlMsgSet {
             else
                 return false;
             if (isset($m->priority) && (is_float($m->priority) || is_int($m->priority)))
-                $im->priority = $m->priority;
+                $im->priority = (float) $m->priority;
             if (isset($m->require) && is_array($m->require))
                 $im->require = $m->require;
         } else
