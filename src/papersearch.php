@@ -1991,9 +1991,6 @@ class PaperSearch {
 
         return ($this->_qe = $qe);
     }
-    function prepare_term() { // XXX backwards compat
-        return $this->term();
-    }
 
     private function _prepare_result($qe) {
         $sqi = new SearchQueryInfo($this);
