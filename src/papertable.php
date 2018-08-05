@@ -2105,9 +2105,7 @@ class PaperTable {
             "position" => $o->form_position(),
             "option" => $o,
             "callback" => function () use ($o) {
-                $ov = null;
-                if ($this->prow)
-                    $ov = $this->prow->option($o->id);
+                $ov = $this->_prow->option($o->id);
                 $ov = $ov ? : new PaperOptionValue($this->prow, $o);
                 $o->echo_editable_html($ov, $this->useRequest ? $this->qreq[$o->formid] : null, $this);
             }

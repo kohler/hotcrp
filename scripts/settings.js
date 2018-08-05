@@ -331,16 +331,14 @@ var revfield_template = '<table id="revfield_$" class="settings-revfield f-conta
   </div>\
   <div class="f-i">\
     <label for="description_$">Description</label>\
-    <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
-  </div>\
+    <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="2" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea></div>\
   <div class="f-i reviewrow_options">\
     <label for="options_$">Options</label>\
-    <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea>\
-  </div>\
+    <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea></div>\
   <div class="f-i">\
-    <button id="moveup_$" class="btn revfield_moveup" type="button">Move up</button><span class="sep"></span>\
-<button id="movedown_$" class="btn revfield_movedown" type="button">Move down</button><span class="sep"></span>\
-<button id="remove_$" class="btn revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
+    <button id="moveup_$" class="btn btn-sm revfield_moveup" type="button">Move up</button><span class="sep"></span>\
+<button id="movedown_$" class="btn btn-sm revfield_movedown" type="button">Move down</button><span class="sep"></span>\
+<button id="remove_$" class="btn btn-sm revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
 <input type="hidden" name="order_$" id="order_$" class="revfield_order" value="0" />\
   </div>\
 </div>\
@@ -356,6 +354,12 @@ var revfieldview_template = '<div style="line-height:1.35">\
 tooltip.add_builder("settings-review-form", function (info) {
     return $.extend({
         dir: "h", content: $(/^description/.test(this.name) ? "#review_form_caption_description" : "#review_form_caption_options").html()
+    }, info);
+});
+
+tooltip.add_builder("settings-option", function (info) {
+    return $.extend({
+        dir: "h", content: $(/^optn/.test(this.name) ? "#option_caption_name" : "#option_caption_options").html()
     }, info);
 });
 

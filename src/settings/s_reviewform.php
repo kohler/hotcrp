@@ -350,7 +350,7 @@ are better). For example:</p>
 4. Accept</pre>
 <p>Or use consecutive capital letters (lower letters are better).</p>
 <p>Normally scores are mandatory: a review with a missing score cannot be
-submitted. Add a line “<code>0. No entry</code>” to make the score optional.</p></div>');
+submitted. Add a “<code>No entry</code>” line to make the score optional.</p></div>');
 
     $rfj = [];
     foreach ($rf->fmap as $f)

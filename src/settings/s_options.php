@@ -48,29 +48,16 @@ class Options_SettingRenderer {
         echo '<div class="settings-opt has-fold fold2c fold3o ',
             (get($jtype, "has_selector") ? "fold4o" : "fold4c"), '">';
 
-        echo '<div class="f-horizontal">';
-
-        echo '<div class="f-ig">',
-            '<div class="', $sv->sclass("optn_$xpos", "f-i"), '">',
-            $sv->label("optn_$xpos", "Field name"),
-            Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", array("placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos"))),
+        echo '<div class="', $sv->sclass("optn_$xpos", "f-i"), '">',
+            Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "style" => "font-weight:bold", "class" => "need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"])),
             Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings-opt-id"]),
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div>';
 
         echo '<div class="', $sv->sclass("optd_$xpos", "f-i"), '">',
             $sv->label("optd_$xpos", "Description"),
-            Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd_$xpos", "class" => "need-autogrow")),
-            '</div></div>';
-
-        if ($o->id && ($examples = $o->example_searches())) {
-            echo '<div class="f-i"><div class="f-c">',
-                'Example ', pluralx($examples, "search"), '</div>',
-                join("<br />", array_map(function ($ex) {
-                    return Ht::link(htmlspecialchars($ex[0]), hoturl("search", ["q" => $ex[0]]));
-                }, $examples)), '</div>';
-        }
-        echo "</div>\n";
+            Ht::textarea("optd_$xpos", $o->description, array("rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "reviewtext need-autogrow")),
+            '</div>';
 
         $show_final = $sv->conf->collectFinalPapers();
         foreach ($sv->conf->paper_opts->nonfixed_option_list() as $ox)
@@ -106,6 +93,7 @@ class Options_SettingRenderer {
                 $otypes["{$name}:final"] = "{$title} (final version)";
         }
         Ht::stash_script('$(function () { $("#settings_opts").on("change input", "select.settings-optvt", settings_option_type); $("#settings_opts").on("click", "button", settings_option_move); settings_option_move_enable(); $("select.settings-optvt").each(settings_option_type); })', 'settings_optvt');
+        Ht::stash_html('<div class="hidden" id="option_caption_name">Field names should be short and memorable (they are used as search keywords).</div><div class="hidden" id="option_caption_options">Enter choices one per line.</div>', 'settings_option_caption');
 
         echo '<div class="f-horizontal">';
         echo '<div class="', $sv->sclass("optvt_$xpos", "f-i"), '">',
@@ -140,8 +128,8 @@ class Options_SettingRenderer {
             $value = "";
         echo '<div class="', $sv->sclass("optv_$xpos", "f-i fx4"), '">',
             $sv->label("optv_$xpos", "Choices"),
-            Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", array("rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "need-autogrow"))),
-            '<div class="f-h">Enter choices one per line.  The first choice will be the default.</div></div>', "\n";
+            Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "reviewtext need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"])),
+            "</div>\n";
 
         $delete_text = "Delete from form";
         if ($o->id) {
@@ -155,9 +143,9 @@ class Options_SettingRenderer {
         }
 
         echo '<div class="f-i">',
-            Ht::button("Move up", ["class" => "btn settings-opt-moveup"]),
-            Ht::button("Move down", ["class" => "btn settings-opt-movedown", "style" => "margin-left: 1em"]),
-            Ht::button($delete_text, ["class" => "btn settings-opt-delete", "style" => "margin-left: 1em"]),
+            Ht::button("Move up", ["class" => "btn btn-sm settings-opt-moveup"]),
+            Ht::button("Move down", ["class" => "btn btn-sm settings-opt-movedown", "style" => "margin-left: 1em"]),
+            Ht::button($delete_text, ["class" => "btn btn-sm settings-opt-delete", "style" => "margin-left: 1em"]),
             "</div>\n";
 
         echo '</div>';
@@ -165,7 +153,6 @@ class Options_SettingRenderer {
 
     static function render(SettingValues $sv) {
         echo "<h3 class=\"settings\">Submission fields</h3>\n";
-        echo "<p class=\"settingtext\">These additional fields are entered by authors at submission time (or final-version submission time). Field names should be brief (“PC paper,” “Supplemental material”). The optional HTML description can explain further.</p>\n";
         echo "<div class='g'></div>\n",
             Ht::hidden("has_options", 1), "\n\n";
         $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
@@ -176,7 +163,7 @@ class Options_SettingRenderer {
             $self->render_option($sv, $o, ++$pos);
         echo "</div>\n",
             '<div style="margin-top:2em">',
-            Ht::button("Add field", ["class" => "settings-opt-new btn"]),
+            Ht::button("Add submission field", ["class" => "settings-opt-new btn"]),
             "</div>\n<div id=\"settings_newopt\" style=\"display:none\">";
         Ht::stash_script('$("button.settings-opt-new").on("click", settings_option_move)');
         $self->render_option($sv, null, 0);
