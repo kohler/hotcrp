@@ -389,6 +389,9 @@ class PaperOption implements Abbreviator {
         if ($disp === false)
             $disp = "none";
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
+        if ($this->display === self::DISP_DEFAULT)
+            $this->display = $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
+
         $this->form_position = get_f($args, "form_position");
         $this->allow_if = get($args, "allow_if");
 
@@ -478,19 +481,15 @@ class PaperOption implements Abbreviator {
     }
 
     function display() {
-        if ($this->display === self::DISP_DEFAULT)
-            return $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
-        else
-            return $this->display;
+        return $this->display;
     }
 
     function form_position() {
         if ($this->form_position)
             return $this->form_position;
-        $d = $this->display();
-        if ($d === self::DISP_SUBMISSION)
+        else if ($this->display === self::DISP_SUBMISSION)
             return 12000 + $this->position;
-        else if ($d === self::DISP_PROMINENT)
+        else if ($this->display === self::DISP_PROMINENT)
             return 32000 + $this->position;
         else
             return 36000 + $this->position;

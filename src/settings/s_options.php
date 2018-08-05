@@ -19,7 +19,7 @@ class Options_SettingRenderer {
                     "description" => "",
                     "type" => "checkbox",
                     "position" => count($sv->conf->paper_opts->nonfixed_option_list()) + 1,
-                    "display" => "default"), $sv->conf);
+                    "display" => "prominent"), $sv->conf);
         }
 
         if ($sv->use_req()) {
@@ -108,10 +108,9 @@ class Options_SettingRenderer {
 
         echo '<div class="', $sv->sclass("optdt_$xpos", "f-i fn3"), '">',
             $sv->label("optdt_$xpos", "Display"),
-            Ht::select("optdt_$xpos", ["default" => "Default",
-                                       "prominent" => "Prominent",
-                                       "topics" => "With topics",
-                                       "submission" => "Near submission"],
+            Ht::select("optdt_$xpos", ["prominent" => "Normal",
+                                       "submission" => "Near submission",
+                                       "topics" => "Grouped with topics"],
                        $o->display_name(), ["id" => "optdt_$xpos"]),
             "</div>";
 
