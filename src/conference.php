@@ -3551,7 +3551,7 @@ class Conf {
                 $m[] = "?etc/msgs.$lang.json";
             expand_json_includes_callback($m, [$this->_ims, "addj"],
                                           ["priority" => -1.0], true);
-            if (($mlist = $this->opt("msgs_include")))
+            if (($mlist = $this->opt("messageOverrides")))
                 expand_json_includes_callback($mlist, [$this->_ims, "addj"]);
         }
         return $this->_ims;
