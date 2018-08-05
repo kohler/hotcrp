@@ -785,16 +785,20 @@ class SelectorPaperOption extends PaperOption {
         $reqv = isset($this->selector[$reqv]) ? $reqv : 0;
         $pt->echo_editable_option_papt($this, null, $this->type === "selector");
         echo '<div class="papev">';
-        if ($this->type === "selector")
-            echo Ht::select($this->formid, $this->selector, $reqv,
+        if ($this->type === "selector") {
+            $sel = [];
+            foreach ($this->selector as $val => $text)
+                $sel[$val + 1] = $text;
+            echo Ht::select($this->formid, $sel, $reqv,
                 ["id" => $this->formid, "data-default-value" => $ov->value]);
-        else
+        } else {
             foreach ($this->selector as $val => $text) {
                 echo '<div class="checki"><label><span class="checkc">',
                     Ht::radio($this->formid, $val + 1, $val + 1 == $reqv,
                         ["data-default-checked" => $val + 1 == $ov->value]),
                     ' </span>', htmlspecialchars($text), '</label></div>';
             }
+        }
         echo "</div></div>\n\n";
     }
 
