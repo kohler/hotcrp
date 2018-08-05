@@ -56,27 +56,38 @@ class IntlMsg {
 class IntlMsgSet {
     private $ims = [];
     private $defs = [];
+    private $_ctx;
+    private $_default_priority;
 
     function add($m, $ctx = null) {
         if (is_string($m))
-            return $this->addj(func_get_args(), null, null);
-        else
-            return $this->addj($m, null, $ctx);
+            $x = $this->addj(func_get_args());
+        else if (!$ctx)
+            $x = $this->addj($m);
+        else {
+            $octx = $this->_ctx;
+            $this->_ctx = $ctx;
+            $x = $this->addj($m);
+            $this->_ctx = $octx;
+        }
+        return $x;
     }
 
-    function addj($m, $defaults = null, $ctx = null) {
+    function addj($m) {
         if (is_associative_array($m))
             $m = (object) $m;
         if (is_object($m) && isset($m->members) && is_array($m->members)) {
+            $octx = $this->_ctx;
             if (isset($m->context) && is_string($m->context))
-                $ctx = ((string) $ctx === "" ? "" : $ctx . "/") . $m->context;
+                $this->_ctx = ((string) $this->_ctx === "" ? "" : $this->_ctx . "/") . $m->context;
             foreach ($m->members as $mm)
-                $this->addj($mm, $ctx);
+                $this->addj($mm);
+            $this->_ctx = $octx;
             return true;
         }
         $im = new IntlMsg;
-        if ($defaults && isset($defaults["priority"]))
-            $im->priority = (float) $defaults["priority"];
+        if ($this->_default_priority !== null)
+            $im->priority = $this->_default_priority;
         if (is_array($m)) {
             $i = 0;
             $n = count($m);
@@ -113,8 +124,8 @@ class IntlMsgSet {
                 $im->require = $m->require;
         } else
             return false;
-        if ($ctx)
-            $im->context = $ctx . ($im->context ? "/" . $im->context : "");
+        if ($this->_ctx)
+            $im->context = $this->_ctx . ($im->context ? "/" . $im->context : "");
         $im->next = get($this->ims, $itext);
         $this->ims[$itext] = $im;
         return true;
