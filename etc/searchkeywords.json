@@ -121,6 +121,11 @@
         "synonym": "decision", "has": "any"
     },
     {
+        "name": "editfinal",
+        "parse_callback": "EditFinal_SearchTerm::parse",
+        "synonym": "edit-final", "has": "yes"
+    },
+    {
         "name": "tag",
         "parse_callback": "Tag_SearchTerm::parse",
         "negated": false, "sorting": false, "is_hash": false, "has": "any"

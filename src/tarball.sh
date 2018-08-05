@@ -259,6 +259,7 @@ src/search/st_author.php
 src/search/st_comment.php
 src/search/st_conflict.php
 src/search/st_decision.php
+src/search/st_editfinal.php
 src/search/st_formula.php
 src/search/st_paperpc.php
 src/search/st_paperstatus.php

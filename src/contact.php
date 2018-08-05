@@ -2148,6 +2148,7 @@ class Contact {
     }
 
     function can_submit_final_paper(PaperInfo $prow) {
+        // see also EditFinal_SearchTerm
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
