@@ -218,6 +218,14 @@ class Mailer {
             return $hasinner;
     }
 
+    static function kw_ims_expand($args, $isbool, $mx) {
+        preg_match('/\A\s*(.*?)\s*(?:|,\s*(\d+)\s*)\z/', $args, $m);
+        $t = $mx->conf->_c("mail", $m[1]);
+        if ($m[2] && strlen($t) < $m[2])
+            $t = str_repeat(" ", $m[2] - strlen($t)) . $t;
+        return $t;
+    }
+
     function kw_confnames($args, $isbool, $uf) {
         if ($uf->name === "CONFNAME")
             return $this->conf->full_name();
@@ -460,22 +468,30 @@ class Mailer {
             $line = rtrim($lines[$i]);
             if ($line == "")
                 $text .= "\n";
-            else if (preg_match('/^%(?:REVIEWS|COMMENTS)(?:[(].*[)])?%$/', $line)) {
+            else if (preg_match('/\A%(?:REVIEWS|COMMENTS)(?:[(].*[)])?%\z/s', $line)) {
                 if (($m = $this->expandvar($line, false)) != "")
                     $text .= $m . "\n";
-            } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)
-                       && tabLength($m[1], true) <= 20) {
-                if (($yes = $this->expandvar($m[2], true)))
-                    $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), tabLength($m[1], true), $width);
-                else if ($yes === null)
-                    $text .= $line . "\n";
-            } else if (preg_match('/^([ \t][ \t]*.*?: )(%\w+(?:|\([^\)]*\))%|\S+)\s*$/', $line, $m)
-                       && tabLength($m[1], true) <= 20)
-                $text .= $this->_lineexpand($m[2], $m[1], tabLength($m[1], true), $width);
-            else if (strpos($line, '%') !== false)
-                $text .= $this->_lineexpand($line, "", 0, $width);
-            else
+            } else if (strpos($line, "%") === false)
                 $text .= prefix_word_wrap("", $line, 0, $width);
+            else {
+                if ($line[0] === " " || $line[0] === "\t") {
+                    if (preg_match('/\A([ \t]*)(%\w+(?:|\([^\)]*\))%)(:.*)\z/s', $line, $m)
+                        && $this->expandvar($m[2], true))
+                        $line = $m[1] . $this->expandvar($m[2]) . $m[3];
+                    if (preg_match('/\A([ \t]*.*?: )(%\w+(?:|\([^\)]*\))%|\S+)\s*\z/s', $line, $m)
+                        && ($tl = tabLength($m[1], true)) <= 20) {
+                        if (str_starts_with($m[2], "%OPT(")) {
+                            if (($yes = $this->expandvar($m[2], true)))
+                                $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), $tl, $width);
+                            else if ($yes === null)
+                                $text .= $line . "\n";
+                        } else
+                            $text .= $this->_lineexpand($m[2], $m[1], $tl, $width);
+                        continue;
+                    }
+                }
+                $text .= $this->_lineexpand($line, "", 0, $width);
+            }
         }
 
         // lose newlines on header expansion

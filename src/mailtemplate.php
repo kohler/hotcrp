@@ -102,7 +102,7 @@ Contact %ADMIN% with any questions or concerns.
 On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%)%
 
 If you are willing to review this submission, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
@@ -134,7 +134,7 @@ Thank you for your help -- we appreciate that reviewing is hard work.
 %REQUESTERNAME% has retracted a previous request that you review %CONFNAME% submission #%NUMBER%. There's no need to complete your review.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -150,7 +150,7 @@ Thank you,
 Visit the assignment page to approve or deny the request.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(assign, p=%NUMBER%)%
 
 %SIGNATURE%\n"),
@@ -162,7 +162,7 @@ Visit the assignment page to approve or deny the request.
 Your proposal that %REVIEWERCONTACT% review %CONFNAME% submission #%NUMBER% has been denied by an administrator. You may want to propose someone else.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
@@ -177,7 +177,7 @@ Thank you,
 %REVIEWERCONTACT% cannot complete the review you requested of %CONFNAME% submission #%NUMBER%. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%)%
 
 %SIGNATURE%\n"),
@@ -189,7 +189,7 @@ Thank you,
 An author of %CONFNAME% submission #%NUMBER% has withdrawn the submission from consideration. It will not be reviewed.%IF(REASON)% They gave the following reason: %REASON%%ENDIF%
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
@@ -206,7 +206,7 @@ Thank you,
 %IF(REASON)%The submission was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The submission was withdrawn by an administrator.%ENDIF%
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
@@ -223,7 +223,7 @@ Thank you,
 Authors and administrators can withdraw submissions during the review process.%IF(REASON)% The following reason was provided: %REASON%%ENDIF%
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%)%
 
 You are not expected to complete your review (and the system will not allow it unless the submission is revived).
@@ -239,7 +239,7 @@ Contact %ADMIN% with any questions or concerns.
 Your %CONFNAME% submission #%NUMBER% has been removed from the submission database by an administrator. This can be done to eliminate duplicates. %IF(REASON)%The following reason was provided for deleting the submission: %REASON%%ENDIF%
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -253,7 +253,7 @@ Contact %ADMIN% with any questions or concerns.
 
         Site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
 
 For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.
@@ -272,7 +272,7 @@ Contact %ADMIN% with any questions or concerns.
 
         Site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
 
 For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.
@@ -291,7 +291,7 @@ Contact %ADMIN% with any questions or concerns.
 
  Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
 
 Contact %ADMIN% with any questions or concerns.
@@ -308,7 +308,7 @@ Contact %ADMIN% with any questions or concerns.
 
  Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
 
 You can approve the review at the link above.
@@ -327,7 +327,7 @@ Contact %ADMIN% with any questions or concerns.
 
  Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
 
 Contact %ADMIN% with any questions or concerns.
@@ -346,7 +346,7 @@ Contact %ADMIN% with any questions or concerns.
 The %CONFNAME% program committee is delighted to inform you that your submission #%NUMBER% has been accepted to appear in the conference.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions. Congratulations!
@@ -370,7 +370,7 @@ Contact %ADMIN% with any questions or concerns.
 The %CONFNAME% program committee is sorry to inform you that your submission #%NUMBER% was rejected, and will not appear in the conference.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
@@ -462,7 +462,7 @@ Contact %ADMIN% with any questions or concerns.
 This is a reminder to finish your review for %CONFNAME% submission #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact the person who requested the review directly.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%)%
 
 Use the link below to sign in to the site.
@@ -487,7 +487,7 @@ Contact %ADMIN% with any questions or concerns.
 This is a reminder from %REQUESTERCONTACT% to finish your review for %CONFNAME% submission #%NUMBER%.%IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF%If you are unable to complete the review, please decline the review using the site or contact %REQUESTERNAME% directly.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%)%
 
 Use the link below to sign in to the site.
@@ -523,7 +523,7 @@ Contact %ADMIN% with any questions or concerns.
            "body" => "Submission #%PAPER% has been registered at the %CONFNAME% site.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this registration: %REASON%
@@ -539,7 +539,7 @@ Contact %ADMIN% with any questions or concerns.
            "body" => "Submission #%PAPER% has been updated at the %CONFNAME% site.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
@@ -555,7 +555,7 @@ Contact %ADMIN% with any questions or concerns.
            "body" => "Submission #%PAPER% has been submitted for review at the %CONFNAME% site.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
@@ -571,7 +571,7 @@ Contact %ADMIN% with any questions or concerns.
            "body" => "Accepted submission #%PAPER% has been updated at the %CONFNAME% submissions site.
 
        Title: %TITLE%
-     Authors: %OPT(AUTHORS)%
+ %_(Authors, 11)%: %OPT(AUTHORS)%
         Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
