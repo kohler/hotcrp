@@ -16,6 +16,7 @@ class Conflict {
                                4 => "institution",
                                5 => "personal",
                                6 => "other",
+                               7 => true,
                                CONFLICT_CHAIRMARK => "confirmed",
                                CONFLICT_AUTHOR => "author",
                                CONFLICT_CONTACTAUTHOR => "author");
