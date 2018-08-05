@@ -1230,15 +1230,15 @@ Subject: [Testconf I] Submitted review #1B "Scalable Timers for Soft State
 
 Greetings,
 
-Review #1B for Test Conference I (Testconf I) paper #1 has been submitted.
-The review is available at the paper site.
+Review #1B for Test Conference I (Testconf I) submission #1 has been
+submitted. The review is available at the submission site.
 
-  Paper site: http://hotcrp.lcdf.org/test/paper/1
+        Site: http://hotcrp.lcdf.org/test/paper/1
        Title: Scalable Timers for Soft State Protocols
    Review by: Mark Handley <mjh@isi.edu>
 
 For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
+notification, see the submission site.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -1264,11 +1264,11 @@ Subject: [Testconf I] Comment for #2 "Small Forwarding Tables for Fast
  Routing..."
 X-Landmark: test/test01.php:545
 
-A comment for Test Conference I (Testconf I) paper #2 has been posted. For
-the most up-to-date comments, or to unsubscribe from email notification,
-see the paper site.
+A comment for Test Conference I (Testconf I) submission #2 has been posted.
+For the most up-to-date comments, or to unsubscribe from email
+notification, see the submission site.
 
-  Paper site: http://hotcrp.lcdf.org/test/paper/2
+        Site: http://hotcrp.lcdf.org/test/paper/2
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -1287,15 +1287,15 @@ X-Landmark: test/test01.php:548
 
 Greetings,
 
-Review #2A for Test Conference I (Testconf I) paper #2 has been submitted.
-The review is available at the paper site.
+Review #2A for Test Conference I (Testconf I) submission #2 has been
+submitted. The review is available at the submission site.
 
-  Paper site: http://hotcrp.lcdf.org/test/paper/2
+        Site: http://hotcrp.lcdf.org/test/paper/2
        Title: Small Forwarding Tables for Fast Routing Lookups
    Review by: Jon Crowcroft <jon@cs.ucl.ac.uk>
 
 For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
+notification, see the submission site.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -1323,15 +1323,15 @@ X-Landmark: test/test01.php:555
 
 Greetings,
 
-Review #2B for Test Conference I (Testconf I) paper #2 has been submitted.
-The review is available at the paper site.
+Review #2B for Test Conference I (Testconf I) submission #2 has been
+submitted. The review is available at the submission site.
 
-  Paper site: http://hotcrp.lcdf.org/test/paper/2
+        Site: http://hotcrp.lcdf.org/test/paper/2
        Title: Small Forwarding Tables for Fast Routing Lookups
    Review by: Peter Druschel <pdruschel@cs.rice.edu>
 
 For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
+notification, see the submission site.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -1359,15 +1359,15 @@ X-Landmark: test/test01.php:573
 
 Greetings,
 
-Review #2C for Test Conference I (Testconf I) paper #2 has been submitted.
-The review is available at the paper site.
+Review #2C for Test Conference I (Testconf I) submission #2 has been
+submitted. The review is available at the submission site.
 
-  Paper site: http://hotcrp.lcdf.org/test/paper/2
+        Site: http://hotcrp.lcdf.org/test/paper/2
        Title: Small Forwarding Tables for Fast Routing Lookups
    Review by: External Reviewer <external@_.com>
 
 For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
+notification, see the submission site.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -1414,16 +1414,16 @@ X-Landmark: test/test06.php:607
 
 Greetings,
 
-Review #17B for Test Conference I (Testconf I) paper #17 has been
-submitted. The review is available at the paper site.
+Review #17B for Test Conference I (Testconf I) submission #17 has been
+submitted. The review is available at the submission site.
 
-  Paper site: http://hotcrp.lcdf.org/test/paper/17
+        Site: http://hotcrp.lcdf.org/test/paper/17
        Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
               the MBone
    Review by: External Reviewer <external@_.com>
 
 For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
+notification, see the submission site.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -1459,16 +1459,16 @@ X-Landmark: test/test06.php:622
 
 Greetings,
 
-Review #17C for Test Conference I (Testconf I) paper #17 has been
-submitted. The review is available at the paper site.
+Review #17C for Test Conference I (Testconf I) submission #17 has been
+submitted. The review is available at the submission site.
 
-  Paper site: http://hotcrp.lcdf.org/test/paper/17
+        Site: http://hotcrp.lcdf.org/test/paper/17
        Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
               the MBone
    Review by: Lixia Zhang <lixia@cs.ucla.edu>
 
 For the most up-to-date reviews and comments, or to unsubscribe from email
-notification, see the paper site.
+notification, see the submission site.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.

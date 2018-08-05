@@ -96,16 +96,16 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "requestreview" =>
-     array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
+     array("subject" => "[%CONFSHORTNAME%] Review request for submission #%NUMBER%",
            "body" => "Dear %NAME%,
 
-On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
+On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
-If you are willing to review this paper, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
+If you are willing to review this submission, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%
 
 Your account information is as follows.
 
@@ -128,10 +128,10 @@ Thank you for your help -- we appreciate that reviewing is hard work.
 %SIGNATURE%\n"),
 
      "retractrequest" =>
-     array("subject" => "[%CONFSHORTNAME%] Retracting review request for paper #%NUMBER%",
+     array("subject" => "[%CONFSHORTNAME%] Retracting review request for submission #%NUMBER%",
            "body" => "Dear %NAME%,
 
-%REQUESTERNAME% has retracted a previous request that you review %CONFNAME% paper #%NUMBER%. There's no need to complete your review.
+%REQUESTERNAME% has retracted a previous request that you review %CONFNAME% submission #%NUMBER%. There's no need to complete your review.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -142,28 +142,28 @@ Thank you,
 %SIGNATURE%\n"),
 
      "proposereview" =>
-     array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER%",
+     array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for submission #%NUMBER%",
            "body" => "Greetings,
 
-%REQUESTERCONTACT% would like %REVIEWERCONTACT% to review %CONFNAME% paper #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
+%REQUESTERCONTACT% would like %REVIEWERCONTACT% to review %CONFNAME% submission #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%
 
 Visit the assignment page to approve or deny the request.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(assign, p=%NUMBER%)%
+        Site: %URL(assign, p=%NUMBER%)%
 
 %SIGNATURE%\n"),
 
      "denyreviewrequest" =>
-     array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER% denied",
+     array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for submission #%NUMBER% denied",
            "body" => "Dear %NAME%,
 
-Your proposal that %REVIEWERCONTACT% review %CONFNAME% paper #%NUMBER% has been denied by an administrator. You may want to propose someone else.
+Your proposal that %REVIEWERCONTACT% review %CONFNAME% submission #%NUMBER% has been denied by an administrator. You may want to propose someone else.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -171,26 +171,26 @@ Thank you,
 %SIGNATURE%\n"),
 
      "refusereviewrequest" =>
-     array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% declined",
+     array("subject" => "[%CONFSHORTNAME%] Review request for submission #%NUMBER% declined",
            "body" => "Dear %NAME%,
 
-%REVIEWERCONTACT% cannot complete the review you requested of %CONFNAME% paper #%NUMBER%. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.
+%REVIEWERCONTACT% cannot complete the review you requested of %CONFNAME% submission #%NUMBER%. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 %SIGNATURE%\n"),
 
      "authorwithdraw" =>
-     array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Withdrawn submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
-An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from consideration. The paper will not be reviewed.%IF(REASON)% They gave the following reason: %REASON%%ENDIF%
+An author of %CONFNAME% submission #%NUMBER% has withdrawn the submission from consideration. It will not be reviewed.%IF(REASON)% They gave the following reason: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -198,16 +198,16 @@ Thank you,
 %SIGNATURE%\n"),
 
      "adminwithdraw" =>
-     array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Withdrawn submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
-%CONFNAME% paper #%NUMBER% has been withdrawn from consideration and will not be reviewed.
+%CONFNAME% submission #%NUMBER% has been withdrawn from consideration and will not be reviewed.
 
-%IF(REASON)%The paper was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The paper was withdrawn by an administrator.%ENDIF%
+%IF(REASON)%The submission was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The submission was withdrawn by an administrator.%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -215,28 +215,28 @@ Thank you,
 %SIGNATURE%\n"),
 
      "withdrawreviewer" =>
-     array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Withdrawn submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
-%CONFSHORTNAME% paper #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.
+%CONFSHORTNAME% submission #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.
 
 Authors and administrators can withdraw submissions during the review process.%IF(REASON)% The following reason was provided: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
-You are not expected to complete your review (and the system will not allow it unless the paper is revived).
+You are not expected to complete your review (and the system will not allow it unless the submission is revived).
 
 Contact %ADMIN% with any questions or concerns.
 
 %SIGNATURE%\n"),
 
      "deletepaper" =>
-     array("subject" => "[%CONFSHORTNAME%] Deleted paper #%NUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Deleted submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
-Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by an administrator. This can be done to remove duplicate papers. %IF(REASON)%The following reason was provided for deleting the paper: %REASON%%ENDIF%
+Your %CONFNAME% submission #%NUMBER% has been removed from the submission database by an administrator. This can be done to eliminate duplicates. %IF(REASON)%The following reason was provided for deleting the submission: %REASON%%ENDIF%
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -249,14 +249,14 @@ Contact %ADMIN% with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Submitted %REVIEWNAME(SUBJECT)% %TITLEHINT%",
            "body" => "Greetings,
 
-%REVIEWNAME% for %CONFNAME% paper #%NUMBER% has been submitted. The review is available at the paper site.
+%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been submitted. The review is available at the submission site.
 
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
 
-For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the paper site.
+For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -268,14 +268,14 @@ Contact %ADMIN% with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Updated %REVIEWNAME(SUBJECT)% %TITLEHINT%",
            "body" => "Greetings,
 
-%REVIEWNAME% for %CONFNAME% paper #%NUMBER% has been updated. The review is available at the paper site.
+%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been updated. The review is available at the submission site.
 
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
    Review by: %OPT(REVIEWAUTHOR)%
 
-For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the paper site.
+For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -284,10 +284,10 @@ Contact %ADMIN% with any questions or concerns.
 %REVIEWS%\n"),
 
      "reviewapprovalrequest" =>
-     array("subject" => "[%CONFSHORTNAME%] Review approval requested for paper #%NUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Review approval requested for submission #%NUMBER% %TITLEHINT%",
            "body" => "Greetings,
 
-%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been submitted for approval.
+%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been submitted for approval.
 
  Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
        Title: %TITLE%
@@ -301,10 +301,10 @@ Contact %ADMIN% with any questions or concerns.
 %REVIEWS%\n"),
 
      "reviewapprovalupdate" =>
-     array("subject" => "[%CONFSHORTNAME%] Review approval requested for paper #%NUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Review approval requested for submission #%NUMBER% %TITLEHINT%",
            "body" => "Greetings,
 
-%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been resubmitted for approval.
+%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been resubmitted for approval.
 
  Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
        Title: %TITLE%
@@ -320,10 +320,10 @@ Contact %ADMIN% with any questions or concerns.
 %REVIEWS%\n"),
 
      "reviewpreapprovaledit" =>
-     array("subject" => "[%CONFSHORTNAME%] Review edited for paper #%NUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Review edited for submission #%NUMBER% %TITLEHINT%",
            "body" => "Greetings,
 
-%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been edited by its requester. The review has not yet been approved.
+%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been edited by its requester. The review has not yet been approved.
 
  Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
        Title: %TITLE%
@@ -340,14 +340,14 @@ Contact %ADMIN% with any questions or concerns.
      array("mailtool_name" => "Accept notification",
            "mailtool_priority" => 10,
            "mailtool_recipients" => "somedec:yes",
-           "subject" => "[%CONFSHORTNAME%] Accepted paper #%NUMBER% %TITLEHINT%",
+           "subject" => "[%CONFSHORTNAME%] Accepted submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear author(s),
 
-The %CONFNAME% program committee is delighted to inform you that your paper #%NUMBER% has been accepted to appear in the conference.
+The %CONFNAME% program committee is delighted to inform you that your submission #%NUMBER% has been accepted to appear in the conference.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
+        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions. Congratulations!
 
@@ -364,14 +364,14 @@ Contact %ADMIN% with any questions or concerns.
      array("mailtool_name" => "Reject notification",
            "mailtool_priority" => 11,
            "mailtool_recipients" => "somedec:no",
-           "subject" => "[%CONFSHORTNAME%] Rejected paper #%NUMBER% %TITLEHINT%",
+           "subject" => "[%CONFSHORTNAME%] Rejected submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear author(s),
 
-The %CONFNAME% program committee is sorry to inform you that your paper #%NUMBER% was rejected, and will not appear in the conference.
+The %CONFNAME% program committee is sorry to inform you that your submission #%NUMBER% was rejected, and will not appear in the conference.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
+        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.
 
@@ -386,9 +386,9 @@ Contact %ADMIN% with any questions or concerns.
 
      "commentnotify" =>
      array("subject" => "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
-           "body" => "A comment for %CONFNAME% paper #%NUMBER% has been posted. For the most up-to-date comments, or to unsubscribe from email notification, see the paper site.
+           "body" => "A comment for %CONFNAME% submission #%NUMBER% has been posted. For the most up-to-date comments, or to unsubscribe from email notification, see the submission site.
 
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -398,9 +398,9 @@ Contact %ADMIN% with any questions or concerns.
 
      "responsenotify" =>
      array("subject" => "[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
-           "body" => "The authors' response for %CONFNAME% paper #%NUMBER% is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the paper site.
+           "body" => "The authors' response for %CONFNAME% submission #%NUMBER% is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the submission site.
 
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -410,9 +410,9 @@ Contact %ADMIN% with any questions or concerns.
 
      "responsedraftnotify" =>
      array("subject" => "[%CONFSHORTNAME%] Draft response for #%NUMBER% %TITLEHINT%",
-           "body" => "The draft authors' response for %CONFNAME% paper #%NUMBER% has been updated as shown below. This response has not yet been submitted to reviewers. For the most up-to-date version, or to turn off notification emails, see the paper site.
+           "body" => "The draft authors' response for %CONFNAME% submission #%NUMBER% has been updated as shown below. This response has not yet been submitted to reviewers. For the most up-to-date version, or to turn off notification emails, see the submission site.
 
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -421,10 +421,10 @@ Contact %ADMIN% with any questions or concerns.
 %COMMENTS%\n"),
 
      "finalsubmitnotify" =>
-     array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
-           "body" => "The final version for %CONFNAME% paper #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the paper site.
+     array("subject" => "[%CONFSHORTNAME%] Updated final version #%NUMBER% %TITLEHINT%",
+           "body" => "The final version for %CONFNAME% submission #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the submission site.
 
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Contact %ADMIN% with any questions or concerns.
 
@@ -435,13 +435,13 @@ Contact %ADMIN% with any questions or concerns.
            "mailtool_pc" => true,
            "mailtool_priority" => 0,
            "mailtool_recipients" => "s",
-           "subject" => "[%CONFSHORTNAME%] Paper #%NUMBER% %TITLEHINT%",
+           "subject" => "[%CONFSHORTNAME%] Submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
 Your message here.
 
        Title: %TITLE%
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Use the link below to sign in to the site.
 
@@ -456,14 +456,14 @@ Contact %ADMIN% with any questions or concerns.
            "mailtool_pc" => true,
            "mailtool_priority" => 20,
            "mailtool_recipients" => "uncrev",
-           "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+           "subject" => "[%CONFSHORTNAME%] Review reminder for submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
-This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact the person who requested the review directly.
+This is a reminder to finish your review for %CONFNAME% submission #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact the person who requested the review directly.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Use the link below to sign in to the site.
 
@@ -481,14 +481,14 @@ Contact %ADMIN% with any questions or concerns.
            "mailtool_priority" => 21,
            "mailtool_recipients" => "uncmyextrev",
            "mailtool_search_type" => "req",
-           "subject" => "[%CONFSHORTNAME%] Review reminder for paper #%NUMBER% %TITLEHINT%",
+           "subject" => "[%CONFSHORTNAME%] Review reminder for submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
-This is a reminder from %REQUESTERCONTACT% to finish your review for %CONFNAME% paper #%NUMBER%.%IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF%If you are unable to complete the review, please decline the review using the site or contact %REQUESTERNAME% directly.
+This is a reminder from %REQUESTERCONTACT% to finish your review for %CONFNAME% submission #%NUMBER%.%IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF%If you are unable to complete the review, please decline the review using the site or contact %REQUESTERNAME% directly.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%)%
+        Site: %URL(paper, p=%NUMBER%)%
 
 Use the link below to sign in to the site.
 
@@ -524,7 +524,7 @@ Contact %ADMIN% with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
+        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this registration: %REASON%
 
@@ -540,7 +540,7 @@ Contact %ADMIN% with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
+        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -556,7 +556,7 @@ Contact %ADMIN% with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
+        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 
@@ -572,7 +572,7 @@ Contact %ADMIN% with any questions or concerns.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
-  Paper site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
+        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%
 
 %NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%
 

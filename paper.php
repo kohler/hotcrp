@@ -358,15 +358,15 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
 // delete action
 if ($Qreq->delete && $Qreq->post_ok()) {
     if ($newPaper)
-        $Conf->confirmMsg("Paper deleted.");
+        $Conf->confirmMsg("Submission deleted.");
     else if (!$Me->can_administer($prow))
-        Conf::msg_error("Only the program chairs can permanently delete papers. Authors can withdraw papers, which is effectively the same.");
+        Conf::msg_error("Only the program chairs can permanently delete submissions. Authors can withdraw submissions, which is effectively the same.");
     else {
         // mail first, before contact info goes away
         if (!$Me->can_administer($prow) || $Qreq->doemail > 0)
             HotCRPMailer::send_contacts("@deletepaper", $prow, array("reason" => (string) $Qreq->emailNote, "infoNames" => 1));
         if ($prow->delete_from_database($Me))
-            $Conf->confirmMsg("Paper #{$prow->paperId} deleted.");
+            $Conf->confirmMsg("Submission #{$prow->paperId} deleted.");
         $prow = null;
         errorMsgExit("");
     }
