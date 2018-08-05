@@ -17,6 +17,7 @@
     ["Unknown options ignored (%2$s).", "Unknown option ignored (%2$s).", ["$1=1"]],
 
     ["paper_edit_field", "Authors", "Author", ["$1=1"]],
+    ["paper_field", "Authors", "Author", ["$1=1"]],
 
     ["You’ll be able to see %d other reviews once you complete your own.", "You’ll be able to see %d other review once you complete your own.", ["$1=1"]],
     ["You’ll be able to see %d other reviews once yours is approved.", "You’ll be able to see %d other review once yours is approved.", ["$1=1"]],

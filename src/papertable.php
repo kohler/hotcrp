@@ -462,7 +462,10 @@ class PaperTable {
     }
 
     private function field_hint($name, $itext = "") {
-        $t = $this->conf->_ci("paper_edit_description", $name, $itext);
+        $args = array_merge(["paper_edit_description"], func_get_args());
+        if (count($args) === 2)
+            $args[] = "";
+        $t = call_user_func_array([$this->conf->ims(), "xci"], $args);
         if ($t !== "")
             return '<div class="paphint">' . $t . '</div>';
         return "";
@@ -521,11 +524,11 @@ class PaperTable {
                 if (($stamps = self::pdf_stamps_html($doc)))
                     $stamps = "<span class='sep'></span>" . $stamps;
                 if ($dtype == DTYPE_FINAL)
-                    $dname = $this->conf->_c("paper_pdf_name", "Final version");
+                    $dname = $this->conf->_c("paper_field", "Final version");
                 else if ($prow->timeSubmitted != 0)
-                    $dname = $this->conf->_c("paper_pdf_name", "Submission");
+                    $dname = $this->conf->_c("paper_field", "Submission");
                 else
-                    $dname = $this->conf->_c("paper_pdf_name", "Draft submission");
+                    $dname = $this->conf->_c("paper_field", "Draft submission");
                 $out[] = '<p class="xd">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
             }
 
@@ -714,7 +717,7 @@ class PaperTable {
             $extra = ["fold" => "paper", "foldnum" => 6,
                       "foldtitle" => "Toggle full abstract"];
         echo '<div class="paperinfo-cl"><div class="paperinfo-abstract"><div class="pg">',
-            $this->papt("abstract", "Abstract", $extra),
+            $this->papt("abstract", $this->conf->_c("paper_field", "Abstract"), $extra),
             '<div class="pavb abstract';
         if ($this->prow
             && !$this->entryMatches
@@ -791,8 +794,8 @@ class PaperTable {
             $hint .= " Submission is blind, so reviewers will not be able to see author information.";
         else if ($sb === Conf::BLIND_UNTILREVIEW)
             $hint .= " Reviewers will not be able to see author information before submitting a review.";
-        $hint .= " Any author with an account on this site can edit the submission.";
-        echo $this->field_hint("Authors", $hint),
+        $hint .= " Any listed author with an account on this site can edit the submission.";
+        echo $this->field_hint("Authors", $hint, $sb),
             $this->messages_for("authors"),
             '<div class="papev"><table id="auedittable" class="auedittable js-row-order">',
             '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
@@ -921,7 +924,7 @@ class PaperTable {
     private function paptabAuthors($skip_contacts) {
         if ($this->view_authors == 0) {
             echo '<div class="pg">',
-                $this->papt("authorInformation", "Authors"),
+                $this->papt("authorInformation", $this->conf->_c("paper_field", "Authors", 0)),
                 '<div class="pavb"><i>Hidden for blind review</i></div>',
                 "</div>\n\n";
             return;
@@ -931,7 +934,7 @@ class PaperTable {
         list($aulist, $contacts) = $this->_analyze_authors();
 
         // "author" or "authors"?
-        $auname = pluralx(count($aulist), "Author");
+        $auname = $this->conf->_c("paper_field", "Authors", count($aulist));
         if ($this->view_authors == 1)
             $auname .= " (deblinded)";
         else if ($this->user->act_author_view($this->prow)) {
@@ -950,7 +953,7 @@ class PaperTable {
         if ($this->view_authors == 1 || $this->allFolded)
             echo '<a class="q ui js-aufoldup" href="" title="Toggle author display">';
         if ($this->view_authors == 1)
-            echo '<span class="fn8">Authors</span><span class="fx8">';
+            echo '<span class="fn8">', $this->conf->_c("paper_field", "Authors", 0), '</span><span class="fx8">';
         if ($this->allFolded)
             echo expander(null, 9);
         else if ($this->view_authors == 1)
@@ -1201,10 +1204,8 @@ class PaperTable {
             '</span></div>';
 
         // Editable version
-        echo '<div class="paphint">',
-            'Contacts are HotCRP users who can edit the submission and view reviews. Authors with HotCRP accounts are always contacts, but you can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.',
-            '</div>';
-        echo '<div class="papev js-row-order"><div>';
+        echo $this->field_hint("Contacts", "Contacts are users who can edit the submission and view reviews. Here you can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in."),
+            '<div class="papev js-row-order"><div>';
 
         $req_cemail = [];
         if ($this->useRequest) {
@@ -1400,6 +1401,10 @@ class PaperTable {
                 $ctypes[CONFLICT_CHAIRMARK] = "Confirmed conflict";
                 $extra["optionstyles"] = array(CONFLICT_CHAIRMARK => "font-weight:bold");
             }
+            foreach ($ctypes as &$ctype)
+                $ctype = $this->conf->_c("conflict_type", $ctype);
+            unset($ctype);
+            $author_ctype = $this->conf->_c("conflict_type", "Author");
         }
 
         echo $this->editable_papt("pcconf", $this->field_name("PC conflicts")),
@@ -1440,7 +1445,7 @@ class PaperTable {
             if ($selectors) {
                 echo '<span class="pcconf-editselector">';
                 if ($disabled) {
-                    echo '<strong>', ($pct >= CONFLICT_AUTHOR ? "Author" : "Conflict"), '</strong>',
+                    echo '<strong>', ($pct >= CONFLICT_AUTHOR ? $author_ctype : "Conflict"), '</strong>',
                         Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry"]);
                 } else {
                     $js["class"] = "conflict-entry";
