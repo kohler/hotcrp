@@ -403,25 +403,15 @@ class PaperOption implements Abbreviator {
         if (is_object($args))
             $args = get_object_vars($args);
         $callback = get($args, "callback");
-        $jtype = null;
-        if (!$callback) {
-            $type = get($args, "type");
-            if ($type && isset(self::$callback_map[$type]))
-                $callback = self::$callback_map[$type];
-            if ($type
-                && (!$callback || isset($conf->opt["optionTypes"]))
-                && ($jtype = $conf->option_type($type))) {
-                error_log(var_export($jtype, true));
-                $callback = $jtype->callback;
-            }
-        }
+        if (!$callback)
+            $callback = get(self::$callback_map, get($args, "type"));
         if (!$callback)
             $callback = "+PaperOption";
         if ($callback[0] === "+") {
             $class = substr($callback, 1);
-            return new $class($conf, $args, $jtype);
+            return new $class($conf, $args);
         } else
-            return call_user_func($callback, $conf, $args, $jtype);
+            return call_user_func($callback, $conf, $args);
     }
 
     static function compare($a, $b) {
