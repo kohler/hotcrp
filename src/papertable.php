@@ -458,7 +458,7 @@ class PaperTable {
     }
 
     private function field_name($name) {
-        return $this->conf->_c("paper_edit_field", $name);
+        return $this->conf->_c("paper_field/edit", $name);
     }
 
     private function field_hint($name, $itext = "") {
@@ -783,7 +783,7 @@ class PaperTable {
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
 
         $sb = $this->conf->submission_blindness();
-        $title = $this->conf->_c("paper_edit_field", "Authors", $max_authors);
+        $title = $this->conf->_c("paper_field/edit", "Authors", $max_authors);
         if ($sb === Conf::BLIND_ALWAYS)
             $title .= " (blind)";
         else if ($sb === Conf::BLIND_UNTILREVIEW)
