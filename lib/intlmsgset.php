@@ -156,18 +156,33 @@ class IntlMsgSet {
 
     private function find($context, $itext, $args) {
         $match = null;
-        $matchnreq = 0;
+        $matchnreq = $matchctxlen = 0;
         for ($im = get($this->ims, $itext); $im; $im = $im->next) {
-            if ($context !== null && $im->context !== null && $im->context !== $context)
+            $ctxlen = $nreq = 0;
+            if ($context !== null && $im->context !== null) {
+                if ($context === $im->context)
+                    $ctxlen = 10000;
+                else {
+                    $ctxlen = (int) min(strlen($context), strlen($im->context));
+                    if (strncmp($context, $im->context, $ctxlen) !== 0
+                        || ($ctxlen < strlen($context) && $context[$ctxlen] !== "/")
+                        || ($ctxlen < strlen($im->context) && $im->context[$ctxlen] !== "/"))
+                        continue;
+                }
+            } else if ($context === null && $im->context !== null)
                 continue;
-            $nreq = $im->require ? $im->check_require($this, $args) : 0;
-            if ($nreq !== false
-                && (!$match
-                    || ($im->context === $context && $match->context !== $context)
-                    || ($im->priority > $match->priority)
-                    || ($im->priority == $match->priority && $nreq > $matchnreq))) {
+            if ($im->require
+                && ($nreq = $im->check_require($this, $args)) === false)
+                continue;
+            if (!$match
+                || $im->priority > $match->priority
+                || ($im->priority == $match->priority
+                    && ($ctxlen > $matchctxlen
+                        || ($ctxlen == $matchctxlen
+                            && $nreq > $matchnreq)))) {
                 $match = $im;
                 $matchnreq = $nreq;
+                $matchctxlen = $ctxlen;
             }
         }
         return $match;

@@ -603,6 +603,20 @@ xassert_eqq($ms->x("fart"), "fart example C");
 xassert_eqq($ms->x("fart", "bobby"), "fart example B");
 xassert_eqq($ms->x("fart", "bob"), "fart example A");
 
+// i18n messages with contexts
+$ms = new IntlMsgSet;
+$ms->add("Hello", "Hello");
+$ms->add(["hello", "Hello", "Hello1"]);
+$ms->add(["hello/yes", "Hello", "Hello2"]);
+$ms->add(["hellop", "Hello", "Hellop", 2]);
+xassert_eqq($ms->xc(null, "Hello"), "Hello");
+xassert_eqq($ms->xc("hello", "Hello"), "Hello1");
+xassert_eqq($ms->xc("hello/no", "Hello"), "Hello1");
+xassert_eqq($ms->xc("hello/yes", "Hello"), "Hello2");
+xassert_eqq($ms->xc("hello/yes/whatever", "Hello"), "Hello2");
+xassert_eqq($ms->xc("hello/ye", "Hello"), "Hello1");
+xassert_eqq($ms->xc("hello/yesp", "Hello"), "Hello1");
+
 // MIME types
 xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n"), Mimetype::PDF_TYPE);
 // test that we can parse lib/mime.types for file extensions
