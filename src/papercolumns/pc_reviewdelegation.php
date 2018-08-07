@@ -25,7 +25,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         foreach ($row->reviews_by_display() as $rrow) {
             if ($rrow->reviewType == REVIEW_EXTERNAL
                 && $rrow->requestedBy == $this->requester->contactId) {
-                if (!$pl->user->can_view_review($row, $rrow))
+                if (!$pl->user->can_view_review_assignment($row, $rrow))
                     continue;
                 if ($pl->user->can_view_review_identity($row, $rrow))
                     $t = $pl->user->reviewer_html_for($rrow);
