@@ -380,7 +380,7 @@ echo "</div></div>\n";
 $req = "Request an external review";
 if (!$Me->allow_administer($prow) && $Conf->setting("extrev_chairreq"))
     $req = "Propose an external review";
-echo Ht::form(hoturl_post("assign", "p=$prow->paperId")),
+echo Ht::form(hoturl_post("assign", "p=$prow->paperId"), ["novalidate" => true]),
     '<div class="revcard"><div class="revcard_head">',
     "<h3>", $req, "</h3></div><div class=\"revcard_body\">";
 

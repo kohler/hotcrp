@@ -23,6 +23,7 @@ class Ht {
                                        "disabled" => self::ATTR_BOOL,
                                        "enctype" => self::ATTR_SKIP,
                                        "method" => self::ATTR_SKIP,
+                                       "novalidate" => self::ATTR_BOOL,
                                        "optionstyles" => self::ATTR_SKIP,
                                        "spellcheck" => self::ATTR_BOOLTEXT,
                                        "type" => self::ATTR_SKIP);
