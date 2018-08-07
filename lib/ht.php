@@ -19,13 +19,17 @@ class Ht {
     const ATTR_NOEMPTY = 4;
     private static $_attr_type = array("accept-charset" => self::ATTR_SKIP,
                                        "action" => self::ATTR_SKIP,
+                                       "checked" => self::ATTR_BOOL,
                                        "class" => self::ATTR_NOEMPTY,
                                        "disabled" => self::ATTR_BOOL,
                                        "enctype" => self::ATTR_SKIP,
+                                       "formnovalidate" => self::ATTR_BOOL,
                                        "method" => self::ATTR_SKIP,
+                                       "multiple" => self::ATTR_BOOL,
                                        "novalidate" => self::ATTR_BOOL,
                                        "optionstyles" => self::ATTR_SKIP,
                                        "spellcheck" => self::ATTR_BOOLTEXT,
+                                       "readonly" => self::ATTR_BOOL,
                                        "type" => self::ATTR_SKIP);
 
     static function extra($js) {
