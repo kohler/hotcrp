@@ -39,7 +39,7 @@ class Ht {
                     || ($v === "" && $t === self::ATTR_NOEMPTY))
                     /* nothing */;
                 else if ($t === self::ATTR_BOOL)
-                    $x .= ($v ? " $k=\"$k\"" : "");
+                    $x .= ($v ? " $k" : "");
                 else if ($t === self::ATTR_BOOLTEXT && is_bool($v))
                     $x .= " $k=\"" . ($v ? "true" : "false") . "\"";
                 else
