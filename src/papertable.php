@@ -1191,7 +1191,7 @@ class PaperTable {
             '</span></div>';
 
         // Editable version
-        echo $this->field_hint("Contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts; you can add contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.", !!$this->prow),
+        echo $this->field_hint("Contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.", !!$this->prow),
             '<div class="papev js-row-order"><div>';
 
         $req_cemail = [];
@@ -1896,12 +1896,11 @@ class PaperTable {
     }
 
     function _collectActionButtons() {
-        $prow = $this->prow;
-        $pid = $prow ? $prow->paperId : "new";
+        $pid = $this->prow ? $this->prow->paperId : "new";
 
         // Withdrawn papers can be revived
-        if ($prow && $prow->timeWithdrawn > 0) {
-            $revivable = $this->conf->timeFinalizePaper($prow);
+        if ($this->_prow->timeWithdrawn > 0) {
+            $revivable = $this->conf->timeFinalizePaper($this->_prow);
             if ($revivable)
                 $b = Ht::submit("revive", "Revive submission", ["class" => "btn btn-primary"]);
             else {
@@ -1919,10 +1918,10 @@ class PaperTable {
             $old_overrides = $this->user->set_overrides(0);
             if ($this->canUploadFinal) {
                 $updater = "submitfinal";
-                $whyNot = $this->user->perm_submit_final_paper($prow);
-            } else if ($prow) {
+                $whyNot = $this->user->perm_submit_final_paper($this->prow);
+            } else if ($this->prow) {
                 $updater = "update";
-                $whyNot = $this->user->perm_update_paper($prow);
+                $whyNot = $this->user->perm_update_paper($this->prow);
             } else {
                 $updater = "update";
                 $whyNot = $this->user->perm_start_paper();
@@ -1937,9 +1936,9 @@ class PaperTable {
                 $x = whyNotText($revWhyNot) . " Are you sure you want to override the deadline?";
                 $buttons[] = array(Ht::button($save_name, ["class" => "btn btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
             } else if (isset($whyNot["updateSubmitted"])
-                       && $this->user->can_finalize_paper($prow)) {
+                       && $this->user->can_finalize_paper($this->_prow)) {
                 $buttons[] = array(Ht::submit("update", $save_name, ["class" => "btn btn-savepaper"]));
-            } else if ($prow) {
+            } else if ($this->prow) {
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
             }
             if (!empty($buttons)) {
@@ -1949,21 +1948,22 @@ class PaperTable {
         }
 
         // withdraw button
-        if (!$prow || !$this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_withdraw_paper", $prow))
+        if (!$this->prow
+            || !$this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_withdraw_paper", $this->prow))
             $b = null;
-        else if ($prow->timeSubmitted <= 0)
+        else if ($this->prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw");
         else {
             $args = ["class" => "btn ui js-withdraw"];
-            if ($this->user->can_withdraw_paper($prow))
+            if ($this->user->can_withdraw_paper($this->prow))
                 $args["data-withdrawable"] = "true";
-            if (($this->admin && !$prow->has_author($this->user))
-                || $this->conf->timeFinalizePaper($prow))
+            if (($this->admin && !$this->prow->has_author($this->user))
+                || $this->conf->timeFinalizePaper($this->prow))
                 $args["data-revivable"] = "true";
             $b = Ht::button("Withdraw", $args);
         }
         if ($b) {
-            if (!$this->user->can_withdraw_paper($prow))
+            if (!$this->user->can_withdraw_paper($this->prow))
                 $b = array($b, "(admin only)");
             $buttons[] = $b;
         }
