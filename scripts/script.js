@@ -4649,6 +4649,7 @@ function search_showforce_click() {
     var xhref = apply_force(window.location.href);
     $("#foldpl > thead").find("a.pl_sort").each(function () {
         var href = apply_force(this.getAttribute("href"));
+        this.setAttribute("href", href);
         if (/\bpl_sorting_(?:fwd|rev)/.test(this.className)
             && !$(this).closest("th").hasClass("pl_id")) {
             var sorter = href_sorter(href);

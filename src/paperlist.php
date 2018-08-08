@@ -1092,6 +1092,8 @@ class PaperList {
             $sort_url .= $s0->reverse ? "" : urlencode(" reverse");
         }
 
+        if ($this->user->overrides() & Contact::OVERRIDE_CONFLICT)
+            $sort_url .= "&amp;forceShow=1";
         return '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
     }
 
