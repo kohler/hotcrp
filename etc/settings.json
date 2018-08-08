@@ -378,7 +378,7 @@
     },
     {
         "name": "sub_blind",
-        "title": "Submission anonymity", "group": "sub",
+        "title": "Submission anonymity", "group": "submissions",
         "type": "radio", "values": [0, 1, 2, 3], "default_value": 2
     },
     {
@@ -411,7 +411,7 @@
     },
     {
         "name": "sub_open",
-        "title": "Open site for submissions", "group": "sub",
+        "title": "Open site for submissions", "group": "submissions",
         "type": "cdate",
         "require": "src/settings/s_submissions.php"
     },

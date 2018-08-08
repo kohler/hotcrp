@@ -87,10 +87,30 @@
         "render_callback": "Reviews_SettingRenderer::render_ratings"
     },
     {
-        "name": "sub", "position": 300,
+        "name": "submissions", "synonym": ["sub"], "position": 300,
         "title": "Submissions",
-        "crosscheck_callback": "Submissions_SettingRenderer::crosscheck",
-        "render_callback": "Submissions_SettingRenderer::render"
+        "crosscheck_callback": "Submissions_SettingRenderer::crosscheck"
+    },
+    {
+        "name": "submissions/open", "position": 10,
+        "render_callback": "Submissions_SettingRenderer::render_open"
+    },
+    {
+        "name": "submissions/deadlines", "position": 20,
+        "render_callback": "Submissions_SettingRenderer::render_deadlines"
+    },
+    {
+        "name": "submissions/updates", "position": 30,
+        "render_callback": "Submissions_SettingRenderer::render_updates"
+    },
+    {
+        "name": "submissions/blind", "position": 40,
+        "render_callback": "Submissions_SettingRenderer::render_blind",
+        "title": "Reviewer visibility"
+    },
+    {
+        "name": "submissions/pcseeall", "position": 50,
+        "render_callback": "Submissions_SettingRenderer::render_pcseeall"
     },
     {
         "name": "subform", "position": 400,
