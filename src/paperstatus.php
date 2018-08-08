@@ -1204,6 +1204,23 @@ class PaperStatus extends MessageSet {
         return true;
     }
 
+    private function unused_random_pid() {
+        $n = max(100, 3 * $this->conf->fetch_ivalue("select count(*) from Paper"));
+        while (1) {
+            $pids = [];
+            while (count($pids) < 10)
+                $pids[] = mt_rand(1, $n);
+
+            $result = $this->conf->qe("select paperId from Paper where paperId?a", $pids);
+            while ($result && ($row = $result->fetch_row()))
+                $pids = array_values(array_diff($pids, [(int) $row[0]]));
+            Dbl::free($result);
+
+            if (!empty($pids))
+                return $pids[0];
+        }
+    }
+
     function execute_save_paper_json($pj) {
         global $Now;
         if (!empty($this->_paper_upd)) {
@@ -1270,7 +1287,13 @@ class PaperStatus extends MessageSet {
                 }
             }
             if ($need_insert) {
+                if (($random_pids = $this->conf->setting("random_pids"))) {
+                    $this->conf->qe("lock tables Paper write");
+                    $this->_paper_upd["paperId"] = $this->unused_random_pid();
+                }
                 $result = $this->conf->qe_apply("insert into Paper set " . join("=?, ", array_keys($this->_paper_upd)) . "=?", array_values($this->_paper_upd));
+                if ($random_pids)
+                    $this->conf->qe("unlock tables");
                 if (!$result || !$result->insert_id)
                     return $this->error_at(false, $this->_("Could not create paper."));
                 $pj->pid = $this->paperId = (int) $result->insert_id;
