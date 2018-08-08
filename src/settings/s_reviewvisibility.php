@@ -6,7 +6,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
         $no_text = "No, unless authors can edit responses";
         if (!$sv->conf->setting("au_seerev", 0)) {
-            if ($sv->conf->timeAuthorViewReviews())
+            if ($sv->conf->can_some_author_view_review())
                 $no_text .= '<div class="f-hx">Authors can edit responses and see reviews now.</div>';
             else if ($sv->conf->setting("resp_active"))
                 $no_text .= '<div class="f-hx">Authors cannot edit responses now.</div>';

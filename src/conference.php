@@ -41,7 +41,7 @@ class Track {
 class Conf {
     public $dblink = null;
 
-    var $settings;
+    public $settings;
     private $settingTexts;
     public $sversion;
     private $_pc_seeall_cache = null;
@@ -2256,14 +2256,14 @@ class Conf {
     function time_submit_final_version() {
         return $this->deadlinesBetween("final_open", "final_done", "final_grace");
     }
-    function timeAuthorViewReviews($reviewsOutstanding = false) {
+    function can_some_author_view_review($reviewsOutstanding = false) {
         // also used to determine when authors can see review counts
         // and comments.  see also mailtemplate.php and PaperInfo::notify
         return $this->au_seerev > 0
             && ($this->au_seerev != self::AUSEEREV_UNLESSINCOMPLETE || !$reviewsOutstanding);
     }
     private function time_author_respond_all_rounds() {
-        $allowed = array();
+        $allowed = [];
         foreach ($this->resp_round_list() as $i => $rname) {
             $isuf = $i ? "_$i" : "";
             if ($this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf"))

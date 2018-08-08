@@ -230,7 +230,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         $this->round = get($cj, "round", null);
     }
     function prepare(PaperList $pl, $visible) {
-        if ($pl->user->privChair || $pl->user->is_reviewer() || $pl->conf->timeAuthorViewReviews()) {
+        if ($pl->user->privChair || $pl->user->is_reviewer() || $pl->conf->can_some_author_view_review()) {
             $pl->qopts["reviewSignatures"] = true;
             return true;
         } else

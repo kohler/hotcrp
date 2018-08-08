@@ -20,7 +20,7 @@ function choose_setting_group($qreq, SettingValues $sv) {
         $want_group = $_SESSION["sg"];
     $want_group = $sv->canonical_group($want_group);
     if (!$want_group || !$sv->is_titled_group($want_group)) {
-        if ($sv->conf->timeAuthorViewReviews())
+        if ($sv->conf->can_some_author_view_review())
             $want_group = $sv->canonical_group("decisions");
         else if ($sv->conf->deadlinesAfter("sub_sub") || $sv->conf->time_review_open())
             $want_group = $sv->canonical_group("reviews");
