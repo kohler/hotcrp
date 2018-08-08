@@ -919,6 +919,7 @@ $blind\n";
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
             $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn btn-primary need-clickthrough-enable", "disabled" => $disabled]);
         }
+        $buttons[] = Ht::submit("cancel", "Cancel", ["class" => "btn"]);
 
         if ($rrow && $type == "bottom" && $Me->allow_administer($prow)) {
             $buttons[] = "";
