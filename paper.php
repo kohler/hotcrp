@@ -61,10 +61,6 @@ function errorMsgExit($msg) {
 }
 
 
-// collect paper ID: either a number or "new"
-$newPaper = $Qreq->p === "new" || $Qreq->paperId === "new";
-
-
 // general error messages
 if ($Qreq->post && $Qreq->post_empty())
     $Conf->post_missing_msg();
@@ -78,7 +74,7 @@ function loadRows() {
         errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
 }
 $prow = null;
-if (!$newPaper)
+if (strcasecmp((string) $Qreq->p, "new") && strcasecmp((string) $Qreq->paperId, "new"))
     loadRows();
 
 
@@ -89,7 +85,7 @@ if ($prow && $Qreq->m === "api" && isset($Qreq->fn) && $Conf->has_api($Qreq->fn)
 
 
 // withdraw and revive actions
-if (isset($Qreq->withdraw) && !$newPaper && $Qreq->post_ok()) {
+if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_withdraw_paper($prow))) {
         $reason = (string) $Qreq->reason;
         if ($reason === "" && $Me->can_administer($prow) && $Qreq->doemail > 0)
@@ -136,7 +132,7 @@ if (isset($Qreq->withdraw) && !$newPaper && $Qreq->post_ok()) {
     } else
         Conf::msg_error(whyNotText($whyNot));
 }
-if (isset($Qreq->revive) && !$newPaper && $Qreq->post_ok()) {
+if (isset($Qreq->revive) && $prow && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
         Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,if(timeSubmitted<-100,-timeSubmitted,0)), withdrawReason=null where paperId=$prow->paperId");
         $Conf->update_papersub_setting(0);
@@ -156,7 +152,7 @@ function final_submit_watch_callback($prow, $minic) {
 }
 
 function update_paper(Qrequest $qreq, $action) {
-    global $Conf, $Me, $prow, $newPaper;
+    global $Conf, $Me, $prow;
     // XXX lock tables
     $wasSubmitted = $prow && $prow->timeSubmitted > 0;
 
@@ -174,7 +170,7 @@ function update_paper(Qrequest $qreq, $action) {
     }
 
     // check deadlines
-    if ($newPaper)
+    if (!$prow)
         // we know that can_start_paper implies can_finalize_paper
         $whyNot = $Me->perm_start_paper();
     else if ($action == "final")
@@ -215,14 +211,14 @@ function update_paper(Qrequest $qreq, $action) {
     } else if (get($pj, "submitted") && !$wasSubmitted) {
         $actiontext = "Submitted";
         $template = "@submitpaper";
-    } else if ($newPaper) {
+    } else if (!$prow) {
         $actiontext = "Registered";
         $template = "@registerpaper";
     } else {
         $actiontext = "Updated";
         $template = "@updatepaper";
     }
-    if (!$newPaper)
+    if ($prow)
         $difftext = join(", ", array_keys($ps->diffs));
     else // only mark submission
         $difftext = join(", ", array_intersect(array_keys($ps->diffs), ["submission", "final"]));
@@ -311,7 +307,7 @@ function update_paper(Qrequest $qreq, $action) {
 if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
     // choose action
     $action = "update";
-    if ($Qreq->submitfinal && !$newPaper)
+    if ($Qreq->submitfinal && $prow)
         $action = "final";
     else if ($Qreq->submitpaper
              && (($prow && $prow->size > 0)
@@ -357,7 +353,7 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
 
 // delete action
 if ($Qreq->delete && $Qreq->post_ok()) {
-    if ($newPaper)
+    if (!$prow)
         $Conf->confirmMsg("Submission deleted.");
     else if (!$Me->can_administer($prow))
         Conf::msg_error("Only the program chairs can permanently delete submissions. Authors can withdraw submissions, which is effectively the same.");
@@ -384,7 +380,7 @@ if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
 
 // prepare paper table
 if ($paperTable->mode == "edit") {
-    if ($newPaper)
+    if (!$prow)
         $editable = true;
     else {
         $old_overrides = $Me->add_overrides(Contact::OVERRIDE_TIME);
