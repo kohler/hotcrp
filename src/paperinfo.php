@@ -240,6 +240,7 @@ class PaperInfo {
     public $finalPaperStorageId;
     public $managerContactId;
     public $paperFormat;
+    public $outcome;
     // $paperTags: DO NOT LIST (property_exists() is meaningful)
     // $optionIds: DO NOT LIST (property_exists() is meaningful)
     // $allConflictTypes: DO NOT LIST (property_exists() is meaningful)
