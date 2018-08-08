@@ -791,10 +791,9 @@ class PaperTable {
         echo $this->editable_papt("authors", $title);
         $hint = "List the authors, including email addresses and affiliations.";
         if ($sb === Conf::BLIND_ALWAYS)
-            $hint .= " Submission is blind, so reviewers will not be able to see author information.";
+            $hint .= " Submission is blind, so reviewers will not see author information.";
         else if ($sb === Conf::BLIND_UNTILREVIEW)
-            $hint .= " Reviewers will not be able to see author information before submitting a review.";
-        $hint .= " Any listed author with an account on this site can edit the submission.";
+            $hint .= " Reviewers will not see author information until they submit a review.";
         echo $this->field_hint("Authors", $hint, $sb),
             $this->messages_for("authors"),
             '<div class="papev"><table id="auedittable" class="auedittable js-row-order">',
@@ -1192,7 +1191,7 @@ class PaperTable {
             '</span></div>';
 
         // Editable version
-        echo $this->field_hint("Contacts", "Contacts are users who can edit the submission and view reviews. You can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in."),
+        echo $this->field_hint("Contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts; you can add contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.", !!$this->prow),
             '<div class="papev js-row-order"><div>';
 
         $req_cemail = [];
@@ -1218,8 +1217,9 @@ class PaperTable {
             } else
                 continue;
             echo '<div class="checki"><label><span class="checkc">', $ctl, ' </span>',
-                Text::user_html_nolink($au),
-                ($au->nonauthor ? " (<em>non-author</em>)" : "");
+                Text::user_html_nolink($au);
+            if ($au->nonauthor)
+                echo ' (<em>non-author</em>)';
             if ($this->user->privChair
                 && $au->contactId
                 && $au->contactId != $this->user->contactId)
