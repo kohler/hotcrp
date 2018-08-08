@@ -573,7 +573,7 @@ class PaperStatus extends MessageSet {
             $collab = rtrim(cleannl($pj->collaborators));
             if (!$this->prow || $collab !== rtrim(cleannl($this->prow->collaborators))) {
                 $old_collab = $collab;
-                $collab = AuthorMatcher::fix_collaborators($old_collab);
+                $collab = (string) AuthorMatcher::fix_collaborators($old_collab);
                 if ($collab !== $old_collab) {
                     $name = $this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts";
                     $this->warning_at("collaborators", "$name changed to follow our required format. You may want to look them over.");
