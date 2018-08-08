@@ -985,9 +985,10 @@ class PaperTable {
 
         // contacts
         if (count($contacts) > 0 && !$skip_contacts) {
-            echo "<div class='pg fx9", ($this->view_authors > 1 ? "" : " fx8"), "'>",
-                $this->papt("authorInformation", pluralx(count($contacts), "Contact")),
-                "<div class='pavb'>",
+            echo '<div class="pg fx9', ($this->view_authors > 1 ? "" : " fx8"), '">',
+                $this->papt("authorInformation",
+                            $this->conf->_c("paper_field", "Contacts", count($contacts))),
+                '<div class="pavb">',
                 $this->authorData($contacts, "col", $this->user),
                 "</div></div>\n\n";
         }
@@ -1169,29 +1170,16 @@ class PaperTable {
                 . '</div>';
     }
 
-    private function echo_editable_new_contact_author() {
-        if ($this->admin) {
-            echo $this->editable_papt("contactAuthor", $this->field_name("Contact")),
-                '<div class="papev js-row-order">';
-            echo '<div data-row-template="',
-                htmlspecialchars($this->editable_newcontact_row('$')),
-                '">';
-            if ($this->useRequest) {
-                for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i)
-                    echo $this->editable_newcontact_row($i);
-            }
-            echo '</div><div class="ug">',
-                Ht::button("Add contact", ["class" => "ui btn row-order-ui addrow"]),
-                "</div></div></div>\n\n";
-        }
-    }
-
     private function echo_editable_contact_author() {
-        if (!$this->prow)
-            return $this->echo_editable_new_contact_author();
-
-        list($aulist, $contacts) = $this->_analyze_authors();
-        $contacts = array_merge($aulist, $contacts);
+        if ($this->prow) {
+            list($aulist, $contacts) = $this->_analyze_authors();
+            $contacts = array_merge($aulist, $contacts);
+        } else if (!$this->admin) {
+            $contacts = [new Author($this->user)];
+            $contacts[0]->contactId = $this->user->contactId;
+            Contact::set_sorter($contacts[0], $this->conf);
+        } else
+            $contacts = [];
         usort($contacts, "Contact::compare");
 
         $cerror = $this->has_problem_at("contactAuthor") || $this->has_problem_at("contacts");
@@ -1204,7 +1192,7 @@ class PaperTable {
             '</span></div>';
 
         // Editable version
-        echo $this->field_hint("Contacts", "Contacts are users who can edit the submission and view reviews. Here you can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in."),
+        echo $this->field_hint("Contacts", "Contacts are users who can edit the submission and view reviews. You can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in."),
             '<div class="papev js-row-order"><div>';
 
         $req_cemail = [];
@@ -1232,7 +1220,8 @@ class PaperTable {
             echo '<div class="checki"><label><span class="checkc">', $ctl, ' </span>',
                 Text::user_html_nolink($au),
                 ($au->nonauthor ? " (<em>non-author</em>)" : "");
-            if ($this->user->privChair && $au->contactId
+            if ($this->user->privChair
+                && $au->contactId
                 && $au->contactId != $this->user->contactId)
                 echo '&nbsp;', actas_link($au);
             echo '</label></div>';
