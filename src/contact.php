@@ -2978,19 +2978,20 @@ class Contact {
         return $this->perm_comment($prow, $crow, true);
     }
 
-    function can_respond(PaperInfo $prow, $crow, $submit = false) {
+    function can_respond(PaperInfo $prow, CommentInfo $crow, $submit = false) {
+        if ($prow->timeSubmitted <= 0
+            || !($crow->commentType & COMMENTTYPE_RESPONSE)
+            || !($rrd = get($prow->conf->resp_rounds(), $crow->commentRound)))
+            return false;
         $rights = $this->rights($prow);
-        return $prow->timeSubmitted > 0
-            && (!$crow
-                || ($crow->commentType & COMMENTTYPE_RESPONSE))
-            && ($rights->can_administer
+        return ($rights->can_administer
                 || $rights->act_author)
             && (($rights->allow_administer
                  && (!$submit || $this->override_deadlines($rights)))
-                || $this->conf->time_author_respond($crow ? (int) $crow->commentRound : null));
+                || $rrd->time_allowed(true));
     }
 
-    function perm_respond(PaperInfo $prow, $crow, $submit = false) {
+    function perm_respond(PaperInfo $prow, CommentInfo $crow, $submit = false) {
         if ($this->can_respond($prow, $crow, $submit))
             return null;
         $rights = $this->rights($prow);
@@ -3004,7 +3005,7 @@ class Contact {
             $whyNot["notSubmitted"] = 1;
         else {
             $whyNot["deadline"] = "resp_done";
-            if ($crow && (int) $crow->commentRound)
+            if ($crow->commentRound)
                 $whyNot["deadline"] .= "_" . $crow->commentRound;
             if ($rights->allow_administer && $rights->conflictType)
                 $whyNot["forceShow"] = 1;
