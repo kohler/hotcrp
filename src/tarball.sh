@@ -1,4 +1,4 @@
-export VERSION=2.101
+export VERSION=2.102
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -78,6 +78,7 @@ users.php
 batch/.htaccess
 batch/addusers.php
 batch/checkinvariants.php
+batch/deletepapers.php
 batch/fixdelegation.php
 batch/killinactivedoc.php
 batch/s3test.php
@@ -187,7 +188,7 @@ src/formatspec.php
 src/formula.php
 src/formulagraph.php
 src/groupedextensions.php
-src/help/h_chairsgude.php
+src/help/h_chairsguide.php
 src/help/h_formulas.php
 src/help/h_keywords.php
 src/help/h_ranking.php
@@ -250,6 +251,7 @@ src/paperstatus.php
 src/papertable.php
 src/paperrank.php
 src/review.php
+src/reviewdiffinfo.php
 src/reviewinfo.php
 src/reviewtable.php
 src/reviewtimes.php
@@ -261,6 +263,7 @@ src/search/st_conflict.php
 src/search/st_decision.php
 src/search/st_editfinal.php
 src/search/st_formula.php
+src/search/st_option.php
 src/search/st_paperpc.php
 src/search/st_paperstatus.php
 src/search/st_pdf.php
@@ -293,7 +296,7 @@ src/updateschema.php
 src/useractions.php
 src/userstatus.php
 
-extra/hotcrp.vim
+devel/hotcrp.vim
 
 images/.htaccess
 images/_.gif
@@ -339,7 +342,6 @@ images/review24.png
 images/review48.png
 images/sortdown.png
 images/sortup.png
-images/sprite.png
 images/stophand45.png
 images/txt.png
 images/txt24.png
@@ -353,6 +355,7 @@ scripts/buzzer.js
 scripts/graph.js
 scripts/jquery-1.12.4.min.js
 scripts/jquery-1.12.4.min.map
+scripts/jquery-3.3.1.min.js
 scripts/script.js
 scripts/settings.js
 

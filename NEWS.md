@@ -1,17 +1,49 @@
 HotCRP NEWS
 ===========
 
-## Version 2.102
+## Version 2.102 - 9.Aug.2018
 
 * Support integration with Lutz Prechelt’s [Review Quality Collector][].
 
+* Support anonymous PC discussion (comments are identified as by, e.g.,
+  “Reviewer A”).
+
+* Add a new conflict assigner that lists *all* potential conflicts, with
+  helpful information.
+
+    * Improve affiliation matching.
+    * Standardize collaborators storage format.
+    * External reviews can be requested with delegation to the chair only if
+      there’s an apparent conflict.
+
+* Many bug fixes and usability improvements. Important bugs include one where
+  reviews looked ugly, several concerning paper list display and
+  override-conflicts mode (e.g., sort order, statistics), some search bugs
+  (e.g., with ranges of scores), and some where complex Unicode strings would
+  cause breakage. Support emoji names.
+
+* Streamline some settings, including track permissions and submission fields.
+  Some features are removed from open-source HotCRP.
+
+* Faster performance for some DB queries and for some graphs. Support
+  simultaneous download from S3.
+
+* Support very long session-based paper lists that would otherwise overflow
+  cookie size limits.
+
+* Improve review rating UI.
+
+* Improve assignment page UI.
+
+* Support CDF graphs by *review* rather than paper.
+
+* Use the term “submission” in preference to “paper” (in many places).
+
 * Internal refactoring continues. Remove `$_REQUEST`; reduce reliance on
-  inline Javascript handlers.
+  inline Javascript handlers; simplify database schema. Further introduction
+  of expansion plans, such as for mail keywords.
 
 * Support PHP 7.2; stop supporting PHP 5.5.
-
-* Many bug fixes and usability improvements, including a bug where reviews
-  looked ugly.
 
 
 ## Version 2.101 - 18.Oct.2017
