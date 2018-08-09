@@ -5,11 +5,12 @@
 class Responses_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
         // Authors' response
-        echo '<div id="foldauresp" class="settings-g fold2o">';
-        $sv->echo_checkbox('resp_active', "<strong>Collect authors’ responses to the reviews<span class='fx2'>:</span></strong>", ["item_open" => true]);
-        Ht::stash_script('$(function () { $("#cbresp_active").on("change", function () { fold("auresp",!$$("cbresp_active").checked,2); }).trigger("change"); })');
-        echo '<div id="auresparea" class="fx2">',
-            Ht::hidden("has_resp_rounds", 1);
+        echo '<div class="settings-g">';
+        $sv->echo_checkbox("resp_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["item_open" => true]);
+        Ht::stash_script('$(function () { $("#cbresp_active").on("change", function () { var ch = $$("cbresp_active").checked; $(".if-response-active").toggleClass("hidden", !ch); }).trigger("change"); })');
+        echo '<div id="auresparea" class="if-response-active',
+            $sv->curv("resp_active") ? "" : " hidden",
+            '">', Ht::hidden("has_resp_rounds", 1);
 
         // Response rounds
         if ($sv->use_req()) {
@@ -40,9 +41,8 @@ class Responses_SettingParser extends SettingParser {
             $sv->echo_entry_group("resp_done$isuf", "Hard deadline", ["horizontal" => true]);
             $sv->echo_entry_group("resp_grace$isuf", "Grace period", ["horizontal" => true]);
             $sv->echo_entry_group("resp_words$isuf", "Word limit", ["horizontal" => true], $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
-            echo '<div style="padding-top:4px">';
             $sv->echo_message_minor("msg.resp_instrux$isuf", "Instructions");
-            echo '</div></div>', "\n";
+            echo '</div>', "\n";
         }
 
         echo '<div class="settings-g">',

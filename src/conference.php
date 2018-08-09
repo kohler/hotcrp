@@ -56,6 +56,7 @@ class Conf {
     public $download_prefix;
     public $au_seerev;
     public $tag_au_seerev;
+    public $any_response_open;
     public $tag_seeall;
     public $sort_by_last;
     public $opt;
@@ -326,13 +327,11 @@ class Conf {
             $this->_pc_see_pdf = false;
 
         $this->au_seerev = get($this->settings, "au_seerev", 0);
-        if (!$this->au_seerev
-            && get($this->settings, "resp_active", 0) > 0
-            && $this->time_author_respond_all_rounds())
-            $this->au_seerev = self::AUSEEREV_YES;
         $this->tag_au_seerev = null;
         if ($this->au_seerev == self::AUSEEREV_TAGS)
             $this->tag_au_seerev = explode(" ", get_s($this->settingTexts, "tag_au_seerev"));
+        $this->any_response_open = get($this->settings, "resp_active", 0) > 0
+            && $this->time_author_respond_all_rounds();
         $this->tag_seeall = get($this->settings, "tag_seeall", 0) > 0;
     }
 
@@ -2257,10 +2256,10 @@ class Conf {
         return $this->deadlinesBetween("final_open", "final_done", "final_grace");
     }
     function can_some_author_view_review($reviewsOutstanding = false) {
-        // also used to determine when authors can see review counts
-        // and comments.  see also mailtemplate.php and PaperInfo::notify
-        return $this->au_seerev > 0
-            && ($this->au_seerev != self::AUSEEREV_UNLESSINCOMPLETE || !$reviewsOutstanding);
+        return $this->any_response_open
+            || ($this->au_seerev > 0
+                && ($this->au_seerev != self::AUSEEREV_UNLESSINCOMPLETE
+                    || !$reviewsOutstanding));
     }
     private function time_author_respond_all_rounds() {
         $allowed = [];
@@ -2272,7 +2271,7 @@ class Conf {
         return $allowed;
     }
     function time_author_respond($round = null) {
-        if (!$this->au_seerev || !$this->setting("resp_active"))
+        if (!$this->any_response_open)
             return $round === null ? array() : false;
         if ($round === null)
             return $this->time_author_respond_all_rounds();

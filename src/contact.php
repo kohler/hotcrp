@@ -2453,15 +2453,22 @@ class Contact {
             || $this->can_view_review($prow, $rrow);
     }
 
+    static function can_some_author_respond(PaperInfo $prow) {
+        return $prow->conf->any_response_open;
+    }
+
     static function can_some_author_view_submitted_review(PaperInfo $prow) {
-        if ($prow->conf->au_seerev == Conf::AUSEEREV_TAGS)
+        if (self::can_some_author_respond($prow))
+            return true;
+        else if ($prow->conf->au_seerev == Conf::AUSEEREV_TAGS)
             return $prow->has_any_tag($prow->conf->tag_au_seerev);
         else
             return $prow->conf->au_seerev != 0;
     }
 
     private function can_view_submitted_review_as_author(PaperInfo $prow) {
-        return $this->conf->au_seerev == Conf::AUSEEREV_YES
+        return self::can_some_author_respond($prow)
+            || $this->conf->au_seerev == Conf::AUSEEREV_YES
             || ($this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
                 && (!$this->has_review()
                     || !$this->has_outstanding_review()))
@@ -2471,7 +2478,9 @@ class Contact {
 
     function can_view_some_review() {
         return $this->is_reviewer()
-            || ($this->is_author() && $this->conf->au_seerev != 0);
+            || ($this->is_author()
+                && ($this->conf->au_seerev != 0
+                    || $this->conf->any_response_open));
     }
 
     private function seerev_setting(PaperInfo $prow, $rrow, $rights) {
@@ -2972,10 +2981,10 @@ class Contact {
     function can_respond(PaperInfo $prow, $crow, $submit = false) {
         $rights = $this->rights($prow);
         return $prow->timeSubmitted > 0
-            && ($rights->can_administer
-                || $rights->act_author)
             && (!$crow
                 || ($crow->commentType & COMMENTTYPE_RESPONSE))
+            && ($rights->can_administer
+                || $rights->act_author)
             && (($rights->allow_administer
                  && (!$submit || $this->override_deadlines($rights)))
                 || $this->conf->time_author_respond($crow ? (int) $crow->commentRound : null));
@@ -3163,7 +3172,8 @@ class Contact {
         } else if (!$as_author && $this->is_reviewer()) {
             return VIEWSCORE_REVIEWERONLY - 1;
         } else if (($as_author || $this->is_author())
-                   && $this->conf->au_seerev != 0) {
+                   && ($this->conf->any_response_open
+                       || $this->conf->au_seerev != 0)) {
             if ($this->can_view_some_decision_as_author()) {
                 return VIEWSCORE_AUTHORDEC - 1;
             } else {

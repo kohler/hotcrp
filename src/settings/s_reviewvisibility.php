@@ -4,14 +4,7 @@
 
 class ReviewVisibility_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
-        $no_text = "No, unless authors can edit responses";
-        if (!$sv->conf->setting("au_seerev", 0)) {
-            if ($sv->conf->can_some_author_view_review())
-                $no_text .= '<div class="f-hx">Authors can edit responses and see reviews now.</div>';
-            else if ($sv->conf->setting("resp_active"))
-                $no_text .= '<div class="f-hx">Authors cannot edit responses now.</div>';
-        }
-        $opts = array(Conf::AUSEEREV_NO => $no_text,
+        $opts = array(Conf::AUSEEREV_NO => "No, unless authors can edit responses",
                       Conf::AUSEEREV_YES => "Yes");
         if ($sv->newv("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
             && !$sv->conf->opt("allow_auseerev_unlessincomplete"))
@@ -19,8 +12,19 @@ class ReviewVisibility_SettingParser extends SettingParser {
         if ($sv->conf->opt("allow_auseerev_unlessincomplete"))
             $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
         $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev");
+
+        $hint = '<p class="settingtext f-h if-response-active';
+        if (!$sv->conf->setting("resp_active"))
+            $hint .= ' hidden';
+        $hint .= '">';
+        if ($sv->conf->any_response_open)
+            $hint .= '<strong>Authors can currently edit responses and therefore see reviews</strong> independent of this setting.';
+        else
+            $hint .= 'Authors who can edit responses can see reviews independent of this setting.';
+        $hint .= '</p>';
+
         $sv->echo_radio_table("au_seerev", $opts,
-            'Can <strong>authors see reviews and author-visible comments</strong> for their papers?');
+            'Can <strong>authors see reviews and author-visible comments</strong> for their papers?' . $hint);
         echo Ht::hidden("has_tag_au_seerev", 1);
         Ht::stash_script('$("#tag_au_seerev").on("input", function () { $("#au_seerev_' . Conf::AUSEEREV_TAGS . '").click(); })');
 
