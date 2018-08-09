@@ -45,6 +45,7 @@ class ResponseRound {
     public $done;
     public $grace;
     public $words;
+    public $search;
     function time_allowed($with_grace) {
         global $Now;
         if ($this->open === null || $this->open <= 0 || $this->open > $Now)
@@ -1430,6 +1431,8 @@ class Conf {
                 $r->done = get($this->settings, "resp_done$isuf");
                 $r->grace = get($this->settings, "resp_grace$isuf");
                 $r->words = get($this->settings, "resp_words$isuf", 500);
+                if (($s = get($this->settingTexts, "resp_search$isuf")))
+                    $r->search = new PaperSearch($this->site_contact(), $s);
                 $this->_resp_rounds[] = $r;
             }
         }

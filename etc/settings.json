@@ -276,6 +276,11 @@
         "type": "tag", "size": 20, "novalue": true, "extensible": true
     },
     {
+        "name": "resp_search",
+        "title": "Response search",
+        "type": "string", "size": 40, "placeholder": "(All)", "extensible": true
+    },
+    {
         "name": "resp_words",
         "title": "Response word limit",
         "type": "zint", "size": 5, "placeholder": "none", "default_value": 500,

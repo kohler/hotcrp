@@ -2216,7 +2216,7 @@ class PaperSearch {
             return $this->paper_ids();
     }
 
-    function filter($callback) {
+    function restrict_match($callback) {
         $m = [];
         foreach ($this->paper_ids() as $pid)
             if (call_user_func($callback, $pid))
@@ -2303,6 +2303,17 @@ class PaperSearch {
         $x = $this->test_limit($prow) && $qe->exec($prow, $this);
         $this->user->set_overrides($old_overrides);
         return $x;
+    }
+
+    function filter($prows) {
+        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        $qe = $this->term();
+        $results = [];
+        foreach ($prows as $prow)
+            if ($this->test_limit($prow) && $qe->exec($prow, $this))
+                $results[] = $prow;
+        $this->user->set_overrides($old_overrides);
+        return $results;
     }
 
     function test_review(PaperInfo $prow, ReviewInfo $rrow) {

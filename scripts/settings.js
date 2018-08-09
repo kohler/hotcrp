@@ -724,6 +724,7 @@ handle_ui.on("js-settings-resp-round-new", function () {
     j.html(jQuery("#response_n").html().replace(/_n\"/g, "_" + i + "\""));
     mktemptext(j);
     j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());
+    suggest(j.find(".papersearch"), taghelp_q);
     return false;
 });
 

@@ -93,6 +93,7 @@ class Contact {
     public $hidden_papers;
     private $_aucollab_matchers;
     private $_aucollab_general_pregexes;
+    private $_authored_papers;
 
     // Per-paper DB information, usually null
     public $conflictType;
@@ -1612,7 +1613,8 @@ class Contact {
             $this->_db_roles = $this->_active_roles =
                 $this->_has_outstanding_review = $this->_is_lead =
                 $this->_is_explicit_manager = $this->_is_metareviewer =
-                $this->_can_view_pc = $this->_dangerous_track_mask = null;
+                $this->_can_view_pc = $this->_dangerous_track_mask =
+                $this->_authored_papers = null;
             $this->_rights_version = self::$rights_version;
         }
     }
@@ -1622,6 +1624,13 @@ class Contact {
         if (!isset($this->_active_roles))
             $this->load_author_reviewer_status();
         return ($this->_active_roles & self::ROLE_AUTHOR) !== 0;
+    }
+
+    function authored_papers() {
+        $this->check_rights_version();
+        if ($this->_authored_papers === null)
+            $this->_authored_papers = $this->is_author() ? $this->conf->paper_set($this, ["author" => true, "tags" => true])->all() : [];
+        return $this->_authored_papers;
     }
 
     function has_review() {
@@ -2988,7 +2997,9 @@ class Contact {
                 || $rights->act_author)
             && (($rights->allow_administer
                  && (!$submit || $this->override_deadlines($rights)))
-                || $rrd->time_allowed(true));
+                || $rrd->time_allowed(true))
+            && (!$rrd->search
+                || $rrd->search->test($prow));
     }
 
     function perm_respond(PaperInfo $prow, CommentInfo $crow, $submit = false) {
@@ -3447,10 +3458,13 @@ class Contact {
             $dl->sub->blind = "until-review";
 
         // responses
-        if ($this->conf->setting("resp_active") > 0) {
+        if ($this->conf->setting("resp_active") > 0
+            && ($this->isPC || $this->is_author())) {
             $dlresps = [];
             foreach ($this->conf->resp_rounds() as $rrd)
-                if ($rrd->open && ($this->isPC || $rrd->open < $Now)) {
+                if ($rrd->open
+                    && ($this->isPC || $rrd->open < $Now)
+                    && ($this->isPC || !$rrd->search || $rrd->search->filter($this->authored_papers()))) {
                     $dlresp = (object) ["open" => $rrd->open, "done" => +$rrd->done];
                     $dlresps[$rrd->name] = $dlresp;
                     $graces[] = [$dlresp, $rrd->grace];

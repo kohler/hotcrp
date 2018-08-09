@@ -18,7 +18,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             $hint .= ' hidden';
         $hint .= '">';
         if ($sv->conf->any_response_open)
-            $hint .= '<strong>Authors can currently edit responses and therefore see reviews</strong> independent of this setting.';
+            $hint .= 'Currently, <strong>some authors can edit responses and therefore see reviews</strong> independent of this setting.';
         else
             $hint .= 'Authors who can edit responses can see reviews independent of this setting.';
         $hint .= '</p>';

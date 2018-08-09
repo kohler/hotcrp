@@ -120,6 +120,8 @@ class Responses_SettingParser extends SettingParser {
                 $sv->save("resp_grace$isuf", $v <= 0 ? null : $v);
             if (($v = $sv->parse_value($sv->si("resp_words$isuf"))) !== null)
                 $sv->save("resp_words$isuf", $v < 0 ? null : $v);
+            if (($v = $sv->parse_value($sv->si("resp_search$isuf"))) !== null)
+                $sv->save("resp_search$isuf", $v !== "" ? $v : null);
             if (($v = $sv->parse_value($sv->si("msg.resp_instrux$isuf"))) !== null)
                 $sv->save("msg.resp_instrux$isuf", $v);
         }
