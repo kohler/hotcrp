@@ -252,17 +252,17 @@
     },
     {
         "name": "resp_done",
-        "title": "Authors’ response hard deadline",
+        "title": "Response hard deadline",
         "type": "date", "extensible": true
     },
     {
         "name": "resp_grace",
-        "title": "Authors’ response grace period",
+        "title": "Response grace period",
         "type": "grace", "extensible": true
     },
     {
         "name": "resp_open",
-        "title": "Authors’ response start time",
+        "title": "Response start time",
         "type": "date", "extensible": true
     },
     {
@@ -277,7 +277,7 @@
     },
     {
         "name": "resp_words",
-        "title": "Authors’ response word limit",
+        "title": "Response word limit",
         "type": "zint", "size": 5, "placeholder": "none", "default_value": 500,
         "extensible": true
     },
@@ -311,7 +311,7 @@
     {
         "name": "roundname",
         "title": "Review round name",
-        "type": "text", "size": 12, "novalue": true, "placeholder": "unnamed",
+        "type": "string", "size": 12, "novalue": true, "placeholder": "unnamed",
         "extensible": true
     },
     {
@@ -343,37 +343,37 @@
     {
         "name": "sub_banal_bodyfontsize",
         "title": "PDF format checker minimum body font size",
-        "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
+        "type": "string", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     {
         "name": "sub_banal_bodylineheight",
         "title": "PDF format checker minimum body line height",
-        "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
+        "type": "string", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     {
         "name": "sub_banal_columns",
         "title": "PDF format checker column count",
-        "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
+        "type": "string", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     {
         "name": "sub_banal_pagelimit",
         "title": "PDF format checker page limit",
-        "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
+        "type": "string", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     {
         "name": "sub_banal_papersize",
         "title": "PDF format checker paper size",
-        "type": "text", "size": 18, "placeholder": "N/A", "novalue": true,
+        "type": "string", "size": 18, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     {
         "name": "sub_banal_textblock",
         "title": "PDF format checker text block size",
-        "type": "text", "size": 18, "placeholder": "N/A", "novalue": true,
+        "type": "string", "size": 18, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     {
