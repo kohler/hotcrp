@@ -1538,7 +1538,7 @@ function display_main(is_initial) {
         else if (checkdl(now, +dl.sub.sub, dl.sub.sub_ingrace))
             dlname = "Submission";
     }
-    if (!dlname && dl.is_author && dl.resps)
+    if (!dlname && dl.resps)
         for (i in dl.resps) {
             x = dl.resps[i];
             if (x.open && +x.open < now && checkdl(now, +x.done, x.ingrace)) {
