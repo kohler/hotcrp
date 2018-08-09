@@ -2638,18 +2638,18 @@ class PaperSearch {
         if ($this->amPC && $this->conf->setting("extrev_approve") && $this->conf->setting("pcrev_editdelegate")
             && $this->user->is_requester())
             array_push($res, "has:approvable");
-        foreach ($this->conf->resp_round_list() as $i => $rname) {
+        foreach ($this->conf->resp_rounds() as $rrd) {
             if (!in_array("has:response", $res))
                 $res[] = "has:response";
-            if ($i)
-                $res[] = "has:{$rname}response";
+            if ($rrd->number)
+                $res[] = "has:{$rrd->name}response";
         }
         if ($this->user->can_view_some_draft_response())
-            foreach ($this->conf->resp_round_list() as $i => $rname) {
+            foreach ($this->conf->resp_rounds() as $rrd) {
                 if (!in_array("has:draftresponse", $res))
                     $res[] = "has:draftresponse";
-                if ($i)
-                    $res[] = "has:draft{$rname}response";
+                if ($rrd->number)
+                    $res[] = "has:draft{$rrd->name}response";
             }
         if ($this->user->can_view_tags()) {
             array_push($res, "has:color", "has:style");

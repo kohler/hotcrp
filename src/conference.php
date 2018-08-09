@@ -38,6 +38,32 @@ class Track {
     }
 }
 
+class ResponseRound {
+    public $name;
+    public $number;
+    public $open;
+    public $done;
+    public $grace;
+    public $words;
+    function time_allowed($with_grace) {
+        global $Now;
+        if ($this->open === null || $this->open <= 0 || $this->open > $Now)
+            return false;
+        $t = $this->done;
+        if ($t !== null && $t > 0 && $with_grace && $this->grace)
+            $t += $this->grace;
+        return $t === null || $t <= 0 || $t >= $Now;
+    }
+    function instructions(Conf $conf) {
+        $m = false;
+        if ($this->number)
+            $m = $conf->message_html("resp_instrux_$this->number", ["wordlimit" => $this->words]);
+        if ($m === false)
+            $m = $conf->message_html("resp_instrux", ["wordlimit" => $this->words]);
+        return $m;
+    }
+}
+
 class Conf {
     public $dblink = null;
 
@@ -73,6 +99,7 @@ class Conf {
     private $rounds = null;
     private $_defined_rounds = null;
     private $_round_settings = null;
+    private $_resp_rounds = null;
     private $tracks = null;
     private $_taginfo = null;
     private $_track_tags = null;
@@ -315,6 +342,7 @@ class Conf {
         $this->_decisions = null;
         $this->_pc_seeall_cache = null;
         $this->_defined_rounds = null;
+        $this->_resp_rounds = null;
         // digested settings
         $this->_pc_see_pdf = true;
         if (get($this->settings, "sub_freeze", 0) <= 0
@@ -1389,20 +1417,28 @@ class Conf {
 
 
 
-    function resp_round_list() {
-        if (($x = get($this->settingTexts, "resp_rounds")))
-            return explode(" ", $x);
-        else
-            return array(1);
+    function resp_rounds() {
+        if ($this->_resp_rounds === null) {
+            $this->_resp_rounds = [];
+            $x = get($this->settingTexts, "resp_rounds", "1");
+            foreach (explode(" ", $x) as $i => $rname) {
+                $r = new ResponseRound;
+                $r->number = $i;
+                $r->name = $rname;
+                $isuf = $i ? "_$i" : "";
+                $r->open = get($this->settings, "resp_open$isuf");
+                $r->done = get($this->settings, "resp_done$isuf");
+                $r->grace = get($this->settings, "resp_grace$isuf");
+                $r->words = get($this->settings, "resp_words$isuf", 500);
+                $this->_resp_rounds[] = $r;
+            }
+        }
+        return $this->_resp_rounds;
     }
 
     function resp_round_name($rnum) {
-        if (($x = get($this->settingTexts, "resp_rounds"))) {
-            $x = explode(" ", $x);
-            if (($n = get($x, $rnum)))
-                return $n;
-        }
-        return "1";
+        $rrd = get($this->resp_rounds(), $rnum);
+        return $rrd ? $rrd->name : "1";
     }
 
     function resp_round_text($rnum) {
@@ -1426,10 +1462,9 @@ class Conf {
         if (!$rname || $rname === 1 || $rname === "1" || $rname === true
             || !strcasecmp($rname, "none"))
             return 0;
-        $rtext = (string) get($this->settingTexts, "resp_rounds");
-        foreach (explode(" ", $rtext) as $i => $x)
-            if (!strcasecmp($x, $rname))
-                return $i;
+        foreach ($this->resp_rounds() as $rrd)
+            if (!strcasecmp($rname, $rrd->name))
+                return $rrd->number;
         return false;
     }
 
@@ -2228,6 +2263,7 @@ class Conf {
         return $t !== null && $t > 0 && $t <= $Now;
     }
     function deadlinesBetween($name1, $name2, $grace = null) {
+        // see also ResponseRound::time_allowed
         global $Now;
         $t = get($this->settings, $name1);
         if (($t === null || $t <= 0 || $t > $Now) && $name1)
@@ -2263,20 +2299,20 @@ class Conf {
     }
     private function time_author_respond_all_rounds() {
         $allowed = [];
-        foreach ($this->resp_round_list() as $i => $rname) {
-            $isuf = $i ? "_$i" : "";
-            if ($this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf"))
-                $allowed[$i] = $rname;
-        }
+        foreach ($this->resp_rounds() as $rrd)
+            if ($rrd->time_allowed(true))
+                $allowed[$rrd->number] = $rrd->name;
         return $allowed;
     }
     function time_author_respond($round = null) {
         if (!$this->any_response_open)
-            return $round === null ? array() : false;
-        if ($round === null)
+            return $round === null ? [] : false;
+        else if ($round === null)
             return $this->time_author_respond_all_rounds();
-        $isuf = $round ? "_$round" : "";
-        return $this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf");
+        else {
+            $rrd = get($this->resp_rounds(), $round);
+            return $rrd && $rrd->time_allowed(true);
+        }
     }
     function can_all_author_view_decision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;

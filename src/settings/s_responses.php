@@ -3,6 +3,10 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Responses_SettingParser extends SettingParser {
+    static function resp_round_names(Conf $conf) {
+        return explode(" ", $conf->setting_data("resp_rounds", "1"));
+    }
+
     static function render(SettingValues $sv) {
         // Authors' response
         echo '<div class="settings-g">';
@@ -18,7 +22,7 @@ class Responses_SettingParser extends SettingParser {
             for ($i = 1; isset($sv->req["resp_roundname_$i"]); ++$i)
                 $rrounds[$i] = $sv->req["resp_roundname_$i"];
         } else
-            $rrounds = $sv->conf->resp_round_list();
+            $rrounds = self::resp_round_names($sv->conf);
         $rrounds["n"] = "";
         foreach ($rrounds as $i => $rname) {
             $isuf = $i ? "_$i" : "";
@@ -54,7 +58,7 @@ class Responses_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
         if (!$sv->newv("resp_active"))
             return false;
-        $old_roundnames = $sv->conf->resp_round_list();
+        $old_roundnames = self::resp_round_names($sv->conf);
         $roundnames = array(1);
         $roundnames_set = array();
 

@@ -3016,13 +3016,10 @@ class Contact {
 
     function preferred_resp_round_number(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if ($rights->act_author) {
-            foreach ($prow->conf->resp_round_list() as $rname) {
-                $rnum = $prow->conf->resp_round_number($rname);
-                if ($rnum !== false && $prow->conf->time_author_respond($rnum))
-                    return $rnum;
-            }
-        }
+        if ($rights->act_author)
+            foreach ($prow->conf->resp_rounds() as $rrd)
+                if ($rrd->time_allowed())
+                    return $rrd->number;
         return false;
     }
 
@@ -3449,24 +3446,20 @@ class Contact {
             $dl->sub->blind = "until-review";
 
         // responses
-        if (+$this->conf->setting("resp_active") > 0) {
+        if ($this->conf->setting("resp_active") > 0) {
             $dlresps = [];
-            foreach ($this->conf->resp_round_list() as $i => $rname) {
-                $isuf = $i ? "_$i" : "";
-                $open = +$this->conf->setting("resp_open$isuf");
-                $done = +$this->conf->setting("resp_done$isuf");
-                if ($open && ($this->isPC || $open < $Now)) {
-                    $dlresp = (object) ["open" => $open, "done" => $done];
-                    $dlresps[$rname] = $dlresp;
-                    $graces[] = [$dlresp, "resp_grace$isuf"];
+            foreach ($this->conf->resp_rounds() as $rrd)
+                if ($rrd->open && ($this->isPC || $rrd->open < $Now)) {
+                    $dlresp = (object) ["open" => $rrd->open, "done" => +$rrd->done];
+                    $dlresps[$rrd->name] = $dlresp;
+                    $graces[] = [$dlresp, $rrd->grace];
                 }
-            }
             if (!empty($dlresps))
                 $dl->resps = $dlresps;
         }
 
         // final copy deadlines
-        if (+$this->conf->setting("final_open") > 0) {
+        if ($this->conf->setting("final_open") > 0) {
             $dl->final = (object) array("open" => true);
             $final_soft = +$this->conf->setting("final_soft");
             if ($final_soft > $Now)
@@ -3562,8 +3555,8 @@ class Contact {
                 else if ($admin && $this->can_comment($prow, null, false))
                     $perm->can_comment = "override";
                 if (get($dl, "resps")) {
-                    foreach ($this->conf->resp_round_list() as $i => $rname) {
-                        $crow = (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i);
+                    foreach ($this->conf->resp_rounds() as $rrd) {
+                        $crow = (object) ["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $rrd->number];
                         $v = false;
                         if ($this->can_respond($prow, $crow, true))
                             $v = true;
@@ -3572,7 +3565,7 @@ class Contact {
                         if ($v && !isset($perm->can_respond))
                             $perm->can_responds = [];
                         if ($v)
-                            $perm->can_responds[$rname] = $v;
+                            $perm->can_responds[$rrd->name] = $v;
                     }
                 }
                 if (self::can_some_author_view_submitted_review($prow))

@@ -74,21 +74,13 @@ class CommentInfo {
             $t = [];
             $crow = new CommentInfo(null, $prow, $prow->conf);
             $crow->commentType = COMMENTTYPE_RESPONSE;
-            foreach ($prow->conf->resp_round_list() as $i => $rname) {
-                $isuf = $i ? "_$i" : "";
-                $wl = $prow->conf->setting("resp_words$isuf", 500);
-                $j = array("words" => $wl);
-                $ix = false;
-                $crow->commentRound = $i;
-                if ($Me->can_respond($prow, $crow)) {
-                    if ($i)
-                        $ix = $prow->conf->message_html("resp_instrux_$i", array("wordlimit" => $wl));
-                    if ($ix === false)
-                        $ix = $prow->conf->message_html("resp_instrux", array("wordlimit" => $wl));
-                    if ($ix !== false)
-                        $j["instrux"] = $ix;
-                }
-                $t[] = "papercomment.set_resp_round(" . json_encode($rname) . "," . json_encode($j) . ")";
+            foreach ($prow->conf->resp_rounds() as $rrd) {
+                $j = ["words" => $rrd->words];
+                $crow->commentRound = $rrd->number;
+                if ($Me->can_respond($prow, $crow)
+                    && ($m = $rrd->instructions($prow->conf)) !== false)
+                    $j["instrux"] = $m;
+                $t[] = "papercomment.set_resp_round(" . json_encode($rrd->name) . "," . json_encode($j) . ")";
             }
             echo Ht::unstash_script(join($t, ";"));
         }
