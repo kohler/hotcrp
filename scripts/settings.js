@@ -715,7 +715,7 @@ return rfs;
 })();
 
 
-function settings_add_resp_round() {
+handle_ui.on("js-settings-resp-round-new", function () {
     var i, j;
     for (i = 1; jQuery("#response_" + i).length; ++i)
         /* do nothing */;
@@ -725,7 +725,7 @@ function settings_add_resp_round() {
     mktemptext(j);
     j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());
     return false;
-}
+});
 
 
 (function ($) {

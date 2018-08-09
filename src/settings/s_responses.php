@@ -7,6 +7,31 @@ class Responses_SettingParser extends SettingParser {
         return explode(" ", $conf->setting_data("resp_rounds", "1"));
     }
 
+    static function render_name_property(SettingValues $sv, $i) {
+        $isuf = $i ? "_$i" : "";
+        $sv->echo_entry_group("resp_roundname$isuf", "Response name", ["horizontal" => true]);
+    }
+
+    static function render_deadline_property(SettingValues $sv, $i) {
+        $isuf = $i ? "_$i" : "";
+        if ($sv->curv("resp_open$isuf") === 1
+            && ($x = $sv->curv("resp_done$isuf")))
+            $sv->conf->settings["resp_open$isuf"] = $x - 7 * 86400;
+        $sv->echo_entry_group("resp_open$isuf", "Start time", ["horizontal" => true]);
+        $sv->echo_entry_group("resp_done$isuf", "Hard deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("resp_grace$isuf", "Grace period", ["horizontal" => true]);
+    }
+
+    static function render_wordlimit_property(SettingValues $sv, $i) {
+        $isuf = $i ? "_$i" : "";
+        $sv->echo_entry_group("resp_words$isuf", "Word limit", ["horizontal" => true], $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
+    }
+
+    static function render_instructions_property(SettingValues $sv, $i) {
+        $isuf = $i ? "_$i" : "";
+        $sv->echo_message_minor("msg.resp_instrux$isuf", "Instructions");
+    }
+
     static function render(SettingValues $sv) {
         // Authors' response
         echo '<div class="settings-g">';
@@ -37,22 +62,17 @@ class Responses_SettingParser extends SettingParser {
             if ($i === "n")
                 echo ' hidden';
             echo '">';
-            $sv->echo_entry_group("resp_roundname$isuf", "Response name", ["horizontal" => true]);
-            if ($sv->curv("resp_open$isuf") === 1
-                && ($x = $sv->curv("resp_done$isuf")))
-                $sv->conf->settings["resp_open$isuf"] = $x - 7 * 86400;
-            $sv->echo_entry_group("resp_open$isuf", "Start time", ["horizontal" => true]);
-            $sv->echo_entry_group("resp_done$isuf", "Hard deadline", ["horizontal" => true]);
-            $sv->echo_entry_group("resp_grace$isuf", "Grace period", ["horizontal" => true]);
-            $sv->echo_entry_group("resp_words$isuf", "Word limit", ["horizontal" => true], $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
-            $sv->echo_message_minor("msg.resp_instrux$isuf", "Instructions");
-            echo '</div>', "\n";
+            foreach ($sv->group_members("responses/properties") as $gj)
+                if (isset($gj->render_response_property_callback)) {
+                    Conf::xt_resolve_require($gj);
+                    call_user_func($gj->render_response_property_callback, $sv, $i, $gj);
+                }
+            echo "</div>\n";
         }
 
         echo '<div class="settings-g">',
-            Ht::button("Add response round", ["class" => "btn", "id" => "resp_round_add"]),
+            Ht::button("Add response round", ["class" => "btn ui js-settings-resp-round-new"]),
             '</div></div></div></div>';
-        Ht::stash_script('$("#resp_round_add").on("click", settings_add_resp_round)');
     }
 
     function parse(SettingValues $sv, Si $si) {

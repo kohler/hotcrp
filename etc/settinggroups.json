@@ -29,6 +29,22 @@
         "render_callback": "Responses_SettingParser::render"
     },
     {
+        "name": "responses/properties/name", "position": 10,
+        "render_response_property_callback": "Responses_SettingParser::render_name_property"
+    },
+    {
+        "name": "responses/properties/deadline", "position": 20,
+        "render_response_property_callback": "Responses_SettingParser::render_deadline_property"
+    },
+    {
+        "name": "responses/properties/word-limit", "position": 30,
+        "render_response_property_callback": "Responses_SettingParser::render_wordlimit_property"
+    },
+    {
+        "name": "responses/properties/instructions", "position": 40,
+        "render_response_property_callback": "Responses_SettingParser::render_instructions_property"
+    },
+    {
         "name": "decisions/review-visibility", "position": 20,
         "title": "Review visibility",
         "render_callback": "ReviewVisibility_SettingParser::render",
