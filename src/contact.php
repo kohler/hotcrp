@@ -3556,7 +3556,7 @@ class Contact {
                     $perm->can_comment = "override";
                 if (get($dl, "resps")) {
                     foreach ($this->conf->resp_rounds() as $rrd) {
-                        $crow = (object) ["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $rrd->number];
+                        $crow = CommentInfo::make_response_template($rrd->number, $prow);
                         $v = false;
                         if ($this->can_respond($prow, $crow, true))
                             $v = true;

@@ -69,8 +69,7 @@ function save_comment($qreq, $text, $is_response, $roundnum) {
             "tags" => $qreq->commenttags,
             "blind" => $qreq->blind];
     if ($is_response && !$crow)
-        $cinfo = new CommentInfo((object) array("commentType" => COMMENTTYPE_RESPONSE,
-                                                "commentRound" => $roundnum), $prow);
+        $cinfo = CommentInfo::make_response_template($roundnum, $prow);
     else
         $cinfo = new CommentInfo($crow, $prow);
     $ok = $cinfo->save($req, $user);
@@ -127,8 +126,7 @@ function handle_response($qreq) {
     }
 
     if (!($xcrow = $crow))
-        $xcrow = (object) array("commentType" => COMMENTTYPE_RESPONSE,
-                                "commentRound" => $rnum);
+        $xcrow = CommentInfo::make_response_template($rnum, $prow);
     if (($whyNot = $Me->perm_respond($prow, $xcrow, true)))
         return Conf::msg_error(whyNotText($whyNot));
 

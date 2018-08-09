@@ -2256,9 +2256,9 @@ class PaperTable {
 
     private function include_comments() {
         return !$this->allreviewslink
-            && (count($this->mycrows)
+            && (!empty($this->mycrows)
                 || $this->user->can_comment($this->prow, null)
-                || $this->conf->time_author_respond());
+                || $this->conf->any_response_open);
     }
 
     function paptabEndWithReviewsAndComments() {
@@ -2335,18 +2335,19 @@ class PaperTable {
             $cs = [];
             if ($this->user->can_comment($this->prow, null)) {
                 $ct = $this->prow->has_author($this->user) ? COMMENTTYPE_BYAUTHOR : 0;
-                $cs[] = ["commentType" => $ct];
+                $cs[] = new CommentInfo((object) ["commentType" => $ct], $this->prow);
             }
             if ($this->admin || $this->prow->has_author($this->user)) {
-                foreach ($this->conf->time_author_respond() as $i => $rname) {
-                    if (!$this->has_response($i))
-                        $cs[] = ["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i];
-                }
+                foreach ($this->conf->resp_rounds() as $rrd)
+                    if (!$this->has_response($rrd->number)) {
+                        $crow = CommentInfo::make_response_template($rrd->number, $this->prow);
+                        if ($this->user->can_respond($this->prow, $crow))
+                            $cs[] = $crow;
+                    }
             }
-            foreach ($cs as $csj) {
+            foreach ($cs as $c) {
                 ++$ncmt;
-                $rc = new CommentInfo((object) $csj, $this->prow);
-                $s .= "papercomment.add(" . json_encode_browser($rc->unparse_json($this->user)) . ");\n";
+                $s .= "papercomment.add(" . json_encode_browser($c->unparse_json($this->user)) . ");\n";
             }
         }
 

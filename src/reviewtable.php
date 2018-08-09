@@ -398,23 +398,27 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     // new response
     if (!$nocmt
         && ($prow->has_author($Me) || $allow_admin)
-        && ($rrounds = $conf->time_author_respond()))
-        foreach ($rrounds as $i => $rname) {
-            $cid = ($i ? $rname : "") . "response";
-            $what = "Add";
-            if ($crows)
-                foreach ($crows as $cr)
-                    if (($cr->commentType & COMMENTTYPE_RESPONSE) && $cr->commentRound == $i) {
-                        $what = "Edit";
-                        if ($cr->commentType & COMMENTTYPE_DRAFT)
-                            $what = "Edit draft";
-                    }
-            $t[] = '<a class="ui js-edit-comment xx revlink" href="#' . $cid . '">'
-                . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
-                . ($cflttype >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
-                . $what . ($i ? " $rname" : "") . ' response</u></a>';
-            $any_comments = true;
+        && $conf->any_response_open) {
+        foreach ($conf->resp_rounds() as $rrd) {
+            $cr = null;
+            foreach ($crows ? : [] as $crow)
+                if (($crow->commentType & COMMENTTYPE_RESPONSE)
+                    && $crow->commentRound == $rrd->number)
+                    $cr = $crow;
+            $cr = $cr ? : CommentInfo::make_response_template($rrd->number, $prow);
+            if ($Me->can_respond($prow, $cr)) {
+                $cid = $conf->resp_round_text($rrd->number) . "response";
+                $what = "Add";
+                if ($cr->commentId)
+                    $what = $cr->commentType & COMMENTTYPE_DRAFT ? "Edit draft" : "Edit";
+                $t[] = '<a class="ui js-edit-comment xx revlink" href="#' . $cid . '">'
+                    . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
+                    . ($cflttype >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
+                    . $what . ($rrd->name == "1" ? "" : " $rrd->name") . ' response</u></a>';
+                $any_comments = true;
+            }
         }
+    }
 
     // override conflict
     if ($allow_admin && !$admin) {

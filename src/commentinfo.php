@@ -62,6 +62,10 @@ class CommentInfo {
         return $cinfo;
     }
 
+    static function make_response_template($round, PaperInfo $prow) {
+        return new CommentInfo((object) ["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $round], $prow);
+    }
+
     function set_prow(PaperInfo $prow) {
         assert(!$this->prow && $this->paperId === $prow->paperId && $this->conf === $prow->conf);
         $this->prow = $prow;
