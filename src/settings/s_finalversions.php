@@ -15,8 +15,8 @@ class FinalVersions_SettingParser extends SettingParser {
         $sv->echo_message_minor("msg.finalsubmit", "Instructions");
         echo '</div>';
         BanalSettings::render("_m1", $sv);
-        echo "</div>",
-            "<p class=\"settingtext\">To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</p>",
+        echo "</div>\n\n",
+            "<p class=\"settingtext\">You can also collect special submission fields for final versions. Use “Editability &gt; Final versions” on <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission fields</a>.</p>",
             "</div>\n\n";
     }
 
