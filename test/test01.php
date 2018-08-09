@@ -881,7 +881,8 @@ xassert_assign($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.
 // combinations of tracks
 $Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"red\":{\"view\":\"+red\"},\"blue\":{\"view\":\"+blue\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
 
-# 1: none; 2: red; 3: green; 4: red green; 5: blue; 6: red blue; 7: green blue; 8: red green blue
+// 1: none; 2: red; 3: green; 4: red green; 5: blue;
+// 6: red blue; 7: green blue; 8: red green blue
 xassert_assign($user_chair, "paper,tag\nall,-green\nall,-red\nall,-blue\n2 4 6 8,+red\n3 4 7 8,+green\n5 6 7 8,+blue\n");
 xassert_assign($user_chair, "paper,action,user\nall,clearadministrator\nall,clearlead\n");
 assert_search_papers($user_chair, "#red", "2 4 6 8");
@@ -945,6 +946,23 @@ $rjson = $Conf->review_form()->unparse_review_json($paper2, $review2b, $user_aut
 ReviewForm::update_review_author_seen();
 $review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!!$review2b->reviewAuthorSeen);
+
+// check review visibility
+$Conf->save_setting("au_seerev", Conf::AUSEEREV_NO);
+xassert(!$user_author2->can_view_review($paper2, $review2b));
+$Conf->save_setting("au_seerev", Conf::AUSEEREV_TAGS);
+$Conf->save_setting("tag_au_seerev", 1, "fart");
+xassert($user_author2->can_view_review($paper2, $review2b));
+$Conf->save_setting("tag_au_seerev", 1, "faart");
+xassert(!$user_author2->can_view_review($paper2, $review2b));
+$Conf->save_setting("resp_active", 1);
+$Conf->save_setting("resp_open", 1);
+$Conf->save_setting("resp_done", $Now + 100);
+xassert($user_author2->can_view_review($paper2, $review2b));
+$Conf->save_setting("au_seerev", Conf::AUSEEREV_NO);
+xassert($user_author2->can_view_review($paper2, $review2b));
+$Conf->save_setting("resp_active", null);
+xassert(!$user_author2->can_view_review($paper2, $review2b));
 
 // check token assignment
 assert_search_papers($user_chair, "re:any 19", "");
