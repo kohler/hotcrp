@@ -31,7 +31,7 @@ class PaperSaver {
         $pj->contacts = array();
         for ($i = 1; isset($qreq["contact_email_{$i}"]); ++$i) {
             if ($qreq["contact_active_{$i}"])
-                $pj->contacts[] = $qreq["contact_email_{$i}"];
+                $pj->contacts[] = (object) ["email" => $qreq["contact_email_{$i}"], "index" => $i];
         }
         for ($i = 1; isset($qreq["newcontact_email_{$i}"]); ++$i) {
             $email = trim((string) $qreq["newcontact_email_{$i}"]);
@@ -41,7 +41,7 @@ class PaperSaver {
                 $name = simplify_whitespace((string) $qreq["newcontact_name_{$i}"]);
                 if ($name === "Name")
                     $name = "";
-                $pj->contacts[] = (object) ["email" => $email, "name" => $name];
+                $pj->contacts[] = (object) ["email" => $email, "name" => $name, "index" => $i, "is_new" => true];
             }
         }
     }

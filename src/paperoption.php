@@ -659,7 +659,7 @@ class CheckboxPaperOption extends PaperOption {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
         $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->formid, "data-default-checked" => !!$ov->value]);
         $pt->echo_editable_option_papt($this, '<span class="checkc">' . $cb . " </span>" . htmlspecialchars($this->title), "checkbox");
-        echo "</div>\n\n";
+        echo $pt->messages_at($this->formid), "</div>\n\n";
         Ht::stash_script("jQuery('#{$this->formid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
 
@@ -799,7 +799,7 @@ class SelectorPaperOption extends PaperOption {
                     ' </span>', htmlspecialchars($text), '</label></div>';
             }
         }
-        echo "</div></div>\n\n";
+        echo $pt->messages_at($this->formid), "</div></div>\n\n";
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
@@ -991,6 +991,7 @@ class NumericPaperOption extends PaperOption {
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
             Ht::entry($this->formid, $reqv, ["id" => $this->formid, "size" => 8, "class" => "js-autosubmit" . $pt->has_error_class($this->formid), "data-default-value" => $ov->value]),
+            $this->messages_at($this->formid),
             "</div></div>\n\n";
     }
 
@@ -1067,6 +1068,7 @@ class TextPaperOption extends PaperOption {
         echo '<div class="papev">',
             ($fi ? $fi->description_preview_html() : ""),
             Ht::textarea($this->formid, $reqv, ["id" => $this->formid, "class" => "papertext need-autogrow" . $pt->has_error_class($this->formid), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true", "data-default-value" => $ov->data()]),
+            $pt->messages_at($this->formid),
             "</div></div>\n\n";
     }
 
@@ -1188,7 +1190,9 @@ class AttachmentsPaperOption extends PaperOption {
                     Ht::link("Delete", "", ["class" => "ui js-remove-document document-action"]),
                 '</div></div>';
         }
-        echo '<div>', Ht::button("Add attachment", ["class" => "btn ui js-add-attachment"]), '</div>',
+        echo '<div>', Ht::button("Add attachment", ["class" => "btn ui js-add-attachment"]),
+            '</div>',
+            $pt->messages_at($this->formid),
             "</div></div>\n\n";
     }
 

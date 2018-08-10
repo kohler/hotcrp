@@ -1017,9 +1017,6 @@ td.rpentry {
 	padding: 2px 0.5em 2px 0;
 	text-align: right;
 }
-td.llentry {
-	padding: 0 0.75em;
-}
 div.hint {
 	margin-bottom: 0.5ex;
 }
@@ -1296,9 +1293,6 @@ div.error, td.error, tr.error {
 td.lentry.error input, div.error input, input.error, textarea.error {
 	background-color: #ffeeee;
 	font-weight: normal;
-}
-div.error > div.f-c, .papet.error > .papfn, .revet.error > .revfn {
-	color: #ff0000;
 }
 /* NB these rules must come after other color-setting rules */
 input.error,
@@ -2727,7 +2721,7 @@ ul.xd > li {
 .papt .papfn, .papet .papfn, .pavt .pavfn {
 	float: left;
 }
-.papet > .papfn {
+.papet {
 	color: #313168;
 }
 .papfn .n {

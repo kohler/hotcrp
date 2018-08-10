@@ -152,7 +152,7 @@ function final_submit_watch_callback($prow, $minic) {
 }
 
 function update_paper(Qrequest $qreq, $action) {
-    global $Conf, $Me, $prow;
+    global $Conf, $Me, $prow, $ps;
     // XXX lock tables
     $wasSubmitted = $prow && $prow->timeSubmitted > 0;
 
@@ -300,7 +300,7 @@ function update_paper(Qrequest $qreq, $action) {
             $prow->notify_final_submit("final_submit_watch_callback", $Me);
     }
 
-    return true;
+    return !$ps->has_error();
 }
 
 
@@ -399,14 +399,15 @@ if ($paperTable->mode == "edit") {
     $editable = false;
 
 $paperTable->initialize($editable, $editable && $useRequest);
-if ($ps && $paperTable->mode === "edit")
-    $paperTable->set_edit_status($ps);
-else if ($prow && $paperTable->mode === "edit") {
+if (($ps || $prow) && $paperTable->mode === "edit") {
     $old_overrides = $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
-    $ps = new PaperStatus($Conf, $Me);
+    if ($ps)
+        $ps->ignore_duplicates = true;
+    else
+        $ps = new PaperStatus($Conf, $Me);
     $ps->paper_json($prow, ["msgs" => true]);
-    $paperTable->set_edit_status($ps);
     $Me->set_overrides($old_overrides);
+    $paperTable->set_edit_status($ps);
 }
 
 // produce paper table

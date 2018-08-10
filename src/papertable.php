@@ -324,25 +324,27 @@ class PaperTable {
         echo "</div>";
     }
 
-    function has_problem_at($f) {
+    private function problem_status_at($f) {
         if ($this->edit_status) {
             if (str_starts_with($f, "au")) {
                 if ($f === "authorInformation")
                     $f = "authors";
                 else if (preg_match('/\A.*?(\d+)\z/', $f, $m)
-                         && $this->edit_status->has_problem_at("author$m[1]"))
-                    return true;
+                         && ($ps = $this->edit_status->problem_status_at("author$m[1]")))
+                    return $ps;
             }
-            return $this->edit_status->has_problem_at($f);
+            return $this->edit_status->problem_status_at($f);
         } else
-            return false;
+            return 0;
     }
-
-    function error_class($f) {
-        return $this->has_problem_at($f) ? " error" : "";
+    function has_problem_at($f) {
+        return $this->problem_status_at($f) != 0;
     }
     function has_error_class($f) {
         return $this->has_problem_at($f) ? " has-error" : "";
+    }
+    function control_class($f, $rest = "", $prefix = "has-") {
+        return MessageSet::status_class($this->problem_status_at($f), $rest, $prefix);
     }
 
     private function editable_papt($what, $heading, $extra = [], PaperOption $opt = null) {
@@ -355,7 +357,7 @@ class PaperTable {
             $t .= '" data-edit-condition="' . htmlspecialchars(json_encode($opt->compile_edit_condition($this->_prow)));
             Ht::stash_script('$(edit_paper_ui.edit_condition)', 'edit_condition');
         }
-        $t .= '"><div class="papet' . $this->error_class($what);
+        $t .= '"><div class="' . $this->control_class($what, "papet");
         if ($for === "checkbox")
             $t .= ' checki';
         if (($id = get($extra, "id")))
@@ -363,12 +365,13 @@ class PaperTable {
         return $t . '">' . Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => "papfn"]) . '</div>';
     }
 
-    function messages_for($field) {
-        if ($this->edit_status && ($ms = $this->edit_status->messages_at($field, true))) {
-            $status = array_reduce($ms, function ($c, $m) { return max($c, $m[2]); }, 0);
-            return Ht::xmsg($status, array_map(function ($m) { return $m[1]; }, $ms));
-        } else
-            return "";
+    function messages_at($field) {
+        $t = "";
+        if ($this->edit_status)
+            foreach ($this->edit_status->messages_at($field, true) as $mx)
+                $t .= '<p class="' . MessageSet::status_class($mx[2], "settings-ap f-h", "is-")
+                    . '">' . $mx[1] . '</p>';
+        return $t;
     }
 
     private function papt($what, $name, $extra = array()) {
@@ -384,7 +387,7 @@ class PaperTable {
         else
             list($divclass, $hdrclass) = array("pavt", "pavfn");
 
-        $c = "<div class=\"$divclass" . $this->error_class($what);
+        $c = "<div class=\"" . $this->control_class($what, $divclass);
         if (($fold || $editfolder) && !get($extra, "float"))
             $c .= " ui js-foldup\"" . $foldnumclass . ">";
         else
@@ -430,7 +433,7 @@ class PaperTable {
 
     private function editable_textarea($fieldName) {
         $js = ["id" => $fieldName,
-               "class" => "papertext need-autogrow" . $this->has_error_class($fieldName),
+               "class" => $this->control_class($fieldName, "papertext need-autogrow"),
                "rows" => self::$textAreaRows[$fieldName], "cols" => 60];
         if ($fieldName === "abstract")
             $js["spellcheck"] = true;
@@ -473,9 +476,10 @@ class PaperTable {
 
     private function echo_editable_title() {
         echo $this->editable_papt("title", $this->field_name("Title"), ["for" => "title"]),
-            $this->messages_for("title"),
             $this->field_hint("Title"),
-            '<div class="papev">', $this->editable_textarea("title"), "</div></div>\n\n";
+            '<div class="papev">', $this->editable_textarea("title"),
+            $this->messages_at("title"),
+            "</div></div>\n\n";
     }
 
     static function pdf_stamps_html($data, $options = null) {
@@ -624,8 +628,7 @@ class PaperTable {
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
         $heading = $this->field_name(htmlspecialchars($docx->title)) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
         echo $this->editable_papt($field, $heading, ["for" => $doc ? false : $inputid], $docx),
-            $this->field_hint(htmlspecialchars($docx->title), $docx->description),
-            $this->messages_for($field);
+            $this->field_hint(htmlspecialchars($docx->title), $docx->description);
 
         echo '<div class="papev has-document" data-dtype="', $dtype,
             '" data-document-name="', $docx->field_key(), '"';
@@ -676,7 +679,7 @@ class PaperTable {
             echo '<div class="document-upload">', $upload_input, '</div>';
         }
 
-        echo "</div>";
+        echo $this->messages_at($field), "</div>";
     }
 
     private function echo_editable_submission() {
@@ -695,11 +698,11 @@ class PaperTable {
                 $title .= ' <span class="n">(optional)</span>';
             echo $this->editable_papt("abstract", $title, ["for" => "abstract"]),
                 $this->field_hint("Abstract"),
-                $this->messages_for("abstract"),
                 '<div class="papev abstract">';
             if (($fi = $this->conf->format_info($this->prow ? $this->prow->paperFormat : null)))
                 echo $fi->description_preview_html();
             echo $this->editable_textarea("abstract"),
+                $this->messages_at("abstract"),
                 "</div></div>\n\n";
         }
     }
@@ -757,7 +760,7 @@ class PaperTable {
             $val = ($pfx === '$' ? "" : (string) $this->qreq["$pfx$n"]);
         }
 
-        $js["class"] = "need-autogrow js-autosubmit e$pfx" . $this->has_error_class("$pfx$n");
+        $js["class"] = $this->control_class("$pfx$n", "need-autogrow js-autosubmit e$pfx");
         if ($val !== $auval) {
             $js["data-default-value"] = $auval;
         }
@@ -775,7 +778,12 @@ class PaperTable {
             . Icons::ui_triangle(0)
             . '</a><a href="" class="ui btn qx need-tooltip row-order-ui movedown" data-tooltip="Move down" tabindex="-1">'
             . Icons::ui_triangle(2)
-            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui delete" data-tooltip="Delete" tabindex="-1">✖</a></span></td></tr>';
+            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui delete" data-tooltip="Delete" tabindex="-1">✖</a></span>'
+            . $this->messages_at("author$n")
+            . $this->messages_at("auname$n")
+            . $this->messages_at("auemail$n")
+            . $this->messages_at("auaff$n")
+            . '</td></tr>';
     }
 
     private function echo_editable_authors() {
@@ -795,7 +803,6 @@ class PaperTable {
         else if ($sb === Conf::BLIND_UNTILREVIEW)
             $hint .= " Reviewers will not see author information until they submit a review.";
         echo $this->field_hint("Authors", $hint, $sb),
-            $this->messages_for("authors"),
             '<div class="papev"><table id="auedittable" class="auedittable js-row-order">',
             '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
@@ -830,7 +837,9 @@ class PaperTable {
                 ++$n;
             } while ($n <= $min_authors);
         }
-        echo "</tbody></table></div></div>\n\n";
+        echo "</tbody></table>",
+            $this->messages_at("authors"),
+            "</div></div>\n\n";
     }
 
     private function authorData($table, $type, $viewAs = null) {
@@ -947,7 +956,7 @@ class PaperTable {
 
         // header with folding
         echo '<div class="pg">',
-            '<div class="pavt ui js-aufoldup', $this->error_class("authors"),
+            '<div class="', $this->control_class("authors", "pavt ui js-aufoldup"),
             '"><span class="pavfn">';
         if ($this->view_authors == 1 || $this->allFolded)
             echo '<a class="q ui js-aufoldup" href="" title="Toggle author display">';
@@ -1150,23 +1159,25 @@ class PaperTable {
         if ($num === '$') {
             $checked = true;
             $name = $email = "";
-            $cerror = false;
         } else {
             $checked = !$this->useRequest || $this->qreq["newcontact_active_{$num}"];
             $email = (string) ($this->useRequest ? $this->qreq["newcontact_email_{$num}"] : "");
             $name = (string) ($this->useRequest ? $this->qreq["newcontact_name_{$num}"] : "");
-            $cerror = $this->has_problem_at("contactAuthor") || $this->has_problem_at("contacts");
         }
         $email = $email === "Email" ? "" : $email;
         $name = $name === "Name" ? "" : $name;
 
-        return '<div class="checki"><span class="checkc">'
-                . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => 1])
-                . ' </span>'
-                . Ht::entry("newcontact_name_{$num}", $name, ["size" => 30, "placeholder" => "Name", "class" => ($cerror ? "has-error " : "") . "want-focus js-autosubmit", "autocomplete" => "off"])
-                . '  '
-                . Ht::entry("newcontact_email_{$num}", $email, ["size" => 20, "placeholder" => "Email", "class" => ($cerror ? "has-error " : "") . "js-autosubmit", "autocomplete" => "off"])
-                . '</div>';
+        return '<div class="' . $this->control_class("newcontact_{$num}", "checki")
+            . '"><span class="checkc">'
+            . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => 1])
+            . ' </span>'
+            . Ht::entry("newcontact_name_{$num}", $name, ["size" => 30, "placeholder" => "Name", "class" => "want-focus js-autosubmit", "autocomplete" => "off"])
+            . '  '
+            . Ht::entry("newcontact_email_{$num}", $email, ["size" => 20, "placeholder" => "Email", "class" => $this->control_class("newcontact_email_{$num}", "js-autosubmit"), "autocomplete" => "off"])
+            . $this->messages_at("newcontact_{$num}")
+            . $this->messages_at("newcontact_name_{$num}")
+            . $this->messages_at("newcontact_email_{$num}")
+            . '</div>';
     }
 
     private function echo_editable_contact_author() {
@@ -1181,42 +1192,43 @@ class PaperTable {
             $contacts = [];
         usort($contacts, "Contact::compare");
 
-        $cerror = $this->has_problem_at("contactAuthor") || $this->has_problem_at("contacts");
-        echo Ht::hidden("has_contacts", 1),
-            '<div id="foldcontactauthors" class="papeg">',
-            '<div class="papet',
-            ($cerror ? " error" : ""),
-            '"><span class="papfn">',
+        echo '<div class="papeg">',
+            '<div class="', $this->control_class("contacts", "papet"),
+            '"><span class="', $this->control_class("contacts", "papfn", "is-"), '">',
             $this->field_name("Contacts"),
             '</span></div>';
 
         // Editable version
         echo $this->field_hint("Contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.", !!$this->prow),
+            Ht::hidden("has_contacts", 1),
             '<div class="papev js-row-order"><div>';
 
         $req_cemail = [];
         if ($this->useRequest) {
             for ($cidx = 1; isset($this->qreq["contact_email_{$cidx}"]); ++$cidx)
                 if ($this->qreq["contact_active_{$cidx}"])
-                    $req_cemail[strtolower($this->qreq["contact_email_{$cidx}"])] = true;
+                    $req_cemail[strtolower($this->qreq["contact_email_{$cidx}"])] = $cidx;
         }
 
         $cidx = 1;
         foreach ($contacts as $au) {
+            $reqidx = get($req_cemail, strtolower($au->email));
             if ($au->nonauthor
                 && (strcasecmp($this->user->email, $au->email) != 0 || $this->allow_admin)) {
                 $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
-                    . Ht::checkbox("contact_active_{$cidx}", 1, !$this->useRequest || isset($req_cemail[strtolower($au->email)]), ["data-default-checked" => true]);
+                    . Ht::checkbox("contact_active_{$cidx}", 1, !$this->useRequest || $reqidx, ["data-default-checked" => true]);
             } else if ($au->contactId) {
                 $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
                     . Ht::hidden("contact_active_{$cidx}", 1)
                     . Ht::checkbox(null, null, true, ["disabled" => true]);
             } else if ($au->email && validate_email($au->email)) {
                 $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
-                    . Ht::checkbox("contact_active_{$cidx}", 1, $this->useRequest && isset($req_cemail[strtolower($au->email)]), ["data-default-checked" => ""]);
+                    . Ht::checkbox("contact_active_{$cidx}", 1, $this->useRequest && $reqidx, ["data-default-checked" => ""]);
             } else
                 continue;
-            echo '<div class="checki"><label><span class="checkc">', $ctl, ' </span>',
+            echo '<div class="',
+                $reqidx ? $this->control_class("contact_{$reqidx}", "checki") : "checki",
+                '"><label><span class="checkc">', $ctl, ' </span>',
                 Text::user_html_nolink($au);
             if ($au->nonauthor)
                 echo ' (<em>non-author</em>)';
@@ -1224,7 +1236,7 @@ class PaperTable {
                 && $au->contactId
                 && $au->contactId != $this->user->contactId)
                 echo '&nbsp;', actas_link($au);
-            echo '</label></div>';
+            echo '</label>', $this->messages_at("contact_{$cidx}"), '</div>';
             ++$cidx;
         }
         echo '</div><div data-row-template="',
@@ -1236,7 +1248,7 @@ class PaperTable {
         }
         echo '</div><div class="ug">',
             Ht::button("Add contact", ["class" => "ui btn row-order-ui addrow"]),
-            "</div></div></div>\n\n";
+            "</div>", $this->messages_at("contacts"), "</div></div>\n\n";
     }
 
     private function echo_editable_anonymity() {
@@ -1248,7 +1260,7 @@ class PaperTable {
         $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . " </span>" . $this->field_name("Anonymous submission");
         echo $this->editable_papt("blind", $heading, ["for" => "checkbox"]),
             $this->field_hint("Anonymous submission", "Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"),
-            $this->messages_for("blind"),
+            $this->messages_at("blind"),
             "</div>\n\n";
     }
 
@@ -1271,9 +1283,9 @@ class PaperTable {
         Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
         We use this information when assigning PC and external reviews.";
         echo "</div><div class=\"mmm\"><strong>List one conflict per line</strong>, using parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</div></div>",
-            $this->messages_for("collaborators"),
             '<div class="papev">',
             $this->editable_textarea("collaborators"),
+            $this->messages_at("collaborators"),
             "</div></div>\n\n";
     }
 
@@ -1346,7 +1358,6 @@ class PaperTable {
             return;
         echo $this->editable_papt("topics", $this->field_name("Topics")),
             $this->field_hint("Topics", "Select any topics that apply to your submission."),
-            $this->messages_for("topics"),
             '<div class="papev">',
             Ht::hidden("has_topics", 1),
             '<div class="ctable">';
@@ -1358,7 +1369,7 @@ class PaperTable {
                 Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked, "data-range-type" => "topic", "class" => "uix js-range-click topic-entry"]),
                 ' </span>', $tname, '</label></div></div>';
         }
-        echo "</div></div></div>\n\n";
+        echo "</div>", $this->messages_at("topics"), "</div></div>\n\n";
     }
 
     function echo_editable_option_papt(PaperOption $o, $heading = null, $for = null) {
@@ -1368,7 +1379,7 @@ class PaperTable {
             $for = $o->formid;
         echo $this->editable_papt($o->formid, $heading, ["id" => "{$o->formid}_div", "for" => $for], $o),
             $this->field_hint(htmlspecialchars($o->title), $o->description),
-            $this->messages_for($o->formid), Ht::hidden("has_{$o->formid}", 1);
+            Ht::hidden("has_{$o->formid}", 1);
     }
 
     private function echo_editable_pc_conflicts() {
@@ -1398,7 +1409,6 @@ class PaperTable {
 
         echo $this->editable_papt("pcconf", $this->field_name("PC conflicts")),
             "<div class='paphint'>Select the PC members who have conflicts of interest with this submission. ", $this->conf->message_html("conflictdef"), "</div>\n",
-            $this->messages_for("pcconf"),
             '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
             '<div class="pc_ctable">';
@@ -1457,7 +1467,7 @@ class PaperTable {
                 echo $pcconfmatch[0];
             echo "</div></div>";
         }
-        echo "</div>\n</div></div>\n\n";
+        echo "</div>", $this->messages_at("pcconf"), "</div></div>\n\n";
     }
 
     private function papstripPCConflicts() {

@@ -18,7 +18,7 @@ class Decisions_SettingParser extends SettingParser {
                     $k > 0 ? 1 : -1, ["data-default-value" => 1]);
             if ($sv->has_error_at("dec_class_$ndec")) {
                 echo ' &nbsp; <label>', Ht::checkbox("dec_classconfirm_$ndec", 1, false),
-                    '&nbsp;<span class="error">Confirm</span></label>';
+                    '&nbsp;<span class="is-error">Confirm</span></label>';
             }
         } else {
             echo Ht::hidden("dec_val_$ndec", $k),

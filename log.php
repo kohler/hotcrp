@@ -24,7 +24,7 @@ $count = cvtint($Qreq->get("n", 50), -1);
 if ($count <= 0) {
     $count = 50;
     Conf::msg_error("\"Show <i>n</i> records\" requires a number greater than 0.");
-    $Eclass["n"] = " error";
+    $Eclass["n"] = " has-error";
 }
 $count = min($count, 200);
 
@@ -110,7 +110,7 @@ if ($Qreq->date !== "now" && isset($Qreq->search)) {
     $first_timestamp = $Conf->parse_time($Qreq->date);
     if ($first_timestamp === false) {
         Conf::msg_error("“" . htmlspecialchars($Qreq->date) . "” is not a valid date.");
-        $Eclass["date"] = " error";
+        $Eclass["date"] = " has-error";
     }
 }
 

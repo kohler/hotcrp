@@ -281,8 +281,10 @@ class PaperStatus extends MessageSet {
                 }
             }
             $max_authors = $this->conf->opt("maxAuthors");
-            if (!$prow->author_list())
+            if (!$prow->author_list()) {
                 $this->error_at("authors", $this->_("Each submission must have at least one author.", $max_authors));
+                $this->error_at("author1", false);
+            }
             if ($max_authors > 0 && count($prow->author_list()) > $max_authors)
                 $this->error_at("authors", $this->_("Each submission can have at most %d authors.", $max_authors));
             if ($msg1)
@@ -308,10 +310,8 @@ class PaperStatus extends MessageSet {
                     && $prow->potential_conflict($p))
                     $pcs[] = Text::name_html($p);
             }
-            if (!empty($pcs)) {
-                $this->warning_at("pcconf", $this->_("<p>You may have missed conflicts of interest for %s. These conflicts are highlighted below; hover for more information. Please verify that all conflicts are correctly marked.</p>", commajoin($pcs, "and"))
-                    . $this->_('<p class="hint">This warning will not prevent submission.</p>'));
-            }
+            if (!empty($pcs))
+                $this->warning_at("pcconf", $this->_("You may have missed conflicts of interest with %s. Please verify that all conflicts are correctly marked. Hover over “possible conflict” labels for more information.", commajoin($pcs, "and")));
         }
 
         $this->ignore_msgs = $original_no_msgs;
@@ -1089,10 +1089,14 @@ class PaperStatus extends MessageSet {
             $ps->error_at("contacts", $ps->_("You can’t remove yourself as submission contact. (Ask another contact to remove you.)"));
         }
         foreach ($pj->bad_contacts as $reg) {
+            $key = "contacts";
+            if (isset($reg->index) && is_int($reg->index))
+                $key = (isset($reg->is_new) && $reg->is_new === true ? "newcontact_email_" : "contact_") . $reg->index;
             if (!isset($reg->email))
-                $ps->error_at("contacts", $ps->_("Contact %s has no associated email.", Text::user_html($reg)));
+                $ps->error_at($key, $ps->_("Contact %s has no associated email.", Text::user_html($reg)));
             else
-                $ps->error_at("contacts", $ps->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
+                $ps->error_at($key, $ps->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
+            $ps->error_at("contacts", false);
         }
     }
 
@@ -1122,8 +1126,13 @@ class PaperStatus extends MessageSet {
                     | ($ps->no_email ? 0 : Contact::SAVE_NOTIFY);
                 $c->disabled = !!$ps->disable_users;
                 if (!Contact::create($ps->conf, $ps->user, $c, $flags)
-                    && !($flags & Contact::SAVE_IMPORT))
-                    $ps->error_at("contacts", $ps->_("Could not create an account for contact %s.", Text::user_html($c)));
+                    && !($flags & Contact::SAVE_IMPORT)) {
+                    $key = "contacts";
+                    if (isset($c->index) && is_int($c->index))
+                        $key = (isset($c->is_new) && $c->is_new === true ? "newcontact_" : "contact_") . $c->index;
+                    $ps->error_at($key, $ps->_("Could not create an account for contact %s.", Text::user_html($c)));
+                    $ps->error_at("contacts", false);
+                }
             }
         }
         if ((isset($ps->diffs["contacts"]) || isset($ps->diffs["pc_conflicts"]))
