@@ -1293,10 +1293,6 @@ div.error, td.error, tr.error {
 	font-weight: bold;
 	color: #ff0000;
 }
-span.setting_error, label.setting_error, input.setting_error,
-textarea.setting_error {
-	color: #ff0000;
-}
 td.lentry.error input, div.error input, input.error, textarea.error {
 	background-color: #ffeeee;
 	font-weight: normal;

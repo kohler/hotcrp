@@ -149,12 +149,18 @@ if ($Graph == "formula") {
     echo '<table>';
     // X axis
     echo '<tr><td class="lcaption"><label for="x_entry">X axis</label></td>',
-        '<td class="lentry">', Ht::entry("x", (string) $Qreq->x, array("id" => "x_entry", "size" => 32, "class" => $fg && get($fg->errf, "fx") ? "setting_error" : "")),
+        '<td class="lentry',
+        ($fg && get($fg->errf, "fx") ? " has-error" : ""),
+        '">',
+        Ht::entry("x", (string) $Qreq->x, ["id" => "x_entry", "size" => 32]),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “search”</span>',
         '</td></tr>';
     // Y axis
     echo '<tr><td class="lcaption"><label for="y_entry">Y axis</label></td>',
-        '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("y", (string) $Qreq->y, array("id" => "y_entry", "size" => 32, "class" => $fg && get($fg->errf, "fy") ? "setting_error" : "")),
+        '<td class="lentry',
+        ($fg && get($fg->errf, "fy") ? " has-error" : ""),
+        '" style="padding-bottom:0.8em">',
+        Ht::entry("y", (string) $Qreq->y, ["id" => "y_entry", "size" => 32]),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</span>',
         '</td></tr>';
     // Series
