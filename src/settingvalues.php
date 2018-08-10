@@ -489,7 +489,7 @@ class SettingValues extends MessageSet {
     }
 
     function curv($name, $default_value = null) {
-        return $this->si_curv($name, $this->si($name), $default_value);
+        return $this->si_curv($this->si($name), $default_value);
     }
     function oldv($name, $default_value = null) {
         return $this->si_oldv($this->si($name), $default_value);
@@ -568,11 +568,11 @@ class SettingValues extends MessageSet {
             $this->cleanup_callbacks[$name][1][] = $arg;
     }
 
-    private function si_curv($name, Si $si, $default_value) {
+    private function si_curv(Si $si, $default_value) {
         if ($si->group && !$si->is_interesting($this))
-            error_log("$name: bad group $si->group, not interesting here");
+            error_log("$si->name: bad group $si->group, not interesting here");
         if ($this->use_req())
-            return get($this->req, str_replace(".", "_", $name), $default_value);
+            return get($this->req, str_replace(".", "_", $si->name), $default_value);
         else
             return $this->si_oldv($si, $default_value);
     }
