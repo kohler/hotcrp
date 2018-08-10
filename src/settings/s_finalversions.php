@@ -4,7 +4,6 @@
 
 class FinalVersions_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
-        $sv->echo_messages_near("final_open");
         echo '<div class="has-fold fold2o">';
         $sv->echo_checkbox('final_open', '<strong>Collect final versions of accepted papers</strong>', ["class" => "uich js-foldup", "item_class" => "settings-g"]);
         echo '<div class="fx2"><div class="settings-g">';
@@ -16,7 +15,7 @@ class FinalVersions_SettingParser extends SettingParser {
         echo '</div>';
         BanalSettings::render("_m1", $sv);
         echo "</div>\n\n",
-            "<p class=\"settingtext\">You can also collect special submission fields for final versions. Use “Editability &gt; Final versions” on <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission fields</a>.</p>",
+            "<p class=\"settingtext\">You can also configure submission fields specifically for final versions. Use “Editability—Final versions” on <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission fields</a>.</p>",
             "</div>\n\n";
     }
 

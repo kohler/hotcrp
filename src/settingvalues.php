@@ -284,7 +284,6 @@ class SettingValues extends MessageSet {
     public $explicit_oldv = array();
     private $hint_status = array();
     private $has_req = array();
-    private $near_msgs = null;
     private $null_mailer;
 
     private $_gxt = null;
@@ -293,7 +292,6 @@ class SettingValues extends MessageSet {
         parent::__construct();
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->near_msgs = new MessageSet;
         // maybe set $Opt["contactName"] and $Opt["contactEmail"]
         $this->conf->site_contact();
         // maybe initialize _setting_info
@@ -390,15 +388,6 @@ class SettingValues extends MessageSet {
     function warning_at($field, $html = false) {
         $fname = self::check_error_field($field, $html);
         parent::warning_at($fname, $html);
-    }
-    function error_near($field, $html)  {
-        $this->near_msgs->error_at($field, $html);
-    }
-    function warning_near($field, $html)  {
-        $this->near_msgs->warning_at($field, $html);
-    }
-    function info_near($field, $html)  {
-        $this->near_msgs->info_at($field, $html);
     }
     function report($is_update = false) {
         $msgs = array();
@@ -602,18 +591,6 @@ class SettingValues extends MessageSet {
             return $this->savedv[$s][0];
     }
 
-    function echo_messages_near($name) {
-        $msgs = [];
-        $status = MessageSet::INFO;
-        foreach ($this->near_msgs->messages_at($name, true) as $mx) {
-            $msgs[] = ($mx[2] == MessageSet::WARNING ? "Warning: " : "") . $mx[1];
-            $status = max($status, $mx[2]);
-        }
-        if (!empty($msgs)) {
-            $xtype = ["xinfo", "xwarning", "xmerror"];
-            $this->conf->msg($xtype[$status], $msgs);
-        }
-    }
     function echo_checkbox_only($name, $js = null) {
         $js["id"] = "cb$name";
         $x = $this->curv($name);
