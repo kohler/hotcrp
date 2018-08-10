@@ -57,6 +57,8 @@ class Tracks_SettingRenderer {
             "</span> &nbsp;",
             Ht::entry($tag_ctl, $reqv[1],
                       $sv->sjs($tag_ctl, ["class" => "fx settings-track-perm-tag", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
+        $sv->echo_messages_at($track_ctl);
+        $sv->echo_messages_at($tag_ctl);
         if ($hint)
             echo '<div class="f-h">', $hint, '</div>';
         echo "</div>";
