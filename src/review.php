@@ -555,10 +555,9 @@ class ReviewForm implements JsonSerializable {
             if ($f->has_options)
                 $rval = $f->normalize_fvalue($rval);
 
-            echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="revet';
-            if ($rvalues && $rvalues->has_problem_at($fid))
-                echo " has-error";
-            echo '"><label class="revfn" for="', $f->id;
+            echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="',
+                $rvalues ? $rvalues->control_class($fid, "revet") : "revet",
+                '"><label class="revfn" for="', $f->id;
             if ($f->has_options) {
                 if ($rval || $f->allow_empty)
                     echo "_", $rval;
@@ -599,6 +598,7 @@ class ReviewForm implements JsonSerializable {
             } else {
                 echo $format_description, $f->unparse_web_control(null, $fval, $rval);
             }
+
             echo "</div></div>\n";
         }
         echo "</div>\n";
