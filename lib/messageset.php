@@ -4,6 +4,7 @@
 
 class MessageSet {
     public $ignore_msgs = false;
+    public $ignore_duplicates = false;
     private $allow_error;
     private $werror;
     private $errf;
@@ -59,8 +60,15 @@ class MessageSet {
             return;
         $this->canonfield && ($field = $this->canonical_field($field));
         if ($status == self::WARNING
-            && $field && $this->werror && isset($this->werror[$field]))
+            && $field
+            && $this->werror
+            && isset($this->werror[$field]))
             $status = self::ERROR;
+        if ($this->ignore_duplicates
+            && $msg
+            && (!$field || isset($this->errf[$field]))
+            && in_array([$field, $msg, $status], $this->msgs))
+            return;
         if ($field)
             $this->errf[$field] = max(get($this->errf, $field, 0), $status);
         if ($msg)
@@ -117,14 +125,16 @@ class MessageSet {
         $this->canonfield && ($field = $this->canonical_field($field));
         return get($this->errf, $field, 0);
     }
-    function control_class($field, $rest = "") {
-        $x = $field ? get($this->errf, $field, 0) : 0;
-        if ($x >= self::ERROR)
-            return $rest === "" ? "has-error" : $rest . " has-error";
-        else if ($x === self::WARNING)
-            return $rest === "" ? "has-warning" : $rest . " has-warning";
-        else
-            return $rest;
+    static function status_class($status, $rest = "", $prefix = "has-") {
+        if ($status >= self::WARNING) {
+            if ($rest !== "")
+                $rest .= " ";
+            $rest .= $prefix . ($status >= self::ERROR ? "error" : "warning");
+        }
+        return $rest;
+    }
+    function control_class($field, $rest = "", $prefix = "has-") {
+        return self::status_class($field ? get($this->errf, $field, 0) : 0, $rest, $prefix);
     }
 
     static private function filter_msgs($ms, $include_fields) {
