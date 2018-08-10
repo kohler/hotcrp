@@ -1,31 +1,44 @@
 [
     {
-        "name": "acct_addr",
+        "name": "opt.shortName", "json_name": "conference-abbreviation",
+        "title": "Conference abbreviation",
+        "type": "simplestring", "size": 20, "autogrow": true,
+        "require": "src/settings/s_basics.php"
+    },
+    {
+        "name": "opt.longName", "json_name": "conference-name",
+        "title": "Conference name",
+        "type": "simplestring", "size": 70, "placeholder": "(same as abbreviation)"
+    },
+    {
+        "name": "acct_addr", "json_name": false,
         "title": "Collect addresses",
         "type": "checkbox",
         "require": "src/settings/s_users.php"
     },
     {
-        "name": "au_seerev",
+        "name": "au_seerev", "json_name": "review-visibility-author",
         "title": "Authors can see reviews", "group": "decisions",
-        "type": "radio", "values": [0, 1, 2, 3], "default_value": 0
+        "type": "radio",
+        "values": [0, 1, 2, 3], "default_value": 0,
+        "json_values": ["no", "unless-incomplete", "yes", "by-tag"]
     },
     {
         "name": "clickthrough_submit",
         "internal": true
     },
     {
-        "name": "cmt_always",
+        "name": "cmt_always", "json_name": "comment-always-allowed",
         "title": "Allow comments even if reviewing is closed",
         "type": "checkbox"
     },
     {
-        "name": "cmt_author",
+        "name": "cmt_author", "json_name": "comment-author",
         "title": "Allow authors to post comments",
         "type": "checkbox"
     },
     {
-        "name": "cmt_revid",
+        "name": "cmt_revid", "json_name": "comment-anonymous-discussion",
         "title": "Anonymous PC discussion",
         "type": "checkbox"
     },
@@ -41,7 +54,9 @@
     {
         "name": "extrev_chairreq", "group": "reviews",
         "title": "PC chair must approve proposed external reviewers",
-        "type": "radio", "values": [0, 1, 2], "default_value": 0
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["no", "yes", "potential-conflicts"]
     },
     {
         "name": "extrev_hard",
@@ -61,10 +76,11 @@
         "extensible": true
     },
     {
-        "name": "extrev_view",
+        "name": "extrev_view", "group": "reviews",
         "title": "External reviewers can view reviews",
-        "type": "radio", "values": [0, 1, 2], "default_value": 0,
-        "group": "reviews"
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["no", "blind", "yes"]
     },
     {
         "name": "final_done",
@@ -176,17 +192,6 @@
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     {
-        "name": "opt.longName",
-        "title": "Conference name",
-        "type": "simplestring", "size": 70, "placeholder": "(same as abbreviation)"
-    },
-    {
-        "name": "opt.shortName",
-        "title": "Conference abbreviation",
-        "type": "simplestring", "size": 20, "autogrow": true,
-        "require": "src/settings/s_basics.php"
-    },
-    {
         "name": "opt.timezone",
         "internal": true
     },
@@ -216,12 +221,16 @@
     {
         "name": "pc_seeallrev",
         "title": "PC can see all reviews",
-        "type": "radio", "values": [0, 1, 3, 4], "default_value": 0
+        "type": "radio",
+        "values": [0, 1, 3, 4], "default_value": 0,
+        "json_values": ["no", "yes", "unless-incomplete-assigned", "if-all-assignments-complete"]
     },
     {
         "name": "pc_seeblindrev",
         "title": "PC can see blind reviewers’ identities",
-        "type": "radio", "values": [0, 1], "default_value": 0
+        "type": "radio",
+        "values": [0, 1], "default_value": 0,
+        "json_values": [true, false]
     },
     {
         "name": "pcrev_any",
@@ -287,10 +296,11 @@
         "extensible": true
     },
     {
-        "name": "rev_blind",
+        "name": "rev_blind", "group": "reviews",
         "title": "Review anonymity",
-        "type": "radio", "values": [0, 1, 2], "default_value": 2,
-        "group": "reviews"
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 2,
+        "json_values": ["open", "optional", "blind"]
     },
     {
         "name": "rev_open",
@@ -301,7 +311,9 @@
     {
         "name": "rev_ratings",
         "title": "Collect ratings of reviews",
-        "type": "radio", "values": [0, 1, 2], "default_value": 0
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["pc", "all", "no"]
     },
     {
         "name": "rev_roundtag",
@@ -322,7 +334,9 @@
     {
         "name": "seedec",
         "title": "Decision visibility", "group": "decisions",
-        "type": "radio", "values": [0, 1, 2, 3],
+        "type": "radio",
+        "values": [0, 1, 2, 3],
+        "json_values": ["no", "pc", "yes", "unconflicted-pc"],
         "require": "src/settings/s_decisions.php"
     },
     {
@@ -384,7 +398,9 @@
     {
         "name": "sub_blind",
         "title": "Submission anonymity", "group": "submissions",
-        "type": "radio", "values": [0, 1, 2, 3], "default_value": 2
+        "type": "radio",
+        "values": [0, 1, 2, 3], "default_value": 2,
+        "json_values": ["open", "optional", "blind", "blind-until-review"]
     },
     {
         "name": "sub_collab",
@@ -394,7 +410,9 @@
     {
         "name": "sub_freeze",
         "title": "Submitters can update until the deadline",
-        "type": "radio", "values": [0, 1]
+        "type": "radio",
+        "values": [0, 1],
+        "json_values": [true, false]
     },
     {
         "name": "sub_grace",
@@ -404,14 +422,18 @@
     {
         "name": "sub_noabstract",
         "title": "Submission abstract required",
-        "type": "radio", "values": [0, 1, 2],
-        "storage": "ova.noAbstract", "default_value": 0
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["required", "optional", "none"],
+        "storage": "ova.noAbstract"
     },
     {
         "name": "sub_nopapers",
         "title": "Submission PDF required",
-        "type": "radio", "values": [0, 1, 2],
-        "storage": "ova.noPapers", "default_value": 0,
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["required", "optional", "none"],
+        "storage": "ova.noPapers",
         "require": "src/settings/s_subform.php"
     },
     {
@@ -433,7 +455,9 @@
     {
         "name": "sub_pcconfvis",
         "title": "PC conflict visibility",
-        "type": "radio", "values": [0, 1, 2], "default_value": 0
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["if-authors-visible", "no", "yes"]
     },
     {
         "name": "sub_reg",

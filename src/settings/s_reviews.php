@@ -246,7 +246,7 @@ class Round_SettingParser extends SettingParser {
             $sv->save("rev_roundtag", null);
             $sv->save("extrev_roundtag", null);
             return false;
-        } else if ($si->name != "rev_roundtag")
+        } else if ($si->name !== "rev_roundtag")
             return false;
         // round names
         $roundnames = $roundnames_set = array();

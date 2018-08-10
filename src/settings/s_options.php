@@ -310,6 +310,13 @@ class Options_SettingParser extends SettingParser {
         }
     }
 
+    function unparse_json(SettingValues $sv, Si $si, &$j) {
+        $oj = [];
+        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $o)
+            $oj[] = $o->unparse();
+        $j["options"] = $oj;
+    }
+
     function save(SettingValues $sv, Si $si) {
         $newj = [];
         foreach ($this->stashed_options as $o)
