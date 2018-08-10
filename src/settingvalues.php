@@ -373,28 +373,26 @@ class SettingValues extends MessageSet {
     function use_req() {
         return $this->has_error();
     }
-    static private function check_error_field($field, &$html) {
-        if ($field instanceof Si) {
-            if ($field->title && $html !== false)
-                $html = htmlspecialchars($field->title) . ": " . $html;
-            return $field->name;
-        } else
-            return $field;
-    }
     function error_at($field, $html = false) {
-        $fname = self::check_error_field($field, $html);
+        $fname = $field instanceof Si ? $field->name : $field;
         parent::error_at($fname, $html);
     }
     function warning_at($field, $html = false) {
-        $fname = self::check_error_field($field, $html);
+        $fname = $field instanceof Si ? $field->name : $field;
         parent::warning_at($fname, $html);
     }
     function report($is_update = false) {
         $msgs = array();
         if ($is_update && $this->has_error())
             $msgs[] = "Your changes were not saved. Please fix these errors and try again.";
-        foreach ($this->messages(true) as $mx)
-            $msgs[] = ($mx[2] == MessageSet::WARNING ? "Warning: " : "") . $mx[1];
+        foreach ($this->messages(true) as $mx) {
+            $t = $mx[1];
+            if ($mx[2] === MessageSet::WARNING)
+                $t = "Warning: " . $t;
+            if ($mx[0] && ($si = Si::get($this->conf, $mx[0])) && $si->title)
+                $t = htmlspecialchars($si->title) . ": " . $t;
+            $msgs[] = $t;
+        }
         if (!empty($msgs) && $this->has_error())
             Conf::msg_error($msgs, true);
         else if (!empty($msgs))
@@ -591,6 +589,23 @@ class SettingValues extends MessageSet {
             return $this->savedv[$s][0];
     }
 
+    function render_messages_at($field) {
+        $t = "";
+        $fname = $field instanceof Si ? $field->name : $field;
+        foreach ($this->messages_at($fname, true) as $mx) {
+            $t .= '<p class="settings-ap f-h';
+            if ($mx[2] === MessageSet::ERROR)
+                $t .= ' is-error';
+            else if ($mx[2] === MessageSet::WARNING)
+                $t .= ' is-warning';
+            $t .= '">' . $mx[1] . '</p>';
+        }
+        return $t;
+    }
+    function echo_messages_at($field) {
+        echo $this->render_messages_at($field);
+    }
+
     function echo_checkbox_only($name, $js = null) {
         $js["id"] = "cb$name";
         $x = $this->curv($name);
@@ -607,6 +622,7 @@ class SettingValues extends MessageSet {
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, $js);
         echo ' </span>', $this->label($name, $text, ["for" => "cb$name"]);
+        $this->echo_messages_at($name);
         if ($hint)
             echo '<p class="settings-ap f-hx', ($hint_class ? " " . $hint_class : ""), '">', $hint, '</p>';
         if (!$item_open)
@@ -623,12 +639,18 @@ class SettingValues extends MessageSet {
             $hint = "";
             if (is_array($text))
                 list($text, $hint) = $text;
+            $label1 = "<label>";
+            $label2 = "</label>";
+            if (strpos($text, "<label") !== false)
+                $label1 = $label2 = "";
             echo '<div class="settings-radioitem checki ',
-                ($k == $x ? "foldo" : "foldc"), '"><label><span class="checkc">',
+                ($k == $x ? "foldo" : "foldc"), '">',
+                $label1, '<span class="checkc">',
                 Ht::radio($name, $k, $k == $x,
                           $this->sjs($name, ["id" => "{$name}_{$k}", "class" => "js-settings-radio"])),
-                '</span>', $text, '</label>', $hint, '</div>';
+                '</span>', $text, $label2, $hint, '</div>';
         }
+        $this->echo_messages_at($name);
         if ($after)
             echo $after;
         echo "</div>\n";
@@ -668,6 +690,7 @@ class SettingValues extends MessageSet {
         echo '<div class="', $this->sclass($name, $klass), '">',
             $this->label($name, $description, ["class" => false]),
             $this->render_entry($name, $js), ($after_entry ? : "");
+        $this->echo_messages_at($name);
         $thint = $si ? $this->type_hint($si->type) : null;
         if ($hint || $thint) {
             echo '<div class="f-h">';
@@ -964,7 +987,8 @@ class SettingValues extends MessageSet {
             return $v;
         } else if ($si->type === "simplestring") {
             return simplify_whitespace($v);
-        } else if ($si->type === "tag" || $si->type === "tagbase") {
+        } else if ($si->type === "tag"
+                   || $si->type === "tagbase") {
             $tagger = new Tagger($this->user);
             $v = trim($v);
             if ($v === "" && $si->optional)

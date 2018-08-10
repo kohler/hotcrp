@@ -1310,7 +1310,11 @@ h2.error, h3.error, h4.error, h5.error, h6.error {
 	color: #ff0000;
 }
 
-.has-error > .f-c, .has-error > label, label.has-error, h3.has-error {
+.has-error > .f-c,
+.has-error > label,
+label.has-error,
+h3.has-error,
+.is-error {
 	color: #ee0000;
 }
 .has-error > input[type=text],
@@ -1325,7 +1329,11 @@ input[type=date].has-error,
 textarea.has-error {
 	border: 1px solid red;
 }
-.has-warning > .f-c, .has-warning > label, label.has-warning, h3.has-warning {
+.has-warning > .f-c,
+.has-warning > label,
+label.has-warning,
+h3.has-warning,
+.is-warning {
 	color: #c07700;
 }
 .has-warning > input[type=text],

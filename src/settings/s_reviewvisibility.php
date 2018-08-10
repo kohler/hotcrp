@@ -11,7 +11,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             $sv->conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
         if ($sv->conf->opt("allow_auseerev_unlessincomplete"))
             $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-        $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev");
+        $opts[Conf::AUSEEREV_TAGS] = "<label for=\"au_seerev_" . Conf::AUSEEREV_TAGS . "\">Yes, for papers with any of these tags:</label>&nbsp; " . $sv->render_entry("tag_au_seerev") . $sv->render_messages_at("tag_au_seerev");
 
         $hint = '<p class="settingtext f-h if-response-active';
         if (!$sv->conf->setting("resp_active"))

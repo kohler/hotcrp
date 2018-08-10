@@ -50,87 +50,87 @@ class Reviews_SettingRenderer {
         echo "</div></div>\n";
     }
 
-static function render(SettingValues $sv) {
-    echo '<div class="settings-g">';
-    $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
-    $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
-    echo "</div>\n";
+    static function render(SettingValues $sv) {
+        echo '<div class="settings-g">';
+        $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
+        $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
+        echo "</div>\n";
 
-    $sv->echo_radio_table("rev_blind", array(Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
-                               Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
-                               Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"),
-        '<strong>Review anonymity:</strong> Are reviewer names hidden from authors?');
+        $sv->echo_radio_table("rev_blind", array(Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
+                                   Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
+                                   Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"),
+            '<strong>Review anonymity:</strong> Are reviewer names hidden from authors?');
 
 
-    // Deadlines
-    echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
-    echo '<p class="settingtext">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
-    echo '<p class="f-h">', ($sv->type_hint("date") ? : ""), '</p>';
+        // Deadlines
+        echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
+        echo '<p class="settingtext">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
+        echo '<p class="f-h">', ($sv->type_hint("date") ? : ""), '</p>';
 
-    $rounds = $sv->conf->round_list();
-    if ($sv->use_req()) {
-        for ($i = 1; isset($sv->req["roundname_$i"]); ++$i)
-            $rounds[$i] = get($sv->req, "deleteround_$i") ? ";" : trim(get_s($sv->req, "roundname_$i"));
-    }
-
-    // prepare round selector
-    $sv->set_oldv("rev_roundtag", "#" . $sv->conf->assignment_round(false));
-    $round_value = $sv->oldv("rev_roundtag");
-    if (preg_match('/\A\#(\d+)\z/', $sv->curv("rev_roundtag"), $m)
-        && get($rounds, intval($m[1]), ";") != ";")
-        $round_value = $m[0];
-
-    $sv->set_oldv("extrev_roundtag", "#same");
-    if ($sv->conf->setting_data("extrev_roundtag", null) !== null)
-        $sv->set_oldv("extrev_roundtag", "#" . $sv->conf->assignment_round(true));
-    $extround_value = $sv->oldv("extrev_roundtag");
-    if (preg_match('/\A\#(\d+)\z/', $sv->curv("extrev_roundtag"), $m)
-        && get($rounds, intval($m[1]), ";") != ";")
-        $extround_value = $m[0];
-
-    $print_round0 = true;
-    if ($round_value != "#0" && $extround_value != "#0"
-        && (!$sv->use_req() || isset($sv->req["roundname_0"]))
-        && !$sv->conf->round0_defined())
-        $print_round0 = false;
-
-    $selector = array();
-    if ($print_round0)
-        $selector["#0"] = "unnamed";
-    for ($i = 1; $i < count($rounds); ++$i)
-        if ($rounds[$i] !== ";")
-            $selector["#$i"] = (object) array("label" => $rounds[$i], "id" => "rev_roundtag_$i");
-
-    echo '<div id="roundtable">';
-    $round_map = edb_map($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
-    $num_printed = 0;
-    for ($i = 0; $i < count($rounds); ++$i)
-        if ($i ? $rounds[$i] !== ";" : $print_round0) {
-            self::echo_round($sv, $i, $i ? $rounds[$i] : "", +get($round_map, $i), count($selector) !== 1);
-            ++$num_printed;
+        $rounds = $sv->conf->round_list();
+        if ($sv->use_req()) {
+            for ($i = 1; isset($sv->req["roundname_$i"]); ++$i)
+                $rounds[$i] = get($sv->req, "deleteround_$i") ? ";" : trim(get_s($sv->req, "roundname_$i"));
         }
-    echo '</div><div id="newround" class="hidden">';
-    self::echo_round($sv, '$', "", "", true);
-    echo '</div><div class="g"></div>';
-    echo Ht::button("Add round", ["id" => "settings_review_round_add"]),
-        ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
-        Ht::hidden("oldroundcount", count($sv->conf->round_list())),
-        Ht::hidden("has_rev_roundtag", 1), Ht::hidden("has_extrev_roundtag", 1);
-    for ($i = 1; $i < count($rounds); ++$i)
-        if ($rounds[$i] === ";")
-            echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
-                Ht::hidden("deleteround_$i", 1, ["data-default-value" => "1"]);
-    Ht::stash_script('review_round_settings()');
 
-    $extselector = array_merge(["#same" => "(same as PC)"], $selector);
-    echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',
-        $sv->label("rev_roundtag", "New PC reviews use round&nbsp; "),
-        Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
-        ' <span class="barsep">·</span> ',
-        $sv->label("extrev_roundtag", "New external reviews use round&nbsp; "),
-        Ht::select("extrev_roundtag", $extselector, $extround_value, $sv->sjs("extrev_roundtag")),
-        '</div>';
-}
+        // prepare round selector
+        $sv->set_oldv("rev_roundtag", "#" . $sv->conf->assignment_round(false));
+        $round_value = $sv->oldv("rev_roundtag");
+        if (preg_match('/\A\#(\d+)\z/', $sv->curv("rev_roundtag"), $m)
+            && get($rounds, intval($m[1]), ";") != ";")
+            $round_value = $m[0];
+
+        $sv->set_oldv("extrev_roundtag", "#same");
+        if ($sv->conf->setting_data("extrev_roundtag", null) !== null)
+            $sv->set_oldv("extrev_roundtag", "#" . $sv->conf->assignment_round(true));
+        $extround_value = $sv->oldv("extrev_roundtag");
+        if (preg_match('/\A\#(\d+)\z/', $sv->curv("extrev_roundtag"), $m)
+            && get($rounds, intval($m[1]), ";") != ";")
+            $extround_value = $m[0];
+
+        $print_round0 = true;
+        if ($round_value != "#0" && $extround_value != "#0"
+            && (!$sv->use_req() || isset($sv->req["roundname_0"]))
+            && !$sv->conf->round0_defined())
+            $print_round0 = false;
+
+        $selector = array();
+        if ($print_round0)
+            $selector["#0"] = "unnamed";
+        for ($i = 1; $i < count($rounds); ++$i)
+            if ($rounds[$i] !== ";")
+                $selector["#$i"] = (object) array("label" => $rounds[$i], "id" => "rev_roundtag_$i");
+
+        echo '<div id="roundtable">';
+        $round_map = edb_map($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
+        $num_printed = 0;
+        for ($i = 0; $i < count($rounds); ++$i)
+            if ($i ? $rounds[$i] !== ";" : $print_round0) {
+                self::echo_round($sv, $i, $i ? $rounds[$i] : "", +get($round_map, $i), count($selector) !== 1);
+                ++$num_printed;
+            }
+        echo '</div><div id="newround" class="hidden">';
+        self::echo_round($sv, '$', "", "", true);
+        echo '</div><div class="g"></div>';
+        echo Ht::button("Add round", ["id" => "settings_review_round_add"]),
+            ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
+            Ht::hidden("oldroundcount", count($sv->conf->round_list())),
+            Ht::hidden("has_rev_roundtag", 1), Ht::hidden("has_extrev_roundtag", 1);
+        for ($i = 1; $i < count($rounds); ++$i)
+            if ($rounds[$i] === ";")
+                echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
+                    Ht::hidden("deleteround_$i", 1, ["data-default-value" => "1"]);
+        Ht::stash_script('review_round_settings()');
+
+        $extselector = array_merge(["#same" => "(same as PC)"], $selector);
+        echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',
+            $sv->label("rev_roundtag", "New PC reviews use round&nbsp; "),
+            Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
+            ' <span class="barsep">·</span> ',
+            $sv->label("extrev_roundtag", "New external reviews use round&nbsp; "),
+            Ht::select("extrev_roundtag", $extselector, $extround_value, $sv->sjs("extrev_roundtag")),
+            '</div>';
+    }
 
 
     static function render_pc(SettingValues $sv) {

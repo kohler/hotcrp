@@ -93,7 +93,7 @@ class Tags_SettingParser extends SettingParser {
                     $tx = $tag . "#" . max($min_idx, (float) $idx);
                 $ts[$tag] = $tx;
             } else if ($t !== "")
-                $sv->error_at($si->name, $si->title . ": " . $tagger->error_html);
+                $sv->error_at($si, $tagger->error_html);
         return array_values($ts);
     }
     function my_parse_list(Si $si, $checkf, $min_idx) {

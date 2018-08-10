@@ -203,7 +203,7 @@ class Tracks_SettingParser extends SettingParser {
             else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
                      || ($trackname === "_" && $i != 1)) {
                 if ($trackname !== "_")
-                    $sv->error_at("name_track$i", "Track name: " . $tagger->error_html);
+                    $sv->error_at("name_track$i", $tagger->error_html);
                 else
                     $sv->error_at("name_track$i", "Track name “_” is reserved.");
                 $sv->error_at("tracks");
