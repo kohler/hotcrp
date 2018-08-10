@@ -552,11 +552,20 @@ class ReviewForm implements JsonSerializable {
             $fval = $rval;
             if ($rvalues && isset($rvalues->req[$fid]))
                 $fval = $rvalues->req[$fid];
+            if ($f->has_options)
+                $rval = $f->normalize_fvalue($rval);
 
             echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="revet';
             if ($rvalues && $rvalues->has_problem_at($fid))
                 echo " has-error";
-            echo '"><label class="revfn" for="', $fid, '">', $f->name_html;
+            echo '"><label class="revfn" for="', $f->id;
+            if ($f->has_options) {
+                if ($rval || $f->allow_empty)
+                    echo "_", $rval;
+                else
+                    echo "_", key($f->options);
+            }
+            echo '">', $f->name_html, '</label>';
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
                 echo '<div class="revvis">(secret)</div>';
             else if ($f->view_score < VIEWSCORE_PC)
@@ -565,7 +574,7 @@ class ReviewForm implements JsonSerializable {
                 echo '<div class="revvis">(hidden from authors)</div>';
             else if ($f->view_score < VIEWSCORE_AUTHOR)
                 echo '<div class="revvis">(hidden from authors until decision)</div>';
-            echo '</label></div>';
+            echo '</div>';
 
             if ($f->description)
                 echo '<div class="revhint">', $f->description, "</div>";
@@ -577,15 +586,15 @@ class ReviewForm implements JsonSerializable {
                 $fval = $f->normalize_fvalue($fval);
                 $rval = $f->normalize_fvalue($rval);
                 foreach ($f->options as $num => $what) {
-                    echo '<label><div class="checki"><span class="checkc">',
+                    echo '<div class="checki"><label><span class="checkc">',
                         $f->unparse_web_control($num, $fval, $rval),
                         ' </span>', $f->unparse_value($num, ReviewField::VALUE_REV_NUM),
-                        ' ', htmlspecialchars($what), '</div></label>';
+                        ' ', htmlspecialchars($what), '</label></div>';
                 }
                 if ($f->allow_empty) {
-                    echo '<label><div class="checki g"><span class="checkc">',
+                    echo '<div class="checki g"><label><span class="checkc">',
                         $f->unparse_web_control(0, $fval, $rval),
-                        ' </span>No entry</div></label>';
+                        ' </span>No entry</label></div>';
                 }
             } else {
                 echo $format_description, $f->unparse_web_control(null, $fval, $rval);

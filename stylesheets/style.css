@@ -2891,8 +2891,11 @@ body#offline .revcard {
 .revvl {
 	padding-right: 1.5em;
 }
-.papeg, .rveg {
+.papeg {
 	margin: 16px 0 24px;
+}
+.rveg {
+	margin: 16px 0 36px;
 }
 .papegroup {
 	margin: 12px -16px;
