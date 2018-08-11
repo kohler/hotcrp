@@ -1606,7 +1606,10 @@ class PaperList {
         foreach ($this->table_attr as $k => $v) {
             if (is_array($v) || is_object($v))
                 $v = $k === "class" ? join(" ", $v) : json_encode_browser($v);
-            $enter .= " $k=\"" . htmlspecialchars($v) . "\"";
+            if ($k === "data-columns")
+                $enter .= " $k='" . str_replace("'", "&#039;", htmlspecialchars($v, ENT_NOQUOTES)) . "'";
+            else
+                $enter .= " $k=\"" . htmlspecialchars($v) . "\"";
         }
         $enter .= ">\n";
         if (self::$include_stash)
