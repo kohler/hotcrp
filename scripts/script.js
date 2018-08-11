@@ -5952,7 +5952,8 @@ plinfo.set_tags = function (pid, rv) {
         $pr.attr("data-color-classes", rv.color_classes)
             .attr("data-color-classes-conflicted", rv.color_classes_conflicted);
         $ptr.addClass("colorconflict");
-    }
+    } else
+        $ptr.removeClass("colorconflict");
 
     // set color classes
     var cc = rv.color_classes;
