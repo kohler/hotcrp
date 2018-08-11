@@ -5708,6 +5708,7 @@ function make_tag_column_callback(f) {
 }
 
 function render_needed() {
+    self || initialize();
     scorechart();
     render_allpref();
     $(".need-tags").each(function () {
@@ -5845,6 +5846,7 @@ function show_loading(f) {
 }
 
 function plinfo(type, dofold) {
+    self || initialize();
     var elt, f = fields[type];
     if (!f)
         log_jserror("plinfo missing type " + type);
@@ -5904,25 +5906,26 @@ function plinfo(type, dofold) {
     return false;
 }
 
-plinfo.initialize = function (sel, fo) {
-    self = $(sel)[0];
-    field_order = fo;
+function initialize() {
+    self = $("table.pltable")[0];
+    field_order = JSON.parse(self.getAttribute("data-columns"));
     fields = {};
     var fold_prefix = self.getAttribute("data-fold-session-prefix");
     if (fold_prefix) {
         var fs = {"2": fold_prefix + "anonau", "5": fold_prefix + "force", "6": fold_prefix + "rownum", "7": fold_prefix + "statistics"};
         self.setAttribute("data-fold-session", JSON.stringify(fs));
     }
-    for (var i = 0; i < fo.length; ++i) {
-        fields[fo[i].name] = fo[i];
-        if (/^(?:#|tag:|tagval:)\S+$/.test(fo[i].name))
-            set_tags_callbacks.push(make_tag_column_callback(fo[i]));
+    for (var i = 0; i < field_order.length; ++i) {
+        fields[field_order[i].name] = field_order[i];
+        if (/^(?:#|tag:|tagval:)\S+$/.test(field_order[i].name))
+            set_tags_callbacks.push(make_tag_column_callback(field_order[i]));
     }
     if (fields.authors)
         fields.au = fields.anonau = fields.aufull = fields.authors;
 };
 
 plinfo.set_scoresort = function (ss) {
+    self || initialize();
     var re = / (?:counts|average|median|variance|minmax|my)$/;
     for (var i = 0; i < field_order.length; ++i) {
         var f = field_order[i];
@@ -5932,7 +5935,9 @@ plinfo.set_scoresort = function (ss) {
 };
 
 plinfo.render_needed = render_needed;
+
 plinfo.set_tags = function (pid, rv) {
+    self || initialize();
     var $pr = pidrow(pid);
     if (!$pr.length)
         return;
@@ -5980,6 +5985,7 @@ plinfo.set_tags = function (pid, rv) {
     for (var i in set_tags_callbacks)
         set_tags_callbacks[i](pid, rv);
 };
+
 plinfo.on_set_tags = function (f) {
     set_tags_callbacks.push(f);
 };
@@ -6005,6 +6011,7 @@ function fold_override(checkbox) {
 };
 
 plinfo.checkbox_change = function (event) {
+    self || initialize();
     if (this.name.substring(0, 4) === "show") {
         var type = this.name.substring(4);
         if (type === "force")

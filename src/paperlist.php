@@ -1098,7 +1098,8 @@ class PaperList {
     }
 
     private function _analyze_folds($rstate, $fieldDef) {
-        $classes = $jscol = array();
+        $classes = &$this->table_attr["class"];
+        $jscol = [];
         $has_sel = false;
         $has_statistics = $has_loadable_statistics = false;
         $default_score_sort = ListSorter::default_score_sort($this->conf);
@@ -1143,9 +1144,7 @@ class PaperList {
             $classes[] = "fold5" . ($this->_view_force ? "o" : "c");
         $classes[] = "fold7" . ($this->_view_statistics ? "o" : "c");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
-        if ($this->_table_id)
-            Ht::stash_script("plinfo.initialize(\"#{$this->_table_id}\"," . json_encode_browser($jscol) . ");");
-        return $classes;
+        $this->table_attr["data-columns"] = $jscol;
     }
 
     private function _make_title_header_extra($rstate, $fieldDef, $show_links) {
@@ -1493,6 +1492,30 @@ class PaperList {
         // create render state
         $rstate = new PaperListTableRender($ncol, $titlecol, $skipcallout);
 
+        // prepare table attributes
+        $this->table_attr["class"] = ["pltable"];
+        if ($this->_table_class)
+            $this->table_attr["class"][] = $this->_table_class;
+        if (get($options, "list"))
+            $this->table_attr["class"][] = "has-hotlist has-fold";
+        if ($this->_table_id)
+            $this->table_attr["id"] = $this->_table_id;
+        if (!empty($options["attributes"]))
+            foreach ($options["attributes"] as $n => $v)
+                $this->table_attr[$n] = $v;
+        if (get($options, "fold_session_prefix"))
+            $this->table_attr["data-fold-session-prefix"] = $options["fold_session_prefix"];
+        if ($this->search->is_order_anno)
+            $this->table_attr["data-order-tag"] = $this->search->is_order_anno;
+        if ($this->groups)
+            $this->table_attr["data-groups"] = json_encode_browser($this->groups);
+        if (get($options, "list"))
+            $this->table_attr["data-hotlist"] = $this->session_list_object()->info_string();
+        if ($this->sortable && ($url = $this->search->url_site_relative_raw())) {
+            $url = Navigation::siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
+            $this->table_attr["data-sort-url-template"] = $url;
+        }
+
         // collect row data
         $body = array();
         $grouppos = empty($this->groups) ? -1 : 0;
@@ -1524,6 +1547,9 @@ class PaperList {
         $tfoot = "";
         if (!$this->_view_columns)
             $tfoot = $this->_statistics_rows($rstate, $fieldDef);
+
+        // analyze folds
+        $this->_analyze_folds($rstate, $fieldDef);
 
         // restore forceShow
         $this->user->set_overrides($overrides);
@@ -1576,36 +1602,13 @@ class PaperList {
         }
 
         // table skeleton including fold classes
-        $foldclasses = array();
-        if ($this->foldable)
-            $foldclasses = $this->_analyze_folds($rstate, $fieldDef);
-        $enter = "<table class=\"pltable";
-        if ($this->_table_class)
-            $enter .= " " . $this->_table_class;
-        if (get($options, "list"))
-            $enter .= " has-hotlist has-fold";
-        if (!empty($foldclasses))
-            $enter .= " " . join(" ", $foldclasses);
-        if ($this->_table_id)
-            $enter .= "\" id=\"" . $this->_table_id;
-        if (!empty($options["attributes"]))
-            foreach ($options["attributes"] as $n => $v)
-                $enter .= "\" $n=\"" . htmlspecialchars($v);
-        if (get($options, "fold_session_prefix"))
-            $enter .= "\" data-fold-session-prefix=\"" . htmlspecialchars($options["fold_session_prefix"]);
-        if ($this->search->is_order_anno)
-            $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
-        if ($this->groups)
-            $enter .= "\" data-groups=\"" . htmlspecialchars(json_encode_browser($this->groups));
-        foreach ($this->table_attr as $k => $v)
-            $enter .= "\" $k=\"" . htmlspecialchars($v);
-        if (get($options, "list"))
-            $enter .= "\" data-hotlist=\"" . htmlspecialchars($this->session_list_object()->info_string());
-        if ($this->sortable && ($url = $this->search->url_site_relative_raw())) {
-            $url = Navigation::siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
-            $enter .= "\" data-sort-url-template=\"" . htmlspecialchars($url);
+        $enter = "<table";
+        foreach ($this->table_attr as $k => $v) {
+            if (is_array($v) || is_object($v))
+                $v = $k === "class" ? join(" ", $v) : json_encode_browser($v);
+            $enter .= " $k=\"" . htmlspecialchars($v) . "\"";
         }
-        $enter .= "\">\n";
+        $enter .= ">\n";
         if (self::$include_stash)
             $enter .= Ht::unstash();
         $rstate->table_start = $enter;
