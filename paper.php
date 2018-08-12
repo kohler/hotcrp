@@ -163,9 +163,9 @@ function update_paper(Qrequest $qreq, $action) {
 
     if (!$prepared) {
         if (!$prow && $qreq->has_files())
-            $ps->error_at("paper", "<strong>Your uploaded files were ignored.</strong>");
-        $emsg = $ps->messages();
-        Conf::msg_error(space_join($Conf->_("There were errors in saving your paper."), $Conf->_("Please fix them and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
+            $ps->error_at(null, "<strong>Your uploaded files were ignored.</strong>");
+        $emsg = $ps->landmarked_messages();
+        Conf::msg_error(space_join($Conf->_("<strong>Some or all of your changes were not saved.</strong>"), $Conf->_("Please fix these errors and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
         return false;
     }
 
@@ -260,15 +260,15 @@ function update_paper(Qrequest $qreq, $action) {
     $notes = join(" ", array_filter($notes, function ($n) { return $n !== ""; }));
 
     $webnotes = "";
-    if (count($ps->messages()))
-        $webnotes .= " <ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>";
+    if ($ps->has_messages())
+        $webnotes .= " <ul><li>" . join("</li><li>", $ps->landmarked_messages()) . "</li></ul>";
 
     $logtext = $actiontext . ($difftext ? " $difftext" : "");
     $Me->log_activity($logtext, $prow->paperId);
 
     // HTML confirmation
     if ($ps->has_error())
-        $webmsg = $Conf->_("There were errors while updating submission #%d.", $prow->paperId);
+        $webmsg = $Conf->_("Some or all of your changes were not saved. Please correct these errors and save again.");
     else if (empty($ps->diffs))
         $webmsg = $Conf->_("No changes to submission #%d.", $prow->paperId);
     else

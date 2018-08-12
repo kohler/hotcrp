@@ -321,10 +321,18 @@ class PaperStatus extends MessageSet {
 
 
     function error_at_option(PaperOption $o, $html) {
-        $this->error_at($o->field_key(), htmlspecialchars($o->name) . ": " . $html);
+        $this->error_at($o->field_key(), $html);
     }
     function warning_at_option(PaperOption $o, $html) {
-        $this->warning_at($o->field_key(), htmlspecialchars($o->name) . ": " . $html);
+        $this->warning_at($o->field_key(), $html);
+    }
+    function landmarked_messages() {
+        $ms = [];
+        foreach ($this->messages(true) as $mx) {
+            $o = $mx[0] ? $this->conf->paper_opts->find($mx[0]) : null;
+            $ms[] = ($o ? htmlspecialchars($o->name) . ": " : "") . $mx[1];
+        }
+        return $ms;
     }
 
     function format_error_at($key, $value) {
@@ -741,7 +749,7 @@ class PaperStatus extends MessageSet {
         if ($v === ""
             && (isset($pj->abstract) || !$ps->prow || (string) $ps->prow->abstract === "")) {
             if (!$ps->conf->opt("noAbstract"))
-                $ps->error_at("abstract", $ps->_("Each submission must have an abstract."));
+                $ps->error_at("abstract", $ps->_("Entry required."));
         }
         if (!$ps->prow
             || (!$ps->has_error_at("abstract")
@@ -766,7 +774,7 @@ class PaperStatus extends MessageSet {
         $max_authors = $ps->conf->opt("maxAuthors");
         if ((is_array($authors) && empty($authors))
             || ($authors === null && (!$ps->prow || !$ps->prow->author_list())))
-            $ps->error_at("authors", $ps->_("Each submission must have at least one author.", $max_authors));
+            $ps->error_at("authors", $ps->_("Entry required."));
         if ($max_authors > 0 && is_array($authors) && count($authors) > $max_authors)
             $ps->error_at("authors", $ps->_("Each submission can have at most %d authors.", $max_authors));
         if (!empty($pj->bad_authors))
