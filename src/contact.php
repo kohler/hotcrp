@@ -3675,10 +3675,10 @@ class Contact {
         return $pids;
     }
 
-    function paper_status_info(PaperInfo $row, $forceShow = null) {
+    function paper_status_info(PaperInfo $row) {
         if ($row->timeWithdrawn > 0) {
             return array("pstat_with", "Withdrawn");
-        } else if ($row->outcome && $this->can_view_decision($row, $forceShow)) {
+        } else if ($row->outcome && $this->can_view_decision($row)) {
             $data = get(self::$status_info_cache, $row->outcome);
             if (!$data) {
                 $decclass = ($row->outcome > 0 ? "pstat_decyes" : "pstat_decno");

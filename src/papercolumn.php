@@ -211,13 +211,13 @@ class StatusPaperColumn extends PaperColumn {
         return "Status";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $status_info = $pl->user->paper_status_info($row, !$pl->search->limit_author() && $pl->user->can_administer($row));
+        $status_info = $pl->user->paper_status_info($row);
         if (!$this->is_long && $status_info[0] == "pstat_sub")
             return "";
         return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $status_info = $pl->user->paper_status_info($row, !$pl->search->limit_author() && $pl->user->allow_administer($row));
+        $status_info = $pl->user->paper_status_info($row);
         return $status_info[1];
     }
 }
