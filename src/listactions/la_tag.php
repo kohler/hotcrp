@@ -73,13 +73,13 @@ class Tag_ListAction extends ListAction {
             $action = null;
 
         $assignset = new AssignmentSet($user, Contact::OVERRIDE_CONFLICT);
-        if (count($papers) && $action) {
+        if (!empty($papers) && $action) {
             foreach ($papers as $p) {
                 foreach ($tags as $t)
                     $x[] = "$action,$p,$t\n";
             }
             $assignset->parse(join("", $x));
-        } else if (count($papers) && $act == "cr" && $user->privChair) {
+        } else if (!empty($papers) && $act == "cr" && $user->privChair) {
             $source_tag = trim((string) $qreq->tagcr_source);
             if ($source_tag == "")
                 $source_tag = (substr($tagreq, 0, 2) == "~~" ? substr($tagreq, 2) : $tagreq);
@@ -94,7 +94,7 @@ class Tag_ListAction extends ListAction {
                 if ($qreq->q === "")
                     $qreq->q = "order:$tagreq";
             } else
-                $assignset->error($tagger->error_html);
+                $assignset->error_here($tagger->error_html);
         }
         if (($errors = $assignset->errors_div_html())) {
             if ($assignset->is_empty())
