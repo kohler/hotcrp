@@ -2130,7 +2130,10 @@ class PaperTable {
                     return;
                 $ov = $this->_prow->option($o->id);
                 $ov = $ov ? : new PaperOptionValue($this->prow, $o);
-                $o->echo_editable_html($ov, $this->useRequest ? $this->qreq[$o->formid] : null, $this);
+                $reqv = null;
+                if ($this->useRequest && $this->qreq["has_{$o->formid}"])
+                    $reqv = $o->parse_request_display($this->qreq, $this->user, $this->prow);
+                $o->echo_editable_html($ov, $reqv, $this);
             }
         ];
     }

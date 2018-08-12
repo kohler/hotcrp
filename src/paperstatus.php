@@ -610,6 +610,18 @@ class PaperStatus extends MessageSet {
         }
 
         // Status
+        if (!isset($pj->submitted)) {
+            if (isset($pj->draft))
+                $pj->submitted = !$pj->draft;
+            else if (isset($pj->status)) {
+                if ($pj->status === "submitted")
+                    $pj->submitted = true;
+                else if ($pj->status === "draft")
+                    $pj->submitted = false;
+            }
+        }
+        if (!isset($pj->submitted))
+            $pj->submitted = $this->prow && $this->prow->timeSubmitted != 0;
         foreach (array("withdrawn_at", "submitted_at", "final_submitted_at") as $k)
             if (isset($pj->$k)) {
                 if (is_numeric($pj->$k))
@@ -948,9 +960,11 @@ class PaperStatus extends MessageSet {
             $result = null;
             if ($oj !== null)
                 $result = $o->store_json($oj, $ps);
-            if ($result === null || $result === false)
+            if ($result === null || $result === false) {
+                if ($o->required && $pj->submitted)
+                    $ps->error_at_option($o, "Entry required.");
                 $result = [];
-            else if (!is_array($result))
+            } else if (!is_array($result))
                 $result = [[$result]];
             else if (count($result) == 2 && !is_int($result[1]))
                 $result = [$result];

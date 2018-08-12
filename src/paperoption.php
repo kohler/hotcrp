@@ -312,6 +312,7 @@ class PaperOption implements Abbreviator {
     private $_search_keyword;
     public $description;
     public $position;
+    public $required;
     public $final;
     public $nonpaper;
     public $visibility; // "rev", "nonblind", "admin"
@@ -368,6 +369,7 @@ class PaperOption implements Abbreviator {
             $this->position = $p;
         else
             $this->position = 999;
+        $this->required = !!get($args, "required");
         $this->final = !!get($args, "final");
         $this->nonpaper = !!get($args, "nonpaper");
         $this->internal = !!get($args, "internal");
@@ -602,6 +604,9 @@ class PaperOption implements Abbreviator {
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
+        return $this->parse_request_display($qreq, $user, $prow);
+    }
+    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
         return null;
     }
 
@@ -664,10 +669,12 @@ class CheckboxPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+        if (!$ov->value && $this->required)
+            $ps->error_at_option($this, "Entry required.");
         return $ov->value ? true : false;
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
+    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
         return $qreq[$this->formid] > 0;
     }
 
@@ -787,6 +794,8 @@ class SelectorPaperOption extends PaperOption {
         echo '<div class="papev">';
         if ($this->type === "selector") {
             $sel = [];
+            if (!$ov->value)
+                $sel[0] = "(Select one)";
             foreach ($this->selector as $val => $text)
                 $sel[$val + 1] = $text;
             echo Ht::select($this->formid, $sel, $reqv,
@@ -803,12 +812,14 @@ class SelectorPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+        if (!$ov->value && $this->required)
+            $ps->error_at_option($this, "Entry required.");
         return get($this->selector, $ov->value - 1, null);
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
+    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
         $v = trim((string) $qreq[$this->formid]);
-        if ($v === "")
+        if ($v === "" || $v === "0")
             return null;
         else if (ctype_digit($v)) {
             $iv = intval($v) - 1;
@@ -886,12 +897,15 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
-        if (!$ov->value)
+        if (!$ov->value) {
+            if ($this->required)
+                $ps->error_at_option($this, "Entry required.");
             return null;
-        else if (($doc = $ps->document_to_json($this->id, $ov->value)))
+        } else if (($doc = $ps->document_to_json($this->id, $ov->value))) {
             return $doc;
-        else
+        } else {
             return false;
+        }
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
@@ -996,10 +1010,12 @@ class NumericPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+        if ($ov->value === null && $this->required)
+            $ps->error_at_option($this, "Entry required.");
         return $ov->value;
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
+    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
         $v = trim((string) $qreq[$this->formid]);
         if ($v === "")
             return null;
@@ -1074,10 +1090,12 @@ class TextPaperOption extends PaperOption {
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         $x = $ov->data();
+        if ((string) $x === "" && $this->required)
+            $ps->error_at_option($this, "Entry required.");
         return $x !== "" ? $x : null;
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
+    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
         $x = trim((string) $qreq[$this->formid]);
         return $x !== "" ? $x : null;
     }
@@ -1197,7 +1215,9 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
-        $attachments = array();
+        $attachments = [];
+        if (!$ov->value && $this->required)
+            $ps->error_at_option($this, "Entry required.");
         foreach ($ov->documents() as $doc)
             if (($doc = $ps->document_to_json($this->id, $doc)))
                 $attachments[] = $doc;
