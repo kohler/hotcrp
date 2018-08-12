@@ -1943,9 +1943,9 @@ class Contact {
                 && strcasecmp($_SESSION["trueuser"]->email, $acct->email) == 0;
     }
 
-    function can_administer(PaperInfo $prow = null, $forceShow = null) {
+    function can_administer(PaperInfo $prow = null) {
         if ($prow) {
-            $rights = $this->rights($prow, $forceShow);
+            $rights = $this->rights($prow);
             return $rights->can_administer;
         } else
             return $this->privChair;

@@ -176,7 +176,7 @@ class PaperApi {
             json_exit(["ok" => true, "result" => '<span class="nw">' . join(',</span> <span class="nw">', $result) . '</span>']);
     }
 
-    static function get_user(Contact $user, Qrequest $qreq, $forceShow = null) {
+    static function get_user(Contact $user, Qrequest $qreq) {
         $u = $user;
         if (isset($qreq->u) || isset($qreq->reviewer)) {
             $x = isset($qreq->u) ? $qreq->u : $qreq->reviewer;
@@ -197,10 +197,10 @@ class PaperApi {
         return $u;
     }
 
-    static function get_reviewer(Contact $user, $qreq, $prow, $forceShow = null) {
-        $u = self::get_user($user, $qreq, $forceShow);
+    static function get_reviewer(Contact $user, $qreq, $prow) {
+        $u = self::get_user($user, $qreq);
         if ($u->contactId !== $user->contactId
-            && ($prow ? !$user->can_administer($prow, $forceShow) : !$user->privChair)) {
+            && ($prow ? !$user->can_administer($prow) : !$user->privChair)) {
             error_log("PaperApi::get_reviewer: rejecting user {$u->contactId}/{$u->email}, requested by {$user->contactId}/{$user->email}");
             json_exit(403, "Permission error.");
         }
@@ -208,9 +208,10 @@ class PaperApi {
     }
 
     static function pref_api(Contact $user, $qreq, $prow) {
-        $u = self::get_reviewer($user, $qreq, $prow, true);
+        $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        $u = self::get_reviewer($user, $qreq, $prow);
         if ($qreq->method() !== "GET") {
-            $aset = new AssignmentSet($user, true);
+            $aset = new AssignmentSet($user);
             $aset->enable_papers($prow);
             $aset->parse("paper,user,preference\n{$prow->paperId}," . CsvGenerator::quote($u->email) . "," . CsvGenerator::quote($qreq->pref, true));
             if (!$aset->execute())
