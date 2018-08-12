@@ -61,12 +61,18 @@ class Preference_PaperColumn extends PaperColumn {
         return 0;
     }
     function analyze(PaperList $pl, &$rows, $fields) {
-        $this->show_conflict = true;
-        foreach ($fields as $fdef)
+        $pfcol = $rtcol = [];
+        foreach ($fields as $fdef) {
             if ($fdef instanceof ReviewerType_PaperColumn
-                && $fdef->is_visible
-                && $fdef->contact()->contactId == $this->contact->contactId)
-                $this->show_conflict = false;
+                && $fdef->is_visible)
+                $rtcol[] = $fdef;
+            else if ($fdef instanceof Preference_PaperColumn
+                     && $fdef->is_visible)
+                $pfcol[] = $fdef;
+        }
+        $this->show_conflict = count($pfcol) !== 1
+            || count($rtcol) !== 1
+            || $rtcol[0]->contact()->contactId !== $this->contact->contactId;
     }
     function header(PaperList $pl, $is_text) {
         if ($this->contact === $pl->user || $this->row)
@@ -90,7 +96,7 @@ class Preference_PaperColumn extends PaperColumn {
             if ($ptext !== "")
                 $ptext = $this->prefix . " <span class=\"asspref" . ($pv[0] < 0 ? "-1" : "1") . "\">P" . $ptext . "</span>";
             return $ptext;
-        } else if ($has_cflt && ($editable ? !$pl->user->allow_administer($row) : $ptext === "0"))
+        } else if ($has_cflt && $ptext === "0")
             return $this->show_conflict ? review_type_icon(-1) : "";
         else if ($editable) {
             $iname = "revpref" . $row->paperId;
