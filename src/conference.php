@@ -1960,6 +1960,15 @@ class Conf {
         if ($any)
             trigger_error("$this->dbname invariant error: bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
 
+        // review rounds are defined
+        $result = $this->qe("select reviewRound, count(*) from PaperReview group by reviewRound");
+        $defined_rounds = $this->defined_round_list();
+        while ($result && ($row = $result->fetch_row())) {
+            if (!isset($defined_rounds[$row[0]]))
+                trigger_error("$this->dbname invariant error: {$row[1]} PaperReviews for reviewRound {$row[0]}, which is not defined");
+        }
+        Dbl::free($result);
+
         // anonymous users are disabled
         $any = $this->invariantq("select email from ContactInfo where email regexp '^anonymous[0-9]*\$' and not disabled limit 1");
         if ($any)
