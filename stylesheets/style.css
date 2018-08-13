@@ -49,7 +49,6 @@ input[type=text], input[type=email], input[type=password], input[type=date], tex
 /* page background */
 html {
 	font-family: "Helvetica Neue", Helvetica, Arial, verdana, tahoma, sans-serif;
-	font-size: 91.667%; /* 11pt; `rem` units relative to this */
 	line-height: 1.35;
 }
 body {
