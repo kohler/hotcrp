@@ -15,9 +15,6 @@ if (!$Qreq->t || !isset($tOpt[$Qreq->t])) {
     $Qreq->t = key($tOpt);
 }
 
-if ($Qreq->kind !== "a" && $Qreq->kind !== "c")
-    $Qreq->kind = "a";
-
 if (!$Qreq->q || trim($Qreq->q) == "(All)")
     $Qreq->q = "";
 
@@ -57,12 +54,6 @@ if (is_array($Qreq->papx)) {
             $Qreq->assrev[$p] = 0;
 }
 
-if (is_array($Qreq->p) && $Qreq->kind == "c") {
-    foreach ($Qreq->p as $p)
-        if (($p = cvtint($p)) > 0)
-            $Qreq->assrev[$p] = -1;
-}
-
 $Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
 
 
@@ -70,53 +61,40 @@ function saveAssignments($qreq, $reviewer) {
     global $Conf, $Me, $Now;
     $round_number = null;
 
-    if (!count($qreq->assrev))
+    if (empty($qreq->assrev))
         return;
 
     $lastPaperId = -1;
     $del = $ins = "";
     $assignments = [];
     foreach ($Me->paper_set(array_keys($qreq->assrev), ["reviewSignatures" => true]) as $row) {
-        $conflict_type = $row->conflict_type($reviewer);
-        if ($row->paperId == $lastPaperId
-            || !$Me->can_administer($row)
-            || $conflict_type >= CONFLICT_AUTHOR
+        $ct = $row->conflict_type($reviewer);
+        if (!$Me->can_administer($row)
+            || $ct >= CONFLICT_AUTHOR
             || !isset($qreq->assrev[$row->paperId]))
             continue;
         $lastPaperId = $row->paperId;
-        $type = $qreq->assrev[$row->paperId];
-        if ($type >= 0 && $conflict_type > 0 && $conflict_type < CONFLICT_AUTHOR)
-            $del .= " or paperId=$row->paperId";
-        if ($type < 0 && $conflict_type < CONFLICT_CHAIRMARK)
-            $ins .= ", ($row->paperId, {$reviewer->contactId}, " . CONFLICT_CHAIRMARK . ")";
-        if ($qreq->kind === "a") {
-            $type = max((int) $type, 0);
-            $old_type = $row->review_type($reviewer);
-            if ($type != $old_type
-                && ($type == 0 || $reviewer->can_accept_review_assignment_ignore_conflict($row))) {
-                $assignment = [$row->paperId, $reviewer->contactId, $type];
-                if ($old_type <= 0) {
-                    if ($round_number === null)
-                        $round_number = (int) $Conf->round_number($qreq->rev_round, true);
-                    $assignment[] = ["round_number" => $round_number];
-                }
-                $assignments[] = $assignment;
-            }
-        }
+        $newct = (int) $qreq->assrev[$row->paperId];
+        if ($newct >= 0 && $ct > 0 && $ct < CONFLICT_AUTHOR)
+            $assignments[] = [$row->paperId, $reviewer->email, "conflict", null, "none"];
+        else if ($newct < 0 && $ct < CONFLICT_CHAIRMARK)
+            $assignments[] = [$row->paperId, $reviewer->email, "conflict", null, "confirmed"];
+        $rt = $row->review_type($reviewer);
+        $newrt = max($newct, 0);
+        if ($rt != $newrt
+            && ($newrt == 0 || $reviewer->can_accept_review_assignment_ignore_conflict($row)))
+            $assignments[] = [$row->paperId, $reviewer->email, ReviewInfo::unparse_assigner_action($newrt), $qreq->rev_round];
     }
 
-    if ($ins)
-        $Conf->qe_raw("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))");
-    if ($del)
-        $Conf->qe_raw("delete from PaperConflict where contactId={$reviewer->contactId} and (" . substr($del, 4) . ")");
-    foreach ($assignments as $assignment)
-        call_user_func_array([$Me, "assign_review"], $assignment);
+    if (!empty($assignments)) {
+        $text = "paper,email,action,round,conflicttype\n";
+        foreach ($assignments as $line)
+            $text .= join(",", $line) . "\n";
+        $aset = new AssignmentSet($Me);
+        $aset->parse($text);
+        $aset->execute(true);
+    }
 
-    if ($Conf->setting("rev_tokens") === -1)
-        $Conf->update_rev_tokens_setting(0);
-
-    if ($Conf->setting("pcrev_assigntime") == $Now)
-        $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
     SelfHref::redirect($qreq);
 }
 
