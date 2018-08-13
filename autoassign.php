@@ -528,10 +528,11 @@ if (count($rev_rounds) > 1 || !get($rev_rounds, "unnamed")) {
     if (($c = Ht::control_class("rev_round")))
         echo ' class="', trim($c), '"';
     echo ' style="font-size:smaller">Review round: ';
+    $expected_round = $Qreq->rev_round ? : $Conf->assignment_round_option(false);
     if (count($rev_rounds) > 1)
-        echo '&nbsp;', Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed");
+        echo '&nbsp;', Ht::select("rev_round", $rev_rounds, $expected_round);
     else
-        echo $Qreq->rev_round ? : "unnamed";
+        echo $expected_round;
     echo "</td></tr>\n";
 }
 

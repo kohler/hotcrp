@@ -241,12 +241,13 @@ if ($reviewer) {
         "<div class=\"aab aabr aabig\">",
         '<div class="aabut aabutsp">', Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]), '</div>';
     $rev_rounds = $Conf->round_selector_options(false);
+    $expected_round = $Conf->assignment_round_option(false);
     if (count($rev_rounds) > 1)
         echo '<div class="aabut aabutsp">Review round: &nbsp;',
-            Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed", ["id" => "assrevround", "class" => "ignore-diff"]),
+            Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : $expected_round, ["id" => "assrevround", "class" => "ignore-diff"]),
             '</div>';
-    else if (!get($rev_rounds, "unnamed"))
-        echo '<div class="aabut aabutsp">Review round: ', $Conf->assignment_round_name(false), '</div>';
+    else if ($expected_round !== "unnamed")
+        echo '<div class="aabut aabutsp">Review round: ', $expected_round, '</div>';
     $paperList->set_table_id_class("foldpl", "pltable_full");
     $paperList->set_view("allrevtopicpref", false);
     echo '<div class="aabut aabutsp"><label>',

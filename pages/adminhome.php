@@ -66,7 +66,7 @@ function admin_home_messages() {
         foreach ($Conf->defined_round_list() as $i => $rname)
             if (!$Conf->missed_review_deadline($i, true, false)
                 && $Conf->setting($Conf->review_deadline($i, true, false))) {
-                $m[] = "The deadline for review round " . htmlspecialchars($Conf->assignment_round_name(false) ? : "unnamed") . " has passed. You may want to <a href=\"" . hoturl("settings", "group=reviews") . "\">change the round for new assignments</a> to " . htmlspecialchars($rname) . ".";
+                $m[] = "The deadline for review round " . htmlspecialchars($Conf->assignment_round_option(false)) . " has passed. You may want to <a href=\"" . hoturl("settings", "group=reviews") . "\">change the round for new assignments</a> to " . htmlspecialchars($rname) . ".";
                 break;
             }
     }

@@ -222,12 +222,13 @@ foldup.call(this,null,{f:this.value!=="review"});
 foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),n:2});
 }).trigger("change")})');
 $rev_rounds = $Conf->round_selector_options(null);
+$expected_round = $Qreq->rev_round ? : $Conf->assignment_round_option(false);
 if (count($rev_rounds) > 1)
     echo '<span class="fx2">&nbsp; in round &nbsp;',
-        Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : "unnamed"),
+        Ht::select("rev_round", $rev_rounds, $expected_round),
         '</span>';
-else if (!get($rev_rounds, "unnamed"))
-    echo '<span class="fx2">&nbsp; in round ', $Conf->assignment_round_name(false), '</span>';
+else if ($expected_round !== "unnamed")
+    echo '<span class="fx2">&nbsp; in round ', $expected_round, '</span>';
 echo '<div class="g"></div>', "\n";
 
 $requestreview_template = $null_mailer->expand_template("requestreview");

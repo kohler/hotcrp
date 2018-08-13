@@ -298,7 +298,7 @@ if ($Me->can_administer($prow)) {
     echo '<div class="pc_ctable has-assignment-set need-assignment-change"';
     $rev_rounds = array_keys($Conf->round_selector_options(false));
     echo ' data-review-rounds="', htmlspecialchars(json_encode($rev_rounds)), '"',
-        ' data-default-review-round="', htmlspecialchars($Conf->assignment_round_name(false)), '">';
+        ' data-default-review-round="', htmlspecialchars($Conf->assignment_round_option(false)), '">';
     $tagger = new Tagger($Me);
     $show_possible_conflicts = $Me->allow_view_authors($prow);
 

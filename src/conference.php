@@ -1292,31 +1292,31 @@ class Conf {
 
     function defined_round_list() {
         if ($this->_defined_rounds === null) {
-            $r = $dl = [];
+            $dl = [];
             foreach ($this->rounds as $i => $rname)
                 if (!$i || $rname !== ";") {
                     foreach (self::$review_deadlines as $rd)
-                        if (($dl[$i] = get($this->settings, $rd . ($i ? "_$i" : ""))))
+                        if (($dl[$i] = +get($this->settings, $rd . ($i ? "_$i" : ""))))
                             break;
-                    $i && ($r[$i] = $rname);
                 }
-            if (!$dl[0]) {
-                $result = $this->qe("select exists (select * from PaperReview where reviewRound=0)");
-                if (!$result || !$result->num_rows)
-                    unset($dl[0]);
-                Dbl::free($result);
-            }
-            array_key_exists(0, $dl) && ($r[0] = "unnamed");
-            uasort($r, function ($a, $b) use ($dl) {
+            if (!$dl[0]
+                && !$this->fetch_ivalue("select exists (select * from PaperReview where reviewRound=0)"))
+                unset($dl[0]);
+            $r = [];
+            foreach ($this->rounds as $i => $rname)
+                if (isset($dl[$i]))
+                    $r[$i] = $i ? $rname : "unnamed";
+            uksort($r, function ($a, $b) use ($r, $dl) {
                 $adl = get($dl, $a);
                 $bdl = get($dl, $b);
-                if ($adl && $bdl && $adl != $bdl)
+                if (!$a || !$b)
+                    return $a ? -1 : 1;
+                else if ($adl && $bdl && $adl != $bdl)
                     return $adl < $bdl ? -1 : 1;
                 else if (!$adl != !$bdl)
                     return $adl ? -1 : 1;
                 else
-                    return strcmp($a !== "unnamed" ? $a : "",
-                                  $b !== "unnamed" ? $b : "");
+                    return strcasecmp($r[$a], $r[$b]);
             });
             $this->_defined_rounds = $r;
         }
@@ -1353,8 +1353,9 @@ class Conf {
 
     function sanitize_round_name($rname) {
         if ($rname === null)
-            return $this->assignment_round_name(false);
-        else if ($rname === "" || preg_match('/\A(?:\(none\)|none|unnamed)\z/i', $rname))
+            return (string) get($this->settingTexts, "rev_roundtag");
+        else if ($rname === "" || !strcasecmp($rname, "(none)")
+                 || !strcasecmp($rname, "none") || !strcasecmp($rname, "unnamed"))
             return "";
         else if (self::round_name_error($rname))
             return false;
@@ -1362,15 +1363,14 @@ class Conf {
             return $rname;
     }
 
-    function assignment_round_name($external) {
-        if ($external && ($x = get($this->settingTexts, "extrev_roundtag")) !== null)
-            return $x;
-        else
-            return (string) get($this->settingTexts, "rev_roundtag");
+    function assignment_round_option($external) {
+        if (!$external || ($x = get($this->settingTexts, "extrev_roundtag")) === null)
+            $x = (string) get($this->settingTexts, "rev_roundtag");
+        return $x === "" ? "unnamed" : $x;
     }
 
     function assignment_round($external) {
-        return $this->round_number($this->assignment_round_name($external), false);
+        return $this->round_number($this->assignment_round_option($external), false);
     }
 
     function round_number($rname, $add) {
@@ -1390,19 +1390,17 @@ class Conf {
     }
 
     function round_selector_options($isexternal) {
-        $opt = $arounds = [];
-        if (($isexternal === null || $isexternal === false)
-            && ($r = $this->assignment_round_name(false)) !== null)
-            $arounds[$r === "" ? "unnamed" : $r] = true;
-        if (($isexternal === null || $isexternal === true)
-            && ($r = $this->assignment_round_name(true)) !== null)
-            $arounds[$r === "" ? "unnamed" : $r] = true;
-        if (isset($arounds["unnamed"]))
-            $opt["unnamed"] = "unnamed";
+        $opt = [];
         foreach ($this->defined_round_list() as $rname)
             $opt[$rname] = $rname;
-        foreach (array_keys($arounds) as $r)
-            $opt[$r] = $r;
+        if (($isexternal === null || $isexternal === true)
+            && ($r = get($this->settingTexts, "rev_roundtag")) !== null
+            && !isset($opt[$r ? : "unnamed"]))
+            $opt[$r ? : "unnamed"] = $r ? : "unnamed";
+        if (($isexternal === null || $isexternal === false)
+            && ($r = get($this->settingTexts, "extrev_roundtag")) !== null
+            && !isset($opt[$r ? : "unnamed"]))
+            $opt[$r ? : "unnamed"] = $r ? : "unnamed";
         return $opt;
     }
 
