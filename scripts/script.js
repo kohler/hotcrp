@@ -2889,7 +2889,7 @@ tooltip.add_builder("rf-description", function (info) {
 });
 
 function score_header_tooltips($j) {
-    $j.find(".rv .revfn").data("tooltipInfo", "rf-description")
+    $j.find(".rv .revfn").attr("data-tooltip-info", "rf-description")
         .each(tooltip);
 }
 
