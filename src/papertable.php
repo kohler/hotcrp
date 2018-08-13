@@ -32,6 +32,7 @@ class PaperTable {
     private $matchPreg;
     private $entryMatches;
     private $canUploadFinal;
+    private $foldmap;
 
     private $allow_admin;
     private $admin;
@@ -284,33 +285,37 @@ class PaperTable {
     }
 
     private function echoDivEnter() {
-        $folds = ["a" => true, "p" => $this->allFolded, "b" => $this->allFolded, "t" => $this->allFolded];
-        foreach (["a", "p", "b", "t"] as $k)
-            if (!$this->conf->session("foldpaper$k", 1))
-                $folds[$k] = false;
+        // 5: topics, 6: abstract, 8: blind authors, 9: full authors
+        $folds = [
+            5 => $this->allFolded && $this->conf->session("foldpapert", 1),
+            6 => $this->allFolded && $this->conf->session("foldpaperb", 1),
+            8 => !!$this->conf->session("foldpapera", 1),
+            9 => $this->allFolded && $this->conf->session("foldpaperp", 1)
+        ];
 
         // if highlighting, automatically unfold abstract/authors
-        if ($this->prow && $folds["b"]) {
+        if ($this->prow && $folds[6]) {
             $abstract = $this->entryData("abstract");
             if ($this->entryMatches || !$this->abstract_foldable($abstract))
-                $folds["b"] = false;
+                $folds[6] = false;
         }
-        if ($this->matchPreg && $this->prow && $folds["a"]) {
+        if ($this->matchPreg && $this->prow && $folds[8]) {
             $this->entryData("authorInformation");
             if ($this->entryMatches)
-                $folds["a"] = $folds["p"] = false;
+                $folds[8] = $folds[9] = false;
         }
+        $this->foldmap = $folds;
 
         // collect folders
         $folders = array("clearfix");
         if ($this->prow) {
             if ($this->view_authors == 1)
-                $folders[] = $folds["a"] ? "fold8c" : "fold8o";
+                $folders[] = $folds[8] ? "fold8c" : "fold8o";
             if ($this->view_authors && $this->allFolded)
-                $folders[] = $folds["p"] ? "fold9c" : "fold9o";
+                $folders[] = $folds[9] ? "fold9c" : "fold9o";
         }
-        $folders[] = $folds["t"] ? "fold5c" : "fold5o";
-        $folders[] = $folds["b"] ? "fold6c" : "fold6o";
+        $folders[] = $folds[5] ? "fold5c" : "fold5o";
+        $folders[] = $folds[6] ? "fold6c" : "fold6o";
 
         // echo div
         echo '<div id="foldpaper" class="', join(" ", $folders), '" data-fold-session="'
@@ -406,6 +411,8 @@ class PaperTable {
             $c .= '<a class="q ui js-foldup" href=""' . $foldnumclass;
             if (($title = defval($extra, "foldtitle")))
                 $c .= ' title="' . $title . '"';
+            if (isset($this->foldmap[$foldnum]))
+                $c .= ' role="button" aria-expanded="' . ($this->foldmap[$foldnum] ? "false" : "true") . '"';
             $c .= '>' . expander(null, $foldnum);
             if (!is_array($name))
                 $name = array($name, $name);
@@ -959,7 +966,7 @@ class PaperTable {
             '<div class="', $this->control_class("authors", "pavt ui js-aufoldup"),
             '"><span class="pavfn">';
         if ($this->view_authors == 1 || $this->allFolded)
-            echo '<a class="q ui js-aufoldup" href="" title="Toggle author display">';
+            echo '<a class="q ui js-aufoldup" href="" title="Toggle author display" role="button" aria-expanded="', $this->foldmap[8] ? "false" : "true", '">';
         if ($this->view_authors == 1)
             echo '<span class="fn8">', $this->conf->_c("paper_field", "Authors", 0), '</span><span class="fx8">';
         if ($this->allFolded)

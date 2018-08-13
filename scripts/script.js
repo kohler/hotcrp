@@ -2190,6 +2190,8 @@ function foldup(event, opts) {
         fold(e, dofold, opts.n || 0);
         $(e).trigger("fold", opts);
     }
+    if (this.hasAttribute("aria-expanded"))
+        this.setAttribute("aria-expanded", dofold ? "false" : "true");
     if (event && typeof event === "object" && event.type === "click") {
         event.stopPropagation();
         event.preventDefault(); // needed for expanders despite handle_ui!

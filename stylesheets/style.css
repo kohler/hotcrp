@@ -1415,7 +1415,7 @@ input.textlite-tt, textarea.tt {
 	width: 99%;
 }
 .papertext, .reviewtext {
-	max-width: 640px;
+	max-width: 720px;
 	box-sizing: border-box;
 }
 textarea[name=comment] {
@@ -1423,7 +1423,7 @@ textarea[name=comment] {
 }
 div.formatdescription {
 	font-size: 69%;
-	max-width: 640px;
+	max-width: 720px;
 	text-align: right;
 	color: #666666;
 	padding-bottom: 5px;
@@ -2866,7 +2866,7 @@ body#offline .revcard {
 	margin: 5px 0;
 }
 .paphint, .revhint {
-	max-width: 640px;
+	max-width: 720px;
 	color: #555555;
 	margin: 0.25rem 0;
 }
@@ -3084,14 +3084,14 @@ body#offline .revcard {
 	white-space: pre-wrap;
 }
 .revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0 {
-	max-width: 640px;
+	max-width: 720px;
 }
 .preview {
 	margin-bottom: 24px;
 }
 .preview-border {
 	border-top: 1px dashed black;
-	max-width: 640px;
+	max-width: 720px;
 }
 .has-overlong {
 	position: relative;
