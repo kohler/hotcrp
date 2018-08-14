@@ -1309,14 +1309,12 @@ class Conf {
             uksort($r, function ($a, $b) use ($r, $dl) {
                 $adl = get($dl, $a);
                 $bdl = get($dl, $b);
-                if (!$a || !$b)
-                    return $a ? -1 : 1;
-                else if ($adl && $bdl && $adl != $bdl)
+                if ($adl && $bdl && $adl != $bdl)
                     return $adl < $bdl ? -1 : 1;
                 else if (!$adl != !$bdl)
                     return $adl ? -1 : 1;
                 else
-                    return strcasecmp($r[$a], $r[$b]);
+                    return strcasecmp($a ? $r[$a] : "~", $b ? $r[$b] : "~");
             });
             $this->_defined_rounds = $r;
         }
