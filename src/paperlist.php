@@ -1011,6 +1011,9 @@ class PaperList {
             $trclass[] = "k" . $rstate->colorindex;
         if (($highlightclass = get($this->search->highlightmap, $row->paperId)))
             $trclass[] = $highlightclass[0] . "highlightmark";
+        $want_plx = $tt !== "" || $this->table_id();
+        if (!$want_plx)
+            $trclass[] = "plnx";
         $trclass = join(" ", $trclass);
         $rstate->colorindex = 1 - $rstate->colorindex;
         $rstate->last_trclass = $trclass;
@@ -1023,7 +1026,7 @@ class PaperList {
             $t .= "\" $k=\"" . htmlspecialchars($v);
         $t .= "\">" . $tm . "</tr>\n";
 
-        if ($tt !== "" || $this->table_id()) {
+        if ($want_plx) {
             $t .= "  <tr class=\"plx $trclass\" data-pid=\"$row->paperId\">";
             if ($rstate->skipcallout > 0)
                 $t .= "<td colspan=\"$rstate->skipcallout\"></td>";

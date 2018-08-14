@@ -1935,7 +1935,11 @@ th.pl {
 	padding: 2px 6px 2px 0;
 }
 td.pl {
-	padding: 3px 6px 3px 0;
+	padding-top: 4px;
+	padding-right: 6px;
+}
+td.plx, tr.plnx > td.pl {
+	padding-bottom: 4px;
 }
 td.plstat {
 	padding: 1px 6px 1px 0;
