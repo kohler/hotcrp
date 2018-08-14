@@ -105,7 +105,10 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
                     if (!isset($whyNot["deadline"]))
                         defappend($texts[$prow->paperId], prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== "));
                 }
-                foreach ($prow->full_reviews_of_user($user) as $rrow)
+                $rrows = $prow->full_reviews_of_user($user);
+                if (empty($rrows))
+                    $rrows[] = null;
+                foreach ($rrows as $rrow)
                     defappend($texts[$prow->paperId], $rf->textForm($prow, $rrow, $user, null) . "\n");
             }
         }
