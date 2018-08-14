@@ -143,14 +143,10 @@ class Ht {
         $disabled = get($js, "disabled");
         if (is_array($disabled))
             unset($js["disabled"]);
-        if ($selected === null || !isset($opt[$selected]))
-            $selected = key($opt);
-        $x = '<select name="' . $name . '"' . self::extra($js);
-        if (!isset($js["data-default-value"]))
-            $x .= ' data-default-value="' . htmlspecialchars($selected) . '"';
-        $x .= '>';
+
         $optionstyles = get($js, "optionstyles", null);
-        $optgroup = "";
+        $x = $optgroup = "";
+        $first_value = $has_selected = false;
         foreach ($opt as $value => $info) {
             if (is_array($info) && isset($info[0]) && $info[0] === "optgroup")
                 $info = (object) array("type" => "optgroup", "label" => get($info, 1));
@@ -167,7 +163,7 @@ class Ht {
                 $value = $info->value;
 
             if ($info === null)
-                $x .= '<option label=" " disabled="disabled"></option>';
+                $x .= '<option label=" " disabled></option>';
             else if (isset($info->type) && $info->type === "optgroup") {
                 $x .= $optgroup;
                 if ($info->label) {
@@ -180,10 +176,14 @@ class Ht {
                 if (get($info, "id"))
                     $x .= ' id="' . $info->id . '"';
                 $x .= ' value="' . htmlspecialchars($value) . '"';
-                if (strcmp($value, $selected) == 0)
-                    $x .= ' selected="selected"';
+                if ($first_value === false)
+                    $first_value = $value;
+                if (!strcmp($value, $selected) && !$has_selected) {
+                    $x .= ' selected';
+                    $has_selected = true;
+                }
                 if (get($info, "disabled"))
-                    $x .= ' disabled="disabled"';
+                    $x .= ' disabled';
                 if (get($info, "class"))
                     $x .= ' class="' . $info->class . '"';
                 if (get($info, "style"))
@@ -191,7 +191,13 @@ class Ht {
                 $x .= '>' . $info->label . '</option>';
             }
         }
-        return $x . $optgroup . "</select>";
+
+        if ($selected === null || !isset($opt[$selected]))
+            $selected = key($opt);
+        $t = '<select name="' . $name . '"' . self::extra($js);
+        if (!isset($js["data-default-value"]))
+            $t .= ' data-default-value="' . htmlspecialchars($has_selected ? $selected : $first_value) . '"';
+        return $t . '>' . $x . $optgroup . "</select>";
     }
 
     static function checkbox($name, $value = 1, $checked = false, $js = null) {
