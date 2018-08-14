@@ -131,6 +131,8 @@ class HotCRPMailer extends Mailer {
 
         $text = "";
         $rf = $this->conf->review_form();
+        assert($this->permissionContact === $this->recipient);
+        assert(!($this->permissionContact->overrides() & Contact::OVERRIDE_CONFLICT));
         foreach ($rrows as $rrow)
             if (($rrow->reviewSubmitted
                  || ($rrow == $this->rrow && $this->rrow_unsubmitted))
@@ -384,6 +386,7 @@ class HotCRPMailer extends Mailer {
 
 
     static function check_can_view_review($recipient, $prow, $rrow) {
+        assert(!($recipient->overrides() & Contact::OVERRIDE_CONFLICT));
         return $recipient->can_view_review($prow, $rrow, false);
     }
 
