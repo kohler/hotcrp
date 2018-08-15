@@ -2682,11 +2682,12 @@ class Contact {
 
     function can_request_review(PaperInfo $prow, $check_time) {
         $rights = $this->rights($prow);
-        return ($rights->reviewType >= REVIEW_PC
-                || ($this->contactId > 0
-                    && isset($prow->leadContactId)
-                    && $prow->leadContactId == $this->contactId)
-                || $rights->allow_administer)
+        return ($rights->allow_administer
+                || (($rights->reviewType >= REVIEW_PC
+                     || ($this->contactId > 0
+                         && isset($prow->leadContactId)
+                         && $prow->leadContactId == $this->contactId))
+                    && $this->conf->setting("extrev_chairreq", 0) >= 0))
             && (!$check_time
                 || $this->conf->time_review(null, false, true)
                 || $this->override_deadlines($rights));
@@ -2697,14 +2698,15 @@ class Contact {
             return null;
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
-        if ($rights->reviewType < REVIEW_PC
-            && ($this->contactId <= 0
-                || !isset($prow->leadContactId)
-                || $prow->leadContactId != $this->contactId)
-            && !$rights->allow_administer)
+        if (!$rights->allow_administer
+            && (($rights->reviewType < REVIEW_PC
+                 && ($this->contactId <= 0
+                     || !isset($prow->leadContactId)
+                     || $prow->leadContactId != $this->contactId))
+                || $this->conf->setting("extrev_chairreq", 0) < 0))
             $whyNot["permission"] = "request_review";
         else {
-            $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
+            $whyNot["deadline"] = "extrev_chairreq";
             if ($rights->allow_administer)
                 $whyNot["override"] = 1;
         }

@@ -381,7 +381,8 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     }
 
     // review assignments
-    if ($mode !== "assign" && $mode !== "edit"
+    if ($mode !== "assign"
+        && $mode !== "edit"
         && $Me->can_request_review($prow, true)) {
         $t[] = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx revlink">'
             . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
@@ -389,7 +390,9 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
 
     // new comment
     $nocmt = preg_match('/\A(?:assign|contact|edit|re)\z/', $mode);
-    if (!$allreviewslink && !$nocmt && $Me->can_comment($prow, null)) {
+    if (!$allreviewslink
+        && !$nocmt
+        && $Me->can_comment($prow, null)) {
         $t[] = '<a class="ui js-edit-comment xx revlink" href="#cnew">'
             . Ht::img("comment48.png", "[Add comment]", $dlimgjs) . "&nbsp;<u>Add comment</u></a>";
         $any_comments = true;

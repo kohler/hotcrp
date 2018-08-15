@@ -187,12 +187,16 @@ class Reviews_SettingRenderer {
 
 
     static function render_external(SettingValues $sv) {
-        echo '<p class="settingtext">Any PC reviewer can propose an external review. Secondary PC reviewers can delegate their reviews to an external reviewer; when the external review is complete, the PC reviewer need not complete a review of their own.</p>', "\n";
-        $sv->echo_radio_table("extrev_chairreq", [0 => "No, external reviewers are contacted right away",
-                1 => "Administrators must approve all external reviewers",
-                2 => "Administrators must approve external reviewers with potential conflicts"],
-                "Do external reviewers need administrator approval?");
-        echo '<div id="foldpcrev_editdelegate" class="settings-g fold2o">';
+        echo '<div id="foldpcrev_editdelegate" class="settings-g has-fold fold',
+            $sv->curv("extrev_chairreq") >= 0 ? 'o' : 'c',
+            ' fold2o" data-fold-values="0 1 2">';
+        $sv->echo_radio_table("extrev_chairreq", [-1 => "No",
+                1 => "Yes, but administrators must approve all requests",
+                2 => "Yes, but administrators must approve external reviewers with potential conflicts",
+                0 => "Yes"],
+                "Can PC reviewers request external reviews?",
+                ["fold" => true]);
+        echo '<p class="settingtext fx">PC reviewers can delegate their secondary reviews to an external reviewer; when the external review is complete, the PC reviewer need not complete a review of their own.</p>', "\n";
         $sv->echo_checkbox("pcrev_editdelegate", "PC members can edit delegated external reviews (and other external reviews they requested)", ["class" => "uich js-foldup", "data-fold-target" => 2]);
         $sv->echo_checkbox("extrev_approve", "Requesters must approve external reviews after they are submitted", ["item_class" => "fx2"]);
         echo "</div>\n";

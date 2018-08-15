@@ -1,12 +1,12 @@
 [
     {
-        "name": "opt.shortName", "json_name": "conference-abbreviation",
+        "name": "opt.shortName", "json_name": "conference_abbreviation",
         "title": "Conference abbreviation",
         "type": "simplestring", "size": 20, "autogrow": true,
         "require": "src/settings/s_basics.php"
     },
     {
-        "name": "opt.longName", "json_name": "conference-name",
+        "name": "opt.longName", "json_name": "conference_name",
         "title": "Conference name",
         "type": "simplestring", "size": 70, "placeholder": "(same as abbreviation)"
     },
@@ -17,7 +17,7 @@
         "require": "src/settings/s_users.php"
     },
     {
-        "name": "au_seerev", "json_name": "review-visibility-author",
+        "name": "au_seerev", "json_name": "review_visibility_author",
         "title": "Authors can see reviews", "group": "decisions",
         "type": "radio",
         "values": [0, 1, 2, 3], "default_value": 0,
@@ -28,17 +28,17 @@
         "internal": true
     },
     {
-        "name": "cmt_always", "json_name": "comment-always-allowed",
+        "name": "cmt_always", "json_name": "comment_always_allowed",
         "title": "Allow comments even if reviewing is closed",
         "type": "checkbox"
     },
     {
-        "name": "cmt_author", "json_name": "comment-author",
+        "name": "cmt_author", "json_name": "comment_author",
         "title": "Allow authors to post comments",
         "type": "checkbox"
     },
     {
-        "name": "cmt_revid", "json_name": "comment-anonymous-discussion",
+        "name": "cmt_revid", "json_name": "comment_anonymous_discussion",
         "title": "Anonymous PC discussion",
         "type": "checkbox"
     },
@@ -53,10 +53,11 @@
     },
     {
         "name": "extrev_chairreq", "group": "reviews",
+        "json_name": "review_external_request",
         "title": "PC chair must approve proposed external reviewers",
         "type": "radio",
-        "values": [0, 1, 2], "default_value": 0,
-        "json_values": ["no", "yes", "potential-conflicts"]
+        "values": [-1, 0, 1, 2], "default_value": 0,
+        "json_values": ["no", "yes", "approval-required", "approval-required-potential-conflicts"]
     },
     {
         "name": "extrev_hard",
