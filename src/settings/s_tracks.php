@@ -194,7 +194,7 @@ class Tracks_SettingRenderer {
 
 class Tracks_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
-        $tagger = new Tagger;
+        $tagger = new Tagger($sv->user);
         $tracks = (object) array();
         $missing_tags = false;
         for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {

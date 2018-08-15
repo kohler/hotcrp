@@ -91,7 +91,7 @@ function setTagIndexes($qreq) {
     }
 
     $RealMe = $Me;
-    $tagger = new Tagger;
+    $tagger = new Tagger($Me);
     if (($tag = $qreq->tag))
         $tag = $tagger->check($tag, Tagger::NOVALUE);
     $curIndex = 0;

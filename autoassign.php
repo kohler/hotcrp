@@ -212,7 +212,7 @@ class AutoassignerInterface {
         if ($this->atype === "discorder") {
             $tag = trim((string) $qreq->discordertag);
             $tag = $tag === "" ? "discuss" : $tag;
-            $tagger = new Tagger;
+            $tagger = new Tagger($user);
             if (($tag = $tagger->check($tag, Tagger::NOVALUE)))
                 $this->discordertag = $tag;
             else
@@ -649,7 +649,6 @@ $(document).on("change", "input.js-pcsel-tag", pcsel_tag);
 $(function(){$("input.js-pcsel-tag").first().trigger("change")})');
 
 $summary = [];
-$tagger = new Tagger($Me);
 $nrev = new AssignmentCountSet($Conf);
 $nrev->load_rev();
 foreach ($Conf->pc_members() as $id => $p) {

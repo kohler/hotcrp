@@ -184,7 +184,7 @@ class UserStatus extends MessageSet {
             $t0 = $x;
         else if ($x !== null)
             $this->error_at($key, "Format error [$key]");
-        $tagger = new Tagger;
+        $tagger = new Tagger($this->viewer);
         $t1 = array();
         foreach ($t0 as $t)
             if ($t !== "" && ($t = $tagger->check($t, Tagger::NOPRIVATE)))

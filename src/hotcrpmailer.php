@@ -113,7 +113,7 @@ class HotCRPMailer extends Mailer {
 
     private function tagger()  {
         if (!$this->_tagger)
-            $this->_tagger = new Tagger($this->permissionContact);
+            $this->_tagger = new Tagger($this->recipient);
         return $this->_tagger;
     }
 

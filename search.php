@@ -85,7 +85,7 @@ function savesearch() {
     global $Conf, $Me, $Qreq;
 
     $name = simplify_whitespace(defval($Qreq, "ssname", ""));
-    $tagger = new Tagger;
+    $tagger = new Tagger($Me);
     if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
         if ($name == "")
             return Conf::msg_error("Saved search name missing.");
