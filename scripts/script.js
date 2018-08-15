@@ -2165,27 +2165,39 @@ function foldup(event, opts) {
             x = x.substring(sp + 1);
         }
         opts.n = parseInt(x) || 0;
-        if (!("f" in opts) && /[co]$/.test(x))
-            opts.f = /c$/.test(x);
+        if (!("f" in opts)) {
+            var last = x.length ? x.charAt(x.length - 1) : "";
+            if (last === "c")
+                opts.f = true;
+            else if (last === "o")
+                opts.f = false;
+        }
     }
-    if (!("f" in opts)
-        && this.tagName === "INPUT"
-        && input_is_checkboxlike(this))
-        opts.f = !this.checked;
+    var foldname = "fold" + (opts.n || "");
     while (e
            && (!e.id || e.id.substr(0, 4) != "fold")
            && !hasClass(e, "has-fold")
            && (opts.n == null
-               || (!hasClass(e, "fold" + (opts.n || "") + "c")
-                   && !hasClass(e, "fold" + (opts.n || "") + "o")))) {
+               || (!hasClass(e, foldname + "c")
+                   && !hasClass(e, foldname + "o"))))
         e = e.parentNode;
-    }
     if (!e)
         return true;
+    if (!("f" in opts)
+        && this.tagName === "INPUT") {
+        if (this.type === "checkbox")
+            opts.f = !this.checked;
+        else if (this.type === "radio") {
+            if (!this.checked)
+                return true;
+            var values = (e.getAttribute("data-" + foldname + "-values") || "").split(/\s+/);
+            opts.f = values.indexOf(this.value) < 0;
+        }
+    }
     if (!opts.n && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
         opts.n = +m[1];
-    dofold = !(new RegExp("\\bfold" + (opts.n || "") + "c\\b")).test(e.className);
-    if (!("f" in opts) || !!opts.f !== !dofold) {
+    dofold = !hasClass(e, foldname + "c");
+    if (!("f" in opts) || !opts.f !== dofold) {
         opts.f = dofold;
         fold(e, dofold, opts.n || 0);
         $(e).trigger("fold", opts);
