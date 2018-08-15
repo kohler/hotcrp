@@ -564,6 +564,8 @@ class PaperOption implements Abbreviator {
             $j->display_space = $this->display_space;
         if ($this->edit_condition)
             $j->edit_condition = $this->edit_condition;
+        if ($this->required)
+            $j->required = true;
         return $j;
     }
 

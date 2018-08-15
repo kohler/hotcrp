@@ -112,7 +112,8 @@ class Options_SettingRenderer {
                     "type" => get($sv->req, "optvt_$oxpos", "checkbox"),
                     "visibility" => get($sv->req, "optp_$oxpos", ""),
                     "position" => get($sv->req, "optfp_$oxpos", 1),
-                    "display" => get($sv->req, "optdt_$oxpos")
+                    "display" => get($sv->req, "optdt_$oxpos"),
+                    "required" => get($sv->req, "optreq_$oxpos")
                 ];
                 if (get($sv->req, "optec_$oxpos") === "final")
                     $args["final"] = true;
@@ -144,7 +145,7 @@ class Options_SettingRenderer {
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div>';
 
-        Ht::stash_script('$(function () { settings_option_move_enable(); $(".js-settings-option-type, .js-settings-option-condition").change(); })', 'settings_optvt');
+        Ht::stash_script('$(settings_option_move_enable)', 'settings_optvt');
         Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_options" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
 
         echo $t;
@@ -284,6 +285,7 @@ class Options_SettingParser extends SettingParser {
         $oarg["visibility"] = get($sv->req, "optp_$xpos", "rev");
         $oarg["position"] = (int) get($sv->req, "optfp_$xpos", 1);
         $oarg["display"] = get($sv->req, "optdt_$xpos");
+        $oarg["required"] = !!get($sv->req, "optreq_$xpos");
 
         $o = PaperOption::make($oarg, $sv->conf);
         $o->req_xpos = $xpos;
