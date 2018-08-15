@@ -1612,7 +1612,7 @@ class PaperTable {
                 '<textarea cols="20" rows="4" name="tags" style="width:97%;margin:0" class="want-focus">',
                 $tagger->unparse($editable),
                 "</textarea></div>",
-                '<div class="aab aabr"><div class="aabut">',
+                '<div class="aab aabr aab-compact"><div class="aabut">',
                 Ht::submit("save", "Save", ["class" => "btn btn-primary"]),
                 '</div><div class="aabut">',
                 Ht::submit("cancel", "Cancel"),

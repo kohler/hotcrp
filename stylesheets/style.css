@@ -858,6 +858,9 @@ a.closebtn {
 .aab {
 	margin: 2em 0 0.7em;
 }
+.aab-compact {
+	margin-top: 0.5em;
+}
 .aab:first-child {
 	margin-top: 0;
 }
