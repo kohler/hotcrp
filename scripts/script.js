@@ -2183,6 +2183,10 @@ function foldup(event, opts) {
         e = e.parentNode;
     if (!e)
         return true;
+    if (opts.n == null && (m = e.className.match(/\bfold(\d*)[oc]\b/))) {
+        opts.n = +m[1];
+        foldname = "fold" + opts.n;
+    }
     if (!("f" in opts)
         && this.tagName === "INPUT") {
         if (this.type === "checkbox")
@@ -2194,8 +2198,6 @@ function foldup(event, opts) {
             opts.f = values.indexOf(this.value) < 0;
         }
     }
-    if (!opts.n && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
-        opts.n = +m[1];
     dofold = !hasClass(e, foldname + "c");
     if (!("f" in opts) || !opts.f !== dofold) {
         opts.f = dofold;
