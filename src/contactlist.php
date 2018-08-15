@@ -722,7 +722,7 @@ class ContactList {
             }
 
             // Now the normal row
-            $t = "  <tr class=\"pl $trclass\">\n";
+            $t = "  <tr class=\"pl $trclass" . ($tt !== "" ? "" : " plnx") . "\">\n";
             $n = 0;
             foreach ($fieldDef as $fieldId => $fdef)
                 if ($fdef[1] == 1) {
