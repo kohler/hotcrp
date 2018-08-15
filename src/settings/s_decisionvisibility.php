@@ -4,10 +4,10 @@
 
 class DecisionVisibility_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
-        $sv->echo_radio_table("seedec", array(Conf::SEEDEC_ADMIN => "Only administrators",
-                                Conf::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
-                                Conf::SEEDEC_REV => "Reviewers and <em>all</em> PC members",
-                                Conf::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"),
+        $sv->echo_radio_table("seedec", [Conf::SEEDEC_ADMIN => "Only administrators",
+                Conf::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
+                Conf::SEEDEC_REV => "Reviewers and <em>all</em> PC members",
+                Conf::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"],
             'Who can see paper <strong>decisions</strong> (accept/reject)?');
 
         echo '<div class="settings-g">';

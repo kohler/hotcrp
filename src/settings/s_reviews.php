@@ -56,9 +56,9 @@ class Reviews_SettingRenderer {
         $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
         echo "</div>\n";
 
-        $sv->echo_radio_table("rev_blind", array(Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
-                                   Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
-                                   Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"),
+        $sv->echo_radio_table("rev_blind", [Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
+                   Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
+                   Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"],
             '<strong>Review anonymity:</strong> Are reviewer names hidden from authors?');
 
 
@@ -162,22 +162,22 @@ class Reviews_SettingRenderer {
             $hint .= ' ' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict review visibility.';
         if ($hint !== "")
             $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
-        $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
-                                      Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
-                                      Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                                      Conf::PCSEEREV_IFCOMPLETE => ["Only after completing a review for the same submission", '<div class="f-hx fx">Discussion leads can also see reviews.</div>']),
+        $sv->echo_radio_table("pc_seeallrev", [Conf::PCSEEREV_YES => "Yes",
+                  Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
+                  Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
+                  Conf::PCSEEREV_IFCOMPLETE => ["label" => "Only after completing a review for the same submission", "hint" => '<div class="f-hx fx">Discussion leads can also see reviews.</div>']],
             'Can PC members <strong>see all reviews<span class="fx2"> and comments</span></strong> except for conflicts?',
-            $hint);
+            ["after" => $hint, "fold" => Conf::PCSEEREV_IFCOMPLETE]);
 
 
         $hint = "";
         if ($sv->conf->setting("pc_seeblindrev") == 0
             && $sv->conf->check_track_sensitivity(Track::VIEWREVID))
             $hint = '<p class="settings-ag f-h">' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict reviewer name visibility.</p>';
-        $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
-                                        1 => ["Only after completing a review for the same submission", '<div class="f-hx fx">Discussion leads can also see reviewer names.</div>']),
+        $sv->echo_radio_table("pc_seeblindrev", [0 => "Yes",
+                1 => ["label" => "Only after completing a review for the same submission", "hint" => '<div class="f-hx fx">Discussion leads can also see reviewer names.</div>']],
             'Can PC members see <strong><span class="fn2">comments and </span>reviewer names</strong> except for conflicts?',
-            $hint);
+            ["after" => $hint, "fold" => 1]);
 
 
         echo '<div class="settings-g">';
@@ -193,8 +193,7 @@ class Reviews_SettingRenderer {
                 2 => "Administrators must approve external reviewers with potential conflicts"],
                 "Do external reviewers need administrator approval?");
         echo '<div id="foldpcrev_editdelegate" class="settings-g fold2o">';
-        $sv->echo_checkbox("pcrev_editdelegate", "PC members can edit delegated external reviews (and other external reviews they requested)");
-        Ht::stash_script('function pcrev_editdelegate_change() { fold("pcrev_editdelegate",!$$("cbpcrev_editdelegate").checked,2); } $("#cbpcrev_editdelegate").on("change", pcrev_editdelegate_change); $(pcrev_editdelegate_change)');
+        $sv->echo_checkbox("pcrev_editdelegate", "PC members can edit delegated external reviews (and other external reviews they requested)", ["class" => "uich js-foldup", "data-fold-target" => 2]);
         $sv->echo_checkbox("extrev_approve", "Requesters must approve external reviews after they are submitted", ["item_class" => "fx2"]);
         echo "</div>\n";
 
@@ -209,12 +208,12 @@ class Reviews_SettingRenderer {
             '<textarea class="tt fx need-autogrow" name="mailbody_requestreview" cols="80" rows="20">', htmlspecialchars($t["body"]), "</textarea>",
             "</div></div>\n";
 
-        $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"),
+        $sv->echo_radio_table("extrev_view", [2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"],
             'Can external reviewers see reviews and comments for their assigned submissions, once they’ve completed a review?');
     }
 
     static function render_ratings(SettingValues $sv) {
-        $sv->echo_radio_table("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"),
+        $sv->echo_radio_table("rev_ratings", [REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"],
             'Should HotCRP collect ratings of reviews?   <a class="hint" href="' . hoturl("help", "t=revrate") . '">Learn more</a>');
     }
 

@@ -4,8 +4,8 @@
 
 class ReviewVisibility_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
-        $opts = array(Conf::AUSEEREV_NO => "No, unless authors can edit responses",
-                      Conf::AUSEEREV_YES => "Yes");
+        $opts = [Conf::AUSEEREV_NO => "No, unless authors can edit responses",
+                 Conf::AUSEEREV_YES => "Yes"];
         if ($sv->newv("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
             && !$sv->conf->opt("allow_auseerev_unlessincomplete"))
             $sv->conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);

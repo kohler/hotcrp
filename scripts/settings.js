@@ -727,16 +727,3 @@ handle_ui.on("js-settings-resp-round-new", function () {
     suggest(j.find(".papersearch"), taghelp_q);
     return false;
 });
-
-
-(function ($) {
-function handle() {
-    var $self = $(this);
-    fold($self.find(".settings-radioitem"), true);
-    fold($self.find(".js-settings-radio:checked").closest(".settings-radioitem"), false);
-}
-$(document).on("change", ".js-settings-radio", function (event) {
-    handle.call($(event.target).closest(".settings-radio")[0]);
-});
-$(function () { $(".settings-radio").each(handle); });
-})($);

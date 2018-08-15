@@ -623,31 +623,43 @@ class SettingValues extends MessageSet {
         if (!$item_open)
             echo "</div>\n";
     }
-    function echo_radio_table($name, $varr, $heading = null, $after = null) {
+    function echo_radio_table($name, $varr, $heading = null, $rest = null) {
         $x = $this->curv($name);
         if ($x === null || !isset($varr[$x]))
             $x = 0;
-        echo '<div class="settings-radio">';
+        if (is_string($rest))
+            $rest = ["after" => $rest];
+        $fold = $rest ? get($rest, "fold", false) : false;
+
+        echo '<div class="settings-radio';
+        if ($fold !== false && $fold !== true)
+            echo ' has-fold fold', in_array($x, explode(" ", $fold)) ? "o" : "c", '" data-fold-values="', $fold;
+        echo '">';
         if ($heading)
             echo '<div class="settings-radioheading">', $heading, '</div>';
-        foreach ($varr as $k => $text) {
-            $hint = "";
-            if (is_array($text))
-                list($text, $hint) = $text;
+        foreach ($varr as $k => $item) {
+            if (is_string($item))
+                $item = ["label" => $item];
+            $label = $item["label"];
+            $hint = get($item, "hint", "");
+            unset($item["label"], $item["hint"]);
+            $item["id"] = "{$name}_{$k}";
+            if ($fold !== false && !isset($item["class"]))
+                $item["class"] = "uich js-foldup";
+
             $label1 = "<label>";
             $label2 = "</label>";
-            if (strpos($text, "<label") !== false)
+            if (strpos($label, "<label") !== false)
                 $label1 = $label2 = "";
-            echo '<div class="settings-radioitem checki ',
-                ($k == $x ? "foldo" : "foldc"), '">',
+
+            echo '<div class="settings-radioitem checki">',
                 $label1, '<span class="checkc">',
-                Ht::radio($name, $k, $k == $x,
-                          $this->sjs($name, ["id" => "{$name}_{$k}", "class" => "js-settings-radio"])),
-                '</span>', $text, $label2, $hint, '</div>';
+                Ht::radio($name, $k, $k == $x, $this->sjs($name, $item)),
+                '</span>', $label, $label2, $hint, '</div>';
         }
         $this->echo_messages_at($name);
-        if ($after)
-            echo $after;
+        if ($rest && isset($rest["after"]))
+            echo $rest["after"];
         echo "</div>\n";
     }
     function render_entry($name, $js = []) {
