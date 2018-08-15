@@ -685,6 +685,8 @@ class Tagger {
 
     function __construct($contact = null) {
         global $Conf, $Me;
+        if (!$contact)
+            error_log("Tagger::\$contact argument null: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $this->contact = ($contact ? : $Me);
         if ($this->contact && $this->contact->contactId > 0)
             $this->_contactId = $this->contact->contactId;
