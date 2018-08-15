@@ -127,10 +127,10 @@ form also can include:</p>
   want or don’t want to review.  They can either set their preferences <a
   href='" . hoturl("reviewprefs") . "'>all at once</a>, or (often more
   convenient) page through the ", $hth->search_link("list of submitted papers", ""),
-  "setting their preferences on the <a
+  " and set their preferences on the <a
   href='" . hoturl("paper") . "'>paper pages</a>.</p>
 
-  <p>If you’d like, you can collect review preferences before the submission
+  <p>If desired, review preferences can be collected before the submission
   deadline.  Select ", $hth->settings_link("“PC can see <em>all registered papers</em> until submission deadline”", "sub"),
   ", which allows PC members to see abstracts for registered papers that haven’t yet
   been submitted.</p></li>\n";
@@ -138,10 +138,10 @@ form also can include:</p>
         } else if ($gj->index === 7) {
             echo "<li><p><strong><a href='" . hoturl("conflictassign") . "'>Check for
   missing conflicts.</a></strong> HotCRP does not automatically confirm all conflicts, such
-  as conflicts indicated by PC members’ “Collaborators and other affiliations”
-  or their review preferences. Use <a href='" .
-  hoturl("conflictassign") . "'>the conflict assignment tool</a> to search for and
-  confirm such conflicts.</p></li>\n";
+  as conflicts indicated by PC members’ “Collaborators and other affiliations.”
+  Use <a href='" .
+  hoturl("conflictassign") . "'>the conflict assignment tool</a> to verify
+  and confirm such conflicts.</p></li>\n";
 
         } else if ($gj->index === 8) {
             echo "<li><p><strong><a href='" . hoturl("manualassign") . "'>Assign
@@ -175,18 +175,14 @@ It is easiest to simply accept such conflicts as a fact of life. Chairs
 who can’t handle conflicts fairly shouldn’t be chairs. However, HotCRP
 does offer other mechanisms for conflicted reviews.</p>
 
-<p>A PC member can manage the reviewing and
-discussion process for specific papers. This PC member is called the
-<em>paper administrator</em>. Use the left-hand side of a
+<p>First, each paper can be assigned a <em>paper administrator</em>: a PC member
+who manages that paper’s reviewing and discussion. Use the left-hand side of a
 <a href='" . hoturl("assign") . "'>paper’s assignment page</a> to enter its administrator. (You may need to
-“Override conflicts” to access the assignment page.)</p>
-
-<p>Paper administrators have full privilege to assign and view reviews for their
-papers, and can, for example, use the autoassignment tool. They cannot change
-conference settings.</p>
-
-<p>Normally, a conflicted chair can easily override their conflict. When a paper
-has an administrator, however, chair conflicts cannot be overridden.</p>
+“Override conflicts” to access the assignment page.)
+Paper administrators have full privilege to assign and view reviews for their
+papers, and can, for example, use the autoassignment tool, but they cannot change
+conference settings. When a paper
+has an administrator, chair conflicts cannot be overridden.</p>
 
 <p>Paper administrators make life easy for PC reviewers and greatly restrict
 conflicted chairs’ access. Usually this suffices.
