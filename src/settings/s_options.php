@@ -37,7 +37,7 @@ class Options_SettingRenderer {
                 $otypes[$uf->name] = get($uf, "title", $uf->name);
         }
 
-        $t = '<div class="' . $sv->sclass("optvt_$xpos", "entryi short")
+        $t = '<div class="' . $sv->control_class("optvt_$xpos", "entryi short")
             . '">' . $sv->label("optvt_$xpos", "Type")
             . Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"])
             . $sv->render_messages_at("optvt_$xpos")
@@ -49,7 +49,7 @@ class Options_SettingRenderer {
             $value = join("\n", $o->selector_options()) . "\n";
             $rows = max(count($o->selector_options()), 3);
         }
-        return $t . '<div class="' . $sv->sclass("optv_$xpos", "entryi fx4")
+        return $t . '<div class="' . $sv->control_class("optv_$xpos", "entryi fx4")
             . '">' . $sv->label("optv_$xpos", "Choices")
             . Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "reviewtext need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"]))
             . $sv->render_messages_at("optv_$xpos")
@@ -57,7 +57,7 @@ class Options_SettingRenderer {
     }
     static function render_description_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $self->add_option_class("fold3" . ((string) $o->description === "" ? "c" : "o"));
-        return '<div class="' . $sv->sclass("optd_$xpos", "entryi fx3")
+        return '<div class="' . $sv->control_class("optd_$xpos", "entryi fx3")
             . '">' . $sv->label("optd_$xpos", "Description")
             . Ht::textarea("optd_$xpos", $o->description, ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "reviewtext settings-opt-description need-autogrow"])
             . $sv->render_messages_at("optd_$xpos")
@@ -65,7 +65,7 @@ class Options_SettingRenderer {
     }
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $self->add_option_class("fold5" . ($o->final ? "o" : "c"));
-        return '<div class="' . $sv->sclass("optec_$xpos", "entryi short fx5")
+        return '<div class="' . $sv->control_class("optec_$xpos", "entryi short fx5")
             . '">' . $sv->label("optec_$xpos", "Editable on")
             . '<span class="sep">'
             . Ht::select("optec_$xpos", ["" => "All submissions", "final" => "Final versions"], $o->final ? "final" : "", ["class" => "uich js-settings-option-condition settings-opt-presence", "id" => "optec_$xpos"])
@@ -74,7 +74,7 @@ class Options_SettingRenderer {
     }
     static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $self->add_option_class("fold6" . ($o->visibility === "rev" ? "c" : "o"));
-        return '<div class="' . $sv->sclass("optp_$xpos", "entryi short fx6")
+        return '<div class="' . $sv->control_class("optp_$xpos", "entryi short fx6")
             . '">' . $sv->label("optp_$xpos", "Visible to")
             . Ht::select("optp_$xpos", ["rev" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible", "admin" => "Administrators only"], $o->visibility, ["id" => "optp_$xpos", "class" => "settings-opt-visibility"])
             . $sv->render_messages_at("optp_$xpos")
@@ -82,7 +82,7 @@ class Options_SettingRenderer {
     }
     static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $self->add_option_class("fold7" . ($o->display() === PaperOption::DISP_PROMINENT ? "c" : "o"));
-        return '<div class="' . $sv->sclass("optdt_$xpos", "entryi short fx7")
+        return '<div class="' . $sv->control_class("optdt_$xpos", "entryi short fx7")
             . '">' . $sv->label("optdt_$xpos", "Display")
             . Ht::select("optdt_$xpos", ["prominent" => "Normal",
                                          "topics" => "Grouped with topics",
@@ -137,7 +137,7 @@ class Options_SettingRenderer {
         echo '<div class="', join(" ", $this->option_classes),
             '"><a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
 
-        echo '<div class="', $sv->sclass("optn_$xpos", "f-i"), '">',
+        echo '<div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "style" => "font-weight:bold", "class" => "need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"])),
             $sv->render_messages_at("optn_$xpos"),
             Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings-opt-id"]),

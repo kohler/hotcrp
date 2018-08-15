@@ -46,7 +46,7 @@ class Tracks_SettingRenderer {
         if ($gj && ($lc = get_s($gj, "label_class")))
             $ljs["class"] = $lc;
 
-        echo '<div class="', $sv->sclass($track_ctl, "entryi wide"),
+        echo '<div class="', $sv->control_class($track_ctl, "entryi wide"),
             ' has-fold fold', ($reqv[0] == "" || $reqv[0] === "none" ? "c" : "o"),
             ($unfolded ? "" : " fx3"),
             '">',

@@ -410,19 +410,14 @@ class SettingValues extends MessageSet {
         return isset($this->interesting_groups[$g]);
     }
 
-    function sclass($name, $class = null) {
-        $ps = $this->problem_status_at($name);
-        if ($ps > 1)
-            return $class ? $class . " has-error" : "has-error";
-        else if ($ps > 0)
-            return $class ? $class . " has-warning" : "has-warning";
-        else
-            return $class;
+    function sclass($name, $class = null) { // XXXXXX backwards compat
+        error_log("SettingValues::sclass called");
+        return $this->control_class($name, $class);
     }
     function label($name, $html, $label_js = null) {
         $name1 = is_array($name) ? $name[0] : $name;
         foreach (is_array($name) ? $name : array($name) as $n) {
-            if (($sc = $this->sclass($n))) {
+            if (($sc = $this->control_class($n))) {
                 if ($label_js && ($ec = get_s($label_js, "class")) !== "")
                     $sc = $ec . " " . $sc;
                 $label_js["class"] = $sc;
@@ -441,7 +436,7 @@ class SettingValues extends MessageSet {
         foreach ($js ? : [] as $k => $v)
             $x[$k] = $v;
         if ($this->has_problem_at($name))
-            $x["class"] = $this->sclass($name, get($x, "class"));
+            $x["class"] = $this->control_class($name, get($x, "class"));
         return $x;
     }
 
@@ -687,7 +682,7 @@ class SettingValues extends MessageSet {
         if ($description === null && $si)
             $description = $si->title;
 
-        echo '<div class="', $this->sclass($name, $klass), '">',
+        echo '<div class="', $this->control_class($name, $klass), '">',
             $this->label($name, $description, ["class" => false]),
             $this->render_entry($name, $js), ($after_entry ? : "");
         $this->echo_messages_at($name);

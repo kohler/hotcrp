@@ -225,7 +225,7 @@ class Ht {
         if ($name)
             $t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
         if ($checked)
-            $t .= " checked=\"checked\"";
+            $t .= " checked";
         return $t . self::extra($js) . " />";
     }
 
