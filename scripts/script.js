@@ -2185,7 +2185,7 @@ function foldup(event, opts) {
         return true;
     if (opts.n == null && (m = e.className.match(/\bfold(\d*)[oc]\b/))) {
         opts.n = +m[1];
-        foldname = "fold" + opts.n;
+        foldname = "fold" + (opts.n || "");
     }
     if (!("f" in opts)
         && this.tagName === "INPUT") {
