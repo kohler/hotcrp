@@ -116,9 +116,8 @@ if ($Me->privChair)
 // Sidebar
 echo '<div class="homeside">';
 
-echo '<noscript><div class="homeinside"><strong>This site requires JavaScript.</strong> ',
-    "Many features will work without JavaScript, but not all.<br />",
-    '<a class="small" href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>';
+echo '<noscript><div class="homeinside"><strong>This site requires JavaScript.</strong><br>',
+    '<a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>';
 
 // Conference management and information sidebar
 $inside_links = [];
