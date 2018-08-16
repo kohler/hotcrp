@@ -92,7 +92,6 @@ class SiteLoader {
         "MimeText" => "lib/mailer.php",
         "NameInfo" => "lib/text.php",
         "NumericOrderPaperColumn" => "src/papercolumn.php",
-        "Option_SearchTerm" => "src/search/st_option.php",
         "PaperInfoSet" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",
         "Review_Assigner" => "src/assignmentset.php",

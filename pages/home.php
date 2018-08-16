@@ -99,8 +99,6 @@ function change_review_tokens($qreq) {
 
 if (isset($Qreq->token) && $Qreq->post_ok() && !$Me->is_empty())
     change_review_tokens($Qreq);
-if (isset($Qreq->cleartokens) && $Qreq->post_ok())
-    $Me->change_review_token(false, false);
 
 
 if ($Me->privChair)
