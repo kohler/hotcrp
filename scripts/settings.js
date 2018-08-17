@@ -406,7 +406,7 @@ tooltip.add_builder("settings-option", function (info) {
         x = "#option_caption_name";
     else if (/^optecs/.test(this.name))
         x = "#option_caption_condition_search";
-    return $.extend({dir: "h", content: $(x).html()}, info);
+    return $.extend({dir: "h", content: $(x).html(), className: "gray"}, info);
 });
 
 function option_value_html(fieldj, value) {
