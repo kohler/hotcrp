@@ -262,7 +262,7 @@ class Options_SettingParser extends SettingParser {
                     if (!$this->fake_prow)
                         $this->fake_prow = new PaperInfo(null, null, $sv->conf);
                     if ($ps->term()->compile_edit_condition($this->fake_prow, $ps) === null)
-                        $sv->error_at("optecs_$xpos", "Invalid search term for field condition. (Only simple searches are allowed, such as “has:OPTION” or “#TAG OR topic:TOPICNAME”.)");
+                        $sv->error_at("optecs_$xpos", "Search too complex for field presence condition. (Not all search keywords are supported for field conditions.)");
                     else
                         $oarg["edit_condition"] = $optecs;
                     if (!empty($ps->warnings))
