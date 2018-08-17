@@ -6621,6 +6621,15 @@ edit_conditions.topic = function (ec, form) {
             return true;
     return false;
 };
+edit_conditions.title = function (ec, form) {
+    return ec.match === ($.trim(form.title && form.title.value) !== "");
+};
+edit_conditions.abstract = function (ec, form) {
+    return ec.match === ($.trim(form.abstract && form.abstract.value) !== "");
+};
+edit_conditions.collaborators = function (ec, form) {
+    return ec.match === ($.trim(form.collaborators && form.collaborators.value) !== "");
+};
 
 function run_edit_conditions() {
     $(".has-edit-condition").each(function () {

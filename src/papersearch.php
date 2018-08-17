@@ -714,6 +714,12 @@ class TextMatch_SearchTerm extends SearchTerm {
         else
             return $row->field_match_pregexes($this->regex, $this->field);
     }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        if (!$this->trivial || $this->field === "authorInformation")
+            return null;
+        else
+            return (object) ["type" => $this->field, "match" => $this->trivial];
+    }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
         if ($this->regex)
@@ -962,6 +968,9 @@ class PaperID_SearchTerm extends SearchTerm {
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return in_array($row->paperId, $this->pids);
+    }
+    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+        return $this->exec($row, $srch);
     }
     function in_order() {
         $pods = $this->pids;
