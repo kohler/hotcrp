@@ -193,13 +193,16 @@ class AbbreviationMatchTracker {
 class AbbreviationClass {
     const TYPE_CAMELCASE = 0;
     const TYPE_LOWERDASH = 1;
-    public $type = self::TYPE_CAMELCASE;
+    public $type;
     public $drop_parens = true;
     public $nwords = 3;
     public $stopwords = "";
     public $tflags = 0;
     public $index = 0;
 
+    function __construct($type = self::TYPE_CAMELCASE) {
+        $this->type = $type;
+    }
     function step() {
         ++$this->index;
         if ($this->index >= 1)

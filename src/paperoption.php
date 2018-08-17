@@ -466,8 +466,7 @@ class PaperOption implements Abbreviator {
     function json_key() {
         if ($this->_json_key === null) {
             $am = $this->abbrev_matcher();
-            $aclass = new AbbreviationClass;
-            $aclass->type = AbbreviationClass::TYPE_LOWERDASH;
+            $aclass = new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH);
             $aclass->nwords = 4;
             $this->_json_key = $am->unique_abbreviation($this->name, $this, $aclass);
             if (!$this->_json_key)
@@ -726,6 +725,16 @@ class SelectorPaperOption extends PaperOption {
     function set_selector_options($selector) {
         $this->selector = $selector;
     }
+    function selector_option_search($idx) {
+        if ($idx >= count($this->selector))
+            return false;
+        else if (preg_match('/\A\w+\z/', $this->selector[$idx]))
+            return $this->search_keyword() . ":" . strtolower($this->selector[$idx]);
+        else if (strpos($this->selector[$idx], "\"") === false)
+            return $this->search_keyword() . ":\"" . $this->selector[$idx] . "\"";
+        else
+            return false;
+    }
 
     function unparse() {
         $j = parent::unparse();
@@ -735,16 +744,9 @@ class SelectorPaperOption extends PaperOption {
 
     function example_searches() {
         $x = parent::example_searches();
-        if (count($this->selector) > 1) {
-            if (preg_match('/\A\w+\z/', $this->selector[1]))
-                $x["selector"] = array("{$this->search_keyword()}:" . strtolower($this->selector[1]), $this);
-            else if (!strpos($this->selector[1], "\""))
-                $x["selector"] = array("{$this->search_keyword()}:\"{$this->selector[1]}\"", $this);
-        }
+        if (($search = $this->selector_option_search(1)))
+            $x["selector"] = [$search, $this, $this->selector[1]];
         return $x;
-    }
-    function example_selector_option() {
-        return count($this->selector) > 1 ? $this->selector[1] : null;
     }
     function parse_selector_search($oname, $compar, $oval) {
         // Special-case handling for 'yes'/'no'.

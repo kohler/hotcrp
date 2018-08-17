@@ -238,8 +238,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return $this->abbreviation;
     }
     function abbreviation1() {
-        $aclass = new AbbreviationClass;
-        $aclass->type = AbbreviationClass::TYPE_LOWERDASH;
+        $aclass = new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH);
         return AbbreviationMatcher::make_abbreviation($this->name, $aclass);
     }
     function web_abbreviation() {

@@ -66,7 +66,7 @@ class Options_SettingRenderer {
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $self->add_option_class("fold5" . ($o->final ? "o" : "c"));
         return '<div class="' . $sv->control_class("optec_$xpos", "entryi short fx5")
-            . '">' . $sv->label("optec_$xpos", "Present for")
+            . '">' . $sv->label("optec_$xpos", "Present on")
             . '<span class="sep">'
             . Ht::select("optec_$xpos", ["" => "All submissions", "final" => "Final versions"], $o->final ? "final" : "", ["class" => "uich js-settings-option-condition settings-opt-presence", "id" => "optec_$xpos"])
             . $sv->render_messages_at("optec_$xpos")
