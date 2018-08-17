@@ -282,7 +282,7 @@ class PaperStatus extends MessageSet {
             }
             $max_authors = $this->conf->opt("maxAuthors");
             if (!$prow->author_list()) {
-                $this->error_at("authors", $this->_("Entry required.", $max_authors));
+                $this->error_at("authors", $this->_("Entry required."));
                 $this->error_at("author1", false);
             }
             if ($max_authors > 0 && count($prow->author_list()) > $max_authors)
