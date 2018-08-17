@@ -194,16 +194,21 @@ class AbbreviationClass {
     const TYPE_CAMELCASE = 0;
     const TYPE_LOWERDASH = 1;
     public $type;
+    public $nwords;
     public $drop_parens = true;
-    public $nwords = 3;
     public $stopwords = "";
     public $tflags = 0;
     public $index = 0;
 
-    function __construct($type = self::TYPE_CAMELCASE) {
+    function __construct($type = self::TYPE_CAMELCASE, $nwords = 3) {
         $this->type = $type;
+        $this->nwords = $nwords;
     }
     function step() {
+        if ($this->nwords < 3) {
+            $this->nwords = 3;
+            return true;
+        }
         ++$this->index;
         if ($this->index >= 1)
             $this->drop_parens = false;
