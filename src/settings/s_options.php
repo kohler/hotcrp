@@ -72,6 +72,14 @@ class Options_SettingRenderer {
             . $sv->render_messages_at("optec_$xpos")
             . "</span></div>";
     }
+    static function render_required_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
+        $self->add_option_class("fold9" . ($o->required ? "o" : "c"));
+        return '<div class="' . $sv->control_class("optreq_$xpos", "entryi short fx9")
+            . '">' . $sv->label("optreq_$xpos", "Required")
+            . Ht::select("optreq_$xpos", ["" => "No", "1" => "Yes"], $o->required ? "1" : "", ["id" => "optreq_$xpos"])
+            . $sv->render_messages_at("optreq_$xpos")
+            . "</div>";
+    }
     static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $self->add_option_class("fold6" . ($o->visibility === "rev" ? "c" : "o"));
         return '<div class="' . $sv->control_class("optp_$xpos", "entryi short fx6")
