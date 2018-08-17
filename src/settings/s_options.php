@@ -66,7 +66,7 @@ class Options_SettingRenderer {
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $self->add_option_class("fold5" . ($o->final ? "o" : "c"));
         return '<div class="' . $sv->control_class("optec_$xpos", "entryi short fx5")
-            . '">' . $sv->label("optec_$xpos", "Editable on")
+            . '">' . $sv->label("optec_$xpos", "Present for")
             . '<span class="sep">'
             . Ht::select("optec_$xpos", ["" => "All submissions", "final" => "Final versions"], $o->final ? "final" : "", ["class" => "uich js-settings-option-condition settings-opt-presence", "id" => "optec_$xpos"])
             . $sv->render_messages_at("optec_$xpos")
@@ -159,7 +159,7 @@ class Options_SettingRenderer {
         echo '<div class="f-i btnp">',
             '<span class="btnbox">',
             Ht::button(Icons::ui_description(), ["class" => "btn btn-licon ui js-settings-option-description need-tooltip", "data-tooltip" => "Description"]),
-            Ht::button(Icons::ui_edit_hide(), ["class" => "btn btn-licon ui js-settings-option-presence need-tooltip", "data-tooltip" => "Editability"]),
+            Ht::button(Icons::ui_edit_hide(), ["class" => "btn btn-licon ui js-settings-option-presence need-tooltip", "data-tooltip" => "Form status"]),
             Ht::button(Icons::ui_visibility_hide(), ["class" => "btn btn-licon ui js-settings-option-visibility need-tooltip", "data-tooltip" => "Reviewer visibility"]),
             Ht::button(Icons::ui_display(), ["class" => "btn btn-licon ui js-settings-option-display need-tooltip", "data-tooltip" => "Display type"]),
             '</span>',
