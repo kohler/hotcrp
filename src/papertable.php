@@ -64,37 +64,8 @@ class PaperTable {
             return;
         }
 
-        // calculate visibility of authors and options
-        // 0: not visible; 1: fold (admin only); 2: visible
-        $new_overrides = 0;
-        if ($this->allow_admin)
-            $new_overrides |= Contact::OVERRIDE_CONFLICT;
-        if ($this->mode === "edit")
-            $new_overrides |= Contact::OVERRIDE_EDIT_CONDITIONS;
-        $overrides = $user->add_overrides($new_overrides);
-
-        if ($user->can_view_authors($prow))
-            $this->view_authors = 2;
-        $olist = $this->conf->paper_opts->option_list_type(!$this->canUploadFinal);
-        foreach ($olist as $o) {
-            if ($user->can_view_paper_option($prow, $o))
-                $this->view_options[$o->id] = 2;
-        }
-
-        if ($this->allow_admin) {
-            $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
-            if ($this->view_authors && !$user->can_view_authors($prow))
-                $this->view_authors = 1;
-            foreach ($olist as $o)
-                if (isset($this->view_options[$o->id])
-                    && !$user->can_view_paper_option($prow, $o))
-                    $this->view_options[$o->id] = 1;
-        }
-
-        $user->set_overrides($overrides);
-
         // enumerate allowed modes
-        $ms = array();
+        $ms = [];
         if ($user->can_view_review($prow, null)
             || $prow->review_submitted($user))
             $this->can_view_reviews = $ms["p"] = true;
@@ -129,6 +100,35 @@ class PaperTable {
             $this->mode = key($ms);
         if (isset($ms["re"]) && isset($this->qreq->reviewId))
             $this->mode = "re";
+
+        // calculate visibility of authors and options
+        // 0: not visible; 1: fold (admin only); 2: visible
+        $new_overrides = 0;
+        if ($this->allow_admin)
+            $new_overrides |= Contact::OVERRIDE_CONFLICT;
+        if ($this->mode === "edit")
+            $new_overrides |= Contact::OVERRIDE_EDIT_CONDITIONS;
+        $overrides = $user->add_overrides($new_overrides);
+
+        if ($user->can_view_authors($prow))
+            $this->view_authors = 2;
+        $olist = $this->conf->paper_opts->option_list_type(!$this->canUploadFinal);
+        foreach ($olist as $o) {
+            if ($user->can_view_paper_option($prow, $o))
+                $this->view_options[$o->id] = 2;
+        }
+
+        if ($this->allow_admin) {
+            $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+            if ($this->view_authors && !$user->can_view_authors($prow))
+                $this->view_authors = 1;
+            foreach ($olist as $o)
+                if (isset($this->view_options[$o->id])
+                    && !$user->can_view_paper_option($prow, $o))
+                    $this->view_options[$o->id] = 1;
+        }
+
+        $user->set_overrides($overrides);
 
         // choose list
         if (!$this->conf->has_active_list())
