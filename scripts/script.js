@@ -1300,13 +1300,13 @@ function prepare_info(elt, info) {
     }
     if (info.builder && builders[info.builder])
         info = builders[info.builder].call(elt, info) || info;
-    if (info.dir == null)
+    if (info.dir == null || elt.hasAttribute("data-tooltip-dir"))
         info.dir = elt.getAttribute("data-tooltip-dir") || "v";
-    if (info.type == null)
+    if (info.type == null || elt.hasAttribute("data-tooltip-type"))
         info.type = elt.getAttribute("data-tooltip-type");
-    if (info.className == null)
+    if (info.className == null || elt.hasAttribute("data-tooltip-class"))
         info.className = elt.getAttribute("data-tooltip-class") || "dark";
-    if (info.content == null)
+    if (info.content == null || elt.hasAttribute("data-tooltip"))
         info.content = elt.getAttribute("data-tooltip");
     return info;
 }
