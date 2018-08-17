@@ -1393,8 +1393,8 @@ class PaperTable {
         if (!$this->conf->setting("sub_pcconf"))
             return;
         if ($this->editable === "f" && !$this->admin) {
-            foreach ($this->prow->pc_conflicts() as $cid => $ctype)
-                echo Ht::hidden("pcc$cid", $ctype);
+            foreach ($this->prow->pc_conflicts() as $cflt)
+                echo Ht::hidden("pcc" . $cflt->contactId, $cflt->conflictType);
             return;
         }
         $pcm = $this->conf->full_pc_members();
