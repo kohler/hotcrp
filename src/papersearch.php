@@ -1442,7 +1442,7 @@ class PaperSearch {
         else {
             $result = $srch->conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
             $contacts = array_map("intval", Dbl::fetch_first_columns($result));
-            return new Conflict_SearchTerm(">0", $contacts, $srch->user);
+            return new Conflict_SearchTerm(">0", $contacts, false);
         }
     }
 

@@ -6630,6 +6630,17 @@ edit_conditions.abstract = function (ec, form) {
 edit_conditions.collaborators = function (ec, form) {
     return ec.match === ($.trim(form.collaborators && form.collaborators.value) !== "");
 };
+edit_conditions.pc_conflict = function (ec, form) {
+    var n = 0, elt;
+    for (var i = 0; i !== ec.cids.length; ++i)
+        if ((elt = form["pcc" + ec.cids[i]])
+            && (elt.type === "checkbox" ? elt.checked : +elt.value > 0)) {
+            ++n;
+            if (ec.compar === "!=" && ec.value === 0)
+                return true;
+        }
+    return evaluate_compar(n, ec.compar, ec.value);
+};
 
 function run_edit_conditions() {
     $(".has-edit-condition").each(function () {
