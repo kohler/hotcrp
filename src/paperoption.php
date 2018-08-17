@@ -709,6 +709,7 @@ class CheckboxPaperOption extends PaperOption {
 
 class SelectorPaperOption extends PaperOption {
     private $selector;
+    private $_selector_am;
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
@@ -725,14 +726,27 @@ class SelectorPaperOption extends PaperOption {
         $this->selector = $selector;
     }
     function selector_option_search($idx) {
-        if ($idx >= count($this->selector))
+        if ($idx <= 0)
+            return $this->search_keyword() . ":none";
+        else if ($idx > count($this->selector))
             return false;
-        else if (preg_match('/\A\w+\z/', $this->selector[$idx]))
-            return $this->search_keyword() . ":" . strtolower($this->selector[$idx]);
-        else if (strpos($this->selector[$idx], "\"") === false)
-            return $this->search_keyword() . ":\"" . $this->selector[$idx] . "\"";
-        else
-            return false;
+        else {
+            $am = $this->selector_abbrev_matcher();
+            if (($q = $am->unique_abbreviation($this->selector[$idx - 1], $idx, new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH, 1))))
+                return $this->search_keyword() . ":" . $q;
+            else
+                return false;
+        }
+    }
+    function selector_abbrev_matcher() {
+        if (!$this->_selector_am) {
+            $this->_selector_am = new AbbreviationMatcher;
+            foreach ($this->selector as $id => $name)
+                $this->_selector_am->add($name, $id + 1);
+            if (!$this->required)
+                $this->_selector_am->add("none", 0);
+        }
+        return $this->_selector_am;
     }
 
     function unparse() {
@@ -743,7 +757,7 @@ class SelectorPaperOption extends PaperOption {
 
     function example_searches() {
         $x = parent::example_searches();
-        if (($search = $this->selector_option_search(1)))
+        if (($search = $this->selector_option_search(2)))
             $x["selector"] = [$search, $this, $this->selector[1]];
         return $x;
     }
