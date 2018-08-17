@@ -499,6 +499,8 @@ class And_SearchTerm extends Op_SearchTerm {
         }
         if (!$ok || empty($ch))
             return $ok;
+        else if (count($ch) === 1)
+            return $ch[0];
         else
             return (object) ["type" => "and", "child" => $ch];
     }
@@ -572,6 +574,8 @@ class Or_SearchTerm extends Op_SearchTerm {
         }
         if ($ok || empty($ch))
             return $ok;
+        else if (count($ch) === 1)
+            return $ch[0];
         else
             return (object) ["type" => "or", "child" => $ch];
     }

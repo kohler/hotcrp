@@ -181,11 +181,30 @@ class Tag_SearchTerm extends SearchTerm {
         return $ok;
     }
     function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
-        if (!$this->tag1
-            || $srch->conf->tags()->is_autosearch($this->tag1))
-            return null;
+        $child = [];
+        $tags = $row->searchable_tags($srch->user);
+        // autosearch tags are special, splice in their search defs
+        foreach ($srch->conf->tags()->filter("autosearch") as $dt)
+            if ($this->tsm->evaluate($srch->user, " {$dt->tag}#0")) {
+                $newsrch = new PaperSearch($srch->user, $dt->autosearch);
+                $newec = $newsrch->term()->compile_edit_condition($row, $newsrch);
+                if ($newec === null)
+                    return null;
+                else if ($newec === true)
+                    return true;
+                else if ($newec !== false)
+                    $child[] = $newec;
+                $tags = str_replace(" {$dt->tag}#0", "", $tags);
+            }
+        // now complete
+        if ($this->tsm->evaluate($srch->user, $tags))
+            return true;
+        else if (empty($child))
+            return false;
+        else if (count($child) === 1)
+            return $child[0];
         else
-            return $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
+            return (object) ["type" => "or", "child" => $child];
     }
     function default_sorter($top, $thenmap, PaperSearch $srch) {
         if ($top && $this->tag1) {
