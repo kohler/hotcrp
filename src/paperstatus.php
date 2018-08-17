@@ -261,11 +261,11 @@ class PaperStatus extends MessageSet {
         // Now produce messages.
         if (!$this->ignore_msgs
             && $pj->title === "")
-            $this->error_at("title", $this->_("Each submission must have a title."));
+            $this->error_at("title", $this->_("Entry required."));
         if (!$this->ignore_msgs
             && (!isset($pj->abstract) || $pj->abstract === "")
             && !$this->conf->opt("noAbstract"))
-            $this->error_at("abstract", $this->_("Each submission must have an abstract."));
+            $this->error_at("abstract", $this->_("Entry required."));
         if (!$this->ignore_msgs
             && $can_view_authors) {
             $msg1 = $msg2 = false;
@@ -282,7 +282,7 @@ class PaperStatus extends MessageSet {
             }
             $max_authors = $this->conf->opt("maxAuthors");
             if (!$prow->author_list()) {
-                $this->error_at("authors", $this->_("Each submission must have at least one author.", $max_authors));
+                $this->error_at("authors", $this->_("Entry required.", $max_authors));
                 $this->error_at("author1", false);
             }
             if ($max_authors > 0 && count($prow->author_list()) > $max_authors)
@@ -295,10 +295,9 @@ class PaperStatus extends MessageSet {
         if (!$this->ignore_msgs
             && $can_view_authors
             && $this->conf->setting("sub_collab")
-            && ($prow->outcome <= 0 || ($user && !$user->can_view_decision($prow)))) {
-            $field = $this->_($this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
-            if (!$prow->collaborators)
-                $this->warning_at("collaborators", $this->_("Enter the authors’ external conflicts of interest in the %s field. If none of the authors have external conflicts, enter “None”.", $field));
+            && ($prow->outcome <= 0 || ($user && !$user->can_view_decision($prow)))
+            && !$prow->collaborators) {
+            $this->warning_at("collaborators", $this->_("Enter the authors’ external conflicts of interest. If none of the authors have external conflicts, enter “None”."));
         }
         if (!$this->ignore_msgs
             && $can_view_authors
@@ -320,6 +319,21 @@ class PaperStatus extends MessageSet {
     }
 
 
+    static function field_title(Conf $conf, $f) {
+        if (($o = $conf->paper_opts->find($f)))
+            return $conf->_c("paper_field/edit", htmlspecialchars($o->title));
+        else if ($f === "title")
+            return $conf->_c("paper_field/edit", "Title");
+        else if ($f === "abstract")
+            return $conf->_c("paper_field/edit", "Abstract");
+        else if ($f === "collaborators")
+            return $conf->_c("paper_field/edit", "Collaborators", $conf->setting("sub_pcconf"));
+        else if (str_starts_with($f, "au"))
+            return $conf->_c("paper_field/edit", "Authors", (int) $conf->opt("maxAuthors"));
+        else
+            return false;
+    }
+
     function error_at_option(PaperOption $o, $html) {
         $this->error_at($o->field_key(), $html);
     }
@@ -328,10 +342,11 @@ class PaperStatus extends MessageSet {
     }
     function landmarked_messages() {
         $ms = [];
-        foreach ($this->messages(true) as $mx) {
-            $o = $mx[0] ? $this->conf->paper_opts->find($mx[0]) : null;
-            $ms[] = ($o ? htmlspecialchars($o->name) . ": " : "") . $mx[1];
-        }
+        foreach ($this->messages(true) as $mx)
+            if ($mx[1]) {
+                $t = $mx[0] ? (string) self::field_title($this->conf, $mx[0]) : "";
+                $ms[] = $t ? "{$t}: {$mx[1]}" : $mx[1];
+            }
         return $ms;
     }
 
@@ -583,7 +598,7 @@ class PaperStatus extends MessageSet {
                 $old_collab = $collab;
                 $collab = (string) AuthorMatcher::fix_collaborators($old_collab);
                 if ($collab !== $old_collab) {
-                    $name = $this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts";
+                    $name = self::field_title($this->conf, "collaborators");
                     $this->warning_at("collaborators", "$name changed to follow our required format. You may want to look them over.");
                 }
             }
@@ -748,7 +763,7 @@ class PaperStatus extends MessageSet {
         $v = convert_to_utf8(get_s($pj, "title"));
         if ($v === ""
             && (isset($pj->title) || !$ps->prow || (string) $ps->prow->title === ""))
-            $ps->error_at("title", $ps->_("Each submission must have a title."));
+            $ps->error_at("title", $ps->_("Entry required."));
         if (!$ps->prow
             || (!$ps->has_error_at("title")
                 && isset($pj->title)

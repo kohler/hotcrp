@@ -1277,7 +1277,7 @@ class PaperTable {
             return;
         $sub_pcconf = $this->conf->setting("sub_pcconf");
 
-        echo $this->editable_papt("collaborators", $this->field_name($sub_pcconf ? "Other conflicts" : "Potential conflicts"), ["for" => "collaborators"]),
+        echo $this->editable_papt("collaborators", $this->conf->_c("paper_field/edit", "Collaborators", $sub_pcconf), ["for" => "collaborators"]),
             '<div class="paphint"><div class="mmm">';
         if ($this->conf->setting("sub_pcconf"))
             echo "List <em>other</em> people and institutions with which
@@ -1346,7 +1346,6 @@ class PaperTable {
         if (!$this->conf->setting("sub_collab") || !$this->prow->collaborators
             || strcasecmp(trim($this->prow->collaborators), "None") == 0)
             return;
-        $name = $this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts";
         $fold = $this->conf->session("foldpscollab", 1) ? 1 : 0;
 
         $data = $this->entryData("collaborators", "col");
@@ -1354,7 +1353,7 @@ class PaperTable {
             $fold = 0;
 
         $this->_papstripBegin("pscollab", $fold, ["data-fold-session" => "foldpscollab"]);
-        echo $this->papt("collaborators", $name,
+        echo $this->papt("collaborators", $this->conf->_c("paper_field", "Collaborators", $this->conf->setting("sub_pcconf")),
                          ["type" => "ps", "fold" => "pscollab", "folded" => $fold]),
             "<div class='psv'><div class='fx'>", $data,
             "</div></div></div>\n\n";
