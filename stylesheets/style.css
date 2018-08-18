@@ -355,9 +355,6 @@ body#help, body#settings, body#buzzer {
 	margin: -24px 0 24px;
 }
 
-table.manyassign {
-	margin-top: 0.75em;
-}
 div#mailref, pre.email, tt.email {
 	font-size: smaller;
 }
@@ -3400,16 +3397,6 @@ body {
 .fold61c .fx61, .fold61o .fn61,
 .fold99c .fx99, .fold99o .fn99,
 .hidden {
-	display: none;
-}
-.foldc:hover .fhn_ib, .foldo:hover .fhx_ib {
-	display: inline-block;
-}
-.foldc:hover .fhn_b, .foldo:hover .fhx_b {
-	display: block;
-}
-.foldc:hover .fhx_ib, .foldo:hover .fhn_ib,
-.foldc:hover .fhx_b, .foldo:hover .fhn_b {
 	display: none;
 }
 

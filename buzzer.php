@@ -89,8 +89,6 @@ echo '<td><button id="trackertable_mute" type="button" class="btn foldc" style="
  <path d="M 48.651772,50.269646 69.395223,25.971024" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round"/>
  <path d="M 69.395223,50.269646 48.651772,25.971024" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round" />
 </svg></button></td>';
-//echo '<span class="hidden fhn_ib">&nbsp;Mute</span>';
-//echo '<span class="hidden fhx_ib">&nbsp;Unmute</span></button></td>';
 
 // show-papers
 if ($Me->has_database_account()) {
