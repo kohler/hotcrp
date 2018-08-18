@@ -1306,8 +1306,10 @@ function prepare_info(elt, info) {
         info.type = elt.getAttribute("data-tooltip-type");
     if (info.className == null || elt.hasAttribute("data-tooltip-class"))
         info.className = elt.getAttribute("data-tooltip-class") || "dark";
-    if (info.content == null || elt.hasAttribute("data-tooltip"))
+    if (elt.hasAttribute("data-tooltip"))
         info.content = elt.getAttribute("data-tooltip");
+    else if (info.content == null && elt.hasAttribute("aria-label"))
+        info.content = elt.getAttribute("aria-label");
     return info;
 }
 
