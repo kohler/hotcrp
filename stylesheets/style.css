@@ -2395,15 +2395,14 @@ body#offline td#upload {
 }
 
 /* paper strip */
-.pspcard_container {
-	float: left;
-	width: 12.8em;
-	position: absolute;
-}
 .pspcard {
+	float: left;
+	position: absolute;
 	z-index: 4;
-	font-size: 8.7pt;
-	font-size: 0.791rem;
+	width: 204px;
+	width: 12.75rem;
+	font-size: 13px;
+	font-size: 0.8125rem;
 	background: #dddddd;
 	border: 1px solid #aaaaaa;
 	padding: 5px 0;
@@ -2418,8 +2417,8 @@ body#offline td#upload {
 	display: none;
 }
 .js-tag-editor {
-	font-size: 8.7pt;
-	font-size: 0.791rem;
+	font-size: 13px;
+	font-size: 0.8125rem;
 }
 .pspcard_body textarea, .pspcard_body select {
 	font-size: inherit;
@@ -2616,10 +2615,10 @@ ul.xd > li {
 	color: #333333;
 	border: 1px solid #dddddd;
 	box-shadow: 0 0 5px rgba(0,0,0,0.1);
-	font-size: 12px;
-	font-size: 0.853rem;
+	font-size: 13px;
+	font-size: 0.8125rem;
 	line-height: 16px;
-	line-height: 1.138rem;
+	line-height: 1rem;
 	margin: 4px 8px;
 	padding: 2px 2px;
 	border-radius: 3px;
@@ -2756,7 +2755,8 @@ ul.xd > li {
 
 /* papers */
 .papcard, .pedcard {
-	margin: 0 0 0 14em;
+	margin-left: 224px;
+	margin-left: 14rem;
 	padding: 6px 0 6px;
 	background: #cec1ff;
 	position: relative;
@@ -3160,7 +3160,7 @@ del span.tagbg {
 body {
 	color: black;
 }
-.pspcard_container {
+.pspcard {
 	float: none;
 	position: static;
 	width: auto;

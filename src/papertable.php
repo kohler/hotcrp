@@ -1307,7 +1307,7 @@ class PaperTable {
 
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
         if (!$this->npapstrip) {
-            echo '<div class="pspcard_container"><div class="pspcard">',
+            echo '<div class="pspcard">',
                 '<div class="pspcard_body"><div class="pspcard_fold">',
                 '<div style="float:right;margin-left:1em"><span class="psfn">More ', expander(true), '</span></div>';
 
@@ -2195,7 +2195,7 @@ class PaperTable {
         if ($prow)
             $this->_papstrip();
         if ($this->npapstrip)
-            echo "</div></div></div></div>\n<div class=\"papcard\">";
+            echo "</div></div></div>\n<div class=\"papcard\">";
         else
             echo '<div class="pedcard">';
         if ($this->editable)

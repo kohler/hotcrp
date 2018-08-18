@@ -33,7 +33,7 @@ h2.paptitle {
 	text-indent: -1.5em;
 	margin-left: 1.5em;
 }
-.pspcard_container, .leftmenu-menu-container {
+.pspcard, .leftmenu-menu-container {
 	float: none;
 	position: static;
 	width: auto;
