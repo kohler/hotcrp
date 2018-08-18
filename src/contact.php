@@ -2550,6 +2550,7 @@ class Contact {
         // See also PaperInfo::can_view_review_identity_of.
         return ($rights->act_author_view
                 && $rrowSubmitted
+                // NB: Reviews lacking user-visible fields have no ordinals.
                 && (!$rrow || $rrow->reviewOrdinal > 0)
                 && $this->can_view_submitted_review_as_author($prow)
                 && ($viewscore >= VIEWSCORE_AUTHOR
@@ -2668,7 +2669,8 @@ class Contact {
     function can_view_review_time(PaperInfo $prow, ReviewInfo $rrow = null) {
         $rights = $this->rights($prow);
         return !$rights->act_author_view
-            || ($rrow && $rrow->reviewAuthorSeen
+            || ($rrow
+                && $rrow->reviewAuthorSeen
                 && $rrow->reviewAuthorSeen <= $rrow->reviewAuthorModified);
     }
 

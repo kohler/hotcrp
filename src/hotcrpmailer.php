@@ -392,7 +392,7 @@ class HotCRPMailer extends Mailer {
     }
 
     static function prepare_to($recipient, $template, $row, $rest = array()) {
-        if (defval($recipient, "disabled"))
+        if ($recipient->disabled)
             return null;
         $mailer = new HotCRPMailer($recipient->conf, $recipient, $row, $rest);
         if (($checkf = get($rest, "check_function"))

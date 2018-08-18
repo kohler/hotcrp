@@ -624,14 +624,6 @@ class ReviewForm implements JsonSerializable {
         return $wc;
     }
 
-    function review_needs_approval(ReviewInfo $rrow) {
-        return !$rrow->reviewSubmitted
-            && $rrow->reviewType == REVIEW_EXTERNAL
-            && $rrow->requestedBy
-            && $this->conf->setting("extrev_approve")
-            && $this->conf->setting("pcrev_editdelegate");
-    }
-
 
     static function update_review_author_seen() {
         while (self::$review_author_seen) {
@@ -900,7 +892,7 @@ $blind\n";
             } else {
                 $buttons[] = array(Ht::button("Save changes", ["class" => "btn btn-primary ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
             }
-        } else if (!$submitted && $rrow && $this->review_needs_approval($rrow)) {
+        } else if (!$submitted && $rrow && $rrow->needs_approval()) {
             if ($my_review && !$rrow->timeApprovalRequested) {
                 $buttons[] = Ht::submit("submitreview", "Submit for approval", ["class" => "btn btn-primary need-clickthrough-enable", "disabled" => $disabled]);
             } else if ($my_review) {
@@ -1752,8 +1744,7 @@ class ReviewValues extends MessageSet {
         $newsubmit = $approval_requested = false;
         if (get($this->req, "ready")
             && (!$rrow || !$rrow->reviewSubmitted)) {
-            if (!$user->isPC && $rrow
-                && $this->rf->review_needs_approval($rrow))
+            if (!$user->isPC && $rrow && $rrow->needs_approval())
                 $approval_requested = true;
             else
                 $newsubmit = true;

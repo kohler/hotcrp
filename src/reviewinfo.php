@@ -332,4 +332,13 @@ class ReviewInfo {
         }
         return $n;
     }
+
+
+    function needs_approval() {
+        return !$this->reviewSubmitted
+            && $this->reviewType == REVIEW_EXTERNAL
+            && $this->requestedBy
+            && $this->conf->setting("extrev_approve")
+            && $this->conf->setting("pcrev_editdelegate");
+    }
 }
