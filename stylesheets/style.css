@@ -903,8 +903,8 @@ a.closebtn {
 	border-bottom-right-radius: 4px;
 }
 .licon {
-	vertical-align: -0.05em;
 	fill: currentColor;
+	vertical-align: -2px;
 }
 .btn > .licon {
 	vertical-align: -0.15em;

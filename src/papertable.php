@@ -496,8 +496,8 @@ class PaperTable {
         $t = array();
         $tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
         if ($tm > 0)
-            $t[] = ($tooltip ? '<span class="nb need-tooltip" data-tooltip="Time of PDF upload">' : '<span class="nb">')
-                . '<svg width="12" height="12" viewBox="0 0 96 96" style="vertical-align:-2px"><path style="fill:#333" d="M48 6a42 42 0 1 1 0 84 42 42 0 1 1 0-84zm0 10a32 32 0 1 0 0 64 32 32 0 1 0 0-64z"/><path style="fill:#333" d="M48 19A5 5 0 0 0 43 24V46c0 2.352.37 4.44 1.464 5.536l12 12c4.714 4.908 12-2.36 7-7L53 46V24A5 5 0 0 0 43 24z"/></svg>'
+            $t[] = ($tooltip ? '<span class="nb need-tooltip" aria-label="Upload time">' : '<span class="nb">')
+                . '<svg width="12" height="12" viewBox="0 0 96 96" class="licon"><path d="M48 6a42 42 0 1 1 0 84 42 42 0 1 1 0-84zm0 10a32 32 0 1 0 0 64 32 32 0 1 0 0-64zM48 19A5 5 0 0 0 43 24V46c0 2.352.37 4.44 1.464 5.536l12 12c4.714 4.908 12-2.36 7-7L53 46V24A5 5 0 0 0 43 24z"/></svg>'
                 . " " . $Conf->unparse_time_full($tm) . "</span>";
         if (($hash = defval($data, "sha1")) != "")
             $hash = Filer::hash_as_text($hash);
@@ -511,7 +511,7 @@ class PaperTable {
                 else if ($alg === "sha256")
                     $x .= "SHA-256 checksum";
             }
-            $x .= '"><svg width="12" height="12" viewBox="0 0 48 48" style="vertical-align:-2px"><path style="fill:#333" d="M19 32l-8-8-7 7 14 14 26-26-6-6-19 19z"/><path style="fill:#333" d="M15 3V10H8v5h7v7h5v-7H27V10h-7V3h-5z"/></svg> '
+            $x .= '"><svg width="12" height="12" viewBox="0 0 48 48" class="licon"><path d="M19 32l-8-8-7 7 14 14 26-26-6-6-19 19zM15 3V10H8v5h7v7h5v-7H27V10h-7V3h-5z"/></svg> '
                 . '<span class="checksum-overflow">' . $xhash . '</span>'
                 . '<span class="checksum-abbreviation">' . substr($xhash, 0, 8) . '</span></span>';
             $t[] = $x;
@@ -781,11 +781,11 @@ class PaperTable {
             . $this->editable_author_component_entry($n, "auname", $au) . ' '
             . $this->editable_author_component_entry($n, "auemail", $au) . ' '
             . $this->editable_author_component_entry($n, "auaff", $au)
-            . '<span class="nb btnbox aumovebox"><a href="" class="ui btn qx need-tooltip row-order-ui moveup" data-tooltip="Move up" tabindex="-1">'
+            . '<span class="nb btnbox aumovebox"><a href="" class="ui btn qx need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
             . Icons::ui_triangle(0)
-            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui movedown" data-tooltip="Move down" tabindex="-1">'
+            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
             . Icons::ui_triangle(2)
-            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui delete" data-tooltip="Delete" tabindex="-1">✖</a></span>'
+            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</a></span>'
             . $this->messages_at("author$n")
             . $this->messages_at("auname$n")
             . $this->messages_at("auemail$n")
