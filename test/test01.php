@@ -201,7 +201,7 @@ $comment1 = new CommentInfo(null, $paper1);
 $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
 xassert($c1ok);
 xassert(!$user_van->can_view_comment($paper1, $comment1));
-xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
+xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
 xassert(!$user_van->can_comment($paper1, null));
 $Conf->save_setting("cmt_author", 1);
 xassert(!$user_van->can_comment($paper1, null));
@@ -210,15 +210,15 @@ xassert($user_van->can_comment($paper1, null));
 $Conf->save_setting("cmt_author", null);
 xassert(!$user_van->can_comment($paper1, null));
 xassert($user_van->can_view_comment($paper1, $comment1));
-xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
+xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
 $Conf->save_setting("rev_blind", Conf::BLIND_OPTIONAL);
 xassert($user_van->can_view_comment($paper1, $comment1));
-xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
+xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
 $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
 xassert($c1ok);
-xassert($user_van->can_view_comment_identity($paper1, $comment1, false));
+xassert($user_van->can_view_comment_identity($paper1, $comment1));
 $Conf->save_setting("rev_blind", null);
-xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
+xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
 $Conf->save_setting("au_seerev", Conf::AUSEEREV_NO);
 
 // check comment/review visibility when reviews are incomplete
