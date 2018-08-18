@@ -221,12 +221,13 @@ if ($homelist) {
 
     // Lists
     echo Ht::form(hoturl("search"), array("method" => "get")),
-        '<h4><a class="qq" href="', hoturl("search"), '">Search</a>: &nbsp;&nbsp;</h4>';
+        '<h4><a class="qq" href="', hoturl("search"), '" id="homesearch-label">Search</a>: &nbsp;&nbsp;</h4>';
 
     $tOpt = PaperSearch::search_types($Me);
     echo Ht::entry("q", (string) $Qreq->q,
                    array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
-                         "class" => "papersearch", "placeholder" => "(All)")),
+                         "class" => "papersearch", "placeholder" => "(All)",
+                         "aria-labelledby" => "homesearch-label")),
         " &nbsp;in&nbsp; ",
         PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; ", Ht::submit("Search"),

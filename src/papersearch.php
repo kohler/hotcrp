@@ -2601,7 +2601,7 @@ class PaperSearch {
                     $sel_opt["xxxb"] = null;
                 $sel_opt[$k] = $v;
             }
-            $sel_extra = array();
+            $sel_extra = ["aria-label" => "Search collection"];
             if ($tabindex)
                 $sel_extra["tabindex"] = $tabindex;
             return Ht::select("t", $sel_opt, $type, $sel_extra);

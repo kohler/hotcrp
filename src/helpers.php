@@ -320,9 +320,9 @@ function goPaperForm($baseUrl = null, $args = array()) {
     $list = $Conf->active_list();
     $x = Ht::form($Conf->hoturl($baseUrl ? : "paper"), ["method" => "get", "class" => "gopaper"]);
     if ($baseUrl == "profile")
-        $x .= Ht::entry("u", "", array("id" => "quicksearchq", "size" => 15, "placeholder" => "User search", "class" => "usersearch need-autogrow"));
+        $x .= Ht::entry("u", "", array("id" => "quicksearchq", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow"));
     else
-        $x .= Ht::entry("p", "", array("id" => "quicksearchq", "size" => 10, "placeholder" => "(All)", "class" => "papersearch need-autogrow"));
+        $x .= Ht::entry("p", "", array("id" => "quicksearchq", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-autogrow"));
     foreach ($args as $k => $v)
         $x .= Ht::hidden($k, $v);
     $x .= "&nbsp; " . Ht::submit("Search") . "</form>";

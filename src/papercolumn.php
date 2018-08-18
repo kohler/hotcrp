@@ -114,9 +114,9 @@ class SelectorPaperColumn extends PaperColumn {
         $pl->mark_has("sel");
         $c = "";
         if ($this->checked($pl, $row))
-            $c .= ' checked="checked"';
+            $c .= ' checked';
         return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
-            . '<input type="checkbox" class="uix js-range-click" name="pap[]" value="' . $row->paperId . '"' . $c . ' />';
+            . '<input type="checkbox" class="uix js-range-click" name="pap[]" value="' . $row->paperId . '"' . $c . ' aria-label="#' . $row->paperId . '" />';
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";

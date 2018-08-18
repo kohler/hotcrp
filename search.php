@@ -315,7 +315,7 @@ echo Ht::form(hoturl("search"), ["method" => "get"]),
     Ht::entry("q", (string) $Qreq->q,
               ["size" => 40, "style" => "width:30em", "tabindex" => 1,
                "class" => "papersearch want-focus",
-               "placeholder" => "(All)"]),
+               "placeholder" => "(All)", "aria-label" => "Search"]),
     " &nbsp;in &nbsp;$tselect &nbsp;\n",
     Ht::submit("Search", ["tabindex" => 1]),
     "</form>";
