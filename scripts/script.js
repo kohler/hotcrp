@@ -6306,7 +6306,7 @@ handle_ui.on("js-withdraw", function (event) {
         var idctr = hc.next_htctl_id();
         hc.push('<div><input type="checkbox" name="override" value="1" id="' + idctr + '">&nbsp;<label for="' + idctr + '">Override deadlines</label></div>');
     }
-    hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn">Withdraw</button>',
+    hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn btn-primary">Withdraw</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);

@@ -1884,10 +1884,11 @@ class PaperTable {
                 return Ht::xmsg("warning", "The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message());
             }
         } else if ($this->mode === "edit") {
-            $t = "";
-            if ($this->user->can_withdraw_paper($prow))
-                $t = " or withdraw it from consideration";
-            return Ht::xmsg("info", "The submission is under review and can’t be changed, but you can change its contacts$t." . $this->_deadline_override_message());
+            if ($this->user->can_withdraw_paper($prow, true))
+                $t = "The submission is under review and can’t be changed, but you can change its contacts or withdraw it from consideration.";
+            else
+                $t = "The submission is under review and can’t be changed or withdrawn, but you can change its contacts.";
+            return Ht::xmsg("info", $t . $this->_deadline_override_message());
         }
         return "";
     }
@@ -1969,13 +1970,13 @@ class PaperTable {
 
         // withdraw button
         if (!$this->prow
-            || !$this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_withdraw_paper", $this->prow))
+            || !$this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_withdraw_paper", $this->prow, true))
             $b = null;
         else if ($this->prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw");
         else {
             $args = ["class" => "btn ui js-withdraw"];
-            if ($this->user->can_withdraw_paper($this->prow))
+            if ($this->user->can_withdraw_paper($this->prow, !$this->admin))
                 $args["data-withdrawable"] = "true";
             if (($this->admin && !$this->prow->has_author($this->user))
                 || $this->conf->timeFinalizePaper($this->prow))
@@ -1983,7 +1984,7 @@ class PaperTable {
             $b = Ht::button("Withdraw", $args);
         }
         if ($b) {
-            if (!$this->user->can_withdraw_paper($this->prow))
+            if ($this->admin && !$this->user->can_withdraw_paper($this->prow))
                 $b = array($b, "(admin only)");
             $buttons[] = $b;
         }

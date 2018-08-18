@@ -2105,15 +2105,19 @@ class Contact {
         return $whyNot;
     }
 
-    function can_withdraw_paper(PaperInfo $prow) {
+    function can_withdraw_paper(PaperInfo $prow, $display_only = false) {
         $rights = $this->rights($prow);
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
-            && ($prow->outcome == 0 || $this->override_deadlines($rights));
+            && ($this->override_deadlines($rights)
+                || (!$prow->has_author_seen_any_review()
+                    && ($prow->outcome == 0
+                        || ($display_only
+                            && !$prow->can_author_view_decision()))));
     }
 
-    function perm_withdraw_paper(PaperInfo $prow) {
-        if ($this->can_withdraw_paper($prow))
+    function perm_withdraw_paper(PaperInfo $prow, $display_only = false) {
+        if ($this->can_withdraw_paper($prow, $display_only))
             return null;
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
@@ -2123,7 +2127,11 @@ class Contact {
             $whyNot["signin"] = "edit_paper";
         else if (!$rights->allow_author)
             $whyNot["author"] = 1;
-        else if ($prow->outcome != 0 && !$this->override_deadlines($rights))
+        else if ($prow->has_author_seen_any_review()
+                 && !$this->override_deadlines($rights))
+            $whyNot["reviewsSeen"] = 1;
+        else if ($prow->outcome != 0
+                 && !$this->override_deadlines($rights))
             $whyNot["decided"] = 1;
         if ($rights->allow_administer)
             $whyNot["override"] = 1;

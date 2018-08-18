@@ -1538,6 +1538,13 @@ class PaperInfo {
         }
     }
 
+    function has_author_seen_any_review() {
+        foreach ($this->reviews_by_id() as $rrow)
+            if ($rrow->reviewAuthorSeen)
+                return true;
+        return false;
+    }
+
     static function fetch_comment_query() {
         return "select PaperComment.*,
             firstName reviewFirstName, lastName reviewLastName, email reviewEmail

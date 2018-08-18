@@ -130,7 +130,7 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
         $Me->log_activity("Withdrew", $prow->paperId);
         SelfHref::redirect($Qreq);
     } else
-        Conf::msg_error(whyNotText($whyNot));
+        Conf::msg_error(whyNotText($whyNot) . " The submission has not been withdrawn.");
 }
 if (isset($Qreq->revive) && $prow && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
