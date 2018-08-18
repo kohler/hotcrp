@@ -667,7 +667,7 @@ class PaperTable {
             echo '</div><div class="document-actions">',
                 Ht::button("Replace", ["class" => "btn ui js-replace-document document-action"]);
             if ($dtype > 0)
-                '<a href="" class="ui js-remove-document document-action">Delete</a>';
+                echo '<a href="" class="ui js-remove-document document-action">Delete</a>';
             if ($has_cf && ($this->cf->failed || $this->cf->need_run || $this->cf->possible_run)) {
                 echo '<a href="" class="ui js-check-format document-action">',
                     ($this->cf->failed || $this->cf->need_run ? "Check format" : "Recheck format"),
