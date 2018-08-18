@@ -388,8 +388,10 @@ class DocumentInfo implements JsonSerializable {
     function save() {
         // look for an existing document with same sha1
         if ($this->binary_hash() !== false && $this->paperId != 0) {
-            $row = $this->conf->fetch_first_row("select paperStorageId, timestamp, inactive from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
-            if ($row) {
+            $row = $this->conf->fetch_first_row("select paperStorageId, timestamp, inactive, filename, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
+            if ($row
+                && (!isset($this->filename) || $row[3] === $this->filename)
+                && (!isset($this->mimetype) || $row[4] === $this->mimetype)) {
                 $this->paperStorageId = (int) $row[0];
                 $this->timestamp = (int) $row[1];
                 if ($row[2])
