@@ -1288,23 +1288,6 @@ td.padl, th.padl, div.padl {
 td.padlb, th.padlb, div.padlb {
 	padding-left: 2em;
 }
-div.error, td.error, tr.error {
-	font-weight: bold;
-	color: #ff0000;
-}
-td.lentry.error input, div.error input, input.error, textarea.error {
-	background-color: #ffeeee;
-	font-weight: normal;
-}
-/* NB these rules must come after other color-setting rules */
-input.error,
-div.error input, td.error input, tr.error input,
-div.error textarea, td.error textarea, tr.error textarea,
-div.error > div.f-c,
-span.error, strong.error,
-h2.error, h3.error, h4.error, h5.error, h6.error {
-	color: #ff0000;
-}
 
 .has-error > .f-c,
 .has-error > label,

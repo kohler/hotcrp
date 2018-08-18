@@ -1310,7 +1310,7 @@ class Formula {
             $rest = " at end" . $rest;
         else {
             $p2 = substr($this->expression, $elen + $pos1, $pos2 - $pos1);
-            $h1 .= '<span class="error">☞<u>' . htmlspecialchars($p2) . '</u></span>' . htmlspecialchars(substr($this->expression, $elen + $pos2));
+            $h1 .= '<span class="is-error">☞<u>' . htmlspecialchars($p2) . '</u></span>' . htmlspecialchars(substr($this->expression, $elen + $pos2));
         }
         $this->_error_html[] = "$type in formula “{$h1}”$rest";
     }
