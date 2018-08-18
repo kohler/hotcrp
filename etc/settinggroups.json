@@ -154,6 +154,10 @@
         "render_option_property_callback": "Options_SettingRenderer::render_presence_property"
     },
     {
+        "name": "options/properties/required", "position": 31,
+        "render_option_property_callback": "Options_SettingRenderer::render_required_property"
+    },
+    {
         "name": "options/properties/visibility", "position": 40,
         "render_option_property_callback": "Options_SettingRenderer::render_visibility_property"
     },
