@@ -2925,6 +2925,10 @@ body#offline .revcard {
 	margin-top: 0.25rem;
 	margin-bottom: 0.5rem;
 }
+.document-replacer {
+	margin-top: 0.5rem;
+	margin-bottom: -0.25rem;
+}
 .document-file, .document-upload, .document-stamps,
 .document-shortformat, .document-actions {
 	display: inline-block;

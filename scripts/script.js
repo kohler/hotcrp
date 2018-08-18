@@ -6250,12 +6250,22 @@ handle_ui.on("js-replace-document", function (event) {
     var $ei = $(this).closest(".has-document"),
         $u = $ei.find(".document-uploader");
     $ei.find(".document-remover").val("");
-    $u.on("change", function () {
-        $ei.find(".document-file, .document-stamps, .document-shortformat, .js-replace-document").addClass("hidden");
-        $ei.find(".document-upload").removeClass("hidden");
-        $ei.find(".js-remove-document").removeClass("undelete").html("Delete");
-        $ei.find(".js-replace-document").addClass("hidden");
-    })[0].click();
+    if (!$u.length) {
+        var docid = +$ei.attr("data-dtype"),
+            name = docid > 0 ? "opt" + docid : "paperUpload",
+            t = '<div class="document-upload hidden"><input id="' + name + '" type="file" name="' + name + '"';
+        if ($ei[0].hasAttribute("data-document-accept"))
+            t += ' accept="' + $ei[0].getAttribute("data-document-accept") + '"';
+        t += ' class="document-uploader' + (docid > 0 ? "" : " js-check-submittable") + '"></div>';
+        $u = $(t).appendTo($ei).find(".document-uploader");
+        $u.on("change", function () {
+            $ei.find(".document-file, .document-stamps, .document-actions, .document-format, .js-replace-document").addClass("hidden");
+            $ei.find(".document-upload").removeClass("hidden");
+            $ei.find(".js-remove-document").removeClass("undelete").html("Delete");
+            $ei.find(".js-replace-document").addClass("hidden");
+        });
+    }
+    $u[0].click();
 });
 
 handle_ui.on("js-remove-document", function (event) {

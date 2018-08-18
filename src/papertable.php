@@ -641,11 +641,11 @@ class PaperTable {
             '" data-document-name="', $docx->field_key(), '"';
         if ($doc)
             echo ' data-docid="', $doc->paperStorageId, '"';
+        if ($accepts)
+            echo ' data-document-accept="', htmlspecialchars(join(",", array_map(function ($m) { return $m->mimetype; }, $accepts))), '"';
         echo '>';
         if ($dtype > 0)
             echo Ht::hidden("has_opt" . $dtype, 1);
-
-        $upload_input = self::document_upload_input($inputid, $dtype, $accepts);
 
         // current version, if any
         $has_cf = false;
@@ -659,13 +659,12 @@ class PaperTable {
                     $this->cf->check_document($this->prow, $doc);
             }
 
-            echo '<div class="document-file nameless">', $doc->link_html(), '</div>',
-                '<div class="document-upload hidden">', $upload_input, '</div>',
-                '<div class="document-stamps">';
+            echo '<div class="document-file">',
+                $doc->link_html(htmlspecialchars($doc->filename ? : "")),
+                '</div><div class="document-stamps">';
             if (($stamps = self::pdf_stamps_html($doc)))
                 echo $stamps;
-            echo '</div><div class="document-actions">',
-                Ht::button("Replace", ["class" => "btn ui js-replace-document document-action"]);
+            echo '</div><div class="document-actions">';
             if ($dtype > 0)
                 echo '<a href="" class="ui js-remove-document document-action">Delete</a>';
             if ($has_cf && ($this->cf->failed || $this->cf->need_run || $this->cf->possible_run)) {
@@ -682,11 +681,12 @@ class PaperTable {
                     echo $this->cf->document_report($this->prow, $doc);
                 echo '</div>';
             }
-        } else {
-            echo '<div class="document-upload">', $upload_input, '</div>';
         }
 
-        echo $this->messages_at($field), "</div>";
+        echo '<div class="document-replacer">',
+            Ht::button($doc ? "Replace" : "Upload", ["class" => "btn ui js-replace-document"]),
+            '</div>',
+            $this->messages_at($field), "</div>";
     }
 
     private function echo_editable_submission() {
