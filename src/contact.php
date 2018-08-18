@@ -1822,8 +1822,6 @@ class Contact {
             $forceShow = false;
         else if ($forceShow === null)
             $forceShow = ($this->_overrides & self::OVERRIDE_CONFLICT) !== 0;
-        else if ($forceShow === "any")
-            $forceShow = !!$ci->forced_rights_link;
         if ($forceShow)
             $ci = $ci->get_forced_rights();
 
@@ -1923,7 +1921,7 @@ class Contact {
 
     function can_meaningfully_override(PaperInfo $prow) {
         if ($this->is_manager()) {
-            $rights = $this->rights($prow, "any");
+            $rights = $this->rights($prow);
             return $rights->allow_administer
                 && ($rights->conflictType > 0 || $this->_dangerous_track_mask);
         } else
@@ -2046,12 +2044,12 @@ class Contact {
     }
 
     function can_edit_paper(PaperInfo $prow) {
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         return $rights->allow_administer || $prow->has_author($this);
     }
 
     function can_update_paper(PaperInfo $prow) {
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
             && (($prow->outcome >= 0 && $this->conf->timeUpdatePaper($prow))
@@ -2061,7 +2059,7 @@ class Contact {
     function perm_update_paper(PaperInfo $prow) {
         if ($this->can_update_paper($prow))
             return null;
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = "edit_paper";
@@ -2081,7 +2079,7 @@ class Contact {
     }
 
     function can_finalize_paper(PaperInfo $prow) {
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
             && ($this->conf->timeFinalizePaper($prow) || $this->override_deadlines($rights));
@@ -2090,7 +2088,7 @@ class Contact {
     function perm_finalize_paper(PaperInfo $prow) {
         if ($this->can_finalize_paper($prow))
             return null;
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = "edit_paper";
@@ -2108,7 +2106,7 @@ class Contact {
     }
 
     function can_withdraw_paper(PaperInfo $prow) {
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
             && ($prow->outcome == 0 || $this->override_deadlines($rights));
@@ -2117,7 +2115,7 @@ class Contact {
     function perm_withdraw_paper(PaperInfo $prow) {
         if ($this->can_withdraw_paper($prow))
             return null;
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
@@ -2133,7 +2131,7 @@ class Contact {
     }
 
     function can_revive_paper(PaperInfo $prow) {
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         return $rights->allow_author
             && $prow->timeWithdrawn > 0
             && ($this->conf->timeUpdatePaper($prow) || $this->override_deadlines($rights));
@@ -2142,7 +2140,7 @@ class Contact {
     function perm_revive_paper(PaperInfo $prow) {
         if ($this->can_revive_paper($prow))
             return null;
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = "edit_paper";
@@ -2159,7 +2157,7 @@ class Contact {
 
     function can_submit_final_paper(PaperInfo $prow) {
         // see also EditFinal_SearchTerm
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
             && $prow->outcome > 0
@@ -2172,7 +2170,7 @@ class Contact {
     function perm_submit_final_paper(PaperInfo $prow) {
         if ($this->can_submit_final_paper($prow))
             return null;
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = "edit_paper";
@@ -2210,7 +2208,7 @@ class Contact {
         }
         if ($this->privChair)
             return true;
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         return $rights->allow_author_view
             || ($rights->review_status != 0
                 // assigned reviewer can view PDF of withdrawn, but submitted, paper
@@ -2223,7 +2221,7 @@ class Contact {
     function perm_view_paper(PaperInfo $prow, $pdf = false) {
         if ($this->can_view_paper($prow, $pdf))
             return null;
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         $base_count = count($whyNot);
         if (!$rights->allow_author_view
@@ -2264,7 +2262,7 @@ class Contact {
     function can_view_document_history(PaperInfo $prow) {
         if ($this->privChair)
             return true;
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         return $rights->act_author || $rights->can_administer;
     }
 
@@ -2274,7 +2272,7 @@ class Contact {
         if (!$prow)
             return (!$this->conf->opt("hideManager") && $this->is_reviewer())
                 || ($this->isPC && $this->is_explicit_manager());
-        $rights = $this->rights($prow, "any");
+        $rights = $this->rights($prow);
         return $prow->managerContactId == $this->contactId
             || ($rights->potential_reviewer && !$this->conf->opt("hideManager"));
     }
