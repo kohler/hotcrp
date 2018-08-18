@@ -146,15 +146,19 @@ class HotCRPMailer extends Mailer {
     }
 
     private function get_comments($tag) {
-        $crows = $this->comment_row ? array($this->comment_row) : $this->row->all_comments();
+        if ($this->comment_row)
+            $crows = [$this->comment_row];
+        else
+            $crows = $this->row->all_comments();
 
         // save old au_seerev setting, and reset it so authors can see them.
         if (!($au_seerev = $this->conf->au_seerev))
             $this->conf->au_seerev = Conf::AUSEEREV_YES;
+        assert(!($this->recipient->overrides() & Contact::OVERRIDE_CONFLICT));
 
         $crows = array_filter($crows, function ($crow) use ($tag) {
             return (!$tag || $crow->has_tag($tag))
-                && $this->recipient->can_view_comment($this->row, $crow, false);
+                && $this->recipient->can_view_comment($this->row, $crow);
         });
 
         $text = "";

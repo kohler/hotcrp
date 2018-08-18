@@ -3037,9 +3037,9 @@ class Contact {
         return false;
     }
 
-    function can_view_comment(PaperInfo $prow, $crow, $forceShow = null) {
+    function can_view_comment(PaperInfo $prow, $crow) {
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         return ($crow && $this->is_my_comment($prow, $crow))
             || $rights->can_administer
             || ($rights->act_author_view
@@ -3053,10 +3053,10 @@ class Contact {
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
                     : $ctype >= COMMENTTYPE_REVIEWER)
-                && $this->can_view_review($prow, null, $forceShow)
+                && $this->can_view_review($prow, null)
                 && ($this->conf->setting("cmt_revid")
                     || $ctype >= COMMENTTYPE_AUTHOR
-                    || $this->can_view_review_identity($prow, null, $forceShow)));
+                    || $this->can_view_review_identity($prow, null)));
     }
 
     function can_view_new_comment_ignore_conflict(PaperInfo $prow) {
