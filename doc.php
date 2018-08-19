@@ -29,6 +29,7 @@ class DocumentRequest {
     public $paperId;
     public $dtype;
     public $opt;
+    public $linkid;
     public $attachment;
     public $filters = [];
     public $req_filename;
@@ -40,7 +41,7 @@ class DocumentRequest {
             document_error("404 Not Found", "No such document [submission " . htmlspecialchars($pid) . "].");
     }
 
-    function parse($req, $path, Conf $conf) {
+    function __construct($req, $path, Conf $conf) {
         $want_path = false;
         if (isset($req["p"]))
             $this->set_paperid($req["p"]);
@@ -96,8 +97,14 @@ class DocumentRequest {
                 document_error("404 Not Found", "No such document " . htmlspecialchars($this->req_filename) . ".");
         }
 
-        $this->opt = null;
-        while ((string) $dtname !== "" && $this->opt === null) {
+        $this->opt = $this->dtype = null;
+        while ((string) $dtname !== "" && $this->dtype === null) {
+            if (str_starts_with($dtname, "comment-")
+                && preg_match('{\Acomment-(?:c[aAxX]?\d+|\w*response)\z}', $dtname)) {
+                $this->dtype = DTYPE_COMMENT;
+                $this->linkid = substr($dtname, 8);
+                break;
+            }
             if (($dtnum = cvtint($dtname, null)) !== null)
                 $this->opt = $conf->paper_opts->get($dtnum);
             else if ($this->paperId >= 0)
@@ -105,7 +112,7 @@ class DocumentRequest {
             else
                 $this->opt = $conf->paper_opts->find_nonpaper($dtname);
             if ($this->opt !== null) {
-                $dtname = "";
+                $this->dtype = $this->opt->id;
                 break;
             }
             $filter = null;
@@ -121,11 +128,11 @@ class DocumentRequest {
             if (str_ends_with($dtname, "-"))
                 $dtname = substr($dtname, 0, strlen($dtname) - 1);
         }
-        if ((string) $dtname !== "")
-            document_error("404 Not Found", "No such document type “" . htmlspecialchars($dtname) . "”.");
-        else if ($this->opt === null)
+        if ($this->dtype === null && (string) $dtname === "") {
             $this->opt = $conf->paper_opts->find($base_dtname);
-        $this->dtype = $this->opt->id;
+            $this->dtype = $this->opt->id;
+        } else if ($this->dtype === null)
+            document_error("404 Not Found", "No such document type “" . htmlspecialchars($dtname) . "”.");
 
         if (isset($req["filter"])) {
             foreach (explode(" ", $req["filter"]) as $filtername)
@@ -138,7 +145,8 @@ class DocumentRequest {
         }
 
         if (!$want_path) {
-            $dtype_name = $this->opt->dtype_name();
+            if ($this->opt)
+                $dtname = $this->opt->dtype_name();
             if ($this->paperId < 0)
                 $this->req_filename = "[$dtype_name";
             else if ($this->dtype === DTYPE_SUBMISSION)
@@ -177,8 +185,9 @@ function document_history(PaperInfo $prow, $dtype) {
         $pjs[] = $pj;
     }
 
-    if ($Me->can_view_document_history($prow)) {
-        $result = $prow->conf->qe("select paperStorageId, paperId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $prow->paperId, $dtype);
+    if ($Me->can_view_document_history($prow)
+        && $dtype >= DTYPE_FINAL) {
+        $result = $prow->conf->qe("select paperId, paperStorageId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $prow->paperId, $dtype);
         while (($doc = DocumentInfo::fetch($result, $prow->conf, $prow))) {
             if (!get($actives, $doc->paperStorageId))
                 $pjs[] = document_history_element($doc);
@@ -192,13 +201,11 @@ function document_history(PaperInfo $prow, $dtype) {
 function document_download($qreq) {
     global $Conf, $Me;
 
-    $dr = new DocumentRequest;
-    $dr->parse($qreq, Navigation::path(), $Conf);
-
-    $docid = null;
+    $dr = new DocumentRequest($qreq, Navigation::path(), $Conf);
+    $want_docid = $request_docid = 0;
 
     if ($dr->dtype === null
-        || $dr->opt->nonpaper !== ($dr->paperId < 0))
+        || ($dr->opt && $dr->opt->nonpaper) !== ($dr->paperId < 0))
         document_error("404 Not Found", "No such document “" . htmlspecialchars($dr->req_filename) . "”.");
 
     if ($dr->paperId < 0) {
@@ -210,8 +217,30 @@ function document_download($qreq) {
         $prow = $Conf->paperRow($dr->paperId, $Me, $whyNot);
         if (!$prow)
             document_error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", whyNotText($whyNot));
-        else if (($whyNot = $Me->perm_view_paper_option($prow, $dr->opt)))
+        if ($dr->opt
+            && ($whyNot = $Me->perm_view_paper_option($prow, $dr->opt)))
             document_error("403 Forbidden", whyNotText($whyNot));
+        if ($dr->dtype == DTYPE_COMMENT) {
+            $doc_crow = $cmtid = null;
+            if ($dr->linkid[0] === "x" || $dr->linkid[0] === "X")
+                $cmtid = (int) substr($dr->linkid, 1);
+            error_log("got cmtid $dr->linkid");
+            foreach ($prow->viewable_comment_skeletons($Me) as $crow)
+                if ($crow->unparse_html_id() === $dr->linkid
+                    || $crow->commentId === $cmtid) {
+                    $doc_crow = $crow;
+                    break;
+                }
+            if (!$doc_crow)
+                document_error("404 Not Found", "No such document “" . htmlspecialchars($dr->req_filename) . "”.");
+            foreach ($prow->comment_linked_documents($doc_crow) as $xdoc)
+                if ($xdoc->unique_filename === $dr->attachment) {
+                    $request_docid = $want_docid = $xdoc->paperStorageId;
+                    break;
+                }
+            if (!$request_docid)
+                document_error("404 Not Found", "No such document “" . htmlspecialchars($dr->req_filename) . "”.");
+        }
     }
 
     // history
@@ -222,7 +251,7 @@ function document_download($qreq) {
         $qreq->version = $qreq->hash;
 
     // time
-    if (isset($qreq->at) && !isset($qreq->version)) {
+    if (isset($qreq->at) && !isset($qreq->version) && $dr->dtype >= DTYPE_FINAL) {
         if (ctype_digit($qreq->at))
             $time = intval($qreq->at);
         else if (!($time = $Conf->parse_time($qreq->at)))
@@ -239,8 +268,7 @@ function document_download($qreq) {
     }
 
     // version
-    $want_docid = $request_docid = 0;
-    if (isset($qreq->version)) {
+    if (isset($qreq->version) && $dr->dtype >= DTYPE_FINAL) {
         $version_hash = Filer::hash_as_binary(trim($qreq->version));
         if (!$version_hash)
             document_error("404 Not Found", "No such version.");

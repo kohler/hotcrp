@@ -261,6 +261,7 @@ class PaperInfo {
     private $_option_array;
     private $_all_option_array;
     private $_document_array;
+    private $_doclink_array;
     private $_conflict_array;
     private $_conflict_array_email;
     private $_review_array;
@@ -1162,6 +1163,36 @@ class PaperInfo {
     function npages() {
         $doc = $this->document($this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL);
         return $doc ? $doc->npages() : 0;
+    }
+
+    private function doclink_array() {
+        if ($this->_doclink_array === null) {
+            $row_set = $this->_row_set ? : new PaperInfoSet($this);
+            foreach ($row_set->all() as $prow)
+                $prow->_doclink_array = [];
+            $result = $this->conf->qe("select paperId, linkId, linkType, documentId from DocumentLink where paperId?a order by paperId, linkId, linkType", $row_set->paper_ids());
+            while ($result && ($row = $result->fetch_row())) {
+                $prow = $row_set->get((int) $row[0]);
+                $linkid = (int) $row[1];
+                if (!isset($prow->_doclink_array[$linkid]))
+                    $prow->_doclink_array[$linkid] = [];
+                $prow->_doclink_array[$linkid][(int) $row[2]] = (int) $row[3];
+            }
+            Dbl::free($result);
+        }
+        return $this->_doclink_array;
+    }
+    private function linked_documents($linkid, $min) {
+        $docs = [];
+        foreach (get($this->doclink_array(), $linkid, []) as $lt => $docid)
+            if ($lt >= $min && $lt < $min + 1024)
+                $docs[] = $this->document(-2, $docid);
+        if (!empty($docs))
+            DocumentInfo::assign_unique_filenames($docs);
+        return $docs;
+    }
+    function comment_linked_documents(CommentInfo $cinfo) {
+        return $this->linked_documents($cinfo->commentId, 0);
     }
 
     private function ratings_query() {
