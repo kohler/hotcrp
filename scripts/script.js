@@ -3299,24 +3299,23 @@ function render_editing(hc, cj) {
 
         // visibility
         hc.push('<div class="cmteditinfo fold2o">', '</div>');
-        hc.push('<div class="f-i"><label for="' + cid + '-visibility">Visibility</label>', '</div>');
+        hc.push('<div class="entryi short"><label for="' + cid + '-visibility">Visibility</label>', '</div>');
         hc.push('<select id="' + cid + '-visibility" name="visibility">', '</select>');
         hc.push('<option value="au">' + au_option + '</option>');
         hc.push('<option value="rev">Hidden from authors</option>');
         hc.push('<option value="pc">Hidden from authors and external reviewers</option>');
-        hc.push('<option value="admin">Administrators only</option>');
-        hc.pop();
-        hc.push('<p class="fx2 f-h">', '</p>');
+        hc.push_pop('<option value="admin">Administrators only</option>');
+        hc.push('<div class="fx2">', '</div>')
         if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true) {
-            var idctr = hc.next_htctl_id();
-            hc.push('<input type="checkbox" name="blind" value="1" id="' + idctr + '">&nbsp;<label for="' + idctr + '">Anonymous to authors</label><br>\n');
+            hc.push('<div class="checki"><label><span class="checkc"><input type="checkbox" name="blind" value="1">&nbsp;</span>Anonymous to authors</label></div>');
         }
-        hc.push(au_description);
+        hc.push('<p class="f-h">', '</p>');
+        hc.push_pop(au_description);
         hc.pop_n(2);
 
         // tags
-        hc.push('<div class="f-i"><label for="' + cid + '-tags">Tags</label>', '</div>')
-        hc.push('<input id="' + cid + '-tags" name="commenttags" type="text" size="40" class="reviewtext" style="font-size:smaller">');
+        hc.push('<div class="entryi"><label for="' + cid + '-tags">Tags</label>', '</div>')
+        hc.push('<input id="' + cid + '-tags" name="commenttags" type="text" size="60">');
         hc.pop(2);
 
         // actions
