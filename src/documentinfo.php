@@ -675,13 +675,19 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
-    function export_filename($filters = null) {
+    function export_filename($filters = null, $rest = null) {
         $fn = $this->conf->download_prefix;
         if ($this->documentType == DTYPE_SUBMISSION)
             $fn .= "paper" . $this->paperId;
         else if ($this->documentType == DTYPE_FINAL)
             $fn .= "final" . $this->paperId;
-        else {
+        else if ($this->documentType == DTYPE_COMMENT) {
+            assert(!$filters);
+            $fn .= "paper" . $this->paperId . "/comment";
+            if (($cmt = get($rest, "_comment")))
+                $fn .= "-" . $cmt->unparse_html_id();
+            return $fn . "/" . ($this->unique_filename ? : $this->filename);
+        } else {
             $o = $this->conf->paper_opts->get($this->documentType);
             if ($o && $o->nonpaper && $this->paperId < 0) {
                 $fn .= $o->dtype_name();
@@ -692,9 +698,11 @@ class DocumentInfo implements JsonSerializable {
             }
             if ($o
                 && $o->has_attachments()
-                && ($afn = $this->unique_filename ? : $this->filename))
+                && ($afn = $this->unique_filename ? : $this->filename)) {
+                assert(!$filters);
                 // do not decorate with MIME type suffix
                 return $fn . $oabbr . "/" . $afn;
+            }
             $fn .= $oabbr;
         }
         $mimetype = $this->mimetype;
@@ -739,11 +747,11 @@ class DocumentInfo implements JsonSerializable {
             }
     }
 
-    function url($filters = null, $rest = null) {
+    function url($filters = null, $rest = null, $flags = 0) {
         if ($filters === null)
             $filters = $this->filters_applied;
         if ($this->mimetype)
-            $f = "file=" . rawurlencode($this->export_filename($filters));
+            $f = "file=" . rawurlencode($this->export_filename($filters, $rest));
         else {
             $f = "p=$this->paperId";
             if ($this->documentType == DTYPE_FINAL)
@@ -751,12 +759,10 @@ class DocumentInfo implements JsonSerializable {
             else if ($this->documentType > 0)
                 $f .= "&amp;dt=$this->documentType";
         }
-        if ($rest && is_array($rest)) {
-            foreach ($rest as $k => $v)
+        foreach ($rest ? : [] as $k => $v)
+            if ($k[0] !== "_")
                 $f .= "&amp;" . urlencode($k) . "=" . urlencode($v);
-        } else if ($rest)
-            $f .= "&amp;" . $rest;
-        return $this->conf->hoturl("doc", $f);
+        return $this->conf->hoturl("doc", $f, $flags);
     }
 
     const L_SMALL = 1;
@@ -883,6 +889,16 @@ class DocumentInfo implements JsonSerializable {
         return null;
     }
 
+    function unparse_json($rest = null) {
+        $x = [];
+        foreach (["filename", "mimetype", "size"] as $k)
+            if ($this->$k)
+                $x[$k] = $this->$k;
+        if ($this->has_hash())
+            $x["hash"] = $this->text_hash();
+        $x["siteurl"] = $this->url(null, $rest, Conf::HOTURL_SITE_RELATIVE | Conf::HOTURL_RAW);
+        return (object) $x;
+    }
     function jsonSerialize() {
         $x = [];
         foreach (get_object_vars($this) as $k => $v)

@@ -318,6 +318,13 @@ class CommentInfo {
             $fmt = $this->conf->default_format;
         if ($fmt)
             $cj->format = (int) $fmt;
+
+        // attachments
+        if ($this->commentType & COMMENTTYPE_HASDOC) {
+            foreach ($this->prow->comment_linked_documents($this) as $doc)
+                $cj->docs[] = $doc->unparse_json(["_comment" => $this]);
+        }
+
         return $cj;
     }
 
