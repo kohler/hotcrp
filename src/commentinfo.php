@@ -109,15 +109,15 @@ class CommentInfo {
             return null;
     }
 
-    static function unparse_html_id($cr, $conf) {
-        $is_author = $cr->commentType >= COMMENTTYPE_AUTHOR;
-        $o = $is_author ? $cr->authorOrdinal : $cr->ordinal;
-        if (self::commenttype_needs_ordinal($cr->commentType) && $o)
+    function unparse_html_id() {
+        $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
+        $o = $is_author ? $this->authorOrdinal : $this->ordinal;
+        if (self::commenttype_needs_ordinal($this->commentType) && $o)
             return ($is_author ? "cA" : "c") . $o;
-        else if ($cr->commentType & COMMENTTYPE_RESPONSE)
-            return $conf->resp_round_text($cr->commentRound) . "response";
+        else if ($this->commentType & COMMENTTYPE_RESPONSE)
+            return $this->conf->resp_round_text($this->commentRound) . "response";
         else
-            return "cx" . $cr->commentId;
+            return "cx" . $this->commentId;
     }
 
     private static function _user($x) {
@@ -355,7 +355,7 @@ class CommentInfo {
 
     function unparse_flow_entry(Contact $contact) {
         // See also ReviewForm::reviewFlowEntry
-        $a = "<a href=\"" . hoturl("paper", "p=$this->paperId#" . self::unparse_html_id($this, $this->conf)) . "\"";
+        $a = "<a href=\"" . hoturl("paper", "p=$this->paperId#" . $this->unparse_html_id()) . "\"";
         $t = '<tr class="pl"><td class="pl_eventicon">' . $a . ">"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_eventid pl_rowclick">'

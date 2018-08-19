@@ -37,7 +37,7 @@ class DocumentRequest {
         if (preg_match('/\A[-+]?\d+\z/', $pid))
             $this->paperId = intval($pid);
         else
-            document_error("404 Not Found", "No such document [paper " . htmlspecialchars($pid) . "].");
+            document_error("404 Not Found", "No such document [submission " . htmlspecialchars($pid) . "].");
     }
 
     function parse($req, $path, Conf $conf) {
@@ -64,7 +64,7 @@ class DocumentRequest {
             $dtname = null;
             if (str_starts_with($s, $conf->download_prefix))
                 $s = substr($s, strlen($conf->download_prefix));
-            if (preg_match(',\A(?:p|paper|)(\d+)/+(.*)\z,', $s, $m)) {
+            if (preg_match(',\A(?:p|paper|sub|submission)(\d+)/+(.*)\z,', $s, $m)) {
                 $this->paperId = intval($m[1]);
                 if (preg_match(',\A([^/]+)\.[^/]+\z,', $m[2], $mm))
                     $dtname = urldecode($mm[1]);
@@ -73,7 +73,7 @@ class DocumentRequest {
                     $this->attachment = urldecode($mm[2]);
                 } else if (isset($req["dt"]))
                     $dtname = $req["dt"];
-            } else if (preg_match(',\A(p|paper|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^/]+|/+(.*))\z,', $s, $m)) {
+            } else if (preg_match(',\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^/]+|/+(.*))\z,', $s, $m)) {
                 $this->paperId = intval($m[2]);
                 $dtname = $m[3];
                 if ($dtname === "" && $m[1] === "" && isset($req["dt"]))
@@ -142,9 +142,9 @@ class DocumentRequest {
             if ($this->paperId < 0)
                 $this->req_filename = "[$dtype_name";
             else if ($this->dtype === DTYPE_SUBMISSION)
-                $this->req_filename = "[paper #{$this->paperId}";
+                $this->req_filename = "[submission #{$this->paperId}";
             else if ($this->dtype === DTYPE_FINAL)
-                $this->req_filename = "[paper #{$this->paperId} final version";
+                $this->req_filename = "[submission #{$this->paperId} final version";
             else
                 $this->req_filename = "[#{$this->paperId} $dtype_name";
             if ($this->attachment)
@@ -201,7 +201,7 @@ function document_download($qreq) {
         || $dr->opt->nonpaper !== ($dr->paperId < 0))
         document_error("404 Not Found", "No such document “" . htmlspecialchars($dr->req_filename) . "”.");
 
-    if ($dr->opt->nonpaper) {
+    if ($dr->paperId < 0) {
         $prow = new PaperInfo(["paperId" => -2], null, $Conf);
         if (($dr->opt->visibility === "admin" && !$Me->privChair)
             || ($dr->opt->visibility !== "all" && !$Me->isPC))
@@ -210,7 +210,7 @@ function document_download($qreq) {
         $prow = $Conf->paperRow($dr->paperId, $Me, $whyNot);
         if (!$prow)
             document_error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", whyNotText($whyNot));
-        else if (($whyNot = $Me->perm_view_paper_option($prow, $dr->dtype)))
+        else if (($whyNot = $Me->perm_view_paper_option($prow, $dr->opt)))
             document_error("403 Forbidden", whyNotText($whyNot));
     }
 

@@ -324,8 +324,8 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
         $cxs = CommentInfo::group_by_identity($viewable_crows, $Me, true);
         if (!empty($cxs)) {
             $count = array_reduce($cxs, function ($n, $cx) { return $n + $cx[1]; }, 0);
-            $cnames = array_map(function ($cx) use ($Me, $conf) {
-                $cid = CommentInfo::unparse_html_id($cx[0], $conf);
+            $cnames = array_map(function ($cx) use ($Me) {
+                $cid = $cx[0]->unparse_html_id();
                 $tclass = "cmtlink";
                 if (($tags = $cx[0]->viewable_tags($Me))
                     && ($color = $cx[0]->conf->tags()->color_classes($tags)))
@@ -336,7 +336,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                     . ($cx[1] > 1 ? " ({$cx[1]})" : "")
                     . $cx[2] . "</span>";
             }, $cxs);
-            $first_cid = CommentInfo::unparse_html_id($cxs[0][0], $conf);
+            $first_cid = $cxs[0][0]->unparse_html_id();
             $pret = '<div class="revnotes"><a href="#' . $first_cid . '"><strong>'
                 . plural($count, "Comment") . '</strong></a>: '
                 . join(" ", $cnames) . '</div>';
