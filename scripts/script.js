@@ -3486,7 +3486,7 @@ function cancel_editor() {
 }
 
 function render_cmt(j, cj, editing, msg) {
-    var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead;
+    var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead, i;
     cmts[cj_cid(cj)] = cj;
     if (cj.response) {
         chead = j.closest(".cmtcard").find(".cmtcard_head");
@@ -3536,8 +3536,21 @@ function render_cmt(j, cj, editing, msg) {
     hc.pop();
     if (editing)
         render_editing(hc, cj);
-    else
+    else {
         hc.push('<div class="cmttext"></div>');
+        if (cj.docs && cj.docs.length) {
+            hc.push('<div class="cmtattachments">', '</div>');
+            for (i = 0; i != cj.docs.length; ++i) {
+                hc.push('<a href="' + text_to_html(siteurl + cj.docs[i].siteurl) + '" class="q">', '</a>');
+                if (cj.docs[i].mimetype === "application/pdf")
+                    hc.push('<img src="' + assetsurl + 'images/pdf.png" alt="[PDF]" class="sdlimg">');
+                else
+                    hc.push('<img src="' + assetsurl + 'images/generic.png" alt="[Attachment]" class="sdlimg">');
+                hc.push_pop(' ' + text_to_html(cj.docs[i].filename || "Attachment"));
+            }
+            hc.pop();
+        }
+    }
 
     // render
     j.find("textarea, input[type=text]").unautogrow();

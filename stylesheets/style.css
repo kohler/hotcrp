@@ -3055,9 +3055,12 @@ body#offline .revcard {
 .cmtt .floatright {
 	padding-left: 0.5em;
 }
-.pavb, .revtext, .cmttext {
+.pavb, .revtext, .cmttext, .cmtattachments {
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+}
+.cmtattachments {
+	margin-top: 0.5em;
 }
 .pavb > p:first-child, .format0 > p:first-child {
 	margin-top: 0;
