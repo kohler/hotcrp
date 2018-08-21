@@ -1236,16 +1236,16 @@ class ReviewValues extends MessageSet {
     public $req;
 
     private $finished = 0;
-    private $newlySubmitted;
+    private $submitted;
     public $updated;
-    private $approvalRequested;
+    private $approval_requested;
     private $saved_draft;
     private $saved_draft_approval;
-    private $authorNotified;
+    private $author_notified;
     public $unchanged;
     private $unchanged_draft;
     private $unchanged_draft_approval;
-    private $ignoredBlank;
+    private $blank;
 
     private $no_notify = false;
     private $_mailer_template;
@@ -1717,7 +1717,7 @@ class ReviewValues extends MessageSet {
         else if ($anynonempty)
             return true;
         else {
-            $this->ignoredBlank[] = "#" . $this->paperId;
+            $this->blank[] = "#" . $this->paperId;
             return false;
         }
     }
@@ -2050,12 +2050,12 @@ class ReviewValues extends MessageSet {
 
         $what = "#$prow->paperId" . ($new_rrow->reviewOrdinal ? unparseReviewOrdinal($new_rrow->reviewOrdinal) : "");
         if ($newsubmit) {
-            $this->newlySubmitted[] = $what;
+            $this->submitted[] = $what;
         } else if ($diffinfo->nonempty() && $submit) {
             $this->updated[] = $what;
         } else if ($new_rrow->timeApprovalRequested
                    && $new_rrow->contactId == $user->contactId) {
-            $this->approvalRequested[] = $what;
+            $this->approval_requested[] = $what;
         } else if ($diffinfo->nonempty()) {
             $this->saved_draft[] = $what;
             if ($new_rrow->timeApprovalRequested)
@@ -2069,7 +2069,7 @@ class ReviewValues extends MessageSet {
             }
         }
         if ($diffinfo->notify_author)
-            $this->authorNotified[] = $what;
+            $this->author_notified[] = $what;
 
         return true;
     }
@@ -2092,22 +2092,22 @@ class ReviewValues extends MessageSet {
 
     function finish() {
         $confirm = false;
-        if ($this->newlySubmitted)
-            $confirm = $this->_confirm_message("Reviews %2\$s submitted.", $this->newlySubmitted);
+        if ($this->submitted)
+            $confirm = $this->_confirm_message("Reviews %2\$s submitted.", $this->submitted);
         if ($this->updated)
             $confirm = $this->_confirm_message("Reviews %2\$s updated.", $this->updated);
-        if ($this->approvalRequested)
-            $confirm = $this->_confirm_message("Reviews %2\$s submitted for approval.", $this->approvalRequested);
+        if ($this->approval_requested)
+            $confirm = $this->_confirm_message("Reviews %2\$s submitted for approval.", $this->approval_requested);
         if ($this->saved_draft) {
             $single = null;
             if ($this->saved_draft == $this->saved_draft_approval && $this->text === null)
                 $single = 3;
             $this->_confirm_message("Draft reviews for papers %2\$s saved.", $this->saved_draft, $single);
         }
-        if ($this->authorNotified)
-            $this->_confirm_message("Authors were notified about updated reviews %2\$s.", $this->authorNotified);
+        if ($this->author_notified)
+            $this->_confirm_message("Authors were notified about updated reviews %2\$s.", $this->author_notified);
         $nunchanged = $this->unchanged ? count($this->unchanged) : 0;
-        $nignoredBlank = $this->ignoredBlank ? count($this->ignoredBlank) : 0;
+        $nignoredBlank = $this->blank ? count($this->blank) : 0;
         if ($nunchanged + $nignoredBlank > 1
             || $this->text !== null
             || !$this->has_messages()) {
@@ -2121,8 +2121,8 @@ class ReviewValues extends MessageSet {
                 }
                 $this->_confirm_message("Reviews %2\$s unchanged.", $this->unchanged, $single);
             }
-            if ($this->ignoredBlank)
-                $this->_confirm_message("Ignored blank review forms %2\$s.", $this->ignoredBlank);
+            if ($this->blank)
+                $this->_confirm_message("Ignored blank review forms %2\$s.", $this->blank);
         }
         $this->finished = $confirm ? 2 : 1;
     }
@@ -2149,15 +2149,9 @@ class ReviewValues extends MessageSet {
 
     function json_report() {
         $j = [];
-        foreach (["newlySubmitted" => "submitted",
-            "updated" => "updated",
-            "approvalRequested" => "approval_requested",
-            "saved_draft" => "saved_draft",
-            "authorNotified" => "author_notified",
-            "unchanged" => "unchanged",
-            "ignoredBlank" => "blank"] as $k => $jk)
+        foreach (["submitted", "updated", "approval_requested", "saved_draft", "author_notified", "unchanged", "blank"] as $k)
             if ($this->$k)
-                $j[$jk] = $this->$k;
+                $j[$k] = $this->$k;
         return $j;
     }
 }
