@@ -98,7 +98,7 @@ class HotCRPMailer extends Mailer {
             && $this->rrow
             && $this->conf->is_review_blind($this->rrow)
             && !$this->recipient->privChair
-            && !$this->recipient->can_view_review_identity($this->row, $this->rrow, false)) {
+            && !$this->recipient->can_view_review_identity($this->row, $this->rrow)) {
             if ($isbool)
                 return false;
             else if ($this->expansionType == self::EXPAND_EMAIL)

@@ -1797,7 +1797,7 @@ class Contact {
 
     // permissions policies
 
-    private function rights(PaperInfo $prow, $forceShow = null) {
+    private function rights(PaperInfo $prow) {
         $ci = $prow->contact_info($this);
 
         // check first whether administration is allowed
@@ -1818,10 +1818,8 @@ class Contact {
         }
 
         // correct $forceShow
-        if (!$ci->allow_administer)
-            $forceShow = false;
-        else if ($forceShow === null)
-            $forceShow = ($this->_overrides & self::OVERRIDE_CONFLICT) !== 0;
+        $forceShow = $ci->allow_administer
+            && ($this->_overrides & self::OVERRIDE_CONFLICT) !== 0;
         if ($forceShow)
             $ci = $ci->get_forced_rights();
 
@@ -2624,8 +2622,8 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_review_identity(PaperInfo $prow, ReviewInfo $rrow = null, $forceShow = null) {
-        $rights = $this->rights($prow, $forceShow);
+    function can_view_review_identity(PaperInfo $prow, ReviewInfo $rrow = null) {
+        $rights = $this->rights($prow);
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
@@ -3070,7 +3068,7 @@ class Contact {
         // Goal: Return true if this user is part of the comment mention
         // completion for a new comment on $prow.
         // Problem: If authors are hidden, should we mention this user or not?
-        $rights = $this->rights($prow, null);
+        $rights = $this->rights($prow);
         return $rights->can_administer
             || $rights->allow_pc;
     }

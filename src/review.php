@@ -692,7 +692,10 @@ class ReviewForm implements JsonSerializable {
         $myReview = !$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId;
         $revViewScore = $prow ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
         self::check_review_author_seen($prow, $rrow, $contact);
-        $viewable_identity = !$prow || $contact->can_view_review_identity($prow, $rrow, true);
+        $viewable_identity = !$prow
+            || $contact->can_view_review_identity($prow, $rrow)
+            || ($contact->can_meaningfully_override($prow)
+                && $contact->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_review_identity", $prow, $rrow));
 
         $x = "==+== =====================================================================\n";
         //$x .= "$prow->paperId:$myReview:$revViewScore:$rrow->contactId;;$prow->conflictType;;$prow->reviewType\n";
@@ -823,7 +826,7 @@ $blind\n";
 
         if (!$no_title)
             $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2);
-        if ($contact->can_view_review_identity($prow, $rrow, false) && isset($rrow->lastName))
+        if ($contact->can_view_review_identity($prow, $rrow) && isset($rrow->lastName))
             $x .= "* Reviewer: " . Text::user_text($rrow) . "\n";
         $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
         if ($time > 1)
@@ -1198,7 +1201,7 @@ $blind\n";
                 $time = $this->conf->unparse_time_obscure($this->conf->obscure_time($rrow->reviewModified));
             $t .= $barsep . $time;
         }
-        if ($contact->can_view_review_identity($prow, $rrow, false))
+        if ($contact->can_view_review_identity($prow, $rrow))
             $t .= $barsep . "<span class='hint'>review by</span> " . $contact->reviewer_html_for($rrow);
         $t .= "</small><br>";
 
