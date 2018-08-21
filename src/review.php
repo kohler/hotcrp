@@ -701,12 +701,12 @@ class ReviewForm implements JsonSerializable {
         //$x .= "$prow->paperId:$myReview:$revViewScore:$rrow->contactId;;$prow->conflictType;;$prow->reviewType\n";
 
         $x .= "==+== Begin Review";
-        if ($req && isset($req['reviewOrdinal']))
-            $x .= " #" . $prow->paperId . unparseReviewOrdinal($req['reviewOrdinal']);
+        if ($req && isset($req["reviewOrdinal"]))
+            $x .= " #" . $prow->paperId . unparseReviewOrdinal($req["reviewOrdinal"]);
         else if ($rrow && isset($rrow->reviewOrdinal))
             $x .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         $x .= "\n";
-        if ($rrow && defval($rrow, "reviewEditVersion") && $viewable_identity)
+        if ($rrow && get($rrow, "reviewEditVersion") && $viewable_identity)
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
         if (!$prow || $viewable_identity) {
             if ($rrow && isset($rrow->reviewEmail))
@@ -964,7 +964,7 @@ $blind\n";
             '<div>',
             Ht::hidden_default_submit("default", "");
         if ($rrow)
-            echo Ht::hidden("version", defval($rrow, "reviewEditVersion", 0) + 1);
+            echo Ht::hidden("version", get($rrow, "reviewEditVersion", 0) + 1);
         echo '<div class="revcard" id="r', $reviewOrdinal, '"><div class="revcard_head">';
 
         // Links
@@ -1016,8 +1016,8 @@ $blind\n";
         if ($sep != $open)
             echo "</span>\n";
 
-        if (defval($options, "editmessage"))
-            echo '<div class="hint">', defval($options, "editmessage"), "</div>\n";
+        if (get($options, "editmessage"))
+            echo '<div class="hint">', $options["editmessage"], "</div>\n";
 
         // download?
         echo '<hr class="c" />';
