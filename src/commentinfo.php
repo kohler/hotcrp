@@ -87,6 +87,9 @@ class CommentInfo {
                 $t[] = "papercomment.set_resp_round(" . json_encode($rrd->name) . "," . json_encode($j) . ")";
             }
             echo Ht::unstash_script(join($t, ";"));
+            Icons::stash_licon("ui_tag");
+            Icons::stash_licon("ui_attachment");
+            Icons::stash_licon("ui_trash");
         }
     }
 
@@ -240,6 +243,12 @@ class CommentInfo {
             && stripos($this->commentTags, " $tag ") !== false;
     }
 
+    function attachments() {
+        return $this->commentType & COMMENTTYPE_HASDOC
+            ? $this->prow->comment_linked_documents($this)
+            : [];
+    }
+
     function unparse_json(Contact $contact) {
         if ($this->commentId && !$contact->can_view_comment($this->prow, $this))
             return false;
@@ -320,9 +329,11 @@ class CommentInfo {
             $cj->format = (int) $fmt;
 
         // attachments
-        if ($this->commentType & COMMENTTYPE_HASDOC) {
-            foreach ($this->prow->comment_linked_documents($this) as $doc)
-                $cj->docs[] = $doc->unparse_json(["_comment" => $this]);
+        foreach ($this->attachments() as $doc) {
+            $docj = $doc->unparse_json(["_comment" => $this]);
+            if ($cj->editable)
+                $docj->docid = $doc->paperStorageId;
+            $cj->docs[] = $docj;
         }
 
         return $cj;
@@ -395,7 +406,7 @@ class CommentInfo {
     where $LinkTable.$LinkColumn={$this->prow->$LinkColumn}
     group by $LinkTable.$LinkColumn) t
 set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
-        Dbl::qe($q);
+        $this->conf->qe($q);
     }
 
     function save($req, Contact $contact) {
@@ -451,6 +462,15 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $ctags = count($ctags) ? " " . join(" ", $ctags) . " " : null;
         } else
             $ctags = null;
+
+        // attachments
+        $docids = $old_docids = [];
+        if (($docs = get($req, "docs"))) {
+            $ctype |= COMMENTTYPE_HASDOC;
+            $docids = array_map(function ($doc) { return $doc->paperStorageId; }, $docs);
+        }
+        if ($this->commentType & COMMENTTYPE_HASDOC)
+            $old_docids = array_map(function ($doc) { return $doc->paperStorageId; }, $this->attachments());
 
         // notifications
         $displayed = !($ctype & COMMENTTYPE_DRAFT);
@@ -517,12 +537,27 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $qv[] = $ctags;
         }
 
-        $result = Dbl::qe_apply($q, $qv);
+        $result = $this->conf->qe_apply($q, $qv);
         if (!$result)
             return false;
         $cmtid = $this->commentId ? : $result->insert_id;
         if (!$cmtid)
             return false;
+
+        // document links
+        if ($docids !== $old_docids) {
+            if ($old_docids)
+                $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType>=? and linkType<?", $this->prow->paperId, $this->commentId, 0, 1024);
+            if ($docids) {
+                $qv = [];
+                foreach ($docids as $i => $did)
+                    $qv[] = [$this->prow->paperId, $this->commentId, $i, $did];
+                $this->conf->qe("insert into DocumentLink (paperId,linkId,linkType,documentId) values ?v", $qv);
+            }
+            if ($old_docids)
+                $this->prow->mark_inactive_linked_documents();
+            $this->prow->invalidate_linked_documents();
+        }
 
         // log
         $contact->log_activity("Comment $cmtid " . ($text !== "" ? "saved" : "deleted"), $this->prow->$LinkColumn);

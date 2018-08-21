@@ -803,7 +803,7 @@ class DocumentInfo implements JsonSerializable {
         if ($html)
             $x .= "&nbsp;" . $html;
         if ($this->size > 0 && !($flags && self::L_NOSIZE)) {
-            $x .= "&nbsp;<span class=\"dlsize\">" . ($html ? "(" : "");
+            $x .= " <span class=\"dlsize\">" . ($html ? "(" : "");
             if ($this->size > 921)
                 $x .= round($this->size / 1024);
             else

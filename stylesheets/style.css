@@ -851,6 +851,10 @@ a.closebtn {
 }
 .aabig .btn {
 	padding: 4px 9px 4px;
+	min-height: 31px;
+}
+.aabig .btn.btn-licon {
+	padding: 1px 7px 1px;
 }
 .aab {
 	margin: 2em 0 0.7em;
@@ -866,7 +870,7 @@ a.closebtn {
 }
 .aabut {
 	float: left;
-	margin: 0 1em 0 0;
+	margin-right: 1em;
 	text-align: center;
 	line-height: 2;
 }
@@ -875,7 +879,8 @@ a.closebtn {
 }
 .aabr > .aabut {
 	float: right;
-	margin: 0 0 0 1em;
+	margin-right: 0;
+	margin-left: 1em;
 }
 .aabut.aabutsp {
 	margin: 0 2.5em 0 0;
@@ -892,6 +897,8 @@ a.closebtn {
 .btnbox > .btn {
 	border-radius: 0;
 	border-left-width: 0;
+	margin-left: 0;
+	margin-right: 0;
 }
 .btnbox > .btn:first-child {
 	border-top-left-radius: 4px;
@@ -2922,6 +2929,9 @@ body#offline .revcard {
 	margin-top: 0.25rem;
 	margin-bottom: 0.5rem;
 }
+.has-document.compact {
+	margin-bottom: 0.25rem;
+}
 .document-replacer {
 	margin-top: 0.5rem;
 	margin-bottom: -0.25rem;
@@ -3061,6 +3071,9 @@ body#offline .revcard {
 }
 .cmtattachments {
 	margin-top: 0.5em;
+}
+.cmtattachments > a {
+	display: block;
 }
 .pavb > p:first-child, .format0 > p:first-child {
 	margin-top: 0;

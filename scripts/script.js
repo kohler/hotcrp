@@ -3251,7 +3251,7 @@ function edit_allowed(cj) {
 }
 
 function render_editing(hc, cj) {
-    var bnote = "", i, x, actions = [], cid = cj_cid(cj);
+    var i, x, actions = [], btnbox = [], cid = cj_cid(cj), bnote;
 
     var msgx = [];
     if (cj.response && resp_rounds[cj.response].instrux)
@@ -3273,8 +3273,6 @@ function render_editing(hc, cj) {
     if (msgx.length)
         hc.push(render_xmsg(0, msgx));
 
-    if (!edit_allowed(cj))
-        bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form><div style="font-weight:normal;font-style:normal">', '</div></form>');
     if (cj.review_token)
         hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '">');
@@ -3284,6 +3282,10 @@ function render_editing(hc, cj) {
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
     hc.push_pop('<textarea name="comment" class="reviewtext cmttext c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
+
+    hc.push('<div class="cmteditinfo fold2o fold3c">', '</div>');
+
+    // visibility
     if (!cj.response && !cj.by_author) {
         var au_option, au_description;
         if (hotcrp_status.myperm.some_author_can_view_review) {
@@ -3297,7 +3299,6 @@ function render_editing(hc, cj) {
             au_option += ' (anonymous to authors)';
 
         // visibility
-        hc.push('<div class="cmteditinfo fold2o">', '</div>');
         hc.push('<div class="entryi short"><label for="' + cid + '-visibility">Visibility</label>', '</div>');
         hc.push('<select id="' + cid + '-visibility" name="visibility">', '</select>');
         hc.push('<option value="au">' + au_option + '</option>');
@@ -3311,31 +3312,48 @@ function render_editing(hc, cj) {
         hc.push('<p class="f-h">', '</p>');
         hc.push_pop(au_description);
         hc.pop_n(2);
+    }
 
-        // tags
-        hc.push('<div class="entryi"><label for="' + cid + '-tags">Tags</label>', '</div>')
-        hc.push('<input id="' + cid + '-tags" name="commenttags" type="text" size="60">');
-        hc.pop(2);
+    // attachments
+    hc.push('<div class="entryi has-editable-attachments hidden" id="' + cid + '-attachments" data-document-prefix="cmtdoc"><label for="' + cid + '-attachments">Attachments</label></div>');
+    btnbox.push('<button type="button" name="attach" class="btn btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="' + cid + '-attachments">' + $("#licon-attachment").html() + '</button>');
 
-        // actions
+    // tags
+    if (!cj.response && !cj.by_author) {
+        hc.push('<div class="entryi fx3"><label for="' + cid + '-tags">Tags</label>', '</div>')
+        hc.push_pop('<input id="' + cid + '-tags" name="commenttags" type="text" size="50">');
+        btnbox.push('<button type="button" name="showtags" class="btn btn-licon need-tooltip" aria-label="Tags">' + $("#licon-tag").html() + '</button>');
+    }
+
+    // delete
+    if (!cj.is_new) {
+        x = cj.response ? "response" : "comment";
+        btnbox.push('<button type="button" name="delete" class="btn btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="Are you sure you want to delete this ' + x + '?">' + $("#licon-trash").html() + '</button>');
+    }
+
+    // close .cmteditinfo
+    hc.pop();
+
+    // actions: save, [save draft], cancel, [btnbox], [word count]
+    bnote = edit_allowed(cj) ? "" : '<div class="hint">(admin only)</div>';
+    if (!cj.response)
         actions.push('<button type="button" name="bsubmit" class="btn btn-primary">Save</button>' + bnote);
-    } else {
+    else {
         // actions
         // XXX allow_administer
+        actions.push('<button type="button" name="bsubmit" class="btn btn-primary">Submit</button>' + bnote);
         if (cj.response) {
             hc.push('<input type="hidden" name="response" value="' + cj.response + '">');
             if (cj.is_new || cj.draft)
                 actions.push('<button type="button" name="savedraft" class="btn">Save draft</button>' + bnote);
         }
-        actions.push('<button type="button" name="bsubmit" class="btn btn-primary">Submit</button>' + bnote);
     }
     actions.push('<button type="button" name="cancel" class="btn">Cancel</button>');
-    if (!cj.is_new) {
-        x = cj.response ? "Delete response" : "Delete comment";
-        actions.push("", '<button type="button" name="delete" class="btn">' + x + '</button>');
-    }
+    if (btnbox.length)
+        actions.push('<div class="btnbox">' + btnbox.join("") + '</div>');
     if (cj.response && resp_rounds[cj.response].words > 0)
         actions.push("", '<div class="words"></div>');
+
     hc.push('<div class="reviewtext aabig aab aabr">', '</div>');
     for (i = 0; i < actions.length; ++i)
         if (actions[i] !== "")
@@ -3364,32 +3382,70 @@ function make_update_words(jq, wlimit) {
         jq.find("textarea").on("input", setwc).each(setwc);
 }
 
-function activate_editing(j, cj) {
+function activate_editing($c, cj) {
     var elt, tags = [], i;
-    j.find("textarea[name=comment]").text(cj.text || "")
+    $c.find("textarea[name=comment]").text(cj.text || "")
         .on("keydown", keydown_editor)
         .on("hotcrp_renderPreview", render_preview)
         .autogrow();
-    /*suggest(j.find("textarea")[0], comment_completion_q, {
+    /*suggest($c.find("textarea")[0], comment_completion_q, {
         filter_length: 1, decorate: true
     });*/
+
+    var vis = cj.visibility || hotcrp_status.myperm.default_comment_visibility || "rev";
+    $c.find("select[name=visibility]")
+        .val(vis).attr("data-default-value", vis)
+        .on("change", visibility_change).change();
+
     for (i in cj.tags || [])
         tags.push(cj.tags[i].replace(detwiddle, "~"));
-    j.find("input[name=commenttags]").val(tags.join(" ")).autogrow();
-    j.find("select[name=visibility]").val(cj.visibility || hotcrp_status.myperm.default_comment_visibility || "rev");
-    if ((elt = j.find("input[name=blind]")[0]) && (!cj.visibility || cj.blind))
-        elt.checked = true;
-    j.find("button[name=bsubmit]").click(submit_editor);
-    j.find("form").on("submit", submit_editor);
-    j.find("button[name=cancel]").click(cancel_editor);
-    j.find("button[name=delete]").click(delete_editor);
-    j.find("button[name=savedraft]").click(savedraft_editor);
-    if ((cj.visibility || "rev") !== "au")
-        fold(j.find(".cmteditinfo")[0], true, 2);
-    j.find("select[name=visibility]").on("change", visibility_change);
+    if (tags.length)
+        fold($c.find(".cmteditinfo")[0], false, 3);
+    $c.find("input[name=commenttags]").val(tags.join(" ")).autogrow();
+
+    for (i in cj.docs || [])
+        $c.find(".has-editable-attachments").removeClass("hidden").append(render_edit_attachment(i, cj.docs[i]));
+
+    if (!cj.visiblity || cj.blind)
+        $c.find("input[name=blind]").prop("checked", true);
+
     if (cj.response && resp_rounds[cj.response].words > 0)
-        make_update_words(j, resp_rounds[cj.response].words);
-    hiliter_children(j);
+        make_update_words($c, resp_rounds[cj.response].words);
+
+    $c.find("form").on("submit", submit_editor);
+    $c.on("click", "button", buttonclick_editor);
+    hiliter_children($c);
+    $c.find(".need-tooltip").each(tooltip);
+}
+
+function render_edit_attachment(i, doc) {
+    var hc = new HtmlCollector;
+    hc.push('<div class="has-document compact" data-document-name="cmtdoc_' + doc.docid + '_' + i + '">', '</div>');
+    hc.push('<div class="document-file">', '</div>');
+    render_attachment_link(hc, doc);
+    hc.pop();
+    hc.push('<div class="document-actions"><a class="ui js-remove-document document-action" href="">Delete</a></div>');
+    return hc.render();
+}
+
+function render_attachment_link(hc, doc) {
+    hc.push('<a href="' + text_to_html(siteurl + doc.siteurl) + '" class="q">', '</a>');
+    if (doc.mimetype === "application/pdf")
+        hc.push('<img src="' + assetsurl + 'images/pdf.png" alt="[PDF]" class="sdlimg">');
+    else
+        hc.push('<img src="' + assetsurl + 'images/generic.png" alt="[Attachment]" class="sdlimg">');
+    hc.push(' ' + text_to_html(doc.filename || "Attachment"));
+    if (doc.size != null) {
+        hc.push(' <span class="dlsize">(', 'kB)</span>');
+        if (doc.size > 921)
+            hc.push(Math.round(doc.size / 1024));
+        else if (doc.size > 0)
+            hc.push(Math.round(doc.size / 102.4) / 10);
+        else
+            hc.push("0");
+        hc.pop();
+    }
+    hc.pop();
 }
 
 function beforeunload() {
@@ -3455,7 +3511,13 @@ function save_editor(elt, action, really) {
         } else
             $c.closest(".cmtg").html(data.msg);
     }
-    $.post(url, $f.serialize(), callback);
+    if (window.FormData)
+        $.ajax(url, {
+            method: "POST", data: new FormData($f[0]), success: callback,
+            processData: false, contentType: false
+        });
+    else
+        $.post(url, $f.serialize(), callback);
 }
 
 function keydown_editor(evt) {
@@ -3465,29 +3527,35 @@ function keydown_editor(evt) {
     }
 }
 
+function buttonclick_editor(evt) {
+    var self = this, $c = $cmt(this);
+    if (this.name === "bsubmit") {
+        evt.preventDefault();
+        save_editor(this, "submit");
+    } else if (this.name === "savedraft")
+        save_editor(this, this.name);
+    else if (this.name === "cancel")
+        render_cmt($c, $c.c, false);
+    else if (this.name === "delete")
+        override_deadlines.call(this, function () {
+            save_editor(self, self.name);
+        });
+    else if (this.name === "showtags") {
+        fold($c.find(".cmteditinfo")[0], false, 3);
+        $c.find("input[name=commenttags]").focus();
+    }
+}
+
 function submit_editor(evt) {
     evt.preventDefault();
     save_editor(this, "submit");
 }
 
-function savedraft_editor() {
-    save_editor(this, "savedraft");
-}
-
-function delete_editor() {
-    save_editor(this, "delete");
-}
-
-function cancel_editor() {
-    var $c = $cmt(this);
-    render_cmt($c, $c.c, false);
-}
-
-function render_cmt(j, cj, editing, msg) {
+function render_cmt($c, cj, editing, msg) {
     var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead, i;
     cmts[cj_cid(cj)] = cj;
     if (cj.response) {
-        chead = j.closest(".cmtcard").find(".cmtcard_head");
+        chead = $c.closest(".cmtcard").find(".cmtcard_head");
         chead.find(".cmtinfo").remove();
     }
 
@@ -3538,32 +3606,26 @@ function render_cmt(j, cj, editing, msg) {
         hc.push('<div class="cmttext"></div>');
         if (cj.docs && cj.docs.length) {
             hc.push('<div class="cmtattachments">', '</div>');
-            for (i = 0; i != cj.docs.length; ++i) {
-                hc.push('<a href="' + text_to_html(siteurl + cj.docs[i].siteurl) + '" class="q">', '</a>');
-                if (cj.docs[i].mimetype === "application/pdf")
-                    hc.push('<img src="' + assetsurl + 'images/pdf.png" alt="[PDF]" class="sdlimg">');
-                else
-                    hc.push('<img src="' + assetsurl + 'images/generic.png" alt="[Attachment]" class="sdlimg">');
-                hc.push_pop(' ' + text_to_html(cj.docs[i].filename || "Attachment"));
-            }
+            for (i = 0; i != cj.docs.length; ++i)
+                render_attachment_link(hc, cj.docs[i]);
             hc.pop();
         }
     }
 
     // render
-    j.find("textarea, input[type=text]").unautogrow();
-    j.html(hc.render());
+    $c.find("textarea, input[type=text]").unautogrow();
+    $c.html(hc.render());
 
     // fill body
     if (editing)
-        activate_editing(j, cj);
+        activate_editing($c, cj);
     else {
-        (cj.response ? chead.parent() : j).find("a.cmteditor").click(edit_this);
+        (cj.response ? chead.parent() : $c).find("a.cmteditor").click(edit_this);
         render_cmt_text(cj.format, cj.text || "", cj.response,
-                        j.find(".cmttext"), chead);
+                        $c.find(".cmttext"), chead);
     }
 
-    return j;
+    return $c;
 }
 
 function render_cmt_text(format, value, response, textj, chead) {
@@ -5428,7 +5490,7 @@ function override_deadlines(callback) {
         djq.remove();
     });
     djq.find("button[name=bsubmit]")
-        .html(ejq.html() || ejq.attr("value") || "Save changes")
+        .html(ejq.attr("aria-label") || ejq.html() || ejq.attr("value") || "Save changes")
         .on("click", function () {
         if (callback && $.isFunction(callback))
             callback();

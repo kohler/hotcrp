@@ -1154,6 +1154,9 @@ class PaperInfo {
                 $dids = array_merge($dids, $oa->unsorted_values());
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
     }
+    function mark_inactive_linked_documents() {
+        $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType<=? and paperStorageId not in (select documentId from DocumentLink where paperId=?)", $this->paperId, DTYPE_COMMENT, $this->paperId);
+    }
 
     function attachment($dtype, $name) {
         $oa = $this->option($dtype);
@@ -1193,6 +1196,9 @@ class PaperInfo {
     }
     function comment_linked_documents(CommentInfo $cinfo) {
         return $this->linked_documents($cinfo->commentId, 0);
+    }
+    function invalidate_linked_documents() {
+        $this->_doclink_array = null;
     }
 
     private function ratings_query() {

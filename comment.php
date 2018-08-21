@@ -67,16 +67,34 @@ function save_comment($qreq, $text, $is_response, $roundnum) {
             "submit" => $is_response && !$qreq->draft,
             "text" => $text,
             "tags" => $qreq->commenttags,
-            "blind" => $qreq->blind];
-    if ($is_response && !$crow)
-        $cinfo = CommentInfo::make_response_template($roundnum, $prow);
-    else
-        $cinfo = new CommentInfo($crow, $prow);
-    $ok = $cinfo->save($req, $user);
-    $what = ($is_response ? "Response" : "Comment");
+            "blind" => $qreq->blind,
+            "docs" => $crow->attachments()];
+    $ok = true;
+    $msg = false;
 
-    $confirm = false;
-    if (!$ok && $is_response) {
+    // attachments in request
+    for ($i = count($req["docs"]) - 1; $i >= 0; --$i)
+        if ($qreq["remove_cmtdoc_{$req["docs"][$i]->paperStorageId}_{$i}"])
+            array_splice($req["docs"], $i, 1);
+    for ($i = 1; $qreq["has_cmtdoc_new_$i"] && count($req["docs"]) < 1000; ++$i)
+        if (($f = $qreq->file("cmtdoc_new_$i"))) {
+            $doc = DocumentInfo::make_file_upload($prow->paperId, DTYPE_COMMENT, $f);
+            if ($doc->save())
+                $req["docs"][] = $doc;
+            else
+                $msg = Ht::xmsg("error", "Error uploading attachment.");
+        }
+
+    if ($ok) {
+        if ($is_response && !$crow)
+            $cinfo = CommentInfo::make_response_template($roundnum, $prow);
+        else
+            $cinfo = new CommentInfo($crow, $prow);
+        $ok = $cinfo->save($req, $user);
+        $what = ($is_response ? "Response" : "Comment");
+    }
+
+    if (!$ok && $is_response && !$msg) {
         $crows = $prow->fetch_comments("(commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=$roundnum");
         reset($crows);
         $cur_response = empty($crows) ? null : current($crows);
@@ -84,32 +102,33 @@ function save_comment($qreq, $text, $is_response, $roundnum) {
             $cinfo = new CommentInfo($cur_response, $prow);
             $ok = true;
         } else
-            $confirm = Ht::xmsg("error", "A response was entered concurrently by another user. Reload to see it.");
+            $msg = Ht::xmsg("error", "A response was entered concurrently by another user. Reload to see it.");
     }
     if (!$ok)
         /* nada */;
-    else if ($is_response && (!$cinfo->commentId || ($cinfo->commentType & COMMENTTYPE_DRAFT))) {
+    else if ($is_response
+             && (!$cinfo->commentId || ($cinfo->commentType & COMMENTTYPE_DRAFT))) {
         if ($cinfo->commentId)
-            $confirm = 'Response saved. <strong>This draft response will not be shown to reviewers.</strong>';
+            $msg = 'Response saved. <strong>This draft response will not be shown to reviewers.</strong>';
         else
-            $confirm = 'Response deleted.';
+            $msg = 'Response deleted.';
         $isuf = $roundnum ? "_$roundnum" : "";
         if (($dl = $Conf->printableTimeSetting("resp_done$isuf")) != "N/A")
-            $confirm .= " You have until $dl to submit the response.";
-        $confirm = Ht::xmsg("warning", $confirm);
+            $msg .= " You have until $dl to submit the response.";
+        $msg = Ht::xmsg("warning", $msg);
     } else if ($is_response) {
         $rname = $Conf->resp_round_text($roundnum);
-        $confirm = Ht::xmsg("confirm", ($rname ? "$rname response" : "Response") . ' submitted.');
+        $msg = Ht::xmsg("confirm", ($rname ? "$rname response" : "Response") . ' submitted.');
     } else if ($cinfo->commentId)
-        $confirm = Ht::xmsg("confirm", "Comment saved.");
+        $msg = Ht::xmsg("confirm", "Comment saved.");
     else
-        $confirm = Ht::xmsg("confirm", "Comment deleted.");
+        $msg = Ht::xmsg("confirm", "Comment deleted.");
 
     $j = array("ok" => $ok);
     if ($cinfo->commentId)
         $j["cmt"] = $cinfo->unparse_json($Me);
-    if ($confirm)
-        $j["msg"] = $confirm;
+    if ($msg)
+        $j["msg"] = $msg;
     json_exit($j);
 }
 
