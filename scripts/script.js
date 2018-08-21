@@ -1411,7 +1411,7 @@ function tooltip() {
         $self.hover(ttenter, ttleave);
 }
 tooltip.erase = function () {
-    var tt = $(this).data("tooltipState");
+    var tt = this === tooltip ? window.global_tooltip : $(this).data("tooltipState");
     tt && tt.erase();
 };
 tooltip.add_builder = function (name, f) {
@@ -1735,8 +1735,7 @@ function tracker_ui(event) {
         else
             event = 0;
     }
-    if (window.global_tooltip)
-        window.global_tooltip.erase();
+    tooltip.erase();
     if (event < 0) {
         $.post(hoturl_post("api/track", {track: "stop"}), load_success);
         if (tracker_refresher) {
@@ -5368,6 +5367,7 @@ function popup_skeleton(options) {
 }
 
 function popup_near(elt, anchor) {
+    tooltip.erase();
     if (elt.jquery)
         elt = elt[0];
     if (hasClass(elt, "popupbg"))
@@ -5411,7 +5411,7 @@ function popup(anchor, which, dofold) {
 }
 
 function popup_close(popup) {
-    window.global_tooltip && window.global_tooltip.erase();
+    tooltip.erase();
     popup.find("textarea, input[type=text]").unautogrow();
     popup.remove();
 }
