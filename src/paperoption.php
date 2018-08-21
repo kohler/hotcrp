@@ -1212,9 +1212,9 @@ class AttachmentsPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", false);
-        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '">';
-        foreach ($ov->documents() as $doc) {
-            $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
+        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" id="', $this->formid, '_attachments">';
+        foreach ($ov->documents() as $i => $doc) {
+            $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
             echo '<div class="has-document" data-document-name="', $oname, '">',
                 '<div class="document-file">',
                     $doc->link_html(htmlspecialchars($doc->unique_filename)),
@@ -1225,10 +1225,9 @@ class AttachmentsPaperOption extends PaperOption {
                     Ht::link("Delete", "", ["class" => "ui js-remove-document document-action"]),
                 '</div></div>';
         }
-        echo '<div>', Ht::button("Add attachment", ["class" => "btn ui js-add-attachment"]),
-            '</div>',
+        echo '</div>', Ht::button("Add attachment", ["class" => "btn ui js-add-attachment", "data-editable-attachments" => "{$this->formid}_attachments"]),
             $pt->messages_at($this->formid),
-            "</div></div>\n\n";
+            "</div>\n\n";
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
@@ -1244,17 +1243,15 @@ class AttachmentsPaperOption extends PaperOption {
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
         $pid = $prow ? $prow->paperId : -1;
         $attachments = $opt_pj ? : [];
-        for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
+        for ($i = count($attachments) - 1; $i >= 0; --$i)
+            if (isset($attachments[$i]->docid)) {
+                $pfx = "remove_{$this->formid}_{$attachments[$i]->docid}";
+                if ($qreq["{$pfx}_{$i}"] || $qreq[$pfx] /* XXX backwards compat */)
+                    array_splice($attachments, $i, 1);
+            }
+        for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i)
             if (($f = $qreq->file("{$this->formid}_new_$i")))
                 $attachments[] = DocumentInfo::make_file_upload($pid, $this->id, $f);
-        }
-        for ($i = 0; $i < count($attachments); ++$i) {
-            if (isset($attachments[$i]->docid)
-                && $qreq["remove_{$this->formid}_{$attachments[$i]->docid}"]) {
-                array_splice($attachments, $i, 1);
-                --$i;
-            }
-        }
         return empty($attachments) ? null : $attachments;
     }
 

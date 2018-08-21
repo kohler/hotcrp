@@ -6236,25 +6236,21 @@ handle_ui.on("js-check-submittable", function (event) {
 });
 
 handle_ui.on("js-add-attachment", function () {
-    var $ea = $(this).closest(".has-editable-attachments"),
-        $ei = $ea.find(".has-document"), n = 0, name;
+    var $ea = $($$(this.getAttribute("data-editable-attachments"))),
+        $ei = $ea.find(".has-document"), $f = $ea.closest("form"), name, n = 0;
     do {
         ++n;
-        name = $ea.data("documentPrefix") + "_new_" + n;
-        $ei.each(function () {
-            if ($(this).data("documentName") === name)
-                return (name = false);
-        });
-    } while (name === false);
+        name = $ea[0].getAttribute("data-document-prefix") + "_new_" + n;
+    } while ($f[0]["has_" + name]);
     var $na = $('<div class="has-document document-new-instance hidden" data-document-name="' + name + '">'
         + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="document-uploader"></div>'
-        + '<div class="document-stamps"></div>'
         + '<div class="document-actions"><a href="" class="ui js-remove-document document-action">Delete</a></div>'
         + '</div>');
-    $ei.length ? $na.insertAfter($ei[$ei.length - 1]) : $na.prependTo($ea);
-    $na.find("input[type=file]").on("change", function () {
+    $na.appendTo($ea).find("input[type=file]").on("change", function () {
         $(this).closest(".has-document").removeClass("hidden");
-        $ea.append('<input type="hidden" name="has_' + name + '" value="1">');
+        $ea.removeClass("hidden");
+        if (!$f[0]["has_" + name])
+            $f.append('<input type="hidden" name="has_' + name + '" value="1">');
     })[0].click();
 });
 
@@ -6282,9 +6278,9 @@ handle_ui.on("js-replace-document", function (event) {
 
 handle_ui.on("js-remove-document", function (event) {
     var $ei = $(this).closest(".has-document"),
-        $f = $ei.closest("form"),
         $r = $ei.find(".document-remover"),
-        $en = $ei.find(".document-file");
+        $en = $ei.find(".document-file"),
+        $f = $(this).closest("form") /* set before $ei is removed */;
     if (hasClass(this, "undelete")) {
         $r.val("");
         $en.find("del > *").unwrap();
