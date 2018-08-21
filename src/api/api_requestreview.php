@@ -67,7 +67,7 @@ class RequestReview_API {
         if (!$user->can_administer($prow)
             && ($extrev_chairreq === 1
                 || ($extrev_chairreq === 2 && $potconflict))) {
-            $result = Dbl::qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
+            $result = $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
                 $prow->paperId, $email, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, $reason, $round);
             if ($extrev_chairreq === 2) {
