@@ -30,7 +30,7 @@ if ($Me->privChair) {
     $tOpt["unsub"] = "Unsubmitted papers";
     $tOpt["all"] = "All papers";
 }
-if ($Me->is_explicit_manager() || ($Me->privChair && $Conf->has_any_manager()))
+if ($Me->privChair ? $Conf->has_any_manager() : $Me->is_manager())
     $tOpt["manager"] = "Papers you administer";
 $tOpt["req"] = "Your review requests";
 if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t]))

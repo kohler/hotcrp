@@ -10,7 +10,7 @@ class AllTags_API {
                  || (!$user->conf->tag_seeall
                      && ($user->privChair
                          ? $user->conf->has_any_manager()
-                         : $user->is_explicit_manager()
+                         : $user->is_manager()
                            || $user->conf->check_track_sensitivity(Track::HIDDENTAG))))
             return self::hard_alltags_api($user);
         else

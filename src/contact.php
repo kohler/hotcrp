@@ -392,7 +392,7 @@ class Contact {
 
         // Check forceShow
         $this->_overrides = 0;
-        if ($qreq && $qreq->forceShow && $this->privChair)
+        if ($qreq && $qreq->forceShow && $this->is_manager())
             $this->_overrides |= self::OVERRIDE_CONFLICT;
         if ($qreq && $qreq->override)
             $this->_overrides |= self::OVERRIDE_TIME;
@@ -405,7 +405,7 @@ class Contact {
     }
     function set_overrides($overrides) {
         $old_overrides = $this->_overrides;
-        if (!$this->privChair)
+        if (($overrides & self::OVERRIDE_CONFLICT) && !$this->is_manager())
             $overrides &= ~self::OVERRIDE_CONFLICT;
         $this->_overrides = $overrides;
         return $old_overrides;
