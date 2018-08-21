@@ -133,7 +133,7 @@ class HotCRPMailer extends Mailer {
         foreach ($rrows as $rrow)
             if (($rrow->reviewSubmitted
                  || ($rrow == $this->rrow && $this->rrow_unsubmitted))
-                && $this->recipient->can_view_review($this->row, $rrow, false)) {
+                && $this->recipient->can_view_review($this->row, $rrow)) {
                 if ($text !== "")
                     $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
                 $text .= $rf->pretty_text($this->row, $rrow, $this->recipient, $this->no_send, true);
@@ -388,7 +388,7 @@ class HotCRPMailer extends Mailer {
 
     static function check_can_view_review($recipient, $prow, $rrow) {
         assert(!($recipient->overrides() & Contact::OVERRIDE_CONFLICT));
-        return $recipient->can_view_review($prow, $rrow, false);
+        return $recipient->can_view_review($prow, $rrow);
     }
 
     static function prepare_to($recipient, $template, $row, $rest = array()) {

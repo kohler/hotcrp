@@ -184,7 +184,7 @@ class GetScores_ListAction extends ListAction {
         foreach ($user->paper_set($ssel) as $row) {
             if (($whyNot = $user->perm_view_paper($row)))
                 $errors[] = "#$row->paperId: " . whyNotText($whyNot);
-            else if (($whyNot = $user->perm_view_review($row, null, null)))
+            else if (($whyNot = $user->perm_view_review($row, null)))
                 $errors[] = "#$row->paperId: " . whyNotText($whyNot);
             else {
                 $row->ensure_full_reviews();

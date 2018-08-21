@@ -1724,7 +1724,7 @@ class ReviewValues extends MessageSet {
 
     function review_watch_callback($prow, $minic) {
         $rrow = $this->_mailer_info["rrow"];
-        if ($minic->can_view_review($prow, $rrow, null, $this->_mailer_diff_view_score)
+        if ($minic->can_view_review($prow, $rrow, $this->_mailer_diff_view_score)
             && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $prow, $this->_mailer_info))) {
             // Don't combine preparations unless you can see all submitted
             // reviewer identities

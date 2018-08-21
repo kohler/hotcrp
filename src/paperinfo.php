@@ -1408,7 +1408,7 @@ class PaperInfo {
     }
 
     function viewable_submitted_reviews_by_display(Contact $contact) {
-        $cinfo = $contact->__rights($this, null);
+        $cinfo = $contact->__rights($this);
         if ($cinfo->vsreviews_array === null
             || $cinfo->vsreviews_version !== $this->_review_array_version) {
             $cinfo->vsreviews_array = [];
@@ -1441,7 +1441,7 @@ class PaperInfo {
 
     function may_have_viewable_scores($field, Contact $contact) {
         $field = is_object($field) ? $field : $this->conf->review_field($field);
-        return $contact->can_view_review($this, null, null, $field->view_score)
+        return $contact->can_view_review($this, null, $field->view_score)
             || $this->review_type($contact);
     }
 

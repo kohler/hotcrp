@@ -1898,9 +1898,9 @@ class Contact {
         return $ci;
     }
 
-    function __rights(PaperInfo $prow, $forceShow = null) {
+    function __rights(PaperInfo $prow) {
         // public access point; to be avoided
-        return $this->rights($prow, $forceShow);
+        return $this->rights($prow);
     }
 
     function override_deadlines($rights) {
@@ -2535,7 +2535,7 @@ class Contact {
         return -1;
     }
 
-    function can_view_review(PaperInfo $prow, $rrow, $forceShow = null, $viewscore = null) {
+    function can_view_review(PaperInfo $prow, $rrow, $viewscore = null) {
         if (is_int($rrow)) {
             $viewscore = $rrow;
             $rrow = null;
@@ -2544,7 +2544,7 @@ class Contact {
         if ($rrow && !($rrow instanceof ReviewInfo))
             error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         assert(!$rrow || $prow->paperId == $rrow->paperId);
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREV)
             || $rights->reviewType == REVIEW_META
             || ($rrow
@@ -2562,7 +2562,7 @@ class Contact {
                 && ($viewscore >= VIEWSCORE_AUTHOR
                     || ($viewscore >= VIEWSCORE_AUTHORDEC
                         && $prow->outcome
-                        && $this->can_view_decision($prow, $forceShow))))
+                        && $this->can_view_decision($prow))))
             || ($rights->allow_pc
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
@@ -2579,11 +2579,11 @@ class Contact {
                 && $seerev >= 0);
     }
 
-    function perm_view_review(PaperInfo $prow, $rrow, $forceShow = null, $viewscore = null) {
-        if ($this->can_view_review($prow, $rrow, $forceShow, $viewscore))
+    function perm_view_review(PaperInfo $prow, $rrow, $viewscore = null) {
+        if ($this->can_view_review($prow, $rrow, $viewscore))
             return null;
         $rrowSubmitted = !$rrow || $rrow->reviewSubmitted > 0;
-        $rights = $this->rights($prow, $forceShow);
+        $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if ((!$rights->act_author_view
              && !$rights->allow_pc
@@ -3113,8 +3113,8 @@ class Contact {
     }
 
 
-    function can_view_decision(PaperInfo $prow, $forceShow = null) {
-        $rights = $this->rights($prow, $forceShow);
+    function can_view_decision(PaperInfo $prow) {
+        $rights = $this->rights($prow);
         return $rights->can_administer
             || ($rights->act_author_view
                 && $prow->can_author_view_decision())

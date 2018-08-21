@@ -2289,7 +2289,7 @@ class PaperTable {
         $prow = $this->prow;
 
         if ($this->user->is_admin_force()
-            && !$this->user->can_view_review($prow, null, false))
+            && !$this->user->call_with_overrides(0, "can_view_review", $prow, null))
             $this->_paptabSepContaining($this->_privilegeMessage());
         else if ($this->user->contactId == $prow->managerContactId
                  && !$this->user->privChair
@@ -2414,13 +2414,14 @@ class PaperTable {
         $act_pc = $this->user->act_pc($prow);
 
         // review messages
-        $whyNot = $this->user->perm_view_review($prow, null, false);
         $msgs = array();
         if (!$this->rrow && !$this->prow->review_type($this->user))
             $msgs[] = "You haven’t been assigned to review this submission, but you can review it anyway.";
-        if ($whyNot && $this->user->is_admin_force()) {
-            $msgs[] = $this->_privilegeMessage();
-        } else if ($whyNot && isset($whyNot["reviewNotComplete"])
+        if ($this->user->is_admin_force()) {
+            if (!$this->user->call_with_overrides(0, "can_view_review", $prow, null))
+                $msgs[] = $this->_privilegeMessage();
+        } else if (($whyNot = $this->user->perm_view_review($prow, null))
+                   && isset($whyNot["reviewNotComplete"])
                    && ($this->user->isPC || $this->conf->setting("extrev_view"))) {
             $nother = 0;
             $myrrow = null;
