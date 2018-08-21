@@ -1963,11 +1963,10 @@ class Contact {
             return $this->privChair;
     }
 
-    function act_pc(PaperInfo $prow = null, $forceShow = null) {
-        if ($prow) {
-            $rights = $this->rights($prow, $forceShow);
-            return $rights->allow_pc;
-        } else
+    function act_pc(PaperInfo $prow = null) {
+        if ($prow)
+            return $this->rights($prow)->allow_pc;
+        else
             return $this->isPC;
     }
 
@@ -2315,8 +2314,8 @@ class Contact {
     }
 
     /* NB caller must check can_view_paper() */
-    function can_view_authors(PaperInfo $prow, $forceShow = null) {
-        $rights = $this->rights($prow, $forceShow);
+    function can_view_authors(PaperInfo $prow) {
+        $rights = $this->rights($prow);
         return ($rights->nonblind
                 && $prow->timeSubmitted != 0
                 && ($rights->allow_pc_broad
@@ -3085,10 +3084,10 @@ class Contact {
                          . " or MyPaperReview.reviewId is not null)");
     }
 
-    function can_view_comment_identity(PaperInfo $prow, $crow, $forceShow = null) {
+    function can_view_comment_identity(PaperInfo $prow, $crow) {
         if ($crow && ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)))
-            return $this->can_view_authors($prow, $forceShow);
-        $rights = $this->rights($prow, $forceShow);
+            return $this->can_view_authors($prow);
+        $rights = $this->rights($prow);
         return $this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || ($crow && $crow->contactId == $this->contactId)
             || (($rights->allow_pc
@@ -3100,7 +3099,7 @@ class Contact {
     }
 
     function can_view_comment_time(PaperInfo $prow, $crow) {
-        return $this->can_view_comment_identity($prow, $crow, true);
+        return $this->can_view_comment_identity($prow, $crow);
     }
 
     function can_view_comment_tags(PaperInfo $prow, $crow) {

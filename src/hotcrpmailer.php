@@ -279,7 +279,7 @@ class HotCRPMailer extends Mailer {
     function kw_authors($args, $isbool) {
         if (!$this->recipient->is_site_contact
             && !$this->row->has_author($this->recipient)
-            && !$this->recipient->can_view_authors($this->row, false))
+            && !$this->recipient->can_view_authors($this->row))
             return $isbool ? false : "Hidden for blind review";
         return rtrim($this->row->pretty_text_author_list());
     }
@@ -392,13 +392,16 @@ class HotCRPMailer extends Mailer {
     }
 
     static function prepare_to($recipient, $template, $row, $rest = array()) {
-        if ($recipient->disabled)
-            return null;
-        $mailer = new HotCRPMailer($recipient->conf, $recipient, $row, $rest);
-        if (($checkf = get($rest, "check_function"))
-            && !call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow))
-            return null;
-        return $mailer->make_preparation($template, $rest);
+        $answer = null;
+        if (!$recipient->disabled) {
+            $old_overrides = $recipient->remove_overrides(Contact::OVERRIDE_CONFLICT);
+            $mailer = new HotCRPMailer($recipient->conf, $recipient, $row, $rest);
+            $checkf = get($rest, "check_function");
+            if (!$checkf || call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow))
+                $answer = $mailer->make_preparation($template, $rest);
+            $recipient->set_overrides($old_overrides);
+        }
+        return $answer;
     }
 
     static function send_to($recipient, $template, $row, $rest = array()) {

@@ -271,8 +271,7 @@ function refuseReview($qreq) {
     $Requester = $Conf->user_by_id($rrow->requestedBy);
     $reqprow = $Conf->paperRow($prow->paperId, $Requester);
     HotCRPMailer::send_to($Requester, "@refusereviewrequest", $reqprow,
-                          array("reviewer_contact" => $rrow,
-                                "reason" => $reason));
+                          ["reviewer_contact" => $rrow, "reason" => $reason]);
 
     // confirmation message
     $Conf->confirmMsg("The request that you review paper #$prow->paperId has been removed.  Mail was sent to the person who originally requested the review.");

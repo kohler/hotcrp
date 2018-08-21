@@ -883,7 +883,8 @@ $blind\n";
         $submitted = $rrow && $rrow->reviewSubmitted;
         $disabled = !$Me->can_clickthrough("review");
         $my_review = !$rrow || $Me->is_my_review($rrow);
-        if (!$this->conf->time_review($rrow, $Me->act_pc($prow, true), true)) {
+        $pc_deadline = $Me->act_pc($prow) || $Me->allow_administer($prow);
+        if (!$this->conf->time_review($rrow, $pc_deadline, true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot) . " Are you sure you want to override the deadline?";
             if (!$submitted) {

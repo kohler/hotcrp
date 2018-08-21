@@ -38,7 +38,7 @@ class GetRevpref_ListAction extends ListAction {
 
         $not_me = $user->contactId !== $Rev->contactId;
         $has_conflict = false;
-        $texts = array();
+        $texts = [];
         foreach ($user->paper_set($ssel, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
             if ($not_me && !$user->allow_administer($prow))
                 continue;
@@ -52,7 +52,7 @@ class GetRevpref_ListAction extends ListAction {
             }
             if ($this->extended) {
                 $x = "";
-                if ($Rev->can_view_authors($prow, false))
+                if ($Rev->can_view_authors($prow))
                     $x .= prefix_word_wrap(" Authors: ", $prow->pretty_text_author_list(), "          ");
                 $x .= prefix_word_wrap("Abstract: ", rtrim($prow->abstract), "          ");
                 if ($prow->topicIds != "")

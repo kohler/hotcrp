@@ -293,7 +293,9 @@ class CommentInfo {
 
         // identity and time
         $idable = $contact->can_view_comment_identity($this->prow, $this);
-        $idable_override = $idable || $contact->can_view_comment_identity($this->prow, $this, true);
+        $idable_override = $idable
+            || ($contact->can_meaningfully_override($this->prow)
+                && $contact->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
         if ($idable || $idable_override) {
             $user = $this->user();
             $cj->author = Text::user_html($user);
@@ -347,7 +349,7 @@ class CommentInfo {
             $x = "$rname Response";
         else
             $x = "Response";
-        if ($contact->can_view_comment_identity($this->prow, $this, false)) {
+        if ($contact->can_view_comment_identity($this->prow, $this)) {
             $x .= " by " . Text::user_text($this->user());
         } else if (($p = $this->unparse_user_pseudonym($contact))
                    && ($p !== "Author" || !($this->commentType & COMMENTTYPE_RESPONSE))) {
@@ -382,7 +384,7 @@ class CommentInfo {
             . $a . ' class="ptitle">'
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->prow->title, 80))
             . "</a>";
-        $idable = $contact->can_view_comment_identity($this->prow, $this, false);
+        $idable = $contact->can_view_comment_identity($this->prow, $this);
         if ($idable || $contact->can_view_comment_time($this->prow, $this))
             $time = $this->conf->parseableTime($this->timeModified, false);
         else
