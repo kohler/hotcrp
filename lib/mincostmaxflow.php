@@ -646,15 +646,39 @@ class MinCostMaxFlow {
         shuffle($this->e);
     }
 
+    private function make_debug_file() {
+        global $Conf, $Now;
+        if (!($dir = $Conf->opt("minCostMaxFlowDebug")))
+            return null;
+        $f = null;
+        $time = time();
+        while (!$f && $time < $Now + 20) {
+            $f = @fopen($dir . "/mcmf-{$Conf->dbname}-{$time}.txt", "xb");
+            ++$time;
+        }
+        return $f;
+    }
+
     function run() {
+        global $Conf, $Now;
         assert(!$this->hasrun);
         $this->hasrun = true;
         $this->initialize_edges();
+        if (($f = $this->make_debug_file())) {
+            fwrite($f, $this->mincost_dimacs_input());
+            fwrite($f, "\nc begintime " . microtime(true) . "\n");
+        }
         $this->pushrelabel_run();
+        if ($f)
+            fwrite($f, "\nc pushrelabeltime " . microtime(true) . "\n");
         if ($this->mincost != 0 || $this->maxcost != 0) {
             $this->epsilon = max(abs($this->mincost), $this->maxcost);
             $this->cspushrelabel_finish();
+            if ($f)
+                fwrite($f, "\nc cspushrelabeltime " . microtime(true) . "\n");
         }
+        if ($f)
+            fclose($f);
     }
 
 
