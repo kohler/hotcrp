@@ -630,16 +630,22 @@ class PaperStatus extends MessageSet {
         if (!isset($pj->submitted)) {
             if (isset($pj->draft))
                 $pj->submitted = !$pj->draft;
-            else if (isset($pj->status)) {
-                if ($pj->status === "submitted")
-                    $pj->submitted = true;
-                else if ($pj->status === "draft")
-                    $pj->submitted = false;
-            }
+            if (isset($pj->status) && $pj->status === "submitted")
+                $pj->submitted = true;
+            else if (isset($pj->status) && $pj->status === "draft")
+                $pj->submitted = false;
+            else
+                $pj->submitted = $this->prow && $this->prow->timeSubmitted != 0;
         }
-        if (!isset($pj->submitted))
-            $pj->submitted = $this->prow && $this->prow->timeSubmitted != 0;
-        foreach (array("withdrawn_at", "submitted_at", "final_submitted_at") as $k)
+        if (!isset($pj->draft))
+            $pj->draft = !$pj->submitted;
+        if (!isset($pj->withdrawn)) {
+            if (isset($pj->status) && $pj->status === "withdrawn")
+                $pj->withdrawn = true;
+            else
+                $pj->withdrawn = $this->prow && $this->prow->timeWithdrawn != 0;
+        }
+        foreach (["withdrawn_at", "submitted_at", "final_submitted_at"] as $k)
             if (isset($pj->$k)) {
                 if (is_numeric($pj->$k))
                     $pj->$k = (int) $pj->$k;
@@ -863,67 +869,47 @@ class PaperStatus extends MessageSet {
         $pj_withdrawn = get($pj, "withdrawn");
         $pj_submitted = get($pj, "submitted");
         $pj_draft = get($pj, "draft");
-        if ($pj_withdrawn === null
-            && $pj_submitted === null
-            && $pj_draft === null) {
-            $pj_status = get($pj, "status");
-            if ($pj_status === "submitted")
-                $pj_submitted = true;
-            else if ($pj_status === "withdrawn")
-                $pj_withdrawn = true;
-            else if ($pj_status === "draft")
-                $pj_draft = true;
-        }
+
         if ($ps->has_error()
-            && ($pj_submitted || $pj_draft === false)
+            && $pj_submitted
             && !$pj_withdrawn
             && (!$ps->prow || $ps->prow->timeSubmitted == 0)) {
             $pj_submitted = false;
             $pj_draft = true;
         }
 
-        $submitted = false;
-        if ($pj_withdrawn !== null
-            || $pj_submitted !== null
-            || $pj_draft !== null) {
-            if ($pj_submitted !== null)
-                $submitted = $pj_submitted;
-            else if ($pj_draft !== null)
-                $submitted = !$pj_draft;
-            else if ($ps->prow)
-                $submitted = $ps->prow->timeSubmitted != 0;
-            if (isset($pj->submitted_at))
-                $submitted_at = $pj->submitted_at;
-            else if ($ps->prow)
-                $submitted_at = $ps->prow->submitted_at();
-            else
+        $submitted = $pj_submitted;
+        if (isset($pj->submitted_at))
+            $submitted_at = $pj->submitted_at;
+        else if ($ps->prow)
+            $submitted_at = $ps->prow->submitted_at();
+        else
+            $submitted_at = 0;
+        if ($pj_withdrawn) {
+            if ($pj_submitted && $submitted_at <= 0)
+                $submitted_at = -100;
+            else if (!$pj_submitted)
                 $submitted_at = 0;
-            if ($pj_withdrawn) {
-                if ($submitted && $submitted_at <= 0)
-                    $submitted_at = -100;
-                else if (!$submitted)
-                    $submitted_at = 0;
-                else
-                    $submitted_at = -$submitted_at;
-                if (!$ps->prow || $ps->prow->timeWithdrawn <= 0) {
-                    $ps->save_paperf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now, "status");
-                    $ps->save_paperf("timeSubmitted", $submitted_at);
-                } else if (($ps->prow->submitted_at() > 0) !== $submitted)
-                    $ps->save_paperf("timeSubmitted", $submitted_at, "status");
-            } else if ($submitted) {
-                if (!$ps->prow || $ps->prow->timeSubmitted <= 0) {
-                    if ($submitted_at <= 0 || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN)
-                        $submitted_at = $Now;
-                    $ps->save_paperf("timeSubmitted", $submitted_at, "status");
-                }
-                if ($ps->prow && $ps->prow->timeWithdrawn != 0)
-                    $ps->save_paperf("timeWithdrawn", 0, "status");
-            } else if ($ps->prow && ($ps->prow->timeWithdrawn > 0 || $ps->prow->timeSubmitted > 0)) {
-                $ps->save_paperf("timeSubmitted", 0, "status");
-                $ps->save_paperf("timeWithdrawn", 0);
+            else
+                $submitted_at = -$submitted_at;
+            if (!$ps->prow || $ps->prow->timeWithdrawn <= 0) {
+                $ps->save_paperf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now, "status");
+                $ps->save_paperf("timeSubmitted", $submitted_at);
+            } else if (($ps->prow->submitted_at() > 0) !== $pj_submitted)
+                $ps->save_paperf("timeSubmitted", $submitted_at, "status");
+        } else if ($pj_submitted) {
+            if (!$ps->prow || $ps->prow->timeSubmitted <= 0) {
+                if ($submitted_at <= 0 || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN)
+                    $submitted_at = $Now;
+                $ps->save_paperf("timeSubmitted", $submitted_at, "status");
             }
+            if ($ps->prow && $ps->prow->timeWithdrawn != 0)
+                $ps->save_paperf("timeWithdrawn", 0, "status");
+        } else if ($ps->prow && ($ps->prow->timeWithdrawn > 0 || $ps->prow->timeSubmitted > 0)) {
+            $ps->save_paperf("timeSubmitted", 0, "status");
+            $ps->save_paperf("timeWithdrawn", 0);
         }
-        $ps->_paper_submitted = !$pj_withdrawn && $submitted;
+        $ps->_paper_submitted = $pj_submitted && !$pj_withdrawn;
     }
 
     static function check_final_status(PaperStatus $ps, $pj) {
