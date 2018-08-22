@@ -106,7 +106,7 @@ class Autoassigner {
     function run_prefconflict($papertype) {
         $papers = array_fill_keys($this->papersel, 1);
         $result = $this->conf->qe_raw($this->conf->preferenceConflictQuery($papertype, ""));
-        $this->ass = array("paper,action,email");
+        $this->ass = ["paper,action,email"];
         while (($row = edb_row($result))) {
             if (!isset($papers[$row[0]]) || !isset($this->pcm[$row[1]]))
                 continue;
@@ -132,7 +132,7 @@ class Autoassigner {
             $action = "no" . $reviewtype;
         } else
             return false;
-        $this->ass = array("paper,action,email");
+        $this->ass = ["paper,action,email"];
         $result = $this->conf->qe_raw($q);
         while (($row = edb_row($result))) {
             if (!isset($papers[$row[0]]) || !isset($this->pcm[$row[1]]))
@@ -297,7 +297,7 @@ class Autoassigner {
 
     private function make_assignment($action, $round, $cid, $pid, &$papers) {
         if (!$this->ass)
-            $this->ass = array("paper,action,email,round");
+            $this->ass = ["paper,action,email,round"];
         $this->ass[] = "$pid,$action," . $this->pcm[$cid]->email . $round;
         $this->eass[$cid][$pid] = self::ENEWASSIGN;
         $papers[$pid]--;
@@ -786,7 +786,10 @@ class Autoassigner {
 
 
     function assignments() {
-        return count($this->ass) > 1 ? $this->ass : null;
+        if (!empty($this->ass) && count($this->ass) > 1)
+            return $this->ass;
+        else
+            return null;
     }
 
     function pc_unhappiness() {
