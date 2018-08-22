@@ -504,7 +504,7 @@ class Autoassigner {
             }
         }
         // figure out badpairs class for each user
-        $bpclass = array();
+        $bpclass = $bpmembers = [];
         if ($this->action_takes_badpairs($action)) {
             foreach ($this->badpairs as $cid1 => $bp) {
                 foreach ($bp as $cid2 => $x)
@@ -514,6 +514,8 @@ class Autoassigner {
             foreach ($bpclass as $cid => &$x)
                 $x = min(array_keys($x));
             unset($x);
+            foreach ($bpclass as $cid => $class)
+                $bpmembers[$class][] = $cid;
         }
         // paper <-> contact map
         $bpdone = array();
@@ -529,8 +531,17 @@ class Autoassigner {
                 if (isset($bpclass[$cid])) {
                     $dst = "b{$pid}." . $bpclass[$cid];
                     if (!$m->node_exists($dst)) {
+                        // Existing assignments might invalidate the badpair
+                        // requirement.
+                        $capacity = 0;
+                        foreach ($bpmembers[$bpclass[$cid]] as $cid2) {
+                            $eass2 = $this->eass[$cid2][$pid];
+                            if ($eass2 > self::ENOASSIGN
+                                && ($eass2 >= self::ENEWASSIGN || $this->balance != self::BALANCE_NEW))
+                                ++$capacity;
+                        }
                         $m->add_node($dst, "b");
-                        $m->add_edge($dst, "p$pid", 1, 0);
+                        $m->add_edge($dst, "p$pid", max($capacity, 1), 0);
                     }
                 } else if ($this->review_gadget == self::REVIEW_GADGET_EXPERTISE
                            && isset($this->prefinfo[$cid][$pid])
