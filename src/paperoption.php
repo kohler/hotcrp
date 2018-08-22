@@ -581,6 +581,9 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
+    function value_present(PaperOptionValue $ov) {
+        return !!$ov->value;
+    }
     function value_compare($av, $bv) {
         return 0;
     }
@@ -669,8 +672,6 @@ class CheckboxPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
-        if (!$ov->value && $this->required)
-            $ps->error_at_option($this, "Entry required.");
         return $ov->value ? true : false;
     }
 
@@ -829,8 +830,6 @@ class SelectorPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
-        if (!$ov->value && $this->required)
-            $ps->error_at_option($this, "Entry required.");
         return get($this->selector, $ov->value - 1, null);
     }
 
@@ -915,8 +914,6 @@ class DocumentPaperOption extends PaperOption {
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         if (!$ov->value) {
-            if ($this->required)
-                $ps->error_at_option($this, "Entry required.");
             return null;
         } else if (($doc = $ps->document_to_json($this->id, $ov->value))) {
             return $doc;
@@ -1013,6 +1010,9 @@ class NumericPaperOption extends PaperOption {
         return $x;
     }
 
+    function value_present(PaperOptionValue $ov) {
+        return $ov->value !== null;
+    }
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
@@ -1027,8 +1027,6 @@ class NumericPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
-        if ($ov->value === null && $this->required)
-            $ps->error_at_option($this, "Entry required.");
         return $ov->value;
     }
 
@@ -1085,6 +1083,9 @@ class TextPaperOption extends PaperOption {
         return $xt;
     }
 
+    function value_present(PaperOptionValue $ov) {
+        return (string) $ov->data() !== "";
+    }
     function value_compare($av, $bv) {
         $av = $av ? (string) $av->data() : "";
         $bv = $bv ? (string) $bv->data() : "";
@@ -1107,8 +1108,6 @@ class TextPaperOption extends PaperOption {
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         $x = $ov->data();
-        if ((string) $x === "" && $this->required)
-            $ps->error_at_option($this, "Entry required.");
         return $x !== "" ? $x : null;
     }
 
@@ -1232,8 +1231,6 @@ class AttachmentsPaperOption extends PaperOption {
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         $attachments = [];
-        if (!$ov->value && $this->required)
-            $ps->error_at_option($this, "Entry required.");
         foreach ($ov->documents() as $doc)
             if (($doc = $ps->document_to_json($this->id, $doc)))
                 $attachments[] = $doc;

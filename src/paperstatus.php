@@ -239,6 +239,8 @@ class PaperStatus extends MessageSet {
             if ($user && !$user->can_view_paper_option($prow, $o))
                 continue;
             $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
+            if ($o->required && !$o->value_present($ov))
+                $this->error_at_option($o, "Entry required.");
             $oj = $o->unparse_json($ov, $this, $user);
             if ($oj !== null)
                 $options[$this->export_ids ? $o->id : $o->json_key()] = $oj;
