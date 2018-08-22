@@ -1185,17 +1185,14 @@ class PaperInfo {
         }
         return $this->_doclink_array;
     }
-    private function linked_documents($linkid, $min) {
+    function linked_documents($linkid, $min, $max) {
         $docs = [];
         foreach (get($this->doclink_array(), $linkid, []) as $lt => $docid)
-            if ($lt >= $min && $lt < $min + 1024)
+            if ($lt >= $min && $lt < $max)
                 $docs[] = $this->document(-2, $docid);
         if (!empty($docs))
             DocumentInfo::assign_unique_filenames($docs);
         return $docs;
-    }
-    function comment_linked_documents(CommentInfo $cinfo) {
-        return $this->linked_documents($cinfo->commentId, 0);
     }
     function invalidate_linked_documents() {
         $this->_doclink_array = null;

@@ -68,7 +68,7 @@ function save_comment($qreq, $text, $is_response, $roundnum) {
             "text" => $text,
             "tags" => $qreq->commenttags,
             "blind" => $qreq->blind,
-            "docs" => $crow->attachments()];
+            "docs" => $crow ? $crow->attachments() : []];
     $ok = true;
     $msg = false;
 
@@ -181,7 +181,7 @@ else if ($Qreq->submitcomment && $Qreq->response) {
     if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
         Conf::msg_error(whyNotText($whyNot));
     else
-        save_comment($Qreq, "", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0, $crow->commentRound);
+        save_comment($Qreq, false, ($crow->commentType & COMMENTTYPE_RESPONSE) != 0, $crow->commentRound);
     if ($Qreq->ajax)
         json_exit(["ok" => false]);
 } else if ($Qreq->cancel && $crow)

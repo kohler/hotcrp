@@ -224,7 +224,6 @@ function document_download($qreq) {
             $doc_crow = $cmtid = null;
             if ($dr->linkid[0] === "x" || $dr->linkid[0] === "X")
                 $cmtid = (int) substr($dr->linkid, 1);
-            error_log("got cmtid $dr->linkid");
             foreach ($prow->viewable_comment_skeletons($Me) as $crow)
                 if ($crow->unparse_html_id() === $dr->linkid
                     || $crow->commentId === $cmtid) {
@@ -233,7 +232,7 @@ function document_download($qreq) {
                 }
             if (!$doc_crow)
                 document_error("404 Not Found", "No such document “" . htmlspecialchars($dr->req_filename) . "”.");
-            foreach ($prow->comment_linked_documents($doc_crow) as $xdoc)
+            foreach ($doc_crow->attachments() as $xdoc)
                 if ($xdoc->unique_filename === $dr->attachment) {
                     $request_docid = $want_docid = $xdoc->paperStorageId;
                     break;

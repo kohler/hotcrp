@@ -3412,9 +3412,9 @@ function activate_editing($c, cj) {
     if (cj.response && resp_rounds[cj.response].words > 0)
         make_update_words($c, resp_rounds[cj.response].words);
 
-    $c.find("form").on("submit", submit_editor);
-    $c.on("click", "button", buttonclick_editor);
-    hiliter_children($c);
+    var $f = $c.find("form");
+    $f.on("submit", submit_editor).on("click", "button", buttonclick_editor);
+    hiliter_children($f);
     $c.find(".need-tooltip").each(tooltip);
 }
 

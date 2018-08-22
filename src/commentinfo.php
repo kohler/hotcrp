@@ -245,8 +245,7 @@ class CommentInfo {
 
     function attachments() {
         return $this->commentType & COMMENTTYPE_HASDOC
-            ? $this->prow->comment_linked_documents($this)
-            : [];
+            ? $this->prow->linked_documents($this->commentId, 0, 1024) : [];
     }
 
     function unparse_json(Contact $contact) {
@@ -456,10 +455,10 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                    && !$contact->act_author_view($this->prow)) {
             $tagger = new Tagger($contact);
             $ctags = array();
-            foreach ($m[0] as $text)
-                if (($text = $tagger->check($text, Tagger::NOVALUE))
-                    && !stri_ends_with($text, "response"))
-                    $ctags[strtolower($text)] = $text;
+            foreach ($m[0] as $tt)
+                if (($tt = $tagger->check($tt, Tagger::NOVALUE))
+                    && !stri_ends_with($tt, "response"))
+                    $ctags[strtolower($tt)] = $tt;
             $tagger->sort($ctags);
             $ctags = count($ctags) ? " " . join(" ", $ctags) . " " : null;
         } else
@@ -478,13 +477,15 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $displayed = !($ctype & COMMENTTYPE_DRAFT);
 
         // query
-        $text = get_s($req, "text");
+        if (($text = get($req, "text")) !== false)
+            $text = (string) $text;
         $q = "";
         $qv = array();
-        if ($text === "" && $this->commentId) {
+        if ($text === false && $this->commentId) {
             $change = true;
             $q = "delete from $Table where commentId=$this->commentId";
-        } else if ($text === "")
+            $docids = [];
+        } else if ($text === false)
             /* do nothing */;
         else if (!$this->commentId) {
             $change = true;
@@ -542,9 +543,29 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $result = $this->conf->qe_apply($q, $qv);
         if (!$result)
             return false;
+
         $cmtid = $this->commentId ? : $result->insert_id;
         if (!$cmtid)
             return false;
+
+        // log
+        $contact->log_activity("Comment $cmtid " . ($text !== false ? "saved" : "deleted"), $this->prow->$LinkColumn);
+
+        // ordinal
+        if ($text !== false && $this->ordinal_missing($ctype))
+            $this->save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn);
+
+        // reload
+        if ($text !== false) {
+            $comments = $this->prow->fetch_comments("commentId=$cmtid");
+            $this->merge($comments[$cmtid], $this->prow);
+            if ($this->timeNotified == $this->timeModified)
+                $this->prow->notify_reviews([$this, "watch_callback"], $contact);
+        } else {
+            $this->commentId = 0;
+            $this->comment = "";
+            $this->commentTags = null;
+        }
 
         // document links
         if ($docids !== $old_docids) {
@@ -559,25 +580,6 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             if ($old_docids)
                 $this->prow->mark_inactive_linked_documents();
             $this->prow->invalidate_linked_documents();
-        }
-
-        // log
-        $contact->log_activity("Comment $cmtid " . ($text !== "" ? "saved" : "deleted"), $this->prow->$LinkColumn);
-
-        // ordinal
-        if ($text !== "" && $this->ordinal_missing($ctype))
-            $this->save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn);
-
-        // reload
-        if ($text !== "") {
-            $comments = $this->prow->fetch_comments("commentId=$cmtid");
-            $this->merge($comments[$cmtid], $this->prow);
-            if ($this->timeNotified == $this->timeModified)
-                $this->prow->notify_reviews([$this, "watch_callback"], $contact);
-        } else {
-            $this->commentId = 0;
-            $this->comment = "";
-            $this->commentTags = null;
         }
 
         return true;
