@@ -555,12 +555,14 @@ class Autoassigner {
         $this->set_progress("Completing assignment" . $this->mcmf_round_descriptor);
         $time = microtime(true);
         $nassigned = 0;
-        foreach ($this->pcm as $cid => $p) {
-            foreach ($m->reachable("u$cid", "p") as $v) {
-                $pid = substr($v->name, 1);
-                if (!$this->eass[$cid][$pid]) {
-                    $this->make_assignment($action, $round, $cid, $pid, $papers);
-                    ++$nassigned;
+        if (!$m->infeasible) {
+            foreach ($this->pcm as $cid => $p) {
+                foreach ($m->reachable("u$cid", "p") as $v) {
+                    $pid = substr($v->name, 1);
+                    if (!$this->eass[$cid][$pid]) {
+                        $this->make_assignment($action, $round, $cid, $pid, $papers);
+                        ++$nassigned;
+                    }
                 }
             }
         }
@@ -713,7 +715,7 @@ class Autoassigner {
         // extract next roots
         $roots = array_keys($plist);
         $result = array();
-        while (count($roots)) {
+        while (!$m->infeasible && !empty($roots)) {
             $source = ".source";
             if (count($roots) !== count($plist))
                 $source = "p" . $roots[mt_rand(0, count($roots) - 1)];
