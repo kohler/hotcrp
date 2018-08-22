@@ -1826,7 +1826,7 @@ class PaperTable {
             }
             $msg = Ht::xmsg("info", $msg);
         }
-        $t1 = $this->conf->_("Enter information about your paper.");
+        $t1 = $this->conf->_("Enter information about your submission.");
         if ($startDeadline && !$this->conf->setting("sub_freeze"))
             $t2 = "You can make changes until the deadline, but thereafter incomplete submissions will not be considered.";
         else if (!$this->conf->opt("noPapers"))
