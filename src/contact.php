@@ -3721,6 +3721,13 @@ class Contact {
         }
     }
 
+    private function assign_review_explanation($type, $round) {
+        $t = ReviewForm::$revtype_names[$type] . " review";
+        if ($round && ($rname = $this->conf->round_name($round)))
+            $t .= " (round $rname)";
+        return $t;
+    }
+
     function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
         global $Now;
         $result = $this->conf->qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy, reviewSubmitted from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
@@ -3769,12 +3776,12 @@ class Contact {
 
         if ($type && !$oldtype) {
             $reviewId = $result->insert_id;
-            $msg = "Review $reviewId added (" . ReviewForm::$revtype_names[$type] . ")";
+            $msg = "Added " . $this->assign_review_explanation($type, $round);
         } else if (!$type) {
-            $msg = "Removed " . ReviewForm::$revtype_names[$oldtype] . " review";
+            $msg = "Removed " . $this->assign_review_explanation($oldtype, $rrow->reviewRound);
             $reviewId = 0;
         } else
-            $msg = "Review $reviewId changed (" . ReviewForm::$revtype_names[$oldtype] . " to " . ReviewForm::$revtype_names[$type] . ")";
+            $msg = "Changed " . $this->assign_review_explanation($oldtype, $rrow->reviewRound) . " to " . $this->assign_review_explanation($type, $round);
         $this->conf->log_for($this, $reviewer_cid, $msg, $pid);
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
