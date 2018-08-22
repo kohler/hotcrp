@@ -733,6 +733,7 @@ class Review_AssignmentParser extends AssignmentParser {
 
         if ($rdata->can_create_review() && empty($res)) {
             $revmatch["_round"] = $rdata->newround;
+            $revmatch["_rsubmitted"] = 0;
             $res[] = $revmatch;
         }
         if ($rdata->newtype && !empty($res)) {
