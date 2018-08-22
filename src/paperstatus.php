@@ -963,11 +963,9 @@ class PaperStatus extends MessageSet {
             $result = null;
             if ($oj !== null)
                 $result = $o->store_json($oj, $ps);
-            if ($result === null || $result === false) {
-                if ($o->required && $pj->submitted)
-                    $ps->error_at_option($o, "Entry required.");
+            if ($result === null || $result === false)
                 $result = [];
-            } else if (!is_array($result))
+            else if (!is_array($result))
                 $result = [[$result]];
             else if (count($result) == 2 && !is_int($result[1]))
                 $result = [$result];
@@ -1255,6 +1253,26 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    static function check_required_options(PaperStatus $ps) {
+        $prow = null;
+        $fail = false;
+        foreach ($ps->conf->paper_opts->option_list() as $o) {
+            if (!$o->required)
+                continue;
+            if (!$prow)
+                $prow = $ps->conf->paper_set(null, ["paperId" => $ps->paperId, "options" => true])->get($ps->paperId);
+            if (!$o->value_present($prow->force_option($o->id))
+                && $o->test_edit_condition($prow)) {
+                $ps->error_at_option($o, "Entry required.");
+                $fail = true;
+            }
+        }
+        if ($fail && (!$ps->prow || $ps->prow->timeSubmitted == 0)) {
+            $ps->conf->qe("update Paper set timeSubmitted=0 where paperId=?", $ps->paperId);
+            $ps->_paper_submitted = false;
+        }
+    }
+
     function execute_save_paper_json($pj) {
         global $Now;
         if (!empty($this->_paper_upd)) {
@@ -1334,16 +1352,19 @@ class PaperStatus extends MessageSet {
                 if (!empty($this->uploaded_documents))
                     $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->uploaded_documents);
             }
-
-            // maybe update `papersub` settings
-            $was_submitted = $this->prow && $this->prow->timeWithdrawn <= 0 && $this->prow->timeSubmitted > 0;
-            if ($this->_paper_submitted != $was_submitted)
-                $this->conf->update_papersub_setting($this->_paper_submitted ? 1 : -1);
         }
 
         self::execute_conflicts($this);
         self::execute_topics($this);
         self::execute_options($this);
+
+        if ($this->_paper_submitted)
+            self::check_required_options($this);
+
+        // maybe update `papersub` settings
+        $was_submitted = $this->prow && $this->prow->timeWithdrawn <= 0 && $this->prow->timeSubmitted > 0;
+        if ($this->_paper_submitted != $was_submitted)
+            $this->conf->update_papersub_setting($this->_paper_submitted ? 1 : -1);
 
         // update autosearch
         $this->conf->update_autosearch_tags($this->paperId);
