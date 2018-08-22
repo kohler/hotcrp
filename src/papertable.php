@@ -567,17 +567,14 @@ class PaperTable {
         echo join("", $out);
     }
 
-    private function is_ready() {
-        return $this->is_ready_checked() && ($this->prow || $this->conf->opt("noPapers"));
-    }
-
-    private function is_ready_checked() {
+    private function is_ready($checkbox) {
         if ($this->useRequest)
             return !!$this->qreq->submitpaper;
         else if ($this->prow && $this->prow->timeSubmitted > 0)
             return true;
         else
-            return !$this->conf->setting("sub_freeze")
+            return $checkbox
+                && !$this->conf->setting("sub_freeze")
                 && (!$this->prow
                     || (!$this->conf->opt("noPapers") && $this->prow->paperStorageId <= 1));
     }
@@ -588,7 +585,7 @@ class PaperTable {
             return;
         }
 
-        $checked = $this->is_ready_checked();
+        $checked = $this->is_ready(true);
         echo '<div class="ready-container ',
             (($this->prow && $this->prow->paperStorageId > 1)
              || $this->conf->opt("noPapers") ? "foldo" : "foldc"),
@@ -1949,7 +1946,12 @@ class PaperTable {
             }
             $this->user->set_overrides($old_overrides);
             // produce button
-            $save_name = $this->is_ready() ? "Save and resubmit" : "Save draft";
+            if (!$this->is_ready(false))
+                $save_name = "Save draft";
+            else if ($this->prow && $this->prow->timeSubmitted > 0)
+                $save_name = "Save and resubmit";
+            else
+                $save_name = "Save and submit";
             if (!$whyNot)
                 $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn btn-primary btn-savepaper"]), "");
             else if ($this->admin) {
