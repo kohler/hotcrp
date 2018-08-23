@@ -387,7 +387,10 @@ class AbbreviationMatcher {
         $xname = preg_replace('/\A(' . str_repeat(' \S+', $aclass->nwords) . ' ).*\z/', '$1', $xname);
         if ($aclass->type === AbbreviationClass::TYPE_CAMELCASE) {
             $xname = str_replace(" ", "", ucwords($xname));
-            return preg_replace('/([A-Z][a-z][a-z])[a-z]*/', '$1', $xname);
+            if (strlen($xname) < 6 && preg_match('/\A[A-Z][a-z]+\z/', $xname))
+                return $xname;
+            else
+                return preg_replace('/([A-Z][a-z][a-z])[a-z]*/', '$1', $xname);
         } else
             return strtolower(str_replace(" ", "-", trim($xname)));
     }
