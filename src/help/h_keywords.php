@@ -17,11 +17,11 @@ class Keywords_HelpTopic {
 
         echo $hth->table(true);
         echo $hth->tgroup("Basics");
-        echo $hth->search_trow("", "all papers in the search category");
+        echo $hth->search_trow("", "all submissions in the search category");
         echo $hth->search_trow("story", "“story” in title, abstract, authors$aunote");
-        echo $hth->search_trow("119", "paper #119");
-        echo $hth->search_trow("1 2 5 12-24 kernel", "papers in the numbered set with “kernel” in title, abstract, authors");
-        echo $hth->search_trow("\"802\"", "“802” in title, abstract, authors (not paper #802)");
+        echo $hth->search_trow("119", "submission #119");
+        echo $hth->search_trow("1 2 5 12-24 kernel", "submissions in the numbered set with “kernel” in title, abstract, authors");
+        echo $hth->search_trow("\"802\"", "“802” in title, abstract, authors (not submission #802)");
         echo $hth->search_trow("very new", "“very” <em>and</em> “new” in title, abstract, authors");
         echo $hth->search_trow("very AND new", "the same");
         echo $hth->search_trow("\"very new\"", "the phrase “very new” in title, abstract, authors");
@@ -52,7 +52,7 @@ class Keywords_HelpTopic {
             echo $hth->tgroup("Submission fields");
             foreach ($oex as $extype => $oex) {
                 if ($extype === "has") {
-                    $desc = "paper has “" . htmlspecialchars($oex[1]->title) . "” submission field";
+                    $desc = "submission has “" . htmlspecialchars($oex[1]->title) . "” set";
                     $oabbr = array();
                     foreach ($hth->conf->paper_opts->option_list() as $ox)
                         if ($ox !== $oex[1])
@@ -62,13 +62,13 @@ class Keywords_HelpTopic {
                 } else if ($extype === "yes")
                     $desc = "same meaning; abbreviations also accepted";
                 else if ($extype === "numeric")
-                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” field has value &gt; 100";
+                    $desc = "submission’s “" . htmlspecialchars($oex[1]->title) . "” field has value &gt; 100";
                 else if ($extype === "selector")
-                    $desc = "paper’s “" . htmlspecialchars($oex[1]->title) . "” field has value “" . htmlspecialchars($oex[2]) . "”";
+                    $desc = "submission’s “" . htmlspecialchars($oex[1]->title) . "” field has value “" . htmlspecialchars($oex[2]) . "”";
                 else if ($extype === "attachment-count")
-                    $desc = "paper has more than 2 “" . htmlspecialchars($oex[1]->title) . "” attachments";
+                    $desc = "submission has more than 2 “" . htmlspecialchars($oex[1]->title) . "” attachments";
                 else if ($extype === "attachment-filename")
-                    $desc = "paper has an “" . htmlspecialchars($oex[1]->title) . "” attachment with a .gif extension";
+                    $desc = "submission has an “" . htmlspecialchars($oex[1]->title) . "” attachment with a .gif extension";
                 else
                     continue;
                 echo $hth->search_trow($oex[0], $desc);
@@ -139,20 +139,20 @@ class Keywords_HelpTopic {
         echo $hth->tgroup("Shepherds");
         echo $hth->search_trow("shep:fdabek", "“fdabek” (in name/email) is shepherd (“none” and “any” also work)");
         echo $hth->tgroup("Conflicts");
-        echo $hth->search_trow("conflict:me", "you have a conflict with the paper");
-        echo $hth->search_trow("conflict:fdabek", "“fdabek” (in name/email) has a conflict with the paper<br /><span class='hint'>This search is only available to chairs and to PC members who can see the paper’s author list.</span>");
-        echo $hth->search_trow("conflict:pc", "some PC member has a conflict with the paper");
-        echo $hth->search_trow("conflict:pc>2", "at least three PC members have conflicts with the paper");
-        echo $hth->search_trow("reconflict:\"1 2 3\"", "a reviewer of paper 1, 2, or 3 has a conflict with the paper");
+        echo $hth->search_trow("conflict:me", "you have a conflict with the submission");
+        echo $hth->search_trow("conflict:fdabek", "“fdabek” (in name/email) has a conflict with the submission<br /><span class='hint'>This search is only available to chairs and to PC members who can see the submission’s author list.</span>");
+        echo $hth->search_trow("conflict:pc", "some PC member has a conflict with the submission");
+        echo $hth->search_trow("conflict:pc>2", "at least three PC members have conflicts with the submission");
+        echo $hth->search_trow("reconflict:\"1 2 3\"", "a reviewer of submission 1, 2, or 3 has a conflict with the submission");
         echo $hth->tgroup("Preferences");
         echo $hth->search_trow("pref:3", "you have preference 3");
         echo $hth->search_trow("pref:pc:X", "a PC member’s preference has expertise “X” (expert)");
         echo $hth->search_trow("pref:fdabek>0", "“fdabek” (in name/email) has preference &gt;&nbsp;0<br /><span class=\"hint\">Administrators can search preferences by name; PC members can only search preferences for the PC as a whole.</span>");
         echo $hth->tgroup("Status");
-        echo $hth->search_trow(["q" => "status:sub", "t" => "all"], "paper is submitted for review");
-        echo $hth->search_trow(["q" => "status:unsub", "t" => "all"], "paper is neither submitted nor withdrawn");
-        echo $hth->search_trow(["q" => "status:withdrawn", "t" => "all"], "paper has been withdrawn");
-        echo $hth->search_trow("has:final", "final copy uploaded");
+        echo $hth->search_trow(["q" => "status:ready", "t" => "all"], "submission is ready for review");
+        echo $hth->search_trow(["q" => "status:incomplete", "t" => "all"], "submission is incomplete (neither ready nor withdrawn)");
+        echo $hth->search_trow(["q" => "status:withdrawn", "t" => "all"], "submission has been withdrawn");
+        echo $hth->search_trow("has:final", "final version uploaded");
 
         foreach ($hth->conf->decision_map() as $dnum => $dname)
             if ($dnum)
@@ -242,9 +242,9 @@ class Keywords_HelpTopic {
         }
         echo $hth->search_trow("sort:-status", "sort by reverse status");
         echo $hth->search_trow("edit:#discuss", "edit the values for tag “#discuss”");
-        echo $hth->search_trow("search1 THEN search2", "like “search1 OR search2”, but papers matching “search1” are grouped together and appear earlier in the sorting order");
+        echo $hth->search_trow("search1 THEN search2", "like “search1 OR search2”, but submissions matching “search1” are grouped together and appear earlier in the sorting order");
         echo $hth->search_trow("1-5 THEN 6-10 show:compact", "display searches in compact columns");
-        echo $hth->search_trow("search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghh highlightmark\">highlight</span> papers in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
+        echo $hth->search_trow("search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghh highlightmark\">highlight</span> submissions in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
 
         echo $hth->end_table();
     }

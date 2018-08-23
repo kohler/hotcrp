@@ -33,7 +33,7 @@ try “-term”.  Or select
 <a href='" . hoturl("search", "opt=1") . "'>Advanced search</a>
 and use “With <b>any</b> of the words” and “<b>Without</b> the words.”</p>
 
-<p>You can search in several paper classes, depending on your role in the
+<p>You can search several categories, depending on your role in the
 conference. Options include:</p>
 <ul class='compact'>
 <li><b>Submitted papers</b> &mdash; all submitted papers.</li>
