@@ -45,23 +45,31 @@ class Keywords_HelpTopic {
         echo $hth->tgroup("Topics");
         echo $hth->search_trow("topic:link", "selected topics match “link”");
 
-        $oex = array();
-        foreach ($hth->conf->paper_opts->option_list() as $o)
-            if (!$o->internal)
-                $oex = array_merge($oex, $o->example_searches());
+        $opts = array_filter($hth->conf->paper_opts->option_list(), function ($o) { return !$o->internal; });
+        usort($opts, function ($a, $b) {
+            if ($a->final !== $b->final)
+                return $a->final ? 1 : -1;
+            else
+                return PaperOption::compare($a, $b);
+        });
+
+        $oex = [];
+        foreach ($opts as $o)
+            $oex = array_merge($o->example_searches(), $oex);
+
         if (!empty($oex)) {
             echo $hth->tgroup("Submission fields");
             foreach ($oex as $extype => $oex) {
                 if ($extype === "has") {
                     $desc = "submission has “" . htmlspecialchars($oex[1]->title) . "” set";
                     $oabbr = array();
-                    foreach ($hth->conf->paper_opts->option_list() as $ox)
-                        if (!$ox->internal && $ox !== $oex[1])
+                    foreach ($opts as $ox)
+                        if ($ox !== $oex[1] && get($ox->example_searches(), "has"))
                             $oabbr[] = "“has:" . htmlspecialchars($ox->search_keyword()) . "”";
                     if (count($oabbr))
-                        $desc .= '<div class="hint">Other field ' . pluralx(count($oabbr), "search") . ': ' . commajoin($oabbr) . '</div>';
+                        $desc .= '<div class="hint">Other field ' . pluralx(count($oabbr), "search") . ': ' . join(", ", $oabbr) . '</div>';
                 } else if ($extype === "yes")
-                    $desc = "same meaning; abbreviations also accepted";
+                    $desc = "submission has “" . htmlspecialchars($oex[1]->title) . "” set";
                 else if ($extype === "numeric")
                     $desc = "submission’s “" . htmlspecialchars($oex[1]->title) . "” field has value &gt; 100";
                 else if ($extype === "selector")
