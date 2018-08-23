@@ -69,5 +69,7 @@
     ["etime", "Deadline passed.", "The deadline for this review has passed.", ["$1^=pcrev_hard"]],
     ["etime", "Deadline passed.", "The deadline for requesting reviews has passed.", ["$1^=extrev_chairreq"]],
     ["etime", "Deadline passed.", "The deadline to update final versions has passed.", ["$1^=final_done"]],
-    ["etime", "Deadline passed.", "The deadline to perform this action has passed."]
+    ["etime", "Deadline passed.", "The deadline to perform this action has passed."],
+
+    ["mail", "Authors", "Author", ["$1=1"]]
 ]

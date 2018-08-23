@@ -348,6 +348,23 @@ class HotCRPMailer extends Mailer {
         return $this->get_comments($tag);
     }
 
+    function kw_ims_expand_authors($args, $isbool) {
+        preg_match('/\A\s*(.*?)\s*(?:|,\s*(\d+)\s*)\z/', $args, $m);
+        if ($m[1] === "Authors") {
+            $nau = 0;
+            if ($this->row
+                && ($this->recipient->is_site_contact
+                    || $this->row->has_author($this->recipient)
+                    || $this->recipient->can_view_authors($this->row)))
+                $nau = count($this->row->author_list());
+            $t = $this->conf->_c("mail", $m[1], $nau);
+        } else
+            $t = $this->conf->_c("mail", $m[1]);
+        if ($m[2] && strlen($t) < $m[2])
+            $t = str_repeat(" ", $m[2] - strlen($t)) . $t;
+        return $t;
+    }
+
 
     protected function unexpanded_warning() {
         $m = parent::unexpanded_warning();

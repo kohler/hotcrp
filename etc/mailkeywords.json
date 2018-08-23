@@ -3,7 +3,7 @@
     {"name": "OPT", "callback": "*kw_opt", "global": true},
     {"name": "URLENC", "callback": "Mailer::kw_urlenc", "global": true},
     {"name": "PHP", "callback": "Navigation::php_suffix", "global": true},
-    {"name": "_", "callback": "Mailer::kw_ims_expand", "global": true},
+    {"name": "_", "callback": "*kw_ims_expand_authors", "global": true},
 
     {"name": "CONFNAME", "callback": "*kw_confnames", "global": true},
     {"name": "CONFSHORTNAME", "callback": "*kw_confnames", "global": true},
