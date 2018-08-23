@@ -6,7 +6,7 @@ class ChairsGuide_HelpTopic {
     static function render_presubmission($hth, $gj) {
         if (!isset($gj->index)) {
             echo $hth->subhead("Submission time");
-            echo "<p>Follow these steps to prepare to accept paper submissions.</p>\n\n<ol>\n";
+            echo "<p>Follow these steps to prepare to accept submissions.</p>\n\n<ol>\n";
             $hth->render_group("chair/presubmission/*");
             echo "</ol>\n\n";
 
@@ -26,19 +26,16 @@ class ChairsGuide_HelpTopic {
         } else if ($gj->index === 3) {
             echo "<li><p><strong>", $hth->settings_link("Set submission deadlines.", "sub"),
   "</strong> Authors first <em>register</em>, then <em>submit</em>
-  their papers, possibly multiple times; they choose for each submitted
+  their work, possibly multiple times; they choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
-  authors to update their papers until the deadline, but you can also require
-  that authors “freeze” each submission explicitly; only
-  administrators can update frozen submissions.
-  The only deadline that really matters is the paper submission
-  deadline, but HotCRP also supports a separate paper registration deadline,
-  which will force authors to register a few days before they submit.  An
+  authors to update submissions until the deadline, but you can also require
+  that authors “freeze” each submission when it is complete.
+  Only the submission deadline really matters,
+  but HotCRP also supports a separate registration deadline, after which
+  new submissions cannot be started. An
   optional <em>grace period</em> applies to both deadlines:
-  HotCRP reports the deadlines, but allows submissions and updates post-deadline
-  for the specified grace period.  This provides some
-  protection against last-minute server overload and gives authors
-  some slack.</p></li>\n";
+  HotCRP reports the set deadlines, but allows updates post-deadline
+  for the specified time.</p></li>\n";
 
         } else if ($gj->index === 4) {
             echo "<li><p><strong>", $hth->settings_link("Set up the submission form", "subform"),
@@ -52,8 +49,8 @@ form also can include:</p>
   <ul>
 
   <li><p><strong>PDF format checker.</strong> This adds a “Check format” link
-  to the Edit Paper screen. Clicking the link checks the paper for formatting
-  errors, such as going over the page limit.  Papers with formatting errors
+  to the Edit screen. Clicking the link checks the submission for formatting
+  errors, such as going over the page limit.  Submissions with formatting errors
   may still be submitted, since the checker itself can make mistakes, but the
   automated checker leaves cheating authors no excuse.</p></li>
 
@@ -61,20 +58,20 @@ form also can include:</p>
   text, and uploaded attachments. Checkbox fields might include “Consider
   this paper for the Best Student Paper award” or “Provide this paper to the
   European shadow PC.” Attachment fields might include supplemental material.
-  You can search for papers with or without each field.</p></li>
+  You can search for submissions with or without each field.</p></li>
 
   <li><p><strong>Topics.</strong> Authors can select topics, such as
-  “Applications” or “Network databases,” that characterize their paper’s
+  “Applications” or “Network databases,” that characterize their submission’s
   subject areas.  PC members express topics for which they have high, medium,
-  and low interest, improving automatic paper assignment.  Although explicit
+  and low interest, improving automatic review assignment.  Although explicit
   preferences (see below) are better than topic-based assignments, busy PC
   members might not specify their preferences; topic matching lets you do a
-  reasonable job at assigning papers anyway.</p></li>
+  reasonable job at assigning reviews anyway.</p></li>
 
   </ul></li>\n";
 
         } else if ($gj->index === 5) {
-            echo "<li><p>Take a look at a <a href='" . hoturl("paper", "p=new") . "'>paper submission page</a> to make sure it looks right.</p></li>\n";
+            echo '<li><p>Take a look at a <a href="' . hoturl("paper", "p=new") . '">submission page</a> to make sure it looks right.</p></li>', "\n";
 
         } else if ($gj->index === 6) {
             echo "<li><p><strong>", $hth->settings_link("Open the site for submissions.", "sub"),
@@ -94,9 +91,9 @@ form also can include:</p>
   " for anomalies.  Withdraw and/or delete duplicates or update details on the <a
   href='" . hoturl("paper") . "'>paper pages</a> (via “Edit paper”).
   Also consider contacting the authors of ",
-  $hth->search_link("papers that were never officially submitted", ["q" => "status:unsub", "t" => "all"]),
+  $hth->search_link("incomplete submissions", ["q" => "status:unsub", "t" => "all"]),
   ", especially if a PDF document was uploaded; sometimes a
-  user will uncheck “The paper is ready for review” by mistake.</p></li>\n";
+  user will uncheck “The submission is ready for review” by mistake.</p></li>\n";
 
         } else if ($gj->index === 2) {
             echo "<li><p><strong>Check for formatting violations (optional).</strong> <a href='" . hoturl("search", "q=") . "'>Search</a>
@@ -139,16 +136,16 @@ form also can include:</p>
             echo "<li><p><strong><a href='" . hoturl("conflictassign") . "'>Check for
   missing conflicts.</a></strong> HotCRP does not automatically confirm all conflicts, such
   as conflicts indicated by PC members’ “Collaborators and other affiliations.”
-  Use <a href='" .
-  hoturl("conflictassign") . "'>the conflict assignment tool</a> to verify
-  and confirm such conflicts.</p></li>\n";
+  Use <a href=\"" .
+  hoturl("conflictassign") . "\">the conflict assignment tool</a> to find and confirm
+  such conflicts.</p></li>\n";
 
         } else if ($gj->index === 8) {
             echo "<li><p><strong><a href='" . hoturl("manualassign") . "'>Assign
   reviews.</a></strong> You can make assignments <a
   href='" . hoturl("assign") . "'>by paper</a>, <a
   href='" . hoturl("manualassign") . "'>by PC member</a>, <a
-  href='" . hoturl("bulkassign") . "'>by uploading an assignments
+  href='" . hoturl("bulkassign") . "'>by uploading an assignment
   file</a>, or, even easier, <a
   href='" . hoturl("autoassign") . "'>automatically</a>.  PC
   review assignments can be “primary” or “secondary”; the difference is
@@ -157,9 +154,9 @@ form also can include:</p>
   also assign PC “metareviews”. Unlike normal reviewers, a metareviewer can
   view all other reviews before submitting their own.</p>
 
-  <p>The default assignments pages apply to all submitted papers.  You can
-  also assign subsets of papers obtained through ", $hth->help_link("search", "search"),
-  ", such as ", $hth->search_link("papers with fewer than three completed reviews", "cre:<3"),
+  <p>The assignment pages apply to all submissions by default.  You can
+  also assign groups of submissions, such as ",
+  $hth->search_link("papers with fewer than three completed reviews", "cre:<3"),
   ".</p></li>\n";
 
         } else if ($gj->index === 9) {
