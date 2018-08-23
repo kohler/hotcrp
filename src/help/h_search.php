@@ -4,32 +4,31 @@
 
 class Search_HelpTopic {
     static function render($hth) {
-        echo "<p>All HotCRP paper lists are obtained through flexible
+        echo "<p>All HotCRP lists are obtained through flexible
 search. Some hints for PC members and chairs:</p>
 
 <ul class='compact'>
-<li><div style='display:inline-block'>", $hth->search_form(""), "</div>&nbsp; finds all papers.  (Leave the search field blank.)</li>
-<li><div style='display:inline-block'>", $hth->search_form("12"), "</div>&nbsp; finds paper #12.  When entered from a
- <a href='#quicklinks'>quicksearch</a> box, this search will jump to
- paper #12 directly.</li>
+<li><div style='display:inline-block'>", $hth->search_form(""), "</div>&nbsp; finds all submissions.  (Leave the search field blank.)</li>
+<li><div style='display:inline-block'>", $hth->search_form("12"), "</div>&nbsp; finds submission #12.  When entered from a
+ <a href='#quicklinks'>quicksearch</a> box, this search will jump to #12 directly.</li>
 <li>", $hth->help_link("Search keywords", "keywords"), "
  let you search specific fields, review scores, and more.</li>
 <li>Use <a href='#quicklinks'>quicklinks</a> on paper pages to navigate
  through search results. Typing <code>j</code> and <code>k</code> also goes
  from paper to paper.</li>
-<li>On search results pages, shift-click checkboxes to
- select paper ranges.</li>
+<li>On list pages, shift-click checkboxes to
+ select ranges of submissions.</li>
 </ul>";
 
     echo $hth->subhead("How to search");
     echo "
-<p>The default search box returns papers that match
+<p>The default search box returns submissions that match
 <em>all</em> of the space-separated terms you enter.
-To search for words that <em>start</em> with
+To search for terms that <em>start</em> with
 a prefix, try “term*”.
-To search for papers that match <em>some</em> of the terms,
+To find <em>some</em> of the terms,
 type “term1 OR term2”.
-To search for papers that <em>don’t</em> match a term,
+To find submissions that <em>don’t</em> match a term,
 try “-term”.  Or select
 <a href='" . hoturl("search", "opt=1") . "'>Advanced search</a>
 and use “With <b>any</b> of the words” and “<b>Without</b> the words.”</p>
