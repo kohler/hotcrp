@@ -5,7 +5,7 @@
 class FinalVersions_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
         echo '<div class="has-fold fold2o">';
-        $sv->echo_checkbox('final_open', '<strong>Collect final versions of accepted papers</strong>', ["class" => "uich js-foldup", "item_class" => "settings-g", "item_open" => true]);
+        $sv->echo_checkbox('final_open', '<strong>Collect final versions of accepted submissions</strong>', ["class" => "uich js-foldup", "item_class" => "settings-g", "item_open" => true]);
         echo '<div class="fx2"><div class="settings-g">';
         $sv->echo_entry_group("final_soft", "Deadline", ["horizontal" => true]);
         $sv->echo_entry_group("final_done", "Hard deadline", ["horizontal" => true]);
@@ -26,6 +26,6 @@ class FinalVersions_SettingParser extends SettingParser {
             && ($sv->newv("final_soft") || $sv->newv("final_done"))
             && (!$sv->newv("final_done") || $sv->newv("final_done") > $Now)
             && $sv->newv("seedec") != Conf::SEEDEC_ALL)
-            $sv->warning_at(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted. You may want to update the the “Who can see paper decisions” setting.");
+            $sv->warning_at(null, "The system is set to collect final versions, but authors cannot submit final versions until they can see decisions. You may want to update the the “Who can see decisions” setting.");
     }
 }

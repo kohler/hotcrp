@@ -10,8 +10,8 @@ class ReviewVisibility_SettingParser extends SettingParser {
             && !$sv->conf->opt("allow_auseerev_unlessincomplete"))
             $sv->conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
         if ($sv->conf->opt("allow_auseerev_unlessincomplete"))
-            $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-        $opts[Conf::AUSEEREV_TAGS] = "<label for=\"au_seerev_" . Conf::AUSEEREV_TAGS . "\">Yes, for papers with any of these tags:</label>&nbsp; " . $sv->render_entry("tag_au_seerev") . $sv->render_messages_at("tag_au_seerev");
+            $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other submissions";
+        $opts[Conf::AUSEEREV_TAGS] = "<label for=\"au_seerev_" . Conf::AUSEEREV_TAGS . "\">Yes, for submissions with any of these tags:</label>&nbsp; " . $sv->render_entry("tag_au_seerev") . $sv->render_messages_at("tag_au_seerev");
 
         $hint = '<p class="settingtext f-h if-response-active';
         if (!$sv->conf->setting("resp_active"))
@@ -24,7 +24,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
         $hint .= '</p>';
 
         $sv->echo_radio_table("au_seerev", $opts,
-            'Can <strong>authors see reviews and author-visible comments</strong> for their papers?' . $hint);
+            'Can <strong>authors see reviews and author-visible comments</strong> for their submissions?' . $hint);
         echo Ht::hidden("has_tag_au_seerev", 1);
         Ht::stash_script('$("#tag_au_seerev").on("input", function () { $("#au_seerev_' . Conf::AUSEEREV_TAGS . '").click(); })');
 

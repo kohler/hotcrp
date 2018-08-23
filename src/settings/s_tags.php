@@ -16,7 +16,7 @@ class Tags_SettingRenderer {
     static function render_tag_sitewide(SettingValues $sv) {
         $sv->set_oldv("tag_sitewide", self::render_tags($sv->conf->tags()->filter("sitewide")));
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
-            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-tagcompletion"], "Administrators can see and change these tags for every paper.");
+            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-tagcompletion"], "Administrators can see and change these tags for every submission.");
     }
     static function render_tag_approval(SettingValues $sv) {
         $sv->set_oldv("tag_approval", self::render_tags($sv->conf->tags()->filter("approval")));
@@ -43,7 +43,7 @@ class Tags_SettingRenderer {
         echo "</div>\n";
 
         echo '<div class="settings-g">';
-        $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
+        $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
         echo "</div>\n";
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
@@ -67,7 +67,7 @@ class Tags_SettingRenderer {
 
         echo Ht::hidden("has_tag_color", 1),
             '<h3 class="settings g">Colors and styles</h3>',
-            "<p class=\"settingtext\">Papers tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
+            "<p class=\"settingtext\">Submissions tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
             '<table id="foldtag_color" class="demargin"><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr>',
             join("", $tag_colors_rows), "</table>\n";
 
@@ -169,7 +169,7 @@ class Tags_SettingParser extends SettingParser {
                 while (($row = edb_row($result))) {
                     $who = substr($row[1], 0, strpos($row[1], "~"));
                     if ($row[2] < 0) {
-                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for paper #$row[0].");
+                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for #$row[0].");
                         $negative = true;
                     } else {
                         $pvals[$row[0]] = get($pvals, $row[0], 0) + $row[2];
@@ -203,7 +203,7 @@ class Tags_SettingParser extends SettingParser {
                 while (($row = edb_row($result))) {
                     $who = substr($row[1], 0, strpos($row[1], "~"));
                     if ($row[2] < 0) {
-                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for paper #$row[0].");
+                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for #$row[0].");
                         $negative = true;
                     } else
                         $pvals[$row[0]] = get($pvals, $row[0], 0) + 1;

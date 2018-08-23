@@ -13,8 +13,8 @@ class Submissions_SettingRenderer {
         // maybe sub_reg was overridden
         if (($sub_reg = $sv->conf->setting("__sub_reg", false)) !== false)
             $sv->set_oldv("sub_reg", $sub_reg);
-        $sv->echo_entry_group("sub_reg", "Registration deadline");
-        $sv->echo_entry_group("sub_sub", "Submission deadline");
+        $sv->echo_entry_group("sub_reg", "Registration deadline", null, "New submissions can be started until this deadline.");
+        $sv->echo_entry_group("sub_sub", "Submission deadline", null, "Submissions must be complete by this deadline.");
         $sv->echo_entry_group("sub_grace", "Grace period");
         echo "</div>\n";
     }
@@ -30,9 +30,9 @@ class Submissions_SettingRenderer {
     }
     static function render_pcseeall(SettingValues $sv) {
         echo '<div class="settings-g foldo" id="foldpc_seeall">';
-        $sv->echo_checkbox("pc_seeall", "PC can see <i>all registered papers</i> until submission deadline", ["class" => "uich js-foldup"], "Check this box to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.");
+        $sv->echo_checkbox("pc_seeall", "PC can view incomplete submissions before submission deadline", ["class" => "uich js-foldup"], "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions.");
         echo '<div class="fx">';
-        $sv->echo_checkbox("pc_seeallpdf", "PC can see submitted PDFs before submission deadline");
+        $sv->echo_checkbox("pc_seeallpdf", "PC can view submitted PDFs before submission deadline");
         echo "</div></div>\n";
     }
     static function crosscheck(SettingValues $sv) {
@@ -40,6 +40,6 @@ class Submissions_SettingRenderer {
             && $sv->newv("sub_freeze", -1) == 0
             && $sv->newv("sub_open") > 0
             && $sv->newv("sub_sub") <= 0)
-            $sv->warning_at(null, "Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
+            $sv->warning_at(null, "Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You may want to either (1) specify a submission deadline, (2) select “Authors must freeze the final version of each submission”, or (3) manually turn off “Open site for submissions” at the proper time.");
     }
 }

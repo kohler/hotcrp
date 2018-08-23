@@ -24,7 +24,7 @@ class Decisions_SettingParser extends SettingParser {
             echo Ht::hidden("dec_val_$ndec", $k),
                     $k > 0 ? "Accept class" : "Reject class";
             if ($count) {
-                echo ", ", plural($count, "paper");
+                echo ", ", plural($count, "submission");
             }
         }
         echo "</td></tr>\n";
