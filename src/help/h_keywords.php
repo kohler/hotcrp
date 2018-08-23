@@ -47,7 +47,8 @@ class Keywords_HelpTopic {
 
         $oex = array();
         foreach ($hth->conf->paper_opts->option_list() as $o)
-            $oex = array_merge($oex, $o->example_searches());
+            if (!$o->internal)
+                $oex = array_merge($oex, $o->example_searches());
         if (!empty($oex)) {
             echo $hth->tgroup("Submission fields");
             foreach ($oex as $extype => $oex) {
@@ -55,7 +56,7 @@ class Keywords_HelpTopic {
                     $desc = "submission has “" . htmlspecialchars($oex[1]->title) . "” set";
                     $oabbr = array();
                     foreach ($hth->conf->paper_opts->option_list() as $ox)
-                        if ($ox !== $oex[1])
+                        if (!$ox->internal && $ox !== $oex[1])
                             $oabbr[] = "“has:" . htmlspecialchars($ox->search_keyword()) . "”";
                     if (count($oabbr))
                         $desc .= '<div class="hint">Other field ' . pluralx(count($oabbr), "search") . ': ' . commajoin($oabbr) . '</div>';

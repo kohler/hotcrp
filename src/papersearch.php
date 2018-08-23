@@ -2681,7 +2681,7 @@ class PaperSearch {
                 $res[] = "has:badge";
         }
         foreach ($this->user->user_option_list() as $o)
-            if ($this->user->can_view_some_paper_option($o))
+            if (!$o->internal && $this->user->can_view_some_paper_option($o))
                 $o->add_search_completion($res);
         if ($this->user->is_reviewer() && $this->conf->has_rounds()
             && (!$category || $category === "round")) {
