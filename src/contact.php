@@ -1677,13 +1677,9 @@ class Contact {
 
     function is_discussion_lead() {
         $this->check_rights_version();
-        if (!isset($this->_is_lead)) {
-            $result = null;
-            if ($this->contactId > 0)
-                $result = $this->conf->qe("select exists (select * from Paper where leadContactId=?)", $this->contactId);
-            $this->_is_lead = edb_nrows($result) > 0;
-            Dbl::free($result);
-        }
+        if (!isset($this->_is_lead))
+            $this->_is_lead = $this->contactId > 0
+                && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactId);
         return $this->_is_lead;
     }
 
@@ -1695,7 +1691,7 @@ class Contact {
                 && $this->isPC
                 && ($this->conf->check_any_admin_tracks($this)
                     || ($this->conf->has_any_manager()
-                        && $this->conf->fetch_value("select exists (select * from Paper where managerContactId=?)", $this->contactId) > 0)))
+                        && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactId) > 0)))
                 $this->_is_explicit_manager = true;
         }
         return $this->_is_explicit_manager;
