@@ -696,10 +696,6 @@ h2.home, h4.home {
 #homeau h2.home {
 	color: #8b3030;
 }
-a.homeactivity {
-	font-weight: bold;
-	color: #1b1ba4;
-}
 .homeside {
 	float: right;
 	clear: right;

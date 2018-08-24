@@ -322,7 +322,7 @@ class Home_Partial {
         if ($user->is_reviewer()) {
             echo "<div class=\"homesubgrp has-fold fold20c\" id=\"homeactivity\" data-fold-session=\"foldhomeactivity\">",
                 foldupbutton(20),
-                "<a href=\"\" class=\"x homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class='fx20'>:</span></a>",
+                "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class='fx20'>:</span></a>",
                 "</div>";
             Ht::stash_script('$("#homeactivity").on("fold", function(e,opts) { opts.f || unfold_events(this); })');
             if (!$conf->session("foldhomeactivity", 1))
