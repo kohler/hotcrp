@@ -1,4 +1,15 @@
 [
+    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with average %4$s score %5$s.", "You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a>.", ["!$4"]],
+    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with average %4$s score %5$s.", "You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a>.", ["$1=0"]],
+    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with average %4$s score %5$s.", "You have submitted <a href=\"%3$s\">your review</a>.", ["!$4", "$1=1", "$2=1"]],
+    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with average %4$s score %5$s.", "You have submitted <a href=\"%3$s\">your review</a> with %4$s score %5$s.", ["$1=1", "$2=1"]],
+    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with average %4$s score %5$s.", "You have not submitted <a href=\"%3$s\">your review</a>.", ["$1=0", "$2=1"]],
+
+    ["The average PC member has submitted %.1f reviews with average %s score %s.", "The average PC member has submitted %.1f reviews.", ["!$2"]],
+    ["The average PC member has submitted %.1f reviews with average %s score %s.", "The average PC member has submitted %g reviews.", ["$1=0"]],
+    ["The average PC member has submitted %.1f reviews with average %s score %s.", "The average PC member has submitted %g review with %s score %s.", ["$1=1"]],
+    ["The average PC member has submitted %.1f reviews with average %s score %s.", "The average PC member has submitted %g review.", ["$1=1", "!$2"]],
+
     ["Each submission must have at least one author.", "Each submission must have an author.", ["$1=1"]],
     ["Each submission can have at most %d authors.", "Each submission can have at most one author.", ["$1=1"]],
 

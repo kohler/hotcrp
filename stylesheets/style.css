@@ -685,18 +685,20 @@ span.hastitle {
 
 
 /* Main */
-#homelist h4, #homerev h4, #homeau h4,
-#homeacct h4, #homeactivity h4 {
-	display: inline;
+h2.home, h4.home {
+	color: #4b4f8d;
+	margin-bottom: 0.5rem;
+	font-size: 1.15rem;
 }
-#homelist h4 {
+#homelist h2.home {
 	color: #8b3030;
 }
-#homerev h4, #homeactivity h4, a.homeactivity {
-	color: #1b1ba4;
+#homeau h2.home {
+	color: #8b3030;
 }
-#homeau h4 {
-	color: #823e78;
+a.homeactivity {
+	font-weight: bold;
+	color: #1b1ba4;
 }
 .homeside {
 	float: right;
@@ -727,12 +729,10 @@ span.hastitle {
 }
 .homegrp {
 	margin-top: 1rem;
-	padding-bottom: 1rem;
-	border-bottom: 1px solid #d8deff;
+	margin-bottom: 2.5rem;
 }
-.homegrp:last-child {
-	padding-bottom: 0;
-	border-bottom: 0 none;
+.homesubgrp {
+	margin-top: 0.75rem;
 }
 span.deadline {
 	font-style: italic;
