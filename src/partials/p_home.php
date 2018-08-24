@@ -228,7 +228,7 @@ class Home_Partial {
                 $this->_merit_field && $npcScore ? $this->_merit_field->name_html : false,
                 $this->_merit_field && $npcScore ? $this->_merit_field->unparse_average($sumpcScore / $npcScore) : false);
             if ($user->isPC || $user->privChair)
-                echo "&nbsp; <small class=\"nw\">(<a href=\"", hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class='barsep'>·</span><a href=\"", hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
+                echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class='barsep'>·</span><a href=\"", $conf->hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
             echo "<br />\n";
         }
         if ($this->_my_rinfo
@@ -255,7 +255,7 @@ class Home_Partial {
                 } else if ($conf->time_review($round, $user->isPC, true))
                     echo ' <span class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, false), "span"), ".</span><br />\n";
                 else
-                    echo ' <span class="deadline"><strong class="overdue">The <a href="', hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></span><br />\n";
+                    echo ' <span class="deadline"><strong class="overdue">The <a href="', $conf->hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></span><br />\n";
             }
         } else if ($user->isPC && $user->can_review_any()) {
             $d = $conf->printableTimeSetting($conf->review_deadline(null, $user->isPC, false), "span");
@@ -263,9 +263,9 @@ class Home_Partial {
                 echo " <span class='deadline'>The review deadline is $d.</span><br />\n";
         }
         if ($user->isPC && $user->can_review_any())
-            echo "  <span class='hint'>As a PC member, you may review <a href='", hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
+            echo "  <span class='hint'>As a PC member, you may review <a href='", $conf->hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
         else if ($user->privChair)
-            echo "  <span class='hint'>As an administrator, you may review <a href='", hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
+            echo "  <span class='hint'>As an administrator, you may review <a href='", $conf->hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
 
         if ($this->_my_rinfo)
             echo '<div id="foldre" class="homesubgrp foldo">';
@@ -274,19 +274,19 @@ class Home_Partial {
         $sep = "";
         $xsep = " <span class='barsep'>·</span> ";
         if ($this->_my_rinfo) {
-            echo $sep, foldupbutton(), "<a href=\"", hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
+            echo $sep, foldupbutton(), "<a href=\"", $conf->hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
             $sep = $xsep;
         }
         if ($user->isPC && $user->is_discussion_lead()) {
-            echo $sep, '<a href="', hoturl("search", "q=lead%3Ame"), '" class="nw">Your discussion leads</a>';
+            echo $sep, '<a href="', $conf->hoturl("search", "q=lead%3Ame"), '" class="nw">Your discussion leads</a>';
             $sep = $xsep;
         }
         if ($conf->deadlinesAfter("rev_open") || $user->privChair) {
-            echo $sep, '<a href="', hoturl("offline"), '">Offline reviewing</a>';
+            echo $sep, '<a href="', $conf->hoturl("offline"), '">Offline reviewing</a>';
             $sep = $xsep;
         }
         if ($user->isPC && $conf->timePCReviewPreferences()) {
-            echo $sep, '<a href="', hoturl("reviewprefs"), '">Review preferences</a>';
+            echo $sep, '<a href="', $conf->hoturl("reviewprefs"), '">Review preferences</a>';
             $sep = $xsep;
         }
         if ($conf->setting("rev_tokens")) {
@@ -304,9 +304,9 @@ class Home_Partial {
 
             $a = [];
             if ($row[0])
-                $a[] = Ht::link(plural($row[0], "positive rating"), hoturl("search", "q=re:me+rate:good"));
+                $a[] = Ht::link(plural($row[0], "positive rating"), $conf->hoturl("search", "q=re:me+rate:good"));
             if ($row[1])
-                $a[] = Ht::link(plural($row[1], "negative rating"), hoturl("search", "q=re:me+rate:bad"));
+                $a[] = Ht::link(plural($row[1], "negative rating"), $conf->hoturl("search", "q=re:me+rate:bad"));
             if (!empty($a))
                 echo '<div class="hint g">Your reviews have received ', commajoin($a), '.</div>';
         }
@@ -379,8 +379,8 @@ class Home_Partial {
         echo '<div class="homegrp">';
         echo "<h2 class=\"home\">Requested Reviews</h2> ";
         if ($user->has_approvable_review())
-            echo '<a href="', hoturl("paper", ["m" => "rea", "p" => "ext:approvable"]), '"><strong>Approve external reviews</strong></a> <span class="barsep">·</span> ';
-        echo '<a href="', hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";
+            echo '<a href="', $conf->hoturl("paper", ["m" => "rea", "p" => "ext:approvable"]), '"><strong>Approve external reviews</strong></a> <span class="barsep">·</span> ';
+        echo '<a href="', $conf->hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";
     }
 
     static function render_submissions(Contact $user, Qrequest $qreq, $gx) {
@@ -401,7 +401,7 @@ class Home_Partial {
         if ($startable && !$user->has_email())
             echo "<span class='deadline'>", $conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to start a submission.</small>";
         else if ($startable || $user->privChair) {
-            echo "<strong><a href='", hoturl("paper", "p=new"), "'>New submission</a></strong> <span class='deadline'>(", $conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
+            echo "<strong><a href='", $conf->hoturl("paper", "p=new"), "'>New submission</a></strong> <span class='deadline'>(", $conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
             if ($user->privChair)
                 echo "<br />\n<span class='hint'>As an administrator, you can start a submission regardless of deadlines and on behalf of others.</span>";
         }
@@ -422,9 +422,9 @@ class Home_Partial {
                 if ($conf->deadlinesBetween("", "sub_sub", "sub_grace"))
                     $deadlines[] = "The site is not open for submissions at the moment.";
                 else
-                    $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>submission deadline</a> has passed.";
+                    $deadlines[] = "The <a href='" . $conf->hoturl("deadlines") . "'>submission deadline</a> has passed.";
             } else if (!$conf->timeUpdatePaper()) {
-                $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>update deadline</a> has passed, but you can still submit.";
+                $deadlines[] = "The <a href='" . $conf->hoturl("deadlines") . "'>update deadline</a> has passed, but you can still submit.";
                 $time = $conf->printableTimeSetting("sub_sub", "span", " to submit papers");
                 if ($time != "N/A")
                     $deadlines[] = "You have until $time.";
@@ -436,7 +436,7 @@ class Home_Partial {
         }
         if (!$startable && !count($deadlines)) {
             if ($conf->deadlinesAfter("sub_open"))
-                $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for registering submissions has passed.";
+                $deadlines[] = "The <a href='" . $conf->hoturl("deadlines") . "'>deadline</a> for registering submissions has passed.";
             else
                 $deadlines[] = "The site is not open for submissions at the moment.";
         }
