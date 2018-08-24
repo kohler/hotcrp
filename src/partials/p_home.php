@@ -274,9 +274,7 @@ class Home_Partial {
             echo $sep, foldupbutton(), "<a href=\"", hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
             $sep = $xsep;
         }
-        if ($user->isPC
-            && $conf->has_any_lead_or_shepherd()
-            && $user->is_discussion_lead()) {
+        if ($user->isPC && $user->is_discussion_lead()) {
             echo $sep, '<a href="', hoturl("search", "q=lead%3Ame"), '" class="nw">Your discussion leads</a>';
             $sep = $xsep;
         }

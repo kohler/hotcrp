@@ -1679,6 +1679,7 @@ class Contact {
         $this->check_rights_version();
         if (!isset($this->_is_lead))
             $this->_is_lead = $this->contactId > 0
+                && $this->conf->has_any_lead_or_shepherd()
                 && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactId);
         return $this->_is_lead;
     }

@@ -2564,8 +2564,7 @@ class PaperSearch {
         if ($user->isPC) {
             if ($user->is_requester() || $reqtype === "req")
                 $ts[] = "req";
-            if (($user->conf->has_any_lead_or_shepherd() && $user->is_discussion_lead())
-                || $reqtype === "lead")
+            if ($user->is_discussion_lead() || $reqtype === "lead")
                 $ts[] = "lead";
             if (($user->privChair ? $user->conf->has_any_manager() : $user->is_manager())
                 || $reqtype === "manager")
