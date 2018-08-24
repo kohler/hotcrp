@@ -90,15 +90,20 @@ if ($Qreq->fn === "events") {
     $rf = $Conf->review_form();
     $events = new PaperEvents($Me);
     $rows = [];
-    foreach ($events->events($when, 10) as $xr) {
-        if ($xr->crow)
-            $rows[] = $xr->crow->unparse_flow_entry($Me);
-        else
-            $rows[] = $rf->unparse_flow_entry($xr->prow, $xr->rrow, $Me);
-        $when = $xr->eventTime;
+    $more = false;
+    foreach ($events->events($when, 11) as $xr) {
+        if (count($rows) == 10)
+            $more = true;
+        else {
+            if ($xr->crow)
+                $rows[] = $xr->crow->unparse_flow_entry($Me);
+            else
+                $rows[] = $rf->unparse_flow_entry($xr->prow, $xr->rrow, $Me);
+            $when = $xr->eventTime;
+        }
     }
     json_exit(["ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
-               "rows" => $rows]);
+               "rows" => $rows, "more" => $more]);
 }
 
 if ($Qreq->fn === "searchcompletion") {

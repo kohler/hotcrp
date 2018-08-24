@@ -7622,8 +7622,10 @@ function load_more_events() {
             if (data.ok) {
                 events = (events || []).concat(data.rows);
                 events_at = data.to;
-                $(".has-events").each(function (i, e) {
-                    render_events(e, data.rows);
+                $(".has-events").each(function () {
+                    render_events(this, data.rows);
+                    if (data.more === false)
+                        $(this).find(".eventtable-more").addClass("hidden");
                 });
             }
         }
