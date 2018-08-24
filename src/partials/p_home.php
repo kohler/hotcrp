@@ -8,11 +8,11 @@ class Home_Partial {
     private $_tokens_done;
 
     function render_head(Contact $user, Qrequest $qreq) {
-        echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
         if ($user->is_empty() || isset($qreq->signin))
             $user->conf->header("Sign in", "home");
         else
             $user->conf->header("Home", "home");
+        echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
         if ($user->privChair)
             echo '<div id="clock_drift_container"></div>';
     }
