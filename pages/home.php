@@ -4,35 +4,7 @@
 
 require_once("src/initweb.php");
 
-// signin links
-// auto-signin when email & password set
-if (isset($Qreq->email) && isset($Qreq->password)) {
-    $Qreq->action = $Qreq->get("action", "login");
-    $Qreq->signin = $Qreq->get("signin", "go");
-}
-// CSRF protection: ignore unvalidated signin/signout for known users
-if (!$Me->is_empty() && !$Qreq->post_ok())
-    unset($Qreq->signout);
-if ($Me->has_email()
-    && (!$Qreq->post_ok() || strcasecmp($Me->email, trim($Qreq->email)) == 0))
-    unset($Qreq->signin);
-if (!isset($Qreq->email) || !isset($Qreq->action))
-    unset($Qreq->signin);
-// signout
-if (isset($Qreq->signout))
-    LoginHelper::logout(true);
-else if (isset($Qreq->signin) && !$Conf->opt("httpAuthLogin"))
-    LoginHelper::logout(false);
-// signin
-if ($Conf->opt("httpAuthLogin"))
-    LoginHelper::check_http_auth($Qreq);
-else if (isset($Qreq->signin))
-    LoginHelper::check_login($Qreq);
-else if ((isset($Qreq->signin) || isset($Qreq->signout))
-         && isset($Qreq->post))
-    SelfHref::redirect($Qreq);
-else if (isset($Qreq->postlogin))
-    LoginHelper::check_postlogin($Qreq);
+Home_Partial::signin_requests($Me, $Qreq);
 
 // disabled users
 if (!$Me->is_empty() && $Me->disabled) {

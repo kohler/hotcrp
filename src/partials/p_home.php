@@ -7,6 +7,37 @@ class Home_Partial {
     private $_pc_rinfo;
     private $_tokens_done;
 
+    static function signin_requests(Contact $user, Qrequest $qreq) {
+        // auto-signin when email & password set
+        if (isset($qreq->email) && isset($qreq->password)) {
+            $qreq->action = $qreq->get("action", "login");
+            $qreq->signin = $qreq->get("signin", "go");
+        }
+        // CSRF protection: ignore unvalidated signin/signout for known users
+        if (!$user->is_empty() && !$qreq->post_ok())
+            unset($qreq->signout);
+        if ($user->has_email()
+            && (!$qreq->post_ok() || strcasecmp($user->email, trim($qreq->email)) == 0))
+            unset($qreq->signin);
+        if (!isset($qreq->email) || !isset($qreq->action))
+            unset($qreq->signin);
+        // signout
+        if (isset($qreq->signout))
+            LoginHelper::logout(true);
+        else if (isset($qreq->signin) && !$user->conf->opt("httpAuthLogin"))
+            LoginHelper::logout(false);
+        // signin
+        if ($user->conf->opt("httpAuthLogin"))
+            LoginHelper::check_http_auth($qreq);
+        else if (isset($qreq->signin))
+            LoginHelper::check_login($qreq);
+        else if ((isset($qreq->signin) || isset($qreq->signout))
+                 && isset($qreq->post))
+            SelfHref::redirect($qreq);
+        else if (isset($qreq->postlogin))
+            LoginHelper::check_postlogin($qreq);
+    }
+
     function render_head(Contact $user, Qrequest $qreq) {
         if ($user->is_empty() || isset($qreq->signin))
             $user->conf->header("Sign in", "home");
