@@ -21,4 +21,17 @@ if (Navigation::page() !== "index") {
     }
 }
 
-require_once("pages/home.php");
+require_once("src/initweb.php");
+// handle signin/signout -- may change $Me
+$Me = Home_Partial::signin_requests($Me, $Qreq);
+
+$gex = new GroupedExtensions($Me, ["etc/homepartials.json"],
+                             $Conf->opt("pagePartials"));
+foreach ($gex->members("home") as $gj)
+    $gex->request($gj, $Qreq, [$Me, $Qreq, $gex, $gj]);
+$gex->start_render();
+foreach ($gex->members("home") as $gj)
+    $gex->render($gj, [$Me, $Qreq, $gex, $gj]);
+$gex->end_render();
+
+$Conf->footer();

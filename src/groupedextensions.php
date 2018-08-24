@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class GroupedExtensions {
+    private $user;
     private $_subgroups;
     private $_render_state;
     private $_render_stack;
@@ -34,6 +35,7 @@ class GroupedExtensions {
         return true;
     }
     function __construct(Contact $user, $args /* ... */) {
+        $this->user = $user;
         self::$next_placeholder = 1;
         $this->_subgroups = [];
         foreach (func_get_args() as $i => $arg) {
@@ -102,6 +104,27 @@ class GroupedExtensions {
         });
     }
 
+    private function call_callback($cb, $args) {
+        if ($cb[0] === "*") {
+            $colons = strpos($cb, ":");
+            $klass = substr($cb, 1, $colons - 1);
+            if (!$this->_render_classes
+                || !isset($this->_render_classes[$klass]))
+                $this->_render_classes[$klass] = new $klass(...$args);
+            $cb = [$this->_render_classes[$klass], substr($cb, $colons + 2)];
+        }
+        return call_user_func_array($cb, $args);
+    }
+
+    function request($gj, Qrequest $qreq, $args) {
+        if (isset($gj->request_callback)) {
+            Conf::xt_resolve_require($gj);
+            if (!isset($gj->allow_request_if)
+                || $this->user->conf->xt_check($gj->allow_request_if, $gj, $this->user, $qreq))
+                $this->call_callback($gj->request_callback, $args);
+        }
+    }
+
     function reset_render() {
         assert(!isset($this->_render_state));
         $this->_render_classes = null;
@@ -129,44 +152,8 @@ class GroupedExtensions {
         }
         if (isset($gj->render_callback)) {
             Conf::xt_resolve_require($gj);
-            $cb = $gj->render_callback;
-            if ($cb[0] === "*") {
-                $colons = strpos($cb, ":");
-                $klass = substr($cb, 1, $colons - 1);
-                if (!$this->_render_classes
-                    || !isset($this->_render_classes[$klass]))
-                    $this->_render_classes[$klass] = new $klass(...$args);
-                $cb = [$this->_render_classes[$klass], substr($cb, $colons + 2)];
-            }
-            call_user_func_array($cb, $args);
+            $this->call_callback($gj->render_callback, $args);
         } else if (isset($gj->render_html))
             echo $gj->render_html;
-    }
-
-    static function xt_request_allowed($expr, $xt, Qrequest $qreq, Contact $user) {
-        foreach (is_array($expr) ? $expr : [$expr] as $e) {
-            $not = false;
-            if (is_string($e) && ($not = str_starts_with($e, "!")))
-                $e = substr($e, 1);
-            if (!is_string($e))
-                $b = $e;
-            else if ($e === "post")
-                $b = $qreq->method() === "POST" && $qreq->post_ok();
-            else if ($e === "getpost")
-                $b = ($qreq->method() === "GET" || $qreq->method() === "POST") && $qreq->post_ok();
-            else if (in_array($e, ["chair", "admin", "manager", "pc", "reviewer"])
-                     || strpos($e, "::") !== false
-                     || str_starts_with($e, "opt.")
-                     || str_starts_with($e, "setting."))
-                $b = $user->conf->xt_check($e, $xt, $user);
-            else {
-                $b = false;
-                foreach (explode(" ", $e) as $word)
-                    $b = $b || isset($qreq[$word]);
-            }
-            if ($not ? $b : !$b)
-                return false;
-        }
-        return true;
     }
 }

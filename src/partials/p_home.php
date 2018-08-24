@@ -1,4 +1,6 @@
 <?php
+// src/partials/p_home.php -- HotCRP home page partials
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Home_Partial {
     private $_in_reviews;
@@ -37,8 +39,43 @@ class Home_Partial {
             SelfHref::redirect($qreq);
         else if (isset($qreq->postlogin))
             LoginHelper::check_postlogin($user, $qreq);
+        // disabled
+        if (!$user->is_empty() && $user->disabled) {
+            $user->conf->header("Account disabled", "home", ["action_bar" => false]);
+            echo Conf::msg_info("Your account on this site has been disabled by an administrator. Please contact the site administrators with questions.");
+            $user->conf->footer();
+            exit;
+        }
         return $user;
     }
+
+
+    static function profile_redirect_request(Contact $user, Qrequest $qreq) {
+        if ($user->has_database_account()
+            && $user->conf->session("freshlogin") === true) {
+            if (self::need_profile_redirect($user)) {
+                $user->conf->save_session("freshlogin", "redirect");
+                go($user->conf->hoturl("profile", "redirect=1"));
+            }
+            $user->conf->save_session("freshlogin", null);
+        }
+    }
+
+    static function need_profile_redirect(Contact $user) {
+        if (!$user->firstName && !$user->lastName)
+            return true;
+        if ($user->conf->opt("noProfileRedirect"))
+            return false;
+        if (!$user->affiliation)
+            return true;
+        if ($user->is_pc_member()
+            && !$user->has_review()
+            && (!$user->collaborators
+                || ($user->conf->topic_map() && !$user->topic_interest_map())))
+            return true;
+        return false;
+    }
+
 
     function render_head(Contact $user, Qrequest $qreq) {
         if ($user->is_empty() || isset($qreq->signin))

@@ -788,7 +788,7 @@ class Conf {
         }
         return $xt && (!isset($xt->disabled) || !$xt->disabled) ? $xt : null;
     }
-    function xt_check($expr, $xt, Contact $user = null) {
+    function xt_check($expr, $xt, Contact $user = null, Qrequest $qreq = null) {
         foreach (is_array($expr) ? $expr : [$expr] as $e) {
             $not = false;
             if (is_string($e) && ($not = str_starts_with($e, "!")))
@@ -807,6 +807,13 @@ class Conf {
                 $b = !$user || $user->can_view_some_review();
             else if ($e === "lead" || $e === "shepherd")
                 $b = $this->has_any_lead_or_shepherd();
+            else if ($e === "empty")
+                $b = $user && $user->is_empty();
+            else if ($e === "post")
+                $b = $qreq && $qreq->post_ok() && $qreq->method() === "POST";
+            else if ($e === "getpost")
+                $b = $qreq && $qreq->post_ok()
+                    && ($qreq->method() === "GET" || $qreq->method() === "POST");
             else if (strpos($e, "::") !== false) {
                 self::xt_resolve_require($xt);
                 $b = call_user_func($e, $xt, $user, $this);
@@ -816,7 +823,14 @@ class Conf {
                     $b = !!$this->opt(substr($e, 4));
                 else if (str_starts_with($e, "setting."))
                     $b = !!$this->setting(substr($e, 8));
-                else
+                else if (str_starts_with($e, "req.")) {
+                    $b = false;
+                    foreach (explode(" ", $e) as $w) {
+                        if (str_starts_with($w, "req."))
+                            $w = substr($w, 4);
+                        $b = $b || ($qreq && isset($qreq[$w]));
+                    }
+                } else
                     $b = !!$this->setting($e);
             }
             if ($not ? $b : !$b)

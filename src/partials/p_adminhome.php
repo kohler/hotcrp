@@ -1,4 +1,6 @@
 <?php
+// src/partials/p_adminhome.php -- HotCRP home page partials for administrators
+// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class AdminHome_Partial {
     static function check_admin(Contact $user, Qrequest $qreq) {
