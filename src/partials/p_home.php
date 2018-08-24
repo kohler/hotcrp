@@ -98,6 +98,7 @@ class Home_Partial {
     }
 
     function render_signin(Contact $user, Qrequest $qreq) {
+        global $Now;
         if ($user->has_email() && !isset($qreq->signin))
             return;
 
@@ -224,8 +225,8 @@ class Home_Partial {
         if (($user->isPC || $user->privChair) && $npc) {
             echo $conf->_("The average PC member has submitted %.1f reviews with average %s score %s.",
                 $sumpcSubmit / $npc,
-                $this->_merit_field ? $this->_merit_field->name_html : false,
-                $this->_merit_field ? $this->_merit_field->unparse_average($sumpcScore / $npcScore) : false);
+                $this->_merit_field && $npcScore ? $this->_merit_field->name_html : false,
+                $this->_merit_field && $npcScore ? $this->_merit_field->unparse_average($sumpcScore / $npcScore) : false);
             if ($user->isPC || $user->privChair)
                 echo "&nbsp; <small class=\"nw\">(<a href=\"", hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class='barsep'>·</span><a href=\"", hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
             echo "<br />\n";
