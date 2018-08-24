@@ -2068,7 +2068,7 @@ class PaperSearch {
         } else if ($limit === "rout")
             $sqi->add_table("Limiter", ["join", "PaperReview", $this->user->act_reviewer_sql("Limiter") . " and reviewNeedsSubmit!=0"]);
         else if ($limit === "req")
-            $sqi->add_table("Limiter", ["join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType=" . REVIEW_EXTERNAL]);
+            $sqi->add_table("Limiter", ["join", "PaperReview", "Limiter.requestedBy=$this->cid and Limiter.reviewType<=" . REVIEW_PC]);
         else if ($limit === "unm")
             $filters[] = "Paper.managerContactId=0";
         else if ($this->q === "re:me")

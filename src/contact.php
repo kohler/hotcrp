@@ -1582,7 +1582,7 @@ class Contact {
                    "exists (select * from PaperReview where contactId=?)"];
             $qv = [$this->contactId, $this->contactId];
             if ($this->isPC) {
-                $qs[] = "exists (select * from PaperReview where requestedBy=? and contactId!=?)";
+                $qs[] = "exists (select * from PaperReview where requestedBy=? and reviewType<=" . REVIEW_PC . " and contactId!=?)";
                 array_push($qv, $this->contactId, $this->contactId);
             } else
                 $qs[] = "0";
