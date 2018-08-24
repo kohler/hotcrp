@@ -930,7 +930,7 @@ $blind\n";
             $buttons[] = array(Ht::button("Delete review", ["class" => "ui btn js-delete-review"]), "(admin only)");
         }
 
-        echo Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-$type:0"]);
+        echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
     }
 
     function show(PaperInfo $prow, ReviewInfo $rrow = null, &$options, ReviewValues $rvalues = null) {

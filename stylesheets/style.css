@@ -437,8 +437,10 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	border-width: 1px;
 	border-style: solid;
 	border-radius: 4px;
-	max-width: 800px;
 	padding: 0.5em 0.5em 0.5em 1.5em;
+}
+.msg > div {
+	max-width: 800px;
 }
 .msg > p {
 	margin-top: 0.3em;
@@ -470,9 +472,6 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	border-color: #eecccc;
 	background: border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2IiBoZWlnaHQ9IjEyIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjAwIiAvPjxwb2x5bGluZSBwb2ludHM9Ii02LDEyLDYsMCwxMiwwLDAsMTIiIGZpbGw9IiM0MDAiIC8+PHBvbHlsaW5lIHBvaW50cz0iNiwxMiwxOCwwLDI0LDAsMTIsMTIiIGZpbGw9IiM0MDAiIC8+PC9zdmc+) left repeat-y,
 		border-box #ffeeee;
-}
-.msgs-wide > .msg, #initialmsgs > .msg {
-	max-width: initial;
 }
 .msgs-small-inline > .msg {
 	display: inline-block;

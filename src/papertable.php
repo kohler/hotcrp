@@ -2157,7 +2157,7 @@ class PaperTable {
         echo '<div>';
 
         if (($m = $this->editMessage()))
-            echo $m, '<div class="g"></div>';
+            echo $m;
         if ($this->quit) {
             echo "</div></form>";
             return;
