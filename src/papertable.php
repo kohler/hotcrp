@@ -2629,15 +2629,19 @@ class PaperTable {
             if ($rrow->contactId == $this->user->contactId
                 || (!$myrrow && $this->user->is_my_review($rrow)))
                 $myrrow = $rrow;
-            if ($rrow->requestedBy == $this->user->contactId
+            if (($rrow->requestedBy == $this->user->contactId || $this->admin)
                 && !$rrow->reviewSubmitted
-                && $rrow->timeApprovalRequested)
+                && $rrow->timeApprovalRequested
+                && !$approvable_rrow)
                 $approvable_rrow = $rrow;
         }
 
         if ($this->rrow)
             $this->editrrow = $this->rrow;
-        else if (!$approvable_rrow || ($myrrow && $myrrow->reviewModified && !$this->prefer_approvable))
+        else if (!$approvable_rrow
+                 || ($myrrow
+                     && $myrrow->reviewModified
+                     && !$this->prefer_approvable))
             $this->editrrow = $myrrow;
         else
             $this->editrrow = $approvable_rrow;
