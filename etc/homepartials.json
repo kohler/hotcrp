@@ -1,0 +1,93 @@
+[
+    {
+        "name": "home/admin", "position": 100, "allow_if": "chair",
+        "request_if": ["getpost", "clearbug clearnewpcrev"],
+        "request_callback": "AdminHome_Partial::check_admin",
+        "render_callback": "AdminHome_Partial::render"
+    },
+    {
+        "name": "home/head", "position": 1000,
+        "render_callback": "*Home_Partial::render_head"
+    },
+    {
+        "name": "home/sidebar", "position": 1500,
+        "render_callback": "*Home_Partial::render_sidebar"
+    },
+    {
+        "name": "home/sidebar/admin", "position": 100, "allow_if": "manager",
+        "render_callback": "*Home_Partial::render_admin_sidebar"
+    },
+    {
+        "name": "home/sidebar/admin/settings", "position": 10, "allow_if": "chair",
+        "render_callback": "*Home_Partial::render_admin_settings"
+    },
+    {
+        "name": "home/sidebar/admin/users", "position": 20, "allow_if": "chair",
+        "render_callback": "*Home_Partial::render_admin_users"
+    },
+    {
+        "name": "home/sidebar/admin/assignments", "position": 30, "allow_if": "chair",
+        "render_callback": "*Home_Partial::render_admin_assignments"
+    },
+    {
+        "name": "home/sidebar/admin/mail", "position": 40, "allow_if": "chair",
+        "render_callback": "*Home_Partial::render_admin_mail"
+    },
+    {
+        "name": "home/sidebar/admin/log", "position": 50, "allow_if": "chair",
+        "render_callback": "*Home_Partial::render_admin_log"
+    },
+    {
+        "name": "home/sidebar/info", "position": 200,
+        "render_callback": "*Home_Partial::render_info_sidebar"
+    },
+    {
+        "name": "home/sidebar/info/deadline", "position": 10,
+        "render_callback": "*Home_Partial::render_info_deadline"
+    },
+    {
+        "name": "home/sidebar/info/pc", "position": 20,
+        "render_callback": "*Home_Partial::render_info_pc"
+    },
+    {
+        "name": "home/sidebar/info/site", "position": 30,
+        "render_callback": "*Home_Partial::render_info_site"
+    },
+    {
+        "name": "home/sidebar/info/accepted", "position": 40,
+        "render_callback": "*Home_Partial::render_info_accepted"
+    },
+
+    {
+        "name": "home/message", "position": 2000,
+        "render_callback": "*Home_Partial::render_message"
+    },
+    {
+        "name": "home/welcome", "position": 2500, "allow_if": "!pc",
+        "render_callback": "*Home_Partial::render_welcome"
+    },
+    {
+        "name": "home/signin", "position": 3000,
+        "render_callback": "*Home_Partial::render_signin"
+    },
+    {
+        "name": "home/search", "position": 4000,
+        "render_callback": "*Home_Partial::render_search"
+    },
+    {
+        "name": "home/reviews", "position": 5000, "allow_if": "reviewer",
+        "render_callback": "*Home_Partial::render_reviews"
+    },
+    {
+        "name": "home/review_tokens", "position": 5500,
+        "render_callback": "*Home_Partial::render_review_tokens"
+    },
+    {
+        "name": "home/review_requests", "position": 6000, "allow_if": "reviewer",
+        "render_callback": "*Home_Partial::render_review_requests"
+    },
+    {
+        "name": "home/submissions", "position": 7000,
+        "render_callback": "Home_Partial::render_submissions"
+    }
+]
