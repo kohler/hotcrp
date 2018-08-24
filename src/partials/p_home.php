@@ -370,9 +370,8 @@ class Home_Partial {
 
     function render_review_requests(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
-        if (!$user->privChair
-            && !($user->is_reviewer() && $conf->has_any_submitted())
-            && !$user->is_requester())
+        if (!$user->is_requester()
+            && !$user->has_approvable_review())
             return;
 
         echo '<div class="homegrp">';
