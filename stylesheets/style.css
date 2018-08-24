@@ -431,13 +431,16 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 }
 
 .msg, .msgs-reset > .msg {
-	margin: 4px 0;
+	margin: 4px 0 1rem;
 	font-weight: normal;
 	font-style: normal;
 	border-width: 1px;
 	border-style: solid;
 	border-radius: 4px;
 	padding: 0.5em 0.5em 0.5em 1.5em;
+}
+.msg + .msg {
+	margin-top: -0.5rem;
 }
 .msg > div {
 	max-width: 800px;
