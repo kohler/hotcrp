@@ -107,9 +107,9 @@ class Reviews_SettingRenderer {
         // round selector
         $selector = [];
         foreach ($roundorder as $i => $rname) {
-            if ($rname !== ";")
+            if ($rname !== "" && $rname !== ";")
                 $selector["#$i"] = (object) ["label" => $rname, "id" => "rev_roundtag_$i"];
-            else if ($i === 0)
+            else if ($i === 0 && $print_round0)
                 $selector["#0"] = "unnamed";
         }
 
