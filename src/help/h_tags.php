@@ -34,7 +34,7 @@ visible only to PC chairs.</p>";
         echo $hth->subhead("Finding tags");
         echo "<p>A paper’s tags are shown like this on the paper page:</p>
 
-<div class='pspcard_container' style='position:static'><div class='pspcard'><div class='pspcard_body'>
+<div class='pspcard' style='position:static'><div class='pspcard_body'>
 <div class='psc psc1'>
  <div class='pst'>
   <span class='psfn'>Tags</span>
@@ -42,7 +42,7 @@ visible only to PC chairs.</p>";
     Ht::img("edit48.png", "[Edit]", "editimg"), "</span>&nbsp;<u class='x'>Edit</u></a></span>
   <hr class='c' /></div>
 <div class='psv'><div class='taghl'>#earlyaccept</div></div></div>
-</div></div></div><hr class='c' />
+</div></div><hr class='c' />
 
 <p>To find all papers with tag “#discuss”:&nbsp; ", $hth->search_form("#discuss"), "</p>
 
