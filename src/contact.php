@@ -73,6 +73,7 @@ class Contact {
     private $_is_lead;
     private $_is_explicit_manager;
     private $_dangerous_track_mask;
+    private $_has_approvable;
     private $_can_view_pc;
     public $is_site_contact = false;
     private $_rights_version = 0;
@@ -1614,7 +1615,7 @@ class Contact {
                 $this->_has_outstanding_review = $this->_is_lead =
                 $this->_is_explicit_manager = $this->_is_metareviewer =
                 $this->_can_view_pc = $this->_dangerous_track_mask =
-                $this->_authored_papers = null;
+                $this->_has_approvable = $this->_authored_papers = null;
             $this->_rights_version = self::$rights_version;
         }
     }
@@ -1704,6 +1705,20 @@ class Contact {
 
     function is_track_manager() {
         return $this->privChair || $this->conf->check_any_admin_tracks($this);
+    }
+
+    function has_approvable_review() {
+        $this->check_rights_version();
+        if ($this->_has_approvable === null) {
+            $this->_has_approvable = 0;
+            if ($this->conf->setting("extrev_approve")
+                && $this->conf->setting("pcrev_editdelegate")
+                && $this->is_requester()) {
+                $search = new PaperSearch($this, "ext:approvable");
+                $this->_has_approvable = count($search->paper_ids());
+            }
+        }
+        return $this->_has_approvable !== 0;
     }
 
 

@@ -15,6 +15,8 @@ class Home_Partial {
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
         if ($user->privChair)
             echo '<div id="clock_drift_container"></div>';
+        if ($user->has_approvable_review())
+            $user->conf->msg("xwarning", "Reviews have been submitted for approval. " . Ht::link("List them", $user->conf->hoturl("search", "q=has%3Aapprovable")));
     }
 
     function render_sidebar(Contact $user, Qrequest $qreq, $gx) {
@@ -375,13 +377,8 @@ class Home_Partial {
 
         echo '<div class="homegrp">';
         echo "<h2 class=\"home\">Requested Reviews</h2> ";
-        if ($conf->setting("extrev_approve")
-            && $conf->setting("pcrev_editdelegate")) {
-            $search = new PaperSearch($user, "ext:approvable");
-            if ($search->paper_ids()) {
-                echo '<a href="', hoturl("paper", ["m" => "rea", "p" => "ext:approvable"]), '"><strong>Approve external reviews</strong></a> <span class="barsep">·</span> ';
-            }
-        }
+        if ($user->has_approvable_review())
+            echo '<a href="', hoturl("paper", ["m" => "rea", "p" => "ext:approvable"]), '"><strong>Approve external reviews</strong></a> <span class="barsep">·</span> ';
         echo '<a href="', hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";
     }
 
