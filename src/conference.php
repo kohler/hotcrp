@@ -2764,10 +2764,7 @@ class Conf {
         if (get($options, "reviewSignatures")
             || get($options, "scores")
             || get($options, "reviewWordCounts")) {
-            $cols[] = "(select " . ReviewInfo::review_signature_sql() . " from PaperReview r where r.paperId=Paper.paperId) reviewSignatures";
-            foreach (get($options, "scores", []) as $fid)
-                if (($f = $this->review_field($fid)) && $f->main_storage)
-                    $cols[] = "(select group_concat({$f->main_storage} order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId) {$fid}Signature";
+            $cols[] = "(select " . ReviewInfo::review_signature_sql($this, get($options, "scores")) . " from PaperReview r where r.paperId=Paper.paperId) reviewSignatures";
             if (get($options, "reviewWordCounts"))
                 $cols[] = "(select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId) reviewWordCountSignature";
         } else if ($contact) {

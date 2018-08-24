@@ -1534,6 +1534,9 @@ class PaperInfo {
             }
         }
     }
+    function _mark_has_score($fid) {
+        $this->_reviews_have[$fid] = true;
+    }
 
     private function _update_review_word_counts($rids) {
         $rf = $this->conf->review_form();

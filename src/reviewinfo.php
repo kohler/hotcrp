@@ -123,20 +123,29 @@ class ReviewInfo {
             $rrow->merge($conf);
         return $rrow;
     }
-    static function review_signature_sql() {
-        return "group_concat(r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', "
-            . "r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', "
-            . "coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', "
-            . "r.reviewOrdinal, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit order by r.reviewId)";
+    static function review_signature_sql(Conf $conf, $scores = null) {
+        $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit";
+        foreach ($scores ? : [] as $fid)
+            if (($f = $conf->review_field($fid)) && $f->main_storage)
+                $t .= ", ' " . $f->short_id . "=', " . $f->id;
+        return "group_concat($t order by r.reviewId)";
     }
     static function make_signature(PaperInfo $prow, $signature) {
         $rrow = new ReviewInfo;
         $rrow->paperId = $prow->paperId;
-        list($rrow->reviewId, $rrow->contactId, $rrow->reviewToken, $rrow->reviewType,
-             $rrow->reviewRound, $rrow->requestedBy, $rrow->reviewBlind, $rrow->reviewModified,
-             $rrow->reviewSubmitted, $rrow->reviewAuthorSeen,
-             $rrow->reviewOrdinal, $rrow->timeApprovalRequested, $rrow->reviewNeedsSubmit)
-            = explode(" ", $signature);
+        $vals = explode(" ", $signature);
+        list($rrow->reviewId, $rrow->contactId, $rrow->reviewToken,
+             $rrow->reviewType, $rrow->reviewRound, $rrow->requestedBy,
+             $rrow->reviewBlind, $rrow->reviewModified, $rrow->reviewSubmitted,
+             $rrow->reviewAuthorSeen, $rrow->reviewOrdinal,
+             $rrow->timeApprovalRequested, $rrow->reviewNeedsSubmit) = $vals;
+        for ($i = 13; isset($vals[$i]); ++$i) {
+            $eq = strpos($vals[$i], "=");
+            $f = self::field_info(substr($vals[$i], 0, $eq), $prow->conf);
+            $fid = $f->id;
+            $rrow->$fid = substr($vals[$i], $eq + 1);
+            $prow->_mark_has_score($fid);
+        }
         $rrow->merge($prow->conf);
         return $rrow;
     }

@@ -1035,6 +1035,8 @@ class SearchQueryInfo {
     public $columns = array();
     public $negated = false;
     private $_has_my_review = false;
+    private $_has_review_signatures = false;
+    private $_review_scores;
 
     function __construct(PaperSearch $srch) {
         $this->conf = $srch->conf;
@@ -1063,9 +1065,12 @@ class SearchQueryInfo {
         $this->_has_my_review = true;
     }
     function finish_reviewer_columns() {
+        if ($this->_has_review_signatures) {
+            $this->add_column("reviewSignatures", "(select " . ReviewInfo::review_signature_sql($this->conf, $this->_review_scores) . " from PaperReview r where r.paperId=Paper.paperId)");
+        }
         if ($this->_has_my_review) {
             $this->add_conflict_columns();
-            if (isset($this->columns["reviewSignatures"])) {
+            if ($this->_has_review_signatures) {
                 /* use that */
             } else if (isset($this->tables["MyReviews"])) {
                 $this->add_column("myReviewPermissions", PaperInfo::my_review_permissions_sql("MyReviews."));
@@ -1078,15 +1083,14 @@ class SearchQueryInfo {
         }
     }
     function add_review_signature_columns() {
-        if (!isset($this->columns["reviewSignatures"]))
-            $this->add_column("reviewSignatures", "(select " . ReviewInfo::review_signature_sql() . " from PaperReview r where r.paperId=Paper.paperId)");
+        $this->_has_review_signatures = true;
     }
     function add_score_columns($fid) {
         $this->add_review_signature_columns();
-        if (!isset($this->columns["{$fid}Signature"])
-            && ($f = $this->conf->review_field($fid))
-            && $f->main_storage)
-            $this->add_column("{$fid}Signature", "(select group_concat({$f->main_storage} order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId)");
+        if (($f = $this->conf->review_field($fid))
+            && $f->main_storage
+            && (!$this->_review_scores || !in_array($fid, $this->_review_scores)))
+            $this->_review_scores[] = $fid;
     }
     function add_review_word_count_columns() {
         $this->add_review_signature_columns();
