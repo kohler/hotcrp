@@ -291,6 +291,7 @@ class Home_Partial {
         }
         if ($conf->setting("rev_tokens")) {
             echo $sep;
+            $this->_in_reviews = true;
             $this->render_review_tokens($user, $qreq);
             $sep = $xsep;
         }
@@ -340,32 +341,30 @@ class Home_Partial {
         if ($this->_tokens_done
             || !$user->has_email()
             || !$user->conf->setting("rev_tokens")
-            || (!$this->_in_reviews && !$user->is_reviewer()))
+            || ($this->_in_reviews && !$user->is_reviewer()))
             return;
 
         $tokens = [];
         foreach ($user->conf->session("rev_tokens", []) as $tt)
             $tokens[] = encode_token((int) $tt);
 
-        if ($this->_in_reviews)
+        if (!$this->_in_reviews)
             echo '<div class="homegrp" id="homerev">',
-                "<h2 class=\"home\">Review tokens</h2>";
-        else
-            echo '<table id="foldrevtokens" class="fold2', empty($tokens) ? "c" : "o", '" style="display:inline-table">',
-                '<tr><td class="fn2"><a href="" class="fn2 ui js-foldup">Add review tokens</a></td>',
-                '<td class="fx2">Review tokens: &nbsp;';
+                "<h2 class=\"home\">Reviews</h2>";
+        echo '<table id="foldrevtokens" class="fold2', empty($tokens) ? "c" : "o", '" style="display:inline-table">',
+            '<tr><td class="fn2"><a href="" class="fn2 ui js-foldup">Add review tokens</a></td>',
+            '<td class="fx2">Review tokens: &nbsp;';
 
         echo Ht::form($user->conf->hoturl_post("index")),
             Ht::entry("token", join(" ", $tokens), ["size" => max(15, count($tokens) * 8)]),
             " &nbsp;", Ht::submit("Save");
         if (empty($tokens))
-            echo '<div class="hint">Enter tokens to gain access to the corresponding reviews.</div>';
+            echo '<div class="f-h">Enter tokens to gain access to the corresponding reviews.</div>';
         echo '</form>';
 
-        if ($this->_in_reviews)
+        echo '</td></tr></table>', "\n";
+        if (!$this->_in_reviews)
             echo '</div>', "\n";
-        else
-            echo '</td></tr></table>', "\n";
         $this->_tokens_done = true;
     }
 

@@ -79,7 +79,7 @@
         "render_callback": "*Home_Partial::render_reviews"
     },
     {
-        "name": "home/review_tokens", "position": 5500,
+        "name": "home/review_tokens", "position": 10000,
         "render_callback": "*Home_Partial::render_review_tokens"
     },
     {
