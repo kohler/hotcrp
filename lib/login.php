@@ -3,29 +3,28 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class LoginHelper {
-    static function logout($explicit) {
-        global $Me, $Conf;
-        if (!$Me->is_empty() && $explicit && !$Conf->opt("httpAuthLogin"))
-            $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
+    static function logout(Contact $user, $explicit) {
+        if (!$user->is_empty() && $explicit && !$user->conf->opt("httpAuthLogin"))
+            $user->conf->confirmMsg("You have been signed out. Thanks for using the system.");
         if (isset($_SESSION))
             unset($_SESSION["trueuser"], $_SESSION["last_actas"],
                   $_SESSION["updatecheck"], $_SESSION["sg"]);
         // clear all conference session info, except maybe capabilities
-        $capabilities = $Conf->session("capabilities");
+        $capabilities = $user->conf->session("capabilities");
         if (isset($_SESSION))
-            unset($_SESSION[$Conf->dsn]);
+            unset($_SESSION[$user->conf->dsn]);
         if (!$explicit && $capabilities)
-            $Conf->save_session("capabilities", $capabilities);
+            $user->conf->save_session("capabilities", $capabilities);
         if ($explicit) {
             ensure_session();
             unset($_SESSION["login_bounce"]);
-            if ($Conf->opt("httpAuthLogin")) {
+            if ($user->conf->opt("httpAuthLogin")) {
                 $_SESSION["reauth"] = true;
                 go("");
             }
         }
-        $Me = new Contact;
-        $Me = $Me->activate(null);
+        $user = new Contact(null, $user->conf);
+        return $user->activate(null);
     }
 
     static function check_http_auth(Qrequest $qreq) {

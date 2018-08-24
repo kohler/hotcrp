@@ -8,6 +8,7 @@ class Home_Partial {
     private $_tokens_done;
 
     static function signin_requests(Contact $user, Qrequest $qreq) {
+        global $Me;
         // auto-signin when email & password set
         if (isset($qreq->email) && isset($qreq->password)) {
             $qreq->action = $qreq->get("action", "login");
@@ -23,9 +24,9 @@ class Home_Partial {
             unset($qreq->signin);
         // signout
         if (isset($qreq->signout))
-            LoginHelper::logout(true);
+            $Me = $user = LoginHelper::logout($user, true);
         else if (isset($qreq->signin) && !$user->conf->opt("httpAuthLogin"))
-            LoginHelper::logout(false);
+            $Me = $user = LoginHelper::logout($user, false);
         // signin
         if ($user->conf->opt("httpAuthLogin"))
             LoginHelper::check_http_auth($qreq);
