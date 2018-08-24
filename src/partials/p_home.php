@@ -16,7 +16,7 @@ class Home_Partial {
         if ($user->privChair)
             echo '<div id="clock_drift_container"></div>';
         if ($user->has_approvable_review())
-            $user->conf->msg("xwarning", "Reviews have been submitted for approval. " . Ht::link("List them", $user->conf->hoturl("search", "q=has%3Aapprovable")));
+            $user->conf->msg("xwarning", "Reviews have been submitted for approval. " . Ht::link("List them", $user->conf->hoturl("paper", "m=rea&amp;p=has%3Aapprovable")));
     }
 
     function render_sidebar(Contact $user, Qrequest $qreq, $gx) {
@@ -379,7 +379,7 @@ class Home_Partial {
         echo '<div class="homegrp">';
         echo "<h2 class=\"home\">Requested Reviews</h2> ";
         if ($user->has_approvable_review())
-            echo '<a href="', $conf->hoturl("paper", ["m" => "rea", "p" => "ext:approvable"]), '"><strong>Approve external reviews</strong></a> <span class="barsep">·</span> ';
+            echo '<a href="', $conf->hoturl("paper", "m=rea&amp;p=has%3Aapprovable"), '">Approve external reviews</a> <span class="barsep">·</span> ';
         echo '<a href="', $conf->hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";
     }
 
