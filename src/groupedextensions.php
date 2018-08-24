@@ -4,6 +4,9 @@
 
 class GroupedExtensions {
     private $_subgroups;
+    private $_render_state;
+    private $_render_stack;
+    private $_render_classes;
     static private $next_placeholder;
 
     function _add_json($fj) {
@@ -98,18 +101,45 @@ class GroupedExtensions {
             return $gj->name === $gj->group;
         });
     }
-    static function render_heading($gj, &$last_title = null,
-                                   $h = 3, $className = null) {
+
+    function reset_render() {
+        assert(!isset($this->_render_state));
+        $this->_render_classes = null;
+    }
+    function start_render($heading_number = 3, $heading_class = null) {
+        $this->_render_stack[] = $this->_render_state;
+        $this->_render_state = [null, $heading_number, $heading_class];
+    }
+    function end_render() {
+        assert(!empty($this->_render_stack));
+        $this->_render_state = array_pop($this->_render_stack);
+    }
+    function render($gj, $args) {
+        assert($this->_render_state !== null);
         if (isset($gj->title)
-            && $gj->title !== $last_title
+            && $gj->title !== $this->_render_state[0]
             && $gj->group !== $gj->name) {
-            echo '<h', $h;
-            if ($className)
-                echo ' class="', $className, '"';
+            echo '<h', $this->_render_state[1];
+            if ($this->_render_state[2])
+                echo ' class="', $this->_render_state[2], '"';
             if (isset($gj->anchorid))
                 echo ' id="', htmlspecialchars($gj->anchorid), '"';
-            echo '>', $gj->title, "</h$h>\n";
-            $last_title = $gj->title;
+            echo '>', $gj->title, "</h", $this->_render_state[1], ">\n";
+            $this->_render_state[0] = $gj->title;
         }
+        if (isset($gj->render_callback)) {
+            Conf::xt_resolve_require($gj);
+            $cb = $gj->render_callback;
+            if ($cb[0] === "*") {
+                $colons = strpos($cb, ":");
+                $klass = substr($cb, 1, $colons - 1);
+                if (!$this->_render_classes
+                    || !isset($this->_render_classes[$klass]))
+                    $this->_render_classes[$klass] = new $klass(...$args);
+                $cb = [$this->_render_classes[$klass], substr($cb, $colons + 2)];
+            }
+            call_user_func_array($cb, $args);
+        } else if (isset($gj->render_html))
+            echo $gj->render_html;
     }
 }

@@ -857,21 +857,16 @@ topics. We use this information to help match papers to reviewers.</p>',
     }
 
     function render_group($g, $cj, $reqj) {
-        $last_title = null;
+        $this->gxt()->start_render(3, "profile");
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
-            $pc = array_search("pc", Conf::xt_allow_list($gj)) !== false;
-            if ($pc && !$this->user->isPC && !$this->viewer->privChair)
-                continue;
-            if ($pc)
+            if (array_search("pc", Conf::xt_allow_list($gj)) === false)
+                $this->gxt()->render($gj, [$this, $cj, $reqj, $gj]);
+            else if ($this->user->isPC || $this->viewer->privChair) {
                 echo '<div class="fx1">';
-            GroupedExtensions::render_heading($gj, $last_title, 3, "profile");
-            if (isset($gj->render_callback)) {
-                Conf::xt_resolve_require($gj);
-                call_user_func($gj->render_callback, $this, $cj, $reqj, $gj);
-            } else if (isset($gj->render_html))
-                echo $gj->render_html;
-            if ($pc)
+                $this->gxt()->render($gj, [$this, $cj, $reqj, $gj]);
                 echo '</div>';
+            }
         }
+        $this->gxt()->end_render();
     }
 }

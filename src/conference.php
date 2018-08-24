@@ -789,14 +789,13 @@ class Conf {
         return $xt && (!isset($xt->disabled) || !$xt->disabled) ? $xt : null;
     }
     function xt_check($expr, $xt, Contact $user = null) {
-        $es = is_array($expr) ? $expr : [$expr];
-        foreach ($es as $e) {
+        foreach (is_array($expr) ? $expr : [$expr] as $e) {
             $not = false;
             if (is_string($e) && ($not = str_starts_with($e, "!")))
                 $e = substr($e, 1);
             if (!is_string($e))
                 $b = $e;
-            else if ($e === "chair")
+            else if ($e === "chair" || $e === "admin")
                 $b = !$user || $user->privChair;
             else if ($e === "manager")
                 $b = !$user || $user->is_manager();

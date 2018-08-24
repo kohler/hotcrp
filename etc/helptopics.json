@@ -5,257 +5,257 @@
     },
     {
         "name": "chair/presubmission", "position": 0,
-        "callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
     },
     {
         "name": "chair/presubmission/accounts", "position": 10, "index": 1,
-        "callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
     },
     {
         "name": "chair/presubmission/policies", "position": 20, "index": 2,
-        "callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
     },
     {
         "name": "chair/presubmission/deadlines", "position": 30, "index": 3,
-        "callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
     },
     {
         "name": "chair/presubmission/subform", "position": 40, "index": 4,
-        "callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
     },
     {
         "name": "chair/presubmission/verify", "position": 50, "index": 5,
-        "callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
     },
     {
         "name": "chair/presubmission/open", "position": 60, "index": 6,
-        "callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
     },
     {
         "name": "chair/assignments", "position": 100,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/assignments/anomalies", "position": 10, "index": 1,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/assignments/format", "position": 20, "index": 2,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/assignments/reviewform", "position": 30, "index": 3,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/assignments/review", "position": 40, "index": 4,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/assignments/tracks", "position": 50, "index": 5,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/assignments/revpref", "position": 60, "index": 6,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/assignments/conflicts", "position": 70, "index": 7,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/assignments/assign", "position": 80, "index": 8,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/assignments/openreview", "position": 90, "index": 9,
-        "callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
     },
     {
         "name": "chair/chair_conflicts", "position": 200,
-        "callback": "ChairsGuide_HelpTopic::render_chair_conflicts"
+        "render_callback": "ChairsGuide_HelpTopic::render_chair_conflicts"
     },
     {
         "name": "chair/premeeting", "position": 300,
-        "callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
     },
     {
         "name": "chair/premeeting/responses", "position": 10, "index": 1,
-        "callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
     },
     {
         "name": "chair/premeeting/pcseeallrev", "position": 20, "index": 2,
-        "callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
     },
     {
         "name": "chair/premeeting/scores", "position": 30, "index": 3,
-        "callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
     },
     {
         "name": "chair/premeeting/tags", "position": 40, "index": 4,
-        "callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
     },
     {
         "name": "chair/premeeting/leads", "position": 50, "index": 5,
-        "callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
     },
     {
         "name": "chair/premeeting/decisions", "position": 60, "index": 6,
-        "callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
     },
     {
         "name": "chair/premeeting/download", "position": 70, "index": 7,
-        "callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
     },
     {
         "name": "chair/atmeeting", "position": 400,
-        "callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
     },
     {
         "name": "chair/atmeeting/tracker", "position": 10, "index": 1,
-        "callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
     },
     {
         "name": "chair/atmeeting/scribes", "position": 20, "index": 2,
-        "callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
     },
     {
         "name": "chair/atmeeting/decisions", "position": 30, "index": 3,
-        "callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
     },
     {
         "name": "chair/atmeeting/shepherds", "position": 40, "index": 4,
-        "callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
     },
     {
         "name": "chair/postmeeting", "position": 500,
-        "callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
     },
     {
         "name": "chair/postmeeting/decisions", "position": 10, "index": 1,
-        "callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
     },
     {
         "name": "chair/postmeeting/updatereviews", "position": 20, "index": 2,
-        "callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
     },
     {
         "name": "chair/postmeeting/auseedec", "position": 30, "index": 3,
-        "callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
     },
     {
         "name": "chair/postmeeting/mail", "position": 40, "index": 4,
-        "callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
     },
     {
         "name": "chair/postmeeting/final", "position": 50, "index": 5,
-        "callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
     },
     {
         "name": "search", "title": "Search",
         "description": "About paper searching.",
-        "callback": "Search_HelpTopic::render",
+        "render_callback": "Search_HelpTopic::render",
         "position": 1000
     },
     {
         "name": "keywords", "title": "Search keywords", "synonym": ["syntax"],
         "description": "Quick reference to search keywords and syntax.",
-        "callback": "Keywords_HelpTopic::render",
+        "render_callback": "Keywords_HelpTopic::render",
         "position": 2000
     },
     {
         "name": "tags", "title": "Tags",
         "description": "How to use tags to define paper sets and discussion orders.",
-        "callback": "*Tags_HelpTopic::render_intro",
+        "render_callback": "*Tags_HelpTopic::render_intro",
         "position": 3000
     },
     {
         "name": "tags/finding",
-        "callback": "*Tags_HelpTopic::render_finding",
+        "render_callback": "*Tags_HelpTopic::render_finding",
         "position": 3100
     },
     {
         "name": "tags/changing",
-        "callback": "*Tags_HelpTopic::render_changing",
+        "render_callback": "*Tags_HelpTopic::render_changing",
         "position": 3200
     },
     {
         "name": "tags/values",
-        "callback": "*Tags_HelpTopic::render_values",
+        "render_callback": "*Tags_HelpTopic::render_values",
         "position": 3300
     },
     {
         "name": "tags/colors",
-        "callback": "*Tags_HelpTopic::render_colors",
+        "render_callback": "*Tags_HelpTopic::render_colors",
         "position": 3300
     },
     {
         "name": "tags/examples",
-        "callback": "*Tags_HelpTopic::render_examples",
+        "render_callback": "*Tags_HelpTopic::render_examples",
         "position": 3900
     },
     {
         "name": "tagexamples/r1reject", "position": 100,
-        "callback": "*Tags_HelpTopic::render_example_r1reject"
+        "render_callback": "*Tags_HelpTopic::render_example_r1reject"
     },
     {
         "name": "tagexamples/controversial", "position": 200,
-        "callback": "*Tags_HelpTopic::render_example_controversial"
+        "render_callback": "*Tags_HelpTopic::render_example_controversial"
     },
     {
         "name": "tagexamples/pcpaper", "position": 300,
-        "callback": "*Tags_HelpTopic::render_example_pcpaper"
+        "render_callback": "*Tags_HelpTopic::render_example_pcpaper"
     },
     {
         "name": "tagexamples/allotment", "position": 400,
-        "callback": "*Tags_HelpTopic::render_example_allotment"
+        "render_callback": "*Tags_HelpTopic::render_example_allotment"
     },
     {
         "name": "tagexamples/rank", "position": 500,
-        "callback": "*Tags_HelpTopic::render_example_rank"
+        "render_callback": "*Tags_HelpTopic::render_example_rank"
     },
     {
         "name": "tagexamples/discuss", "position": 600,
-        "callback": "*Tags_HelpTopic::render_example_discuss"
+        "render_callback": "*Tags_HelpTopic::render_example_discuss"
     },
     {
         "name": "tagexamples/decisions", "position": 700,
-        "callback": "*Tags_HelpTopic::render_example_decisions"
+        "render_callback": "*Tags_HelpTopic::render_example_decisions"
     },
     {
         "name": "scoresort", "title": "Sorting scores",
         "description": "How scores are sorted in paper lists.",
-        "callback": "ScoreSort_HelpTopic::render",
+        "render_callback": "ScoreSort_HelpTopic::render",
         "position": 5000
     },
     {
         "name": "revround", "title": "Review rounds",
         "description": "Sets of reviews with different deadlines and forms.",
-        "callback": "RevRound_HelpTopic::render",
+        "render_callback": "RevRound_HelpTopic::render",
         "position": 6000
     },
     {
         "name": "reviewratings", "title": "Review ratings", "synonym": ["revrate"],
         "description": "Rating the quality of reviews.",
-        "callback": "RevRate_HelpTopic::render",
+        "render_callback": "RevRate_HelpTopic::render",
         "position": 7000
     },
     {
         "name": "votetags", "title": "Voting",
         "description": "PC members can vote for papers using tags.",
-        "callback": "VoteTags_HelpTopic::render",
+        "render_callback": "VoteTags_HelpTopic::render",
         "position": 8000
     },
     {
         "name": "ranking", "title": "Ranking",
         "description": "PC members can rank papers using tags.",
-        "callback": "Ranking_HelpTopic::render",
+        "render_callback": "Ranking_HelpTopic::render",
         "position": 9000
     },
     {
         "name": "formulas", "title": "Formulas",
         "description": "Create and display formulas in search orders.",
-        "callback": "Formulas_HelpTopic::render",
+        "render_callback": "Formulas_HelpTopic::render",
         "position": 10000
     }
 ]

@@ -5,7 +5,7 @@
 require_once("src/initweb.php");
 
 $help_topics = new GroupedExtensions($Me, [
-    '{"name":"topics","title":"Help topics","position":-1000000,"priority":1000000,"callback":"show_help_topics"}',
+    '{"name":"topics","title":"Help topics","position":-1000000,"priority":1000000,"render_callback":"show_help_topics"}',
     "etc/helptopics.json"
 ], $Conf->opt("helpTopics"));
 
@@ -153,20 +153,10 @@ class HtHead extends Ht {
             }, $vt)) . ")";
     }
     function render_group($topic) {
-        foreach ($this->_help_topics->members($topic) as $gj) {
-            Conf::xt_resolve_require($gj);
-            if (isset($gj->callback)) {
-                $cb = $gj->callback;
-                if ($cb[0] === "*") {
-                    $colons = strpos($cb, ":");
-                    $klass = substr($cb, 1, $colons - 1);
-                    if (!isset($this->_renderers[$klass]))
-                        $this->_renderers[$klass] = new $klass($this, $gj);
-                    $cb = [$this->_renderers[$klass], substr($cb, $colons + 2)];
-                }
-                call_user_func($cb, $this, $gj);
-            }
-        }
+        $this->_help_topics->start_render(3, "helppage");
+        foreach ($this->_help_topics->members($topic) as $gj)
+            $this->_help_topics->render($gj, [$this, $gj]);
+        $this->_help_topics->end_render();
     }
     function groups() {
         return $this->_help_topics->groups();

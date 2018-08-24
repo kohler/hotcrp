@@ -358,15 +358,10 @@ class SettingValues extends MessageSet {
         }
     }
     function render_group($g) {
-        $last_title = null;
-        foreach ($this->group_members($g) as $gj) {
-            GroupedExtensions::render_heading($gj, $last_title, 3, "settings");
-            if (isset($gj->render_callback)) {
-                Conf::xt_resolve_require($gj);
-                call_user_func($gj->render_callback, $this, $gj);
-            } else if (isset($gj->render_html))
-                echo $gj->render_html;
-        }
+        $this->gxt()->start_render(3, "settings");
+        foreach ($this->group_members($g) as $gj)
+            $this->gxt()->render($gj, [$this, $gj]);
+        $this->gxt()->end_render();
     }
 
 
