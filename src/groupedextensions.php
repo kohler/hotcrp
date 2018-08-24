@@ -142,4 +142,31 @@ class GroupedExtensions {
         } else if (isset($gj->render_html))
             echo $gj->render_html;
     }
+
+    static function xt_request_allowed($expr, $xt, Qrequest $qreq, Contact $user) {
+        foreach (is_array($expr) ? $expr : [$expr] as $e) {
+            $not = false;
+            if (is_string($e) && ($not = str_starts_with($e, "!")))
+                $e = substr($e, 1);
+            if (!is_string($e))
+                $b = $e;
+            else if ($e === "post")
+                $b = $qreq->method() === "POST" && $qreq->post_ok();
+            else if ($e === "getpost")
+                $b = ($qreq->method() === "GET" || $qreq->method() === "POST") && $qreq->post_ok();
+            else if (in_array($e, ["chair", "admin", "manager", "pc", "reviewer"])
+                     || strpos($e, "::") !== false
+                     || str_starts_with($e, "opt.")
+                     || str_starts_with($e, "setting."))
+                $b = $user->conf->xt_check($e, $xt, $user);
+            else {
+                $b = false;
+                foreach (explode(" ", $e) as $word)
+                    $b = $b || isset($qreq[$word]);
+            }
+            if ($not ? $b : !$b)
+                return false;
+        }
+        return true;
+    }
 }

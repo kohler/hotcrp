@@ -96,6 +96,7 @@ etc/assignmentparsers.json
 etc/emojicodes.json
 etc/formulafunctions.json
 etc/helptopics.json
+etc/homepartials.json
 etc/listactions.json
 etc/mailkeywords.json
 etc/msgs.json
@@ -151,7 +152,6 @@ lib/xlsx.php
 lib/zipdocument.php
 
 pages/.htaccess
-pages/adminhome.php
 pages/home.php
 
 src/.htaccess
@@ -250,6 +250,8 @@ src/papersearch.php
 src/paperstatus.php
 src/papertable.php
 src/paperrank.php
+src/partials/p_adminhome.php
+src/partials/p_home.php
 src/review.php
 src/reviewdiffinfo.php
 src/reviewinfo.php

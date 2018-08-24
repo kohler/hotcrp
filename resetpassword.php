@@ -68,7 +68,6 @@ if ($Conf->opt("conferenceSite"))
     echo " For general information about ", htmlspecialchars($Conf->short_name), ", see <a href=\"", htmlspecialchars($Conf->opt("conferenceSite")), "\">the conference site</a>.";
 
 echo "</div>
-<hr class='home' />
 <div class='homegrp' id='homereset'>\n",
     Ht::form(hoturl_post("resetpassword")),
     '<div class="f-contain">',
@@ -87,9 +86,7 @@ echo '<div class="', Ht::control_class("password", "f-i"), '">
 <div class="f-i" style="margin-top:2em">',
     Ht::submit("go", "Reset password", ["class" => "btn btn-primary"]),
     "</div>
-</div></form>
-<hr class='home' /></div>\n";
+</div></form></div>\n";
 Ht::stash_script("focus_within(\$(\"#homereset\"));window.scroll(0,0)");
 
-echo '<hr class="c" />', "\n";
 $Conf->footer();
