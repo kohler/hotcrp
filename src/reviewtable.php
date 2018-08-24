@@ -330,14 +330,14 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                 if (($tags = $cx[0]->viewable_tags($Me))
                     && ($color = $cx[0]->conf->tags()->color_classes($tags)))
                     $tclass .= " $color taghh";
-                return "<span class=\"nb\"><a class=\"{$tclass}\" href=\"#{$cid}\">"
+                return "<span class=\"nb\"><a class=\"{$tclass} track\" href=\"#{$cid}\">"
                     . $cx[0]->unparse_user_html($Me, null)
                     . "</a>"
                     . ($cx[1] > 1 ? " ({$cx[1]})" : "")
                     . $cx[2] . "</span>";
             }, $cxs);
             $first_cid = $cxs[0][0]->unparse_html_id();
-            $pret = '<div class="revnotes"><a href="#' . $first_cid . '"><strong>'
+            $pret = '<div class="revnotes"><a class="track" href="#' . $first_cid . '"><strong>'
                 . plural($count, "Comment") . '</strong></a>: '
                 . join(" ", $cnames) . '</div>';
             $any_comments = true;

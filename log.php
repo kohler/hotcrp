@@ -596,12 +596,12 @@ foreach ($visible_rows as $row) {
         $at .= htmlspecialchars($m[1])
             . " (<a href=\"" . hoturl("search", "t=all&amp;q=" . preg_replace('/[\s,]+/', "+", $m[2]))
             . "\">papers</a> "
-            . preg_replace('/(\d+)/', "<a href=\"" . hoturl("paper", "p=\$1") . "\">\$1</a>", $m[2])
+            . preg_replace('/(\d+)/', "<a class=\"track\" href=\"" . hoturl("paper", "p=\$1") . "\">\$1</a>", $m[2])
             . ")";
     } else
         $at .= htmlspecialchars($act);
     if ($row->paperId)
-        $at .= " (<a href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">paper " . htmlspecialchars($row->paperId) . "</a>)";
+        $at .= " (<a class=\"track\" href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">paper " . htmlspecialchars($row->paperId) . "</a>)";
     $t[] = '<td class="pl pl_logaction">' . $at . '</td>';
     $trs[] = '    <tr class="k' . (count($trs) % 2) . '">' . join("", $t) . "</tr>\n";
 }

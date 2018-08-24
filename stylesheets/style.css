@@ -169,10 +169,10 @@ td.quicklinks, #trackerconnect {
 
 
 /* generic horizontal styles */
-:link, a.nv, a.ui {
+:link, :visited, a.nv, a.ui {
 	color: #004daa;
 }
-:visited {
+.ptitle:visited, .pnum:visited, .track:visited {
 	color: #660099;
 }
 a:hover, a.nv:hover, a.ui:hover {

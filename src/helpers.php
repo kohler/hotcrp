@@ -306,7 +306,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         $urlrest["p"] = $id;
     }
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
-        . "\" class=\"x\" href=\"" . hoturl($baseUrl, $urlrest) . "\">"
+        . "\" class=\"x pnum\" href=\"" . hoturl($baseUrl, $urlrest) . "\">"
         . ($isprev ? Icons::ui_linkarrow(3) : "")
         . $paperText
         . ($isprev ? "" : Icons::ui_linkarrow(1))
