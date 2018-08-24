@@ -8,7 +8,6 @@ class Home_Partial {
     private $_tokens_done;
 
     static function signin_requests(Contact $user, Qrequest $qreq) {
-        global $Me;
         // auto-signin when email & password set
         if (isset($qreq->email) && isset($qreq->password)) {
             $qreq->action = $qreq->get("action", "login");
@@ -18,25 +17,27 @@ class Home_Partial {
         if (!$user->is_empty() && !$qreq->post_ok())
             unset($qreq->signout);
         if ($user->has_email()
-            && (!$qreq->post_ok() || strcasecmp($user->email, trim($qreq->email)) == 0))
+            && (!$qreq->post_ok()
+                || strcasecmp($user->email, trim($qreq->email)) == 0))
             unset($qreq->signin);
         if (!isset($qreq->email) || !isset($qreq->action))
             unset($qreq->signin);
         // signout
         if (isset($qreq->signout))
-            $Me = $user = LoginHelper::logout($user, true);
+            $user = LoginHelper::logout($user, true);
         else if (isset($qreq->signin) && !$user->conf->opt("httpAuthLogin"))
-            $Me = $user = LoginHelper::logout($user, false);
+            $user = LoginHelper::logout($user, false);
         // signin
         if ($user->conf->opt("httpAuthLogin"))
-            LoginHelper::check_http_auth($qreq);
+            LoginHelper::check_http_auth($user, $qreq);
         else if (isset($qreq->signin))
-            LoginHelper::check_login($qreq);
+            LoginHelper::login_redirect($user->conf, $qreq);
         else if ((isset($qreq->signin) || isset($qreq->signout))
                  && isset($qreq->post))
             SelfHref::redirect($qreq);
         else if (isset($qreq->postlogin))
-            LoginHelper::check_postlogin($qreq);
+            LoginHelper::check_postlogin($user, $qreq);
+        return $user;
     }
 
     function render_head(Contact $user, Qrequest $qreq) {

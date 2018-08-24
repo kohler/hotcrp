@@ -4,7 +4,7 @@
 
 require_once("src/initweb.php");
 
-Home_Partial::signin_requests($Me, $Qreq);
+$Me = Home_Partial::signin_requests($Me, $Qreq);
 
 // disabled users
 if (!$Me->is_empty() && $Me->disabled) {
