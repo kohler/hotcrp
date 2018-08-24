@@ -88,6 +88,6 @@
     },
     {
         "name": "home/submissions", "position": 7000,
-        "render_callback": "Home_Partial::render_submissions"
+        "render_callback": "*Home_Partial::render_submissions"
     }
 ]

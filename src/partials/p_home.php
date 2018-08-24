@@ -383,11 +383,11 @@ class Home_Partial {
         echo '<a href="', $conf->hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";
     }
 
-    static function render_submissions(Contact $user, Qrequest $qreq, $gx) {
+    function render_submissions(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->is_author()
             && $conf->timeStartPaper() <= 0
-            && $user->privChair
+            && !$user->privChair
             && $user->is_reviewer())
             return;
 
