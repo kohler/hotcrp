@@ -196,10 +196,10 @@ class Reviews_SettingRenderer {
                 0 => "Yes"],
                 "Can PC reviewers request external reviews?",
                 ["fold" => true]);
-        echo '<p class="settingtext fx">PC reviewers can delegate their secondary reviews to an external reviewer; when the external review is complete, the PC reviewer need not complete a review of their own.</p>', "\n";
+        echo '<div class="fx"><p class="settingtext">PC reviewers can delegate their secondary reviews to an external reviewer; when the external review is complete, the PC reviewer need not complete a review of their own.</p>', "\n";
         $sv->echo_checkbox("pcrev_editdelegate", "PC members can edit delegated external reviews (and other external reviews they requested)", ["class" => "uich js-foldup", "data-fold-target" => 2]);
         $sv->echo_checkbox("extrev_approve", "Requesters must approve external reviews after they are submitted", ["item_class" => "fx2"]);
-        echo "</div>\n";
+        echo "</div></div>\n";
 
         $t = $sv->expand_mail_template("requestreview", false);
         echo '<div id="foldmailbody_requestreview" class="settings-g ',
