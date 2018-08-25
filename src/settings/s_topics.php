@@ -34,7 +34,7 @@ class Topics_SettingRenderer {
                 if ($sv->use_req() && isset($sv->req["top$tid"]))
                     $tname = $sv->req["top$tid"];
                 echo '<tr><td class="lentry">',
-                    Ht::entry("top$tid", $tname, ["size" => 80, "class" => "need-autogrow wide" . ($sv->has_problem_at("top$tid") ? " has-error" : "")]),
+                    Ht::entry("top$tid", $tname, ["size" => 80, "class" => "need-autogrow wide" . ($sv->has_problem_at("top$tid") ? " has-error" : ""), "aria-label" => "Topic name"]),
                     '</td>';
                 if (!empty($interests)) {
                     $tinterests = get($interests, $tid, array());
@@ -47,8 +47,8 @@ class Topics_SettingRenderer {
                 "</div>\n";
         }
 
-        echo '<div class="mg"><strong>New topics</strong> (enter one per line)<br>',
-            Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("topnew") ? "has-error " : "") . "need-autogrow")), "</div>";
+        echo '<div class="mg"><label for="topnew"><strong>New topics</strong></label> (enter one per line)<br>',
+            Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("topnew") ? "has-error " : "") . "need-autogrow", "id" => "topnew")), "</div>";
     }
 }
 

@@ -746,16 +746,16 @@ class PaperTable {
     private function editable_author_component_entry($n, $pfx, $au) {
         $auval = "";
         if ($pfx === "auname") {
-            $js = ["size" => "35", "placeholder" => "Name", "autocomplete" => "off"];
+            $js = ["size" => "35", "placeholder" => "Name", "autocomplete" => "off", "aria-label" => "Author name"];
             if ($au && $au->firstName && $au->lastName && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au->lastName))
                 $auval = $au->lastName . ", " . $au->firstName;
             else if ($au)
                 $auval = $au->name();
         } else if ($pfx === "auemail") {
-            $js = ["size" => "30", "placeholder" => "Email", "autocomplete" => "off"];
+            $js = ["size" => "30", "placeholder" => "Email", "autocomplete" => "off", "aria-label" => "Author email"];
             $auval = $au ? $au->email : "";
         } else {
-            $js = ["size" => "32", "placeholder" => "Affiliation", "autocomplete" => "off"];
+            $js = ["size" => "32", "placeholder" => "Affiliation", "autocomplete" => "off", "aria-label" => "Author affiliation"];
             $auval = $au ? $au->affiliation : "";
         }
 
@@ -1809,14 +1809,13 @@ class PaperTable {
 
     private function _edit_message_new_paper() {
         global $Now;
-        $startDeadline = $this->deadlineSettingIs("sub_reg");
         $msg = "";
         if (!$this->conf->timeStartPaper()) {
             $sub_open = $this->conf->setting("sub_open");
             if ($sub_open <= 0 || $sub_open > $Now)
                 $msg = "The conference site is not open for submissions." . $this->_deadline_override_message();
             else
-                $msg = 'The <a href="' . hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $startDeadline . $this->_deadline_override_message();
+                $msg = 'The <a href="' . hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadlineSettingIs("sub_reg") . $this->_deadline_override_message();
             if (!$this->admin) {
                 $this->quit = true;
                 return '<div class="merror">' . $msg . '</div>';
@@ -1824,14 +1823,14 @@ class PaperTable {
             $msg = Ht::xmsg("info", $msg);
         }
         $t1 = $this->conf->_("Enter information about your submission.");
-        if ($startDeadline && !$this->conf->setting("sub_freeze"))
+        if ($this->conf->setting("sub_reg") && !$this->conf->setting("sub_freeze"))
             $t2 = "You can make changes until the deadline, but thereafter incomplete submissions will not be considered.";
         else if (!$this->conf->opt("noPapers"))
             $t2 = "You don’t have to upload the PDF right away, but incomplete submissions will not be considered.";
         else
             $t2 = "Incomplete submissions will not be considered.";
         $t2 = $this->conf->_($t2);
-        $msg .= Ht::xmsg("info", space_join($t1, $t2, $startDeadline));
+        $msg .= Ht::xmsg("info", space_join($t1, $t2, $this->deadlineSettingIs("sub_reg")));
         if (($v = $this->conf->message_html("submit")))
             $msg .= Ht::xmsg("info", $v);
         return $msg;
@@ -1999,7 +1998,7 @@ class PaperTable {
             $v = (string) $this->qreq->emailNote;
             echo '<div class="checki"><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), " </span>",
                 Ht::label("Email authors, including:"), "&nbsp; ",
-                Ht::entry("emailNote", $v, ["id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit"]),
+                Ht::entry("emailNote", $v, ["id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
                 "</div>\n";
         }
 

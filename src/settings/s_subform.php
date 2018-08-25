@@ -241,7 +241,7 @@ class SubForm_SettingRenderer {
         $sv->echo_message_minor("msg.conflictdef", "Definition of conflict of interest");
         echo "</div>\n";
 
-        echo '<div class="settings-g">', $sv->label("sub_pcconfhide", "When can reviewers see conflict information?"),
+        echo '<div class="settings-g">', $sv->label("sub_pcconfvis", "When can reviewers see conflict information?"),
             '&nbsp; ',
             $sv->render_select("sub_pcconfvis", [1 => "Never", 0 => "When authors or tracker are visible", 2 => "Always"]),
             '</div>';
