@@ -65,6 +65,9 @@ h2.paptitle {
 .papcard, .pedcard, .notecard, .revcard, .cmtcard {
 	margin-left: 0;
 }
+.pedcard {
+	margin-right: 0;
+}
 .leftmenu-content-container {
 	margin: 0 -12px;
 }
