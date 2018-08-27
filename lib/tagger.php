@@ -927,7 +927,7 @@ class Tagger {
                     . $base . '</u>' . substr($tag, strlen($base)) . '</a>';
             else
                 $tx = "#" . $tag;
-            if (($cc = $dt->styles($base, TagMap::STYLE_FG)))
+            if (($cc = $dt->styles($base)))
                 $tx = '<span class="' . join(" ", $cc) . ' taghh">' . $tx . '</span>';
             $tt .= $tx . " ";
         }

@@ -1293,15 +1293,6 @@ class PaperTable {
             "</div></div>\n\n";
     }
 
-    private function papstrip_tags_background_classes($viewable) {
-        $t = "has-tag-classes pscopen";
-        if (($color = $this->prow->conf->tags()->styles($viewable, TagMap::STYLE_BG))) {
-            TagMap::mark_pattern_fill($color);
-            $t .= " " . join(" ", $color);
-        }
-        return $t;
-    }
-
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
         if (!$this->npapstrip) {
             echo '<div class="pspcard">',
@@ -1310,7 +1301,7 @@ class PaperTable {
 
             if ($this->prow && ($viewable = $this->prow->viewable_tags($this->user))) {
                 $tagger = new Tagger($this->user);
-                echo '<div class="', $this->papstrip_tags_background_classes($viewable), '">',
+                echo '<div class="pscopen">',
                     '<span class="psfn">Tags:</span> ',
                     $tagger->unparse_and_link($viewable),
                     '</div>';
@@ -1571,7 +1562,7 @@ class PaperTable {
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", true);
-        echo '<div class="', $this->papstrip_tags_background_classes($viewable), '">';
+        echo '<div class="pscopen">';
 
         if ($is_editable) {
             echo Ht::form(hoturl("paper", "p=" . $this->prow->paperId), ["data-pid" => $this->prow->paperId, "data-no-tag-report" => $unfolded ? 1 : null]);
@@ -1813,7 +1804,7 @@ class PaperTable {
         if (!$this->conf->timeStartPaper()) {
             $sub_open = $this->conf->setting("sub_open");
             if ($sub_open <= 0 || $sub_open > $Now)
-                $msg = "The conference site is not open for submissions." . $this->_deadline_override_message();
+                $msg = "The site is not open for submissions." . $this->_deadline_override_message();
             else
                 $msg = 'The <a href="' . hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadlineSettingIs("sub_reg") . $this->_deadline_override_message();
             if (!$this->admin) {
