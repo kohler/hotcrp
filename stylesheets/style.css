@@ -355,10 +355,6 @@ body#help, body#settings, body#buzzer {
 	margin: -24px 0 24px;
 }
 
-div#mailref, pre.email, tt.email {
-	font-size: smaller;
-}
-
 
 /* footer */
 div#footer {
@@ -3340,7 +3336,6 @@ body {
 	background-color: #ffffff;
 }
 .mhdp {
-	font-size: smaller;
 	font-family: monospace;
 }
 .mhpad {
