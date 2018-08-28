@@ -117,8 +117,6 @@ class LoginHelper {
             $user = Contact::create($conf, null, $qreq->make_array(), Contact::SAVE_ANY_EMAIL);
             if (!$user)
                 return Conf::msg_error($conf->db_error_html(true, "while adding your account"));
-            if ($conf->setting("setupPhase", false))
-                self::first_user($user, $msg);
         }
 
         // if no user found, then fail
@@ -171,6 +169,12 @@ class LoginHelper {
         $user = $xuser->activate($qreq);
         $conf->save_session("freshlogin", true);
         $conf->save_session("password_reset", null);
+
+        // give chair privilege to first user (external login or contactdb)
+        if ($conf->setting("setupPhase", false)) {
+            $user->activate_database_account();
+            self::first_user($user, "", false);
+        }
 
         go($conf->hoturl("index", ["go" => $qreq->go, "postlogin" => 1]));
         exit;
@@ -244,7 +248,7 @@ class LoginHelper {
 
         // handle setup phase
         if ($conf->setting("setupPhase", false)) {
-            self::first_user($user, $msg);
+            self::first_user($user, $msg, true);
             return $user;
         }
 
@@ -263,12 +267,14 @@ class LoginHelper {
         return null;
     }
 
-    static private function first_user($user, $msg) {
+    static private function first_user($user, $msg, $is_create) {
         $msg .= " As the first user, you have been automatically signed in and assigned system administrator privilege.";
-        if (!$user->conf->external_login())
+        if (!$user->conf->external_login()
+            && $is_create
+            && $user->plaintext_password())
             $msg .= " Your password is “<samp>" . htmlspecialchars($user->plaintext_password()) . "</samp>”. All later users will have to sign in normally.";
         $user->save_roles(Contact::ROLE_ADMIN, null);
         $user->conf->save_setting("setupPhase", null);
-        $user->conf->confirmMsg($msg);
+        $user->conf->confirmMsg(ltrim($msg));
     }
 }
