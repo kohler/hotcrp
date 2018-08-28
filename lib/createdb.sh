@@ -487,13 +487,6 @@ global $Opt;'
 __EOF__
     test -z "$minimal_options" && awk 'BEGIN { p = 0 }
 /^\$Opt\[.db/ { p = 1; next }
-/^\$Opt\[.passwordHmacKey/ { p = 0; next }
-{ if (p) print }' < "${SRCDIR}${distoptions_file}"
-    cat <<__EOF__
-\$Opt["passwordHmacKey"] = "`generate_random_ints | generate_password 40`";
-__EOF__
-    test -z "$minimal_options" && awk 'BEGIN { p = 0 }
-/^\$Opt\[.passwordHmacKey/ { p = 1; next }
 { if (p) print }' < "${SRCDIR}${distoptions_file}"
 }
 
