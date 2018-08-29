@@ -283,14 +283,15 @@ max_procrastination_seq.label = function (dl) {
 procrastination_seq.tick_format = max_procrastination_seq.tick_format =
     function (x) { return -x; };
 
-function seq_to_cdf(seq, flip) {
+function seq_to_cdf(seq, flip, raw) {
     var cdf = [], i, n = seq.ntotal || seq.length;
     seq.sort(flip ? d3.descending : d3.ascending);
     for (i = 0; i <= seq.length; ++i) {
+        var y = raw ? i : i/n;
         if (i != 0 && (i == seq.length || seq[i-1] != seq[i]))
-            cdf.push([seq[i-1], i/n]);
+            cdf.push([seq[i-1], y]);
         if (i != seq.length && (i == 0 || seq[i-1] != seq[i]))
-            cdf.push([seq[i], i/n]);
+            cdf.push([seq[i], y]);
     }
     cdf.cdf = true;
     return cdf;
@@ -473,7 +474,7 @@ function hotcrp_graphs_cdf(args) {
     });
     var data = series.map(function (d) {
         d = d.d ? d.d : d;
-        return d.cdf ? d : seq_to_cdf(d, !!args.x.flip);
+        return d.cdf ? d : seq_to_cdf(d, args.x.flip, args.y.raw);
     });
 
     // axis domains

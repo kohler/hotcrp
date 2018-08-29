@@ -70,11 +70,12 @@ if ($Graph == "formula") {
         $all_review_fields = $Conf->all_review_fields();
         $field1 = get($all_review_fields, "overAllMerit");
         $field2 = null;
-        foreach ($all_review_fields as $f)
+        foreach ($all_review_fields as $f) {
             if ($f->has_options && !$field1)
                 $field1 = $f;
             else if ($f->has_options && !$field2 && $field1 != $f)
                 $field2 = $f;
+        }
         unset($Qreq->x, $Qreq->y);
         if ($field1)
             $Qreq->y = "avg(" . $field1->search_keyword() . ")";
@@ -117,12 +118,14 @@ if ($Graph == "formula") {
             $Conf->warnMsg(join("<br/>", array_slice($fg->error_html, $fgerr_begin)));
 
         $xhtml = htmlspecialchars($fg->fx_expression());
-        if ($fg->fx_type == FormulaGraph::X_TAG)
+        if ($fg->fx_type === FormulaGraph::X_TAG)
             $xhtml = "tag";
 
-        if ($fg->fx_type == FormulaGraph::X_QUERY)
+        if ($fg->fx_type === FormulaGraph::X_QUERY)
             /* no header */;
-        else if ($fg->type == FormulaGraph::CDF)
+        else if ($fg->type === FormulaGraph::RAWCDF)
+            echo "<h2>Cumulative count of $xhtml</h2>\n";
+        else if ($fg->type & FormulaGraph::CDF)
             echo "<h2>$xhtml CDF</h2>\n";
         else if (($fg->type & FormulaGraph::BARCHART)
                  && $fg->fy->expression === "sum(1)")
@@ -136,10 +139,10 @@ if ($Graph == "formula") {
         $gtype = "scatter";
         if ($fg->type & FormulaGraph::BARCHART)
             $gtype = "barchart";
-        else if ($fg->type == FormulaGraph::BOXPLOT)
-            $gtype = "boxplot";
-        else if ($fg->type == FormulaGraph::CDF)
+        else if ($fg->type & FormulaGraph::CDF)
             $gtype = "cdf";
+        else if ($fg->type === FormulaGraph::BOXPLOT)
+            $gtype = "boxplot";
         echo Ht::unstash_script('hotgraph_info=' . json_encode_browser(["selector" => "#hotgraph"] + $fg->graph_json()) . ';'
             . "\$(function () { hotcrp_graphs.{$gtype}(hotgraph_info) });"), "\n";
     } else
@@ -186,5 +189,4 @@ foreach ($Graphs as $g => $gname)
     $ghtml[] = '<a' . ($g == $Graph ? ' class="q"' : '') . ' href="' . hoturl("graph", "g=$g") . '">' . htmlspecialchars($gname) . '</a>';
 echo join(' <span class="barsep">·</span> ', $ghtml), '</div>';
 
-echo "<hr class=\"c\" />\n";
 $Conf->footer();

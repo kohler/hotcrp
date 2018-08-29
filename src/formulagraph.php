@@ -3,11 +3,14 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class FormulaGraph {
+    // bitmasks
     const SCATTER = 1;
     const CDF = 2;
-    const BARCHART = 4; /* NB is bitmask */
-    const FBARCHART = 5;
+    const BARCHART = 4;
     const BOXPLOT = 8;
+
+    const FBARCHART = 132; // 128 | BARCHART
+    const RAWCDF = 130;    // 128 | CDF
 
     const REVIEWER_COLOR = 1;
 
@@ -45,6 +48,9 @@ class FormulaGraph {
         $fy = simplify_whitespace($fy);
         if (strcasecmp($fy, "cdf") == 0) {
             $this->type = self::CDF;
+            $this->fy = new Formula("0", true);
+        } else if (preg_match('/\A(?:rawcdf|cdfcount|cumcount|cumulativecount)\z/i', $fy)) {
+            $this->type = self::RAWCDF;
             $this->fy = new Formula("0", true);
         } else if (preg_match('/\A(?:count|bar|bars|barchart)\z/i', $fy)) {
             $this->type = self::BARCHART;
@@ -85,7 +91,7 @@ class FormulaGraph {
             $this->fx = new Formula($fx, true);
 
         $fx = $this->fx;
-        if ($this->type !== self::CDF) {
+        if (!($this->type & self::CDF)) {
             $fx->check($this->user);
         } else {
             $this->fxs = [];
@@ -113,7 +119,7 @@ class FormulaGraph {
             $this->errf["fy"] = true;
             $this->fy = new Formula("sum(0)", true);
             $this->fy->check($this->user);
-        } else if ($this->type === self::CDF && $this->fx_type === self::X_TAG) {
+        } else if (($this->type & self::CDF) && $this->fx_type === self::X_TAG) {
             $this->error_html[] = "CDFs by tag don’t make sense.";
             $this->errf["fy"] = true;
         }
@@ -423,7 +429,7 @@ class FormulaGraph {
         if ((!$this->fx_type && $this->fx->result_format() === $format)
             || ($this->fx_type == self::X_TAG && $format === Fexpr::FTAG))
             $axes |= 1;
-        if ($this->type != self::CDF && $this->fy->result_format() === $format)
+        if (!($this->type & self::CDF) && $this->fy->result_format() === $format)
             $axes |= 2;
         return $axes;
     }
@@ -431,7 +437,7 @@ class FormulaGraph {
     private function _valuemap_collect($axes) {
         assert(!!$axes);
         $vs = [];
-        if ($this->type == self::CDF) {
+        if ($this->type & self::CDF) {
             foreach ($this->_data as $dx)
                 foreach ($dx->d as $d)
                     $vs[$d] = true;
@@ -452,7 +458,7 @@ class FormulaGraph {
 
     private function _valuemap_rewrite($axes, $m) {
         assert(!!$axes);
-        if ($this->type == self::CDF) {
+        if ($this->type & self::CDF) {
             foreach ($this->_data as $dx) {
                 foreach ($dx->d as &$d) {
                     array_key_exists($d, $m) && ($d = $m[$d]);
@@ -543,7 +549,7 @@ class FormulaGraph {
         foreach ($this->_xorder_data as $i => $d)
             $xo[$d[0]] = $i + 1;
         $this->_xorder_map = $xo;
-        if ($this->type == self::CDF) {
+        if ($this->type & self::CDF) {
             foreach ($this->_data as $dx) {
                 foreach ($dx->d as &$d) {
                     $d = get($xo, $d);
@@ -583,7 +589,7 @@ class FormulaGraph {
                 $rowset->add($prow);
         Dbl::free($result);
 
-        if ($this->type == self::CDF)
+        if ($this->type & self::CDF)
             $this->_cdf_data($rowset);
         else if ($this->type & self::BARCHART)
             $this->_combine_data($rowset);
@@ -611,7 +617,10 @@ class FormulaGraph {
         } else if ($this->type === self::BARCHART
                    && $f->expression === "sum(1)") {
             $j["label"] = "# $counttype";
-        } else if ($this->type === self::CDF) {
+        } else if ($this->type === self::RAWCDF) {
+            $j["label"] = "Cumulative count of $counttype";
+            $j["raw"] = true;
+        } else if ($this->type & self::CDF) {
             $j["label"] = "CDF of $counttype";
         } else if (!$this->fx_type) {
             $j["label"] = $f->expression;
