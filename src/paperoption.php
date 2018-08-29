@@ -1022,7 +1022,7 @@ class NumericPaperOption extends PaperOption {
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
             Ht::entry($this->formid, $reqv, ["id" => $this->formid, "size" => 8, "class" => "js-autosubmit" . $pt->has_error_class($this->formid), "data-default-value" => $ov->value]),
-            $this->messages_at($this->formid),
+            $pt->messages_at($this->formid),
             "</div></div>\n\n";
     }
 
