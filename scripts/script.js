@@ -6139,7 +6139,7 @@ var fmap = {}, cmap = {"whitetag": 1, "redtag": 2, "orangetag": 3, "yellowtag": 
         "": {size: 34, css: "backgroundColor", incr: 8, rule: true},
         "gdot ": {size: 12, css: "fill", incr: 3, pattern: true},
         "glab ": {size: 20, css: "fill", incr: 6, pattern: true}
-    }, style;
+    }, style, pattern_svg;
 return function (classes, class_prefix) {
     if (!classes || classes.indexOf(" ") < 0)
         return null;
@@ -6181,11 +6181,12 @@ return function (classes, class_prefix) {
         t += '<path d="' + ["M", sw * i, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" ") + '" fill="' + color + '"></path>' +
             '<path d="' + ["M", sw * i + size, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" ") + '" fill="' + color + '"></path>';
     }
-    if (param.pattern)
-        $("div.body").prepend('<svg width="0" height="0"><defs><pattern id="' + id
-                              + '" patternUnits="userSpaceOnUse" width="' + size
-                              + '" height="' + size + '">' + t
-                              + '</pattern></defs></svg>');
+    if (param.pattern) {
+        pattern_svg || (pattern_svg = $('<svg width="0" height="0" style="position:absolute"><defs></defs></svg>').appendTo("#prebody").find("defs"));
+        pattern_svg.append('<pattern id="' + id
+                           + '" patternUnits="userSpaceOnUse" width="' + size
+                           + '" height="' + size + '">' + t + '</pattern>');
+    }
     if (param.rule && window.btoa) {
         style || (style = $("<style></style>").appendTo("head")[0].sheet);
         t = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size +

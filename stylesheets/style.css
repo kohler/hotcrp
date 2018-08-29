@@ -3643,6 +3643,24 @@ th.pl_logaction {
 .gdot.graytag, .gbar.graytag, .gbox.graytag, .glab.graytag {
 	fill: rgba(120, 120, 120, 0.2);
 }
+.gcdf.color1, .gdot.color1, .gbar.color1, .gbox.color1 {
+	stroke: rgba(252, 141, 98, 0.8);
+}
+.gdot.color1, .gbar.color1, .gbox.color1, .glab.color1 {
+	fill: rgba(252, 141, 98, 0.2);
+}
+.gcdf.color2, .gdot.color2, .gbar.color2, .gbox.color2 {
+	stroke: rgba(166, 118, 29, 0.8);
+}
+.gdot.color2, .gbar.color2, .gbox.color2, .glab.color2 {
+	fill: rgba(166, 118, 29, 0.2);
+}
+.gcdf.color3, .gdot.color3, .gbar.color3, .gbox.color3 {
+	stroke: rgba(231, 41, 138, 0.8);
+}
+.gdot.color3, .gbar.color3, .gbox.color3, .glab.color3 {
+	fill: rgba(231, 41, 138, 0.2);
+}
 
 .gcdf_hover0, .gdot_hover0, .gbar_hover0, .gbox_hover0 {
 	stroke: rgba(70, 0, 0, 0.5);

@@ -26,7 +26,9 @@ class FormulaGraph {
     public $fy;
     public $fx_type = 0;
     private $queries = [];
-    private $query_styles = [];
+    private $_qstyles = [];
+    private $_qstyles_bytag = [];
+    private $_qstyle_index = 0;
     private $searches = [];
     private $papermap = [];
     private $reviewers = [];
@@ -128,9 +130,21 @@ class FormulaGraph {
     function add_query($q, $style, $fieldname = false) {
         $qn = count($this->queries);
         $this->queries[] = $q;
-        if ($style === "by-tag" || $style === "default")
+        if ($style === "by-tag" || $style === "default" || $style === "") {
             $style = "";
-        $this->query_styles[] = $style;
+            $this->_qstyles_bytag[] = true;
+        } else if ($style === "plain") {
+            $style = "";
+            $this->_qstyles_bytag[] = false;
+        } else {
+            $this->_qstyles_bytag[] = false;
+        }
+        if ($style === "") {
+            if (($n = $this->_qstyle_index % 4))
+                $style = "color" . $n;
+            ++$this->_qstyle_index;
+        }
+        $this->_qstyles[] = $style;
         $psearch = new PaperSearch($this->user, array("q" => $q));
         foreach ($psearch->paper_ids() as $pid)
             $this->papermap[$pid][] = $qn;
@@ -202,8 +216,7 @@ class FormulaGraph {
         $fxlabel = count($this->fxs) > 1 ? $fx->expression : "";
         foreach ($data as $q => &$d) {
             $d = (object) ["d" => $d];
-            $s = $qcolors[$q];
-            if ($s && $s !== "plain")
+            if (($s = $qcolors[$q]))
                 $d->className = $s;
             $dlabel = "";
             if (get($this->queries, $q) && count($this->queries) > 1)
@@ -218,11 +231,11 @@ class FormulaGraph {
     }
     private function _cdf_data(PaperInfoSet $rowset) {
         // calculate query styles
-        $qcolors = $this->query_styles;
+        $qcolors = $this->_qstyles;
         $need_anal = array_fill(0, count($qcolors), false);
         $nneed_anal = 0;
         foreach ($qcolors as $qi => $q) {
-            if ($qcolors[$qi] === "" || $qcolors[$qi] === "plain") {
+            if ($this->_qstyles_bytag[$qi]) {
                 $qcolors[$qi] = [];
                 $need_anal[$qi] = true;
                 ++$nneed_anal;
@@ -231,7 +244,7 @@ class FormulaGraph {
         foreach ($rowset->all() as $prow) {
             if ($nneed_anal === 0)
                 break;
-            foreach (get($this->papermap, $prow->paperId) as $qi) {
+            foreach ($this->papermap[$prow->paperId] as $qi) {
                 if ($need_anal[$qi]) {
                     $c = [];
                     if ($prow->paperTags)
@@ -239,7 +252,7 @@ class FormulaGraph {
                     if ($qcolors[$qi] !== null && !empty($c))
                         $c = array_values(array_intersect($qcolors[$qi], $c));
                     if (empty($c)) {
-                        $qcolors[$qi] = "";
+                        $qcolors[$qi] = $this->_qstyles[$qi];
                         $need_anal[$qi] = false;
                         --$nneed_anal;
                     } else
@@ -272,15 +285,15 @@ class FormulaGraph {
 
     private function _paper_style(PaperInfo $prow) {
         $qnum = $this->papermap[$prow->paperId][0];
-        $s = get($this->query_styles, (int) $qnum);
-        if (!$s && $this->reviewer_color && $this->user->can_view_reviewer_tags($prow))
-            return self::REVIEWER_COLOR;
-        else if (!$s && $prow->paperTags && ($c = $prow->viewable_tags($this->user)))
-            return trim($prow->conf->tags()->color_classes($c), true);
-        else if ($s === "plain")
-            return "";
-        else
-            return $s;
+        if ($this->_qstyles_bytag[$qnum]) {
+            if ($this->reviewer_color && $this->user->can_view_reviewer_tags($prow))
+                return self::REVIEWER_COLOR;
+            else if ($prow->paperTags
+                     && ($c = $prow->viewable_tags($this->user))
+                     && ($c = $prow->conf->tags()->styles($c, TagMap::STYLE_BG)))
+                return join(" ", $c);
+        }
+        return $this->_qstyles[$qnum];
     }
 
     private function _add_tag_data(&$data, $d, PaperInfo $prow) {
