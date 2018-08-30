@@ -629,7 +629,10 @@ class Score_Fexpr extends Sub_Fexpr {
         $fid = $this->field->id;
         $state->_ensure_rrow_score($fid);
         $rrow = $state->_rrow();
-        return "({$rrow} && isset({$rrow}->$fid) && {$rrow}->$fid ? (int) {$rrow}->$fid : null)";
+        if ($this->field->allow_empty)
+            return "({$rrow} ? (int) {$rrow}->$fid : null)";
+        else
+            return "({$rrow} && isset({$rrow}->$fid) && {$rrow}->$fid ? (int) {$rrow}->$fid : null)";
     }
 }
 

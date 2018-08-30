@@ -1212,7 +1212,7 @@ function option_letter_ticks(n, c, sv) {
         this.selectAll("g.tick text").each(function () {
             var d = d3.select(this), value = +d.text();
             d.style("fill", info.rgb(value));
-            if (c)
+            if (c && value)
                 d.text(info.unparse(value, split));
         });
     }
