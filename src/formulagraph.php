@@ -397,7 +397,7 @@ class FormulaGraph {
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $x) ? : "";
                 $d = [$x, $fytrack($prow, $rcid, $this->user), $prow->paperId, $s];
-                if ($rrow && $rrow->reviewOrdinal)
+                if ($rrow && $rrow->reviewOrdinal && $this->fx->is_indexed())
                     $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
                 foreach ($queries as $q) {
                     $q && ($d[4] = $q);
@@ -432,6 +432,8 @@ class FormulaGraph {
                 array_pop($d);
                 $d[3] || array_pop($d);
             }
+            if ($reviewf && !$this->fx->is_indexed())
+                $d[2] = array_values(array_unique($d[2]));
             $newdata[] = $d;
         }
         $this->_data = $newdata;
