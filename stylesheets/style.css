@@ -3662,11 +3662,15 @@ th.pl_logaction {
 	fill: rgba(231, 41, 138, 0.2);
 }
 
-.gcdf_hover0, .gdot_hover0, .gbar_hover0, .gbox_hover0 {
+.gcdf-hover0, .gdot-hover0, .gbar-hover0, .gbox-hover0 {
 	stroke: rgba(70, 0, 0, 0.5);
 	stroke-width: 3px;
 }
-.gcdf_hover1, .gdot_hover1, .gbar_hover1, .gbox_hover1 {
+.gcdf-hover1, .gdot-hover1, .gbar-hover1, .gbox-hover1 {
 	stroke: yellow;
 	stroke-width: 2px;
+}
+.ghighlight {
+	fill: none;
+	pointer-events: none;
 }

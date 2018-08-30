@@ -513,9 +513,9 @@ function hotcrp_graphs_cdf(args) {
             p.attr("stroke-dasharray", series[i].dashpattern.join(","));
     });
 
-    svg.append("path").attr("class", "gcdf gcdf_hover0");
-    svg.append("path").attr("class", "gcdf gcdf_hover1");
-    var hovers = svg.selectAll(".gcdf_hover0, .gcdf_hover1");
+    svg.append("path").attr("class", "gcdf gcdf-hover0");
+    svg.append("path").attr("class", "gcdf gcdf-hover1");
+    var hovers = svg.selectAll(".gcdf-hover0, .gcdf-hover1");
     hovers.style("display", "none");
 
     make_axes(svg, xAxis, yAxis, args);
@@ -704,6 +704,7 @@ function grouped_quadtree(data, xs, ys, rf) {
         } else {
             vp ? vp.next = vd : q.add(vd);
             vd.n = 1;
+            vd.i = nd.length;
             nd.push(vd);
         }
     }
@@ -749,6 +750,8 @@ hotcrp_graphs.scatter = function (args) {
     var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
 
+    $(args.selector).on("hotgraphhighlight", highlight);
+
     var svg = d3.select(args.selector).append("svg")
         .attr("width", args.width + args.left + args.right)
         .attr("height", args.height + args.top + args.bottom)
@@ -767,15 +770,14 @@ hotcrp_graphs.scatter = function (args) {
     }
 
     place(svg.selectAll(".gdot").data(data.data)
-          .enter().append("path")
-            .attr("class", function (d) {
-                return d[3] ? "gdot " + d[3] : "gdot";
-            })
-            .style("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
+            .enter()
+              .append("path")
+              .attr("class", function (d) { return d[3] ? "gdot " + d[3] : "gdot"; })
+              .style("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
 
-    svg.append("path").attr("class", "gdot gdot_hover0");
-    svg.append("path").attr("class", "gdot gdot_hover1");
-    var hovers = svg.selectAll(".gdot_hover0, .gdot_hover1").style("display", "none");
+    svg.append("path").attr("class", "gdot gdot-hover0");
+    svg.append("path").attr("class", "gdot gdot-hover1");
+    var hovers = svg.selectAll(".gdot-hover0, .gdot-hover1").style("display", "none");
 
     make_axes(svg, xAxis, yAxis, args);
 
@@ -818,6 +820,30 @@ hotcrp_graphs.scatter = function (args) {
 
     function mouseclick() {
         clicker(hovered_data ? hovered_data[2].map(proj2) : null);
+    }
+
+    var highlights;
+    function highlight(event) {
+        mouseout();
+        var myd = [];
+        if (event.pids)
+            myd = data.data.filter(function (d) {
+                for (var i = 0; i < d[2].length; ++i)
+                    if (event.pids.indexOf(d[2][i][2]) >= 0)
+                        return true;
+                return false;
+            });
+        function keyf(d) {
+            return d ? d.i : "x";
+        }
+
+        var sel = svg.selectAll(".ghighlight.gdot-hover0").data(myd, keyf);
+        place(sel.enter().append("path").attr("class", "ghighlight gdot-hover0"));
+        sel.exit().remove();
+
+        var sel1 = svg.selectAll(".ghighlight.gdot-hover1").data(myd, keyf);
+        place(sel1.enter().append("path").attr("class", "ghighlight gdot-hover1"));
+        sel1.exit().remove();
     }
 };
 
@@ -919,9 +945,9 @@ hotcrp_graphs.barchart = function (args) {
 
     make_axes(svg, xAxis, yAxis, args);
 
-    svg.append("path").attr("class", "gbar gbar_hover0");
-    svg.append("path").attr("class", "gbar gbar_hover1");
-    var hovers = svg.selectAll(".gbar_hover0, .gbar_hover1")
+    svg.append("path").attr("class", "gbar gbar-hover0");
+    svg.append("path").attr("class", "gbar gbar-hover1");
+    var hovers = svg.selectAll(".gbar-hover0, .gbar-hover1")
         .style("display", "none").style("pointer-events", "none");
 
     svg.selectAll(".gbar").on("mouseover", mouseover).on("mouseout", mouseout)
@@ -1108,19 +1134,19 @@ hotcrp_graphs.boxplot = function (args) {
 
     make_axes(svg, xAxis, yAxis, args);
 
-    svg.append("line").attr("class", "gbox whiskerl gbox_hover0");
-    svg.append("line").attr("class", "gbox whiskerh gbox_hover0");
-    svg.append("path").attr("class", "gbox box gbox_hover0");
-    svg.append("line").attr("class", "gbox median gbox_hover0");
-    svg.append("circle").attr("class", "gbox outlier gbox_hover0");
-    svg.append("path").attr("class", "gbox mean gbox_hover0");
-    svg.append("line").attr("class", "gbox whiskerl gbox_hover1");
-    svg.append("line").attr("class", "gbox whiskerh gbox_hover1");
-    svg.append("path").attr("class", "gbox box gbox_hover1");
-    svg.append("line").attr("class", "gbox median gbox_hover1");
-    svg.append("circle").attr("class", "gbox outlier gbox_hover1");
-    svg.append("path").attr("class", "gbox mean gbox_hover1");
-    var hovers = svg.selectAll(".gbox_hover0, .gbox_hover1")
+    svg.append("line").attr("class", "gbox whiskerl gbox-hover0");
+    svg.append("line").attr("class", "gbox whiskerh gbox-hover0");
+    svg.append("path").attr("class", "gbox box gbox-hover0");
+    svg.append("line").attr("class", "gbox median gbox-hover0");
+    svg.append("circle").attr("class", "gbox outlier gbox-hover0");
+    svg.append("path").attr("class", "gbox mean gbox-hover0");
+    svg.append("line").attr("class", "gbox whiskerl gbox-hover1");
+    svg.append("line").attr("class", "gbox whiskerh gbox-hover1");
+    svg.append("path").attr("class", "gbox box gbox-hover1");
+    svg.append("line").attr("class", "gbox median gbox-hover1");
+    svg.append("circle").attr("class", "gbox outlier gbox-hover1");
+    svg.append("path").attr("class", "gbox mean gbox-hover1");
+    var hovers = svg.selectAll(".gbox-hover0, .gbox-hover1")
         .style("display", "none").style("ponter-events", "none");
 
     svg.selectAll(".gbox").on("mouseout", mouseout).on("click", mouseclick);
@@ -1354,6 +1380,25 @@ function make_rotate_ticks(angle) {
                 .style("text-anchor", "middle");
         };
 };
+
+handle_ui.on("js-hotgraph-highlight", function () {
+    var self = this, t = $.trim(this.value);
+    function success(pids) {
+        var e = $.Event("hotgraphhighlight");
+        e.pids = pids;
+        $(self).closest(".has-hotgraph").find(".hotgraph").trigger(e);
+    }
+    if (t === "")
+        success(null);
+    else if (/^[1-9][0-9]*$/.test(t))
+        success([+t]);
+    else {
+        $.get(hoturl("api/search", {q: t}), null, function (data) {
+            if (data.ok && data.ids)
+                success(data.ids);
+        });
+    }
+});
 
 return hotcrp_graphs;
 })(jQuery, d3);
