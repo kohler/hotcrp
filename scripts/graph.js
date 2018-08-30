@@ -401,7 +401,7 @@ function make_axis(ticks) {
     else if (ticks && ticks[0] === "option_letter")
         ticks = option_letter_ticks(ticks[1], ticks[2], ticks[3]);
     else
-        ticks = {};
+        ticks = {type: ticks ? ticks[0] : null};
     return $.extend({
         ticks: function (extent) {},
         rewrite: function () {},
@@ -835,7 +835,7 @@ function data_quantize_x(data) {
     return data;
 }
 
-function data_to_barchart(data, isfraction) {
+function data_to_barchart(data, yaxis) {
     data = data_quantize_x(data);
     data.sort(function (a, b) {
         return d3.ascending(a[0], b[0])
@@ -843,17 +843,18 @@ function data_to_barchart(data, isfraction) {
             || (a[3] || "").localeCompare(b[3] || "");
     });
 
-    for (var i = 0; i != data.length; ++i)
+    for (var i = 0; i != data.length; ++i) {
         if (i && data[i-1][0] == data[i][0] && data[i-1][4] == data[i][4])
             data[i].yoff = data[i-1].yoff + data[i-1][1];
         else
             data[i].yoff = 0;
+    }
 
-    if (isfraction && data.some(function (d) { return d[4] != data[0][4]; })) {
+    if (yaxis.fraction && data.some(function (d) { return d[4] != data[0][4]; })) {
         var maxy = {};
         data.forEach(function (d) { maxy[d[0]] = d[1] + d.yoff; });
         data.forEach(function (d) { d.yoff /= maxy[d[0]]; d[1] /= maxy[d[0]]; });
-    } else if (isfraction) {
+    } else if (yaxis.fraction) {
         var maxy = 0;
         data.forEach(function (d) { maxy += d[1]; });
         data.forEach(function (d) { d.yoff /= maxy; d[1] /= maxy; });
@@ -864,11 +865,12 @@ function data_to_barchart(data, isfraction) {
 
 hotcrp_graphs.barchart = function (args) {
     args = make_args(args);
-    var data = data_to_barchart(args.data, !!args.y.fraction);
+    var data = data_to_barchart(args.data, args.y),
+        ystart = args.y.ticks.type === "option_letter" ? 0.75 : 0;
 
     var xe = d3.extent(data, proj0),
         ge = d3.extent(data, function (d) { return d[4] || 0; }),
-        ye = [d3.min(data, function (d) { return d.yoff; }),
+        ye = [d3.min(data, function (d) { return Math.max(d.yoff, ystart); }),
               d3.max(data, function (d) { return d.yoff + d[1]; })],
         deltae = d3.extent(data, function (d, i) {
             var delta = i ? d[0] - data[i-1][0] : 0;
@@ -901,9 +903,10 @@ hotcrp_graphs.barchart = function (args) {
 
     function place(sel, close) {
         return sel.attr("d", function (d) {
-            return ["M", x(d[0]) + gdelta + (d[4] ? barwidth * d[4] : 0), y(d.yoff),
+            var yoff = Math.max(d.yoff, ystart);
+            return ["M", x(d[0]) + gdelta + (d[4] ? barwidth * d[4] : 0), y(yoff),
                     "V", y(d.yoff + d[1]), "h", barwidth,
-                    "V", y(d.yoff)].join(" ") + (close || "");
+                    "V", y(yoff)].join(" ") + (close || "");
         });
     }
 
@@ -1222,7 +1225,8 @@ function option_letter_ticks(n, c, sv) {
             t += " (" + value.toFixed(2).replace(/\.00$/, "") + ")";
         return t;
     }
-    return { ticks: format, rewrite: rewrite, unparse_html: unparse_html };
+    return { ticks: format, rewrite: rewrite, unparse_html: unparse_html,
+             type: "option_letter" };
 };
 
 function get_max_tick_width(axis) {
@@ -1335,7 +1339,7 @@ function named_integer_ticks(map) {
     want_mclasses = d3.keys(map).some(function (k) { return mclasses(k); });
 
     return { ticks: format, rewrite: rewrite, unparse_html: unparse_html,
-             search: search };
+             search: search, type: "named_integer" };
 };
 
 function make_rotate_ticks(angle) {

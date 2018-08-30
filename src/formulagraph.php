@@ -658,7 +658,7 @@ class FormulaGraph {
             $n = count($format->options);
             $ol = $format->option_letter ? chr($format->option_letter - $n) : null;
             $j["ticks"] = ["option_letter", $n, $ol, $format->option_class_prefix];
-            if ($format->option_letter)
+            if ($format->option_letter && $isx)
                 $j["flip"] = true;
         } else {
             if ($format === Fexpr::FREVIEWER) {
