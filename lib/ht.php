@@ -99,7 +99,9 @@ class Ht {
             $action = substr($action, 0, $qpos) . (string) substr($action, $pos);
         }
 
-        $x = '<form method="' . $method . '" action="' . $action . '"';
+        $x = '<form';
+        if ((string) $action !== "")
+            $x .= ' method="' . $method . '" action="' . $action . '"';
         $enctype = get($extra, "enctype");
         if (!$enctype && $method !== "get")
             $enctype = "multipart/form-data";
