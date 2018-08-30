@@ -439,7 +439,7 @@ function position_label(axis, p, prefix) {
     var aa = axis.axis_args, t = '<span class="nw">' + (prefix || "");
     if (aa.label)
         t += escape_entities(aa.label) + " ";
-    return t + aa.ticks.unparse_html.call(axis, p) + '</span>';
+    return t + aa.ticks.unparse_html.call(axis, p, true) + '</span>';
 }
 
 
@@ -1221,7 +1221,8 @@ function option_letter_ticks(n, c, sv) {
     }
     function unparse_html(value, include_numeric) {
         var t = info.unparse_html(value);
-        if (include_numeric && t.charAt(0) === "<")
+        if (include_numeric && t.charAt(0) === "<"
+            && value !== Math.round(value * 2) / 2)
             t += " (" + value.toFixed(2).replace(/\.00$/, "") + ")";
         return t;
     }
