@@ -398,8 +398,8 @@ function clicker_go(url) {
 function make_axis(ticks) {
     if (ticks && ticks[0] === "named")
         ticks = named_integer_ticks(ticks[1]);
-    else if (ticks && ticks[0] === "option_letter")
-        ticks = option_letter_ticks(ticks[1], ticks[2], ticks[3]);
+    else if (ticks && ticks[0] === "score")
+        ticks = score_ticks(ticks[1], ticks[2], ticks[3]);
     else
         ticks = {type: ticks ? ticks[0] : null};
     return $.extend({
@@ -522,7 +522,7 @@ function hotcrp_graphs_cdf(args) {
 
     svg.append("rect").attr("x", -args.left).attr("width", args.width + args.left)
         .attr("height", args.height + args.bottom)
-        .style("fill", "none").style("pointer-events", "all")
+        .attr("fill", "none").style("pointer-events", "all")
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
         .on("mouseout", mouseout);
 
@@ -773,17 +773,16 @@ hotcrp_graphs.scatter = function (args) {
             .enter()
               .append("path")
               .attr("class", function (d) { return d[3] ? "gdot " + d[3] : "gdot"; })
-              .style("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
+              .attr("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
 
-    svg.append("path").attr("class", "gdot gdot-hover0");
-    svg.append("path").attr("class", "gdot gdot-hover1");
-    var hovers = svg.selectAll(".gdot-hover0, .gdot-hover1").style("display", "none");
+    svg.append("path").attr("class", "gdot gdot-hover");
+    var hovers = svg.selectAll(".gdot-hover").style("display", "none");
 
     make_axes(svg, xAxis, yAxis, args);
 
     svg.append("rect").attr("x", -args.left).attr("width", args.width + args.left)
         .attr("height", args.height + args.bottom)
-        .style("fill", "none").style("pointer-events", "all")
+        .attr("fill", "none").style("pointer-events", "all")
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
         .on("mouseout", mouseout).on("click", mouseclick);
 
@@ -822,7 +821,6 @@ hotcrp_graphs.scatter = function (args) {
         clicker(hovered_data ? hovered_data[2].map(proj2) : null);
     }
 
-    var highlights;
     function highlight(event) {
         mouseout();
         var myd = [];
@@ -837,13 +835,24 @@ hotcrp_graphs.scatter = function (args) {
             return d ? d.i : "x";
         }
 
-        var sel = svg.selectAll(".ghighlight.gdot-hover0").data(myd, keyf);
-        place(sel.enter().append("path").attr("class", "ghighlight gdot-hover0"));
-        sel.exit().remove();
+        if (!$$("svggpat_dot_highlight"))
+            $("div.body").prepend('<svg width="0" height="0" style="position:absolute"><defs><radialGradient id="svggpat_dot_highlight"><stop offset="50%" stop-opacity="0" /><stop offset="50%" stop-color="#ffff00" stop-opacity="0.5" /><stop offset="100%" stop-color="#ffff00" stop-opacity="0" /></radialGradient></defs></svg>');
 
-        var sel1 = svg.selectAll(".ghighlight.gdot-hover1").data(myd, keyf);
-        place(sel1.enter().append("path").attr("class", "ghighlight gdot-hover1"));
-        sel1.exit().remove();
+        var sel = svg.selectAll(".ghighlight").data(myd, keyf);
+        sel.exit().remove();
+        var g = sel.enter()
+          .append("g")
+            .attr("class", "ghighlight");
+        g.append("circle")
+            .attr("class", "gdot-hover")
+            .attr("cx", proj0)
+            .attr("cy", proj1)
+            .attr("r", function (d) { return d.r - 0.5; });
+        g.append("circle")
+            .attr("cx", proj0)
+            .attr("cy", proj1)
+            .attr("r", function (d) { return (d.r + 0.5) * 2; })
+            .style("fill", "url(#svggpat_dot_highlight)");
     }
 };
 
@@ -892,7 +901,7 @@ function data_to_barchart(data, yaxis) {
 hotcrp_graphs.barchart = function (args) {
     args = make_args(args);
     var data = data_to_barchart(args.data, args.y),
-        ystart = args.y.ticks.type === "option_letter" ? 0.75 : 0;
+        ystart = args.y.ticks.type === "score" ? 0.75 : 0;
 
     var xe = d3.extent(data, proj0),
         ge = d3.extent(data, function (d) { return d[4] || 0; }),
@@ -941,7 +950,7 @@ hotcrp_graphs.barchart = function (args) {
             .attr("class", function (d) {
                 return d[3] ? "gbar " + d[3] : "gbar";
             })
-            .style("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
+            .attr("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
 
     make_axes(svg, xAxis, yAxis, args);
 
@@ -1110,7 +1119,7 @@ hotcrp_graphs.boxplot = function (args) {
     place_box(svg.selectAll(".gbox.box").data(nonoutliers)
             .enter().append("path")
             .attr("class", function (d) { return "gbox box " + d.c; })
-            .style("fill", function (d) { return make_pattern_fill(d.c, "gdot "); }));
+            .attr("fill", function (d) { return make_pattern_fill(d.c, "gdot "); }));
 
     place_median(svg.selectAll(".gbox.median").data(nonoutliers)
             .enter().append("line")
@@ -1134,19 +1143,13 @@ hotcrp_graphs.boxplot = function (args) {
 
     make_axes(svg, xAxis, yAxis, args);
 
-    svg.append("line").attr("class", "gbox whiskerl gbox-hover0");
-    svg.append("line").attr("class", "gbox whiskerh gbox-hover0");
-    svg.append("path").attr("class", "gbox box gbox-hover0");
-    svg.append("line").attr("class", "gbox median gbox-hover0");
-    svg.append("circle").attr("class", "gbox outlier gbox-hover0");
-    svg.append("path").attr("class", "gbox mean gbox-hover0");
-    svg.append("line").attr("class", "gbox whiskerl gbox-hover1");
-    svg.append("line").attr("class", "gbox whiskerh gbox-hover1");
-    svg.append("path").attr("class", "gbox box gbox-hover1");
-    svg.append("line").attr("class", "gbox median gbox-hover1");
-    svg.append("circle").attr("class", "gbox outlier gbox-hover1");
-    svg.append("path").attr("class", "gbox mean gbox-hover1");
-    var hovers = svg.selectAll(".gbox-hover0, .gbox-hover1")
+    svg.append("line").attr("class", "gbox whiskerl gbox-hover");
+    svg.append("line").attr("class", "gbox whiskerh gbox-hover");
+    svg.append("path").attr("class", "gbox box gbox-hover");
+    svg.append("line").attr("class", "gbox median gbox-hover");
+    svg.append("circle").attr("class", "gbox outlier gbox-hover");
+    svg.append("path").attr("class", "gbox mean gbox-hover");
+    var hovers = svg.selectAll(".gbox-hover")
         .style("display", "none").style("ponter-events", "none");
 
     svg.selectAll(".gbox").on("mouseout", mouseout).on("click", mouseclick);
@@ -1228,7 +1231,7 @@ hotcrp_graphs.boxplot = function (args) {
     }
 };
 
-function option_letter_ticks(n, c, sv) {
+function score_ticks(n, c, sv) {
     var info = make_score_info(n, c, sv), split = 2;
     function format(extent) {
         var count = Math.floor(extent[1] * 2) - Math.ceil(extent[0] * 2) + 1;
@@ -1240,20 +1243,20 @@ function option_letter_ticks(n, c, sv) {
     function rewrite() {
         this.selectAll("g.tick text").each(function () {
             var d = d3.select(this), value = +d.text();
-            d.style("fill", info.rgb(value));
+            d.attr("fill", info.rgb(value));
             if (c && value)
                 d.text(info.unparse(value, split));
         });
     }
     function unparse_html(value, include_numeric) {
         var t = info.unparse_html(value);
-        if (include_numeric && t.charAt(0) === "<"
+        if (include_numeric && c && t.charAt(0) === "<"
             && value !== Math.round(value * 2) / 2)
             t += " (" + value.toFixed(2).replace(/\.00$/, "") + ")";
         return t;
     }
     return { ticks: format, rewrite: rewrite, unparse_html: unparse_html,
-             type: "option_letter" };
+             type: "score" };
 };
 
 function get_max_tick_width(axis) {
@@ -1334,7 +1337,7 @@ function named_integer_ticks(map) {
                         .attr("x", b.x - 3).attr("y", b.y)
                         .attr("width", b.width + 6).attr("height", b.height + 1)
                         .attr("class", "glab " + c)
-                        .style("fill", make_pattern_fill(c, "glab "));
+                        .attr("fill", make_pattern_fill(c, "glab "));
                 }
             });
         }

@@ -20,7 +20,7 @@ class FormulaGraph {
     public $conf;
     public $user;
     public $type = 0;
-    private $fx;
+    public $fx;
     private $fxs;
     private $fx_expression;
     public $fy;
@@ -659,7 +659,7 @@ class FormulaGraph {
         } else if ($format instanceof ReviewField) {
             $n = count($format->options);
             $ol = $format->option_letter ? chr($format->option_letter - $n) : null;
-            $j["ticks"] = ["option_letter", $n, $ol, $format->option_class_prefix];
+            $j["ticks"] = ["score", $n, $ol, $format->option_class_prefix];
             if ($format->option_letter && $isx)
                 $j["flip"] = true;
         } else {

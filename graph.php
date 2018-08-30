@@ -36,17 +36,22 @@ echo Ht::unstash();
 echo $Conf->make_script_file("scripts/d3-hotcrp.min.js", true);
 echo $Conf->make_script_file("scripts/graph.js");
 
-function echo_graph($searchable) {
+function echo_graph($searchable, $fg) {
     echo '<div class="has-hotgraph" style="max-width:960px;margin-bottom:4em">';
     if ($searchable)
         echo Ht::entry("q", "", ["placeholder" => "Highlight", "class" => "uich js-hotgraph-highlight papersearch"]);
-    echo "<div class=\"hotgraph\" id=\"hotgraph\"></div></div>\n";
+    echo "<div class=\"hotgraph\" id=\"hotgraph\"";
+    if ($fg && !($fg->type & FormulaGraph::CDF)) {
+        echo " data-graph-fx=\"", htmlspecialchars($fg->fx->expression),
+            "\" data-graph-fy=\"", htmlspecialchars($fg->fy->expression), "\"";
+    }
+    echo "></div></div>\n";
 }
 
 // Procrastination report
 if ($Graph == "procrastination") {
     echo "<h2>Procrastination</h2>\n";
-    echo_graph(false);
+    echo_graph(false, null);
     $rt = new ReviewTimes($Me);
     echo Ht::unstash_script('jQuery(function () { hotcrp_graphs.procrastination("#hotgraph",' . json_encode_browser($rt->json()) . '); })');
 }
@@ -137,7 +142,7 @@ if ($Graph == "formula") {
             echo "<h2>", htmlspecialchars($fg->fy->expression), " by $xhtml</h2>\n";
         else
             echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. $xhtml</h2>\n";
-        echo_graph(($fg->type & FormulaGraph::SCATTER));
+        echo_graph($fg->type & FormulaGraph::SCATTER, $fg);
 
         $gtype = "scatter";
         if ($fg->type & FormulaGraph::BARCHART)

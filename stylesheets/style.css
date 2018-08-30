@@ -3672,12 +3672,12 @@ th.pl_logaction {
 	stroke-width: 2px;
 	fill: none;
 }
-.gdot-hover0, .gbar-hover0, .gbox-hover0 {
+.gdot-hover, .gbar-hover0, .gbox-hover {
 	stroke: rgba(0, 0, 0, 0.4);
-	stroke-width: 2.5px;
+	stroke-width: 2px;
 	fill: rgba(0, 0, 0, 0.1);
 }
-.gdot-hover1, .gbar-hover1, .gbox-hover1 {
+.gbar-hover1 {
 	stroke-width: 0;
 	fill: none;
 }
