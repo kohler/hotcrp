@@ -42,38 +42,45 @@ class FormulaGraph {
     public $error_html = [];
     public $errf = [];
 
-    function __construct(Contact $user, $fx, $fy) {
+    function __construct(Contact $user, $gtype, $fx, $fy) {
         $this->conf = $user->conf;
         $this->user = $user;
 
-        // Y axis expression
+        $gtype = simplify_whitespace($gtype);
+        $fx = simplify_whitespace($fx);
         $fy = simplify_whitespace($fy);
-        if (strcasecmp($fy, "cdf") == 0) {
-            $this->type = self::CDF;
-            $this->fy = new Formula("0", true);
-        } else if (preg_match('/\A(?:rawcdf|cdfcount|cumcount|cumulativecount)\z/i', $fy)) {
-            $this->type = self::RAWCDF;
-            $this->fy = new Formula("0", true);
-        } else if (preg_match('/\A(?:count|bar|bars|barchart)\z/i', $fy)) {
-            $this->type = self::BARCHART;
-            $this->fy = new Formula("sum(1)", true);
-        } else if (preg_match('/\A(?:stack|frac|fraction)\z/i', $fy)) {
-            $this->type = self::FBARCHART;
-            $this->fy = new Formula("sum(1)", true);
-        } else {
-            if (preg_match('/\A(?:box|boxplot)\s+(.*)\z/i', $fy, $m)) {
-                $this->type = self::BOXPLOT;
-                $fy = $m[1];
-            } else if (preg_match('/\Abars?\s+(.+)\z/i', $fy, $m)) {
-                $this->type = self::BARCHART;
-                $fy = $m[1];
-            } else if (preg_match('/\Ascatter\s+(.+)\z/i', $fy, $m)) {
-                $this->type = self::SCATTER;
-                $fy = $m[1];
-            }
-            $this->fy = new Formula($fy, true);
+
+        // graph type
+        $fy_guess = false;
+        $fy_gtype = $fy;
+        if ($gtype === "") {
+            $gtype = preg_replace('/\s+.*/', "", $fy);
+            $fy_guess = true;
+            $fy_gtype = ltrim(substr($fy, strlen($gtype)));
         }
 
+        // Y axis expression
+        if (strcasecmp($gtype, "cdf") == 0) {
+            $this->type = self::CDF;
+            $fy = "0";
+        } else if (preg_match('/\A(?:raw-?cdf|cdf-?count|cum-?count|cumulative-?count)\z/i', $gtype)) {
+            $this->type = self::RAWCDF;
+            $fy = "0";
+        } else if (preg_match('/\A(?:count|bar|bars|barchart)\z/i', $gtype)) {
+            $this->type = self::BARCHART;
+            $fy = $fy_gtype ? : "sum(1)";
+        } else if (preg_match('/\A(?:full-?area|full-?stack|stack|frac|fraction)\z/i', $gtype)) {
+            $this->type = self::FBARCHART;
+            $fy = "sum(1)";
+        } else if (preg_match('/\A(?:box|boxplot|candlestick)\z/i', $gtype)) {
+            $this->type = self::BOXPLOT;
+            $fy = $fy_gtype;
+        } else if (strcasecmp($gtype, "scatter") == 0) {
+            $this->type = self::SCATTER;
+            $fy = $fy_gtype;
+        }
+
+        $this->fy = new Formula($fy, true);
         $this->fy->check($this->user);
         if (!$this->type) {
             $this->type = self::SCATTER;
@@ -82,7 +89,7 @@ class FormulaGraph {
         }
 
         // X axis expression(s)
-        $this->fx_expression = $fx = simplify_whitespace($fx);
+        $this->fx_expression = $fx;
         if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
             $this->fx = new Formula("0", true);
             $this->fx_type = self::X_QUERY;
@@ -707,8 +714,14 @@ class FormulaGraph {
         return $j;
     }
 
+    function type_json() {
+        $tj = [self::SCATTER => "scatter", self::CDF => "cdf", self::RAWCDF => "cumulative-count", self::BARCHART => "bar", self::FBARCHART => "full-stack", self::BOXPLOT => "box"];
+        return get($tj, $this->type);
+    }
+
     function graph_json() {
         $j = [
+            "type" => $this->type_json(),
             "data" => $this->data(),
             "x" => $this->axis_json("x"),
             "y" => $this->axis_json("y")

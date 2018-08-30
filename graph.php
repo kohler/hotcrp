@@ -36,11 +36,13 @@ echo Ht::unstash();
 echo $Conf->make_script_file("scripts/d3-hotcrp.min.js", true);
 echo $Conf->make_script_file("scripts/graph.js");
 
-function echo_graph($searchable, $fg) {
+function echo_graph($searchable, $fg, $h2) {
     echo '<div class="has-hotgraph" style="max-width:960px;margin-bottom:4em">';
     if ($searchable)
-        echo Ht::entry("q", "", ["placeholder" => "Highlight", "class" => "uich js-hotgraph-highlight papersearch"]);
-    echo "<div class=\"hotgraph\" id=\"hotgraph\"";
+        echo Ht::entry("q", "", ["placeholder" => "Highlight", "class" => "uich js-hotgraph-highlight papersearch floatright need-autogrow"]);
+    if ($h2)
+        echo "<h2>", $h2, "</h2>\n";
+    echo "<div class=\"hotgraph c\" id=\"hotgraph\"";
     if ($fg && !($fg->type & FormulaGraph::CDF)) {
         echo " data-graph-fx=\"", htmlspecialchars($fg->fx->expression),
             "\" data-graph-fy=\"", htmlspecialchars($fg->fy->expression), "\"";
@@ -50,8 +52,7 @@ function echo_graph($searchable, $fg) {
 
 // Procrastination report
 if ($Graph == "procrastination") {
-    echo "<h2>Procrastination</h2>\n";
-    echo_graph(false, null);
+    echo_graph(false, null, "Procrastination");
     $rt = new ReviewTimes($Me);
     echo Ht::unstash_script('jQuery(function () { hotcrp_graphs.procrastination("#hotgraph",' . json_encode_browser($rt->json()) . '); })');
 }
@@ -94,8 +95,8 @@ if ($Graph == "formula") {
     }
 
     $fg = null;
-    if ($Qreq->x && $Qreq->y) {
-        $fg = new FormulaGraph($Me, $Qreq->x, $Qreq->y);
+    if ($Qreq->x && ($Qreq->gtype || $Qreq->y)) {
+        $fg = new FormulaGraph($Me, $Qreq->gtype, $Qreq->x, $Qreq->y);
         if ($Qreq->xorder)
             $fg->set_xorder($Qreq->xorder);
         if (!empty($fg->error_html))
@@ -130,19 +131,19 @@ if ($Graph == "formula") {
             $xhtml = "tag";
 
         if ($fg->fx_type === FormulaGraph::X_QUERY)
-            /* no header */;
+            $h2 = "";
         else if ($fg->type === FormulaGraph::RAWCDF)
-            echo "<h2>Cumulative count of $xhtml</h2>\n";
+            $h2 = "Cumulative count of $xhtml";
         else if ($fg->type & FormulaGraph::CDF)
-            echo "<h2>$xhtml CDF</h2>\n";
+            $h2 = "$xhtml CDF";
         else if (($fg->type & FormulaGraph::BARCHART)
                  && $fg->fy->expression === "sum(1)")
-            echo "<h2>$xhtml</h2>\n";
+            $h2 = $xhtml;
         else if ($fg->type & FormulaGraph::BARCHART)
-            echo "<h2>", htmlspecialchars($fg->fy->expression), " by $xhtml</h2>\n";
+            $h2 = htmlspecialchars($fg->fy->expression) . " by $xhtml";
         else
-            echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. $xhtml</h2>\n";
-        echo_graph($fg->type & FormulaGraph::SCATTER, $fg);
+            $h2 = htmlspecialchars($fg->fy->expression) . " vs. $xhtml";
+        echo_graph($fg->type & FormulaGraph::SCATTER, $fg, $h2);
 
         $gtype = "scatter";
         if ($fg->type & FormulaGraph::BARCHART)
