@@ -27,7 +27,8 @@ class SessionList {
     }
 
     static function decode_ids($s) {
-        if (($a = json_decode($s)) !== null)
+        if (str_starts_with($s, "[")
+            && ($a = json_decode($s)) !== null)
             return is_array($a) ? $a : [$a];
         $a = [];
         $l = strlen($s);
@@ -99,6 +100,12 @@ class SessionList {
         }
         return $a;
     }
+
+    static private function encoding_ends_numerically($a) {
+        $w = $a[count($a) - 1];
+        return is_int($w) || ctype_digit($w[strlen($w) - 1]);
+    }
+
     static function encode_ids($ids) {
         if (empty($ids))
             return "";
@@ -106,33 +113,42 @@ class SessionList {
         // i-p: range of 1-8 sequential missing papers
         // q<N>: range of <N> sequential present papers
         // r<N>: range of <N> sequential missing papers
-        // <N>[-<N>]: include <N>
+        // s: ignored
+        // <N>[-<N>]: include <N>, set direction forwards
         // z: next range is backwards
         // A-H: like a-h + i
         // I-P: like a-h + j
-        $a = [$ids[0]];
         $n = count($ids);
-        $next = $ids[0] + 1;
+        $a = [$ids[0]];
         $sign = 1;
+        $next = $ids[0] + 1;
         for ($i = 1; $i < $n; ) {
-            $delta = $ids[$i] - $next;
-            if ($delta !== 0 && ($sign > 0) !== ($delta > 0)) {
-                $sign = -$sign;
-                $a[] = "z";
-            }
-            $delta = abs($delta);
+            $delta = ($ids[$i] - $next) * $sign;
             if (($delta === 1 || $delta === 2)
                 && ($ch = $a[count($a) - 1]) >= "a"
-                && $ch <= "h")
+                && $ch <= "h") {
                 $a[count($a) - 1] = chr(ord($ch) - 40 + 8 * $delta);
-            else if ($delta > 0 && $delta <= 8)
+            } else if ($delta > 0 && $delta <= 8) {
                 $a[] = chr(104 + $delta);
-            else if ($delta >= 9)
+            } else if ($delta < 0 && $delta >= -8) {
+                $sign = -$sign;
+                $a[] = "z" . chr(104 - $delta);
+            } else if ($delta >= 9) {
                 $a[] = "r" . $delta;
+            } else if ($delta !== 0) {
+                if (self::encoding_ends_numerically($a))
+                    $a[] = "s";
+                $a[] = $ids[$i];
+                $sign = 1;
+                $next = $ids[$i] + 1;
+                ++$i;
+                continue;
+            }
 
             $d = 1;
             $step = 1;
-            if ($i + 1 < $n && $ids[$i + 1] < $ids[$i])
+            if (($i + 1 < $n && $ids[$i + 1] === $ids[$i] - 1)
+                || ($sign < 0 && ($i + 1 === $n || $ids[$i + 1] !== $ids[$i] + 1)))
                 $step = -1;
             if (($sign > 0) !== ($step > 0)) {
                 $sign = -$sign;
@@ -140,10 +156,9 @@ class SessionList {
             }
             while ($i + $d < $n && $ids[$i + $d] === $ids[$i] + $sign * $d)
                 ++$d;
-            if ($d === 1 && $delta >= 9) {
-                while (($w = $a[count($a) - 1]) === "z" || $w[0] === "r")
-                    array_pop($a);
-                if (is_int($w) || ctype_digit($w[strlen($w) - 1]))
+            if ($d === 1 && $a[count($a) - 1][0] === "r") {
+                array_pop($a);
+                if (self::encoding_ends_numerically($a))
                     $a[] = "s";
                 $a[] = $ids[$i];
                 $sign = 1;
@@ -157,6 +172,7 @@ class SessionList {
         }
         return join("", $a);
     }
+
     static function decode_info_string($info) {
         if (($j = json_decode($info))
             && (isset($j->ids) || isset($j->digest))) {

@@ -169,6 +169,31 @@ xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([1,3,5,7
 xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([11,10,9,8,7,6,5,4,3,2,1]))), "[11,10,9,8,7,6,5,4,3,2,1]");
 xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([10,9,7,1,3,5,5]))), "[10,9,7,1,3,5,5]");
 
+function random_paper_ids() {
+    $a = [];
+    $n = mt_rand(1, 10);
+    $p = null;
+    for ($i = 0; $i < $n; ++$i) {
+        $p1 = mt_rand(1, $p === null ? 100 : 150);
+        if ($p1 > 100)
+            $p1 = max(1, $p + (int) round(($p1 - 125) / 8));
+        $p2 = 20 - (int) sqrt(mt_rand(0, 399));
+        if (mt_rand(1, 4) === 1) {
+            for ($p = $p1; $p >= 1 && $p > $p1 - $p2; --$p)
+                $a[] = $p;
+        } else {
+            for ($p = $p1; $p < $p1 + $p2; ++$p)
+                $a[] = $p;
+        }
+    }
+    return $a;
+}
+for ($i = 0; $i < 1000; ++$i) {
+    $ids = random_paper_ids();
+    //file_put_contents("/tmp/x", "if (JSON.stringify(decode_ids(" . json_encode(SessionList::encode_ids($ids)) . ")) !== " . json_encode(json_encode($ids)) . ") throw new Error;\n", FILE_APPEND);
+    xassert_eqq(SessionList::decode_ids(SessionList::encode_ids($ids)), $ids);
+}
+
 // obscure_time tests
 $t = $Conf->parse_time("1 Sep 2010 00:00:01");
 $t0 = $Conf->obscure_time($t);
