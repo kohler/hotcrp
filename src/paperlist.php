@@ -480,12 +480,11 @@ class PaperList {
             && $this->sorters[0]->thenmap === null
             && ($always || (string) $this->qreq->sort != "")
             && ($this->sorters[0]->type != "id" || $this->sorters[0]->reverse)) {
-            $x = ($this->sorters[0]->reverse ? "r" : "");
+            $x = ($this->sorters[0]->reverse ? " reverse" : "");
             if (($fdef = $this->find_column($this->sorters[0]->type))
                 && isset($fdef->score))
-                $x .= $this->sorters[0]->score;
-            return ($fdef ? $fdef->name : $this->sorters[0]->type)
-                . ($x ? ",$x" : "");
+                $x .= " " . ListSorter::canonical_long_score_sort($this->sorters[0]->score);
+            return ($fdef ? $fdef->name : $this->sorters[0]->type) . $x;
         } else
             return "";
     }
