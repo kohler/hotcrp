@@ -3125,9 +3125,10 @@ class Conf {
 
     function header_head($title, $extra = null) {
         global $Me, $Now, $ConfSitePATH;
-        // clear session list cookie
-        if (isset($_COOKIE["hotlist-info"]))
-            $this->set_cookie("hotlist-info", "", $Now - 86400);
+        // clear session list cookies
+        foreach ($_COOKIE as $k => $v)
+            if (str_starts_with($k, "hotlist-info"))
+                $this->set_cookie($k, "", $Now - 86400);
 
         echo "<!DOCTYPE html>
 <html lang=\"en\">

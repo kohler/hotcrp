@@ -4546,6 +4546,7 @@ function searchbody_postreorder(tbody) {
                     $np.html(np_html);
             }
         }
+    tbody.parentElement.setAttribute("data-reordered", "");
 }
 
 function reorder(tbl, pids, groups, remove_all) {
@@ -7156,7 +7157,7 @@ function update_digest(info) {
         return false;
 }
 function make_digest(info, pid) {
-    var m = /^(.*)"ids":"([-0-9']+)"(.*)/.exec(info), digest;
+    var m = /^(.*)"ids":"([-0-9'a-zA-Z]+)"(.*)/.exec(info), digest;
     if (m && wstorage() && (digest = update_digest(m[2]))) {
         info = m[1] + '"digest":"listdigest' + digest + '"';
         if (pid) {
@@ -7190,7 +7191,7 @@ function set_cookie(info, pid) {
         var p = "; max-age=20", m;
         if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
             p += "; path=" + m[1];
-        document.cookie = "hotlist-info=" + encodeURIComponent(info) + siteurl_cookie_params + p;
+        document.cookie = "hotlist-info-" + now_msec() + "=" + encodeURIComponent(info) + siteurl_cookie_params + p;
     }
 }
 function is_listable(sitehref) {
@@ -7210,7 +7211,7 @@ function set_list_order(info, tbody) {
         }
     if (p0 > 0)
         l.push(p0 == p1 ? p0 : p0 + "-" + p1);
-    return info.replace(/"ids":"[-0-9']+"/, '"ids":"' + l.join("'") + '"');
+    return info.replace(/"ids":"[-0-9'a-zA-Z]+"/, '"ids":"' + l.join("'") + '"');
 }
 function handle_list(e, href) {
     var $hl, sitehref, m;
@@ -7219,7 +7220,9 @@ function handle_list(e, href) {
         && is_listable((sitehref = href.substring(siteurl.length)))
         && ($hl = $(e).closest(".has-hotlist")).length) {
         var info = $hl.attr("data-hotlist");
-        if ($hl.is("table.pltable") && document.getElementById("footer"))
+        if ($hl.is("table.pltable")
+            && $hl[0].hasAttribute("data-reordered")
+            && document.getElementById("footer"))
             // Existence of `#footer` checks that the table is fully loaded
             info = set_list_order(info, $hl.children("tbody.pltable")[0]);
         m = /^[^\/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);

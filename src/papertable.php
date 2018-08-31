@@ -150,9 +150,7 @@ class PaperTable {
             $this->matchPreg = null;
     }
     private function find_session_list($pid) {
-        if (isset($_COOKIE["hotlist-info"])
-            && ($list = SessionList::decode_info_string($_COOKIE["hotlist-info"]))
-            && $list->list_type() === "p"
+        if (($list = SessionList::load_cookie("p"))
             && ($list->set_current_id($pid) || $list->digest))
             return $list;
 

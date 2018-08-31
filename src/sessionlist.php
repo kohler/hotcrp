@@ -202,10 +202,27 @@ class SessionList {
                 $j[$k] = $v;
         return json_encode_browser($j);
     }
+
+    static function load_cookie($type) {
+        $found = null;
+        foreach ($_COOKIE as $k => $v)
+            if (($k === "hotlist-info" && $found === null)
+                || (str_starts_with($k, "hotlist-info-")
+                    && ($found === null || strnatcmp($k, $found) > 0)))
+                $found = $k;
+        if ($found
+            && ($list = SessionList::decode_info_string($_COOKIE[$found]))
+            && $list->list_type() === $type)
+            return $list;
+        else
+            return null;
+    }
     function set_cookie() {
         global $Conf, $Now;
-        $Conf->set_cookie("hotlist-info", $this->info_string(), $Now + 20);
+        $t = round(microtime(true) * 1000);
+        $Conf->set_cookie("hotlist-info-" . $t, $this->info_string(), $Now + 20);
     }
+
     function set_current_id($id) {
         if ($this->curid !== $id)
             $this->curid = $this->previd = $this->nextid = null;
