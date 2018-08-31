@@ -7061,17 +7061,71 @@ var cookie_set_at;
 function decode_ids(str) {
     if ($.isArray(str))
         return str;
-    var a = [], m = str.match(/[-\d]+/g);
-    if (!m)
-        return false;
-    for (var i = 0; i < m.length; ++i) {
-        var p = m[i].indexOf("-");
-        if (p >= 0) {
-            var x, y = +m[i].substr(p + 1);
-            for (x = +m[i].substr(0, p); x <= y; ++x)
-                a.push(x);
-        } else
-            a.push(+m[i]);
+    var a = [], l = str.length, next = null, sign = 1;
+    for (var i = 0; i < l; ) {
+        var ch = str.charCodeAt(i);
+        if (ch >= 48 && ch <= 57) {
+            var n1 = 0;
+            while (ch >= 48 && ch <= 57) {
+                n1 = 10 * n1 + ch - 48;
+                ++i;
+                ch = i < l ? str.charCodeAt(i) : 0;
+            }
+            var n2 = n1;
+            if (ch === 45
+                && i + 1 < l
+                && (ch = str.charCodeAt(i + 1)) >= 48
+                && ch <= 57) {
+                ++i;
+                n2 = 0;
+                while (ch >= 48 && ch <= 57) {
+                    n2 = 10 * n2 + ch - 48;
+                    ++i;
+                    ch = i < l ? str.charCodeAt(i) : 0;
+                }
+            }
+            while (n1 <= n2) {
+                a.push(n1);
+                ++n1;
+            }
+            next = n1;
+            sign = 1;
+            continue;
+        }
+
+        while (ch === 122) {
+            sign = -sign;
+            ++i;
+            ch = i < l ? str.charCodeAt(i) : 0;
+        }
+
+        var include = true, n = 0, skip = 0;
+        if (ch >= 97 && ch <= 104)
+            n = ch - 96;
+        else if (ch >= 105 && ch <= 112) {
+            include = false;
+            n = ch - 104;
+        } else if (ch === 113 || ch === 114) {
+            include = ch === 113;
+            while (i + 1 < l && (ch = str.charCodeAt(i + 1)) >= 48 && ch <= 57) {
+                n = 10 * n + ch - 48;
+                ++i;
+            }
+        } else if (ch >= 65 && ch <= 72) {
+            n = ch - 64;
+            skip = 1;
+        } else if (ch >= 73 && ch <= 80) {
+            n = ch - 72;
+            skip = 2;
+        }
+
+        while (n > 0 && include) {
+            a.push(next);
+            next += sign;
+            --n;
+        }
+        next += sign * (n + skip);
+        ++i;
     }
     return a;
 }
