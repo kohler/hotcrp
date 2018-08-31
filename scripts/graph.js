@@ -1,7 +1,7 @@
 // graph.js -- HotCRP JavaScript library for graph drawing
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
-var hotcrp_graphs = (function ($, d3) {
+var hotcrp_graph = (function ($, d3) {
 var BOTTOM_MARGIN = 30;
 var PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,
@@ -424,13 +424,13 @@ function axis_domain(axis, argextent, e) {
     axis.domain(e);
 }
 
-function make_args(args) {
+function make_args(selector, args) {
     args = $.extend({top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50}, args);
     args.x = args.x || {};
     args.y = args.y || {};
     args.x.ticks = make_axis(args.x.ticks);
     args.y.ticks = make_axis(args.y.ticks);
-    args.width = $(args.selector).width() - args.left - args.right;
+    args.width = $(selector).width() - args.left - args.right;
     args.height = 500 - args.top - args.bottom;
     return args;
 }
@@ -443,19 +443,16 @@ function position_label(axis, p, prefix) {
 }
 
 
-/* actual graphs */
-var hotcrp_graphs = {};
-
 // args: {selector: JQUERYSELECTOR,
 //        data: [{d: [ARRAY], label: STRING, className: STRING}],
 //        x/y: {label: STRING, tick_format: STRING}}
-function hotcrp_graphs_cdf(args) {
-    args = make_args(args);
+function graph_cdf(selector, args) {
+    args = make_args(selector, args);
 
     var x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
         y = d3.scaleLinear().range([args.height, 0]);
 
-    var svg = d3.select(args.selector).append("svg")
+    var svg = d3.select(selector).append("svg")
         .attr("width", args.width + args.left + args.right)
         .attr("height", args.height + args.top + args.bottom)
       .append("g")
@@ -568,11 +565,10 @@ function hotcrp_graphs_cdf(args) {
         hovered_path = hubble = null;
     }
 };
-hotcrp_graphs.cdf = hotcrp_graphs_cdf;
 
 
-hotcrp_graphs.procrastination = function (selector, revdata) {
-    var args = {selector: selector, data: {}, x: {}, y: {}};
+function graph_procrastination(selector, revdata) {
+    var args = {data: {}, x: {}, y: {}};
 
     // collect data
     var alldata = [], d, i, l, cid, u;
@@ -612,7 +608,7 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
     args.x.label = dlf.label(revdata.deadlines);
     args.y.label = "Fraction of assignments completed";
 
-    hotcrp_graphs_cdf(args);
+    graph_cdf(selector, args);
 };
 
 
@@ -732,8 +728,8 @@ function data_to_scatter(data) {
     return data;
 }
 
-hotcrp_graphs.scatter = function (args) {
-    args = make_args(args);
+function graph_scatter(selector, args) {
+    args = make_args(selector, args);
     var data = data_to_scatter(args.data);
 
     var xe = d3.extent(data, proj0),
@@ -750,9 +746,9 @@ hotcrp_graphs.scatter = function (args) {
     var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
 
-    $(args.selector).on("hotgraphhighlight", highlight);
+    $(selector).on("hotgraphhighlight", highlight);
 
-    var svg = d3.select(args.selector).append("svg")
+    var svg = d3.select(selector).append("svg")
         .attr("width", args.width + args.left + args.right)
         .attr("height", args.height + args.top + args.bottom)
       .append("g")
@@ -898,8 +894,8 @@ function data_to_barchart(data, yaxis) {
     return data;
 }
 
-hotcrp_graphs.barchart = function (args) {
-    args = make_args(args);
+function graph_bars(selector, args) {
+    args = make_args(selector, args);
     var data = data_to_barchart(args.data, args.y),
         ystart = args.y.ticks.type === "score" ? 0.75 : 0;
 
@@ -930,7 +926,7 @@ hotcrp_graphs.barchart = function (args) {
     var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
 
-    var svg = d3.select(args.selector).append("svg")
+    var svg = d3.select(selector).append("svg")
         .attr("width", args.width + args.left + args.right)
         .attr("height", args.height + args.top + args.bottom)
       .append("g")
@@ -1034,8 +1030,8 @@ function data_to_boxplot(data, septags) {
     return data;
 }
 
-hotcrp_graphs.boxplot = function (args) {
-    args = make_args(args);
+function graph_boxplot(selector, args) {
+    args = make_args(selector, args);
     var data = data_to_boxplot(args.data, !!args.y.fraction, true);
 
     var xe = d3.extent(data, proj0),
@@ -1059,7 +1055,7 @@ hotcrp_graphs.boxplot = function (args) {
     var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
 
-    var svg = d3.select(args.selector).append("svg")
+    var svg = d3.select(selector).append("svg")
         .attr("width", args.width + args.left + args.right)
         .attr("height", args.height + args.top + args.bottom)
       .append("g")
@@ -1403,5 +1399,18 @@ handle_ui.on("js-hotgraph-highlight", function () {
     }
 });
 
-return hotcrp_graphs;
+return function (selector, args) {
+    if (args.type === "procrastination")
+        return graph_procrastination(selector, args);
+    else if (args.type === "scatter")
+        return graph_scatter(selector, args);
+    else if (args.type === "cdf" || args.type === "cumulative-count")
+        return graph_cdf(selector, args);
+    else if (args.type === "bar" || args.type === "full-stack")
+        return graph_bars(selector, args);
+    else if (args.type === "box")
+        return graph_boxplot(selector, args);
+    else
+        return null;
+};
 })(jQuery, d3);

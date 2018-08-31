@@ -54,7 +54,7 @@ function echo_graph($searchable, $fg, $h2) {
 if ($Graph == "procrastination") {
     echo_graph(false, null, "Procrastination");
     $rt = new ReviewTimes($Me);
-    echo Ht::unstash_script('jQuery(function () { hotcrp_graphs.procrastination("#hotgraph",' . json_encode_browser($rt->json()) . '); })');
+    echo Ht::unstash_script('$(function () { hotcrp_graph("#hotgraph",' . json_encode_browser($rt->json()) . ') })');
 }
 
 
@@ -152,12 +152,11 @@ if ($Graph == "formula") {
             $gtype = "cdf";
         else if ($fg->type === FormulaGraph::BOXPLOT)
             $gtype = "boxplot";
-        echo Ht::unstash_script('hotgraph_info=' . json_encode_browser(["selector" => "#hotgraph"] + $fg->graph_json()) . ';'
-            . "\$(function () { hotcrp_graphs.{$gtype}(hotgraph_info) });"), "\n";
+        echo Ht::unstash_script("\$(function () { hotcrp_graph(\"#hotgraph\", " . json_encode_browser($fg->graph_json()) . ") });"), "\n";
     } else
         echo "<h2>Formulas</h2>\n";
 
-    echo Ht::form(hoturl("graph", "g=formula"), array("method" => "get"));
+    echo Ht::form(hoturl("graph", "g=formula"), ["method" => "get"]);
     echo '<table>';
     // X axis
     echo '<tr><td class="lcaption"><label for="x_entry">X axis</label></td>',

@@ -118,6 +118,6 @@ class ReviewTimes {
                     $u->color_classes = $t;
             }
 
-        return (object) array("reviews" => $this->r, "deadlines" => $this->dl, "users" => $users);
+        return (object) ["type" => "procrastination", "reviews" => $this->r, "deadlines" => $this->dl, "users" => $users];
     }
 }

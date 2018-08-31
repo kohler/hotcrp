@@ -715,7 +715,9 @@ class FormulaGraph {
     }
 
     function type_json() {
-        $tj = [self::SCATTER => "scatter", self::CDF => "cdf", self::RAWCDF => "cumulative-count", self::BARCHART => "bar", self::FBARCHART => "full-stack", self::BOXPLOT => "box"];
+        $tj = [self::SCATTER => "scatter", self::CDF => "cdf",
+            self::RAWCDF => "cumulative-count", self::BARCHART => "bar",
+            self::FBARCHART => "full-stack", self::BOXPLOT => "box"];
         return get($tj, $this->type);
     }
 
