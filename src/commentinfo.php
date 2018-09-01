@@ -332,7 +332,7 @@ class CommentInfo {
         // attachments
         foreach ($this->attachments() as $doc) {
             $docj = $doc->unparse_json(["_comment" => $this]);
-            if ($cj->editable)
+            if (isset($cj->editable))
                 $docj->docid = $doc->paperStorageId;
             $cj->docs[] = $docj;
         }
