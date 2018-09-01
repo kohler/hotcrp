@@ -431,7 +431,7 @@ function make_args(selector, args) {
     args.x.ticks = make_axis(args.x.ticks);
     args.y.ticks = make_axis(args.y.ticks);
     args.width = $(selector).width() - args.left - args.right;
-    args.height = 500 - args.top - args.bottom;
+    args.height = 520 - args.top - args.bottom;
     return args;
 }
 
@@ -447,16 +447,9 @@ function position_label(axis, p, prefix) {
 //        data: [{d: [ARRAY], label: STRING, className: STRING}],
 //        x/y: {label: STRING, tick_format: STRING}}
 function graph_cdf(selector, args) {
-    args = make_args(selector, args);
-
     var x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
-        y = d3.scaleLinear().range([args.height, 0]);
-
-    var svg = d3.select(selector).append("svg")
-        .attr("width", args.width + args.left + args.right)
-        .attr("height", args.height + args.top + args.bottom)
-      .append("g")
-        .attr("transform", "translate(" + args.left + "," + args.top + ")");
+        y = d3.scaleLinear().range([args.height, 0]),
+        svg = this;
 
     // massage data
     var series = args.data;
@@ -567,8 +560,8 @@ function graph_cdf(selector, args) {
 };
 
 
-function graph_procrastination(selector, revdata) {
-    var args = {data: {}, x: {}, y: {}};
+function procrastination_filter(revdata) {
+    var args = {type: "cdf", data: {}, x: {}, y: {}};
 
     // collect data
     var alldata = [], d, i, l, cid, u;
@@ -608,7 +601,7 @@ function graph_procrastination(selector, revdata) {
     args.x.label = dlf.label(revdata.deadlines);
     args.y.label = "Fraction of assignments completed";
 
-    graph_cdf(selector, args);
+    return args;
 };
 
 
@@ -728,18 +721,73 @@ function data_to_scatter(data) {
     return data;
 }
 
+var scatter_annulus = d3.arc()
+    .innerRadius(function (d) { return d.r0 ? d.r0 - 0.5 : 0; })
+    .outerRadius(function (d) { return d.r - 0.5; })
+    .startAngle(0)
+    .endAngle(Math.PI * 2);
+
+function scatter_transform(d) {
+    return "translate(" + d[0] + "," + d[1] + ")";
+}
+
+function scatter_key(d) {
+    var t = d[0] + "," + d[1];
+    if (d.r0)
+        t += "," + d.r0;
+    return t;
+}
+
+function scatter_create(svg, data, klass) {
+    var sel = svg.selectAll(".gdot");
+    if (klass)
+        sel = sel.filter("." + klass);
+    sel = sel.data(data, scatter_key);
+    sel.exit().remove();
+    var pathklass = "gdot" + (klass ? " " + klass : "");
+    sel.enter()
+        .append("path")
+        .attr("class", function (d) { return pathklass + (d[3] ? " " + d[3] : "") })
+        .attr("fill", function (d) { return make_pattern_fill(d[3], "gdot"); })
+      .merge(sel)
+        .attr("d", scatter_annulus)
+        .attr("transform", scatter_transform);
+}
+
+function scatter_highlight(svg, data, klass) {
+    if (!$$("svggpat_dot_highlight"))
+        $("div.body").prepend('<svg width="0" height="0" style="position:absolute"><defs><radialGradient id="svggpat_dot_highlight"><stop offset="50%" stop-opacity="0" /><stop offset="50%" stop-color="#ffff00" stop-opacity="0.5" /><stop offset="100%" stop-color="#ffff00" stop-opacity="0" /></radialGradient></defs></svg>');
+
+    var sel = svg.selectAll(".ghighlight");
+    if (klass)
+        sel = sel.filter("." + klass);
+    sel = sel.data(data, scatter_key);
+    sel.exit().remove();
+    var g = sel.enter()
+      .append("g")
+        .attr("class", "ghighlight");
+    g.append("circle")
+        .attr("class", "gdot-hover");
+    g.append("circle")
+        .style("fill", "url(#svggpat_dot_highlight)");
+    g.merge(sel).selectAll("circle")
+        .attr("cx", proj0)
+        .attr("cy", proj1)
+        .attr("r", function (d, i) {
+            return i ? (d.r + 0.5) * 2 : d.r - 0.5;
+        });
+}
+
 function graph_scatter(selector, args) {
-    args = make_args(selector, args);
-    var data = data_to_scatter(args.data);
+    var data = data_to_scatter(args.data),
+        svg = this;
 
     var xe = d3.extent(data, proj0),
         ye = d3.extent(data, proj1),
         x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
-        y = d3.scaleLinear().range(args.y.flip ? [0, args.height] : [args.height, 0]),
-        rf = function (d) { return d.r - 1; };
+        y = d3.scaleLinear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
     axis_domain(x, args.x.extent, expand_extent(xe));
     axis_domain(y, args.y.extent, expand_extent(ye, true));
-    data = grouped_quadtree(data, x, y, 4);
 
     var xAxis = d3.axisBottom(x);
     args.x.ticks.ticks.call(xAxis, xe);
@@ -748,28 +796,8 @@ function graph_scatter(selector, args) {
 
     $(selector).on("hotgraphhighlight", highlight);
 
-    var svg = d3.select(selector).append("svg")
-        .attr("width", args.width + args.left + args.right)
-        .attr("height", args.height + args.top + args.bottom)
-      .append("g")
-        .attr("transform", "translate(" + args.left + "," + args.top + ")");
-
-    var annulus = d3.arc()
-        .innerRadius(function (d) { return d.r0 ? d.r0 - 0.5 : 0; })
-        .outerRadius(function (d) { return d.r - 0.5; })
-        .startAngle(0)
-        .endAngle(Math.PI * 2);
-
-    function place(sel) {
-        return sel.attr("d", annulus)
-            .attr("transform", function (d) { return "translate(" + d[0] + "," + d[1] + ")"; });
-    }
-
-    place(svg.selectAll(".gdot").data(data.data)
-            .enter()
-              .append("path")
-              .attr("class", function (d) { return d[3] ? "gdot " + d[3] : "gdot"; })
-              .attr("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
+    data = grouped_quadtree(data, x, y, 4);
+    scatter_create(svg, data.data);
 
     svg.append("path").attr("class", "gdot gdot-hover");
     var hovers = svg.selectAll(".gdot-hover").style("display", "none");
@@ -793,7 +821,10 @@ function graph_scatter(selector, args) {
         var m = d3.mouse(this), p = data.quadtree.gfind(m, 4);
         if (p != hovered_data) {
             if (p)
-                place(hovers.datum(p)).style("display", null);
+                hovers.datum(p)
+                    .attr("d", scatter_annulus)
+                    .attr("transform", scatter_transform)
+                    .style("display", null);
             else
                 hovers.style("display", "none");
             svg.style("cursor", p ? "pointer" : null);
@@ -827,28 +858,7 @@ function graph_scatter(selector, args) {
                         return true;
                 return false;
             });
-        function keyf(d) {
-            return d ? d.i : "x";
-        }
-
-        if (!$$("svggpat_dot_highlight"))
-            $("div.body").prepend('<svg width="0" height="0" style="position:absolute"><defs><radialGradient id="svggpat_dot_highlight"><stop offset="50%" stop-opacity="0" /><stop offset="50%" stop-color="#ffff00" stop-opacity="0.5" /><stop offset="100%" stop-color="#ffff00" stop-opacity="0" /></radialGradient></defs></svg>');
-
-        var sel = svg.selectAll(".ghighlight").data(myd, keyf);
-        sel.exit().remove();
-        var g = sel.enter()
-          .append("g")
-            .attr("class", "ghighlight");
-        g.append("circle")
-            .attr("class", "gdot-hover")
-            .attr("cx", proj0)
-            .attr("cy", proj1)
-            .attr("r", function (d) { return d.r - 0.5; });
-        g.append("circle")
-            .attr("cx", proj0)
-            .attr("cy", proj1)
-            .attr("r", function (d) { return (d.r + 0.5) * 2; })
-            .style("fill", "url(#svggpat_dot_highlight)");
+        scatter_highlight(svg, myd);
     }
 };
 
@@ -895,9 +905,9 @@ function data_to_barchart(data, yaxis) {
 }
 
 function graph_bars(selector, args) {
-    args = make_args(selector, args);
     var data = data_to_barchart(args.data, args.y),
-        ystart = args.y.ticks.type === "score" ? 0.75 : 0;
+        ystart = args.y.ticks.type === "score" ? 0.75 : 0,
+        svg = this;
 
     var xe = d3.extent(data, proj0),
         ge = d3.extent(data, function (d) { return d[4] || 0; }),
@@ -925,12 +935,6 @@ function graph_bars(selector, args) {
     args.x.ticks.ticks.call(xAxis, xe);
     var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
-
-    var svg = d3.select(selector).append("svg")
-        .attr("width", args.width + args.left + args.right)
-        .attr("height", args.height + args.top + args.bottom)
-      .append("g")
-        .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
     function place(sel, close) {
         return sel.attr("d", function (d) {
@@ -1031,8 +1035,8 @@ function data_to_boxplot(data, septags) {
 }
 
 function graph_boxplot(selector, args) {
-    args = make_args(selector, args);
-    var data = data_to_boxplot(args.data, !!args.y.fraction, true);
+    var data = data_to_boxplot(args.data, !!args.y.fraction, true),
+        svg = this;
 
     var xe = d3.extent(data, proj0),
         ye = [d3.min(data, function (d) { return d.ymin; }),
@@ -1054,12 +1058,6 @@ function graph_boxplot(selector, args) {
     args.x.ticks.ticks.call(xAxis, xe);
     var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
-
-    var svg = d3.select(selector).append("svg")
-        .attr("width", args.width + args.left + args.right)
-        .attr("height", args.height + args.top + args.bottom)
-      .append("g")
-        .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
     function place_whisker(l, sel) {
         sel.attr("x1", function (d) { return x(d[0]); })
@@ -1399,18 +1397,32 @@ handle_ui.on("js-hotgraph-highlight", function () {
     }
 });
 
+var graphers = {
+    procrastination: {filter: true, callback: procrastination_filter},
+    scatter: {callback: graph_scatter},
+    cdf: {callback: graph_cdf},
+    "cumulative-count": {callback: graph_cdf},
+    bars: {callback: graph_bars},
+    "full-stack": {callback: graph_bars},
+    box: {callback: graph_boxplot}
+};
+
 return function (selector, args) {
-    if (args.type === "procrastination")
-        return graph_procrastination(selector, args);
-    else if (args.type === "scatter")
-        return graph_scatter(selector, args);
-    else if (args.type === "cdf" || args.type === "cumulative-count")
-        return graph_cdf(selector, args);
-    else if (args.type === "bar" || args.type === "full-stack")
-        return graph_bars(selector, args);
-    else if (args.type === "box")
-        return graph_boxplot(selector, args);
-    else
-        return null;
+    while (true) {
+        var g = graphers[args.type];
+        if (!g)
+            return null;
+        else if (g.filter)
+            args = g.callback(args);
+        else {
+            args = make_args(selector, args);
+            var svg = d3.select(selector).append("svg")
+                .attr("width", args.width + args.left + args.right)
+                .attr("height", args.height + args.top + args.bottom)
+              .append("g")
+                .attr("transform", "translate(" + args.left + "," + args.top + ")");
+            return g.callback.call(svg, selector, args);
+        }
+    }
 };
 })(jQuery, d3);

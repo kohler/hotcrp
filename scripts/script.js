@@ -6145,6 +6145,8 @@ return function (classes, class_prefix) {
     if (!classes || classes.indexOf(" ") < 0)
         return null;
     class_prefix = class_prefix || "";
+    if (class_prefix !== "" && class_prefix.charAt(class_prefix.length - 1) !== " ")
+        class_prefix += " ";
     var index = class_prefix + classes;
     if (index in fmap)
         return fmap[index];
