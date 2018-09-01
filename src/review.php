@@ -1855,14 +1855,12 @@ class ReviewValues extends MessageSet {
             $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
             if (!$result)
                 return $result;
+            Dbl::free($result);
             $locked = true;
             $max_ordinal = $this->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
-            if ($max_ordinal !== null) {
-                // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
-                $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
-                $qv[] = $max_ordinal + 1;
-            }
-            Dbl::free($result);
+            // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
+            $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
+            $qv[] = (int) $max_ordinal + 1;
             $newordinal = true;
         }
         if ($newsubmit || $newordinal) {
