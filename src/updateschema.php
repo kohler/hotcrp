@@ -326,6 +326,35 @@ function update_schema_selector_options($conf) {
         || $conf->ql("update PaperOption set value=value+1 where optionId?a", $oids);
 }
 
+function update_schema_missing_review_ordinals($conf) {
+    $pids = Dbl::fetch_first_columns($conf->dblink, "select distinct paperId from PaperReview where reviewSubmitted>0 and reviewAuthorModified>0 and reviewOrdinal=0");
+    if (empty($pids))
+        return true;
+    $rf = $conf->review_form();
+    foreach ($conf->paper_set(null, ["paperId" => $pids, "tags" => true]) as $prow) {
+        $prow->ensure_full_reviews();
+        $next_ordinal = $next_displayed = 0;
+        $update_rrows = [];
+        foreach ($prow->reviews_by_id() as $rrow) {
+            $next_ordinal = max($next_ordinal, $rrow->reviewOrdinal);
+            if ($rrow->reviewOrdinal > 0)
+                $next_displayed = max($next_displayed, $rrow->timeDisplayed);
+            if ($rrow->reviewSubmitted > 0
+                && $rrow->reviewModified > 0
+                && $rrow->reviewOrdinal == 0
+                && $rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC)
+                $update_rrows[] = $rrow;
+        }
+        assert(count($update_rrows) <= 1);
+        if ($update_rrows) {
+            $rrow = $update_rrows[0];
+            $new_displayed = max($rrow->timeDisplayed, $next_displayed + 1);
+            $conf->qe("update PaperReview set reviewOrdinal=?, timeDisplayed=? where paperId=? and reviewId=?", $next_ordinal + 1, $new_displayed, $prow->paperId, $rrow->reviewId);
+        }
+    }
+    return true;
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1414,6 +1443,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 198
         && update_schema_selector_options($conf))
         $conf->update_schema_version(199);
+    if ($conf->sversion == 199
+        && update_schema_missing_review_ordinals($conf))
+        $conf->update_schema_version(200);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
