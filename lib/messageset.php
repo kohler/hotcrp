@@ -71,8 +71,10 @@ class MessageSet {
             return;
         if ($field)
             $this->errf[$field] = max(get($this->errf, $field, 0), $status);
-        if ($msg)
-            $this->msgs[] = [$field, $msg, $status];
+        if ($msg) {
+            foreach (is_array($msg) ? $msg : [$msg] as $m)
+                $this->msgs[] = [$field, $m, $status];
+        }
         if ($status == self::WARNING)
             ++$this->has_warning;
         if ($status == self::ERROR

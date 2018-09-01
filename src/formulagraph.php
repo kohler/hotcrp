@@ -2,7 +2,7 @@
 // formulagraph.php -- HotCRP class for drawing graphs
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
-class FormulaGraph {
+class FormulaGraph extends MessageSet {
     // bitmasks
     const SCATTER = 1;
     const CDF = 2;
@@ -39,8 +39,6 @@ class FormulaGraph {
     private $_data;
     private $_xorder_data;
     private $_xorder_map;
-    public $error_html = [];
-    public $errf = [];
 
     function __construct(Contact $user, $gtype, $fx, $fy) {
         $this->conf = $user->conf;
@@ -116,22 +114,16 @@ class FormulaGraph {
             }
         }
 
-        if ($fx->error_html()) {
-            $this->error_html[] = "X axis formula: " . $fx->error_html();
-            $this->errf["fx"] = true;
-        }
-        if ($this->fy->error_html()) {
-            $this->error_html[] = "Y axis formula: " . $this->fy->error_html();
-            $this->errf["fy"] = true;
-        } else if (($this->type & self::BARCHART) && !$this->fy->can_combine()) {
-            $this->error_html[] = "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.";
-            $this->errf["fy"] = true;
+        if ($fx->error_html())
+            $this->error_at("fx", "X axis formula: " . $fx->error_html());
+        if ($this->fy->error_html())
+            $this->error_at("fy", "Y axis formula: " . $this->fy->error_html());
+        else if (($this->type & self::BARCHART) && !$this->fy->can_combine()) {
+            $this->error_at("fy", "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.");
             $this->fy = new Formula("sum(0)", true);
             $this->fy->check($this->user);
-        } else if (($this->type & self::CDF) && $this->fx_type === self::X_TAG) {
-            $this->error_html[] = "CDFs by tag don’t make sense.";
-            $this->errf["fy"] = true;
-        }
+        } else if (($this->type & self::CDF) && $this->fx_type === self::X_TAG)
+            $this->error_at("fy", "CDFs by tag don’t make sense.");
     }
 
     function add_query($q, $style, $fieldname = false) {
@@ -155,11 +147,8 @@ class FormulaGraph {
         $psearch = new PaperSearch($this->user, array("q" => $q));
         foreach ($psearch->paper_ids() as $pid)
             $this->papermap[$pid][] = $qn;
-        if (!empty($psearch->warnings)) {
-            $this->error_html = array_merge($this->error_html, $psearch->warnings);
-            if ($fieldname)
-                $this->errf[$fieldname] = true;
-        }
+        if (!empty($psearch->warnings))
+            $this->error_at($fieldname, $psearch->warnings);
         $this->searches[] = $q !== "" ? $psearch : null;
     }
 
@@ -173,15 +162,12 @@ class FormulaGraph {
         if ($xorder !== "" && $this->type !== self::SCATTER) {
             $fxorder = new Formula($xorder, true);
             $fxorder->check($this->user);
-            if ($fxorder->error_html()) {
-                $this->error_html[] = "X order formula: " . $fxorder->error_html();
-                $this->errf["xorder"] = true;
-            } else if (!$fxorder->can_combine()) {
-                $this->error_html[] = "X order formula “" . htmlspecialchars($xorder) . "” is unsuitable, use an aggregate function.";
-                $this->errf["xorder"] = true;
-            } else {
+            if ($fxorder->error_html())
+                $this->error_at("xorder", "X order formula: " . $fxorder->error_html());
+            else if (!$fxorder->can_combine())
+                $this->error_at("xorder", "X order formula “" . htmlspecialchars($xorder) . "” is unsuitable, use an aggregate function.");
+            else
                 $this->fxorder = $fxorder;
-            }
         }
     }
 

@@ -59,10 +59,10 @@ if ($Graph == "procrastination") {
 
 
 // Formula experiment
-function formulas_qrow($i, $q, $s, $errf) {
+function formulas_qrow($i, $q, $s, $status) {
     if ($q === "all")
         $q = "";
-    $klass = ($errf ? "has-error " : "") . "papersearch";
+    $klass = MessageSet::status_class($status, "papersearch");
     $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i"));
     $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("default" => "default", "plain" => "plain", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
     $t .= ' <span class="nb btnbox aumovebox" style="margin-left:1em"><a href="#" class="ui btn qx row-order-ui moveup" tabindex="-1">'
@@ -94,13 +94,13 @@ if ($Graph == "formula") {
             $Qreq->x = "pid";
     }
 
-    $fg = null;
     if ($Qreq->x && ($Qreq->gtype || $Qreq->y)) {
-        $fg = new FormulaGraph($Me, $Qreq->gtype, $Qreq->x, $Qreq->y);
+        $fg = $fgm = new FormulaGraph($Me, $Qreq->gtype, $Qreq->x, $Qreq->y);
         if ($Qreq->xorder)
             $fg->set_xorder($Qreq->xorder);
-        if (!empty($fg->error_html))
-            Conf::msg_error(join("<br/>", $fg->error_html));
+    } else {
+        $fg = null;
+        $fgm = new MessageSet;
     }
 
     $queries = $styles = array();
@@ -120,11 +120,11 @@ if ($Graph == "formula") {
     if (count($queries) == 1 && $queries[0] == "all")
         $queries[0] = "";
     if ($fg) {
-        $fgerr_begin = count($fg->error_html);
         for ($i = 0; $i < count($queries); ++$i)
             $fg->add_query($queries[$i], $styles[$i], "q$i");
-        if (count($fg->error_html) > $fgerr_begin)
-            $Conf->warnMsg(join("<br/>", array_slice($fg->error_html, $fgerr_begin)));
+
+        if ($fg->has_messages())
+            echo Ht::xmsg($fg->problem_status(), $fg->messages());
 
         $xhtml = htmlspecialchars($fg->fx_expression());
         if ($fg->fx_type === FormulaGraph::X_TAG)
@@ -160,16 +160,13 @@ if ($Graph == "formula") {
     echo '<table>';
     // X axis
     echo '<tr><td class="lcaption"><label for="x_entry">X axis</label></td>',
-        '<td class="lentry',
-        ($fg && get($fg->errf, "fx") ? " has-error" : ""),
-        '">',
+        '<td class="', $fgm->control_class("fx", "lentry"), '">',
         Ht::entry("x", (string) $Qreq->x, ["id" => "x_entry", "size" => 32]),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “search”</span>',
         '</td></tr>';
     // Y axis
     echo '<tr><td class="lcaption"><label for="y_entry">Y axis</label></td>',
-        '<td class="lentry',
-        ($fg && get($fg->errf, "fy") ? " has-error" : ""),
+        '<td class="', $fgm->control_class("fy", "lentry"),
         '" style="padding-bottom:0.8em">',
         Ht::entry("y", (string) $Qreq->y, ["id" => "y_entry", "size" => 32]),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</span>',
@@ -178,9 +175,9 @@ if ($Graph == "formula") {
     echo '<tr><td class="lcaption"><label for="q1">Search</label></td>',
         '<td class="lentry">',
         '<table class="js-row-order"><tbody id="qcontainer" data-row-template="',
-        htmlspecialchars(formulas_qrow('$', "", "by-tag", false)), '">';
+        htmlspecialchars(formulas_qrow('$', "", "by-tag", 0)), '">';
     for ($i = 0; $i < count($styles); ++$i)
-        echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fg && get($fg->errf, "q$i"));
+        echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fgm->problem_status_at("q$i"));
     echo "</tbody><tbody><tr><td class=\"lentry\">",
         Ht::link("Add search", "#", ["class" => "ui btn row-order-ui addrow"]),
         "</td></tr></tbody></table></td></tr>\n";
