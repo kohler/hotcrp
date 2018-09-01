@@ -14,9 +14,6 @@ class FormulaGraph extends MessageSet {
 
     const REVIEWER_COLOR = 1;
 
-    const X_QUERY = 1;
-    const X_TAG = 2;
-
     public $conf;
     public $user;
     public $type = 0;
@@ -24,7 +21,7 @@ class FormulaGraph extends MessageSet {
     private $fxs;
     private $fx_expression;
     public $fy;
-    public $fx_type = 0;
+    private $fx_type = 0;
     private $queries = [];
     private $_qstyles = [];
     private $_qstyles_bytag = [];
@@ -90,10 +87,10 @@ class FormulaGraph extends MessageSet {
         $this->fx_expression = $fx;
         if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
             $this->fx = new Formula("0", true);
-            $this->fx_type = self::X_QUERY;
+            $this->fx_type = Fexpr::FSEARCH;
         } else if (strcasecmp($fx, "tag") == 0) {
             $this->fx = new Formula("0", true);
-            $this->fx_type = self::X_TAG;
+            $this->fx_type = Fexpr::FTAG;
         } else
             $this->fx = new Formula($fx, true);
 
@@ -122,8 +119,31 @@ class FormulaGraph extends MessageSet {
             $this->error_at("fy", "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.");
             $this->fy = new Formula("sum(0)", true);
             $this->fy->check($this->user);
-        } else if (($this->type & self::CDF) && $this->fx_type === self::X_TAG)
+        } else if (($this->type & self::CDF) && $this->fx_type === Fexpr::FTAG)
             $this->error_at("fy", "CDFs by tag don’t make sense.");
+    }
+
+    static function parse_queries(Qrequest $qreq) {
+        $queries = $styles = [];
+        for ($i = 1; isset($qreq["q$i"]); ++$i) {
+            $q = trim($qreq["q$i"]);
+            $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
+            $styles[] = trim((string) $qreq["s$i"]);
+        }
+        if (empty($queries) && isset($qreq->q)) {
+            $q = trim($qreq->q);
+            $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
+            $styles[] = trim((string) $qreq->s);
+        } else if (empty($queries))
+            $queries[] = $styles[] = "";
+        while (count($queries) > 1
+               && $queries[count($queries) - 1] === $queries[count($queries) - 2]) {
+            array_pop($queries);
+            array_pop($styles);
+        }
+        if (count($queries) === 1 && $queries[0] === "all")
+            $queries[0] = "";
+        return [$queries, $styles];
     }
 
     function add_query($q, $style, $fieldname = false) {
@@ -152,10 +172,6 @@ class FormulaGraph extends MessageSet {
         $this->searches[] = $q !== "" ? $psearch : null;
     }
 
-    function fx_expression() {
-        return $this->fx_expression;
-    }
-
     function set_xorder($xorder) {
         $this->fxorder = null;
         $xorder = simplify_whitespace($xorder);
@@ -169,6 +185,19 @@ class FormulaGraph extends MessageSet {
             else
                 $this->fxorder = $fxorder;
         }
+    }
+
+    function fx_expression() {
+        return $this->fx_expression;
+    }
+
+    function fx_format() {
+        return $this->fx_type ? : $this->fx->result_format();
+    }
+
+    function fx_combinable() {
+        $format = $this->fx->result_format();
+        return !$this->fx_type && $format !== Fexpr::FREVIEWER;
     }
 
     private function _filter_queries($prow, $rrow) {
@@ -196,7 +225,7 @@ class FormulaGraph extends MessageSet {
                 if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
                     if ($rcid)
                         $queries = $this->_filter_queries($prow, $prow->review_of_user($rcid));
-                    if ($this->fx_type === self::X_QUERY) {
+                    if ($this->fx_type === Fexpr::FSEARCH) {
                         foreach ($queries as $q)
                             $data[0][] = $q;
                     } else {
@@ -290,7 +319,7 @@ class FormulaGraph extends MessageSet {
     }
 
     private function _add_tag_data(&$data, $d, PaperInfo $prow) {
-        assert($this->fx_type === self::X_TAG);
+        assert($this->fx_type === Fexpr::FTAG);
         $tags = TagInfo::split_unpack($prow->viewable_tags($this->user));
         foreach ($tags as $ti) {
             if (!isset($this->tags[$ti[0]]))
@@ -336,12 +365,12 @@ class FormulaGraph extends MessageSet {
                 }
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $d[0]) ? : "";
-                if ($this->fx_type === self::X_QUERY) {
+                if ($this->fx_type === Fexpr::FSEARCH) {
                     foreach ($this->_filter_queries($prow, $rrow) as $q) {
                         $d[0] = $q;
                         $data[$s][] = $d;
                     }
-                } else if ($this->fx_type === self::X_TAG)
+                } else if ($this->fx_type === Fexpr::FTAG)
                     $this->_add_tag_data($data[$s], $d, $prow);
                 else
                     $data[$s][] = $d;
@@ -394,7 +423,7 @@ class FormulaGraph extends MessageSet {
                     $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
                 foreach ($queries as $q) {
                     $q && ($d[4] = $q);
-                    if ($this->fx_type === self::X_TAG)
+                    if ($this->fx_type === Fexpr::FTAG)
                         $this->_add_tag_data($data, $d, $prow);
                     else
                         $data[] = $d;
@@ -435,7 +464,7 @@ class FormulaGraph extends MessageSet {
     private function _valuemap_axes($format) {
         $axes = 0;
         if ((!$this->fx_type && $this->fx->result_format() === $format)
-            || ($this->fx_type == self::X_TAG && $format === Fexpr::FTAG))
+            || ($this->fx_type == Fexpr::FTAG && $format === Fexpr::FTAG))
             $axes |= 1;
         if (!($this->type & self::CDF) && $this->fy->result_format() === $format)
             $axes |= 2;
@@ -642,9 +671,9 @@ class FormulaGraph extends MessageSet {
                     break;
                 }
         }
-        if ($isx && $this->fx_type == self::X_QUERY) {
+        if ($isx && $this->fx_type == Fexpr::FSEARCH) {
             $j["ticks"] = ["named", $this->queries];
-        } else if ($isx && $this->fx_type == self::X_TAG) {
+        } else if ($isx && $this->fx_type == Fexpr::FTAG) {
             $tagger = new Tagger($this->user);
             $j["ticks"] = ["named", array_map(function ($t) use ($tagger) {
                 return $tagger->unparse($t);
@@ -664,6 +693,7 @@ class FormulaGraph extends MessageSet {
                     if ($this->user->can_view_reviewer_tags()
                         && ($colors = $r->viewable_color_classes($this->user)))
                         $rd["color_classes"] = $colors;
+                    $rd["id"] = $r->contactId;
                     $x[$r->sort_position] = $rd;
                 }
                 $j["ticks"] = ["named", $x];

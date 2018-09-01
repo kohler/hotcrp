@@ -103,22 +103,7 @@ if ($Graph == "formula") {
         $fgm = new MessageSet;
     }
 
-    $queries = $styles = array();
-    for ($i = 1; isset($Qreq["q$i"]); ++$i) {
-        $q = trim($Qreq["q$i"]);
-        $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
-        $styles[] = trim((string) $Qreq["s$i"]);
-    }
-    if (count($queries) == 0) {
-        $queries[0] = "";
-        $styles[0] = trim((string) $Qreq["s0"]);
-    }
-    while (count($queries) > 1 && $queries[count($queries) - 1] == $queries[count($queries) - 2]) {
-        array_pop($queries);
-        array_pop($styles);
-    }
-    if (count($queries) == 1 && $queries[0] == "all")
-        $queries[0] = "";
+    list($queries, $styles) = FormulaGraph::parse_queries($Qreq);
     if ($fg) {
         for ($i = 0; $i < count($queries); ++$i)
             $fg->add_query($queries[$i], $styles[$i], "q$i");
@@ -127,10 +112,10 @@ if ($Graph == "formula") {
             echo Ht::xmsg($fg->problem_status(), $fg->messages());
 
         $xhtml = htmlspecialchars($fg->fx_expression());
-        if ($fg->fx_type === FormulaGraph::X_TAG)
+        if ($fg->fx_format() === Fexpr::FTAG)
             $xhtml = "tag";
 
-        if ($fg->fx_type === FormulaGraph::X_QUERY)
+        if ($fg->fx_format() === Fexpr::FSEARCH)
             $h2 = "";
         else if ($fg->type === FormulaGraph::RAWCDF)
             $h2 = "Cumulative count of $xhtml";
@@ -143,7 +128,9 @@ if ($Graph == "formula") {
             $h2 = htmlspecialchars($fg->fy->expression) . " by $xhtml";
         else
             $h2 = htmlspecialchars($fg->fy->expression) . " vs. $xhtml";
-        echo_graph($fg->type & FormulaGraph::SCATTER, $fg, $h2);
+        $highlightable = ($fg->type & (FormulaGraph::SCATTER | FormulaGraph::BOXPLOT))
+            && $fg->fx_combinable();
+        echo_graph($highlightable, $fg, $h2);
 
         $gtype = "scatter";
         if ($fg->type & FormulaGraph::BARCHART)

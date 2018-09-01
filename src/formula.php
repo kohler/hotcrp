@@ -49,6 +49,7 @@ class Fexpr implements JsonSerializable {
     const FPREFEXPERTISE = 5;
     const FREVIEWER = 6;
     const FTAG = 7; // used in formulagraph.php
+    const FSEARCH = 8; // used in formulagraph.php
 
     function __construct($op = null) {
         $this->op = $op;
@@ -1873,7 +1874,8 @@ class Formula {
         else if ($this->_format === Fexpr::FREVIEWER
                  || $this->_format === Fexpr::FBOOL
                  || $this->_format === Fexpr::FPREFEXPERTISE
-                 || $this->_format === Fexpr::FTAG)
+                 || $this->_format === Fexpr::FTAG
+                 || $this->_format === Fexpr::FSEARCH)
             return false;
         else
             return true;

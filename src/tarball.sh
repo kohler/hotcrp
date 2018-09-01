@@ -157,6 +157,7 @@ pages/home.php
 src/.htaccess
 src/api/api_alltags.php
 src/api/api_error.php
+src/api/api_graphdata.php
 src/api/api_requestreview.php
 src/api/api_search.php
 src/api/api_searchconfig.php

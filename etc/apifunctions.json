@@ -29,6 +29,10 @@
         "callback": "PaperApi::follow_api"
     },
     {
+        "name": "graphdata", "get": true,
+        "callback": "GraphData_Api::graphdata"
+    },
+    {
         "name": "lead", "paper": true, "get": true, "post": true,
         "callback": "PaperApi::lead_api"
     },

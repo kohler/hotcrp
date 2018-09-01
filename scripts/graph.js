@@ -732,10 +732,7 @@ function scatter_transform(d) {
 }
 
 function scatter_key(d) {
-    var t = d[0] + "," + d[1];
-    if (d.r0)
-        t += "," + d.r0;
-    return t;
+    return d[0] + "," + d[1] + "," + d.r;
 }
 
 function scatter_create(svg, data, klass) {
@@ -752,6 +749,7 @@ function scatter_create(svg, data, klass) {
       .merge(sel)
         .attr("d", scatter_annulus)
         .attr("transform", scatter_transform);
+    return sel;
 }
 
 function scatter_highlight(svg, data, klass) {
@@ -765,7 +763,7 @@ function scatter_highlight(svg, data, klass) {
     sel.exit().remove();
     var g = sel.enter()
       .append("g")
-        .attr("class", "ghighlight");
+        .attr("class", "ghighlight" + (klass ? " " + klass : ""));
     g.append("circle")
         .attr("class", "gdot-hover");
     g.append("circle")
@@ -849,16 +847,19 @@ function graph_scatter(selector, args) {
     }
 
     function highlight(event) {
-        mouseout();
-        var myd = [];
-        if (event.pids)
-            myd = data.data.filter(function (d) {
-                for (var i = 0; i < d[2].length; ++i)
-                    if (event.pids.indexOf(d[2][i][2]) >= 0)
-                        return true;
-                return false;
-            });
-        scatter_highlight(svg, myd);
+        if (event.ids) {
+            mouseout();
+            var myd = [];
+            if (event.ids.length)
+                myd = data.data.filter(function (d) {
+                    for (var i = 0; i < d[2].length; ++i)
+                        if (event.ids.indexOf(d[2][i][2]) >= 0)
+                            return true;
+                    return false;
+                });
+            scatter_highlight(svg, myd);
+        } else if (event.q && event.ok)
+            $.getJSON(hoturl("api/search", {q: event.q}), null, highlight);
     }
 };
 
@@ -1022,11 +1023,14 @@ function data_to_boxplot(data, septags) {
     }, []);
 
     data.map(function (d) {
-        d.q = [d.d[0], d3.quantile(d.d, 0.25), d3.quantile(d.d, 0.5),
-               d3.quantile(d.d, 0.75), d.d[d.d.length - 1]];
-        if (d.d.length > 20) {
-            d.q[0] = d3.quantile(d.d, 0.05);
-            d.q[4] = d3.quantile(d.d, 0.95);
+        var l = d.d.length, med = d3.quantile(d.d, 0.5);
+        if (l < 4)
+            d.q = [d.d[0], d.d[0], med, d.d[l-1], d.d[l-1]];
+        else {
+            var q1 = d3.quantile(d.d, 0.25), q3 = d3.quantile(d.d, 0.75),
+                iqr = q3 - q1;
+            d.q = [Math.max(d.d[0], q1 - 1.5 * iqr), q1, med,
+                   q3, Math.min(d.d[l-1], q3 + 1.5 * iqr)];
         }
         d.m = d3.sum(d.d) / d.d.length;
     });
@@ -1058,6 +1062,8 @@ function graph_boxplot(selector, args) {
     args.x.ticks.ticks.call(xAxis, xe);
     var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
+
+    $(selector).on("hotgraphhighlight", highlight);
 
     function place_whisker(l, sel) {
         sel.attr("x1", function (d) { return x(d[0]); })
@@ -1126,7 +1132,7 @@ function graph_boxplot(selector, args) {
     var outliers = d3.merge(data.map(function (d) {
         var nd = [], len = d.d.length;
         for (var i = 0; i < len; ++i)
-            if (d.d[i] < d.q[0] || d.d[i] > d.q[4] || len == 1)
+            if (d.d[i] < d.q[0] || d.d[i] > d.q[4] || len <= 1)
                 nd.push([d[0], d.d[i], d.p[i], d.c]);
         return nd;
     }));
@@ -1222,6 +1228,29 @@ function graph_boxplot(selector, args) {
             clicker_go(hoturl("search", {q: s}));
         else
             clicker(hovered_data.p);
+    }
+
+    function highlight(event) {
+        mouseout();
+        if (event.ids && !event.ids.length)
+            svg.selectAll(".gscatter").remove();
+        else {
+            var $g = $(selector);
+            $.getJSON(hoturl("api/graphdata"), {
+                x: $g.attr("data-graph-fx"), y: $g.attr("data-graph-fy"),
+                q: event.q
+            }, function (rv) {
+                if (rv.ok) {
+                    var data = data_to_scatter(rv.data);
+                    data = grouped_quadtree(data, x, y, 4);
+                    var sel = scatter_create(svg, data.data, "gscatter");
+                    scatter_highlight(svg, data.data, "gscatter");
+                    sel.enter().selectAll(".gscatter")
+                        .on("mouseover", mouseover_outlier)
+                        .on("mouseout", mouseout).on("click", mouseclick);
+                }
+            });
+        }
     }
 };
 
@@ -1379,22 +1408,16 @@ function make_rotate_ticks(angle) {
 };
 
 handle_ui.on("js-hotgraph-highlight", function () {
-    var self = this, t = $.trim(this.value);
-    function success(pids) {
-        var e = $.Event("hotgraphhighlight");
-        e.pids = pids;
-        $(self).closest(".has-hotgraph").find(".hotgraph").trigger(e);
-    }
-    if (t === "")
-        success(null);
-    else if (/^[1-9][0-9]*$/.test(t))
-        success([+t]);
-    else {
-        $.get(hoturl("api/search", {q: t}), null, function (data) {
-            if (data.ok && data.ids)
-                success(data.ids);
-        });
-    }
+    var s = $.trim(this.value), pids = null;
+    if (s === "")
+        pids = [];
+    else if (/^[1-9][0-9]*$/.test(s))
+        pids = [+s];
+    var e = $.Event("hotgraphhighlight");
+    e.ok = true;
+    e.q = s;
+    e.ids = pids;
+    $(this).closest(".has-hotgraph").find(".hotgraph").trigger(e);
 });
 
 var graphers = {
