@@ -748,7 +748,7 @@ class FormulaGraph extends MessageSet {
             "x" => $this->axis_json("x"),
             "y" => $this->axis_json("y")
         ];
-        if ($this->type === self::CDF)
+        if ($this->type & self::CDF)
             $j["cdf_tooltip_position"] = true;
         return $j;
     }
