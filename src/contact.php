@@ -1712,13 +1712,26 @@ class Contact {
         if ($this->_has_approvable === null) {
             $this->_has_approvable = 0;
             if ($this->conf->setting("extrev_approve")
-                && $this->conf->setting("pcrev_editdelegate")
-                && $this->is_requester()) {
-                $search = new PaperSearch($this, "ext:approvable");
-                $this->_has_approvable = count($search->paper_ids());
+                && $this->conf->setting("pcrev_editdelegate")) {
+                if ($this->is_manager()) {
+                    $search = new PaperSearch($this, "ext:approvable:myreq THEN ext:approvable");
+                    foreach ($search->paper_ids() as $pid)
+                        if ($search->thenmap[$pid] === 0) {
+                            $this->_has_approvable = 2;
+                            break;
+                        } else
+                            $this->_has_approvable = 1;
+                } else if ($this->is_requester()
+                           && $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$this->contactId})"))
+                    $this->_has_approvable = 2;
             }
         }
-        return $this->_has_approvable !== 0;
+        return $this->_has_approvable === 2;
+    }
+
+    function has_admin_approvable_review() {
+        return $this->has_approvable_review()
+            || $this->_has_approvable === 1;
     }
 
 

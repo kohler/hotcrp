@@ -184,7 +184,8 @@ a.q, a.u, a.qx {
 a.qq, a.uu, a.nn, a.mailto, a.btn {
 	color: inherit;
 }
-a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.mailto:active {
+a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.mailto:active,
+a.attention {
 	color: red;
 }
 a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,

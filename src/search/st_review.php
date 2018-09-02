@@ -7,6 +7,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     const INCOMPLETE = 2;
     const INPROGRESS = 4;
     const APPROVABLE = 8;
+    const MYREQUEST = 16;
 
     private $review_type = 0;
     private $completeness = 0;
@@ -24,6 +25,17 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     private $requester;
     private $ratings;
     private $frozen = false;
+
+    static private $completeness_map = [
+        "complete" => self::COMPLETE, "done" => self::COMPLETE,
+        "incomplete" => self::INCOMPLETE, "notdone" => self::INCOMPLETE,
+        "not-done" => self::INCOMPLETE,
+        "draft" => self::INPROGRESS, "inprogress" => self::INPROGRESS,
+        "in-progress" => self::INPROGRESS, "partial" => self::INPROGRESS,
+        "approvable" => self::APPROVABLE,
+        "myreq" => self::MYREQUEST, "myrequest" => self::MYREQUEST,
+        "my-req" => self::MYREQUEST, "my-request" => self::MYREQUEST
+    ];
 
     function __construct($countexpr = null, $contacts = null) {
         parent::__construct($countexpr, $contacts);
@@ -55,17 +67,11 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         return true;
     }
     function apply_completeness($word) {
-        if ($word === "complete" || $word === "done")
-            $this->completeness |= self::COMPLETE;
-        else if ($word === "incomplete")
-            $this->completeness |= self::INCOMPLETE;
-        else if ($word === "approvable")
-            $this->completeness |= self::APPROVABLE;
-        else if ($word === "draft" || $word === "inprogress" || $word === "in-progress" || $word === "partial")
-            $this->completeness |= self::INPROGRESS;
-        else
+        if (isset(self::$completeness_map[$word])) {
+            $this->completeness |= self::$completeness_map[$word];
+            return true;
+        } else
             return false;
-        return true;
     }
     function apply_round($word, Conf $conf) {
         $round = $conf->round_number($word, false);
@@ -125,7 +131,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         $this->rfield_score2 = $value2;
         $this->rfield_scoret = $valuet;
     }
-    function useful_sqlexpr($table_name) {
+    function useful_sqlexpr(Contact $user, $table_name) {
         if ($this->test(0))
             return false;
         $where = [];
@@ -165,6 +171,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $where[] = "exists (select * from ReviewRating where paperId={$table_name}.paperId and reviewId={$table_name}.reviewId)";
         if ($this->requester)
             $where[] = "requestedBy=" . $this->requester;
+        if ($this->completeness & self::MYREQUEST)
+            $where[] = "requestedBy=" . $user->contactId;
         if (empty($where))
             return false;
         else
@@ -195,7 +203,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                     && ($rrow->reviewSubmitted
                         || $rrow->timeApprovalRequested <= 0
                         || ($rrow->requestedBy != $user->contactId
-                            && !$user->allow_administer($prow)))))
+                            && !$user->allow_administer($prow))))
+                || (($this->completeness & self::MYREQUEST)
+                    && $rrow->requestedBy != $user->contactId))
                 return false;
         }
         if ($this->round !== null
@@ -441,7 +451,7 @@ class Review_SearchTerm extends SearchTerm {
         if ($cexpr === ">=0" || $sqi->negated)
             return "true";
         else {
-            $wheres = $this->rsm->useful_sqlexpr("r") ? : "true";
+            $wheres = $this->rsm->useful_sqlexpr($sqi->user, "r") ? : "true";
             if ($cexpr === ">0")
                 return "exists (select * from PaperReview r where paperId=Paper.paperId and $wheres)";
             else

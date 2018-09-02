@@ -2662,7 +2662,9 @@ class PaperSearch {
             array_push($res, "has:review", "has:creview", "has:ireview", "has:preview", "has:primary", "has:secondary", "has:external", "has:comment", "has:aucomment");
         else if ($this->user->can_view_some_review())
             array_push($res, "has:review", "has:comment");
-        if ($this->amPC && $this->conf->setting("extrev_approve") && $this->conf->setting("pcrev_editdelegate")
+        if ($this->amPC
+            && $this->conf->setting("extrev_approve")
+            && $this->conf->setting("pcrev_editdelegate")
             && $this->user->is_requester())
             array_push($res, "has:approvable");
         foreach ($this->conf->resp_rounds() as $rrd) {
