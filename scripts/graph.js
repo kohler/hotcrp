@@ -721,6 +721,40 @@ function data_to_scatter(data) {
     return data;
 }
 
+function remap_scatter_data(data, rv, map) {
+    if (!rv.x || !rv.x.reordered || rv.x.ticks[0] !== "named")
+        return;
+    var ov2ok = {}, k;
+    for (k in map) {
+        if (typeof map[k] === "string")
+            ov2ok[map[k]] = +k;
+        else
+            ov2ok[map[k].id] = +k;
+    }
+    var ik2ok = {}, inmap = rv.x.ticks[1];
+    for (k in inmap) {
+        if (typeof inmap[k] === "string") {
+            if (ov2ok[inmap[k]] != null)
+                ik2ok[k] = ov2ok[inmap[k]];
+        } else {
+            if (ov2ok[inmap[k].id] != null)
+                ik2ok[k] = ov2ok[inmap[k].id];
+        }
+    }
+    var n = data.length;
+    for (var i = 0; i !== n; ) {
+        var x = ik2ok[data[i][0]];
+        if (x != null) {
+            data[i][0] = x;
+            ++i;
+        } else {
+            data[i] = data[n - 1];
+            data.pop();
+            --n;
+        }
+    }
+}
+
 var scatter_annulus = d3.arc()
     .innerRadius(function (d) { return d.r0 ? d.r0 - 0.5 : 0; })
     .outerRadius(function (d) { return d.r - 0.5; })
@@ -1264,6 +1298,8 @@ function graph_boxplot(selector, args) {
             }, function (rv) {
                 if (rv.ok) {
                     var data = data_to_scatter(rv.data);
+                    if (args.x.reordered && args.x.ticks.map)
+                        remap_scatter_data(data, rv, args.x.ticks.map);
                     data = grouped_quadtree(data, x, y, 4);
                     var sel = scatter_create(svg, data.data, "gscatter");
                     scatter_highlight(svg, data.data, "gscatter");
@@ -1411,7 +1447,7 @@ function named_integer_ticks(map) {
     want_mclasses = d3.keys(map).some(function (k) { return mclasses(k); });
 
     return { ticks: format, rewrite: rewrite, unparse_html: unparse_html,
-             search: search, type: "named_integer" };
+             search: search, type: "named_integer", map: map };
 };
 
 function make_rotate_ticks(angle) {
@@ -1444,7 +1480,7 @@ var graphers = {
     scatter: {callback: graph_scatter},
     cdf: {callback: graph_cdf},
     "cumulative-count": {callback: graph_cdf},
-    bars: {callback: graph_bars},
+    bar: {callback: graph_bars},
     "full-stack": {callback: graph_bars},
     box: {callback: graph_boxplot}
 };

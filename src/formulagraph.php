@@ -36,6 +36,7 @@ class FormulaGraph extends MessageSet {
     private $_data;
     private $_xorder_data;
     private $_xorder_map;
+    private $_axis_remapped = 0;
 
     function __construct(Contact $user, $gtype, $fx, $fy) {
         $this->conf = $user->conf;
@@ -197,7 +198,7 @@ class FormulaGraph extends MessageSet {
 
     function fx_combinable() {
         $format = $this->fx->result_format();
-        return !$this->fx_type && $format !== Fexpr::FREVIEWER;
+        return !$this->fx_type;
     }
 
     private function _filter_queries($prow, $rrow) {
@@ -522,6 +523,7 @@ class FormulaGraph extends MessageSet {
             }
             unset($d);
         }
+        $this->_axis_remapped |= $axes;
     }
 
     private function _reviewer_reformat() {
@@ -727,6 +729,8 @@ class FormulaGraph extends MessageSet {
             $j["ticks"][1] = $newticks;
         }
 
+        if ($this->_axis_remapped & ($isx ? 1 : 2))
+            $j["reordered"] = true;
         return $j;
     }
 
