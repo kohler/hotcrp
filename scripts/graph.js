@@ -1045,6 +1045,7 @@ function data_to_boxplot(data, septags) {
 
 function graph_boxplot(selector, args) {
     var data = data_to_boxplot(args.data, !!args.y.fraction, true),
+        $sel = $(selector),
         svg = this;
 
     var xe = d3.extent(data, proj0),
@@ -1067,8 +1068,6 @@ function graph_boxplot(selector, args) {
     args.x.ticks.ticks.call(xAxis, xe);
     var yAxis = d3.axisLeft(y);
     args.y.ticks.ticks.call(yAxis, ye);
-
-    $(selector).on("hotgraphhighlight", highlight);
 
     function place_whisker(l, sel) {
         sel.attr("x1", function (d) { return x(d[0]); })
@@ -1157,9 +1156,27 @@ function graph_boxplot(selector, args) {
     var hovers = svg.selectAll(".gbox-hover")
         .style("display", "none").style("ponter-events", "none");
 
-    svg.selectAll(".gbox").on("mouseout", mouseout).on("click", mouseclick);
-    svg.selectAll(".gbox").filter(":not(.outlier)").on("mouseover", mouseover);
-    svg.selectAll(".gbox.outlier").on("mouseover", mouseover_outlier);
+    $sel.on("hotgraphhighlight", highlight);
+
+    $sel[0].addEventListener("mouseout", function (event) {
+        if (hasClass(event.target, "gbox")
+            || hasClass(event.target, "gscatter"))
+            mouseout.call(event.target);
+    }, false);
+
+    $sel[0].addEventListener("mouseover", function (event) {
+        if (hasClass(event.target, "outlier")
+            || hasClass(event.target, "gscatter"))
+            mouseover_outlier.call(event.target);
+        else if (hasClass(event.target, "gbox"))
+            mouseover.call(event.target);
+    }, false);
+
+    $sel[0].addEventListener("click", function (event) {
+        if (hasClass(event.target, "gbox")
+            || hasClass(event.target, "gscatter"))
+            mouseclick.call(event.target);
+    }, false);
 
     function make_tooltip(p, ps, ds) {
         var yformat = args.y.ticks.unparse_html, t, x = [];
@@ -1250,9 +1267,6 @@ function graph_boxplot(selector, args) {
                     data = grouped_quadtree(data, x, y, 4);
                     var sel = scatter_create(svg, data.data, "gscatter");
                     scatter_highlight(svg, data.data, "gscatter");
-                    sel.enter().selectAll(".gscatter")
-                        .on("mouseover", mouseover_outlier)
-                        .on("mouseout", mouseout).on("click", mouseclick);
                 }
             });
         }
