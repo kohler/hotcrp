@@ -852,9 +852,14 @@ function graph_scatter(selector, args) {
             var myd = [];
             if (event.ids.length)
                 myd = data.data.filter(function (d) {
-                    for (var i = 0; i < d[2].length; ++i)
-                        if (event.ids.indexOf(d[2][i][2]) >= 0)
+                    var pts = d[2];
+                    for (var i in pts) {
+                        var p = pts[i][2];
+                        if (typeof p === "string")
+                            p = parseInt(p, 10);
+                        if (event.ids.indexOf(p) >= 0)
                             return true;
+                    }
                     return false;
                 });
             scatter_highlight(svg, myd);
