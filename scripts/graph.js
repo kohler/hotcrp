@@ -534,7 +534,7 @@ function graph_cdf(selector, args) {
         }
         var u = p.pathNode ? series[p.pathNode.getAttribute("data-index")] : null;
         if (u && (u.label || args.cdf_tooltip_position)) {
-            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: args.tooltip_class || "graphtip", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             if (args.cdf_tooltip_position) {
                 var xp = x.invert(p[0]), yp = y.invert(p[1]);
@@ -561,7 +561,7 @@ function graph_cdf(selector, args) {
 
 
 function procrastination_filter(revdata) {
-    var args = {type: "cdf", data: {}, x: {}, y: {}};
+    var args = {type: "cdf", data: {}, x: {}, y: {}, tooltip_class: "graphtip dark"};
 
     // collect data
     var alldata = [], d, i, l, cid, u;
@@ -779,7 +779,7 @@ function scatter_create(svg, data, klass) {
     sel.enter()
         .append("path")
         .attr("class", function (d) { return pathklass + (d[3] ? " " + d[3] : "") })
-        .attr("fill", function (d) { return make_pattern_fill(d[3], "gdot"); })
+        .style("fill", function (d) { return make_pattern_fill(d[3], "gdot"); })
       .merge(sel)
         .attr("d", scatter_annulus)
         .attr("transform", scatter_transform);
@@ -863,7 +863,7 @@ function graph_scatter(selector, args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             hubble.html(make_tooltip(p[2][0], p[2].map(proj2)))
                 .dir("b").near(hovers.node());
         } else if (hubble)
@@ -925,10 +925,13 @@ function data_to_barchart(data, yaxis) {
     });
 
     for (var i = 0; i != data.length; ++i) {
-        if (i && data[i-1][0] == data[i][0] && data[i-1][4] == data[i][4])
+        if (i && data[i-1][0] == data[i][0] && data[i-1][4] == data[i][4]) {
             data[i].yoff = data[i-1].yoff + data[i-1][1];
-        else
+            data[i].i0 = data[i-1].i0;
+        } else {
             data[i].yoff = 0;
+            data[i].i0 = i;
+        }
     }
 
     if (yaxis.fraction && data.some(function (d) { return d[4] != data[0][4]; })) {
@@ -990,7 +993,7 @@ function graph_bars(selector, args) {
             .attr("class", function (d) {
                 return d[3] ? "gbar " + d[3] : "gbar";
             })
-            .attr("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
+            .style("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
 
     make_axes(svg, xAxis, yAxis, args);
 
@@ -1008,9 +1011,25 @@ function graph_bars(selector, args) {
             position_label(yAxis, p[1]) + '</p><p>#' + p[2].join(', #') + '</p>';
     }
 
+    function make_mouseover(d) {
+        if (!d)
+            return null;
+        if (data[d.i0] == d && (d.i0 + 1 == data.length || data[d.i0 + 1].i0 != d.i0))
+            return d;
+        if (!d.ia) {
+            d.ia = [d[0], 0, [], "", d[4]];
+            d.ia.yoff = 0;
+            for (var i = d.i0; i != data.length && data[i].i0 == d.i0; ++i) {
+                d.ia[1] = data[i][1] + data[i].yoff;
+                d.ia[2].push.apply(d.ia[2], data[i][2]);
+            }
+        }
+        return d.ia;
+    }
+
     var hovered_data, hubble;
     function mouseover() {
-        var p = d3.select(this).data()[0];
+        var p = make_mouseover(d3.select(this).data()[0]);
         if (p != hovered_data) {
             if (p)
                 place(hovers.datum(p), "Z").style("display", null);
@@ -1020,7 +1039,7 @@ function graph_bars(selector, args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             hubble.html(make_tooltip(p)).dir("h").near(this);
         }
     }
@@ -1157,7 +1176,7 @@ function graph_boxplot(selector, args) {
     place_box(svg.selectAll(".gbox.box").data(nonoutliers)
             .enter().append("path")
             .attr("class", function (d) { return "gbox box " + d.c; })
-            .attr("fill", function (d) { return make_pattern_fill(d.c, "gdot "); }));
+            .style("fill", function (d) { return make_pattern_fill(d.c, "gdot "); }));
 
     place_median(svg.selectAll(".gbox.median").data(nonoutliers)
             .enter().append("line")
@@ -1244,7 +1263,7 @@ function graph_boxplot(selector, args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             if (!p.th)
                 p.th = make_tooltip(p, p.p, p.d);
             hubble.html(p.th).dir("h").near(hovers.filter(".box").node());
@@ -1261,7 +1280,7 @@ function graph_boxplot(selector, args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             if (!p.th)
                 p.th = make_tooltip(p[2][0], p[2].map(proj2), p[2].map(proj1));
             hubble.html(p.th).dir("h").near(hovers.filter(".outlier").node());
@@ -1415,7 +1434,7 @@ function named_integer_ticks(map) {
                         .attr("x", b.x - 3).attr("y", b.y)
                         .attr("width", b.width + 6).attr("height", b.height + 1)
                         .attr("class", "glab " + c)
-                        .attr("fill", make_pattern_fill(c, "glab "));
+                        .style("fill", make_pattern_fill(c, "glab "));
                 }
             });
         }

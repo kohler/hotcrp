@@ -144,6 +144,12 @@ if ($Graph == "formula") {
         echo "<h2>Formulas</h2>\n";
 
     echo Ht::form(hoturl("graph", "g=formula"), ["method" => "get"]);
+    /*echo '<div class="btnbox">',
+        Ht::button(Icons::ui_graph_scatter()),
+        Ht::button(Icons::ui_graph_bars()),
+        Ht::button(Icons::ui_graph_box()),
+        Ht::button(Icons::ui_graph_cdf()),
+        '</div>';*/
     echo '<table>';
     // X axis
     echo '<tr><td class="lcaption"><label for="x_entry">X axis</label></td>',

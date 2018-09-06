@@ -916,7 +916,7 @@ a.closebtn {
 	vertical-align: -0.05em;
 	stroke: currentColor;
 	fill: none;
-	stroke-width: 2;
+	stroke-width: 2px;
 	stroke-linejoin: round;
 	stroke-linecap: round;
 }
@@ -2595,22 +2595,29 @@ ul.xd > li {
 	border: 2px solid red;
 	font-size: smaller;
 }
-.bubble.tooltip, .bubble.graphtip {
+.bubble.tooltip {
 	background-color: rgba(44, 44, 66, 0.95);
 	color: #ffffff;
 	border: 0 none;
+}
+.bubble.gray, .bubble.graphtip {
+	background-color: rgba(246, 246, 250, 0.95);
+	color: #222222;
+	border: 1px solid #b8b8b8;
+}
+.bubble.tooltip, .bubble.graphtip {
 	font-size: 75%;
 	line-height: 1.35;
 }
-.bubble.gray {
-	background-color: rgba(246, 246, 255, 0.95);
-	color: black;
-	border: 1px solid #b8b8b8;
+.bubble.graphtip.dark {
+	background-color: rgba(44, 44, 66, 0.95);
+	color: #ffffff;
+	border: 0 none;
 }
 .bubble.tooltip {
 	margin: 0 8px;
 }
-.bubble.tooltip span.tagbg, .bubble.graphtip span.tagbg {
+.bubble.tooltip span.tagbg, .bubble.graphtip.dark span.tagbg {
 	color: #2c2c33;
 }
 .bubble.suggest {
@@ -3578,7 +3585,7 @@ th.pl_logaction {
 
 .gcdf {
 	fill: none;
-	stroke: rgba(70, 130, 180, 0.8);
+	stroke: rgba(0, 92, 168, 0.5);
 	stroke-width: 1.5px;
 }
 .gcdf-many {
@@ -3596,8 +3603,11 @@ th.pl_logaction {
 }
 
 .gdot, .gbar, .gbox {
-	stroke: rgba(70, 130, 180, 0.8);
-	fill: rgba(70, 130, 180, 0.2);
+	stroke: rgba(0, 92, 168, 0.8);
+	fill: rgba(0, 92, 168, 0.2);
+	stroke-width: 1px;
+	stroke-linecap: butt;
+	stroke-linejoin: miter;
 }
 .gcdf.whitetag, .gdot.whitetag, .gbar.whitetag, .gbox.whitetag {
 	stroke: rgba(255, 255, 255, 0.8);
