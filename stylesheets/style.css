@@ -3578,17 +3578,20 @@ th.pl_logaction {
 
 .gcdf {
 	fill: none;
-	stroke: rgba(70, 130, 180, 0.5);
+	stroke: rgba(70, 130, 180, 0.8);
 	stroke-width: 1.5px;
 }
-.revtimel_all {
+.gcdf-many {
+	stroke: rgba(70, 130, 180, 0.5);
+}
+.gcdf-cumulative {
 	stroke: red;
 	stroke-width: 2.5px;
 }
-.revtimel_hilite {
+.gcdf-highlight {
 	stroke: black;
 }
-.gcdf.revtimel_light {
+.gcdf-thin {
 	stroke-width: 0.5px;
 }
 

@@ -566,21 +566,21 @@ function procrastination_filter(revdata) {
     // collect data
     var alldata = [], d, i, l, cid, u;
     for (cid in revdata.reviews) {
-        var d = {d: revdata.reviews[cid]};
+        var d = {d: revdata.reviews[cid], className: "gcdf-many"};
         if ((u = revdata.users[cid]) && u.name)
             d.label = u.name;
         if (cid && cid == hotcrp_user.cid) {
-            d.className = "revtimel_hilite";
+            d.className = "gcdf-highlight";
             d.priority = 1;
         } else if (u && u.light)
-            d.className = "revtimel_light";
+            d.className += " gcdf-thin";
         if (u && u.color_classes)
-            d.className = (d.className ? d.className + " " : "") + u.color_classes;
+            d.className += " " + u.color_classes;
         Array.prototype.push.apply(alldata, d.d);
         if (cid !== "conflicts")
             args.data[cid] = d;
     }
-    args.data.all = {d: alldata, className: "revtimel_all", priority: 2};
+    args.data.all = {d: alldata, className: "gcdf-cumulative", priority: 2};
 
     var dlf = max_procrastination_seq;
 
