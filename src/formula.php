@@ -284,7 +284,8 @@ class ConstantFexpr extends Fexpr {
             return false;
     }
     function typecheck(Conf $conf) {
-        if ($this->format_ === self::FREVTYPE && is_string($this->x)
+        if ($this->format_ === self::FREVTYPE
+            && is_string($this->x)
             && !$this->_check_revtype())
             return new Fexpr_Error($this, "unknown review type “" . htmlspecialchars($this->x) . "”");
         if ($this->format_ !== false)
@@ -292,7 +293,8 @@ class ConstantFexpr extends Fexpr {
         return new Fexpr_Error($this, "“" . htmlspecialchars($this->x) . "” undefined");
     }
     function typecheck_neighbor(Conf $conf, $e) {
-        if ($this->format_ !== false || !($e instanceof Fexpr)
+        if ($this->format_ !== false
+            || !($e instanceof Fexpr)
             || $e->typecheck($conf))
             return;
         $format = $e->format();
@@ -301,7 +303,8 @@ class ConstantFexpr extends Fexpr {
             $letter = strtoupper($this->x);
         if ($format === self::FPREFEXPERTISE && $letter >= "X" && $letter <= "Z")
             $this->x = 89 - ord($letter);
-        else if ($format instanceof ReviewField && $letter
+        else if ($format instanceof ReviewField
+                 && $letter
                  && ($x = $format->parse_value($letter, true)))
             $this->x = $x;
         else if ($format === self::FROUND
@@ -1635,7 +1638,10 @@ class Formula {
             if (($quoted = $field[0] === "\""))
                 $field = substr($field, 1, strlen($field) - 2);
             while (1) {
-                $fs = $this->conf->find_all_fields($field);
+                if ($quoted || strlen($field) > 1)
+                    $fs = $this->conf->find_all_fields($field);
+                else
+                    $fs = [];
                 if (count($fs) === 1) {
                     $f = $fs[0];
                     if ($f instanceof PaperOption)
@@ -1655,13 +1661,6 @@ class Formula {
                         } else
                             $this->_error_html[] = "Circular formula reference.";
                     }
-                    break;
-                }
-                $f = $this->conf->find_review_field($field);
-                if ($f) {
-                    if (!$f->has_options)
-                        return null;
-                    $e = $this->_reviewer_decoration(new Score_Fexpr($f), $m[2]);
                     break;
                 }
                 if ($quoted)
