@@ -807,7 +807,7 @@ class SelectorPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = $reqv === null ? $ov->value : $reqv;
-        $reqv = isset($this->selector[$reqv]) ? $reqv : 0;
+        $reqv = $reqv && isset($this->selector[$reqv - 1]) ? $reqv : 0;
         $pt->echo_editable_option_papt($this, null, $this->type === "selector");
         echo '<div class="papev">';
         if ($this->type === "selector") {
