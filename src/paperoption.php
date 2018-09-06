@@ -838,9 +838,9 @@ class SelectorPaperOption extends PaperOption {
         if ($v === "" || $v === "0")
             return null;
         else if (ctype_digit($v)) {
-            $iv = intval($v) - 1;
-            if (isset($this->selector[$iv]))
-                return $this->selector[$iv];
+            $iv = intval($v);
+            if (isset($this->selector[$iv - 1]))
+                return $iv;
         }
         return $v;
     }
