@@ -567,7 +567,10 @@ class PaperTable {
 
     private function is_ready($checkbox) {
         if ($this->useRequest)
-            return !!$this->qreq->submitpaper;
+            return !!$this->qreq->submitpaper
+                && ($checkbox
+                    || $this->conf->opt("noPapers")
+                    || ($this->prow && $this->prow->paperStorageId > 1));
         else if ($this->prow && $this->prow->timeSubmitted > 0)
             return true;
         else
