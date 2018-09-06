@@ -2103,6 +2103,10 @@ class PaperSearch {
             $sqi->add_review_word_count_columns();
         if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
             $sqi->add_column("blind", "Paper.blind");
+        if (get($this->_query_options, "authorInformation"))
+            $sqi->add_column("authorInformation", "Paper.authorInformation");
+        if (get($this->_query_options, "pdfSize"))
+            $sqi->add_column("size", "Paper.size");
 
         // create query
         $sqi->finish_reviewer_columns();

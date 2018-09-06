@@ -553,6 +553,7 @@ class PdfSize_Fexpr extends Sub_Fexpr {
         parent::__construct("");
     }
     function compile(FormulaCompiler $state) {
+        $state->queryOptions["pdfSize"] = true;
         return '($contact->can_view_pdf($prow) ? (int) $prow->size : null)';
     }
 }
@@ -588,6 +589,7 @@ class Author_Fexpr extends Sub_Fexpr {
             return false;
     }
     function compile(FormulaCompiler $state) {
+        $state->queryOptions["authorInformation"] = true;
         if ($this->matchtype === null)
             $v = 'count($prow->author_list())';
         else if ($this->matchtype === "none")
