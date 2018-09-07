@@ -143,6 +143,7 @@
         "name": "msg.resp_instrux",
         "title": "Authors’ response instructions",
         "type": "htmlstring", "size": 3, "message_default": "msg.resp_instrux",
+        "message_context_setting": "+resp_words",
         "extensible": true
     },
     {

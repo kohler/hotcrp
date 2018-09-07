@@ -60,6 +60,8 @@ class IntlMsgSet {
     private $_ctx;
     private $_default_priority;
 
+    const PRIO_OVERRIDE = 1000.0;
+
     function set_default_priority($p) {
         $this->_default_priority = (float) $p;
     }
@@ -157,7 +159,11 @@ class IntlMsgSet {
         return true;
     }
 
-    private function find($context, $itext, $args) {
+    function add_override($id, $otext) {
+        return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE]);
+    }
+
+    private function find($context, $itext, $args, $priobound) {
         $match = null;
         $matchnreq = $matchctxlen = 0;
         for ($im = get($this->ims, $itext); $im; $im = $im->next) {
@@ -176,6 +182,9 @@ class IntlMsgSet {
                 continue;
             if ($im->require
                 && ($nreq = $im->check_require($this, $args)) === false)
+                continue;
+            if ($priobound !== null
+                && $im->priority >= $priobound)
                 continue;
             if (!$match
                 || $im->priority > $match->priority
@@ -211,29 +220,36 @@ class IntlMsgSet {
 
     function x($itext) {
         $args = func_get_args();
-        if (($im = $this->find(null, $itext, $args)))
+        if (($im = $this->find(null, $itext, $args, null)))
             $args[0] = $im->otext;
         return $this->expand($args, null);
     }
 
     function xc($context, $itext) {
         $args = array_slice(func_get_args(), 1);
-        if (($im = $this->find($context, $itext, $args)))
+        if (($im = $this->find($context, $itext, $args, null)))
             $args[0] = $im->otext;
         return $this->expand($args, null);
     }
 
     function xi($id, $itext) {
         $args = array_slice(func_get_args(), 1);
-        if (($im = $this->find(null, $id, $args)))
+        if (($im = $this->find(null, $id, $args, null)))
             $args[0] = $im->otext;
         return $this->expand($args, $id);
     }
 
     function xci($context, $id, $itext) {
         $args = array_slice(func_get_args(), 2);
-        if (($im = $this->find($context, $id, $args)))
+        if (($im = $this->find($context, $id, $args, null)))
             $args[0] = $im->otext;
         return $this->expand($args, $id);
+    }
+
+    function default_itext($id, $itext) {
+        $args = array_slice(func_get_args(), 1);
+        if (($im = $this->find(null, $id, $args, self::PRIO_OVERRIDE)))
+            $args[0] = $im->otext;
+        return $args[0];
     }
 }

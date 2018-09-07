@@ -27,6 +27,7 @@ class Si {
     public $autogrow;
     public $ifnonempty;
     public $message_default;
+    public $message_context_setting;
     public $date_backup;
 
     static public $option_is_value = [];
@@ -59,7 +60,7 @@ class Si {
         $this->name = $this->base_name = $this->json_name = $this->title = $j->name;
         if (isset($j->json_name) && ($j->json_name === false || is_string($j->json_name)))
             $this->json_name = $j->json_name;
-        foreach (["title", "type", "storage", "parser_class", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
+        foreach (["title", "type", "storage", "parser_class", "ifnonempty", "message_default", "message_context_setting", "placeholder", "invalid_value", "date_backup"] as $k)
             $this->store($k, $j, $k, "is_string");
         foreach (["internal", "optional", "novalue", "disabled", "autogrow"] as $k)
             $this->store($k, $j, $k, "is_bool");
@@ -169,6 +170,9 @@ class Si {
                 $si->storage .= $m[2];
             if ($si->extensible === self::X_WORD)
                 $si->title .= " (" . htmlspecialchars(substr($m[2], 1)) . ")";
+            if ($si->message_context_setting
+                && str_starts_with($si->message_context_setting, "+"))
+                $si->message_context_setting .= $m[2];
             $conf->_setting_info[$name] = $si;
         }
         if (!isset($conf->_setting_info[$name]))
@@ -734,7 +738,8 @@ class SettingValues extends MessageSet {
     }
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
-        $si->default_value = $this->conf->message_default_html($name);
+        if ($si->message_default)
+            $si->default_value = $this->si_message_default($si);
         $current = $this->curv($name);
         $description = '<a class="ui q js-foldup" href="">'
             . expander(null, 0) . $description . '</a>';
@@ -794,6 +799,19 @@ class SettingValues extends MessageSet {
         if (!$this->null_mailer)
             $this->null_mailer = new HotCRPMailer($this->conf, null, null, array("width" => false));
         return $this->null_mailer->expand_template($name, $default);
+    }
+
+    private function si_message_default($si) {
+        $msgname = $si->message_default;
+        if (str_starts_with($msgname, "msg."))
+            $msgname = substr($msgname, 4);
+        $ctxarg = null;
+        if (($ctxname = $si->message_context_setting))
+            $ctxarg = $this->curv($ctxname[0] === "+" ? substr($ctxname, 1) : $ctxname);
+        if (($t = $this->conf->ims()->default_itext($msgname, false, $ctxarg)))
+            return $t;
+        else
+            return $this->conf->message_default_html($msgname);
     }
 
 
@@ -960,8 +978,11 @@ class SettingValues extends MessageSet {
         else if ($si->type === "date"
                  || $si->type === "cdate"
                  || $si->type === "ndate") {
-            if ($v == "" || !strcasecmp($v, "N/A") || !strcasecmp($v, "same as PC")
-                || $v == "0" || ($si->type !== "ndate" && !strcasecmp($v, "none")))
+            if ((string) $v === ""
+                || $v === "0"
+                || !strcasecmp($v, "N/A")
+                || !strcasecmp($v, "same as PC")
+                || ($si->type !== "ndate" && !strcasecmp($v, "none")))
                 return -1;
             else if (!strcasecmp($v, "none"))
                 return 0;
@@ -1020,7 +1041,7 @@ class SettingValues extends MessageSet {
         } else if ($si->type === "htmlstring") {
             if (($v = CleanHTML::basic_clean($v, $err)) !== false) {
                 if ($si->message_default
-                    && $v === $this->conf->message_default_html($si->message_default))
+                    && $v === $this->si_message_default($si))
                     return "";
                 return $v;
             }

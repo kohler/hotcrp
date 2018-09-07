@@ -58,9 +58,9 @@ class ResponseRound {
     function instructions(Conf $conf) {
         $m = false;
         if ($this->number)
-            $m = $conf->message_html("resp_instrux_$this->number", ["wordlimit" => $this->words]);
+            $m = $conf->_i("resp_instrux_$this->number", false, $this->words);
         if ($m === false)
-            $m = $conf->message_html("resp_instrux", ["wordlimit" => $this->words]);
+            $m = $conf->_i("resp_instrux", false, $this->words);
         return $m;
     }
 }
@@ -3608,6 +3608,9 @@ class Conf {
             $this->_ims->clear_default_priority();
             if (($mlist = $this->opt("messageOverrides")))
                 expand_json_includes_callback($mlist, [$this->_ims, "addj"]);
+            foreach ($this->settingTexts as $k => $v)
+                if (str_starts_with($k, "msg."))
+                    $this->_ims->add_override(substr($k, 4), $v);
         }
         return $this->_ims;
     }

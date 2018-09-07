@@ -82,5 +82,9 @@
     ["etime", "Deadline passed.", "The deadline to update final versions has passed.", ["$1^=final_done"]],
     ["etime", "Deadline passed.", "The deadline to perform this action has passed."],
 
-    ["mail", "Authors", "Author", ["$1=1"]]
+    ["mail", "Authors", "Author", ["$1=1"]],
+
+    {"id": "resp_instrux", "template": {"wordlimit": "%1$d"}},
+    {"id": "resp_instrux", "itext": "The authors’ response should address reviewer concerns and correct misunderstandings. Make it short and to the point; the conference deadline has passed."},
+    {"id": "resp_instrux", "itext": "The authors’ response should address reviewer concerns and correct misunderstandings. Make it short and to the point; the conference deadline has passed. Try to stay within %WORDLIMIT% words.", "require": ["$1>0"]}
 ]
