@@ -7,6 +7,7 @@ class IntlMsg {
     public $otext;
     public $require;
     public $priority = 0.0;
+    public $template;
     public $next;
 
     private function arg(IntlMsgSet $ms, $args, $which) {
@@ -55,7 +56,7 @@ class IntlMsg {
 
 class IntlMsgSet {
     private $ims = [];
-    private $defs = [];
+    private $template = [];
     private $_ctx;
     private $_default_priority;
 
@@ -90,6 +91,16 @@ class IntlMsgSet {
             foreach ($m->members as $mm)
                 $this->addj($mm);
             $this->_ctx = $octx;
+            return true;
+        }
+        if (is_object($m)
+            && isset($m->id)
+            && isset($m->template)
+            && (is_object($m->template) || is_associative_array($m->template))) {
+            if (!isset($this->template[$m->id]))
+                $this->template[$m->id] = [];
+            foreach ((array) $m->template as $k => $v)
+                $this->template[$m->id][strtolower($k)] = $v;
             return true;
         }
         $im = new IntlMsg;
@@ -146,14 +157,6 @@ class IntlMsgSet {
         return true;
     }
 
-    function set($name, $value) {
-        $this->defs[$name] = $value;
-    }
-
-    function get($name) {
-        return get($this->defs, $name);
-    }
-
     private function find($context, $itext, $args) {
         $match = null;
         $matchnreq = $matchctxlen = 0;
@@ -188,22 +191,20 @@ class IntlMsgSet {
         return $match;
     }
 
-    private function expand($args) {
-        $pos = 0;
-        while (($pos = strpos($args[0], "%", $pos)) !== false) {
-            if (preg_match('/\A(?!\d+)\w+(?=[$%])/', substr($args[0], $pos + 1), $m)
-                && isset($this->defs[$m[0]])) {
-                $args[] = $this->defs[$m[0]];
-                $t = substr($args[0], 0, $pos + 1) . (count($args) - 1);
-                $pos += 1 + strlen($m[0]);
-                if ($args[0][$pos] == "%") {
-                    $t .= "\$s";
-                    ++$pos;
-                }
-                $args[0] = $t . substr($args[0], $pos);
-                $pos = strlen($t);
-            } else
-                $pos += 2;
+    private function expand($args, $id) {
+        if ($args[0] === null || $args[0] === false || $args[0] === "")
+            return $args[0];
+        if ($id && isset($this->template[$id])) {
+            $pos = 0;
+            while (($pos = strpos($args[0], "%", $pos)) !== false) {
+                if (preg_match('/\A(?!\d+)\w+(?=%)/', substr($args[0], $pos + 1), $m)
+                    && ($tmpl = get($this->template[$id], strtolower($m[0]))) !== null) {
+                    $t = substr($args[0], 0, $pos) . $tmpl;
+                    $args[0] = $t . substr($args[0], $pos + strlen($m[0]) + 2);
+                    $pos = strlen($t);
+                } else
+                    $pos += 2;
+            }
         }
         return call_user_func_array("sprintf", $args);
     }
@@ -212,27 +213,27 @@ class IntlMsgSet {
         $args = func_get_args();
         if (($im = $this->find(null, $itext, $args)))
             $args[0] = $im->otext;
-        return $this->expand($args);
+        return $this->expand($args, null);
     }
 
     function xc($context, $itext) {
         $args = array_slice(func_get_args(), 1);
         if (($im = $this->find($context, $itext, $args)))
             $args[0] = $im->otext;
-        return $this->expand($args);
+        return $this->expand($args, null);
     }
 
     function xi($id, $itext) {
         $args = array_slice(func_get_args(), 1);
         if (($im = $this->find(null, $id, $args)))
             $args[0] = $im->otext;
-        return $this->expand($args);
+        return $this->expand($args, $id);
     }
 
     function xci($context, $id, $itext) {
         $args = array_slice(func_get_args(), 2);
         if (($im = $this->find($context, $id, $args)))
             $args[0] = $im->otext;
-        return $this->expand($args);
+        return $this->expand($args, $id);
     }
 }
