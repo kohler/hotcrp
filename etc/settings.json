@@ -149,7 +149,9 @@
     {
         "name": "msg.revprefdescription",
         "title": "Review preference instructions",
-        "type": "htmlstring", "size": 20, "message_default": "msg.revprefdescription"
+        "type": "htmlstring", "size": 20,
+        "message_default": "msg.revprefdescription",
+        "message_context_setting": "has_topics"
     },
     {
         "name": "msg.submit",

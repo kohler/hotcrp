@@ -1284,7 +1284,7 @@ class PaperTable {
         at the authors’ own institutions.";
         else
             echo "List people and institutions with which the authors have
-        conflicts of interest. ", $this->conf->message_html("conflictdef"), "
+        conflicts of interest. ", $this->conf->_i("conflictdef", false), "
         Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
         We use this information when assigning PC and external reviews.";
         echo "</div><div class=\"mmm\"><strong>List one conflict per line</strong>, using parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</div></div>",
@@ -1407,7 +1407,7 @@ class PaperTable {
         }
 
         echo $this->editable_papt("pcconf", $this->field_name("PC conflicts")),
-            "<div class='paphint'>Select the PC members who have conflicts of interest with this submission. ", $this->conf->message_html("conflictdef"), "</div>\n",
+            "<div class='paphint'>Select the PC members who have conflicts of interest with this submission. ", $this->conf->_i("conflictdef", false), "</div>\n",
             '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
             '<div class="pc_ctable">';
@@ -1823,7 +1823,7 @@ class PaperTable {
             $t2 = "Incomplete submissions will not be considered.";
         $t2 = $this->conf->_($t2);
         $msg .= Ht::xmsg("info", space_join($t1, $t2, $this->deadlineSettingIs("sub_reg")));
-        if (($v = $this->conf->message_html("submit")))
+        if (($v = $this->conf->_i("submit", false)))
             $msg .= Ht::xmsg("info", $v);
         return $msg;
     }
@@ -1866,7 +1866,7 @@ class PaperTable {
                    && $prow->outcome > 0
                    && $can_view_decision) {
             if ($this->user->can_submit_final_paper($prow)) {
-                if (($t = $this->conf->message_html("finalsubmit", array("deadline" => $this->deadlineSettingIs("final_soft")))))
+                if (($t = $this->conf->_i("finalsubmit", false, $this->deadlineSettingIs("final_soft"))))
                     return Ht::xmsg("info", $t);
             } else if ($this->mode === "edit") {
                 return Ht::xmsg("warning", "The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message());
@@ -1896,7 +1896,7 @@ class PaperTable {
         else
             $m .= Ht::xmsg("info", "You aren’t a contact for this submission, but as an administrator you can still make changes.");
         if ($this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_update_paper", $prow)
-            && ($v = $this->conf->message_html("submit")))
+            && ($v = $this->conf->_i("submit", false)))
             $m .= Ht::xmsg("info", $v);
         if ($this->edit_status && $this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable))
@@ -2091,7 +2091,7 @@ class PaperTable {
 
     static private function _echo_clickthrough($ctype) {
         global $Conf, $Now;
-        $data = $Conf->message_html("clickthrough_$ctype");
+        $data = $Conf->_i("clickthrough_$ctype", false);
         echo Ht::form(["class" => "ui"]), '<div>', $data;
         $buttons = [Ht::submit("Agree", ["class" => "btn btnbig btn-highlight ui js-clickthrough"])];
         echo Ht::hidden("clickthrough_type", $ctype),

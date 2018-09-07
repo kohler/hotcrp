@@ -808,10 +808,7 @@ class SettingValues extends MessageSet {
         $ctxarg = null;
         if (($ctxname = $si->message_context_setting))
             $ctxarg = $this->curv($ctxname[0] === "+" ? substr($ctxname, 1) : $ctxname);
-        if (($t = $this->conf->ims()->default_itext($msgname, false, $ctxarg)))
-            return $t;
-        else
-            return $this->conf->message_default_html($msgname);
+        return $this->conf->ims()->default_itext($msgname, false, $ctxarg);
     }
 
 

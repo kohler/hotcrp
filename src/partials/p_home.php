@@ -153,7 +153,7 @@ class Home_Partial {
     }
 
     function render_message(Contact $user) {
-        if (($t = $user->conf->message_html("home")))
+        if (($t = $user->conf->_i("home", false)))
             $user->conf->infoMsg($t);
     }
 

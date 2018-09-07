@@ -3569,34 +3569,6 @@ class Conf {
 
     // messages
 
-    function message_name($name) {
-        if (str_starts_with($name, "msg."))
-            $name = substr($name, 4);
-        if ($name === "revprefdescription" && $this->has_topics())
-            $name .= ".withtopics";
-        else if (str_starts_with($name, "resp_instrux") && $this->setting("resp_words", 500) > 0)
-            $name .= ".wordlimit";
-        return $name;
-    }
-
-    function message_html($name, $expansions = null) {
-        $name = $this->message_name($name);
-        $html = get($this->settingTexts, "msg.$name");
-        if ($html === null && ($p = strrpos($name, ".")) !== false)
-            $html = get($this->settingTexts, "msg." . substr($name, 0, $p));
-        if ($html === null)
-            $html = Message::default_html($name);
-        if ($html && $expansions)
-            foreach ($expansions as $k => $v)
-                $html = str_ireplace("%$k%", $v, $html);
-        return $html;
-    }
-
-    function message_default_html($name) {
-        return Message::default_html($this->message_name($name));
-    }
-
-
     function ims() {
         if (!$this->_ims) {
             $this->_ims = new IntlMsgSet;
