@@ -207,17 +207,23 @@ class Si {
         expand_json_includes_callback(["etc/settings.json"], $hook);
         if (($olist = $conf->opt("settingSpecs")))
             expand_json_includes_callback($olist, $hook);
-        usort($conf->_setting_info, "Conf::xt_priority_compare");
+        usort($conf->_setting_info, function ($a, $b) {
+            return strcmp($a->name, $b->name) ? : Conf::xt_priority_compare($a, $b);
+        });
 
         $all = [];
         $nall = count($conf->_setting_info);
         for ($i = 0; $i < $nall; ++$i) {
             $j = $conf->_setting_info[$i];
             if ($conf->xt_allowed($j) && !isset($all[$j->name])) {
-                while (isset($j->merge) && $j->merge && $i + 1 < $nall
+                while (isset($j->merge)
+                       && $j->merge
+                       && $i + 1 < $nall
                        && $j->name === $conf->_setting_info[$i + 1]->name) {
-                    unset($j->merge);
-                    $j = object_replace_recursive($conf->_setting_info[$i + 1], $j);
+                    $jx = $j;
+                    $j = $conf->_setting_info[$i + 1];
+                    unset($jx->merge);
+                    object_replace_recursive($j, $jx);
                     ++$i;
                 }
                 Conf::xt_resolve_require($j);
