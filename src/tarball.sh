@@ -351,7 +351,6 @@ images/view48.png
 images/viewas.png
 
 scripts/.htaccess
-scripts/d3.min.js
 scripts/d3-hotcrp.min.js
 scripts/buzzer.js
 scripts/graph.js
