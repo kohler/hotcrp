@@ -96,18 +96,19 @@ class ReviewTimes {
         $contacts = $this->conf->pc_members();
         $need_contacts = [];
         foreach ($this->r as $cid => $x)
-            if (!isset($contacts[$cid]) && ctype_digit($cid))
+            if (!isset($contacts[$cid]) && (is_int($cid) || ctype_digit($cid)))
                 $need_contacts[] = $cid;
-        if (count($need_contacts)) {
+        if (!empty($need_contacts)) {
             $result = $this->conf->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where contactId ?a", $need_contacts);
             while (($row = Contact::fetch($result, $this->conf)))
                 $contacts[$row->contactId] = $row;
+            Dbl::free($result);
         }
 
         $users = array();
         $tags = $this->user->can_view_reviewer_tags();
         foreach ($this->r as $cid => $x)
-            if ($cid != "conflicts") {
+            if ($cid !== "conflicts") {
                 $users[$cid] = $u = (object) array();
                 $p = get($contacts, $cid);
                 if ($p)
