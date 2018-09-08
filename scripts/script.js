@@ -6142,7 +6142,10 @@ var fmap = {}, cmap = {"whitetag": 1, "redtag": 2, "orangetag": 3, "yellowtag": 
         "glab ": {size: 20, css: "fill", incr: 6, pattern: true}
     }, style;
 return function (classes, class_prefix) {
-    if (!classes || classes.indexOf(" ") < 0)
+    var space;
+    if (!classes
+        || (space = classes.indexOf(" ")) < 0
+        || classes.substring(space) === " tagbg")
         return null;
     class_prefix = class_prefix || "";
     if (class_prefix !== "" && class_prefix.charAt(class_prefix.length - 1) !== " ")
