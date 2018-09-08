@@ -77,16 +77,16 @@ class Icons {
 //<path d="M 19.9 15.7 C 19.9 15.7 18.5 17.2 18.5 18.5 L 18.5 58.8 C 18.5 60.5 19.8 61.8 21.5 61.7 L 43.5 61.8 C 45.2 61.8 46.5 60.4 46.5 58.8 L 46.5 18.4 C 46.6 17.9 46.4 17 45.7 15.9 L 35.9 4 C 34.7 2.6 33.7 2 32.6 2 C 31.5 2 30.4 2.6 29.3 4 C 29.3 4 20 15.8 19.9 15.7 Z M 43.4 58.1 L 21.6 58.1 L 21.7 19.6 L 43.5 19.6 Z M 34.5 8.4 C 36.3 9.5 36.7 11.8 35.7 13.6 C 34.6 15.4 32.2 16 30.4 14.9 C 28.6 13.8 28.1 11.5 29.3 9.7 C 30.4 7.9 32.7 7.3 34.5 8.4 Z" /></svg>';
     }
     static function ui_graph_scatter() {
-        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path stroke-linejoin="miter" d="M 7 9 L 7 57 L 89 57" /><circle cx="22" cy="19" r="4" class="gdot" /><circle cx="39" cy="38" r="6" class="gdot" /><circle cx="54" cy="18" r="2" class="gdot" /><circle cx="64" cy="18" r="2" class="gdot" /><circle cx="75" cy="36" r="3" class="gdot" /></svg>';
+        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path stroke-linejoin="miter" d="M7 12V60H89" /><circle cx="22" cy="22" r="4" class="gdot" /><circle cx="39" cy="41" r="6" class="gdot" /><circle cx="54" cy="22" r="2" class="gdot" /><circle cx="64" cy="50" r="3" class="gdot" /><circle cx="64" cy="20" r="2" class="gdot" /><circle cx="75" cy="39" r="3" class="gdot" /></svg>';
     }
     static function ui_graph_bars() {
-        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M 18 56 L 18 26 L 25 26 L 25 56" class="gbar" /><path d="M 35 56 L 35 19 L 42 19 L 42 56" class="gbar" /><path d="M 70 56 L 70 38 L 77 38 L 77 56" class="gbar" /><path d="M 53 56 L 53 30 L 60 30 L 60 56" class="gbar" /><path stroke-linejoin="miter" d="M 7 9 L 7 57 L 89 57" /></svg>';
+        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M18 59V29H25V59" class="gbar" /><path d="M35 59V22H42V59" class="gbar" /><path d="M70 59V41H77V59" class="gbar" /><path d="M53 59V33H60V59" class="gbar" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
     }
     static function ui_graph_box() {
-        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M 19 47 L 19 24 L 25 24 L 25 47 Z M 22 15 L 22 24 M 22 47 L 22 50" class="gbox" /><path d="M 37 40 L 37 26 L 43 26 L 43 40 Z M 40 10 L 40 26 M 40 40 L 40 46" class="gbox" /><path d="M 70 37 L 70 17 L 76 17 L 76 37 Z M 73 14 L 73 17 M 73 37 L 73 53" class="gbox" /><path d="M 53 44 L 53 41 L 59 41 L 59 44 Z M 56 33 L 56 41 M 56 44 L 56 50" class="gbox" /><path stroke-linejoin="miter" d="M 7 9 L 7 57 L 89 57" /></svg>';
+        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M19 50V27H25V50Z M22 18V27 M22 50V53" class="gbox" /><path d="M37 43V29H43V43Z M40 13V29 M40 43V49" class="gbox" /><path d="M70 40V20H76V40Z M73 17V20 M73 40V56" class="gbox" /><path d="M53 47V44H59V47Z M56 36V41 M56 47V53" class="gbox" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
     }
     static function ui_graph_cdf() {
-        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M 21 57 L 21 51 L 33 51 L 33 43 L 50 43 L 50 29 L 60 29 L 60 25 L 66 25 L 66 12 L 71 12 L 71 9 L 89 9" class="gcdf" /><path stroke-linejoin="miter" d="M 7 9 L 7 57 L 89 57" /></svg>';
+        return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M21 60V54H33V46H50V32H60V28H66V15H71V12H89" class="gcdf" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
     }
     static function stash_licon($name) {
         if (Ht::mark_stash("licon-{$name}")) {

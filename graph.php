@@ -144,37 +144,35 @@ if ($Graph == "formula") {
         echo "<h2>Formulas</h2>\n";
 
     echo Ht::form(hoturl("graph", "g=formula"), ["method" => "get"]);
-    /*echo '<div class="btnbox">',
-        Ht::button(Icons::ui_graph_scatter()),
-        Ht::button(Icons::ui_graph_bars()),
-        Ht::button(Icons::ui_graph_box()),
-        Ht::button(Icons::ui_graph_cdf()),
+    /*echo '<div>',
+        Ht::button(Icons::ui_graph_scatter(), ["class" => "btn btn-t"]),
+        Ht::button(Icons::ui_graph_bars(), ["class" => "btn btn-t"]),
+        Ht::button(Icons::ui_graph_box(), ["class" => "btn btn-t"]),
+        Ht::button(Icons::ui_graph_cdf(), ["class" => "btn btn-t"]),
         '</div>';*/
-    echo '<table>';
+
     // X axis
-    echo '<tr><td class="lcaption"><label for="x_entry">X axis</label></td>',
-        '<td class="', $fgm->control_class("fx", "lentry"), '">',
+    echo '<div class="', $fgm->control_class("fx", "entryi"), '">',
+        '<label for="x_entry">X axis</label>',
         Ht::entry("x", (string) $Qreq->x, ["id" => "x_entry", "size" => 32]),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “search”</span>',
-        '</td></tr>';
+        '</div>';
     // Y axis
-    echo '<tr><td class="lcaption"><label for="y_entry">Y axis</label></td>',
-        '<td class="', $fgm->control_class("fy", "lentry"),
-        '" style="padding-bottom:0.8em">',
+    echo '<div class="', $fgm->control_class("fy", "entryi"), '">',
+        '<label for="y_entry">Y axis</label>',
         Ht::entry("y", (string) $Qreq->y, ["id" => "y_entry", "size" => 32]),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</span>',
-        '</td></tr>';
+        '</div>';
     // Series
-    echo '<tr><td class="lcaption"><label for="q1">Search</label></td>',
-        '<td class="lentry">',
+    echo '<div class="', $fgm->control_class("q1", "entryi"), '">',
+        '<label for="q1">Data set</label>',
         '<table class="js-row-order"><tbody id="qcontainer" data-row-template="',
         htmlspecialchars(formulas_qrow('$', "", "by-tag", 0)), '">';
     for ($i = 0; $i < count($styles); ++$i)
         echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fgm->problem_status_at("q$i"));
-    echo "</tbody><tbody><tr><td class=\"lentry\">",
-        Ht::link("Add search", "#", ["class" => "ui btn row-order-ui addrow"]),
-        "</td></tr></tbody></table></td></tr>\n";
-    echo '</table>';
+    echo "</tbody><tbody><tr><td>",
+        Ht::button("Add data set", ["class" => "ui btn row-order-ui addrow"]),
+        "</td></tr></tbody></table></div>\n";
     echo '<div class="g"></div>';
     echo Ht::submit(null, "Graph");
     echo '</form>';

@@ -781,10 +781,12 @@ a.closebtn {
 	border-radius: 0;
 }
 
-.btn {
+.btn, .btn.btn-t:hover {
 	border-radius: 4px;
 	display: inline-block;
-	border: 1px solid #b5b5b5;
+	border-width: 1px;
+	border-style: solid;
+	border-color: #b5b5b5;
 	background: white;
 	background-image: linear-gradient(#fcfcfc, #f0f0f0);
 	padding: 2px 6px 3px;
@@ -793,6 +795,10 @@ a.closebtn {
 	white-space: nowrap;
 	text-indent: 0;
 }
+.btn.btn-t {
+	border-color: rgba(181, 181, 181, 0);
+	background: none;
+}
 .btn.btn-sm {
 	font-size: smaller;
 }
@@ -800,7 +806,7 @@ a.closebtn {
 	padding: 1px 4px;
 	font-size: 120%;
 }
-.btn:hover {
+.btn:hover, .btn.btn-t:hover {
 	border: 1px solid #a5a5a5;
 	background-image: linear-gradient(#eeeeee, #dddddd);
 }
