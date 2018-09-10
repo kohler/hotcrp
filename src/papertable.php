@@ -1819,12 +1819,12 @@ class PaperTable {
         $t = [$this->conf->_("Enter information about your submission.")];
         $sub_reg = $this->conf->setting("sub_reg");
         $sub_upd = $this->conf->setting("sub_update");
-        if ($sub_reg > 0 && $sub_upd > 0 && $sub_reg < $sub_upd)
+        if ($sub_reg > 0 && $sub_upd > 0 && $sub_reg < $sub_upd) {
             $t[] = $this->conf->_("All submissions must be registered by %s and completed by %s.", $this->conf->printableTimeSetting("sub_reg"), $this->conf->printableTimeSetting("sub_sub"));
-        else if ($sub_upd > 0)
+            if (!$this->conf->opt("noPapers"))
+                $t[] = $this->conf->_("PDF upload is not required to register.");
+        } else if ($sub_upd > 0)
             $t[] = $this->conf->_("All submissions must be completed by %s.", $this->conf->printableTimeSetting("sub_update"));
-        if (!$this->conf->opt("noPapers"))
-            $t[] = $this->conf->_("You need not upload a submission PDF to register.");
         $msg .= Ht::xmsg("info", space_join($t));
         if (($v = $this->conf->_i("submit", false)))
             $msg .= Ht::xmsg("info", $v);
