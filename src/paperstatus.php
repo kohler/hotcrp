@@ -268,6 +268,9 @@ class PaperStatus extends MessageSet {
             && (!isset($pj->abstract) || $pj->abstract === "")
             && !$this->conf->opt("noAbstract"))
             $this->error_at("abstract", $this->_("Entry required."));
+        if ($prow->paperStorageId <= 1
+            && !$this->conf->opt("noPapers"))
+            $this->warning_at("paper", $this->_("Entry required to complete submission."));
         if (!$this->ignore_msgs
             && $can_view_authors) {
             $msg1 = $msg2 = false;

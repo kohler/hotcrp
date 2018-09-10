@@ -2972,6 +2972,9 @@ body#offline .revcard {
 	content: "";
 	display: block;
 }
+.has-document > .f-h {
+	margin-top: 0.5rem;
+}
 @media screen and (min-width: 900px) {
 .document-file, .document-upload {
 	min-width: 19rem;

@@ -396,6 +396,35 @@ class PaperInfo {
     }
 
 
+    function missing_fields($registration = false, Contact $user = null) {
+        $f = [];
+        if ($this->title === ""
+            || (strlen($this->title) <= 6
+                && preg_match('{\A(?:|N/?A|TB[AD])\z}i', $this->title)))
+            $f["title"] = true;
+        if ((string) $this->authorInformation === "")
+            $f["authors"] = true;
+        if (((string) $this->abstract === ""
+             || (strlen($this->abstract) <= 6
+                 && preg_match('{\A(?:|N/?A|TB[AD])\s*\z}i', $this->abstract)))
+            && !$this->conf->opt("noAbstract"))
+            $f["abstract"] = true;
+        if (!$registration
+            && !$this->conf->opt("noPapers")
+            && $this->paperStorageId <= 1)
+            $f["submission"] = true;
+        foreach ($this->conf->paper_opts->option_list() as $o) {
+            if ($o->required
+                && (!$user || $user->can_view_paper_option($this, $o))) {
+                $ov = $this->option($o->id) ? : new PaperOptionValue($this, $o);
+                if (!$o->value_present($ov))
+                    $f[$o->json_key()] = true;
+            }
+        }
+        return $f;
+    }
+
+
     function unaccented_title() {
         if ($this->_unaccented_title === null)
             $this->_unaccented_title = UnicodeHelper::deaccent($this->title);
