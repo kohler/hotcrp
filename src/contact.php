@@ -2089,11 +2089,14 @@ class Contact {
             $whyNot["author"] = 1;
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
-        if ($prow->outcome < 0 && $this->can_view_decision($prow))
+        if ($prow->outcome < 0
+            && $this->can_view_decision($prow))
             $whyNot["rejected"] = 1;
-        if ($prow->timeSubmitted > 0 && $this->conf->setting("sub_freeze") > 0)
+        if ($prow->timeSubmitted > 0
+            && $this->conf->setting("sub_freeze") > 0)
             $whyNot["updateSubmitted"] = 1;
-        if (!$this->conf->timeUpdatePaper($prow) && !$this->override_deadlines($rights))
+        if (!$this->conf->timeUpdatePaper($prow)
+            && !$this->override_deadlines($rights))
             $whyNot["deadline"] = "sub_update";
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
