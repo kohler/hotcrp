@@ -7,6 +7,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
     const RUN_PREFER_NO = 1;
     const RUN_NO = 2;
 
+    const DEBUG = 0;
+
     public $pages = 0;
     private $body_pages;
     public $metadata_updates = [];
@@ -52,6 +54,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         if (self::$banal_args)
             $banal_run .= self::$banal_args . " ";
         $pipes = null;
+        $tstart = microtime(true);
         $banal_proc = proc_open($banal_run . escapeshellarg($filename),
                                 [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
         $this->banal_stdout = stream_get_contents($pipes[1]);
@@ -60,6 +63,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
         fclose($pipes[2]);
         $this->banal_status = proc_close($banal_proc);
         ++self::$runcount;
+        $banal_time = microtime(true) - $tstart;
+        if (self::DEBUG && $banal_time > 0.1)
+            error_log(sprintf("%.6f: $banal_run " . escapeshellarg($filename)));
         return json_decode($this->banal_stdout);
     }
 
