@@ -93,6 +93,8 @@ banal has three modes of operation:
 
 -json     JSON output
 
+-max-pages=N  maximum number of pages for JSON
+
 -version  report the version of banal
 
 EOF
@@ -104,7 +106,8 @@ $banal_version = 1.2;
 
 # parse args
 local($report, $stats, $judge, $no_app, $json, $version, $debug_pdftohtml,
-      $paper, $pages, $font, $leading, $cols, $width, $height, $fudge, $format, $zoom);
+      $paper, $pages, $font, $leading, $cols, $width, $height, $fudge, $format,
+      $zoom, $max_pages);
 for (my $i = 0; $i < @ARGV; ) {
     no strict "refs";
     if ($ARGV[$i] =~ /\A--?(report|stats|judge|no[-_]app|json|version|debug[-_]pdftohtml)\z/) {
@@ -112,11 +115,15 @@ for (my $i = 0; $i < @ARGV; ) {
         $name =~ s/-/_/g;
         ${$name} = 1;
         splice @ARGV, $i, 1;
-    } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom)=(.*)\z/) {
-        ${$1} = $2;
+    } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom|max[-_]pages)=(.*)\z/) {
+        my($name) = $1;
+        $name =~ s/-/_/g;
+        ${$name} = $2;
         splice @ARGV, $i, 1;
-    } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom)\z/ && $i + 1 < @ARGV) {
-        ${$1} = $ARGV[$i + 1];
+    } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom|max[-_]pages)\z/ && $i + 1 < @ARGV) {
+        my($name) = $1;
+        $name =~ s/-/_/g;
+        ${$name} = $ARGV[$i + 1];
         splice @ARGV, $i, 2;
     } elsif ($ARGV[$i] =~ /\A-/) {
         print STDERR "banal: bad option ", $ARGV[$i], "\n";
@@ -988,19 +995,23 @@ sub report_json ($) {
     printf "{\n  \"at\": %d,\n", time;
     printf "  \"args\": %s,\n", json_quote(join(" ", @switches)) if @switches;
 
-    my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}};
+    my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}, "mr" => {}, "mb" => {}};
     my $px = {}, $nummargin = 10000;
     for my $i (1 .. $doc->{npages}) {
         my $page = $doc->{pages}->{$i};
         my($pbb, $tbb) = ($page->{pagespec}->{paperbb}, $page->{pagespec}->{textbb});
+        my($pw) = POSIX::floor($pbb->{width} * 72 / $grid) * $grid;
+        my($ph) = POSIX::floor($pbb->{height} * 72 / $grid) * $grid;
         my($tl) = POSIX::floor($tbb->{left} * 72 / $grid) * $grid;
         my($tt) = POSIX::floor($tbb->{top} * 72 / $grid) * $grid;
         my($tr) = POSIX::ceil(($tbb->{left} + $tbb->{width}) * 72 / $grid) * $grid;
         my($tb) = POSIX::ceil(($tbb->{top} + $tbb->{height}) * 72 / $grid) * $grid;
-        my($pd) = {"pw" => (sprintf "%.0f", $pbb->{width} * 72 / $grid) * $grid,
-                   "ph" => (sprintf "%.0f", $pbb->{height} * 72 / $grid) * $grid,
+        my($pd) = {"pw" => $pw,
+                   "ph" => $ph,
                    "mt" => $tt,
                    "ml" => $tl,
+                   "mb" => $ph - $tb,
+                   "mr" => $pw - $tr,
                    "tw" => $tr - $tl,
                    "th" => $tb - $tt};
         $px->{$i} = $pd;
@@ -1014,9 +1025,10 @@ sub report_json ($) {
     my($pw, $ph) = (modevalkey($dx->{pw}), modevalkey($dx->{ph}));
     my($tw, $th) = (modevalkey($dx->{tw}), modevalkey($dx->{th}));
     my($mt, $ml) = (modevalkey($dx->{mt}), modevalkey($dx->{ml}));
+    my($mr, $mb) = (modevalkey($dx->{mr}), modevalkey($dx->{mb}));
 
     my ($doc_ps) = sprintf "\"papersize\": [%.0f,%.0f]", $ph, $pw;
-    my ($doc_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $mt, $pw - ($ml + $tw), $ph - ($mt + $th), $ml;
+    my ($doc_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $mt, $mr, $mb, $ml;
     my ($doc_bfs);
     if (p2h_font_bug($doc)) {
         $doc_bfs = "\"bodyfontsize\": null";
@@ -1027,11 +1039,15 @@ sub report_json ($) {
     my ($doc_c) = sprintf "\"columns\": %d", $doc->{pages}->{1}->{pagespec}->{ncols};
     print "  $doc_ps,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n";
     printf "  \"nummargin\": %.0f,\n", $nummargin if $nummargin < 10000;
+    if ($max_pages && $doc->{npages} > $max_pages) {
+        printf "  \"npages\": %d,\n", $doc->{npages};
+    }
     print "  \"pages\": [";
     $sep = "\n";
 
     my %pages;
     for my $i (1 .. $doc->{npages}) {
+        last if $max_pages && $i > $max_pages;
         my $page = $doc->{pages}->{$i};
         my @val = ();
 
@@ -1131,7 +1147,7 @@ sub report_stats ($) {
 
     printf  "$file\t%.2fx%.2f\t%.2fx%.2f\t%.2fx%.2fx%.2fx%.2f\t%d\t%.1f\t%d\t%d\t%s\n",
             # page width x height
-            $doc->{pagespec}->{paperbb}->{width}, 
+            $doc->{pagespec}->{paperbb}->{width},
             $doc->{pagespec}->{paperbb}->{height},
             # text region width x height
             $doc->{textbb}->{width},

@@ -82,9 +82,27 @@ class CheckFormat extends MessageSet implements FormatChecker {
             && (!isset($pg->d) || $pg->d >= 16000 || !isset($pg->columns) || $pg->columns <= 2);
     }
 
+    static function page_message($px) {
+        if (empty($px))
+            return "";
+        else if (count($px) <= 20)
+            return " (" . pluralx($px, "page") . " " . numrangejoin($px) . ")";
+        else
+            return " (including pages " . numrangejoin(array_slice($px, 0, 20)) . ")";
+    }
+
     private function check_banal_json($bj, $spec) {
-        if (!$bj || !isset($bj->pages) || !isset($bj->papersize)
-            || !is_array($bj->pages) || !is_array($bj->papersize)
+        if ($bj && isset($bj->cfmsg) && is_array($bj->cfmsg)) {
+            foreach ($bj->cfmsg as $m)
+                $this->msg($m[0], $m[1], $m[2]);
+            return;
+        }
+
+        if (!$bj
+            || !isset($bj->pages)
+            || !isset($bj->papersize)
+            || !is_array($bj->pages)
+            || !is_array($bj->papersize)
             || count($bj->papersize) != 2)
             return $this->msg_fail("Analysis failure: no pages or paper size.");
 
@@ -105,20 +123,22 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
         // number of pages
         $minpages = $maxpages = null;
-        if ($spec->pagelimit) {
-            if (count($bj->pages) < $spec->pagelimit[0])
-                $this->msg("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . count($bj->pages) . ".", self::WARNING);
-            else if (count($bj->pages) > $spec->pagelimit[1])
-                $this->msg("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], "page") . ", found " . count($bj->pages) . ".", self::ERROR);
-        }
         $this->pages = count($bj->pages);
+        if (isset($bj->npages) && is_int($bj->npages))
+            $this->pages = $bj->npages;
+        if ($spec->pagelimit) {
+            if ($this->pages < $spec->pagelimit[0])
+                $this->msg("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $this->pages . ".", self::WARNING);
+            else if ($this->pages > $spec->pagelimit[1])
+                $this->msg("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], "page") . ", found " . $this->pages . ".", self::ERROR);
+        }
         $this->body_pages = count(array_filter($bj->pages, function ($pg) {
             return CheckFormat::banal_page_is_body($pg);
         }));
 
         // body pages exist
         if (($spec->columns || $spec->bodyfontsize || $spec->bodylineheight)
-            && $this->body_pages < 0.5 * count($bj->pages)) {
+            && $this->body_pages < 0.5 * $this->pages) {
             if ($this->body_pages == 0)
                 $this->msg(false, "Warning: No pages seemed to contain body text; results may be off.", self::WARNING);
             else
@@ -141,7 +161,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                     && $spec->is_checkable($i + 1, "columns"))
                     $px[] = $i + 1;
             if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0))
-                $this->msg("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . ", different on " . pluralx($px, "page") . " " . numrangejoin($px) . ".", self::WARNING);
+                $this->msg("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . self::page_message($px) . ".", self::WARNING);
         }
 
         // text block
@@ -152,8 +172,10 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $docpsiz = get($bj, "papersize");
             $docmarg = get($bj, "margin");
             foreach ($bj->pages as $i => $pg)
-                if (($psiz = defval($pg, "papersize", $docpsiz)) && is_array($psiz)
-                    && ($marg = defval($pg, "margin", $docmarg)) && is_array($marg)
+                if (($psiz = defval($pg, "papersize", $docpsiz))
+                    && is_array($psiz)
+                    && ($marg = defval($pg, "margin", $docmarg))
+                    && is_array($marg)
                     && $spec->is_checkable($i + 1, "textblock")) {
                     $pwidth = $psiz[1] - $marg[1] - $marg[3];
                     $pheight = $psiz[0] - $marg[0] - $marg[2];
@@ -175,15 +197,15 @@ class CheckFormat extends MessageSet implements FormatChecker {
                     . FormatSpec::unparse_dimen($spec->textblock[0]) . " by "
                     . (count($px) > 1 ? "up to " : "")
                     . ((int) (100 * $maxx / $spec->textblock[0] + .5) - 100)
-                    . "% on " . pluralx($px, "page") . " "
-                    . numrangejoin($px) . ".", $this->body_error_status($nbadx));
+                    . "%" . self::page_message($px) . ".",
+                    $this->body_error_status($nbadx));
             if (!empty($py))
                 $this->msg("textblock", "Margins too small: text height exceeds "
                     . FormatSpec::unparse_dimen($spec->textblock[1]) . " by "
                     . (count($py) > 1 ? "up to " : "")
                     . ((int) (100 * $maxy / $spec->textblock[1] + .5) - 100)
-                    . "% on " . pluralx($py, "page") . " "
-                    . numrangejoin($py) . ".", $this->body_error_status($nbady));
+                    . "%" . self::page_message($px) . ".",
+                    $this->body_error_status($nbady));
         }
 
         // font size
@@ -210,9 +232,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
                     }
                 }
             if (!empty($lopx))
-                $this->msg("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx) . ".", $this->body_error_status($nbadsize));
+                $this->msg("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
             if (!empty($hipx))
-                $this->msg("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx) . ".", self::WARNING);
+                $this->msg("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".", self::WARNING);
         }
 
         // line height
@@ -239,9 +261,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
                     }
                 }
             if (!empty($lopx))
-                $this->msg("bodylineheight", "Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx) . ".", $this->body_error_status($nbadsize));
+                $this->msg("bodylineheight", "Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
             if (!empty($hipx))
-                $this->msg("bodylineheight", "Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx) . ".", self::WARNING);
+                $this->msg("bodylineheight", "Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".", self::WARNING);
         }
     }
 
@@ -260,12 +282,20 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $this->check_banal_json($bj, $spec);
     }
 
+    static private function compress_bj($bj) {
+        $bj = clone $bj;
+        $bj->pages = array_slice($bj->pages, 0, 30);
+        $bj->cfmsg = $this->messages(true);
+        return $bj;
+    }
+
     function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
         global $Now;
         $bj = null;
         if (($m = $doc->metadata()) && isset($m->banal))
             $bj = $m->banal;
-        $bj_ok = $bj && $bj->at >= @filemtime("src/banal") && get($bj, "args") == self::$banal_args;
+        $bj_ok = $bj && $bj->at >= @filemtime("src/banal")
+            && get($bj, "args") == self::$banal_args;
         if (!$bj_ok || $bj->at < $Now - 86400) {
             $cf->possible_run = true;
             if ($cf->allow_run == CheckFormat::RUN_YES
@@ -289,8 +319,11 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
 
             $bj = $cf->run_banal($path);
-            if ($bj && is_object($bj) && isset($bj->pages)) {
-                $cf->metadata_updates["npages"] = count($bj->pages);
+            if ($bj && is_object($bj) && isset($bj->pages) && is_array($bj->pages)) {
+                $npages = count($bj->pages);
+                if (isset($bj->npages) && is_int($bj->npages))
+                    $npages = $bj->npages;
+                $cf->metadata_updates["npages"] = $npages;
                 $cf->metadata_updates["banal"] = $bj;
             }
 
@@ -299,9 +332,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
         } else
             $cf->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
 
-        if ($bj)
+        if ($bj) {
             $cf->check_banal_json($bj, $spec);
-        else
+            if (isset($cf->metadata_updates["banal"])
+                && $cf->pages > 30)
+                $cf->metadata_updates["banal"] = self::compress_bj($bj);
+        } else
             $cf->msg_fail(null);
     }
 
