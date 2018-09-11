@@ -201,21 +201,39 @@ class IntlMsgSet {
     }
 
     private function expand($args, $id) {
-        if ($args[0] === null || $args[0] === false || $args[0] === "")
-            return $args[0];
+        $s = $args[0];
+        if ($s === null || $s === false || $s === "")
+            return $s;
         if ($id && isset($this->template[$id])) {
             $pos = 0;
-            while (($pos = strpos($args[0], "%", $pos)) !== false) {
-                if (preg_match('/\A(?!\d+)\w+(?=%)/', substr($args[0], $pos + 1), $m)
+            while (($pos = strpos($s, "%", $pos)) !== false) {
+                if (preg_match('/(?!\d+)\w+(?=%)/A', $s, $m, 0, $pos + 1)
                     && ($tmpl = get($this->template[$id], strtolower($m[0]))) !== null) {
-                    $t = substr($args[0], 0, $pos) . $tmpl;
-                    $args[0] = $t . substr($args[0], $pos + strlen($m[0]) + 2);
+                    $t = substr($s, 0, $pos) . $tmpl;
+                    $s = $t . substr($s, $pos + strlen($m[0]) + 2);
                     $pos = strlen($t);
                 } else
                     $pos += 2;
             }
         }
-        return call_user_func_array("sprintf", $args);
+        if (count($args) > 1) {
+            $pos = $argnum = 0;
+            while (($pos = strpos($s, "%", $pos)) !== false) {
+                ++$pos;
+                if ($pos < strlen($s) && $s[$pos] === "%") {
+                    $s = substr($s, 0, $pos) . substr($s, $pos + strlen($m[0]));
+                } else if (preg_match('/(?:(\d+)\$)?(\d*(?:\.\d+)?)([deEifgosxX])/A', $s, $m, 0, $pos)) {
+                    $argi = $m[1] ? +$m[1] : ++$argnum;
+                    if (isset($args[$argi])) {
+                        $args[0] = "%{$argi}\${$m[2]}{$m[3]}";
+                        $x = call_user_func_array("sprintf", $args);
+                        $s = substr($s, 0, $pos - 1) . $x . substr($s, $pos + strlen($m[0]));
+                        $pos = $pos - 1 + strlen($x);
+                    }
+                }
+            }
+        }
+        return $s;
     }
 
     function x($itext) {
