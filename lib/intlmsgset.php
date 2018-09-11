@@ -7,7 +7,8 @@ class IntlMsg {
     public $otext;
     public $require;
     public $priority = 0.0;
-    public $template;
+    public $format;
+    public $no_conversions;
     public $next;
 
     private function arg(IntlMsgSet $ms, $args, $which) {
@@ -150,6 +151,10 @@ class IntlMsgSet {
                 $im->priority = (float) $m->priority;
             if (isset($m->require) && is_array($m->require))
                 $im->require = $m->require;
+            if (isset($m->format) && is_int($m->format))
+                $im->format = $m->format;
+            if (isset($m->no_conversions) && is_bool($m->no_conversions))
+                $im->no_conversions = $m->no_conversions;
         } else
             return false;
         if ($this->_ctx)
@@ -160,7 +165,7 @@ class IntlMsgSet {
     }
 
     function add_override($id, $otext) {
-        return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE]);
+        return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true]);
     }
 
     private function find($context, $itext, $args, $priobound) {
@@ -200,28 +205,24 @@ class IntlMsgSet {
         return $match;
     }
 
-    private function expand($args, $id) {
-        $s = $args[0];
+    private function expand($s, $args, $id, $im) {
         if ($s === null || $s === false || $s === "")
             return $s;
-        if ($id && isset($this->template[$id])) {
-            $pos = 0;
-            while (($pos = strpos($s, "%", $pos)) !== false) {
-                if (preg_match('/(?!\d+)\w+(?=%)/A', $s, $m, 0, $pos + 1)
-                    && ($tmpl = get($this->template[$id], strtolower($m[0]))) !== null) {
-                    $t = substr($s, 0, $pos) . $tmpl;
-                    $s = $t . substr($s, $pos + strlen($m[0]) + 2);
-                    $pos = strlen($t);
-                } else
-                    $pos += 2;
-            }
-        }
-        if (count($args) > 1) {
+        $tmpl = $id ? get($this->template, $id) : null;
+        if (count($args) > 1 || $tmpl !== null) {
             $pos = $argnum = 0;
             while (($pos = strpos($s, "%", $pos)) !== false) {
                 ++$pos;
-                if ($pos < strlen($s) && $s[$pos] === "%") {
-                    $s = substr($s, 0, $pos) . substr($s, $pos + strlen($m[0]));
+                if ($tmpl !== null
+                    && preg_match('{(?!\d+)\w+(?=%)}A', $s, $m, 0, $pos)
+                    && ($t = get($tmpl, strtolower($m[0]))) !== null) {
+                    $t = substr($s, 0, $pos - 1) . $this->expand($t, $args, null, null);
+                    $s = $t . substr($s, $pos + strlen($m[0]) + 1);
+                    $pos = strlen($t);
+                } else if ($im && $im->no_conversions) {
+                    /* do nothing */
+                } else if ($pos < strlen($s) && $s[$pos] === "%") {
+                    $s = substr($s, 0, $pos) . substr($s, $pos + 1);
                 } else if (preg_match('/(?:(\d+)\$)?(\d*(?:\.\d+)?)([deEifgosxX])/A', $s, $m, 0, $pos)) {
                     $argi = $m[1] ? +$m[1] : ++$argnum;
                     if (isset($args[$argi])) {
@@ -240,28 +241,28 @@ class IntlMsgSet {
         $args = func_get_args();
         if (($im = $this->find(null, $itext, $args, null)))
             $args[0] = $im->otext;
-        return $this->expand($args, null);
+        return $this->expand($args[0], $args, null, $im);
     }
 
     function xc($context, $itext) {
         $args = array_slice(func_get_args(), 1);
         if (($im = $this->find($context, $itext, $args, null)))
             $args[0] = $im->otext;
-        return $this->expand($args, null);
+        return $this->expand($args[0], $args, null, $im);
     }
 
     function xi($id, $itext) {
         $args = array_slice(func_get_args(), 1);
         if (($im = $this->find(null, $id, $args, null)))
             $args[0] = $im->otext;
-        return $this->expand($args, $id);
+        return $this->expand($args[0], $args, $id, $im);
     }
 
     function xci($context, $id, $itext) {
         $args = array_slice(func_get_args(), 2);
         if (($im = $this->find($context, $id, $args, null)))
             $args[0] = $im->otext;
-        return $this->expand($args, $id);
+        return $this->expand($args[0], $args, $id, $im);
     }
 
     function default_itext($id, $itext) {

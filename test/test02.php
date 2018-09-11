@@ -616,9 +616,11 @@ $ms->add("bx", "b");
 $ms->add(["fart", "fart example A", ["$1=bob"]]);
 $ms->add(["fart", "fart example B", ["$1^=bob"]]);
 $ms->add(["fart", "fart example C"]);
-$ms->add(["id" => "fox-saying", "template" => ["FOX" => "%1s"]]);
+$ms->add(["id" => "fox-saying", "template" => ["FOX" => "%1\$s"]]);
 $ms->add(["id" => "fox-saying", "itext" => "What the fox said"]);
 $ms->add(["id" => "fox-saying", "itext" => "What the %FOX% said", "require" => ["$1"]]);
+$ms->add(["id" => "test103", "template" => ["BUTT" => "%1\$s"]]);
+$ms->add_override("test103", "%BUTT% %% %s %BU%%MAN%%BUTT%");
 xassert_eqq($ms->x("Hello"), "Bonjour");
 xassert_eqq($ms->x("%d friend", 1), "1 ami");
 xassert_eqq($ms->x("%d friend", 0), "0 amis");
@@ -626,11 +628,13 @@ xassert_eqq($ms->x("%d friend", 2), "2 amis");
 xassert_eqq($ms->x("ax"), "b");
 xassert_eqq($ms->x("bx"), "a");
 xassert_eqq($ms->x("%xOOB%x friend", 10, 11), "aOOBb friend");
+xassert_eqq($ms->x("%xOOB%x%% friend", 10, 11), "aOOBb% friend");
 xassert_eqq($ms->x("fart"), "fart example C");
 xassert_eqq($ms->x("fart", "bobby"), "fart example B");
 xassert_eqq($ms->x("fart", "bob"), "fart example A");
 xassert_eqq($ms->xi("fox-saying", false), "What the fox said");
 xassert_eqq($ms->xi("fox-saying", false, "Animal"), "What the Animal said");
+xassert_eqq($ms->xi("test103", false, "Ass"), "Ass %% %s %BU%%MAN%Ass");
 
 // i18n messages with contexts
 $ms = new IntlMsgSet;
