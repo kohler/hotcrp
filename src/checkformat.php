@@ -65,7 +65,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         ++self::$runcount;
         $banal_time = microtime(true) - $tstart;
         if (self::DEBUG && $banal_time > 0.1)
-            error_log(sprintf("%.6f: $banal_run " . escapeshellarg($filename)));
+            error_log(sprintf("%.6f: %s", $banal_time, $banal_run . escapeshellarg($filename)));
         return json_decode($this->banal_stdout);
     }
 
