@@ -476,6 +476,7 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .msgs-small-inline > .msg {
 	display: inline-block;
 	margin-right: 1em;
+	margin-bottom: 0.25rem;
 	padding: 0.25em 0.5em 0.25em 1em;
 	vertical-align: top;
 }
