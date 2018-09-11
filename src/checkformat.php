@@ -282,7 +282,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $this->check_banal_json($bj, $spec);
     }
 
-    static private function compress_bj($bj) {
+    private function compress_bj($bj) {
         $bj = clone $bj;
         $bj->pages = array_slice($bj->pages, 0, 30);
         $bj->cfmsg = $this->messages(true);
@@ -336,7 +336,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $cf->check_banal_json($bj, $spec);
             if (isset($cf->metadata_updates["banal"])
                 && $cf->pages > 30)
-                $cf->metadata_updates["banal"] = self::compress_bj($bj);
+                $cf->metadata_updates["banal"] = $cf->compress_bj($bj);
         } else
             $cf->msg_fail(null);
     }
