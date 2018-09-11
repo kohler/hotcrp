@@ -284,6 +284,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
     private function compress_bj($bj) {
         $bj = clone $bj;
+        $bj->npages = count($bj->pages);
         $bj->pages = array_slice($bj->pages, 0, 30);
         $bj->cfmsg = $this->messages(true);
         return $bj;
