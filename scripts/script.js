@@ -2319,6 +2319,7 @@ function jump(hash) {
         hash = m ? m[0] : "";
     }
     $("a.has-focus-history").each(function () {
+        console.log([this.getAttribute("href"), hash]);
         if (this.getAttribute("href") === hash) {
             focus_fold.call(this);
             return false;

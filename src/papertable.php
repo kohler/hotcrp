@@ -801,7 +801,7 @@ class PaperTable {
             $title .= " (blind)";
         else if ($sb === Conf::BLIND_UNTILREVIEW)
             $title .= " (blind until review)";
-        echo $this->editable_papt("authors", $title);
+        echo $this->editable_papt("authors", $title, ["id" => "authors"]);
         $hint = "List the authors, including email addresses and affiliations.";
         if ($sb === Conf::BLIND_ALWAYS)
             $hint .= " Submission is blind, so reviewers will not see author information.";
@@ -1199,7 +1199,7 @@ class PaperTable {
 
         echo '<div class="papeg">',
             '<div class="', $this->control_class("contacts", "papet"),
-            '"><span class="', $this->control_class("contacts", "papfn", "is-"), '">',
+            '" id="contacts"><span class="', $this->control_class("contacts", "papfn", "is-"), '">',
             $this->field_name("Contacts"),
             '</span></div>';
 
@@ -1351,7 +1351,7 @@ class PaperTable {
     private function echo_editable_topics() {
         if (!$this->conf->has_topics())
             return;
-        echo $this->editable_papt("topics", $this->field_name("Topics")),
+        echo $this->editable_papt("topics", $this->field_name("Topics"), ["id" => "topics"]),
             $this->field_hint("Topics", "Select any topics that apply to your submission."),
             '<div class="papev">',
             Ht::hidden("has_topics", 1),
@@ -1406,7 +1406,7 @@ class PaperTable {
             $author_ctype = $this->conf->_c("conflict_type", "Author");
         }
 
-        echo $this->editable_papt("pcconf", $this->field_name("PC conflicts")),
+        echo $this->editable_papt("pcconf", $this->field_name("PC conflicts"), ["id" => "pc-conflicts"]),
             "<div class='paphint'>Select the PC members who have conflicts of interest with this submission. ", $this->conf->_i("conflictdef", false), "</div>\n",
             '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
