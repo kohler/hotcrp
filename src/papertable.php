@@ -796,7 +796,7 @@ class PaperTable {
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
 
         $sb = $this->conf->submission_blindness();
-        $title = $this->conf->_c("paper_field/edit", "Authors", $max_authors);
+        $title = $this->field_name("Authors");
         if ($sb === Conf::BLIND_ALWAYS)
             $title .= " (blind)";
         else if ($sb === Conf::BLIND_UNTILREVIEW)
@@ -1275,7 +1275,7 @@ class PaperTable {
             return;
         $sub_pcconf = $this->conf->setting("sub_pcconf");
 
-        echo $this->editable_papt("collaborators", $this->conf->_c("paper_field/edit", "Collaborators", $sub_pcconf), ["for" => "collaborators"]),
+        echo $this->editable_papt("collaborators", $this->field_name("Collaborators"), ["for" => "collaborators"]),
             '<div class="paphint"><div class="mmm">';
         if ($this->conf->setting("sub_pcconf"))
             echo "List <em>other</em> people and institutions with which
