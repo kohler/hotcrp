@@ -644,8 +644,6 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 
 Ht::stash_script('focus_within($("#profile-form"))');
-if ($newProfile)
-    Ht::stash_script("focus_fold.hash(true)");
-else
+if (!$newProfile)
     Ht::stash_script('hiliter_children("#profile-form",true)');
 $Conf->footer();

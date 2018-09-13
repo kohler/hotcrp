@@ -2291,7 +2291,7 @@ function focus_fold(event) {
                 break;
             addClass(e, "active");
             $(f).find(".linelink").not(e).removeClass("active");
-            if (event) {
+            if (event || has_focused === false) {
                 focus_within(e, ".lld *");
                 event_prevent(event);
             }
@@ -2302,7 +2302,7 @@ function focus_fold(event) {
             if (!e)
                 break;
             e.className = e.className.replace(/links\d+/, 'links' + m[1]);
-            if (event) {
+            if (event || has_focused === false) {
                 focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
                 event_prevent(event);
             }
@@ -2313,9 +2313,11 @@ function focus_fold(event) {
     return false;
 }
 
-function jump(href) {
-    var hash = href.match(/#.*/);
-    hash = hash ? hash[0] : "";
+function jump(hash) {
+    if (hash !== "" && hash.charAt(0) !== "#") {
+        var m = hash.match(/#.*/);
+        hash = m ? m[0] : "";
+    }
     $("a.has-focus-history").each(function () {
         if (this.getAttribute("href") === hash) {
             focus_fold.call(this);
@@ -2327,7 +2329,10 @@ function jump(href) {
 $(window).on("popstate", function (event) {
     var state = (event.originalEvent || event).state;
     state && jump(state.href);
+}).on("hashchange", function (event) {
+    jump(location.hash);
 });
+$(function () { has_focused || jump(location.hash); });
 
 function handler(event) {
     if (focus_fold.call(this, event)
@@ -2335,11 +2340,7 @@ function handler(event) {
         && hasClass(this, "has-focus-history"))
         push_history_state(this.href);
 }
-
-handler.hash = function () {
-    has_focused || jump(location.href);
-};
-
+handler.autofocus = function () { has_focused || (has_focused = false); };
 return handler;
 })($);
 

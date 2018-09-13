@@ -499,8 +499,7 @@ if ($pl->count > 0)
     echo "  <td><div class='tll3'><a class='ui tla nw has-focus-history' href=\"#view\">View options</a></div></td>\n";
 echo "</tr></table></div></div>\n\n";
 if ($pl->count == 0)
-    Ht::stash_script("focus_fold.call(\$(\"#searchform .tll$activetab\")[0])");
-Ht::stash_script("focus_fold.hash()");
+    Ht::stash_script("focus_fold.autofocus()");
 echo Ht::unstash();
 
 
