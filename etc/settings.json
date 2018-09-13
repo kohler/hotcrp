@@ -202,7 +202,7 @@
     {
         "name": "options",
         "parser_class": "Options_SettingParser", "group": "subform",
-        "type": "string"
+        "type": "string", "extensible": false
     },
     {
         "name": "options_nextid",

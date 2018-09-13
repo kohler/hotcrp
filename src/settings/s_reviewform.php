@@ -102,7 +102,7 @@ class ReviewForm_SettingParser extends SettingParser {
             if (isset($sv->req["options_$fid"]))
                 $ok = $this->check_options($sv, $fid, $fj);
             if ((!$ok || count($fj->options) < 2) && $pos > 0) {
-                $sv->error_at("options_$fid", htmlspecialchars($sn) . ": Invalid options.");
+                $sv->error_at("options_$fid", htmlspecialchars($sn) . ": Invalid choices.");
                 if ($this->option_error)
                     $sv->error_at(null, $this->option_error);
                 $this->option_error = false;
@@ -151,7 +151,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     function parse(SettingValues $sv, Si $si) {
         $this->nrfj = (object) array();
-        $this->option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
+        $this->option_error = "Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>";
 
@@ -292,7 +292,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $updates = $this->clear_nonexisting_options($clear_options, $sv->conf);
             if (!empty($updates)) {
                 sort($updates);
-                $sv->warning_at(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $updates) . ".");
+                $sv->warning_at(null, "Your changes invalidated some existing review scores. The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $updates) . ".");
             }
         }
         // reset all word counts if author visibility changed

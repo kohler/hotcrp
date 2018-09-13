@@ -11,7 +11,7 @@ class Si {
     public $group;
     public $type;
     public $internal;
-    public $extensible = 0;
+    public $extensible;
     public $storage_type;
     public $storage;
     public $optional = false;
@@ -37,7 +37,7 @@ class Si {
     const SI_SLICE = 4;
     const SI_OPT = 8;
 
-    const X_YES = 1;
+    const X_SIMPLE = 1;
     const X_WORD = 2;
 
     static private $type_storage = [
@@ -69,12 +69,16 @@ class Si {
         $this->store("json_values", $j, "json_values", "is_array");
         if (isset($j->default_value) && (is_int($j->default_value) || is_string($j->default_value)))
             $this->default_value = $j->default_value;
-        if (isset($j->extensible) && $j->extensible === true)
-            $this->extensible = self::X_YES;
-        else if (isset($j->extensible) && $j->extensible === "word")
-            $this->extensible = self::X_WORD;
-        else if (isset($j->extensible) && $j->extensible !== false)
-            trigger_error("setting {$j->name}.extensible format error");
+        if (isset($j->extensible)) {
+            if ($j->extensible === true || $j->extensible === "simple")
+                $this->extensible = self::X_SIMPLE;
+            else if ($j->extensible === "word")
+                $this->extensible = self::X_WORD;
+            else if ($j->extensible === false)
+                $this->extensible = false;
+            else
+                trigger_error("setting {$j->name}.extensible format error");
+        }
         if (isset($j->group)) {
             if (is_string($j->group))
                 $this->group = $j->group;
@@ -157,14 +161,21 @@ class Si {
     }
 
     static function get($conf, $name, $k = null) {
-        if (!isset($conf->_setting_info[$name])
-            && preg_match('/\A(.*)(_(?:[^_\s]+))\z/', $name, $m)
-            && isset($conf->_setting_info[$m[1]])) {
-            $si = clone $conf->_setting_info[$m[1]];
-            if (!$si->extensible
-                || ($si->extensible === self::X_YES
-                    && !preg_match('/\A_(?:\$|n|m?\d+)\z/', $m[2])))
-                error_log("$name: cloning non-extensible setting $si->name");
+        if (isset($conf->_setting_info[$name]))
+            $si = $conf->_setting_info[$name];
+        else if (!preg_match('{\A(.*)(_(?:[^_\s]+))\z}', $name, $m)
+                 || !isset($conf->_setting_info[$m[1]]))
+            return null;
+        else {
+            $base_si = $conf->_setting_info[$m[1]];
+            if (!$base_si->extensible
+                || ($base_si->extensible === self::X_SIMPLE
+                    && !preg_match('{\A_(?:\$|n|m?\d+)\z}', $m[2]))) {
+                if ($base_si->extensible !== false)
+                    error_log("$name: cloning non-extensible setting $base_si->name, " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+                return null;
+            }
+            $si = clone $base_si;
             $si->name = $name;
             if ($si->storage)
                 $si->storage .= $m[2];
@@ -175,9 +186,6 @@ class Si {
                 $si->message_context_setting .= $m[2];
             $conf->_setting_info[$name] = $si;
         }
-        if (!isset($conf->_setting_info[$name]))
-            return null;
-        $si = $conf->_setting_info[$name];
         return $k ? $si->$k : $si;
     }
 
