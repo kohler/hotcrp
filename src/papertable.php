@@ -465,7 +465,7 @@ class PaperTable {
         return $table_type === "col" ? nl2br($text) : $text;
     }
 
-    private function field_name($name) {
+    function field_name($name) {
         return $this->conf->_c("paper_field/edit", $name);
     }
 
@@ -1174,7 +1174,7 @@ class PaperTable {
 
         return '<div class="' . $this->control_class("newcontact_{$num}", "checki")
             . '"><span class="checkc">'
-            . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => 1])
+            . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => 1, "id" => false])
             . ' </span>'
             . Ht::entry("newcontact_name_{$num}", $name, ["size" => 30, "placeholder" => "Name", "class" => "want-focus js-autosubmit", "autocomplete" => "off"])
             . '  '
@@ -1221,14 +1221,14 @@ class PaperTable {
             if ($au->nonauthor
                 && (strcasecmp($this->user->email, $au->email) != 0 || $this->allow_admin)) {
                 $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
-                    . Ht::checkbox("contact_active_{$cidx}", 1, !$this->useRequest || $reqidx, ["data-default-checked" => true]);
+                    . Ht::checkbox("contact_active_{$cidx}", 1, !$this->useRequest || $reqidx, ["data-default-checked" => true, "id" => false]);
             } else if ($au->contactId) {
                 $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
                     . Ht::hidden("contact_active_{$cidx}", 1)
-                    . Ht::checkbox(null, null, true, ["disabled" => true]);
+                    . Ht::checkbox(null, null, true, ["disabled" => true, "id" => false]);
             } else if ($au->email && validate_email($au->email)) {
                 $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
-                    . Ht::checkbox("contact_active_{$cidx}", 1, $this->useRequest && $reqidx, ["data-default-checked" => ""]);
+                    . Ht::checkbox("contact_active_{$cidx}", 1, $this->useRequest && $reqidx, ["data-default-checked" => "", "id" => false]);
             } else
                 continue;
             echo '<div class="',
@@ -1361,7 +1361,7 @@ class PaperTable {
             $pchecked = isset($ptopics[$tid]);
             $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
             echo '<div class="ctelt"><div class="ctelti checki"><label><span class="checkc">',
-                Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked, "data-range-type" => "topic", "class" => "uix js-range-click topic-entry"]),
+                Ht::checkbox("top$tid", 1, $checked, ["data-default-checked" => $pchecked, "data-range-type" => "topic", "class" => "uix js-range-click topic-entry", "id" => false]),
                 ' </span>', $tname, '</label></div></div>';
         }
         echo "</div>", $this->messages_at("topics"), "</div></div>\n\n";

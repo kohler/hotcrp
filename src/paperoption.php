@@ -666,7 +666,7 @@ class CheckboxPaperOption extends PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
         $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->formid, "data-default-checked" => !!$ov->value]);
-        $pt->echo_editable_option_papt($this, '<span class="checkc">' . $cb . " </span>" . htmlspecialchars($this->title), "checkbox");
+        $pt->echo_editable_option_papt($this, '<span class="checkc">' . $cb . " </span>" . $pt->field_name(htmlspecialchars($this->title)), "checkbox");
         echo $pt->messages_at($this->formid), "</div>\n\n";
         Ht::stash_script("jQuery('#{$this->formid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }

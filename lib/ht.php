@@ -211,9 +211,10 @@ class Ht {
             $checked = false;
         }
         $js = $js ? : array();
-        if (!get($js, "id"))
+        if (!array_key_exists("id", $js) || $js["id"] === true)
             $js["id"] = "htctl" . ++self::$_controlid;
-        self::$_lastcontrolid = $js["id"];
+        if ($js["id"])
+            self::$_lastcontrolid = $js["id"];
         if (isset($js["data-default-checked"]) || isset($js["data-default-value"])) {
             $dc = get($js, "data-default-checked");
             if ($dc === null)
