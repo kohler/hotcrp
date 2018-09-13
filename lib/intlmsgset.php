@@ -11,44 +11,56 @@ class IntlMsg {
     public $no_conversions;
     public $next;
 
-    private function arg(IntlMsgSet $ms, $args, $which) {
-        if (ctype_digit($which))
-            return get($args, +$which);
-        else
-            return $ms->get($which);
+    private function resolve_arg(IntlMsgSet $ms, $args, $argname, &$val) {
+        if ($argname[0] === "\$") {
+            $which = substr($argname, 1);
+            if (ctype_digit($which)) {
+                $val = get($args, +$which);
+                return true;
+            } else
+                return false;
+        } else if (($ans = $ms->resolve_requirement_argument($argname))) {
+            $val = is_array($ans) ? $ans[0] : $ans;
+            return true;
+        } else
+            return false;
     }
     function check_require(IntlMsgSet $ms, $args) {
         if (!$this->require)
             return 0;
         $nreq = 0;
         foreach ($this->require as $req) {
-            if (preg_match('/\A\s*\$(\w+)\s*([=!<>]=?|≠|≤|≥)\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*\z/', $req, $m)) {
-                $arg = $this->arg($ms, $args, $m[1]);
-                if ((string) $arg === ""
-                    || !CountMatcher::compare((float) $arg, $m[2], (float) $m[3]))
+            if (preg_match('/\A\s*(\S+?)\s*([=!<>]=?|≠|≤|≥)\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*\z/', $req, $m)
+                && $this->resolve_arg($ms, $args, $m[1], $val)) {
+                if ((string) $val === ""
+                    || !CountMatcher::compare((float) $val, $m[2], (float) $m[3]))
                     return false;
                 ++$nreq;
-            } else if (preg_match('/\A\s*\$(\w+)\s*([=!]=?|≠|!?\^=)\s*(\S+)\s*\z/', $req, $m)) {
-                $arg = $this->arg($ms, $args, $m[1]);
-                if ((string) $arg === "")
+            } else if (preg_match('/\A\s*(\S+?)\s*([=!]=?|≠|!?\^=)\s*(\S+)\s*\z/', $req, $m)
+                       && $this->resolve_arg($ms, $args, $m[1], $val)) {
+                if ((string) $val === "")
                     return false;
                 if ($m[2] === "^=" || $m[2] === "!^=") {
-                    $have = str_starts_with($arg, $m[3]);
+                    $have = str_starts_with($val, $m[3]);
                     $weight = 0.9;
                 } else {
-                    $have = $arg === $m[3];
+                    $have = $val === $m[3];
                     $weight = 1;
                 }
                 $want = ($m[2] === "=" || $m[2] === "==" || $m[2] === "^=");
                 if ($have !== $want)
                     return false;
                 $nreq += $weight;
-            } else if (preg_match('/\A\s*(|!)\s*\$(\w+)\s*\z/', $req, $m)) {
-                $arg = $this->arg($ms, $args, $m[2]);
-                $bool_arg = (string) $arg !== "" && $arg !== 0;
-                if ($bool_arg !== ($m[1] === ""))
+            } else if (preg_match('/\A\s*(!*)\s*(\S+)\s*\z/', $req, $m)
+                       && $this->resolve_arg($ms, $args, $m[2], $val)) {
+                $bool_arg = $val !== null && $val !== false && $val !== "" && $val !== 0 && $val !== [];
+                if ($bool_arg !== (strlen($m[1]) % 2 === 0))
                     return false;
                 ++$nreq;
+            } else if (($weight = $ms->resolve_requirement($req)) !== null) {
+                if ($weight <= 0)
+                    return false;
+                $nreq += $weight;
             }
         }
         return $nreq;
@@ -58,6 +70,7 @@ class IntlMsg {
 class IntlMsgSet {
     private $ims = [];
     private $template = [];
+    private $require_resolvers = [];
     private $_ctx;
     private $_default_priority;
 
@@ -166,6 +179,22 @@ class IntlMsgSet {
 
     function add_override($id, $otext) {
         return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true]);
+    }
+
+    function add_requirement_resolver($function) {
+        $this->require_resolvers[] = $function;
+    }
+    function resolve_requirement($requirement) {
+        foreach ($this->require_resolvers as $fn)
+            if (($x = call_user_func($fn, $requirement, true)) !== null)
+                return $x;
+        return null;
+    }
+    function resolve_requirement_argument($argname) {
+        foreach ($this->require_resolvers as $fn)
+            if (($x = call_user_func($fn, $argname, false)) !== null)
+                return $x;
+        return null;
     }
 
     private function find($context, $itext, $args, $priobound) {

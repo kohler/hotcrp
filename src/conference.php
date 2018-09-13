@@ -3572,6 +3572,7 @@ class Conf {
     function ims() {
         if (!$this->_ims) {
             $this->_ims = new IntlMsgSet;
+            $this->_ims->add_requirement_resolver([$this, "resolve_ims_requirement"]);
             $m = ["?etc/msgs.json"];
             if (($lang = $this->opt("lang")))
                 $m[] = "?etc/msgs.$lang.json";
@@ -3601,6 +3602,17 @@ class Conf {
 
     function _ci($context, $id, $itext) {
         return call_user_func_array([$this->ims(), "xci"], func_get_args());
+    }
+
+    function resolve_ims_requirement($s, $isreq) {
+        if ($isreq)
+            return null;
+        else if (str_starts_with($s, "setting."))
+            return [$this->setting(substr($s, 8))];
+        else if (str_starts_with($s, "opt."))
+            return [$this->opt(substr($s, 4))];
+        else
+            return null;
     }
 
 

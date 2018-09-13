@@ -27,9 +27,9 @@
     ["Unknown topics ignored (%2$s).", "Unknown topic ignored (%2$s).", ["$1=1"]],
     ["Unknown options ignored (%2$s).", "Unknown option ignored (%2$s).", ["$1=1"]],
 
-    ["paper_field", "Authors", "Author", ["$1=1"]],
+    ["paper_field", "Authors", "Author", ["opt.maxAuthors=1"]],
     ["paper_field", "Contacts", "Contact", ["$1=1"]],
-    ["paper_field", "Collaborators", "Other conflicts", ["$1"]],
+    ["paper_field", "Collaborators", "Other conflicts", ["setting.sub_pcconf"]],
     ["paper_edit_description", "Contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts.", ["!$1"]],
 
     ["You’ll be able to see %d other reviews once you complete your own.", "You’ll be able to see %d other review once you complete your own.", ["$1=1"]],
