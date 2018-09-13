@@ -2324,6 +2324,10 @@ function jump(hash) {
             return false;
         }
     });
+    if (hash !== "") {
+        var $e = $(hash).closest(".papeg");
+        $e.length && $e.scrollIntoView();
+    }
 }
 
 $(window).on("popstate", function (event) {

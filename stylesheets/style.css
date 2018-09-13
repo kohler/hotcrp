@@ -2890,7 +2890,8 @@ body#offline .revcard {
 	padding-right: 1.5em;
 }
 .papeg, .rveg {
-	margin: 16px 0 36px;
+	margin: 16px 0 20px;
+	padding-top: 16px;
 }
 .papegroup {
 	margin: 12px -16px;
