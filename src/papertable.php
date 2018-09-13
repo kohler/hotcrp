@@ -688,11 +688,17 @@ class PaperTable {
     }
 
     private function echo_editable_submission() {
-        if ($this->canUploadFinal)
-            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0);
-        else
+        if (!$this->canUploadFinal) {
             $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0);
-        echo "</div>\n\n";
+            echo "</div>\n\n";
+        }
+    }
+
+    private function echo_editable_final_version() {
+        if ($this->canUploadFinal) {
+            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0);
+            echo "</div>\n\n";
+        }
     }
 
     private function echo_editable_abstract() {
@@ -1887,7 +1893,7 @@ class PaperTable {
         return "";
     }
 
-    private function editMessage() {
+    private function _edit_message() {
         if (!($prow = $this->prow))
             return $this->_edit_message_new_paper();
 
@@ -1904,9 +1910,15 @@ class PaperTable {
         if ($this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_update_paper", $prow)
             && ($v = $this->conf->_i("submit", false)))
             $m .= Ht::xmsg("info", $v);
-        if ($this->edit_status && $this->edit_status->has_problem()
-            && ($this->edit_status->has_problem_at("contacts") || $this->editable))
-            $m .= Ht::xmsg("warning", "There may be problems with this submission. Please scroll through the form and fix the problems if appropriate.");
+        if ($this->edit_status
+            && $this->edit_status->has_problem()
+            && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {
+            $fields = [];
+            foreach ($this->edit_fields ? : [] as $uf)
+                if (isset($uf->title) && $this->edit_status->has_problem_at($uf->name))
+                    $fields[] = Ht::link($this->field_name($uf->title), "#" . $uf->name);
+            $m .= Ht::xmsg($this->edit_status->problem_status(), $this->conf->_c("paper_edit", "Please check %s before completing your submission for review.", commajoin($fields)));
+        }
         return $m;
     }
 
@@ -2132,6 +2144,8 @@ class PaperTable {
 
     private function make_echo_editable_option($o) {
         return (object) [
+            "name" => $o->formid,
+            "title" => htmlspecialchars($o->title),
             "position" => $o->form_position(),
             "option" => $o,
             "callback" => function () use ($o) {
@@ -2153,7 +2167,15 @@ class PaperTable {
         $this->_echo_editable_form();
         echo '<div>';
 
-        if (($m = $this->editMessage()))
+        $ofields = [];
+        foreach ($this->conf->paper_opts->option_list_type(!$this->canUploadFinal) as $opt)
+            if ((!$this->prow || get($this->view_options, $opt->id))
+                && !$opt->internal)
+                $ofields[] = $this->make_echo_editable_option($opt);
+        $gxt = new GroupedExtensions($this->user, ["etc/submissioneditgroups.json"], $this->conf->opt("submissionEditGroups"), $ofields);
+        $this->edit_fields = array_values($gxt->groups());
+
+        if (($m = $this->_edit_message()))
             echo $m;
         if ($this->quit) {
             echo "</div></form>";
@@ -2162,13 +2184,6 @@ class PaperTable {
 
         $this->echoActions(true);
 
-        $ofields = [];
-        foreach ($this->conf->paper_opts->option_list_type(!$this->canUploadFinal) as $opt)
-            if ((!$this->prow || get($this->view_options, $opt->id))
-                && !$opt->internal)
-                $ofields[] = $this->make_echo_editable_option($opt);
-        $gxt = new GroupedExtensions($this->user, ["etc/submissioneditgroups.json"], $this->conf->opt("submissionEditGroups"), $ofields);
-        $this->edit_fields = array_values($gxt->groups());
         for ($this->edit_fields_position = 0;
              $this->edit_fields_position < count($this->edit_fields);
              ++$this->edit_fields_position) {
@@ -2217,7 +2232,7 @@ class PaperTable {
             } else
                 $this->_echo_editable_body();
         } else {
-            if ($this->mode === "edit" && ($m = $this->editMessage()))
+            if ($this->mode === "edit" && ($m = $this->_edit_message()))
                 echo $m, "<div class='g'></div>\n";
             $status_info = $this->user->paper_status_info($this->prow);
             echo '<p class="xd"><span class="pstat ', $status_info[0], '">',
