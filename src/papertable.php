@@ -362,7 +362,9 @@ class PaperTable {
         }
         $t .= '"><div class="' . $this->control_class($what, "papet");
         if ($for === "checkbox")
-            $t .= ' checki';
+            $t .= " checki";
+        if (($tclass = get($extra, "tclass")))
+            $t .= " " . ltrim($tclass);
         if (($id = get($extra, "id")))
             $t .= '" id="' . $id;
         return $t . '">' . Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => "papfn"]) . '</div>';
@@ -632,7 +634,7 @@ class PaperTable {
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
         $heading = $this->field_name(htmlspecialchars($docx->title)) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
-        echo $this->editable_papt($field, $heading, ["for" => $doc ? false : $inputid], $docx),
+        echo $this->editable_papt($field, $heading, ["for" => $doc ? false : $inputid, "id" => $docx->readable_formid], $docx),
             $this->field_hint(htmlspecialchars($docx->title), $docx->description);
 
         echo '<div class="papev has-document" data-dtype="', $dtype,
@@ -665,7 +667,8 @@ class PaperTable {
             echo '</div><div class="document-actions">';
             if ($dtype > 0)
                 echo '<a href="" class="ui js-remove-document document-action">Delete</a>';
-            if ($has_cf && ($this->cf->failed || $this->cf->need_run || $this->cf->possible_run)) {
+            if ($has_cf
+                && ($this->cf->failed || $this->cf->need_run || $this->cf->possible_run)) {
                 echo '<a href="" class="ui js-check-format document-action">',
                     ($this->cf->failed || $this->cf->need_run ? "Check format" : "Recheck format"),
                     '</a>';
@@ -1373,12 +1376,10 @@ class PaperTable {
         echo "</div>", $this->messages_at("topics"), "</div></div>\n\n";
     }
 
-    function echo_editable_option_papt(PaperOption $o, $heading = null, $for = null) {
+    function echo_editable_option_papt(PaperOption $o, $heading = null, $rest = []) {
         if (!$heading)
             $heading = $this->field_name(htmlspecialchars($o->title));
-        if ($for === null || $for === true)
-            $for = $o->formid;
-        echo $this->editable_papt($o->formid, $heading, ["id" => "{$o->formid}_div", "for" => $for], $o),
+        echo $this->editable_papt($o->formid, $heading, $rest, $o),
             $this->field_hint(htmlspecialchars($o->title), $o->description),
             Ht::hidden("has_{$o->formid}", 1);
     }
@@ -1412,7 +1413,7 @@ class PaperTable {
             $author_ctype = $this->conf->_c("conflict_type", "Author");
         }
 
-        echo $this->editable_papt("pcconf", $this->field_name("PC conflicts"), ["id" => "pc-conflicts"]),
+        echo $this->editable_papt("pcconf", $this->field_name("PC conflicts"), ["id" => "pcconf"]),
             "<div class='paphint'>Select the PC members who have conflicts of interest with this submission. ", $this->conf->_i("conflictdef", false), "</div>\n",
             '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
@@ -1916,7 +1917,7 @@ class PaperTable {
             $fields = [];
             foreach ($this->edit_fields ? : [] as $uf)
                 if (isset($uf->title) && $this->edit_status->has_problem_at($uf->name))
-                    $fields[] = Ht::link($this->field_name($uf->title), "#" . $uf->name);
+                    $fields[] = Ht::link($this->field_name($uf->title), "#" . (isset($uf->readable_formid) ? $uf->readable_formid : $uf->name));
             $m .= Ht::xmsg($this->edit_status->problem_status(), $this->conf->_c("paper_edit", "Please check %s before completing your submission for review.", commajoin($fields)));
         }
         return $m;
@@ -2145,6 +2146,7 @@ class PaperTable {
     private function make_echo_editable_option($o) {
         return (object) [
             "name" => $o->formid,
+            "readable_formid" => $o->readable_formid,
             "title" => htmlspecialchars($o->title),
             "position" => $o->form_position(),
             "option" => $o,

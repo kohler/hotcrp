@@ -165,7 +165,7 @@ function update_paper(Qrequest $qreq, $action) {
         if (!$prow && $qreq->has_files())
             $ps->error_at(null, "<strong>Your uploaded files were ignored.</strong>");
         $emsg = $ps->landmarked_messages();
-        Conf::msg_error(space_join($Conf->_("<strong>Some or all of your changes were not saved.</strong>"), $Conf->_("Please fix these errors and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
+        Conf::msg_error(space_join($Conf->_("Please fix these errors and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
         return false;
     }
 
@@ -405,7 +405,7 @@ if (($ps || $prow) && $paperTable->mode === "edit") {
         $ps->ignore_duplicates = true;
     else
         $ps = new PaperStatus($Conf, $Me);
-    $ps->paper_json($prow, ["msgs" => true]);
+    $ps->paper_json($prow, ["msgs" => true, "editable" => true]);
     $Me->set_overrides($old_overrides);
     $paperTable->set_edit_status($ps);
 }

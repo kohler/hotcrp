@@ -18,6 +18,7 @@ class PaperStatus extends MessageSet {
     public $paperId;
     private $_on_document_export = [];
     private $_on_document_import = [];
+    private $_cf;
 
     public $diffs;
     private $_paper_upd;
@@ -76,7 +77,7 @@ class PaperStatus extends MessageSet {
         return call_user_func_array([$this->conf->ims(), "x"], func_get_args());
     }
 
-    function document_to_json($dtype, $docid) {
+    function document_to_json($dtype, $docid, $field = false) {
         if (!is_object($docid))
             $doc = $this->prow ? $this->prow->document($dtype, $docid) : null;
         else {
@@ -115,7 +116,24 @@ class PaperStatus extends MessageSet {
                 return null;
         if (!count(get_object_vars($d)))
             $d = null;
+
+        // maybe warn about format check
+        if ($d
+            && $field
+            && $doc->mimetype === "application/pdf"
+            && ($spec = $this->conf->format_spec($doc->documentType))
+            && !$spec->is_empty()) {
+            if (!$this->_cf)
+                $this->_cf = new CheckFormat($this->conf, CheckFormat::RUN_NO);
+            $this->_cf->check_document($this->prow, $doc);
+            if ($this->_cf->has_problem())
+                $this->msg($field, false, $this->_cf->problem_status());
+        }
+
         return $d;
+    }
+
+    private function _maybe_check_format($doc, $name) {
     }
 
     function paper_json($prow, $args = array()) {
@@ -130,6 +148,7 @@ class PaperStatus extends MessageSet {
         $this->user = $user;
         $original_no_msgs = $this->ignore_msgs;
         $this->ignore_msgs = !get($args, "msgs");
+        $for_editable = !!get($args, "editable");
 
         $this->prow = $prow;
         $this->paperId = $prow->paperId;
@@ -222,12 +241,12 @@ class PaperStatus extends MessageSet {
 
         if ($prow->paperStorageId > 1
             && (!$user || $user->can_view_pdf($prow))
-            && ($doc = $this->document_to_json(DTYPE_SUBMISSION, (int) $prow->paperStorageId)))
+            && ($doc = $this->document_to_json(DTYPE_SUBMISSION, (int) $prow->paperStorageId, "paper")))
             $pj->submission = $doc;
 
         if ($prow->finalPaperStorageId > 1
             && (!$user || $user->can_view_pdf($prow))
-            && ($doc = $this->document_to_json(DTYPE_FINAL, (int) $prow->finalPaperStorageId)))
+            && ($doc = $this->document_to_json(DTYPE_FINAL, (int) $prow->finalPaperStorageId, "final")))
             $pj->final = $doc;
         if ($prow->timeFinalSubmitted > 0) {
             $pj->final_submitted = true;
@@ -311,11 +330,14 @@ class PaperStatus extends MessageSet {
             $pcs = [];
             foreach ($this->conf->full_pc_members() as $p) {
                 if (!$prow->has_conflict($p)
-                    && $prow->potential_conflict($p))
-                    $pcs[] = Text::name_html($p);
+                    && $prow->potential_conflict($p)) {
+                    $n = Text::name_html($p);
+                    $pcs[] = $for_editable ? Ht::link($n, "#pcc{$p->contactId}", ["class" => "uu"]) : $n;
+                }
             }
-            if (!empty($pcs))
-                $this->warning_at("pcconf", $this->_("You may have missed conflicts of interest with %s. Please verify that all conflicts are correctly marked. Hover over “possible conflict” labels for more information.", commajoin($pcs, "and")));
+            if (!empty($pcs)) {
+                $this->warning_at("pcconf", $this->_("You may have missed conflicts of interest with %s. Please verify that all conflicts are correctly marked.", commajoin($pcs, "and")) . ($for_editable ? $this->_(" Hover over “possible conflict” labels for more information.") : ""));
+            }
         }
 
         $this->ignore_msgs = $original_no_msgs;

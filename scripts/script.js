@@ -2237,7 +2237,8 @@ handle_ui.on("js-aufoldup", function (event) {
 });
 
 handle_ui.on("js-click-child", function (event) {
-    var a = $(this).find("a")[0];
+    var a = $(this).find("a")[0]
+        || $(this).find("input[type=checkbox], input[type=radio]")[0];
     if (a && event.target !== a) {
         var newEvent = new MouseEvent("click", {
             button: event.button, buttons: event.buttons,
@@ -2245,6 +2246,7 @@ handle_ui.on("js-click-child", function (event) {
             altKey: event.altKey, metaKey: event.metaKey
         });
         a.dispatchEvent(newEvent);
+        event.preventDefault();
     }
 });
 
@@ -2319,15 +2321,19 @@ function jump(hash) {
         hash = m ? m[0] : "";
     }
     $("a.has-focus-history").each(function () {
-        console.log([this.getAttribute("href"), hash]);
         if (this.getAttribute("href") === hash) {
             focus_fold.call(this);
             return false;
         }
     });
     if (hash !== "") {
-        var $e = $(hash).closest(".papeg");
-        $e.length && $e.scrollIntoView();
+        var $hash = $(hash), $e = $hash.closest(".papeg");
+        if ($e.length) {
+            var hashg = $hash.geometry(), eg = $e.geometry();
+            if ((hashg.width <= 0 && hashg.height <= 0)
+                || (hashg.top >= eg.top && hashg.top - eg.top <= 100))
+                $e.scrollIntoView();
+        }
     }
 }
 

@@ -182,11 +182,16 @@ class PaperOptionList {
     function option_list() {
         if ($this->list === null) {
             $this->list = [];
+            $readable_formids = [];
             foreach ($this->option_json_list() as $id => $oj)
                 if (!get($oj, "nonpaper")
                     && ($o = $this->get($id))) {
                     assert(!$o->nonpaper);
                     $this->list[$id] = $o;
+                    if (isset($readable_formids[$o->readable_formid]))
+                        $o->readable_formid = $o->formid;
+                    else
+                        $readable_formid[$o->readable_formid] = true;
                 }
         }
         return $this->list;
@@ -302,6 +307,7 @@ class PaperOption implements Abbreviator {
 
     public $id;
     public $formid;
+    public $readable_formid;
     public $conf;
     public $name;
     public $title;
@@ -373,10 +379,17 @@ class PaperOption implements Abbreviator {
         $this->final = !!get($args, "final");
         $this->nonpaper = !!get($args, "nonpaper");
         $this->internal = !!get($args, "internal");
+
         if ($this->id <= 0)
             $this->formid = $this->_json_key;
         else
             $this->formid = "opt" . $this->id;
+        if (($x = get_s($args, "readable_formid")))
+            $this->readable_formid = $x;
+        else if (($x = self::make_readable_formid($this->title)))
+            $this->readable_formid = $x;
+        else
+            $this->readable_formid = $this->formid;
 
         $vis = get($args, "visibility") ? : get($args, "view_type");
         if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin")
@@ -430,6 +443,14 @@ class PaperOption implements Abbreviator {
             return $ap < $bp ? -1 : 1;
         else
             return $a->id - $b->id;
+    }
+
+    static function make_readable_formid($s) {
+        $s = strtolower(preg_replace('{[^A-Za-z0-9]+}', "-", UnicodeHelper::deaccent($s)));
+        if (!preg_match('{\A(?:title|paper|submission|final|authors|blind|contacts|abstract|topics|pcconf|collaborators|submit|-|)\z}', $s))
+            return $s;
+        else
+            return false;
     }
 
     function fixed() {
@@ -665,10 +686,11 @@ class CheckboxPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
-        $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->formid, "data-default-checked" => !!$ov->value]);
-        $pt->echo_editable_option_papt($this, '<span class="checkc">' . $cb . " </span>" . $pt->field_name(htmlspecialchars($this->title)), "checkbox");
+        $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->readable_formid, "data-default-checked" => !!$ov->value]);
+        $pt->echo_editable_option_papt($this,
+            '<span class="checkc">' . $cb . " </span>" . $pt->field_name(htmlspecialchars($this->title)),
+            ["for" => "checkbox", "tclass" => "ui js-click-child"]);
         echo $pt->messages_at($this->formid), "</div>\n\n";
-        Ht::stash_script("jQuery('#{$this->formid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
@@ -808,7 +830,10 @@ class SelectorPaperOption extends PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = $reqv === null ? $ov->value : $reqv;
         $reqv = $reqv && isset($this->selector[$reqv - 1]) ? $reqv : 0;
-        $pt->echo_editable_option_papt($this, null, $this->type === "selector");
+        $pt->echo_editable_option_papt($this, null,
+            $this->type === "selector"
+            ? ["for" => $this->readable_formid]
+            : ["id" => $this->readable_formid]);
         echo '<div class="papev">';
         if ($this->type === "selector") {
             $sel = [];
@@ -817,7 +842,8 @@ class SelectorPaperOption extends PaperOption {
             foreach ($this->selector as $val => $text)
                 $sel[$val + 1] = $text;
             echo Ht::select($this->formid, $sel, $reqv,
-                ["id" => $this->formid, "data-default-value" => $ov->value]);
+                ["id" => $this->readable_formid,
+                 "data-default-value" => $ov->value]);
         } else {
             foreach ($this->selector as $val => $text) {
                 echo '<div class="checki"><label><span class="checkc">',
@@ -1019,9 +1045,9 @@ class NumericPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = (string) ($reqv === null ? $ov->value : $reqv);
-        $pt->echo_editable_option_papt($this);
+        $pt->echo_editable_option_papt($this, null, ["for" => $this->readable_formid]);
         echo '<div class="papev">',
-            Ht::entry($this->formid, $reqv, ["id" => $this->formid, "size" => 8, "class" => "js-autosubmit" . $pt->has_error_class($this->formid), "data-default-value" => $ov->value]),
+            Ht::entry($this->formid, $reqv, ["id" => $this->readable_formid, "size" => 8, "class" => "js-autosubmit" . $pt->has_error_class($this->formid), "data-default-value" => $ov->value]),
             $pt->messages_at($this->formid),
             "</div></div>\n\n";
     }
@@ -1097,11 +1123,11 @@ class TextPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = (string) ($reqv === null ? $ov->data() : $reqv);
-        $pt->echo_editable_option_papt($this);
+        $pt->echo_editable_option_papt($this, null, ["for" => $this->readable_formid]);
         $fi = $pt->prow ? $pt->prow->edit_format() : $pt->conf->format_info(null);
         echo '<div class="papev">',
             ($fi ? $fi->description_preview_html() : ""),
-            Ht::textarea($this->formid, $reqv, ["id" => $this->formid, "class" => "papertext need-autogrow" . $pt->has_error_class($this->formid), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true", "data-default-value" => $ov->data()]),
+            Ht::textarea($this->formid, $reqv, ["id" => $this->readable_formid, "class" => "papertext need-autogrow" . $pt->has_error_class($this->formid), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true", "data-default-value" => $ov->data()]),
             $pt->messages_at($this->formid),
             "</div></div>\n\n";
     }
@@ -1210,7 +1236,7 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", false);
+        $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", false, ["id" => $this->readable_formid]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" id="', $this->formid, '_attachments">';
         foreach ($ov->documents() as $i => $doc) {
             $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
