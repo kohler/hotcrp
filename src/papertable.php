@@ -1918,7 +1918,7 @@ class PaperTable {
             foreach ($this->edit_fields ? : [] as $uf)
                 if (isset($uf->title) && $this->edit_status->has_problem_at($uf->name))
                     $fields[] = Ht::link($this->field_name($uf->title), "#" . (isset($uf->readable_formid) ? $uf->readable_formid : $uf->name));
-            $m .= Ht::xmsg($this->edit_status->problem_status(), $this->conf->_c("paper_edit", "Please check %s before completing your submission for review.", commajoin($fields)));
+            $m .= Ht::xmsg($this->edit_status->problem_status(), $this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)));
         }
         return $m;
     }
