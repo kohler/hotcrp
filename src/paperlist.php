@@ -480,13 +480,13 @@ class PaperList {
             && $this->sorters[0]->thenmap === null
             && ($always || (string) $this->qreq->sort != "")
             && ($this->sorters[0]->type != "id" || $this->sorters[0]->reverse)) {
-            $anno = null;
             if (($fdef = $this->find_column($this->sorters[0]->type)))
-                $anno = $fdef->sort_annotations($this, $this->sorters[0]);
+                $x = $fdef->sort_name($this, $this->sorters[0]);
+            else
+                $x = $this->sorters[0]->type;
             if ($this->sorters[0]->reverse)
-                $anno = ($anno ? "$anno " : "") . "reverse";
-            $anno = $anno ? " by $anno" : "";
-            return ($fdef ? $fdef->name : $this->sorters[0]->type) . $anno;
+                $x .= " reverse";
+            return $x;
         } else
             return "";
     }
@@ -542,15 +542,20 @@ class PaperList {
         return $pc ? $this->user->reviewer_text_for($pc) : "";
     }
 
-    function _compare_pc($contactId1, $contactId2) {
+    function _compare_pc($contactId1, $contactId2, $sorter) {
         $pc1 = $this->conf->pc_member_by_id($contactId1);
         $pc2 = $this->conf->pc_member_by_id($contactId2);
         if ($pc1 === $pc2)
             return 0;
         else if (!$pc1 || !$pc2)
             return $pc1 ? -1 : 1;
-        else
+        else if (empty($sorter->anno))
             return Contact::compare($pc1, $pc2);
+        else {
+            $s1 = Contact::make_sorter($pc1, $sorter->anno);
+            $s2 = Contact::make_sorter($pc2, $sorter->anno);
+            return strnatcasecmp($s1, $s2);
+        }
     }
 
     function displayable_list_actions($prefix) {
@@ -1083,15 +1088,15 @@ class PaperList {
             || !($sort_url = $this->search->url_site_relative_raw()))
             return $t;
 
-        $default_score_sort = ListSorter::default_score_sort($this->conf);
-        $sort_name = $fdef->sort_name($default_score_sort);
+        $sort_name = $fdef->sort_name($this, null);
         $sort_url = htmlspecialchars(Navigation::siteurl() . $sort_url)
             . (strpos($sort_url, "?") ? "&amp;" : "?") . "sort=" . urlencode($sort_name);
         $s0 = get($this->sorters, 0);
 
         $sort_class = "pl_sort";
-        if ($s0 && $s0->thenmap === null
-            && $sort_name === $s0->field->sort_name($s0->score ? : $default_score_sort)) {
+        if ($s0
+            && $s0->thenmap === null
+            && $sort_name === $s0->field->sort_name($this, $s0)) {
             $sort_class = "pl_sort pl_sorting" . ($s0->reverse ? "_rev" : "_fwd");
             $sort_url .= $s0->reverse ? "" : urlencode(" reverse");
         }
@@ -1106,7 +1111,6 @@ class PaperList {
         $jscol = [];
         $has_sel = false;
         $has_statistics = $has_loadable_statistics = false;
-        $default_score_sort = ListSorter::default_score_sort($this->conf);
         foreach ($fieldDef as $fdef) {
             $j = ["name" => $fdef->name,
                   "title" => $fdef->header($this, false),
@@ -1123,7 +1127,7 @@ class PaperList {
                         $has_statistics = true;
                 }
                 if ($fdef->sort)
-                    $j["sort_name"] = $fdef->sort_name($default_score_sort);
+                    $j["sort_name"] = $fdef->sort_name($this, null);
             }
             if (!$fdef->is_visible)
                 $j["missing"] = true;
@@ -1849,7 +1853,7 @@ class PaperList {
         ksort($res, SORT_NATURAL);
         $res = array_values($res);
         foreach ($this->sorters as $s) {
-            $w = "sort:" . ($s->reverse ? "-" : "") . PaperSearch::escape_word($s->field->sort_name($s->score));
+            $w = "sort:" . ($s->reverse ? "-" : "") . PaperSearch::escape_word($s->field->sort_name($this, $s));
             if ($w !== "sort:id")
                 $res[] = $w;
         }

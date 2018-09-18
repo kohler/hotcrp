@@ -20,7 +20,7 @@ class Formula_PaperColumn extends PaperColumn {
         else
             return $this->formula->name;
     }
-    function sort_name($score_sort) {
+    function sort_name(PaperList $pl, ListSorter $sorter = null) {
         return $this->formula->name ? : $this->formula->expression;
     }
     function prepare(PaperList $pl, $visible) {

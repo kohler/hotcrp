@@ -245,20 +245,61 @@ class Contact {
         $this->$name = $value;
     }
 
-    static function set_sorter($c, Conf $conf) {
-        if (!$conf->sort_by_last && isset($c->unaccentedName)) {
-            $c->sorter = trim("$c->unaccentedName $c->email");
-            return;
+
+    static function parse_sortanno(Conf $conf, $args, $explicit = false) {
+        $name = $conf->sort_by_last ? ["lastName", "firstName"] : ["firstName", "lastName"];
+        $s = [];
+        foreach ($args as $w) {
+            if ($w === "name")
+                $s = array_merge($s, $name);
+            else if ($w === "first" || $w === "firstName")
+                $s[] = "firstName";
+            else if ($w === "last" || $w === "lastName")
+                $s[] = "lastName";
+            else if ($w === "email" || $w === "affiliation")
+                $s[] = $w;
         }
-        if ($conf->sort_by_last) {
-            if (($m = Text::analyze_von($c->lastName)))
-                $c->sorter = trim("$m[1] $c->firstName $m[0] $c->email");
-            else
-                $c->sorter = trim("$c->lastName $c->firstName $c->email");
-        } else
-            $c->sorter = trim("$c->firstName $c->lastName $c->email");
-        if (preg_match('/[\x80-\xFF]/', $c->sorter))
-            $c->sorter = UnicodeHelper::deaccent($c->sorter);
+        if (empty($s) && $explicit) {
+            $s = $name;
+            $s[] = "email";
+        }
+        return $s;
+    }
+
+    static function unparse_sortanno(Conf $conf, $args) {
+        $defaultargs = $conf->sort_by_last ? ["lastName", "firstName", "email"] : ["firstName", "lastName", "email"];
+        return $args === $defaultargs ? null : join(" ", $args);
+    }
+
+    static function make_sorter($c, $args) {
+        if ($args === false && isset($c->unaccentedName))
+            return trim("$c->unaccentedName $c->email");
+        if (is_bool($args) || $args === null)
+            $args = $args ? ["lastName", "firstName", "email"] : ["firstName", "lastName", "email"];
+        $s = [];
+        $firstName = $c->firstName;
+        foreach ($args as $arg) {
+            if ($arg === "lastName"
+                && $firstName !== false
+                && ($m = Text::analyze_von($c->lastName))) {
+                $x = $m[1];
+                $firstName = ltrim($firstName . " " . $m[0]);
+            } else if ($arg === "firstName") {
+                $x = $firstName;
+                $firstName = false;
+            } else
+                $x = $c->$arg;
+            if ((string) $x !== "")
+                $s[] = $x;
+        }
+        $t = join(" ", $s);
+        if (preg_match('/[\x80-\xFF]/', $t))
+            $t = UnicodeHelper::deaccent($t);
+        return $t;
+    }
+
+    static function set_sorter($c, Conf $conf) {
+        $c->sorter = self::make_sorter($c, $conf->sort_by_last);
     }
 
     static function compare($a, $b) {

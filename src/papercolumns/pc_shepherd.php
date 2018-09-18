@@ -16,9 +16,15 @@ class Shepherd_PaperColumn extends PaperColumn {
             return $row->shepherdContactId;
         return 0;
     }
+    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+        $sorter->anno = Contact::parse_sortanno($pl->conf, $sorter->anno);
+    }
+    function sort_name(PaperList $pl, ListSorter $sorter = null) {
+        return $this->name . PaperColumn::contact_sort_anno($pl, $sorter);
+    }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $pl = $sorter->pl;
-        return $pl->_compare_pc(self::cid($pl, $a), self::cid($pl, $b));
+        return $pl->_compare_pc(self::cid($pl, $a), self::cid($pl, $b), $sorter);
     }
     function header(PaperList $pl, $is_text) {
         return "Shepherd";
