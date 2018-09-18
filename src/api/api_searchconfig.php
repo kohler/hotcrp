@@ -18,6 +18,7 @@ class SearchConfig_API {
                 $user->conf->save_setting("{$report}display_default", null);
             else
                 $user->conf->save_setting("{$report}display_default", 1, $display);
+            $user->conf->save_session("{$report}display", null);
         }
         $s1 = new PaperSearch($user, get($qreq, "q", "NONE"));
         $l1 = new PaperList($s1, ["sort" => get($qreq, "sort", true), "report" => $report]);

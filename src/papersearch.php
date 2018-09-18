@@ -1476,7 +1476,7 @@ class PaperSearch {
     }
 
     static function parse_sorter($text) {
-        $text = simplify_whitespace($text);
+        $text = str_replace("\"", "", simplify_whitespace($text));
         $sort = ListSorter::make_empty($text === "");
         if (($ch1 = substr($text, 0, 1)) === "-" || $ch1 === "+") {
             $sort->reverse = $ch1 === "-";
