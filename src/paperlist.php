@@ -284,7 +284,7 @@ class PaperList {
         else if (in_array($k, ["rownum", "rownumbers"]))
             $this->_view_row_numbers = $v;
         else {
-            if ($k === "authors")
+            if ($k === "authors" || $k === "author")
                 $k = "au";
             if ($v && in_array($k, ["aufull", "anonau"]) && !isset($this->_view_fields["au"]))
                 $this->_view_fields["au"] = $v;
@@ -853,7 +853,7 @@ class PaperList {
             return !$this->_view_row_numbers;
         else if ($fname === "statistics")
             return !$this->_view_statistics;
-        if ($fname === "authors")
+        if ($fname === "authors" || $fname === "author")
             $fname = "au";
         if (!$fname || $this->_unfold_all || $this->qreq["show$fname"])
             return false;

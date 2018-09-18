@@ -170,7 +170,7 @@
         "name": "authors",
         "row": true, "fold": 1, "completion": true, "sort": true,
         "callback": "+Authors_PaperColumn",
-        "synonym": "au", "position": 150
+        "synonym": ["au", "author"], "position": 150
     },
     {
         "name": "potentialconflict",
