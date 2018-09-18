@@ -249,7 +249,7 @@ class Contact {
     static function parse_sortanno(Conf $conf, $args, $explicit = false) {
         $name = $conf->sort_by_last ? ["lastName", "firstName"] : ["firstName", "lastName"];
         $s = [];
-        foreach ($args as $w) {
+        foreach ($args ? : [] as $w) {
             if ($w === "name")
                 $s = array_merge($s, $name);
             else if ($w === "first" || $w === "firstName")
