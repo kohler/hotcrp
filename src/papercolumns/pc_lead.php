@@ -17,7 +17,7 @@ class Lead_PaperColumn extends PaperColumn {
         return 0;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $pl = $sorter->list;
+        $pl = $sorter->pl;
         return $pl->_compare_pc(self::cid($pl, $a), self::cid($pl, $b));
     }
     function header(PaperList $pl, $is_text) {

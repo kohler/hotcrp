@@ -42,6 +42,9 @@ class PaperColumn extends Column {
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
     }
+    function sort_annotations(PaperList $pl, ListSorter $sorter) {
+        return null;
+    }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         error_log("unexpected compare " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $a->paperId - $b->paperId;
@@ -302,6 +305,61 @@ class Authors_PaperColumn extends PaperColumn {
         $this->anonau = !$pl->is_folded("anonau");
         $this->highlight = $pl->search->field_highlighter("authorInformation");
         return $pl->user->can_view_some_authors();
+    }
+    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+        $name = $pl->conf->sort_by_last ? ["lastName", "firstName"] : ["firstName", "lastName"];
+        $s = [];
+        foreach ($sorter->anno ? : [] as $anno) {
+            if ($anno === "name")
+                $s = array_merge($s, $name);
+            else if ($anno === "email")
+                $s[] = "email";
+            else if ($anno === "aff" || $anno === "affiliation")
+                $s[] = "affiliation";
+            else if ($anno === "first")
+                $s[] = "firstName";
+            else if ($anno === "last")
+                $s[] = "lastName";
+        }
+        if (!in_array("firstName", $s) && !in_array("lastName", $s))
+            $s = array_merge($s, $name);
+        foreach (["lastName", "firstName", "email", "affiliation"] as $k)
+            if (!in_array($k, $s))
+                $s[] = $k;
+        $sorter->anno = $s;
+    }
+    function sort_annotations(PaperList $pl, ListSorter $sorter) {
+        $sdef = $pl->conf->sort_by_last ? ["lastName", "firstName"] : ["firstName", "lastName"];
+        array_push($sdef, "email", "affiliation");
+        $sgot = $sorter->anno;
+        $x = [];
+        while ($sgot !== $sdef) {
+            $x[] = $sgot[0];
+            $sdef = array_diff($sdef, [$sgot[0]]);
+            array_shift($sgot);
+        }
+        return $x ? join(" ", $x) : null;
+    }
+    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
+        $au1 = $sorter->pl->user->allow_view_authors($a) ? $a->author_list() : [];
+        $au2 = $sorter->pl->user->allow_view_authors($b) ? $b->author_list() : [];
+        if (empty($au1) && empty($au2))
+            return 0;
+        else if (empty($au1) || empty($au2))
+            return empty($au1) ? 1 : -1;
+        for ($i = 0; $i < count($au1) && $i < count($au2); ++$i) {
+            foreach ($sorter->anno as $k) {
+                $v = strcasecmp(UnicodeHelper::deaccent($au1[$i]->$k), UnicodeHelper::deaccent($au2[$i]->$k));
+                if ($v === 0)
+                    $v = strcmp($au1[$i]->$k, $au2[$i]->$k);
+                if ($v !== 0)
+                    return $v;
+            }
+        }
+        if (count($au1) === count($au2))
+            return 0;
+        else
+            return count($au1) < count($au2) ? -1 : 1;
     }
     private function affiliation_map($row) {
         $nonempty_count = 0;
@@ -926,6 +984,9 @@ class ScoreGraph_PaperColumn extends PaperColumn {
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row)
             self::set_sort_fields($pl, $row, $sorter);
+    }
+    function sort_annotations(PaperList $pl, ListSorter $sorter) {
+        return ListSorter::canonical_long_score_sort($sorter->score);
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $k = $sorter->uid;

@@ -460,7 +460,7 @@ class PaperList {
         }
         foreach ($this->sorters as $s) {
             $s->assign_uid();
-            $s->list = $this;
+            $s->pl = $this;
         }
         foreach ($this->sorters as $s) {
             $s->field->analyze_sort($this, $rows, $s);
@@ -469,7 +469,7 @@ class PaperList {
         usort($rows, [$this, $thenmap ? "_then_sort_compare" : "_sort_compare"]);
 
         foreach ($this->sorters as $s)
-            $s->list = null; // break circular ref
+            $s->pl = null; // break circular ref
         $this->user->set_overrides($overrides);
         return $rows;
     }
@@ -480,11 +480,13 @@ class PaperList {
             && $this->sorters[0]->thenmap === null
             && ($always || (string) $this->qreq->sort != "")
             && ($this->sorters[0]->type != "id" || $this->sorters[0]->reverse)) {
-            $x = ($this->sorters[0]->reverse ? " reverse" : "");
-            if (($fdef = $this->find_column($this->sorters[0]->type))
-                && isset($fdef->score))
-                $x .= " " . ListSorter::canonical_long_score_sort($this->sorters[0]->score);
-            return ($fdef ? $fdef->name : $this->sorters[0]->type) . $x;
+            $anno = null;
+            if (($fdef = $this->find_column($this->sorters[0]->type)))
+                $anno = $fdef->sort_annotations($this, $this->sorters[0]);
+            if ($this->sorters[0]->reverse)
+                $anno = ($anno ? "$anno " : "") . "reverse";
+            $anno = $anno ? " by $anno" : "";
+            return ($fdef ? $fdef->name : $this->sorters[0]->type) . $anno;
         } else
             return "";
     }

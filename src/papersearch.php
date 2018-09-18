@@ -1154,7 +1154,7 @@ class PaperSearch {
     private $_matches; // list of ints
 
     static private $_sort_keywords = ["by" => "by", "up" => "up", "down" => "down",
-                 "reverse" => "down", "reversed" => "down", "score" => ""];
+                "rev" => "down", "reverse" => "down", "reversed" => "down", "score" => ""];
 
     static public $search_type_names = [
         "a" => "Your submissions",
@@ -1514,6 +1514,9 @@ class PaperSearch {
                     continue;
                 } else if (($x = ListSorter::canonical_short_score_sort($w))) {
                     $sort->score = $x;
+                    continue;
+                } else if ($i > $bypos) {
+                    $sort->anno[] = $w;
                     continue;
                 }
             }

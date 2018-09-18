@@ -5,12 +5,13 @@
 class ListSorter {
     public $type;
     public $reverse = false;
-    public $score = null;
+    public $score;
+    public $anno;
     public $empty = false;
-    public $thenmap = null;
-    public $field = null;
-    public $uid = null;
-    public $list = null;
+    public $thenmap;
+    public $field;
+    public $uid;
+    public $pl;
 
     static private $next_uid = 1;
 
@@ -78,11 +79,15 @@ class ListSorter {
             $x = $array[count($array) - 1];
             if (((!$s->type && !$s->field) || (!$x->type && !$x->field))
                 && $s->thenmap === $x->thenmap) {
-                foreach (array("type", "reverse", "score", "field") as $k)
+                foreach (["type", "reverse", "score", "field"] as $k)
                     if ($x->$k === null && $s->$k !== null) {
                         $x->$k = $s->$k;
                         $x->empty = false;
                     }
+                if ($s->anno !== null) {
+                    foreach ($s->anno as $anno)
+                        $x->anno[] = $anno;
+                }
                 return;
             }
         }
