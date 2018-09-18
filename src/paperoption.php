@@ -520,7 +520,7 @@ class PaperOption implements Abbreviator {
         return !$this->_ecs || $this->_ecs->test($prow);
     }
     function compile_edit_condition(PaperInfo $prow) {
-        assert($this->_ecs);
+        assert($this->_ecs !== null);
         return $this->_ecs->term()->compile_edit_condition($prow, $this->_ecs);
     }
 
