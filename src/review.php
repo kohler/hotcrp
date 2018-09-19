@@ -1513,7 +1513,7 @@ class ReviewValues extends MessageSet {
                 /* skip */;
             else if ($k === "p")
                 $this->paperId = cvtint($v);
-            else if ($k === "forceShow")
+            else if ($k === "override")
                 $this->req["override"] = !!$v;
             else if ($k === "blind" || $k === "version" || $k === "ready")
                 $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);

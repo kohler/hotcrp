@@ -122,7 +122,7 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
     $tf->paperId = $prow->paperId;
     if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
         $tf->msg(null, whyNotText($whyNot), MessageSet::ERROR);
-    else if ($tf->parse_web($Qreq, $Qreq->forceShow)
+    else if ($tf->parse_web($Qreq, $Qreq->override)
              && $tf->check_and_save($Me, $prow, $paperTable->editrrow)
              && !$tf->has_problem_at("ready")) {
         $tf->report();
@@ -133,7 +133,7 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
     $paperTable->set_review_values($tf);
 } else if ($Qreq->has_attachment("after_login")) {
     $tf = new ReviewValues($rf);
-    $tf->parse_web($Qreq, $Qreq->forceShow);
+    $tf->parse_web($Qreq, $Qreq->override);
     $paperTable->set_review_values($tf);
 }
 
@@ -145,7 +145,7 @@ if (isset($Qreq->adoptreview) && $Qreq->post_ok()) {
     $my_rrow = $prow->review_of_user($Me);
     if (($whyNot = $Me->perm_submit_review($prow, $my_rrow)))
         $tf->msg(null, whyNotText($whyNot), MessageSet::ERROR);
-    else if ($tf->parse_web($Qreq, $Qreq->forceShow)
+    else if ($tf->parse_web($Qreq, $Qreq->override)
              && $tf->unset_ready()
              && $tf->check_and_save($Me, $prow, $my_rrow)
              && !$tf->has_problem_at("ready"))
