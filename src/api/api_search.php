@@ -20,7 +20,7 @@ class Search_API {
             return new JsonResult(400, "Missing parameter.");
 
         $search = new PaperSearch($user, ["t" => $t, "q" => $q, "qt" => $qreq->qt, "urlbase" => $qreq->urlbase, "reviewer" => $qreq->reviewer]);
-        $pl = new PaperList($search, ["sort" => true], $qreq);
+        $pl = new PaperList($search, ["report" => $qreq->report ? : "pl", "sort" => true], $qreq);
         $ih = $pl->ids_and_groups();
         return ["ok" => true, "ids" => $ih[0], "groups" => $ih[1],
                 "hotlist" => $pl->session_list_object()->info_string()];
