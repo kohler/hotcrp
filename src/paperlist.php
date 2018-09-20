@@ -138,11 +138,11 @@ class PaperList {
     private $_view_statistics = false;
     private $_view_force = false;
     private $_view_fields = [];
-    private $atab;
+    private $_atab;
 
     private $_table_id;
     private $_table_class;
-    private $report_id;
+    private $_report_id;
     private $_row_id_pattern;
     private $_selection;
 
@@ -180,6 +180,10 @@ class PaperList {
 
     static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P];
 
+    const VIEWDISPLAY_VIEW = 1;
+    const VIEWDISPLAY_SORT = 2;
+    const VIEWDISPLAY_ALL = 3;
+
     function __construct(PaperSearch $search, $args = array(), $qreq = null) {
         $this->search = $search;
         $this->conf = $this->search->conf;
@@ -200,7 +204,7 @@ class PaperList {
             $this->_paper_link_page = "paper";
             $this->_paper_link_mode = "edit";
         }
-        $this->atab = $qreq->atab;
+        $this->_atab = $qreq->atab;
 
         $this->tagger = new Tagger($this->user);
 
@@ -217,18 +221,21 @@ class PaperList {
         else if ($this->sortable && $qreq->sort)
             array_unshift($this->sorters, PaperSearch::parse_sorter($qreq->sort));
 
-        if (($report = get($args, "report"))) {
-            $display = null;
-            if (!get($args, "no_session_display"))
-                $display = $this->conf->session("{$report}display", null);
-            if ($display === null)
-                $display = $this->conf->setting_data("{$report}display_default", null);
-            if ($display === null && $report === "pl")
-                $display = $this->conf->review_form()->default_display();
-            $this->set_view_display($display);
-        }
+        $viewdisplay = 0;
         if (is_string(get($args, "display")))
-            $this->set_view_display($args["display"]);
+            $viewdisplay |= $this->set_view_display($args["display"], ~$viewdisplay);
+        if (($report = get($args, "report"))) {
+            if (!get($args, "no_session_display")) {
+                $s = $this->conf->session("{$report}display", null);
+                $viewdisplay |= $this->set_view_display($s, ~($viewdisplay | self::VIEWDISPLAY_SORT));
+            }
+            $s = $this->conf->setting_data("{$report}display_default", null);
+            $viewdisplay |= $this->set_view_display($s, ~$viewdisplay);
+            if ($report === "pl") {
+                $s = $this->conf->review_form()->default_display();
+                $viewdisplay |= $this->set_view_display($s, ~$viewdisplay);
+            }
+        }
         foreach ($this->search->viewmap ? : [] as $k => $v)
             $this->set_view($k, $v);
         if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
@@ -256,10 +263,10 @@ class PaperList {
     }
 
     function report_id() {
-        return $this->report_id;
+        return $this->_report_id;
     }
     function set_report($report) {
-        $this->report_id = $report;
+        $this->_report_id = $report;
     }
 
     function set_row_filter($filter) {
@@ -291,11 +298,11 @@ class PaperList {
             $this->_view_fields[$k] = $v;
         }
     }
-    function set_view_display($str) {
-        $has_sorters = !!array_filter($this->sorters, function ($s) {
-            return $s->thenmap === null;
-        });
+    function set_view_display($str, $viewdisplay) {
+        if ($str === null)
+            return 0;
         $splitter = new SearchSplitter($str);
+        $result = 0;
         while (($w = $splitter->shift()) !== "") {
             if (($colon = strpos($w, ":")) !== false) {
                 $action = substr($w, 0, $colon);
@@ -303,13 +310,17 @@ class PaperList {
             } else
                 $action = "show";
             if ($action === "sort") {
-                if (!$has_sorters && $w !== "sort:id")
+                if ($w !== "sort:id" && ($viewdisplay & self::VIEWDISPLAY_SORT)) {
                     ListSorter::push($this->sorters, PaperSearch::parse_sorter($w));
-            } else if ($action === "edit")
-                $this->set_view($w, "edit");
-            else
-                $this->set_view($w, $action !== "hide");
+                    $result |= self::VIEWDISPLAY_SORT;
+                }
+            } else if ($viewdisplay & self::VIEWDISPLAY_VIEW) {
+                $action = $action === "edit" ? $action : $action !== "hide";
+                $this->set_view($w, $action);
+                $result |= self::VIEWDISPLAY_VIEW;
+            }
         }
+        return $result;
     }
 
     function set_selection(SearchSelection $ssel) {
@@ -577,8 +588,8 @@ class PaperList {
     function action_xt_displayed($fj) {
         if (isset($fj->display_if_report)
             && (str_starts_with($fj->display_if_report, "!")
-                ? $this->report_id === substr($fj->display_if_report, 1)
-                : $this->report_id !== $fj->display_if_report))
+                ? $this->_report_id === substr($fj->display_if_report, 1)
+                : $this->_report_id !== $fj->display_if_report))
             return false;
         if (isset($fj->display_if)
             && !$this->conf->xt_check($fj->display_if, $fj, $this->user))
@@ -693,7 +704,7 @@ class PaperList {
                 array_unshift($lllg, $rf->name, $rf->title);
                 $lllg[0] = SelfHref::make($this->qreq, ["atab" => $lllg[0], "anchor" => "plact"]);
                 $lllgroups[] = $lllg;
-                if ($this->qreq->fn == $rf->name || $this->atab == $rf->name)
+                if ($this->qreq->fn == $rf->name || $this->_atab == $rf->name)
                     $whichlll = count($lllgroups) - 1;
             }
         }
@@ -712,7 +723,7 @@ class PaperList {
     }
 
     private function _list_columns() {
-        switch ($this->report_id) {
+        switch ($this->_report_id) {
         case "a":
             return "id title revstat statusfull authors collab abstract topics reviewers shepherd scores formulas";
         case "authorHome":
@@ -757,7 +768,7 @@ class PaperList {
             $this->_default_linkto("assign");
             return "sel id title status reviewers";
         default:
-            error_log($this->conf->dbname . ": No such report {$this->report_id}");
+            error_log($this->conf->dbname . ": No such report {$this->_report_id}");
             return null;
         }
     }
@@ -1221,7 +1232,7 @@ class PaperList {
         $this->_has = [];
         $this->count = 0;
         $this->need_render = false;
-        $this->report_id = $this->report_id ? : $report_id;
+        $this->_report_id = $this->_report_id ? : $report_id;
         return true;
     }
 
@@ -1414,7 +1425,7 @@ class PaperList {
     }
 
     private function _listDescription() {
-        switch ($this->report_id) {
+        switch ($this->_report_id) {
         case "reviewAssignment":
             return "Review assignments";
         case "editpref":
@@ -1813,49 +1824,53 @@ class PaperList {
     }
 
 
-    function display($report_id) {
+    function display($report_id, $viewdisplay = self::VIEWDISPLAY_ALL) {
         if (!($this->_prepare($report_id)
               && ($field_list = $this->_list_columns())))
             return false;
         $field_list = $this->_columns($field_list, false);
         $res = [];
-        if ($this->_view_force)
-            $res["-3 force"] = "show:force";
-        if ($this->_view_compact_columns)
-            $res["-2 ccol"] = "show:ccol";
-        else if ($this->_view_columns)
-            $res["-2 col"] = "show:col";
-        if ($this->_view_row_numbers)
-            $res["-1 rownum"] = "show:rownum";
-        if ($this->_view_statistics)
-            $res["-1 statistics"] = "show:statistics";
-        $x = [];
-        foreach ($this->_view_fields as $k => $v) {
-            $f = $this->_expand_view_column($k, false);
-            foreach ($f as $col)
-                if ($v === "edit"
-                    || ($v && ($col->fold || !$col->is_visible))
-                    || (!$v && !$col->fold && $col->is_visible)) {
-                    if ($v !== "edit")
-                        $v = $v ? "show" : "hide";
-                    $key = ($col->position ? : 0) . " " . $col->name;
-                    $res[$key] = $v . ":" . PaperSearch::escape_word($col->name);
-                }
+        if ($viewdisplay & self::VIEWDISPLAY_VIEW) {
+            if ($this->_view_force)
+                $res["-3 force"] = "show:force";
+            if ($this->_view_compact_columns)
+                $res["-2 ccol"] = "show:ccol";
+            else if ($this->_view_columns)
+                $res["-2 col"] = "show:col";
+            if ($this->_view_row_numbers)
+                $res["-1 rownum"] = "show:rownum";
+            if ($this->_view_statistics)
+                $res["-1 statistics"] = "show:statistics";
+            $x = [];
+            foreach ($this->_view_fields as $k => $v) {
+                $f = $this->_expand_view_column($k, false);
+                foreach ($f as $col)
+                    if ($v === "edit"
+                        || ($v && ($col->fold || !$col->is_visible))
+                        || (!$v && !$col->fold && $col->is_visible)) {
+                        if ($v !== "edit")
+                            $v = $v ? "show" : "hide";
+                        $key = ($col->position ? : 0) . " " . $col->name;
+                        $res[$key] = $v . ":" . PaperSearch::escape_word($col->name);
+                    }
+            }
+            $anonau = get($this->_view_fields, "anonau") && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL;
+            $aufull = get($this->_view_fields, "aufull");
+            if (($anonau || $aufull) && !get($this->_view_fields, "au"))
+                $res["150 authors"] = "hide:authors";
+            if ($anonau)
+                $res["151 anonau"] = "show:anonau";
+            if ($aufull)
+                $res["151 aufull"] = "show:aufull";
+            ksort($res, SORT_NATURAL);
+            $res = array_values($res);
         }
-        $anonau = get($this->_view_fields, "anonau") && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL;
-        $aufull = get($this->_view_fields, "aufull");
-        if (($anonau || $aufull) && !get($this->_view_fields, "au"))
-            $res["150 authors"] = "hide:authors";
-        if ($anonau)
-            $res["151 anonau"] = "show:anonau";
-        if ($aufull)
-            $res["151 aufull"] = "show:aufull";
-        ksort($res, SORT_NATURAL);
-        $res = array_values($res);
-        foreach ($this->sorters as $s) {
-            $w = "sort:" . ($s->reverse ? "-" : "") . PaperSearch::escape_word($s->field->sort_name($this, $s));
-            if ($w !== "sort:id")
-                $res[] = $w;
+        if ($viewdisplay & self::VIEWDISPLAY_SORT) {
+            foreach ($this->sorters as $s) {
+                $w = "sort:" . PaperSearch::escape_word($s->field->sort_name($this, $s) . ($s->reverse ? " reverse" : ""));
+                if ($w !== "sort:id")
+                    $res[] = $w;
+            }
         }
         return join(" ", $res);
     }
@@ -1863,6 +1878,6 @@ class PaperList {
         $pl = new PaperList(new PaperSearch($user, "NONE"), ["report" => $report, "sort" => true]);
         if ($var)
             $pl->set_view($var, $val);
-        $user->conf->save_session("{$report}display", $pl->display("s"));
+        $user->conf->save_session("{$report}display", $pl->display("s", self::VIEWDISPLAY_VIEW));
     }
 }
