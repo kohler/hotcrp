@@ -35,7 +35,7 @@ class PaperPC_SearchTerm extends SearchTerm {
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $can_view = "can_view_{$this->kind}";
-        return $srch->user->$can_view($row, true)
+        return $srch->user->$can_view($row)
             && CountMatcher::compare_using($row->{$this->fieldname}, $this->match);
     }
 }
