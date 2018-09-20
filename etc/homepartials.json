@@ -27,19 +27,19 @@
         "render_callback": "*Home_Partial::render_admin_settings"
     },
     {
-        "name": "home/sidebar/admin/users", "position": 20, "allow_if": "chair",
+        "name": "home/sidebar/admin/users", "position": 20, "allow_if": "manager",
         "render_callback": "*Home_Partial::render_admin_users"
     },
     {
-        "name": "home/sidebar/admin/assignments", "position": 30, "allow_if": "chair",
+        "name": "home/sidebar/admin/assignments", "position": 30, "allow_if": "manager",
         "render_callback": "*Home_Partial::render_admin_assignments"
     },
     {
-        "name": "home/sidebar/admin/mail", "position": 40, "allow_if": "chair",
+        "name": "home/sidebar/admin/mail", "position": 40, "allow_if": "manager",
         "render_callback": "*Home_Partial::render_admin_mail"
     },
     {
-        "name": "home/sidebar/admin/log", "position": 50, "allow_if": "chair",
+        "name": "home/sidebar/admin/log", "position": 50, "allow_if": "manager",
         "render_callback": "*Home_Partial::render_admin_log"
     },
     {
