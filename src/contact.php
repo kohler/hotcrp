@@ -2347,7 +2347,7 @@ class Contact {
             return (!$this->conf->opt("hideManager") && $this->is_reviewer())
                 || ($this->isPC && $this->is_explicit_manager());
         $rights = $this->rights($prow);
-        return $prow->managerContactId == $this->contactId
+        return $rights->allow_administer
             || ($rights->potential_reviewer && !$this->conf->opt("hideManager"));
     }
 
