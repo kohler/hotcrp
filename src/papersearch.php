@@ -1379,15 +1379,22 @@ class PaperSearch {
         $scm = $this->make_contact_match($type, $word);
         if ($scm->warn_html)
             $this->warn($scm->warn_html);
-        return $scm->ids;
+        return $scm;
     }
-    function matching_users($word, $quoted, $pc_only) {
-        $cids = $this->matching_contacts_base(ContactSearch::F_USER, $word, $quoted, $pc_only);
-        return empty($cids) ? [] : $cids;
+    function matching_uids($word, $quoted, $pc_only) {
+        $scm = $this->matching_contacts_base(ContactSearch::F_USER, $word, $quoted, $pc_only);
+        return empty($scm->ids) ? [] : $scm->ids;
     }
-    function matching_special_contacts($word, $quoted, $pc_only) {
-        $cids = $this->matching_contacts_base(0, $word, $quoted, $pc_only);
-        return $cids === false ? null : (empty($cids) ? [] : $cids);
+    function matching_contacts($word, $quoted, $pc_only) {
+        $scm = $this->matching_contacts_base(ContactSearch::F_USER, $word, $quoted, $pc_only);
+        return $scm->contacts();
+    }
+    function matching_special_uids($word, $quoted, $pc_only) {
+        $scm = $this->matching_contacts_base(0, $word, $quoted, $pc_only);
+        if ($scm->ids === false)
+            return null;
+        else
+            return empty($scm->ids) ? [] : $scm->ids;
     }
 
     static function decision_matchexpr(Conf $conf, $word, $flag) {

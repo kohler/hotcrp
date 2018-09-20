@@ -59,7 +59,7 @@ class Comment_SearchTerm extends SearchTerm {
             if (empty($tags))
                 return new False_SearchTerm;
         } else if ($m[0] !== "")
-            $contacts = $srch->matching_users($m[0], $sword->quoted, false);
+            $contacts = $srch->matching_uids($m[0], $sword->quoted, false);
         $csm = new ContactCountMatcher($m[1], $contacts);
         return new Comment_SearchTerm($csm, $tags, $sword->kwdef);
     }

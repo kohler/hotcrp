@@ -47,12 +47,12 @@ class Revpref_SearchTerm extends SearchTerm {
 
         if (preg_match('/\A((?:(?!≠|≤|≥)[^:=!<>])+)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
-            $contacts = $srch->matching_special_contacts($m[1], $sword->quoted, true);
+            $contacts = $srch->matching_special_uids($m[1], $sword->quoted, true);
             if ($contacts !== null)
                 $safe_contacts = 1;
             else {
                 $safe_contacts = -1;
-                $contacts = $srch->matching_users($m[1], $sword->quoted, true);
+                $contacts = $srch->matching_uids($m[1], $sword->quoted, true);
             }
             $word = str_starts_with($m[2], ":") ? substr($m[2], 1) : $m[2];
             if ($word === "")

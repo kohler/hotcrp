@@ -259,6 +259,7 @@ src/reviewtable.php
 src/reviewtimes.php
 src/sample.pdf
 src/schema.sql
+src/search/st_admin.php
 src/search/st_author.php
 src/search/st_comment.php
 src/search/st_conflict.php

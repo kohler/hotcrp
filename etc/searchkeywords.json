@@ -112,7 +112,7 @@
     },
     {
         "name": "admin",
-        "parse_callback": "PaperPC_SearchTerm::parse", "pcfield": "manager",
+        "parse_callback": "Admin_SearchTerm::parse",
         "synonym": ["manager", "administrator"], "has": "any"
     },
     {

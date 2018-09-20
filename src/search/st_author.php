@@ -26,7 +26,7 @@ class Author_SearchTerm extends SearchTerm {
                 $word = null;
                 $count = "=0";
             } else if (trim($word) !== "")
-                $cids = $srch->matching_special_contacts($word, false, false);
+                $cids = $srch->matching_special_uids($word, false, false);
         }
         return new Author_SearchTerm($count, $cids, $word, $sword->quoted);
     }
