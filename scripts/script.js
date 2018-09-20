@@ -7074,9 +7074,7 @@ handle_ui.on("js-assign-review", function (event) {
 
 
 // list management, conflict management
-(function ($) {
-var cookie_set_at;
-function decode_ids(str) {
+function decode_session_list_ids(str) {
     if ($.isArray(str))
         return str;
     var a = [], l = str.length, next = null, sign = 1;
@@ -7147,6 +7145,9 @@ function decode_ids(str) {
     }
     return a;
 }
+
+(function ($) {
+var cookie_set_at;
 function update_digest(info) {
     var add = typeof info === "string" ? 1 : 0,
         digests = wstorage.json(false, "list_digests") || [],
@@ -7178,7 +7179,7 @@ function make_digest(info, pid) {
     if (m && wstorage() && (digest = update_digest(m[2]))) {
         info = m[1] + '"digest":"listdigest' + digest + '"';
         if (pid) {
-            var ids = decode_ids(m[2]), pos;
+            var ids = decode_session_list_ids(m[2]), pos;
             if (ids && (pos = $.inArray(pid, ids)) >= 0) {
                 info += ',"curid":' + pid
                     + ',"previd":' + (pos > 0 ? ids[pos - 1] : 'false')
@@ -7318,7 +7319,7 @@ $(function () {
                 ids, pos;
             if (info
                 && info.ids
-                && (ids = decode_ids(info.ids))
+                && (ids = decode_session_list_ids(info.ids))
                 && (pos = $.inArray(hotcrp_paperid, ids)) >= 0) {
                 if (pos > 0)
                     $(this).prepend('<a id="quicklink_prev" class="x" href="' + hoturl_html("paper", {p: ids[pos - 1]}) + '">&lt; #' + ids[pos - 1] + '</a> ');
@@ -7339,7 +7340,7 @@ function hotlist_search_params(x, ids) {
     var m;
     if (!x || !x.ids || !(m = x.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/)))
         return false;
-    var q = {q: ids ? x.ids.replace(/'/g, " ") : urldecode(m[2]), t: m[1] || "s"};
+    var q = {q: ids ? decode_session_list_ids(x.ids).join(" ") : urldecode(m[2]), t: m[1] || "s"};
     if (m[3]) {
         var args = m[3].split(/[&;]/);
         for (var i = 0; i < args.length; ++i) {
