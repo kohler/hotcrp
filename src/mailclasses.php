@@ -240,8 +240,13 @@ class MailRecipients {
 
         // additional manager limit
         if (!$this->contact->privChair
-            && !($this->selflags[$this->type] & self::F_ANYPC))
-            $where[] = "Paper.managerContactId=" . $this->contact->contactId;
+            && !($this->selflags[$this->type] & self::F_ANYPC)) {
+            if ($this->conf->check_any_admin_tracks($this->contact)) {
+                $ps = new PaperSearch($this, ["q" => "", "t" => "manager"]);
+                $where[] = "Paper.paperId" . sql_in_numeric_set($ps->paper_ids());
+            } else
+                $where[] = "Paper.managerContactId=" . $this->contact->contactId;
+        }
 
         // reviewer limit
         if (!preg_match('_\A(new|unc|c|allc|)(pc|ext|myext|)rev\z_',
