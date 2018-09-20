@@ -52,7 +52,7 @@ class ContactSearch {
     private function check_simple() {
         if (strcasecmp($this->text, "me") == 0
             && (!($this->type & self::F_PC)
-                || ($this->user->roles & Contact::ROLE_PC))) {
+                || ($this->user->roles & Contact::ROLE_PCLIKE))) {
             return [$this->user->contactId];
         }
         if ($this->user->can_view_pc()) {
