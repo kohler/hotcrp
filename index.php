@@ -11,7 +11,7 @@ if (Navigation::page() !== "index") {
         && strpos($page, "/") === false) {
         include("$page.php");
         exit;
-    } else if ($page == "images" || $page == "scripts" || $page == "stylesheets") {
+    } else if ($page === "images" || $page === "scripts" || $page === "stylesheets") {
         $_GET["file"] = $page . Navigation::path();
         include("cacheable.php");
         exit;
