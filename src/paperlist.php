@@ -129,7 +129,6 @@ class PaperList {
 
     private $sortable;
     private $foldable;
-    private $_unfold_all = false;
     private $_paper_link_page;
     private $_paper_link_mode;
     private $_view_columns = false;
@@ -328,10 +327,6 @@ class PaperList {
     }
     function is_selected($paperId, $default = false) {
         return $this->_selection ? $this->_selection->is_selected($paperId) : $default;
-    }
-
-    function unfold_all() {
-        $this->_unfold_all = true;
     }
 
     function mark_has($key, $value = true) {
@@ -868,7 +863,7 @@ class PaperList {
             return !$this->_view_statistics;
         if ($fname === "authors" || $fname === "author")
             $fname = "au";
-        if (!$fname || $this->_unfold_all || $this->qreq["show$fname"])
+        if (!$fname || $this->qreq["show$fname"])
             return false;
         return !get($this->_view_fields, $fname);
     }
