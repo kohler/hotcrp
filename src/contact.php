@@ -1990,8 +1990,7 @@ class Contact {
     function can_meaningfully_override(PaperInfo $prow) {
         if ($this->is_manager()) {
             $rights = $this->rights($prow);
-            return $rights->allow_administer
-                && ($rights->conflictType > 0 || $this->_dangerous_track_mask);
+            return $rights->allow_administer && $rights->conflictType > 0;
         } else
             return false;
     }
@@ -2020,8 +2019,7 @@ class Contact {
     private function _can_administer_for_track(PaperInfo $prow, $rights, $ttype) {
         return $rights->can_administer
             && (!($this->_dangerous_track_mask & (1 << $ttype))
-                || $this->conf->check_tracks($prow, $this, $ttype)
-                || ($this->_overrides & self::OVERRIDE_CONFLICT) !== 0);
+                || $this->conf->check_tracks($prow, $this, $ttype));
     }
 
     function can_administer_for_track(PaperInfo $prow = null, $ttype) {
