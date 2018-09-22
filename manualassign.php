@@ -120,6 +120,7 @@ Assignment methods:
 <ul><li><a href='", hoturl("autoassign"), "'>Automatic</a></li>
  <li><a href='", hoturl("manualassign"), "' class='q'><strong>Manual by PC member</strong></a></li>
  <li><a href='", hoturl("assign"), "'>Manual by paper</a></li>
+ <li><a href='", hoturl("conflictassign"), "'>Potential conflicts</a></li>
  <li><a href='", hoturl("bulkassign"), "'>Bulk update</a></li>
 </ul>
 <hr class='hr' />\n";
