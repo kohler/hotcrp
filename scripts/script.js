@@ -5889,19 +5889,20 @@ function set(f, $j, text) {
 function make_callback(dofold, type) {
     var f = fields[type], values, tr;
     function render_some() {
-        var index = field_index(f), htmlk = f.name + ".html";
+        var index = field_index(f), htmlk = f.name;
         for (var n = 0; n < 64 && tr; tr = tr.nextSibling)
             if (tr.nodeName === "TR" && tr.hasAttribute("data-pid")
                 && /\bpl\b/.test(tr.className)) {
                 var p = +tr.getAttribute("data-pid");
-                for (var k in values)
-                    if (k.substr(0, 5) == "attr." && p in values[k])
-                        pidattr(p, k.substr(5), values[k][p]);
-                if (values[htmlk] && p in values[htmlk]) {
+                if (values.attr && p in values.attr) {
+                    for (var k in values.attr[p])
+                        pidattr(p, k, values.attr[p][k]);
+                }
+                if (p in values.data) {
                     var $elt = pidfield(p, f, index);
                     if (!$elt.length)
                         log_jserror("bad pidfield " + JSON.stringify([p, f.name, index]));
-                    set(f, $elt, values[htmlk][p]);
+                    set(f, $elt, values.data[p][htmlk]);
                 }
                 ++n;
             }
@@ -5909,23 +5910,23 @@ function make_callback(dofold, type) {
         if (tr)
             setTimeout(render_some, 8);
     }
-    function render_statistics() {
+    function render_statistics(statvalues) {
         var tr = $(self).find("tfoot > tr.pl_statrow").first()[0],
-            index = field_index(f), htmlk = f.name + ".stat.html";
+            index = field_index(f);
         for (; tr; tr = tr.nextSibling)
             if (tr.nodeName === "TR" && tr.hasAttribute("data-statistic")) {
                 var stat = tr.getAttribute("data-statistic"),
                     j = 0, td = tr.childNodes[index];
-                if (td && (stat in values[htmlk]))
-                    td.innerHTML = values[htmlk][stat];
+                if (td && stat in statvalues)
+                    td.innerHTML = statvalues[stat];
             }
     }
     function render_start() {
         ensure_field(f);
         tr = $(self).find("tr.pl").first()[0];
         render_some();
-        if (values[f.name + ".stat.html"])
-            render_statistics();
+        if (values.stat && f.name in values.stat)
+            render_statistics(values.stat[f.name]);
     }
     return function (rv) {
         if (type === "aufull")

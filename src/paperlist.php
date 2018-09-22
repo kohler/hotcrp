@@ -1327,13 +1327,13 @@ class PaperList {
         }
     }
 
-    private function _prepare_columns($field_list) {
+    private function _prepare_columns($field_list, $all) {
         $field_list2 = [];
         $this->need_tag_attr = false;
         $this->table_attr = [];
         foreach ($field_list as $fdef) {
             if ($fdef) {
-                $fdef->is_visible = !$this->is_folded($fdef);
+                $fdef->is_visible = $all || !$this->is_folded($fdef);
                 $fdef->has_content = false;
                 if ($fdef->prepare($this, $fdef->is_visible ? 1 : 0)) {
                     $field_list2[] = $fdef->realize($this);
@@ -1361,12 +1361,12 @@ class PaperList {
         $this->_header_script .= $script;
     }
 
-    private function _columns($field_list, $table_html) {
+    private function _columns($field_list, $table_html, $all) {
         $field_list = $this->_canonicalize_columns($field_list);
         if ($table_html)
             $field_list = $this->_view_columns($field_list);
         $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
-        return $this->_prepare_columns($field_list);
+        return $this->_prepare_columns($field_list, $all);
     }
 
     private function _statistics_rows($rstate, $fieldDef) {
@@ -1411,7 +1411,7 @@ class PaperList {
     function ids_and_groups() {
         if (!$this->_prepare())
             return null;
-        $field_list = $this->_columns("id", false);
+        $field_list = $this->_columns("id", false, true);
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
@@ -1459,7 +1459,7 @@ class PaperList {
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
 
         // expand fields, check sort
-        $field_list = $this->_columns($field_list, true);
+        $field_list = $this->_columns($field_list, true, false);
         $rows = $this->_rows($field_list);
 
         if (empty($rows)) {
@@ -1677,56 +1677,59 @@ class PaperList {
                 . "</table>";
     }
 
-    function column_json($fieldId) {
-        if (!$this->_prepare()
-            || !($fdef = $this->find_column($fieldId)))
+    function column_json($fields) {
+        if (!$this->_prepare())
             return null;
 
-        // field is never folded, no sorting
-        $this->set_view($fdef->name, true);
-        assert(!$this->is_folded($fdef));
-        $this->sorters = [];
-
-        // get rows
-        $field_list = $this->_columns([$fdef->name], false);
-        assert(count($field_list) === 1);
+        // get column list, check sort
+        $field_list = $this->_columns($fields, false, true);
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
-        $fdef = $field_list[0];
 
         // turn off forceShow
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
 
         // output field data
-        $data = array();
-        if (($x = $fdef->header($this, false)))
-            $data["{$fdef->name}.headerhtml"] = $x;
-        $m = array();
+        $data = $attr = $stat = [];
         foreach ($rows as $row) {
             $this->_row_setup($row);
-            list($empty, $content) = $this->_row_field_content($fdef, $row);
-            $m[$row->paperId] = $content;
+            $p = ["id" => $row->paperId];
+            foreach ($field_list as $fdef) {
+                list($empty, $content) = $this->_row_field_content($fdef, $row);
+                if ($content !== "")
+                    $p[$fdef->name] = $content;
+            }
+            $data[$row->paperId] = $p;
             foreach ($this->row_attr as $k => $v) {
-                if (!isset($data["attr.$k"]))
-                    $data["attr.$k"] = [];
-                $data["attr.$k"][$row->paperId] = $v;
+                if (!isset($attr[$row->paperId]))
+                    $attr[$row->paperId] = [];
+                $attr[$row->paperId][$k] = $v;
             }
         }
-        $data["{$fdef->name}.html"] = $m;
+
+        // analyze `has`, including authors
+        foreach ($field_list as $fdef)
+            $this->mark_has($fdef->name, $fdef->has_content);
 
         // output statistics
-        if ($fdef->has_statistics()) {
-            $m = [];
-            foreach (self::$stats as $stat)
-                $m[ScoreInfo::$stat_keys[$stat]] = $fdef->statistic($this, $stat);
-            $data["{$fdef->name}.stat.html"] = $m;
-        }
-        $this->mark_has($fdef->name, $fdef->has_content);
+        foreach ($field_list as $fdef)
+            if ($fdef->has_statistics()) {
+                $stat[$fdef->name] = [];
+                foreach (self::$stats as $s)
+                    $stat[ScoreInfo::$stat_keys[$s]] = $fdef->statistic($this, $s);
+            }
 
         // restore forceShow
         $this->user->set_overrides($overrides);
-        return $data;
+
+        // output
+        $result = ["data" => $data];
+        if (!empty($attr))
+            $result["attr"] = $attr;
+        if (!empty($stat))
+            $result["stat"] = $stat;
+        return $result;
     }
 
     function text_json($fields) {
@@ -1734,25 +1737,24 @@ class PaperList {
             return null;
 
         // get column list, check sort
-        $field_list = $this->_columns($fields, false);
+        $field_list = $this->_columns($fields, false, true);
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
 
-        $x = array();
+        $data = [];
         foreach ($rows as $row) {
             $this->_row_setup($row);
-            $p = array("id" => $row->paperId);
+            $p = ["id" => $row->paperId];
             foreach ($field_list as $fdef) {
                 if ($fdef->viewable()
                     && !$fdef->content_empty($this, $row)
                     && ($text = $fdef->text($this, $row)) !== "")
                     $p[$fdef->name] = $text;
             }
-            $x[$row->paperId] = (object) $p;
+            $data[$row->paperId] = (object) $p;
         }
-
-        return $x;
+        return $data;
     }
 
     private function _row_text_csv_data(PaperInfo $row, $fieldDef) {
@@ -1785,7 +1787,7 @@ class PaperList {
         $field_list = $this->_list_columns();
         if ($field_list === false)
             return null;
-        $field_list = $this->_columns($field_list, true);
+        $field_list = $this->_columns($field_list, true, false); /* XXX */
         $rows = $this->_rows($field_list);
         if ($rows === null || empty($rows))
             return null;
@@ -1793,7 +1795,8 @@ class PaperList {
         // get field array
         $fieldDef = array();
         foreach ($field_list as $fdef)
-            if ($fdef->viewable() && $fdef->is_visible
+            if ($fdef->viewable()
+                && $fdef->is_visible
                 && $fdef->header($this, true) != "")
                 $fieldDef[] = $fdef;
 
@@ -1822,7 +1825,7 @@ class PaperList {
         if (!($this->_prepare($report_id)
               && ($field_list = $this->_list_columns())))
             return false;
-        $field_list = $this->_columns($field_list, false);
+        $field_list = $this->_columns($field_list, false, false);
         $res = [];
         if ($viewdisplay & self::VIEWDISPLAY_VIEW) {
             if ($this->_view_force)

@@ -48,11 +48,35 @@ class Search_API {
             $report = "pf";
         $pl = new PaperList($search, ["report" => $report]);
         $response = $pl->column_json($qreq->f);
-        $response["ok"] = !empty($response);
+        if (!$response)
+            return ["ok" => false];
+        else {
+            $response["ok"] = true;
+            if ($qreq->session && $qreq->post_ok())
+                $user->setsession_api($qreq->session);
+            return $response;
+        }
+    }
 
-        if ($qreq->session && $qreq->post_ok())
-            $user->setsession_api($qreq->session);
+    static function fieldtext(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+        if ($qreq->f === null)
+            return new JsonResult(400, "Missing parameter.");
+        $fdefs = [];
+        foreach (preg_split('/\s+/', trim($qreq->f)) as $fid) {
+            if ($user->conf->paper_columns($fid, $user))
+                $fdefs[] = $fid;
+            else
+                return new JsonResult(404, "No such field “{$fid}”.");
+        }
 
-        return $response;
+        if (!isset($qreq->q) && $prow) {
+            $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
+            $qreq->q = $prow->paperId;
+        } else if (!isset($qreq->q))
+            $qreq->q = "";
+        $search = new PaperSearch($user, $qreq);
+
+        $pl = new PaperList($search, ["report" => "pl"]);
+        return ["ok" => true, "data" => $pl->text_json($qreq->f)];
     }
 }

@@ -21,6 +21,10 @@
         "callback": "PaperApi::decision_api"
     },
     {
+        "name": "fieldtext", "get": true,
+        "callback": "Search_API::fieldtext"
+    },
+    {
         "name": "fieldhtml", "get": true,
         "callback": "Search_API::fieldhtml"
     },
