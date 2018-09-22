@@ -1893,6 +1893,10 @@ class Contact {
         if ($ci->rights_forced !== $forceShow) {
             $ci->rights_forced = $forceShow;
 
+            // check dangerous track mask
+            if ($ci->allow_administer && $this->_dangerous_track_mask === null)
+                $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
+
             // check current administration status
             $ci->can_administer = $ci->allow_administer
                 && (!$ci->conflictType || $forceShow);
@@ -1916,8 +1920,12 @@ class Contact {
 
             // check whether this is a potential reviewer
             // (existing external reviewer or PC)
-            if ($ci->reviewType > 0 || $am_lead || $ci->allow_administer)
+            if ($ci->reviewType > 0 || $am_lead)
                 $ci->potential_reviewer = true;
+            else if ($ci->allow_administer)
+                $ci->potential_reviewer = !$tracks
+                    || !($this->_dangerous_track_mask & (1 << Track::UNASSREV))
+                    || $this->conf->check_tracks($prow, $this, Track::UNASSREV);
             else if ($ci->allow_pc)
                 $ci->potential_reviewer = !$tracks
                     || $this->conf->check_tracks($prow, $this, Track::UNASSREV);
@@ -1953,10 +1961,6 @@ class Contact {
                 || ($prow->outcome > 0
                     && ($isPC || $ci->allow_review)
                     && $this->conf->time_reviewer_view_accepted_authors());
-
-            // check dangerous track mask
-            if ($ci->allow_administer && $this->_dangerous_track_mask === null)
-                $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
         }
 
         return $ci;
@@ -2816,11 +2820,9 @@ class Contact {
                 && ($this->conf->check_all_tracks($this, Track::ASSREV)
                     || $this->conf->check_all_tracks($this, Track::UNASSREV));
         $rights = $this->rights($prow);
-        return $rights->allow_pc_broad
-            && ($rights->reviewType > 0
-                || $rights->allow_administer
-                || $this->conf->check_tracks($prow, $this, Track::ASSREV)
-                || $this->conf->check_tracks($prow, $this, Track::UNASSREV));
+        return $rights->potential_reviewer
+            || ($rights->allow_pc_broad
+                && $this->conf->check_tracks($prow, $this, Track::ASSREV));
     }
 
     function can_accept_review_assignment_ignore_conflict(PaperInfo $prow = null) {
@@ -2863,6 +2865,7 @@ class Contact {
                 && $this->conf->setting("pcrev_any") > 0
                 && $this->conf->time_review(null, true, true))
             || ($rights->can_administer
+                && $rights->potential_reviewer /* true unless track perm */
                 && (($prow->timeSubmitted > 0 && !$submit)
                     || $this->override_deadlines($rights)));
     }
@@ -3115,7 +3118,9 @@ class Contact {
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
         $rights = $this->rights($prow);
         return ($crow && $this->is_my_comment($prow, $crow))
-            || $rights->can_administer
+            || ($rights->can_administer
+                && ($ctype >= COMMENTTYPE_AUTHOR
+                    || $rights->potential_reviewer))
             || ($rights->act_author_view
                 && ($ctype & (COMMENTTYPE_BYAUTHOR | COMMENTTYPE_RESPONSE)))
             || ($rights->act_author_view
