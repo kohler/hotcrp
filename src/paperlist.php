@@ -767,9 +767,11 @@ class PaperList {
         case "reviewersSel":
             $this->_default_linkto("assign");
             return "sel id title status reviewers";
+        case "empty":
+            return "";
         default:
             error_log($this->conf->dbname . ": No such report {$this->_report_id}");
-            return null;
+            return false;
         }
     }
 
@@ -1161,7 +1163,7 @@ class PaperList {
             $classes[] = "fold6" . ($this->_view_row_numbers ? "o" : "c");
         if ($this->user->is_track_manager())
             $classes[] = "fold5" . ($this->_view_force ? "o" : "c");
-        $classes[] = "fold7" . ($this->_view_statistics ? "o" : "c");
+        $classes[] = "fold7" . ($this->is_folded("statistics") ? "c" : "o");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
         $this->table_attr["data-columns"] = $jscol;
     }
@@ -1458,7 +1460,7 @@ class PaperList {
             $field_list = $options["field_list"];
         else
             $field_list = $this->_list_columns();
-        if (!$field_list)
+        if ($field_list === false)
             return PaperListTableRender::make_error("No matching report");
 
         // turn off forceShow
@@ -1792,7 +1794,7 @@ class PaperList {
             $field_list = $options["field_list"];
         else
             $field_list = $this->_list_columns();
-        if (!$field_list)
+        if ($field_list === false)
             return null;
         $field_list = $this->_columns($field_list, true);
         $rows = $this->_rows($field_list);
