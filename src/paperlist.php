@@ -1150,7 +1150,7 @@ class PaperList {
             $jscol[] = $j;
             if ($fdef->fold)
                 $classes[] = "fold" . $fdef->fold . ($fdef->is_visible ? "o" : "c");
-            if ($fdef instanceof SelectorPaperColumn)
+            if ($fdef instanceof Selector_PaperColumn)
                 $has_sel = true;
         }
         // authorship requires special handling
@@ -1655,7 +1655,7 @@ class PaperList {
 
         // footer
         reset($fieldDef);
-        if (current($fieldDef) instanceof SelectorPaperColumn
+        if (current($fieldDef) instanceof Selector_PaperColumn
             && !get($options, "nofooter"))
             $tfoot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($tfoot)

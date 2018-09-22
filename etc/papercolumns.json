@@ -1,22 +1,22 @@
 [
     {
         "name": "sel",
-        "column": true, "minimal": true, "callback": "+SelectorPaperColumn",
+        "column": true, "minimal": true, "callback": "+Selector_PaperColumn",
         "position": 10
     },
     {
         "name": "selon",
-        "column": true, "minimal": true, "className": "pl_sel", "callback": "+SelectorPaperColumn",
+        "column": true, "minimal": true, "className": "pl_sel", "callback": "+Selector_PaperColumn",
         "position": 10
     },
     {
         "name": "id",
-        "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+IdPaperColumn",
+        "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+Id_PaperColumn",
         "position": 50
     },
     {
         "name": "title",
-        "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+TitlePaperColumn",
+        "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+Title_PaperColumn",
         "position": 120
     },
     {

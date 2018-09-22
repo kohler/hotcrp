@@ -87,7 +87,7 @@ class PaperColumn extends Column {
     }
 }
 
-class IdPaperColumn extends PaperColumn {
+class Id_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
@@ -106,7 +106,7 @@ class IdPaperColumn extends PaperColumn {
     }
 }
 
-class SelectorPaperColumn extends PaperColumn {
+class Selector_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
@@ -129,7 +129,7 @@ class SelectorPaperColumn extends PaperColumn {
     }
 }
 
-class TitlePaperColumn extends PaperColumn {
+class Title_PaperColumn extends PaperColumn {
     private $has_decoration = false;
     private $highlight = false;
     function __construct(Conf $conf, $cj) {
