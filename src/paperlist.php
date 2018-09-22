@@ -1451,10 +1451,7 @@ class PaperList {
             $this->qopts["tags"] = true;
 
         // get column list
-        if (isset($options["field_list"]))
-            $field_list = $options["field_list"];
-        else
-            $field_list = $this->_list_columns();
+        $field_list = $this->_list_columns();
         if ($field_list === false)
             return PaperListTableRender::make_error("No matching report");
 
@@ -1785,10 +1782,7 @@ class PaperList {
             return null;
 
         // get column list, check sort
-        if (isset($options["field_list"]))
-            $field_list = $options["field_list"];
-        else
-            $field_list = $this->_list_columns();
+        $field_list = $this->_list_columns();
         if ($field_list === false)
             return null;
         $field_list = $this->_columns($field_list, true);
