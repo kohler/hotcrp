@@ -164,7 +164,7 @@
     {
         "name": "abstract",
         "row": true, "fold": true, "completion": true, "callback": "+Abstract_PaperColumn",
-        "position": 140
+        "synonym": ["abstracts"], "position": 140
     },
     {
         "name": "authors",
