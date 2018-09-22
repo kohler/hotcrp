@@ -74,23 +74,26 @@ class ListSorter {
             return $conf->opt("defaultScoreSort", "C");
     }
 
-    static function push(&$array, ListSorter $s) {
-        if (!empty($array)) {
-            $x = $array[count($array) - 1];
-            if (((!$s->type && !$s->field) || (!$x->type && !$x->field))
-                && $s->thenmap === $x->thenmap) {
+    static function append(&$output, $sinput) {
+        $cur = null;
+        foreach ($sinput as $s) {
+            if ($cur
+                && ((!$cur->type && !$cur->field) || (!$s->type && !$s->field))
+                && $cur->thenmap === $s->thenmap) {
                 foreach (["type", "reverse", "score", "field"] as $k)
-                    if ($x->$k === null && $s->$k !== null) {
-                        $x->$k = $s->$k;
-                        $x->empty = false;
+                    if ($cur->$k === null && $s->$k !== null) {
+                        $cur->$k = $s->$k;
+                        $cur->empty = false;
                     }
-                if ($s->anno !== null) {
-                    foreach ($s->anno as $anno)
-                        $x->anno[] = $anno;
-                }
-                return;
+                foreach ($s->anno ? : [] as $anno)
+                    $cur->anno[] = $anno;
+            } else {
+                if ($cur)
+                    $output[] = $cur;
+                $cur = $s;
             }
         }
-        $array[] = $s;
+        if ($cur)
+            $output[] = $cur;
     }
 }

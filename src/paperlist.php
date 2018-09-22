@@ -214,12 +214,11 @@ class PaperList {
         $this->qopts["scores"] = [];
         // NB that actually processed the search, setting PaperSearch::viewmap
 
-        foreach ($this->search->sorters ? : [] as $sorter)
-            ListSorter::push($this->sorters, $sorter);
         if ($this->sortable && is_string($args["sort"]))
-            array_unshift($this->sorters, PaperSearch::parse_sorter($args["sort"]));
+            $this->sorters[] = PaperSearch::parse_sorter($args["sort"]);
         else if ($this->sortable && $qreq->sort)
-            array_unshift($this->sorters, PaperSearch::parse_sorter($qreq->sort));
+            $this->sorters[] = PaperSearch::parse_sorter($qreq->sort);
+        ListSorter::append($this->sorters, $this->search->sorters ? : []);
 
         $viewdisplay = 0;
         if (is_string(get($args, "display")))
@@ -230,11 +229,9 @@ class PaperList {
                 $viewdisplay |= $this->set_view_display($s, ~($viewdisplay | self::VIEWDISPLAY_SORT));
             }
             $s = $this->conf->setting_data("{$report}display_default", null);
-            $viewdisplay |= $this->set_view_display($s, ~$viewdisplay);
-            if ($report === "pl") {
+            if ($s === null && $report === "pl")
                 $s = $this->conf->review_form()->default_display();
-                $viewdisplay |= $this->set_view_display($s, ~$viewdisplay);
-            }
+            $viewdisplay |= $this->set_view_display($s, ~$viewdisplay);
         }
         foreach ($this->search->viewmap ? : [] as $k => $v)
             $this->set_view($k, $v);
@@ -298,11 +295,12 @@ class PaperList {
             $this->_view_fields[$k] = $v;
         }
     }
-    function set_view_display($str, $viewdisplay) {
+    private function set_view_display($str, $viewdisplay) {
         if ($str === null)
             return 0;
         $splitter = new SearchSplitter($str);
         $result = 0;
+        $sorters = [];
         while (($w = $splitter->shift()) !== "") {
             if (($colon = strpos($w, ":")) !== false) {
                 $action = substr($w, 0, $colon);
@@ -310,8 +308,9 @@ class PaperList {
             } else
                 $action = "show";
             if ($action === "sort") {
-                if ($w !== "sort:id" && ($viewdisplay & self::VIEWDISPLAY_SORT)) {
-                    ListSorter::push($this->sorters, PaperSearch::parse_sorter($w));
+                if (($w !== "sort:id" || $sorters || $this->sorters)
+                    && ($viewdisplay & self::VIEWDISPLAY_SORT)) {
+                    $sorters[] = PaperSearch::parse_sorter($w);
                     $result |= self::VIEWDISPLAY_SORT;
                 }
             } else if ($viewdisplay & self::VIEWDISPLAY_VIEW) {
@@ -320,6 +319,7 @@ class PaperList {
                 $result |= self::VIEWDISPLAY_VIEW;
             }
         }
+        ListSorter::append($this->sorters, $sorters);
         return $result;
     }
 
@@ -1242,6 +1242,9 @@ class PaperList {
         $fs = $this->find_columns($k);
         if (!$fs) {
             if (!$this->search->viewmap || !isset($this->search->viewmap[$k])) {
+                // Backward compatibility: This is handling the *old* names
+                // for review fields, which were stored in sessions using
+                // the internal SQL column names.
                 if (($rfinfo = ReviewInfo::field_info($k, $this->conf))
                     && ($rfield = $this->conf->review_field($rfinfo->id)))
                     $fs = $this->find_columns($rfield->name);
