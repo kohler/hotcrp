@@ -1863,6 +1863,12 @@ class Contact {
 
     // permissions policies
 
+    private function dangerous_track_mask() {
+        if ($this->_dangerous_track_mask === null)
+            $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
+        return $this->_dangerous_track_mask;
+    }
+
     private function rights(PaperInfo $prow) {
         $ci = $prow->contact_info($this);
 
@@ -1870,14 +1876,16 @@ class Contact {
         if (!isset($ci->allow_administer)) {
             $ci->allow_administer = false;
             if (($this->contactId > 0
-                 && (!$prow->managerContactId
-                     || $prow->managerContactId == $this->contactId
-                     || !$ci->conflictType)
-                 && ($this->privChair
-                     || $prow->managerContactId == $this->contactId
-                     || ($this->isPC
-                         && $this->is_track_manager()
-                         && $this->conf->check_admin_tracks($prow, $this))))
+                 && $prow->managerContactId == $this->contactId)
+                || ($this->privChair
+                    && (!$prow->managerContactId || !$ci->conflictType)
+                    && (!($this->dangerous_track_mask() & Track::BITS_VIEWADMIN)
+                        || ($this->conf->check_tracks($prow, $this, Track::VIEW)
+                            && $this->conf->check_tracks($prow, $this, Track::ADMIN))))
+                || ($this->isPC
+                    && $this->is_track_manager()
+                    && (!$prow->managerContactId || !$ci->conflictType)
+                    && $this->conf->check_admin_tracks($prow, $this))
                 || $this->is_site_contact) {
                 $ci->allow_administer = true;
             }
@@ -1892,10 +1900,6 @@ class Contact {
         // set other rights
         if ($ci->rights_forced !== $forceShow) {
             $ci->rights_forced = $forceShow;
-
-            // check dangerous track mask
-            if ($ci->allow_administer && $this->_dangerous_track_mask === null)
-                $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
 
             // check current administration status
             $ci->can_administer = $ci->allow_administer
@@ -2271,7 +2275,8 @@ class Contact {
     }
 
     function has_hidden_papers() {
-        return $this->hidden_papers !== null;
+        return $this->hidden_papers !== null
+            || ($this->dangerous_track_mask() & Track::BITS_VIEW);
     }
 
     function can_view_paper(PaperInfo $prow, $pdf = false) {
@@ -2282,7 +2287,8 @@ class Contact {
             $this->hidden_papers[$prow->paperId] = true;
             return false;
         }
-        if ($this->privChair)
+        if ($this->privChair
+            && !($this->dangerous_track_mask() & Track::BITS_VIEW))
             return true;
         $rights = $this->rights($prow);
         return $rights->allow_author_view

@@ -18,6 +18,7 @@ class Track {
     const BITS_VIEW = 0x1;    // 1 << VIEW
     const BITS_REVIEW = 0x30; // (1 << ASSREV) | (1 << UNASSREV)
     const BITS_ADMIN = 0x80;  // 1 << ADMIN
+    const BITS_VIEWADMIN = 0x81;  // (1 << VIEW) | (1 << ADMIN)
 
     static public $map = [
         "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
@@ -1280,10 +1281,11 @@ class Conf {
 
     function dangerous_track_mask(Contact $user) {
         $m = 0;
-        if ($this->tracks) {
+        if ($this->tracks && $user->contactTags) {
             foreach ($this->tracks as $t => $tr)
                 foreach ($tr as $i => $perm)
-                    if ($perm && $perm[0] === "-"
+                    if ($perm
+                        && $perm[0] === "-"
                         && !Track::match_perm($user, $perm))
                         $m |= 1 << $i;
         }
