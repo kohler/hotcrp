@@ -15,8 +15,12 @@ if (!isset($_GET["fn"])) {
         $_GET["fn"] = $fn;
     else if (isset($_GET["track"]))
         $_GET["fn"] = "track";
-    else
-        json_exit(404, "API function missing");
+    else {
+        http_response_code(404);
+        header("Content-Type: text/plain; charset=utf-8");
+        echo json_encode(["ok" => false, "error" => "API function missing"]);
+        exit;
+    }
 }
 if ($_GET["fn"] === "deadlines")
     $_GET["fn"] = "status";
