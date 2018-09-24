@@ -1863,11 +1863,11 @@ class PaperList {
             $res = array_values($res);
         }
         if ($viewdisplay & self::VIEWDISPLAY_SORT) {
-            foreach ($this->sorters as $s) {
-                $w = "sort:" . PaperSearch::escape_word($s->field->sort_name($this, $s) . ($s->reverse ? " reverse" : ""));
-                if ($w !== "sort:id")
-                    $res[] = $w;
-            }
+            $n = count($res);
+            foreach ($this->sorters as $s)
+                $res[] = "sort:" . PaperSearch::escape_word($s->field->sort_name($this, $s) . ($s->reverse ? " reverse" : ""));
+            while (count($res) > $n && $res[count($res) - 1] === "sort:id")
+                array_pop($res);
         }
         return join(" ", $res);
     }
