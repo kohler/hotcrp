@@ -47,6 +47,16 @@ class ResponseRound {
     public $grace;
     public $words;
     public $search;
+    function relevant(Contact $user, PaperInfo $prow = null) {
+        global $Now;
+        if ($user->allow_administer($prow)
+            && ($this->done || $this->search || $this->name !== "1"))
+            return true;
+        else
+            return $this->open
+                && ($user->isPC || $this->open < $Now)
+                && ($user->isPC || !$this->search || $this->search->filter($prow ? [$prow] : $user->authored_papers()));
+    }
     function time_allowed($with_grace) {
         global $Now;
         if ($this->open === null || $this->open <= 0 || $this->open > $Now)

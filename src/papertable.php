@@ -2379,7 +2379,8 @@ class PaperTable {
             }
             if ($this->admin || $this->prow->has_author($this->user)) {
                 foreach ($this->conf->resp_rounds() as $rrd)
-                    if (!$this->has_response($rrd->number)) {
+                    if (!$this->has_response($rrd->number)
+                        && $rrd->relevant($this->user, $this->prow)) {
                         $crow = CommentInfo::make_response_template($rrd->number, $this->prow);
                         if ($this->user->can_respond($this->prow, $crow))
                             $cs[] = $crow;

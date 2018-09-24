@@ -3547,9 +3547,7 @@ class Contact {
             && ($this->isPC || $this->is_author())) {
             $dlresps = [];
             foreach ($this->conf->resp_rounds() as $rrd)
-                if ($rrd->open
-                    && ($this->isPC || $rrd->open < $Now)
-                    && ($this->isPC || !$rrd->search || $rrd->search->filter($this->authored_papers()))) {
+                if ($rrd->relevant($this)) {
                     $dlresp = (object) ["open" => $rrd->open, "done" => +$rrd->done];
                     $dlresps[$rrd->name] = $dlresp;
                     $graces[] = [$dlresp, $rrd->grace];
