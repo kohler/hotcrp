@@ -2958,7 +2958,7 @@ class Conf {
             $q .= " and P.timeSubmitted>0";
         if ($extra)
             $q .= " " . $extra;
-        return $this->conf->ql_raw($q);
+        return $this->ql_raw($q);
     }
 
 
