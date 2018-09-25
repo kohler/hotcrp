@@ -2057,7 +2057,11 @@ class PaperSearch {
                 $filters[] = "(Paper.managerContactId=" . $this->cid . " or Paper.managerContactId=0)";
             else
                 $filters[] = "Paper.managerContactId=" . $this->cid;
-            $filters[] = "Paper.timeSubmitted>0";
+            // XXX what about "activemanager" etc.?
+            if ($this->conf->can_pc_see_all_submissions())
+                $filters[] = "Paper.timeWithdrawn<=0";
+            else
+                $filters[] = "Paper.timeSubmitted>0";
             $sqi->add_conflict_table();
         }
 
