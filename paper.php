@@ -201,7 +201,7 @@ function update_paper(Qrequest $qreq, $action) {
         $submitkey = "timeSubmitted";
         $storekey = "paperStorageId";
     }
-    if (get($pj, "submitted") || $Conf->can_pc_see_all_submissions())
+    if (get($pj, "submitted") || $Conf->can_pc_see_active_submissions())
         $Conf->update_papersub_setting(1);
 
     // confirmation message

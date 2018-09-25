@@ -2398,7 +2398,7 @@ class Contact {
             || ($rights->nonblind
                 && $prow->timeWithdrawn <= 0
                 && $rights->allow_pc_broad
-                && $this->conf->can_pc_see_all_submissions())
+                && $this->conf->can_pc_see_active_submissions())
             || ($rights->allow_administer
                 ? $rights->nonblind || $rights->rights_forced /* chair can't see blind authors unless forceShow */
                 : $rights->act_author_view);
@@ -2415,7 +2415,7 @@ class Contact {
             || ($rights->nonblind
                 && $prow->timeWithdrawn <= 0
                 && $rights->allow_pc_broad
-                && $this->conf->can_pc_see_all_submissions());
+                && $this->conf->can_pc_see_active_submissions());
     }
 
     function can_view_some_authors() {

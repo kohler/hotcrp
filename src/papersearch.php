@@ -1117,11 +1117,11 @@ class PaperSearch {
     public $user;
     public $cid;
 
-    private $limitName;
     private $fields;
     private $_reviewer_user = false;
+    private $_named_limit;
     private $_active_limit;
-    private $urlbase;
+    private $_urlbase;
     public $warnings = array();
     private $_quiet_count = 0;
 
@@ -1182,43 +1182,6 @@ class PaperSearch {
         $this->user = $user;
         $this->cid = $user->contactId;
 
-        // paper selection
-        $ptype = (string) get($options, "t");
-        if ($ptype === "0")
-            $ptype = "";
-        if ($ptype === "vis")
-            $this->limitName = "vis";
-        else if ($user->privChair && !$ptype && $this->conf->timeUpdatePaper())
-            $this->limitName = "all";
-        else if (($user->privChair && $ptype === "act")
-                 || ($user->isPC
-                     && (!$ptype || $ptype === "act" || $ptype === "all")
-                     && $this->conf->can_pc_see_all_submissions()))
-            $this->limitName = "act";
-        else if ($user->privChair && $ptype === "unm")
-            $this->limitName = "unm";
-        else if ($user->isPC && (!$ptype || $ptype === "s" || $ptype === "unm"))
-            $this->limitName = "s";
-        else if ($user->isPC && ($ptype === "und" || $ptype === "undec"))
-            $this->limitName = "und";
-        else if ($user->isPC && ($ptype === "acc"
-                                 || $ptype === "reqrevs" || $ptype === "req"
-                                 || $ptype === "lead" || $ptype === "rable"
-                                 || $ptype === "manager" || $ptype === "editpref"))
-            $this->limitName = $ptype;
-        else if ($user->privChair && ($ptype === "all" || $ptype === "unsub"))
-            $this->limitName = $ptype;
-        else if ($ptype === "r" || $ptype === "rout" || $ptype === "a")
-            $this->limitName = $ptype;
-        else if ($ptype === "rable")
-            $this->limitName = "r";
-        else if (!$user->is_reviewer())
-            $this->limitName = "a";
-        else if (!$user->is_author())
-            $this->limitName = "r";
-        else
-            $this->limitName = "ar";
-
         // default query fields
         // NB: If a complex query field, e.g., "re", "tag", or "option", is
         // default, then it must be the only default or query construction
@@ -1258,26 +1221,54 @@ class PaperSearch {
                 $this->_reviewer_user = $reviewer;
         }
 
+        // paper selection
+        $limit = (string) get($options, "t");
+        if ($limit === "0")
+            $limit = "";
+        if ($limit === "undec")
+            $limit = "und";
+        if (in_array($limit, ["r", "rout", "a", "vis"])
+            || ($user->privChair && in_array($limit, ["all", "unsub", "unm"]))
+            || ($user->isPC && in_array($limit, ["acc", "reqrevs", "req", "lead", "rable",
+                                                 "manager", "editpref", "und"])))
+            /* ok */;
+        else if ($user->privChair && !$limit && $this->conf->timeUpdatePaper())
+            $limit = "all";
+        else if (($user->privChair && $limit === "act")
+                 || ($user->isPC
+                     && (!$limit || $limit === "act" || $limit === "all")
+                     && $this->conf->can_pc_see_active_submissions()))
+            $limit = "act";
+        else if ($user->isPC && (!$limit || $limit === "s" || $limit === "unm"))
+            $limit = "s";
+        else if ($limit === "rable")
+            $limit = "r";
+        else if (!$user->is_reviewer())
+            $limit = "a";
+        else if (!$user->is_author())
+            $limit = "r";
+        else
+            $limit = "ar";
+
         // URL base
         if (isset($options["urlbase"]))
-            $this->urlbase = $options["urlbase"];
+            $this->_urlbase = $options["urlbase"];
         else
-            $this->urlbase = $this->conf->hoturl_site_relative_raw("search", "t=" . urlencode($this->limitName));
+            $this->_urlbase = $this->conf->hoturl_site_relative_raw("search", "t=" . urlencode($limit));
         if ($qtype !== "n")
-            $this->urlbase = hoturl_add_raw($this->urlbase, "qt=" . urlencode($qtype));
+            $this->_urlbase = hoturl_add_raw($this->_urlbase, "qt=" . urlencode($qtype));
         if ($this->_reviewer_user
             && $this->_reviewer_user->contactId !== $user->contactId
-            && strpos($this->urlbase, "reviewer=") === false)
-            $this->urlbase = hoturl_add_raw($this->urlbase, "reviewer=" . urlencode($this->_reviewer_user->email));
-        if (strpos($this->urlbase, "&amp;") !== false)
-            trigger_error(caller_landmark() . " PaperSearch::urlbase should be a raw URL", E_USER_NOTICE);
+            && strpos($this->_urlbase, "reviewer=") === false)
+            $this->_urlbase = hoturl_add_raw($this->_urlbase, "reviewer=" . urlencode($this->_reviewer_user->email));
+        assert(strpos($this->_urlbase, "&amp;") === false);
 
-        $this->set_limit($this->limitName);
+        $this->set_limit($limit);
     }
 
     private function set_limit($limit) {
         assert($this->_qe === null);
-        $this->_active_limit = $limit;
+        $this->_named_limit = $this->_active_limit = $limit;
         if ($this->_active_limit === "editpref")
             $this->_active_limit = "rable";
         else if ($this->_active_limit === "reqrevs")
@@ -1286,7 +1277,7 @@ class PaperSearch {
             $u = $this->reviewer_user();
             if ($this->user->privChair || $this->user === $u) {
                 if ($u->can_accept_review_assignment_ignore_conflict(null)) {
-                    if ($this->conf->can_pc_see_all_submissions())
+                    if ($this->conf->can_pc_see_active_submissions())
                         $this->_active_limit = "act";
                     else
                         $this->_active_limit = "s";
@@ -1313,7 +1304,7 @@ class PaperSearch {
         return $this->_active_limit;
     }
     function limit_submitted() {
-        return !in_array($this->_active_limit, ["a", "ar", "act", "all", "unsub"]);
+        return !in_array($this->_active_limit, ["a", "ar", "act", "all", "unsub", "vis"]);
     }
     function limit_author() {
         return $this->_active_limit === "a";
@@ -2040,7 +2031,7 @@ class PaperSearch {
             || $limit === "acc"
             || $limit === "und"
             || $limit === "unm"
-            || ($limit === "rable" && !$this->conf->can_pc_see_all_submissions()))
+            || ($limit === "rable" && !$this->conf->can_pc_see_active_submissions()))
             $filters[] = "Paper.timeSubmitted>0";
         else if ($limit === "act"
                  || $limit === "r"
@@ -2056,7 +2047,7 @@ class PaperSearch {
             else
                 $filters[] = "Paper.managerContactId=" . $this->cid;
             // XXX what about "activemanager" etc.?
-            if ($this->conf->can_pc_see_all_submissions())
+            if ($this->conf->can_pc_see_active_submissions())
                 $filters[] = "Paper.timeWithdrawn<=0";
             else
                 $filters[] = "Paper.timeSubmitted>0";
@@ -2289,7 +2280,7 @@ class PaperSearch {
         case "rable":
             $user = $this->reviewer_user();
             return $user->can_accept_review_assignment_ignore_conflict($prow)
-                && ($this->conf->can_pc_see_all_submissions()
+                && ($this->conf->can_pc_see_active_submissions()
                     ? $prow->timeWithdrawn <= 0
                     : $prow->timeSubmitted > 0)
                 && ($this->user->privChair
@@ -2378,7 +2369,7 @@ class PaperSearch {
             return false;
         if ($limit === "rable") {
             if ($this->reviewer_user()->isPC)
-                $limit = $this->conf->can_pc_see_all_submissions() ? "act" : "s";
+                $limit = $this->conf->can_pc_see_active_submissions() ? "act" : "s";
             else
                 $limit = "r";
         }
@@ -2438,10 +2429,10 @@ class PaperSearch {
     }
 
     function url_site_relative_raw($q = null) {
-        $url = $this->urlbase;
+        $url = $this->_urlbase;
         if ($q === null)
             $q = $this->q;
-        if ($q !== "" || substr($this->urlbase, 0, 6) === "search")
+        if ($q !== "" || substr($this->_urlbase, 0, 6) === "search")
             $url .= (strpos($url, "?") === false ? "?" : "&")
                 . "q=" . urlencode($q);
         return $url;
@@ -2488,7 +2479,7 @@ class PaperSearch {
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
         if ((string) $sort !== "")
             $rest[] = "sort=" . urlencode($sort);
-        return "p/" . $this->limitName . "/" . urlencode($this->q)
+        return "p/" . $this->_named_limit . "/" . urlencode($this->q)
             . ($rest ? "/" . join("&", $rest) : "");
     }
 
@@ -2512,7 +2503,7 @@ class PaperSearch {
     function create_session_list_object($ids, $listname, $sort = null) {
         $sort = $sort !== null ? $sort : $this->_default_sort;
         $l = new SessionList($this->listid($sort), $ids,
-                             $this->description($listname), $this->urlbase);
+                             $this->description($listname), $this->_urlbase);
         if ($this->field_highlighters())
             $l->highlight = $this->_match_preg_query ? : true;
         return $l;
@@ -2561,7 +2552,7 @@ class PaperSearch {
     static function search_types(Contact $user, $reqtype = null) {
         $ts = [];
         if ($user->isPC) {
-            if ($user->conf->can_pc_see_all_submissions())
+            if ($user->conf->can_pc_see_active_submissions())
                 $ts[] = "act";
             $ts[] = "s";
             if ($user->conf->timePCViewDecision(false) && $user->conf->has_any_accepted())
@@ -2569,7 +2560,7 @@ class PaperSearch {
         }
         if ($user->privChair) {
             $ts[] = "all";
-            if (!$user->conf->can_pc_see_all_submissions() && $reqtype === "act")
+            if (!$user->conf->can_pc_see_active_submissions() && $reqtype === "act")
                 $ts[] = "act";
         }
         if ($user->is_reviewer())

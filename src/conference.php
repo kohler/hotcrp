@@ -363,7 +363,7 @@ class Conf {
             && ($ss = get($this->settings, "sub_sub", 0)) > 0
             && $ss > $Now
             && (get($this->settings, "pc_seeallpdf", 0) <= 0
-                || !$this->can_pc_see_all_submissions()))
+                || !$this->can_pc_see_active_submissions()))
             $this->_pc_see_pdf = false;
 
         $this->au_seerev = get($this->settings, "au_seerev", 0);
@@ -2383,7 +2383,7 @@ class Conf {
         return !$this->missed_review_deadline($round, $isPC, $hard);
     }
     function timePCReviewPreferences() {
-        return $this->can_pc_see_all_submissions() || $this->has_any_submitted();
+        return $this->can_pc_see_active_submissions() || $this->has_any_submitted();
     }
     function timePCViewDecision($conflicted) {
         $s = $this->setting("seedec");
@@ -2404,7 +2404,7 @@ class Conf {
         else if ($prow->timeSubmitted > 0)
             return !$pdf || $this->_pc_see_pdf;
         else
-            return !$pdf && $this->can_pc_see_all_submissions();
+            return !$pdf && $this->can_pc_see_active_submissions();
     }
 
     function submission_blindness() {
@@ -2476,7 +2476,7 @@ class Conf {
         return !!get($this->settings, "metareviews");
     }
 
-    function can_pc_see_all_submissions() {
+    function can_pc_see_active_submissions() {
         if ($this->_pc_seeall_cache === null) {
             $this->_pc_seeall_cache = get($this->settings, "pc_seeall") ? : 0;
             if ($this->_pc_seeall_cache > 0 && !$this->timeFinalizePaper())
@@ -2954,7 +2954,7 @@ class Conf {
                 left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
                 where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0
                   and P.timeWithdrawn<=0";
-        if ($type != "all" && ($type || !$this->can_pc_see_all_submissions()))
+        if ($type != "all" && ($type || !$this->can_pc_see_active_submissions()))
             $q .= " and P.timeSubmitted>0";
         if ($extra)
             $q .= " " . $extra;
