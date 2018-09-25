@@ -2946,7 +2946,7 @@ class Conf {
         return $rowset;
     }
 
-    function preferenceConflictQuery($type, $extra) {
+    function preference_conflict_result($type, $extra) {
         $q = "select PRP.paperId, PRP.contactId, PRP.preference
                 from PaperReviewPreference PRP
                 join ContactInfo c on (c.contactId=PRP.contactId and c.roles!=0 and (c.roles&" . Contact::ROLE_PC . ")!=0)
@@ -2954,11 +2954,11 @@ class Conf {
                 left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
                 where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0
                   and P.timeWithdrawn<=0";
-        if ($type != "all" && ($type || !$this->can_pc_see_active_submissions()))
+        if ($type !== "all" && $type !== "act")
             $q .= " and P.timeSubmitted>0";
         if ($extra)
             $q .= " " . $extra;
-        return $q;
+        return $this->conf->ql_raw($q);
     }
 
 

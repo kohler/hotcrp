@@ -57,7 +57,7 @@ class AdminHome_Partial {
         if (!$site_contact->email || $site_contact->email == "you@example.com")
             $m[] = "<a href=\"" . hoturl("settings", "group=basics") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong.";
         // Any -100 preferences around?
-        $result = $conf->ql($conf->preferenceConflictQuery(false, "limit 1"));
+        $result = $conf->preference_conflict_result("s", "limit 1");
         if (($row = edb_row($result)))
             $m[] = "PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. <a href='" . hoturl_post("conflictassign") . "' class='nw'>Confirm these conflicts</a>";
         // Weird URLs?

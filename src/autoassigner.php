@@ -105,7 +105,7 @@ class Autoassigner {
 
     function run_prefconflict($papertype) {
         $papers = array_fill_keys($this->papersel, 1);
-        $result = $this->conf->qe_raw($this->conf->preferenceConflictQuery($papertype, ""));
+        $result = $this->conf->preference_conflict_result($papertype, "");
         $this->ass = ["paper,action,email"];
         while (($row = edb_row($result))) {
             if (!isset($papers[$row[0]]) || !isset($this->pcm[$row[1]]))
