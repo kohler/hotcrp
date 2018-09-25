@@ -218,7 +218,7 @@ foreach ($jp as &$j) {
     if (!$quiet)
         fwrite(STDERR, $pid ? "saved\n" : "failed\n");
     $prefix = $pidtext . ": ";
-    foreach ($ps->messages() as $msg)
+    foreach ($ps->landmarked_messages() as $msg)
         fwrite(STDERR, $prefix . htmlspecialchars_decode($msg) . "\n");
     if ($pid)
         ++$nsuccesses;
