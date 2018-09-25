@@ -1115,10 +1115,7 @@ class SearchQueryInfo {
 class PaperSearch {
     public $conf;
     public $user;
-    private $contact;
     public $cid;
-    public $privChair;
-    private $amPC;
 
     private $limitName;
     private $fields;
@@ -1183,8 +1180,6 @@ class PaperSearch {
         // contact facts
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->privChair = $user->privChair;
-        $this->amPC = $user->isPC;
         $this->cid = $user->contactId;
 
         // paper selection
@@ -1193,7 +1188,7 @@ class PaperSearch {
             $ptype = "";
         if ($ptype === "vis")
             $this->limitName = "vis";
-        else if ($this->privChair && !$ptype && $this->conf->timeUpdatePaper())
+        else if ($user->privChair && !$ptype && $this->conf->timeUpdatePaper())
             $this->limitName = "all";
         else if (($user->privChair && $ptype === "act")
                  || ($user->isPC
@@ -1211,7 +1206,7 @@ class PaperSearch {
                                  || $ptype === "lead" || $ptype === "rable"
                                  || $ptype === "manager" || $ptype === "editpref"))
             $this->limitName = $ptype;
-        else if ($this->privChair && ($ptype === "all" || $ptype === "unsub"))
+        else if ($user->privChair && ($ptype === "all" || $ptype === "unsub"))
             $this->limitName = $ptype;
         else if ($ptype === "r" || $ptype === "rout" || $ptype === "a")
             $this->limitName = $ptype;
@@ -1237,11 +1232,11 @@ class PaperSearch {
         if ($user->can_view_some_authors()
             && ($qtype === "n" || $qtype === "au" || $qtype === "ac"))
             $this->fields["au"] = 1;
-        if ($this->privChair && $qtype === "ac")
+        if ($user->privChair && $qtype === "ac")
             $this->fields["co"] = 1;
-        if ($this->amPC && $qtype === "re")
+        if ($user->isPC && $qtype === "re")
             $this->fields["re"] = 1;
-        if ($this->amPC && $qtype === "tag")
+        if ($user->isPC && $qtype === "tag")
             $this->fields["tag"] = 1;
 
         // the query itself
@@ -1289,7 +1284,7 @@ class PaperSearch {
             $this->_active_limit = "req";
         if ($this->_active_limit === "rable") {
             $u = $this->reviewer_user();
-            if ($this->privChair || $this->user === $u) {
+            if ($this->user->privChair || $this->user === $u) {
                 if ($u->can_accept_review_assignment_ignore_conflict(null)) {
                     if ($this->conf->can_pc_see_all_submissions())
                         $this->_active_limit = "act";
@@ -1308,7 +1303,10 @@ class PaperSearch {
 
     function __get($name) {
         error_log("PaperSearch::$name " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        return $name === "contact" ? $this->user : null;
+        if ($name === "privChair")
+            return $this->user->privChair;
+        else
+            return null;
     }
 
     function limit() {
@@ -1374,7 +1372,7 @@ class PaperSearch {
             $type |= ContactSearch::F_PC;
         if ($quoted)
             $type |= ContactSearch::F_QUOTED;
-        if (!$quoted && $this->amPC)
+        if (!$quoted && $this->user->isPC)
             $type |= ContactSearch::F_TAG;
         $scm = $this->make_contact_match($type, $word);
         if ($scm->warn_html)
@@ -2265,7 +2263,7 @@ class PaperSearch {
         if ($this->user->has_hidden_papers())
             return false;
         else if ($limit === "und" || $limit === "acc" || $limit === "vis")
-            return $this->privChair;
+            return $this->user->privChair;
         else if ($limit === "rable" || $limit === "manager")
             return false;
         else
@@ -2294,7 +2292,7 @@ class PaperSearch {
                 && ($this->conf->can_pc_see_all_submissions()
                     ? $prow->timeWithdrawn <= 0
                     : $prow->timeSubmitted > 0)
-                && ($this->privChair
+                && ($this->user->privChair
                     || $this->user === $user
                     || $this->user->can_administer($prow));
         case "act":
@@ -2369,10 +2367,10 @@ class PaperSearch {
         if ($this->_matches !== null
             || ($this->q !== ""
                 && ($this->q !== "re:me" || $xlimit !== "r"))
-            || (!$this->privChair
+            || (!$this->user->privChair
                 && $this->reviewer_user() !== $this->user)
             || ($this->conf->has_tracks()
-                && !$this->privChair
+                && !$this->user->privChair
                 && !in_array($xlimit, ["a", "r", "ar"]))
             || ($this->conf->has_tracks()
                 && $limit === "rable")
@@ -2391,7 +2389,7 @@ class PaperSearch {
             $queryOptions["unsub"] = 1;
             $queryOptions["active"] = 1;
         } else if ($limit === "acc") {
-            if ($this->privChair || $this->conf->can_all_author_view_decision()) {
+            if ($this->user->privChair || $this->conf->can_all_author_view_decision()) {
                 $queryOptions["accepted"] = 1;
                 $queryOptions["finalized"] = 1;
             } else
@@ -2417,7 +2415,7 @@ class PaperSearch {
         else if ($limit === "unm")
             $queryOptions["finalized"] = $queryOptions["unmanaged"] = 1;
         else if ($limit !== "all"
-                 && ($limit !== "vis" || !$this->privChair))
+                 && ($limit !== "vis" || !$this->user->privChair))
             return false; /* don't understand limit */
         if ($this->q === "re:me" && $limit !== "rout")
             $queryOptions["myReviews"] = 1;
@@ -2651,13 +2649,13 @@ class PaperSearch {
         $res = [];
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
-        if ($this->amPC && (!$category || $category === "ss")) {
+        if ($this->user->isPC && (!$category || $category === "ss")) {
             foreach ($this->conf->saved_searches() as $k => $v)
                 $res[] = "ss:" . $k;
         }
 
         array_push($res, "has:submission", "has:abstract");
-        if ($this->amPC && $this->conf->has_any_manager())
+        if ($this->user->isPC && $this->conf->has_any_manager())
             $res[] = "has:admin";
         if ($this->conf->has_any_lead_or_shepherd()
             && $this->user->can_view_lead(null))
@@ -2680,7 +2678,7 @@ class PaperSearch {
             array_push($res, "has:review", "has:creview", "has:ireview", "has:preview", "has:primary", "has:secondary", "has:external", "has:comment", "has:aucomment");
         else if ($this->user->can_view_some_review())
             array_push($res, "has:review", "has:comment");
-        if ($this->amPC
+        if ($this->user->isPC
             && $this->conf->setting("extrev_approve")
             && $this->conf->setting("pcrev_editdelegate")
             && $this->user->is_requester())
