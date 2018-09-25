@@ -1121,6 +1121,7 @@ class PaperSearch {
     private $_reviewer_user = false;
     private $_named_limit;
     private $_active_limit;
+    private $_limit_flags;
     private $_urlbase;
     public $warnings = array();
     private $_quiet_count = 0;
@@ -1170,6 +1171,9 @@ class PaperSearch {
         "und" => "Undecided papers",
         "unm" => "Unmanaged submissions"
     ];
+
+    const LFLAG_SUBMITTED = 1;
+    const LFLAG_ACTIVE = 2;
 
 
     // NB: `$options` can come from an unsanitized user request.
@@ -1227,19 +1231,19 @@ class PaperSearch {
             $limit = "";
         if ($limit === "undec")
             $limit = "und";
-        if (in_array($limit, ["r", "rout", "a", "vis"])
+        if (in_array($limit, ["a", "r", "ar", "rout", "vis"])
             || ($user->privChair && in_array($limit, ["all", "unsub", "unm"]))
             || ($user->isPC && in_array($limit, ["acc", "reqrevs", "req", "lead", "rable",
-                                                 "manager", "editpref", "und"])))
+                                                 "editpref", "manager", "und"])))
             /* ok */;
         else if ($user->privChair && !$limit && $this->conf->timeUpdatePaper())
             $limit = "all";
         else if (($user->privChair && $limit === "act")
                  || ($user->isPC
-                     && (!$limit || $limit === "act" || $limit === "all")
+                     && in_array($limit, ["", "act", "all", "unm"])
                      && $this->conf->can_pc_see_active_submissions()))
             $limit = "act";
-        else if ($user->isPC && (!$limit || $limit === "s" || $limit === "unm"))
+        else if ($user->isPC && in_array($limit, ["", "s", "unm"]))
             $limit = "s";
         else if ($limit === "rable")
             $limit = "r";
@@ -1268,7 +1272,9 @@ class PaperSearch {
 
     private function set_limit($limit) {
         assert($this->_qe === null);
-        $this->_named_limit = $this->_active_limit = $limit;
+        $this->_named_limit = $limit;
+
+        $this->_active_limit = $limit;
         if ($this->_active_limit === "editpref")
             $this->_active_limit = "rable";
         else if ($this->_active_limit === "reqrevs")
@@ -1284,6 +1290,16 @@ class PaperSearch {
                 } else if (!$u->isPC)
                     $this->_active_limit = "r";
             }
+        }
+
+        $this->_limit_flags = 0;
+        if (!in_array($this->_active_limit, ["a", "ar", "vis", "all"])) {
+            if (in_array($this->_active_limit, ["r", "act", "unsub"])
+                || ($this->conf->can_pc_see_active_submissions()
+                    && !in_array($this->_active_limit, ["s", "acc"])))
+                $this->_limit_flags = self::LFLAG_ACTIVE;
+            else
+                $this->_limit_flags = self::LFLAG_SUBMITTED;
         }
     }
 
@@ -1304,7 +1320,7 @@ class PaperSearch {
         return $this->_active_limit;
     }
     function limit_submitted() {
-        return !in_array($this->_active_limit, ["a", "ar", "act", "all", "unsub", "vis"]);
+        return $this->_limit_flags === self::LFLAG_SUBMITTED;
     }
     function limit_author() {
         return $this->_active_limit === "a";
@@ -2025,19 +2041,12 @@ class PaperSearch {
             return [null, false];
 
         // status limitation parts
-        $limit = $this->limit();
-        if ($limit === "s"
-            || $limit === "req"
-            || $limit === "acc"
-            || $limit === "und"
-            || $limit === "unm"
-            || ($limit === "rable" && !$this->conf->can_pc_see_active_submissions()))
+        if ($this->_limit_flags === self::LFLAG_SUBMITTED)
             $filters[] = "Paper.timeSubmitted>0";
-        else if ($limit === "act"
-                 || $limit === "r"
-                 || $limit === "rable")
+        else if ($this->_limit_flags === self::LFLAG_ACTIVE)
             $filters[] = "Paper.timeWithdrawn<=0";
-        else if ($limit === "unsub")
+        $limit = $this->limit();
+        if ($limit === "unsub")
             $filters[] = "(Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0)";
         else if ($limit === "lead")
             $filters[] = "Paper.leadContactId=" . $this->cid;
@@ -2046,11 +2055,6 @@ class PaperSearch {
                 $filters[] = "(Paper.managerContactId=" . $this->cid . " or Paper.managerContactId=0)";
             else
                 $filters[] = "Paper.managerContactId=" . $this->cid;
-            // XXX what about "activemanager" etc.?
-            if ($this->conf->can_pc_see_active_submissions())
-                $filters[] = "Paper.timeWithdrawn<=0";
-            else
-                $filters[] = "Paper.timeSubmitted>0";
             $sqi->add_conflict_table();
         }
 
@@ -2262,60 +2266,53 @@ class PaperSearch {
     }
 
     function test_limit(PaperInfo $prow) {
-        if (!$this->user->can_view_paper($prow))
+        if (!$this->user->can_view_paper($prow)
+            || ($this->_limit_flags === self::LFLAG_SUBMITTED && $prow->timeSubmitted <= 0)
+            || ($this->_limit_flags === self::LFLAG_ACTIVE && $prow->timeWithdrawn > 0))
             return false;
         switch ($this->limit()) {
+        case "all":
+        case "vis":
         case "s":
-            return $prow->timeSubmitted > 0;
-        case "acc":
-            return $prow->timeSubmitted > 0
-                && $this->user->can_view_decision($prow)
-                && $prow->outcome > 0;
-        case "und":
-            return $prow->timeSubmitted > 0
-                && ($prow->outcome == 0
-                    || !$this->user->can_view_decision($prow));
-        case "unm":
-            return $prow->timeSubmitted > 0 && $prow->managerContactId == 0;
-        case "rable":
-            $user = $this->reviewer_user();
-            return $user->can_accept_review_assignment_ignore_conflict($prow)
-                && ($this->conf->can_pc_see_active_submissions()
-                    ? $prow->timeWithdrawn <= 0
-                    : $prow->timeSubmitted > 0)
-                && ($this->user->privChair
-                    || $this->user === $user
-                    || $this->user->can_administer($prow));
         case "act":
-            return $prow->timeWithdrawn <= 0;
-        case "r":
-            return $prow->timeWithdrawn <= 0 && $prow->has_reviewer($this->user);
-        case "unsub":
-            return $prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0;
-        case "lead":
-            return $prow->leadContactId == $this->cid;
-        case "manager":
-            return $prow->timeSubmitted > 0 && $this->user->allow_administer($prow);
+            return true;
         case "a":
             return $this->user->act_author_view($prow);
         case "ar":
             return $this->user->act_author_view($prow)
                 || ($prow->timeWithdrawn <= 0 && $prow->has_reviewer($this->user));
+        case "r":
+            return $prow->has_reviewer($this->user);
         case "rout":
             foreach ($prow->reviews_of_user($this->user, $this->user->review_tokens()) as $rrow)
                 if ($rrow->reviewNeedsSubmit != 0)
                     return true;
             return false;
+        case "acc":
+            return $prow->outcome > 0
+                && $this->user->can_view_decision($prow);
+        case "und":
+            return $prow->outcome == 0
+                || !$this->user->can_view_decision($prow);
+        case "unm":
+            return $this->user->allow_administer($prow)
+                && $prow->managerContactId == 0;
+        case "rable":
+            $user = $this->reviewer_user();
+            return $user->can_accept_review_assignment_ignore_conflict($prow)
+                && ($this->user === $user
+                    || $this->user->allow_administer($prow));
+        case "unsub":
+            return $prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0;
+        case "lead":
+            return $prow->leadContactId == $this->cid;
+        case "manager":
+            return $this->user->allow_administer($prow);
         case "req":
-            if ($prow->timeSubmitted <= 0)
-                return false;
             foreach ($prow->reviews_by_id() as $rrow)
                 if ($rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy == $this->cid)
                     return true;
             return false;
-        case "all":
-        case "vis":
-            return true;
         default:
             return false;
         }
