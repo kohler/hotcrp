@@ -41,7 +41,8 @@ if ($Qreq->neg) {
     $filter = function ($pl, $row) {
         $user = $pl->reviewer_user();
         return $row->conflict_type($user) == 0
-            && $row->potential_conflict($user);
+            && ($row->reviewer_preference($user)[0] <= -100
+                || $row->potential_conflict($user));
     };
 }
 $args = ["display" => "show:authors show:aufull", "rowset" => $rowset];
