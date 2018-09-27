@@ -53,17 +53,18 @@ class AuthorMatcher extends Author {
             $wordinfo = self::wordinfo();
             preg_match_all('/[a-z0-9&]+/', $this->deaccent(2), $m);
 
-            $directs = $alts = [];
-            $any_weak = false;
+            $directs = $wstrong = $wweak = $alts = [];
+            $any_strong_alternate = false;
             foreach ($m[0] as $w) {
                 $aw = get($wordinfo, $w);
                 if ($aw && isset($aw->stop) && $aw->stop)
                     continue;
-                $any[] = preg_quote($w);
-                $directs[] = $w;
-                if ($aw && isset($aw->weak) && $aw->weak)
-                    $any_weak = true;
+                $weak = $aw && isset($aw->weak) && $aw->weak;
+                if ($wstrong !== false && !$weak)
+                    $wstrong[] = $w;
+                $wweak[] = $w;
                 if ($aw && isset($aw->alternate)) {
+                    $any_strong_alternate = $any_strong_alternate || !$weak;
                     if (is_array($aw->alternate))
                         $alts = array_merge($alts, $aw->alternate);
                     else
@@ -77,27 +78,40 @@ class AuthorMatcher extends Author {
                 }
             }
 
-            $rs = $directs;
+            $directs = $wweak;
+            if (empty($wstrong))
+                $wstrong = false;
+
             foreach ($alts as $alt) {
                 if (is_object($alt)) {
-                    if ((isset($alt->if) && !self::match_if($alt->if, $rs))
-                        || (isset($alt->if_not) && self::match_if($alt->if_not, $rs)))
+                    if ((isset($alt->if) && !self::match_if($alt->if, $wweak))
+                        || (isset($alt->if_not) && self::match_if($alt->if_not, $wweak)))
                         continue;
                     $alt = $alt->word;
                 }
-                if (!is_string($alt))
-                    echo var_export($alt, true);
+                $have_strong = false;
                 foreach (explode(" ", $alt) as $altw)
                     if ($altw !== "") {
-                        $any[] = preg_quote($altw);
-                        $rs[] = $altw;
-                        $any_weak = true;
+                        $aw = get($wordinfo, $altw);
+                        if ($wstrong !== false && (!$aw || !isset($aw->weak) || !$aw->weak)) {
+                            $wstrong[] = $altw;
+                            $have_strong = true;
+                        }
+                        $wweak[] = $altw;
                     }
+                if ($any_strong_alternate && !$have_strong)
+                    $wstrong = false;
             }
 
-            if (!empty($rs)) {
-                $rex = '{\b(?:' . str_replace('&', '\\&', join("|", $rs)) . ')\b}';
-                $this->affiliation_matcher = [$directs, $any_weak, $rex];
+            if (!empty($wstrong)) {
+                $wstrong = str_replace("&", "\\&", join("|", $wstrong));
+                $wweak = str_replace("&", "\\&", join("|", $wweak));
+                $any[] = $wstrong;
+                $this->affiliation_matcher = [$directs, "{\\b(?:{$wstrong})\\b}", "{\\b(?:{$wweak})\\b}"];
+            } else if (!empty($wweak)) {
+                $wweak = str_replace("&", "\\&", join("|", $wweak));
+                $any[] = $wweak;
+                $this->affiliation_matcher = [$directs, false, "{\\b(?:{$wweak})\\b}"];
             }
         }
 
@@ -208,11 +222,11 @@ class AuthorMatcher extends Author {
             self::$wordinfo = (array) json_decode(file_get_contents("$ConfSitePATH/etc/affiliationmatchers.json"));
         return self::$wordinfo;
     }
+
     private function test_affiliation($mtext) {
-        list($am_words, $am_any_weak, $am_regex) = $this->affiliation_matcher;
-        if (!$am_any_weak)
-            return preg_match($am_regex, $mtext) === 1;
-        else if (!preg_match_all($am_regex, $mtext, $m))
+        list($am_words, $am_sregex, $am_wregex) = $this->affiliation_matcher;
+        if (($am_sregex && !preg_match($am_sregex, $mtext))
+            || !preg_match_all($am_wregex, $mtext, $m))
             return false;
         $result = true;
         $wordinfo = self::wordinfo();
