@@ -14,32 +14,6 @@ class AuthorMatcher extends Author {
         parent::__construct($x);
     }
 
-    static private function expand_alts($aw, $direct) {
-        $alts = [];
-        if (isset($aw->alternate))
-            $alts = is_array($aw->alternate) ? $aw->alternate : [$aw->alternate];
-        if (isset($aw->sync)) {
-            if (is_array($aw->sync))
-                $alts = array_merge($alts, $aw->sync);
-            else
-                $alts[] = $aw->sync;
-        }
-        $altws = [];
-        foreach ($alts as $a) {
-            if (is_object($a)) {
-                if (!(isset($a->if) && !self::match_if($a->if, $direct))
-                    || (isset($a->if_not) && self::match_if($a->if_not, $direct)))
-                    continue;
-                $a = $a->word;
-            }
-            if (strpos($a, " ") === false)
-                $altws[] = $a;
-            else
-                array_merge($altws, explode(" ", $a));
-        }
-        return $altws;
-    }
-
     private function prepare() {
         $any = [];
         if ($this->firstName !== "") {
@@ -79,49 +53,51 @@ class AuthorMatcher extends Author {
             $wordinfo = self::wordinfo();
             preg_match_all('/[a-z0-9&]+/', $this->deaccent(2), $m);
 
-            $any_strong = $any_weak = false;
-            $words = [];
+            $directs = $alts = [];
+            $any_weak = false;
             foreach ($m[0] as $w) {
                 $aw = get($wordinfo, $w);
-                if (!$aw || !isset($aw->stop) || !$aw->stop) {
-                    $weak = $aw && isset($aw->weak) && $aw->weak;
-                    $any_weak = $any_weak || $weak;
-                    $any_strong = $any_strong || !$weak;
-                    $words[] = [$w, $aw];
+                if ($aw && isset($aw->stop) && $aw->stop)
+                    continue;
+                $any[] = preg_quote($w);
+                $directs[] = $w;
+                if ($aw && isset($aw->weak) && $aw->weak)
+                    $any_weak = true;
+                if ($aw && isset($aw->alternate)) {
+                    if (is_array($aw->alternate))
+                        $alts = array_merge($alts, $aw->alternate);
+                    else
+                        $alts[] = $aw->alternate;
+                }
+                if ($aw && isset($aw->sync)) {
+                    if (is_array($aw->sync))
+                        $alts = array_merge($alts, $aw->sync);
+                    else
+                        $alts[] = $aw->sync;
                 }
             }
 
-            $direct = $wstrong = $wweak = $alt = [];
-            foreach ($words as $waw) {
-                list($w, $aw) = $waw;
-                $direct[] = $w;
-                $weak = $aw && isset($aw->weak) && $aw->weak;
-                $w = preg_quote($w);
-                if (!$any_strong || !$weak)
-                    $any[] = $w;
-                if (!$weak)
-                    $wstrong[] = $w;
-                $wweak[] = $w;
-                if ($aw && (isset($aw->alternate) || isset($aw->sync))) {
-                    foreach (self::expand_alts($aw, $direct) as $w) {
-                        if ($w === "")
-                            continue;
-                        $w = preg_quote($w);
-                        if (!$any_strong || !$weak)
-                            $any[] = $w;
-                        if (!$weak)
-                            $wstrong[] = $w;
-                        $wweak[] = $w;
+            $rs = $directs;
+            foreach ($alts as $alt) {
+                if (is_object($alt)) {
+                    if ((isset($alt->if) && !self::match_if($alt->if, $rs))
+                        || (isset($alt->if_not) && self::match_if($alt->if_not, $rs)))
+                        continue;
+                    $alt = $alt->word;
+                }
+                if (!is_string($alt))
+                    echo var_export($alt, true);
+                foreach (explode(" ", $alt) as $altw)
+                    if ($altw !== "") {
+                        $any[] = preg_quote($altw);
+                        $rs[] = $altw;
+                        $any_weak = true;
                     }
-                }
             }
 
-            if (!empty($wweak)) {
-                $srex = null;
-                if ($wstrong)
-                    $srex = '{\b(?:' . join("|", $wstrong) . ')\b}';
-                $wrex = '{\b(?:' . join("|", $wweak) . ')\b}';
-                $this->affiliation_matcher = [$direct, $any_weak, $srex, $wrex];
+            if (!empty($rs)) {
+                $rex = '{\b(?:' . str_replace('&', '\\&', join("|", $rs)) . ')\b}';
+                $this->affiliation_matcher = [$directs, $any_weak, $rex];
             }
         }
 
@@ -233,10 +209,10 @@ class AuthorMatcher extends Author {
         return self::$wordinfo;
     }
     private function test_affiliation($mtext) {
-        list($am_words, $am_any_weak, $am_sregex, $am_wregex) =
-            $this->affiliation_matcher;
-        if (($am_sregex && !preg_match($am_sregex, $mtext))
-            || !preg_match_all($am_wregex, $mtext, $m))
+        list($am_words, $am_any_weak, $am_regex) = $this->affiliation_matcher;
+        if (!$am_any_weak)
+            return preg_match($am_regex, $mtext) === 1;
+        else if (!preg_match_all($am_regex, $mtext, $m))
             return false;
         $result = true;
         $wordinfo = self::wordinfo();
