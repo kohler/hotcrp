@@ -28,6 +28,7 @@ echo "</div>\n";
 
 $search = new PaperSearch($Me, ["t" => "manager", "q" => "",
                                 "urlbase" => hoturl_site_relative_raw("conflictassign")]);
+$rowset = $Conf->paper_set($Me, ["allConflictType" => 1, "allReviewerPreference" => 1, "tags" => 1, "paperId" => $search->paper_ids()]);
 
 if ($Qreq->neg) {
     $filter = function ($pl, $row, $fields) {
@@ -43,7 +44,7 @@ if ($Qreq->neg) {
             && $fields["potentialconflict"]->nonempty;
     };
 }
-$args = ["display" => "show:authors show:aufull"];
+$args = ["display" => "show:authors show:aufull", "rowset" => $rowset];
 
 $any = false;
 foreach ($Conf->full_pc_members() as $pc) {

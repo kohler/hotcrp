@@ -243,10 +243,9 @@ class PaperInfo {
     public $outcome;
     // $paperTags: DO NOT LIST (property_exists() is meaningful)
     // $optionIds: DO NOT LIST (property_exists() is meaningful)
-    // $allConflictTypes: DO NOT LIST (property_exists() is meaningful)
+    // $allConflictType: DO NOT LIST (property_exists() is meaningful)
     // $reviewSignatures: DO NOT LIST (property_exists() is meaningful)
 
-    private $_unaccented_title;
     private $_contact_info = [];
     private $_rights_version = 0;
     private $_author_array;
@@ -426,9 +425,7 @@ class PaperInfo {
 
 
     function unaccented_title() {
-        if ($this->_unaccented_title === null)
-            $this->_unaccented_title = UnicodeHelper::deaccent($this->title);
-        return $this->_unaccented_title;
+        return $this->field_deaccent("title");
     }
 
     function pretty_text_title_indent($width = 75) {
@@ -592,16 +589,25 @@ class PaperInfo {
             . '…</div>', $messages];
     }
 
-    function field_match_pregexes($reg, $field) {
+    function field_deaccent($field, $want_false = false) {
         $data = $this->$field;
-        $field_deaccent = $field . "_deaccent";
-        if (!isset($this->$field_deaccent)) {
-            if (preg_match('/[\x80-\xFF]/', $data))
-                $this->$field_deaccent = UnicodeHelper::deaccent($data);
-            else
-                $this->$field_deaccent = false;
-        }
-        return Text::match_pregexes($reg, $data, $this->$field_deaccent);
+        if ((string) $data !== "") {
+            $field_deaccent = $field . "_deaccent";
+            if (!isset($this->$field_deaccent)) {
+                if (preg_match('/[\x80-\xFF]/', $data))
+                    $this->$field_deaccent = UnicodeHelper::deaccent($data);
+                else
+                    $this->$field_deaccent = false;
+            }
+            if ($want_false || $this->$field_deaccent !== false)
+                $data = $this->$field_deaccent;
+        } else if ($want_false)
+            $data = false;
+        return $data;
+    }
+
+    function field_match_pregexes($reg, $field) {
+        return Text::match_pregexes($reg, $this->$field, $this->field_deaccent($field, true));
     }
 
     function submitted_at() {
@@ -884,14 +890,15 @@ class PaperInfo {
 
 
     function load_conflicts($email) {
-        if (!$email && isset($this->allConflictType)) {
+        if (!$email && property_exists($this, "allConflictType")) {
             $this->_conflict_array = [];
             $this->_conflict_array_email = $email;
-            foreach (explode(",", $this->allConflictType) as $x) {
-                list($cid, $ctype) = explode(" ", $x);
-                $cflt = new PaperInfo_Conflict($cid, $ctype);
-                $this->_conflict_array[$cflt->contactId] = $cflt;
-            }
+            if ((string) $this->allConflictType !== "")
+                foreach (explode(",", $this->allConflictType) as $x) {
+                    list($cid, $ctype) = explode(" ", $x);
+                    $cflt = new PaperInfo_Conflict($cid, $ctype);
+                    $this->_conflict_array[$cflt->contactId] = $cflt;
+                }
         } else {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             foreach ($row_set->all() as $prow) {
@@ -977,7 +984,9 @@ class PaperInfo {
 
     function reviewer_preference($contact, $include_topic_score = false) {
         $cid = is_int($contact) ? $contact : $contact->contactId;
-        if ($this->_prefs_cid === null && $this->_prefs_array === null) {
+        if ($this->_prefs_cid === null
+            && $this->_prefs_array === null
+            && !property_exists($this, "allReviewerPreference")) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             foreach ($row_set as $prow)
                 $prow->_prefs_cid = [$cid, null];

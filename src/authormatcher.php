@@ -71,7 +71,8 @@ class AuthorMatcher extends Author {
             if (!empty($rr))
                 $this->lastName_matcher = (object) [
                     "preg_raw" => '\A' . join("", $rr),
-                    "preg_utf8" => '\A' . join("", $ur)
+                    "preg_utf8" => '\A' . join("", $ur),
+                    "simple" => count($m[0]) === 1 && strlen($m[0][0]) === strlen($this->lastName) ? $m[0][0] : false
                 ];
         }
         if ($this->affiliation !== "") {
@@ -182,7 +183,9 @@ class AuthorMatcher extends Author {
             $au = Author::make_string_guess($au);
         if ($this->lastName_matcher
             && $au->lastName !== ""
-            && Text::match_pregexes($this->lastName_matcher, $au->lastName, $au->deaccent(1))
+            && ($this->lastName_matcher->simple
+                ? $this->lastName_matcher->simple === $au->deaccent(1)
+                : Text::match_pregexes($this->lastName_matcher, $au->lastName, $au->deaccent(1)))
             && ($au->firstName === ""
                 || !$this->firstName_matcher
                 || Text::match_pregexes($this->firstName_matcher, $au->firstName, $au->deaccent(0)))) {
