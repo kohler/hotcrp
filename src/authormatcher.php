@@ -7,6 +7,7 @@ class AuthorMatcher extends Author {
     private $lastName_matcher;
     private $affiliation_matcher;
     private $general_pregexes_;
+    private $highlight_pregexes_;
 
     private static $wordinfo;
 
@@ -49,6 +50,7 @@ class AuthorMatcher extends Author {
                     "simple" => count($m[0]) === 1 && strlen($m[0][0]) === strlen($this->lastName) ? $m[0][0] : false
                 ];
         }
+        $highlight_any = false;
         if ($this->affiliation !== "") {
             $wordinfo = self::wordinfo();
             preg_match_all('/[a-z0-9&]+/', $this->deaccent(2), $m);
@@ -107,6 +109,7 @@ class AuthorMatcher extends Author {
                 $wstrong = str_replace("&", "\\&", join("|", $wstrong));
                 $wweak = str_replace("&", "\\&", join("|", $wweak));
                 $any[] = $wstrong;
+                $highlight_any = $wweak;
                 $this->affiliation_matcher = [$directs, "{\\b(?:{$wstrong})\\b}", "{\\b(?:{$wweak})\\b}"];
             } else if (!empty($wweak)) {
                 $wweak = str_replace("&", "\\&", join("|", $wweak));
@@ -123,12 +126,26 @@ class AuthorMatcher extends Author {
             ];
         } else
             $this->general_pregexes_ = false;
+        if ($highlight_any !== false && $highlight_any !== $any[count($any) - 1]) {
+            $any[count($any) - 1] = $highlight_any;
+            $content = join("|", $any);
+            $this->highlight_pregexes_ = (object) [
+                "preg_raw" => '\b(?:' . $content . ')\b',
+                "preg_utf8" => Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
+            ];
+        }
     }
 
     function general_pregexes() {
         if ($this->general_pregexes_ === null)
             $this->prepare();
         return $this->general_pregexes_;
+    }
+
+    function highlight_pregexes() {
+        if ($this->general_pregexes_ === null)
+            $this->prepare();
+        return $this->highlight_pregexes_ ? : $this->general_pregexes_;
     }
 
     static function make($x, $nonauthor) {
@@ -201,7 +218,7 @@ class AuthorMatcher extends Author {
         }
         $pregexes = [];
         foreach ($matchers as $matcher)
-            $pregexes[] = $matcher->general_pregexes();
+            $pregexes[] = $matcher->highlight_pregexes();
         if (count($pregexes) > 1)
             $pregexes = [Text::merge_pregexes($pregexes)];
         if (!empty($pregexes))
