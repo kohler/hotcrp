@@ -8,7 +8,7 @@ class Author {
     public $email = "";
     public $affiliation = "";
     private $_name;
-    public $contactId = null;
+    public $contactId;
     private $_deaccents;
     public $nonauthor;
     public $sorter;

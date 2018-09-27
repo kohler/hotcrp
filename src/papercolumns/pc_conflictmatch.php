@@ -72,7 +72,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
             if (count($cx) > 1) {
                 $n = $len = false;
                 foreach ($cx as $c) {
-                    $thislen = strlen(preg_replace('{>[^<]*<}', "", $c[0]));
+                    $thislen = strlen(preg_replace('{<[^>]*>[^<]*</[^>]*>}', "", $c[0]));
                     if ($n === false || $thislen < $len) {
                         $n = $c[0];
                         $len = $thislen;

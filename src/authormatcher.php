@@ -94,10 +94,12 @@ class AuthorMatcher extends Author {
                 $have_strong = false;
                 foreach (explode(" ", $alt) as $altw)
                     if ($altw !== "") {
-                        $aw = get($wordinfo, $altw);
-                        if ($wstrong !== false && (!$aw || !isset($aw->weak) || !$aw->weak)) {
-                            $wstrong[] = $altw;
-                            $have_strong = true;
+                        if ($wstrong !== false) {
+                            $aw = get($wordinfo, $altw);
+                            if (!$aw || !isset($aw->weak) || !$aw->weak) {
+                                $wstrong[] = $altw;
+                                $have_strong = true;
+                            }
                         }
                         $wweak[] = $altw;
                     }
@@ -133,7 +135,8 @@ class AuthorMatcher extends Author {
                 "preg_raw" => '\b(?:' . $content . ')\b',
                 "preg_utf8" => Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
             ];
-        }
+        } else
+            $this->highlight_pregexes_ = false;
     }
 
     function general_pregexes() {
