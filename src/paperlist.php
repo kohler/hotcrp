@@ -936,6 +936,13 @@ class PaperList {
     }
 
     private function _row_content($rstate, PaperInfo $row, $fieldDef) {
+        // filter
+        if ($this->_row_filter
+            && !call_user_func($this->_row_filter, $this, $row)) {
+            --$this->count;
+            return "";
+        }
+
         // main columns
         $tm = "";
         foreach ($fieldDef as $fdef) {
@@ -981,13 +988,6 @@ class PaperList {
             }
             if ($fdef->is_visible ? $content !== "" : !$empty)
                 $fdef->has_content = !$empty;
-        }
-
-        // filter
-        if ($this->_row_filter
-            && !call_user_func($this->_row_filter, $this, $row, $fieldDef, $tm, $tt)) {
-            --$this->count;
-            return "";
         }
 
         // tags

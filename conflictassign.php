@@ -31,17 +31,17 @@ $search = new PaperSearch($Me, ["t" => "manager", "q" => "",
 $rowset = $Conf->paper_set($Me, ["allConflictType" => 1, "allReviewerPreference" => 1, "tags" => 1, "paperId" => $search->paper_ids()]);
 
 if ($Qreq->neg) {
-    $filter = function ($pl, $row, $fields) {
+    $filter = function ($pl, $row) {
         $user = $pl->reviewer_user();
         $ct = $row->conflict_type($user);
         return $ct > 0 && $ct < CONFLICT_AUTHOR
-            && !$fields["potentialconflict"]->nonempty;
+            && !$row->potential_conflict($user);
     };
 } else {
-    $filter = function ($pl, $row, $fields) {
+    $filter = function ($pl, $row) {
         $user = $pl->reviewer_user();
         return $row->conflict_type($user) == 0
-            && $fields["potentialconflict"]->nonempty;
+            && $row->potential_conflict($user);
     };
 }
 $args = ["display" => "show:authors show:aufull", "rowset" => $rowset];
