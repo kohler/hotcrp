@@ -231,32 +231,34 @@
     {
         "name": "show",
         "parse_callback": "Show_SearchTerm::parse", "allow_parens": true,
-        "showtype": true, "sorting": false
+        "view_action": "show", "sorting": false
     },
     {
         "name": "hide",
         "parse_callback": "Show_SearchTerm::parse", "allow_parens": true,
-        "showtype": false, "sorting": false
+        "view_action": "hide", "sorting": false
     },
     {
         "name": "edit",
         "parse_callback": "Show_SearchTerm::parse",
-        "showtype": "edit", "sorting": false
+        "view_action": "edit", "sorting": false
     },
     {
         "name": "showsort",
         "parse_callback": "Show_SearchTerm::parse", "allow_parens": true,
-        "showtype": true, "sorting": true, "synonym": "sortshow"
+        "view_action": "show", "sorting": true,
+        "synonym": "sortshow"
     },
     {
         "name": "editsort",
         "parse_callback": "Show_SearchTerm::parse",
-        "showtype": "edit", "sorting": true, "synonym": "sortedit"
+        "view_action": "edit", "sorting": true,
+        "synonym": "sortedit"
     },
     {
         "name": "sort",
         "parse_callback": "Show_SearchTerm::parse", "allow_parens": true,
-        "showtype": null, "sorting": true
+        "view_action": false, "sorting": true
     },
     {
         "name": "HEADING",

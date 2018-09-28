@@ -55,8 +55,6 @@ foreach ($Conf->full_pc_members() as $pc) {
     $paperlist->set_row_filter($filter);
     $paperlist->set_table_id_class(null, "pltable_full pltable-focus-checkbox");
     $tr = $paperlist->table_render("conflictassign", ["header_links" => false, "nofooter" => true]);
-    if (!isset($args["rowset"]))
-        $args["rowset"] = $paperlist->rowset();
     if ($paperlist->count > 0) {
         if (!$any)
             echo Ht::form(hoturl("conflictassign")),

@@ -211,13 +211,12 @@ class PaperList {
         if ($this->qopts === false)
             $this->qopts = ["paperId" => $this->search->paper_ids()];
         $this->qopts["scores"] = [];
-        // NB that actually processed the search, setting PaperSearch::viewmap
 
         if ($this->sortable && is_string($args["sort"]))
             $this->sorters[] = PaperSearch::parse_sorter($args["sort"]);
         else if ($this->sortable && $qreq->sort)
             $this->sorters[] = PaperSearch::parse_sorter($qreq->sort);
-        ListSorter::append($this->sorters, $this->search->sorters ? : []);
+        ListSorter::append($this->sorters, $this->search->sorter_list());
 
         $viewdisplay = 0;
         if (is_string(get($args, "display")))
@@ -232,8 +231,8 @@ class PaperList {
                 $s = $this->conf->review_form()->default_display();
             $viewdisplay |= $this->set_view_display($s, ~$viewdisplay);
         }
-        foreach ($this->search->viewmap ? : [] as $k => $v)
-            $this->set_view($k, $v);
+        foreach ($this->search->view_list() as $vv)
+            $this->set_view($vv[0], $vv[1]);
         if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
             && get($this->_view_fields, "au")
             && get($this->_view_fields, "anonau") === null)
@@ -276,6 +275,8 @@ class PaperList {
     function set_view($k, $v) {
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"")
             $k = substr($k, 1, -1);
+        if (in_array($v, ["show", "hide"]))
+            $v = $v === "show";
         if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"]))
             $this->_view_compact_columns = $this->_view_columns = $v;
         else if (in_array($k, ["columns", "column", "col"]))
@@ -1237,18 +1238,9 @@ class PaperList {
         if (in_array($k, ["anonau", "aufull"]))
             return [];
         $fs = $this->find_columns($k);
-        if (!$fs) {
-            if (!$this->search->viewmap || !isset($this->search->viewmap[$k])) {
-                // Backward compatibility: This is handling the *old* names
-                // for review fields, which were stored in sessions using
-                // the internal SQL column names.
-                if (($rfinfo = ReviewInfo::field_info($k, $this->conf))
-                    && ($rfield = $this->conf->review_field($rfinfo->id)))
-                    $fs = $this->find_columns($rfield->name);
-            } else if ($report && isset($this->_column_errors_by_name[$k])) {
-                foreach ($this->_column_errors_by_name[$k] as $i => $err)
-                    $this->error_html[] = ($i ? "" : "Can’t show “" . htmlspecialchars($k) . "”: ") . $err;
-            }
+        if (!$fs && $report && isset($this->_column_errors_by_name[$k])) {
+            foreach ($this->_column_errors_by_name[$k] as $i => $err)
+                $this->error_html[] = ($i ? "" : "Can’t show “" . htmlspecialchars($k) . "”: ") . $err;
         }
         return $fs;
     }

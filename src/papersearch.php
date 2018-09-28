@@ -309,7 +309,7 @@ class Op_SearchTerm extends SearchTerm {
         if ($term) {
             foreach ($term->float as $k => $v) {
                 $v1 = get($this->float, $k);
-                if ($k === "sort" && $v1)
+                if (($k === "sort" || $k === "view") && $v1)
                     array_splice($this->float[$k], count($v1), 0, $v);
                 else if ($k === "strspan" && $v1)
                     $this->apply_strspan($v);
@@ -929,9 +929,9 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
 class Show_SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $word = simplify_whitespace($word);
-        $action = $sword->kwdef->showtype;
+        $action = $sword->kwdef->view_action;
         if (str_starts_with($word, "-") && !$sword->kwdef->sorting) {
-            $action = false;
+            $action = "hide";
             $word = substr($word, 1);
         }
         $f = [];
@@ -941,8 +941,8 @@ class Show_SearchTerm {
             $sort = PaperSearch::parse_sorter($viewfield);
             $viewfield = $sort->type;
         }
-        if ($viewfield !== "" && $action !== null)
-            $f["view"] = [$viewfield => $action];
+        if ($viewfield !== "" && $action)
+            $f["view"] = [[$viewfield, $action]];
         return SearchTerm::make_float($f);
     }
     static function parse_heading($word, SearchWord $sword) {
@@ -1144,8 +1144,7 @@ class PaperSearch {
     public $groupmap;
     public $is_order_anno = false;
     public $highlightmap;
-    public $viewmap;
-    public $sorters = [];
+    private $_sorters = [];
     private $_default_sort; // XXX should be used more often
     private $_highlight_tags;
 
@@ -1926,10 +1925,10 @@ class PaperSearch {
             foreach ($sorters as $s)
                 if (($s = self::parse_sorter($s))) {
                     $s->thenmap = $thenmap;
-                    $this->sorters[] = $s;
+                    $this->_sorters[] = $s;
                 }
         } else if (($s = $qe->default_sorter(true, $thenmap, $this))) {
-            $this->sorters[] = $s;
+            $this->_sorters[] = $s;
         }
     }
 
@@ -1946,7 +1945,7 @@ class PaperSearch {
 
     private function _find_order_anno_tag($qe) {
         $thetag = null;
-        foreach ($this->sorters as $sorter) {
+        foreach ($this->_sorters as $sorter) {
             $tag = $sorter->type ? Tagger::check_tag_keyword($sorter->type, $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID) : false;
             $ok = $tag && ($thetag === null || $thetag === $tag);
             $thetag = $ok ? $tag : false;
@@ -1956,9 +1955,9 @@ class PaperSearch {
         $dt = $this->conf->tags()->add(TagInfo::base($tag));
         if ($dt->has_order_anno())
             return $dt;
-        foreach ($qe->get_float("view", []) as $vk => $action) {
-            if ($action === "edit"
-                && ($t = Tagger::check_tag_keyword($vk, $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID | Tagger::NOTAGKEYWORD))
+        foreach ($qe->get_float("view", []) as $vv) {
+            if ($vv[1] === "edit"
+                && ($t = Tagger::check_tag_keyword($vv[0], $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID | Tagger::NOTAGKEYWORD))
                 && strcasecmp($t, $dt->tag) == 0)
                 return $dt;
         }
@@ -2202,8 +2201,7 @@ class PaperSearch {
         if ($this->_allow_deleted)
             $this->_add_deleted_papers($qe);
 
-        // view and sort information
-        $this->viewmap = $qe->get_float("view", array());
+        // sort information
         $this->_add_sorters($qe, null);
         if ($qe->type === "then")
             for ($i = 0; $i < $qe->nthen; ++$i)
@@ -2237,11 +2235,20 @@ class PaperSearch {
 
     function sorted_paper_ids() {
         $this->_prepare();
-        if ($this->_default_sort || $this->sorters) {
+        if ($this->_default_sort || $this->_sorters) {
             $pl = new PaperList($this, ["sort" => $this->_default_sort]);
             return $pl->paper_ids();
         } else
             return $this->paper_ids();
+    }
+
+    function view_list() {
+        return $this->term()->get_float("view", []);
+    }
+
+    function sorter_list() {
+        $this->_prepare();
+        return $this->_sorters;
     }
 
     function restrict_match($callback) {
@@ -2514,7 +2521,7 @@ class PaperSearch {
         if ($this->_highlight_tags === null) {
             $this->_prepare();
             $this->_highlight_tags = array();
-            foreach ($this->sorters ? : array() as $s)
+            foreach ($this->_sorters as $s)
                 if ($s->type[0] === "#")
                     $this->_highlight_tags[] = substr($s->type, 1);
         }
