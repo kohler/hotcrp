@@ -2520,8 +2520,10 @@ class Conf {
                     $anchor = "#" . urlencode($v);
             $options = $x;
         } else if (is_string($options)) {
-            if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
-                list($options, $anchor) = array($m[1], $m[2]);
+            if (($pos = strpos($options, "#"))) {
+                $anchor = substr($options, $pos);
+                $options = substr($options, 0, $pos);
+            }
         } else
             $options = "";
         if ($flags & self::HOTURL_POST)
@@ -2535,37 +2537,41 @@ class Conf {
                     $options .= $amp . $k . "=" . $v;
         // append forceShow to links to same paper if appropriate
         $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
-        if ($is_paper_page && $this->paper
-            && preg_match($are . 'p=' . $this->paper->paperId . $zre, $options)
-            && $Me->conf === $this
+        if ($is_paper_page
+            && $this->paper
             && $Me->can_administer($this->paper)
             && $this->paper->has_conflict($Me)
+            && $Me->conf === $this
+            && preg_match($are . 'p=' . $this->paper->paperId . $zre, $options)
             && !preg_match($are . 'forceShow=/', $options))
             $options .= $amp . "forceShow=1";
         // create slash-based URLs if appropriate
         if ($options) {
-            if ($page == "review"
+            if ($page === "review"
                 && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $options, $m)) {
                 $t .= "/" . $m[2];
                 $options = $m[1] . $m[3];
                 if (preg_match($are . 'p=\d+' . $zre, $options, $m))
                     $options = $m[1] . $m[2];
-            } else if ($page == "paper"
-                       && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m)
-                       && preg_match($are . 'm=(\w+)' . $zre, $m[1] . $m[3], $m2)) {
-                $t .= "/" . $m[2] . "/" . $m2[2];
-                $options = $m2[1] . $m2[3];
             } else if (($is_paper_page
                         && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m))
-                       || ($page == "profile"
-                           && preg_match($are . 'u=([^&?]+)' . $zre, $options, $m))
-                       || ($page == "help"
+                       || ($page === "help"
                            && preg_match($are . 't=(\w+)' . $zre, $options, $m))
-                       || ($page == "settings"
-                           && preg_match($are . 'group=(\w+)' . $zre, $options, $m))
-                       || ($page == "graph"
+                       || ($page === "settings"
+                           && preg_match($are . 'group=(\w+)' . $zre, $options, $m))) {
+                $t .= "/" . $m[2];
+                $options = $m[1] . $m[3];
+                if ($options !== ""
+                    && $page === "paper"
+                    && preg_match($are . 'm=(\w+)' . $zre, $options, $m)) {
+                    $t .= "/" . $m[2];
+                    $options = $m[1] . $m[3];
+                }
+            } else if (($page === "profile"
+                        && preg_match($are . 'u=([^&?]+)' . $zre, $options, $m))
+                       || ($page === "graph"
                            && preg_match($are . 'g=([^&?]+)' . $zre, $options, $m))
-                       || ($page == "doc"
+                       || ($page === "doc"
                            && preg_match($are . 'file=([^&]+)' . $zre, $options, $m))) {
                 $t .= "/" . str_replace("%2F", "/", $m[2]);
                 $options = $m[1] . $m[3];
@@ -2575,7 +2581,7 @@ class Conf {
             }
             $options = preg_replace('/&(?:amp;)?\z/', "", $options);
         }
-        if ($options && preg_match('/\A&(?:amp;)?(.*)\z/', $options, $m))
+        if ($options !== "" && preg_match('/\A&(?:amp;)?(.*)\z/', $options, $m))
             $options = $m[1];
         if ($options !== "")
             $t .= "?" . $options;
