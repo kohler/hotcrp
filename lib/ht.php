@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 class Ht {
-
     public static $img_base = "";
     public static $default_button_class = "";
     private static $_script_open = "<script";
@@ -465,24 +464,31 @@ class Ht {
     }
 
 
-    static function xmsg($type, $content) {
-        if (is_int($type))
-            $type = $type >= 2 ? "error" : ($type > 0 ? "warning" : "info");
-        if (substr($type, 0, 1) === "x")
-            $type = substr($type, 1);
-        if ($type === "merror")
-            $type = "error";
-        if (is_array($content)) {
-            $content = join("", array_map(function ($x) {
+    static function msg($msg, $status) {
+        if (is_int($status))
+            $status = $status >= 2 ? "error" : ($status > 0 ? "warning" : "info");
+        if (substr($status, 0, 1) === "x")
+            $status = substr($status, 1);
+        if ($status === "merror")
+            $status = "error";
+        if (is_array($msg)) {
+            $msg = join("", array_map(function ($x) {
                 if (str_starts_with($x, "<p") || str_starts_with($x, "<div"))
                     return $x;
                 else
                     return "<p>{$x}</p>";
-            }, $content));
-        }
-        if ($content === "")
+            }, $msg));
+        } else if ($msg !== ""
+                   && !str_starts_with($msg, "<p")
+                   && !str_starts_with($msg, "<div"))
+            $msg = "<p>{$msg}</p>";
+        if ($msg === "")
             return "";
-        return '<div class="msg msg-' . $type . '">' . $content . '</div>';
+        return '<div class="msg msg-' . $status . '">' . $msg . '</div>';
+    }
+
+    static function xmsg($status, $msg) {
+        return self::msg($msg, $status);
     }
 
 

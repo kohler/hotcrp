@@ -520,9 +520,9 @@ if ($UserStatus->has_messages()) {
     $msgs = [];
     foreach ($UserStatus->messages(true) as $m) {
         $status = max($m[2], $status);
-        $msgs[] = '<div class="mmm">' . $m[1] . '</div>';
+        $msgs[] = $m[1];
     }
-    echo '<div class="msgs-wide">', Ht::xmsg($status, join("", $msgs)), "</div>\n";
+    echo '<div class="msgs-wide">', Ht::msg($msgs, $status), "</div>\n";
 }
 
 echo '<div id="foldaccount" class="';

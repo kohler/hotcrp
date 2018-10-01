@@ -400,7 +400,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
         $t = "";
         if ($this->failed)
-            $t .= Ht::xmsg("error", '<div>' . join('</div><div>', $this->messages_at("error")) . '</div>');
+            $t .= Ht::msg($this->messages_at("error"), 2);
         $msgs = array_filter($this->messages(true), function ($mx) { return $mx[0] != "error" && $mx[2] > MessageSet::INFO; });
         if ($msgs) {
             $msgs = array_map(function ($m) {
@@ -413,9 +413,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $status = "warning";
                 $start = "This document may violate the submission format requirements.";
             }
-            $t .= Ht::xmsg($status, "$start\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\nSubmissions that violate the requirements will not be considered. However, the automated format checker uses heuristics and can be too strict (for instance, it sometimes warns about font size in figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.");
+            $t .= Ht::msg("<p>$start</p>\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\n<p>Submissions that violate the requirements will not be considered. However, the automated format checker uses heuristics and can be too strict (for instance, it sometimes warns about font size in figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.</p>", $status);
         } else if (!$this->has_problem())
-            $t .= Ht::xmsg("confirm", "Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.");
+            $t .= Ht::msg("Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", "confirm");
         return $t;
     }
     function document_report(PaperInfo $prow, $doc) {

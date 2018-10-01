@@ -562,7 +562,7 @@ class PaperTable {
             && $this->mode !== "assign"
             && $this->mode !== "contact"
             && $prow->outcome >= 0)
-            $out[] = Ht::xmsg("warning", 'The authors still have <a href="' . hoturl("deadlines") . '">time</a> to make changes.');
+            $out[] = Ht::msg('The authors still have <a href="' . hoturl("deadlines") . '">time</a> to make changes.', 1);
 
         echo join("", $out);
     }
@@ -1596,13 +1596,13 @@ class PaperTable {
             // uneditable
             echo '<div class="fn want-tag-report-warnings">';
             if (!empty($tm1))
-                echo Ht::xmsg("warning", $tm1);
+                echo Ht::msg($tm1, 1);
             echo '</div><div class="fn js-tag-result">',
                 ($tx === "" ? "None" : $tx), '</div>';
 
             echo '<div class="fx js-tag-editor"><div class="want-tag-report">';
             if (!empty($tm0))
-                echo Ht::xmsg($tms, $tm0);
+                echo Ht::msg($tm0, $tms);
             echo "</div>";
             $editable = $tags;
             if ($this->prow)
@@ -1820,7 +1820,7 @@ class PaperTable {
                 $this->quit = true;
                 return '<div class="merror">' . $msg . '</div>';
             }
-            $msg = Ht::xmsg("warning", $msg);
+            $msg = Ht::msg($msg, 1);
         }
 
         $t = [$this->conf->_("Enter information about your submission.")];
@@ -1832,21 +1832,21 @@ class PaperTable {
                 $t[] = $this->conf->_("PDF upload is not required to register.");
         } else if ($sub_upd > 0)
             $t[] = $this->conf->_("All submissions must be completed by %s.", $this->conf->printableTimeSetting("sub_update"));
-        $msg .= Ht::xmsg("info", space_join($t));
+        $msg .= Ht::msg(space_join($t), 0);
         if (($v = $this->conf->_i("submit", false)))
-            $msg .= Ht::xmsg("info", $v);
+            $msg .= Ht::msg($v, 0);
         return $msg;
     }
 
     private function _edit_message_for_author(PaperInfo $prow) {
         $can_view_decision = $prow->outcome != 0 && $this->user->can_view_decision($prow);
         if ($can_view_decision && $prow->outcome < 0) {
-            return Ht::xmsg("warning", "The submission was not accepted." . $this->_forceShow_message());
+            return Ht::msg("The submission was not accepted." . $this->_forceShow_message(), 1);
         } else if ($prow->timeWithdrawn > 0) {
             if ($this->user->can_revive_paper($prow))
-                return Ht::xmsg("warning", "The submission has been withdrawn, but you can still revive it." . $this->deadline_setting_is("sub_update"));
+                return Ht::msg("The submission has been withdrawn, but you can still revive it." . $this->deadline_setting_is("sub_update"), 1);
             else
-                return Ht::xmsg("warning", "The submission has been withdrawn." . $this->_forceShow_message());
+                return Ht::msg("The submission has been withdrawn." . $this->_forceShow_message(), 1);
         } else if ($prow->timeSubmitted <= 0) {
             $whyNot = $this->user->perm_update_paper($prow);
             if (!$whyNot) {
@@ -1859,37 +1859,37 @@ class PaperTable {
                     $t[] = $this->conf->_("All submissions must be completed by %s to be considered.", $this->conf->printableTimeSetting("sub_update"));
                 else
                     $t[] = $this->conf->_("Incomplete submissions will not be considered.");
-                return Ht::xmsg("warning", space_join($t));
+                return Ht::msg(space_join($t), 1);
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($prow)) {
-                return Ht::xmsg("warning", 'The submission is not ready for review. Although you cannot make any further changes, the current version can be still be submitted for review.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message());
+                return Ht::msg('The submission is not ready for review. Although you cannot make any further changes, the current version can be still be submitted for review.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
             } else if (isset($whyNot["deadline"])) {
                 if ($this->conf->deadlinesBetween("", "sub_sub", "sub_grace")) {
-                    return Ht::xmsg("warning", 'The site is not open for updates at the moment.' . $this->_deadline_override_message());
+                    return Ht::msg('The site is not open for updates at the moment.' . $this->_deadline_override_message(), 1);
                 } else {
-                    return Ht::xmsg("warning", 'The <a href="' . hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message());
+                    return Ht::msg('The <a href="' . hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
                 }
             } else {
-                return Ht::xmsg("warning", 'The submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message());
+                return Ht::msg('The submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), 1);
             }
         } else if ($this->user->can_update_paper($prow)) {
             if ($this->mode === "edit")
-                return Ht::xmsg("confirm", 'The submission is ready and will be considered for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"));
+                return Ht::msg('The submission is ready and will be considered for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), "confirm");
         } else if ($this->conf->collectFinalPapers()
                    && $prow->outcome > 0
                    && $can_view_decision) {
             if ($this->user->can_submit_final_paper($prow)) {
                 if (($t = $this->conf->_i("finalsubmit", false, $this->deadline_setting_is("final_soft"))))
-                    return Ht::xmsg("info", $t);
+                    return Ht::msg($t, 0);
             } else if ($this->mode === "edit") {
-                return Ht::xmsg("warning", "The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message());
+                return Ht::msg("The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message(), 1);
             }
         } else if ($this->mode === "edit") {
             if ($this->user->can_withdraw_paper($prow, true))
                 $t = "The submission is under review and can’t be changed, but you can change its contacts or withdraw it from consideration.";
             else
                 $t = "The submission is under review and can’t be changed or withdrawn, but you can change its contacts.";
-            return Ht::xmsg("info", $t . $this->_deadline_override_message());
+            return Ht::msg($t . $this->_deadline_override_message(), 0);
         }
         return "";
     }
@@ -1905,12 +1905,12 @@ class PaperTable {
             $m .= $this->_edit_message_for_author($prow);
         else if ($this->conf->collectFinalPapers()
                  && $prow->outcome > 0 && !$prow->can_author_view_decision())
-            $m .= Ht::xmsg("info", "The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.");
+            $m .= Ht::msg("The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 0);
         else
-            $m .= Ht::xmsg("info", "You aren’t a contact for this submission, but as an administrator you can still make changes.");
+            $m .= Ht::msg("You aren’t a contact for this submission, but as an administrator you can still make changes.", 0);
         if ($this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_update_paper", $prow)
             && ($v = $this->conf->_i("submit", false)))
-            $m .= Ht::xmsg("info", $v);
+            $m .= Ht::msg($v, 0);
         if ($this->edit_status
             && $this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {
@@ -1918,7 +1918,7 @@ class PaperTable {
             foreach ($this->edit_fields ? : [] as $uf)
                 if (isset($uf->title) && $this->edit_status->has_problem_at($uf->name))
                     $fields[] = Ht::link($this->field_name($uf->title), "#" . (isset($uf->readable_formid) ? $uf->readable_formid : $uf->name));
-            $m .= Ht::xmsg($this->edit_status->problem_status(), $this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)));
+            $m .= Ht::msg($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
         }
         return $m;
     }
@@ -2120,7 +2120,7 @@ class PaperTable {
     }
 
     static function echo_review_clickthrough() {
-        echo '<div class="revcard js-clickthrough-terms"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">', Ht::xmsg("error", "You must agree to these terms before you can save reviews.");
+        echo '<div class="revcard js-clickthrough-terms"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
         self::_echo_clickthrough("review");
         echo "</form></div></div>";
     }
@@ -2226,7 +2226,7 @@ class PaperTable {
                 echo '<div class="js-clickthrough-container">',
                     '<div class="js-clickthrough-terms">',
                     '<h3>Submission terms</h3>',
-                    Ht::xmsg("error", "You must agree to these terms to register a submission.");
+                    Ht::msg("You must agree to these terms to register a submission.", 2);
                 self::_echo_clickthrough("submit");
                 echo '</div><div class="js-clickthrough-body hidden">';
                 $this->_echo_editable_body();

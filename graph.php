@@ -109,7 +109,7 @@ if ($Graph == "formula") {
             $fg->add_query($queries[$i], $styles[$i], "q$i");
 
         if ($fg->has_messages())
-            echo Ht::xmsg($fg->problem_status(), $fg->messages());
+            echo Ht::msg($fg->messages(), $fg->problem_status());
 
         $xhtml = htmlspecialchars($fg->fx_expression());
         if ($fg->fx_format() === Fexpr::FTAG)

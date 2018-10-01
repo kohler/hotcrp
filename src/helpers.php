@@ -215,7 +215,7 @@ class JsonResult {
                     && !isset($this->content["error"]))
                     $this->content["error"] = $msg[1];
                 if ($div)
-                    $t .= Ht::xmsg($msg[0], $msg[1]);
+                    $t .= Ht::msg($msg[1], $msg[0]);
                 else
                     $t .= "<span class=\"$msg[0]\">$msg[1]</span>";
             }

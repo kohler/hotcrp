@@ -1036,9 +1036,9 @@ $blind\n";
         $admin = $Me->allow_administer($prow);
         if ($rrow && !$Me->is_my_review($rrow)) {
             if ($Me->is_owned_review($rrow))
-                echo Ht::xmsg("info", "This isn’t your review, but you can make changes since you requested it.");
+                echo Ht::msg("This isn’t your review, but you can make changes since you requested it.", 0);
             else if ($admin)
-                echo Ht::xmsg("info", "This isn’t your review, but as an administrator you can still make changes.");
+                echo Ht::msg("This isn’t your review, but as an administrator you can still make changes.", 0);
         }
 
         // delegate?
@@ -1063,7 +1063,7 @@ $blind\n";
                 $t = "A delegated external reviewer has submitted their review for approval. If you approve that review, you won’t need to submit your own.";
             else
                 $t = "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
-            echo Ht::xmsg("info", $t);
+            echo Ht::msg($t, 0);
         }
 
         // top save changes

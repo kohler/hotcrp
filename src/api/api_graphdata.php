@@ -15,7 +15,7 @@ class GraphData_API {
             $fg->add_query($queries[$i], $styles[$i], isset($qreq->q1) ? "q$i" : "q");
 
         if ($fg->has_error())
-            return new JsonResult(400, ["ok" => false, "error" => Ht::xmsg("error", $fg->messages())]);
+            return new JsonResult(400, ["ok" => false, "error" => Ht::msg($fg->messages(), 2)]);
 
         return ["ok" => true] + $fg->graph_json();
     }

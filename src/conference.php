@@ -2985,7 +2985,7 @@ class Conf {
             ensure_session();
             $_SESSION[$conf->dsn]["msgs"][] = [$type, $text];
         } else if ($type[0] == "x" || is_int($type))
-            echo Ht::xmsg($type, $text);
+            echo Ht::msg($text, $type);
         else {
             if (is_array($text))
                 $text = '<div class="multimessage">' . join("", array_map(function ($x) { return '<div class="mmm">' . $x . '</div>'; }, $text)) . '</div>';
@@ -3393,7 +3393,7 @@ class Conf {
         $this->headerPrinted = true;
         echo "<div id=\"initialmsgs\">\n";
         if (($x = $this->opt("maintenance")))
-            echo Ht::xmsg(2, is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.");
+            echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
         if (($msgs = $this->session("msgs")) && !empty($msgs)) {
             $this->save_session("msgs", null);
             foreach ($msgs as $m)

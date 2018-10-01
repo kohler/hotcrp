@@ -82,7 +82,7 @@ function save_comment($qreq, $text, $is_response, $roundnum) {
             if ($doc->save())
                 $req["docs"][] = $doc;
             else
-                $msg = Ht::xmsg("error", "Error uploading attachment.");
+                $msg = Ht::msg("Error uploading attachment.", 2);
         }
 
     if ($ok) {
@@ -102,7 +102,7 @@ function save_comment($qreq, $text, $is_response, $roundnum) {
             $cinfo = new CommentInfo($cur_response, $prow);
             $ok = true;
         } else
-            $msg = Ht::xmsg("error", "A response was entered concurrently by another user. Reload to see it.");
+            $msg = Ht::msg("A response was entered concurrently by another user. Reload to see it.", 2);
     }
     if (!$ok)
         /* nada */;
@@ -115,14 +115,14 @@ function save_comment($qreq, $text, $is_response, $roundnum) {
         $isuf = $roundnum ? "_$roundnum" : "";
         if (($dl = $Conf->printableTimeSetting("resp_done$isuf")) != "N/A")
             $msg .= " You have until $dl to submit the response.";
-        $msg = Ht::xmsg("warning", $msg);
+        $msg = Ht::msg($msg, 1);
     } else if ($is_response) {
         $rname = $Conf->resp_round_text($roundnum);
-        $msg = Ht::xmsg("confirm", ($rname ? "$rname response" : "Response") . ' submitted.');
+        $msg = Ht::msg(($rname ? "$rname response" : "Response") . ' submitted.', "confirm");
     } else if ($cinfo->commentId)
-        $msg = Ht::xmsg("confirm", "Comment saved.");
+        $msg = Ht::msg("Comment saved.", "confirm");
     else
-        $msg = Ht::xmsg("confirm", "Comment deleted.");
+        $msg = Ht::msg("Comment deleted.", "confirm");
 
     $j = array("ok" => $ok);
     if ($cinfo->commentId)
