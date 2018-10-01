@@ -256,7 +256,9 @@ class UserStatus extends MessageSet {
         }
 
         // Password changes
-        if (isset($cj->new_password) && $old_user && $old_user->data("locked")) {
+        if (isset($cj->new_password)
+            && $old_user
+            && $old_user->data("locked")) {
             unset($cj->new_password);
             $this->warning_at("password", "Ignoring request to change locked user’s password.");
         }

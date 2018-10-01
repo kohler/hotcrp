@@ -1263,10 +1263,11 @@ class Contact {
         // create or update local user
         $upd = $u->_make_create_updater($cdbu ? : $reg, false);
         if (!$u->contactId) {
-            if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
+            if (($cdbu && $cdbu->disabled)
+                || get($reg, "disabled"))
                 $upd["disabled"] = 1;
             if ($cdbu) {
-                $upd["password"] = $cdbu->password;
+                $upd["password"] = "";
                 $upd["passwordTime"] = $cdbu->passwordTime;
             }
         }
@@ -1300,7 +1301,10 @@ class Contact {
 
     // PASSWORDS
     //
+    // XXX THESE RULES ARE NOT ALL FOLLOWED BY THE CODE
+    //
     // password "" or null: reset password (user must recreate password)
+    //     or password stored in contactdb
     // password "*": invalid password, cannot be reset by user
     // password starting with " ": legacy hashed password using hash_hmac
     //     format: " HASHMETHOD KEYID SALT[16B]HMAC"
@@ -1330,7 +1334,7 @@ class Contact {
     // if (contactdb password allowed
     //     && (!expected || expected matches contactdb)) {
     //     change contactdb password and update time;
-    //     set local password to "*";
+    //     set local password to "";
     // } else
     //     change local password and update time;
 
@@ -1455,31 +1459,47 @@ class Contact {
             return false;
 
         $cdbu = $this->contactdb_user();
-        $cdbok = false;
-        if ($cdbu
-            && ($hash = $cdbu->password)
+        $cdbok = $cdbu
+            && $cdbu->password
             && $cdbu->allow_contactdb_password()
-            && ($cdbok = $this->check_hashed_password($input, $hash))) {
+            // NB $this is OK here, password hash passed in
+            && $this->check_hashed_password($input, $cdbu->password);
+        $localok = $this->contactId > 0
+            && $this->password
+            && $this->check_hashed_password($input, $this->password);
+
+        if ($cdbok
+            || ($localok && $cdbu && !$cdbu->password)) {
+            $cdbok = true;
             $updater = ["passwordUseTime" => $Now];
-            if ($this->check_password_encryption($hash, true)) {
+            if ($this->check_password_encryption($cdbu->password, true)
+                || ($this->password
+                    && $cdbu->passwordTime < $this->passwordUseTime)) {
                 $updater["password"] = $this->hash_password($input);
                 $updater["passwordTime"] = $Now;
             }
             $cdbu->apply_updater($updater, true);
+            // clear local password, if any
+            if ($localok) {
+                $this->apply_updater(["passwordUseTime" => $Now, "password" => "", "passwordTime" => $Now], false);
+                $localok = false;
+            }
         }
 
-        $localok = false;
-        if ($this->contactId
-            && ($hash = $this->password)
-            && ($localok = $this->check_hashed_password($input, $hash))) {
+        if ($localok
+            && $cdbu
+            && $cdbu->password
+            && $cdbu->passwordUseTime >= $this->passwordUseTime)
+            $localok = false;
+        if ($localok) {
             if ($cdbu
                 && !$cdbok
                 && $this->passwordTime
                 && $cdbu->passwordTime > $this->passwordTime)
                 error_log($this->conf->dbname . ": " . $this->email . ": using old local password (" . post_value(true) . ")");
             $updater = ["passwordUseTime" => $Now];
-            if ($this->check_password_encryption($hash, false)) {
-                $updater["password"] = $cdbok ? $cdbu->password : $this->hash_password($input);
+            if ($this->check_password_encryption($this->password, false)) {
+                $updater["password"] = $this->hash_password($input);
                 $updater["passwordTime"] = $Now;
             }
             $this->apply_updater($updater, false);
@@ -1488,20 +1508,32 @@ class Contact {
         return $cdbok || $localok;
     }
 
+    function check_obsolete_local_password($input) {
+        return $this->contactId
+            && self::valid_password($input)
+            && $this->check_hashed_password($input, $this->password)
+            && ($cdbu = $this->contactdb_user())
+            && $cdbu->password
+            && $cdbu->passwordUseTime >= $this->passwordUseTime;
+    }
+
     const CHANGE_PASSWORD_PLAINTEXT = 1;
     const CHANGE_PASSWORD_ENABLE = 2;
     function change_password($new, $flags) {
         global $Now;
         assert(!$this->conf->external_login());
+        $use_time = $Now;
 
         $cdbu = $this->contactdb_user();
         if (($flags & self::CHANGE_PASSWORD_ENABLE)
-            && ($this->password !== "" || ($cdbu && (string) $cdbu->password !== "")))
+            && ($this->password !== ""
+                || ($cdbu && (string) $cdbu->password !== "")))
             return false;
 
         if ($new === null) {
             $new = self::random_password();
             $flags |= self::CHANGE_PASSWORD_PLAINTEXT;
+            $use_time = 0;
         }
         assert(self::valid_password($new));
 
@@ -1511,23 +1543,16 @@ class Contact {
                 && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && $this->check_password_encryption("", true))
                 $hash = $this->hash_password($hash);
-            $cdbu->password = $hash;
-            $cdbu->passwordTime = $Now;
-            Dbl::ql($this->conf->contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $cdbu->password, $cdbu->passwordTime, $cdbu->contactDbId);
-            if ($this->contactId && $this->password) {
-                $this->password = "";
-                $this->passwordTime = $cdbu->passwordTime;
-                $this->conf->ql("update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
-            }
+            $cdbu->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], true);
+            if ($this->contactId && $this->password)
+                $this->apply_updater(["passwordUseTime" => $use_time, "password" => "", "passwordTime" => $Now], false);
         } else if ($this->contactId) {
             $hash = $new;
             if ($hash
                 && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && $this->check_password_encryption("", false))
                 $hash = $this->hash_password($hash);
-            $this->password = $hash;
-            $this->passwordTime = $Now;
-            $this->conf->ql("update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
+            $this->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], false);
         }
         return true;
     }

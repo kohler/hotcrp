@@ -21,8 +21,8 @@ function password($email, $iscdb = false) {
 function save_password($email, $encoded_password, $iscdb = false) {
     global $Conf, $Now;
     $dblink = $iscdb ? $Conf->contactdb() : $Conf->dblink;
-    Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=? where email=?", $encoded_password, $Now, $email);
-    ++$Now;
+    Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where email=?", $encoded_password, $Now + 1, $Now + 1, $email);
+    $Now += 2;
 }
 
 if (!$Conf->contactdb()) {
@@ -64,12 +64,15 @@ xassert(user($marina)->check_password("isdevitch"));
 xassert(!user($marina)->check_password("dungdevitch"));
 
 // update local password only
-$Conf->qe("update ContactInfo set password=? where contactId=?", "ncurses", user($marina)->contactId);
+save_password($marina, "ncurses", false);
 xassert_eqq(password($marina), "ncurses");
 xassert_eqq(password($marina, true), "isdevitch");
 xassert(user($marina)->check_password("ncurses"));
+
+// logging in with global password makes local password obsolete
 xassert(user($marina)->check_password("isdevitch"));
-xassert(user($marina)->check_password("ncurses"));
+xassert(!user($marina)->check_password("ncurses"));
+xassert(user($marina)->check_obsolete_local_password("ncurses"));
 
 // null contactdb password => can log in locally
 save_password($marina, null, true);
