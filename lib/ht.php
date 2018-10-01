@@ -18,6 +18,7 @@ class Ht {
     const ATTR_NOEMPTY = 4;
     private static $_attr_type = array("accept-charset" => self::ATTR_SKIP,
                                        "action" => self::ATTR_SKIP,
+                                       "autofocus" => self::ATTR_BOOL,
                                        "checked" => self::ATTR_BOOL,
                                        "class" => self::ATTR_NOEMPTY,
                                        "disabled" => self::ATTR_BOOL,

@@ -176,9 +176,11 @@ class Home_Partial {
         echo '<div class="homegrp foldo" id="homeacct">',
             Ht::form($conf->hoturl("index", ["post" => post_value(true)])),
             '<div class="f-contain">';
-        if ($conf->opt("contactdb_dsn") && $conf->opt("contactdb_loginFormHeading"))
-            echo $conf->opt("contactdb_loginFormHeading");
+        if ($conf->opt("contactdb_dsn")
+            && ($x = $conf->opt("contactdb_loginFormHeading")))
+            echo $x;
         $password_reset = $conf->session("password_reset");
+        $focus_email = !Ht::problem_status_at("password");
         if ($password_reset && $password_reset->time < $Now - 900) {
             $password_reset = null;
             $conf->save_session("password_reset", null);
@@ -187,22 +189,23 @@ class Home_Partial {
         echo '<div class="', Ht::control_class("email", "f-i"), '">',
             Ht::label($is_external_login ? "Username" : "Email", "signin_email"),
             Ht::entry("email", $qreq->get("email", $password_reset ? $password_reset->email : ""),
-                      ["size" => 36, "id" => "signin_email", "class" => "fullw", "autocomplete" => "username", "tabindex" => 1, "type" => $is_external_login ? "text" : "email"]),
+                      ["size" => 36, "id" => "signin_email", "class" => "fullw", "autocomplete" => "username", "tabindex" => 1, "type" => $is_external_login ? "text" : "email", "autofocus" => $focus_email]),
+            Ht::render_messages_at("email"),
             '</div><div class="', Ht::control_class("password", "f-i fx"), '">';
         if (!$is_external_login)
             echo '<div class="floatright"><a href="" class="n x small ui js-forgot-password">Forgot your password?</a></div>';
         echo Ht::label("Password", "signin_password"),
             Ht::password("password", "",
-                         ["size" => 36, "id" => "signin_password", "class" => "fullw", "autocomplete" => "current-password", "tabindex" => 1]),
+                         ["size" => 36, "id" => "signin_password", "class" => "fullw", "autocomplete" => "current-password", "tabindex" => 1, "autofocus" => !$focus_email]),
+            Ht::render_messages_at("password"),
             "</div>\n";
         if ($password_reset)
             echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
         if ($is_external_login)
             echo Ht::hidden("action", "login");
         echo '<div class="popup-actions">',
-            Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn btn-primary"]),
+            Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn btn-primary", "tabindex" => 1]),
             '</div><p class="hint">New to the site? <a href="" class="ui js-create-account">Create an account</a></p></div></form></div>';
-        Ht::stash_script("focus_within(\$(\"#login\"));window.scroll(0,0)");
     }
 
     function render_search(Contact $user, Qrequest $qreq) {

@@ -76,11 +76,8 @@ class LoginHelper {
         // to determine if the user is registered
         if (!isset($qreq->email)
             || ($qreq->email = trim($qreq->email)) === "") {
-            Ht::error_at("email");
-            if ($conf->opt("ldapLogin"))
-                return Conf::msg_error("Enter your LDAP username.");
-            else
-                return Conf::msg_error("Enter your email address.");
+            Ht::error_at("email", $conf->opt("ldapLogin") ? "Enter your LDAP username." : "Enter your email address.");
+            return false;
         }
 
         // do LDAP login before validation, since we might create an account
@@ -121,13 +118,15 @@ class LoginHelper {
 
         // if no user found, then fail
         if (!$user && (!$cdb_user || !$cdb_user->allow_contactdb_password())) {
-            Ht::error_at("email");
-            return Conf::msg_error("No account for " . htmlspecialchars($qreq->email) . ". Did you enter the correct email address?");
+            Ht::error_at("email", "No account for " . htmlspecialchars($qreq->email) . ". Did you enter the correct email address?");
+            return false;
         }
 
         // if user disabled, then fail
-        if ($user && $user->disabled)
-            return Conf::msg_error("Your account is disabled. Contact the site administrator for more information.");
+        if ($user && $user->disabled) {
+            Ht::error_at("email", "Your account is disabled. Contact the site administrator for more information.");
+            return false;
+        }
 
         // maybe reset password
         $xuser = $user ? : $cdb_user;
@@ -146,16 +145,19 @@ class LoginHelper {
         if (!$external_login) {
             $password = trim((string) $qreq->password);
             if ($password === "") {
-                Ht::error_at("password");
-                return Conf::msg_error("Password missing.");
+                Ht::error_at("password", "Password missing.");
+                return false;
             }
 
             if (!$xuser->check_password($password)) {
-                Ht::error_at("password");
                 if ($xuser->password_is_reset())
-                    return Conf::msg_error("Your previous password has been disabled. Use “Forgot your password?” to create a new password.");
+                    $error = "Your previous password has been reset. Use “Forgot your password?” to create a new password.";
+                else if ($xuser->check_obsolete_local_password($password))
+                    $error = "The password you entered has been superseded by a more recent " . $conf->opt("contactdb_description", "global") . " password. Enter the more recent password to sign in, or use “Forgot your password?”.";
                 else
-                    return Conf::msg_error("Incorrect password.");
+                    $error = "Incorrect password.";
+                Ht::error_at("password", $error);
+                return false;
             }
         }
 
@@ -224,17 +226,17 @@ class LoginHelper {
     static private function create_account($conf, $qreq, $user, $cdb_user) {
         // check for errors
         if ($user && $user->has_database_account() && $user->activity_at > 0) {
-            Ht::error_at("email");
-            return Conf::msg_error("An account already exists for " . htmlspecialchars($qreq->email) . ". Enter your password or select “Forgot your password?” to reset it.");
+            Ht::error_at("email", "An account already exists for " . htmlspecialchars($qreq->email) . ". Enter your password or select “Forgot your password?” to reset it.");
+            return false;
         } else if ($cdb_user
                    && $cdb_user->allow_contactdb_password()
                    && $cdb_user->password_used()) {
             $desc = $conf->opt("contactdb_description") ? : "HotCRP";
-            Ht::error_at("email");
-            return Conf::msg_error("An account already exists for " . htmlspecialchars($qreq->email) . " on $desc. Sign in using your $desc password or select “Forgot your password?” to reset it.");
+            Ht::error_at("email", "An account already exists for " . htmlspecialchars($qreq->email) . " on $desc. Sign in using your $desc password or select “Forgot your password?” to reset it.");
+            return false;
         } else if (!validate_email($qreq->email)) {
-            Ht::error_at("email");
-            return Conf::msg_error("“" . htmlspecialchars($qreq->email) . "” is not a valid email address.");
+            Ht::error_at("email", "“" . htmlspecialchars($qreq->email) . "” is not a valid email address.");
+            return false;
         }
 
         // create database account
