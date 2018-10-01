@@ -141,11 +141,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function files() {
         return $this->____files;
     }
-    function set_annex($name, $x) {
-        $this->____x[$name] = $x;
-    }
     function has_annexes() {
         return !empty($this->____x);
+    }
+    function annexes() {
+        return $this->____x;
     }
     function has_annex($name) {
         return isset($this->____x[$name]);
@@ -156,8 +156,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             $x = $this->____x[$name];
         return $x;
     }
-    function annexes() {
-        return $this->____x;
+    function set_annex($name, $x) {
+        $this->____x[$name] = $x;
     }
     function approve_post() {
         $this->____post_ok = true;
