@@ -216,7 +216,7 @@ class SearchTerm {
     static function andjoin_sqlexpr($q, $default = "false") {
         if (empty($q))
             return $default;
-        else if (in_array("false", $q))
+        else if (in_array("false", $q, true))
             return "false";
         else
             return "(" . join(" and ", $q) . ")";
@@ -224,7 +224,7 @@ class SearchTerm {
     static function orjoin_sqlexpr($q, $default = "false") {
         if (empty($q))
             return $default;
-        else if (in_array("true", $q))
+        else if (in_array("true", $q, true))
             return "true";
         else
             return "(" . join(" or ", $q) . ")";
@@ -858,7 +858,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
     function promote(PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher(">0");
-        if (in_array($srch->limit(), ["r", "rout", "rable"]))
+        if (in_array($srch->limit(), ["r", "rout", "rable"], true))
             $rsm->add_contact($srch->cid);
         else if ($srch->limit() === "req") {
             $rsm->apply_requester($srch->cid);
@@ -1230,19 +1230,19 @@ class PaperSearch {
             $limit = "";
         if ($limit === "undec")
             $limit = "und";
-        if (in_array($limit, ["a", "r", "ar", "rout", "vis"])
-            || ($user->privChair && in_array($limit, ["all", "unsub", "unm"]))
+        if (in_array($limit, ["a", "r", "ar", "rout", "vis"], true)
+            || ($user->privChair && in_array($limit, ["all", "unsub", "unm"], true))
             || ($user->isPC && in_array($limit, ["acc", "reqrevs", "req", "lead", "rable",
-                                                 "editpref", "manager", "und"])))
+                                                 "editpref", "manager", "und"], true)))
             /* ok */;
         else if ($user->privChair && !$limit && $this->conf->timeUpdatePaper())
             $limit = "all";
         else if (($user->privChair && $limit === "act")
                  || ($user->isPC
-                     && in_array($limit, ["", "act", "all", "unm"])
+                     && in_array($limit, ["", "act", "all", "unm"], true)
                      && $this->conf->can_pc_see_active_submissions()))
             $limit = "act";
-        else if ($user->isPC && in_array($limit, ["", "s", "unm"]))
+        else if ($user->isPC && in_array($limit, ["", "s", "unm"], true))
             $limit = "s";
         else if ($limit === "rable")
             $limit = "r";
@@ -1292,10 +1292,10 @@ class PaperSearch {
         }
 
         $this->_limit_flags = 0;
-        if (!in_array($this->_active_limit, ["a", "ar", "vis", "all"])) {
-            if (in_array($this->_active_limit, ["r", "act", "unsub"])
+        if (!in_array($this->_active_limit, ["a", "ar", "vis", "all"], true)) {
+            if (in_array($this->_active_limit, ["r", "act", "unsub"], true)
                 || ($this->conf->can_pc_see_active_submissions()
-                    && !in_array($this->_active_limit, ["s", "acc"])))
+                    && !in_array($this->_active_limit, ["s", "acc"], true)))
                 $this->_limit_flags = self::LFLAG_ACTIVE;
             else
                 $this->_limit_flags = self::LFLAG_SUBMITTED;
@@ -2366,7 +2366,7 @@ class PaperSearch {
                 && $this->reviewer_user() !== $this->user)
             || ($this->conf->has_tracks()
                 && !$this->user->privChair
-                && !in_array($xlimit, ["a", "r", "ar"]))
+                && !in_array($xlimit, ["a", "r", "ar"], true))
             || ($this->conf->has_tracks()
                 && $limit === "rable")
             || $this->user->has_hidden_papers())
@@ -2422,7 +2422,7 @@ class PaperSearch {
             && $this->q[0] !== "#"
             && preg_match('/\A' . TAG_REGEX . '\z/', $this->q)
             && $this->user->can_view_tags(null)
-            && in_array($this->limit(), ["s", "all", "r"])) {
+            && in_array($this->limit(), ["s", "all", "r"], true)) {
             if ($this->q[0] === "~")
                 return "#" . $this->q;
             $result = $this->conf->qe("select paperId from PaperTag where tag=? limit 1", $this->q);
@@ -2679,14 +2679,14 @@ class PaperSearch {
             && $this->user->is_requester())
             array_push($res, "has:approvable");
         foreach ($this->conf->resp_rounds() as $rrd) {
-            if (!in_array("has:response", $res))
+            if (!in_array("has:response", $res, true))
                 $res[] = "has:response";
             if ($rrd->number)
                 $res[] = "has:{$rrd->name}response";
         }
         if ($this->user->can_view_some_draft_response())
             foreach ($this->conf->resp_rounds() as $rrd) {
-                if (!in_array("has:draftresponse", $res))
+                if (!in_array("has:draftresponse", $res, true))
                     $res[] = "has:draftresponse";
                 if ($rrd->number)
                     $res[] = "has:draft{$rrd->name}response";

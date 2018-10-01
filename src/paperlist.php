@@ -275,22 +275,24 @@ class PaperList {
     function set_view($k, $v) {
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"")
             $k = substr($k, 1, -1);
-        if (in_array($v, ["show", "hide"]))
+        if (in_array($v, ["show", "hide"], true))
             $v = $v === "show";
-        if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"]))
+        if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"], true))
             $this->_view_compact_columns = $this->_view_columns = $v;
-        else if (in_array($k, ["columns", "column", "col"]))
+        else if (in_array($k, ["columns", "column", "col"], true))
             $this->_view_columns = $v;
         else if ($k === "force")
             $this->_view_force = $v;
-        else if (in_array($k, ["statistics", "stat", "stats", "totals"]))
+        else if (in_array($k, ["statistics", "stat", "stats", "totals"], true))
             $this->_view_statistics = $v;
-        else if (in_array($k, ["rownum", "rownumbers"]))
+        else if (in_array($k, ["rownum", "rownumbers"], true))
             $this->_view_row_numbers = $v;
         else {
             if ($k === "authors" || $k === "author")
                 $k = "au";
-            if ($v && in_array($k, ["aufull", "anonau"]) && !isset($this->_view_fields["au"]))
+            if ($v
+                && in_array($k, ["aufull", "anonau"], true)
+                && !isset($this->_view_fields["au"]))
                 $this->_view_fields["au"] = $v;
             $this->_view_fields[$k] = $v;
         }
@@ -393,7 +395,7 @@ class PaperList {
                            && $this->user->can_view_decision($row)
                            && $row->timeFinalSubmitted <= 0;
                    });
-        if (!in_array($key, ["collab", "lead", "shepherd", "topics", "sel", "need_review", "authors", "tags"]))
+        if (!in_array($key, ["collab", "lead", "shepherd", "topics", "sel", "need_review", "authors", "tags"], true))
             error_log("unexpected PaperList::_compute_has({$key})");
         return false;
     }
@@ -1235,7 +1237,7 @@ class PaperList {
     }
 
     private function _expand_view_column($k, $report) {
-        if (in_array($k, ["anonau", "aufull"]))
+        if (in_array($k, ["anonau", "aufull"], true))
             return [];
         $fs = $this->find_columns($k);
         if (!$fs && $report && isset($this->_column_errors_by_name[$k])) {

@@ -214,7 +214,7 @@ class SessionList {
             $j["ids"] = self::encode_ids($this->ids);
         foreach (get_object_vars($this) as $k => $v)
             if ($v != null
-                && !in_array($k, ["ids", "id_position", "curid", "previd", "nextid"]))
+                && !in_array($k, ["ids", "id_position", "curid", "previd", "nextid"], true))
                 $j[$k] = $v;
         return json_encode_browser($j);
     }
