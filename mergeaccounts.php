@@ -52,18 +52,18 @@ function crpmerge($qreq, $MiniMe) {
 if (isset($Qreq->merge) && $Qreq->post_ok()) {
     if (!$Qreq->email) {
         $MergeError = "Enter an email address to merge.";
-        Ht::set_control_class("email", "has-error");
+        Ht::error_at("email");
     } else if (!$Qreq->password) {
         $MergeError = "Enter the password of the account to merge.";
-        Ht::set_control_class("password", "has-error");
+        Ht::error_at("password");
     } else {
         $MiniMe = $Conf->user_by_email($Qreq->email);
         if (!$MiniMe) {
             $MergeError = "No account for " . htmlspecialchars($Qreq->email) . " exists.  Did you enter the correct email address?";
-            Ht::set_control_class("email", "has-error");
+            Ht::error_at("email");
         } else if (!$MiniMe->check_password($Qreq->password)) {
             $MergeError = "That password is incorrect.";
-            Ht::set_control_class("password", "has-error");
+            Ht::error_at("password");
         } else if ($MiniMe->contactId == $Me->contactId) {
             $Conf->confirmMsg("Accounts successfully merged.");
             go(hoturl("index"));

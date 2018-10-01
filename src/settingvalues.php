@@ -600,14 +600,8 @@ class SettingValues extends MessageSet {
     function render_messages_at($field) {
         $t = "";
         $fname = $field instanceof Si ? $field->name : $field;
-        foreach ($this->messages_at($fname, true) as $mx) {
-            $t .= '<p class="settings-ap f-h';
-            if ($mx[2] === MessageSet::ERROR)
-                $t .= ' is-error';
-            else if ($mx[2] === MessageSet::WARNING)
-                $t .= ' is-warning';
-            $t .= '">' . $mx[1] . '</p>';
-        }
+        foreach ($this->messages_at($fname, true) as $mx)
+            $t .= '<p class="' . MessageSet::status_class($mx[2], "settings-ap f-h", "is-") . '">' . $mx[1] . "</p>";
         return $t;
     }
     function echo_messages_at($field) {

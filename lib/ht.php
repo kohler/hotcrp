@@ -11,7 +11,7 @@ class Ht {
     private static $_stash = "";
     private static $_stash_inscript = false;
     private static $_stash_map = [];
-    private static $_control_classes = [];
+    private static $_msgset = null;
     const ATTR_SKIP = 1;
     const ATTR_BOOL = 2;
     const ATTR_BOOLTEXT = 3;
@@ -492,20 +492,25 @@ class Ht {
     }
 
 
-    static function control_class($name, $rest = false) {
-        if (isset(self::$_control_classes[$name])) {
-            $c = self::$_control_classes[$name];
-            if ($rest && $c && $c[0] !== " ")
-                $rest .= " ";
-            return $rest ? $rest . $c : $c;
-        } else {
+    static function control_class($field, $rest = "") {
+        if (self::$_msgset)
+            return self::$_msgset->control_class($field, $rest);
+        else
             return $rest;
+    }
+    static function error_at($field, $msg = "") {
+        self::$_msgset || (self::$_msgset = new MessageSet);
+        self::$_msgset->error_at($field, $msg);
+    }
+    static function problem_status_at($field) {
+        return self::$_msgset ? self::$_msgset->problem_status_at($field) : 0;
+    }
+    static function render_messages_at($field) {
+        $t = "";
+        if (self::$_msgset) {
+            foreach (self::$_msgset->messages_at($field, true) as $mx)
+                $t .= '<p class="' . MessageSet::status_class($mx[2], "f-h", "is-") . '">' . $mx[1] . '</p>';
         }
-    }
-    static function set_control_class($name, $class) {
-        self::$_control_classes[$name] = $class ? " " . $class : "";
-    }
-    static function error_at($name) {
-        self::$_control_classes[$name] = " has-error";
+        return $t;
     }
 }

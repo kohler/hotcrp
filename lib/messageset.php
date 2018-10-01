@@ -64,14 +64,17 @@ class MessageSet {
             && $this->werror
             && isset($this->werror[$field]))
             $status = self::ERROR;
+        if ($field)
+            $this->errf[$field] = max(get($this->errf, $field, 0), $status);
+        if ($msg === null || $msg === false || $msg === [])
+            $msg = "";
         if ($this->ignore_duplicates
-            && $msg
+            && $msg !== ""
+            && is_string($msg)
             && (!$field || isset($this->errf[$field]))
             && in_array([$field, $msg, $status], $this->msgs))
             return;
-        if ($field)
-            $this->errf[$field] = max(get($this->errf, $field, 0), $status);
-        if ($msg) {
+        if ($msg !== "") {
             foreach (is_array($msg) ? $msg : [$msg] as $m)
                 $this->msgs[] = [$field, $m, $status];
         }
@@ -91,42 +94,57 @@ class MessageSet {
         $this->msg($field, $msg, self::INFO);
     }
 
-    function has_error() {
-        return $this->has_error > 0;
-    }
-    function nerrors() {
-        return $this->has_error;
-    }
-    function has_warning() {
-        return $this->has_warning > 0;
-    }
-    function nwarnings() {
-        return $this->has_warning;
-    }
-    function has_problem() {
-        return $this->has_warning > 0 || $this->has_error > 0;
-    }
-    function has_messages() {
-        return !empty($this->msgs);
-    }
     function problem_status() {
         if ($this->has_error > 0)
             return self::ERROR;
         else
             return $this->has_warning > 0 ? self::WARNING : self::INFO;
     }
-    function has_error_at($field) {
-        $this->canonfield && ($field = $this->canonical_field($field));
-        return get($this->errf, $field, 0) > 1;
+    function has_messages() {
+        return !empty($this->msgs);
+    }
+    function has_problem() {
+        return $this->has_warning > 0 || $this->has_error > 0;
+    }
+    function has_error() {
+        return $this->has_error > 0;
+    }
+    function has_warning() {
+        return $this->has_warning > 0;
+    }
+
+    function nerrors() {
+        return $this->has_error;
+    }
+    function nwarnings() {
+        return $this->has_warning;
+    }
+
+    function problem_status_at($field) {
+        if ($this->has_warning > 0 || $this->has_error > 0) {
+            $this->canonfield && ($field = $this->canonical_field($field));
+            return get($this->errf, $field, 0);
+        } else
+            return 0;
+    }
+    function has_messages_at($field) {
+        if (!empty($this->errf)) {
+            $this->canonfield && ($field = $this->canonical_field($field));
+            if (isset($this->errf[$field])) {
+                foreach ($this->msgs as $mx)
+                    if ($mx[0] === $field)
+                        return true;
+            }
+        }
+        return false;
     }
     function has_problem_at($field) {
-        $this->canonfield && ($field = $this->canonical_field($field));
-        return get($this->errf, $field, 0) > 0;
+        return $this->problem_status_at($field) > 0;
     }
-    function problem_status_at($field) {
-        $this->canonfield && ($field = $this->canonical_field($field));
-        return get($this->errf, $field, 0);
+    function has_error_at($field) {
+        return $this->problem_status_at($field) > 1;
     }
+
     static function status_class($status, $rest = "", $prefix = "has-") {
         if ($status >= self::WARNING) {
             if ($rest !== "")
