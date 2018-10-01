@@ -131,7 +131,7 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
     loadRows();
     $tf->report();
     $paperTable->set_review_values($tf);
-} else if ($Qreq->has_attachment("after_login")) {
+} else if ($Qreq->has_annex("after_login")) {
     $tf = new ReviewValues($rf);
     $tf->parse_web($Qreq, $Qreq->override);
     $paperTable->set_review_values($tf);

@@ -141,22 +141,22 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function files() {
         return $this->____files;
     }
-    function set_attachment($name, $x) {
+    function set_annex($name, $x) {
         $this->____x[$name] = $x;
     }
-    function has_attachments() {
+    function has_annexes() {
         return !empty($this->____x);
     }
-    function has_attachment($name) {
+    function has_annex($name) {
         return isset($this->____x[$name]);
     }
-    function attachment($name) {
+    function annex($name) {
         $x = null;
         if (array_key_exists($name, $this->____x))
             $x = $this->____x[$name];
         return $x;
     }
-    function attachments() {
+    function annexes() {
         return $this->____x;
     }
     function approve_post() {

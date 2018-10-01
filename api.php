@@ -66,10 +66,10 @@ if ($Qreq->p && ctype_digit($Qreq->p)) {
                 $whynot["signin"] = "view_paper";
         }
         $Conf->paper = null;
-        $Qreq->set_attachment("paper_whynot", $whynot);
+        $Qreq->set_annex("paper_whynot", $whynot);
     }
 } else if ($Qreq->p) {
-    $Qreq->set_attachment("paper_whynot", ["conf" => $Conf, "invalidId" => "paper", "paperId" => $Qreq->p]);
+    $Qreq->set_annex("paper_whynot", ["conf" => $Conf, "invalidId" => "paper", "paperId" => $Qreq->p]);
 }
 
 // requests

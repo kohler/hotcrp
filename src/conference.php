@@ -3687,7 +3687,7 @@ class Conf {
         }
         if (!$prow && get($uf, "paper")) {
             $result = ["ok" => false];
-            if (($whynot = $qreq->attachment("paper_whynot"))) {
+            if (($whynot = $qreq->annex("paper_whynot"))) {
                 $status = isset($result["noPaper"]) ? 404 : 403;
                 $result["error"] = whyNotText($whynot, true);
                 if (isset($whynot["signin"]))

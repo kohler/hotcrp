@@ -14,7 +14,7 @@ if ($Qreq->post_ok() && !$Me->has_database_account()) {
     else
         $Me->escape();
 }
-$useRequest = isset($Qreq->title) && $Qreq->has_attachment("after_login");
+$useRequest = isset($Qreq->title) && $Qreq->has_annex("after_login");
 foreach (["emailNote", "reason"] as $x)
     if ($Qreq[$x] === "Optional explanation")
         unset($Qreq[$x]);

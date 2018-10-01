@@ -112,7 +112,7 @@ function initialize_user() {
             foreach ($lb[3] as $k => $v)
                 if (!isset($Qreq[$k]))
                     $Qreq[$k] = $v;
-            $Qreq->set_attachment("after_login", true);
+            $Qreq->set_annex("after_login", true);
         }
         unset($_SESSION["login_bounce"]);
     }
