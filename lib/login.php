@@ -152,9 +152,10 @@ class LoginHelper {
             if (!$xuser->check_password($password)) {
                 if ($xuser->password_is_reset())
                     $error = "Your previous password has been reset. Use “Forgot your password?” to create a new password.";
-                else if ($xuser->check_obsolete_local_password($password))
+                else if ($xuser->check_obsolete_local_password($password)) {
                     $error = "The password you entered has been superseded by a more recent " . $conf->opt("contactdb_description", "global") . " password. Enter the more recent password to sign in, or use “Forgot your password?”.";
-                else
+                    error_log($conf->dbname . ": " . $xuser->email . ": preventing login using obsolete local password (" . post_value(true) . ")");
+                } else
                     $error = "Incorrect password.";
                 Ht::error_at("password", $error);
                 return false;

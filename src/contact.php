@@ -1496,8 +1496,14 @@ class Contact {
             if ($cdbu
                 && !$cdbok
                 && $this->passwordTime
-                && $cdbu->passwordTime > $this->passwordTime)
-                error_log($this->conf->dbname . ": " . $this->email . ": using old local password (" . post_value(true) . ")");
+                && $cdbu->passwordTime > $this->passwordTime) {
+                $tx = sprintf("local s%.0fd u%.0fd, global s%.0fd u%.0fd",
+                             ($Now - $this->passwordTime) / 86400,
+                             ($Now - $this->passwordUseTime) / 86400,
+                             ($Now - $cdbu->passwordTime) / 86400,
+                             ($Now - $cdbu->passwordUseTime) / 86400);
+                error_log($this->conf->dbname . ": " . $this->email . ": using old local password, $tx (" . post_value(true) . ")");
+            }
             $updater = ["passwordUseTime" => $Now];
             if ($this->check_password_encryption($this->password, false)) {
                 $updater["password"] = $this->hash_password($input);
