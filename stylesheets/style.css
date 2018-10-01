@@ -685,15 +685,18 @@ span.hastitle {
 
 /* Main */
 h2.home, h4.home {
-	color: #4b4f8d;
+	color: #9e2441;
 	margin-bottom: 0.5rem;
 	font-size: 1.15rem;
 }
-#homelist h2.home {
-	color: #8b3030;
+h2.home-1 {
+	color: #c72047;
 }
-#homeau h2.home {
-	color: #8b3030;
+h2.home-2 {
+	color: #ba2347;
+}
+h2.home-3 {
+	color: #a3213f;
 }
 .homeside {
 	float: right;

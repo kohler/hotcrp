@@ -208,7 +208,13 @@ class Home_Partial {
             '</div><p class="hint">New to the site? <a href="" class="ui js-create-account">Create an account</a></p></div></form></div>';
     }
 
-    function render_search(Contact $user, Qrequest $qreq) {
+    private function render_h2_home($x, $gx) {
+        $i = +$gx->annex("h2_home_count") + 1;
+        $gx->set_annex("h2_home_count", $i);
+        return "<h2 class=\"home home-$i\">" . $x . "</h2>";
+    }
+
+    function render_search(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->privChair
             && ((!$conf->has_any_submitted()
@@ -218,7 +224,7 @@ class Home_Partial {
 
         echo '<div class="homegrp" id="homelist">',
             Ht::form($conf->hoturl("search"), ["method" => "get"]),
-            '<h2 class="home"><a class="qq" href="', $conf->hoturl("search"), '" id="homesearch-label">Search</a></h2>';
+            $this->render_h2_home('<a class="qq" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>', $gx);
 
         $tOpt = PaperSearch::search_types($user);
         echo Ht::entry("q", (string) $qreq->q,
@@ -231,7 +237,7 @@ class Home_Partial {
             "</form></div>\n";
     }
 
-    function render_reviews(Contact $user, Qrequest $qreq) {
+    function render_reviews(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->privChair
             && !($user->is_reviewer() && $conf->has_any_submitted()))
@@ -284,7 +290,7 @@ class Home_Partial {
         echo '<div class="homegrp" id="homerev">';
 
         // Overview
-        echo "<h2 class=\"home\">Reviews</h2> ";
+        echo $this->render_h2_home("Reviews", $gx);
         if ($this->_my_rinfo) {
             echo $conf->_("You have submitted %1\$d of <a href=\"%3\$s\">%2\$d reviews</a> with average %4\$s score %5\$s.",
                 $this->_my_rinfo->num_submitted, $this->_my_rinfo->num_needs_submit,
@@ -363,7 +369,7 @@ class Home_Partial {
         if ($conf->setting("rev_tokens")) {
             echo $sep;
             $this->_in_reviews = true;
-            $this->render_review_tokens($user, $qreq);
+            $this->render_review_tokens($user, $qreq, $gx);
             $sep = $xsep;
         }
 
@@ -408,7 +414,7 @@ class Home_Partial {
     }
 
     // Review token printing
-    function render_review_tokens(Contact $user, Qrequest $qreq) {
+    function render_review_tokens(Contact $user, Qrequest $qreq, $gx) {
         if ($this->_tokens_done
             || !$user->has_email()
             || !$user->conf->setting("rev_tokens")
@@ -421,7 +427,7 @@ class Home_Partial {
 
         if (!$this->_in_reviews)
             echo '<div class="homegrp" id="homerev">',
-                "<h2 class=\"home\">Reviews</h2>";
+                $this->render_h2_home("Reviews", $gx);
         echo '<table id="foldrevtokens" class="fold2', empty($tokens) ? "c" : "o", '" style="display:inline-table">',
             '<tr><td class="fn2"><a href="" class="fn2 ui js-foldup">Add review tokens</a></td>',
             '<td class="fx2">Review tokens: &nbsp;';
@@ -439,14 +445,13 @@ class Home_Partial {
         $this->_tokens_done = true;
     }
 
-    function render_review_requests(Contact $user, Qrequest $qreq) {
+    function render_review_requests(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->is_requester()
             && !$user->has_admin_approvable_review())
             return;
 
-        echo '<div class="homegrp">';
-        echo "<h2 class=\"home\">Requested Reviews</h2> ";
+        echo '<div class="homegrp">', $this->render_h2_home("Requested Reviews", $gx);
         if ($user->has_admin_approvable_review()) {
             echo '<a href="', $conf->hoturl("paper", "m=rea&amp;p=has%3Aapprovable"),
                 ($user->has_approvable_review() ? '" class="attention' : ''),
@@ -463,11 +468,8 @@ class Home_Partial {
             && $user->is_reviewer())
             return;
 
-        echo '<div class="homegrp" id="homeau">';
-        if ($user->is_author())
-            echo "<h2 class=\"home\">Your Submissions</h2> ";
-        else
-            echo "<h2 class=\"home\">Submissions</h2> ";
+        echo '<div class="homegrp" id="homeau">',
+            $this->render_h2_home($user->is_author() ? "Your Submissions" : "Submissions", $gx);
 
         $startable = $conf->timeStartPaper();
         if ($startable && !$user->has_email())

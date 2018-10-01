@@ -8,6 +8,7 @@ class GroupedExtensions {
     private $_render_state;
     private $_render_stack;
     private $_render_classes;
+    private $_annexes = [];
     static private $next_placeholder;
 
     function _add_json($fj) {
@@ -155,5 +156,18 @@ class GroupedExtensions {
             $this->call_callback($gj->render_callback, $args);
         } else if (isset($gj->render_html))
             echo $gj->render_html;
+    }
+
+    function has_annex($name) {
+        return isset($this->_annexes[$name]);
+    }
+    function annex($name) {
+        $x = null;
+        if (array_key_exists($name, $this->_annexes))
+            $x = $this->_annexes[$name];
+        return $x;
+    }
+    function set_annex($name, $x) {
+        $this->_annexes[$name] = $x;
     }
 }
