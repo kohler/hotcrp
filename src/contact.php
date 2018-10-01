@@ -1489,7 +1489,8 @@ class Contact {
         if ($localok
             && $cdbu
             && $cdbu->password
-            && $cdbu->passwordUseTime >= $this->passwordUseTime)
+            && $cdbu->passwordUseTime >= $this->passwordUseTime
+            && $this->passwordUseTime < $Now - $this->conf->opt("obsoletePasswordDelay", 2592000))
             $localok = false;
         if ($localok) {
             if ($cdbu

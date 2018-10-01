@@ -6,8 +6,11 @@ global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 
 global $Opt;
-$Opt = array("contactdb_dsn" => "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/hotcrp_testdb_cdb",
-             "contactdb_passwordHmacKeyid" => "c1");
+$Opt = [
+    "contactdb_dsn" => "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/hotcrp_testdb_cdb",
+    "contactdb_passwordHmacKeyid" => "c1",
+    "obsoletePasswordDelay" => 0
+];
 require_once("$ConfSitePATH/test/setup.php");
 
 function password($email, $iscdb = false) {
@@ -71,6 +74,7 @@ xassert(user($marina)->check_password("ncurses"));
 
 // logging in with global password makes local password obsolete
 xassert(user($marina)->check_password("isdevitch"));
+++$Now;
 xassert(!user($marina)->check_password("ncurses"));
 xassert(user($marina)->check_obsolete_local_password("ncurses"));
 

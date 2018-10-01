@@ -255,12 +255,12 @@ class LoginHelper {
         }
 
         if (Mailer::allow_send($user->email))
-            $msg .= " A password has been emailed to you. Return here when you receive it to complete the registration process. If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
+            $msg .= " Login information has been emailed to you. Return here when you receive it to complete the registration process. If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
         else {
             if ($conf->opt("sendEmail"))
                 $msg .= " The email address you provided seems invalid.";
             else
-                $msg .= " The conference system is not set up to mail passwords at this time.";
+                $msg .= " The system cannot send email at this time.";
             $msg .= " Although an account was created for you, you need help to retrieve your password. Contact " . Text::user_html($conf->site_contact()) . ".";
         }
         if (isset($qreq->password) && trim($qreq->password) !== "")
