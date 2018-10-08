@@ -1729,8 +1729,13 @@ class Contact {
     }
 
     function contactdb_roles() {
-        $this->is_author(); // load _db_roles
-        return $this->roles | ($this->_db_roles & (self::ROLE_AUTHOR | self::ROLE_REVIEWER));
+        if ($this->disabled)
+            return 0;
+        else {
+            $this->is_author(); // load _db_roles
+            return $this->roles
+                | ($this->_db_roles & (self::ROLE_AUTHOR | self::ROLE_REVIEWER));
+        }
     }
 
     function has_outstanding_review() {
