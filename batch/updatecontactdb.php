@@ -54,15 +54,17 @@ if ($users) {
     $cdbids = [];
     $qv = [];
     while (($u = Contact::fetch($result, $Conf))) {
+        $cdb_roles = $u->contactdb_roles();
+        if ($cdb_roles == 0)
+            continue;
         $cdbu = get($cdb_users, $u->email);
         $cdbid = $cdbu ? (int) $cdbu->contactDbId : 0;
-        $cdb_roles = $u->contactdb_roles();
         if ($cdbu
             && (int) $cdbu->roles === $cdb_roles
             && $cdbu->activity_at)
             /* skip */;
         else if ($cdbu && $cdbu->password !== null)
-            $qv[] = [$cdbid, $confid, $cdb_roles, $u->lastLogin ? : $u->creationTime];
+            $qv[] = [$cdbid, $confid, $cdb_roles, $u->creationTime];
         else
             $cdbid = $u->contactdb_update();
         if ($cdbid)
