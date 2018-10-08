@@ -490,7 +490,10 @@ class Contact {
 
     private function _contactdb_save_roles($cdbur) {
         global $Now;
-        Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=values(roles), activity_at=values(activity_at)", $cdbur->contactDbId, $cdbur->confid, $this->contactdb_roles(), $Now);
+        if (($roles = $this->contactdb_roles()))
+            Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=values(roles), activity_at=values(activity_at)", $cdbur->contactDbId, $cdbur->confid, $roles, $Now);
+        else
+            Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=? and roles=0", $cdbur->contactDbId, $cdbur->confid);
     }
     function contactdb_update($update_keys = null, $only_update_empty = false) {
         global $Now;
