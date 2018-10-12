@@ -43,7 +43,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function msg_fail($what) {
-        $this->msg("error", $what, self::ERROR);
+        if ($what)
+            $this->msg("error", $what, self::ERROR);
         $this->failed = true;
     }
 
@@ -369,7 +370,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             if (!isset($this->errf["error"]))
                 $this->msg_fail("No such document.");
             return;
-        } else if ($doc->mimetype != "application/pdf")
+        } else if ($doc->mimetype !== "application/pdf")
             return $this->msg_fail("The format checker only works for PDF files.");
 
         $done_me = false;
