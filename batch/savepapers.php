@@ -151,6 +151,7 @@ function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
             return false;
         }
         $docj->content = $content;
+        unset($docj->content_file);
     }
 }
 
