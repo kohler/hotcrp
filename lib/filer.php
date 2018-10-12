@@ -1,6 +1,102 @@
 <?php
 // filer.php -- generic document helper class
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+
+class HashAnalysis {
+    private $prefix;
+    private $hash;
+    private $binary;
+
+    function __construct($hash) {
+        $len = strlen($hash);
+        if ($len === 37
+            && strcasecmp(substr($hash, 0, 5), "sha2-") == 0) {
+            $this->prefix = "sha2-";
+            $this->hash = substr($hash, 5);
+            $this->binary = true;
+        } else if ($len === 20) {
+            $this->prefix = "";
+            $this->hash = $hash;
+            $this->binary = true;
+        } else if ($len === 69
+                   && strcasecmp(substr($hash, 0, 5), "sha2-") == 0
+                   && ctype_xdigit(substr($hash, 5))) {
+            $this->prefix = "sha2-";
+            $this->hash = substr($hash, 5);
+            $this->binary = false;
+        } else if ($len === 40
+                   && ctype_xdigit($hash)) {
+            $this->prefix = "";
+            $this->hash = $hash;
+            $this->binary = false;
+        } else if ($len === 32) {
+            $this->prefix = "sha2-";
+            $this->hash = $hash;
+            $this->binary = true;
+        } else if ($len === 64
+                   && ctype_xdigit($hash)) {
+            $this->prefix = "sha2-";
+            $this->hash = $hash;
+            $this->binary = false;
+        } else if ($len === 25
+                   && strcasecmp(substr($hash, 0, 5), "sha1-") == 0) {
+            $this->prefix = "";
+            $this->hash = substr($hash, 5);
+            $this->binary = true;
+        } else if ($len === 45
+                   && strcasecmp(substr($hash, 0, 5), "sha1-") == 0
+                   && ctype_xdigit(substr($hash, 5))) {
+            $this->prefix = "";
+            $this->hash = substr($hash, 5);
+            $this->binary = false;
+        } else {
+            if ($hash === "")
+                $this->prefix = "";
+            else if ($hash === "sha256")
+                $this->prefix = "sha2-";
+            else
+                $this->prefix = "xxx-";
+        }
+    }
+    static function make_known_algorithm($algo) {
+        $ha = new HashAnalysis("");
+        if ($algo === "sha1") {
+            $ha->prefix = "";
+        } else {
+            $ha->prefix = "sha2-";
+        }
+        return $ha;
+    }
+
+    function ok() {
+        return $this->hash !== null;
+    }
+    function known_algorithm() {
+        return $this->prefix !== "xxx-";
+    }
+    function algorithm() {
+        if ($this->prefix === "sha2-") {
+            return "sha256";
+        } else if ($this->prefix === "") {
+            return "sha1";
+        } else {
+            return "xxx";
+        }
+    }
+    function prefix() {
+        return $this->prefix;
+    }
+    function text() {
+        return $this->prefix . ($this->binary ? bin2hex($this->hash) : strtolower($this->hash));
+    }
+    function binary() {
+        return $this->prefix . ($this->binary ? $this->hash : hex2bin($this->hash));
+    }
+    function text_data() {
+        return $this->binary ? bin2hex($this->hash) : strtolower($this->hash);
+    }
+}
+
 class Filer {
     static public $tempdir;
     static public $tempcounter = 0;
@@ -87,61 +183,19 @@ class Filer {
     }
 
     // hash helpers
-    static function analyze_hash($hash, $refhash = null) {
-        $len = strlen($hash);
-        if ($len === 20 || $len === 40)
-            return [$hash, "", "sha1"];
-        else if ($len === 32 || $len === 64) {
-            if (!$refhash || substr($refhash, 0, 5) !== "sha3-")
-                return [$hash, "sha2-", "sha256"];
-        } else if (($len == 25 || $len === 45)
-                   && strcasecmp(substr($hash, 0, 5), "sha1-") == 0)
-            return [substr($hash, 5), "", "sha1"];
-        else if (($len == 37 || $len === 69)
-                 && strcasecmp(substr($hash, 0, 5), "sha2-") == 0)
-            return [substr($hash, 5), "sha2-", "sha256"];
-        return [false, false, false];
-    }
-    static function hash_as_text($hash, $refhash = null) {
-        if (!is_string($hash)) {
-            error_log("Filer::hash_as_text: invalid input " . var_export($hash, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            return false;
-        }
-        list($hash, $pfx, $alg) = self::analyze_hash($hash, $refhash);
-        if ($hash !== false && strlen($hash) < 40)
-            return $pfx . bin2hex($hash);
-        else if ($hash !== false && ctype_xdigit($hash))
-            return $pfx . strtolower($hash);
-        else
-            return false;
+    static function hash_as_text($hash) {
+        assert(is_string($hash));
+        $ha = new HashAnalysis($hash);
+        return $ha->ok() ? $ha->text() : false;
     }
     static function hash_as_binary($hash) {
-        if (!is_string($hash)) {
-            error_log("Filer::hash_as_binary: invalid input " . var_export($h, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            return false;
-        }
-        list($hash, $pfx, $alg) = self::analyze_hash($hash);
-        if ($hash !== false && strlen($hash) < 40)
-            return $pfx . $hash;
-        else if ($hash !== false && ctype_xdigit($hash))
-            return $pfx . hex2bin($hash);
-        else
-            return false;
-    }
-    static function check_text_hash($hash1, $hash2) {
-        $hash2 = self::hash_as_text($hash2, $hash1);
-        return $hash2 !== false && $hash1 === $hash2;
+        assert(is_string($hash));
+        $ha = new HashAnalysis($hash);
+        return $ha->ok() ? $ha->binary() : false;
     }
     static function sha1_hash_as_text($str) {
-        if (strlen($str) > 20 && strcasecmp(substr($str, 0, 5), "sha1-") == 0)
-            $str = substr($str, 5);
-        $len = strlen($str);
-        if ($len === 20)
-            return bin2hex($str);
-        else if ($len === 40 && ctype_xdigit($str))
-            return strtolower($str);
-        else
-            return false;
+        $ha = new HashAnalysis($str);
+        return $ha->ok() && $ha->prefix() === "" ? $ha->text() : false;
     }
 
     // filestore path functions
@@ -223,7 +277,7 @@ class Filer {
                     $x .= Mimetype::extension($doc->mimetype);
             } else {
                 if ($hash === false
-                    && ($hash = $doc->text_hash()) == false)
+                    && ($hash = $doc->text_hash()) === false)
                     return false;
                 if ($fn === "h" && $fwidth === "")
                     $x .= $hash;

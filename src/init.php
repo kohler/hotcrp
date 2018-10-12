@@ -87,6 +87,7 @@ class SiteLoader {
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
         "FormatChecker" => "src/formatspec.php",
+        "HashAnalysis" => "lib/filer.php",
         "JsonSerializable" => "lib/json.php",
         "LoginHelper" => "lib/login.php",
         "MailPreparation" => "lib/mailer.php",

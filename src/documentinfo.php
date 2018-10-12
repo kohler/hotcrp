@@ -258,13 +258,22 @@ class DocumentInfo implements JsonSerializable {
 
     private function store_docstore() {
         if (($dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR))) {
-            if ($this->content_file !== null
-                && copy($this->content_file, $dspath)
-                && @filesize($dspath) === @filesize($this->content_file))
+            if (file_exists($dspath)
+                && $this->file_binary_hash($dspath, $this->binary_hash()) === $this->binary_hash())
+                $ok = true;
+            else if ($this->content_file !== null
+                     && copy($this->content_file, $dspath)
+                     && @filesize($dspath) === @filesize($this->content_file))
                 $ok = true;
             else {
                 $content = $this->content();
-                $ok = file_put_contents($dspath, $content) === strlen($content);
+                if (file_put_contents($dspath . "~", $content) === strlen($content)
+                    && rename($dspath . "~", $dspath))
+                    $ok = true;
+                else {
+                    @unlink($dspath . "~");
+                    $ok = false;
+                }
             }
             if ($ok) {
                 $this->filestore = $dspath;
@@ -635,7 +644,8 @@ class DocumentInfo implements JsonSerializable {
             return substr($hash, strpos($hash, "-") + 1);
     }
     function check_text_hash($hash) {
-        return Filer::check_text_hash($this->text_hash(), $hash);
+        $hash = $this->binary_hash();
+        return $hash !== false && $hash === Filer::hash_as_binary($hash);
     }
     function hash_algorithm() {
         assert($this->has_hash());
@@ -655,21 +665,30 @@ class DocumentInfo implements JsonSerializable {
         else
             return false;
     }
-    function content_binary_hash($like_hash = false) {
+    private function hash_algorithm_for($like_hash) {
+        $ha = null;
+        if ($like_hash)
+            $ha = new HashAnalysis($like_hash);
+        if (!$ha || !$ha->known_algorithm())
+            $ha = HashAnalysis::make_known_algorithm($this->conf->opt("contentHashMethod"));
+        return $ha;
+    }
+    function content_binary_hash($like_hash = null) {
         // never cached
-        if ($like_hash) {
-            list($x1, $x2, $algorithm) = Filer::analyze_hash($like_hash);
-        } else
-            $algorithm = $this->conf->opt("contentHashMethod");
-        if ($algorithm !== "sha1" && $algorithm !== "sha256")
-            $algorithm = "sha256";
-        $pfx = ($algorithm === "sha1" ? "" : "sha2-");
+        $ha = $this->hash_algorithm_for($like_hash);
         $this->ensure_content();
         if ($this->content !== null)
-            return $pfx . hash($algorithm, $this->content, true);
+            return $ha->prefix() . hash($ha->algorithm(), $this->content, true);
         else if (($file = $this->available_content_file())
-                 && ($h = hash_file($algorithm, $file, true)) !== false)
-            return $pfx . $h;
+                 && ($h = hash_file($ha->algorithm(), $file, true)) !== false)
+            return $ha->prefix() . $h;
+        else
+            return false;
+    }
+    function file_binary_hash($file, $like_hash = null) {
+        $ha = $this->hash_algorithm_for($like_hash);
+        if (($h = hash_file($ha->algorithm(), $file, true)) !== false)
+            return $ha->prefix() . $h;
         else
             return false;
     }

@@ -492,30 +492,31 @@ class PaperTable {
     static function pdf_stamps_html($data, $options = null) {
         global $Conf;
         $tooltip = !$options || !get($options, "notooltip");
+        $t = [];
 
-        $t = array();
-        $tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
+        $tm = get($data, "timestamp", get($data, "timeSubmitted", 0));
         if ($tm > 0)
             $t[] = ($tooltip ? '<span class="nb need-tooltip" aria-label="Upload time">' : '<span class="nb">')
                 . '<svg width="12" height="12" viewBox="0 0 96 96" class="licon"><path d="M48 6a42 42 0 1 1 0 84 42 42 0 1 1 0-84zm0 10a32 32 0 1 0 0 64 32 32 0 1 0 0-64zM48 19A5 5 0 0 0 43 24V46c0 2.352.37 4.44 1.464 5.536l12 12c4.714 4.908 12-2.36 7-7L53 46V24A5 5 0 0 0 43 24z"/></svg>'
                 . " " . $Conf->unparse_time_full($tm) . "</span>";
-        if (($hash = defval($data, "sha1")) != "")
-            $hash = Filer::hash_as_text($hash);
-        if ($hash) {
-            list($xhash, $pfx, $alg) = Filer::analyze_hash($hash);
+
+        $ha = new HashAnalysis(get($data, "sha1"));
+        if ($ha->ok()) {
             $x = '<span class="nb checksum';
             if ($tooltip) {
                 $x .= ' need-tooltip" data-tooltip="';
-                if ($alg === "sha1")
-                    $x .= "SHA-1 checksum";
-                else if ($alg === "sha256")
+                if ($ha->algorithm() === "sha256")
                     $x .= "SHA-256 checksum";
+                else if ($ha->algorithm() === "sha1")
+                    $x .= "SHA-1 checksum";
             }
+            $h = $ha->text_data();
             $x .= '"><svg width="12" height="12" viewBox="0 0 48 48" class="licon"><path d="M19 32l-8-8-7 7 14 14 26-26-6-6-19 19zM15 3V10H8v5h7v7h5v-7H27V10h-7V3h-5z"/></svg> '
-                . '<span class="checksum-overflow">' . $xhash . '</span>'
-                . '<span class="checksum-abbreviation">' . substr($xhash, 0, 8) . '</span></span>';
+                . '<span class="checksum-overflow">' . $h . '</span>'
+                . '<span class="checksum-abbreviation">' . substr($h, 0, 8) . '</span></span>';
             $t[] = $x;
         }
+
         if (!empty($t))
             return '<span class="hint">' . join(" <span class='barsep'>·</span> ", $t) . "</span>";
         else

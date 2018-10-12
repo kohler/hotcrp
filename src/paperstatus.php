@@ -419,11 +419,11 @@ class PaperStatus extends MessageSet {
         if ($docj instanceof DocumentInfo)
             $doc = $docj;
         else {
-            $doc = null;
-            if (!isset($docj->hash) && isset($docj->sha1))
-                $dochash = (string) Filer::sha1_hash_as_text($docj->sha1);
-            else
-                $dochash = (string) get($docj, "hash");
+            $doc = $dochash = null;
+            if (!isset($docj->hash) && isset($docj->sha1) && is_string($docj->sha1))
+                $dochash = Filer::sha1_hash_as_text($docj->sha1);
+            else if (isset($docj->hash) && is_string($docj->hash))
+                $dochash = Filer::hash_as_text($docj->hash);
 
             if ($this->prow
                 && ($docid = get($docj, "docid"))
@@ -431,12 +431,16 @@ class PaperStatus extends MessageSet {
                 $result = $this->conf->qe("select * from PaperStorage where paperId=? and paperStorageId=? and documentType=?", $this->prow->paperId, $docid, $o->id);
                 $doc = DocumentInfo::fetch($result, $this->conf, $this->prow);
                 Dbl::free($result);
-                if (!$doc || ($dochash !== "" && !Filer::check_text_hash($doc->sha1, $dochash)))
+                if (!$doc
+                    || ((string) $dochash !== "" && $doc->text_hash() !== $dochash))
                     $doc = null;
             }
 
             if (!$doc) {
-                $args = ["paperId" => $this->paperId, "sha1" => $dochash, "documentType" => $o->id];
+                $args = [
+                    "paperId" => $this->paperId, "sha1" => (string) $dochash,
+                    "documentType" => $o->id
+                ];
                 foreach (["timestamp", "mimetype", "content", "content_base64",
                           "content_file", "metadata", "filename"] as $k)
                     if (isset($docj->$k))
