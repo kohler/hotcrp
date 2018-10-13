@@ -43,7 +43,6 @@ if ($Qreq->changeemail)
 if (!$Me->has_email())
     $Me->escape();
 $newProfile = false;
-$useRequest = false;
 $UserStatus = new UserStatus($Me);
 
 if ($Qreq->u === null) {
