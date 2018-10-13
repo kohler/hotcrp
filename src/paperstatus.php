@@ -138,7 +138,7 @@ class PaperStatus extends MessageSet {
 
     function paper_json($prow, $args = array()) {
         if (is_int($prow))
-            $prow = $this->conf->paperRow(["paperId" => $prow, "topics" => true, "options" => true], $this->user);
+            $prow = $this->conf->fetch_paper(["paperId" => $prow, "topics" => true, "options" => true], $this->user);
         $original_user = $user = $this->user;
         if (get($args, "forceShow"))
             $user = null;
@@ -1238,7 +1238,7 @@ class PaperStatus extends MessageSet {
         $this->clear();
         $this->paperId = $paperid ? : -1;
         if ($paperid)
-            $this->prow = $this->conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true], $this->user);
+            $this->prow = $this->conf->fetch_paper(["paperId" => $paperid, "topics" => true, "options" => true], $this->user);
         if ($pj && $this->prow && $paperid !== $this->prow->paperId) {
             $this->error_at("pid", $this->_("Saving submission with different ID"));
             return false;

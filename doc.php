@@ -214,8 +214,8 @@ function document_download($qreq) {
             || ($dr->opt->visibility !== "all" && !$Me->isPC))
             document_error("403 Forbidden", "You aren’t allowed to view this document.");
     } else {
-        $prow = $Conf->paperRow($dr->paperId, $Me, $whyNot);
-        if (!$prow)
+        $prow = $Conf->fetch_paper($dr->paperId, $Me);
+        if (($whyNot = $Me->perm_view_paper($prow, false, $dr->paperId)))
             document_error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", whyNotText($whyNot));
         if ($dr->opt
             && ($whyNot = $Me->perm_view_paper_option($prow, $dr->opt)))

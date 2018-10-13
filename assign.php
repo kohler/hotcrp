@@ -28,13 +28,10 @@ function errorMsgExit($msg) {
 // grab paper row
 function loadRows() {
     global $prow, $Conf, $Me, $Qreq;
-    $Conf->paper = $prow = PaperTable::paperRow($Qreq, $whyNot);
-    if (!$prow)
-        errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
-    if (($whyNot = $Me->perm_request_review($prow, false))) {
-        $wnt = whyNotText($whyNot);
-        error_go(hoturl("paper", ["p" => $prow->paperId]), $wnt);
-    }
+    if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me)))
+        errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
+    if (($whynot = $Me->perm_request_review($prow, false)))
+        error_go(hoturl("paper", ["p" => $prow->paperId]), whyNotText($whynot));
 }
 
 

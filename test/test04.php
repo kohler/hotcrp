@@ -195,7 +195,7 @@ $ps->save_paper_json((object) [
 ]);
 MailChecker::check_db("test04-akhmatova");
 
-$paper1 = $Conf->paperRow(1, $user_chair);
+$paper1 = $Conf->fetch_paper(1, $user_chair);
 $user_anna = user($anna);
 xassert(!!$user_anna);
 xassert($user_anna->act_author_view($paper1));
@@ -223,7 +223,7 @@ xassert_eqq($user_anne1->tag_value("b"), 3.0);
 xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
 xassert_eqq($user_anne1->data("data_test"), 139);
 xassert_eqq($user_anne1->email, "anne1@_.com");
-$paper1 = $Conf->paperRow(1);
+$paper1 = $Conf->fetch_paper(1);
 xassert($paper1->has_conflict($user_anne1));
 
 // creation interactions

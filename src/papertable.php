@@ -2497,64 +2497,6 @@ class PaperTable {
 
     // Functions for loading papers
 
-    static private function _maybeSearchPaperId($qreq) {
-        global $Conf, $Me, $Now;
-
-        // if a number, don't search
-        if ((string) $qreq->paperId !== "") {
-            if (ctype_digit($qreq->paperId) && $qreq->paperId[0] !== "0")
-                return false;
-            if (preg_match('/^\s*#?([1-9]\d*)\s*$/s', $qreq->paperId, $m)) {
-                $qreq->paperId = $m[1];
-                return false;
-            }
-        }
-
-        // if a complex request, or a form upload, don't search
-        foreach ($qreq->keys() as $k)
-            if (!in_array($k, ["p", "paperId", "m", "mode", "forceShow", "go", "actas", "t"]))
-                return false;
-
-        // if no paper ID set, find one
-        if (!isset($qreq->paperId)) {
-            $q = "select min(Paper.paperId) from Paper ";
-            if ($Me->isPC)
-                $q .= "where timeSubmitted>0";
-            else if ($Me->has_review())
-                $q .= "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId)";
-            else
-                $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$Me->contactId and ContactInfo.conflictType>=" . CONFLICT_AUTHOR . ")";
-            $result = $Conf->q_raw($q);
-            if (($paperId = edb_row($result)))
-                $qreq->paperId = $paperId[0];
-            return false;
-        }
-
-        // if invalid contact, don't search
-        if ($Me->is_empty())
-            return false;
-
-        // actually try to search
-        if ($qreq->paperId === "(All)")
-            $qreq->paperId = "";
-        $search = new PaperSearch($Me, ["q" => $qreq->paperId, "t" => $qreq->get("t", 0)]);
-        $ps = $search->paper_ids();
-        if (count($ps) == 1) {
-            $list = $search->session_list_object();
-            $qreq->paperId = $qreq->p = $list->ids[0];
-            // DISABLED: check if the paper is in the current list
-            unset($qreq->ls);
-            $list->set_cookie();
-            // ensure URI makes sense ("paper/2" not "paper/searchterm")
-            SelfHref::redirect($qreq);
-            return true;
-        } else {
-            $t = $qreq->t ? "&t=" . urlencode($qreq->t) : "";
-            go(hoturl("search", "q=" . urlencode($qreq->paperId) . $t));
-            exit;
-        }
-    }
-
     static function clean_request(Qrequest $qreq) {
         if (!isset($qreq->paperId) && isset($qreq->p))
             $qreq->paperId = $qreq->p;
@@ -2565,53 +2507,100 @@ class PaperTable {
         if (!isset($qreq->reviewId)
             && preg_match(',\A/\d+[A-Z]+\z,i', Navigation::path()))
             $qreq->reviewId = substr(Navigation::path(), 1);
-        else if (!isset($qreq->paperId) && ($pc = Navigation::path_component(0)))
+        else if (!isset($qreq->paperId)
+                 && ($pc = Navigation::path_component(0)))
             $qreq->paperId = $pc;
-        if (!isset($qreq->paperId) && isset($qreq->reviewId)
-            && preg_match('/^(\d+)[A-Z]+$/i', $qreq->reviewId, $m))
+        if (!isset($qreq->paperId)
+            && isset($qreq->reviewId)
+            && preg_match('/\A(\d+)[A-Z]+\z/i', $qreq->reviewId, $m))
             $qreq->paperId = $m[1];
+        if (isset($qreq->paperId) || isset($qreq->reviewId))
+            unset($qreq->q);
     }
 
-    static function paperRow(Qrequest $qreq, &$whyNot) {
-        global $Conf, $Me;
+    static private function simple_qreq($qreq) {
+        return $qreq->method() === "GET"
+            && !array_diff($qreq->keys(), ["p", "paperId", "m", "mode", "forceShow", "go", "actas", "t", "q", "r", "reviewId"]);
+    }
 
-        self::clean_request($qreq);
-        if (isset($qreq->paperId) && $qreq->paperId === "new")
+    static private function lookup_pid($qreq, $user) {
+        // if a number, don't search
+        $pid = isset($qreq->paperId) ? $qreq->paperId : $qreq->q;
+        if (preg_match('/\A\s*#?(\d+)\s*\z/', $pid, $m))
+            return intval($m[1]);
+
+        // look up a review ID
+        if (!isset($pid) && isset($qreq->reviewId))
+            return $user->conf->fetch_ivalue("select paperId from PaperReview where reviewId=?", $qreq->reviewId);
+
+        // if a complex request, or a form upload, or empty user, don't search
+        if (!self::simple_qreq($qreq) || $user->is_empty())
             return null;
 
-        $sel = [];
-        if (isset($qreq->paperId)
-            || (!isset($qreq->reviewId) && !isset($qreq->commentId))) {
-            self::_maybeSearchPaperId($qreq);
-            $sel["paperId"] = $qreq->get("paperId", 1);
-        } else if (isset($qreq->reviewId))
-            $sel["reviewId"] = $qreq->reviewId;
-        else
-            assert(!isset($qreq->commentId));
-
-        $sel["topics"] = $sel["options"] = true;
-        if (($Me->isPC && $Conf->timePCReviewPreferences()) || $Me->privChair)
-            $sel["reviewerPreference"] = true;
-        if ($Me->isPC || $Conf->setting("tag_rank"))
-            $sel["tags"] = true;
-
-        if (!($prow = $Conf->paperRow($sel, $Me, $whyNot)))
-            return null;
-        $rrow = null;
-        if (isset($sel["reviewId"]))
-            $rrow = $prow->review_of_id($sel["reviewId"]);
-        if (($whyNot = $Me->perm_view_paper($prow))
-            || (!isset($qreq->paperId)
-                && !$Me->can_view_review($prow, $rrow)
-                && !$Me->privChair)) {
-            // Don't allow querier to probe review/comment<->paper mapping
-            if (!isset($qreq->paperId))
-                $whyNot = array("invalidId" => "paper");
-            return null;
+        // if no paper ID set, find one
+        if (!isset($pid)) {
+            $q = "select min(Paper.paperId) from Paper ";
+            if ($user->isPC)
+                $q .= "where timeSubmitted>0";
+            else if ($user->has_review())
+                $q .= "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$user->contactId)";
+            else
+                $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$user->contactId and ContactInfo.conflictType>=" . CONFLICT_AUTHOR . ")";
+            return $user->conf->fetch_ivalue($q);
         }
-        if (!isset($qreq->paperId))
-            $qreq->paperId = $prow->paperId;
-        return $prow;
+
+        // actually try to search
+        if ($pid === "" || $pid === "(All)")
+            return null;
+
+        $search = new PaperSearch($user, ["q" => $pid, "t" => $qreq->get("t")]);
+        $ps = $search->paper_ids();
+        if (count($ps) == 1) {
+            $list = $search->session_list_object();
+            // DISABLED: check if the paper is in the current list
+            unset($qreq->ls);
+            $list->set_cookie();
+            return $ps[0];
+        } else
+            return null;
+    }
+
+    static function redirect_request($pid, Qrequest $qreq, Contact $user) {
+        if ($pid !== null) {
+            $qreq->paperId = $pid;
+            unset($qreq->q, $qreq->p);
+            SelfHref::redirect($qreq);
+        } else if ((isset($qreq->paperId) || isset($qreq->q))
+                   && !$user->is_empty()) {
+            $q = "q=" . urlencode(isset($qreq->paperId) ? $qreq->paperId : $qreq->q);
+            if ($qreq->t)
+                $q .= "&t=" . urlencode($qreq->t);
+            go($user->conf->hoturl("search", $q));
+        }
+    }
+
+    static function fetch_paper_request(Qrequest $qreq, Contact $user) {
+        self::clean_request($qreq);
+        $pid = self::lookup_pid($qreq, $user);
+        if (self::simple_qreq($qreq)
+            && ($pid === null || (string) $pid !== $qreq->paperId))
+            self::redirect_request($pid, $qreq, $user);
+        $sel = ["paperId" => $pid, "topics" => true, "options" => true];
+        if ($user->privChair
+            || ($user->isPC && $user->conf->timePCReviewPreferences()))
+            $sel["reviewerPreference"] = true;
+        $prow = $user->conf->fetch_paper($sel, $user);
+        $whynot = $user->perm_view_paper($prow, false, $pid);
+        if (!$whynot
+            && !isset($qreq->paperId)
+            && isset($qreq->reviewId)
+            && !$user->privChair
+            && (!($rrow = $prow->review_of_id($qreq->reviewId))
+                || !$user->can_view_review($prow, $rrow)))
+            $whynot = ["conf" => $user->conf, "invalidId" => "paper"];
+        if ($whynot)
+            $qreq->set_annex("paper_whynot", $whynot);
+        return ($user->conf->paper = $whynot ? null : $prow);
     }
 
     function resolveReview($want_review) {

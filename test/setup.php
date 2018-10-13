@@ -421,7 +421,7 @@ function call_api($fn, $user, $qreq, $prow) {
 
 function fetch_paper($pid, $contact = null) {
     global $Conf;
-    return $Conf->paperRow($pid, $contact);
+    return $Conf->fetch_paper($pid, $contact);
 }
 
 function fetch_review(PaperInfo $prow, $contact) {

@@ -47,9 +47,8 @@ function errorMsgExit($msg) {
 // collect paper ID
 function loadRows() {
     global $Conf, $Me, $Qreq, $prow, $paperTable, $editRrowLogname;
-    $Conf->paper = $prow = PaperTable::paperRow($Qreq, $whyNot);
-    if (!$prow)
-        errorMsgExit(whyNotText($whyNot + ["listViewable" => true]));
+    if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me)))
+        errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
     $paperTable = new PaperTable($prow, $Qreq);
     $paperTable->resolveReview(true);
 
@@ -269,7 +268,7 @@ function refuseReview($qreq) {
 
     // send confirmation email
     $Requester = $Conf->user_by_id($rrow->requestedBy);
-    $reqprow = $Conf->paperRow($prow->paperId, $Requester);
+    $reqprow = $Conf->fetch_paper($prow->paperId, $Requester);
     HotCRPMailer::send_to($Requester, "@refusereviewrequest", $reqprow,
                           ["reviewer_contact" => $rrow, "reason" => $reason]);
 

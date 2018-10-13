@@ -231,7 +231,7 @@ foreach ($jp as &$j) {
 
     // XXX more validation here
     if ($pid && isset($j->reviews) && is_array($j->reviews) && $reviews) {
-        $prow = $Conf->paperRow(["paperId" => $pid], $site_contact);
+        $prow = $Conf->fetch_paper($pid, $site_contact);
         foreach ($j->reviews as $reviewindex => $reviewj) {
             if ($tf->parse_json($reviewj)
                 && isset($tf->req["reviewerEmail"])

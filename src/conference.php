@@ -2703,7 +2703,7 @@ class Conf {
         return "group_concat(contactId,' ',preference,' ',coalesce(expertise,'.'))";
     }
 
-    private function paperQuery(Contact $contact = null, $options = array()) {
+    function paper_result($options, Contact $user = null) {
         // Options:
         //   "paperId" => $pid  Only paperId $pid (if array, any of those)
         //   "reviewId" => $rid Only paper reviewed by $rid
@@ -2728,7 +2728,10 @@ class Conf {
         //   "assignments"
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
 
-        $contactId = $contact ? $contact->contactId : 0;
+        $contactId = $user ? $user->contactId : 0;
+        if (is_int($options)
+            || (is_array($options) && !empty($options) && !is_associative_array($options)))
+            $options = ["paperId" => $options];
 
         // paper selection
         $paperset = array();
@@ -2766,10 +2769,10 @@ class Conf {
         else
             $cols = ["Paper.*"];
 
-        if ($contact) {
+        if ($user) {
             $aujoinwhere = null;
             if (get($options, "author")
-                && ($aujoinwhere = $contact->act_author_view_sql("PaperConflict", true)))
+                && ($aujoinwhere = $user->act_author_view_sql("PaperConflict", true)))
                 $where[] = $aujoinwhere;
             if (get($options, "author") && !$aujoinwhere)
                 $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
@@ -2781,7 +2784,7 @@ class Conf {
 
         // my review
         $no_paperreview = $paperreview_is_my_reviews = false;
-        $reviewjoin = "PaperReview.paperId=Paper.paperId and " . ($contact ? $contact->act_reviewer_sql("PaperReview") : "false");
+        $reviewjoin = "PaperReview.paperId=Paper.paperId and " . ($user ? $user->act_reviewer_sql("PaperReview") : "false");
         if (get($options, "myReviews")) {
             $joins[] = "join PaperReview on ($reviewjoin)";
             $paperreview_is_my_reviews = true;
@@ -2799,7 +2802,7 @@ class Conf {
             $cols[] = "(select " . ReviewInfo::review_signature_sql($this, get($options, "scores")) . " from PaperReview r where r.paperId=Paper.paperId) reviewSignatures";
             if (get($options, "reviewWordCounts"))
                 $cols[] = "(select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId) reviewWordCountSignature";
-        } else if ($contact) {
+        } else if ($user) {
             // need myReviewPermissions
             if ($no_paperreview)
                 $joins[] = "left join PaperReview on ($reviewjoin)";
@@ -2821,7 +2824,7 @@ class Conf {
             $cols[] = "'' as optionIds";
 
         if (get($options, "tags")
-            || ($contact && $contact->isPC)
+            || ($user && $user->isPC)
             || $this->has_tracks())
             $cols[] = "(select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where PaperTag.paperId=Paper.paperId) paperTags";
         if (get($options, "tagIndex") && !is_array($options["tagIndex"]))
@@ -2881,7 +2884,7 @@ class Conf {
             ];
             if ($this->has_any_lead_or_shepherd())
                 $owhere[] = "leadContactId=$contactId";
-            if ($this->has_any_manager() && $contact->is_explicit_manager())
+            if ($this->has_any_manager() && $user->is_explicit_manager())
                 $owhere[] = "managerContactId=$contactId";
             $where[] = "(" . join(" or ", $owhere) . ")";
         }
@@ -2900,45 +2903,7 @@ class Conf {
             . get($options, "order", "order by Paper.paperId") . "\n";
 
         //Conf::msg_debugt($pq);
-        return $pq;
-    }
-
-    function paperRow($sel, Contact $contact = null, &$whyNot = null) {
-        $ret = null;
-        $whyNot = ["conf" => $this];
-
-        if (!is_array($sel))
-            $sel = ["paperId" => $sel];
-        if (isset($sel["paperId"]))
-            $whyNot["paperId"] = $sel["paperId"];
-        if (isset($sel["reviewId"]))
-            $whyNot["reviewId"] = $sel["reviewId"];
-
-        if (isset($sel["paperId"]) && cvtint($sel["paperId"]) < 0)
-            $whyNot["invalidId"] = "paper";
-        else if (isset($sel["reviewId"]) && cvtint($sel["reviewId"]) < 0
-                 && !preg_match('/^\d+[A-Z][A-Z]?$/i', $sel["reviewId"]))
-            $whyNot["invalidId"] = "review";
-        else {
-            $result = $this->paper_result($sel, $contact);
-            if (!$result || $result->num_rows == 0) {
-                if (!$contact
-                    || $contact->privChair
-                    || ($contact->isPC && !$this->check_track_view_sensitivity()))
-                    $whyNot["noPaper"] = 1;
-                else
-                    $whyNot["permission"] = "view_paper";
-            } else
-                $ret = PaperInfo::fetch($result, $contact, $this);
-
-            Dbl::free($result);
-        }
-
-        return $ret;
-    }
-
-    function paper_result($options, Contact $user = null) {
-        return $this->qe_raw($this->paperQuery($user, $options));
+        return $this->qe_raw($pq);
     }
 
     function paper_set($options, Contact $user = null) {
@@ -2950,30 +2915,22 @@ class Conf {
         return $rowset;
     }
 
-    function fetch_request_paper(Contact $user, Qrequest $qreq) {
-        $this->paper = null;
-        if ($qreq->p) {
-            if (ctype_digit($qreq->p)) {
-                $result = $this->paper_result(["paperId" => intval($qreq->p)], $user);
-                $prow = PaperInfo::fetch($result, $user, $this);
-                Dbl::free($result);
+    function fetch_paper($options, Contact $user = null) {
+        $result = $this->paper_result($options, $user);
+        $prow = PaperInfo::fetch($result, $user, $this);
+        Dbl::free($result);
+        return $prow;
+    }
 
-                if ($prow && $user->can_view_paper($prow))
-                    $this->paper = $prow;
-                else if (!$prow && $user->can_view_missing_papers())
-                    $whynot = ["noPaper" => true];
-                else {
-                    $whynot = ["permission" => "view_paper"];
-                    if ($user->is_empty())
-                        $whynot["signin"] = "view_paper";
-                }
-            } else
-                $whynot = ["invalidId" => "paper"];
-            if (!$this->paper) {
-                $whynot["conf"] = $this;
-                $whynot["paperId"] = $qreq->p;
+    function fetch_paper_request(Qrequest $qreq, Contact $user) {
+        $this->paper = $prow = null;
+        if ($qreq->p) {
+            if (ctype_digit($qreq->p))
+                $prow = $this->fetch_paper(intval($qreq->p), $user);
+            if (($whynot = $user->perm_view_paper($prow, false, $qreq->p)))
                 $qreq->set_annex("paper_whynot", $whynot);
-            }
+            else
+                $this->paper = $prow;
         }
         return $this->paper;
     }

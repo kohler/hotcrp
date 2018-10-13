@@ -2324,6 +2324,20 @@ class Contact {
             || ($this->isPC && $this->conf->check_all_tracks($this, Track::TRACK_VIEW));
     }
 
+    function no_paper_whynot($pid) {
+        $whynot = ["conf" => $this->conf, "paperId" => $pid];
+        if (!ctype_digit((string) $pid))
+            $whynot["invalidId"] = "paper";
+        else if ($this->can_view_missing_papers())
+            $whynot["noPaper"] = true;
+        else {
+            $whynot["permission"] = "view_paper";
+            if ($this->is_empty())
+                $whynot["signin"] = "view_paper";
+        }
+        return $whynot;
+    }
+
     function can_view_paper(PaperInfo $prow, $pdf = false) {
         // hidden_papers is set when a chair with a conflicted, managed
         // paper “becomes” a user
@@ -2345,7 +2359,9 @@ class Contact {
                 && (!$pdf || $this->conf->check_tracks($prow, $this, Track::VIEWPDF)));
     }
 
-    function perm_view_paper(PaperInfo $prow, $pdf = false) {
+    function perm_view_paper(PaperInfo $prow = null, $pdf = false, $pid = null) {
+        if (!$prow)
+            return $this->no_paper_whynot($pid);
         if ($this->can_view_paper($prow, $pdf))
             return null;
         $rights = $this->rights($prow);
@@ -2353,9 +2369,11 @@ class Contact {
         $base_count = count($whyNot);
         if (!$rights->allow_author_view
             && !$rights->review_status
-            && !$rights->allow_pc_broad)
+            && !$rights->allow_pc_broad) {
             $whyNot["permission"] = "view_paper";
-        else {
+            if ($this->is_empty())
+                $whyNot["signin"] = "view_paper";
+        } else {
             if ($prow->timeWithdrawn > 0)
                 $whyNot["withdrawn"] = 1;
             else if ($prow->timeSubmitted <= 0)
