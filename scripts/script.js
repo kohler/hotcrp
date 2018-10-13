@@ -456,6 +456,20 @@ window.strftime = (function () {
         str += num.toString();
         return str.length <= n ? str : str.substr(str.length - n);
     }
+    function unparse_q(d, alt, is24) {
+        if (is24 && alt && d.getSeconds())
+            return strftime("%H:%M:%S", d);
+        else if (is24)
+            return strftime("%H:%M", d);
+        else if (alt && d.getSeconds())
+            return strftime("%#l:%M:%S%P", d);
+        else if (alt && d.getMinutes())
+            return strftime("%#l:%M%P", d);
+        else if (alt)
+            return strftime("%#l%P", d);
+        else
+            return strftime("%I:%M:%S %p", d);
+    }
     var unparsers = {
         a: function (d) { return (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])[d.getDay()]; },
         A: function (d) { return (["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])[d.getDay()]; },
@@ -474,24 +488,12 @@ window.strftime = (function () {
         I: function (d) { return pad(d.getHours() % 12 || 12, "0", 2); },
         l: function (d, alt) { return pad(d.getHours() % 12 || 12, alt ? "" : " ", 2); },
         M: function (d) { return pad(d.getMinutes(), "0", 2); },
+        X: function (d) { return strftime("%A %#e %b %Y %#q", d); },
         p: function (d) { return d.getHours() < 12 ? "AM" : "PM"; },
         P: function (d) { return d.getHours() < 12 ? "am" : "pm"; },
-        r: function (d, alt) {
-            if (alt && d.getSeconds())
-                return strftime("%#l:%M:%S%P", d);
-            else if (alt && d.getMinutes())
-                return strftime("%#l:%M%P", d);
-            else if (alt)
-                return strftime("%#l%P", d);
-            else
-                return strftime("%I:%M:%S %p", d);
-        },
-        R: function (d, alt) {
-            if (alt && d.getSeconds())
-                return strftime("%H:%M:%S", d);
-            else
-                return strftime("%H:%M", d);
-        },
+        q: function (d, alt) { return unparse_q(d, alt, strftime.is24); },
+        r: function (d, alt) { return unparse_q(d, alt, false); },
+        R: function (d, alt) { return unparse_q(d, alt, true); },
         S: function (d) { return pad(d.getSeconds(), "0", 2); },
         T: function (d) { return strftime("%H:%M:%S", d); },
         /* XXX z Z */
@@ -502,7 +504,7 @@ window.strftime = (function () {
         t: function (d) { return "\t"; },
         "%": function (d) { return "%"; }
     };
-    return function(fmt, d) {
+    function strftime(fmt, d) {
         var words = fmt.split(/(%#?\S)/), wordno, word, alt, f, t = "";
         if (d == null)
             d = new Date;
@@ -519,6 +521,7 @@ window.strftime = (function () {
         }
         return t;
     };
+    return strftime;
 })();
 
 function unparse_interval(t, now, format) {
@@ -1474,17 +1477,14 @@ try {
 
 // initialization
 window.setLocalTime = (function () {
-var servhr24, showdifference = false;
+var showdifference = false;
 function setLocalTime(elt, servtime) {
     var d, s;
     if (elt && typeof elt == "string")
         elt = $$(elt);
     if (elt && showdifference) {
         d = new Date(servtime * 1000);
-        if (servhr24)
-            s = strftime("%A %#e %b %Y %#R your time", d);
-        else
-            s = strftime("%A %#e %b %Y %#r your time", d);
+        s = strftime("%X your time", d);
         if (elt.tagName == "SPAN") {
             elt.innerHTML = " (" + s + ")";
         } else {
@@ -1494,7 +1494,7 @@ function setLocalTime(elt, servtime) {
     }
 }
 setLocalTime.initialize = function (servzone, hr24) {
-    servhr24 = hr24;
+    strftime.is24 = hr24;
     // print local time if server time is in a different time zone
     showdifference = Math.abs((new Date).getTimezoneOffset() - servzone) >= 60;
 };
@@ -3265,25 +3265,39 @@ function edit_allowed(cj) {
 function render_editing(hc, cj) {
     var i, x, actions = [], btnbox = [], cid = cj_cid(cj), bnote;
 
-    var msgx = [];
-    if (cj.response && resp_rounds[cj.response].instrux)
+    var msgx = [], msg, msgx_status = 0;
+    if (cj.response
+        && resp_rounds[cj.response].instrux)
         msgx.push(resp_rounds[cj.response].instrux);
-    if (cj.response && !hotcrp_status.myperm.act_author)
+    if (cj.response
+        && !hotcrp_status.myperm.act_author)
         msgx.push('You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.');
-    else if (cj.review_token && hotcrp_status.myperm.review_tokens
+    else if (cj.review_token
+             && hotcrp_status.myperm.review_tokens
              && hotcrp_status.myperm.review_tokens.indexOf(cj.review_token) >= 0)
         msgx.push('You have a review token for this paper, so your comment will be anonymous.');
-    else if (!cj.response && cj.author_email && hotcrp_user.email
+    else if (!cj.response
+             && cj.author_email
+             && hotcrp_user.email
              && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase()) {
-        var msg;
         if (hotcrp_status.myperm.act_author)
-            msg = "You didn’t write this comment, but you can edit it as a fellow author.";
+            msg = "You didn’t write this comment, but as a fellow author you can edit it.";
         else
-            msg = "You didn’t write this comment, but you can edit it as an administrator.";
+            msg = "You didn’t write this comment, but as an administrator you can edit it.";
         msgx.push(msg);
     }
+    if (cj.response
+        && resp_rounds[cj.response].done > now_sec()) {
+        msg = strftime("The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000));
+        if (cj.draft && !cj.is_new) {
+            msg = "<strong>This is a draft response.</strong> It will not be shown to reviewers unless submitted. " + msg;
+            msgx_status = 1;
+        }
+        msgx.push(msg);
+    } else if (cj.response && cj.draft)
+        msgx.push("<strong>This is a draft response.</strong> It will not be shown to reviewers.");
     if (msgx.length)
-        hc.push(render_xmsg(0, msgx));
+        hc.push(render_xmsg(msgx_status, msgx));
 
     hc.push('<form><div style="font-weight:normal;font-style:normal">', '</div></form>');
     if (cj.review_token)
@@ -3293,7 +3307,7 @@ function render_editing(hc, cj) {
     if (fmt.has_preview)
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
-    hc.push_pop('<textarea name="comment" class="reviewtext cmttext c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
+    hc.push_pop('<textarea name="text" class="reviewtext cmttext c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
 
     hc.push('<div class="cmteditinfo fold2o fold3c">', '</div>');
 
@@ -3333,7 +3347,7 @@ function render_editing(hc, cj) {
     // tags
     if (!cj.response && !cj.by_author) {
         hc.push('<div class="entryi fx3"><label for="' + cid + '-tags">Tags</label>', '</div>')
-        hc.push_pop('<input id="' + cid + '-tags" name="commenttags" type="text" size="50">');
+        hc.push_pop('<input id="' + cid + '-tags" name="tags" type="text" size="50" placeholder="Comment tags">');
         btnbox.push('<button type="button" name="showtags" class="btn btn-licon need-tooltip" aria-label="Tags">' + $("#licon-tag").html() + '</button>');
     }
 
@@ -3396,7 +3410,7 @@ function make_update_words(jq, wlimit) {
 
 function activate_editing($c, cj) {
     var elt, tags = [], i;
-    $c.find("textarea[name=comment]").text(cj.text || "")
+    $c.find("textarea[name=text]").text(cj.text || "")
         .on("keydown", keydown_editor)
         .on("hotcrp_renderPreview", render_preview)
         .autogrow();
@@ -3413,7 +3427,7 @@ function activate_editing($c, cj) {
         tags.push(cj.tags[i].replace(detwiddle, "~"));
     if (tags.length)
         fold($c.find(".cmteditinfo")[0], false, 3);
-    $c.find("input[name=commenttags]").val(tags.join(" ")).autogrow();
+    $c.find("input[name=tags]").val(tags.join(" ")).autogrow();
 
     for (i in cj.docs || [])
         $c.find(".has-editable-attachments").removeClass("hidden").append(render_edit_attachment(i, cj.docs[i]));
@@ -3461,7 +3475,7 @@ function render_attachment_link(hc, doc) {
 }
 
 function beforeunload() {
-    var i, $cs = $(".cmtg textarea[name=comment]"), $c, text;
+    var i, $cs = $(".cmtg textarea[name=text]"), $c, text;
     for (i = 0; i != $cs.length && has_unload; ++i) {
         $c = $cmt($cs[i]);
         text = $($cs[i]).val().replace(/\s+$/, "");
@@ -3484,16 +3498,14 @@ function save_editor(elt, action, really) {
     var carg = {p: hotcrp_paperid};
     if ($c.c.cid)
         carg.c = $c.c.cid;
-    var arg = $.extend({ajax: 1}, carg);
+    var arg = $.extend({}, carg);
     if (really)
         arg.override = 1;
     if (hotcrp_want_override_conflict)
         arg.forceShow = 1;
     if (action === "delete")
-        arg.deletecomment = 1;
-    else
-        arg.submitcomment = 1;
-    var url = hoturl_post("comment", arg);
+        arg.delete = 1;
+    var url = hoturl_post("api/comment", arg);
     $c.find("button").prop("disabled", true);
     function callback(data, textStatus, jqxhr) {
         if (!data.ok) {
@@ -3554,7 +3566,7 @@ function buttonclick_editor(evt) {
         });
     else if (this.name === "showtags") {
         fold($c.find(".cmteditinfo")[0], false, 3);
-        $c.find("input[name=commenttags]").focus();
+        $c.find("input[name=tags]").focus();
     }
 }
 
@@ -3610,7 +3622,7 @@ function render_cmt($c, cj, editing, msg) {
     if (msg)
         hc.push(msg);
     else if (cj.response && cj.draft && cj.text)
-        hc.push('<div class="msg msg-warning">This is a draft response. Reviewers won’t see it until you submit.</div>');
+        hc.push('<div class="msg msg-warning"><strong>This response is a draft.</strong></div>');
     hc.pop();
     if (editing)
         render_editing(hc, cj);
@@ -3712,11 +3724,11 @@ function edit(cj) {
     if (!elt && /\beditcomment\b/.test(window.location.search))
         return false;
     var $c = $cmt(elt);
-    if (!$c.find("textarea[name=comment]").length)
+    if (!$c.find("textarea[name=text]").length)
         render_cmt($c, cj, true);
     location.hash = "#" + cid;
     $c.scrollIntoView();
-    var te = $c.find("textarea[name=comment]")[0];
+    var te = $c.find("textarea[name=text]")[0];
     te.setSelectionRange && te.setSelectionRange(te.value.length, te.value.length);
     $(function () { te.focus(); });
     has_unload || $(window).on("beforeunload.papercomment", beforeunload);
@@ -3726,7 +3738,9 @@ function edit(cj) {
 
 return {
     add: add,
-    set_resp_round: function (rname, rinfo) { resp_rounds[rname] = rinfo; },
+    set_resp_round: function (rname, rinfo) {
+        resp_rounds[rname] = rinfo;
+    },
     edit: edit,
     edit_id: function (cid) {
         var cj = cmts[cid];

@@ -81,9 +81,12 @@ class CommentInfo {
             foreach ($prow->conf->resp_rounds() as $rrd) {
                 $j = ["words" => $rrd->words];
                 $crow->commentRound = $rrd->number;
-                if ($Me->can_respond($prow, $crow)
-                    && ($m = $rrd->instructions($prow->conf)) !== false)
-                    $j["instrux"] = $m;
+                if ($Me->can_respond($prow, $crow)) {
+                    if (($m = $rrd->instructions($prow->conf)) !== false)
+                        $j["instrux"] = $m;
+                    if ($rrd->done)
+                        $j["done"] = $rrd->done;
+                }
                 $t[] = "papercomment.set_resp_round(" . json_encode($rrd->name) . "," . json_encode($j) . ")";
             }
             echo Ht::unstash_script(join($t, ";"));
@@ -91,6 +94,11 @@ class CommentInfo {
             Icons::stash_licon("ui_attachment");
             Icons::stash_licon("ui_trash");
         }
+    }
+
+
+    function is_response() {
+        return ($this->commentType & COMMENTTYPE_RESPONSE) !== 0;
     }
 
     static private function commenttype_needs_ordinal($ctype) {

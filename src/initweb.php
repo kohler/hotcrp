@@ -23,7 +23,7 @@ $Qreq = make_qreq();
 // have an old version of the page lying around their directory. Don't run
 // that code; redirect to index.
 if (in_array(Navigation::page(),
-             ["account", "contactauthors", "contacts", "login", "logout"]))
+             ["account", "comment", "contactauthors", "contacts", "login", "logout"]))
     go();
 
 // Check for redirect to https

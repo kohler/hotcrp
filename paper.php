@@ -449,10 +449,10 @@ else {
             if ($preferred_resp_round !== false)
                 $j->response = $Conf->resp_round_name($preferred_resp_round);
         }
-        if (($x = $Qreq->comment) !== null) {
+        if (($x = $Qreq->text) !== null) {
             $j->text = $x;
             $j->visibility = $Qreq->visibility;
-            $tags = trim((string) $Qreq->commenttags);
+            $tags = trim((string) $Qreq->tags);
             $j->tags = $tags === "" ? [] : preg_split('/\s+/', $tags);
             $j->blind = !!$Qreq->blind;
             $j->draft = !!$Qreq->draft;
