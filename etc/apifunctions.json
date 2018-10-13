@@ -1,7 +1,7 @@
 [
     {
         "name": "administrator", "paper": true, "get": true, "post": true,
-        "callback": "PaperApi::manager_api",
+        "callback": "PaperPC_API::manager_api",
         "synonym": ["manager"]
     },
     {
@@ -18,7 +18,7 @@
     },
     {
         "name": "decision", "paper": true, "get": true, "post": true,
-        "callback": "PaperApi::decision_api"
+        "callback": "Decision_API::run"
     },
     {
         "name": "fieldtext", "get": true,
@@ -38,7 +38,7 @@
     },
     {
         "name": "lead", "paper": true, "get": true, "post": true,
-        "callback": "PaperApi::lead_api"
+        "callback": "PaperPC_API::lead_api"
     },
     {
         "name": "viewoptions", "get": true, "post": true,
@@ -84,7 +84,7 @@
     },
     {
         "name": "shepherd", "paper": true, "get": true, "post": true,
-        "callback": "PaperApi::shepherd_api"
+        "callback": "PaperPC_API::shepherd_api"
     },
     {
         "name": "taganno", "get": true,

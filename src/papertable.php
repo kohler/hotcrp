@@ -2579,7 +2579,7 @@ class PaperTable {
         if (isset($qreq->paperId) && $qreq->paperId === "new")
             return null;
 
-        $sel = array();
+        $sel = [];
         if (isset($qreq->paperId)
             || (!isset($qreq->reviewId) && !isset($qreq->commentId))) {
             self::_maybeSearchPaperId($qreq);

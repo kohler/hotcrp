@@ -3,62 +3,6 @@
 // Copyright (c) 2008-2018 Eddie Kohler; see LICENSE.
 
 class PaperApi {
-    static function decision_api(Contact $user, Qrequest $qreq, $prow) {
-        if ($qreq->method() !== "GET") {
-            $aset = new AssignmentSet($user, true);
-            $aset->enable_papers($prow);
-            if (is_numeric($qreq->decision))
-                $qreq->decision = get($user->conf->decision_map(), +$qreq->decision);
-            $aset->parse("paper,action,decision\n{$prow->paperId},decision," . CsvGenerator::quote($qreq->decision));
-            if (!$aset->execute())
-                return $aset->json_result();
-            $prow->outcome = $prow->conf->fetch_ivalue("select outcome from Paper where paperId=?", $prow->paperId);
-        }
-        if (!$user->can_view_decision($prow))
-            json_exit(403, "Permission error.");
-        $dname = $prow->conf->decision_name($prow->outcome);
-        $jr = new JsonResult(["ok" => true, "value" => (int) $prow->outcome, "result" => htmlspecialchars($dname ? : "?")]);
-        if ($user->can_set_decision($prow))
-            $jr->content["editable"] = true;
-        return $jr;
-    }
-
-    private static function paper_pc_api(Contact $user, Qrequest $qreq, $prow, $type) {
-        if ($qreq->method() !== "GET") {
-            if (!isset($qreq->$type))
-                return new JsonResult(400, ["ok" => false, "error" => "Missing parameter."]);
-            $aset = new AssignmentSet($user);
-            $aset->enable_papers($prow);
-            $aset->parse("paper,action,user\n{$prow->paperId},$type," . CsvGenerator::quote($qreq->$type));
-            if (!$aset->execute())
-                return $aset->json_result();
-            $cid = $user->conf->fetch_ivalue("select {$type}ContactId from Paper where paperId=?", $prow->paperId);
-        } else {
-            $k = "can_view_$type";
-            if (!$user->$k($prow))
-                return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
-            $k = "{$type}ContactId";
-            $cid = $prow->$k;
-        }
-        $luser = $cid ? $user->conf->pc_member_by_id($cid) : null;
-        $j = ["ok" => true, "result" => $luser ? $user->name_html_for($luser) : "None"];
-        if ($user->can_view_reviewer_tags($prow))
-            $j["color_classes"] = $cid ? $user->user_color_classes_for($luser) : "";
-        return $j;
-    }
-
-    static function lead_api(Contact $user, Qrequest $qreq, $prow) {
-        return self::paper_pc_api($user, $qreq, $prow, "lead");
-    }
-
-    static function shepherd_api(Contact $user, Qrequest $qreq, $prow) {
-        return self::paper_pc_api($user, $qreq, $prow, "shepherd");
-    }
-
-    static function manager_api(Contact $user, Qrequest $qreq, $prow) {
-        return self::paper_pc_api($user, $qreq, $prow, "manager");
-    }
-
     static function tagreport(Contact $user, $prow) {
         $ret = (object) ["ok" => $user->can_view_tags($prow)];
         if ($prow)
