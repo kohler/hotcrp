@@ -2319,6 +2319,11 @@ class Contact {
             || ($this->dangerous_track_mask() & Track::BITS_VIEW);
     }
 
+    function can_view_missing_papers() {
+        return $this->privChair
+            || ($this->isPC && $this->conf->check_all_tracks($this, Track::TRACK_VIEW));
+    }
+
     function can_view_paper(PaperInfo $prow, $pdf = false) {
         // hidden_papers is set when a chair with a conflicted, managed
         // paper “becomes” a user

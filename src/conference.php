@@ -2908,7 +2908,7 @@ class Conf {
         $whyNot = ["conf" => $this];
 
         if (!is_array($sel))
-            $sel = array("paperId" => $sel);
+            $sel = ["paperId" => $sel];
         if (isset($sel["paperId"]))
             $whyNot["paperId"] = $sel["paperId"];
         if (isset($sel["reviewId"]))
@@ -2920,13 +2920,11 @@ class Conf {
                  && !preg_match('/^\d+[A-Z][A-Z]?$/i', $sel["reviewId"]))
             $whyNot["invalidId"] = "review";
         else {
-            $q = $this->paperQuery($contact, $sel);
-            $result = $this->qe_raw($q);
-
-            if (!$result)
-                $whyNot["dbError"] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
-            else if ($result->num_rows == 0) {
-                if (!$contact || $contact->isPC)
+            $result = $this->paper_result($contact, $sel);
+            if (!$result || $result->num_rows == 0) {
+                if (!$contact
+                    || $contact->privChair
+                    || ($contact->isPC && !$this->check_track_view_sensitivity()))
                     $whyNot["noPaper"] = 1;
                 else
                     $whyNot["permission"] = "view_paper";
@@ -2951,6 +2949,35 @@ class Conf {
         Dbl::free($result);
         return $rowset;
     }
+
+    function fetch_request_paper(Contact $user, Qrequest $qreq) {
+        $this->paper = null;
+        if ($qreq->p) {
+            if (ctype_digit($qreq->p)) {
+                $result = $this->paper_result($user, ["paperId" => intval($qreq->p)]);
+                $prow = PaperInfo::fetch($result, $user, $this);
+                Dbl::free($result);
+
+                if ($prow && $user->can_view_paper($prow))
+                    $this->paper = $prow;
+                else if (!$prow && $user->can_view_missing_papers())
+                    $whynot = ["noPaper" => true];
+                else {
+                    $whynot = ["permission" => "view_paper"];
+                    if ($user->is_empty())
+                        $whynot["signin"] = "view_paper";
+                }
+            } else
+                $whynot = ["invalidId" => "paper"];
+            if (!$this->paper) {
+                $whynot["conf"] = $this;
+                $whynot["paperId"] = $qreq->p;
+                $qreq->set_annex("paper_whynot", $whynot);
+            }
+        }
+        return $this->paper;
+    }
+
 
     function preference_conflict_result($type, $extra) {
         $q = "select PRP.paperId, PRP.contactId, PRP.preference

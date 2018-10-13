@@ -2586,8 +2586,8 @@ class PaperTable {
             $sel["paperId"] = $qreq->get("paperId", 1);
         } else if (isset($qreq->reviewId))
             $sel["reviewId"] = $qreq->reviewId;
-        else if (isset($qreq->commentId))
-            $sel["commentId"] = $qreq->commentId;
+        else
+            assert(!isset($qreq->commentId));
 
         $sel["topics"] = $sel["options"] = true;
         if (($Me->isPC && $Conf->timePCReviewPreferences()) || $Me->privChair)

@@ -54,23 +54,8 @@ if (!$Me->has_database_account()
         $Me->tracker_kiosk_state = $kiosks->$key->show_papers ? 2 : 1;
     }
 }
-if ($Qreq->p && ctype_digit($Qreq->p)) {
-    $Conf->paper = $Conf->paperRow(["paperId" => intval($Qreq->p)], $Me);
-    if (!$Conf->paper || !$Me->can_view_paper($Conf->paper)) {
-        $whynot = ["conf" => $Conf, "paperId" => $Qreq->p];
-        if (!$Conf->paper && $Me->privChair)
-            $whynot["noPaper"] = true;
-        else {
-            $whynot["permission"] = "view_paper";
-            if ($Me->is_empty())
-                $whynot["signin"] = "view_paper";
-        }
-        $Conf->paper = null;
-        $Qreq->set_annex("paper_whynot", $whynot);
-    }
-} else if ($Qreq->p) {
-    $Qreq->set_annex("paper_whynot", ["conf" => $Conf, "invalidId" => "paper", "paperId" => $Qreq->p]);
-}
+if ($Qreq->p)
+    $Conf->fetch_request_paper($Me, $Qreq);
 
 // requests
 if ($Conf->has_api($Qreq->fn))
