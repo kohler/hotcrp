@@ -1706,7 +1706,7 @@ class Contact {
     function authored_papers() {
         $this->check_rights_version();
         if ($this->_authored_papers === null)
-            $this->_authored_papers = $this->is_author() ? $this->conf->paper_set($this, ["author" => true, "tags" => true])->all() : [];
+            $this->_authored_papers = $this->is_author() ? $this->conf->paper_set(["author" => true, "tags" => true], $this)->all() : [];
         return $this->_authored_papers;
     }
 
@@ -3785,7 +3785,7 @@ class Contact {
         } else {
             $options = $pids;
         }
-        return $this->conf->paper_set($this, $options);
+        return $this->conf->paper_set($options, $this);
     }
 
     function hide_reviewer_identity_pids() {

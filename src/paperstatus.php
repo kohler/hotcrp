@@ -1289,7 +1289,7 @@ class PaperStatus extends MessageSet {
             if (!$o->required)
                 continue;
             if (!$prow)
-                $prow = $ps->conf->paper_set(null, ["paperId" => $ps->paperId, "options" => true])->get($ps->paperId);
+                $prow = $ps->conf->paper_set(["paperId" => $ps->paperId, "options" => true])->get($ps->paperId);
             if (!$o->value_present($prow->force_option($o->id))
                 && $o->test_edit_condition($prow)) {
                 $ps->error_at_option($o, "Entry required.");
@@ -1400,7 +1400,7 @@ class PaperStatus extends MessageSet {
 
         // update document inactivity
         if ($this->_document_change) {
-            $pset = $this->conf->paper_set(null, ["paperId" => $this->paperId, "options" => true]);
+            $pset = $this->conf->paper_set(["paperId" => $this->paperId, "options" => true]);
             foreach ($pset as $prow)
                 $prow->mark_inactive_documents();
         }

@@ -331,7 +331,7 @@ function update_schema_missing_review_ordinals($conf) {
     if (empty($pids))
         return true;
     $rf = $conf->review_form();
-    foreach ($conf->paper_set(null, ["paperId" => $pids, "tags" => true]) as $prow) {
+    foreach ($conf->paper_set(["paperId" => $pids, "tags" => true]) as $prow) {
         $prow->ensure_full_reviews();
         $next_ordinal = $next_displayed = 0;
         $update_rrows = [];

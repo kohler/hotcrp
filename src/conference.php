@@ -1893,7 +1893,7 @@ class Conf {
         } else {
             if (is_object($paper))
                 $paper = $paper->paperId;
-            $rowset = $this->paper_set(null, ["paperId" => $paper]);
+            $rowset = $this->paper_set(["paperId" => $paper]);
             foreach ($this->tags()->filter("autosearch") as $dt) {
                 $search = new PaperSearch($this->site_contact(), ["q" => $dt->autosearch, "t" => "all"]);
                 foreach ($rowset as $prow) {
@@ -2920,7 +2920,7 @@ class Conf {
                  && !preg_match('/^\d+[A-Z][A-Z]?$/i', $sel["reviewId"]))
             $whyNot["invalidId"] = "review";
         else {
-            $result = $this->paper_result($contact, $sel);
+            $result = $this->paper_result($sel, $contact);
             if (!$result || $result->num_rows == 0) {
                 if (!$contact
                     || $contact->privChair
@@ -2937,13 +2937,13 @@ class Conf {
         return $ret;
     }
 
-    function paper_result(Contact $user = null, $options = []) {
+    function paper_result($options, Contact $user = null) {
         return $this->qe_raw($this->paperQuery($user, $options));
     }
 
-    function paper_set(Contact $user = null, $options = []) {
+    function paper_set($options, Contact $user = null) {
         $rowset = new PaperInfoSet;
-        $result = $this->paper_result($user, $options);
+        $result = $this->paper_result($options, $user);
         while (($prow = PaperInfo::fetch($result, $user, $this)))
             $rowset->add($prow);
         Dbl::free($result);
@@ -2954,7 +2954,7 @@ class Conf {
         $this->paper = null;
         if ($qreq->p) {
             if (ctype_digit($qreq->p)) {
-                $result = $this->paper_result($user, ["paperId" => intval($qreq->p)]);
+                $result = $this->paper_result(["paperId" => intval($qreq->p)], $user);
                 $prow = PaperInfo::fetch($result, $user, $this);
                 Dbl::free($result);
 

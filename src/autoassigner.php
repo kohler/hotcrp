@@ -181,7 +181,7 @@ class Autoassigner {
             $this->eass[(int) $row[1]][(int) $row[0]] = self::ENOASSIGN;
 
         // then load preferences
-        $result = $this->conf->paper_result(null, ["paperId" => $this->papersel, "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "reviewSignatures" => true, "tags" => $this->conf->check_track_sensitivity(Track::ASSREV)]);
+        $result = $this->conf->paper_result(["paperId" => $this->papersel, "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "reviewSignatures" => true, "tags" => $this->conf->check_track_sensitivity(Track::ASSREV)]);
         $nmade = 0;
         while (($row = PaperInfo::fetch($result, null, $this->conf))) {
             $pid = $row->paperId;
@@ -242,7 +242,7 @@ class Autoassigner {
             $scoredir = substr($scoreinfo, 0, 1) === "-" ? -1 : 1;
         }
 
-        $set = $this->conf->paper_set(null, ["paperId" => $this->papersel, "allConflictType" => true, "reviewSignatures" => true, "scores" => $score ? [$score] : []]);
+        $set = $this->conf->paper_set(["paperId" => $this->papersel, "allConflictType" => true, "reviewSignatures" => true, "scores" => $score ? [$score] : []]);
 
         $scorearr = [];
         foreach ($set as $prow) {

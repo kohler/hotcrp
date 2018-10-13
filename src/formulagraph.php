@@ -621,7 +621,7 @@ class FormulaGraph extends MessageSet {
         if ($this->fx->is_indexed() || $this->fy->is_indexed())
             $queryOptions["reviewSignatures"] = true;
 
-        $result = $this->conf->paper_result($this->user, $queryOptions);
+        $result = $this->conf->paper_result($queryOptions, $this->user);
         $rowset = new PaperInfoSet;
         while (($prow = PaperInfo::fetch($result, $this->user)))
             if ($this->user->can_view_paper($prow))
