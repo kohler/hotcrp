@@ -690,7 +690,7 @@ class Limit_SearchTerm extends SearchTerm {
         if ($user->has_hidden_papers())
             return false;
         else if (in_array($this->limit, ["und", "acc", "vis"], true))
-            return $this->user->privChair;
+            return $user->privChair;
         else if (in_array($this->limit, ["rable", "manager", "unm"], true))
             return false;
         else
