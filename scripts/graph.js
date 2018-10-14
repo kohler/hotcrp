@@ -213,7 +213,7 @@ function closestPoint(pathNode, point, inbest) {
         return inbest;
 
     var pathLength = pathNode.getTotalLength(),
-        precision = pathLength / svg_path_number_of_items(pathNode) * .125,
+        precision = Math.max(pathLength / svg_path_number_of_items(pathNode) * .125, 3),
         best, bestLength, bestDistance2 = Infinity;
 
     function check(pLength) {
