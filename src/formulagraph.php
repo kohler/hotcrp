@@ -59,7 +59,7 @@ class FormulaGraph extends MessageSet {
         if (strcasecmp($gtype, "cdf") == 0) {
             $this->type = self::CDF;
             $fy = "0";
-        } else if (preg_match('/\A(?:raw-?cdf|cdf-?count|cum-?count|cumulative-?count)\z/i', $gtype)) {
+        } else if (preg_match('/\A(?:raw-?cdf|cdf-?count|count-?cdf|cum-?count|cumulative-?count)\z/i', $gtype)) {
             $this->type = self::RAWCDF;
             $fy = "0";
         } else if (preg_match('/\A(?:count|bar|bars|barchart)\z/i', $gtype)) {
