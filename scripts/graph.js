@@ -1429,7 +1429,8 @@ function named_integer_ticks(map) {
         var fvalue = Math.round(value);
         if (Math.abs(value - fvalue) <= 0.05 && map[fvalue]) {
             var t = text_to_html(mtext(fvalue));
-            if (value !== fvalue && include_numeric)
+            // NB `value` might be a bool
+            if (value !== fvalue && include_numeric && typeof value === "number")
                 t += " (" + value.toFixed(2) + ")";
             return t;
         } else
