@@ -1268,8 +1268,8 @@ class PaperList {
                 $f->mark_editable();
         }
 
-        // remove deselected columns;
-        // in compactcolumns view, remove non-minimal columns
+        // remove deselected columns, and in compactcolumns view,
+        // remove non-minimal columns
         $minimal = $this->_view_compact_columns;
         $field_list2 = array();
         foreach ($field_list as $fdef) {
@@ -1279,6 +1279,9 @@ class PaperList {
                 || ($v !== false && (!$minimal || $fdef->minimal)))
                 $field_list2[] = $fdef;
         }
+
+        // sort by position
+        usort($field_list2, "Column::position_compare");
         return $field_list2;
     }
 
@@ -1492,12 +1495,13 @@ class PaperList {
 
         // count non-callout columns
         $skipcallout = 0;
-        foreach ($fieldDef as $fdef) {
-            if ($fdef->position === null || $fdef->position >= 100)
-                break;
-            else
-                ++$skipcallout;
-        }
+        foreach ($fieldDef as $fdef)
+            if ($fdef->viewable_column()) {
+                if ($fdef->position === null || $fdef->position >= 100)
+                    break;
+                else
+                    ++$skipcallout;
+            }
 
         // create render state
         $rstate = new PaperListTableRender($ncol, $titlecol, $skipcallout);

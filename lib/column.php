@@ -13,7 +13,7 @@ class Column {
     public $minimal = false;
     public $is_visible = false;
     public $has_content = false;
-    public $position = null;
+    public $position;
 
     static private $keys = ["name" => true, "className" => true, "column" => true, "row" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true, "position" => true];
 
@@ -37,5 +37,14 @@ class Column {
     }
     function column_json() {
         return array_intersect_key(get_object_vars($this), self::$keys);
+    }
+
+    static function position_compare($a, $b) {
+        if ($a->position === $b->position)
+            return 0;
+        else if ($a->position === null || $b->position === null)
+            return $a->position === null ? 1 : -1;
+        else
+            return $a->position < $b->position ? -1 : 1;
     }
 }
