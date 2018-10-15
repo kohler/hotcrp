@@ -334,7 +334,9 @@ if (count($tOpt) > 1) {
         echo "<td class='pad'>";
         $revViewScore = $Me->permissive_view_score_bound();
         foreach ($Conf->all_review_fields() as $f)
-            if ($f->view_score > $revViewScore && $f->has_options) {
+            if ($f->view_score > $revViewScore
+                && $f->has_options
+                && $f->main_storage) {
                 $checked = strpos(displayOptionsSet("uldisplay"), $f->id) !== false;
                 echo Ht::checkbox("show{$f->id}", 1, $checked),
                     "&nbsp;", Ht::label($f->name_html), "<br />";
