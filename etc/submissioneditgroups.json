@@ -4,7 +4,8 @@
         "callback": "*echo_editable_title"
     },
     {
-        "name": "paper", "title": "Submission", "position": 11000,
+        "name": "paper", "readable_formid": "submission",
+        "title": "Submission", "position": 11000,
         "callback": "*echo_editable_submission"
     },
     {

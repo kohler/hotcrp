@@ -305,7 +305,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         $paperText = "#$id";
         $urlrest["p"] = $id;
     }
-    return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
+    return "<a id=\"quicklink-" . ($isprev ? "prev" : "next")
         . "\" class=\"x pnum\" href=\"" . hoturl($baseUrl, $urlrest) . "\">"
         . ($isprev ? Icons::ui_linkarrow(3) : "")
         . $paperText
@@ -320,9 +320,9 @@ function goPaperForm($baseUrl = null, $args = array()) {
     $list = $Conf->active_list();
     $x = Ht::form($Conf->hoturl($baseUrl ? : "paper"), ["method" => "get", "class" => "gopaper"]);
     if ($baseUrl == "profile")
-        $x .= Ht::entry("u", "", array("id" => "quicksearchq", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow"));
+        $x .= Ht::entry("u", "", array("id" => "quicklink-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow"));
     else
-        $x .= Ht::entry("p", "", array("id" => "quicksearchq", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-autogrow"));
+        $x .= Ht::entry("p", "", array("id" => "quicklink-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-autogrow"));
     foreach ($args as $k => $v)
         $x .= Ht::hidden($k, $v);
     $x .= "&nbsp; " . Ht::submit("Search") . "</form>";
@@ -642,16 +642,16 @@ function actionBar($mode = null, $qreq = null) {
         if ($list->description) {
             $url = $list->full_site_relative_url();
             if ($url)
-                $x .= '<a id="quicklink_list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $list->description . "</a>";
+                $x .= '<a id="quicklink-list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $list->description . "</a>";
             else
-                $x .= '<span id="quicklink_list">' . $list->description . '</span>';
+                $x .= '<span id="quicklink-list">' . $list->description . '</span>';
         }
         if (($next = $list->neighbor_id(1)) !== false)
             $x .= " " . _one_quicklink($next, $goBase, $xmode, $listtype, false);
         $x .= '</td>';
 
         if ($Me->privChair && $listtype == "p")
-            $x .= "  <td id=\"trackerconnect\" class=\"vbar\"><a id=\"trackerconnectbtn\" class=\"ui tracker-ui start tbtn need-tooltip\" href=\"\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+            $x .= "  <td id=\"tracker-connect\" class=\"vbar\"><a id=\"tracker-connect-btn\" class=\"ui tracker-ui start tbtn need-tooltip\" href=\"\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
     }
 
     return $x . '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . "</td></tr></table>";

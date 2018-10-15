@@ -11,13 +11,13 @@ function make_row(hc, idx, paper) {
             (pcconf.length ? "<span class=\"nb\">" + pcconf.join(",</span> <span class=\"nb\">") + "</span>" : "None");
     }
 
-    hc.push("<tr class=\"trackertable" + idx +
+    hc.push("<tr class=\"tracker-table" + idx +
             (show_papers && pcconf ? " t" : " t b") + "\">", "</tr>");
-    hc.push("<td class=\"trackertable trackerdesc remargin-left\">", "</td>");
+    hc.push("<td class=\"tracker-table tracker-desc remargin-left\">", "</td>");
     hc.push_pop(idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
-    hc.push("<td class=\"trackertable trackerpid\">", "</td>");
+    hc.push("<td class=\"tracker-table tracker-pid\">", "</td>");
     hc.push_pop(paper.pid && show_papers ? "#" + paper.pid : "");
-    hc.push("<td class=\"trackertable trackertitle\">", "</td>");
+    hc.push("<td class=\"tracker-table tracker-title\">", "</td>");
     if (!show_papers)
         hc.push_pop(pcconf ? pcconf : "");
     else if (paper.title && paper.format) {
@@ -28,15 +28,15 @@ function make_row(hc, idx, paper) {
     else
         hc.push_pop("<i>No title</i>");
     if (idx == 0)
-        hc.push("<td id=\"trackerelapsed\" class=\"trackertable remargin-right\"></td>");
+        hc.push("<td id=\"tracker-elapsed\" class=\"tracker-table remargin-right\"></td>");
     else
-        hc.push("<td class=\"trackertable remargin-right\"></td>");
+        hc.push("<td class=\"tracker-table remargin-right\"></td>");
     hc.pop();
     if (show_papers && pcconf) {
-        hc.push("<tr class=\"trackertable" + idx + " b\">", "</tr>");
-        hc.push("<td class=\"trackertable remargin-left\" colspan=\"2\"></td>");
-        hc.push("<td class=\"trackertable trackerpcconf\">" + pcconf + "</td>");
-        hc.push("<td class=\"trackertable remargin-right\"></td>");
+        hc.push("<tr class=\"tracker-table" + idx + " b\">", "</tr>");
+        hc.push("<td class=\"tracker-table remargin-left\" colspan=\"2\"></td>");
+        hc.push("<td class=\"tracker-table tracker-pcconf\">" + pcconf + "</td>");
+        hc.push("<td class=\"tracker-table remargin-right\"></td>");
         hc.pop();
     }
 }
@@ -52,7 +52,7 @@ function make_table() {
         for (var i = 0; i < dl.tracker.papers.length; ++i)
             make_row(hc, i, dl.tracker.papers[i]);
     }
-    $("#trackertable").html(hc.render());
+    $("#tracker-table").html(hc.render());
     if (dl.tracker && dl.tracker.position != null)
         hotcrp_deadlines.tracker_show_elapsed();
     if (has_format)
@@ -60,7 +60,7 @@ function make_table() {
     if (status != "open" && (dl.tracker_status || "off") != "off"
         && status != dl.tracker_status
         && !muted) {
-        var sound = $("#buzzersound")[0];
+        var sound = $("#tracker-sound")[0];
         sound.pause();
         sound.currentTime = 0;
         sound.play();
@@ -71,7 +71,7 @@ $(window).on("hotcrpdeadlines", function (evt, dl) {
     $(make_table);
 });
 
-$("#trackertable_mute").on("click", function () {
+$("#tracker-table-mute").on("click", function () {
     fold(this);
     muted = $(this).hasClass("foldo");
 });
@@ -105,11 +105,11 @@ return function (initial_info) {
     muted = info.muted;
     show_papers = info.show_papers;
     make_table();
-    $("#trackertable_showpapers").on("change", do_show_papers).each(do_show_papers);
-    $("#trackertable_kioskmode").on("click", do_kiosk);
+    $("#tracker-table-showpapers").on("change", do_show_papers).each(do_show_papers);
+    $("#tracker-table-kioskmode").on("click", do_kiosk);
     if (info.is_kiosk) {
-        var site = $("#header_site h1").find(".header-site-name").html();
-        $("#header_site h1").html('<span class="header-site-name">' + site + '</span>');
+        var site = $("#header-site h1").find(".header-site-name").html();
+        $("#header-site h1").html('<span class="header-site-name">' + site + '</span>');
     }
 };
 })($);

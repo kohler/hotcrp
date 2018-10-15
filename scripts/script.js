@@ -488,7 +488,7 @@ window.strftime = (function () {
         I: function (d) { return pad(d.getHours() % 12 || 12, "0", 2); },
         l: function (d, alt) { return pad(d.getHours() % 12 || 12, alt ? "" : " ", 2); },
         M: function (d) { return pad(d.getMinutes(), "0", 2); },
-        X: function (d) { return strftime("%A %#e %b %Y %#q", d); },
+        X: function (d) { return strftime("%#e %b %Y %#q", d); },
         p: function (d) { return d.getHours() < 12 ? "AM" : "PM"; },
         P: function (d) { return d.getHours() < 12 ? "am" : "pm"; },
         q: function (d, alt) { return unparse_q(d, alt, strftime.is24); },
@@ -1476,32 +1476,6 @@ try {
 
 
 // initialization
-window.setLocalTime = (function () {
-var showdifference = false;
-function setLocalTime(elt, servtime) {
-    var d, s;
-    if (elt && typeof elt == "string")
-        elt = $$(elt);
-    if (elt && showdifference) {
-        d = new Date(servtime * 1000);
-        s = strftime("%X your time", d);
-        if (elt.tagName == "SPAN") {
-            elt.innerHTML = " (" + s + ")";
-        } else {
-            elt.innerHTML = s;
-        }
-        removeClass(elt, "hidden");
-    }
-}
-setLocalTime.initialize = function (servzone, hr24) {
-    strftime.is24 = hr24;
-    // print local time if server time is in a different time zone
-    showdifference = Math.abs((new Date).getTimezoneOffset() - servzone) >= 60;
-};
-return setLocalTime;
-})();
-
-
 window.hotcrp_deadlines = (function ($) {
 var dl, dlname, dltime, reload_timeout, reload_nerrors = 0, redisplay_timeout;
 
@@ -1517,15 +1491,15 @@ function display_main(is_initial) {
     // this logic is repeated in the back end
     var s = "", i, x, subtype, browser_now = now_sec(),
         now = +dl.now + (browser_now - +dl.load),
-        elt = $$("maindeadline");
+        elt = $$("header-deadline");
 
     if (!elt)
         return;
 
     if (!is_initial
         && Math.abs(browser_now - dl.now) >= 300000
-        && (x = $$("clock_drift_container")))
-        x.innerHTML = "<div class='warning'>The HotCRP server’s clock is more than 5 minutes off from your computer’s clock. If your computer’s clock is correct, you should update the server’s clock.</div>";
+        && (x = $$("msg-clock-drift")))
+        x.innerHTML = '<div class="msg msg-warning">The HotCRP server’s clock is more than 5 minutes off from your computer’s clock. If your computer’s clock is correct, you should update the server’s clock.</div>';
 
     // See also the version in `Conf`
     dlname = "";
@@ -1594,19 +1568,19 @@ function is_my_tracker() {
     return dl.tracker && (ts = tracker_window_state()) && dl.tracker.trackerid == ts[1];
 }
 
-var tracker_map = [["is_manager", "Administrator"],
-                   ["is_lead", "Discussion lead"],
-                   ["is_reviewer", "Reviewer"],
-                   ["is_conflict", "Conflict"]];
+var tracker_map = [["is_manager", "is-manager", "Administrator"],
+                   ["is_lead", "is-lead", "Discussion lead"],
+                   ["is_reviewer", "is-reviewer", "Reviewer"],
+                   ["is_conflict", "is-conflict", "Conflict"]];
 
 function tracker_paper_columns(idx, paper) {
     var url = hoturl("paper", {p: paper.pid}), x = [];
-    var t = '<td class="trackerdesc">';
+    var t = '<td class="tracker-desc">';
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
-    t += '</td><td class="trackerpid">';
+    t += '</td><td class="tracker-pid">';
     if (paper.pid)
         t += '<a class="uu" href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
-    t += '</td><td class="trackerbody">';
+    t += '</td><td class="tracker-body">';
     if (paper.title) {
         var f = paper.format ? ' ptitle need-format" data-format="' + paper.format : "";
         x.push('<a class="uu' + f + '" href="' + url + '">' + text_to_html(paper.title) + '</a>');
@@ -1615,7 +1589,7 @@ function tracker_paper_columns(idx, paper) {
     }
     for (var i = 0; i != tracker_map.length; ++i)
         if (paper[tracker_map[i][0]])
-            x.push('<span class="tracker' + tracker_map[i][0] + '">' + tracker_map[i][1] + '</span>');
+            x.push('<span class="tracker-' + tracker_map[i][1] + '">' + tracker_map[i][2] + '</span>');
     return t + x.join(" &nbsp;&#183;&nbsp; ") + '</td>';
 }
 
@@ -1634,7 +1608,7 @@ function tracker_show_elapsed() {
         s = sprintf("%d:%02d:%02d", s/3600, (s/60)%60, s%60);
     else
         s = sprintf("%d:%02d", s/60, s%60);
-    $("#trackerelapsed").html(s);
+    $("#tracker-elapsed").html(s);
 
     tracker_timer = setTimeout(tracker_show_elapsed,
                                1000 - (delta * 1000) % 1000);
@@ -1645,31 +1619,31 @@ function tracker_html(mytracker) {
     var t = "";
     if (dl.is_admin) {
         var dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
-        t += '<div class="need-tooltip" id="trackerlogo" data-tooltip="' + escape_entities(dt) + '"></div>';
+        t += '<div class="need-tooltip" id="tracker-logo" data-tooltip="' + escape_entities(dt) + '"></div>';
         t += '<div style="float:right"><a class="ui tracker-ui stop closebtn need-tooltip" href="" data-tooltip="Stop meeting tracker">x</a></div>';
     } else
-        t += '<div id="trackerlogo"></div>';
+        t += '<div id="tracker-logo"></div>';
     if (dl.tracker && dl.tracker.position_at)
-        t += '<div style="float:right" id="trackerelapsed"></div>';
+        t += '<div style="float:right" id="tracker-elapsed"></div>';
     if (!dl.tracker.papers || !dl.tracker.papers[0]) {
-        t += "<table class=\"trackerinfo\"><tbody><tr><td><a href=\"" + siteurl + dl.tracker.url + "\">Discussion list</a></td></tr></tbody></table>";
+        t += "<table class=\"tracker-info\"><tbody><tr><td><a href=\"" + siteurl + dl.tracker.url + "\">Discussion list</a></td></tr></tbody></table>";
     } else {
-        t += "<table class=\"trackerinfo\"><tbody><tr class=\"tracker0\"><td rowspan=\"" + dl.tracker.papers.length + "\">";
+        t += "<table class=\"tracker-info\"><tbody><tr class=\"tracker-row\"><td rowspan=\"" + dl.tracker.papers.length + "\">";
         t += "</td>" + tracker_paper_columns(0, dl.tracker.papers[0]);
         for (var i = 1; i < dl.tracker.papers.length; ++i)
-            t += "</tr><tr class=\"tracker" + i + "\">" + tracker_paper_columns(i, dl.tracker.papers[i]);
+            t += "</tr><tr class=\"tracker-row\">" + tracker_paper_columns(i, dl.tracker.papers[i]);
         t += "</tr></tbody></table>";
     }
     return t + '<hr class="c">';
 }
 
 function display_tracker() {
-    var mne = $$("tracker"), mnspace = $$("trackerspace"),
+    var mne = $$("tracker"), mnspace = $$("tracker-space"),
         mytracker = is_my_tracker(),
         body, t, tt, i, e;
 
     // tracker button
-    if ((e = $$("trackerconnectbtn"))) {
+    if ((e = $$("tracker-connect-btn"))) {
         if (mytracker) {
             e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui tracker-ui stop ttmenu\" href=\"\">Stop meeting tracker</a></div></div>");
         } else {
@@ -1696,7 +1670,7 @@ function display_tracker() {
     body = document.body;
     if (!mnspace) {
         mnspace = document.createElement("div");
-        mnspace.id = "trackerspace";
+        mnspace.id = "tracker-space";
         body.insertBefore(mnspace, body.firstChild);
     }
     if (!mne) {
@@ -1713,7 +1687,7 @@ function display_tracker() {
             mne.className = mytracker ? "active nomatch" : "nomatch";
         else
             mne.className = mytracker ? "active" : "match";
-        tt = '<div class="trackerholder';
+        tt = '<div class="tracker-holder';
         if (dl.tracker && (dl.tracker.listinfo || dl.tracker.listid))
             tt += ' has-hotlist" data-hotlist="' + escape_entities(dl.tracker.listinfo || dl.tracker.listid);
         mne.innerHTML = tt + '">' + t + '</div>';
@@ -1932,7 +1906,7 @@ function load(dlx, is_initial) {
         comet_store(1);
     if (!reload_timeout) {
         var t;
-        if (is_initial && $$("clock_drift_container"))
+        if (is_initial && $$("msg-clock-drift"))
             t = 10;
         else if (had_tracker_at && comet_tracker())
             /* skip */;
@@ -1986,9 +1960,28 @@ return {
 })(jQuery);
 
 
-var hotcrp_load = {
-    time: setLocalTime.initialize
-};
+var hotcrp_load = (function ($) {
+    function show_usertimes() {
+        $(".need-usertime").each(function () {
+            var d = new Date(+this.getAttribute("data-time") * 1000),
+                s = strftime("%X your time", d);
+            if (this.tagName === "SPAN")
+                this.innerHTML = " (" + s + ")";
+            else
+                this.innerHTML = s;
+            removeClass(this, "hidden");
+            removeClass(this, "need-usertime");
+        });
+    }
+    return {
+        time: function (servzone, hr24) {
+            strftime.is24 = hr24;
+            // print local time if server time is in a different time zone
+            if (Math.abs((new Date).getTimezoneOffset() - servzone) >= 60)
+                $(show_usertimes);
+        }
+    };
+})(jQuery);
 
 
 function input_is_checkboxlike(elt) {
@@ -3793,16 +3786,16 @@ handle_ui.on("js-togglepreview", switch_preview);
 // quicklink shortcuts
 function quicklink_shortcut(evt, key) {
     // find the quicklink, reject if not found
-    var a = $$("quicklink_" + (key == "j" ? "prev" : "next")), f;
+    var a = $$("quicklink-" + (key == "j" ? "prev" : "next")), f;
     if (a && a.focus) {
         // focus (for visual feedback), call callback
         a.focus();
         add_revpref_ajax.then(function () { a.click(); });
         return true;
-    } else if ($$("quicklink_list")) {
+    } else if ($$("quicklink-list")) {
         // at end of list
         a = evt.target || evt.srcElement;
-        a = (a && a.tagName == "INPUT" ? a : $$("quicklink_list"));
+        a = (a && a.tagName == "INPUT" ? a : $$("quicklink-list"));
         make_outline_flasher(a, "200, 0, 0", 1000);
         return true;
     } else
@@ -5549,7 +5542,7 @@ function check_version(url, versionstr) {
     var x;
     function updateverifycb(json) {
         var e;
-        if (json && json.messages && (e = $$("initialmsgs")))
+        if (json && json.messages && (e = $$("msg-initial")))
             e.innerHTML = json.messages + e.innerHTML;
     }
     function updatecb(json) {
@@ -6630,9 +6623,10 @@ function save_pstags(evt) {
 }
 
 function prepare_pstagindex() {
-    var $f = this.tagName === "FORM" ? $(this) : $(this).find("form");
-    $f.on("submit", save_pstagindex);
-    $f.find("input").on("change", save_pstagindex);
+    $(".need-tag-index-form").each(function () {
+        $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
+            .find("input").on("change", save_pstagindex);
+    });
 }
 
 function save_pstagindex(event) {
@@ -7334,8 +7328,10 @@ $(function () {
         }
     });
     // having resolved digests, insert quicklinks
-    if (had_digests && hotcrp_paperid
-        && !$$("quicklink_prev") && !$$("quicklink_next")) {
+    if (had_digests
+        && hotcrp_paperid
+        && !$$("quicklink-prev")
+        && !$$("quicklink-next")) {
         $(".quicklinks").each(function () {
             var $l = $(this).closest(".has-hotlist"),
                 info = JSON.parse($l.attr("data-hotlist") || "null"),
@@ -7345,9 +7341,9 @@ $(function () {
                 && (ids = decode_session_list_ids(info.ids))
                 && (pos = $.inArray(hotcrp_paperid, ids)) >= 0) {
                 if (pos > 0)
-                    $(this).prepend('<a id="quicklink_prev" class="x" href="' + hoturl_html("paper", {p: ids[pos - 1]}) + '">&lt; #' + ids[pos - 1] + '</a> ');
+                    $(this).prepend('<a id="quicklink-prev" class="x" href="' + hoturl_html("paper", {p: ids[pos - 1]}) + '">&lt; #' + ids[pos - 1] + '</a> ');
                 if (pos < ids.length - 1)
-                    $(this).append(' <a id="quicklink_next" class="x" href="' + hoturl_html("paper", {p: ids[pos + 1]}) + '">#' + ids[pos + 1] + ' &gt;</a>');
+                    $(this).append(' <a id="quicklink-next" class="x" href="' + hoturl_html("paper", {p: ids[pos + 1]}) + '">#' + ids[pos + 1] + ' &gt;</a>');
             }
         });
     }

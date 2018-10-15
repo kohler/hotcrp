@@ -2,10 +2,10 @@
 /* mobile.css -- HotCRP mobile CSS styles */
 /* Copyright (c) 2006-2018 Eddie Kohler; see LICENSE. */
 
-#header_site, #header_page, h1.paptitle, div.submission_modes {
+#header-site, #header-page, h1.paptitle, div.submission_modes {
 	padding-left: 12px;
 }
-#header_right, h1.paptitle, div#footer {
+#header-right, h1.paptitle, div#footer {
 	padding-right: 12px;
 }
 table.vbar {
@@ -23,7 +23,7 @@ div#body > .demargin .remargin-left {
 div#body > .demargin .remargin-right {
 	padding-right: 12px;
 }
-#initialmsgs {
+#msg-initial {
 	padding: 0 12px;
 }
 div.paptitle {

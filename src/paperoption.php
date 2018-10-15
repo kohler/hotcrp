@@ -102,8 +102,8 @@ class PaperOptionList {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->osubmission = new DocumentPaperOption($this->conf, ["id" => DTYPE_SUBMISSION, "name" => "Submission", "title" => "Submission", "message_title" => "submission", "json_key" => "paper", "type" => null, "position" => 0]);
-        $this->ofinal = new DocumentPaperOption($this->conf, ["id" => DTYPE_FINAL, "name" => "Final version", "title" => "Final version", "message_title" => "final version", "json_key" => "final", "type" => null, "final" => true, "position" => 0]);
+        $this->osubmission = new DocumentPaperOption($this->conf, ["id" => DTYPE_SUBMISSION, "name" => "Submission", "title" => "Submission", "message_title" => "submission", "readable_formid" => "submission", "json_key" => "paper", "type" => null, "position" => 0]);
+        $this->ofinal = new DocumentPaperOption($this->conf, ["id" => DTYPE_FINAL, "name" => "Final version", "title" => "Final version", "message_title" => "final version", "readable_formid" => "final", "json_key" => "final", "type" => null, "final" => true, "position" => 0]);
     }
 
     function _add_json($oj, $k, $landmark) {
@@ -447,10 +447,12 @@ class PaperOption implements Abbreviator {
 
     static function make_readable_formid($s) {
         $s = strtolower(preg_replace('{[^A-Za-z0-9]+}', "-", UnicodeHelper::deaccent($s)));
-        if (!preg_match('{\A(?:title|paper|submission|final|authors|blind|contacts|abstract|topics|pcconf|collaborators|submit|-|)\z}', $s))
+        if ($s[strlen($s) - 1] === "-")
+            $s = substr($s, 0, -1);
+        if (!preg_match('{\A(?:title|paper|submission|final|authors|blind|contacts|abstract|topics|pcconf|collaborators|submit|paperform|htctl.*|fold.*|pcc\d+|body.*|tracker.*|msg.*|header.*|footer.*|quicklink.*|-|)\z}', $s))
             return $s;
         else
-            return false;
+            return "field-" . $s;
     }
 
     function fixed() {

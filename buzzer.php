@@ -71,14 +71,14 @@ if (!$Me->isPC && !$Me->tracker_kiosk_state)
 
 $Conf->header("Discussion status", "buzzer", ["action_bar" => false, "class" => "hide-tracker"]);
 
-echo '<div id="trackertable" class="demargin" style="margin-top:1em"></div>';
-echo "<audio id=\"buzzersound\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
+echo '<div id="tracker-table" class="demargin" style="margin-top:1em"></div>';
+echo "<audio id=\"tracker-sound\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
 
 echo Ht::form(hoturl_post("buzzer"));
 echo '<table style="margin-top:3em"><tr>';
 
 // mute button
-echo '<td><button id="trackertable_mute" type="button" class="btn foldc" style="padding-bottom:5px">
+echo '<td><button id="tracker-table-mute" type="button" class="btn foldc" style="padding-bottom:5px">
 <svg id="soundicon" class="fn" width="1.5em" height="1.5em" viewBox="0 0 75 75" style="position:relative;bottom:-3px">
  <polygon points="39.389,13.769 22.235,28.606 6,28.606 6,47.699 21.989,47.699 39.389,62.75 39.389,13.769" style="stroke:#111111;stroke-width:5;stroke-linejoin:round;fill:#111111;" />
  <path d="M 48.128,49.03 C 50.057,45.934 51.19,42.291 51.19,38.377 C 51.19,34.399 50.026,30.703 48.043,27.577" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round"/>
@@ -93,14 +93,14 @@ echo '<td><button id="trackertable_mute" type="button" class="btn foldc" style="
 // show-papers
 if ($Me->has_database_account()) {
     echo '<td style="padding-left:2em">',
-        Ht::checkbox("buzzer_showpapers", 1, $show_papers, ["id" => "trackertable_showpapers"]),
+        Ht::checkbox("buzzer_showpapers", 1, $show_papers, ["id" => "tracker-table-showpapers"]),
         "&nbsp;", Ht::label("Show papers"), '</td>';
 }
 
 // kiosk mode
 if ($Me->privChair) {
     echo '<td style="padding-left:2em">',
-        Ht::button("Kiosk mode", ["id" => "trackertable_kioskmode"]),
+        Ht::button("Kiosk mode", ["id" => "tracker-table-kioskmode"]),
         '</td>';
 }
 

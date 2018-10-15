@@ -63,20 +63,20 @@ body {
 	background-repeat: repeat-x;
 	background-position: top;
 }
-#header_right {
+#header-right {
 	padding: 8px 24px 0;
 	font-size: smaller;
 	text-align: right;
 	float: right;
 }
-#usertime, .usertime {
+.usertime {
 	padding-top: 1px;
 	font-size: smaller;
 }
-#maindeadline {
+#header-deadline {
 	padding-top: 1px;
 }
-#header_site {
+#header-site {
 	float: left;
 	padding: 3px 12px 4px 24px;
 	border-bottom: 1px solid #f33360;
@@ -84,7 +84,7 @@ body {
 	border-bottom-right-radius: 4px;
 	background: #ffc9d6; /* #ed6182; */
 }
-#header_site, #footer_crp a {
+#header-site {
 	color: #f33360;
 }
 h1 {
@@ -96,30 +96,30 @@ h1 {
 #header {
 	padding-bottom: 24px;
 }
-#header_site > h1 {
+#header-site > h1 {
 	font-weight: normal;
 }
-.header_site_page > h1 {
+.header-site-page > h1 {
 	font-size: 100%;
 }
 .header-site-name {
 	font-weight: bold;
 }
-#header_page {
+#header-page {
 	clear: both;
 	float: left;
 	padding: 0.5em 0 0 24px;
 }
-#header_page > h1, h1.paptitle {
+#header-page > h1, h1.paptitle {
 	font-weight: normal;
 }
-#header_page.header_page_submission {
+#header-page.header-page-submission {
 	float: none;
 	padding: 14px 0 0;
 	position: relative;
 	z-index: 1;
 }
-#header_page_submission_inner {
+#header-page-submission-inner {
 	background: white;
 	border-top: 1px solid #f33360; /*#b2a584;*/
 	border-bottom: 1px solid #f33360; /*#b2a584;*/
@@ -135,7 +135,7 @@ table.vbar {
 	font-size: smaller;
 	margin: 8px 24px 0 0;
 }
-body#home table.vbar {
+#body-home table.vbar {
 	margin-top: -4px;
 }
 td.vbar {
@@ -147,22 +147,22 @@ td.gopaper {
 	vertical-align: middle;
 	padding: 4px 0 6px 0.5em;
 }
-td.quicklinks, #trackerconnect {
+td.quicklinks, #tracker-connect {
 	vertical-align: middle;
 	padding: 4px 0.75em 4px 0.5em;
 }
-#quicklink_prev {
+#quicklink-prev {
 	padding-right: 0.5em;
 }
-#quicklink_next {
+#quicklink-next {
 	padding-left: 0.5em;
 }
-#quicksearchq {
+#quicklink-search {
 	min-width: 72px;
 	width: 72px;
 	max-width: 600px;
 }
-#quicksearchq.usersearch {
+#quicklink-search.usersearch {
 	min-width: 96px;
 	width: 96px;
 }
@@ -347,11 +347,11 @@ div#body > .demargin .remargin-right {
 body.paper {
 	background: #dce4e8;
 }
-body#help, body#settings, body#buzzer {
+#body-help, #body-settings, #body-buzzer {
 	background: #ecf2f4;
 }
 
-#initialmsgs {
+#msg-initial {
 	padding: 0 24px;
 	margin: -24px 0 24px;
 }
@@ -363,7 +363,7 @@ div#footer {
 	padding: 0 24px 8px 12px;
 	clear: both;
 }
-div#footer_crp {
+div#footer-crp {
 	float: right;
 	font-size: 69%;
 	background: #ffc9d6;
@@ -2363,7 +2363,7 @@ a.badge:active {
 	color: #999999;
 }
 
-body#offline td#upload {
+#body-offline td#upload {
 	padding-left: 3em;
 }
 
@@ -2821,7 +2821,7 @@ ul.xd > li {
 	border: 1px solid #bf9999;
 	border-radius: 4px;
 }
-body#offline .revcard {
+#body-offline .revcard {
 	margin: 16px 7em;
 }
 .revcard_head {
@@ -3231,19 +3231,19 @@ body {
 #tracker.active.nomatch {
 	background: rgba(255, 255, 100, 0.9);
 }
-#tracker .trackerholder {
+#tracker .tracker-holder {
 	padding: 0.5em 1em 0.5em 0.8em;
 	border-bottom: 1px solid #6a936a;
 	color: #3d3d57;
 }
-#tracker.nomatch .trackerholder {
+#tracker.nomatch .tracker-holder {
 	border-bottom: 1px solid #f33360;
 }
-#tracker .trackerinfo {
+#tracker .tracker-info {
 	margin-left: 48px;
 	line-height: 1.25;
 }
-#trackerlogo {
+#tracker-logo {
 	float: left;
 	position: absolute;
 	top: 1px;
@@ -3252,17 +3252,17 @@ body {
 	border-radius: 10px;
 	color: #0b522b;
 }
-#trackerlogo:before {
+#tracker-logo:before {
 	content: "\261e";
 	font-size: 300%;
 	line-height: 24px;
 }
-#tracker.nomatch #trackerlogo {
+#tracker.nomatch #tracker-logo {
 	/*background: rgba(255, 220, 215, 0.9);*/
 	color: #e33355;
 	animation: 3s 0s infinite normal trackernomatchlogo;
 }
-#tracker.nomatch .tracker0 {
+.nomatch .tracker-row:first-child {
 	color: #b31028;
 }
 @keyframes trackernomatchlogo {
@@ -3274,52 +3274,52 @@ body {
 	29% { left: 5px; animation-timing-function: ease-in; }
 	31% { left: 7px; animation-timing-function: ease-out; }
 }
-#tracker .tracker1, #tracker .tracker2, #tracker .tracker3,
-#tracker .tracker4, #tracker .tracker5 {
+.tracker-row {
 	padding-top: 2px;
 }
-#tracker .tracker2, #tracker .tracker3,
-#tracker .tracker4, #tracker .tracker5 {
+.tracker-row:first-child {
+	padding-top: 0;
+}
+.tracker-row:nth-child(n+3) {
 	font-size: smaller;
 }
-.trackerdesc {
+.tracker-desc {
 	font-weight: bold;
 	padding-right: 0.5em;
 }
-.trackerpid {
+.tracker-pid {
 	text-align: right;
 	padding-right: 0.5em;
 }
-#tracker .trackeris_reviewer, #tracker .trackeris_manager,
-#tracker .trackeris_conflict, #tracker .trackeris_lead {
+.tracker-is-reviewer, .tracker-is-manager, .tracker-is-conflict, .tracker-is-lead {
 	font-weight: bold;
 }
-#trackerelapsed {
+#tracker-elapsed {
 	font-weight: bold;
 	padding: 0 1em 0 0.5em;
 	opacity: 0.5;
 	text-align: right;
 }
 
-#trackertable {
+#tracker-table {
 	font-size: larger;
 }
-.trackertable0 {
+.tracker-table0 {
 	background: #ffffff;
 }
-.trackertable0.t > td.trackertable {
+.tracker-table0.t > td.tracker-table {
 	border-top: 1px solid #f33360;
 }
-.trackertable0.b > td.trackertable {
+.tracker-table0.b > td.tracker-table {
 	border-bottom: 1px solid #f33360;
 }
-.trackertable {
+.tracker-table {
 	padding: 0.25em 0.5em 0.25em 0;
 }
-.trackertable.trackertitle {
+.tracker-table.tracker-title {
 	padding-right: 2em;
 }
-.trackertable.trackerpcconf {
+.tracker-table.tracker-pcconf {
 	padding-top: 0;
 	font-size: smaller;
 }

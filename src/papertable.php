@@ -219,7 +219,7 @@ class PaperTable {
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
 
-        $t = '<div id="header_page" class="header_page_submission"><div id="header_page_submission_inner"><h1 class="paptitle';
+        $t = '<div id="header-page" class="header-page-submission"><div id="header-page-submission-inner"><h1 class="paptitle';
 
         if (!$paperTable && !$prow) {
             if (($pid = $qreq->paperId) && ctype_digit($pid))
@@ -818,7 +818,7 @@ class PaperTable {
         else if ($sb === Conf::BLIND_UNTILREVIEW)
             $hint .= " Reviewers will not see author information until they submit a review.";
         echo $this->field_hint("Authors", $hint, $sb),
-            '<div class="papev"><table id="auedittable" class="auedittable js-row-order">',
+            '<div class="papev"><table class="js-row-order">',
             '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
             'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', null, $max_authors)), '">';
@@ -1694,7 +1694,7 @@ class PaperTable {
         $totmark = $this->papstrip_tag_float($tag, "overall", "rank");
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
-        echo Ht::form("", ["id" => "{$id}form", "data-pid" => $this->prow->paperId]);
+        echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag rank", "~$tag", $myval),
@@ -1707,7 +1707,7 @@ class PaperTable {
             '<a href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
             " <div class='hint' style='margin-top:4px'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~{$tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
             "</div></div></form></div>\n";
-        Ht::stash_script('edit_paper_ui.prepare_pstagindex.call($$("' . $id . 'form"))');
+        Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
 
     private function papstripVote($tag, $allotment) {
@@ -1717,7 +1717,7 @@ class PaperTable {
         $totmark = $this->papstrip_tag_float($tag, "total", "vote");
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
-        echo Ht::form("", ["id" => "{$id}form", "data-pid" => $this->prow->paperId]);
+        echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag votes", "~$tag", $myval),
@@ -1730,7 +1730,7 @@ class PaperTable {
             ' <span class="barsep">·</span> ',
             '<a href="', hoturl("search", "q=" . urlencode("editsort:-#~$tag")), '">Edit all</a>',
             "</div></div></form></div>\n";
-        Ht::stash_script('edit_paper_ui.prepare_pstagindex.call($$("' . $id . 'form"))');
+        Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
 
     private function papstripApproval($tag) {
@@ -1740,7 +1740,7 @@ class PaperTable {
         $totmark = $this->papstrip_tag_float($tag, "total", "approval");
 
         $this->papstrip_tag_entry(null, null);
-        echo Ht::form("", ["id" => "{$id}form", "data-pid" => $this->prow->paperId]);
+        echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id,
@@ -1751,7 +1751,7 @@ class PaperTable {
                          . "&nbsp;" . Ht::label("#$tag vote"),
                          array("type" => "ps", "float" => $totmark)),
             "</form></div>\n\n";
-        Ht::stash_script('edit_paper_ui.prepare_pstagindex.call($$("' . $id . 'form"))');
+        Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
 
     private function papstripWatch() {
@@ -2010,7 +2010,7 @@ class PaperTable {
             $v = (string) $this->qreq->emailNote;
             echo '<div class="checki"><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), " </span>",
                 Ht::label("Email authors, including:"), "&nbsp; ",
-                Ht::entry("emailNote", $v, ["id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
+                Ht::entry("emailNote", $v, ["size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
                 "</div>\n";
         }
 

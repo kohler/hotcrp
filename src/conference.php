@@ -106,8 +106,6 @@ class Conf {
     private $_save_logs = false;
     public $_session_handler;
 
-    private $usertimeId = 1;
-
     private $rounds = null;
     private $_defined_rounds = null;
     private $_round_settings = null;
@@ -2240,9 +2238,7 @@ class Conf {
             $t .= $preadjust;
         if ($useradjust) {
             $sp = strpos($useradjust, " ");
-            $t .= "<$useradjust class=\"usertime hidden\" id=\"usertime$this->usertimeId\"></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
-            Ht::stash_script("setLocalTime('usertime$this->usertimeId',$value)");
-            ++$this->usertimeId;
+            $t .= "<$useradjust class=\"usertime hidden need-usertime\" data-time=\"$value\"></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
         }
         return $t;
     }
@@ -3259,11 +3255,11 @@ class Conf {
 
     static function echo_header(Conf $conf, $is_home, $site_div, $title_div,
                                 $profile_html, $actions_html, $my_deadlines) {
-        echo $site_div, '<div id="header_right">', $profile_html;
+        echo $site_div, '<div id="header-right">', $profile_html;
         if ($my_deadlines && $conf->has_interesting_deadline($my_deadlines))
-            echo '<div id="maindeadline">&nbsp;</div>';
+            echo '<div id="header-deadline">&nbsp;</div>';
         else
-            echo '<div id="maindeadline" class="hidden"></div>';
+            echo '<div id="header-deadline" class="hidden"></div>';
         echo '</div>', ($title_div ? : ""), ($actions_html ? : "");
     }
 
@@ -3271,7 +3267,7 @@ class Conf {
         global $ConfSitePATH, $Me, $Now;
         echo "<body";
         if ($id)
-            echo ' id="', $id, '"';
+            echo ' id="body-', $id, '"';
         $class = get($extra, "class");
         if (($list = $this->active_list()))
             $class = ($class ? $class . " " : "") . "has-hotlist";
@@ -3300,12 +3296,12 @@ class Conf {
         if ($trackerowner)
             Ht::stash_script("hotcrp_deadlines.tracker_ui(0)");
 
-        echo '<div id="prebody"><div id="header">';
+        echo '<div id="header">';
 
-        // $header_site
+        // site header
         $is_home = $id === "home";
-        $site_div = '<div id="header_site" class="'
-            . ($is_home ? "header_site_home" : "header_site_page")
+        $site_div = '<div id="header-site" class="'
+            . ($is_home ? "header-site-home" : "header-site-page")
             . '"><h1><a class="qq" href="' . $this->hoturl("index") . '">'
             . '<span class="header-site-name">'
             . htmlspecialchars($this->short_name) . '</span>';
@@ -3358,7 +3354,7 @@ class Conf {
         $title_div = get($extra, "title_div");
         if (!$title_div) {
             if ($title && $title !== "Home")
-                $title_div = '<div id="header_page"><h1>' . $title . '</h1></div>';
+                $title_div = '<div id="header-page"><h1>' . $title . '</h1></div>';
             else if ($action_bar)
                 $title_div = '<hr class="c">';
         }
@@ -3375,7 +3371,7 @@ class Conf {
         echo "  <hr class=\"c\"></div>\n";
 
         $this->headerPrinted = true;
-        echo "<div id=\"initialmsgs\">\n";
+        echo "<div id=\"msg-initial\">\n";
         if (($x = $this->opt("maintenance")))
             echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
         if (($msgs = $this->session("msgs")) && !empty($msgs)) {
@@ -3385,7 +3381,7 @@ class Conf {
         }
         echo "</div>\n";
 
-        echo "</div>\n<div id=\"body\" class=\"body\">\n";
+        echo "<div id=\"body\" class=\"body\">\n";
 
         // If browser owns tracker, send it the script immediately
         if ($trackerowner)
@@ -3437,9 +3433,9 @@ class Conf {
     function footer() {
         global $Me, $ConfSitePATH;
         echo "</div>\n", // class='body'
-            '<div id="footer"><div id="footer_crp">',
+            '<div id="footer"><div id="footer-crp">',
             $this->opt("extraFooter", ""),
-            '<a href="http://read.seas.harvard.edu/~kohler/hotcrp/">HotCRP</a>';
+            '<a class="uu" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->opt("noFooterVersion")) {
             if ($Me && $Me->privChair) {
                 echo " v", HOTCRP_VERSION;
