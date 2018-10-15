@@ -2545,7 +2545,7 @@ class PaperTable {
             else if ($user->has_review())
                 $q .= "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$user->contactId)";
             else
-                $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$user->contactId and ContactInfo.conflictType>=" . CONFLICT_AUTHOR . ")";
+                $q .= "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$user->contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
             return $user->conf->fetch_ivalue($q);
         }
 
