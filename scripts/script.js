@@ -2540,6 +2540,7 @@ function row_order_change(e, delta, action) {
         autogrow = $tbody.attr("data-row-order-autogrow");
 
     if (action < 0) {
+        tooltip.erase();
         $r.remove();
         delta = 0;
     } else if (action == 0) {
@@ -2576,6 +2577,7 @@ function row_order_change(e, delta, action) {
         var $newtr = $($tbody[0].getAttribute("data-row-template")).appendTo($tbody);
         mktemptext($newtr);
         suggest($newtr.find(".papersearch"), taghelp_q);
+        $newtr.find(".need-tooltip").each(tooltip);
         trs = $tbody.children();
         if (want_focus) {
             focus_within($newtr);
