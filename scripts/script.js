@@ -2336,10 +2336,10 @@ function jump(hash) {
         }
     });
     if (e && ($g = $(e).closest(".papeg")).length) {
-        var hashg = $(e).geometry(), eg = $e.geometry();
+        var hashg = $(e).geometry(), gg = $g.geometry();
         if ((hashg.width <= 0 && hashg.height <= 0)
-            || (hashg.top >= eg.top && hashg.top - eg.top <= 100))
-            $e.scrollIntoView();
+            || (hashg.top >= gg.top && hashg.top - gg.top <= 100))
+            $g.scrollIntoView();
     } else if (e && hasClass(e, "response") && hasClass(e, "editable"))
         papercomment.edit_id(hash.substring(1));
 }
