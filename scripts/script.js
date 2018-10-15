@@ -2316,9 +2316,18 @@ function focus_fold(event) {
 }
 
 function jump(hash) {
+    var e, m, $g;
     if (hash !== "" && hash.charAt(0) !== "#") {
-        var m = hash.match(/#.*/);
+        m = hash.match(/#.*/);
         hash = m ? m[0] : "";
+    }
+    // clean up unwanted trailers, such as “%E3%80%82” (ideographic full stop)
+    if (hash !== "") {
+        e = document.getElementById(hash.substring(1));
+        if (!e
+            && (m = hash.match(/^#([-_a-zA-Z0-9]+)(?=[^-_a-zA-Z0-9])/))
+            && (e = document.getElementById(m[1])))
+            hash = location.hash = m[0];
     }
     $("a.has-focus-history").each(function () {
         if (this.getAttribute("href") === hash) {
@@ -2326,15 +2335,13 @@ function jump(hash) {
             return false;
         }
     });
-    if (hash !== "") {
-        var $hash = $(hash), $e = $hash.closest(".papeg");
-        if ($e.length) {
-            var hashg = $hash.geometry(), eg = $e.geometry();
-            if ((hashg.width <= 0 && hashg.height <= 0)
-                || (hashg.top >= eg.top && hashg.top - eg.top <= 100))
-                $e.scrollIntoView();
-        }
-    }
+    if (e && ($g = $(e).closest(".papeg")).length) {
+        var hashg = $(e).geometry(), eg = $e.geometry();
+        if ((hashg.width <= 0 && hashg.height <= 0)
+            || (hashg.top >= eg.top && hashg.top - eg.top <= 100))
+            $e.scrollIntoView();
+    } else if (e && hasClass(e, "response") && hasClass(e, "editable"))
+        papercomment.edit_id(hash.substring(1));
 }
 
 $(window).on("popstate", function (event) {
@@ -3680,7 +3687,8 @@ function render_preview(evt, format, value, dest) {
 function add(cj, editing) {
     var cid = cj_cid(cj), j = $("#" + cid), $pc = null;
     if (!j.length) {
-        var $c = $("#body").children().last();
+        var $c = $("#body").children().last(),
+            iddiv = '<div id="' + cid + '" class="cmtid' + (cj.editable ? " editable" : "");
         if (!$c.hasClass("cmtcard") && ($pc = $("#body > .cmtcard").last()).length) {
             if (!cj.is_new)
                 $pc.append('<div class="cmtcard_link"><a class="qq" href="#' + cid + '">Later comments &#x25BC;</a></div>');
@@ -3688,9 +3696,7 @@ function add(cj, editing) {
         if (!$c.hasClass("cmtcard") || cj.response || $c.hasClass("response")) {
             var t;
             if (cj.response)
-                t = '<div id="' + cid +
-                    '" class="cmtcard cmtid response responseround_' + cj.response +
-                    '"><div class="cmtcard_head"><h3>' +
+                t = iddiv + ' response cmtcard"><div class="cmtcard_head"><h3>' +
                     (cj.response == "1" ? "Response" : cj.response + " Response") +
                     '</h3></div>';
             else
@@ -3702,7 +3708,7 @@ function add(cj, editing) {
         if (cj.response)
             j = $('<div class="cmtg"></div>');
         else
-            j = $('<div id="' + cid + '" class="cmtg cmtid"></div>');
+            j = $(iddiv + ' cmtg"></div>');
         j.appendTo($c.find(".cmtcard_body"));
     }
     if (editing == null && cj.response && cj.draft && cj.editable)
