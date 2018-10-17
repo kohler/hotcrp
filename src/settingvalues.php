@@ -850,7 +850,8 @@ class SettingValues extends MessageSet {
         if ($this->has_savedv("resp_active") && $this->savedv("resp_active"))
             foreach (explode(" ", $this->newv("resp_rounds")) as $i => $rname) {
                 $isuf = $i ? "_$i" : "";
-                if ($this->newv("resp_open$isuf") > $this->newv("resp_done$isuf")) {
+                if ($this->newv("resp_open$isuf") > $this->newv("resp_done$isuf")
+                    && $this->newv("resp_done$isuf")) {
                     $si = Si::get($this->conf, "resp_open$isuf");
                     $this->error_at($si, "Must come before " . Si::get($this->conf, "resp_done", "title") . ".");
                     $this->error_at("resp_done$isuf");
