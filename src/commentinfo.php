@@ -538,7 +538,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $qa .= ", timeNotified=$Now";
             // reset timeDisplayed if you change the comment type
             if ((!$this->timeDisplayed || $this->ordinal_missing($ctype))
-                && $text !== "" && $displayed)
+                && ($text !== "" || $docids)
+                && $displayed)
                 $qa .= ", timeDisplayed=$Now";
             $q = "update $Table set timeModified=$Now$qa, commentType=$ctype, comment=?, commentOverflow=?, commentTags=? where commentId=$this->commentId";
             if (strlen($text) <= 32000)
