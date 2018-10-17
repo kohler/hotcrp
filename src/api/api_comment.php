@@ -123,7 +123,7 @@ class Comment_API {
 
             // check for response simultaneity
             if (!$ok && $xcrow->is_response()) {
-                $ocrow = self::fetch_comments("(commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=$round", $prow);
+                $ocrow = self::find_comment("(commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=$round", $prow);
                 if ($ocrow
                     && $ocrow->comment === $req["text"]
                     && !$docchange) {
