@@ -3256,12 +3256,13 @@ function comment_identity_time(cj) {
 }
 
 
-function edit_allowed(cj) {
+function edit_allowed(cj, override) {
     var p = hotcrp_status.myperm;
     if (cj.response)
-        return p.can_responds && p.can_responds[cj.response] === true;
+        p = p.can_responds && p.can_responds[cj.response];
     else
-        return p.can_comment === true;
+        p = p.can_comment;
+    return override ? !!p : p === true;
 }
 
 function render_editing(hc, cj) {
@@ -3356,7 +3357,11 @@ function render_editing(hc, cj) {
     // delete
     if (!cj.is_new) {
         x = cj.response ? "response" : "comment";
-        btnbox.push('<button type="button" name="delete" class="btn btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="Are you sure you want to delete this ' + x + '?">' + $("#licon-trash").html() + '</button>');
+        if (edit_allowed(cj))
+            bnote = "Are you sure you want to delete this " + x + "?";
+        else
+            bnote = "Are you sure you want to override the deadline and delete this " + x + "?";
+        btnbox.push('<button type="button" name="delete" class="btn btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="' + bnote + '">' + $("#licon-trash").html() + '</button>');
     }
 
     // close .cmteditinfo
@@ -3521,7 +3526,8 @@ function save_editor(elt, action, really) {
             $c.find("button").prop("disabled", false);
             return;
         }
-        var cid = cj_cid($c.c), editing_response = $c.c.response && edit_allowed($c.c);
+        var cid = cj_cid($c.c),
+            editing_response = $c.c.response && edit_allowed($c.c, true);
         if (!data.cmt && !$c.c.is_new)
             delete cmts[cid];
         if (!data.cmt && editing_response)
@@ -3564,7 +3570,7 @@ function buttonclick_editor(evt) {
         render_cmt($c, $c.c, false);
     else if (this.name === "delete")
         override_deadlines.call(this, function () {
-            save_editor(self, self.name);
+            save_editor(self, self.name, true);
         });
     else if (this.name === "showtags") {
         fold($c.find(".cmteditinfo")[0], false, 3);
@@ -5518,7 +5524,10 @@ function override_deadlines(callback) {
         djq.remove();
     });
     djq.find("button[name=bsubmit]")
-        .html(ejq.attr("aria-label") || ejq.html() || ejq.attr("value") || "Save changes")
+        .html(ejq.attr("aria-label")
+              || ejq.html()
+              || ejq.attr("value")
+              || "Save changes")
         .on("click", function () {
         if (callback && $.isFunction(callback))
             callback();

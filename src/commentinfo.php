@@ -256,6 +256,11 @@ class CommentInfo {
             ? $this->prow->linked_documents($this->commentId, 0, 1024) : [];
     }
 
+    function attachment_ids() {
+        return array_map(function ($doc) { return $doc->paperStorageId; },
+                         $this->attachments());
+    }
+
     function unparse_json(Contact $contact) {
         if ($this->commentId && !$contact->can_view_comment($this->prow, $this))
             return false;

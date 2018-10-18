@@ -129,7 +129,7 @@ class Comment_API {
                 $ocrow = self::find_comment("(commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=$round", $prow);
                 if ($ocrow
                     && $ocrow->comment === $req["text"]
-                    && !$docchange) {
+                    && $ocrow->attachment_ids() == $xcrow->attachment_ids()) {
                     $xcrow = $ocrow;
                     $ok = true;
                 } else
