@@ -27,6 +27,17 @@ class Comment_API {
         if (!isset($qreq->text) && !isset($qreq->delete))
             return new JsonResult(400, "Parameter error.");
 
+        // check response
+        $round = false;
+        if ($qreq->response) {
+            $round = $prow->conf->resp_round_number($qreq->response);
+            if ($round === false)
+                return new JsonResult(404, "No such response round.");
+            // XXX backwards compat
+            if ($qreq->c === $qreq->response . "response")
+                $qreq->c = "new";
+        }
+
         // find comment
         $crow = null;
         if ($qreq->c && $qreq->c !== "new") {
@@ -34,14 +45,6 @@ class Comment_API {
                 $crow = self::find_comment("commentId=" . intval($qreq->c), $prow);
             if (!$crow)
                 return new JsonResult(404, "No such comment.");
-        }
-
-        // check response
-        $round = false;
-        if ($qreq->response) {
-            $round = $prow->conf->resp_round_number($qreq->response);
-            if ($round === false)
-                return new JsonResult(404, "No such response round.");
         }
 
         // create skeleton

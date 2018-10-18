@@ -3525,7 +3525,7 @@ function save_editor(elt, action, really) {
         if (!data.cmt && !$c.c.is_new)
             delete cmts[cid];
         if (!data.cmt && editing_response)
-            data.cmt = {is_new: true, response: $c.c.response, editable: true, draft: true, cid: cid};
+            data.cmt = {is_new: true, response: $c.c.response, editable: true};
         if (data.cmt) {
             var data_cid = cj_cid(data.cmt);
             if (cid !== data_cid) {
