@@ -1454,12 +1454,15 @@ class Contact {
             return $input;
     }
 
-    function check_password($input) {
+    function check_password($input, $info = null) {
         global $Now;
         assert(!$this->conf->external_login());
         if (($this->contactId && $this->disabled)
-            || !self::valid_password($input))
+            || !self::valid_password($input)) {
+            if ($info)
+                $info->disabled = true;
             return false;
+        }
 
         $cdbu = $this->contactdb_user();
         $cdbok = $cdbu
@@ -1487,14 +1490,24 @@ class Contact {
                 $this->apply_updater(["passwordUseTime" => $Now, "password" => "", "passwordTime" => $Now], false);
                 $localok = false;
             }
+            if ($info)
+                $info->cdb = true;
         }
 
         if ($localok
             && $cdbu
-            && $cdbu->password
-            && $cdbu->passwordUseTime >= $this->passwordUseTime
-            && $this->passwordUseTime < $Now - $this->conf->opt("obsoletePasswordDelay", 2592000))
-            $localok = false;
+            && $cdbu->password) {
+            $localusetime = max($this->passwordTime, $this->passwordUseTime);
+            if ($localusetime
+                && $cdbu->passwordUseTime > $localusetime
+                && ($x = $this->conf->opt("obsoletePasswordInterval")) > 0
+                && $localusetime < $Now - $x) {
+                $localok = false;
+                if ($info)
+                    $info->local_obsolete = true;
+            }
+        }
+
         if ($localok) {
             if ($cdbu
                 && !$cdbok
@@ -1513,18 +1526,11 @@ class Contact {
                 $updater["passwordTime"] = $Now;
             }
             $this->apply_updater($updater, false);
+            if ($info)
+                $info->local = true;
         }
 
         return $cdbok || $localok;
-    }
-
-    function check_obsolete_local_password($input) {
-        return $this->contactId
-            && self::valid_password($input)
-            && $this->check_hashed_password($input, $this->password)
-            && ($cdbu = $this->contactdb_user())
-            && $cdbu->password
-            && $cdbu->passwordUseTime >= $this->passwordUseTime;
     }
 
     const CHANGE_PASSWORD_PLAINTEXT = 1;

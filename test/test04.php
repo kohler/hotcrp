@@ -9,7 +9,7 @@ global $Opt;
 $Opt = [
     "contactdb_dsn" => "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/hotcrp_testdb_cdb",
     "contactdb_passwordHmacKeyid" => "c1",
-    "obsoletePasswordDelay" => 0
+    "obsoletePasswordInterval" => 1
 ];
 require_once("$ConfSitePATH/test/setup.php");
 
@@ -73,10 +73,12 @@ xassert_eqq(password($marina, true), "isdevitch");
 xassert(user($marina)->check_password("ncurses"));
 
 // logging in with global password makes local password obsolete
+$Now += 3;
 xassert(user($marina)->check_password("isdevitch"));
-++$Now;
-xassert(!user($marina)->check_password("ncurses"));
-xassert(user($marina)->check_obsolete_local_password("ncurses"));
+$Now += 3;
+$info = (object) [];
+xassert(!user($marina)->check_password("ncurses", $info));
+xassert(get($info, "local_obsolete"));
 
 // null contactdb password => can log in locally
 save_password($marina, null, true);
