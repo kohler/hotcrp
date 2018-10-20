@@ -8,9 +8,19 @@ class ReviewTimes {
     private $r;
     private $dl;
 
+    private function count_unmodified_review($rrow) {
+        if ($rrow->requestedBy == $rrow->contactId
+            || $rrow->requestedBy == 0)
+            return false;
+        $u1 = $this->conf->cached_user_by_id($rrow->contactId);
+        $u2 = $this->conf->cached_user_by_id($rrow->requestedBy);
+        return !$u1 || !$u2 || !$u1->privChair || !$u2->privChair;
+    }
+
     function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
+        $this->conf->pc_members_and_admins(); // to cache them
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
         $this->dl = [];
@@ -30,9 +40,8 @@ class ReviewTimes {
             foreach ($prow->reviews_by_id() as $rrow) {
                 if ($rrow->reviewType > REVIEW_PC
                     || ($rrow->reviewType == REVIEW_PC
-                        && ($rrow->reviewSubmitted
-                            || ($rrow->requestedBy != $rrow->contactId
-                                && $rrow->requestedBy != 0)))) {
+                        && ($rrow->reviewModified
+                            || $this->count_unmodified_review($rrow)))) {
                     $viewable = $user->privChair
                         || ($user->can_view_review_assignment($prow, $rrow)
                             && $user->can_view_review_identity($prow, $rrow));
