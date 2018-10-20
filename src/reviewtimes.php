@@ -12,8 +12,8 @@ class ReviewTimes {
         if ($rrow->requestedBy == $rrow->contactId
             || $rrow->requestedBy == 0)
             return false;
-        $u1 = $this->conf->cached_user_by_id($rrow->contactId);
-        $u2 = $this->conf->cached_user_by_id($rrow->requestedBy);
+        $u1 = $this->conf->cached_user_by_id($rrow->contactId, true);
+        $u2 = $this->conf->cached_user_by_id($rrow->requestedBy, true);
         return !$u1 || !$u2 || !$u1->privChair || !$u2->privChair;
     }
 
@@ -102,24 +102,17 @@ class ReviewTimes {
         if (count($nass))
             $heavy_boundary = 0.66 * $nass[(int) (0.8 * count($nass))];
 
-        $contacts = $this->conf->pc_members();
-        $need_contacts = [];
         foreach ($this->r as $cid => $x)
-            if (!isset($contacts[$cid]) && (is_int($cid) || ctype_digit($cid)))
-                $need_contacts[] = $cid;
-        if (!empty($need_contacts)) {
-            $result = $this->conf->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where contactId ?a", $need_contacts);
-            while (($row = Contact::fetch($result, $this->conf)))
-                $contacts[$row->contactId] = $row;
-            Dbl::free($result);
-        }
+            if (is_int($cid) || ctype_digit($cid))
+                $this->conf->cached_user_by_id($cid, true);
+        $this->conf->load_missing_cached_users();
 
         $users = array();
         $tags = $this->user->can_view_reviewer_tags();
         foreach ($this->r as $cid => $x)
             if ($cid !== "conflicts") {
                 $users[$cid] = $u = (object) array();
-                $p = get($contacts, $cid);
+                $p = $this->conf->cached_user_by_id($cid, true);
                 if ($p)
                     $u->name = Text::name_text($p);
                 if (count($x) < $heavy_boundary)
