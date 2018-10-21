@@ -6407,9 +6407,7 @@ handle_ui.on("js-remove-document", function (event) {
 
 handle_ui.on("js-withdraw", function (event) {
     var $f = $(this).closest("form"),
-        hc = popup_skeleton({
-            anchor: this, action: hoturl_post("paper", {p: hotcrp_paperid, m: "edit"})
-        });
+        hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Are you sure you want to withdraw this submission from consideration and/or publication?');
     if (!this.hasAttribute("data-revivable"))
         hc.push(' Only administrators can undo this step.');
@@ -6428,9 +6426,7 @@ handle_ui.on("js-withdraw", function (event) {
 
 handle_ui.on("js-delete-paper", function (event) {
     var $f = $(this).closest("form"),
-        hc = popup_skeleton({
-            anchor: this, action: hoturl_post("paper", {p: hotcrp_paperid, m: "edit"})
-        });
+        hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="delete" value="1" class="btn dangerous">Delete</button>',
         '<button type="button" name="cancel" class="btn">Cancel</button>']);
