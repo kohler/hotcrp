@@ -1631,41 +1631,47 @@ class Conf {
 
     function pc_members() {
         if ($this->_pc_members_cache === null) {
-            $pc = array();
             $result = $this->q("select " . $this->_cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
-            $by_name_text = array();
+            $pc = $by_name_text = [];
+            $expected_by_name_count = 0;
             $this->_pc_tags_cache = ["pc" => "pc"];
-            while ($result && ($row = Contact::fetch($result, $this))) {
-                $pc[$row->contactId] = $row;
-                if ($row->firstName || $row->lastName) {
-                    $name_text = Text::name_text($row);
-                    $row2 = get($by_name_text, $name_text);
-                    if ($row2) {
-                        $pc1 = ($row->roles & Contact::ROLE_PC) != 0;
-                        $pc2 = ($row2->roles & Contact::ROLE_PC) != 0;
-                        if (!$pc1 || $pc2)
-                            $row->nameAmbiguous = true;
-                        if (!$pc2 || $pc1)
-                            $row2->nameAmbiguous = true;
-                        if (!$pc2)
-                            $by_name_text[$name_text] = $row;
-                    } else
-                        $by_name_text[$name_text] = $row;
+            while ($result && ($u = Contact::fetch($result, $this))) {
+                $pc[$u->contactId] = $u;
+                $u->name_analysis = Text::analyze_name($u);
+                if ($u->firstName || $u->lastName) {
+                    $by_name_text[Text::name_text($u)][] = $u;
+                    $expected_by_name_count += 1;
                 }
-                if ($row->contactTags)
-                    foreach (explode(" ", $row->contactTags) as $t) {
+                if ($u->contactTags)
+                    foreach (explode(" ", $u->contactTags) as $t) {
                         list($tag, $value) = TagInfo::unpack($t);
                         if ($tag)
                             $this->_pc_tags_cache[strtolower($tag)] = $tag;
                     }
             }
             Dbl::free($result);
+
+            if ($expected_by_name_count > count($by_name_text)) {
+                foreach ($by_name_text as $us)
+                    if (count($us) > 1) {
+                        $npcus = 0;
+                        foreach ($us as $u)
+                            $npcus += ($u->roles & Contact::ROLE_PC ? 1 : 0);
+                        foreach ($us as $u)
+                            if ($npcus > 1 || ($u->roles & Contact::ROLE_PC) == 0) {
+                                $u->nameAmbiguous = true;
+                                $u->name_analysis = null;
+                                $u->name_analysis = Text::analyze_name($u);
+                            }
+                    }
+            }
+
             uasort($pc, "Contact::compare");
             $this->_pc_members_and_admins_cache = $pc;
             $pc = array_filter($pc, function ($p) { return ($p->roles & Contact::ROLE_PC) != 0; });
             $order = 0;
-            foreach ($pc as $row) {
-                $row->sort_position = $order;
+            foreach ($pc as $u) {
+                $u->sort_position = $order;
                 ++$order;
             }
             $this->_pc_members_cache = $pc;
@@ -1684,9 +1690,9 @@ class Conf {
         if (!$this->_pc_members_fully_loaded) {
             if ($this->_pc_members_cache !== null) {
                 $result = $this->q("select * from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
-                while ($result && ($row = $result->fetch_object())) {
-                    if (($pc = get($this->_pc_members_and_admins_cache, $row->contactId)))
-                        $pc->merge_secondary_properties($row);
+                while ($result && ($u = $result->fetch_object())) {
+                    if (($pc = get($this->_pc_members_and_admins_cache, $u->contactId)))
+                        $pc->merge_secondary_properties($u);
                 }
                 Dbl::free($result);
             }

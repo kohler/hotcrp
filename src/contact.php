@@ -29,6 +29,7 @@ class Contact {
     public $preferredEmail = "";
     public $sorter = "";
     public $sort_position;
+    public $name_analysis;
 
     public $affiliation = "";
     public $country;

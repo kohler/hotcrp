@@ -62,8 +62,12 @@ class Text {
         $ret = $ret ? : new NameInfo;
         // collect arguments
         $delta = 0;
-        if (count($args) == 1 && is_string($args[0]))
-            $args = self::split_name($args[0], true);
+        if (count($args) == 1) {
+            if (is_string($args[0]))
+                $args = self::split_name($args[0], true);
+            else if (is_object($args[0]) && isset($args[0]->name_analysis))
+                return $args[0]->name_analysis;
+        }
         foreach ($args as $i => $v) {
             if (is_string($v) || is_bool($v)) {
                 if ($i + $delta < 4) {
