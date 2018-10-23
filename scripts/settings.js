@@ -558,12 +558,10 @@ function rfs(data) {
     for (i = 0; i != fieldorder.length; ++i)
         append_field(fieldorder[i], i + 1);
     $("#reviewform_container").on("click", "a.settings-field-folder", view_unfold);
-    $("#reviewform_container").on("fold", ".settings-revfield", function (evt, opts) {
-        if (!opts.f) {
-            $(this).find("textarea").css("height", "auto").autogrow();
-            $(this).find("input[type=text]").autogrow();
-            mktemptext($(this));
-        }
+    $("#reviewform_container").on("unfold", ".settings-revfield", function (evt, opts) {
+        $(this).find("textarea").css("height", "auto").autogrow();
+        $(this).find("input[type=text]").autogrow();
+        mktemptext($(this));
     });
 
     // highlight errors, apply request

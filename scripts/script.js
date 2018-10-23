@@ -871,6 +871,7 @@ return handle_ui;
 $(document).on("click", ".ui, .uix", handle_ui);
 $(document).on("change", ".uich", handle_ui);
 $(document).on("keydown", ".uikd", handle_ui);
+$(document).on("unfold", ".ui-unfold", handle_ui);
 
 
 // rangeclick
@@ -2196,7 +2197,7 @@ function foldup(event, opts) {
     if (!("f" in opts) || !opts.f !== dofold) {
         opts.f = dofold;
         fold(e, dofold, opts.n || 0);
-        $(e).trigger("fold", opts);
+        $(e).trigger(opts.f ? "fold" : "unfold", opts);
     }
     if (this.hasAttribute("aria-expanded"))
         this.setAttribute("aria-expanded", dofold ? "false" : "true");
@@ -2207,7 +2208,7 @@ function foldup(event, opts) {
 }
 
 handle_ui.on("js-foldup", foldup);
-$(document).on("fold", ".js-fold-focus", function (event, opts) {
+$(document).on("fold unfold", ".js-fold-focus", function (event, opts) {
     focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
 });
 $(function () {
@@ -2280,25 +2281,27 @@ function focus_fold(event) {
     }
     while (e) {
         if (hasClass(e, "linelink")) {
-            for (f = e.parentElement; f && !hasClass(f, "linelinks"); f = f.parentElement) {
-            }
+            f = e.parentElement;
+            while (f && !hasClass(f, "linelinks"))
+                f = f.parentElement;
             if (!f)
                 break;
+            $(f).find(".linelink").removeClass("active");
             addClass(e, "active");
-            $(f).find(".linelink").not(e).removeClass("active");
+            $(e).trigger("unfold", {f: false});
             if (event || has_focused === false) {
                 focus_within(e, ".lld *");
                 event && event_prevent(event);
             }
             return (has_focused = true);
-        } else if ((m = e.className.match(/\b(?:lll|lld|tll|tld)(\d+)/))) {
+        } else if ((m = e.className.match(/\b(?:tll|tld)(\d+)/))) {
             while (e && !/\b(?:tab|line)links\d/.test(e.className))
                 e = e.parentElement;
             if (!e)
                 break;
             e.className = e.className.replace(/links\d+/, 'links' + m[1]);
             if (event || has_focused === false) {
-                focus_within(e, ".lld" + m[1] + " *, .tld" + m[1] + " *");
+                focus_within(e, ".tld" + m[1] + " *");
                 event && event_prevent(event);
             }
             return (has_focused = true);
@@ -2343,7 +2346,10 @@ $(window).on("popstate", function (event) {
 }).on("hashchange", function (event) {
     jump(location.hash);
 });
-$(function () { has_focused || jump(location.hash); });
+$(function () {
+    has_focused || jump(location.hash);
+    $(".linelink.active").trigger("unfold", {f: false, linelink: true});
+});
 
 function handler(event) {
     if (focus_fold.call(this, event)
@@ -4032,6 +4038,7 @@ function completion_item(c) {
         return c;
     }
 }
+
 
 var search_completion = new HPromise().onThen(function (search_completion) {
     jQuery.get(hoturl("api/searchcompletion"), null, function (v) {
@@ -6576,17 +6583,15 @@ function prepare_pstags() {
         foldup.call($ta[0], evt, {f: true});
     });
     $f.on("submit", save_pstags);
-    $f.closest(".foldc, .foldo").on("fold", function (evt, opts) {
-        if (!opts.f) {
-            $f.data("everOpened", true);
-            $f.find("input").prop("disabled", false);
-            if (!$f.data("noTagReport")) {
-                $.get(hoturl("api/tagreport", {p: $f.attr("data-pid")}), handle_tag_report);
-            }
-            $f.removeData("noTagReport");
-            $ta.autogrow();
-            focus_within($f[0]);
+    $f.closest(".foldc, .foldo").on("unfold", function (evt, opts) {
+        $f.data("everOpened", true);
+        $f.find("input").prop("disabled", false);
+        if (!$f.data("noTagReport")) {
+            $.get(hoturl("api/tagreport", {p: $f.attr("data-pid")}), handle_tag_report);
         }
+        $f.removeData("noTagReport");
+        $ta.autogrow();
+        focus_within($f[0]);
     });
     $(window).on("hotcrptags", function (evt, data) {
         if (data.pid == $f.attr("data-pid")) {
