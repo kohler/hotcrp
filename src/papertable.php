@@ -1499,7 +1499,7 @@ class PaperTable {
             "<div class='psv psconf'>", join("", $pcconf), "</div></div>\n";
     }
 
-    private function _papstripLeadShepherd($type, $name, $showedit, $wholefold) {
+    private function _papstripLeadShepherd($type, $name, $showedit) {
         $editable = ($type === "manager" ? $this->user->privChair : $this->admin);
 
         $field = $type . "ContactId";
@@ -1507,12 +1507,7 @@ class PaperTable {
             return;
         $value = $this->prow->$field;
 
-        if ($wholefold === null)
-            $this->_papstripBegin($type, true);
-        else {
-            echo '<div id="fold', $type, '" class="foldc">';
-            $this->_papstripBegin(null, true);
-        }
+        $this->_papstripBegin($type, true);
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv">';
         $p = $this->conf->pc_member_by_id($value);
@@ -1537,22 +1532,19 @@ class PaperTable {
             Ht::stash_script('edit_paper_ui.prepare_psedit.call($$("fold' . $type . '"),{p:' . $this->prow->paperId . ',fn:"' . $type . '"})');
         }
 
-        if ($wholefold === null)
-            echo "</div></div>\n";
-        else
-            echo "</div></div></div>\n";
+        echo "</div></div>\n";
     }
 
     private function papstripLead($showedit) {
-        $this->_papstripLeadShepherd("lead", "Discussion lead", $showedit || $this->qreq->atab === "lead", null);
+        $this->_papstripLeadShepherd("lead", "Discussion lead", $showedit || $this->qreq->atab === "lead");
     }
 
-    private function papstripShepherd($showedit, $fold) {
-        $this->_papstripLeadShepherd("shepherd", "Shepherd", $showedit || $this->qreq->atab === "shepherd", $fold);
+    private function papstripShepherd($showedit) {
+        $this->_papstripLeadShepherd("shepherd", "Shepherd", $showedit || $this->qreq->atab === "shepherd");
     }
 
     private function papstripManager($showedit) {
-        $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || $this->qreq->atab === "manager", null);
+        $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || $this->qreq->atab === "manager");
     }
 
     private function papstripTags() {
@@ -2049,14 +2041,12 @@ class PaperTable {
         if ($this->user->allow_view_authors($prow) && !$this->editable)
             $this->papstripCollaborators();
 
-        $foldShepherd = $this->user->can_set_decision($prow) && $prow->outcome <= 0
-            && $prow->shepherdContactId == 0 && $this->mode !== "assign";
         if ($this->user->can_set_decision($prow))
             $this->papstripOutcomeSelector();
         if ($this->user->can_view_lead($prow))
             $this->papstripLead($this->mode === "assign");
         if ($this->user->can_view_shepherd($prow))
-            $this->papstripShepherd($this->mode === "assign", $foldShepherd);
+            $this->papstripShepherd($this->mode === "assign");
 
         if ($this->user->can_accept_review_assignment($prow)
             && $this->conf->timePCReviewPreferences()
