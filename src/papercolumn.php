@@ -630,8 +630,8 @@ class PreferenceList_PaperColumn extends PaperColumn {
             $pl->qopts["allReviewerPreference"] = true;
             if ($this->topics)
                 $pl->qopts["topics"] = true;
+            $pl->conf->stash_hotcrp_pc($pl->user);
         }
-        $pl->conf->stash_hotcrp_pc($pl->user);
         return true;
     }
     function header(PaperList $pl, $is_text) {

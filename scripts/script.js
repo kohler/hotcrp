@@ -4061,6 +4061,20 @@ var search_completion = new HPromise().onThen(function (search_completion) {
 });
 
 
+var hotcrp_pc_promise = new HPromise().onThen(function (promise) {
+    if (hotcrp_pc != null)
+        promise.fulfill(hotcrp_pc);
+    else
+        jQuery.get(hoturl("api/pc"), null, function (v) {
+            if (v && v.ok && v.pc) {
+                hotcrp_pc = v.pc;
+                promise.fulfill(v.pc);
+            } else
+                promise.reject(null);
+        });
+});
+
+
 function completion_split(elt) {
     if (elt.selectionStart == elt.selectionEnd)
         return [elt.value.substring(0, elt.selectionStart),
@@ -4091,10 +4105,11 @@ function taghelp_q(elt, options) {
 }
 
 function pc_tag_completion(elt, options) {
-    var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/)) && window.hotcrp_pctags) {
+    var x = completion_split(elt), m, n, f;
+    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^(\S*)/);
-        return make_suggestions(m[2], n[1], options)(hotcrp_pctags);
+        f = make_suggestions(m[2], n[1], options);
+        return hotcrp_pc_promise.then(function (pc) { f(pc.__tags__ || []) });
     } else
         return null;
 }
@@ -5658,13 +5673,14 @@ function pidfield(pid, f, index) {
 
 
 function render_allpref() {
-    var atomre = /(\d+)([PT])(\S+)/g;
-    $(".need-allpref").each(function () {
+    var self = this;
+    hotcrp_pc_promise.then(function (pcs) {
         var t = [], m,
-            pid = pidnear(this),
-            allpref = pidattr(pid, "data-allpref") || "";
+            pid = pidnear(self),
+            allpref = pidattr(pid, "data-allpref") || "",
+            atomre = /(\d+)([PT])(\S+)/g;
         while ((m = atomre.exec(allpref)) !== null) {
-            var pc = hotcrp_pc[m[1]];
+            var pc = pcs[m[1]];
             if (!pc.name_html)
                 pc.name_html = escape_entities(pc.name);
             var x = '';
@@ -5689,9 +5705,11 @@ function render_allpref() {
             });
             t = t.map(function (x) { return x[3]; });
             x = '<span class="nb">' + t.join(',</span> <span class="nb">') + '</span>';
-            $(this).html(x).removeClass("need-allpref");
+            $(self).html(x).removeClass("need-allpref");
         } else
-            $(this).closest("div").empty();
+            $(self).closest("div").empty();
+    }, function () {
+        $(self).closest("div").empty();
     });
 }
 
@@ -5846,7 +5864,7 @@ function make_tag_column_callback(f) {
 function render_needed() {
     self || initialize();
     scorechart();
-    render_allpref();
+    $(".need-allpref").each(render_allpref);
     $(".need-tags").each(function () {
         render_row_tags(this.parentNode);
     });
@@ -7006,6 +7024,43 @@ handle_ui.on("js-annotate-order", function (event) {
 });
 
 var paperlist_ui = (function ($) {
+
+handle_ui.on("js-tag-list-action", function () {
+    $("input.js-submit-action-info-tag").each(function () {
+        this.name === "tag" && suggest(this, taghelp_tset);
+    });
+    $("select.js-submit-action-info-tag").on("change", function () {
+        var $t = $(this).closest(".linelink"),
+            $ty = $t.find("select[name=tagfn]");
+        foldup.call($t[0], null, {f: $ty.val() !== "cr", n: 99});
+        foldup.call($t[0], null, {f: $ty.val() === "cr"
+            || (!$t.find("input[name=tagcr_source]").val()
+                && $t.find("input[name=tagcr_method]").val() !== "schulze"
+                && !$t.find("input[name=tagcr_gapless]").is(":checked"))});
+    }).trigger("change");
+});
+
+handle_ui.on("js-assign-list-action", function () {
+    var self = this;
+    removeClass(self, "ui-unfold");
+    hotcrp_pc_promise.then(function (pc) {
+        $(self).find("select[name=markpc]").each(populate_pcselector);
+        $(".js-submit-action-info-assign").on("change", function () {
+            var $mpc = $(self).find("select[name=markpc]"),
+                afn = $(this).val();
+            foldup.call(self, null, {f: afn === "auto"});
+            if (afn === "lead" || afn === "shepherd") {
+                $(self).find(".js-assign-for").html("to");
+                if (!$mpc.find("option[value=0]").length)
+                    $mpc.prepend('<option value="0">None</option>');
+            } else {
+                $(self).find(".js-assign-for").html("for");
+                $mpc.find("option[value=0]").remove();
+            }
+        }).trigger("change");
+    });
+});
+
 function paperlist_submit(event) {
     // analyze why this is being submitted
     var $self = $(this), fn = $self.data("submitMark");
@@ -7048,26 +7103,10 @@ function paperlist_submit(event) {
     this.action = action;
 }
 
-function paperlist_ui(event) {
+return function (event) {
     if (event.type === "submit")
         paperlist_submit.call(this, event);
-}
-paperlist_ui.prepare_tag_listaction = function () {
-    $("input.js-submit-action-info-tag").each(function () {
-        this.name === "tag" && suggest(this, taghelp_tset);
-    });
-    function placttag() {
-        var $t = $(this).closest(".linelink"),
-            $ty = $t.find("select[name=tagfn]");
-        foldup.call($t[0], null, {f: $ty.val() !== "cr", n: 99});
-        foldup.call($t[0], null, {f: $ty.val() === "cr"
-            || (!$t.find("input[name=tagcr_source]").val()
-                && $t.find("input[name=tagcr_method]").val() !== "schulze"
-                && !$t.find("input[name=tagcr_gapless]").is(":checked"))});
-    }
-    $("select.js-submit-action-info-tag").on("change", placttag).trigger("change");
 };
-return paperlist_ui;
 })($);
 
 handle_ui.on("js-assign-review", function (event) {

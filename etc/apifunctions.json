@@ -62,6 +62,10 @@
         "callback": "PaperApi::mentioncompletion_api"
     },
     {
+        "name": "pc", "get": true, "post": true,
+        "callback": "PaperPC_API::pc_api"
+    },
+    {
         "name": "review", "paper": true, "get": true, "post": true,
         "callback": "PaperApi::review_api"
     },

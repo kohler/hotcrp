@@ -38,4 +38,11 @@ class PaperPC_API {
     static function manager_api(Contact $user, Qrequest $qreq, $prow) {
         return self::run($user, $qreq, $prow, "manager");
     }
+
+    static function pc_api(Contact $user, Qrequest $qreq, $prow) {
+        if (!$user->can_view_pc())
+            return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
+        $pc = $user->conf->hotcrp_pc_json($user);
+        return ["ok" => true, "pc" => $pc];
+    }
 }

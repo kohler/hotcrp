@@ -4,8 +4,6 @@
 
 class Tag_ListAction extends ListAction {
     static function render(PaperList $pl) {
-        Ht::stash_script('$(paperlist_ui.prepare_tag_listaction)', "Tag_ListAction script");
-
         // tagtype cell
         $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
         $tagextra = ["class" => "js-submit-action-info-tag"];
@@ -37,7 +35,7 @@ class Tag_ListAction extends ListAction {
         }
 
         return [Ht::select("tagfn", $tagopt, $pl->qreq->tagfn, $tagextra) . " &nbsp;",
-            ["linelink-class" => "has-fold foldc fold99c", "content" => $t]];
+            ["linelink-class" => "has-fold foldc fold99c ui-unfold js-tag-list-action", "content" => $t]];
     }
     function allow(Contact $user) {
         return $user->can_change_some_tag();

@@ -3448,9 +3448,7 @@ class Conf {
         echo Ht::unstash(), "</body>\n</html>\n";
     }
 
-    function stash_hotcrp_pc(Contact $user) {
-        if (!Ht::mark_stash("hotcrp_pc"))
-            return;
+    function hotcrp_pc_json(Contact $user) {
         $hpcj = $list = [];
         foreach ($this->pc_members() as $pcm) {
             $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_text_for($pcm), "email" => $pcm->email];
@@ -3468,7 +3466,14 @@ class Conf {
         $hpcj["__order__"] = $list;
         if ($this->sort_by_last)
             $hpcj["__sort__"] = "last";
-        Ht::stash_script("hotcrp_pc=" . json_encode_browser($hpcj) . ";");
+        if ($user->can_view_contact_tags())
+            $hpcj["__tags__"] = array_values($this->pc_tags());
+        return $hpcj;
+    }
+
+    function stash_hotcrp_pc(Contact $user) {
+        if (Ht::mark_stash("hotcrp_pc"))
+            Ht::stash_script("hotcrp_pc=" . json_encode_browser($this->hotcrp_pc_json($user)) . ";");
     }
 
 
