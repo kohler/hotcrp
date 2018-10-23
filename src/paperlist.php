@@ -617,16 +617,16 @@ class PaperList {
             $foot .= '<td class="plf pl_footselector" colspan="' . $arrow_ncol . '">'
                 . Icons::ui_upperleft() . "</td>\n   ";
         }
-        $foot .= '<td id="plact" class="plf pl_footer linelinks" colspan="' . $ncol . '">';
+        $foot .= '<td id="plact" class="plf pl-footer linelinks" colspan="' . $ncol . '">';
 
         if ($header) {
-            $foot .= "<table class=\"pl_footerpart\"><tbody><tr>\n"
-                . '    <td class="pl_footer_desc">' . $header . "</td>\n"
+            $foot .= "<table class=\"pl-footer-part\"><tbody><tr>\n"
+                . '    <td class="pl-footer-desc">' . $header . "</td>\n"
                 . '   </tr></tbody></table>';
         }
 
         foreach ($lllgroups as $i => $lllg) {
-            $attr = ["class" => "linelink pl_footerpart"];
+            $attr = ["class" => "linelink pl-footer-part"];
             if ($i === $activegroup)
                 $attr["class"] .= " active";
             for ($j = 2; $j < count($lllg); ++$j) {
@@ -645,7 +645,7 @@ class PaperList {
             foreach ($attr as $k => $v)
                 $foot .= " $k=\"" . htmlspecialchars($v) . "\"";
             $foot .= "><tbody><tr>\n"
-                . "    <td class=\"pl_footer_desc lll\"><a class=\"ui tla\" href=\""
+                . "    <td class=\"pl-footer-desc lll\"><a class=\"ui tla\" href=\""
                 . $lllg[0] . "\">" . $lllg[1] . "</a></td>\n";
             for ($j = 2; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];

@@ -5857,7 +5857,7 @@ function render_needed() {
 
 function add_column(f) {
     var index = field_index(f), $j = $(self);
-    $j.find("tr.plx > td.plx, td.pl_footer, tr.plheading > td:last-child, " +
+    $j.find("tr.plx > td.plx, td.pl-footer, tr.plheading > td:last-child, " +
             "thead > tr.pl_headrow.pl_annorow > td:last-child, " +
             "tfoot > tr.pl_statheadrow > td:last-child").each(function () {
         this.setAttribute("colspan", +this.getAttribute("colspan") + 1);

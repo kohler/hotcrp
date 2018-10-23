@@ -1751,7 +1751,7 @@ tr.pl_statheadrow {
 tr.pl_statheadrow > td.plstat {
 	border-top: 1px solid #cccccc;
 }
-.pl_footselector, .pl_footer_desc {
+.pl_footselector, .pl-footer-desc {
 	line-height: 2;
 }
 .pl_footselector {
@@ -1760,7 +1760,7 @@ tr.pl_statheadrow > td.plstat {
 	padding-right: 6px;
 	vertical-align: top;
 }
-.pl_footerpart {
+.pl-footer-part {
 	float: left;
 }
 
