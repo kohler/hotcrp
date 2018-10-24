@@ -2046,7 +2046,6 @@ class PaperTable {
             && $this->conf->timePCReviewPreferences()
             && ($this->user->roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR)))
             $this->papstripReviewPreference();
-        echo Ht::unstash_script("$(\".need-pcselector\").each(populate_pcselector)");
     }
 
     function _paptabTabLink($text, $link, $image, $highlight) {

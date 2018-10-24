@@ -78,56 +78,66 @@ function add_callback(cb1, cb2) {
 
 
 // promises
-function HPromise(value) {
-    this.value = value;
-    this.state = value === undefined ? false : 1;
+function HPromise(executor) {
+    this.state = -1;
     this.c = [];
+    if (executor) {
+        try {
+            executor(this._resolver(1), this._resolver(0));
+        } catch (e) {
+            this._resolver(0)(e);
+        }
+    }
 }
+HPromise.prototype._resolver = function (state) {
+    var self = this;
+    return function (value) {
+        if (self.state === -1) {
+            self.state = state;
+            self.value = value;
+            self._resolve();
+        }
+    };
+};
 HPromise.prototype.then = function (yes, no) {
     var next = new HPromise;
     this.c.push([no, yes, next]);
-    if (this.state !== false)
+    if (this.state === 0 || this.state === 1)
         this._resolve();
-    else if (this.on) {
-        this.on(this);
-        this.on = null;
-    }
     return next;
 };
 HPromise.prototype._resolve = function () {
-    var i, x, f, v;
+    var i, x, ss = this.state, s, v, f;
+    this.state = 2;
     for (i in this.c) {
         x = this.c[i];
-        f = x[this.state];
+        s = ss;
+        v = this.value;
+        f = x[s];
         if ($.isFunction(f)) {
             try {
-                v = f(this.value);
-                x[2].fulfill(v);
+                v = f(v);
             } catch (e) {
-                x[2].reject(e);
+                s = 0;
+                v = e;
             }
-        } else
-            x[2][this.state ? "fulfill" : "reject"](this.value);
+        }
+        x[2]._resolver(s)(v);
     }
     this.c = [];
+    this.state = ss;
 };
-HPromise.prototype.fulfill = function (value) {
-    if (this.state === false) {
-        this.value = value;
-        this.state = 1;
-        this._resolve();
-    }
+HPromise.resolve = function (value) {
+    var p = new HPromise;
+    p.value = value;
+    p.state = 1;
+    return p;
 };
-HPromise.prototype.reject = function (reason) {
-    if (this.state === false) {
-        this.value = reason;
-        this.state = 0;
-        this._resolve();
-    }
-};
-HPromise.prototype.onThen = function (f) {
-    this.on = add_callback(this.on, f);
-    return this;
+HPromise.reject = function (reason) {
+    var p = new HPromise;
+    p.value = reason;
+    p.state = 0;
+    return p;
 };
 
 
@@ -3993,40 +4003,6 @@ function strnatcmp(a, b) {
         return 1;
 }
 
-var alltags = new HPromise().onThen(function (p) {
-    if (hotcrp_user.is_pclike)
-        jQuery.get(hoturl("api/alltags"), null, function (v) {
-            var tlist = (v && v.tags) || [];
-            tlist.sort(strnatcmp);
-            p.fulfill(tlist);
-        });
-    else
-        p.fulfill([]);
-});
-
-tooltip.add_builder("votereport", function (info) {
-    var pid = $(this).attr("data-pid") || hotcrp_paperid,
-        tag = $(this).attr("data-tag");
-    if (pid && tag)
-        info.content = new HPromise().onThen(function (p) {
-            $.get(hoturl("api/votereport", {p: pid, tag: tag}), function (rv) {
-                p.fulfill(rv.ok ? rv.result || "" : rv.error);
-            });
-        });
-});
-
-var allmentions = new HPromise().onThen(function (p) {
-    if (hotcrp_user.is_pclike)
-        jQuery.get(hoturl("api/mentioncompletion", hotcrp_paperid ? {p: hotcrp_paperid} : null), null, function (v) {
-            var tlist = (v && v.mentioncompletion) || [];
-            tlist = tlist.map(completion_item);
-            tlist.sort(function (a, b) { return strnatcmp(a.s, b.s); });
-            p.fulfill(tlist);
-        });
-    else
-        p.fulfill([]);
-});
-
 function completion_item(c) {
     if (typeof c === "string")
         return {s: c};
@@ -4040,8 +4016,30 @@ function completion_item(c) {
 }
 
 
-var search_completion = new HPromise().onThen(function (search_completion) {
-    jQuery.get(hoturl("api/searchcompletion"), null, function (v) {
+var demand_load = {};
+
+demand_load.make = function (executor) {
+    var promise;
+    return function (value) {
+        if (!promise) {
+            if (value != null)
+                promise = HPromise.resolve(value);
+            else
+                promise = new HPromise(executor);
+        }
+        return promise;
+    };
+}
+
+demand_load.pc = demand_load.make(function (resolve, reject) {
+    $.get(hoturl("api/pc", {p: hotcrp_paperid}), null, function (v) {
+        var pc = v && v.ok && v.pc;
+        (pc ? resolve : reject)(pc);
+    });
+});
+
+demand_load.search_completion = demand_load.make(function (resolve, reject) {
+    $.get(hoturl("api/searchcompletion"), null, function (v) {
         var sc = (v && v.searchcompletion) || [],
             scs = $.grep(sc, function (x) { return typeof x === "string"; }),
             sci = $.grep(sc, function (x) { return typeof x === "object"; }),
@@ -4056,21 +4054,42 @@ var search_completion = new HPromise().onThen(function (search_completion) {
             });
             Array.prototype.push.apply(result, item.i);
         });
-        search_completion.fulfill(result);
+        resolve(result);
     });
 });
 
-
-var hotcrp_pc_promise = new HPromise().onThen(function (promise) {
-    if (hotcrp_pc != null)
-        promise.fulfill(hotcrp_pc);
+demand_load.tags = demand_load.make(function (resolve, reject) {
+    if (hotcrp_user.is_pclike)
+        $.get(hoturl("api/alltags"), null, function (v) {
+            var tlist = (v && v.tags) || [];
+            tlist.sort(strnatcmp);
+            resolve(tlist);
+        });
     else
-        jQuery.get(hoturl("api/pc", {p: hotcrp_paperid}), null, function (v) {
-            if (v && v.ok && v.pc) {
-                hotcrp_pc = v.pc;
-                promise.fulfill(v.pc);
-            } else
-                promise.reject(null);
+        resolve(tlist);
+});
+
+demand_load.mentions = demand_load.make(function (resolve, reject) {
+    if (hotcrp_user.is_pclike)
+        $.get(hoturl("api/mentioncompletion", {p: hotcrp_paperid}), null, function (v) {
+            var tlist = (v && v.mentioncompletion) || [];
+            tlist = tlist.map(completion_item);
+            tlist.sort(function (a, b) { return strnatcmp(a.s, b.s); });
+            resolve(tlist);
+        });
+    else
+        resolve([]);
+});
+
+
+tooltip.add_builder("votereport", function (info) {
+    var pid = $(this).attr("data-pid") || hotcrp_paperid,
+        tag = $(this).attr("data-tag");
+    if (pid && tag)
+        info.content = demand_load.make(function (resolve) {
+            $.get(hoturl("api/votereport", {p: pid, tag: tag}), function (rv) {
+                resolve(rv.ok ? rv.result || "" : rv.error);
+            });
         });
 });
 
@@ -4087,7 +4106,7 @@ function taghelp_tset(elt, options) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
-        return alltags.then(make_suggestions(m[2], n[1], options, {suffix: n[2]}));
+        return demand_load.tags().then(make_suggestions(m[2], n[1], options, {suffix: n[2]}));
     } else
         return null;
 }
@@ -4096,10 +4115,10 @@ function taghelp_q(elt, options) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagvalue:))([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
-        return alltags.then(make_suggestions(m[2], n[1], options));
+        return demand_load.tags().then(make_suggestions(m[2], n[1], options));
     } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
-        return search_completion.then(make_suggestions(m[2], n[1], options, {prefix: m[1]}));
+        return demand_load.search_completion().then(make_suggestions(m[2], n[1], options, {prefix: m[1]}));
     } else
         return null;
 }
@@ -4109,7 +4128,7 @@ function pc_tag_completion(elt, options) {
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^(\S*)/);
         f = make_suggestions(m[2], n[1], options);
-        return hotcrp_pc_promise.then(function (pc) { f(pc.__tags__ || []) });
+        return demand_load.pc().then(function (pc) { f(pc.__tags__ || []) });
     } else
         return null;
 }
@@ -4118,7 +4137,7 @@ function comment_completion_q(elt, options) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[\s,;])@([-\w_.]*)$/))) {
         n = x[1].match(/^([-\w_.]*)/);
-        return allmentions.then(make_suggestions(m[1], n[1], options));
+        return demand_load.mentions().then(make_suggestions(m[1], n[1], options));
     } else
         return null;
 }
@@ -5674,7 +5693,7 @@ function pidfield(pid, f, index) {
 
 function render_allpref() {
     var self = this;
-    hotcrp_pc_promise.then(function (pcs) {
+    demand_load.pc().then(function (pcs) {
         var t = [], m,
             pid = pidnear(self),
             allpref = pidattr(pid, "data-allpref") || "",
@@ -7043,8 +7062,10 @@ handle_ui.on("js-tag-list-action", function () {
 handle_ui.on("js-assign-list-action", function () {
     var self = this;
     removeClass(self, "ui-unfold");
-    hotcrp_pc_promise.then(function (pc) {
-        $(self).find("select[name=markpc]").each(populate_pcselector);
+    demand_load.pc().then(function (pcs) {
+        $(self).find("select[name=markpc]").each(function () {
+            populate_pcselector.call(this, pcs);
+        });
         $(".js-submit-action-info-assign").on("change", function () {
             var $mpc = $(self).find("select[name=markpc]"),
                 afn = $(this).val();
@@ -7114,8 +7135,8 @@ handle_ui.on("js-unfold-pcselector", function () {
     removeClass(this, "ui-unfold");
     var $pc = $(this).find("select[data-pcselector-options]");
     if ($pc.length)
-        hotcrp_pc_promise.then(function () {
-            $pc.each(populate_pcselector);
+        demand_load.pc().then(function (pcs) {
+            $pc.each(function () { populate_pcselector.call(this, pcs); });
         });
 });
 
@@ -7442,21 +7463,22 @@ $(".js-radio-focus").on("click keypress", "input, select", function (event) {
 
 
 // PC selectors
-function populate_pcselector() {
+function populate_pcselector(pcs) {
+    removeClass(this, "need-pcselector");
     var optids = this.getAttribute("data-pcselector-options") || "*";
     if (optids.charAt(0) === "[")
         optids = JSON.parse(optids);
     else
         optids = optids.split(/[\s,]+/);
     var selected = this.getAttribute("data-pcselector-selected"), selindex = 0;
-    var last_first = hotcrp_pc.__sort__ === "last", used = {};
+    var last_first = pcs.__sort__ === "last", used = {};
 
     for (var i = 0; i < optids.length; ++i) {
         var cid = optids[i], email, name, p;
         if (cid === "" || cid === "*")
-            optids.splice.apply(optids, [i + 1, 0].concat(hotcrp_pc.__order__));
+            optids.splice.apply(optids, [i + 1, 0].concat(pcs.__order__));
         else if (cid === "assignable")
-            optids.splice.apply(optids, [i + 1, 0].concat(hotcrp_pc.__assignable__[hotcrp_paperid] || []));
+            optids.splice.apply(optids, [i + 1, 0].concat(pcs.__assignable__[hotcrp_paperid] || []));
         else if (cid === "selected") {
             if (selected != null)
                 optids.splice.apply(optids, [i + 1, 0, selected]);
@@ -7467,7 +7489,7 @@ function populate_pcselector() {
                 name = optids[i];
                 if (name === "" || name === "0")
                     name = "None";
-            } else if ((p = hotcrp_pc[cid])) {
+            } else if ((p = pcs[cid])) {
                 email = p.email;
                 name = p.name;
                 if (last_first && p.lastpos) {
@@ -7488,10 +7510,13 @@ function populate_pcselector() {
         }
     }
     this.selectedIndex = selindex;
-    $(this).removeClass("need-pcselector");
 }
 
-$(function () { $(".need-pcselector").each(populate_pcselector); });
+$(function () {
+    $(".need-pcselector").length && demand_load.pc().then(function (pcs) {
+        $(".need-pcselector").each(function () { populate_pcselector.call(this, pcs); });
+    });
+});
 
 
 // score information

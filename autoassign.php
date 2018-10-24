@@ -710,8 +710,7 @@ $("#bptable a.js-badpairs-row").on("click", function () {
         tbody.children().last().remove();
     }
     return false;
-});
-$(".need-pcselector").each(populate_pcselector)');
+});');
 
 
 // Load balancing

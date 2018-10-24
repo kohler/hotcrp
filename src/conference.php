@@ -3487,7 +3487,7 @@ class Conf {
 
     function stash_hotcrp_pc(Contact $user) {
         if (Ht::mark_stash("hotcrp_pc"))
-            Ht::stash_script("hotcrp_pc=" . json_encode_browser($this->hotcrp_pc_json($user)) . ";");
+            Ht::stash_script("demand_load.pc(" . json_encode_browser($this->hotcrp_pc_json($user)) . ");");
     }
 
 
