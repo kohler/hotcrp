@@ -1668,13 +1668,14 @@ class Conf {
 
             uasort($pc, "Contact::compare");
             $this->_pc_members_and_admins_cache = $pc;
-            $pc = array_filter($pc, function ($p) { return ($p->roles & Contact::ROLE_PC) != 0; });
-            $order = 0;
-            foreach ($pc as $u) {
-                $u->sort_position = $order;
-                ++$order;
-            }
-            $this->_pc_members_cache = $pc;
+
+            $this->_pc_members_cache = [];
+            foreach ($pc as $u)
+                if ($u->roles & Contact::ROLE_PC) {
+                    $u->sort_position = count($this->_pc_members_cache);
+                    $this->_pc_members_cache[$u->contactId] = $u;
+                }
+
             ksort($this->_pc_tags_cache);
         }
         return $this->_pc_members_cache;
@@ -3474,6 +3475,13 @@ class Conf {
             $hpcj["__sort__"] = "last";
         if ($user->can_view_contact_tags())
             $hpcj["__tags__"] = array_values($this->pc_tags());
+        if ($this->paper && $user->allow_administer($this->paper)) {
+            $list = [];
+            foreach ($this->pc_members() as $pcm)
+                if ($pcm->can_accept_review_assignment($this->paper))
+                    $list[] = $pcm->contactId;
+            $hpcj["__assignable__"] = [$this->paper->paperId => $list];
+        }
         return $hpcj;
     }
 

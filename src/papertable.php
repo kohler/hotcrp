@@ -1507,7 +1507,7 @@ class PaperTable {
             return;
         $value = $this->prow->$field;
 
-        $this->_papstripBegin($type, true);
+        $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector"] : "");
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv">';
         $p = $this->conf->pc_member_by_id($value);
@@ -1519,15 +1519,9 @@ class PaperTable {
         echo '">', $text, '</div>';
 
         if ($editable) {
-            $selopt = [0];
-            foreach ($this->conf->pc_members() as $p)
-                if (!$this->prow
-                    || $p->can_accept_review_assignment($this->prow)
-                    || $p->contactId == $value)
-                    $selopt[] = $p->contactId;
             $this->conf->stash_hotcrp_pc($this->user);
             echo '<form class="submit-ui fx"><div>',
-                Ht::select($type, [], 0, ["class" => "psc-select need-pcselector want-focus", "style" => "width:99%", "data-pcselector-options" => join(" ", $selopt), "data-pcselector-selected" => $value]),
+                Ht::select($type, [], 0, ["class" => "psc-select want-focus", "style" => "width:99%", "data-pcselector-options" => "0 assignable selected", "data-pcselector-selected" => $value]),
                 '</div></form>';
             Ht::stash_script('edit_paper_ui.prepare_psedit.call($$("fold' . $type . '"),{p:' . $this->prow->paperId . ',fn:"' . $type . '"})');
         }

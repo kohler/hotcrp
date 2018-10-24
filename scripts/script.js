@@ -4065,7 +4065,7 @@ var hotcrp_pc_promise = new HPromise().onThen(function (promise) {
     if (hotcrp_pc != null)
         promise.fulfill(hotcrp_pc);
     else
-        jQuery.get(hoturl("api/pc"), null, function (v) {
+        jQuery.get(hoturl("api/pc", {p: hotcrp_paperid}), null, function (v) {
             if (v && v.ok && v.pc) {
                 hotcrp_pc = v.pc;
                 promise.fulfill(v.pc);
@@ -7109,6 +7109,17 @@ return function (event) {
 };
 })($);
 
+
+handle_ui.on("js-unfold-pcselector", function () {
+    removeClass(this, "ui-unfold");
+    var $pc = $(this).find("select[data-pcselector-options]");
+    if ($pc.length)
+        hotcrp_pc_promise.then(function () {
+            $pc.each(populate_pcselector);
+        });
+});
+
+
 handle_ui.on("js-assign-review", function (event) {
     var form, m;
     if (event.type !== "change"
@@ -7441,31 +7452,39 @@ function populate_pcselector() {
     var last_first = hotcrp_pc.__sort__ === "last", used = {};
 
     for (var i = 0; i < optids.length; ++i) {
-        if (optids[i] === "" || optids[i] === "*")
-            optids.splice.apply(optids, [i, 1].concat(hotcrp_pc.__order__));
-        var cid = +optids[i], email, name, p;
-        if (!cid) {
-            email = "none";
-            name = optids[i];
-            if (name === "" || name === "0")
-                name = "None";
-        } else if ((p = hotcrp_pc[cid])) {
-            email = p.email;
-            name = p.name;
-            if (last_first && p.lastpos) {
-                var nameend = p.emailpos ? p.emailpos - 1 : name.length;
-                name = name.substring(p.lastpos, nameend) + ", " + name.substring(0, p.lastpos - 1) + name.substring(nameend);
+        var cid = optids[i], email, name, p;
+        if (cid === "" || cid === "*")
+            optids.splice.apply(optids, [i + 1, 0].concat(hotcrp_pc.__order__));
+        else if (cid === "assignable")
+            optids.splice.apply(optids, [i + 1, 0].concat(hotcrp_pc.__assignable__[hotcrp_paperid] || []));
+        else if (cid === "selected") {
+            if (selected != null)
+                optids.splice.apply(optids, [i + 1, 0, selected]);
+        } else {
+            cid = +optids[i];
+            if (!cid) {
+                email = "none";
+                name = optids[i];
+                if (name === "" || name === "0")
+                    name = "None";
+            } else if ((p = hotcrp_pc[cid])) {
+                email = p.email;
+                name = p.name;
+                if (last_first && p.lastpos) {
+                    var nameend = p.emailpos ? p.emailpos - 1 : name.length;
+                    name = name.substring(p.lastpos, nameend) + ", " + name.substring(0, p.lastpos - 1) + name.substring(nameend);
+                }
+            } else
+                continue;
+            if (!used[email]) {
+                used[email] = true;
+                var opt = document.createElement("option");
+                opt.setAttribute("value", email);
+                opt.text = name;
+                this.add(opt);
+                if (email === selected || (email !== "none" && cid == selected))
+                    selindex = this.options.length - 1;
             }
-        } else
-            continue;
-        if (!used[email]) {
-            used[email] = true;
-            var opt = document.createElement("option");
-            opt.setAttribute("value", email);
-            opt.text = name;
-            this.add(opt);
-            if (email === selected || (email !== "none" && cid == selected))
-                selindex = this.options.length - 1;
         }
     }
     this.selectedIndex = selindex;
