@@ -7800,7 +7800,7 @@ return function (j) {
 
 // home activity
 (function ($) {
-var events = null, events_at = 0;
+var events = null, events_at = 0, events_more = null;
 
 function load_more_events() {
     $.ajax(hoturl("api/events", (events_at ? {from: events_at} : null)), {
@@ -7809,11 +7809,8 @@ function load_more_events() {
             if (data.ok) {
                 events = (events || []).concat(data.rows);
                 events_at = data.to;
-                $(".has-events").each(function () {
-                    render_events(this, data.rows);
-                    if (data.more === false)
-                        $(this).find(".eventtable-more").addClass("hidden");
-                });
+                events_more = data.more;
+                $(".has-events").each(function () { render_events(this, data.rows); });
             }
         }
     });
@@ -7828,12 +7825,16 @@ function render_events(e, rows) {
     }
     for (var i = 0; i < rows.length; ++i)
         j.append(rows[i]);
+    if (events_more === false)
+        $(e).find(".eventtable-more").addClass("hidden");
+    if (events_more === false && !events.length)
+        j.append("<tr><td>No recent activity in papers you’re following</td></tr>");
 }
 
 handle_ui.on("js-open-activity", function () {
     removeClass(this, "ui-unfold");
     var $e = $("<div class=\"fx20 has-events\"></div>").appendTo(this);
-    events ? render_events(this, events) : load_more_events();
+    events ? render_events(this, events, true) : load_more_events();
 });
 })(jQuery);
 
