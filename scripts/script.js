@@ -2883,7 +2883,7 @@ $(function () {
     }
     if ($(".paperinfo-abstract").length) {
         check_abstract_height();
-        $("#foldpaper").on("fold renderText", check_abstract_height);
+        $("#foldpaper").on("fold unfold renderText", check_abstract_height);
         $(window).on("resize", check_abstract_height);
     }
 });
@@ -7799,7 +7799,7 @@ return function (j) {
 
 
 // home activity
-var unfold_events = (function ($) {
+(function ($) {
 var events = null, events_at = 0;
 
 function load_more_events() {
@@ -7830,13 +7830,11 @@ function render_events(e, rows) {
         j.append(rows[i]);
 }
 
-return function (e) {
-    var j = $(e);
-    if (!j.find(".has-events").length) {
-        j = $("<div class=\"fx20 has-events\"></div>").appendTo(j);
-        events ? render_events(j[0], events) : load_more_events();
-    }
-};
+handle_ui.on("js-open-activity", function () {
+    removeClass(this, "ui-unfold");
+    var $e = $("<div class=\"fx20 has-events\"></div>").appendTo(this);
+    events ? render_events(this, events) : load_more_events();
+});
 })(jQuery);
 
 

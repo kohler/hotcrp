@@ -401,11 +401,10 @@ class Home_Partial {
             echo "</div>";
 
         if ($user->is_reviewer()) {
-            echo "<div class=\"homesubgrp has-fold fold20c\" id=\"homeactivity\" data-fold-session=\"foldhomeactivity\">",
+            echo "<div class=\"homesubgrp has-fold fold20c ui-unfold js-open-activity\" id=\"homeactivity\" data-fold-session=\"foldhomeactivity\">",
                 foldupbutton(20),
                 "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class='fx20'>:</span></a>",
                 "</div>";
-            Ht::stash_script('$("#homeactivity").on("fold", function(e,opts) { opts.f || unfold_events(this); })');
             if (!$conf->session("foldhomeactivity", 1))
                 Ht::stash_script("foldup.call(\$(\"#homeactivity\")[0],null,20)");
         }
