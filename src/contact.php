@@ -2328,7 +2328,7 @@ class Contact {
 
     function can_view_missing_papers() {
         return $this->privChair
-            || ($this->isPC && $this->conf->check_all_tracks($this, Track::TRACK_VIEW));
+            || ($this->isPC && $this->conf->check_all_tracks($this, Track::VIEW));
     }
 
     function no_paper_whynot($pid) {
