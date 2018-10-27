@@ -362,9 +362,9 @@ function proj2(d) {
 
 function pid_sorter(a, b) {
     if (typeof a === "object")
-        a = a.id;
+        a = a.id || a[2];
     if (typeof b === "object")
-        b = b.id;
+        b = b.id || b[2];
     var d = (typeof a === "string" ? parseInt(a, 10) : a) -
             (typeof b === "string" ? parseInt(b, 10) : b);
     return d ? d : (a < b ? -1 : (a == b ? 0 : 1));
@@ -376,9 +376,14 @@ function pid_renderer(ps, cc) {
     for (var i = 0; i !== ps.length; ++i) {
         var p = ps[i], cx = cc, rest = null;
         if (typeof p === "object") {
-            rest = p.rest;
-            cx = p.color_classes;
-            p = p.id;
+            if (p.id) {
+                rest = p.rest;
+                cx = p.color_classes;
+                p = p.id;
+            } else {
+                cx = p[3];
+                p = p[2];
+            }
         }
         if (cx) {
             make_pattern_fill(cx);
@@ -388,6 +393,8 @@ function pid_renderer(ps, cc) {
         var comma = i === ps.length - 1 ? "" : ","
         if (rest)
             a.push('<span class="nw">' + p + rest + comma + '</span>');
+        else if (cx && comma)
+            a.push('<span class="nw">' + p + comma + '</span>');
         else
             a.push(p + comma);
     }
@@ -543,10 +550,14 @@ function graph_cdf(selector, args) {
 
     make_axes(svg, xAxis, yAxis, args);
 
-    svg.append("rect").attr("x", -args.left).attr("width", args.width + args.left)
+    svg.append("rect")
+        .attr("x", -args.left)
+        .attr("width", args.width + args.left)
         .attr("height", args.height + args.bottom)
-        .attr("fill", "none").style("pointer-events", "all")
-        .on("mouseover", mousemoved).on("mousemove", mousemoved)
+        .attr("fill", "none")
+        .style("pointer-events", "all")
+        .on("mouseover", mousemoved)
+        .on("mousemove", mousemoved)
         .on("mouseout", mouseout);
 
     var hovered_path, hubble;
@@ -724,7 +735,12 @@ function grouped_quadtree(data, xs, ys, rf) {
             vp[2].push(d);
             vp.n += 1;
         } else {
-            vp ? vp.next = vd : q.add(vd);
+            if (vp) {
+                vp.next = vd;
+                vd.head = vp.head || vp;
+            } else {
+                q.add(vd);
+            }
             vd.n = 1;
             vd.i = nd.length;
             nd.push(vd);
@@ -843,6 +859,26 @@ function scatter_highlight(svg, data, klass) {
         });
 }
 
+function scatter_union(p) {
+    if (p.head)
+        p = p.head;
+    if (!p.next)
+        return p;
+    if (!p.union) {
+        console.log(p);
+        var u = [p[0], p[1], [].concat(p[2]), p[3]], pp = p.next;
+        u.r = p.r;
+        while (pp) {
+            u.r = Math.max(u.r, pp.r);
+            Array.prototype.push.apply(u[2], pp[2]);
+            pp = pp.next;
+        }
+        u[2].sort(pid_sorter);
+        p.union = u;
+    }
+    return p.union;
+}
+
 function graph_scatter(selector, args) {
     var data = data_to_scatter(args.data),
         svg = this;
@@ -869,11 +905,16 @@ function graph_scatter(selector, args) {
 
     make_axes(svg, xAxis, yAxis, args);
 
-    svg.append("rect").attr("x", -args.left).attr("width", args.width + args.left)
+    svg.append("rect")
+        .attr("x", -args.left)
+        .attr("width", args.width + args.left)
         .attr("height", args.height + args.bottom)
-        .attr("fill", "none").style("pointer-events", "all")
-        .on("mouseover", mousemoved).on("mousemove", mousemoved)
-        .on("mouseout", mouseout).on("click", mouseclick);
+        .attr("fill", "none")
+        .style("pointer-events", "all")
+        .on("mouseover", mousemoved)
+        .on("mousemove", mousemoved)
+        .on("mouseout", mouseout)
+        .on("click", mouseclick);
 
     function make_tooltip(p, ps) {
         return '<p>' + position_label(xAxis, p[0]) + ', ' +
@@ -884,6 +925,8 @@ function graph_scatter(selector, args) {
     var hovered_data, hubble;
     function mousemoved() {
         var m = d3.mouse(this), p = data.quadtree.gfind(m, 4);
+        if (p && (p.head || p.next))
+            p = scatter_union(p);
         if (p != hovered_data) {
             if (p)
                 hovers.datum(p)
@@ -897,8 +940,9 @@ function graph_scatter(selector, args) {
         }
         if (p) {
             hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-            hubble.html(make_tooltip(p[2][0], p[2].map(proj2)))
-                .dir("b").near(hovers.node());
+            hubble.html(make_tooltip(p[2][0], p[2]))
+                .dir("b")
+                .near(hovers.node());
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
