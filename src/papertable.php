@@ -112,7 +112,7 @@ class PaperTable {
 
         if ($user->can_view_authors($prow))
             $this->view_authors = 2;
-        $olist = $this->conf->paper_opts->option_list_type(!$this->canUploadFinal);
+        $olist = $this->conf->paper_opts->option_list_type(!$prow || $prow->outcome <= 0);
         foreach ($olist as $o) {
             if ($user->can_view_paper_option($prow, $o))
                 $this->view_options[$o->id] = 2;
