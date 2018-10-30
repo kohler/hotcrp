@@ -602,7 +602,8 @@ class DocumentInfo implements JsonSerializable {
                 $s3l = $adocs[$i][1];
                 curl_multi_remove_handle($curlm, $s3l->curlh);
                 $s3l->parse_result();
-                if (($s3l->status !== null && $s3l->status !== 500) || $s3l->runindex >= 5) {
+                if (($s3l->status !== null && $s3l->status !== 0 && $s3l->status !== 500)
+                    || $s3l->runindex >= 5) {
                     $adocs[$i][0]->handle_load_s3_curl($s3l, $adocs[$i][3]);
                     array_splice($adocs, $i, 1);
                 } else {

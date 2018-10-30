@@ -49,7 +49,7 @@ class S3Document extends S3Result {
     private $s3_signing_key;
     private $fixed_time;
 
-    static public $retry_timeout_allowance = 4; // in seconds
+    static public $retry_timeout_allowance = 10; // in seconds
     static private $instances = [];
 
     function __construct($opt = []) {

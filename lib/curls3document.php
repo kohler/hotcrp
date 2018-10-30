@@ -16,8 +16,8 @@ class CurlS3Document extends S3Result {
     function __construct(S3Document $s3, $skey, $method, $args, $dstream) {
         $this->s3 = $s3;
         $this->curlh = curl_init();
-        curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($this->curlh, CURLOPT_TIMEOUT, 15);
+        curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($this->curlh, CURLOPT_TIMEOUT, 6);
         $this->hstream = fopen("php://memory", "w+b");
         curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->hstream);
         $this->dstream = $dstream;
@@ -32,8 +32,9 @@ class CurlS3Document extends S3Result {
         $this->clear_result();
         if (++$this->runindex > 1) {
             curl_setopt($this->curlh, CURLOPT_FRESH_CONNECT, true);
-            curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 10);
-            curl_setopt($this->curlh, CURLOPT_TIMEOUT, 30);
+            $tf = $this->runindex > 2 ? 2 : 1;
+            curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 6 * $tf);
+            curl_setopt($this->curlh, CURLOPT_TIMEOUT, 15 * $tf);
             rewind($this->hstream);
             ftruncate($this->hstream, 0);
             rewind($this->dstream);
