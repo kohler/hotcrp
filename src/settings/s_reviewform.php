@@ -11,7 +11,7 @@ class ReviewForm_SettingParser extends SettingParser {
     private function check_options(SettingValues $sv, $fid, $fj) {
         $text = cleannl($sv->req["options_$fid"]);
         $letters = ($text && ord($text[0]) >= 65 && ord($text[0]) <= 90);
-        $expect = ($letters ? "[A-Z]" : "[1-9]");
+        $expect = ($letters ? "[A-Z]" : "[1-9][0-9]*");
 
         $opts = array();
         $lowonum = 10000;
@@ -20,10 +20,9 @@ class ReviewForm_SettingParser extends SettingParser {
         foreach (explode("\n", $text) as $line) {
             $line = trim($line);
             if ($line != "") {
-                if ((preg_match("/^($expect)\\.\\s*(\\S.*)/", $line, $m)
-                     || preg_match("/^($expect)\\s+(\\S.*)/", $line, $m))
+                if (preg_match("/^($expect)[\\.\\s]\\s*(\\S.*)/", $line, $m)
                     && !isset($opts[$m[1]])) {
-                    $onum = ($letters ? ord($m[1]) : (int) $m[1]);
+                    $onum = $letters ? ord($m[1]) : intval($m[1]);
                     $lowonum = min($lowonum, $onum);
                     $opts[$onum] = $m[2];
                 } else if (preg_match('/^(?:0\.\s*)?No entry$/i', $line))

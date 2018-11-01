@@ -234,68 +234,28 @@ function get_fid(elt) {
     return elt.id.replace(/^.*_/, "");
 }
 
+function unparse_option(fieldj, idx) {
+    if (fieldj.option_letter) {
+        var cc = fieldj.option_letter.charCodeAt(0);
+        return String.fromCharCode(cc + fieldj.options.length - idx);
+    } else
+        return idx.toString();
+}
+
 function options_to_text(fieldj) {
-    var cc = 49, ccdelta = 1, i, t = [];
+    var i, t = [];
     if (!fieldj.options)
         return "";
-    if (fieldj.option_letter) {
-        cc = fieldj.option_letter.charCodeAt(0) + fieldj.options.length - 1;
-        ccdelta = -1;
-    }
-    for (i = 0; i != fieldj.options.length; ++i, cc += ccdelta)
-        t.push(String.fromCharCode(cc) + ". " + fieldj.options[i]);
-    fieldj.option_letter && t.reverse();
-    fieldj.allow_empty && t.push("No entry");
-    t.length && t.push(""); // get a trailing newline
+    for (i = 0; i != fieldj.options.length; ++i)
+        t.push(unparse_option(fieldj, i + 1) + ". " + fieldj.options[i]);
+    if (fieldj.option_letter)
+        t.reverse();
+    if (fieldj.allow_empty)
+        t.push("No entry");
+    if (t.length)
+        t.push(""); // get a trailing newline
     return t.join("\n");
 }
-
-/* parse HTML form into JSON review form description -- currently unused
-function parse_field(fid) {
-    var fieldj = {name: $("#shortName_" + fid).val()}, x;
-    if ((x = $("#order_" + fid).val()))
-        fieldj.position = x|0;
-    if ((x = $.trim($("#description_" + fid).val())) !== "")
-        fieldj.description = x;
-    if ((x = $("#options_" + fid).val()) != "pc")
-        fieldj.visibility = x;
-    if (original[fid].options) {
-        if (!text_to_options(fieldj, $("#options_" + fid).val()))
-            return false;
-        x = $("#option_class_prefix_" + fid).val() || "sv";
-        if ($("#option_class_prefix_flipped_" + fid).val())
-            x = colors[(colors.indexOf(x) || 0) ^ 2];
-        if (x != "sv")
-            fieldj.option_class_prefix = x;
-    }
-    return fieldj;
-}
-
-function text_to_options(fieldj, text) {
-    var lines = $.split(/[\r\n\v]+/), i, s, cc, xlines = [], m;
-    for (i in lines)
-        if ((s = $.trim(lines[i])) !== "")
-            xlines.push(s);
-    xlines.sort();
-    if (xlines.length >= 1 && xlines.length <= 9
-        && /^[1A-Z](?:[.]|\s)\s*\S/.test(xlines[0]))
-        cc = xlines[0].charCodeAt(0);
-    else
-        return false;
-    lines = [];
-    for (i = 0; i < xlines.length; ++i)
-        if ((m = /^[1-9A-Z](?:[.]|\s)\s*(\S.*)\z/.exec(xlines[i]))
-            && xlines[i].charCodeAt(0) == cc + i)
-            lines.push(m[1]);
-        else
-            return false;
-    if (cc != 49) {
-        lines.reverse();
-        fieldj.option_letter = String.fromCharCode(cc + lines.length - 1);
-    }
-    fieldj.options = lines;
-    return true;
-} */
 
 function option_class_prefix(fieldj) {
     var sv = fieldj.option_class_prefix || "sv";
@@ -410,13 +370,9 @@ tooltip.add_builder("settings-option", function (info) {
 });
 
 function option_value_html(fieldj, value) {
-    var cc = 48, ccdelta = 1, t, n;
+    var t, n;
     if (!value || value < 0)
         return ["", "No entry"];
-    if (fieldj.option_letter) {
-        cc = fieldj.option_letter.charCodeAt(0) + fieldj.options.length;
-        ccdelta = -1;
-    }
     t = '<span class="rev_num sv';
     if (value <= fieldj.options.length) {
         if (fieldj.options.length > 1)
@@ -425,7 +381,7 @@ function option_value_html(fieldj, value) {
             n = 1;
         t += " " + (fieldj.option_class_prefix || "sv") + n;
     }
-    return [t + '">' + String.fromCharCode(cc + value * ccdelta) + '.</span>',
+    return [t + '">' + unparse_option(fieldj, value) + '.</span>',
             escape_entities(fieldj.options[value - 1] || "Unknown")];
 }
 
