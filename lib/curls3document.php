@@ -12,6 +12,8 @@ class CurlS3Document extends S3Result {
     public $runindex;
     private $method;
     private $args;
+    private $tries;
+    private $start;
 
     function __construct(S3Document $s3, $skey, $method, $args, $dstream) {
         $this->s3 = $s3;
@@ -45,6 +47,7 @@ class CurlS3Document extends S3Result {
         curl_setopt($this->curlh, CURLOPT_CUSTOMREQUEST, $hdr["method"]);
         curl_setopt($this->curlh, CURLOPT_POSTFIELDS, $hdr["content"]);
         curl_setopt($this->curlh, CURLOPT_HTTPHEADER, $hdr["header"]);
+        $this->start = microtime(true);
     }
 
     function exec() {
@@ -59,10 +62,12 @@ class CurlS3Document extends S3Result {
         $this->status = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
         if ($this->status === 0)
             $this->status = null;
-        if (($this->status === null || $this->status === 500)
-            && (S3Document::$retry_timeout_allowance <= 0 || $this->runindex >= 5)) {
-            trigger_error("S3 error: $this->method $this->skey: failed", E_USER_WARNING);
-            $this->status = false;
+        if ($this->status === null || $this->status === 500) {
+            $this->tries[] = [$this->runindex, microtime(true) - $this->start, $this->status];
+            if (S3Document::$retry_timeout_allowance <= 0 || $this->runindex >= 5) {
+                trigger_error("S3 error: $this->method $this->skey: curl failed " . json_encode($this->tries), E_USER_WARNING);
+                $this->status = false;
+            }
         }
         return $this->status !== null && $this->status !== 500;
     }

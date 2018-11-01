@@ -548,15 +548,20 @@ class DocumentInfo implements JsonSerializable {
 
         $adocs = [];
         $curlm = curl_multi_init();
-        $stoptime = null;
+        $starttime = $stoptime = null;
 
         while (1) {
             // check time
             $time = microtime(true);
-            if ($stoptime === null)
-                $stoptime = $time + 15;
+            if ($stoptime === null) {
+                $starttime = $time;
+                $stoptime = $time + 20 * max(ceil(count($pfdocs) / 8), 1);
+                S3Document::$retry_timeout_allowance += 5 * count($pfdocs) / 4;
+            }
             if ($time >= $stoptime)
                 break;
+            if ($time >= $starttime + 5)
+                set_time_limit(30);
 
             // add documents to sliding window
             while (count($adocs) < 8 && !empty($pfdocs)) {
@@ -585,6 +590,7 @@ class DocumentInfo implements JsonSerializable {
             unset($adoc);
             if ($mintime > $time) {
                 usleep((int) (($mintime - $time) * 1000000));
+                S3Document::$retry_timeout_allowance -= $mintime - $time;
                 continue;
             }
 
