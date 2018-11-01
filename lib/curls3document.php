@@ -57,19 +57,21 @@ class CurlS3Document extends S3Result {
         $hstr = preg_replace('/(?:\r\n?|\n)[ \t]+/s', " ", $hstr);
         $this->parse_response_lines(preg_split('/\r\n?|\n/', $hstr));
         $this->status = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
-        if (($this->status === null || $this->status === 0 || $this->status === 500)
+        if ($this->status === 0)
+            $this->status = null;
+        if (($this->status === null || $this->status === 500)
             && (S3Document::$retry_timeout_allowance <= 0 || $this->runindex >= 5)) {
             trigger_error("S3 error: $this->method $this->skey: failed", E_USER_WARNING);
             $this->status = false;
         }
+        return $this->status !== null && $this->status !== 500;
     }
 
     function run() {
         while (true) {
             $this->prepare();
             $this->exec();
-            $this->parse_result();
-            if ($this->status !== null && $this->status !== 0 && $this->status !== 500)
+            if ($this->parse_result())
                 return;
             $timeout = 0.005 * (1 << $this->runindex);
             S3Document::$retry_timeout_allowance -= $timeout;
