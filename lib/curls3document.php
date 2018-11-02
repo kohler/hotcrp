@@ -67,7 +67,7 @@ class CurlS3Document extends S3Result {
             $this->status = null;
         if ($this->status === null || $this->status === 500) {
             $now = microtime(true);
-            $this->tries[] = [$this->runindex, round(($now - $this->start) * 1000) / 1000, round(($now - $this->first_start) * 1000) / 1000, $this->status];
+            $this->tries[] = [$this->runindex, round(($now - $this->start) * 1000) / 1000, round(($now - $this->first_start) * 1000) / 1000, $this->status, curl_errno($this->curlh)];
             if (S3Document::$retry_timeout_allowance <= 0 || $this->runindex >= 5) {
                 trigger_error("S3 error: $this->method $this->skey: curl failed " . json_encode($this->tries), E_USER_WARNING);
                 $this->status = false;
