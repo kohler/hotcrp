@@ -1770,7 +1770,8 @@ var comet_store = (function () {
         var x = v && JSON.parse(v);
         if (!x || typeof x !== "object")
             x = {};
-        if (!x.updated_at || x.updated_at + 10 < now_sec()
+        if (!x.updated_at
+            || x.updated_at + 10 < now_sec()
             || (x.tracker_status != dl.tracker_status && x.at < dl.now))
             x.expired = true;
         else if (x.tracker_status != dl.tracker_status)
@@ -4090,7 +4091,7 @@ tooltip.add_builder("votereport", function (info) {
             $.get(hoturl("api/votereport", {p: pid, tag: tag}), function (rv) {
                 resolve(rv.ok ? rv.result || "" : rv.error);
             });
-        });
+        })();
 });
 
 
