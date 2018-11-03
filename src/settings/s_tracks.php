@@ -51,17 +51,17 @@ class Tracks_SettingRenderer {
             ($unfolded ? "" : " fx3"),
             '">',
             $sv->label([$track_ctl, $tag_ctl], $question, $ljs),
-            '<span class="strut">',
+            '<div class="entry">',
             Ht::select($track_ctl, $permts, $reqv[0],
                        $sv->sjs($track_ctl, ["class" => "js-track-perm", "data-default-value" => $curv[0]])),
-            "</span> &nbsp;",
+            " &nbsp;",
             Ht::entry($tag_ctl, $reqv[1],
                       $sv->sjs($tag_ctl, ["class" => "fx settings-track-perm-tag", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
         $sv->echo_messages_at($track_ctl);
         $sv->echo_messages_at($tag_ctl);
         if ($hint)
             echo '<div class="f-h">', $hint, '</div>';
-        echo "</div>";
+        echo "</div></div>";
     }
 
     static function render_view_permission(SettingValues $sv, $tnum, $t, $gj) {
@@ -129,7 +129,7 @@ class Tracks_SettingRenderer {
         }
 
         if (self::$nperm_rendered_folded) {
-            echo '<div class="entryi wide fn3"><a href="" class="ui js-foldup" data-fold-target="3">Show all permissions</a></div>';
+            echo '<div class="entryi wide fn3"><label></label><div class="entry"><a href="" class="ui js-foldup" data-fold-target="3">Show all permissions</a></div></div>';
         }
         echo "</div></div>\n\n";
     }

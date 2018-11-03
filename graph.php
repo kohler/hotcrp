@@ -154,25 +154,28 @@ if ($Graph == "formula") {
     // X axis
     echo '<div class="', $fgm->control_class("fx", "entryi"), '">',
         '<label for="x_entry">X axis</label>',
+        '<div class="entry">',
         Ht::entry("x", (string) $Qreq->x, ["id" => "x_entry", "size" => 32]),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “search”</span>',
-        '</div>';
+        '</div></div>';
     // Y axis
     echo '<div class="', $fgm->control_class("fy", "entryi"), '">',
         '<label for="y_entry">Y axis</label>',
+        '<div class="entry">',
         Ht::entry("y", (string) $Qreq->y, ["id" => "y_entry", "size" => 32]),
         '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</span>',
-        '</div>';
+        '</div></div>';
     // Series
     echo '<div class="', $fgm->control_class("q1", "entryi"), '">',
         '<label for="q1">Data set</label>',
+        '<div class="entry">',
         '<table class="js-row-order"><tbody id="qcontainer" data-row-template="',
         htmlspecialchars(formulas_qrow('$', "", "by-tag", 0)), '">';
     for ($i = 0; $i < count($styles); ++$i)
         echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fgm->problem_status_at("q$i"));
     echo "</tbody><tbody><tr><td>",
         Ht::button("Add data set", ["class" => "ui btn row-order-ui addrow"]),
-        "</td></tr></tbody></table></div>\n";
+        "</td></tr></tbody></table></div></div>\n";
     echo '<div class="g"></div>';
     echo Ht::submit(null, "Graph");
     echo '</form>';

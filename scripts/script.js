@@ -3331,6 +3331,10 @@ function render_editing(hc, cj) {
 
     hc.push('<div class="cmteditinfo fold2o fold3c">', '</div>');
 
+    // attachments
+    hc.push('<div class="entryi has-editable-attachments hidden" id="' + cid + '-attachments" data-document-prefix="cmtdoc"><label for="' + cid + '-attachments">Attachments</label></div>');
+    btnbox.push('<button type="button" name="attach" class="btn btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="' + cid + '-attachments">' + $("#licon-attachment").html() + '</button>');
+
     // visibility
     if (!cj.response && !cj.by_author) {
         var au_option, au_description;
@@ -3345,7 +3349,7 @@ function render_editing(hc, cj) {
             au_option += ' (anonymous to authors)';
 
         // visibility
-        hc.push('<div class="entryi short"><label for="' + cid + '-visibility">Visibility</label>', '</div>');
+        hc.push('<div class="entryi"><label for="' + cid + '-visibility">Visibility</label><div class="entry">', '</div></div>');
         hc.push('<select id="' + cid + '-visibility" name="visibility">', '</select>');
         hc.push('<option value="au">' + au_option + '</option>');
         hc.push('<option value="rev">Hidden from authors</option>');
@@ -3359,10 +3363,6 @@ function render_editing(hc, cj) {
         hc.push_pop(au_description);
         hc.pop_n(2);
     }
-
-    // attachments
-    hc.push('<div class="entryi has-editable-attachments hidden" id="' + cid + '-attachments" data-document-prefix="cmtdoc"><label for="' + cid + '-attachments">Attachments</label></div>');
-    btnbox.push('<button type="button" name="attach" class="btn btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="' + cid + '-attachments">' + $("#licon-attachment").html() + '</button>');
 
     // tags
     if (!cj.response && !cj.by_author) {
@@ -3453,8 +3453,11 @@ function activate_editing($c, cj) {
         fold($c.find(".cmteditinfo")[0], false, 3);
     $c.find("input[name=tags]").val(tags.join(" ")).autogrow();
 
-    for (i in cj.docs || [])
-        $c.find(".has-editable-attachments").removeClass("hidden").append(render_edit_attachment(i, cj.docs[i]));
+    if (cj.docs && cj.docs.length) {
+        $c.find(".has-editable-attachments").removeClass("hidden").append('<div class="entry"></div>');
+        for (i in cj.docs || [])
+            $c.find(".has-editable-attachments .entry").append(render_edit_attachment(i, cj.docs[i]));
+    }
 
     if (!cj.visiblity || cj.blind)
         $c.find("input[name=blind]").prop("checked", true);
@@ -6387,7 +6390,14 @@ handle_ui.on("js-check-submittable", function (event) {
 
 handle_ui.on("js-add-attachment", function () {
     var $ea = $($$(this.getAttribute("data-editable-attachments"))),
-        $ei = $ea.find(".has-document"), $f = $ea.closest("form"), name, n = 0;
+        $ei = $ea,
+        $f = $ea.closest("form"),
+        name, n = 0;
+    if ($ea.hasClass("entryi")) {
+        if (!$ea.find(".entry").length)
+            $ea.append('<div class="entry"></div>');
+        $ei = $ea.find(".entry");
+    }
     do {
         ++n;
         name = $ea[0].getAttribute("data-document-prefix") + "_new_" + n;
@@ -6396,7 +6406,7 @@ handle_ui.on("js-add-attachment", function () {
         + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="document-uploader"></div>'
         + '<div class="document-actions"><a href="" class="ui js-remove-document document-action">Delete</a></div>'
         + '</div>');
-    $na.appendTo($ea).find("input[type=file]").on("change", function () {
+    $na.appendTo($ei).find("input[type=file]").on("change", function () {
         $(this).closest(".has-document").removeClass("hidden");
         $ea.removeClass("hidden");
         if (!$f[0]["has_" + name])
@@ -6437,7 +6447,10 @@ handle_ui.on("js-remove-document", function (event) {
         $ei.find(".document-stamps, .document-shortformat").removeClass("hidden");
         $(this).removeClass("undelete").html("Delete");
     } else if ($ei.hasClass("document-new-instance")) {
+        var holder = $ei[0].parentElement;
         $ei.remove();
+        if (!holder.firstChild && hasClass(holder.parentElement, "has-editable-attachments"))
+            addClass(holder.parentElement, "hidden");
     } else {
         if (!$r.length)
             $r = $('<input type="hidden" class="document-remover" name="remove_' + $ei.data("documentName") + '" data-default-value="" value="1">').appendTo($ei.find(".document-actions"));

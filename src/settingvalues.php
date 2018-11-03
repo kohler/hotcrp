@@ -702,8 +702,10 @@ class SettingValues extends MessageSet {
             $description = $si->title;
 
         echo '<div class="', $this->control_class($name, $klass), '">',
-            $this->label($name, $description, ["class" => false]),
-            $this->render_entry($name, $js), ($after_entry ? : "");
+            $this->label($name, $description, ["class" => false]);
+        if ($horizontal)
+            echo '<div class="entry">';
+        echo $this->render_entry($name, $js), ($after_entry ? : "");
         $this->echo_messages_at($name);
         $thint = $si ? $this->type_hint($si->type) : null;
         if ($hint || $thint) {
@@ -714,6 +716,8 @@ class SettingValues extends MessageSet {
                 echo $hint ? $hint : $thint;
             echo '</div>';
         }
+        if ($horizontal)
+            echo "</div>";
         if (!$item_open)
             echo "</div>\n";
     }

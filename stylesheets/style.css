@@ -207,10 +207,6 @@ a.mailto:hover, a:hover u.x, .ul {
 a.small {
 	font-size: smaller;
 }
-.strut {
-	display: inline-block;
-	line-height: 1.8;
-}
 span.barsep {
 	opacity: 0.8;
 	padding: 0 0.5em;
@@ -253,32 +249,28 @@ span.nb {
 }
 .entryi {
 	margin: 0.5em 0;
-	padding-left: 9rem;
+	display: flex;
+	align-items: baseline;
 }
 .entryi > label {
-	float: left;
-	margin-left: -9rem;
 	width: 8rem;
+	margin-right: 1rem;
 	text-align: right;
+	flex: 0 0 auto;
 }
-.entryi > label:before {
-	content: "";
-	line-height: 1.8;
+.entryi.wide > label {
+	width: 19rem;
 }
-.entryi.short > label:before {
-	line-height: 1;
+.entryi > .entry {
+	flex: 1 1 auto;
+}
+.entry > textarea:first-child {
+	vertical-align: top;
 }
 .checki, .entryi {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
-}
-.entryi.wide {
-	padding-left: 20rem;
-}
-.entryi.wide > label {
-	margin-left: -20rem;
-	width: 19rem;
 }
 .fullw {
 	width: 100%;
@@ -817,6 +809,9 @@ a.closebtn {
 	border: 1px solid #aaaaaa;
 	background-image: linear-gradient(#c3c3c3, #d3d3d3);
 }
+.btn:hover, .btn:focus, .btn:active, .btn:focus-within {
+	z-index: 1;
+}
 .btn.btn-default,
 .btn.btn-primary {
 	border: 1px solid #6b73b5;
@@ -899,11 +894,15 @@ a.closebtn {
 .btnp > .btn:last-child, .btnp > .btnbox:last-child {
 	margin-right: 0;
 }
+.btnbox {
+	display: flex;
+}
 .btnbox > .btn {
 	border-radius: 0;
 	border-left-width: 0;
 	margin-left: 0;
 	margin-right: 0;
+	flex: 0 1 auto;
 }
 .btnbox > .btn:first-child {
 	border-top-left-radius: 4px;

@@ -16,7 +16,7 @@ class BanalSettings {
         $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "item_class" => "settings-g has-fold fold" . ($sv->curv("sub_banal$suffix") > 0 ? "o" : "c"), "item_open" => true]);
         echo Ht::hidden("has_sub_banal$suffix", 1),
             '<div class="settings-2col fx">';
-        $sv->echo_entry_group("sub_banal_papersize$suffix", "Paper size", ["horizontal" => true], "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”, “letter OR A4”");
+        $sv->echo_entry_group("sub_banal_papersize$suffix", "Paper size", ["horizontal" => true], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
         $sv->echo_entry_group("sub_banal_pagelimit$suffix", "Page limit", ["horizontal" => true]);
         $sv->echo_entry_group("sub_banal_textblock$suffix", "Text block", ["horizontal" => true], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
         $sv->echo_entry_group("sub_banal_bodyfontsize$suffix", "Body font size", ["horizontal" => true, "after_entry" => "&nbsp;pt"]);
