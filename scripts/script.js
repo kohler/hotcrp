@@ -1324,6 +1324,8 @@ function prepare_info(elt, info) {
         info.content = elt.getAttribute("data-tooltip");
     else if (info.content == null && elt.hasAttribute("aria-label"))
         info.content = elt.getAttribute("aria-label");
+    else if (info.content == null && elt.hasAttribute("title"))
+        info.content = elt.getAttribute("title");
     return info;
 }
 

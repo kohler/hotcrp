@@ -83,10 +83,13 @@ class Conflict_PaperColumn extends PaperColumn {
         $ct = $row->conflict_type($this->contact);
         if ($ct >= CONFLICT_AUTHOR)
             return "Author";
-        return '<input type="checkbox" class="uix uikd js-range-click uich js-assign-review" '
-            . 'data-range-type="assrevu' . ($this->show_user ? $this->contact->contactId : "")
+        $t = '<input type="checkbox" class="uix uich js-assign-review js-range-click" '
+            . 'data-range-type="assrevu' . $this->contact->contactId
             . '" name="assrev' . $row->paperId . 'u' . $this->contact->contactId
-            . '" value="-1"' . ($ct ? " checked" : "") . ' />';
+            . '" value="-1"' . ($ct ? " checked" : "");
+        if ($this->show_user)
+            $t .= ' title="' . $pl->user->name_text_for($this->contact) . ' conflict"';
+        return $t . '>';
     }
     function text(PaperList $pl, PaperInfo $row) {
         $ct = $this->conflict_type($pl, $row);
@@ -106,10 +109,11 @@ class Conflict_PaperColumn extends PaperColumn {
         $rs = [];
         $cs = new ContactSearch(ContactSearch::F_PC | ContactSearch::F_TAG | ContactSearch::F_USER, $m[2], $conf->xt_user);
         foreach ($cs->ids as $cid) {
-            $u = $conf->pc_member_by_id($cid);
-            $fj["name"] = $m[1] . ":" . $u->email;
-            $fj["user"] = $u->email;
-            $rs[] = (object) $fj;
+            if (($u = $conf->pc_member_by_id($cid))) {
+                $fj["name"] = $m[1] . ":" . $u->email;
+                $fj["user"] = $u->email;
+                $rs[] = (object) $fj;
+            }
         }
         if (empty($rs))
             $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[2]) . "”.");
