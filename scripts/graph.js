@@ -631,7 +631,7 @@ function procrastination_filter(revdata) {
     // infer deadlines when not set
     for (i in revdata.deadlines)
         if (!revdata.deadlines[i]) {
-            var subat = alldata.filter(function (d) { return d[2] == i; })
+            var subat = alldata.filter(function (d) { return (d[2] || 0) == i; })
                 .map(proj0);
             subat.sort(d3.ascending);
             revdata.deadlines[i] = subat.length ? d3.quantile(subat, 0.8) : 0;
