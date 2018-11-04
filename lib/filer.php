@@ -100,6 +100,7 @@ class HashAnalysis {
 class Filer {
     static public $tempdir;
     static public $tempcounter = 0;
+    static public $no_touch;
 
     // download
     static function download_file($filename, $no_accel = false) {
@@ -217,7 +218,7 @@ class Filer {
                 } else
                     return null;
             }
-            if (filemtime($path) < $Now - 172800)
+            if (filemtime($path) < $Now - 172800 && !self::$no_touch)
                 @touch($path, $Now);
         }
         if (($flags & self::FPATH_MKDIR)

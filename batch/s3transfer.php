@@ -23,7 +23,9 @@ $result = $Conf->qe_raw("select paperStorageId from PaperStorage where paperStor
 $sids = array();
 while (($row = edb_row($result)))
     $sids[] = (int) $row[0];
+Dbl::free($result);
 
+Filer::$no_touch = true;
 $failures = 0;
 foreach ($sids as $sid) {
     if ($active !== false && !isset($active[$sid]))
