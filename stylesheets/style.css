@@ -895,7 +895,7 @@ a.closebtn {
 	margin-right: 0;
 }
 .btnbox {
-	display: flex;
+	display: inline-flex;
 }
 .btnbox > .btn {
 	border-radius: 0;
@@ -1245,8 +1245,8 @@ label.f-c, .f-i > label {
 	display: block;
 }
 .f-c, .f-i > label {
-	font-weight: bold;
-	margin-bottom: 0.25rem;
+	margin-bottom: 0.3rem;
+	font-weight: 500;
 }
 .f-c.n, .f-i > label.n {
 	font-weight: normal;
