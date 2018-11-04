@@ -218,7 +218,7 @@ class Filer {
                     return null;
             }
             if (filemtime($path) < $Now - 172800)
-                touch($path, $Now);
+                @touch($path, $Now);
         }
         if (($flags & self::FPATH_MKDIR)
             && !self::prepare_docstore(self::docstore_fixed_prefix($pattern), $path))
