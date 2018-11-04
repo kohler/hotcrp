@@ -228,7 +228,7 @@ span.nb {
 	display: inline-block; /* why? */
 	text-indent: 0;
 }
-.childfold {
+.childfold, .js-foldup {
 	cursor: pointer;
 }
 .wait, body.wait input, body.wait button {
@@ -1230,7 +1230,7 @@ ul.compact {
 
 /* vertically arranged forms */
 .f-i, .f-checkbox {
-	margin: 1em 0;
+	margin: 1em 0 1.25em;
 }
 .f-horizontal {
 	margin: 1em -18px 1em 0;
