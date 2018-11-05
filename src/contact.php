@@ -568,6 +568,10 @@ class Contact {
         return (string) $email !== "" && strcasecmp($email, $this->email) === 0;
     }
 
+    function is_disabled() {
+        return $this->disabled;
+    }
+
     function name_text() {
         if ($this->firstName === "" || $this->lastName === "")
             return $this->firstName . $this->lastName;
@@ -1291,7 +1295,7 @@ class Contact {
 
         // notify on creation
         if ($create) {
-            if (($flags & self::SAVE_NOTIFY) && !$u->disabled)
+            if (($flags & self::SAVE_NOTIFY) && !$u->is_disabled())
                 $u->sendAccountInfo("create", false);
             $type = $u->disabled ? "disabled " : "";
             $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Created {$type}account");
@@ -1458,7 +1462,7 @@ class Contact {
     function check_password($input, $info = null) {
         global $Now;
         assert(!$this->conf->external_login());
-        if (($this->contactId && $this->disabled)
+        if (($this->contactId && $this->is_disabled())
             || !self::valid_password($input)) {
             if ($info)
                 $info->disabled = true;
@@ -1571,7 +1575,7 @@ class Contact {
 
 
     function sendAccountInfo($sendtype, $sensitive) {
-        assert(!$this->disabled);
+        assert(!$this->is_disabled());
 
         $cdbu = $this->contactdb_user();
         $rest = array();
@@ -1734,7 +1738,7 @@ class Contact {
     }
 
     function contactdb_roles() {
-        if ($this->disabled)
+        if ($this->is_disabled())
             return 0;
         else {
             $this->is_author(); // load _db_roles

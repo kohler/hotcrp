@@ -1729,7 +1729,7 @@ class Conf {
     function pc_completion_map() {
         $map = $bylevel = [];
         foreach ($this->pc_members_and_admins() as $pc)
-            if (!$pc->disabled) {
+            if (!$pc->is_disabled()) {
                 foreach ($pc->completion_items() as $k => $level) {
                     if (!isset($bylevel[$k])
                         || $bylevel[$k] < $level
@@ -3321,7 +3321,7 @@ class Conf {
         if ($Me && !$Me->is_empty()) {
             // profile link
             $profile_parts = [];
-            if ($Me->has_email() && !$Me->disabled) {
+            if ($Me->has_email() && !$Me->is_disabled()) {
                 $profile_parts[] = '<a class="q" href="' . $this->hoturl("profile") . '"><strong>'
                     . htmlspecialchars($Me->email)
                     . '</strong></a> &nbsp; <a href="' . $this->hoturl("profile") . '">Profile</a>';
@@ -3343,7 +3343,7 @@ class Conf {
 
             // help, sign out
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
-            if (!$Me->disabled)
+            if (!$Me->is_disabled())
                 $profile_parts[] = '<a href="' . $this->hoturl("help", $x) . '">Help</a>';
             if (!$Me->has_email() && !isset($this->opt["httpAuthLogin"]))
                 $profile_parts[] = '<a href="' . $this->hoturl("index", "signin=1") . '" class="nw">Sign in</a>';

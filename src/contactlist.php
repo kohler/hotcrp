@@ -274,7 +274,7 @@ class ContactList {
                 $t = "[No name]";
             $t = '<span class="taghl">' . $t . '</span>';
             if ($this->user->privChair)
-                $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->disabled ? " class='uu'" : "") . ">$t</a>";
+                $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? " class='uu'" : "") . ">$t</a>";
             $role = $row->role_html();
             if ($role !== "" && ($this->limit !== "pc" || ($row->roles & Contact::ROLE_PCLIKE) !== Contact::ROLE_PC))
                 $t .= " $role";
@@ -282,7 +282,7 @@ class ContactList {
                 $t .= " <a href=\"" . hoturl("index", "actas=" . urlencode($row->email)) . "\">"
                     . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($row)))
                     . "</a>";
-            if ($row->disabled && $this->user->isPC)
+            if ($row->is_disabled() && $this->user->isPC)
                 $t .= ' <span class="hint">(disabled)</span>';
             return $t;
         case self::FIELD_EMAIL:
@@ -695,7 +695,7 @@ class ContactList {
                 } else
                     $trclass .= " " . $k;
             }
-            if ($row->disabled && $this->user->isPC)
+            if ($row->is_disabled() && $this->user->isPC)
                 $trclass .= " graytext";
             $this->count++;
             $ids[] = (int) $row->contactId;

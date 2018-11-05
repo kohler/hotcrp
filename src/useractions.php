@@ -70,7 +70,7 @@ class UserActions {
         $done = $disabled = [];
         $result = $user->conf->qe("select * from ContactInfo where contactId?a", $ids);
         while (($xuser = Contact::fetch($result, $user->conf))) {
-            if (!$xuser->disabled) {
+            if (!$xuser->is_disabled()) {
                 $xuser->sendAccountInfo("send", false);
                 $done[] = $xuser->email;
             } else

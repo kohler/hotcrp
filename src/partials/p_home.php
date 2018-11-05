@@ -40,7 +40,7 @@ class Home_Partial {
         else if (isset($qreq->postlogin))
             LoginHelper::check_postlogin($user, $qreq);
         // disabled
-        if (!$user->is_empty() && $user->disabled) {
+        if (!$user->is_empty() && $user->is_disabled()) {
             $user->conf->header("Account disabled", "home", ["action_bar" => false]);
             echo Conf::msg_info("Your account on this site has been disabled by an administrator. Please contact the site administrators with questions.");
             $user->conf->footer();

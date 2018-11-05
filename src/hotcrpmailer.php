@@ -410,7 +410,7 @@ class HotCRPMailer extends Mailer {
 
     static function prepare_to($recipient, $template, $row, $rest = array()) {
         $answer = null;
-        if (!$recipient->disabled) {
+        if (!$recipient->is_disabled()) {
             $old_overrides = $recipient->remove_overrides(Contact::OVERRIDE_CONFLICT);
             $mailer = new HotCRPMailer($recipient->conf, $recipient, $row, $rest);
             $checkf = get($rest, "check_function");

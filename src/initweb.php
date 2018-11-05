@@ -89,7 +89,7 @@ function initialize_user() {
     $Me = $Me->activate($Qreq);
 
     // redirect if disabled
-    if ($Me->disabled) {
+    if ($Me->is_disabled()) {
         if (Navigation::page() === "api")
             json_exit(["ok" => false, "error" => "Your account is disabled."]);
         else if (Navigation::page() !== "index"
