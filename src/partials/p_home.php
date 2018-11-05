@@ -42,7 +42,7 @@ class Home_Partial {
         // disabled
         if (!$user->is_empty() && $user->is_disabled()) {
             $user->conf->header("Account disabled", "home", ["action_bar" => false]);
-            echo Conf::msg_info("Your account on this site has been disabled by an administrator. Please contact the site administrators with questions.");
+            $user->conf->msg(0, "Your account on this site has been disabled by a site administrator. Please contact them with questions.");
             $user->conf->footer();
             exit;
         }

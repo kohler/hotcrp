@@ -44,6 +44,7 @@ class Contact {
     private $_contactdb_user = false;
 
     public $disabled = false;
+    private $_disabled;
     public $activity_at = false;
     private $lastLogin;
     public $creationTime = 0;
@@ -112,8 +113,6 @@ class Contact {
             $this->merge($trueuser);
         else if ($this->contactId || $this->contactDbId)
             $this->db_load();
-        else if ($this->conf->opt("disableNonPC"))
-            $this->disabled = true;
     }
 
     static function fetch($result, Conf $conf) {
@@ -186,14 +185,13 @@ class Contact {
                 $roles |= self::ROLE_CHAIR;
             $this->assign_roles($roles);
         }
-        if (!$this->isPC && $this->conf->opt("disableNonPC"))
-            $this->disabled = true;
         if (isset($user->has_review))
             $this->has_review_ = $user->has_review;
         if (isset($user->has_outstanding_review))
             $this->_has_outstanding_review = $user->has_outstanding_review;
         if (isset($user->is_site_contact))
             $this->is_site_contact = $user->is_site_contact;
+        $this->_disabled = null;
     }
 
     private function db_load() {
@@ -221,8 +219,7 @@ class Contact {
         if (isset($this->__isAuthor__))
             $this->_db_roles = ((int) $this->__isAuthor__ > 0 ? self::ROLE_AUTHOR : 0)
                 | ((int) $this->__hasReview__ > 0 ? self::ROLE_REVIEWER : 0);
-        if (!$this->isPC && $this->conf->opt("disableNonPC"))
-            $this->disabled = true;
+        $this->_disabled = null;
     }
 
     function merge_secondary_properties($x) {
@@ -569,7 +566,10 @@ class Contact {
     }
 
     function is_disabled() {
-        return $this->disabled;
+        if ($this->_disabled === null)
+            $this->_disabled = $this->disabled
+                || (!$this->isPC && $this->conf->opt("disableNonPC"));
+        return $this->_disabled;
     }
 
     function name_text() {
@@ -1095,6 +1095,7 @@ class Contact {
         if ($actor && $this->contactId == $actor->contactId)
             $this->mark_activity();
 
+        $this->_disabled = null;
         return true;
     }
 
@@ -1297,7 +1298,7 @@ class Contact {
         if ($create) {
             if (($flags & self::SAVE_NOTIFY) && !$u->is_disabled())
                 $u->sendAccountInfo("create", false);
-            $type = $u->disabled ? "disabled " : "";
+            $type = $u->is_disabled() ? "disabled " : "";
             $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Created {$type}account");
             // if ($Me && $Me->privChair)
             //    $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($u->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
