@@ -206,7 +206,9 @@ class Home_Partial {
         echo '<div class="popup-actions">',
             Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn btn-primary", "tabindex" => 1]),
             '</div>';
-        if (!$is_external_login && !$conf->opt("disableNewUsers"))
+        if (!$is_external_login
+            && !$conf->opt("disableNewUsers")
+            && !$conf->opt("disableNonPC"))
             echo '<p class="hint">New to the site? <a href="" class="ui js-create-account">Create an account</a></p>';
         echo '</div></form></div>';
     }

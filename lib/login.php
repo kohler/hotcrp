@@ -103,7 +103,7 @@ class LoginHelper {
 
         // create account if requested
         if ($qreq->action === "new") {
-            if ($conf->opt("disableNewUsers")) {
+            if ($conf->opt("disableNewUsers") || $conf->opt("disableNonPC")) {
                 Ht::error_at("email", "New users can’t self-register for this site.");
                 return false;
             }
