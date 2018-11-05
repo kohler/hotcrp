@@ -99,17 +99,18 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
                 && !isset($whyNot["reviewNotAssigned"]))
                 $errors[whyNotText($whyNot, true)] = true;
             else {
+                $texts[$prow->paperId] = "";
                 if ($whyNot) {
                     $t = whyNotText($whyNot, true);
                     $errors[$t] = false;
                     if (!isset($whyNot["deadline"]))
-                        defappend($texts[$prow->paperId], prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== "));
+                        $texts[$prow->paperId] .= prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== ");
                 }
                 $rrows = $prow->full_reviews_of_user($user);
                 if (empty($rrows))
                     $rrows[] = null;
                 foreach ($rrows as $rrow)
-                    defappend($texts[$prow->paperId], $rf->textForm($prow, $rrow, $user, null) . "\n");
+                    $texts[$prow->paperId] .= $rf->textForm($prow, $rrow, $user, null) . "\n";
             }
         }
 
@@ -207,7 +208,7 @@ class GetScores_ListAction extends ListAction {
                         $b["email"] = $rrow->email;
                     }
                     if ($this_scores)
-                        arrayappend($texts[$row->paperId], $b);
+                        $texts[$row->paperId][] = $b;
                 }
             }
         }
@@ -289,7 +290,7 @@ class GetLead_ListAction extends ListAction {
         foreach ($user->paper_set($ssel) as $row)
             if ($row->$key && $user->$can_view($row, true)) {
                 $name = $user->name_object_for($row->$key);
-                arrayappend($texts[$row->paperId], [$row->paperId, $row->title, $name->firstName, $name->lastName, $name->email]);
+                $texts[$row->paperId][] = [$row->paperId, $row->title, $name->firstName, $name->lastName, $name->email];
             }
         return $user->conf->make_csvg($this->type . "s")
             ->select(["paper", "title", "first", "last", "{$this->type}email"])

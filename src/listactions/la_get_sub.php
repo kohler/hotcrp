@@ -147,14 +147,14 @@ class GetAbstract_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $texts = array();
         foreach ($user->paper_set($ssel, ["topics" => 1]) as $prow) {
-            if (($whyNot = $user->perm_view_paper($prow)))
+            if (($whyNot = $user->perm_view_paper($prow))) {
                 Conf::msg_error(whyNotText($whyNot));
-            else {
-                defappend($texts[$prow->paperId], $this->render($prow, $user));
+            } else {
+                $texts[$prow->paperId] = $this->render($prow, $user);
                 $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
             }
         }
-        if (count($texts))
+        if (!empty($texts))
             downloadText(join("", $ssel->reorder($texts)), "abstract$rfSuffix");
     }
 }
@@ -196,10 +196,10 @@ class GetAuthors_ListAction extends ListAction {
                     unset($contact_emails[$lemail]);
                 } else if ($admin)
                     $line[] = "no";
-                arrayappend($texts[$prow->paperId], $line);
+                $texts[$prow->paperId][] = $line;
             }
             foreach ($contact_emails as $c)
-                arrayappend($texts[$prow->paperId], [$prow->paperId, $prow->title, $c->firstName, $c->lastName, $c->email, $c->affiliation, "contact_only"]);
+                $texts[$prow->paperId][] = [$prow->paperId, $prow->title, $c->firstName, $c->lastName, $c->email, $c->affiliation, "contact_only"];
         }
         $header = ["paper", "title", "first", "last", "email", "affiliation"];
         if ($want_contacttype)
@@ -221,7 +221,7 @@ class GetContacts_ListAction extends ListAction {
                 foreach ($prow->contacts() as $cid => $c) {
                     $a = $contact_map[$cid];
                     $aa = $prow->author_by_email($a->email) ? : $a;
-                    arrayappend($texts[$prow->paperId], [$prow->paperId, $prow->title, $aa->firstName, $aa->lastName, $aa->email, $aa->affiliation]);
+                    $texts[$prow->paperId][] = [$prow->paperId, $prow->title, $aa->firstName, $aa->lastName, $aa->email, $aa->affiliation];
                 }
         return $user->conf->make_csvg("contacts")
             ->select(["paper", "title", "first", "last", "email", "affiliation"])
@@ -272,7 +272,7 @@ class GetTopics_ListAction extends ListAction {
                     $out[] = [$row->paperId, $row->title, $t];
                 if (empty($out))
                     $out[] = [$row->paperId, $row->title, "<none>"];
-                arrayappend($texts[$row->paperId], $out);
+                $texts[$row->paperId] = $out;
             }
         return $user->conf->make_csvg("topics")
             ->select(["paper", "title", "topic"])

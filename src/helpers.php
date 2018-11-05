@@ -2,19 +2,6 @@
 // helpers.php -- HotCRP non-class helper functions
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
-function defappend(&$var, $str) {
-    if (!isset($var))
-        $var = "";
-    $var .= $str;
-}
-
-function arrayappend(&$var, $value) {
-    if (isset($var))
-        $var[] = $value;
-    else
-        $var = array($value);
-}
-
 function mkarray($value) {
     if (is_array($value))
         return $value;
