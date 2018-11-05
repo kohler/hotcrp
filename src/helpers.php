@@ -736,20 +736,6 @@ function unparse_preference_span($preference, $always = false) {
     return $t;
 }
 
-function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
-    global $Conf;
-    $text = "<select" . ($id === null ? "" : " id='$id'") . " name='decision'$extra>\n";
-    $decs = $Conf->decision_map();
-    if (!isset($decs[$curOutcome]))
-        $curOutcome = null;
-    $outcomes = array_keys($decs);
-    if ($curOutcome === null)
-        $text .= "    <option value='' selected='selected'>Set decision...</option>\n";
-    foreach ($decs as $dnum => $dname)
-        $text .= "    <option value='$dnum'" . ($curOutcome == $dnum && $curOutcome !== null ? " selected='selected'" : "") . ">" . htmlspecialchars($dname) . "</option>\n";
-    return $text . "  </select>";
-}
-
 function review_type_icon($revtype, $unfinished = null, $title = null) {
     // see also script.js:review_form
     static $revtypemap = array(-3 => array("&minus;", "Refused"),

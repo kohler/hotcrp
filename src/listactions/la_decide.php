@@ -7,8 +7,9 @@ class Decide_ListAction extends ListAction {
         return $user->can_set_some_decision() && Navigation::page() !== "reviewprefs";
     }
     static function render(PaperList $pl) {
+        $opts = ["" => "Choose decision..."] + $pl->conf->decision_map();
         return ["Set to &nbsp;"
-                . decisionSelector($pl->qreq->decision, null, " class=\"want-focus js-submit-action-info-decide\"")
+                . Ht::select("decision", $opts, "", ["class" => "want-focus js-submit-action-info-decide"])
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "class" => "btn uix js-submit-mark"])];
     }
     function run(Contact $user, $qreq, $ssel) {

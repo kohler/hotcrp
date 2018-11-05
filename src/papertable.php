@@ -1622,7 +1622,9 @@ class PaperTable {
             '<div class="psv"><form class="submit-ui fx"><div>';
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
-        echo decisionSelector($this->prow->outcome, null, " class=\"want-focus\" style=\"width:99%\""),
+        echo Ht::select("decision", $this->conf->decision_map(),
+                        (string) $this->prow->outcome,
+                        ["class" => "want-focus w-99"]),
             '</div></form><p class="fn odname js-psedit-result">',
             htmlspecialchars($this->conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";

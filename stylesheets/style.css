@@ -1405,7 +1405,7 @@ input.textlite-tt, textarea.tt {
 .papertext {
 	width: 96%;
 }
-.reviewtext, div#popup_ref textarea {
+.w-99, .reviewtext, div#popup_ref textarea {
 	width: 99%;
 }
 .papertext, .reviewtext {
