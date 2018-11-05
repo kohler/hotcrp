@@ -103,6 +103,10 @@ class LoginHelper {
 
         // create account if requested
         if ($qreq->action === "new") {
+            if ($conf->opt("disableNewUsers")) {
+                Ht::error_at("email", "New users can’t self-register for this site.");
+                return false;
+            }
             $user = self::create_account($conf, $qreq, $user, $cdb_user);
             if (!$user)
                 return null;
@@ -123,7 +127,8 @@ class LoginHelper {
         }
 
         // if user disabled, then fail
-        if ($user && $user->is_disabled()) {
+        if ($user && $user->is_disabled()
+            || (!$user && $cdb_user && $cdb_user->is_disabled())) {
             Ht::error_at("email", "Your account is disabled. Contact the site administrator for more information.");
             return false;
         }

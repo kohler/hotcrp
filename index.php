@@ -24,6 +24,7 @@ if (Navigation::page() !== "index") {
 require_once("src/initweb.php");
 // handle signin/signout -- may change $Me
 $Me = Home_Partial::signin_requests($Me, $Qreq);
+// That also got rid of all disabled users.
 
 $gex = new GroupedExtensions($Me, ["etc/homepartials.json"],
                              $Conf->opt("pagePartials"));

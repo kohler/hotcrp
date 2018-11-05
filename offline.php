@@ -189,7 +189,7 @@ if ($Me->is_reviewer()) {
     echo "<a href='", hoturl("offline", "downloadForm=1"), "'>Blank form</a></div>\n";
 echo "</td>\n";
 if ($Me->is_reviewer()) {
-    $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
+    $disabled = ($pastDeadline && !$Me->privChair ? " disabled" : "");
     echo "<td><h3>Upload filled-out forms</h3>\n",
         Ht::form(hoturl_post("offline", "uploadForm=1")),
         Ht::hidden("postnonempty", 1),

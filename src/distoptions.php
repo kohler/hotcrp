@@ -102,6 +102,7 @@ $Opt["emailSender"] = null;
 //                   string is "Basic realm="HotCRP"".
 //   defaultEmailDomain Set to the default domain for account email addresses
 //                   when using httpAuthLogin.
+//   disableNewUsers Don’t allow new users to register.
 
 
 // USER PASSWORDS
@@ -122,7 +123,6 @@ $Opt["safePasswords"] = 2;
 
 // PAPER STORAGE
 //
-//   noPapers        Set to true to collect abstracts only, not papers.
 //   docstore        Set to true to serve papers and other downloads from a
 //                   cache on the local filesystem. By default this cache is
 //                   created in the "docs" directory. You can also set
