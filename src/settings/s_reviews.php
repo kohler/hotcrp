@@ -22,7 +22,7 @@ class Reviews_SettingRenderer {
         if ($deletable) {
             echo '<div class="inb" style="padding-left:2em">',
                 Ht::hidden("deleteround_$rnum", "", ["data-default-value" => ""]),
-                Ht::button("Delete round", ["class" => "btn js-settings-review-round-delete"]),
+                Ht::button("Delete round", ["class" => "js-settings-review-round-delete"]),
                 '</div>';
         }
         if ($rnum === '$')

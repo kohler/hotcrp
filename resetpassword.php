@@ -84,7 +84,7 @@ echo '<div class="', Ht::control_class("password", "f-i"), '">
   <label for="reset_password2">New password (again)</label>',
     Ht::password("password2", "", ["tabindex" => 1, "size" => 36, "id" => "reset_password2", "autocomplete" => "new-password"]), '</div>
 <div class="f-i" style="margin-top:2em">',
-    Ht::submit("go", "Reset password", ["class" => "btn btn-primary"]),
+    Ht::submit("go", "Reset password", ["class" => "btn-primary"]),
     "</div>
 </div></form></div>\n";
 Ht::stash_script("focus_within(\$(\"#homereset\"));window.scroll(0,0)");

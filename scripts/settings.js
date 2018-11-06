@@ -340,9 +340,9 @@ var revfield_template = '<div id="revfield_$" class="settings-revfield f-contain
     <label for="options_$">Choices</label>\
     <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea></div>\
   <div class="f-i">\
-    <button id="moveup_$" class="btn btn-sm revfield_moveup" type="button">Move up</button><span class="sep"></span>\
-<button id="movedown_$" class="btn btn-sm revfield_movedown" type="button">Move down</button><span class="sep"></span>\
-<button id="remove_$" class="btn btn-sm revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
+    <button id="moveup_$" class="btn-sm revfield_moveup" type="button">Move up</button><span class="sep"></span>\
+<button id="movedown_$" class="btn-sm revfield_movedown" type="button">Move down</button><span class="sep"></span>\
+<button id="remove_$" class="btn-sm revfield_remove" type="button">Delete from form</button><span class="sep"></span>\
 <input type="hidden" name="order_$" id="order_$" class="revfield_order" value="0" />\
   </div>\
 </div></div>';
@@ -618,13 +618,13 @@ function add_dialog(fid, focus) {
         hc.push('<h2>' + (has_options ? "Add score field" : "Add text field") + '</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<table style="width:500px;max-width:90%;margin-bottom:2em"><tbody><tr>', '</tr></tbody></table>');
-        hc.push('<td style="text-align:left"><button name="prev" type="button" class="btn need-tooltip" data-tooltip="Previous template">&lt;</button></td>');
+        hc.push('<td style="text-align:left"><button name="prev" type="button" class="need-tooltip" data-tooltip="Previous template">&lt;</button></td>');
         hc.push('<td class="newreviewfield-template-name" style="text-align:center"></td>');
-        hc.push('<td style="text-align:right"><button name="next" type="button" class="btn need-tooltip" data-tooltip="Next template">&gt;</button></td>');
+        hc.push('<td style="text-align:right"><button name="next" type="button" class="need-tooltip" data-tooltip="Next template">&gt;</button></td>');
         hc.pop();
         hc.push('<div class="newreviewfield-template" style="width:500px;max-width:90%;min-height:6em"></div>');
-        hc.push_actions(['<button type="submit" name="add" class="btn btn-primary want-focus">Create field</button>',
-            '<button type="button" name="cancel" class="btn">Cancel</button>']);
+        hc.push_actions(['<button type="submit" name="add" class="btn-primary want-focus">Create field</button>',
+            '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         render_template();
         $d.find(".newreviewfield-template-name").on("click", change_template);

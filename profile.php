@@ -544,12 +544,12 @@ if ($UserStatus->global_user() && false) {
         '</span>Update global profile</label></div></div>';
 }
 
-$buttons = [Ht::submit("save", $newProfile ? "Create account" : "Save changes", ["class" => "btn btn-primary"]),
-    Ht::submit("cancel", "Cancel", ["class" => "btn"])];
+$buttons = [Ht::submit("save", $newProfile ? "Create account" : "Save changes", ["class" => "btn-primary"]),
+    Ht::submit("cancel", "Cancel")];
 
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
-    $args = ["class" => "btn ui"];
+    $args = ["class" => "ui"];
     if (!empty($tracks->soleAuthor)) {
         $args["class"] .= " js-cannot-delete-user";
         $args["data-sole-author"] = pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor);
@@ -608,7 +608,7 @@ if ($newProfile) {
     echo '<div class="g"><strong>OR</strong> &nbsp;',
         '<input type="file" name="bulk" size="30" /></div>';
 
-    echo '<div>', Ht::submit("savebulk", "Save accounts", ["class" => "btn btn-primary"]), '</div>';
+    echo '<div>', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>';
 
     echo "<p>Enter or upload CSV user data with header. For example:</p>\n",
         '<pre class="entryexample">

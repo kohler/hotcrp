@@ -171,7 +171,7 @@ if (isset($Qreq->upload)
             $assignset->echo_unparse_display();
 
             echo Ht::actions([
-                Ht::submit("Apply changes", ["class" => "btn btn-primary"]),
+                Ht::submit("Apply changes", ["class" => "btn-primary"]),
                 Ht::submit("cancel", "Cancel")
             ], ["class" => "aab aabig"]),
                 "</form>\n";
@@ -245,7 +245,7 @@ echo "<table class='fx'><tr><td>",
     Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true", "class" => "need-autogrow")),
     "</td></tr></table>\n";
 
-echo '<div class="lg"></div>', Ht::submit("Prepare assignments", ["class" => "btn btn-primary"]),
+echo '<div class="lg"></div>', Ht::submit("Prepare assignments", ["class" => "btn-primary"]),
     " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
 echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC assignments</a></div>';

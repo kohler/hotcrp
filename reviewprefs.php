@@ -182,8 +182,8 @@ function parseUploadedPreferences($text, $filename, $apply) {
         echo Ht::form(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]));
 
         $actions = '<div class="aab aabr aabig">'
-            . Ht::submit("Save changes", ["class" => "aabut btn btn-primary"])
-            . Ht::submit("cancel", "Cancel", ["class" => "aabut btn"])
+            . Ht::submit("Save changes", ["class" => "aabut btn-primary"])
+            . Ht::submit("cancel", "Cancel", ["class" => "aabut"])
             . '</div>';
         if (count($assignset->assigned_pids()) >= 4)
             echo $actions;
@@ -241,7 +241,7 @@ $pl = new PaperList($search, ["sort" => true, "report" => "pf"], $Qreq);
 $pl->set_table_id_class("foldpl", "pltable_full", "p#");
 $pl_text = $pl->table_html("editpref",
                 array("fold_session_prefix" => "pfdisplay.",
-                      "footer_extra" => "<div id='plactr'>" . Ht::submit("fn", "Save changes", ["class" => "btn", "data-default-submit-all" => 1, "value" => "saveprefs"]) . "</div>",
+                      "footer_extra" => "<div id='plactr'>" . Ht::submit("fn", "Save changes", ["data-default-submit-all" => 1, "value" => "saveprefs"]) . "</div>",
                       "list" => true));
 
 

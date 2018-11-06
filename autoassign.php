@@ -296,9 +296,9 @@ class AutoassignerInterface {
         }
 
         echo '<div class="aab aabig btnp">',
-            Ht::submit("submit", "Apply changes", ["class" => "btn btn-primary"]),
-            Ht::submit("download", "Download assignment file", ["class" => "btn"]),
-            Ht::submit("cancel", "Cancel", ["class" => "btn"]);
+            Ht::submit("submit", "Apply changes", ["class" => "btn-primary"]),
+            Ht::submit("download", "Download assignment file"),
+            Ht::submit("cancel", "Cancel");
         foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_round", "method", "haspap") as $t)
             if (isset($this->qreq[$t]))
                 echo Ht::hidden($t, $this->qreq[$t]);
@@ -476,7 +476,7 @@ if (count($tOpt) > 1)
     echo Ht::select("t", $tOpt, $Qreq->t);
 else
     echo join("", $tOpt);
-echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery", "class" => "btn"]);
+echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);
 if (isset($Qreq->requery) || isset($Qreq->haspap)) {
     $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q,
                                          "urlbase" => hoturl_site_relative_raw("autoassign")));
@@ -739,7 +739,7 @@ if ($Conf->opt("autoassignReviewGadget") === "expertise") {
 
 
 // Create assignment
-echo '<div class="aab aabig">', Ht::submit("assign", "Prepare assignments", ["class" => "btn btn-primary"]),
+echo '<div class="aab aabig">', Ht::submit("assign", "Prepare assignments", ["class" => "btn-primary"]),
     ' &nbsp; <span class="hint">You’ll be able to check the assignment before it is saved.</span>',
     '</div>';
 

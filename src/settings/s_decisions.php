@@ -58,7 +58,7 @@ class Decisions_SettingParser extends SettingParser {
             '</tbody><tbody id="settings-new-decision-type" class="hidden">';
         self::render_row($sv, 0, 1, "", true, 0);
         echo '</tbody></table><div class="mg">',
-            Ht::button("Add decision type", ["class" => "ui js-settings-add-decision-type btn"]),
+            Ht::button("Add decision type", ["class" => "ui js-settings-add-decision-type"]),
             "</div></div>\n";
     }
 

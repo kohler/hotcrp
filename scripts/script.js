@@ -3335,7 +3335,7 @@ function render_editing(hc, cj) {
 
     // attachments
     hc.push('<div class="entryi has-editable-attachments hidden" id="' + cid + '-attachments" data-document-prefix="cmtdoc"><label for="' + cid + '-attachments">Attachments</label></div>');
-    btnbox.push('<button type="button" name="attach" class="btn btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="' + cid + '-attachments">' + $("#licon-attachment").html() + '</button>');
+    btnbox.push('<button type="button" name="attach" class="btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="' + cid + '-attachments">' + $("#licon-attachment").html() + '</button>');
 
     // visibility
     if (!cj.response && !cj.by_author) {
@@ -3370,7 +3370,7 @@ function render_editing(hc, cj) {
     if (!cj.response && !cj.by_author) {
         hc.push('<div class="entryi fx3"><label for="' + cid + '-tags">Tags</label>', '</div>')
         hc.push_pop('<input id="' + cid + '-tags" name="tags" type="text" size="50" placeholder="Comment tags">');
-        btnbox.push('<button type="button" name="showtags" class="btn btn-licon need-tooltip" aria-label="Tags">' + $("#licon-tag").html() + '</button>');
+        btnbox.push('<button type="button" name="showtags" class="btn-licon need-tooltip" aria-label="Tags">' + $("#licon-tag").html() + '</button>');
     }
 
     // delete
@@ -3380,7 +3380,7 @@ function render_editing(hc, cj) {
             bnote = "Are you sure you want to delete this " + x + "?";
         else
             bnote = "Are you sure you want to override the deadline and delete this " + x + "?";
-        btnbox.push('<button type="button" name="delete" class="btn btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="' + bnote + '">' + $("#licon-trash").html() + '</button>');
+        btnbox.push('<button type="button" name="delete" class="btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="' + bnote + '">' + $("#licon-trash").html() + '</button>');
     }
 
     // close .cmteditinfo
@@ -3389,18 +3389,18 @@ function render_editing(hc, cj) {
     // actions: save, [save draft], cancel, [btnbox], [word count]
     bnote = edit_allowed(cj) ? "" : '<div class="hint">(admin only)</div>';
     if (!cj.response)
-        actions.push('<button type="button" name="bsubmit" class="btn btn-primary">Save</button>' + bnote);
+        actions.push('<button type="button" name="bsubmit" class="btn-primary">Save</button>' + bnote);
     else {
         // actions
         // XXX allow_administer
-        actions.push('<button type="button" name="bsubmit" class="btn btn-primary">Submit</button>' + bnote);
+        actions.push('<button type="button" name="bsubmit" class="btn-primary">Submit</button>' + bnote);
         if (cj.response) {
             hc.push('<input type="hidden" name="response" value="' + cj.response + '">');
             if (cj.is_new || cj.draft)
-                actions.push('<button type="button" name="savedraft" class="btn">Save draft</button>' + bnote);
+                actions.push('<button type="button" name="savedraft">Save draft</button>' + bnote);
         }
     }
-    actions.push('<button type="button" name="cancel" class="btn">Cancel</button>');
+    actions.push('<button type="button" name="cancel">Cancel</button>');
     if (btnbox.length)
         actions.push('<div class="btnbox">' + btnbox.join("") + '</div>');
     if (cj.response && resp_rounds[cj.response].words > 0)
@@ -5430,8 +5430,8 @@ function edit_anno(locator) {
         for (var i = 0; i < annos.length; ++i)
             add_anno(hc, annos[i]);
         hc.pop();
-        hc.push('<div class="g"><button type="button" name="add" class="btn">Add group</button></div>');
-        hc.push_actions(['<button type="submit" name="save" class="btn btn-primary">Save changes</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);
+        hc.push('<div class="g"><button type="button" name="add">Add group</button></div>');
+        hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save changes</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         for (var i = 0; i < annos.length; ++i) {
             $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
@@ -5564,8 +5564,8 @@ function override_deadlines(callback) {
     var djq = $('<div class="popupbg"><div class="popupo"><p>'
                 + (ejq.attr("data-override-text") || "Are you sure you want to override the deadline?")
                 + '</p><form><div class="popup-actions">'
-                + '<button type="button" name="bsubmit" class="btn btn-primary"></button>'
-                + '<button type="button" name="cancel" class="btn">Cancel</button>'
+                + '<button type="button" name="bsubmit" class="btn-primary"></button>'
+                + '<button type="button" name="cancel">Cancel</button>'
                 + '</div></form></div></div>');
     djq.find("button[name=cancel]").on("click", function () {
         djq.remove();
@@ -5831,8 +5831,8 @@ function edittags_callback(rv) {
         return;
     $(div).html('<em class="plx">Tags:</em> '
                 + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" class="want-focus" data-tooltip-dir="v"></textarea>'
-                + ' &nbsp;<button type="button" name="tagsave ' + rv.pid + '" class="btn">Save</button>'
-                + ' &nbsp;<button type="button" name="tagcancel ' + rv.pid + '" class="btn">Cancel</button>');
+                + ' &nbsp;<button type="button" name="tagsave ' + rv.pid + '">Save</button>'
+                + ' &nbsp;<button type="button" name="tagcancel ' + rv.pid + '">Cancel</button>');
     var $ta = $(div).find("textarea");
     suggest($ta, taghelp_tset);
     $ta.val(rv.tags_edit_text).autogrow()
@@ -6329,8 +6329,8 @@ handle_ui.on("js-forgot-password", function (event) {
     hc.push('<p>Enter your email and we’ll send you instructions for signing in.</p>');
     hc.push('<div class="f-i"><label for="forgotpassword_email">Email</label>', '</div>');
     hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="username" id="forgotpassword_email">');
-    hc.push_actions(['<button type="submit" class="btn btn-primary">Reset password</button>',
-        '<button type="button" name="cancel" class="btn">Cancel</button>']);
+    hc.push_actions(['<button type="submit" class="btn-primary">Reset password</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
 });
@@ -6341,8 +6341,8 @@ handle_ui.on("js-create-account", function (event) {
     hc.push('<p>Enter your email and we’ll create an account and send you an initial password.</p>')
     hc.push('<div class="f-i"><label for="createaccount_email">Email</label>', '</div>');
     hc.push_pop('<input type="email" name="email" size="36" class="fullw" autocomplete="email" id="createaccount_email">');
-    hc.push_actions(['<button type="submit" class="btn btn-primary">Create account</button>',
-        '<button type="button" name="cancel" class="btn">Cancel</button>']);
+    hc.push_actions(['<button type="submit" class="btn-primary">Create account</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
 });
@@ -6477,8 +6477,8 @@ handle_ui.on("js-withdraw", function (event) {
         var idctr = hc.next_htctl_id();
         hc.push('<div><input type="checkbox" name="override" value="1" id="' + idctr + '">&nbsp;<label for="' + idctr + '">Override deadlines</label></div>');
     }
-    hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn btn-primary">Withdraw</button>',
-        '<button type="button" name="cancel" class="btn">Cancel</button>']);
+    hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn-primary">Withdraw</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);
     $d.on("submit", "form", function () { $f.addClass("submitting"); });
@@ -6488,8 +6488,8 @@ handle_ui.on("js-delete-paper", function (event) {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>');
-    hc.push_actions(['<button type="submit" name="delete" value="1" class="btn dangerous">Delete</button>',
-        '<button type="button" name="cancel" class="btn">Cancel</button>']);
+    hc.push_actions(['<button type="submit" name="delete" value="1" class="dangerous">Delete</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);
     $d.on("submit", "form", function () { $f.addClass("submitting"); });
@@ -6884,7 +6884,7 @@ if (hotcrp_paperid) {
 handle_ui.on("js-cannot-delete-user", function (event) {
     var hc = popup_skeleton({anchor: this});
     hc.push('<p><strong>This user cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the user, first remove these papers from the database or give the papers more contacts.</p>');
-    hc.push_actions(['<button type="button" name="cancel" class="btn">Cancel</button>']);
+    hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });
 
@@ -6894,8 +6894,8 @@ handle_ui.on("js-delete-user", function (event) {
     hc.push('<p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>');
     if ((x = $(this).data("deleteInfo")))
         hc.push(x);
-    hc.push_actions(['<button type="submit" name="delete" value="1" class="btn dangerous">Delete user</button>',
-        '<button type="button" name="cancel" class="btn">Cancel</button>']);
+    hc.push_actions(['<button type="submit" name="delete" value="1" class="dangerous">Delete user</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });
 
@@ -6925,9 +6925,9 @@ handle_ui.on("js-decline-review", function () {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
-    hc.push('<textarea name="reason" rows="3" cols="40" style="width:99%" placeholder="Optional explanation" spellcheck="true"></textarea>');
-    hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn btn-primary">Decline review</button>',
-        '<button type="button" name="cancel" class="btn">Cancel</button>']);
+    hc.push('<textarea name="reason" rows="3" cols="40" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
+    hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn-primary">Decline review</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });
 
@@ -6935,8 +6935,8 @@ handle_ui.on("js-delete-review", function () {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p>');
-    hc.push_actions(['<button type="submit" name="deletereview" value="1" class="btn dangerous">Delete review</button>',
-        '<button type="button" name="cancel" class="btn">Cancel</button>']);
+    hc.push_actions(['<button type="submit" name="deletereview" value="1" class="dangerous">Delete review</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });
 
@@ -7003,8 +7003,8 @@ handle_ui.on("js-edit-formulas", function () {
         hc.push('<div class="editformulas">', '</div>');
         for (i in formulas || [])
             push_formula(hc, formulas[i]);
-        hc.pop_push('<button type="button" name="add" class="btn">Add named formula</button>');
-        hc.push_actions(['<button type="submit" name="saveformulas" value="1" class="btn btn-primary">Save</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);
+        hc.pop_push('<button type="button" name="add">Add named formula</button>');
+        hc.push_actions(['<button type="submit" name="saveformulas" value="1" class="btn-primary">Save</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         $d.on("click", "button", click);
         $d.on("click", "a.delete-link", ondelete);
@@ -7038,7 +7038,7 @@ handle_ui.on("js-edit-view-options", function () {
         hc.push('<div class="f-i"><div class="f-c">Current view options</div>', '</div>');
         hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(display_current || "") + '</textarea>');
         hc.pop();
-        hc.push_actions(['<button type="submit" name="save" class="btn btn-primary">Save options as default</button>', '<button type="button" name="cancel" class="btn">Cancel</button>']);
+        hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save options as default</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         $d.on("submit", "form", submit);
     }
@@ -7835,7 +7835,7 @@ function load_more_events() {
 function render_events(e, rows) {
     var j = $(e).find("tbody");
     if (!j.length) {
-        $(e).append("<div class=\"eventtable\"><table class=\"pltable\"><tbody class=\"pltable\"></tbody></table></div><div class=\"g eventtable-more\"><button class=\"btn\" type=\"button\">More</button></div>");
+        $(e).append("<div class=\"eventtable\"><table class=\"pltable\"><tbody class=\"pltable\"></tbody></table></div><div class=\"g eventtable-more\"><button type=\"button\">More</button></div>");
         $(e).find("button").on("click", load_more_events);
         j = $(e).find("tbody");
     }

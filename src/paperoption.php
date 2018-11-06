@@ -1253,7 +1253,7 @@ class AttachmentsPaperOption extends PaperOption {
                     Ht::link("Delete", "", ["class" => "ui js-remove-document document-action"]),
                 '</div></div>';
         }
-        echo '</div>', Ht::button("Add attachment", ["class" => "btn ui js-add-attachment", "data-editable-attachments" => "{$this->formid}_attachments"]),
+        echo '</div>', Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}_attachments"]),
             $pt->messages_at($this->formid),
             "</div>\n\n";
     }

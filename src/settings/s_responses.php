@@ -71,7 +71,7 @@ class Responses_SettingParser extends SettingParser {
         }
 
         echo '<div class="settings-g">',
-            Ht::button("Add response round", ["class" => "btn ui js-settings-resp-round-new"]),
+            Ht::button("Add response round", ["class" => "ui js-settings-resp-round-new"]),
             '</div></div></div></div>';
     }
 

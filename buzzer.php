@@ -78,7 +78,7 @@ echo Ht::form(hoturl_post("buzzer"));
 echo '<table style="margin-top:3em"><tr>';
 
 // mute button
-echo '<td><button id="tracker-table-mute" type="button" class="btn foldc" style="padding-bottom:5px">
+echo '<td><button id="tracker-table-mute" type="button" class="foldc" style="padding-bottom:5px">
 <svg id="soundicon" class="fn" width="1.5em" height="1.5em" viewBox="0 0 75 75" style="position:relative;bottom:-3px">
  <polygon points="39.389,13.769 22.235,28.606 6,28.606 6,47.699 21.989,47.699 39.389,62.75 39.389,13.769" style="stroke:#111111;stroke-width:5;stroke-linejoin:round;fill:#111111;" />
  <path d="M 48.128,49.03 C 50.057,45.934 51.19,42.291 51.19,38.377 C 51.19,34.399 50.026,30.703 48.043,27.577" style="fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round"/>

@@ -204,7 +204,7 @@ class Home_Partial {
         if ($is_external_login)
             echo Ht::hidden("action", "login");
         echo '<div class="popup-actions">',
-            Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn btn-primary", "tabindex" => 1]),
+            Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn-primary", "tabindex" => 1]),
             '</div>';
         if (!$is_external_login
             && !$conf->opt("disableNewUsers")

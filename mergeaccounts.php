@@ -112,7 +112,7 @@ echo '<div class="', Ht::control_class("email", "f-i"), '">',
     Ht::radio("prefer", 1), '</span>',
     "Keep the account named above and delete my current account</label></div>",
     '</div>',
-    Ht::actions([Ht::submit("merge", "Merge accounts", ["class" => "btn btn-primary"])]),
+    Ht::actions([Ht::submit("merge", "Merge accounts", ["class" => "btn-primary"])]),
     '</form>';
 
 

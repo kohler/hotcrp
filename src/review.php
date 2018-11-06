@@ -862,8 +862,8 @@ $blind\n";
             && $rrow->reviewType < REVIEW_SECONDARY
             && ($user->is_my_review($rrow) || $user->can_administer($prow))) {
             $buttons = [];
-            $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn btn-highlight"]);
-            $buttons[] = Ht::button("Decline", ["class" => "ui btn js-decline-review"]);
+            $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn-highlight"]);
+            $buttons[] = Ht::button("Decline", ["class" => "ui js-decline-review"]);
             // Also see $qreq->refuse case in review.php.
             if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
@@ -888,46 +888,46 @@ $blind\n";
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot) . " Are you sure you want to override the deadline?";
             if (!$submitted) {
-                $buttons[] = array(Ht::button("Submit review", ["class" => "btn btn-primary ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
-                $buttons[] = array(Ht::button("Save changes", ["class" => "btn ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
+                $buttons[] = array(Ht::button("Submit review", ["class" => "btn-primary ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
+                $buttons[] = array(Ht::button("Save changes", ["class" => "ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
             } else {
-                $buttons[] = array(Ht::button("Save changes", ["class" => "btn btn-primary ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
+                $buttons[] = array(Ht::button("Save changes", ["class" => "btn-primary ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
             }
         } else if (!$submitted && $rrow && $rrow->needs_approval()) {
             if ($my_review && !$rrow->timeApprovalRequested) {
-                $buttons[] = Ht::submit("submitreview", "Submit for approval", ["class" => "btn btn-primary need-clickthrough-enable", "disabled" => $disabled]);
+                $buttons[] = Ht::submit("submitreview", "Submit for approval", ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
             } else if ($my_review) {
-                $buttons[] = Ht::submit("submitreview", "Resubmit for approval", ["class" => "btn btn-primary need-clickthrough-enable", "disabled" => $disabled]);
+                $buttons[] = Ht::submit("submitreview", "Resubmit for approval", ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
             } else {
-                $buttons[] = Ht::submit("submitreview", "Approve review", ["class" => "btn btn-highlight need-clickthrough-enable", "disabled" => $disabled]);
+                $buttons[] = Ht::submit("submitreview", "Approve review", ["class" => "btn-highlight need-clickthrough-enable", "disabled" => $disabled]);
             }
             if (!$my_review || !$rrow->timeApprovalRequested) {
-                $buttons[] = Ht::submit("savedraft", "Save changes", ["class" => "btn need-clickthrough-enable", "disabled" => $disabled]);
+                $buttons[] = Ht::submit("savedraft", "Save changes", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
             }
             if (!$my_review && $rrow->requestedBy == $Me->contactId) {
                 $my_rrow = $prow->review_of_user($Me);
                 if (!$my_rrow || $my_rrow->reviewModified <= 1) {
-                    $buttons[] = Ht::submit("adoptreview", "Adopt as your review", ["class" => "btn need-clickthrough-enable", "disabled" => $disabled]);
+                    $buttons[] = Ht::submit("adoptreview", "Adopt as your review", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
                 } else if (!$my_rrow->reviewSubmitted) {
-                    $buttons[] = Ht::button("Adopt as your review", ["class" => "btn ui js-override-deadlines need-clickthrough-enable", "data-override-text" => "Are you sure you want to replace your current draft review?", "data-override-submit" => "adoptreview", "disabled" => $disabled]);
+                    $buttons[] = Ht::button("Adopt as your review", ["class" => "ui js-override-deadlines need-clickthrough-enable", "data-override-text" => "Are you sure you want to replace your current draft review?", "data-override-submit" => "adoptreview", "disabled" => $disabled]);
                 }
             }
         } else if (!$submitted) {
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
-            $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn btn-primary need-clickthrough-enable", "disabled" => $disabled]);
-            $buttons[] = Ht::submit("savedraft", "Save changes", ["class" => "btn need-clickthrough-enable", "disabled" => $disabled]);
+            $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
+            $buttons[] = Ht::submit("savedraft", "Save changes", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
         } else {
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
-            $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn btn-primary need-clickthrough-enable", "disabled" => $disabled]);
+            $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
         }
-        $buttons[] = Ht::submit("cancel", "Cancel", ["class" => "btn"]);
+        $buttons[] = Ht::submit("cancel", "Cancel");
 
         if ($rrow && $type == "bottom" && $Me->allow_administer($prow)) {
             $buttons[] = "";
             if ($submitted) {
-                $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review", ["class" => "btn"]), "(admin only)");
+                $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
             }
-            $buttons[] = array(Ht::button("Delete review", ["class" => "ui btn js-delete-review"]), "(admin only)");
+            $buttons[] = array(Ht::button("Delete review", ["class" => "ui js-delete-review"]), "(admin only)");
         }
 
         echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);

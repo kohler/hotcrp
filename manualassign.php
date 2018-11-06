@@ -183,7 +183,7 @@ echo "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
 
 echo '<tr><td colspan="2"><div class="aab aabr">',
-    '<div class="aabut">', Ht::submit("Go", ["class" => "btn btn-primary"]), '</div>',
+    '<div class="aabut">', Ht::submit("Go", ["class" => "btn-primary"]), '</div>',
     '</div></td></tr>',
     "</table>\n</form></div></td></tr></table>\n";
 
@@ -240,7 +240,7 @@ if ($reviewer) {
         Ht::hidden("q", $Qreq->q),
         Ht::hidden("papx", join(" ", $search->paper_ids())),
         "<div class=\"aab aabr aabig\">",
-        '<div class="aabut aabutsp">', Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]), '</div>';
+        '<div class="aabut aabutsp">', Ht::submit("update", "Save assignments", ["class" => "btn-primary"]), '</div>';
     $rev_rounds = $Conf->round_selector_options(false);
     $expected_round = $Conf->assignment_round_option(false);
     if (count($rev_rounds) > 1)
@@ -257,7 +257,7 @@ if ($reviewer) {
         $paperList->table_html("reviewAssignment",
                                ["header_links" => true, "nofooter" => true, "list" => true]),
         '<div class="aab aabr aabig"><div class="aabut">',
-        Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]),
+        Ht::submit("update", "Save assignments", ["class" => "btn-primary"]),
         "</div></div></div></form>\n";
     Ht::stash_script('hiliter_children("form.assignpc")');
     Ht::stash_script('$("#assrevimmediate").on("change", function () { var $f = $(this).closest("form").toggleClass("ignore-diff", this.checked); form_highlight($f); })');

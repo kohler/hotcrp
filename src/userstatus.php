@@ -705,7 +705,7 @@ class UserStatus extends MessageSet {
             '">';
         $pws = get($reqj, "__passwords", ["", "", ""]);
         // Hit a button to change your password
-        echo Ht::button("Change password", ["class" => "btn ui js-foldup fn3", "data-fold-target" => "3o"]);
+        echo Ht::button("Change password", ["class" => "ui js-foldup fn3", "data-fold-target" => "3o"]);
         // Display the following after the button is clicked
         echo '<div class="fx3">';
         if (!$us->viewer->can_change_password(null)

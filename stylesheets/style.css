@@ -776,7 +776,7 @@ a.closebtn {
 	border-radius: 0;
 }
 
-.btn, .btn.btn-t:hover {
+button, .btn, button.btn-t:hover {
 	border-radius: 4px;
 	display: inline-block;
 	border-width: 1px;
@@ -790,70 +790,71 @@ a.closebtn {
 	white-space: nowrap;
 	text-indent: 0;
 }
-.btn.btn-t {
+button.btn-t {
 	border-color: rgba(181, 181, 181, 0);
 	background: none;
 }
-.btn.btn-sm {
+.btn-sm {
 	font-size: smaller;
 }
-.btn.btn-licon {
+.btn-licon {
 	padding: 1px 4px;
 	font-size: 120%;
 }
-.btn:hover, .btn.btn-t:hover {
+button:hover, .btn:hover {
 	border: 1px solid #a5a5a5;
 	background-image: linear-gradient(#eeeeee, #dddddd);
 }
-.btn:active {
+button:active, .btn:active {
 	border: 1px solid #aaaaaa;
 	background-image: linear-gradient(#c3c3c3, #d3d3d3);
 }
+button:hover, button:focus, button:active, button:focus-within,
 .btn:hover, .btn:focus, .btn:active, .btn:focus-within {
 	z-index: 1;
 }
-.btn.btn-default,
-.btn.btn-primary {
+.btn-default,
+.btn-primary {
 	border: 1px solid #6b73b5;
 	background: #8089d1;
 	background-image: linear-gradient(#9ca3d6, #8089d1);
 	color: white;
 }
-.btn.btn-default:hover, .btn.btn-default:active,
-.btn.btn-primary:hover, .btn.btn-primary:active {
+.btn-default:hover, .btn-default:active,
+.btn-primary:hover, .btn-primary:active {
 	border: 1px solid #505799;
 	background-image: linear-gradient(#8089d1, #6b73b5);
 }
-.alert .btn.btn-default, .alert .btn.btn-primary, .alert .btn.btn-alertable,
-.btn.btn-highlight, .btn.dangerous {
+.alert .btn-default, .alert .btn-primary, .alert .btn-alertable,
+.btn-highlight, button.dangerous {
 	border: 1px solid #cc0000;
 	background: #ff0000;
 	background-image: linear-gradient(#ff4040, #ff0000);
 	color: white;
 }
-.alert .btn.btn-default:hover, .alert .btn.btn-default:active,
-.alert .btn.btn-primary:hover, .alert .btn.btn-primary:active,
-.alert .btn.btn-alertable:hover, .alert .btn.btn-alertable:active,
-.btn.btn-highlight:hover, .btn.btn-highlight:active {
+.alert .btn-default:hover, .alert .btn-default:active,
+.alert .btn-primary:hover, .alert .btn-primary:active,
+.alert .btn-alertable:hover, .alert .btn-alertable:active,
+.btn-highlight:hover, .btn-highlight:active {
 	border: 1px solid #b00000;
 	background-image: linear-gradient(#ee0000, #cc0000);
 }
-.btn:disabled, .btn:disabled:hover,
-.btn.btn-default:disabled, .btn.btn-default:disabled:hover,
-.btn.btn-primary:disabled, .btn.btn-primary:disabled:hover,
-.alert .btn.btn-default:disabled, .alert .btn.btn-default:disabled:hover,
-.alert .btn.btn-primary:disabled, .alert .btn.btn-primary:disabled:hover,
-.alert .btn.btn-alertable:disabled, .alert .btn.btn-alertable:disabled:hover,
-.btn.btn-highlight:disabled, .alert .btn.btn-highlight:disabled:hover {
+button:disabled, button:disabled:hover, .btn:disabled, .btn:disabled:hover,
+.btn-default:disabled, .btn-default:disabled:hover,
+.btn-primary:disabled, .btn-primary:disabled:hover,
+.alert .btn-default:disabled, .alert .btn-default:disabled:hover,
+.alert .btn-primary:disabled, .alert .btn-primary:disabled:hover,
+.alert .btn-alertable:disabled, .alert .btn-alertable:disabled:hover,
+.btn-highlight:disabled, .alert .btn-highlight:disabled:hover {
 	color: rgba(102, 102, 102, 0.5);
 	border-color: #c5c5c5;
 	background: rgba(222, 222, 222, 0.5);
 }
-.aabig .btn {
+.aabig button, .aabig .btn {
 	padding: 4px 9px 4px;
 	min-height: 31px;
 }
-.aabig .btn.btn-licon {
+.aabig .btn-licon {
 	padding: 1px 7px 1px;
 }
 .aab {
@@ -888,28 +889,28 @@ a.closebtn {
 .aabr > .aabut.aabutsp {
 	margin: 0 0 0 2.5em;
 }
-.btnp > .btn, .btnp > .btnbox {
+.btnp > button, .btnp > .btn, .btnp > .btnbox {
 	margin-right: 0.75em;
 }
-.btnp > .btn:last-child, .btnp > .btnbox:last-child {
+.btnp > button:last-child, .btnp > .btn:last-child, .btnp > .btnbox:last-child {
 	margin-right: 0;
 }
 .btnbox {
 	display: inline-flex;
 }
-.btnbox > .btn {
+.btnbox > button, .btnbox > .btn {
 	border-radius: 0;
 	border-left-width: 0;
 	margin-left: 0;
 	margin-right: 0;
 	flex: 0 1 auto;
 }
-.btnbox > .btn:first-child {
+.btnbox > button:first-child, .btnbox > .btn:first-child {
 	border-top-left-radius: 4px;
 	border-bottom-left-radius: 4px;
 	border-left-width: 1px;
 }
-.btnbox > .btn:last-child {
+.btnbox > button:last-child, .btnbox > .btn:last-child {
 	border-top-right-radius: 4px;
 	border-bottom-right-radius: 4px;
 }
@@ -917,7 +918,7 @@ a.closebtn {
 	fill: currentColor;
 	vertical-align: -2px;
 }
-.btn > .licon {
+button > .licon, .btn > .licon {
 	vertical-align: -0.15em;
 }
 .licon-s {
@@ -3476,7 +3477,7 @@ a.help {
 .popup-actions {
 	margin-top: 1em;
 }
-.popup-actions .btn {
+.popup-actions .btn, .popup-actions button {
 	float: right;
 	margin-left: 1em;
 }

@@ -156,9 +156,9 @@ class MailSender {
             ' &nbsp; ';
         $class = $this->groupable ? "" : " hidden";
         if (!$this->qreq->group && $this->qreq->ungroup)
-            echo Ht::submit("group", "Gather recipients", ["class" => "btn mail_groupable" . $class]);
+            echo Ht::submit("group", "Gather recipients", ["class" => "mail_groupable" . $class]);
         else
-            echo Ht::submit("ungroup", "Separate recipients", ["class" => "btn mail_groupable" . $class]);
+            echo Ht::submit("ungroup", "Separate recipients", ["class" => "mail_groupable" . $class]);
         echo ' &nbsp; ', Ht::submit("cancel", "Cancel"), '</div>';
     }
 

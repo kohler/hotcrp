@@ -686,7 +686,7 @@ class PaperTable {
         }
 
         echo '<div class="document-replacer">',
-            Ht::button($doc ? "Replace" : "Upload", ["class" => "btn ui js-replace-document"]),
+            Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document"]),
             '</div>',
             $this->messages_at($field), "</div>";
     }
@@ -789,11 +789,11 @@ class PaperTable {
             . $this->editable_author_component_entry($n, "auname", $au) . ' '
             . $this->editable_author_component_entry($n, "auemail", $au) . ' '
             . $this->editable_author_component_entry($n, "auaff", $au)
-            . '<span class="nb btnbox aumovebox"><a href="" class="ui btn qx need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
+            . '<span class="nb btnbox aumovebox"><button type="button" class="ui qx need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
             . Icons::ui_triangle(0)
-            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
+            . '</button><button type="button" class="ui qx need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
             . Icons::ui_triangle(2)
-            . '</a><a href="" class="ui btn qx need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</a></span>'
+            . '</button><button type="button" class="ui qx need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>'
             . $this->messages_at("author$n")
             . $this->messages_at("auname$n")
             . $this->messages_at("auemail$n")
@@ -1262,7 +1262,7 @@ class PaperTable {
                 echo $this->editable_newcontact_row($i);
         }
         echo '</div><div class="ug">',
-            Ht::button("Add contact", ["class" => "ui btn row-order-ui addrow"]),
+            Ht::button("Add contact", ["class" => "ui row-order-ui addrow"]),
             "</div>", $this->messages_at("contacts"), "</div></div>\n\n";
     }
 
@@ -1599,7 +1599,7 @@ class PaperTable {
                 $tagger->unparse($editable),
                 "</textarea></div>",
                 '<div class="aab aabr aab-compact"><div class="aabut">',
-                Ht::submit("save", "Save", ["class" => "btn btn-primary"]),
+                Ht::submit("save", "Save", ["class" => "btn-primary"]),
                 '</div><div class="aabut">',
                 Ht::submit("cancel", "Cancel"),
                 "</div></div>",
@@ -1919,11 +1919,11 @@ class PaperTable {
         if ($this->_prow->timeWithdrawn > 0) {
             $revivable = $this->conf->timeFinalizePaper($this->_prow);
             if ($revivable)
-                $b = Ht::submit("revive", "Revive submission", ["class" => "btn btn-primary"]);
+                $b = Ht::submit("revive", "Revive submission", ["class" => "btn-primary"]);
             else {
                 $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?";
                 if ($this->admin)
-                    $b = array(Ht::button("Revive submission", ["class" => "btn ui js-override-deadlines", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
+                    $b = array(Ht::button("Revive submission", ["class" => "ui js-override-deadlines", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
             }
             return array($b);
         }
@@ -1952,19 +1952,19 @@ class PaperTable {
             else
                 $save_name = "Save and submit";
             if (!$whyNot)
-                $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn btn-primary btn-savepaper"]), "");
+                $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn-primary btn-savepaper"]), "");
             else if ($this->admin) {
                 $revWhyNot = filter_whynot($whyNot, ["deadline", "rejected"]);
                 $x = whyNotText($revWhyNot) . " Are you sure you want to override the deadline?";
-                $buttons[] = array(Ht::button($save_name, ["class" => "btn btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
+                $buttons[] = array(Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($this->_prow)) {
-                $buttons[] = array(Ht::submit("update", $save_name, ["class" => "btn btn-savepaper"]));
+                $buttons[] = array(Ht::submit("update", $save_name, ["class" => "btn-savepaper"]));
             } else if ($this->prow) {
-                $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
+                $buttons[] = array(Ht::submit("updatecontacts", "Save contacts"), "");
             }
             if (!empty($buttons)) {
-                $buttons[] = [Ht::submit("cancel", "Cancel", ["class" => "btn"])];
+                $buttons[] = [Ht::submit("cancel", "Cancel")];
                 $buttons[] = "";
             }
         }
@@ -1976,7 +1976,7 @@ class PaperTable {
         else if ($this->prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw");
         else {
-            $args = ["class" => "btn ui js-withdraw"];
+            $args = ["class" => "ui js-withdraw"];
             if ($this->user->can_withdraw_paper($this->prow, !$this->admin))
                 $args["data-withdrawable"] = "true";
             if (($this->admin && !$this->prow->has_author($this->user))
@@ -2005,7 +2005,7 @@ class PaperTable {
         $buttons = $this->_collectActionButtons();
 
         if ($this->admin && $this->prow)
-            $buttons[] = array(Ht::button("Delete", ["class" => "btn ui js-delete-paper"]), "(admin only)");
+            $buttons[] = array(Ht::button("Delete", ["class" => "ui js-delete-paper"]), "(admin only)");
 
         echo Ht::actions($buttons, array("class" => "aab aabr aabig"));
     }
@@ -2098,7 +2098,7 @@ class PaperTable {
         global $Conf, $Now;
         $data = $Conf->_i("clickthrough_$ctype", false);
         echo Ht::form(["class" => "ui"]), '<div>', $data;
-        $buttons = [Ht::submit("Agree", ["class" => "btn btnbig btn-highlight ui js-clickthrough"])];
+        $buttons = [Ht::submit("Agree", ["class" => "btnbig btn-highlight ui js-clickthrough"])];
         echo Ht::hidden("clickthrough_type", $ctype),
             Ht::hidden("clickthrough_id", sha1($data)),
             Ht::hidden("clickthrough_time", $Now),

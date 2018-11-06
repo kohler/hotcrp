@@ -145,10 +145,10 @@ if ($Graph == "formula") {
 
     echo Ht::form(hoturl("graph", "g=formula"), ["method" => "get"]);
     /*echo '<div>',
-        Ht::button(Icons::ui_graph_scatter(), ["class" => "btn btn-t"]),
-        Ht::button(Icons::ui_graph_bars(), ["class" => "btn btn-t"]),
-        Ht::button(Icons::ui_graph_box(), ["class" => "btn btn-t"]),
-        Ht::button(Icons::ui_graph_cdf(), ["class" => "btn btn-t"]),
+        Ht::button(Icons::ui_graph_scatter(), ["class" => "btn-t"]),
+        Ht::button(Icons::ui_graph_bars(), ["class" => "btn-t"]),
+        Ht::button(Icons::ui_graph_box(), ["class" => "btn-t"]),
+        Ht::button(Icons::ui_graph_cdf(), ["class" => "btn-t"]),
         '</div>';*/
 
     // X axis
@@ -174,7 +174,7 @@ if ($Graph == "formula") {
     for ($i = 0; $i < count($styles); ++$i)
         echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fgm->problem_status_at("q$i"));
     echo "</tbody><tbody><tr><td>",
-        Ht::button("Add data set", ["class" => "ui btn row-order-ui addrow"]),
+        Ht::button("Add data set", ["class" => "ui row-order-ui addrow"]),
         "</td></tr></tbody></table></div></div>\n";
     echo '<div class="g"></div>';
     echo Ht::submit(null, "Graph");

@@ -94,8 +94,8 @@ function do_kiosk() {
             + '<td>' + escape_entities(info.kiosk_urls[0]) + '</td></tr></tbody></table>');
     if (show_papers)
         hc.push('<input type="hidden" name="buzzer_showpapers" value="1" />');
-    hc.push_actions(['<button type="submit" name="signout_to_kiosk" value="1" class="btn">Enter kiosk mode</button>',
-        '<button type="button" name="cancel" class="btn">Cancel</button>']);
+    hc.push_actions(['<button type="submit" name="signout_to_kiosk" value="1">Enter kiosk mode</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 }
 

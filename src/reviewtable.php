@@ -16,7 +16,7 @@ function _retract_review_request_form(PaperInfo $prow, ReviewInfo $rr) {
         . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
         . '<div class="inline">'
         . Ht::hidden("retract", $rr->email)
-        . Ht::submit("Retract review", array("title" => "Retract this review request", "style" => "font-size:smaller"))
+        . Ht::submit("Retract review", ["title" => "Retract this review request", "class" => "btn-sm"])
         . '</div></form></small>';
 }
 
@@ -235,9 +235,9 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                     $t .= Ht::hidden("override", 1);
                     $apptext = "Override conflict and approve review";
                 }
-                $t .= Ht::submit("approvereview", $apptext, array("style" => "font-size:smaller"))
+                $t .= Ht::submit("approvereview", $apptext, ["class" => "btn-sm"])
                     . ' '
-                    . Ht::submit("denyreview", "Deny request", array("style" => "font-size:smaller"))
+                    . Ht::submit("denyreview", "Deny request", ["class" => "btn-sm"])
                     . '</form>';
             } else if ($Me->contactId && $rr->requestedBy === $Me->contactId)
                 $t .= _retract_review_request_form($prow, $rr);

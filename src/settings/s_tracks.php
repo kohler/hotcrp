@@ -164,7 +164,7 @@ class Tracks_SettingRenderer {
         // catchall track
         self::do_track($sv, "_", 1);
         self::do_cross_track($sv);
-        echo Ht::button("Add track", ["class" => "btn ui js-settings-add-track", "id" => "settings_track_add"]);
+        echo Ht::button("Add track", ["class" => "ui js-settings-add-track", "id" => "settings_track_add"]);
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
         Ht::stash_script('$(document).on("change", "select.js-track-perm", function (event) { foldup.call(this, event, {f: this.selectedIndex == 0 || this.selectedIndex == 3}) })');

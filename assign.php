@@ -364,7 +364,7 @@ if ($Me->can_administer($prow)) {
 
     echo "</div>\n",
         '<div class="aab aabr aabig">',
-        '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn btn-primary"]), '</div>',
+        '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn-primary"]), '</div>',
         '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
         '<div id="assresult" class="aabut"></div>',
         '</div></form>';
@@ -429,7 +429,7 @@ if ($Me->can_administer($prow))
         ' </span>Override deadlines, declined requests, and potential conflicts</label></div>';
 
 echo "<div class='f-i'>\n",
-    Ht::submit("requestreview", "Request review", ["class" => "btn btn-primary"]),
+    Ht::submit("requestreview", "Request review", ["class" => "btn-primary"]),
     "</div>\n\n";
 Ht::stash_script("\$(\"#revreq_email\").on(\"input\",revreq_email_input)");
 

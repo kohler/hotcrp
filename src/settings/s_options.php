@@ -173,16 +173,16 @@ class Options_SettingRenderer {
 
         echo '<div class="f-i btnp">',
             '<span class="btnbox">',
-            Ht::button(Icons::ui_description(), ["class" => "btn btn-licon ui js-settings-option-description need-tooltip", "aria-label" => "Description"]),
-            Ht::button(Icons::ui_edit_hide(), ["class" => "btn btn-licon ui js-settings-option-presence need-tooltip", "aria-label" => "Form properties"]),
-            Ht::button(Icons::ui_visibility_hide(), ["class" => "btn btn-licon ui js-settings-option-visibility need-tooltip", "aria-label" => "Reviewer visibility"]),
-            Ht::button(Icons::ui_display(), ["class" => "btn btn-licon ui js-settings-option-display need-tooltip", "aria-label" => "Display type"]),
+            Ht::button(Icons::ui_description(), ["class" => "btn-licon ui js-settings-option-description need-tooltip", "aria-label" => "Description"]),
+            Ht::button(Icons::ui_edit_hide(), ["class" => "btn-licon ui js-settings-option-presence need-tooltip", "aria-label" => "Form properties"]),
+            Ht::button(Icons::ui_visibility_hide(), ["class" => "btn-licon ui js-settings-option-visibility need-tooltip", "aria-label" => "Reviewer visibility"]),
+            Ht::button(Icons::ui_display(), ["class" => "btn-licon ui js-settings-option-display need-tooltip", "aria-label" => "Display type"]),
             '</span>',
             '<span class="btnbox">',
-            Ht::button(Icons::ui_movearrow(0), ["class" => "btn btn-licon ui js-settings-option-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
-            Ht::button(Icons::ui_movearrow(2), ["class" => "btn btn-licon ui js-settings-option-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
+            Ht::button(Icons::ui_movearrow(0), ["class" => "btn-licon ui js-settings-option-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
+            Ht::button(Icons::ui_movearrow(2), ["class" => "btn-licon ui js-settings-option-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
-            Ht::button(Icons::ui_trash(), ["class" => "btn btn-licon ui js-settings-option-move delete need-tooltip", "aria-label" => "Delete", "data-option-exists" => get($this->have_options, $o->id)]),
+            Ht::button(Icons::ui_trash(), ["class" => "btn-licon ui js-settings-option-move delete need-tooltip", "aria-label" => "Delete", "data-option-exists" => get($this->have_options, $o->id)]),
             "</div>\n";
 
         echo '</div>';
@@ -207,7 +207,7 @@ class Options_SettingRenderer {
 
         echo '<div style="margin-top:2em" id="settings_newopt" data-template="',
             htmlspecialchars($newopt), '">',
-            Ht::button("Add submission field", ["class" => "btn ui js-settings-option-new"]),
+            Ht::button("Add submission field", ["class" => "ui js-settings-option-new"]),
             "</div>\n";
     }
     static function crosscheck(SettingValues $sv) {
