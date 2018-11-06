@@ -256,15 +256,9 @@ class Ht {
         if (!isset($js["class"]) && self::$default_button_class)
             $js["class"] = self::$default_button_class;
         $type = isset($js["type"]) ? $js["type"] : "button";
-        if ($type === "button" || preg_match("_[<>]_", $html) || isset($js["value"])) {
-            if (!isset($js["value"]))
-                $js["value"] = 1;
-            return "<button type=\"$type\"" . self::extra($js)
-                . ">" . $html . "</button>";
-        } else {
-            $js["value"] = $html;
-            return "<input type=\"$type\"" . self::extra($js) . " />";
-        }
+        if (!isset($js["value"]) && isset($js["name"]) && $type !== "button")
+            $js["value"] = "1";
+        return "<button type=\"$type\"" . self::extra($js) . ">" . $html . "</button>";
     }
 
     static function submit($name, $html = null, $js = null) {
