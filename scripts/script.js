@@ -2443,14 +2443,14 @@ function make_round_selector(name, revtype, $a) {
         else
             around = $as[0].getAttribute("data-default-review-round");
         around = around || "unnamed";
-        t += '<div class="assignment-ui-round fx2">Round:&nbsp; <select name="rev_round' + name + '" data-default-value="' + around + '">';
+        t += '<div class="assignment-ui-round fx2">Round:&nbsp; <span class="select"><select name="rev_round' + name + '" data-default-value="' + around + '">';
         for (var i = 0; i < rounds.length; ++i) {
             t += '<option value="' + rounds[i] + '"';
             if (rounds[i] == around)
                 t += " selected";
             t += '>' + rounds[i] + '</option>';
         }
-        t += '</select></div>';
+        t += '</select></span></div>';
     }
     return t;
 }
@@ -3352,7 +3352,7 @@ function render_editing(hc, cj) {
 
         // visibility
         hc.push('<div class="entryi"><label for="' + cid + '-visibility">Visibility</label><div class="entry">', '</div></div>');
-        hc.push('<select id="' + cid + '-visibility" name="visibility">', '</select>');
+        hc.push('<span class="select"><select id="' + cid + '-visibility" name="visibility">', '</select></span>');
         hc.push('<option value="au">' + au_option + '</option>');
         hc.push('<option value="rev">Hidden from authors</option>');
         hc.push('<option value="pc">Hidden from authors and external reviewers</option>');

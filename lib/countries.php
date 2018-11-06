@@ -229,7 +229,7 @@ class Countries {
             $extra["autocomplete"] = "country-name";
         if (!isset($extra["data-default-value"]))
             $extra["data-default-value"] = $sel_country;
-        return "<select name=\"${name}\"" . Ht::extra($extra) . ">\n"
-            . join("\n", $opts) . "</select>";
+        return "<span class=\"select\"><select name=\"${name}\"" . Ht::extra($extra) . ">\n"
+            . join("\n", $opts) . "</select></span>";
     }
 }

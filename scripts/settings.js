@@ -316,21 +316,21 @@ var revfield_template = '<div id="revfield_$" class="settings-revfield f-contain
   <div class="f-horizontal">\
     <div class="f-i">\
       <label for="authorView_$">Visibility</label>\
-      <select name="authorView_$" id="authorView_$" class="reviewfield_authorView">\
+      <span class="select"><select name="authorView_$" id="authorView_$" class="reviewfield_authorView">\
         <option value="au">Shown to authors</option>\
         <option value="pc">Hidden from authors</option>\
         <option value="audec">Hidden from authors until decision</option>\
         <option value="admin">Shown only to administrators</option>\
-      </select>\
+      </select></span>\
     </div>\
     <div class="f-i reviewrow_options">\
       <label for="option_class_prefix_$">Colors</label>\
-      <select name="option_class_prefix_$" id="option_class_prefix_$" class="reviewfield_option_class_prefix"></select>\
+      <span class="select"><select name="option_class_prefix_$" id="option_class_prefix_$" class="reviewfield_option_class_prefix"></select></span>\
 <input type="hidden" name="option_class_prefix_flipped_$" id="option_class_prefix_flipped_$" value="" />\
     </div>\
     <div class="f-i reviewrow_rounds">\
       <label for="round_list_$">Rounds</label>\
-      <select name="round_list_$" id="round_list_$" class="reviewfield_round_list"></select>\
+      <span class="select"><select name="round_list_$" id="round_list_$" class="reviewfield_round_list"></select></span>\
     </div>\
   </div>\
   <div class="f-i">\

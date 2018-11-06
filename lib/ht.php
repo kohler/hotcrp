@@ -195,10 +195,10 @@ class Ht {
 
         if ($selected === null || !isset($opt[$selected]))
             $selected = key($opt);
-        $t = '<select name="' . $name . '"' . self::extra($js);
+        $t = '<span class="select"><select name="' . $name . '"' . self::extra($js);
         if (!isset($js["data-default-value"]))
             $t .= ' data-default-value="' . htmlspecialchars($has_selected ? $selected : $first_value) . '"';
-        return $t . '>' . $x . $optgroup . "</select>";
+        return $t . '>' . $x . $optgroup . "</select></span>";
     }
 
     static function checkbox($name, $value = 1, $checked = false, $js = null) {
