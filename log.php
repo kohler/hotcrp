@@ -603,7 +603,7 @@ foreach ($visible_rows as $row) {
     if ($row->paperId)
         $at .= " (<a class=\"track\" href=\"" . hoturl("paper", "p=" . urlencode($row->paperId)) . "\">paper " . htmlspecialchars($row->paperId) . "</a>)";
     $t[] = '<td class="pl pl_logaction">' . $at . '</td>';
-    $trs[] = '    <tr class="k' . (count($trs) % 2) . '">' . join("", $t) . "</tr>\n";
+    $trs[] = '    <tr class="plnx k' . (count($trs) % 2) . '">' . join("", $t) . "</tr>\n";
 }
 
 if (!$Me->privChair || !empty($exclude_pids)) {
