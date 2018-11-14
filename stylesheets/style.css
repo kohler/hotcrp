@@ -45,7 +45,7 @@ input[type=text], input[type=email], input[type=password], input[type=date], tex
 /* page background */
 html {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-		"Helevtica Neue", Arial, sans-serif,
+		"Helvetica Neue", Arial, sans-serif,
 		"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 	line-height: 1.4;
 }
