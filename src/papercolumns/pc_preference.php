@@ -120,9 +120,11 @@ class Preference_PaperColumn extends PaperColumn {
         $rs = [];
         foreach (ContactSearch::make_pc($m[1], $conf->xt_user)->ids as $cid) {
             $u = $conf->cached_user_by_id($cid);
-            $fj["name"] = "pref:" . $u->email . $m[2];
-            $fj["user"] = $u->email;
-            $rs[] = (object) $fj;
+            if ($u->roles & Contact::ROLE_PC) {
+                $fj["name"] = "pref:" . $u->email . $m[2];
+                $fj["user"] = $u->email;
+                $rs[] = (object) $fj;
+            }
         }
         if (empty($rs))
             $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[1]) . "”.");
