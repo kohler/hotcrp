@@ -1276,12 +1276,14 @@ class PaperList {
             $v = get($this->_view_fields, $fdef->name);
             if ($v
                 || $fdef->fold
-                || ($v !== false && (!$minimal || $fdef->minimal)))
+                || ($v !== false && (!$minimal || $fdef->minimal))) {
+                $fdef->__subposition = count($field_list2);
                 $field_list2[] = $fdef;
+            }
         }
 
         // sort by position
-        usort($field_list2, "Column::position_compare");
+        usort($field_list2, "Conf::xt_position_compare");
         return $field_list2;
     }
 
