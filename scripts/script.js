@@ -227,7 +227,8 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
                 } catch (e) {
                 }
             }
-            if (typeof rjson !== "object"
+            if (!rjson
+                || typeof rjson !== "object"
                 || rjson.ok !== false
                 || typeof rjson.error !== "string")
                 rjson = {ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)};
