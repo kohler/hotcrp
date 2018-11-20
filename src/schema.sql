@@ -507,10 +507,12 @@ insert into Settings (name, value) values ('no_papersub', 1);
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
 insert into Settings (name, value, data) values ('tag_chair', 1, 'accept reject pcpaper');
--- allow PC members to review any paper by default
+-- default: allow PC members to review any paper
 insert into Settings (name, value) values ('pcrev_any', 1);
--- allow external reviewers to see the other reviews by default
+-- default: allow external reviewers to see the other reviews
 insert into Settings (name, value) values ('extrev_view', 2);
+-- default: administrators must approve potentially-conflicted external reviews
+insert into Settings (name, value) values ('extrev_chairreq', 2);
 -- default outcome map
 insert into Settings (name, value, data) values ('outcome_map', 1, '{"0":"Unspecified","-1":"Rejected","1":"Accepted"}');
 -- default review form
