@@ -13,6 +13,7 @@ class Formula_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->formula = $cj->formula;
+        $this->statistics = new ScoreInfo;
     }
     function completion_name() {
         if (strpos($this->formula->name, " ") !== false)
@@ -31,11 +32,6 @@ class Formula_PaperColumn extends PaperColumn {
         if ($visible)
             $this->formula->add_query_options($pl->qopts);
         return true;
-    }
-    function realize(PaperList $pl) {
-        $f = clone $this;
-        $f->statistics = new ScoreInfo;
-        return $f;
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         $formulaf = $this->formula->compile_sortable_function();

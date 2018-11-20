@@ -1297,7 +1297,7 @@ class PaperList {
                        && ($field = $this->find_column($sorter->type))) {
                 if ($field->prepare($this, PaperColumn::PREP_SORT)
                     && $field->sort) {
-                    $sorter->field = $field->realize($this);
+                    $sorter->field = $field;
                     $sorter->name = $field->name;
                     $sorters[] = $sorter;
                 }
@@ -1335,7 +1335,7 @@ class PaperList {
                 $fdef->is_visible = $all || !$this->is_folded($fdef);
                 $fdef->has_content = false;
                 if ($fdef->prepare($this, $fdef->is_visible ? 1 : 0)) {
-                    $field_list2[] = $fdef->realize($this);
+                    $field_list2[] = $fdef;
                 }
             }
         }

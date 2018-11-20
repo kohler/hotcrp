@@ -32,9 +32,6 @@ class PaperColumn extends Column {
     function prepare(PaperList $pl, $visible) {
         return true;
     }
-    function realize(PaperList $pl) {
-        return $this;
-    }
     function annotate_field_js(PaperList $pl, &$fjs) {
     }
 
