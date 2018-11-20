@@ -2034,13 +2034,6 @@ td.pl_tag, td.pl_edittag, td.pl_tagval, td.pl_edittagval {
 	white-space: nowrap;
 }
 
-td.plred {
-	color: #ff0000;
-}
-td.plgreen {
-	color: #00cc00;
-}
-
 .pl_titleextra {
 	font-weight: normal;
 }
