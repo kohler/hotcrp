@@ -237,6 +237,8 @@ class PaperList {
             && get($this->_view_fields, "au")
             && get($this->_view_fields, "anonau") === null)
             $this->_view_fields["anonau"] = true;
+        if ($qreq->forceShow !== null)
+            $this->_view_force = !!$qreq->forceShow;
 
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
 

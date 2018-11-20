@@ -4767,8 +4767,12 @@ $(document).on("collectState", function (event, state) {
 });
 
 function search_sort_url(self, href) {
-    var hrefm = /^([^?#]*search(?:\.php)?)(\?[^#]*)/.exec(href);
-    $.ajax(hoturl("api/search", hrefm[2]), {
+    var hrefm = /^([^?#]*search(?:\.php)?)(\?[^#]*)/.exec(href),
+        api = hrefm[2];
+    if (!/&forceShow/.test(hrefm)
+        && document.getElementById("showforce"))
+        api += "&forceShow=0";
+    $.ajax(hoturl("api/search", api), {
         method: "GET", cache: false,
         success: function (data) {
             var tbl = $(self).closest("table")[0];
