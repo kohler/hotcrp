@@ -13,12 +13,14 @@ class Preference_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
-        $this->editable = !!get($cj, "edit");
         if (isset($cj->user))
             $this->contact = $conf->pc_member_by_email($cj->user);
+        if (get($cj, "edit"))
+            $this->mark_editable();
     }
     function mark_editable() {
         $this->editable = true;
+        $this->className = "pl_editrevpref";
     }
     function prepare(PaperList $pl, $visible) {
         $this->viewer_contact = $pl->user;
