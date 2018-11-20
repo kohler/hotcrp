@@ -9,6 +9,7 @@ class Preference_PaperColumn extends PaperColumn {
     private $not_me;
     private $show_conflict;
     private $prefix;
+    private $secondary_sort_topic_score;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
@@ -32,6 +33,7 @@ class Preference_PaperColumn extends PaperColumn {
         $this->prefix =  "";
         if ($this->row)
             $this->prefix = $pl->user->reviewer_html_for($this->contact);
+        $this->secondary_sort_topic_score = $pl->report_id() === "editpref";
         return true;
     }
     private function preference_values($row) {
@@ -47,17 +49,17 @@ class Preference_PaperColumn extends PaperColumn {
             return $ap === $bp ? 0 : ($ap === null ? 1 : -1);
         if ($ap != $bp)
             return $ap < $bp ? 1 : -1;
-
         if ($ae !== $be) {
             if (($ae === null) !== ($be === null))
                 return $ae === null ? 1 : -1;
             return (float) $ae < (float) $be ? 1 : -1;
         }
-
-        $at = $a->topic_interest_score($this->contact);
-        $bt = $b->topic_interest_score($this->contact);
-        if ($at != $bt)
-            return $at < $bt ? 1 : -1;
+        if ($this->secondary_sort_topic_score) {
+            $at = $a->topic_interest_score($this->contact);
+            $bt = $b->topic_interest_score($this->contact);
+            if ($at != $bt)
+                return $at < $bt ? 1 : -1;
+        }
         return 0;
     }
     function analyze(PaperList $pl, &$rows, $fields) {
