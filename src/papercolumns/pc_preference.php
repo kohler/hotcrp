@@ -10,13 +10,15 @@ class Preference_PaperColumn extends PaperColumn {
     private $show_conflict;
     private $prefix;
     private $secondary_sort_topic_score;
+    private $statistics;
+    private $override_statistics;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
         if (isset($cj->user))
             $this->contact = $conf->pc_member_by_email($cj->user);
         if (get($cj, "edit"))
             $this->mark_editable();
+        $this->statistics = new ScoreInfo;
     }
     function mark_editable() {
         $this->editable = true;
@@ -39,17 +41,23 @@ class Preference_PaperColumn extends PaperColumn {
         return true;
     }
     private function preference_values($row) {
-        if ($this->not_me && !$this->viewer_contact->allow_administer($row))
+        if ($this->not_me && !$this->viewer_contact->can_administer($row))
             return [null, null];
         else
             return $row->reviewer_preference($this->contact);
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         list($ap, $ae) = $this->preference_values($a);
+        if ($ap === 0 && $ae === null && $a->has_conflict($this->contact))
+            $ap = false;
         list($bp, $be) = $this->preference_values($b);
+        if ($bp === 0 && $be === null && $b->has_conflict($this->contact))
+            $bp = false;
+        if ($ap === false || $bp === false)
+            return $ap === $bp ? 0 : ($ap === false ? 1 : -1);
         if ($ap === null || $bp === null)
             return $ap === $bp ? 0 : ($ap === null ? 1 : -1);
-        if ($ap != $bp)
+        if ($ap !== $bp)
             return $ap < $bp ? 1 : -1;
         if ($ae !== $be) {
             if (($ae === null) !== ($be === null))
@@ -87,31 +95,83 @@ class Preference_PaperColumn extends PaperColumn {
             return $pl->user->name_html_for($this->contact) . "<br>preference";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $this->not_me && !$pl->user->can_administer($row);
+        return $this->not_me && !$pl->user->allow_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $has_cflt = $row->has_conflict($this->contact);
-        $pv = $this->preference_values($row);
-        $ptext = unparse_preference($pv);
+        $pv = $row->reviewer_preference($this->contact);
+        $pv_exists = $pv[0] !== 0 || $pv[1] !== null;
         $editable = $this->editable && $this->contact->can_become_reviewer_ignore_conflict($row);
-        if (!$editable)
-            $ptext = str_replace("-", "−" /* U+2122 */, $ptext);
+        $has_conflict = $row->has_conflict($this->contact);
+
+        // compute HTML
+        $t = "";
         if ($this->row) {
-            if ($ptext !== "")
-                $ptext = $this->prefix . " <span class=\"asspref" . ($pv[0] < 0 ? "-1" : "1") . "\">P" . $ptext . "</span>";
-            return $ptext;
-        } else if ($has_cflt && $ptext === "0")
-            return $this->show_conflict ? review_type_icon(-1) : "";
-        else if ($editable) {
+            if ($pv_exists) {
+                $t = $this->prefix . " <span class=\"asspref" . ($pv[0] < 0 ? "-1" : "1") . "\">P" . str_replace("-", "−" /* U+2122 */, unparse_preference($pv)) . "</span>";
+            }
+        } else if ($editable && (!$has_conflict || $pv_exists)) {
             $iname = "revpref" . $row->paperId;
-            if ($this->not_me)
+            if ($this->not_me) {
                 $iname .= "u" . $this->contact->contactId;
-            return '<input name="' . $iname . '" class="uikd uich revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($this->show_conflict && $has_cflt ? "&nbsp;" . review_type_icon(-1) : "");
-        } else
-            return $ptext;
+            }
+            $t = '<input name="' . $iname . '" class="uikd uich revpref" value="'
+                . ($pv_exists ? unparse_preference($pv) : "")
+                . '" type="text" size="4" tabindex="2" placeholder="0" />';
+            if ($has_conflict && $this->show_conflict) {
+                $t .= " " . review_type_icon(-1);
+            }
+        } else if ($has_conflict) {
+            if ($this->show_conflict) {
+                $t = review_type_icon(-1);
+            }
+        } else {
+            $t = str_replace("-", "−" /* U+2122 */, unparse_preference($pv));
+        }
+
+        // account for statistics and maybe wrap HTML in conflict
+        if ($this->not_me && !$pl->user->can_administer($row) && $t !== "") {
+            $tag = $this->row ? "div" : "span";
+            $t = "<$tag class=\"fx5\">" . $t . "</$tag>";
+            if (!$this->override_statistics) {
+                $this->override_statistics = clone $this->statistics;
+            }
+            if ($pv_exists) {
+                $this->override_statistics->add($pv[0]);
+            }
+        } else if ($pv_exists) {
+            $this->statistics->add($pv[0]);
+            if ($this->override_statistics) {
+                $this->override_statistics->add($pv[0]);
+            }
+        }
+
+        return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
         return unparse_preference($this->preference_values($row));
+    }
+    function has_statistics() {
+        return !$this->row && !$this->editable;
+    }
+    private function unparse_statistic($statistics, $stat) {
+        $x = $statistics->statistic($stat);
+        if ($x == 0
+            && $stat !== ScoreInfo::COUNT
+            && $statistics->statistic(ScoreInfo::COUNT) == 0)
+            return "";
+        else if (in_array($stat, [ScoreInfo::COUNT, ScoreInfo::SUM, ScoreInfo::MEDIAN]))
+            return $x;
+        else
+            return sprintf("%.2f", $x);
+    }
+    function statistic($pl, $stat) {
+        $t = $this->unparse_statistic($this->statistics, $stat);
+        if ($this->override_statistics) {
+            $tt = $this->unparse_statistic($this->override_statistics, $stat);
+            if ($t !== $tt)
+                $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
+        }
+        return $t;
     }
 
     static function expand($name, Conf $conf, $xfj, $m) {

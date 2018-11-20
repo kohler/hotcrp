@@ -177,7 +177,7 @@ class PaperList {
 
     static public $include_stash = true;
 
-    static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P];
+    static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P, ScoreInfo::COUNT];
 
     const VIEWDISPLAY_VIEW = 1;
     const VIEWDISPLAY_SORT = 2;

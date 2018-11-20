@@ -116,7 +116,8 @@ class Formula_PaperColumn extends PaperColumn {
     function has_statistics() {
         return true;
     }
-    private function unparse_stat($x, $stat) {
+    private function unparse_statistic($statistics, $stat) {
+        $x = $statistics->statistic($stat);
         if ($stat == ScoreInfo::MEAN || $stat == ScoreInfo::MEDIAN)
             return $this->unparse($x);
         else if ($stat == ScoreInfo::COUNT && is_int($x))
@@ -129,9 +130,9 @@ class Formula_PaperColumn extends PaperColumn {
     function statistic($pl, $stat) {
         if ($stat == ScoreInfo::SUM && !$this->formula->result_format_is_real())
             return "";
-        $t = $this->unparse_stat($this->statistics->statistic($stat), $stat);
+        $t = $this->unparse_statistic($this->statistics, $stat);
         if ($this->override_statistics) {
-            $tt = $this->unparse_stat($this->override_statistics->statistic($stat), $stat);
+            $tt = $this->unparse_statistic($this->override_statistics, $stat);
             if ($t !== $tt)
                 $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
         }
