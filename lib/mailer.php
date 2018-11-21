@@ -434,8 +434,6 @@ class Mailer {
             $r = [];
             foreach ($text as $k => $t) {
                 if (isset(self::$template_fields[$k])) {
-                    if ($k === "body" && is_array($t))
-                        $t = join("", $t);
                     $f = self::$template_fields[$k];
                     $r[$f] = $this->expand($t, $f);
                 }

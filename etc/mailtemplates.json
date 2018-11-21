@@ -14,5 +14,519 @@
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
+	},
+
+	{
+		"name": "activateaccount",
+		"subject": "[%CONFSHORTNAME%] Account information",
+		"body": [
+			"Greetings,\n\n",
+			"Your %CONTACTDBDESCRIPTION% account has been activated for the %CONFNAME% submissions site.\n\n",
+			"        Site: %URL%/\n",
+			"       Email: %EMAIL%\n\n",
+			"Use the link above to sign in with your %CONTACTDBDESCRIPTION% password or to reset your password.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "accountinfo",
+		"subject": "[%CONFSHORTNAME%] Account information",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"Here is your account information for the %CONFNAME% submissions site.\n\n",
+			"        Site: %URL%/\n",
+			"       Email: %EMAIL%\n",
+			"    Password: %OPT(PASSWORD)%\n\n",
+			"Or use the link below to sign in.\n\n",
+			"%LOGINURL%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "resetpassword",
+		"subject": "[%CONFSHORTNAME%] Password reset request",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"We received a request to reset the password for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to create a new password. The link will work for 3 days.\n\n",
+			"%URL%/resetpassword%PHP%/%CAPABILITY%\n\n",
+			"If you did not make this request, it's safe to ignore this email.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "changeemail",
+		"subject": "[%CONFSHORTNAME%] Email change request",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"We received a request to change the email address for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to update your account to use %EMAIL%. The link will work for 3 days.\n\n",
+			"%URL%/profile%PHP%?changeemail=%CAPABILITY%\n\n",
+			"If you did not make this request, it's safe to ignore this email.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "mergeaccount",
+		"subject": "[%CONFSHORTNAME%] Merged account",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"Your account at the %CONFSHORTNAME% submissions site has been merged with the account of %OTHERCONTACT%. From now on, you should log in using the %OTHEREMAIL% account.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+
+	{
+		"name": "registerpaper",
+		"subject": "[%CONFSHORTNAME%] Registered #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Submission #%PAPER% has been registered at the %CONFNAME% site.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%\n\n",
+			"%NOTES%%IF(REASON)%An administrator provided the following reason for this registration: %REASON%\n\n",
+			"%ELSEIF(ADMINUPDATE)%An administrator performed this registration.\n\n",
+			"%ENDIF%Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "updatepaper",
+		"subject": "[%CONFSHORTNAME%] Updated #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Submission #%PAPER% has been updated at the %CONFNAME% site.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%\n\n",
+			"%NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%\n\n",
+			"%ELSEIF(ADMINUPDATE)%An administrator performed this update.\n\n",
+			"%ENDIF%Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "submitpaper",
+		"subject": "[%CONFSHORTNAME%] Submitted #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Submission #%PAPER% has been submitted for review at the %CONFNAME% site.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%\n\n",
+			"%NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%\n\n",
+			"%ELSEIF(ADMINUPDATE)%An administrator performed this update.\n\n",
+			"%ENDIF%Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "submitfinalpaper",
+		"subject": "[%CONFSHORTNAME%] Updated accepted #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Accepted submission #%PAPER% has been updated at the %CONFNAME% submissions site.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%\n\n",
+			"%NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%\n\n",
+			"%ELSEIF(ADMINUPDATE)%An administrator performed this update.\n\n",
+			"%ENDIF%Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "finalsubmitnotify",
+		"subject": "[%CONFSHORTNAME%] Updated final version #%NUMBER% %TITLEHINT%",
+		"body": [
+			"The final version for %CONFNAME% submission #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "authorwithdraw",
+		"subject": "[%CONFSHORTNAME%] Withdrawn submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"An author of %CONFNAME% submission #%NUMBER% has withdrawn the submission from consideration. It will not be reviewed.%IF(REASON)% They gave the following reason: %REASON%%ENDIF%\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "adminwithdraw",
+		"subject": "[%CONFSHORTNAME%] Withdrawn submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"%CONFNAME% submission #%NUMBER% has been withdrawn from consideration and will not be reviewed.\n\n",
+			"%IF(REASON)%The submission was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The submission was withdrawn by an administrator.%ENDIF%\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "withdrawreviewer",
+		"subject": "[%CONFSHORTNAME%] Withdrawn submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"%CONFSHORTNAME% submission #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.\n\n",
+			"Authors and administrators can withdraw submissions during the review process.%IF(REASON)% The following reason was provided: %REASON%%ENDIF%\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"You are not expected to complete your review (and the system will not allow it unless the submission is revived).\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "deletepaper",
+		"subject": "[%CONFSHORTNAME%] Deleted submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"Your %CONFNAME% submission #%NUMBER% has been removed from the submission database by an administrator. This can be done to eliminate duplicates. %IF(REASON)%The following reason was provided for deleting the submission: %REASON%%ENDIF%\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+
+	{
+		"name": "requestreview",
+		"subject": "[%CONFSHORTNAME%] Review request for submission #%NUMBER%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"If you are willing to review this submission, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%\n\n",
+			"Your account information is as follows.\n\n",
+			"        Site: %URL%/\n",
+			"       Email: %EMAIL%\n",
+			"    Password: %OPT(PASSWORD)%\n\n",
+			"Or use the link below to sign in.\n\n",
+			"%LOGINURL%\n\n",
+			"Once you've decided, please take a moment to accept or decline this review request by using one of these links. You may also contact %REQUESTERNAME% directly or decline the review using the conference site.\n\n",
+			"      Accept: %URL(review, p=%NUMBER%&accept=1&%LOGINURLPARTS%)%\n",
+			"     Decline: %URL(review, p=%NUMBER%&decline=1&%LOGINURLPARTS%)%\n\n",
+			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "proposereview",
+		"subject": "[%CONFSHORTNAME%] Proposed reviewer for submission #%NUMBER%",
+		"body": [
+			"Greetings,\n\n",
+			"%REQUESTERCONTACT% would like %REVIEWERCONTACT% to review %CONFNAME% submission #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%\n\n",
+			"Visit the assignment page to approve or deny the request.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(assign, p=%NUMBER%)%\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "denyreviewrequest",
+		"subject": "[%CONFSHORTNAME%] Proposed reviewer for submission #%NUMBER% denied",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"Your proposal that %REVIEWERCONTACT% review %CONFNAME% submission #%NUMBER% has been denied by an administrator. You may want to propose someone else.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "retractrequest",
+		"subject": "[%CONFSHORTNAME%] Retracting review request for submission #%NUMBER%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"%REQUESTERNAME% has retracted a previous request that you review %CONFNAME% submission #%NUMBER%. There's no need to complete your review.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "refusereviewrequest",
+		"subject": "[%CONFSHORTNAME%] Review request for submission #%NUMBER% declined",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"%REVIEWERCONTACT% cannot complete the review you requested of %CONFNAME% submission #%NUMBER%. %IF(REASON)%They gave the following reason: %REASON% %ENDIF%You may want to find an alternate reviewer.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "reviewapprovalrequest",
+		"subject": "[%CONFSHORTNAME%] Review approval requested for submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Greetings,\n\n",
+			"%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been submitted for approval.\n\n",
+			" Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%REVIEWS%\n"
+		]
+	},
+
+	{
+		"name": "reviewapprovalupdate",
+		"subject": "[%CONFSHORTNAME%] Review approval requested for submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Greetings,\n\n",
+			"%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been resubmitted for approval.\n\n",
+			" Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"You can approve the review at the link above.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%REVIEWS%\n"
+		]
+	},
+
+	{
+		"name": "reviewpreapprovaledit",
+		"subject": "[%CONFSHORTNAME%] Review edited for submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Greetings,\n\n",
+			"%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been edited by its requester. The review has not yet been approved.\n\n",
+			" Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%REVIEWS%\n"
+		]
+	},
+
+	{
+		"name": "reviewsubmit",
+		"subject": "[%CONFSHORTNAME%] Submitted %REVIEWNAME(SUBJECT)% %TITLEHINT%",
+		"body": [
+			"Greetings,\n\n",
+			"%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been submitted. The review is available at the submission site.\n\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%REVIEWS%\n"
+		]
+	},
+
+	{
+		"name": "reviewupdate",
+		"subject": "[%CONFSHORTNAME%] Updated %REVIEWNAME(SUBJECT)% %TITLEHINT%",
+		"body": [
+			"Greetings,\n\n",
+			"%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been updated. The review is available at the submission site.\n\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%REVIEWS%\n"
+		]
+	},
+
+
+	{
+		"name": "commentnotify",
+		"subject": "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
+		"body": [
+			"A comment for %CONFNAME% submission #%NUMBER% has been posted. For the most up-to-date comments, or to unsubscribe from email notification, see the submission site.\n\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%COMMENTS%\n"
+		]
+	},
+
+	{
+		"name": "responsenotify",
+		"subject": "[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
+		"body": [
+			"The authors' response for %CONFNAME% submission #%NUMBER% is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%COMMENTS%\n"
+		]
+	},
+
+	{
+		"name": "responsedraftnotify",
+		"subject": "[%CONFSHORTNAME%] Draft response for #%NUMBER% %TITLEHINT%",
+		"body": [
+			"The draft authors' response for %CONFNAME% submission #%NUMBER% has been updated as shown below. This response has not yet been submitted to reviewers. For the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%COMMENTS%\n"
+		]
+	},
+
+
+	{
+		"name": "generic",
+		"title": "Generic",
+		"allow_pc": true,
+		"position": 0,
+		"default_recipients": "s",
+		"subject": "[%CONFSHORTNAME%] Submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"Your message here.\n\n",
+			"       Title: %TITLE%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "newpcrev",
+		"title": "Review assignment notification",
+		"position": 10,
+		"default_recipients": "newpcrev",
+		"subject": "[%CONFSHORTNAME%] New review assignments",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"You have been assigned new reviews for %CONFNAME%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%.%ENDIF%\n\n",
+			"             Site: %URL%/\n",
+			"     Your reviews: %URL(search, q=re:me)%\n",
+			"  New assignments: %NEWASSIGNMENTS%\n\n",
+			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "reviewremind",
+		"title": "Review reminder",
+		"allow_pc": true,
+		"position": 20,
+		"default_recipients": "uncrev",
+		"subject": "[%CONFSHORTNAME%] Review reminder for submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"This is a reminder to finish your review for %CONFNAME% submission #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact the person who requested the review directly.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "myreviewremind",
+		"title": "Personalized review reminder",
+		"allow_pc": true,
+		"position": 21,
+		"default_recipients": "uncmyextrev",
+		"default_search_type": "req",
+		"subject": "[%CONFSHORTNAME%] Review reminder for submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"This is a reminder from %REQUESTERCONTACT% to finish your review for %CONFNAME% submission #%NUMBER%.%IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF%If you are unable to complete the review, please decline the review using the site or contact %REQUESTERNAME% directly.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
+		"name": "acceptnotify",
+		"title": "Accept notification",
+		"position": 60,
+		"default_recipients": "somedec:yes",
+		"subject": "[%CONFSHORTNAME%] Accepted submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear author(s),\n\n",
+			"The %CONFNAME% program committee is delighted to inform you that your submission #%NUMBER% has been accepted to appear in the conference.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%\n\n",
+			"Your paper was one of %NUMACCEPTED% accepted out of %NUMSUBMITTED% submissions. Congratulations!\n\n",
+			"Reviews and comments on your paper are appended to this email. The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%REVIEWS%\n",
+			"%COMMENTS%\n"
+		]
+	},
+
+	{
+		"name": "rejectnotify",
+		"title": "Reject notification",
+		"position": 61,
+		"default_recipients": "somedec:no",
+		"subject": "[%CONFSHORTNAME%] Rejected submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear author(s),\n\n",
+			"The %CONFNAME% program committee is sorry to inform you that your submission #%NUMBER% was rejected, and will not appear in the conference.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%\n\n",
+			"%NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.\n\n",
+			"Reviews and comments on your paper are appended to this email. The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%REVIEWS%\n",
+			"%COMMENTS%\n"
+		]
 	}
 ]

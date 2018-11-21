@@ -220,7 +220,6 @@ src/listactions/la_mail.php
 src/listactions/la_tag.php
 src/listsorter.php
 src/mailclasses.php
-src/mailtemplate.php
 src/meetingtracker.php
 src/mergecontacts.php
 src/multiconference.php

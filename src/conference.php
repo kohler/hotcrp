@@ -3896,20 +3896,20 @@ class Conf {
     // mail templates
 
     function _add_mail_template_json($fj) {
-        if (isset($fj->name) && is_string($fj->name))
+        if (isset($fj->name) && is_string($fj->name)) {
+            if (is_array($fj->body))
+                $fj->body = join("", $fj->body);
             return self::xt_add($this->_mail_template_map, $fj->name, $fj);
-        else
+        } else
             return false;
     }
     function mail_template_map() {
         if ($this->_mail_template_map === null) {
             $this->_mail_template_map = [];
-            global $ConfSitePATH, $mailTemplates;
-            if (!$mailTemplates) {
-                require_once("$ConfSitePATH/src/mailtemplate.php");
-                if (isset($this->opt["mailtemplate_include"])
-                    && $this->opt["mailtemplate_include"])
-                    read_included_options($this->opt["mailtemplate_include"]);
+            if ($this->opt("mailtemplate_include")) { // backwards compatibility
+                global $ConfSitePATH, $mailTemplates;
+                $mailTemplates = [];
+                read_included_options($this->opt["mailtemplate_include"]);
                 foreach ($mailTemplates as $name => $template) {
                     $template["name"] = $name;
                     $this->_add_mail_template_json((object) $template);
@@ -3929,7 +3929,8 @@ class Conf {
         if (!$default_only) {
             $s = $this->setting_data("mailsubj_$name", false);
             $b = $this->setting_data("mailbody_$name", false);
-            if ($s !== false || $b !== false) {
+            if (($s !== false && $s !== $uf->subject)
+                || ($b !== false && $b !== $uf->body)) {
                 $uf = clone $uf;
                 if ($s !== false)
                     $uf->subject = $s;
