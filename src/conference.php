@@ -139,24 +139,24 @@ class Conf {
     private $_updating_autosearch_tags = false;
     private $_cdb = false;
 
-    private $_formula_functions = null;
-    private $_search_keyword_base = null;
-    private $_search_keyword_factories = null;
-    private $_assignment_parsers = null;
-    private $_api_map = null;
-    private $_list_action_map = null;
-    private $_list_action_renderers = null;
-    private $_list_action_factories = null;
-    private $_paper_column_map = null;
-    private $_paper_column_factories = null;
-    private $_option_type_map = null;
-    private $_option_type_factories = null;
-    private $_hook_map = null;
-    private $_hook_factories = null;
-    public $_file_filters = null; // maintained externally
-    public $_setting_info = null; // maintained externally
-    private $_mail_keyword_map = null;
-    private $_mail_keyword_factories = null;
+    private $_formula_functions;
+    private $_search_keyword_base;
+    private $_search_keyword_factories;
+    private $_assignment_parsers;
+    private $_api_map;
+    private $_list_action_map;
+    private $_list_action_renderers;
+    private $_list_action_factories;
+    private $_paper_column_map;
+    private $_paper_column_factories;
+    private $_option_type_map;
+    private $_option_type_factories;
+    private $_hook_map;
+    private $_hook_factories;
+    public $_file_filters; // maintained externally
+    public $_setting_info; // maintained externally
+    private $_mail_keyword_map;
+    private $_mail_keyword_factories;
 
     public $paper = null; // current paper row
     private $_active_list = false;
@@ -909,75 +909,6 @@ class Conf {
     }
     function xt_factory_errors() {
         return $this->_xt_factory_error;
-    }
-
-
-    function _add_search_keyword_json($kwj) {
-        if (isset($kwj->name) && is_string($kwj->name))
-            return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
-        else if (is_string($kwj->match) && is_string($kwj->expand_callback)) {
-            $this->_search_keyword_factories[] = $kwj;
-            return true;
-        } else
-            return false;
-    }
-    private function make_search_keyword_map() {
-        $this->_search_keyword_base = $this->_search_keyword_factories = [];
-        expand_json_includes_callback(["etc/searchkeywords.json"], [$this, "_add_search_keyword_json"]);
-        if (($olist = $this->opt("searchKeywords")))
-            expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
-        usort($this->_search_keyword_factories, "Conf::xt_priority_compare");
-    }
-    function search_keyword($keyword, Contact $user = null) {
-        if ($this->_search_keyword_base === null)
-            $this->make_search_keyword_map();
-        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
-        $uf = $this->xt_search_name($this->_search_keyword_base, $keyword, $checkf);
-        if (($expansions = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $checkf, $uf, $user)))
-            $uf = $expansions[0];
-        return self::xt_resolve_require($uf);
-    }
-
-
-    function _add_assignment_parser_json($uf) {
-        if (isset($uf->name) && is_string($uf->name))
-            return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
-        return false;
-    }
-    function assignment_parser($keyword, Contact $user = null) {
-        require_once("assignmentset.php");
-        if ($this->_assignment_parsers === null) {
-            $this->_assignment_parsers = [];
-            expand_json_includes_callback(["etc/assignmentparsers.json"], [$this, "_add_assignment_parser_json"]);
-            if (($olist = $this->opt("assignmentParsers")))
-                expand_json_includes_callback($olist, [$this, "_add_assignment_parser_json"]);
-        }
-        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
-        $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $checkf);
-        $uf = self::xt_resolve_require($uf);
-        if ($uf && !isset($uf->__parser)) {
-            $p = $uf->parser_class;
-            $uf->__parser = new $p($this, $uf);
-        }
-        return $uf ? $uf->__parser : null;
-    }
-
-
-    function _add_formula_function_json($fj) {
-        if (isset($fj->name) && is_string($fj->name))
-            return self::xt_add($this->_formula_functions, $fj->name, $fj);
-        return false;
-    }
-    function formula_function($fname, Contact $user) {
-        if ($this->_formula_functions === null) {
-            $this->_formula_functions = [];
-            expand_json_includes_callback(["etc/formulafunctions.json"], [$this, "_add_formula_function_json"]);
-            if (($olist = $this->opt("formulaFunctions")))
-                expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
-        }
-        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
-        $uf = $this->xt_search_name($this->_formula_functions, $fname, $checkf);
-        return self::xt_resolve_require($uf);
     }
 
 
@@ -3632,7 +3563,83 @@ class Conf {
     }
 
 
+    // search keywords
+
+    function _add_search_keyword_json($kwj) {
+        if (isset($kwj->name) && is_string($kwj->name))
+            return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
+        else if (is_string($kwj->match) && is_string($kwj->expand_callback)) {
+            $this->_search_keyword_factories[] = $kwj;
+            return true;
+        } else
+            return false;
+    }
+    private function make_search_keyword_map() {
+        $this->_search_keyword_base = $this->_search_keyword_factories = [];
+        expand_json_includes_callback(["etc/searchkeywords.json"], [$this, "_add_search_keyword_json"]);
+        if (($olist = $this->opt("searchKeywords")))
+            expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
+        usort($this->_search_keyword_factories, "Conf::xt_priority_compare");
+    }
+    function search_keyword($keyword, Contact $user = null) {
+        if ($this->_search_keyword_base === null)
+            $this->make_search_keyword_map();
+        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
+        $uf = $this->xt_search_name($this->_search_keyword_base, $keyword, $checkf);
+        if (($expansions = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $checkf, $uf, $user)))
+            $uf = $expansions[0];
+        return self::xt_resolve_require($uf);
+    }
+
+
+    // assignment parsers
+
+    function _add_assignment_parser_json($uf) {
+        if (isset($uf->name) && is_string($uf->name))
+            return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
+        return false;
+    }
+    function assignment_parser($keyword, Contact $user = null) {
+        require_once("assignmentset.php");
+        if ($this->_assignment_parsers === null) {
+            $this->_assignment_parsers = [];
+            expand_json_includes_callback(["etc/assignmentparsers.json"], [$this, "_add_assignment_parser_json"]);
+            if (($olist = $this->opt("assignmentParsers")))
+                expand_json_includes_callback($olist, [$this, "_add_assignment_parser_json"]);
+        }
+        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
+        $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $checkf);
+        $uf = self::xt_resolve_require($uf);
+        if ($uf && !isset($uf->__parser)) {
+            $p = $uf->parser_class;
+            $uf->__parser = new $p($this, $uf);
+        }
+        return $uf ? $uf->__parser : null;
+    }
+
+
+    // formula functions
+
+    function _add_formula_function_json($fj) {
+        if (isset($fj->name) && is_string($fj->name))
+            return self::xt_add($this->_formula_functions, $fj->name, $fj);
+        return false;
+    }
+    function formula_function($fname, Contact $user) {
+        if ($this->_formula_functions === null) {
+            $this->_formula_functions = [];
+            expand_json_includes_callback(["etc/formulafunctions.json"], [$this, "_add_formula_function_json"]);
+            if (($olist = $this->opt("formulaFunctions")))
+                expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
+        }
+        $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
+        $uf = $this->xt_search_name($this->_formula_functions, $fname, $checkf);
+        return self::xt_resolve_require($uf);
+    }
+
+
     // API
+
     function _add_api_json($fj) {
         if (isset($fj->name) && is_string($fj->name)
             && isset($fj->callback) && is_string($fj->callback))
@@ -3727,6 +3734,7 @@ class Conf {
 
 
     // List action API
+
     function _add_list_action_json($fj) {
         $ok = false;
         if (isset($fj->name) && is_string($fj->name)) {
@@ -3776,7 +3784,8 @@ class Conf {
     }
 
 
-    // Paper columns
+    // paper columns
+
     function _add_paper_column_json($fj) {
         $cb = isset($fj->callback) && is_string($fj->callback);
         if (isset($fj->name) && is_string($fj->name) && $cb) {
@@ -3815,7 +3824,8 @@ class Conf {
     }
 
 
-    // Option types
+    // option types
+
     function _add_option_type_json($fj) {
         $cb = isset($fj->callback) && is_string($fj->callback);
         if (isset($fj->name) && is_string($fj->name) && $cb)
@@ -3852,7 +3862,8 @@ class Conf {
     }
 
 
-    // Mail keywords
+    // mail keywords
+
     function _add_mail_keyword_json($fj) {
         $cb = isset($fj->callback) && is_string($fj->callback);
         if (isset($fj->name) && is_string($fj->name) && $cb)
