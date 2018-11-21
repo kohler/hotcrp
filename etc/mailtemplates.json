@@ -1,0 +1,18 @@
+[
+	{
+		"name": "createaccount",
+		"subject": "[%CONFSHORTNAME%] Account information",
+		"body": [
+			"Greetings,\n\n",
+			"An account has been created for you at the %CONFNAME% submissions site.\n\n",
+			"        Site: %URL%/\n",
+			"       Email: %EMAIL%\n",
+			"    Password: %OPT(PASSWORD)%\n\n",
+			"Use the link below to sign in.\n\n",
+			"%LOGINURL%\n\n",
+			"If you already have an account under a different email address, you may merge this new account into that one. Go to your profile page and select \"Merge with another account\".\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	}
+]

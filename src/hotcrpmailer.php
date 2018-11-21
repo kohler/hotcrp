@@ -464,9 +464,3 @@ class HotCRPMailer extends Mailer {
         return count($contacts) > 0;
     }
 }
-
-// load mail templates, including local ones if any
-global $ConfSitePATH, $Opt;
-require_once("$ConfSitePATH/src/mailtemplate.php");
-if (isset($Opt["mailtemplate_include"]) && $Opt["mailtemplate_include"])
-    read_included_options($Opt["mailtemplate_include"]);

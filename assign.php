@@ -414,8 +414,8 @@ echo '<div class="papertext g">',
 
 // reason area
 $null_mailer = new HotCRPMailer($Conf);
-$reqbody = $null_mailer->expand_template("requestreview", false);
-if (strpos($reqbody["body"], "%REASON%") !== false) {
+$reqbody = $null_mailer->expand_template("requestreview");
+if ($reqbody && strpos($reqbody["body"], "%REASON%") !== false) {
     echo '<div class="f-i">',
         Ht::label('Note to reviewer <span class="n">(optional)</span>', "revreq_reason"),
         Ht::textarea("reason", $Qreq->reason,

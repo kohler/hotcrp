@@ -84,12 +84,12 @@ if (isset($Qreq->p) && is_array($Qreq->p)
 
 // Load template if requested
 if (isset($Qreq->loadtmpl)) {
-    $t = $Qreq->get("template", "genericmailtool");
-    $template = (array) get($mailTemplates, $t, []);
+    $t = $Qreq->get("template", "generic");
+    $template = (array) $Conf->mail_template($t);
     if (((!isset($template["title"]) || $template["title"] === false)
          && !isset($template["allow_template"]))
         || (isset($template["allow_template"]) && $template["allow_template"] === false))
-        $template = (array) get($mailTemplates, "genericmailtool");
+        $template = (array) $Conf->mail_template("generic");
     if (!isset($Qreq->recipients) || $Qreq->loadtmpl != -1)
         $Qreq->recipients = get($template, "default_recipients", "s");
     if (isset($template["default_search_type"]))
@@ -439,10 +439,14 @@ class MailSender {
 
 
 // Set subject and body if necessary
-if (!isset($Qreq->subject))
-    $Qreq->subject = $null_mailer->expand($mailTemplates["genericmailtool"]["subject"]);
-if (!isset($Qreq->emailBody))
-    $Qreq->emailBody = $null_mailer->expand($mailTemplates["genericmailtool"]["body"]);
+if (!isset($Qreq->subject)) {
+    $t = $Conf->mail_template("generic");
+    $Qreq->subject = $null_mailer->expand($t->subject, "subject");
+}
+if (!isset($Qreq->emailBody)) {
+    $t = $Conf->mail_template("generic");
+    $Qreq->emailBody = $null_mailer->expand($t->body, "body");
+}
 if (substr($Qreq->subject, 0, strlen($subjectPrefix)) == $subjectPrefix)
     $Qreq->subject = substr($Qreq->subject, strlen($subjectPrefix));
 if (isset($Qreq->cc) && $Me->is_manager()) // XXX should only apply to papers you administer
@@ -491,20 +495,20 @@ echo Ht::form(hoturl_post("mail", "check=1")),
 
 <div class='aa' style='padding-left:8px'>
   <strong>Template:</strong> &nbsp;";
-$tmpl = array();
-foreach ($mailTemplates as $k => $v) {
-    if ((isset($v["title"]) && $v["title"] !== false)
-        && (!isset($v["allow_template"]) || $v["allow_template"])
-        && ($Me->privChair || get($v, "allow_pc")))
-        $tmpl[$k] = get($v, "position", 100);
+$tmpl = $tmploptions = [];
+foreach (array_keys($Conf->mail_template_map()) as $tname) {
+    if (($template = $Conf->mail_template($tname))
+        && (isset($template->title) && $template->title !== false)
+        && (!isset($template->allow_template) || $template->allow_template)
+        && ($Me->privChair || get($template, "allow_pc")))
+        $tmpl[] = $template;
 }
-asort($tmpl);
-foreach ($tmpl as $k => &$v) {
-    $v = $mailTemplates[$k]["title"];
-}
-if (!isset($Qreq->template) || !isset($tmpl[$Qreq->template]))
-    $Qreq->template = "genericmailtool";
-echo Ht::select("template", $tmpl, $Qreq->template),
+usort($tmpl, "Conf::xt_position_compare");
+foreach ($tmpl as $t)
+    $tmploptions[$t->name] = $t->title;
+if (!isset($Qreq->template) || !isset($tmploptions[$Qreq->template]))
+    $Qreq->template = "generic";
+echo Ht::select("template", $tmploptions, $Qreq->template),
     " &nbsp;",
     Ht::submit("loadtmpl", "Load", ["id" => "loadtmpl"]),
     " &nbsp;

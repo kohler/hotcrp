@@ -99,6 +99,7 @@ etc/helptopics.json
 etc/homepartials.json
 etc/listactions.json
 etc/mailkeywords.json
+etc/mailtemplates.json
 etc/msgs.json
 etc/optiontypes.json
 etc/papercolumns.json

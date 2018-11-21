@@ -338,7 +338,7 @@ Contact %ADMIN% with any questions or concerns.
 
      "acceptnotify" =>
      array("title" => "Accept notification",
-           "position" => 10,
+           "position" => 60,
            "default_recipients" => "somedec:yes",
            "subject" => "[%CONFSHORTNAME%] Accepted submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear author(s),
@@ -362,7 +362,7 @@ Contact %ADMIN% with any questions or concerns.
 
      "rejectnotify" =>
      array("title" => "Reject notification",
-           "position" => 11,
+           "position" => 61,
            "default_recipients" => "somedec:no",
            "subject" => "[%CONFSHORTNAME%] Rejected submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear author(s),
@@ -430,7 +430,7 @@ Contact %ADMIN% with any questions or concerns.
 
 %SIGNATURE%\n"),
 
-     "genericmailtool" =>
+     "generic" =>
      array("title" => "Generic",
            "allow_pc" => true,
            "position" => 0,
@@ -502,6 +502,7 @@ Contact %ADMIN% with any questions or concerns.
 
      "newpcrev" =>
      array("title" => "Review assignment notification",
+           "position" => 10,
            "default_recipients" => "newpcrev",
            "subject" => "[%CONFSHORTNAME%] New review assignments",
            "body" => "Dear %NAME%,

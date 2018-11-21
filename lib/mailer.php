@@ -96,8 +96,8 @@ class Mailer {
     const EXPAND_HEADER = 1;
     const EXPAND_EMAIL = 2;
 
-    public static $email_fields = array("to" => "To", "cc" => "Cc", "bcc" => "Bcc",
-                                        "reply-to" => "Reply-To");
+    public static $email_fields = ["to" => "To", "cc" => "Cc", "bcc" => "Bcc", "reply-to" => "Reply-To"];
+    public static $template_fields = ["to" => "to", "cc" => "cc", "bcc" => "bcc", "reply_to" => "reply-to", "subject" => "subject", "body" => "body"];
 
     public $conf;
     public $recipient = null;
@@ -170,18 +170,18 @@ class Mailer {
         else
             $t = "";
         if ($t == "" && $out == "NAME" && $r->email
-            && $this->expansionType != self::EXPAND_EMAIL)
+            && $this->expansionType !== self::EXPAND_EMAIL)
             $t = $r->email;
-        if ($t != "" && $this->expansionType == self::EXPAND_EMAIL
+        if ($t != "" && $this->expansionType === self::EXPAND_EMAIL
             && preg_match('#[\000-\037()[\]<>@,;:\\".]#', $t))
             $t = "\"" . addcslashes($t, '"\\') . "\"";
 
         $email = $r->email;
-        if ($email == "" && $this->expansionType == self::EXPAND_EMAIL)
+        if ($email == "" && $this->expansionType === self::EXPAND_EMAIL)
             $email = "<none>";
         if ($out == "EMAIL")
             $t = $email;
-        else if ($out == "CONTACT" && $this->expansionType == self::EXPAND_EMAIL) {
+        else if ($out == "CONTACT" && $this->expansionType === self::EXPAND_EMAIL) {
             if ($t == "")
                 $t = $email;
             else if ($email[0] == "<")
@@ -430,10 +430,17 @@ class Mailer {
     }
 
     function expand($text, $field = null) {
-        if (is_array($text)) {
-            foreach ($text as $k => &$t)
-                $t = $this->expand($t, $k);
-            return $text;
+        if (is_object($text) || is_array($text)) {
+            $r = [];
+            foreach ($text as $k => $t) {
+                if (isset(self::$template_fields[$k])) {
+                    if ($k === "body" && is_array($t))
+                        $t = join("", $t);
+                    $f = self::$template_fields[$k];
+                    $r[$f] = $this->expand($t, $f);
+                }
+            }
+            return $r;
         }
 
         // leave early on empty string
@@ -443,10 +450,9 @@ class Mailer {
         // width, expansion type based on field
         $oldExpansionType = $this->expansionType;
         $width = 100000;
-        if ($field == "to" || $field == "cc" || $field == "bcc"
-            || $field == "reply-to")
+        if (isset(self::$email_fields[$field]))
             $this->expansionType = self::EXPAND_EMAIL;
-        else if ($field != "body" && $field != "")
+        else if ($field !== "body" && $field != "")
             $this->expansionType = self::EXPAND_HEADER;
         else {
             $this->expansionType = self::EXPAND_BODY;
@@ -503,30 +509,8 @@ class Mailer {
     }
 
 
-    static function get_template($templateName, $default = false) {
-        global $Conf, $mailTemplates;
-        $mail = $mailTemplates[$templateName];
-        if (!$default && $Conf) {
-            if (($t = $Conf->setting_data("mailsubj_" . $templateName, false)) !== false)
-                $mail["subject"] = $t;
-            if (($t = $Conf->setting_data("mailbody_" . $templateName, false)) !== false)
-                $mail["body"] = $t;
-        }
-        return $mail;
-    }
-
     function expand_template($templateName, $default = false) {
-        return $this->expand(self::get_template($templateName, $default));
-    }
-
-    static function is_template($template) {
-        global $mailTemplates;
-        return (is_array($template)
-                && is_string(get($template, "subject"))
-                && is_string(get($template, "body")))
-            || (is_string($template)
-                && $template[0] === "@"
-                && isset($mailTemplates[substr($template, 1)]));
+        return $this->expand($this->conf->mail_template($templateName, $default));
     }
 
 
@@ -545,7 +529,9 @@ class Mailer {
     function make_preparation($template, $rest = array()) {
         // look up template
         if (is_string($template) && $template[0] === "@")
-            $template = self::get_template(substr($template, 1));
+            $template = (array) $this->conf->mail_template(substr($template, 1));
+        if (is_object($template))
+            $template = (array) $template;
         // add rest fields to template for expansion
         foreach (self::$email_fields as $lcfield => $field)
             if (isset($rest[$lcfield]))

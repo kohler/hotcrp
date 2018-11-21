@@ -232,18 +232,19 @@ else if ($expected_round !== "unnamed")
     echo '<span class="fx2">&nbsp; in round ', $expected_round, '</span>';
 echo '<div class="g"></div>', "\n";
 
-$requestreview_template = $null_mailer->expand_template("requestreview");
-echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);
-if (isset($Qreq->requestreview_body))
-    $t = $Qreq->requestreview_body;
-else
-    $t = $requestreview_template["body"];
-echo "<table class='fx'><tr><td>",
-    Ht::checkbox("requestreview_notify", 1, true),
-    "&nbsp;</td><td>", Ht::label("Send email to external reviewers:"), "</td></tr>
-<tr><td></td><td>",
-    Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true", "class" => "need-autogrow")),
-    "</td></tr></table>\n";
+if (($requestreview_template = $null_mailer->expand_template("requestreview"))) {
+    echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);
+    if (isset($Qreq->requestreview_body))
+        $t = $Qreq->requestreview_body;
+    else
+        $t = $requestreview_template["body"];
+    echo "<table class='fx'><tr><td>",
+        Ht::checkbox("requestreview_notify", 1, true),
+        "&nbsp;</td><td>", Ht::label("Send email to external reviewers:"), "</td></tr>
+    <tr><td></td><td>",
+        Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true", "class" => "need-autogrow")),
+        "</td></tr></table>\n";
+}
 
 echo '<div class="lg"></div>', Ht::submit("Prepare assignments", ["class" => "btn-primary"]),
     " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";

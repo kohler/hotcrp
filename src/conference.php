@@ -157,6 +157,7 @@ class Conf {
     public $_setting_info; // maintained externally
     private $_mail_keyword_map;
     private $_mail_keyword_factories;
+    private $_mail_template_map;
 
     public $paper = null; // current paper row
     private $_active_list = false;
@@ -3892,7 +3893,56 @@ class Conf {
     }
 
 
-    // Hooks
+    // mail templates
+
+    function _add_mail_template_json($fj) {
+        if (isset($fj->name) && is_string($fj->name))
+            return self::xt_add($this->_mail_template_map, $fj->name, $fj);
+        else
+            return false;
+    }
+    function mail_template_map() {
+        if ($this->_mail_template_map === null) {
+            $this->_mail_template_map = [];
+            global $ConfSitePATH, $mailTemplates;
+            if (!$mailTemplates) {
+                require_once("$ConfSitePATH/src/mailtemplate.php");
+                if (isset($this->opt["mailtemplate_include"])
+                    && $this->opt["mailtemplate_include"])
+                    read_included_options($this->opt["mailtemplate_include"]);
+                foreach ($mailTemplates as $name => $template) {
+                    $template["name"] = $name;
+                    $this->_add_mail_template_json((object) $template);
+                }
+            }
+            expand_json_includes_callback(["etc/mailtemplates.json"], [$this, "_add_mail_template_json"]);
+            if (($mts = $this->opt("mailTemplates")))
+                expand_json_includes_callback($mts, [$this, "_add_mail_template_json"]);
+        }
+        return $this->_mail_template_map;
+    }
+    function mail_template($name, $default_only = false) {
+        $checkf = [$this, "xt_allowed"];
+        $uf = $this->xt_search_name($this->mail_template_map(), $name, $checkf);
+        if (!$uf || !Conf::xt_resolve_require($uf))
+            return null;
+        if (!$default_only) {
+            $s = $this->setting_data("mailsubj_$name", false);
+            $b = $this->setting_data("mailbody_$name", false);
+            if ($s !== false || $b !== false) {
+                $uf = clone $uf;
+                if ($s !== false)
+                    $uf->subject = $s;
+                if ($b !== false)
+                    $uf->body = $b;
+            }
+        }
+        return $uf;
+    }
+
+
+    // hooks
+
     function _add_hook_json($fj) {
         if (isset($fj->callback) && is_string($fj->callback) && !isset($fj->synonym)) {
             if (isset($fj->event) && is_string($fj->event))
