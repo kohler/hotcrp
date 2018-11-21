@@ -468,9 +468,5 @@ class HotCRPMailer extends Mailer {
 // load mail templates, including local ones if any
 global $ConfSitePATH, $Opt;
 require_once("$ConfSitePATH/src/mailtemplate.php");
-if ((@include "$ConfSitePATH/conf/mailtemplate-local.php") !== false
-    || (@include "$ConfSitePATH/conf/mailtemplate-local.inc") !== false
-    || (@include "$ConfSitePATH/Code/mailtemplate-local.inc") !== false)
-    /* do nothing */;
 if (isset($Opt["mailtemplate_include"]) && $Opt["mailtemplate_include"])
     read_included_options($Opt["mailtemplate_include"]);

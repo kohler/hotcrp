@@ -85,14 +85,15 @@ if (isset($Qreq->p) && is_array($Qreq->p)
 // Load template if requested
 if (isset($Qreq->loadtmpl)) {
     $t = $Qreq->get("template", "genericmailtool");
-    if (!isset($mailTemplates[$t])
-        || (!isset($mailTemplates[$t]["mailtool_name"]) && !isset($mailTemplates[$t]["mailtool_priority"])))
-        $t = "genericmailtool";
-    $template = $mailTemplates[$t];
+    $template = (array) get($mailTemplates, $t, []);
+    if (((!isset($template["title"]) || $template["title"] === false)
+         && !isset($template["allow_template"]))
+        || (isset($template["allow_template"]) && $template["allow_template"] === false))
+        $template = (array) get($mailTemplates, "genericmailtool");
     if (!isset($Qreq->recipients) || $Qreq->loadtmpl != -1)
-        $Qreq->recipients = get($template, "mailtool_recipients", "s");
-    if (isset($template["mailtool_search_type"]))
-        $Qreq->t = $template["mailtool_search_type"];
+        $Qreq->recipients = get($template, "default_recipients", "s");
+    if (isset($template["default_search_type"]))
+        $Qreq->t = $template["default_search_type"];
     $Qreq->subject = $null_mailer->expand($template["subject"]);
     $Qreq->emailBody = $null_mailer->expand($template["body"]);
 }
@@ -492,13 +493,14 @@ echo Ht::form(hoturl_post("mail", "check=1")),
   <strong>Template:</strong> &nbsp;";
 $tmpl = array();
 foreach ($mailTemplates as $k => $v) {
-    if (isset($v["mailtool_name"])
-        && ($Me->privChair || defval($v, "mailtool_pc")))
-        $tmpl[$k] = defval($v, "mailtool_priority", 100);
+    if ((isset($v["title"]) && $v["title"] !== false)
+        && (!isset($v["allow_template"]) || $v["allow_template"])
+        && ($Me->privChair || get($v, "allow_pc")))
+        $tmpl[$k] = get($v, "position", 100);
 }
 asort($tmpl);
 foreach ($tmpl as $k => &$v) {
-    $v = $mailTemplates[$k]["mailtool_name"];
+    $v = $mailTemplates[$k]["title"];
 }
 if (!isset($Qreq->template) || !isset($tmpl[$Qreq->template]))
     $Qreq->template = "genericmailtool";

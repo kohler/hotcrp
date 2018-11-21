@@ -337,9 +337,9 @@ Contact %ADMIN% with any questions or concerns.
 %REVIEWS%\n"),
 
      "acceptnotify" =>
-     array("mailtool_name" => "Accept notification",
-           "mailtool_priority" => 10,
-           "mailtool_recipients" => "somedec:yes",
+     array("title" => "Accept notification",
+           "position" => 10,
+           "default_recipients" => "somedec:yes",
            "subject" => "[%CONFSHORTNAME%] Accepted submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear author(s),
 
@@ -361,9 +361,9 @@ Contact %ADMIN% with any questions or concerns.
 %COMMENTS%\n"),
 
      "rejectnotify" =>
-     array("mailtool_name" => "Reject notification",
-           "mailtool_priority" => 11,
-           "mailtool_recipients" => "somedec:no",
+     array("title" => "Reject notification",
+           "position" => 11,
+           "default_recipients" => "somedec:no",
            "subject" => "[%CONFSHORTNAME%] Rejected submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear author(s),
 
@@ -431,10 +431,10 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "genericmailtool" =>
-     array("mailtool_name" => "Generic",
-           "mailtool_pc" => true,
-           "mailtool_priority" => 0,
-           "mailtool_recipients" => "s",
+     array("title" => "Generic",
+           "allow_pc" => true,
+           "position" => 0,
+           "default_recipients" => "s",
            "subject" => "[%CONFSHORTNAME%] Submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
@@ -452,10 +452,10 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "reviewremind" =>
-     array("mailtool_name" => "Review reminder",
-           "mailtool_pc" => true,
-           "mailtool_priority" => 20,
-           "mailtool_recipients" => "uncrev",
+     array("title" => "Review reminder",
+           "allow_pc" => true,
+           "position" => 20,
+           "default_recipients" => "uncrev",
            "subject" => "[%CONFSHORTNAME%] Review reminder for submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
@@ -476,11 +476,11 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "myreviewremind" =>
-     array("mailtool_name" => "Personalized review reminder",
-           "mailtool_pc" => true,
-           "mailtool_priority" => 21,
-           "mailtool_recipients" => "uncmyextrev",
-           "mailtool_search_type" => "req",
+     array("title" => "Personalized review reminder",
+           "allow_pc" => true,
+           "position" => 21,
+           "default_recipients" => "uncmyextrev",
+           "default_search_type" => "req",
            "subject" => "[%CONFSHORTNAME%] Review reminder for submission #%NUMBER% %TITLEHINT%",
            "body" => "Dear %NAME%,
 
@@ -501,8 +501,8 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "newpcrev" =>
-     array("mailtool_name" => "Review assignment notification",
-           "mailtool_recipients" => "newpcrev",
+     array("title" => "Review assignment notification",
+           "default_recipients" => "newpcrev",
            "subject" => "[%CONFSHORTNAME%] New review assignments",
            "body" => "Dear %NAME%,
 
