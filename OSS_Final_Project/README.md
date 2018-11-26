@@ -1,6 +1,6 @@
 ﻿# Introduction to Open Source Software
-## Final Project by TEAM17
-### 구성원
+# Final Project by TEAM17
+## 구성원
 	* 조장: 17011637 최민지 (Grace8MJ)
 	* 조원: 17011609 유재현 (JaeHyunYu)
 	* 조원: 17011627 이나연 (katherine022)
@@ -9,21 +9,21 @@
 	* 조원: 17011009 구세화 (KooSeHwa)
 
 
-### Pivotal Tracker
+## Pivotal Tracker
 	* 팀프로젝트 수행 과정을 효율적으로 관리 및 기록하기 위한 어플리케이션입니다.
 	* Git 및 GitHub와 연동되어 있어서 효율적으로 사용이 가능합니다. 
 	* GitHub의 Issues 탭에 모든 과정들을 기록하려 했으나, debug 등 code 위주의 소통을 위한 공간으로 issues 탭을 남겨두기로 결정하였습니다. 자료, 진행 과정, GitHub와의 연동성, 계획 시각화, 효율성 등 이러한 이유 때문에 issues 탭을 이용하는 것이 아닌, Pivotal Tracker를 이용해서 팀프로젝트를 진행하였습니다. 또한 issues 탭에서는 사용할 수 없는 accept/reject 상태가 있어서 feedback이 더 원활했습니다.
 	* Link: https://www.pivotaltracker.com/n/projects/2227295
 
 
-### Project Choice Motivation
+## Project Choice Motivation
 	* 2018년 한국정보보호학회 동계학술대회 (CISC-W'18)
 	* 2018년 12월 8일 (토) 세종대학교
 	* Link: http://www.cisc.or.kr/
 	* Link: http://www.icngc.org/
 
 
-### Call for Paper Process
+## Call for Paper Process
         ![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Call%20for%20Paper%20Process.png =70x) <br/>
         논문 투고 과정 시각자료입니다
 
