@@ -644,15 +644,21 @@ function actionBar($mode = null, $qreq = null) {
     return $x . '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . "</td></tr></table>";
 }
 
-function parseReviewOrdinal($text) {
-    $text = strtoupper($text);
-    if (ctype_alpha($text)) {
-        if (strlen($text) == 1)
-            return ord($text) - 64;
-        else if (strlen($text) == 2)
-            return (ord($text[0]) - 64) * 26 + ord($text[1]) - 64;
+function parseReviewOrdinal($t) {
+    $t = strtoupper($t);
+    if (!ctype_alpha($t))
+        return -1;
+    $l = strlen($t) - 1;
+    $ord = 0;
+    $base = 1;
+    while (true) {
+        $ord += (ord($t[$l]) - 64) * $base;
+        if ($l === 0)
+            break;
+        --$l;
+        $base *= 26;
     }
-    return -1;
+    return $ord;
 }
 
 function unparseReviewOrdinal($ord) {
@@ -663,10 +669,17 @@ function unparseReviewOrdinal($ord) {
             return $ord->paperId . unparseReviewOrdinal($ord->reviewOrdinal);
         else
             return $ord->reviewId;
-    } else if ($ord <= 26)
+    } else if ($ord <= 26) {
         return chr($ord + 64);
-    else
-        return chr(intval(($ord - 1) / 26) + 64) . chr((($ord - 1) % 26) + 65);
+    } else {
+        $t = "";
+        while (true) {
+            $t = chr((($ord - 1) % 26) + 65) . $t;
+            if ($ord <= 26)
+                return $t;
+            $ord = intval(($ord - 1) / 26);
+        }
+    }
 }
 
 function downloadText($text, $filename, $inline = false) {
