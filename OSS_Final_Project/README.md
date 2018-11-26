@@ -10,13 +10,6 @@
 	* 조원: 17011009 구세화 (KooSeHwa)
 
 
-## Pivotal Tracker
-* 팀프로젝트 수행 과정을 효율적으로 관리 및 기록하기 위한 어플리케이션입니다.
-* Git 및 GitHub와 연동되어 있어서 효율적으로 사용이 가능합니다. 
-* GitHub의 Issues 탭에 모든 과정들을 기록하려 했으나, debug 등 code 위주의 소통을 위한 공간으로 issues 탭을 남겨두기로 결정하였습니다. 자료, 진행 과정, GitHub와의 연동성, 계획 시각화, 효율성 등 이러한 이유 때문에 issues 탭을 이용하는 것이 아닌, Pivotal Tracker를 이용해서 팀프로젝트를 진행하였습니다. 또한 issues 탭에서는 사용할 수 없는 accept/reject 상태가 있어서 feedback이 더 원활했습니다.
-* Link: https://www.pivotaltracker.com/n/projects/2227295
-
-
 ## Project Choice Motivation
 * 2018년 한국정보보호학회 동계학술대회 (CISC-W'18)
 * 2018년 12월 8일 (토) 세종대학교
@@ -25,7 +18,7 @@
 
 
 ## Call for Paper Process
-![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Call%20for%20Paper%20Process.png =70x) <br/>
+![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Call%20for%20Paper%20Process.png) <br/>
 논문 투고 과정 시각자료입니다
 
 1. 투고 (Submit)
@@ -56,3 +49,11 @@
 
 6. 최종적으로 다른 심사자들에게 평가(comment)를 받고 최종 결정이 나게 됩니다.
 
+
+## Pivotal Tracker
+* 팀프로젝트 수행 과정을 효율적으로 관리 및 기록하기 위한 어플리케이션입니다.
+* Git 및 GitHub와 연동되어 있어서 효율적으로 사용이 가능합니다.
+* Git 및 GitHub 활용방안 스터디를 통해 나온 최민지의 아이디어를 반영해서 활동에 이용하였습니다.
+* GitHub의 Issues 탭에 모든 과정들을 기록하려 했으나, debug 등 code 위주의 소통을 위한 공간으로 issues 탭을 남겨두기로 결정하였습니다. 자료, 진행 과정, GitHub와의 연동성, >계획 시각화, 효율성 등 이러한 이유 때문에 issues 탭을 이용하는 것이 아닌, Pivotal Tracker를 이용해서 팀프로젝트를 진행하였습니다. 또한 issues 탭에서는 사용할 수 없는 accept/reject 상태가 있어서 feedback이 더 원활했습니다.
+* Git에서 commit message를 적을 때, 맨 뒤에 [delivers #(project ID No.)]를 써주면 자동으로 연동이 됩니다.
+* Link: https://www.pivotaltracker.com/n/projects/2227295
