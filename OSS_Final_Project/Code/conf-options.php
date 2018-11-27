@@ -196,7 +196,7 @@ $Opt["safePasswords"] = 2;
 //                   token enabling them to view their papers without logging in.
 
 $Opt["smartScoreCompare"] = true;
-
+$Opt["upload_max_filesize"] = "2M";
 
 // EXTERNAL SOFTWARE CONFIGURATION
 //
