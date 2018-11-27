@@ -872,6 +872,7 @@ class Conf {
                     unset($overlay->merge);
                     $xt = $list[$i + 1];
                     object_replace_recursive($xt, $overlay);
+                    $overlay->priority = -PHP_INT_MAX;
                     ++$i;
                 }
                 if (self::xt_priority_compare($xt, $found) <= 0
