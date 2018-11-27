@@ -1,0 +1,9 @@
+{
+  "name": "d3-sunburst",
+  "main": "d3-sunburst.js",
+  "version": "187.0.0",
+  "author": {
+    "name": "Mike Bostock",
+    "url": "https://beta.observablehq.com/@mbostock"
+  }
+}
