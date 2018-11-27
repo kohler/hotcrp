@@ -223,17 +223,17 @@ class Si {
         $nall = count($conf->_setting_info);
         for ($i = 0; $i < $nall; ++$i) {
             $j = $conf->_setting_info[$i];
+            while ($i + 1 < $nall
+                   && isset($j->merge)
+                   && $j->merge
+                   && $j->name === $conf->_setting_info[$i + 1]->name) {
+                $overlay = $j;
+                unset($overlay->merge);
+                $j = $conf->_setting_info[$i + 1];
+                object_replace_recursive($j, $overlay);
+                ++$i;
+            }
             if ($conf->xt_allowed($j) && !isset($all[$j->name])) {
-                while (isset($j->merge)
-                       && $j->merge
-                       && $i + 1 < $nall
-                       && $j->name === $conf->_setting_info[$i + 1]->name) {
-                    $jx = $j;
-                    $j = $conf->_setting_info[$i + 1];
-                    unset($jx->merge);
-                    object_replace_recursive($j, $jx);
-                    ++$i;
-                }
                 Conf::xt_resolve_require($j);
                 $class = get_s($j, "setting_class", "Si");
                 $all[$j->name] = new $class($j);

@@ -858,10 +858,27 @@ class Conf {
             return [];
     }
     function xt_search_name($map, $name, $checkf, $found = null) {
-        foreach (get($map, $name, []) as $xt)
-            if (self::xt_priority_compare($xt, $found) <= 0
-                && call_user_func($checkf, $xt))
-                $found = $xt;
+        if (isset($map[$name])) {
+            $list = $map[$name];
+            $nlist = count($list);
+            if ($nlist > 1)
+                usort($list, "Conf::xt_priority_compare");
+            for ($i = 0; $i < $nlist; ++$i) {
+                $xt = $list[$i];
+                while ($i + 1 < $nlist
+                       && isset($xt->merge)
+                       && $xt->merge) {
+                    $overlay = $xt;
+                    unset($overlay->merge);
+                    $xt = $list[$i + 1];
+                    object_replace_recursive($xt, $overlay);
+                    ++$i;
+                }
+                if (self::xt_priority_compare($xt, $found) <= 0
+                    && call_user_func($checkf, $xt))
+                    return $xt;
+            }
+        }
         return $found;
     }
     function xt_search_factories($factories, $name, $checkf, $found,
