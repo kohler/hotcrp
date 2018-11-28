@@ -21,21 +21,18 @@
 ![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Call%20for%20Paper%20Process.png) <br/>
 논문 투고 과정 시각자료입니다
 
-1. 투고 (Submit)
-	저널마다 요구하는 논문의 구조와 그림등의 형태나 채색 허용여부에 따라 원고를 교정후 투고합니다.
+1. 투고 (Submit) : 저널마다 요구하는 논문의 구조와 그림등의 형태나 채색 허용여부에 따라 원고를 교정후 투고합니다.
 
-2. 편집장 심사
-	제출한 원고가 규격에 맞는지 확인 및 간단한 심사 -> ACCEPT / DENY
+2. 편집장 심사 : 제출한 원고가 규격에 맞는지 확인 및 간단한 심사 -> ACCEPT / DENY
 
 [ACCEPT]
 ​	원고가 1차심사를 통과할경우
 
-3. 동료 심사(Peer Review) & 각 심사자들 평가
-   : 해당 연구 분야를 잘아는 다른 대가들에게 투고한 원고를 보내게 됩니다. 
-  각 심사자들이 원고가 게재 가능한지에 대한 평가를 내립니다.
+3. 동료 심사(Peer Review) & 각 심사자들 평가 : 해당 연구 분야를 잘아는 다른 대가들에게 투고한 원고를 보내게 됩니다. 각 심사자들이 원고가 게재 가능한지에 대한 평가를 내립니다.
   평가 기준은
 
   - 무수정 통과(Accept without changes)
+
   - 일부 개정후 제출(Revise & Resubmit) 
   - 중대개정요구(Major revision)
   - 일부개정요구(Minor revision))
@@ -43,16 +40,11 @@
 
   등이 있습니다.
 
-4. Editor Review & Revision Feedback 
+4. Editor Review & Revision Feedback  : 무수정 통과를 제외하고는 심사자들의 comment를 모아서 편집장이 원고자에게 보내는데 comment들의 대한 답변을 요구합니다.
 
-   : 무수정 통과를 제외하고는 심사자들의 comment를 모아서 편집장이 원고자에게 보내는데 comment들의 대한 답변을 요구합니다.
+5. Resubmit : 원고자가 comment들의 대한 답변과 수정본을 다시 보내는 과정입니다.
 
-5. Resubmit
-    : 원고자가 comment들의 대한 답변과 수정본을 다시 보내는 과정입니다.
-
-6. Final Review&Final Accept
-
-    : 최종적으로 다른 심사자들에게 평가(comment)를 받고 최종 결정이 나게 됩니다.
+6. Final Review&Final Accept : 최종적으로 다른 심사자들에게 평가(comment)를 받고 최종 결정이 나게 됩니다.
 
 
 ## Pivotal Tracker
