@@ -58,7 +58,7 @@ HotCPR는 각 리뷰에 대한 등급을 보고한다. 누가 등급 매겼는�
 긍정적인 등급의 모든 리뷰를 찾으려면 "re:any rate:good" 검색
 특정 등급의 리뷰를 검색 가능. 예를 들어 "rate:short" 검색
 
-6.PC meeting
+6.PC Meeting
 --------------------
 - 의견 및 리뷰 응답 (거부)
 - 투표 또는 순위 별 논문 주문
@@ -67,7 +67,7 @@ HotCPR는 각 리뷰에 대한 등급을 보고한다. 누가 등급 매겼는�
 - 메일 사용자
 
 
-7.ACM integration
+7.ACM Integration
 -----------------------
 HotCRP.com은 ACM의 게시 서비스와 통합됩니다.
 HotCRP는 저작권 할당, 최종 버전 제출, PDF 확인 및 절차 구축을 지원합니다.
@@ -83,7 +83,7 @@ ACM이 후원하는 컨퍼런스 및 워크샵은 사이트 전반의 서비스 
 - Contenets wizard : 자동으로 내용 생성
 - ACM 디지털 라이브러리에 필요한 모든 파일이 포함된 단일 번들 내보내기
 
-8. USENIX integration
+8.USENIX Integration
 -------------------------
 USENIX는 HotCRP를 사용하여 모든 회의와 워크샵을 관리 (https://www.usenix.org)
 
