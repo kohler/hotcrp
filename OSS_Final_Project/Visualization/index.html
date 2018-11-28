@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+
+<meta charset="utf-8">
+
+
+<!-- 창 열릴 때 제목 지정하는 부분 -->
+<title>Paper Distribution Visualization</title>
+
+
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@observablehq/notebook-inspector@1/dist/notebook-inspector-style.css">
+
+<body>
+
+<script type="module">
+
+
+import {Inspector, Runtime} from "https://unpkg.com/@observablehq/notebook-runtime@1?module";
+
+import notebook from "./d3-sunburst.js";
+
+
+Runtime.load(notebook, Inspector.into(document.body));
+
+
+</script>
