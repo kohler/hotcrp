@@ -1,5 +1,5 @@
 // URL: https://beta.observablehq.com/@mbostock/d3-sunburst
-// Title: D3 Sunburst
+// Title: "Journal Distribution Visualization"
 // Author: Mike Bostock (@mbostock)
 // Version: 187
 // Runtime version: 1
@@ -11,7 +11,6 @@ const m0 = {
       inputs: ["md"],
       value: (function(md){return(
 md`# D3 Sunburst
-
 The [Flare visualization toolkit](https://flare.prefuse.org) package hierarchy.`
 )})
     },
@@ -21,11 +20,13 @@ The [Flare visualization toolkit](https://flare.prefuse.org) package hierarchy.`
       value: (function(partition,data,d3,DOM,width,color,arc,format)
 {
   const root = partition(data);
+  //데이터 구조를 생성하는 파티션 변수와 data를 결합하여 root에 저장
 
 
 
-          // �ð�ȭ�� ��Ҹ� �����ϴ� �κ�
-          // .style�� ǥ���� �κе��� ��ҵ��� ���� ��Ÿ���� ǥ���ϰ� �������ִ� �κ���.
+          // 시각화할 요소를 선택하는 부분
+          // .style로 표시한 부분들은 요소들의 관한 스타일을 표시하고 지정해주는 부분임.
+  //svg 경로는 칠하고, 채우는 등 모양의 윤곽을 나타냄.
   const svg = d3.select(DOM.svg(width, width))
       .style("width", "100%")           
       .style("height", "auto")
@@ -34,18 +35,19 @@ The [Flare visualization toolkit](https://flare.prefuse.org) package hierarchy.`
       .style("box-sizing", "border-box");
   
 
-          // append("g")�� �ǹ̴� �׷쳻 ��� element�鿡�� ������ �Ӽ��� �����Ѵٴ� ���� �ǹ�
+          // append("g")의 의미는 그룹내 모든 element들에게 동일한 속성을 적용한다는 것을 의미
   const g = svg.append("g");
 
 
-        // attr()�� �ǹ̴� ��ҵ��� attributes�� ��ȭ�ϱ� ���� �ַ� ����  
+        // attr()의 의미는 요소들의 attributes를 변화하기 위해 주로 사용됨  
   g.append("g")
       .attr("fill-opacity", 0.6)
-    .selectAll("path")
-    .data(root.descendants().filter(d => d.depth))
-    .enter().append("path")
+    .selectAll("path")  //<svg>요소에 추가 된 <g>의 <path>요소 참조, 현재 path요소가 없으므로 새로 path의 위치 생성
+    .data(root.descendants().filter(d => d.depth))  //path요소에 대해 알려준다. root변수를 전달
+    .enter().append("path") //path요소와 데이터를 연결, g요소 아래에 빈 path요소 생성
       .attr("fill", d => { while (d.depth > 1) d = d.parent; return color(d.data.name); })
-      .attr("d", arc)
+      //d.depth는 시각화에 나타나는 링 개수 제한
+      .attr("d", arc)  //path요소의 모든 'd'속성을 arc변수의 값으로 채운다. d는 path요소의 각 행에 대한 실제 경로 포함 
     .append("title")
       .text(d => `${d.ancestors().map(d => d.data.name).reverse().join("/")}\n${format(d.value)}`);
 
@@ -61,7 +63,7 @@ The [Flare visualization toolkit](https://flare.prefuse.org) package hierarchy.`
         return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
       })
       .attr("dy", "0.35em")
-      .text(d => d.data.name);
+      .text(d => d.data.name); 
 
   document.body.appendChild(svg.node());
 
@@ -80,18 +82,22 @@ The [Flare visualization toolkit](https://flare.prefuse.org) package hierarchy.`
       name: "data",
       inputs: ["require"],
       value: (function(require){return(
+        //데이터set설정
 require("@observablehq/flare")
 )})
     },
     {
+      //데이터구조
+      //partition은 데이터를 sunburst패턴으로 구성하고 크기를 적절하게 설정해준다.
       name: "partition",
       inputs: ["d3","radius"],
       value: (function(d3,radius){return(
 data => d3.partition()
-    .size([2 * Math.PI, radius])
-  (d3.hierarchy(data)
+    .size([2 * Math.PI, radius])  //size는 파티션의 크기(width,height)를 설정
+     //Math.PI는 sunburst가 차지하는 라디안 수를 d3에 알린다. 따라서 *2를 지우면 반원이 된다. radius는 중심에서 외부까지의 거리를 d3에 알린다.
+  (d3.hierarchy(data) 
     .sum(d => d.size)
-    .sort((a, b) => b.value - a.value))
+    .sort((a, b) => b.value - a.value))  //각 노드 정렬
 )})
     },
     {
@@ -121,17 +127,18 @@ d3.format(",d")
 width / 2
 )})
     },
-    {
+    { //호의 크기
       name: "arc",
       inputs: ["d3","radius"],
       value: (function(d3,radius){return(
-d3.arc()
-    .startAngle(d => d.x0)
-    .endAngle(d => d.x1)
+//d3.arc()는 data를  기반으로 각 호의 크기를 계산.
+d3.arc()  //아래의 4가지 변수(start,end,inner,outer)는 각 호의 대해 4개의 외부 선을 정의 
+    .startAngle(d => d.x0)  //d.x0: 원호의 시작
+    .endAngle(d => d.x1)  //d.x1: 호 끝의 라디안 위치
     .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
     .padRadius(radius / 2)
-    .innerRadius(d => d.y0)
-    .outerRadius(d => d.y1 - 1)
+    .innerRadius(d => d.y0)  //d.y0: 내부호의 라디안 위치
+    .outerRadius(d => d.y1 - 1)  //d.y1: 외부호의 라디안 위치
 )})
     },
     {
