@@ -12,13 +12,21 @@
 
 ## Project Choice Motivation
 * 2018년 한국정보보호학회 동계학술대회 (CISC-W'18)
-* 2018년 12월 8일 (토) 세종대학교
-* Link: http://www.cisc.or.kr/
-* Link: http://www.icngc.org/
+	- 일시: 2018년 12월 8일 (토)
+	- 장소: 세종대학교
+	- Link: http://www.cisc.or.kr/
+	- 학부생으로서 막연히 논문에 대해 관심이 있었던 찰나에, 우연한 기회로 한국정보보호학회 동계학술대회를 개최한다는 소식을 듣게 되었습니다. 팀원 모두 세종대학교 정보보호학과인 덕에 분야적으로도, 개최 장소로도 본 학술대회는 저희의 관심을 끌기에 충분했습니다. 당장에 논문을 작성해서 투고를 할 수 없는 상황이었음에도 불구하고 가까운 미래에 참여하자는 생각으로 논문 투고 과정, 심사 과정 등을 알아보게 되었고, 이 과정에서 논문 관리 시스템에 대해 알게 되어 프로젝트를 함께 시작하였습니다.
 
-* 활용방안
-	- http://writing.copyright.or.kr/ [제 14회 전국 청소년 저작권 글짓기 대회 공모요강]
-	- http://www.ilovecontest.com/munhak/bbs/board.php?board=gongmomunhak3&category=&config=7&sort=user_add1&search=%B1%DB%C1%FE%B1%E2&shwhere=user_add3&PHPSESSID=096cc42e69e8df372eaaa7a33037c9bc [엽서시 문학공모]
+* The 4th Internation Conference on Next Gerneration Computing (ICNGC 2018)
+	- 일시: 2018년 12월 20일~23일
+	- 장소: Vung Tau City, Vietnam
+	- Link: http://www.icngc.org/
+
+* 최근 글짓기 공모전
+	- 제 14회 전국 청소년 저작권 글짓기 대회
+	- Link: http://writing.copyright.or.kr/ 
+	- 엽서시 문학공모
+	- Link: http://www.ilovecontest.com/munhak/bbs/board.php?board=gongmomunhak3&category=&config=7&sort=user_add1&search=%B1%DB%C1%FE%B1%E2&shwhere=user_add3&PHPSESSID=096cc42e69e8df372eaaa7a33037c9bc
 	- 위 링크들은 최근 글짓기 공모전들의 접수 방식을 보여줍니다. 
 	아직까지 많은 글짓기 공모전들이 원고제출을 이메일을 활용하는 방식을 사용하고 있습니다. 
 	이메일 제출방식은 지원자가 이메일 주소를 잘못 입력했을 시에 지원이 누락될 수도 있고, 접수 담당자가 받은 메일을 하나씩 열어 파일을 따로 내려 받아야하는 번거로움이 있습니다. 
