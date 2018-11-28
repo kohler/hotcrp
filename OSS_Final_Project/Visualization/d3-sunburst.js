@@ -22,15 +22,23 @@ The [Flare visualization toolkit](https://flare.prefuse.org) package hierarchy.`
 {
   const root = partition(data);
 
+
+
+          // 시각화할 요소를 선택하는 부분
+          // .style로 표시한 부분들은 요소들의 관한 스타일을 표시하고 지정해주는 부분임.
   const svg = d3.select(DOM.svg(width, width))
-      .style("width", "100%")
+      .style("width", "100%")           
       .style("height", "auto")
       .style("padding", "10px")
       .style("font", "10px sans-serif")
       .style("box-sizing", "border-box");
   
+
+          // append("g")의 의미는 그룹내 모든 element들에게 동일한 속성을 적용한다는 것을 의미
   const g = svg.append("g");
-  
+
+
+        // attr()의 의미는 요소들의 attributes를 변화하기 위해 주로 사용됨  
   g.append("g")
       .attr("fill-opacity", 0.6)
     .selectAll("path")
