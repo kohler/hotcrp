@@ -421,7 +421,7 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 }
 
 .msg, .msgs-reset > .msg {
-	margin: 4px 0 1rem;
+	margin: 0.5rem 0 1rem;
 	font-weight: normal;
 	font-style: normal;
 	border-width: 1px;
@@ -466,10 +466,12 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	background: border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2IiBoZWlnaHQ9IjEyIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjAwIiAvPjxwb2x5bGluZSBwb2ludHM9Ii02LDEyLDYsMCwxMiwwLDAsMTIiIGZpbGw9IiM0MDAiIC8+PHBvbHlsaW5lIHBvaW50cz0iNiwxMiwxOCwwLDI0LDAsMTIsMTIiIGZpbGw9IiM0MDAiIC8+PC9zdmc+) left repeat-y,
 		border-box #ffeeee;
 }
+.msgs-small-inline {
+	margin: 0.25rem 0 0;
+}
 .msgs-small-inline > .msg {
 	display: inline-block;
-	margin-right: 1em;
-	margin-bottom: 0.25rem;
+	margin: 0 1rem 0.25rem 0;
 	padding: 0.25em 0.5em 0.25em 1em;
 }
 
