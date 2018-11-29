@@ -10,7 +10,9 @@ const m0 = {
     {
       inputs: ["md"],
       value: (function(md){return(
-md`# D3 Sunburst
+
+          // 큰제목설정
+md`# Paper Distribution Visualization
 The [Flare visualization toolkit](https://flare.prefuse.org) package hierarchy.`
 )})
     },
