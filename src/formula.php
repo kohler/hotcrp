@@ -1249,6 +1249,7 @@ class Formula {
     private $_tagrefs;
     private $_error_html = [];
     private $_recursion = 0;
+    private $_macro;
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
@@ -1489,6 +1490,25 @@ class Formula {
                 return call_user_func($kwdef->callback, $ff, $this);
         }
 
+        if (isset($kwdef->macro)) {
+            if ($this->_recursion > 10) {
+                $this->add_error_at("Circular macro definition", $pos1, -strlen($t), ".");
+                return null;
+            }
+            ++$this->_recursion;
+            $old_macro = $this->_macro;
+            $this->_macro = $ff;
+            $tt = $kwdef->macro;
+            $e = $this->_parse_ternary($tt, false);
+            if (!$e || $tt !== "") {
+                $this->add_error_at("Parse error in macro", $pos1, -strlen($t), ".");
+                return null;
+            }
+            $this->_macro = $old_macro;
+            --$this->_recursion;
+            return $e;
+        }
+
         return null;
     }
 
@@ -1691,6 +1711,14 @@ class Formula {
                 $m[2] = substr($field, $dash) . $m[2];
                 $field = substr($field, 0, $dash);
             }
+            $t = $m[2];
+        } else if (preg_match('/\A\$(\d+)(.*)\z/s', $t, $m)
+                   && $this->_macro
+                   && intval($m[1]) > 0) {
+            if (intval($m[1]) <= count($this->_macro->args))
+                $e = $this->_macro->args[intval($m[1]) - 1];
+            else
+                $e = ConstantFexpr::cnull();
             $t = $m[2];
         }
 
