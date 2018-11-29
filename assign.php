@@ -381,11 +381,7 @@ echo Ht::form(hoturl_post("assign", "p=$prow->paperId"), ["novalidate" => true])
     '<div class="revcard"><div class="revcard_head">',
     "<h3>", $req, "</h3></div><div class=\"revcard_body\">";
 
-echo '<p class="papertext f-h">External reviewers may view their assigned papers, including ';
-if ($Conf->setting("extrev_view") >= 2)
-    echo "the other reviewers’ identities and ";
-echo "any eventual decision.  Before requesting an external review,
- you should generally check personally whether they are interested.";
+echo '<p class="papertext">', $Conf->_i("external-review-request-description", null);
 if ($Me->allow_administer($prow))
     echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
 echo '</p>';

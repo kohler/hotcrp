@@ -3266,7 +3266,9 @@ class Contact {
             || ($rights->allow_pc_broad
                 && $this->conf->timePCViewDecision($rights->view_conflict_type > 0))
             || ($rights->review_status > 0
-                && $this->conf->time_reviewer_view_decision());
+                && $this->conf->time_reviewer_view_decision()
+                && ($rights->allow_pc_broad
+                    || $this->conf->setting("extrev_view") > 0));
     }
 
     function can_view_some_decision() {

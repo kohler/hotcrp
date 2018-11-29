@@ -187,6 +187,9 @@ class Reviews_SettingRenderer {
 
 
     static function render_external(SettingValues $sv) {
+        $sv->echo_radio_table("extrev_view", [2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"],
+            'Can external reviewers see reviews, comments, and eventual decisions for their assigned submissions, once they’ve completed a review?');
+
         echo '<div id="foldpcrev_editdelegate" class="settings-g has-fold fold',
             $sv->curv("extrev_chairreq") >= 0 ? 'o' : 'c',
             ' fold2o" data-fold-values="0 1 2">';
@@ -211,9 +214,6 @@ class Reviews_SettingRenderer {
             '<span class="fx"> (<a href="', hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
             '<textarea class="tt fx need-autogrow" name="mailbody_requestreview" cols="80" rows="20">', htmlspecialchars($t["body"]), "</textarea>",
             "</div></div>\n";
-
-        $sv->echo_radio_table("extrev_view", [2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"],
-            'Can external reviewers see reviews and comments for their assigned submissions, once they’ve completed a review?');
     }
 
     static function render_ratings(SettingValues $sv) {

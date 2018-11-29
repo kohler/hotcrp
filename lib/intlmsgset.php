@@ -164,7 +164,7 @@ class IntlMsgSet {
                 $im->priority = (float) $m->priority;
             if (isset($m->require) && is_array($m->require))
                 $im->require = $m->require;
-            if (isset($m->format) && is_int($m->format))
+            if (isset($m->format) && (is_int($m->format) || is_string($m->format)))
                 $im->format = $m->format;
             if (isset($m->no_conversions) && is_bool($m->no_conversions))
                 $im->no_conversions = $m->no_conversions;
