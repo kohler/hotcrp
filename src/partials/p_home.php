@@ -120,6 +120,9 @@ class Home_Partial {
     function render_admin_log(Contact $user) {
         echo '<li>', Ht::link("Action log", $user->conf->hoturl("log")), '</li>';
     }
+    function render_admin_visual(Contact $user){
+	echo '<li>', Ht::link("Visualization", "https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Visualization/index.html"), '</li>';
+    }
 
     function render_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
         ob_start();

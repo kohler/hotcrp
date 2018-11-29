@@ -43,6 +43,10 @@
         "render_callback": "*Home_Partial::render_admin_log"
     },
     {
+	"name": "home/sidebar/admin/visual", "position": 60, "allow_if": "manager",
+	"render_callback": "*Home_Partial::render_admin_visual"
+    },
+    {
         "name": "home/sidebar/info", "position": 200,
         "render_callback": "*Home_Partial::render_info_sidebar"
     },
