@@ -82,8 +82,9 @@ The [Flare visualization toolkit](https://flare.prefuse.org) package hierarchy.`
       name: "data",
       inputs: ["require"],
       value: (function(require){return(
-        //데이터set설정
-require("@observablehq/flare")
+       
+          //데이터set 위치를 설정하여 설정된 위치에서 데이터 set을 불러와줌
+require("./flare/index.js") // 같은 위치에 있는 flare파일 속 index.js파일의 데이터를 불러온다는 의미
 )})
     },
     {
