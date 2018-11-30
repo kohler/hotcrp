@@ -3,7 +3,7 @@
 
 var siteurl, siteurl_postvalue, siteurl_suffix, siteurl_defaults,
     siteurl_absolute_base, siteurl_cookie_params, assetsurl,
-    hotcrp_paperid, hotcrp_status, hotcrp_user, hotcrp_pc,
+    hotcrp_paperid, hotcrp_status, hotcrp_user,
     hotcrp_want_override_conflict;
 
 function $$(id) {
@@ -4036,7 +4036,7 @@ demand_load.make = function (executor) {
         }
         return promise;
     };
-}
+};
 
 demand_load.pc = demand_load.make(function (resolve, reject) {
     $.get(hoturl("api/pc", {p: hotcrp_paperid}), null, function (v) {
