@@ -578,10 +578,11 @@ class SettingValues extends MessageSet {
             $this->cleanup_callbacks[$name][1][] = $arg;
     }
 
-    private function si_curv(Si $si, $default_value, $all = false) {
-        if (!$this->all_interesting && $si->group && !$si->is_interesting($this))
-            error_log("$si->name: bad group $si->group, not interesting here");
-        if ($this->use_req())
+    private function si_curv(Si $si, $default_value) {
+        if ($this->use_req()
+            && ($this->all_interesting
+                || !$si->group
+                || $si->is_interesting($this)))
             return get($this->req, str_replace(".", "_", $si->name), $default_value);
         else
             return $this->si_oldv($si, $default_value);
