@@ -32,7 +32,6 @@ class HotCRPMailer extends Mailer {
     protected $row = null;
     protected $rrow = null;
     protected $rrow_unsubmitted = false;
-    protected $reviewNumber = "";
     protected $comment_row = null;
     protected $newrev_since = false;
     protected $no_send = false;
@@ -69,12 +68,10 @@ class HotCRPMailer extends Mailer {
             $this->contacts[$k] = get($rest, $k . "_contact");
         $this->row = $row;
         assert(!$row || $this->row->paperId > 0);
-        foreach (array("rrow", "reviewNumber", "comment_row", "newrev_since") as $k)
+        foreach (["rrow", "comment_row", "newrev_since"] as $k)
             $this->$k = get($rest, $k);
         if (get($rest, "rrow_unsubmitted"))
             $this->rrow_unsubmitted = true;
-        if ($this->reviewNumber === null)
-            $this->reviewNumber = "";
         if (get($rest, "no_send"))
             $this->no_send = true;
         // Infer reviewer contact from rrow/comment_row
@@ -323,13 +320,10 @@ class HotCRPMailer extends Mailer {
     }
     function kw_reviewname($args) {
         $s = $args === "SUBJECT";
-        if ($this->reviewNumber !== "")
-            return ($s ? "review #" : "Review #") . $this->reviewNumber;
+        if ($this->rrow && $this->rrow->reviewOrdinal)
+            return ($s ? "review #" : "Review #") . $this->row->paperId . unparseReviewOrdinal($this->rrow->reviewOrdinal);
         else
             return ($s ? "review" : "A review");
-    }
-    function kw_reviewnumber() {
-        return $this->reviewNumber;
     }
     function kw_reviewid($args, $isbool) {
         if ($isbool && !$this->rrow)

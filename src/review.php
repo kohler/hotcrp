@@ -2009,8 +2009,6 @@ class ReviewValues extends MessageSet {
             "rrow" => $new_rrow, "reviewer_contact" => $reviewer,
             "check_function" => "HotCRPMailer::check_can_view_review"
         ];
-        if ($new_rrow->reviewOrdinal)
-            $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($new_rrow->reviewOrdinal);
         $this->_mailer_preps = [];
         if ($new_rrow->reviewSubmitted
             && ($diffinfo->notify || $diffinfo->notify_author)) {

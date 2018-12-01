@@ -41,7 +41,6 @@
     {"name": "COMMENTS", "callback": "*kw_comments", "expand_if": "*kw_haspaper"},
     {"match": "(OTHER|REQUESTER|REVIEWER)(CONTACT|NAME|EMAIL|FIRST|LAST)", "callback": "*kw_reviewercontact", "global": true},
     {"name": "REVIEWNAME", "callback": "*kw_reviewname", "expand_if": "*kw_haspaper"},
-    {"name": "REVIEWNUMBER", "callback": "*kw_reviewnumber", "expand_if": "*kw_haspaper"},
     {"name": "REVIEWID", "callback": "*kw_reviewid", "expand_if": "*kw_haspaper"},
     {"name": "REVIEWAUTHOR", "callback": "*kw_reviewercontact", "global": true, "match_data": [null, "REVIEWER", "CONTACT"]},
     {"name": "NEWASSIGNMENTS", "callback": "*kw_newassignments"},
