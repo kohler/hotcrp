@@ -120,9 +120,9 @@ class Home_Partial {
     function render_admin_log(Contact $user) {
         echo '<li>', Ht::link("Action log", $user->conf->hoturl("log")), '</li>';
     }
-    function render_admin_visual(Contact $user){
-	echo '<li>', Ht::link("Visualization", "http://35.200.51.105/student_paper/visual/"), '</li>';
-    }
+    function render_admin_visual(Contact $user){	// etc/homepartials.json의 47번째 줄에서 불러들여짐
+	echo '<li>', Ht::link("Visualization", "http://35.200.51.105/student_paper/visual/"), '</li>';	// 기존 메뉴와 같이 list 형태, link는 visual 디렉터리로...
+    } // TEAM17이 추가한 Visualization 탭 (Administration 메뉴에만 존재함)
 
     function render_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
         ob_start();

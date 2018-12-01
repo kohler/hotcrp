@@ -42,8 +42,8 @@
         "name": "home/sidebar/admin/log", "position": 50, "allow_if": "manager",
         "render_callback": "*Home_Partial::render_admin_log"
     },
-    {
-	"name": "home/sidebar/admin/visual", "position": 60, "allow_if": "manager",
+    {	// 기존에 있던 Administration 메뉴 밑에 Visualization 탭 하나 추가
+	"name": "home/sidebar/admin/visual", "position": 60, "allow_if": "manager", // 기존 탭 밑인 position 60에 권한이 manager일 경우에만
 	"render_callback": "*Home_Partial::render_admin_visual"
     },
     {
