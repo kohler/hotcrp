@@ -393,7 +393,7 @@ if (($rrow = $prow->review_of_user($Me))
 echo '<div class="papertext g">',
     '<div class="', Ht::control_class("email", "f-i"), '">',
     Ht::label("Email", "revreq_email"),
-    Ht::entry("email", (string) $Qreq->email, ["id" => "revreq_email", "size" => 52, "class" => "fullw", "autocomplete" => "off", "type" => "email"]),
+    Ht::entry("email", (string) $Qreq->email, ["size" => 52, "class" => "fullw uii js-request-review-email", "autocomplete" => "off", "type" => "email"]),
     '</div>',
     '<div class="f-2col">',
     '<div class="', Ht::control_class("firstName", "f-i"), '">',
@@ -427,7 +427,6 @@ if ($Me->can_administer($prow))
 echo "<div class='f-i'>\n",
     Ht::submit("requestreview", "Request review", ["class" => "btn-primary"]),
     "</div>\n\n";
-Ht::stash_script("\$(\"#revreq_email\").on(\"input\",revreq_email_input)");
 
 echo "</div></div></div></form>\n";
 

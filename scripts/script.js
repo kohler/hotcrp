@@ -882,6 +882,7 @@ return handle_ui;
 $(document).on("click", ".ui, .uix", handle_ui);
 $(document).on("change", ".uich", handle_ui);
 $(document).on("keydown", ".uikd", handle_ui);
+$(document).on("input", ".uii", handle_ui);
 $(document).on("unfold", ".ui-unfold", handle_ui);
 
 
@@ -2514,7 +2515,7 @@ handle_ui.on("js-assignment-fold", function (event) {
 });
 })($);
 
-function revreq_email_input(event) {
+handle_ui.on("js-request-review-email", function () {
     var v = this.value.trim(), f = $(this).closest("form")[0];
     function success(data) {
         if (!data || !data.ok)
@@ -2533,8 +2534,7 @@ function revreq_email_input(event) {
         });
     else
         success(null);
-    event = null;
-};
+});
 
 
 // author entry
