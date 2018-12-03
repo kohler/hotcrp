@@ -283,12 +283,15 @@ class HotCRPMailer extends Mailer {
     function kw_authorviewcapability($args, $isbool) {
         if ($this->conf->opt("disableCapabilities"))
             return "";
-        else if ($this->row
-                 && isset($this->row->capVersion)
-                 && $this->recipient->act_author_view($this->row))
-            return "cap=" . $this->conf->capability_text($this->row, "a");
-        else
-            return null;
+        if ($this->row
+            && isset($this->row->capVersion)
+            && $this->recipient->act_author_view($this->row)) {
+            if (!$this->sensitivity)
+                return "cap=" . $this->conf->capability_text($this->row, "a");
+            else if ($this->sensitivity === "display")
+                return "cap=HIDDEN";
+        }
+        return null;
     }
     function kw_tagvalue($args, $isbool, $uf) {
         $tag = isset($uf->match_data) ? $uf->match_data[1] : $args;
