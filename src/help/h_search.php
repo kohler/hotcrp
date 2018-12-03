@@ -7,7 +7,7 @@ class Search_HelpTopic {
         echo "<p>All HotCRP lists are obtained through flexible
 search. Some hints for PC members and chairs:</p>
 
-<ul class='compact'>
+<ul>
 <li><div style='display:inline-block'>", $hth->search_form(""), "</div>&nbsp; finds all submissions.  (Leave the search field blank.)</li>
 <li><div style='display:inline-block'>", $hth->search_form("12"), "</div>&nbsp; finds submission #12.  When entered from a
  <a href='#quicklinks'>quicksearch</a> box, this search will jump to #12 directly.</li>
@@ -35,7 +35,7 @@ and use “With <b>any</b> of the words” and “<b>Without</b> the words.”</
 
 <p>You can search several categories, depending on your role in the
 conference. Options include:</p>
-<ul class='compact'>
+<ul>
 <li><b>Submitted papers</b> &mdash; all submitted papers.</li>
 <li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
 <li><b>Your submissions</b> &mdash; papers for which you’re a contact.</li>
@@ -69,7 +69,7 @@ to navigate through the rest of the search matches.</p>
 <p>Use the checkboxes to select some papers, then choose an action.
 You can:</p>
 
-<ul class='compact'>
+<ul>
 <li>Download a <code>.zip</code> file with the selected papers.</li>
 <li>Download all reviews for the selected papers.</li>
 <li>Download tab-separated text files with authors, PC
