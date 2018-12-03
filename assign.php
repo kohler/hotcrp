@@ -424,8 +424,9 @@ if ($Me->can_administer($prow))
         Ht::checkbox("override"),
         ' </span>Override deadlines, declined requests, and potential conflicts</label></div>';
 
-echo "<div class='f-i'>\n",
-    Ht::submit("requestreview", "Request review", ["class" => "btn-primary"]),
+echo '<div class="aab aabr">',
+    '<div class="aabut aabutsp">', Ht::submit("requestreview", "Request review", ["class" => "btn-primary"]), '</div>',
+    '<div class="aabut"><a class="ui js-request-review-preview-email">Preview request email</a></div>',
     "</div>\n\n";
 
 echo "</div></div></div></form>\n";

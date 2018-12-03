@@ -921,10 +921,11 @@ button:disabled, button:disabled:hover, .btn:disabled, .btn:disabled:hover,
 	margin-left: 1em;
 }
 .aabut.aabutsp {
-	margin: 0 2.5em 0 0;
+	margin-right: 2.5em;
 }
 .aabr > .aabut.aabutsp {
-	margin: 0 0 0 2.5em;
+	margin-right: 0;
+	margin-left: 2.5em;
 }
 .btnp > button, .btnp > .btn, .btnp > .btnbox {
 	margin-right: 0.75em;

@@ -50,6 +50,10 @@
         "synonym": ["listreport"]
     },
     {
+        "name": "mailtext", "get": true, "post": true,
+        "callback": "Mail_API::mailtext"
+    },
+    {
         "name": "namedformula", "get": true,
         "callback": "SearchConfig_API::namedformula"
     },

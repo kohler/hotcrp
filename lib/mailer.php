@@ -154,44 +154,47 @@ class Mailer {
             $r->email = $contact->preferredEmail;
 
         // maybe infer username
-        if ($r->firstName == ""
-            && $r->lastName == ""
+        if ($r->firstName === ""
+            && $r->lastName === ""
             && is_object($contact)
             && (get_s($contact, "email") !== ""
                 || get_s($contact, "preferredEmail") !== ""))
             $this->infer_user_name($r, $contact);
 
-        if ($out == "NAME" || $out == "CONTACT")
+        $email = $r->email;
+        if ($email === "")
+            $email = "<none>";
+        if ($out === "EMAIL")
+            return $email;
+
+        if ($out === "NAME" || $out === "CONTACT")
             $t = $r->name;
-        else if ($out == "FIRST")
+        else if ($out === "FIRST")
             $t = $r->firstName;
-        else if ($out == "LAST")
+        else if ($out === "LAST")
             $t = $r->lastName;
         else
             $t = "";
-        if ($t == "" && $out == "NAME" && $r->email
-            && $this->expansionType !== self::EXPAND_EMAIL)
-            $t = $r->email;
-        if ($t != "" && $this->expansionType === self::EXPAND_EMAIL
+
+        if ($t !== ""
+            && $this->expansionType === self::EXPAND_EMAIL
             && preg_match('#[\000-\037()[\]<>@,;:\\".]#', $t))
             $t = "\"" . addcslashes($t, '"\\') . "\"";
 
-        $email = $r->email;
-        if ($email == "" && $this->expansionType === self::EXPAND_EMAIL)
-            $email = "<none>";
-        if ($out == "EMAIL")
-            $t = $email;
-        else if ($out == "CONTACT" && $this->expansionType === self::EXPAND_EMAIL) {
-            if ($t == "")
-                $t = $email;
-            else if ($email[0] == "<")
-                $t .= " $email";
+        if ($out === "CONTACT") {
+            if ($t === "")
+                return $email;
+            else if ($email[0] === "<")
+                return $t . " " . $email;
             else
-                $t .= " <$email>";
-        } else if ($out == "CONTACT" && $email != "")
-            $t = ($t == "" ? $email : "$t <$email>");
-
-        return $t;
+                return $t . " <" . $email . ">";
+        } else if ($out === "NAME") {
+            if ($t === "" && $this->expansionType !== self::EXPAND_EMAIL)
+                return $email;
+            else
+                return $t;
+        } else
+            return $t;
     }
 
     function infer_user_name($r, $contact) {

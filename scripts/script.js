@@ -2536,6 +2536,42 @@ handle_ui.on("js-request-review-email", function () {
         success(null);
 });
 
+handle_ui.on("js-request-review-preview-email", function (event) {
+    var f = $(this).closest("form")[0],
+        a = {p: hotcrp_paperid, template: "requestreview"},
+        self = this;
+    function fv(field, defaultv) {
+        var x = f[field] && f[field].value.trim();
+        if (x === "")
+            x = f[field].getAttribute("placeholder");
+        if (x === false || x === "" || x == null)
+            x = defaultv;
+        if (x !== "")
+            a[field] = x;
+    }
+    fv("email", "<email>");
+    fv("firstName", "");
+    fv("lastName", "");
+    fv("affiliation", "Affiliation");
+    fv("reason", "");
+    if (a.firstName == null && a.lastName == null)
+        a.lastName = "<Name>";
+    $.ajax(hoturl("api/mailtext", a), {
+        method: "GET", success: function (data) {
+            if (data.ok && data.subject && data.body) {
+                var hc = popup_skeleton();
+                hc.push('<h2>External review request email preview</h2>');
+                hc.push('<pre></pre>');
+                hc.push_actions(['<button type="button" class="btn-primary no-focus" name="cancel">Close</button>']);
+                var $d = hc.show(false);
+                $d.find("pre").text("Subject: " + data.subject + "\n\n" + data.body);
+                hc.show(true);
+            }
+        }
+    });
+    event.stopPropagation();
+});
+
 
 // author entry
 var row_order_ui = (function ($) {
@@ -5537,7 +5573,13 @@ function popup_near(elt, anchor) {
     elt.style.left = x + "px";
     elt.style.top = y + "px";
     var viselts = $(elt).find("input, button, textarea, select").filter(":visible");
-    var efocus = viselts.filter(".want-focus")[0] || viselts.filter(":not(.dangerous)")[0];
+    $(elt).find("input, button, textarea, select").filter(":visible").each(function () {
+        if (hasClass(this, "want-focus")) {
+            efocus = this;
+            return false;
+        } else if (!hasClass(this, "dangerous") && !hasClass(this, "no-focus"))
+            efocus = this;
+    });
     efocus && focus_at(efocus);
 }
 
@@ -5548,7 +5590,7 @@ function popup(anchor, which, dofold) {
 
     if (dofold) {
         elt.className = "popupc";
-        if (/popupbg/.test(elt.parentNode.className))
+        if (hasClass(elt.parentNode, "popupbg"))
             elt.parentNode.style.display = "none";
     } else {
         elt.className = "popupo";

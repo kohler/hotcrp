@@ -219,7 +219,7 @@
 		"subject": "[%CONFSHORTNAME%] Review request for submission #%NUMBER%",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%\n\n",
+			"On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.%IF(REASON)%\n\nThey supplied this note: %REASON%%ENDIF%\n\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
