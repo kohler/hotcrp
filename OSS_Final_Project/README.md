@@ -72,6 +72,9 @@
 
 
 ## New Feature Proposal
+![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Contribution%20Result.png) <br/>
+Visualization이 어떻게 연결되어 있고, 어떠한 방식으로 나타나는지에 관한 시각자료 입니다.
+
 * 아이디어 결정 과정 : https://github.com/OSS-TEAM17/hotcrp/tree/master/OSS_Final_Project/NewFuncIdeas
 * Server Link : http://35.200.51.105/student_paper/
 * 어떠한 주제의 논문과 자료들이 들어오고 뭐가 이슈인지에 대한 자료들을 기반으로 원형 그래프를 구현하였습니다.
