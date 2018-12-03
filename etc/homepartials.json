@@ -80,6 +80,10 @@
         "render_callback": "*Home_Partial::render_search"
     },
     {
+        "name": "home/review_requests", "position": 4500, "allow_if": "reviewer",
+        "render_callback": "*Home_Partial::render_review_requests"
+    },
+    {
         "name": "home/reviews", "position": 5000, "allow_if": "reviewer",
         "render_callback": "*Home_Partial::render_reviews"
     },
@@ -88,10 +92,6 @@
         "allow_request_if": ["getpost", "req.token", "!empty"],
         "request_callback": "ReviewToken_Partial::request",
         "render_callback": "*Home_Partial::render_review_tokens"
-    },
-    {
-        "name": "home/review_requests", "position": 6000, "allow_if": "reviewer",
-        "render_callback": "*Home_Partial::render_review_requests"
     },
     {
         "name": "home/submissions", "position": 7000,
