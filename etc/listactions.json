@@ -109,7 +109,7 @@
     },
     {
         "name": "get/rank", "get": true,
-        "allow_if": ["tag_rank", "reviewer"], "display_if": false,
+        "allow_if": ["setting.tag_rank", "reviewer"], "display_if": false,
         "require": "src/listactions/la_get_rev.php",
         "callback": "+GetRank_ListAction"
     },

@@ -800,8 +800,12 @@ class Conf {
     function xt_check($expr, $xt, Contact $user = null, Qrequest $qreq = null) {
         foreach (is_array($expr) ? $expr : [$expr] as $e) {
             $not = false;
-            if (is_string($e) && ($not = str_starts_with($e, "!")))
+            if (is_string($e)
+                && strlen($e) > 0
+                && ($e[0] === "!" || $e[0] === "-")) {
                 $e = substr($e, 1);
+                $not = true;
+            }
             if (!is_string($e))
                 $b = $e;
             else if ($e === "chair" || $e === "admin")
