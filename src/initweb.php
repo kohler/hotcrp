@@ -17,6 +17,8 @@ if ($_SERVER["REQUEST_METHOD"] !== "GET"
 
 // Collect $Qreq
 $Qreq = make_qreq();
+if (isset($Qreq->i))
+    error_log("Request parameter with name=i");
 
 // Check for obsolete pages
 // These are pages that we've removed from the source. But some user might
