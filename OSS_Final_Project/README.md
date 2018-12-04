@@ -11,6 +11,8 @@
 
 
 ## Project Choice Motivation
+![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/%EC%8A%A4%ED%86%A0%EB%A6%AC.PNG) <br/>
+
 * 2018년 한국정보보호학회 동계학술대회 (CISC-W'18)
 	- 일시: 2018년 12월 8일 (토)
 	- 장소: 세종대학교
