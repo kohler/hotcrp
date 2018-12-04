@@ -13,26 +13,26 @@
 ## Project Choice Motivation
 ![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/%EC%8A%A4%ED%86%A0%EB%A6%AC.PNG) <br/>
 
-* 2018년 한국정보보호학회 동계학술대회 (CISC-W'18)
+* **2018년 한국정보보호학회 동계학술대회 (CISC-W'18)**
   - 일시: 2018년 12월 8일 (토)
   - 장소: 세종대학교
   - Link: http://www.cisc.or.kr/
   - **"앗! 한국정보보호학회가 세종대학교에서?"** <br/>학부생으로서 막연히 논문에 대해 관심이 있었던 찰나에, 우연한 기회로 한국정보보호학회 동계학술대회를 개최한다는 소식을 듣게 되었습니다. 팀원 모두 세종대학교 정보보호학과인 덕에 분야적으로도, 개최 장소로도 본 학술대회는 저희의 관심을 끌기에 충분했습니다. 당장에 논문을 작성해서 투고를 할 수 없는 상황이었음에도 불구하고 가까운 미래에 참여하자는 생각으로 **논문 투고 과정, 심사 과정** 등을 알아보게 되었고, 이 과정에서 논문 관리 시스템에 대해 알게 되어 프로젝트를 함께 시작하였습니다.
 
-* The 4th Internation Conference on Next Gerneration Computing (ICNGC 2018)
+* **The 4th Internation Conference on Next Gerneration Computing (ICNGC 2018)**
   - 일시: 2018년 12월 20일~23일
   - 장소: Vung Tau City, Vietnam
   - Link: http://www.icngc.org/
   - **"ICNGC 운영진을 만나다"** <br/> 우연찮은 기회로 ICNGC 운영진을 인터뷰 할 수 있는 기회를 얻게 되었습니다. 이번 ICNGC에서 테스트 서버로 HotCRP를 사용하고 있다는 사실을 알게 되었고, 여러 이점들에 대해 설명을 들을 수 있었습니다. 프로젝트를 시작하고 리서치만을 통해 알게 된 사실보다 직접 인터뷰를 통해 얻은 간접 경험은 저희 프로젝트를 더욱 사실적으로 원활히 진행할 수 있게 도와주었습니다. 
 
-* 최근 글짓기 공모전
+* **최근 글짓기 공모전**
   - 제 14회 전국 청소년 저작권 글짓기 대회
   - Link: http://writing.copyright.or.kr/ 
   - 엽서시 문학공모
   - Link: http://www.ilovecontest.com/munhak/bbs/board.php?board=gongmomunhak3&category=&config=7&sort=user_add1&search=%B1%DB%C1%FE%B1%E2&shwhere=user_add3&PHPSESSID=096cc42e69e8df372eaaa7a33037c9bc
   - **"생각지도 못한 글짓기 대회에서의 어려움"** <br/>위 링크들은 최근 글짓기 공모전들의 접수 방식을 보여줍니다.<br/>아직까지 많은 글짓기 공모전들이 원고제출을 이메일을 활용하는 방식을 사용하고 있습니다.<br/>이메일 제출방식은 지원자가 이메일 주소를 잘못 입력했을 시에 지원이 누락될 수도 있고, 접수 담당자가 받은 메일을 하나씩 열어 파일을 따로 내려 받아야하는 번거로움이 있습니다.<br/>**HotCRP을 사용하면 이러한 시스템의 단점을 보완할 수 있을 것이라 생각합니다.**<br/>지원자는 원서를 잘못된 곳에 제출할 걱정을 할 필요가 없으며, 제출된 파일들을 한 카테고리안에 저장한 다음 문서를 대량으로 다운로드 받을 수 있고, 제출한 사람의 이름이나 파일 이름을 검색하여 쉽게 찾을 수 있습니다. <br/>HotCRP는 이외에도 다양한 기능(자세한 내용은 https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Summary_of_Main_Features.md 을 참고)을 보유하고 있어 기존의 이메일 제출 관행을 대체할 방안으로 활용될 수 있을 것이라 생각합니다.
 
-* 2018 ICT아이디어 공모전 '그들의 은밀한 사생활'
+* **2018 ICT아이디어 공모전 '그들의 은밀한 사생활'**
   - 일시 : 2018년 11월 17일 ~ 12월10일
   - 장소 : 세종대학교
   - Link: https://m.facebook.com/story.php?story_fbid=2213803028942748&id=1771203086536080
