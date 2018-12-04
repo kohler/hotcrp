@@ -45,7 +45,8 @@
 
 ## Call for Paper Process
 ![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Call%20for%20Paper%20Process%20Ver.2.png) <br/>
-논문 투고 과정 시각자료입니다
+
+<span style = "color:green">논문 투고 과정 시각자료입니다</span>
 
 1. 투고 (Submit) : 저널마다 요구하는 논문의 구조와 그림등의 형태나 채색 허용여부에 따라 원고를 교정후 <u>투고</u>합니다.
 
