@@ -73,7 +73,7 @@
 
 ## New Feature Proposal
 
-* Idea Decision Process : https://github.com/OSS-TEAM17/hotcrp/tree/master/OSS_Final_Project/NewFuncIdeas
+* Idea Decision Process : https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/NewFuncIdeas/NewFuncIdea.md
 
 * Server Link : http://35.200.51.105/student_paper/
 ![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Contribution%20Result.png) <br/>
