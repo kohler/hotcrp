@@ -111,5 +111,5 @@ Visualization이 어떻게 연결되어 있고, 어떠한 방식으로 나타나
 * Pivotal Tracker를 통해서 계획을 짜고 수행하기도 했지만 이 뿐만 아니라 저희는 Gantt Chart도 따로 만들어서 이를 토대로 계획을 수행하곤 했습니다.
 * Pivotal Tracker: 당장 수행해야 하는 계획들 기록 (일주일 단위)
 * Gantt Chart: 전체적인 계획 기록 (전체 기간을 토대로 날짜별로 한 눈에 파악 가능)
-![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Gantt%20Chart%20for%20Planning.pdf) <br/>
+![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Gantt%20Chart%20for%20Planning.jpg) <br/>
 * Link: https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Gantt%20Chart%20for%20Planning.pdf
