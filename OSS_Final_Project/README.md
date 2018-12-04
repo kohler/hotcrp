@@ -97,6 +97,7 @@ Visualization이 어떻게 연결되어 있고, 어떠한 방식으로 나타나
 
 
 ## Pivotal Tracker
+![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/pivotal_tracker.jpg) <br/>
 * 팀프로젝트 수행 과정을 효율적으로 관리 및 기록하기 위한 어플리케이션입니다.
 * Git 및 GitHub와 연동되어 있어서 효율적으로 사용이 가능합니다.
 * Git 및 GitHub 활용방안 스터디를 통해 나온 최민지의 아이디어를 반영해서 활동에 이용하였습니다.
@@ -104,9 +105,11 @@ Visualization이 어떻게 연결되어 있고, 어떠한 방식으로 나타나
 * Git에서 commit message를 적을 때, 맨 뒤에 [delivers #(project ID No.)]를 써주면 자동으로 연동이 됩니다.
 * Link: https://www.pivotaltracker.com/n/projects/2227295
 * History
+![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/pivotal_tracker_history_summary.jpg) <br/>
   * Week 1 History: https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Pivotal%20Tracker%20History%201.pdf
   * Week 2 History: https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Pivotal%20Tracker%20History%202.pdf
 * Pivotal Tracker를 통해서 계획을 짜고 수행하기도 했지만 이 뿐만 아니라 저희는 Gantt Chart도 따로 만들어서 이를 토대로 계획을 수행하곤 했습니다.
 * Pivotal Tracker: 당장 수행해야 하는 계획들 기록 (일주일 단위)
 * Gantt Chart: 전체적인 계획 기록 (전체 기간을 토대로 날짜별로 한 눈에 파악 가능)
+![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Gantt%20Chart%20for%20Planning.pdf) <br/>
 * Link: https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Gantt%20Chart%20for%20Planning.pdf
