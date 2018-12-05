@@ -65,6 +65,13 @@
 6. Final Review&Final Accept : 최종적으로 다른 심사자들에게 **평가(comment)를 받고 최종 결정**이 나게 됩니다.
 
 
+## Analysis
+![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Code%20Analysis.png) <br/>
+* 사진에 보여지는 코드들이 저희가 New Feature Proposal을 위해 검토했던 코드들입니다.
+* 시각화를 위한 원형 그래프는 주로 아래의 깃허브 링크에서 다루었습니다. <br/>Link: https://github.com/JaeHyunYu/OSS_Final_Graph
+* HotCRP 기존 기능들에 대한 분석은 주로 사이트와 코드를 기반으로 진행되었습니다.
+
+
 ## New Feature Proposal
 
 * Idea Decision Process : https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/NewFuncIdeas/NewFuncIdea.md
