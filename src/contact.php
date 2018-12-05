@@ -1356,10 +1356,6 @@ class Contact {
         return hotcrp_random_password($length);
     }
 
-    static function password_storage_cleartext() {
-        return opt("safePasswords") < 1;
-    }
-
     function allow_contactdb_password() {
         $cdbu = $this->contactdb_user();
         return $cdbu && $cdbu->password && $cdbu->password !== "*";

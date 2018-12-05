@@ -1483,6 +1483,10 @@ class Conf {
 
     // users
 
+    function password_storage_cleartext() {
+        return $this->opt["safePasswords"] < 1;
+    }
+
     function external_login() {
         return isset($this->opt["ldapLogin"]) || isset($this->opt["httpAuthLogin"]);
     }

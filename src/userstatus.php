@@ -728,12 +728,12 @@ class UserStatus extends MessageSet {
       <div class="f-c">Repeat new password</div>',
             Ht::password("upassword2", $pws[1], ["size" => 52]), "</div>\n";
         if ($us->user->plaintext_password()
-            && ($us->viewer->privChair || Contact::password_storage_cleartext())) {
+            && ($us->viewer->privChair || $us->conf->password_storage_cleartext())) {
             echo "  <div class=\"f-h\">";
-            if (Contact::password_storage_cleartext())
+            if ($us->conf->password_storage_cleartext())
                 echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
             if ($us->viewer->privChair) {
-                if (Contact::password_storage_cleartext())
+                if ($us->conf->password_storage_cleartext())
                     echo " <span class=\"sep\"></span>";
                 echo '<span class="n"><a class="ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
             }
