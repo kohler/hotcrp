@@ -728,24 +728,6 @@ class Conf {
     }
 
 
-    function _add_emoji_code($val, $key) {
-        if (is_string($val) && str_starts_with($key, ":") && str_ends_with($key, ":")) {
-            $this->_emoji_codes[$key] = $val;
-            return true;
-        } else
-            return false;
-    }
-    function emoji_code_map() {
-        global $ConfSitePATH;
-        if ($this->_emoji_codes === null) {
-            $this->_emoji_codes = json_decode(file_get_contents("$ConfSitePATH/etc/emojicodes.json"), true);
-            if (($olist = $this->opt("emojiCodes")))
-                expand_json_includes_callback($olist, [$this, "_add_emoji_code"]);
-        }
-        return $this->_emoji_codes;
-    }
-
-
     static function xt_priority($xt) {
         return $xt ? get($xt, "priority", 0) : -PHP_INT_MAX;
     }
@@ -932,6 +914,25 @@ class Conf {
     }
     function xt_factory_errors() {
         return $this->_xt_factory_error;
+    }
+
+
+    // emoji codes
+    function _add_emoji_code($val, $key) {
+        if (is_string($val) && str_starts_with($key, ":") && str_ends_with($key, ":")) {
+            $this->_emoji_codes[$key] = $val;
+            return true;
+        } else
+            return false;
+    }
+    function emoji_code_map() {
+        global $ConfSitePATH;
+        if ($this->_emoji_codes === null) {
+            $this->_emoji_codes = json_decode(file_get_contents("$ConfSitePATH/etc/emojicodes.json"), true);
+            if (($olist = $this->opt("emojiCodes")))
+                expand_json_includes_callback($olist, [$this, "_add_emoji_code"]);
+        }
+        return $this->_emoji_codes;
     }
 
 
