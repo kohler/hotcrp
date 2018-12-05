@@ -94,6 +94,8 @@
 * 위와 같이 아직 부족한 점이 많아서 공식 프로젝트 기간이 끝난 이후에도 현재 연구 및 개발한 논문 관리 사이트를 보완할 예정입니다. 실질적으로 사용 가능한 조건들을 충족했을 때에 내년에 이에 대해 구체적으로 논문을 써 볼 계획에 있습니다. 
 * 또한 이 개발 결과를 가지고 여러 중학교나 고등학교, 혹은 여러 학회에까지도 본 사이트 활용 제안을 추진할 예정입니다. 
 
+![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/Pull_Request.png) <br/>
+
 
 ## Pivotal Tracker
 ![alt text](https://github.com/OSS-TEAM17/hotcrp/blob/master/OSS_Final_Project/pivotal_tracker.jpg) <br/>
