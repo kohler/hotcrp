@@ -217,6 +217,7 @@
 	{
 		"name": "requestreview",
 		"subject": "[%CONFSHORTNAME%] Review request for submission #%NUMBER%",
+		"allow_pc": true,
 		"body": [
 			"Dear %NAME%,\n\n",
 			"On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.%IF(REASON)%\n\nThey supplied this note: %REASON%%ENDIF%\n\n",
