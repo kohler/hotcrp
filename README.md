@@ -21,20 +21,17 @@ Prerequisites
 HotCRP runs on Unix, including Mac OS X. It requires the following
 software:
 
-* Nginx, http://nginx.org/ or Apache, http://apache.org/
+* Nginx, http://nginx.org/ \
   (You may be able to use another web server that works with PHP.)
 * PHP version 5.6 or higher, http://php.net/
-  - Including MySQL support
+  - Including MySQL support and php-fpm
 * MySQL version 5 or higher, http://mysql.org/
 * The zip compressor, http://www.info-zip.org/
 * Poppler’s version of pdftohtml, http://poppler.freedesktop.org/ (only
   required for format checking)
 
-Apache is preloaded on most Linux distributions. You may need to install
-additional packages, such as php71, php71-fpm, php71-mysqlnd, zip,
-poppler-utils, and sendmail or postfix. You may need to restart the Apache web
-server after installing these packages (`sudo apachectl graceful` or `sudo
-apache2ctl graceful`). If using nginx, you will need php-fpm.
+You may need to install additional packages, such as php71, php71-fpm,
+php71-mysqlnd, zip, poppler-utils, and sendmail or postfix.
 
 Installation
 ------------
@@ -72,37 +69,6 @@ point at a HotCRP installation in /home/kohler/hotcrp (assuming
 
     You may also set up separate `location` blocks so that Nginx
 serves files under `images/`, `scripts/`, and `stylesheets/` directly.
-
-    **Apache**: Generally you must add a `<Directory>` to `httpd.conf`
-(or one of its inclusions) for the HotCRP directory, and an `Alias`
-redirecting your preferred URL path to that directory. This example
-makes `/testconf` point at a HotCRP installation in
-/home/kohler/hotcrp:
-
-        # Apache 2.2 and earlier:
-        <Directory "/home/kohler/hotcrp">
-            Options Indexes Includes FollowSymLinks
-            AllowOverride all
-            Order allow,deny
-            Allow from all
-        </Directory>
-        Alias /testconf /home/kohler/hotcrp
-        
-        # Apache 2.4 and later:
-        <Directory "/home/kohler/hotcrp">
-            Options Indexes Includes FollowSymLinks
-            AllowOverride all
-            Require all granted
-        </Directory>
-        Alias /testconf /home/kohler/hotcrp
-
-    Note that the first argument to Alias should NOT end in a slash.
-The `AllowOverride all` directive is required.
-
-    Everything under HotCRP’s URL path (here, `/testconf`) should be
-served by HotCRP. This normally happens automatically. However, if
-the URL path is `/`, you may need to turn off your server’s default
-handlers for subdirectories such as `/doc`.
 
 4. Update PHP settings.
 
@@ -163,9 +129,6 @@ You can set up everything else through the web site itself.
     doing things like generating MIME-encoded mail messages.  By default
     HotCRP sets the PHP memory limit to 128MB.
 
-  - HotCRP benefits from Apache’s `mod_expires` and `mod_rewrite`
-    modules; consider enabling them.
-
   - Most HotCRP settings are assigned in the conference database’s
     Settings table. The Settings table can also override values in
     `conf/options.php`: a Settings record with name "opt.XXX" takes
@@ -214,7 +177,7 @@ conference IDs and replace them with `__invalid__`.
 To turn on multiconference support:
 
 1. Set your Web server to use the HotCRP install directory for all relevant
-   URLs. For Apache, this may require an `Alias` directive per conference.
+   URLs.
 
 2. Set `$Opt["multiconference"]` to true in `conf/options.php`. This will set
    the conference ID to the last directory component as described above.
@@ -255,7 +218,7 @@ LICENSE file for full license terms.
 Authors
 -------
 
-Eddie Kohler, Harvard/UCLA
+Eddie Kohler, Harvard
 
 * HotCRP is based on CRP, which was written by Dirk Grunwald,
   University of Colorado
