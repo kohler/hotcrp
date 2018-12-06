@@ -20,14 +20,6 @@ $Qreq = make_qreq();
 if (isset($Qreq->i))
     error_log("Request parameter with name=i");
 
-// Check for obsolete pages
-// These are pages that we've removed from the source. But some user might
-// have an old version of the page lying around their directory. Don't run
-// that code; redirect to index.
-if (in_array(Navigation::page(),
-             ["account", "contactauthors", "contacts", "login", "logout"]))
-    go();
-
 // Check for redirect to https
 if ($Conf->opt("redirectToHttps"))
     Navigation::redirect_http_to_https($Conf->opt("allowLocalHttp"));

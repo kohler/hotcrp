@@ -5,38 +5,44 @@
 require_once("lib/navigation.php");
 
 $page = Navigation::page();
+
 if ($page === "u"
     && ($unum = Navigation::path_component(0)) !== false
-    && ctype_digit($unum))
+    && ctype_digit($unum)) {
     $page = Navigation::shift_path_components(2);
-if ($page !== "index") {
-    if (is_readable("$page.php")
-        /* The following is paranoia (currently can't happen): */
-        && strpos($page, "/") === false) {
-        include("$page.php");
-        exit;
-    } else if ($page === "images" || $page === "scripts" || $page === "stylesheets") {
-        $_GET["file"] = $page . Navigation::path();
-        include("cacheable.php");
-        exit;
-    } else {
-        header("HTTP/1.0 404 Not Found");
-        exit;
-    }
+}
+
+if ($page === "images" || $page === "scripts" || $page === "stylesheets") {
+    $_GET["file"] = $page . Navigation::path();
+    include("cacheable.php");
+    exit;
+} else if ($page === "api" || $page === "cacheable") {
+    include("$page.php");
+    exit;
 }
 
 require_once("src/initweb.php");
-// handle signin/signout -- may change $Me
-$Me = Home_Partial::signin_requests($Me, $Qreq);
-// That also got rid of all disabled users.
+$page_template = $Conf->page_template($page);
 
-$gex = new GroupedExtensions($Me, ["etc/homepartials.json"],
-                             $Conf->opt("pagePartials"));
-foreach ($gex->members("home") as $gj)
-    $gex->request($gj, $Qreq, [$Me, $Qreq, $gex, $gj]);
-$gex->start_render();
-foreach ($gex->members("home") as $gj)
-    $gex->render($gj, [$Me, $Qreq, $gex, $gj]);
-$gex->end_render();
+if (!$page_template) {
+    header("HTTP/1.0 404 Not Found");
+    exit;
+}
+if ($page_template->name === "index") {
+    // handle signin/signout -- may change $Me
+    $Me = Home_Partial::signin_requests($Me, $Qreq);
+    // That also got rid of all disabled users.
 
-$Conf->footer();
+    $gex = new GroupedExtensions($Me, ["etc/homepartials.json"],
+                                 $Conf->opt("pagePartials"));
+    foreach ($gex->members("home") as $gj)
+        $gex->request($gj, $Qreq, [$Me, $Qreq, $gex, $gj]);
+    $gex->start_render();
+    foreach ($gex->members("home") as $gj)
+        $gex->render($gj, [$Me, $Qreq, $gex, $gj]);
+    $gex->end_render();
+
+    $Conf->footer();
+} else {
+    include($page_template->require);
+}

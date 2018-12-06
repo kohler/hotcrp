@@ -4048,4 +4048,16 @@ class Conf {
             }
         }
     }
+
+
+    // pages
+
+    function page_template($page) {
+        if ($page === "index")
+            return (object) ["name" => "index"];
+        else if (in_array($page, ["assign", "autoassign", "bulkassign", "buzzer", "checkupdates", "comment", "conflictassign", "deadlines", "doc", "graph", "help", "log", "mail", "manualassign", "mergeaccounts", "offline", "paper", "profile", "resetpassword", "review", "reviewprefs", "scorechart", "search", "settings", "users"]))
+            return (object) ["name" => $page, "require" => "$page.php"];
+        else
+            return null;
+    }
 }
