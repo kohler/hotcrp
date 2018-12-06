@@ -4,8 +4,12 @@
 
 require_once("lib/navigation.php");
 
-if (Navigation::page() !== "index") {
-    $page = Navigation::page();
+$page = Navigation::page();
+if ($page === "u"
+    && ($unum = Navigation::path_component(0)) !== false
+    && ctype_digit($unum))
+    $page = Navigation::shift_path_components(2);
+if ($page !== "index") {
     if (is_readable("$page.php")
         /* The following is paranoia (currently can't happen): */
         && strpos($page, "/") === false) {

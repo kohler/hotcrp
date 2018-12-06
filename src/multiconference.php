@@ -28,7 +28,7 @@ class Multiconference {
                 }
             }
         } else if (!$confid) {
-            $base = Navigation::site_absolute(true);
+            $base = Navigation::base_absolute(true);
             if (($multis = get($Opt, "multiconferenceAnalyzer"))) {
                 foreach (is_array($multis) ? $multis : array($multis) as $multi) {
                     list($match, $replace) = explode(" ", $multi);

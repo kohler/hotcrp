@@ -26,7 +26,7 @@ if (isset($Qreq->p)
 }
 if (!isset($Qreq->p)
     && !isset($Qreq->paperId)
-    && ($x = Navigation::path_component(0)) !== null) {
+    && ($x = Navigation::path_component(0)) !== false) {
     if (preg_match(',\A(?:new|\d+)\z,i', $x)) {
         $Qreq->p = $x;
         if (!isset($Qreq->m) && ($x = Navigation::path_component(1)))

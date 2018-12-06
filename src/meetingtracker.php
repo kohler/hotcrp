@@ -87,7 +87,7 @@ class MeetingTracker {
             return;
 
         // calculate status
-        $url = Navigation::site_absolute();
+        $url = Navigation::base_absolute();
         $tracker = self::lookup($conf);
 
         // first drop notification json in trackerCometUpdateDirectory

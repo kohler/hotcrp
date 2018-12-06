@@ -474,7 +474,7 @@ class Conf {
 
         // remove final slash from $Opt["paperSite"]
         if (!isset($this->opt["paperSite"]) || $this->opt["paperSite"] == "")
-            $this->opt["paperSite"] = Navigation::site_absolute();
+            $this->opt["paperSite"] = Navigation::base_absolute();
         if ($this->opt["paperSite"] == "" && isset($this->opt["defaultPaperSite"]))
             $this->opt["paperSite"] = $this->opt["defaultPaperSite"];
         $this->opt["paperSite"] = preg_replace('|/+\z|', "", $this->opt["paperSite"]);
