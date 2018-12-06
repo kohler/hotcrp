@@ -126,11 +126,6 @@ function initialize_user() {
         }
         $_SESSION["addrs"] = $as;
     }
-
-    // clear $_SESSION["tracker"]
-    if (isset($_SESSION[$Conf->dsn])
-        && isset($_SESSION[$Conf->dsn]["tracker"]))
-        unset($_SESSION[$Conf->dsn]["tracker"]);
 }
 
 initialize_user();
