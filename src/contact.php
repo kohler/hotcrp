@@ -306,20 +306,20 @@ class Contact {
 
     private function assign_roles($roles) {
         $this->roles = $roles;
-        $this->isPC = ($roles & self::ROLE_PCLIKE) != 0;
-        $this->privChair = ($roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
+        $this->isPC = ($roles & self::ROLE_PCLIKE) !== 0;
+        $this->privChair = ($roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
     }
 
 
     // initialization
 
-    private function actas_user($x, $trueuser) {
+    private function actas_user($x, $trueemail) {
         // translate to email
         if (is_numeric($x)) {
             $acct = $this->conf->user_by_id($x);
             $email = $acct ? $acct->email : null;
         } else if ($x === "admin")
-            $email = $trueuser->email;
+            $email = $trueemail;
         else
             $email = $x;
         if (!$email || strcasecmp($email, $this->email) == 0)
@@ -327,8 +327,8 @@ class Contact {
 
         // can always turn back into baseuser
         $baseuser = $this;
-        if (strcasecmp($this->email, $trueuser->email) != 0
-            && ($u = $this->conf->user_by_email($trueuser->email)))
+        if (strcasecmp($this->email, $trueemail) !== 0
+            && ($u = $this->conf->user_by_email($trueemail)))
             $baseuser = $u;
         if (strcasecmp($email, $baseuser->email) == 0)
             return $baseuser;
@@ -359,16 +359,16 @@ class Contact {
     function activate($qreq) {
         global $Now;
         $this->_activated = true;
-        $trueuser = isset($_SESSION["trueuser"]) ? $_SESSION["trueuser"] : null;
+        $trueemail = isset($_SESSION["u"]) ? $_SESSION["u"] : null;
         $truecontact = null;
 
         // Handle actas requests
-        if ($qreq && $qreq->actas && $trueuser) {
+        if ($qreq && $qreq->actas && $trueemail) {
             $actas = $qreq->actas;
             unset($qreq->actas, $_GET["actas"], $_POST["actas"]);
-            $actascontact = $this->actas_user($actas, $trueuser);
+            $actascontact = $this->actas_user($actas, $trueemail);
             if ($actascontact !== $this) {
-                if ($actascontact->email !== $trueuser->email) {
+                if (strcasecmp($actascontact->email, $trueemail) !== 0) {
                     hoturl_defaults(array("actas" => $actascontact->email));
                     $_SESSION["last_actas"] = $actascontact->email;
                 }
@@ -401,8 +401,8 @@ class Contact {
         }
 
         // Maybe auto-create a user
-        if ($trueuser
-            && strcasecmp($trueuser->email, $this->email) == 0) {
+        if ($trueemail
+            && strcasecmp($trueemail, $this->email) === 0) {
             $trueuser_aucheck = $this->conf->session("trueuser_author_check", 0);
             if (!$this->has_database_account()
                 && $trueuser_aucheck + 600 < $Now) {
@@ -532,8 +532,8 @@ class Contact {
 
     function is_actas_user() {
         return $this->_activated
-            && isset($_SESSION["trueuser"])
-            && strcasecmp($_SESSION["trueuser"]->email, $this->email) !== 0;
+            && isset($_SESSION["u"])
+            && strcasecmp($_SESSION["u"], $this->email) !== 0;
     }
 
     private function activate_capabilities($qreq) {
@@ -986,7 +986,7 @@ class Contact {
         $changing_other = false;
         if ($this->conf->contactdb()
             && $Me
-            && (strcasecmp($this->email, $Me->email) != 0 || $Me->is_actas_user()))
+            && (strcasecmp($this->email, $Me->email) !== 0 || $Me->is_actas_user()))
             $changing_other = true;
 
         // Main fields
@@ -1044,7 +1044,7 @@ class Contact {
             $tags = array();
             foreach ($cj->tags as $t) {
                 list($tag, $value) = TagInfo::unpack($t);
-                if (strcasecmp($tag, "pc") != 0)
+                if (strcasecmp($tag, "pc") !== 0)
                     $tags[$tag] = $tag . "#" . ($value ? : 0);
             }
             ksort($tags);
@@ -2061,9 +2061,8 @@ class Contact {
             return $acct
                 && $this->contactId > 0
                 && $this->contactId == $acct->contactId
-                && isset($_SESSION)
-                && isset($_SESSION["trueuser"])
-                && strcasecmp($_SESSION["trueuser"]->email, $acct->email) == 0;
+                && isset($_SESSION["u"])
+                && strcasecmp($_SESSION["u"], $acct->email) === 0;
     }
 
     function can_administer(PaperInfo $prow = null) {

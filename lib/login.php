@@ -8,7 +8,8 @@ class LoginHelper {
             $user->conf->confirmMsg("You have been signed out. Thanks for using the system.");
         if (isset($_SESSION))
             unset($_SESSION["trueuser"], $_SESSION["last_actas"],
-                  $_SESSION["updatecheck"], $_SESSION["sg"]);
+                  $_SESSION["updatecheck"], $_SESSION["sg"],
+                  $_SESSION["u"], $_SESSION["us"]);
         // clear all conference session info, except maybe capabilities
         $capabilities = $user->conf->session("capabilities");
         if (isset($_SESSION))
@@ -173,6 +174,7 @@ class LoginHelper {
 
         // activate and redirect
         ensure_session();
+        $_SESSION["u"] = $xuser->email;
         $_SESSION["trueuser"] = (object) array("email" => $xuser->email);
         $_SESSION["testsession"] = true;
         $user = $xuser->activate($qreq);

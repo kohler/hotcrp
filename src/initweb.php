@@ -75,11 +75,13 @@ function initialize_user() {
 
     // load current user
     $Me = null;
-    $trueuser = isset($_SESSION["trueuser"]) ? $_SESSION["trueuser"] : null;
-    if ($trueuser && $trueuser->email)
-        $Me = $Conf->user_by_email($trueuser->email);
+    if (!isset($_SESSION["u"]) && isset($_SESSION["trueuser"]))
+        $_SESSION["u"] = $_SESSION["trueuser"]->email;
+    $trueemail = isset($_SESSION["u"]) ? $_SESSION["u"] : null;
+    if ($trueemail)
+        $Me = $Conf->user_by_email($trueemail);
     if (!$Me)
-        $Me = new Contact($trueuser);
+        $Me = new Contact($trueemail ? (object) ["email" => $trueemail] : null);
     $Me = $Me->activate($Qreq);
 
     // redirect if disabled
