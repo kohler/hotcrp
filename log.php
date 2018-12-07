@@ -495,9 +495,12 @@ function render_users($users) {
                 $t = "<del>" . $t . " &lt;" . htmlspecialchars($user->email) . "&gt;</del>";
             else {
                 $t = '<a href="' . hoturl("log", "q=&amp;acct=" . urlencode($user->email)) . '&amp;n=' . $count . '">' . $t . '</a>';
-                if (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE))
+                $roles = 0;
+                if (isset($user->roles) && ($user->roles & Contact::ROLE_PCLIKE))
+                    $roles = $user->viewable_pc_roles($Me);
+                if (!($roles & Contact::ROLE_PCLIKE))
                     $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';
-                if (isset($user->roles) && ($rolet = $user->role_html()))
+                if ($roles !== 0 && ($rolet = Contact::role_html_for($roles)))
                     $t .= " $rolet";
             }
             $ts[] = $t;

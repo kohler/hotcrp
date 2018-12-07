@@ -275,9 +275,11 @@ class ContactList {
             $t = '<span class="taghl">' . $t . '</span>';
             if ($this->user->privChair)
                 $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? " class='uu'" : "") . ">$t</a>";
-            $role = $row->role_html();
-            if ($role !== "" && ($this->limit !== "pc" || ($row->roles & Contact::ROLE_PCLIKE) !== Contact::ROLE_PC))
-                $t .= " $role";
+            $roles = $row->viewable_pc_roles($this->user);
+            if ($roles === Contact::ROLE_PC && $this->limit === "pc")
+                $roles = 0;
+            if ($roles !== 0 && ($rolet = Contact::role_html_for($roles)))
+                $t .= " $rolet";
             if ($this->user->privChair && $row->email != $this->user->email)
                 $t .= " <a href=\"" . hoturl("index", "actas=" . urlencode($row->email)) . "\">"
                     . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($row)))
