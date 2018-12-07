@@ -619,9 +619,8 @@ function actionBar($mode = null, $qreq = null) {
     } else if ($qreq && ($qreq->m || $qreq->mode))
         $xmode["m"] = $qreq->m ? : $qreq->mode;
 
-    $x = '<table class="vbar"><tr>';
-
     // quicklinks
+    $x = "";
     if (($list = $Conf->active_list())) {
         $x .= '<td class="vbar quicklinks">';
         if (($prev = $list->neighbor_id(-1)) !== false)
@@ -638,10 +637,14 @@ function actionBar($mode = null, $qreq = null) {
         $x .= '</td>';
 
         if ($Me->privChair && $listtype == "p")
-            $x .= "  <td id=\"tracker-connect\" class=\"vbar\"><a id=\"tracker-connect-btn\" class=\"ui tracker-ui start tbtn need-tooltip\" href=\"\" data-tooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+            $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui tracker-ui start tbtn need-tooltip" href="" data-tooltip="Start meeting tracker">&#9759;</a><td>';
     }
 
-    return $x . '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . "</td></tr></table>";
+    // paper search form
+    if ($Me->isPC || $Me->is_reviewer() || $Me->is_author())
+        $x .= '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . '</td>';
+
+    return $x ? '<table class="vbar"><tr>' . $x . '</tr></table>' : '';
 }
 
 function parseReviewOrdinal($t) {
