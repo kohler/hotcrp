@@ -659,7 +659,8 @@ class Autoassigner {
 
     function run_reviews_per_pc($reviewtype, $round, $nass) {
         $this->preferences_review($reviewtype);
-        $papers = array_fill_keys($this->papersel, ceil((count($this->pcm) * ($nass + 2)) / count($this->papersel)));
+        $papers = array_fill_keys($this->papersel,
+            ceil((count($this->pcm) * ($nass + 2)) / max(count($this->papersel), 1)));
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
         $this->assign_method($papers, $action, $round, $nass);
     }
