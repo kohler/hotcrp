@@ -1944,7 +1944,7 @@ function load(dlx, is_initial) {
 function load_success(data) {
     if (reload_timeout !== true)
         clearTimeout(reload_timeout);
-    if (data.ok) {
+    if (data && data.ok) {
         reload_timeout = null;
         reload_nerrors = 0;
         load(data);
