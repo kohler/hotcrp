@@ -6790,6 +6790,8 @@ function evaluate_compar(x, compar, y) {
     if ($.isArray(y)) {
         var r = y.indexOf(x) >= 0;
         return compar === "=" ? r : !r;
+    } else if (x === null || y === null) {
+        return compar === "!=" ? x !== y : x === y;
     } else {
         var compar_map = {"=": 2, "!=": 5, "<": 1, "<=": 3, ">=": 6, ">": 4};
         compar = compar_map[compar];
@@ -6836,7 +6838,11 @@ edit_conditions.option = function (ec, form) {
             v = fs.value;
     } else if ("value" in fs)
         v = fs.value;
-    return evaluate_compar(+v, ec.compar, ec.value);
+    if (v != null && v !== "")
+        v = +v;
+    else
+        v = null;
+    return evaluate_compar(v, ec.compar, ec.value);
 };
 edit_conditions.topic = function (ec, form) {
     if (ec.topics === false || ec.topics === true) {
