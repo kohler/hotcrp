@@ -1732,7 +1732,7 @@ class ReviewValues extends MessageSet {
             if (!$this->_mailer_always_combine
                 && !$prow->has_author($minic)
                 && (!$prow->has_reviewer($minic)
-                    || !$minic->can_view_review_identity($prow, $rrow)))
+                    || !$minic->can_view_review_identity($prow, null)))
                 $p->unique_preparation = true;
             $this->_mailer_preps[] = $p;
         }
