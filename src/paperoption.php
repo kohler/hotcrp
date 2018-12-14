@@ -121,12 +121,13 @@ class PaperOptionList {
             $oj->id = intval($oj->id);
         if (is_int($oj->id)
             && $oj->id > 0
-            && !isset($this->jlist[$oj->id])
             && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed
             && ((isset($oj->name) && is_string($oj->name))
-                || (isset($oj->title) && is_string($oj->title)))) {
-            if ($this->conf->xt_allowed($oj) && !Conf::xt_disabled($oj))
-                $this->jlist[$oj->id] = $oj;
+                || (isset($oj->title) && is_string($oj->title)))
+            && $this->conf->xt_allowed($oj)
+            && (!isset($this->jlist[$oj->id])
+                || Conf::xt_priority_compare($oj, $this->jlist[$oj->id]) <= 0)) {
+            $this->jlist[$oj->id] = $oj;
             return true;
         } else
             return false;
@@ -143,6 +144,7 @@ class PaperOptionList {
                 $this->_adding_fixed = true;
                 expand_json_includes_callback($olist, [$this, "_add_json"]);
             }
+            $this->jlist = array_filter($this->jlist, "Conf::xt_enabled");
             uasort($this->jlist, ["PaperOption", "compare"]);
         }
         return $this->jlist;
