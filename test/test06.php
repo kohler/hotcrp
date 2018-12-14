@@ -735,6 +735,29 @@ assert_search_papers($user_chair, "ovemer:1-3", "");
 assert_search_papers($user_chair, "ovemer:2..1", "17 18");
 assert_search_papers($user_chair, "ovemer:3..1", "1 17 18");
 
+// new external reviewer does not get combined email
+$Conf->save_setting("round_settings", null);
+$Conf->save_setting("extrev_view", 1);
+$Conf->save_setting("extrev_approve", 1);
+$Conf->save_setting("pcrev_editdelegate", 1);
+Contact::update_rights();
+MailChecker::clear();
+
+$xqreq = new Qrequest("POST", ["email" => "external2@_.com", "name" => "Jo March", "affiliation" => "Concord"]);
+$result = RequestReview_API::requestreview($user_lixia, $xqreq, $paper17);
+$result = JsonResult::make($result);
+MailChecker::check_db("test06-external2-request17");
+xassert($result->content["ok"]);
+
+$user_external2 = $Conf->user_by_email("external2@_.com");
+save_review(17, $user_external2, [
+    "ready" => true, "ovemer" => 3, "revexp" => 3
+]);
+MailChecker::check_db("test06-external2-approval17");
+
+save_review(17, $user_lixia, ["ready" => true], fetch_review(17, $user_external2));
+MailChecker::check_db("test06-external2-submit17");
+
 // `r` vs. `rout`
 assert_search_papers($user_mgbaker, ["t" => "r", "q" => ""], "1 13 17");
 assert_search_papers($user_mgbaker, ["t" => "rout", "q" => ""], "13");

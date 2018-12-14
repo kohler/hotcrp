@@ -424,18 +424,20 @@ function fetch_paper($pid, $contact = null) {
     return $Conf->fetch_paper($pid, $contact);
 }
 
-function fetch_review(PaperInfo $prow, $contact) {
+function fetch_review($prow, $contact) {
+    if (is_int($prow))
+        $prow = fetch_paper($prow, $contact);
     return $prow->fresh_review_of_user($contact);
 }
 
-function save_review($paper, $contact, $revreq) {
+function save_review($paper, $contact, $revreq, $rrow = null) {
     global $Conf;
     $pid = is_object($paper) ? $paper->paperId : $paper;
     $prow = fetch_paper($pid, $contact);
     $rf = $Conf->review_form();
     $tf = new ReviewValues($rf);
     $tf->parse_web(new Qrequest("POST", $revreq), false);
-    $tf->check_and_save($contact, $prow, fetch_review($prow, $contact));
+    $tf->check_and_save($contact, $prow, $rrow ? : fetch_review($prow, $contact));
     return fetch_review($prow, $contact);
 }
 
