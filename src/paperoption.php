@@ -121,9 +121,7 @@ class PaperOptionList {
             $oj->id = intval($oj->id);
         if (is_int($oj->id)
             && $oj->id > 0
-            && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed
-            && ((isset($oj->name) && is_string($oj->name))
-                || (isset($oj->title) && is_string($oj->title)))) {
+            && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed) {
             if ($this->conf->xt_allowed($oj)
                 && (!isset($this->jlist[$oj->id])
                     || Conf::xt_priority_compare($oj, $this->jlist[$oj->id]) <= 0))
@@ -362,8 +360,16 @@ class PaperOption implements Abbreviator {
             $args = get_object_vars($args);
         $this->id = (int) $args["id"];
         $this->conf = $conf;
-        $this->name = isset($args["name"]) ? $args["name"] : $args["title"];
-        $this->title = isset($args["title"]) ? $args["title"] : $args["name"];
+        if (isset($args["name"]))
+            $this->name = $args["name"];
+        else if (isset($args["title"]))
+            $this->name = $args["title"];
+        else
+            $this->name = "<Unknown-{$this->id}>";
+        if (isset($args["title"]))
+            $this->title = $args["title"];
+        else
+            $this->title = $this->name;
         $this->message_title = get($args, "message_title", $this->title);
         $this->type = $args["type"];
 
@@ -1346,7 +1352,7 @@ class AttachmentsPaperOption extends PaperOption {
 
 class UnknownPaperOption extends PaperOption {
     function __construct(Conf $conf, $id) {
-        parent::__construct($conf, ["id" => $id, "name" => "__unknown{$id}__", "type" => "__unknown{$id}__"]);
+        parent::__construct($conf, ["id" => $id, "type" => "__unknown{$id}__"]);
     }
 
     function takes_multiple() {
