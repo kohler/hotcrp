@@ -123,11 +123,11 @@ class PaperOptionList {
             && $oj->id > 0
             && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed
             && ((isset($oj->name) && is_string($oj->name))
-                || (isset($oj->title) && is_string($oj->title)))
-            && $this->conf->xt_allowed($oj)
-            && (!isset($this->jlist[$oj->id])
-                || Conf::xt_priority_compare($oj, $this->jlist[$oj->id]) <= 0)) {
-            $this->jlist[$oj->id] = $oj;
+                || (isset($oj->title) && is_string($oj->title)))) {
+            if ($this->conf->xt_allowed($oj)
+                && (!isset($this->jlist[$oj->id])
+                    || Conf::xt_priority_compare($oj, $this->jlist[$oj->id]) <= 0))
+                $this->jlist[$oj->id] = $oj;
             return true;
         } else
             return false;
