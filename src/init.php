@@ -248,6 +248,7 @@ function read_included_options(&$files) {
 }
 
 function expand_json_includes_callback($includelist, $callback) {
+    global $Conf;
     $includes = [];
     foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $str) {
         $expandable = null;
@@ -282,7 +283,7 @@ function expand_json_includes_callback($includelist, $callback) {
             if (is_object($v))
                 $v->__subposition = ++Conf::$next_xt_subposition;
             if (!call_user_func($callback, $v, $k, $landmark))
-                error_log("$landmark: Invalid expansion " . json_encode($v) . ".");
+                error_log(($Conf ? "$Conf->dbname: " : "") . "$landmark: Invalid expansion " . json_encode($v) . ".");
         }
     }
 }
