@@ -889,7 +889,7 @@ $blind\n";
             $override_text = whyNotText($whyNot) . " Are you sure you want to override the deadline?";
             if (!$submitted) {
                 $buttons[] = array(Ht::button("Submit review", ["class" => "btn-primary ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
-                $buttons[] = array(Ht::button("Save changes", ["class" => "ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
+                $buttons[] = array(Ht::button("Save draft", ["class" => "ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
             } else {
                 $buttons[] = array(Ht::button("Save changes", ["class" => "btn-primary ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
             }
@@ -902,7 +902,7 @@ $blind\n";
                 $buttons[] = Ht::submit("submitreview", "Approve review", ["class" => "btn-highlight need-clickthrough-enable", "disabled" => $disabled]);
             }
             if (!$my_review || !$rrow->timeApprovalRequested) {
-                $buttons[] = Ht::submit("savedraft", "Save changes", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
+                $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
             }
             if (!$my_review && $rrow->requestedBy == $Me->contactId) {
                 $my_rrow = $prow->review_of_user($Me);
@@ -915,7 +915,7 @@ $blind\n";
         } else if (!$submitted) {
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
             $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
-            $buttons[] = Ht::submit("savedraft", "Save changes", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
+            $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
         } else {
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
             $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
