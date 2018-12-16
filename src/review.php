@@ -1088,6 +1088,11 @@ $blind\n";
 
         // review actions
         if ($Me->timeReview($prow, $rrow) || $admin) {
+            if (Contact::can_some_author_view_submitted_review($prow)
+                && (!$rrow || $rrow->reviewSubmitted || !$rrow->needs_approval() || !$Me->is_my_review($rrow)))
+                echo '<div class="is-warning">⚠️ Authors can currently see submitted reviews.</div>';
+            if ($rrow && $rrow->reviewSubmitted && !$admin)
+                echo '<div class="is-warning">⚠️ Only administrators can remove or unsubmit the review at this point.</div>';
             $this->_echo_review_actions($prow, $rrow, $reviewPostLink);
         }
 
