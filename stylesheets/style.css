@@ -2872,6 +2872,12 @@ ul.xd > li {
 .revinfo {
 	font-size: smaller;
 }
+.rve {
+	margin-top: 16px;
+}
+.rveg {
+	margin-bottom: 36px;
+}
 .rvg .revvt {
 	margin-right: 2em;
 	padding-bottom: 2px;
@@ -2917,7 +2923,7 @@ ul.xd > li {
 .revvl {
 	padding-right: 1.5em;
 }
-.papeg, .rveg {
+.papeg {
 	margin: 16px 0 20px;
 	padding-top: 16px;
 }

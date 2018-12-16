@@ -876,7 +876,7 @@ $blind\n";
         }
     }
 
-    private function _echo_review_actions($prow, $rrow, $type, $reviewPostLink) {
+    private function _echo_review_actions($prow, $rrow, $reviewPostLink) {
         global $Me;
         $buttons = array();
 
@@ -922,7 +922,7 @@ $blind\n";
         }
         $buttons[] = Ht::submit("cancel", "Cancel");
 
-        if ($rrow && $type == "bottom" && $Me->allow_administer($prow)) {
+        if ($rrow && $Me->allow_administer($prow)) {
             $buttons[] = "";
             if ($submitted) {
                 $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
@@ -1042,7 +1042,8 @@ $blind\n";
         }
 
         // delegate?
-        if ($rrow && !$rrow->reviewSubmitted
+        if ($rrow
+            && !$rrow->reviewSubmitted
             && $rrow->contactId == $Me->contactId
             && $rrow->reviewType == REVIEW_SECONDARY) {
             $ndelegated = 0;
@@ -1069,7 +1070,6 @@ $blind\n";
         // top save changes
         if ($Me->timeReview($prow, $rrow) || $admin) {
             $this->_echo_accept_decline($prow, $rrow, $reviewPostLink, $Me);
-            $this->_echo_review_actions($prow, $rrow, "top", $reviewPostLink);
         }
 
         // blind?
@@ -1088,9 +1088,7 @@ $blind\n";
 
         // review actions
         if ($Me->timeReview($prow, $rrow) || $admin) {
-            $this->_echo_review_actions($prow, $rrow, "bottom", $reviewPostLink);
-            if ($rrow && $rrow->reviewSubmitted && !$admin)
-                echo '<div class="hint">Only administrators can remove or unsubmit the review at this point.</div>';
+            $this->_echo_review_actions($prow, $rrow, $reviewPostLink);
         }
 
         echo "</div></div></div></form>\n\n";
