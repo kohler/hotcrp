@@ -1566,7 +1566,7 @@ function redisplay_main() {
 
 
 // tracker
-var has_tracker, had_tracker_at, last_tracker_html,
+var had_tracker, had_tracker_at, last_tracker_html,
     tracker_has_format, tracker_timer, tracker_refresher;
 
 function tracker_window_state() {
@@ -1587,26 +1587,6 @@ var tracker_map = [["is_manager", "is-manager", "Administrator"],
                    ["is_lead", "is-lead", "Discussion lead"],
                    ["is_reviewer", "is-reviewer", "Reviewer"],
                    ["is_conflict", "is-conflict", "Conflict"]];
-
-function tracker_paper_columns(idx, paper) {
-    var url = hoturl("paper", {p: paper.pid}), x = [];
-    var t = '<td class="tracker-desc">';
-    t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
-    t += '</td><td class="tracker-pid">';
-    if (paper.pid)
-        t += '<a class="uu" href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
-    t += '</td><td class="tracker-body">';
-    if (paper.title) {
-        var f = paper.format ? ' ptitle need-format" data-format="' + paper.format : "";
-        x.push('<a class="uu' + f + '" href="' + url + '">' + text_to_html(paper.title) + '</a>');
-        if (paper.format)
-            tracker_has_format = true;
-    }
-    for (var i = 0; i != tracker_map.length; ++i)
-        if (paper[tracker_map[i][0]])
-            x.push('<span class="tracker-' + tracker_map[i][1] + '">' + tracker_map[i][2] + '</span>');
-    return t + x.join(" &nbsp;&#183;&nbsp; ") + '</td>';
-}
 
 function tracker_show_elapsed() {
     if (tracker_timer) {
@@ -1629,33 +1609,71 @@ function tracker_show_elapsed() {
                                1000 - (delta * 1000) % 1000);
 }
 
+function tracker_paper_columns(idx, paper, wwidth) {
+    var url = hoturl("paper", {p: paper.pid}), x = [];
+    var t = '<td class="tracker-desc">';
+    t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
+    t += '</td><td class="tracker-pid">';
+    if (paper.pid)
+        t += '<a class="uu" href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
+    t += '</td><td class="tracker-body"';
+    if (idx >= 2 && (dl.is_admin || (dl.tracker && dl.tracker.position_at)))
+        t += ' colspan="2"';
+    t += '>';
+    if (paper.title) {
+        var f = paper.format ? ' ptitle need-format" data-format="' + paper.format : "";
+        var title = paper.title;
+        if (wwidth <= 500 && title.length > 40)
+            title = title.replace(/^(\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 50) + "…";
+        else if (wwidth <= 768 && title.length > 50)
+            title = title.replace(/^(\S+\s+\S+\s+\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 75) + "…";
+        x.push('<a class="tracker-title uu' + f + '" href="' + url + '">' + text_to_html(title) + '</a>');
+        if (paper.format)
+            tracker_has_format = true;
+    }
+    for (var i = 0; i != tracker_map.length; ++i)
+        if (paper[tracker_map[i][0]])
+            x.push('<span class="tracker-' + tracker_map[i][1] + '">' + tracker_map[i][2] + '</span>');
+    return t + x.join(" &nbsp;&#183;&nbsp; ") + '</td>';
+}
+
 function tracker_html(mytracker) {
     tracker_has_format = false;
-    var t = "";
+    var t = "", dt = "";
     if (dl.is_admin) {
-        var dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
+        dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
         t += '<div class="need-tooltip" id="tracker-logo" data-tooltip="' + escape_entities(dt) + '"></div>';
-        t += '<div style="float:right"><a class="ui tracker-ui stop closebtn need-tooltip" href="" data-tooltip="Stop meeting tracker">x</a></div>';
     } else
         t += '<div id="tracker-logo"></div>';
-    if (dl.tracker && dl.tracker.position_at)
-        t += '<div style="float:right" id="tracker-elapsed"></div>';
+    var rows = [], i, wwidth = $(window).width();
     if (!dl.tracker.papers || !dl.tracker.papers[0]) {
-        t += "<table class=\"tracker-info\"><tbody><tr><td><a href=\"" + siteurl + dl.tracker.url + "\">Discussion list</a></td></tr></tbody></table>";
+        rows.push('<td><a href=\"' + siteurl + dl.tracker.url + '\">Discussion list</a></td>');
     } else {
-        t += "<table class=\"tracker-info\"><tbody><tr class=\"tracker-row\"><td rowspan=\"" + dl.tracker.papers.length + "\">";
-        t += "</td>" + tracker_paper_columns(0, dl.tracker.papers[0]);
-        for (var i = 1; i < dl.tracker.papers.length; ++i)
-            t += "</tr><tr class=\"tracker-row\">" + tracker_paper_columns(i, dl.tracker.papers[i]);
-        t += "</tr></tbody></table>";
+        for (i = 0; i < dl.tracker.papers.length; ++i)
+            rows.push(tracker_paper_columns(i, dl.tracker.papers[i], wwidth));
     }
-    return t + '<hr class="c">';
+    t += "<table class=\"tracker-info clearfix\"><tbody>";
+    for (i = 0; i < rows.length; ++i) {
+        t += '<tr class="tracker-row">';
+        if (i == 0)
+            t += '<td rowspan="' + rows.length + '" class="tracker-logo-td"><div class="tracker-logo-space"></div></td>';
+        t += rows[i];
+        if (i == 0 && (dl.is_admin || (dl.tracker && dl.tracker.position_at))) {
+            t += '<td rowspan="' + Math.min(2, rows.length) + '" class="tracker-elapsed nb">';
+            if (dl.tracker && dl.tracker.position_at)
+                t += '<span id="tracker-elapsed"></span>';
+            if (dl.is_admin)
+                t += '<a class="ui tracker-ui stop closebtn need-tooltip" href="" data-tooltip="Stop meeting tracker">x</a>';
+        }
+        t += '</tr>';
+    }
+    return t + '</tr></tbody></table>';
 }
 
 function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("tracker-space"),
         mytracker = is_my_tracker(),
-        body, t, tt, i, e;
+        t, tt, i, e;
 
     // tracker button
     if ((e = $$("tracker-connect-btn"))) {
@@ -1668,8 +1686,7 @@ function display_tracker() {
     }
 
     // tracker display management
-    has_tracker = !!dl.tracker;
-    if (has_tracker)
+    if (dl.tracker)
         had_tracker_at = now_sec();
     else if (tracker_window_state())
         wstorage(true, "hotcrp-tracking", null);
@@ -1682,17 +1699,20 @@ function display_tracker() {
     }
 
     // tracker display
-    body = document.body;
     if (!mnspace) {
         mnspace = document.createElement("div");
         mnspace.id = "tracker-space";
-        body.insertBefore(mnspace, body.firstChild);
+        document.body.insertBefore(mnspace, document.body.firstChild);
     }
     if (!mne) {
         mne = document.createElement("div");
         mne.id = "tracker";
-        body.insertBefore(mne, body.firstChild);
+        document.body.insertBefore(mne, document.body.firstChild);
         last_tracker_html = null;
+    }
+    if (!had_tracker) {
+        $(window).on("resize", display_tracker);
+        had_tracker = true;
     }
 
     t = tracker_html(mytracker);
@@ -1709,8 +1729,8 @@ function display_tracker() {
         $(mne).find(".need-tooltip").each(tooltip);
         if (tracker_has_format)
             render_text.on_page();
-        mnspace.style.height = mne.offsetHeight + "px";
     }
+    mnspace.style.height = mne.offsetHeight + "px";
     if (dl.tracker && dl.tracker.position_at)
         tracker_show_elapsed();
 }
@@ -1903,7 +1923,6 @@ function load(dlx, is_initial) {
     dl.myperm = dl.perm[hotcrp_paperid] || {};
     dl.rev = dl.rev || {};
     dl.tracker_status = dl.tracker_status || "off";
-    has_tracker = !!dl.tracker;
     if (dl.tracker
         || (dl.tracker_status_at && dl.load - dl.tracker_status_at < 259200))
         had_tracker_at = dl.load;
@@ -5458,7 +5477,7 @@ function edit_anno(locator) {
         hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32"></td></tr>');
         hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5">', '</td></tr>');
         if (anno.annoid)
-            hc.push(' <a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete group">x</a>');
+            hc.push(' <a class="ui closebtn delete-link need-tooltip" href="" data-tooltip="Delete group">x</a>');
         hc.pop_n(2);
     }
     function show_dialog(rv) {
@@ -7002,7 +7021,7 @@ handle_ui.on("js-edit-formulas", function () {
         hc.push('<div class="editformulas-formula" data-formula-number="' + nformulas + '">', '</div>');
         hc.push('<div class="f-i"><div class="f-c">Name</div>');
         if (f.editable) {
-            hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete formula">x</a></div>');
+            hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="" data-tooltip="Delete formula">x</a></div>');
             hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)">' + escape_entities(f.name) + '</textarea>');
             hc.push('<hr class="c">');
         } else

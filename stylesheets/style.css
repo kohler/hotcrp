@@ -771,6 +771,7 @@ a.tbtn, a.tbtn-on {
 a.closebtn {
 	display: inline-block;
 	padding: 2px 4px;
+	margin-left: 0.75em;
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	border: 1px solid black;
@@ -3250,6 +3251,10 @@ body {
 	font-size: smaller;
 	position: fixed;
 	z-index: 8;
+	border-bottom: 1px solid #6a936a;
+}
+#tracker.nomatch {
+	border-bottom: 1px solid #f33360;
 }
 #tracker.active {
 	background: rgba(100, 255, 100, 0.9);
@@ -3264,15 +3269,15 @@ body {
 	background: rgba(255, 255, 100, 0.9);
 }
 #tracker .tracker-holder {
-	padding: 0.5em 1em 0.5em 0.8em;
-	border-bottom: 1px solid #6a936a;
+	padding: 0.5em 0;
 	color: #3d3d57;
-}
-#tracker.nomatch .tracker-holder {
-	border-bottom: 1px solid #f33360;
+	max-height: 20vh;
+	overflow-y: scroll;
 }
 #tracker .tracker-info {
-	margin-left: 48px;
+	width: 100%;
+	max-height: 20vh;
+	overflow-y: scroll;
 	line-height: 1.25;
 }
 #tracker-logo {
@@ -3306,32 +3311,40 @@ body {
 	29% { left: 5px; animation-timing-function: ease-in; }
 	31% { left: 7px; animation-timing-function: ease-out; }
 }
-.tracker-row {
-	padding-top: 2px;
-}
-.tracker-row:first-child {
-	padding-top: 0;
+.tracker-logo-space {
+	display: inline-block;
+	width: 58px;
 }
 .tracker-row:nth-child(n+3) {
 	font-size: smaller;
 }
 .tracker-desc {
 	font-weight: bold;
-	padding-right: 0.5em;
+	padding-bottom: 2px;
 }
 .tracker-pid {
 	text-align: right;
+}
+.tracker-desc, .tracker-pid, .tracker-body {
 	padding-right: 0.5em;
+}
+.tracker-desc, .tracker-pid, .tracker-logo-td {
+	white-space: nowrap;
+	width: 1px;
 }
 .tracker-is-reviewer, .tracker-is-manager, .tracker-is-conflict, .tracker-is-lead {
 	font-weight: bold;
 }
-#tracker-elapsed {
-	font-weight: bold;
-	padding: 0 1em 0 0.5em;
-	opacity: 0.5;
+.tracker-elapsed {
+	padding-right: 1em;
 	text-align: right;
+}
+#tracker-elapsed {
+	display: inline-block;
 	min-width: 5em;
+	font-weight: bold;
+	color: #222222;
+	opacity: 0.5;
 }
 
 #tracker-table {
