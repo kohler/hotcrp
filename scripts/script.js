@@ -5592,6 +5592,7 @@ function popup_near(elt, anchor) {
     elt.style.left = x + "px";
     elt.style.top = y + "px";
     var viselts = $(elt).find("input, button, textarea, select").filter(":visible");
+    var efocus;
     $(elt).find("input, button, textarea, select").filter(":visible").each(function () {
         if (hasClass(this, "want-focus")) {
             efocus = this;
