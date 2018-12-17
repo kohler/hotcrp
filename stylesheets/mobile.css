@@ -12,6 +12,9 @@
 }
 }
 @media screen and (max-width: 768px) {
+html {
+	font-size: 14px;
+}
 #header-site, #header-page, h1.paptitle, div.submission_modes {
 	padding-left: 12px;
 }

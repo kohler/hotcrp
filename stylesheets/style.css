@@ -3331,6 +3331,7 @@ body {
 	padding: 0 1em 0 0.5em;
 	opacity: 0.5;
 	text-align: right;
+	min-width: 5em;
 }
 
 #tracker-table {
