@@ -7040,6 +7040,7 @@ handle_ui.on("js-edit-formulas", function () {
             var hc = new HtmlCollector;
             push_formula(hc, {name: "", expression: "", editable: true, id: "new"});
             var $f = $(hc.render()).appendTo($d.find(".editformulas"));
+            $f[0].setAttribute("data-formula-new", "");
             $f.find("textarea").autogrow();
             focus_at($f.find(".editformulas-name"));
             $d.find(".popup-bottom").scrollIntoView();
@@ -7047,9 +7048,13 @@ handle_ui.on("js-edit-formulas", function () {
     }
     function ondelete() {
         var $x = $(this).closest(".editformulas-formula");
-        $x.find(".editformulas-expression").closest(".f-i").addClass("hidden");
-        $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
-        $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1">');
+        if ($x[0].hasAttribute("data-formula-new"))
+            $x.remove();
+        else {
+            $x.find(".editformulas-expression").closest(".f-i").addClass("hidden");
+            $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
+            $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1">');
+        }
     }
     function submit(event) {
         event.preventDefault();
