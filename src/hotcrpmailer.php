@@ -281,7 +281,8 @@ class HotCRPMailer extends Mailer {
         return rtrim($this->row->pretty_text_author_list());
     }
     function kw_authorviewcapability($args, $isbool) {
-        if ($this->conf->opt("disableCapabilities"))
+        if ($this->conf->opt("disableCapabilities")
+            || $this->sensitivity === "high")
             return "";
         if ($this->row
             && isset($this->row->capVersion)
