@@ -254,7 +254,8 @@ class Mailer {
             foreach ($a as &$t) {
                 $t = preg_replace('/\&(?=\&|\z)/', "", $m->expand($t, "urlpart"));
             }
-            return hoturl_absolute_nodefaults($a[0], isset($a[1]) ? $a[1] : "");
+            return $m->conf->hoturl($a[0], isset($a[1]) ? $a[1] : "",
+                                    Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
         }
     }
 
