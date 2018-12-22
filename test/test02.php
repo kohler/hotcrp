@@ -378,13 +378,9 @@ xassert_eqq(CountMatcher::filter_using([10, 11, -10], "≤10"), [0 => 10, 2 => -
 // simple_search tests
 xassert_eqq(Text::simple_search("yes", ["yes", "no", "yes-really"]), ["yes"]);
 xassert_eqq(Text::simple_search("yes", ["yes", "no", "yes-really"], Text::SEARCH_UNPRIVILEGE_EXACT), ["yes", 2 => "yes-really"]);
-xassert_eqq(Text::simple_search("yes", ["yes", "no", "yes-really"], Text::SEARCH_ONLY_EXACT), ["yes"]);
-xassert_eqq(Text::simple_search("yes", ["yes-maybe", "no", "yes-really"], Text::SEARCH_ONLY_EXACT), []);
 xassert_eqq(Text::simple_search("yes", ["yes-maybe", "no", "yes-really"], 0), ["yes-maybe", 2 => "yes-really"]);
 xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"]), ["yes"]);
 xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"], Text::SEARCH_UNPRIVILEGE_EXACT), ["yes", 2 => "yes-really"]);
-xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"], Text::SEARCH_ONLY_EXACT), ["yes"]);
-xassert_eqq(Text::simple_search("Yes", ["yes-maybe", "no", "yes-really"], Text::SEARCH_ONLY_EXACT), []);
 xassert_eqq(Text::simple_search("Yes", ["yes-maybe", "no", "yes-really"], 0), ["yes-maybe", 2 => "yes-really"]);
 xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"], Text::SEARCH_CASE_SENSITIVE), []);
 xassert_eqq(Text::simple_search("Yes", ["yes", "no", "Yes-really"], Text::SEARCH_CASE_SENSITIVE), [2 => "Yes-really"]);
