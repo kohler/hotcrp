@@ -97,7 +97,7 @@ class Mailer {
     const EXPAND_EMAIL = 2;
 
     public static $email_fields = ["to" => "To", "cc" => "Cc", "bcc" => "Bcc", "reply-to" => "Reply-To"];
-    public static $template_fields = ["to" => "to", "cc" => "cc", "bcc" => "bcc", "reply_to" => "reply-to", "subject" => "subject", "body" => "body"];
+    public static $template_fields = ["to", "cc", "bcc", "reply-to", "subject", "body"];
 
     public $conf;
     public $recipient = null;
@@ -252,10 +252,20 @@ class Mailer {
         else {
             $a = preg_split('/\s*,\s*/', $args);
             foreach ($a as &$t) {
-                $t = preg_replace('/\&(?=\&|\z)/', "", $m->expand($t, "urlpart"));
+                $t = $m->expand($t, "urlpart");
+                $t = preg_replace('/\&(?=\&|\z)/', "", $t);
             }
-            return $m->conf->hoturl($a[0], isset($a[1]) ? $a[1] : "",
-                                    Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
+            if (!isset($a[1]))
+                $a[1] = "";
+            for ($i = 2; isset($a[$i]); ++$i) {
+                if ($a[$i] !== "") {
+                    if ($a[1] !== "")
+                        $a[1] .= "&" . $a[$i];
+                    else
+                        $a[1] = $a[$i];
+                }
+            }
+            return $m->conf->hoturl($a[0], $a[1], Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
         }
     }
 
@@ -437,10 +447,8 @@ class Mailer {
         if (is_object($text) || is_array($text)) {
             $r = [];
             foreach ($text as $k => $t) {
-                if (isset(self::$template_fields[$k])) {
-                    $f = self::$template_fields[$k];
-                    $r[$f] = $this->expand($t, $f);
-                }
+                if (in_array($k, self::$template_fields))
+                    $r[$k] = $this->expand($t, $k);
             }
             return $r;
         }
@@ -528,7 +536,7 @@ class Mailer {
         return new MailPreparation($this->conf);
     }
 
-    function make_preparation($template, $rest = array()) {
+    function make_preparation($template, $rest = []) {
         // look up template
         if (is_string($template) && $template[0] === "@")
             $template = (array) $this->conf->mail_template(substr($template, 1));
@@ -554,12 +562,12 @@ class Mailer {
         if (!$recipient || !$recipient->email)
             return Conf::msg_error("no email in Mailer::send");
         if (get($recipient, "preferredEmail")) {
-            $recipient = (object) array("email" => $recipient->preferredEmail);
-            foreach (array("firstName", "lastName", "name", "fullName") as $k)
+            $recipient = (object) ["email" => $recipient->preferredEmail];
+            foreach (["firstName", "lastName", "name", "fullName"] as $k)
                 if (get($this->recipient, $k))
                     $recipient->$k = $this->recipient->$k;
         }
-        $prep->to = array(Text::user_email_to($recipient));
+        $prep->to = [Text::user_email_to($recipient)];
         $mail["to"] = $prep->to[0];
         $prep->sendable = self::allow_send($recipient->email);
 
@@ -575,7 +583,7 @@ class Mailer {
             $prep->headers["from"] = $fromHeader . $eol;
         $prep->headers["subject"] = $subject . $eol;
         $prep->headers["to"] = "";
-        foreach (self::$email_fields as $lcfield => $field)
+        foreach (self::$email_fields as $lcfield => $field) {
             if (($text = get_s($mail, $lcfield)) !== "" && $text !== "<none>") {
                 if (($hdr = MimeText::encode_email_header($field . ": ", $text)))
                     $prep->headers[$lcfield] = $hdr . $eol;
@@ -585,6 +593,7 @@ class Mailer {
                         Conf::msg_error("$field destination “<samp>" . htmlspecialchars($text) . "</samp>” isn't a valid email list.");
                 }
             }
+        }
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . $eol;
         $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . $eol;
 

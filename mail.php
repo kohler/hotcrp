@@ -36,9 +36,24 @@ $tOpt["req"] = "Your review requests";
 if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t]))
     $Qreq->t = key($tOpt);
 
-// mailer
-$mailer_options = array("requester_contact" => $Me);
-$null_mailer = new HotCRPMailer($Conf, null, null, array_merge(array("width" => false), $mailer_options));
+// mailer options
+if (isset($Qreq->cc) && $Me->is_manager())
+    // XXX should only apply to papers you administer
+    $Qreq->cc = simplify_whitespace($Qreq->cc);
+else if ($Conf->opt("emailCc"))
+    $Qreq->cc = $Conf->opt("emailCc");
+else
+    $Qreq->cc = Text::user_email_to($Conf->site_contact());
+
+if (isset($Qreq->replyto) && $Me->is_manager())
+    // XXX should only apply to papers you administer
+    $Qreq->replyto = simplify_whitespace($Qreq->replyto);
+else
+    $Qreq->replyto = $Conf->opt("emailReplyTo", "");
+
+global $mailer_options;
+$mailer_options = ["requester_contact" => $Me, "cc" => $Qreq->cc, "reply-to" => $Qreq->replyto];
+$null_mailer = new HotCRPMailer($Conf, null, null, array_merge(["width" => false], $mailer_options));
 
 // template options
 if (isset($Qreq->monreq))
@@ -271,7 +286,7 @@ class MailSender {
 
         echo '<div class="mail"><table>';
         $nprintrows = 0;
-        foreach (array("To", "cc", "bcc", "reply-to", "Subject") as $k) {
+        foreach (["To", "cc", "bcc", "reply-to", "Subject"] as $k) {
             if ($k == "To") {
                 $vh = array();
                 foreach ($show_prep->to as $to)
@@ -340,9 +355,8 @@ class MailSender {
         if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
             $subject = $subjectPrefix . $subject;
         $emailBody = $this->qreq->emailBody;
-        $template = array("subject" => $subject, "body" => $emailBody);
-        $rest = array("cc" => $this->qreq->cc, "reply-to" => $this->qreq->replyto, "no_error_quit" => true);
-        $rest = array_merge($rest, $mailer_options);
+        $template = ["subject" => $subject, "body" => $emailBody];
+        $rest = array_merge(["no_error_quit" => true], $mailer_options);
 
         // test whether this mail is paper-sensitive
         $mailer = new HotCRPMailer($Conf, $Me, null, $rest);
@@ -359,7 +373,7 @@ class MailSender {
 
         if ($this->sending) {
             $q = "recipients=?, cc=?, replyto=?, subject=?, emailBody=?, q=?, t=?";
-            $qv = [$recipients, $this->qreq->cc, $this->qreq->replyto, $this->qreq->subject, $this->qreq->emailBody, $this->qreq->q, $this->qreq->t];
+            $qv = [$recipients, $rest["cc"], $rest["reply-to"], $this->qreq->subject, $this->qreq->emailBody, $this->qreq->q, $this->qreq->t];
             if ($Conf->sversion >= 146 && !$Me->privChair)
                 $q .= ", fromNonChair=1";
             if (($log_result = $Conf->qe_apply("insert into MailLog set $q", $qv)))
@@ -397,7 +411,7 @@ class MailSender {
                     $preperrors[$emsg] = true;
                 }
             } else if ($this->process_prep($prep, $last_prep, $row)) {
-                if ((!$Me->privChair || opt("chairHidePasswords"))
+                if ((!$Me->privChair || $Conf->opt("chairHidePasswords"))
                     && !@$last_prep->sensitive) {
                     $srest = array_merge($rest, array("sensitivity" => "display"));
                     $mailer->reset($contact, $row, $srest);
@@ -449,16 +463,6 @@ if (!isset($Qreq->emailBody)) {
 }
 if (substr($Qreq->subject, 0, strlen($subjectPrefix)) == $subjectPrefix)
     $Qreq->subject = substr($Qreq->subject, strlen($subjectPrefix));
-if (isset($Qreq->cc) && $Me->is_manager()) // XXX should only apply to papers you administer
-    $Qreq->cc = simplify_whitespace($Qreq->cc);
-else if ($Conf->opt("emailCc"))
-    $Qreq->cc = $Conf->opt("emailCc");
-else
-    $Qreq->cc = Text::user_email_to($Conf->site_contact());
-if (isset($Qreq->replyto) && $Me->is_manager()) // XXX should only apply to papers you administer
-    $Qreq->replyto = simplify_whitespace($Qreq->replyto);
-else
-    $Qreq->replyto = $Conf->opt("emailReplyTo", "");
 
 
 // Check or send

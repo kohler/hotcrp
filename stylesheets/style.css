@@ -1537,6 +1537,7 @@ pre.entryexample.dark {
 }
 pre.email {
 	margin: 0;
+	white-space: pre-wrap;
 }
 
 .pcrevsum {
