@@ -382,8 +382,6 @@ xassert_eqq(Text::simple_search("yes", ["yes-maybe", "no", "yes-really"], 0), ["
 xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"]), ["yes"]);
 xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"], Text::SEARCH_UNPRIVILEGE_EXACT), ["yes", 2 => "yes-really"]);
 xassert_eqq(Text::simple_search("Yes", ["yes-maybe", "no", "yes-really"], 0), ["yes-maybe", 2 => "yes-really"]);
-xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"], Text::SEARCH_CASE_SENSITIVE), []);
-xassert_eqq(Text::simple_search("Yes", ["yes", "no", "Yes-really"], Text::SEARCH_CASE_SENSITIVE), [2 => "Yes-really"]);
 $opts = ["x" => "None", "a" => "ACM badges: available", "af" => "ACM badges: available, functional", "afr" => "ACM badges: available, functional, replicated", "ar" => "ACM badges: available, reusable", "arr" => "ACM badges: available, reusable, replicated", "f" => "ACM badges: functional", "fr" => "ACM badges: functional, replicated", "r" => "ACM badges: reusable", "rr" => "ACM badges: reusable, replicated"];
 xassert_eqq(array_keys(Text::simple_search("ACM badges: available, functional, replicated", $opts)), ["afr"]);
 xassert_eqq(array_keys(Text::simple_search("ACM badges: functional, replicated", $opts)), ["fr"]);

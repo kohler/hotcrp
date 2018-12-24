@@ -437,7 +437,6 @@ class Text {
         return join("", $s);
     }
 
-    const SEARCH_CASE_SENSITIVE = 1;
     const SEARCH_UNPRIVILEGE_EXACT = 2;
     const SEARCH_NO_SPECIAL = 8;
 
@@ -445,16 +444,13 @@ class Text {
         if (!($flags & self::SEARCH_UNPRIVILEGE_EXACT)) {
             $matches = [];
             foreach ($haystacks as $k => $v) {
-                if ($flags & self::SEARCH_CASE_SENSITIVE
-                    ? strcmp($needle, $v) === 0
-                    : strcasecmp($needle, $v) === 0)
+                if (strcasecmp($needle, $v) === 0)
                     $matches[$k] = $v;
             }
             if (!empty($matches))
                 return $matches;
         }
 
-        $reflags = $flags & self::SEARCH_CASE_SENSITIVE ? "" : "i";
         $rewords = array();
         foreach (preg_split('/[^A-Za-z_0-9*]+/', $needle) as $word)
             if ($word !== "")
@@ -462,11 +458,11 @@ class Text {
         $i = $flags & self::SEARCH_UNPRIVILEGE_EXACT ? 1 : 0;
         for (; $i <= 2; ++$i) {
             if ($i == 0)
-                $re = ',\A' . join('\b.*\b', $rewords) . '\z,' . $reflags;
+                $re = ',\A' . join('\b.*\b', $rewords) . '\z,i';
             else if ($i == 1)
-                $re = ',\A' . join('\b.*\b', $rewords) . '\b,' . $reflags;
+                $re = ',\A' . join('\b.*\b', $rewords) . '\b,i';
             else
-                $re = ',\b' . join('.*\b', $rewords) . ',' . $reflags;
+                $re = ',\b' . join('.*\b', $rewords) . ',i';
             $matches = preg_grep($re, $haystacks);
             if (!empty($matches))
                 return $matches;
