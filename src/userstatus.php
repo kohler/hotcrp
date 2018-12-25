@@ -589,7 +589,9 @@ class UserStatus extends MessageSet {
         ["country"],
         ["roles"],
         ["follow"],
-        ["tags"]
+        ["tags"],
+        ["add_tags"],
+        ["remove_tags"]
     ];
 
     static function parse_csv_main(UserStatus $us, $cj, $line, $uf) {
