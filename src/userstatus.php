@@ -377,22 +377,24 @@ class UserStatus extends MessageSet {
             foreach ($cj->tags as $t)
                 if ($t !== "") {
                     list($tag, $index) = TagInfo::unpack($t);
-                    $old_tags[$tag] = $index;
+                    $old_tags[strtolower($tag)] = [$tag, $index];
                 }
             // process removals, then additions
             foreach ($this->make_tags_array(get($cj, "remove_tags"), "remove_tags") as $t) {
                 list($tag, $index) = TagInfo::unpack($t);
-                if ($index === false || get($old_tags, $tag) == $index)
-                    unset($old_tags[$tag]);
+                if ($index !== false) {
+                    $ti = get($old_tags, strtolower($tag));
+                    if (!$ti || $ti[1] != $index)
+                        continue;
+                }
+                unset($old_tags[strtolower($tag)]);
             }
             foreach ($this->make_tags_array(get($cj, "add_tags"), "add_tags") as $t) {
                 list($tag, $index) = TagInfo::unpack($t);
-                $old_tags[$tag] = $index;
+                $old_tags[strtolower($tag)] = [$tag, $index];
             }
             // collect results
-            $cj->tags = array();
-            foreach ($old_tags as $tag => $index)
-                $cj->tags[] = $tag . "#" . (float) $index;
+            $cj->tags = array_map(function ($ti) { return $ti[0] . "#" . (float) $ti[1]; }, $old_tags);
         }
 
         // Topics
