@@ -688,6 +688,12 @@ wstorage.json = function (is_session, key) {
     var x = wstorage(is_session, key);
     return x ? JSON.parse(x) : false;
 };
+wstorage.site = function (is_session, key, value) {
+    return wstorage(is_session, siteurl_path + key, value);
+};
+wstorage.site_json = function (is_session, key) {
+    return wstorage.json(is_session, siteurl_path + key);
+};
 
 
 // hoturl
@@ -877,6 +883,16 @@ handle_ui.on = function (className, callback) {
     callbacks[className] = callbacks[className] || [];
     callbacks[className].push(callback);
 };
+handle_ui.trigger = function (className, event) {
+    var c = callbacks[className];
+    if (c) {
+        if (typeof event === "string")
+            event = new Event(event);
+        for (var j = 0; j < c.length; ++j) {
+            c[j].call(this, event);
+        }
+    }
+};
 return handle_ui;
 })($);
 $(document).on("click", ".ui, .uix", handle_ui);
@@ -888,54 +904,106 @@ $(document).on("unfold", ".ui-unfold", handle_ui);
 
 // rangeclick
 handle_ui.on("js-range-click", function (event) {
-    var $f = $(this).closest("form"), key = false;
+    var $f = $(this).closest("form"), key = false,
+        rangeclick_state = $f[0].jsRangeClick || {};
     if (event.type === "keydown" && !event_modkey(event))
         key = event_key(event);
-    if ($f[0].hasAttribute("data-range-clicking")
+    if (rangeclick_state.__clicking__
         || (event.type === "keydown" && key !== "ArrowDown" && key !== "ArrowUp"))
         return;
 
-    var kind = this.getAttribute("data-range-type"),
-        kindsearch = kind ? "[data-range-type~='" + kind + "']" : "[name='" + this.name + "']",
-        $cbs = $f.find("input[type=" + this.type + "]" + kindsearch);
+    // find checkboxes and groups of this type
+    var kind = this.getAttribute("data-range-type") || this.name,
+        cbs = [], cbgs = [];
+    $f.find("input.js-range-click").each(function () {
+        var tkind = this.getAttribute("data-range-type") || this.name;
+        if (kind === tkind) {
+            cbs.push(this);
+            if (hasClass(this, "is-range-group"))
+                cbgs.push(this);
+        }
+    });
 
-    var rangeclick_last = $f.data("rangeClickLast") || {};
-    var lastelt = rangeclick_last[kindsearch], thispos, lastpos, i, j;
-    for (i = 0; i != $cbs.length; ++i) {
-        if ($cbs[i] == this)
+    // find positions
+    var lastelt = rangeclick_state[kind], thispos, lastpos, i, j;
+    for (i = 0; i !== cbs.length; ++i) {
+        if (cbs[i] === this)
             thispos = i;
-        if ($cbs[i] == lastelt)
+        if (cbs[i] === lastelt)
             lastpos = i;
     }
 
     if (key) {
         if (thispos !== 0 && key === "ArrowUp")
             --thispos;
-        else if (thispos < $cbs.length - 1 && key === "ArrowDown")
+        else if (thispos < cbs.length - 1 && key === "ArrowDown")
             ++thispos;
-        $($cbs[thispos]).focus().scrollIntoView();
+        $(cbs[thispos]).focus().scrollIntoView();
         event.preventDefault();
         return;
     }
 
-    rangeclick_last[kindsearch] = this;
-    $f.data("rangeClickLast", rangeclick_last);
+    // handle click
+    if (event.type === "click") {
+        $f[0].jsRangeClick = rangeclick_state;
+        rangeclick_state.__clicking__ = true;
 
-    if (event.shiftKey && lastelt) {
-        if (lastpos <= thispos) {
-            i = lastpos;
-            j = thispos - 1;
+        if (hasClass(this, "is-range-group")) {
+            // select all/none
+            for (i = 0; i !== cbs.length; ++i) {
+                if (!hasClass(cbs[i], "is-range-group")
+                    && cbs[i].checked !== this.checked)
+                    $(cbs[i]).trigger("click");
+            }
         } else {
-            i = thispos + 1;
-            j = lastpos;
+            // select range
+            rangeclick_state[kind] = this;
+            if (event.shiftKey && lastelt) {
+                if (lastpos <= thispos) {
+                    i = lastpos;
+                    j = thispos - 1;
+                } else {
+                    i = thispos + 1;
+                    j = lastpos;
+                }
+                for (; i <= j; ++i) {
+                    if (cbs[i].checked !== this.checked)
+                        $(cbs[i]).trigger("click");
+                }
+            }
         }
-        $f[0].setAttribute("data-range-clicking", "y");
-        for (; i <= j; ++i) {
-            if ($cbs[i].checked !== this.checked)
-                $($cbs[i]).trigger("click");
-        }
-        $f[0].removeAttribute("data-range-clicking");
+
+        delete rangeclick_state.__clicking__;
     }
+
+    // update groups
+    if (cbgs.length !== 0) {
+        var state = null;
+        for (i = 0; i !== cbs.length; ++i) {
+            if (!hasClass(cbs[i], "is-range-group")) {
+                if (state === null)
+                    state = cbs[i].checked;
+                else if (state !== cbs[i].checked) {
+                    state = 2;
+                    break;
+                }
+            }
+        }
+        for (i = 0; i !== cbgs.length; ++i) {
+            if (state === 2)
+                cbs[i].indeterminate = true;
+            else {
+                cbs[i].indeterminate = false;
+                cbs[i].checked = state;
+            }
+        }
+    }
+});
+
+$(function () {
+    $(".is-range-group").each(function () {
+        handle_ui.trigger.call(this, "js-range-click", "updaterange");
+    });
 });
 
 

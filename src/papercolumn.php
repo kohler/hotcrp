@@ -108,7 +108,10 @@ class Selector_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function header(PaperList $pl, $is_text) {
-        return $is_text ? "Selected" : "";
+        if ($is_text)
+            return "Selected";
+        else
+            return '<input type="checkbox" class="uix js-range-click is-range-group" data-range-type="pap[]" aria-label="Select all">';
     }
     protected function checked(PaperList $pl, PaperInfo $row) {
         return $pl->is_selected($row->paperId, $this->name == "selon");
@@ -119,7 +122,7 @@ class Selector_PaperColumn extends PaperColumn {
         if ($this->checked($pl, $row))
             $c .= ' checked';
         return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
-            . '<input type="checkbox" class="uix js-range-click" name="pap[]" value="' . $row->paperId . '"' . $c . ' aria-label="#' . $row->paperId . '" />';
+            . '<input type="checkbox" class="uix uikd js-range-click" name="pap[]" value="' . $row->paperId . '"' . $c . ' aria-label="#' . $row->paperId . '">';
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";
