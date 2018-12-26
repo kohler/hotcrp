@@ -44,7 +44,14 @@ class AbbreviationMatchTracker {
             $this->dpattern = $this->dupattern = AbbreviationMatcher::dedash($pattern);
         }
         $this->is_camel_word = AbbreviationMatcher::is_camel_word($pattern);
-        $this->has_star = strpos($pattern, "*") !== false;
+        $starpos = strpos($pattern, "*");
+        if ($starpos === false) {
+            $this->has_star = 0;
+        } else if ($starpos === 0) {
+            $this->has_star = 2;
+        } else {
+            $this->has_star = 1;
+        }
     }
     private function wmatch_score($pattern, $subject, $flags) {
         // assert($pattern whitespace is simplified)
@@ -58,7 +65,8 @@ class AbbreviationMatchTracker {
             if ($pword_pos !== $ppos) {
                 $pword = '{\A' . preg_quote($pwords[$ppos]) . '(\S*)\z}' . $flags;
                 $pword_pos = $ppos;
-                if ($this->has_star && strpos($pwords[$ppos], "*") !== false) {
+                if ($this->has_star !== 0
+                    && strpos($pwords[$ppos], "*") !== false) {
                     $pword = str_replace('\\*', '.*', $pword);
                     $pword_star = true;
                 } else
@@ -67,13 +75,14 @@ class AbbreviationMatchTracker {
             if (preg_match($pword, $swords[$spos], $m)) {
                 ++$ppos;
                 $demerits += ($m[1] !== "" || $pword_star ? 1 : 0);
-            } else
+            } else if ($this->has_star !== 2) {
                 $demerits += 1;
+            }
             ++$spos;
         }
         // missed words cost 1/64 point, partial words cost 1/64 point
         if (!isset($pwords[$ppos])) {
-            if (!$this->has_star)
+            if ($this->has_star === 0)
                 $demerits += count($swords) - $spos;
             return 1 - 0.015625 * max(min($demerits, 63), 1);
         } else
@@ -109,7 +118,7 @@ class AbbreviationMatchTracker {
             ++$spos;
         }
         if (!isset($this->camelwords[$ppos])) {
-            if (!$this->has_star)
+            if ($this->has_star === 0)
                 $demerits += count($swords) - $spos;
             return 1 - 0.015625 * max(min($demerits, 63), 1);
         } else
@@ -181,8 +190,9 @@ class AbbreviationMatchTracker {
             $this->mclass = $mclass;
             $this->matches = [$data];
         } else if ($mclass == $this->mclass
-                   && $this->matches[count($this->matches) - 1] !== $data)
+                   && $this->matches[count($this->matches) - 1] !== $data) {
             $this->matches[] = $data;
+        }
     }
 
     function matches() {
@@ -328,7 +338,7 @@ class AbbreviationMatcher {
         $last = $prio = false;
         foreach ($this->matches[$pattern] as $i) {
             $d = $this->data[$i];
-            if (!$tflags || ($d[3] & $tflags) != 0) {
+            if (!$tflags || ($d[3] & $tflags) !== 0) {
                 if ($prio === false || $d[4] > $prio) {
                     $results = [];
                     $prio = $d[4];
