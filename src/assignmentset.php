@@ -1631,7 +1631,7 @@ class AssignmentSet {
             if (!empty($summary))
                 echo "<div class=\"g\"></div>\n",
                     "<h3>Summary</h3>\n",
-                    '<div class="pc_ctable">', join("", $summary), "</div>\n";
+                    '<div class="pc-ctable">', join("", $summary), "</div>\n";
         }
     }
 

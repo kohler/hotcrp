@@ -1418,7 +1418,7 @@ class PaperTable {
             "<div class='paphint'>Select the PC members who have conflicts of interest with this submission. ", $this->conf->_i("conflictdef", false), "</div>\n",
             '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
-            '<div class="pc_ctable">';
+            '<div class="pc-ctable">';
         foreach ($pcm as $id => $p) {
             $pct = $this->prow ? $this->prow->conflict_type($p) : 0;
             if ($this->useRequest)

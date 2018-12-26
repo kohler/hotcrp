@@ -1599,14 +1599,14 @@ pre.email {
 	float: right;
 	white-space: nowrap;
 }
-.ctable, .pc_ctable, .searchctable {
+.ctable, .pc-ctable, .search-ctable {
 	-webkit-columns: 300px 4;
 	columns: 300px 4;
 	-webkit-column-gap: 18px;
 	column-gap: 18px;
-	margin: 0 -12px -4px;
+	margin: 0 -12px -6px;
 }
-.searchctable {
+.search-ctable {
 	-webkit-columns: 150px 4;
 	columns: 150px 4;
 	max-width: 800px;
@@ -1617,15 +1617,14 @@ pre.email {
 	page-break-inside: avoid;
 	break-inside: avoid;
 	margin: 0 6px;
-	padding: 2px 0 4px;
+	padding-bottom: 6px;
 }
 .ctelti {
 	padding: 0 6px;
 	display: block;
 }
 .checki.ctelti {
-	margin: 0;
-	padding: 0 6px 0 26px;
+	padding-left: 26px;
 }
 .has-assignment.foldo {
 	margin-bottom: 0.5rem;

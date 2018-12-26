@@ -292,7 +292,7 @@ if ($Me->can_administer($prow)) {
     else
         echo "<p>Review preferences display as “P#”.</p>";
 
-    echo '<div class="pc_ctable has-assignment-set need-assignment-change"';
+    echo '<div class="pc-ctable has-assignment-set need-assignment-change"';
     $rev_rounds = array_keys($Conf->round_selector_options(false));
     echo ' data-review-rounds="', htmlspecialchars(json_encode($rev_rounds)), '"',
         ' data-default-review-round="', htmlspecialchars($Conf->assignment_round_option(false)), '">';

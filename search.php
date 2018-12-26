@@ -450,7 +450,7 @@ if ($pl->count > 0) {
     echo Ht::form(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
     echo_request_as_hidden_inputs();
 
-    echo '<div class="searchctable">';
+    echo '<div class="search-ctable">';
     ksort($display_options->items);
     foreach ($display_options->items as $column => $items) {
         if (empty($items))

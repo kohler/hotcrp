@@ -664,7 +664,7 @@ foreach ($Conf->pc_members() as $id => $p) {
         . "</label></div>";
     $summary[] = $t;
 }
-echo '<div class="pc_ctable" style="margin-top:0.5em">', join("", $summary), "</div>\n",
+echo '<div class="pc-ctable" style="margin-top:0.5em">', join("", $summary), "</div>\n",
     "</td></tr></table>\n";
 
 
