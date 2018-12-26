@@ -949,14 +949,9 @@ handle_ui.on("js-range-click", function (event) {
         rangeclick_state.__clicking__ = true;
 
         if (hasClass(this, "is-range-group")) {
-            // select all/none
-            for (i = 0; i !== cbs.length; ++i) {
-                if (!hasClass(cbs[i], "is-range-group")
-                    && cbs[i].checked !== this.checked)
-                    $(cbs[i]).trigger("click");
-            }
+            i = 0;
+            j = cbs.length - 1;
         } else {
-            // select range
             rangeclick_state[kind] = this;
             if (event.shiftKey && lastelt) {
                 if (lastpos <= thispos) {
@@ -966,11 +961,17 @@ handle_ui.on("js-range-click", function (event) {
                     i = thispos + 1;
                     j = lastpos;
                 }
-                for (; i <= j; ++i) {
-                    if (cbs[i].checked !== this.checked)
-                        $(cbs[i]).trigger("click");
-                }
+            } else {
+                i = 1;
+                j = 0;
             }
+        }
+
+        while (i <= j) {
+            if (cbs[i].checked !== this.checked
+                && !hasClass(cbs[i], "is-range-group"))
+                $(cbs[i]).trigger("click");
+            ++i;
         }
 
         delete rangeclick_state.__clicking__;
@@ -991,10 +992,10 @@ handle_ui.on("js-range-click", function (event) {
         }
         for (i = 0; i !== cbgs.length; ++i) {
             if (state === 2)
-                cbs[i].indeterminate = true;
+                cbgs[i].indeterminate = true;
             else {
-                cbs[i].indeterminate = false;
-                cbs[i].checked = state;
+                cbgs[i].indeterminate = false;
+                cbgs[i].checked = state;
             }
         }
     }
