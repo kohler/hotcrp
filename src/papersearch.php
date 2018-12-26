@@ -16,6 +16,12 @@ class SearchWord {
         if ($this->quoted)
             $this->word = substr($qword, 1, -1);
     }
+    static function quote($text) {
+        if ($text === ""
+            || !preg_match('{\A[-A-Za-z0-9_.@/]+\z}', $text))
+            $text = "\"" . str_replace("\"", "\\\"", $text) . "\"";
+        return $text;
+    }
 }
 
 class SearchSplitter {
@@ -2761,7 +2767,7 @@ class PaperSearch {
                 $o->add_search_completion($res);
         if ($this->user->is_reviewer() && $this->conf->has_rounds()
             && (!$category || $category === "round")) {
-            $res[] = array("pri" => -1, "nosort" => true, "i" => array("round:any", "round:none"));
+            $res[] = array("pri" => -1, "nosort" => true, "i" => ["round:any", "round:none"]);
             $rlist = array();
             foreach ($this->conf->round_list() as $rnum => $round)
                 if ($rnum && $round !== ";")
@@ -2769,8 +2775,15 @@ class PaperSearch {
             $res = array_merge($res, self::simple_search_completion("round:", $rlist));
         }
         if ($this->conf->has_topics() && (!$category || $category === "topic")) {
-            foreach ($this->conf->topic_map() as $tname)
-                $res[] = "topic:\"{$tname}\"";
+            $atopics = $this->conf->topic_map();
+            foreach ($this->conf->topic_group_map() as $tgname => $tids) {
+                if (count($tids) >= 3) {
+                    $res[] = "topic:" . SearchWord::quote($tgname);
+                }
+                foreach ($tids as $tid) {
+                    $res[] = "topic:" . SearchWord::quote($atopics[$tid]);
+                }
+            }
         }
         if ((!$category || $category === "style") && $this->user->can_view_tags()) {
             $res[] = array("pri" => -1, "nosort" => true, "i" => array("style:any", "style:none", "color:any", "color:none"));

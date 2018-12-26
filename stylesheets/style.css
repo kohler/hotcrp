@@ -1283,6 +1283,9 @@ label.f-c, .f-i > label {
 	margin-bottom: 0.3rem;
 	font-weight: 500;
 }
+label.strong {
+	font-weight: bold;
+}
 .f-c.n, .f-i > label.n {
 	font-weight: normal;
 }
@@ -1610,7 +1613,7 @@ pre.email {
 	-webkit-columns: 150px 4;
 	columns: 150px 4;
 	max-width: 800px;
-	margin: 0 -6px -4px;
+	margin: 0 -6px -6px;
 }
 .ctelt {
 	-webkit-column-break-inside: avoid;
@@ -1622,6 +1625,9 @@ pre.email {
 .ctelti {
 	padding: 0 6px;
 	display: block;
+}
+.cteltx {
+	padding-bottom: 3px;
 }
 .checki.ctelti {
 	padding-left: 26px;

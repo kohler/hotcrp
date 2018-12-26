@@ -116,6 +116,7 @@ class Conf {
     private $_track_sensitivity = 0;
     private $_decisions = null;
     private $_topic_map = null;
+    private $_topic_group_map = null;
     private $_topic_order_map = null;
     private $_topic_separator_cache = null;
     private $_topic_abbrev_matcher = null;
@@ -1008,30 +1009,56 @@ class Conf {
 
     function topic_map() {
         if ($this->_topic_map === null) {
-            $this->_topic_map = $tx = [];
+            $txs = [];
             $result = $this->qe_raw("select topicId, topicName from TopicArea");
-            while (($row = edb_row($result))) {
-                if (preg_match('{\A(?:None of |Others?(?: |\z))}', $row[1]))
-                    $tx[(int) $row[0]] = $row[1];
-                else
-                    $this->_topic_map[(int) $row[0]] = $row[1];
+            while (($row = $result->fetch_row())) {
+                $colon = (int) strpos($row[1], ":");
+                $other = 0;
+                if (preg_match('{\G\s*(?:none of |others?(?: |\z))}i', $row[1], $m, 0, $colon !== 0 ? $colon + 1 : 0)) {
+                    $other = $colon === 0 ? 2 : 1;
+                }
+                $txs[] = [(int) $row[0], $row[1], $other, substr($row[1], 0, $colon)];
             }
             Dbl::free($result);
-            asort($this->_topic_map, SORT_NATURAL | SORT_FLAG_CASE);
-            if (!empty($tx)) {
-                asort($tx, SORT_NATURAL | SORT_FLAG_CASE);
-                foreach ($tx as $tid => $tname)
-                    $this->_topic_map[$tid] = $tname;
+
+            usort($txs, function ($ta, $tb) {
+                if ($ta[2] !== $tb[2]
+                    && ($ta[2] === 2
+                        || $tb[2] === 2
+                        || strcasecmp($ta[3], $tb[3]) === 0))
+                    return $ta[2] > $tb[2] ? 1 : -1;
+                else
+                    return strnatcasecmp($ta[1], $tb[1]);
+            });
+
+            $this->_topic_map = $this->_topic_group_map = [];
+            $last_group = null;
+            foreach ($txs as $t) {
+                $this->_topic_map[$t[0]] = $t[1];
+                if ($last_group === null || strcasecmp($last_group, $t[3]) !== 0) {
+                    if ($t[3] === "")
+                        $last_group = " " . count($this->_topic_group_map);
+                    else
+                        $last_group = $t[3];
+                }
+                $this->_topic_group_map[$last_group][] = $t[0];
             }
         }
         return $this->_topic_map;
     }
 
+    function topic_group_map() {
+        if ($this->_topic_group_map === null)
+            $this->topic_map();
+        return $this->_topic_group_map;
+    }
+
     function topic_order_map() {
         if ($this->_topic_order_map === null) {
+            $i = 0;
             $this->_topic_order_map = [];
             foreach ($this->topic_map() as $tid => $tname)
-                $this->_topic_order_map[$tid] = count($this->_topic_order_map);
+                $this->_topic_order_map[$tid] = $i++;
         }
         return $this->_topic_order_map;
     }
@@ -1041,6 +1068,12 @@ class Conf {
             $this->_topic_abbrev_matcher = new AbbreviationMatcher;
             foreach ($this->topic_map() as $tid => $tname)
                 $this->_topic_abbrev_matcher->add($tname, $tid);
+            foreach ($this->topic_group_map() as $tgname => $tids) {
+                if ($tgname[0] !== " ") {
+                    foreach ($tids as $tid)
+                        $this->_topic_abbrev_matcher->add($tgname, $tid, 1);
+                }
+            }
         }
         return $this->_topic_abbrev_matcher;
     }
@@ -1066,7 +1099,7 @@ class Conf {
     }
 
     function invalidate_topics() {
-        $this->_topic_map = $this->_topic_order_map = null;
+        $this->_topic_map = $this->_topic_group_map = $this->_topic_order_map = null;
         $this->_topic_separator_cache = $this->_topic_abbrev_matcher = null;
     }
 

@@ -904,17 +904,21 @@ $(document).on("unfold", ".ui-unfold", handle_ui);
 
 // rangeclick
 handle_ui.on("js-range-click", function (event) {
-    var $f = $(this).closest("form"), key = false,
-        rangeclick_state = $f[0].jsRangeClick || {};
+    var $f = $(this).closest("form"),
+        rangeclick_state = $f[0].jsRangeClick || {},
+        kind = this.getAttribute("data-range-type") || this.name;
+    $f[0].jsRangeClick = rangeclick_state;
+
+    var key = false;
     if (event.type === "keydown" && !event_modkey(event))
         key = event_key(event);
     if (rangeclick_state.__clicking__
+        || (event.type === "updaterange" && rangeclick_state["__update__" + kind])
         || (event.type === "keydown" && key !== "ArrowDown" && key !== "ArrowUp"))
         return;
 
     // find checkboxes and groups of this type
-    var kind = this.getAttribute("data-range-type") || this.name,
-        cbs = [], cbgs = [];
+    var cbs = [], cbgs = [];
     $f.find("input.js-range-click").each(function () {
         var tkind = this.getAttribute("data-range-type") || this.name;
         if (kind === tkind) {
@@ -925,7 +929,7 @@ handle_ui.on("js-range-click", function (event) {
     });
 
     // find positions
-    var lastelt = rangeclick_state[kind], thispos, lastpos, i, j;
+    var lastelt = rangeclick_state[kind], thispos, lastpos, i;
     for (i = 0; i !== cbs.length; ++i) {
         if (cbs[i] === this)
             thispos = i;
@@ -944,13 +948,14 @@ handle_ui.on("js-range-click", function (event) {
     }
 
     // handle click
+    var group = false, single_group = false, j;
     if (event.type === "click") {
-        $f[0].jsRangeClick = rangeclick_state;
         rangeclick_state.__clicking__ = true;
 
         if (hasClass(this, "is-range-group")) {
             i = 0;
             j = cbs.length - 1;
+            group = this.getAttribute("data-range-group");
         } else {
             rangeclick_state[kind] = this;
             if (event.shiftKey && lastelt) {
@@ -964,24 +969,33 @@ handle_ui.on("js-range-click", function (event) {
             } else {
                 i = 1;
                 j = 0;
+                single_group = this.getAttribute("data-range-group");
             }
         }
 
         while (i <= j) {
             if (cbs[i].checked !== this.checked
-                && !hasClass(cbs[i], "is-range-group"))
+                && !hasClass(cbs[i], "is-range-group")
+                && (!group || cbs[i].getAttribute("data-range-group") === group))
                 $(cbs[i]).trigger("click");
             ++i;
         }
 
         delete rangeclick_state.__clicking__;
+    } else if (event.type === "updaterange") {
+        rangeclick_state["__updated__" + kind] = true;
     }
 
     // update groups
-    if (cbgs.length !== 0) {
+    for (j = 0; j !== cbgs.length; ++j) {
+        group = cbgs[j].getAttribute("data-range-group");
+        if (single_group && group !== this.getAttribute("data-range-group"))
+            continue;
+
         var state = null;
         for (i = 0; i !== cbs.length; ++i) {
-            if (!hasClass(cbs[i], "is-range-group")) {
+            if (cbs[i].getAttribute("data-range-group") === group
+                && !hasClass(cbs[i], "is-range-group")) {
                 if (state === null)
                     state = cbs[i].checked;
                 else if (state !== cbs[i].checked) {
@@ -990,13 +1004,12 @@ handle_ui.on("js-range-click", function (event) {
                 }
             }
         }
-        for (i = 0; i !== cbgs.length; ++i) {
-            if (state === 2)
-                cbgs[i].indeterminate = true;
-            else {
-                cbgs[i].indeterminate = false;
-                cbgs[i].checked = state;
-            }
+
+        if (state === 2)
+            cbgs[j].indeterminate = true;
+        else {
+            cbgs[j].indeterminate = false;
+            cbgs[j].checked = state;
         }
     }
 });
