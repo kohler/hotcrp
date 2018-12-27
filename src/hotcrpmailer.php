@@ -270,6 +270,9 @@ class HotCRPMailer extends Mailer {
         else
             return "";
     }
+    function kw_abstract() {
+        return $this->row->abstract;
+    }
     function kw_pid() {
         return $this->row->paperId;
     }
@@ -293,6 +296,12 @@ class HotCRPMailer extends Mailer {
                 return "cap=HIDDEN";
         }
         return null;
+    }
+    function kw_decision($args, $isbool) {
+        if (!$this->row->outcome && $isbool)
+            return false;
+        else
+            return $this->conf->decision_name($this->row->outcome);
     }
     function kw_tagvalue($args, $isbool, $uf) {
         $tag = isset($uf->match_data) ? $uf->match_data[1] : $args;

@@ -36,7 +36,9 @@
 
     {"name": "TITLE", "callback": "*kw_title", "expand_if": "*kw_haspaper"},
     {"name": "TITLEHINT", "callback": "*kw_titlehint", "expand_if": "*kw_haspaper"},
+    {"name": "ABSTRACT", "callback": "*kw_abstract", "expand_if": "*kw_haspaper"},
     {"name": "PAPER", "callback": "*kw_pid", "expand_if": "*kw_haspaper", "synonym": "NUMBER"},
+    {"name": "DECISION", "callback": "*kw_decision", "expand_if": "*kw_haspaper"},
     {"name": "REVIEWS", "callback": "*kw_reviews", "expand_if": "*kw_haspaper"},
     {"name": "COMMENTS", "callback": "*kw_comments", "expand_if": "*kw_haspaper"},
     {"match": "(OTHER|REQUESTER|REVIEWER)(CONTACT|NAME|EMAIL|FIRST|LAST)", "callback": "*kw_reviewercontact", "global": true},
