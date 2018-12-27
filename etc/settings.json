@@ -11,12 +11,6 @@
         "type": "simplestring", "size": 70, "placeholder": "(same as abbreviation)"
     },
     {
-        "name": "acct_addr", "json_name": false,
-        "title": "Collect addresses",
-        "type": "checkbox",
-        "require": "src/settings/s_users.php"
-    },
-    {
         "name": "au_seerev", "json_name": "review_visibility_author",
         "title": "Authors can see reviews", "group": "decisions",
         "type": "radio",
@@ -524,7 +518,8 @@
     },
     {
         "name": "topics",
-        "parser_class": "Topics_SettingParser", "require": "src/settings/s_topics.php"
+        "parser_class": "Topics_SettingParser",
+        "require": "src/settings/s_topics.php"
     },
     {
         "name": "tracks",
