@@ -1082,10 +1082,6 @@ class Conf {
         return get($this->settings, "has_topics", 0) !== 0;
     }
 
-    function topic_count() {
-        return count($this->topic_map());
-    }
-
     function topic_separator() {
         if ($this->_topic_separator_cache === null) {
             $this->_topic_separator_cache = ", ";
