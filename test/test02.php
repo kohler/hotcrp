@@ -382,11 +382,23 @@ xassert_eqq(Text::simple_search("yes", ["yes-maybe", "no", "yes-really"], 0), ["
 xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"]), ["yes"]);
 xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"], Text::SEARCH_UNPRIVILEGE_EXACT), ["yes", 2 => "yes-really"]);
 xassert_eqq(Text::simple_search("Yes", ["yes-maybe", "no", "yes-really"], 0), ["yes-maybe", 2 => "yes-really"]);
+
 $opts = ["x" => "None", "a" => "ACM badges: available", "af" => "ACM badges: available, functional", "afr" => "ACM badges: available, functional, replicated", "ar" => "ACM badges: available, reusable", "arr" => "ACM badges: available, reusable, replicated", "f" => "ACM badges: functional", "fr" => "ACM badges: functional, replicated", "r" => "ACM badges: reusable", "rr" => "ACM badges: reusable, replicated"];
 xassert_eqq(array_keys(Text::simple_search("ACM badges: available, functional, replicated", $opts)), ["afr"]);
 xassert_eqq(array_keys(Text::simple_search("ACM badges: functional, replicated", $opts)), ["fr"]);
 xassert_eqq(array_keys(Text::simple_search("ACM badges: available, functional, replicated", $opts, Text::SEARCH_UNPRIVILEGE_EXACT)), ["afr"]);
 xassert_eqq(array_keys(Text::simple_search("ACM badges: functional, replicated", $opts, Text::SEARCH_UNPRIVILEGE_EXACT)), ["afr", "fr"]);
+
+$am = new AbbreviationMatcher;
+foreach ($opts as $d => $dname)
+    $am->add($dname, $d);
+xassert_eqq($am->find_all("ACM badges: available, functional, replicated"), ["afr"]);
+xassert_eqq($am->find_all("ACM badges: functional, replicated"), ["fr"]);
+xassert_eqq($am->find_all("available"), ["a", "af", "afr", "ar", "arr"]);
+xassert_eqq($am->find_all("ACM badges: available"), ["a"]);
+xassert_eqq($am->find_all("acm-badges-available"), ["a"]);
+xassert_eqq($am->find_all("ACMBadAva"), ["a"]);
+xassert_eqq($am->find_all("ava"), ["a", "af", "afr", "ar", "arr"]);
 
 // Qrequest tests
 $q = new Qrequest("GET", ["a" => 1, "b" => 2]);
@@ -731,6 +743,15 @@ xassert(AbbreviationMatcher::is_camel_word("ove-mer"));
 $am->add("99 Problems", 7);
 xassert_eqq($am->find_all("99p"), [7]);
 
+$am->add("?", 8);
+xassert_eqq($am->find_all("ela"), [1, 5, 6]);
+xassert_eqq($am->find_all("elan"), [1, 5]);
+xassert_eqq($am->find_all("elange"), [6]);
+xassert_eqq($am->find_all("elan*"), [1, 5, 6]);
+xassert_eqq($am->find_all("e*e"), [6]);
+xassert_eqq($am->find_all("99p"), [7]);
+xassert_eqq($am->find_all("?"), [8]);
+
 $am = new AbbreviationMatcher;
 $am->add("Overall merit", 1);
 $am->add("Overall merit 2", 2);
@@ -750,6 +771,31 @@ xassert_eqq($am->find_all("PCPer"), [5]);
 xassert_eqq($am->find_all("PCPer2"), [6]);
 xassert_eqq($am->find_all("PCPer3"), [7]);
 xassert_eqq($am->find_all("PCPer20"), [8]);
+xassert_eqq($am->find_all("Per"), [5, 6, 7, 8]);
+xassert_eqq($am->find_all("20"), [8]);
+xassert_eqq($am->find_all("2"), [2, 6]);
+
+$am->add("Number 2", 9);
+$am->add("Number 2 Bis", 10);
+$am->add("2 Butts", 11);
+xassert_eqq($am->find_all("2"), [2, 6, 9, 10, 11]);
+
+$am = new AbbreviationMatcher;
+$am->add("France Land", 5);
+$am->add("France Land Flower", 6);
+$am->add("France Land Ripen", 7);
+$am->add("Glass Flower", 8);
+$am->add("Glass Flower Milk", 9);
+$am->add("Flower Cheese", 10);
+$am->add("Anne France", 11);
+xassert_eqq($am->find_all("flower"), [6, 8, 9, 10]);
+xassert_eqq($am->find_all("flo"), [6, 8, 9, 10]);
+xassert_eqq($am->find_all("fra"), [5, 6, 7, 11]);
+
+$am->add("France", 12);
+xassert_eqq($am->find_all("fra"), [12]);
+xassert_eqq($am->find_all("fra*"), [5, 6, 7, 12]);
+xassert_eqq($am->find_all("*fra*"), [5, 6, 7, 11, 12]);
 
 // AbbreviationMatcher tests taken from old abbreviation styles
 $am = new AbbreviationMatcher;

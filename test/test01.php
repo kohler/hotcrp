@@ -543,7 +543,7 @@ assert_search_papers($user_chair, "cmt:marina>1", "18");
 assert_search_papers($user_chair, "cmt:#redcmt", "18");
 $comment4 = new CommentInfo(null, $paper2);
 $c2ok = $comment4->save(array("text" => "test", "visibility" => "p", "blind" => false), $user_mgbaker);
-MailChecker::check_db();
+MailChecker::check_db("test01-comment2");
 assert_search_papers($user_chair, "has:comment", "1 2 18");
 assert_search_papers($user_chair, "has:response", "");
 assert_search_papers($user_chair, "has:author-comment", "1 18");

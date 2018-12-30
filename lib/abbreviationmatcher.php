@@ -57,13 +57,13 @@ class AbbreviationMatchTracker {
         // assert($pattern whitespace is simplified)
         $pwords = explode(" ", $pattern);
         $swords = preg_split('{\s+}', $subject);
-        $ppos = $spos = $demerits = 0;
         $pword = null;
         $pword_pos = -1;
         $pword_star = false;
+        $ppos = $spos = $demerits = $skipped = 0;
         while (isset($pwords[$ppos]) && isset($swords[$spos])) {
             if ($pword_pos !== $ppos) {
-                $pword = '{\A' . preg_quote($pwords[$ppos]) . '(\S*)\z}' . $flags;
+                $pword = '{\A' . preg_quote($pwords[$ppos]) . '([^-\s,.:;\'"\[\]{}()!?&]*).*\z}' . $flags;
                 $pword_pos = $ppos;
                 if ($this->has_star !== 0
                     && strpos($pwords[$ppos], "*") !== false) {
@@ -74,17 +74,19 @@ class AbbreviationMatchTracker {
             }
             if (preg_match($pword, $swords[$spos], $m)) {
                 ++$ppos;
-                $demerits += ($m[1] !== "" || $pword_star ? 1 : 0);
+                $demerits += $m[1] !== "" || $pword_star;
             } else if ($this->has_star !== 2) {
-                $demerits += 1;
+                $skipped = 1;
             }
             ++$spos;
         }
         // missed words cost 1/64 point, partial words cost 1/64 point
         if (!isset($pwords[$ppos])) {
-            if ($this->has_star === 0)
-                $demerits += count($swords) - $spos;
-            return 1 - 0.015625 * max(min($demerits, 63), 1);
+            $demerits += $skipped;
+            if ($this->has_star === 0 && $skipped === 0)
+                $demerits += $spos < count($swords);
+            //error_log("- $subject $this->pattern $demerits $ppos $spos");
+            return 1 - 0.015625 * min($demerits + 1, 63);
         } else
             return 0;
     }
@@ -100,7 +102,7 @@ class AbbreviationMatchTracker {
             }
         }
         $swords = preg_split('{\s+}', $subject);
-        $ppos = $spos = $demerits = 0;
+        $ppos = $spos = $demerits = $skipped = 0;
         while (isset($this->camelwords[$ppos]) && isset($swords[$spos])) {
             $pword = $this->camelwords[$ppos];
             $sword = $swords[$spos];
@@ -114,13 +116,19 @@ class AbbreviationMatchTracker {
                     break;
                 $pword = $this->camelwords[$ppos];
             }
-            $demerits += ($sidx < strlen($sword) ? 1 : 0);
+            if ($sidx === 0) {
+                $skipped = 1;
+            } else {
+                $demerits += $sidx < strlen($sword);
+            }
             ++$spos;
         }
         if (!isset($this->camelwords[$ppos])) {
-            if ($this->has_star === 0)
-                $demerits += count($swords) - $spos;
-            return 1 - 0.015625 * max(min($demerits, 63), 1);
+            $demerits += $skipped;
+            if ($this->has_star === 0 && $skipped === 0)
+                $demerits += $spos < count($swords);
+            //error_log("+ $subject $this->pattern $demerits $ppos $spos");
+            return 1 - 0.015625 * min($demerits + 1, 63);
         } else
             return 0;
     }
@@ -186,6 +194,7 @@ class AbbreviationMatchTracker {
 
     function check($subject, $data, $sisu = null) {
         $mclass = $this->mclass($subject, $sisu);
+        //if ($mclass > 0) error_log("$subject : {$this->pattern} : $mclass");
         if ($mclass > $this->mclass) {
             $this->mclass = $mclass;
             $this->matches = [$data];
