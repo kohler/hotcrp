@@ -212,6 +212,7 @@ class AbbreviationMatchTracker {
 class AbbreviationClass {
     const TYPE_CAMELCASE = 0;
     const TYPE_LOWERDASH = 1;
+    const TYPE_ASIS = 2;
     public $type;
     public $nwords;
     public $drop_parens = true;
@@ -235,7 +236,12 @@ class AbbreviationClass {
             $this->stopwords = false;
         if ($this->index > $this->nwords)
             $this->nwords = $this->index;
-        return $this->index <= 5;
+        if ($this->type === self::TYPE_ASIS) {
+            if ($this->index === 6)
+                $this->nwords = 0;
+            return $this->index <= 6;
+        } else
+            return $this->index <= 5;
     }
 }
 
@@ -403,14 +409,17 @@ class AbbreviationMatcher {
         // drop unlikely punctuation
         $xname = preg_replace('/[-:\s+,.?!()\[\]\{\}_\/\"]+/', " ", " $name ");
         // drop extraneous words
-        $xname = preg_replace('/\A(' . str_repeat(' \S+', $aclass->nwords) . ' ).*\z/', '$1', $xname);
+        if ($aclass->nwords > 0)
+            $xname = preg_replace('/\A(' . str_repeat(' \S+', $aclass->nwords) . ' ).*\z/', '$1', $xname);
         if ($aclass->type === AbbreviationClass::TYPE_CAMELCASE) {
             $xname = str_replace(" ", "", ucwords($xname));
             if (strlen($xname) < 6 && preg_match('/\A[A-Z][a-z]+\z/', $xname))
                 return $xname;
             else
                 return preg_replace('/([A-Z][a-z][a-z])[a-z]*/', '$1', $xname);
-        } else
+        } else if ($aclass->type === AbbreviationClass::TYPE_LOWERDASH)
             return strtolower(str_replace(" ", "-", trim($xname)));
+        else
+            return $xname;
     }
 }
