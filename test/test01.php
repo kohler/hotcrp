@@ -111,6 +111,15 @@ xassert_assign($user_chair, "paper,action,decision\n1,decision,no\n");
 $paper1 = $Conf->fetch_paper(1, $user_chair);
 xassert(!$user_estrin->can_update_paper($paper1));
 
+// clear decision
+xassert_eq($paper1->outcome, -1);
+xassert_assign($user_chair, "paper,action,decision\n1,cleardecision,yes\n");
+$paper1 = $Conf->fetch_paper(1, $user_chair);
+xassert_eq($paper1->outcome, -1);
+xassert_assign($user_chair, "paper,action,decision\n1,cleardecision,no\n");
+$paper1 = $Conf->fetch_paper(1, $user_chair);
+xassert_eq($paper1->outcome, 0);
+
 // change submission date
 $Conf->save_setting("sub_update", $Now - 5);
 $Conf->save_setting("sub_sub", $Now - 5);

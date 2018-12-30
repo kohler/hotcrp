@@ -165,6 +165,18 @@ class AssignmentState {
         }
         return $res;
     }
+    function remove_if($q, $predicate) {
+        $res = [];
+        foreach ($this->query_items($q) as $item) {
+            if (!$predicate
+                || call_user_func($predicate, $item->after ? : $item->before)) {
+                $res[] = $item->after ? : $item->before;
+                $item->after = false;
+                $item->lineno = $this->lineno;
+            }
+        }
+        return $res;
+    }
     function add($x) {
         $k = $this->extract_key($x);
         assert(!!$k);

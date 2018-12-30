@@ -1640,7 +1640,7 @@ class Formula {
             $e = $this->_parse_option($rest[1]);
             $t = $rest[2];
         } else if (preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
-            $me = PaperSearch::decision_matchexpr($this->conf, $m[1], Text::SEARCH_UNPRIVILEGE_EXACT);
+            $me = PaperSearch::decision_matchexpr($this->conf, $m[1], false);
             $e = $this->field_search_fexpr(["outcome", $me]);
             $t = $m[2];
         } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {

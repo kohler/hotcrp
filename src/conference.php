@@ -114,12 +114,13 @@ class Conf {
     private $_taginfo = null;
     private $_track_tags = null;
     private $_track_sensitivity = 0;
-    private $_decisions = null;
-    private $_topic_map = null;
-    private $_topic_group_map = null;
-    private $_topic_order_map = null;
-    private $_topic_separator_cache = null;
-    private $_topic_abbrev_matcher = null;
+    private $_decisions;
+    private $_decision_matcher;
+    private $_topic_map;
+    private $_topic_group_map;
+    private $_topic_order_map;
+    private $_topic_separator_cache;
+    private $_topic_abbrev_matcher;
     private $_pc_members_cache = null;
     private $_pc_tags_cache = null;
     private $_pc_members_and_admins_cache = null;
@@ -351,7 +352,7 @@ class Conf {
             $this->crosscheck_track_settings($j);
 
         // clear caches
-        $this->_decisions = null;
+        $this->_decisions = $this->_decision_matcher = null;
         $this->_pc_seeall_cache = null;
         $this->_defined_rounds = null;
         $this->_resp_rounds = null;
@@ -999,10 +1000,25 @@ class Conf {
         $dname = simplify_whitespace($dname);
         if ((string) $dname === "")
             return "Empty decision name.";
-        else if (preg_match(',\A(?:yes|no|any|none|unknown|unspecified)\z,i', $dname))
+        else if (preg_match(',\A(?:yes|no|any|none|unknown|unspecified|undecided|\?)\z,i', $dname))
             return "Decision name “{$dname}” is reserved.";
         else
             return false;
+    }
+
+    function decision_matcher() {
+        if ($this->_decision_matcher === null) {
+            $this->_decision_matcher = new AbbreviationMatcher;
+            foreach ($this->decision_map() as $d => $dname)
+                $this->_decision_matcher->add($dname, $d);
+            foreach (["none", "unknown", "undecided", "?"] as $dname)
+                $this->_decision_matcher->add($dname, 0);
+        }
+        return $this->_decision_matcher;
+    }
+
+    function find_all_decisions($dname) {
+        return $this->decision_matcher()->find_all($dname);
     }
 
 

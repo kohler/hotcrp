@@ -21,20 +21,31 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
             return true;
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        if (!$this->remove) {
-            if (!isset($req["decision"]))
-                return "Decision missing.";
-            $matchexpr = PaperSearch::decision_matchexpr($state->conf, $req["decision"], 0);
-            $dec = array_keys($state->conf->decision_map());
-            $dec = array_values(CountMatcher::filter_using($dec, $matchexpr));
-            if (count($dec) == 1)
-                $dec = $dec[0];
-            else if (empty($dec))
-                return "No decisions match “" . htmlspecialchars($req["decision"]) . "”.";
-            else
-                return "More than one decision matches “" . htmlspecialchars($req["decision"]) . "”.";
+        $removepred = null;
+        if (isset($req["decision"])) {
+            $matchexpr = PaperSearch::decision_matchexpr($state->conf, $req["decision"], false);
+            if (!$this->remove) {
+                if (is_string($matchexpr)) {
+                    $dec = array_keys($state->conf->decision_map());
+                    $dec = array_values(CountMatcher::filter_using($dec, $matchexpr));
+                } else {
+                    $dec = $matchexpr;
+                }
+                if (count($dec) === 1)
+                    $dec = $dec[0];
+                else if (empty($dec))
+                    return "No decisions match “" . htmlspecialchars($req["decision"]) . "”.";
+                else
+                    return "More than one decision matches “" . htmlspecialchars($req["decision"]) . "”.";
+            } else {
+                $removepred = function ($item) use ($matchexpr) {
+                    return CountMatcher::compare_using($item["_decision"], $matchexpr);
+                };
+            }
+        } else if (!$this->remove) {
+            return "Decision missing.";
         }
-        $state->remove(["type" => "decision", "pid" => $prow->paperId]);
+        $state->remove_if(["type" => "decision", "pid" => $prow->paperId], $removepred);
         if (!$this->remove && $dec)
             $state->add(["type" => "decision", "pid" => $prow->paperId, "_decision" => +$dec]);
         return true;

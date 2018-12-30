@@ -1575,21 +1575,16 @@ class PaperSearch {
             return empty($scm->ids) ? [] : $scm->ids;
     }
 
-    static function decision_matchexpr(Conf $conf, $word, $flag) {
-        $lword = strtolower($word);
-        if (!($flag & Text::SEARCH_NO_SPECIAL)) {
-            if ($lword === "yes")
+    static function decision_matchexpr(Conf $conf, $word, $quoted) {
+        if (!$quoted) {
+            if (strcasecmp($word, "yes") === 0)
                 return ">0";
-            else if ($lword === "no")
+            else if (strcasecmp($word, "no") === 0)
                 return "<0";
-            else if ($lword === "?" || $lword === "none"
-                     || $lword === "unknown" || $lword === "unspecified"
-                     || $lword === "undecided")
-                return [0];
-            else if ($lword === "any")
+            else if (strcasecmp($word, "any") === 0)
                 return "!=0";
         }
-        return array_keys(Text::simple_search($word, $conf->decision_map(), $flag));
+        return $conf->find_all_decisions($word);
     }
 
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {
@@ -1610,8 +1605,7 @@ class PaperSearch {
                     return ["timeWithdrawn", "<=0"];
             }
         }
-        $flag = $quoted ? Text::SEARCH_NO_SPECIAL : Text::SEARCH_UNPRIVILEGE_EXACT;
-        return ["outcome", self::decision_matchexpr($conf, $word, $flag)];
+        return ["outcome", self::decision_matchexpr($conf, $word, $quoted)];
     }
 
     static function parse_reconflict($word, SearchWord $sword, PaperSearch $srch) {
@@ -2725,9 +2719,11 @@ class PaperSearch {
             $res[] = "has:decision";
             if (!$category || $category === "dec") {
                 $res[] = array("pri" => -1, "nosort" => true, "i" => array("dec:any", "dec:none", "dec:yes", "dec:no"));
-                $dm = $this->conf->decision_map();
-                unset($dm[0]);
-                $res = array_merge($res, self::simple_search_completion("dec:", $dm, Text::SEARCH_UNPRIVILEGE_EXACT));
+                foreach ($this->conf->decision_map() as $d => $dname) {
+                    if ($d !== 0) {
+                        $res[] = "dec:" . SearchWord::quote($dname);
+                    }
+                }
             }
             if ($this->conf->setting("final_open"))
                 $res[] = "has:final";
