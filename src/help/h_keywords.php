@@ -66,7 +66,7 @@ class Keywords_HelpTopic {
                     foreach ($opts as $ox)
                         if ($ox !== $oex[1] && get($ox->example_searches(), "has"))
                             $oabbr[] = "“has:" . htmlspecialchars($ox->search_keyword()) . "”";
-                    if (count($oabbr))
+                    if (!empty($oabbr))
                         $desc .= '<div class="hint">Other field ' . pluralx(count($oabbr), "search") . ': ' . join(", ", $oabbr) . '</div>';
                 } else if ($extype === "yes")
                     $desc = "submission has “" . htmlspecialchars($oex[1]->title) . "” set";

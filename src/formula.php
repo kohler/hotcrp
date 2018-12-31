@@ -1578,27 +1578,29 @@ class Formula {
     }
 
     private function _parse_option($text) {
-        $os = Option_SearchTerm::analyze($this->conf, $text);
-        foreach ($os->warn as $w)
+        $os = Option_SearchTerm::analyze($this->conf, $text, true);
+        foreach ($os->warnings as $w)
             $this->_error_html[] = $w;
         $e = null;
         foreach ($os->os as $o) {
             $ex = new Option_Fexpr($o->option);
-            if ($o->kind)
+            if ($o->kind) {
                 $this->_error_html[] = "“" . htmlspecialchars($text) . "” can’t be used in formulas.";
-            else if ($os->value_word === "")
-                /* stick with raw option fexpr */;
-            else if (is_array($o->value) && $o->compar === "!=")
+            } else if ($o->value === null) {
+                $ex = $o->compar === "=" ? $ex : new NegateFexpr($ex);
+            } else if (is_array($o->value) && $o->compar === "!=") {
                 $ex = new NegateFexpr(new InFexpr($ex, $o->value));
-            else if (is_array($o->value))
+            } else if (is_array($o->value)) {
                 $ex = new InFexpr($ex, $o->value);
-            else
+            } else {
                 $ex = new Fexpr(get(self::$_oprewrite, $o->compar, $o->compar),
                                 $ex, new ConstantFexpr($o->value, $o->option));
+            }
             $e = $e ? new Fexpr("||", $e, $ex) : $ex;
         }
-        if ($e && $os->negate)
+        if ($e && $os->negated) {
             $e = new NegateFexpr($e);
+        }
         return $e;
     }
 

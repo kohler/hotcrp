@@ -599,11 +599,22 @@ class PaperOption implements Abbreviator {
         return $j;
     }
 
+    function parse_search($oms) {
+        if (!$oms->quoted && $oms->compar === "=") {
+            if ($oms->vword === "" || strcasecmp($oms->vword, "yes") === 0) {
+                $oms->os[] = new OptionMatcher($this, "!=", null);
+                return true;
+            } else if (strcasecmp($oms->vword, "no") === 0) {
+                $oms->os[] = new OptionMatcher($this, "=", null);
+                return true;
+            }
+        }
+        return false;
+    }
     function example_searches() {
         return ["has" => ["has:{$this->search_keyword()}", $this],
-                "yes" => ["{$this->search_keyword()}:yes", $this]];
+                "yes" => ["{$this->search_keyword()}:any", $this]];
     }
-
     function add_search_completion(&$res) {
         array_push($res, "has:{$this->search_keyword()}",
                    "opt:{$this->search_keyword()}");
@@ -789,44 +800,27 @@ class SelectorPaperOption extends PaperOption {
         return $j;
     }
 
+    function parse_search($oms) {
+        $vs = $this->selector_abbrev_matcher()->find_all($oms->vword);
+        if (empty($vs)) {
+            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->vword) . "” matches no options.";
+            return false;
+        } else if (count($vs) === 1) {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $vs[0]);
+            return true;
+        } else if ($oms->compar === "=" || $oms->compar === "!=") {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $vs);
+            return true;
+        } else {
+            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->vword) . "” matches more than one option.";
+            return false;
+        }
+    }
     function example_searches() {
         $x = parent::example_searches();
         if (($search = $this->selector_option_search(2)))
             $x["selector"] = [$search, $this, $this->selector[1]];
         return $x;
-    }
-    function parse_selector_search($oname, $compar, $oval) {
-        // Special-case handling for 'yes'/'no'.
-        if ($oval === ""
-            || strcasecmp($oval, "yes") === 0
-            || strcasecmp($oval, "no") === 0) {
-            $oyes = $ono = 0;
-            foreach ($this->selector as $k => $v) {
-                if (strcasecmp($v, "yes") === 0)
-                    $oyes = $k + 1;
-                else if (strcasecmp($v, "no") === 0)
-                    $ono = $k + 1;
-            }
-            if ($oval === "" || strcasecmp($oval, "yes") === 0) {
-                if ($oyes)
-                    return new OptionMatcher($this, $compar, $oyes);
-                else
-                    return new OptionMatcher($this, "!=", null);
-            } else {
-                if ($ono)
-                    return new OptionMatcher($this, $compar, $ono);
-                else
-                    return new OptionMatcher($this, "=", null);
-            }
-        }
-
-        $xval = $this->selector_abbrev_matcher()->find_all($oval);
-        if (empty($xval)) {
-            return "“" . htmlspecialchars($oval) . "” doesn’t match any " . htmlspecialchars($oname) . " values.";
-        } else if (count($xval) > 1) {
-            return "“" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($compar) . ".";
-        }
-        return new OptionMatcher($this, $compar, array_map(function ($x) { return $x + 1; }, $xval));
     }
 
     function change_type(PaperOption $o, $upgrade, $change_values) {
@@ -1040,6 +1034,17 @@ class NumericPaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
 
+    function parse_search($oms) {
+        if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oms->vword, $m)) {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, intval($m[1]));
+            return true;
+        } else if (parent::parse_search($oms)) {
+            return true;
+        } else {
+            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->vword) . "” is not an integer.";
+            return false;
+        }
+    }
     function example_searches() {
         $x = parent::example_searches();
         $x["numeric"] = array("{$this->search_keyword()}:>100", $this);
@@ -1117,6 +1122,16 @@ class TextPaperOption extends PaperOption {
         $xt->display_space = +$m[1];
         $xt->title = "Multiline text ({$m[1]} lines)";
         return $xt;
+    }
+
+    function parse_search($oms) {
+        if ($oms->compar === "=" || $oms->compar === "!=") {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "text");
+            return true;
+        } else {
+            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
+            return false;
+        }
     }
 
     function value_present(PaperOptionValue $ov) {
@@ -1234,6 +1249,20 @@ class AttachmentsPaperOption extends PaperOption {
             array_multisort($data_array, SORT_NUMERIC, $values);
     }
 
+    function parse_search($oms) {
+        if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oms->vword, $m)) {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $m[1], "attachment-count");
+            return true;
+        } else if (parent::parse_search($oms)) {
+            return true;
+        } else if ($oms->compar === "=" || $oms->compar === "!=") {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "attachment-name");
+            return true;
+        } else {
+            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
+            return false;
+        }
+    }
     function example_searches() {
         $x = parent::example_searches();
         $x["attachment-count"] = array("{$this->search_keyword()}:>2", $this);
