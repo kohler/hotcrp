@@ -797,15 +797,17 @@ class SelectorPaperOption extends PaperOption {
     }
     function parse_selector_search($oname, $compar, $oval) {
         // Special-case handling for 'yes'/'no'.
-        if ($oval === "" || strcasecmp($oval, "yes") == 0 || strcasecmp($oval, "no") == 0) {
+        if ($oval === ""
+            || strcasecmp($oval, "yes") === 0
+            || strcasecmp($oval, "no") === 0) {
             $oyes = $ono = 0;
             foreach ($this->selector as $k => $v) {
-                if (strcasecmp($v, "yes") == 0)
+                if (strcasecmp($v, "yes") === 0)
                     $oyes = $k + 1;
-                else if (strcasecmp($v, "no") == 0)
+                else if (strcasecmp($v, "no") === 0)
                     $ono = $k + 1;
             }
-            if ($oval === "" || strcasecmp($oval, "yes") == 0) {
+            if ($oval === "" || strcasecmp($oval, "yes") === 0) {
                 if ($oyes)
                     return new OptionMatcher($this, $compar, $oyes);
                 else
@@ -818,16 +820,13 @@ class SelectorPaperOption extends PaperOption {
             }
         }
 
-        $xval = Text::simple_search($oval, $this->selector);
-        if (empty($xval))
+        $xval = $this->selector_abbrev_matcher()->find_all($oval);
+        if (empty($xval)) {
             return "“" . htmlspecialchars($oval) . "” doesn’t match any " . htmlspecialchars($oname) . " values.";
-        else if (count($xval) == 1) {
-            reset($xval);
-            return new OptionMatcher($this, $compar, key($xval) + 1);
-        } else if ($compar !== "=" && $compar !== "!=")
+        } else if (count($xval) > 1) {
             return "“" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($compar) . ".";
-        else
-            return new OptionMatcher($this, $compar, array_map(function ($x) { return $x + 1; }, array_keys($xval)));
+        }
+        return new OptionMatcher($this, $compar, array_map(function ($x) { return $x + 1; }, $xval));
     }
 
     function change_type(PaperOption $o, $upgrade, $change_values) {
@@ -860,7 +859,7 @@ class SelectorPaperOption extends PaperOption {
                 echo '<div class="checki"><label><span class="checkc">',
                     Ht::radio($this->formid, $val + 1, $val + 1 == $reqv,
                         ["data-default-checked" => $val + 1 == $ov->value]),
-                    ' </span>', htmlspecialchars($text), '</label></div>';
+                    ' </span>', htmlspecialchars($text), '</label></div>';
             }
         }
         echo $pt->messages_at($this->formid), "</div></div>\n\n";
