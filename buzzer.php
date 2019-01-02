@@ -14,7 +14,7 @@ if ($Me->privChair) {
     });
     $kchange = false;
     // delete old kiosks
-    while (count($kiosks)
+    while (!empty($kiosks)
            && (count($kiosks) > 12 || current($kiosks)->update_at <= $Now - 172800)) {
         array_shift($kiosks);
         $kchange = true;

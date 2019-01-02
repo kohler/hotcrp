@@ -27,11 +27,10 @@ function make_row(hc, idx, paper) {
         hc.push_pop(text_to_html(paper.title));
     else
         hc.push_pop("<i>No title</i>");
+    hc.push("<td class=\"tracker-table remargin-right tracker-elapsed\">", "</td>");
     if (idx == 0)
-        hc.push("<td id=\"tracker-elapsed\" class=\"tracker-table remargin-right\"></td>");
-    else
-        hc.push("<td class=\"tracker-table remargin-right\"></td>");
-    hc.pop();
+        hc.push("<span id=\"tracker-elapsed\"></span>");
+    hc.pop_n(2);
     if (show_papers && pcconf) {
         hc.push("<tr class=\"tracker-table" + idx + " b\">", "</tr>");
         hc.push("<td class=\"tracker-table remargin-left\" colspan=\"2\"></td>");
