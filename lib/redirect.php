@@ -102,6 +102,7 @@ function ensure_session($flags = 0) {
         session_commit();
 
         session_id($new_sid);
+        $_COOKIE[$sn] = $new_sid;
     } else {
         $session_data = null;
     }
