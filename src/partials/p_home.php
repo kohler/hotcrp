@@ -30,15 +30,15 @@ class Home_Partial {
         else if (isset($qreq->signin) && !$user->conf->opt("httpAuthLogin"))
             $user = LoginHelper::logout($user, false);
         // signin
-        if ($user->conf->opt("httpAuthLogin"))
+        if ($user->conf->opt("httpAuthLogin")) {
             LoginHelper::check_http_auth($user, $qreq);
-        else if (isset($qreq->signin))
+        } else if ($qreq->signin) {
             LoginHelper::login_redirect($user->conf, $qreq);
-        else if ((isset($qreq->signin) || isset($qreq->signout))
-                 && isset($qreq->post))
+        } else if (($qreq->signin || $qreq->signout) && $qreq->post) {
             SelfHref::redirect($qreq);
-        else if (isset($qreq->postlogin))
+        } else if (isset($qreq->postlogin)) {
             LoginHelper::check_postlogin($user, $qreq);
+        }
         // disabled
         if (!$user->is_empty() && $user->is_disabled()) {
             $user->conf->header("Account disabled", "home", ["action_bar" => false]);
