@@ -4,25 +4,17 @@
 
 class LoginHelper {
     static function logout(Contact $user, $explicit) {
-        if (!$user->is_empty() && $explicit && !$user->conf->opt("httpAuthLogin"))
-            $user->conf->confirmMsg("You have been signed out. Thanks for using the system.");
-        if (isset($_SESSION))
-            unset($_SESSION["trueuser"], $_SESSION["last_actas"],
-                  $_SESSION["updatecheck"], $_SESSION["sg"],
-                  $_SESSION["u"], $_SESSION["us"]);
-        // clear all conference session info, except maybe capabilities
-        $capabilities = $user->conf->session("capabilities");
-        if (isset($_SESSION))
-            unset($_SESSION[$user->conf->dsn]);
-        if (!$explicit && $capabilities)
-            $user->conf->save_session("capabilities", $capabilities);
-        if ($explicit) {
-            ensure_session();
-            unset($_SESSION["login_bounce"]);
-            if ($user->conf->opt("httpAuthLogin")) {
-                $_SESSION["reauth"] = true;
-                go("");
-            }
+        global $Now;
+        if (isset($_SESSION)) {
+            $_SESSION = [];
+            session_commit();
+        }
+        if ($explicit && $user->conf->opt("httpAuthLogin")) {
+            ensure_session(ENSURE_SESSION_REGENERATE_ID);
+            $_SESSION["reauth"] = true;
+            go("");
+        } else if ($explicit) {
+            kill_session();
         }
         $user = new Contact(null, $user->conf);
         return $user->activate(null);
@@ -173,7 +165,7 @@ class LoginHelper {
         $xuser->mark_login();
 
         // activate and redirect
-        ensure_session();
+        ensure_session(ENSURE_SESSION_REGENERATE_ID);
         $_SESSION["u"] = $xuser->email;
         $_SESSION["trueuser"] = (object) array("email" => $xuser->email);
         $_SESSION["testsession"] = true;

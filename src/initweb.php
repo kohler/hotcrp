@@ -71,7 +71,7 @@ function initialize_user() {
             $Qreq->approve_post();
         }
     }
-    ensure_session(true);
+    ensure_session(ENSURE_SESSION_ALLOW_EMPTY);
 
     // load current user
     $Me = null;

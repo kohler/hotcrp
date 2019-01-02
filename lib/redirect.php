@@ -70,26 +70,74 @@ function set_session_name(Conf $conf) {
                               $params["httponly"]);
 }
 
-function ensure_session($only_nonempty = false) {
-    global $Conf;
-    if (session_id() !== "")
+define("ENSURE_SESSION_ALLOW_EMPTY", 1);
+if (function_exists("session_create_id")) {
+    define("ENSURE_SESSION_REGENERATE_ID", 2);
+} else {
+    define("ENSURE_SESSION_REGENERATE_ID", 0);
+}
+
+function ensure_session($flags = 0) {
+    global $Conf, $Now;
+    if (session_id() !== ""
+        && !($flags & ENSURE_SESSION_REGENERATE_ID)) {
         return;
+    }
 
     $sn = session_name();
     $has_cookie = isset($_COOKIE[$sn]);
-    if ($only_nonempty && !$has_cookie)
+    if (!$has_cookie && ($flags & ENSURE_SESSION_ALLOW_EMPTY)) {
         return;
+    }
+
+    if ($has_cookie && ($flags & ENSURE_SESSION_REGENERATE_ID)) {
+        // choose new id, mark old session as deleted
+        if (session_id() === "") {
+            session_start();
+        }
+        $session_data = $_SESSION;
+        $new_sid = session_create_id();
+        $_SESSION["nextsid"] = $new_sid;
+        $_SESSION["deletedat"] = $Now;
+        session_commit();
+
+        session_id($new_sid);
+    } else {
+        $session_data = null;
+    }
 
     session_start();
 
+    // maybe upgrade from old session
+    while (isset($_SESSION["deletedat"])) {
+        if ($_SESSION["deletedat"] < $Now - 300) {
+            // maybe a session fixation attack, maybe something else
+            $_SESSION = [];
+        } else if (isset($_SESSION["nextsid"])) {
+            $new_sid = $_SESSION["nextsid"];
+            session_commit();
+            session_id($new_sid);
+            $_COOKIE[$sn] = $new_sid;
+            session_start();
+        } else {
+            break;
+        }
+    }
+
+    // transfer data from previous session if regenerating id
+    foreach ($session_data ? : [] as $k => $v) {
+        $_SESSION[$k] = $v;
+    }
+
     // avoid session fixation
     if (empty($_SESSION)) {
-        if ($has_cookie)
+        if ($has_cookie && !($flags & ENSURE_SESSION_REGENERATE_ID)) {
             session_regenerate_id();
+        }
         $_SESSION["testsession"] = false;
     } else if ($Conf->_session_handler
                && is_callable([$Conf->_session_handler, "refresh_cookie"])) {
-        call_user_func([$Conf->_session_handler, "refresh_cookie"], $sn);
+        call_user_func([$Conf->_session_handler, "refresh_cookie"], $sn, session_id());
     }
 }
 
@@ -109,4 +157,17 @@ function post_value($allow_empty = false) {
         $sid = ".empty";
     }
     return urlencode($sid);
+}
+
+function kill_session() {
+    global $Now;
+    if (($sn = session_name())
+        && isset($_COOKIE[$sn])) {
+        if (session_id() !== "") {
+            session_commit();
+        }
+        $params = session_get_cookie_params();
+        setcookie($sn, "", $Now - 86400, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
+        $_COOKIE[$sn] = "";
+    }
 }
