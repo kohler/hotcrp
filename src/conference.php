@@ -3190,7 +3190,7 @@ class Conf {
             $title = preg_replace(",(?: |&nbsp;|\302\240)+,", " ", $title);
             $title = str_replace("&#x2215;", "-", $title);
         }
-        if ($title && $title !== "Home")
+        if ($title && $title !== "Home" && $title !== "Sign in")
             echo $title, " - ";
         echo htmlspecialchars($this->short_name), "</title>\n</head>\n";
 
