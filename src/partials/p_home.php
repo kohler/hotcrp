@@ -16,22 +16,22 @@ class Home_Partial {
             $qreq->signin = $qreq->get("signin", "go");
         }
         // clean up request: no signin without email/action
-        if (!isset($qreq->email) || !isset($qreq->action)) {
-            unset($qreq->signin);
-        }
+        $signin = $qreq->signin && isset($qreq->email) && isset($qreq->action);
         // clean up request: ignore signin to same email
-        if ($qreq->signin
+        if ($signin
             && !$user->is_empty()
             && strcasecmp($qreq->email, $user->email) === 0) {
             unset($qreq->signin);
+            $signin = false;
         }
         // CSRF protection: ignore unvalidated signin/signout for known users
-        if (($qreq->signin || $qreq->signout)
+        if (($signin || $qreq->signout)
             && !$qreq->post_ok()) {
-            $type = isset($qreq->signin) ? "signin" : "signout";
+            $type = $signin ? "signin" : "signout";
             if (!$user->is_empty()) {
                 error_log("ignoring unvalidated $type {$user->email} " . session_id());
                 unset($qreq->signin, $qreq->signout);
+                $signin = false;
             } else {
                 error_log("warning: unvalidated $type " . session_id());
             }
@@ -46,9 +46,9 @@ class Home_Partial {
         // signin
         if ($user->conf->opt("httpAuthLogin")) {
             LoginHelper::check_http_auth($user, $qreq);
-        } else if ($qreq->signin) {
+        } else if ($signin) {
             LoginHelper::login_redirect($user->conf, $qreq);
-        } else if (($qreq->signin || $qreq->signout) && $qreq->post) {
+        } else if (($signin || $qreq->signout) && $qreq->post) {
             SelfHref::redirect($qreq);
         } else if (isset($qreq->postlogin)) {
             LoginHelper::check_postlogin($user, $qreq);
