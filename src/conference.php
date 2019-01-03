@@ -2963,7 +2963,7 @@ class Conf {
     //
 
     static function msg_on(Conf $conf = null, $type, $text) {
-        if (PHP_SAPI == "cli") {
+        if (PHP_SAPI === "cli") {
             if (is_array($text))
                 $text = join("\n", $text);
             if ($type === "xmerror" || $type === "merror" || $type === 2)
@@ -2974,7 +2974,7 @@ class Conf {
         } else if ($conf && !$conf->headerPrinted) {
             ensure_session();
             $_SESSION[$conf->dsn]["msgs"][] = [$type, $text];
-        } else if ($type[0] == "x" || is_int($type))
+        } else if ($type[0] === "x" || is_int($type))
             echo Ht::msg($text, $type);
         else {
             if (is_array($text))
