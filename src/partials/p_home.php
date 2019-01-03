@@ -186,7 +186,6 @@ class Home_Partial {
 
         $conf = $user->conf;
         echo '<div class="homegrp">', $conf->_("Sign in to submit or review papers."), '</div>';
-        $passwordFocus = !Ht::control_class("email") && Ht::control_class("password");
         echo '<div class="homegrp foldo" id="homeacct">',
             Ht::form($conf->hoturl("index", ["post" => post_value(true)])),
             '<div class="f-contain">';
@@ -194,7 +193,8 @@ class Home_Partial {
             && ($x = $conf->opt("contactdb_loginFormHeading")))
             echo $x;
         $password_reset = $conf->session("password_reset");
-        $focus_email = !Ht::problem_status_at("password");
+        $focus_email = !Ht::problem_status_at("password")
+            && (!$qreq->email || Ht::problem_status_at("email"));
         if ($password_reset && $password_reset->time < $Now - 900) {
             $password_reset = null;
             $conf->save_session("password_reset", null);
