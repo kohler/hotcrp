@@ -22,7 +22,7 @@ function make_session_name($conf, $n) {
     if (($x = $conf->opt("confid"))) {
         $n = preg_replace(',\*|\$\{confid\}|\$confid\b,', $x, $n);
     }
-    return preg_replace_callback(',[^A-Ya-z0-9],', function ($m) {
+    return preg_replace_callback(',[^-_A-Ya-z0-9],', function ($m) {
         return "Z" . dechex(ord($m[0]));
     }, $n);
 }
