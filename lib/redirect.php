@@ -97,7 +97,6 @@ function ensure_session($flags = 0) {
         }
         $session_data = $_SESSION;
         $new_sid = session_create_id();
-        $_SESSION["nextsid"] = $new_sid;
         $_SESSION["deletedat"] = $Now;
         session_commit();
 
@@ -109,20 +108,9 @@ function ensure_session($flags = 0) {
 
     session_start();
 
-    // maybe upgrade from old session
-    while (isset($_SESSION["deletedat"])) {
-        if ($_SESSION["deletedat"] < $Now - 300) {
-            // maybe a session fixation attack, maybe something else
-            $_SESSION = [];
-        } else if (isset($_SESSION["nextsid"])) {
-            $new_sid = $_SESSION["nextsid"];
-            session_commit();
-            session_id($new_sid);
-            $_COOKIE[$sn] = $new_sid;
-            session_start();
-        } else {
-            break;
-        }
+    // maybe kill old session
+    if (isset($_SESSION["deletedat"]) && $_SESSION["deletedat"] < $Now - 30) {
+        $_SESSION = [];
     }
 
     // transfer data from previous session if regenerating id
