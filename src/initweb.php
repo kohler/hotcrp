@@ -17,8 +17,6 @@ if ($_SERVER["REQUEST_METHOD"] !== "GET"
 
 // Collect $Qreq
 $Qreq = make_qreq();
-if (isset($Qreq->i))
-    error_log("Request parameter with name=i");
 
 // Check for redirect to https
 if ($Conf->opt("redirectToHttps"))
@@ -86,6 +84,15 @@ function initialize_user() {
         if ($nav->shifted_path !== ""
             && substr($nav->shifted_path, 0, 2) === "u/") {
             $uindex = (int) substr($nav->shifted_path, 2);
+        } else if ($nav->shifted_path === ""
+                   && isset($_GET["i"])
+                   && $_SERVER["REQUEST_METHOD"] === "GET") {
+            foreach ($_SESSION["us"] as $i => $u) {
+                if (strcasecmp($_GET["i"], $u) === 0) {
+                    $uindex = $i;
+                    break;
+                }
+            }
         }
         if ($uindex >= 0 && $uindex < count($_SESSION["us"])) {
             $trueemail = $_SESSION["us"][$uindex];
@@ -106,6 +113,12 @@ function initialize_user() {
             }
             Navigation::redirect_base("u/" . $uindex . "/" . $page . $nav->query);
         }
+    }
+    if (isset($_GET["i"])
+        && $_SERVER["REQUEST_METHOD"] === "GET"
+        && $trueemail
+        && strcasecmp($_GET["i"], $trueemail) !== 0) {
+        Conf::msg_error("You are not signed in as " . htmlspecialchars($_GET["i"]) . ". <a href=\"" . $Conf->hoturl("index", ["signin" => 1, "email" => $_GET["i"]]) . "\">Sign in</a>");
     }
 
     // look up and activate user
