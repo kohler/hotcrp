@@ -8,12 +8,13 @@ class NavigationState {
     public $protocol;           // "PROTOCOL://"
     public $host;               // "HOST"
     public $server;             // "PROTOCOL://HOST[:PORT]"
-    public $site_path;          // "/SITEPATH/"; ends in /
-    public $site_path_relative;
-    public $base_path;
-    public $base_path_relative;
+    public $site_path;          // "/SITEPATH/"; always ends in /
+    public $site_path_relative; // "/SITEPATH/", "../"+, or ""
+    public $base_path;          // "/BASEPATH/"; always ends in /; $site_path prefix
+    public $base_path_relative; // "/BASEPATH/", "../"+, or ""
     public $page;               // "PAGE" or "index" (.php suffix stripped)
     public $path;               // "/PATH" or ""
+    public $shifted_path;
     public $query;              // "?QUERY" or ""
     public $php_suffix;
     public $request_uri;
@@ -96,6 +97,7 @@ class NavigationState {
             && substr($this->page, $pagelen - 4) === ".php")
             $this->page = substr($this->page, 0, $pagelen - 4);
         $this->path = $m[2];
+        $this->shifted_path = "";
         $this->query = $m[3];
 
         // detect $site_path_relative
@@ -192,8 +194,12 @@ class NavigationState {
         }
         if ($n > 0)
             return false;
-        $this->site_path .= substr($path, $pos);
-        $this->site_path_relative = substr($this->site_path_relative, 3 * $nx);
+        $this->site_path .= substr($path, 0, $pos);
+        if (substr($this->site_path_relative, 0, 3) === "../")
+            $this->site_path_relative = substr($this->site_path_relative, 3 * $nx);
+        else
+            $this->site_path_relative = $this->site_path;
+        $this->shifted_path .= substr($path, 0, $pos);
         $spos = $pos;
         if ($pos < strlen($path) && ($spos = strpos($path, "/", $pos)) === false)
             $spos = strlen($path);
@@ -291,6 +297,10 @@ class Navigation {
         return self::$s->shift_path_components($n);
     }
 
+    static function shifted_path() {
+        return self::$s->shifted_path;
+    }
+
     static function set_page($page) {
         return (self::$s->page = $page);
     }
@@ -328,6 +338,10 @@ class Navigation {
 
     static function redirect_site($site_url) {
         self::redirect(self::site_absolute() . $site_url);
+    }
+
+    static function redirect_base($base_url) {
+        self::redirect(self::base_absolute() . $base_url);
     }
 
     static function redirect_http_to_https($allow_http_if_localhost = false) {
