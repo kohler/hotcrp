@@ -164,11 +164,36 @@ class LoginHelper {
         // mark activity
         $xuser->mark_login();
 
-        // activate and redirect
+        // store authentication
         ensure_session(ENSURE_SESSION_REGENERATE_ID);
-        $_SESSION["u"] = $xuser->email;
-        $_SESSION["trueuser"] = (object) array("email" => $xuser->email);
+        if (isset($_SESSION["us"])) {
+            $us = $_SESSION["us"];
+        } else if (isset($_SESSION["u"])) {
+            $us = [$_SESSION["u"]];
+        } else {
+            $us = [];
+        }
+        $uindex = null;
+        foreach ($us as $i => $u) {
+            if (strcasecmp($u, $xuser->email) === 0) {
+                $uindex = $i;
+                break;
+            }
+        }
+        if ($uindex === null) {
+            $uindex = count($us);
+            $us[] = $xuser->email;
+            if ($uindex > 0) {
+                $_SESSION["us"] = $us;
+            }
+        }
+        if ($uindex === 0) {
+            $_SESSION["u"] = $xuser->email;
+            $_SESSION["trueuser"] = (object) array("email" => $xuser->email);
+        }
         $_SESSION["testsession"] = true;
+
+        // activate
         $user = $xuser->activate($qreq);
         $conf->save_session("freshlogin", true);
         $conf->save_session("password_reset", null);
@@ -179,8 +204,17 @@ class LoginHelper {
             self::first_user($user, "", false);
         }
 
-        go($conf->hoturl("index", ["go" => $qreq->go, "postlogin" => 1]));
-        exit;
+        // redirect
+        $nav = Navigation::get();
+        $url = $nav->server . $nav->base_path;
+        if (count($us) > 1) {
+            $url .= "u/" . $uindex . "/";
+        }
+        $url .= "?postlogin=1";
+        if ($qreq->go !== null) {
+            $url .= "&go=" . urlencode($qreq->go);
+        }
+        Navigation::redirect($url);
     }
 
     static function check_postlogin(Contact $user, Qrequest $qreq) {
