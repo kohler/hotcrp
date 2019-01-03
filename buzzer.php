@@ -73,7 +73,7 @@ if (!$Me->isPC && !$Me->tracker_kiosk_state)
 $Conf->header("Discussion status", "buzzer", ["action_bar" => false, "class" => "hide-tracker"]);
 
 echo '<div id="tracker-table" class="demargin" style="margin-top:1em"></div>';
-echo "<audio id=\"tracker-sound\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
+echo "<audio id=\"tracker-sound\" crossorigin=\"anonymous\" preload=\"auto\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
 
 echo Ht::form(hoturl_post("buzzer"));
 echo '<table style="margin-top:3em"><tr>';

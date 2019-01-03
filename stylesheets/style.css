@@ -3365,6 +3365,13 @@ body {
 .tracker-table0.b > td.tracker-table {
 	border-bottom: 1px solid #f33360;
 }
+.tracker-table0.change {
+	animation: 20s ease-in-out tracker-table0-change;
+}
+@keyframes tracker-table0-change {
+	from, 1%, 3%, 5%, 7%, 9%, 50% { background-color: #ffff00; }
+	2%, 4%, 6%, 8%, to { background-color: #ffffff; }
+}
 .tracker-table {
 	padding: 0.25em 0.5em 0.25em 0;
 }

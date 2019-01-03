@@ -1,5 +1,5 @@
 var start_buzzer_page = (function ($) {
-var info, has_format, status, muted, show_papers;
+var info, has_format, status, muted, show_papers, last_table;
 
 function make_row(hc, idx, paper) {
     var pcconf;
@@ -48,21 +48,25 @@ function make_table() {
         hc.push("<table style=\"width:100%\">", "</table>");
 
         hc.push("<tbody>", "</tbody>");
-        for (var i = 0; i < dl.tracker.papers.length; ++i)
+        for (var i = 0; i < dl.tracker.papers.length; ++i) {
             make_row(hc, i, dl.tracker.papers[i]);
+        }
     }
-    $("#tracker-table").html(hc.render());
+    var this_table = hc.render();
+    if (this_table !== last_table) {
+        $("#tracker-table").html(this_table);
+        last_table = this_table;
+    }
     if (dl.tracker && dl.tracker.position != null)
         hotcrp_deadlines.tracker_show_elapsed();
     if (has_format)
         render_text.on_page();
-    if (status != "open" && (dl.tracker_status || "off") != "off"
-        && status != dl.tracker_status
-        && !muted) {
-        var sound = $("#tracker-sound")[0];
-        sound.pause();
-        sound.currentTime = 0;
-        sound.play();
+    if (status !== "open"
+        && (dl.tracker_status || "off") !== "off"
+        && status !== dl.tracker_status) {
+        $("#tracker-table .tracker-table0").addClass("change");
+        if (!muted)
+            play(false);
     }
     status = dl.tracker_status || "off";
 }
@@ -70,13 +74,36 @@ $(window).on("hotcrpdeadlines", function (evt, dl) {
     $(make_table);
 });
 
+function play(stop) {
+    var sound = $("#tracker-sound")[0],
+        stopper = function () {
+            sound.removeEventListener("play", stopper, false);
+            stopper = false;
+            sound.pause();
+        };
+    sound.load();
+    if (stop)
+        sound.addEventListener("play", stopper, false);
+    var promise = sound.play();
+    if (promise)
+        promise.catch(function (err) {
+            if (stopper !== false) {
+                fold($("#tracker-table-mute"), null, false);
+                muted = true;
+                sound.removeEventListener("play", stopper, false);
+            }
+        });
+}
+
 $("#tracker-table-mute").on("click", function () {
     fold(this);
     muted = $(this).hasClass("foldo");
+    if (!muted)
+        play(true);
 });
 
 function do_show_papers() {
-    if (!show_papers != !this.checked) {
+    if (!show_papers !== !this.checked) {
         show_papers = !show_papers;
         make_table();
     }
@@ -87,10 +114,9 @@ function do_kiosk() {
     hc.push('<p>Kiosk mode is a discussion status page with no other site privileges. It’s safe to leave a browser in kiosk mode open in the hallway.</p>');
     hc.push('<p><strong>Kiosk mode will sign your browser out of the site.</strong> Do not use kiosk mode on your main browser.</p>');
     hc.push('<p>These URLs access kiosk mode directly:</p>');
-    hc.push('<table><tbody><tr><td class="lcaption nw">With papers</td>'
-            + '<td>' + escape_entities(info.kiosk_urls[1]) + '</td></tr>'
-            + '<tr><td class="lcaption nw">Conflicts only</td>'
-            + '<td>' + escape_entities(info.kiosk_urls[0]) + '</td></tr></tbody></table>');
+    hc.push('<dl><dt>With papers</dt><dd>' + escape_entities(info.kiosk_urls[1])
+            + '</dd><dt>Conflicts only</dt><dd>' + escape_entities(info.kiosk_urls[0])
+            + '</dd></dl>');
     if (show_papers)
         hc.push('<input type="hidden" name="buzzer_showpapers" value="1" />');
     hc.push_actions(['<button type="submit" name="signout_to_kiosk" value="1">Enter kiosk mode</button>',
@@ -110,5 +136,7 @@ return function (initial_info) {
         var site = $("#header-site h1").find(".header-site-name").html();
         $("#header-site h1").html('<span class="header-site-name">' + site + '</span>');
     }
+    if (!muted)
+        play(true);
 };
 })($);
