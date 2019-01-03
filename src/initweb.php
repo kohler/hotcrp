@@ -73,24 +73,58 @@ function initialize_user() {
     }
     ensure_session(ENSURE_SESSION_ALLOW_EMPTY);
 
-    // load current user
-    $Me = null;
-    if (!isset($_SESSION["u"]) && isset($_SESSION["trueuser"]))
+    // upgrade session format
+    if (!isset($_SESSION["u"]) && isset($_SESSION["trueuser"])) {
         $_SESSION["u"] = $_SESSION["trueuser"]->email;
+    }
+
+    // determine user
+    $nav = Navigation::get();
     $trueemail = isset($_SESSION["u"]) ? $_SESSION["u"] : null;
-    if ($trueemail)
+    if (isset($_SESSION["us"])) {
+        $uindex = -1;
+        if ($nav->shifted_path !== ""
+            && substr($nav->shifted_path, 0, 2) === "u/") {
+            $uindex = (int) substr($nav->shifted_path, 2);
+        }
+        if ($uindex >= 0 && $uindex < count($_SESSION["us"])) {
+            $trueemail = $_SESSION["us"][$uindex];
+        } else {
+            $uindex = 0;
+            foreach ($_SESSION["us"] as $i => $u) {
+                if (strcasecmp($trueemail, $u) === 0) {
+                    $uindex = $i;
+                    break;
+                }
+            }
+        }
+        if ($nav->shifted_path === ""
+            && $_SERVER["REQUEST_METHOD"] === "GET") {
+            $page = "";
+            if ($nav->page !== "index" || $nav->path !== "") {
+                $page .= $nav->page . $nav->php_suffix . $nav->path;
+            }
+            Navigation::redirect_base("u/" . $uindex . "/" . $page . $nav->query);
+        }
+    }
+
+    // look up and activate user
+    $Me = null;
+    if ($trueemail) {
         $Me = $Conf->user_by_email($trueemail);
-    if (!$Me)
+    }
+    if (!$Me) {
         $Me = new Contact($trueemail ? (object) ["email" => $trueemail] : null);
+    }
     $Me = $Me->activate($Qreq);
 
     // redirect if disabled
     if ($Me->is_disabled()) {
-        if (Navigation::page() === "api")
+        if ($nav->page === "api") {
             json_exit(["ok" => false, "error" => "Your account is disabled."]);
-        else if (Navigation::page() !== "index"
-                 && Navigation::page() !== "resetpassword")
+        } else if ($nav->page !== "index" && $nav->page !== "resetpassword") {
             Navigation::redirect_site(hoturl_site_relative("index"));
+        }
     }
 
     // if bounced through login, add post data
