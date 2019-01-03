@@ -2517,13 +2517,14 @@ class Conf {
         $anchor = "";
         if (is_array($options)) {
             $x = "";
-            foreach ($options as $k => $v)
+            foreach ($options as $k => $v) {
                 if ($v === null || $v === false)
                     /* skip */;
-                else if ($k !== "anchor")
-                    $x .= ($x === "" ? "" : $amp) . $k . "=" . urlencode($v);
-                else
+                else if ($k === "anchor")
                     $anchor = "#" . urlencode($v);
+                else
+                    $x .= ($x === "" ? "" : $amp) . $k . "=" . urlencode($v);
+            }
             $options = $x;
         } else if (is_string($options)) {
             if (($pos = strpos($options, "#"))) {
@@ -2598,10 +2599,11 @@ class Conf {
         $need_site_path = false;
         if ($page === "index") {
             $expect = "index" . Navigation::php_suffix();
-            if (substr($t, 0, strlen($expect)) === $expect
-                && ($t === $expect || $t[strlen($expect)] === "?" || $t[strlen($expect)] === "#")) {
+            $lexpect = strlen($expect);
+            if (substr($t, 0, $lexpect) === $expect
+                && ($t === $expect || $t[$lexpect] === "?" || $t[$lexpect] === "#")) {
                 $need_site_path = true;
-                $t = substr($t, strlen($expect));
+                $t = substr($t, $lexpect);
             }
         }
         if (($flags & self::HOTURL_ABSOLUTE) || $this !== Conf::$g)
@@ -3217,8 +3219,13 @@ class Conf {
                 $p .= "; secure";
             Ht::stash_script("siteurl_postvalue=" . json_encode(post_value()) . ";siteurl_cookie_params=" . json_encode($p));
         }
-        if (($urldefaults = hoturl_defaults()))
+        if (self::$hoturl_defaults) {
+            $urldefaults = [];
+            foreach (self::$hoturl_defaults as $k => $v) {
+                $urldefaults[$k] = urldecode($v);
+            }
             Ht::stash_script("siteurl_defaults=" . json_encode_browser($urldefaults) . ";");
+        }
         Ht::stash_script("assetsurl=" . json_encode_browser($this->opt["assetsUrl"]) . ";");
         $huser = (object) array();
         if ($Me && $Me->email)

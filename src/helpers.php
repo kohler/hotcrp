@@ -40,19 +40,6 @@ function hoturl_add_raw($url, $component) {
     return $url . (strpos($url, "?") === false ? "?" : "&") . $component;
 }
 
-function hoturl_defaults($options = array()) {
-    foreach ($options as $k => $v)
-        if ($v !== null)
-            Conf::$hoturl_defaults[$k] = urlencode($v);
-        else
-            unset(Conf::$hoturl_defaults[$k]);
-    $ret = array();
-    if (Conf::$hoturl_defaults)
-        foreach (Conf::$hoturl_defaults as $k => $v)
-            $ret[$k] = urldecode($v);
-    return $ret;
-}
-
 function hoturl_site_relative($page, $options = null) {
     global $Conf;
     return $Conf->hoturl($page, $options, Conf::HOTURL_SITE_RELATIVE);

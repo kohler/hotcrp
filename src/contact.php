@@ -369,7 +369,7 @@ class Contact {
             $actascontact = $this->actas_user($actas, $trueemail);
             if ($actascontact !== $this) {
                 if (strcasecmp($actascontact->email, $trueemail) !== 0) {
-                    hoturl_defaults(array("actas" => $actascontact->email));
+                    Conf::$hoturl_defaults["actas"] = urlencode($actascontact->email);
                     $_SESSION["last_actas"] = $actascontact->email;
                 }
                 if ($this->privChair)
