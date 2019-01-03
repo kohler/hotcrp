@@ -32,10 +32,15 @@ class NavigationState {
         if (!$this->host && isset($server["SERVER_NAME"]))
             $this->host = $server["SERVER_NAME"];
 
-        if (isset($server["HTTPS"]) && $server["HTTPS"] != "off")
-            list($x, $xport) = array("https://", 443);
-        else
-            list($x, $xport) = array("http://", 80);
+        if (isset($server["HTTPS"])
+            && $server["HTTPS"] !== ""
+            && $server["HTTPS"] !== "off") {
+            $x = "https://";
+            $xport = 443;
+        } else {
+            $x = "http://";
+            $xport = 80;
+        }
         $this->protocol = $x;
         $x .= $this->host ? : "localhost";
         if (($port = $server["SERVER_PORT"])
