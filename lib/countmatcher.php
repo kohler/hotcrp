@@ -38,9 +38,10 @@ class CountMatcher {
     static function compare($x, $compar, $y) {
         if (!is_int($compar))
             $compar = self::$opmap[$compar];
-        if ($x > $y)
+        $delta = $x - $y;
+        if ($delta > 0.000001)
             return ($compar & 4) !== 0;
-        else if ($x == $y)
+        else if ($delta > -0.000001)
             return ($compar & 2) !== 0;
         else
             return ($compar & 1) !== 0;
