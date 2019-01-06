@@ -788,6 +788,7 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
 
 
 if (!function_exists("random_bytes")) {
+    // PHP 5.6
     function random_bytes($length) {
         $x = @file_get_contents("/dev/urandom", false, null, 0, $length);
         if (($x === false || $x === "")
@@ -795,18 +796,14 @@ if (!function_exists("random_bytes")) {
             $x = openssl_random_pseudo_bytes($length, $strong);
             $x = $strong ? $x : false;
         }
-        return $x === "" ? false : $x;
+        if ($x === false || $x === "")
+            throw new Exception("Cannot obtain $length random bytes");
+        return $x;
     }
 }
 
 function hotcrp_random_password($length = 14) {
     $bytes = random_bytes($length + 10);
-    if ($bytes === false) {
-        $bytes = "";
-        while (strlen($bytes) < $length)
-            $bytes .= sha1(opt("conferenceKey") . pack("V", mt_rand()));
-    }
-
     $l = "a e i o u y a e i o u y a e i o u y a e i o u y a e i o u y b c d g h j k l m n p r s t u v w trcrbrfrthdrchphwrstspswprslcl2 3 4 5 6 7 8 9 - @ _ + = ";
     $pw = "";
     $nvow = 0;

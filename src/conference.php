@@ -269,14 +269,6 @@ class Conf {
         if (isset($this->opt["httpAuthLogin"]) && !$this->opt["httpAuthLogin"])
             unset($this->opt["httpAuthLogin"]);
 
-        // set conferenceKey
-        if (!isset($this->opt["conferenceKey"])) {
-            if (!isset($this->settingTexts["conf_key"])
-                && ($key = random_bytes(32)) !== false)
-                $this->__save_setting("conf_key", 1, $key);
-            $this->opt["conferenceKey"] = get($this->settingTexts, "conf_key", "");
-        }
-
         // set capability key
         if (!get($this->settings, "cap_key")
             && !get($this->opt, "disableCapabilities")
