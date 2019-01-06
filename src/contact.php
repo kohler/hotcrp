@@ -409,8 +409,10 @@ class Contact {
                 $this->capabilities = $caps;
                 ++self::$rights_version;
             }
-            if ($qreq && isset($qreq->cap))
-                $this->activate_capabilities($qreq);
+            if ($qreq && isset($qreq->cap)) {
+                $this->apply_capability_text($qreq->cap);
+                unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
+            }
         }
 
         // Add review tokens from session
@@ -553,15 +555,6 @@ class Contact {
         return $this->_activated
             && isset($_SESSION["u"])
             && strcasecmp($_SESSION["u"], $this->email) !== 0;
-    }
-
-    private function activate_capabilities($qreq) {
-        // Add capabilities from arguments
-        if (($cap_req = $qreq->cap)) {
-            foreach (preg_split(',\s+,', $cap_req) as $cap)
-                $this->apply_capability_text($cap);
-            unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
-        }
     }
 
     function is_empty() {
@@ -844,16 +837,17 @@ class Contact {
     }
 
     function apply_capability_text($text) {
-        if (preg_match(',\A([-+]?)0([1-9][0-9]*)(a)(\S+)\z,', $text, $m)
-            && ($result = $this->conf->ql("select paperId, capVersion from Paper where paperId=$m[2]"))
-            && ($row = edb_orow($result))) {
-            $rowcap = $this->conf->capability_text($row, $m[3]);
-            $text = substr($text, strlen($m[1]));
-            if ($rowcap === $text
-                || $rowcap === str_replace("/", "_", $text))
-                return $this->change_paper_capability((int) $m[2], self::CAP_AUTHORVIEW, $m[1] !== "-");
+        // Add capabilities from arguments
+        foreach (preg_split('{\s+}', $text) as $cap) {
+            if (preg_match('{\A([-+]?)0([1-9][0-9]*)(a)(\S+)\z}', $cap, $m)
+                && ($result = $this->conf->ql("select paperId, capVersion from Paper where paperId=$m[2]"))
+                && ($row = edb_orow($result))) {
+                $rowcap = $this->conf->capability_text($row, $m[3]);
+                $text = substr($text, strlen($m[1]));
+                if ($rowcap === $text)
+                    $this->change_paper_capability((int) $m[2], self::CAP_AUTHORVIEW, $m[1] !== "-");
+            }
         }
-        return null;
     }
 
     private function make_data() {

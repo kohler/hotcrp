@@ -269,14 +269,6 @@ class Conf {
         if (isset($this->opt["httpAuthLogin"]) && !$this->opt["httpAuthLogin"])
             unset($this->opt["httpAuthLogin"]);
 
-        // set capability key
-        if (!get($this->settings, "cap_key")
-            && !get($this->opt, "disableCapabilities")
-            && !(($key = random_bytes(16)) !== false
-                 && ($key = base64_encode($key))
-                 && $this->__save_setting("cap_key", 1, $key)))
-            $this->opt["disableCapabilities"] = true;
-
         // GC old capabilities
         if (get($this->settings, "__capability_gc", 0) < $Now - 86400) {
             foreach (array($this->dblink, $this->contactdb()) as $db)
@@ -1823,8 +1815,11 @@ class Conf {
         // capVersion to a random value; but the only way to get cap_key is
         // database access, which would give you all the capVersions anyway.
 
-        if (!isset($this->settingTexts["cap_key"]))
-            return false;
+        if (!isset($this->settingTexts["cap_key"])) {
+            $key = base64_encode(random_bytes(16));
+            if ((string) $key === "" || !$this->__save_setting("cap_key", 1, $key))
+                return false;
+        }
         $start = "0" . $prow->paperId . $capType;
         $hash = sha1($start . $prow->capVersion . $this->settingTexts["cap_key"], true);
         $suffix = str_replace(array("+", "/", "="), array("-", "_", ""),
