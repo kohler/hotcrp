@@ -93,6 +93,7 @@ etc/.htaccess
 etc/affiliationmatchers.json
 etc/apifunctions.json
 etc/assignmentparsers.json
+etc/capabilityhandlers.json
 etc/emojicodes.json
 etc/formulafunctions.json
 etc/helptopics.json

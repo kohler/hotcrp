@@ -153,6 +153,7 @@ class Conf {
     private $_paper_column_factories;
     private $_option_type_map;
     private $_option_type_factories;
+    private $_capability_factories;
     private $_hook_map;
     private $_hook_factories;
     public $_file_filters; // maintained externally
@@ -861,7 +862,9 @@ class Conf {
         $this->_xt_factory_error = null;
         $xts = [];
         foreach ($factories as $fxt) {
-            if (self::xt_priority_compare($fxt, $found) >= 0)
+            if (empty($xts)
+                ? self::xt_priority_compare($fxt, $found) >= 0
+                : self::xt_priority_compare($fxt, $xts[0]) > 0)
                 break;
             if ($fxt->match === ".*")
                 $m = [$name];
@@ -882,7 +885,7 @@ class Conf {
                 if ($prio <= 0 && call_user_func($checkf, $xt)) {
                     if ($prio < 0)
                         $xts = [];
-                    $xts[] = $found = $xt;
+                    $xts[] = $xt;
                 }
             }
         }
@@ -1791,40 +1794,6 @@ class Conf {
             if (empty($_SESSION[$this->dsn]))
                 unset($_SESSION[$this->dsn]);
         }
-    }
-
-    function capability_text($prow, $capType) {
-        // A capability has the following representation (. is concatenation):
-        //    capFormat . paperId . capType . hashPrefix
-        // capFormat -- Character denoting format (currently 0).
-        // paperId -- Decimal representation of paper number.
-        // capType -- Capability type (e.g. "a" for author view).
-        // To create hashPrefix, calculate a SHA-1 hash of:
-        //    capFormat . paperId . capType . paperCapVersion . capKey
-        // where paperCapVersion is a decimal representation of the paper's
-        // capability version (usually 0, but could allow conference admins
-        // to disable old capabilities paper-by-paper), and capKey
-        // is a random string specific to the conference, stored in Settings
-        // under cap_key (created in load_settings).  Then hashPrefix
-        // is the base-64 encoding of the first 8 bytes of this hash, except
-        // that "+" is re-encoded as "-", "/" is re-encoded as "_", and
-        // trailing "="s are removed.
-        //
-        // Any user who knows the conference's cap_key can construct any
-        // capability for any paper.  Longer term, one might set each paper's
-        // capVersion to a random value; but the only way to get cap_key is
-        // database access, which would give you all the capVersions anyway.
-
-        if (!isset($this->settingTexts["cap_key"])) {
-            $key = base64_encode(random_bytes(16));
-            if ((string) $key === "" || !$this->__save_setting("cap_key", 1, $key))
-                return false;
-        }
-        $start = "0" . $prow->paperId . $capType;
-        $hash = sha1($start . $prow->capVersion . $this->settingTexts["cap_key"], true);
-        $suffix = str_replace(array("+", "/", "="), array("-", "_", ""),
-                              base64_encode(substr($hash, 0, 8)));
-        return $start . $suffix;
     }
 
 
@@ -3925,6 +3894,29 @@ class Conf {
         if (($expansions = $this->xt_search_factories($this->_option_type_factories, $name, [$this, "xt_allowed"], $uf, null, "i")))
             $uf = $expansions[0];
         return $uf;
+    }
+
+
+    // capability tokens
+
+    function _add_capability_json($fj) {
+        if (isset($fj->match) && is_string($fj->match)
+            && isset($fj->callback) && is_string($fj->callback)) {
+            $this->_capability_factories[] = $fj;
+            return true;
+        } else
+            return false;
+    }
+    function capability_handler($cap) {
+        if ($this->_capability_factories === null) {
+            $this->_capability_factories = [];
+            expand_json_includes_callback(["etc/capabilityhandlers.json"], [$this, "_add_capability_json"]);
+            if (($olist = $this->opt("capabilityHandlers")))
+                expand_json_includes_callback($olist, [$this, "_add_capability_json"]);
+            usort($this->_capability_factories, "Conf::xt_priority_compare");
+        }
+        $expansions = $this->xt_search_factories($this->_capability_factories, $cap, [$this, "xt_allowed"], null);
+        return $expansions ? $expansions[0] : null;
     }
 
 

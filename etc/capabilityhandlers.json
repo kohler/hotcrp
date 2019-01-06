@@ -1,0 +1,6 @@
+[
+    {
+        "match": "0([1-9][0-9]*)a\\S+",
+        "callback": "CapabilityManager::apply_old_author_view"
+    }
+]

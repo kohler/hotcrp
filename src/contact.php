@@ -839,13 +839,12 @@ class Contact {
     function apply_capability_text($text) {
         // Add capabilities from arguments
         foreach (preg_split('{\s+}', $text) as $cap) {
-            if (preg_match('{\A([-+]?)0([1-9][0-9]*)(a)(\S+)\z}', $cap, $m)
-                && ($result = $this->conf->ql("select paperId, capVersion from Paper where paperId=$m[2]"))
-                && ($row = edb_orow($result))) {
-                $rowcap = $this->conf->capability_text($row, $m[3]);
-                $text = substr($text, strlen($m[1]));
-                if ($rowcap === $text)
-                    $this->change_paper_capability((int) $m[2], self::CAP_AUTHORVIEW, $m[1] !== "-");
+            if ($cap !== "") {
+                $isadd = $cap[0] !== "-";
+                if ($cap[0] === "-" || $cap[0] === "+")
+                    $cap = substr($cap, 1);
+                if ($cap !== "" && ($uf = $this->conf->capability_handler($cap)))
+                    call_user_func($uf->callback, $this, $uf, $isadd, $cap);
             }
         }
     }
