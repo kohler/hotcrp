@@ -120,7 +120,7 @@ class LoginHelper {
         }
 
         // if user disabled, then fail
-        if ($user && $user->is_disabled()
+        if (($user && $user->is_disabled())
             || (!$user && $cdb_user && $cdb_user->is_disabled())) {
             Ht::error_at("email", "Your account is disabled. Contact the site administrator for more information.");
             return false;
