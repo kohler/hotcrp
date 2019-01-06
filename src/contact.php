@@ -409,7 +409,7 @@ class Contact {
                 $this->capabilities = $caps;
                 ++self::$rights_version;
             }
-            if ($qreq && (isset($qreq->cap) || isset($qreq->testcap)))
+            if ($qreq && isset($qreq->cap))
                 $this->activate_capabilities($qreq);
         }
 
@@ -561,18 +561,6 @@ class Contact {
             foreach (preg_split(',\s+,', $cap_req) as $cap)
                 $this->apply_capability_text($cap);
             unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
-        }
-
-        // Support capability testing
-        if ($this->conf->opt("testCapabilities")
-            && ($cap_req = $qreq->testcap)
-            && preg_match_all('/([-+]?)([1-9]\d*)([A-Za-z]+)/',
-                              $cap_req, $m, PREG_SET_ORDER)) {
-            foreach ($m as $mm) {
-                $c = ($mm[3] == "a" ? self::CAP_AUTHORVIEW : 0);
-                $this->change_paper_capability((int) $mm[2], $c, $mm[1] !== "-");
-            }
-            unset($qreq->testcap, $_GET["testcap"], $_POST["testcap"]);
         }
     }
 
