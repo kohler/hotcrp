@@ -84,7 +84,6 @@ class Contact {
     public $privChair = false;
     public $contactTags;
     public $tracker_kiosk_state = false;
-    const CAP_AUTHORVIEW = 1;
     private $capabilities;
     private $_review_tokens;
     private $_activated = false;
@@ -404,15 +403,19 @@ class Contact {
         }
 
         // Add capabilities from session and request
-        if (!$this->conf->opt("disableCapabilities")) {
-            if (($caps = $this->conf->session("capabilities"))) {
-                $this->capabilities = $caps;
-                ++self::$rights_version;
-            }
-            if ($qreq && isset($qreq->cap)) {
-                $this->apply_capability_text($qreq->cap);
-                unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
-            }
+        $cap = $this->conf->session("cap");
+        if (!$cap && ($cap = $this->conf->session("capabilities"))) {
+            $cap = CapabilityManager::upgrade_capabilities_0($cap);
+            $this->conf->save_session("capabilities", null);
+            $this->conf->save_session("cap", $cap);
+        }
+        if ($cap) {
+            $this->capabilities = $cap;
+            ++self::$rights_version;
+        }
+        if ($qreq && isset($qreq->cap)) {
+            $this->apply_capability_text($qreq->cap);
+            unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
         }
 
         // Add review tokens from session
@@ -796,41 +799,20 @@ class Contact {
         if (empty($this->capabilities))
             $this->capabilities = null;
         if ($this->_activated)
-            $this->conf->save_session("capabilities", $this->capabilities);
+            $this->conf->save_session("cap", $this->capabilities);
     }
 
     function capability($name) {
-        if ($this->capabilities !== null && isset($this->capabilities[0]))
-            return get($this->capabilities[0], $name);
-        else
-            return null;
+        return $this->capabilities ? get($this->capabilities, $name) : null;
     }
 
     function set_capability($name, $newval) {
         $oldval = $this->capability($name);
         if ($newval !== $oldval) {
-            ++self::$rights_version;
             if ($newval !== null)
-                $this->capabilities[0][$name] = $newval;
+                $this->capabilities[$name] = $newval;
             else
-                unset($this->capabilities[0][$name]);
-            if (empty($this->capabilities[0]))
-                unset($this->capabilities[0]);
-            $this->update_capabilities();
-        }
-        return $newval !== $oldval;
-    }
-
-    function change_paper_capability($pid, $bit, $isset) {
-        $oldval = 0;
-        if ($this->capabilities !== null)
-            $oldval = get($this->capabilities, $pid) ? : 0;
-        $newval = ($oldval & ~$bit) | ($isset ? $bit : 0);
-        if ($newval !== $oldval) {
-            if ($newval !== 0)
-                $this->capabilities[$pid] = $newval;
-            else
-                unset($this->capabilities[$pid]);
+                unset($this->capabilities[$name]);
             $this->update_capabilities();
         }
         return $newval !== $oldval;
@@ -1694,7 +1676,7 @@ class Contact {
         // Update contact information from capabilities
         if ($this->capabilities) {
             foreach ($this->capabilities as $pid => $cap)
-                if ($pid && ($cap & self::CAP_AUTHORVIEW))
+                if ($cap === "av" && ctype_digit($pid))
                     $this->_active_roles |= self::ROLE_AUTHOR;
         }
     }
@@ -2001,8 +1983,7 @@ class Contact {
             // this user is a PC member or reviewer, which takes priority.
             $ci->view_conflict_type = $ci->conflictType;
             if (isset($this->capabilities)
-                && isset($this->capabilities[$prow->paperId])
-                && ($this->capabilities[$prow->paperId] & self::CAP_AUTHORVIEW)
+                && get($this->capabilities, $prow->paperId) === "av"
                 && !$isPC
                 && !$ci->review_status)
                 $ci->view_conflict_type = CONFLICT_AUTHOR;
@@ -2133,7 +2114,7 @@ class Contact {
         $m = [];
         if (isset($this->capabilities) && !$this->isPC) {
             foreach ($this->capabilities as $pid => $cap)
-                if ($pid && ($cap & Contact::CAP_AUTHORVIEW))
+                if ($cap === "av" && ctype_digit($pid))
                     $m[] = "Paper.paperId=$pid";
         }
         if (empty($m) && $this->contactId && $only_if_complex)

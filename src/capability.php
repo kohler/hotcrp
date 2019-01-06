@@ -34,17 +34,15 @@ class CapabilityManager {
         if (!$ok)
             return false;
         return $this->prefix . "1"
-            . str_replace(array("+", "/", "="),
-                          array("-a", "-b", ""), base64_encode($salt));
+            . str_replace(["+", "/", "="], ["-a", "-b", ""], base64_encode($salt));
     }
 
     function check($capabilityText) {
         if (substr($capabilityText, 0, strlen($this->prefix) + 1) !== $this->prefix . "1")
             return false;
-        $value = base64_decode(str_replace(array("-a", "-b", "-", "_"), // -, _ obsolete
-                                           array("+", "/", "+", "/"),
+        $value = base64_decode(str_replace(["-a", "-b"], ["+", "/"],
                                            substr($capabilityText, strlen($this->prefix) + 1)));
-        if (strlen($value) >= 16
+        if (strlen($value) >= 2
             && ($result = Dbl::ql($this->dblink, "select * from Capability where salt=?", $value))
             && ($row = Dbl::fetch_first_object($result))
             && ($row->timeExpires == 0 || $row->timeExpires >= time()))
@@ -98,7 +96,21 @@ class CapabilityManager {
 
     static function apply_old_author_view(Contact $user, $uf, $isadd) {
         if (($prow = $user->conf->fetch_paper(["paperId" => $uf->match_data[1]]))
-            && ($uf->name === self::capability_text($prow, "a")))
-            $user->change_paper_capability($prow->paperId, Contact::CAP_AUTHORVIEW, $isadd);
+            && ($uf->name === self::capability_text($prow, "a"))
+            && !$user->conf->opt("disableCapabilities"))
+            $user->set_capability($prow->paperId, $isadd ? "av" : null);
+    }
+
+
+    static function upgrade_capabilities_0($caps) {
+        $ncaps = null;
+        foreach ($caps as $pid => $a) {
+            if ($pid === 0) {
+                $ncaps = array_merge($ncaps, $a);
+            } else if ($a === 1 && ctype_digit($pid)) {
+                $ncaps[$pid] = "av";
+            }
+        }
+        return $ncaps;
     }
 }
