@@ -328,7 +328,7 @@ class Ht {
             $t .= '">';
             if (is_array($a)) {
                 $t .= $a[0];
-                if (count($a) > 1)
+                if (count($a) > 1 && $a[1] !== "")
                     $t .= '<div class="hint">' . $a[1] . '</div>';
             } else
                 $t .= $a;

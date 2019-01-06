@@ -1972,20 +1972,20 @@ class PaperTable {
                 $save_name = "Save and resubmit";
             else
                 $save_name = "Save and submit";
-            if (!$whyNot)
+            if (!$whyNot) {
                 $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn-primary btn-savepaper"]), "");
-            else if ($this->admin) {
+            } else if ($this->admin) {
                 $revWhyNot = filter_whynot($whyNot, ["deadline", "rejected"]);
                 $x = whyNotText($revWhyNot) . " Are you sure you want to override the deadline?";
                 $buttons[] = array(Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($this->_prow)) {
-                $buttons[] = array(Ht::submit("update", $save_name, ["class" => "btn-savepaper"]));
+                $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper"]);
             } else if ($this->prow) {
-                $buttons[] = array(Ht::submit("updatecontacts", "Save contacts"), "");
+                $buttons[] = Ht::submit("updatecontacts", "Save contacts");
             }
             if (!empty($buttons)) {
-                $buttons[] = [Ht::submit("cancel", "Cancel")];
+                $buttons[] = Ht::submit("cancel", "Cancel");
                 $buttons[] = "";
             }
         }
@@ -2017,7 +2017,7 @@ class PaperTable {
     function echoActions($top) {
         if ($this->admin && !$top) {
             $v = (string) $this->qreq->emailNote;
-            echo '<div class="checki"><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), " </span>",
+            echo '<div class="checki"><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), " </span>",
                 Ht::label("Email authors, including:"), "&nbsp; ",
                 Ht::entry("emailNote", $v, ["size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
                 "</div>\n";
