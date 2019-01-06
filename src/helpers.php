@@ -840,7 +840,7 @@ function encode_token($x, $format = "") {
         $n >>= 5;
         $have -= 5;
     }
-    if ($format == "V")
+    if ($format === "V")
         return preg_replace('/(\AA|[^A])A*\z/', '$1', $t);
     else
         return $t;
@@ -855,13 +855,13 @@ function decode_token($x, $format = "") {
         $o = ord($x[$i]);
         if ($o >= 48 && $o <= 90 && ($out = ord($map[$o - 48])) >= 48)
             $o = $out - 48;
-        else if ($o == 46 /*.*/ || $o == 34 /*"*/)
+        else if ($o === 46 /*.*/ || $o === 34 /*"*/)
             continue;
         else
             return false;
         $n += $o << $have;
         $have += 5;
-        while ($have >= 8 || ($n && $i == strlen($x) - 1)) {
+        while ($have >= 8 || ($n && $i === strlen($x) - 1)) {
             $t .= chr($n & 255);
             $n >>= 8;
             $have -= 8;
