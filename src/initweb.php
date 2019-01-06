@@ -80,38 +80,29 @@ function initialize_user() {
     $nav = Navigation::get();
     $trueemail = isset($_SESSION["u"]) ? $_SESSION["u"] : null;
     if (isset($_SESSION["us"])) {
-        $uindex = -1;
+        $uindex = false;
         if ($nav->shifted_path !== ""
             && substr($nav->shifted_path, 0, 2) === "u/") {
             $uindex = (int) substr($nav->shifted_path, 2);
         } else if ($nav->shifted_path === ""
                    && isset($_GET["i"])
                    && $_SERVER["REQUEST_METHOD"] === "GET") {
-            foreach ($_SESSION["us"] as $i => $u) {
-                if (strcasecmp($_GET["i"], $u) === 0) {
-                    $uindex = $i;
-                    break;
-                }
-            }
+            $uindex = Contact::session_user_index($_GET["i"]);
         }
-        if ($uindex >= 0 && $uindex < count($_SESSION["us"])) {
+        if ($uindex !== false
+            && $uindex >= 0
+            && $uindex < count($_SESSION["us"])) {
             $trueemail = $_SESSION["us"][$uindex];
         } else {
-            $uindex = 0;
-            foreach ($_SESSION["us"] as $i => $u) {
-                if (strcasecmp($trueemail, $u) === 0) {
-                    $uindex = $i;
-                    break;
-                }
-            }
+            $uindex = (int) Contact::session_user_index($trueemail);
         }
         if ($nav->shifted_path === ""
             && $_SERVER["REQUEST_METHOD"] === "GET") {
-            $page = "";
+            $page = "u/" . $uindex . "/";
             if ($nav->page !== "index" || $nav->path !== "") {
                 $page .= $nav->page . $nav->php_suffix . $nav->path;
             }
-            Navigation::redirect_base("u/" . $uindex . "/" . $page . $nav->query);
+            Navigation::redirect_base($page . $nav->query);
         }
     }
     if (isset($_GET["i"])

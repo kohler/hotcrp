@@ -149,13 +149,14 @@ class LoginHelper {
 
             $info = (object) [];
             if (!$xuser->check_password($password, $info)) {
-                if ($xuser->password_is_reset())
+                if ($xuser->password_is_reset()) {
                     $error = "Your previous password has been reset. Use “Forgot your password?” to create a new password.";
-                else if (get($info, "local_obsolete")) {
+                } else if (get($info, "local_obsolete")) {
                     $error = "The password you entered has been superseded by a more recent " . $conf->opt("contactdb_description", "global") . " password. Enter the more recent password to sign in, or use “Forgot your password?”.";
                     error_log($conf->dbname . ": " . $xuser->email . ": preventing login using obsolete local password (" . post_value(true) . ")");
-                } else
+                } else {
                     $error = "Incorrect password.";
+                }
                 Ht::error_at("password", $error);
                 return false;
             }
@@ -166,21 +167,9 @@ class LoginHelper {
 
         // store authentication
         ensure_session(ENSURE_SESSION_REGENERATE_ID);
-        if (isset($_SESSION["us"])) {
-            $us = $_SESSION["us"];
-        } else if (isset($_SESSION["u"])) {
-            $us = [$_SESSION["u"]];
-        } else {
-            $us = [];
-        }
-        $uindex = null;
-        foreach ($us as $i => $u) {
-            if (strcasecmp($u, $xuser->email) === 0) {
-                $uindex = $i;
-                break;
-            }
-        }
-        if ($uindex === null) {
+        $uindex = Contact::session_user_index($xuser->email);
+        if ($uindex === false) {
+            $us = Contact::session_users();
             $uindex = count($us);
             $us[] = $xuser->email;
             if ($uindex > 0) {

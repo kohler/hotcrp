@@ -313,6 +313,25 @@ class Contact {
 
     // initialization
 
+    static function session_users() {
+        if (isset($_SESSION["us"])) {
+            return $_SESSION["us"];
+        } else if (isset($_SESSION["u"])) {
+            return [$_SESSION["u"]];
+        } else {
+            return [];
+        }
+    }
+
+    static function session_user_index($email) {
+        foreach (self::session_users() as $i => $u) {
+            if (strcasecmp($u, $email) == 0) {
+                return $i;
+            }
+        }
+        return false;
+    }
+
     private function actas_user($x, $trueemail) {
         // translate to email
         if (is_numeric($x)) {
