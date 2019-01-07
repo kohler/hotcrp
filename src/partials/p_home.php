@@ -29,11 +29,19 @@ class Home_Partial {
             && !$qreq->post_ok()) {
             $type = $signin ? "signin" : "signout";
             if (!$user->is_empty()) {
-                error_log("ignoring unvalidated $type {$user->email} " . session_id());
+                error_log("ignoring unvalidated $type, sid=" . session_id() . ", email={$user->email}");
                 unset($qreq->signin, $qreq->signout);
                 $signin = false;
-            } else {
-                error_log("warning: unvalidated $type " . session_id());
+            } else if ($signin) {
+                $sid = session_id();
+                $msg = "warning: unvalidated signin, sid="
+                    . ($sid === "" ? ".empty" : $sid)
+                    . ", action={$qreq->action}, email={$qreq->email}";
+                if ($qreq->password)
+                    $msg .= ", password";
+                if (isset($_GET["post"]))
+                    $msg .= ", post=" . $_GET["post"];
+                error_log($msg);
             }
         }
         // signout
