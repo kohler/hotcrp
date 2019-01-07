@@ -3211,14 +3211,12 @@ class Conf {
 
         // Javascript settings to set before script.js
         Ht::stash_script("siteurl=" . json_encode_browser(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
-        if (session_id() !== "") {
-            $p = "";
-            if (($x = $this->opt("sessionDomain")))
-                $p .= "; domain=" . $x;
-            if ($this->opt("sessionSecure"))
-                $p .= "; secure";
-            Ht::stash_script("siteurl_postvalue=" . json_encode(post_value()) . ";siteurl_cookie_params=" . json_encode($p));
-        }
+        $p = "";
+        if (($x = $this->opt("sessionDomain")))
+            $p .= "; domain=" . $x;
+        if ($this->opt("sessionSecure"))
+            $p .= "; secure";
+        Ht::stash_script("siteurl_postvalue=" . json_encode(post_value(true)) . ";siteurl_cookie_params=" . json_encode($p));
         if (self::$hoturl_defaults) {
             $urldefaults = [];
             foreach (self::$hoturl_defaults as $k => $v) {
