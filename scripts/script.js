@@ -1661,7 +1661,7 @@ function tracker_show_elapsed() {
         clearTimeout(tracker_timer);
         tracker_timer = null;
     }
-    if (!dl.tracker || dl.tracker_hidden || !dl.tracker.position_at)
+    if (!dl.tracker || !dl.tracker.position_at)
         return;
 
     var now = now_sec();
@@ -1824,11 +1824,11 @@ function tracker_ui(event) {
         if (tstate && tstate[0] !== hoturl_absolute_base())
             tstate = null;
         if (event && (!tstate || !is_my_tracker())) {
-            tstate = [hoturl_absolute_base(), Math.floor(Math.random() * 100000), null,
+            tstate = [hoturl_absolute_base(), Math.floor(Math.random() * 10000000), null,
                 document.body.getAttribute("data-hotlist") || null];
         }
         if (tstate) {
-            var req = "track=" + tstate[1] + "%20x", reqdata = {};
+            var req = "track=" + tstate[1], reqdata = {};
             if (hotcrp_paperid)
                 req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
             if (tstate[2])

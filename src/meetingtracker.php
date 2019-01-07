@@ -271,8 +271,9 @@ class MeetingTracker {
             $xlist = SessionList::decode_info_string($qreq["hotlist-info"]);
         if ($xlist && str_starts_with($xlist->listid, "p/")) {
             $position = false;
-            if (count($args) >= 3 && ctype_digit($args[2]))
-                $position = array_search((int) $args[2], $xlist->ids);
+            $i = count($args) === 3 ? 2 : 1;
+            if (count($args) >= $i && ctype_digit($args[$i]))
+                $position = array_search((int) $args[$i], $xlist->ids);
             self::update($user, $xlist, $args[0], $position);
         }
     }
