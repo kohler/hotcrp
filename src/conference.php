@@ -3227,10 +3227,10 @@ class Conf {
         return false;
     }
 
-    static function echo_header(Conf $conf, $is_home, $site_div, $title_div,
-                                $profile_html, $actions_html, $my_deadlines) {
+    function echo_header($is_home, $site_div, $title_div,
+                         $profile_html, $actions_html, $my_deadlines) {
         echo $site_div, '<div id="header-right">', $profile_html;
-        if ($my_deadlines && $conf->has_interesting_deadline($my_deadlines))
+        if ($my_deadlines && $this->has_interesting_deadline($my_deadlines))
             echo '<div id="header-deadline">&nbsp;</div>';
         else
             echo '<div id="header-deadline" class="hidden"></div>';
@@ -3334,14 +3334,7 @@ class Conf {
                 $title_div = '<hr class="c">';
         }
 
-        $renderf = $this->opt("headerRenderer");
-        if (!$renderf)
-            $renderf = "Conf::echo_header";
-        if (is_array($renderf)) {
-            require_once($renderf[0]);
-            $renderf = $renderf[1];
-        }
-        call_user_func($renderf, $this, $is_home, $site_div, $title_div, $profile_html, $action_bar, $my_deadlines);
+        $this->echo_header($is_home, $site_div, $title_div, $profile_html, $action_bar, $my_deadlines);
 
         echo "  <hr class=\"c\"></div>\n";
 
