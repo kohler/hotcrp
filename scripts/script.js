@@ -975,7 +975,7 @@ handle_ui.on("js-range-click", function (event) {
     // update groups
     for (j = 0; j !== cbgs.length; ++j) {
         group = cbgs[j].getAttribute("data-range-group");
-        if (single_group && group !== this.getAttribute("data-range-group"))
+        if (single_group && group !== single_group)
             continue;
 
         var state = null;
