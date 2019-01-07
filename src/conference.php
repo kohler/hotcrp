@@ -3166,7 +3166,10 @@ class Conf {
             Ht::stash_html($this->make_script_file("//code.jquery.com/jquery-migrate-3.0.0.js", true));
 
         // Javascript settings to set before script.js
-        Ht::stash_script("siteurl=" . json_encode_browser(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
+        $nav = Navigation::get();
+        Ht::stash_script("siteurl=" . json_encode_browser($nav->site_path_relative)
+            . ";siteurl_base_path=" . json_encode_browser($nav->base_path)
+            . ";siteurl_suffix=\"" . $nav->php_suffix . "\"");
         $p = "";
         if (($x = $this->opt("sessionDomain")))
             $p .= "; domain=" . $x;

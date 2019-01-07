@@ -1,7 +1,8 @@
 // script.js -- HotCRP JavaScript library
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
-var siteurl, siteurl_postvalue, siteurl_suffix, siteurl_defaults,
+var siteurl, siteurl_base_path,
+    siteurl_postvalue, siteurl_suffix, siteurl_defaults,
     siteurl_absolute_base, siteurl_cookie_params, assetsurl,
     hotcrp_paperid, hotcrp_status, hotcrp_user,
     hotcrp_want_override_conflict;
@@ -670,10 +671,14 @@ wstorage.json = function (is_session, key) {
     return x ? JSON.parse(x) : false;
 };
 wstorage.site = function (is_session, key, value) {
-    return wstorage(is_session, siteurl_path + key, value);
+    if (siteurl_base_path !== "/")
+        key = siteurl_base_path + key;
+    return wstorage(is_session, key, value);
 };
 wstorage.site_json = function (is_session, key) {
-    return wstorage.json(is_session, siteurl_path + key);
+    if (siteurl_base_path !== "/")
+        key = siteurl_base_path + key;
+    return wstorage.json(is_session, key);
 };
 
 
@@ -809,7 +814,7 @@ function url_absolute(url, loc) {
 
 function hoturl_absolute_base() {
     if (!siteurl_absolute_base)
-        siteurl_absolute_base = url_absolute(siteurl);
+        siteurl_absolute_base = url_absolute(siteurl_base_path);
     return siteurl_absolute_base;
 }
 
@@ -1633,10 +1638,10 @@ var had_tracker, had_tracker_at, last_tracker_html,
     tracker_has_format, tracker_timer, tracker_refresher;
 
 function tracker_window_state() {
-    var ts = wstorage.json(true, "hotcrp-tracking");
+    var ts = wstorage.site_json(true, "hotcrp-tracking");
     if (ts && !ts[2] && dl.tracker && dl.tracker.trackerid == ts[1] && dl.tracker.start_at) {
         ts = [ts[0], ts[1], dl.tracker.start_at, ts[3]];
-        wstorage(true, "hotcrp-tracking", ts);
+        wstorage.site(true, "hotcrp-tracking", ts);
     }
     return ts;
 }
@@ -1752,7 +1757,7 @@ function display_tracker() {
     if (dl.tracker)
         had_tracker_at = now_sec();
     else if (tracker_window_state())
-        wstorage(true, "hotcrp-tracking", null);
+        wstorage.site(true, "hotcrp-tracking", null);
     if (!dl.tracker || hasClass(document.body, "hide-tracker")) {
         if (mne)
             mne.parentNode.removeChild(mne);
@@ -1816,7 +1821,7 @@ function tracker_ui(event) {
         }
     } else if (wstorage()) {
         var tstate = tracker_window_state();
-        if (tstate && tstate[0] != hoturl_absolute_base())
+        if (tstate && tstate[0] !== hoturl_absolute_base())
             tstate = null;
         if (event && (!tstate || !is_my_tracker())) {
             tstate = [hoturl_absolute_base(), Math.floor(Math.random() * 100000), null,
@@ -1833,7 +1838,7 @@ function tracker_ui(event) {
             $.post(hoturl_post("api/track", req), reqdata, load_success);
             if (!tracker_refresher)
                 tracker_refresher = setInterval(tracker_ui, 25000, 0);
-            wstorage(true, "hotcrp-tracking", tstate);
+            wstorage.site(true, "hotcrp-tracking", tstate);
         }
     }
 }
@@ -1850,9 +1855,6 @@ var comet_store = (function () {
     if (!wstorage())
         return function () { return false; };
 
-    function site_key() {
-        return "hotcrp-comet " + hoturl_absolute_base();
-    }
     function make_site_status(v) {
         var x = v && JSON.parse(v);
         if (!x || typeof x !== "object")
@@ -1870,12 +1872,13 @@ var comet_store = (function () {
         return x;
     }
     function site_status() {
-        return make_site_status(wstorage(false, site_key()));
+        return make_site_status(wstorage.site(false, "hotcrp-comet"));
     }
     function store_current_status() {
         stored_at = dl.now;
-        wstorage(false, site_key(), {at: stored_at, tracker_status: dl.tracker_status,
-                                     updated_at: now_sec()});
+        wstorage.site(false, "hotcrp-comet", {
+            at: stored_at, tracker_status: dl.tracker_status, updated_at: now_sec()
+        });
         if (!restore_status_timeout)
             restore_status_timeout = setTimeout(restore_current_status, 5000);
     }
@@ -1886,7 +1889,7 @@ var comet_store = (function () {
     }
     $(window).on("storage", function (e) {
         var x, ee = e.originalEvent;
-        if (dl && dl.tracker_site && ee.key == site_key()) {
+        if (dl && dl.tracker_site && ee.key === "hotcrp-comet") {
             var x = make_site_status(ee.newValue);
             if (x.expired || x.fresh)
                 reload();
@@ -1908,7 +1911,7 @@ var comet_store = (function () {
             return !!x.same;
         }
         if (action < 0 && x.owned)
-            wstorage(false, site_key(), null);
+            wstorage.site(false, "hotcrp-comet", null);
     }
     return s;
 })();
@@ -4573,7 +4576,7 @@ var add_revpref_ajax = (function () {
     function rp(selector, on_unload) {
         var $e = $(selector);
         if ($e.is("input")) {
-            var rpf = wstorage(true, "revpref_focus");
+            var rpf = wstorage.site(true, "revpref_focus");
             if (rpf && now_msec() - rpf < 3000)
                 focus_at($e[0]);
             $e = $e.parent();
@@ -4628,7 +4631,7 @@ var add_revpref_ajax = (function () {
     function rp_unload() {
         if ((blurred_at && now_msec() - blurred_at < 1000)
             || $(":focus").is("input.revpref"))
-            wstorage(true, "revpref_focus", blurred_at || now_msec());
+            wstorage.site(true, "revpref_focus", blurred_at || now_msec());
     }
 
     handle_ui.on("revpref", function (event) {
@@ -5736,10 +5739,10 @@ function check_version(url, versionstr) {
             jQuery.get(siteurl + "checkupdates.php",
                        {data: JSON.stringify(json)}, updateverifycb);
         else if (json && json.status)
-            wstorage(false, "hotcrp_version_check", {at: now_msec(), version: versionstr});
+            wstorage.site(false, "hotcrp_version_check", {at: now_msec(), version: versionstr});
     }
     try {
-        if ((x = wstorage.json(false, "hotcrp_version_check"))
+        if ((x = wstorage.site_json(false, "hotcrp_version_check"))
             && x.at >= now_msec() - 600000 /* 10 minutes */
             && x.version == versionstr)
             return;
@@ -7405,7 +7408,7 @@ function decode_session_list_ids(str) {
 var cookie_set_at;
 function update_digest(info) {
     var add = typeof info === "string" ? 1 : 0,
-        digests = wstorage.json(false, "list_digests") || [],
+        digests = wstorage.site_json(false, "list_digests") || [],
         found = -1, now = now_msec();
     for (var i = 0; i < digests.length; ++i) {
         var digest = digests[i];
@@ -7423,7 +7426,7 @@ function update_digest(info) {
         digests.push([now, info, now]);
         found = digests.length - 1;
     }
-    wstorage(false, "list_digests", digests);
+    wstorage.site(false, "list_digests", digests);
     if (found >= 0)
         return digests[found][1 - add];
     else
