@@ -558,13 +558,6 @@ unparse_interval.SHORT = 4;
 
 
 // events
-function event_prevent(evt) {
-    if (evt.preventDefault)
-        evt.preventDefault();
-    else
-        evt.returnValue = false;
-}
-
 var event_key = (function () {
 var key_map = {"Spacebar": " ", "Esc": "Escape"},
     charCode_map = {"9": "Tab", "13": "Enter", "27": "Escape"},
@@ -2395,7 +2388,7 @@ function focus_fold(event) {
             $(e).trigger("unfold", {f: false});
             if (event || has_focused === false) {
                 focus_within(e, ".lld *");
-                event && event_prevent(event);
+                event && event.preventDefault();
             }
             return (has_focused = true);
         } else if ((m = e.className.match(/\b(?:tll|tld)(\d+)/))) {
@@ -2406,7 +2399,7 @@ function focus_fold(event) {
             e.className = e.className.replace(/links\d+/, 'links' + m[1]);
             if (event || has_focused === false) {
                 focus_within(e, ".tld" + m[1] + " *");
-                event && event_prevent(event);
+                event && event.preventDefault();
             }
             return (has_focused = true);
         } else
@@ -2492,7 +2485,7 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
     }
     if (defaulte || !type) {
         event.stopPropagation();
-        event_prevent(event);
+        event.preventDefault();
     }
 });
 
@@ -5462,7 +5455,7 @@ function tag_mousedown(evt) {
         dragging.attachEvent("onmousecapture", tag_mouseup);
     }
     evt.stopPropagation();
-    event_prevent(evt);
+    evt.preventDefault();
 }
 
 function tag_mouseup(evt) {
@@ -6349,7 +6342,7 @@ handle_ui.on("js-plinfo", function (event) {
             if (type[i])
                 plinfo(type[i], null);
         event.stopPropagation();
-        event_prevent(event);
+        event.preventDefault();
     }
 });
 
