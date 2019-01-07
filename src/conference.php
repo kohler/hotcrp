@@ -3227,16 +3227,6 @@ class Conf {
         return false;
     }
 
-    function echo_header($is_home, $site_div, $title_div,
-                         $profile_html, $actions_html, $my_deadlines) {
-        echo $site_div, '<div id="header-right">', $profile_html;
-        if ($my_deadlines && $this->has_interesting_deadline($my_deadlines))
-            echo '<div id="header-deadline">&nbsp;</div>';
-        else
-            echo '<div id="header-deadline" class="hidden"></div>';
-        echo '</div>', ($title_div ? : ""), ($actions_html ? : "");
-    }
-
     function header_body($title, $id, $extra = null) {
         global $ConfSitePATH, $Me, $Now;
         echo "<body";
@@ -3334,7 +3324,12 @@ class Conf {
                 $title_div = '<hr class="c">';
         }
 
-        $this->echo_header($is_home, $site_div, $title_div, $profile_html, $action_bar, $my_deadlines);
+        echo $site_div, '<div id="header-right">', $profile_html;
+        if ($my_deadlines && $this->has_interesting_deadline($my_deadlines))
+            echo '<div id="header-deadline">&nbsp;</div>';
+        else
+            echo '<div id="header-deadline" class="hidden"></div>';
+        echo '</div>', ($title_div ? : ""), ($action_bar ? : "");
 
         echo "  <hr class=\"c\"></div>\n";
 
