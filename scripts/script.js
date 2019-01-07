@@ -290,7 +290,7 @@ function geometry_translate(g, dx, dy) {
 
 
 // text transformation
-window.escape_entities = (function () {
+var escape_entities = (function () {
     var re = /[&<>\"']/g;
     var rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "\'": "&#39;"};
     return function (s) {
@@ -300,7 +300,7 @@ window.escape_entities = (function () {
     };
 })();
 
-window.urlencode = (function () {
+var urlencode = (function () {
     var re = /%20|[!~*'()]/g;
     var rep = {"%20": "+", "!": "%21", "~": "%7E", "*": "%2A", "'": "%27", "(": "%28", ")": "%29"};
     return function (s) {
@@ -310,7 +310,7 @@ window.urlencode = (function () {
     };
 })();
 
-window.urldecode = function (s) {
+var urldecode = function (s) {
     if (s === null || typeof s === "number")
         return s;
     return decodeURIComponent(s.replace(/\+/g, "%20"));
@@ -451,7 +451,7 @@ function now_sec() {
     return now_msec() / 1000;
 }
 
-window.strftime = (function () {
+var strftime = (function () {
     function pad(num, str, n) {
         str += num.toString();
         return str.length <= n ? str : str.substr(str.length - n);
@@ -5669,26 +5669,9 @@ function popup_near(elt, anchor) {
     efocus && focus_at(efocus);
 }
 
-function popup(anchor, which, dofold) {
-    var elt = $$("popup_" + which);
-    if (!elt)
-        log_jserror("no popup " + which);
-
-    if (dofold) {
-        elt.className = "popupc";
-        if (hasClass(elt.parentNode, "popupbg"))
-            elt.parentNode.style.display = "none";
-    } else {
-        elt.className = "popupo";
-        popup_near(elt, anchor);
-    }
-
-    return false;
-}
-
 function popup_close(popup) {
     tooltip.erase();
-    popup.find("textarea, input[type=text]").unautogrow();
+    popup.find("textarea, input").unautogrow();
     popup.remove();
 }
 
