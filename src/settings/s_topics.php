@@ -16,7 +16,7 @@ class Topics_SettingRenderer {
         Dbl::free($result);
 
         echo "<h3 class=\"settings g\">Topics</h3>\n";
-        echo "<p class=\"settingtext\">Authors select the topics that apply to their submissions. PC members can indicate topics they’re interested in or search using the “topic:” keyword.";
+        echo "<p class=\"settingtext\">Authors select the topics that apply to their submissions. PC members can indicate topics they’re interested in or search using the “topic:” keyword. Use a colon to create topic groups, as in “Systems: Correctness” and “Systems: Performance”.";
         if ($sv->conf->topic_map())
             echo " To delete an existing topic, remove its name.";
         echo "</p>\n", Ht::hidden("has_topics", 1);
