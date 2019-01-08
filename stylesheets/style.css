@@ -3277,6 +3277,7 @@ body {
 	color: #3d3d57;
 	max-height: 20vh;
 	overflow-y: scroll;
+	position: relative;
 }
 .tracker-info {
 	width: 100%;

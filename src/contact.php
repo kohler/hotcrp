@@ -2091,7 +2091,7 @@ class Contact {
             || ($this->can_view_pc() && $this->_can_view_pc > 1);
     }
 
-    function can_view_tracker() {
+    function can_view_tracker($tracker_json = null) {
         return $this->privChair
             || ($this->isPC && $this->conf->check_default_track($this, Track::VIEWTRACKER))
             || $this->tracker_kiosk_state;
@@ -2491,10 +2491,10 @@ class Contact {
             return false;
         $pccv = $this->conf->setting("sub_pcconfvis");
         return $pccv == 2
-            || (!$pccv && $this->can_view_authors($prow))
-            || (!$pccv && $this->conf->setting("tracker")
-                && MeetingTracker::is_paper_tracked($prow)
-                && $this->can_view_tracker());
+            || (!$pccv
+                && ($this->can_view_authors($prow)
+                    || ($this->conf->setting("tracker")
+                        && MeetingTracker::can_view_tracker_at($this, $prow))));
     }
 
     function can_view_paper_option(PaperInfo $prow, $opt) {
@@ -3674,19 +3674,8 @@ class Contact {
 
         // add meeting tracker
         if (($this->isPC || $this->tracker_kiosk_state)
-            && $this->can_view_tracker()) {
-            $tracker = MeetingTracker::lookup($this->conf);
-            if ($tracker->trackerid
-                && ($tinfo = MeetingTracker::info_for($this))) {
-                $dl->tracker = $tinfo;
-                $dl->tracker_status = MeetingTracker::tracker_status($tracker);
-                $dl->now = microtime(true);
-            }
-            if ($tracker->position_at)
-                $dl->tracker_status_at = $tracker->position_at;
-            if (($tcs = $this->conf->opt("trackerCometSite")))
-                $dl->tracker_site = $tcs;
-        }
+            && $this->can_view_tracker())
+            MeetingTracker::my_deadlines($dl, $this);
 
         // permissions
         if ($prows) {
