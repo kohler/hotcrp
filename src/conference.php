@@ -3813,13 +3813,15 @@ class Conf {
 
     function _add_paper_column_json($fj) {
         $cb = isset($fj->callback) && is_string($fj->callback);
-        if (isset($fj->name) && is_string($fj->name) && $cb) {
-            return self::xt_add($this->_paper_column_map, $fj->name, $fj);
-        } else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
+        $ok = false;
+        if (isset($fj->name) && is_string($fj->name) && $cb)
+            $ok = self::xt_add($this->_paper_column_map, $fj->name, $fj);
+        if (isset($fj->match) && is_string($fj->match)
+            && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
             $this->_paper_column_factories[] = $fj;
-            return true;
-        } else
-            return false;
+            $ok = true;
+        }
+        return $ok;
     }
     function paper_column_map() {
         if ($this->_paper_column_map === null) {
@@ -3843,7 +3845,8 @@ class Conf {
     }
     function paper_columns($name, Contact $user) {
         $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
-        $uf = $this->xt_search_name($this->paper_column_map(), $name, $checkf);
+        $map = $this->paper_column_map();
+        $uf = $name[0] !== "?" ? $this->xt_search_name($map, $name, $checkf) : null;
         $expansions = $this->xt_search_factories($this->_paper_column_factories, $name, $checkf, $uf, $user, "i");
         return array_filter($expansions ? : [$uf], "Conf::xt_resolve_require");
     }

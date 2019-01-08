@@ -122,6 +122,7 @@
         "completion_callback": "Score_PaperColumnFactory::completions"
     },
     {
+        "name": "?graph",
         "match": "(?:g|graph):?\\((.*)\\)", "priority": -1,
         "column": true, "fold": true, "sort": true, "minimal": true, "className": "pl_score",
         "callback": "+FormulaGraph_PaperColumn",

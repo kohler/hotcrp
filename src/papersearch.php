@@ -2794,7 +2794,10 @@ class PaperSearch {
             $pl = new PaperList($this);
             foreach ($this->conf->paper_column_map() as $cname => $cj) {
                 $cj = $this->conf->basic_paper_column($cname, $this->user);
-                if ($cj && isset($cj->completion) && $cj->completion
+                if ($cj
+                    && isset($cj->completion)
+                    && $cj->completion
+                    && !str_starts_with($cj->name, "?")
                     && ($c = PaperColumn::make($this->conf, $cj))
                     && ($cat = $c->completion_name())
                     && $c->prepare($pl, 0)) {
