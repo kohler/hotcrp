@@ -41,7 +41,6 @@ class Topic_SearchTerm extends SearchTerm {
             if (empty($value)) {
                 $srch->warn("“" . htmlspecialchars($word) . "” does not match any defined paper topic.");
             }
-            error_log(json_encode($value));
         }
         return new Topic_SearchTerm($value, $negated);
     }
