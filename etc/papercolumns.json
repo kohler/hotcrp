@@ -126,7 +126,7 @@
         "column": true, "fold": true, "sort": true, "minimal": true, "className": "pl_score",
         "callback": "+FormulaGraph_PaperColumn",
         "position": 1200,
-        "expand_callback": "FormulaGraph_PaperColumnFactory::expand",
+        "expand_callback": "FormulaGraph_PaperColumn::expand",
         "completion": "graph(<formula>)"
     },
     {

@@ -45,10 +45,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         else
             return htmlspecialchars($x);
     }
-}
 
-class FormulaGraph_PaperColumnFactory {
-    static private $nregistered = 0;
     static function expand($name, Conf $conf, $xfj, $m) {
         $formula = new Formula($m[1], true);
         if (!$formula->check($conf->xt_user)) {
@@ -58,9 +55,8 @@ class FormulaGraph_PaperColumnFactory {
             $conf->xt_factory_error("Graphed formulas must return review fields.");
             return null;
         } else {
-            ++self::$nregistered;
             $cj = (array) $xfj;
-            $cj["name"] = "graphx" . self::$nregistered;
+            $cj["name"] = "graph(" . $m[1] . ")";
             $cj["formula"] = $formula;
             return [(object) $cj];
         }
