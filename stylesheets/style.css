@@ -3257,36 +3257,34 @@ body {
 	font-size: smaller;
 	position: fixed;
 	z-index: 8;
+}
+.tracker-match {
+	background: rgba(221, 250, 238, 0.9);
 	border-bottom: 1px solid #6a936a;
 }
-#tracker.nomatch {
-	border-bottom: 1px solid #f33360;
-}
-#tracker.active {
+.tracker-match.tracker-active {
 	background: rgba(100, 255, 100, 0.9);
 }
-#tracker.match {
-	background: rgba(221, 250, 238, 0.9);
-}
-#tracker.nomatch {
+.tracker-nomatch {
 	background: rgba(252, 177, 185, 0.9);
+	border-bottom: 1px solid #f33360;
 }
-#tracker.active.nomatch {
+.tracker-nomatch.tracker-active {
 	background: rgba(255, 255, 100, 0.9);
 }
-#tracker .tracker-holder {
+.tracker-holder {
 	padding: 0.5em 0;
 	color: #3d3d57;
 	max-height: 20vh;
 	overflow-y: scroll;
 }
-#tracker .tracker-info {
+.tracker-info {
 	width: 100%;
+	line-height: 1.25;
 	max-height: 20vh;
 	overflow-y: scroll;
-	line-height: 1.25;
 }
-#tracker-logo {
+.tracker-logo {
 	float: left;
 	position: absolute;
 	top: 1px;
@@ -3295,17 +3293,17 @@ body {
 	border-radius: 10px;
 	color: #0b522b;
 }
-#tracker-logo:before {
+.tracker-logo:before {
 	content: "\261e";
 	font-size: 300%;
 	line-height: 24px;
 }
-#tracker.nomatch #tracker-logo {
+.tracker-nomatch .tracker-logo {
 	/*background: rgba(255, 220, 215, 0.9);*/
 	color: #e33355;
 	animation: 3s 0s infinite normal trackernomatchlogo;
 }
-.nomatch .tracker-row:first-child {
+.tracker-nomatch .tracker-row:first-child {
 	color: #b31028;
 }
 @keyframes trackernomatchlogo {
@@ -3345,7 +3343,7 @@ body {
 	padding-right: 1em;
 	text-align: right;
 }
-#tracker-elapsed {
+.tracker-timer {
 	display: inline-block;
 	min-width: 5em;
 	font-weight: bold;

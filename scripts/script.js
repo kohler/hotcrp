@@ -1637,18 +1637,19 @@ function redisplay_main() {
 var had_tracker, had_tracker_at, last_tracker_html,
     tracker_has_format, tracker_timer, tracker_refresher;
 
-function tracker_window_state() {
+function analyze_tracker() {
     var ts = wstorage.site_json(true, "hotcrp-tracking");
-    if (ts && !ts[2] && dl.tracker && dl.tracker.trackerid == ts[1] && dl.tracker.start_at) {
-        ts = [ts[0], ts[1], dl.tracker.start_at, ts[3]];
-        wstorage.site(true, "hotcrp-tracking", ts);
+    if (ts) {
+        if (ts[0] !== hoturl_absolute_base())
+            wstorage.site(true, "hotcrp-tracking", null);
+        else if (dl.tracker && dl.tracker.trackerid === ts[1]) {
+            dl.tracker_here = dl.tracker.tracker_here = true;
+            if (!ts[2] && dl.tracker.start_at) {
+                ts[2] = dl.tracker.start_at;
+                wstorage.site(true, "hotcrp-tracking", ts);
+            }
+        }
     }
-    return ts;
-}
-
-function is_my_tracker() {
-    var ts;
-    return dl.tracker && (ts = tracker_window_state()) && dl.tracker.trackerid == ts[1];
 }
 
 var tracker_map = [["is_manager", "is-manager", "Administrator"],
@@ -1663,18 +1664,22 @@ function tracker_show_elapsed() {
     }
     if (!dl.tracker || !dl.tracker.position_at)
         return;
-
-    var now = now_sec();
-    var delta = now - (dl.tracker.position_at + dl.load - dl.now);
-    var s = Math.round(delta);
-    if (s >= 3600)
-        s = sprintf("%d:%02d:%02d", s/3600, (s/60)%60, s%60);
-    else
-        s = sprintf("%d:%02d", s/60, s%60);
-    $("#tracker-elapsed").html(s);
-
-    tracker_timer = setTimeout(tracker_show_elapsed,
-                               1000 - (delta * 1000) % 1000);
+    var now = now_sec(), max_delta_ms = 0;
+    $(".tracker-timer").each(function () {
+        var tid = this.getAttribute("data-trackerid"),
+            tracker = dl.tracker, t = "";
+        if (tracker && +tid === tracker.trackerid) {
+            var delta = now - (tracker.position_at + dl.load - dl.now),
+                s = Math.round(delta);
+            if (s >= 3600)
+                t = sprintf("%d:%02d:%02d", s/3600, (s/60)%60, s%60)
+            else
+                t = sprintf("%d:%02d", s/60, s%60);
+            max_delta_ms = Math.max(max_delta_ms, (delta * 1000) % 1000);
+        }
+        this.innerHTML = t;
+    });
+    tracker_timer = setTimeout(tracker_show_elapsed, 1000 - max_delta_ms);
 }
 
 function tracker_paper_columns(idx, paper, wwidth) {
@@ -1705,20 +1710,25 @@ function tracker_paper_columns(idx, paper, wwidth) {
     return t + x.join(" &nbsp;&#183;&nbsp; ") + '</td>';
 }
 
-function tracker_html(mytracker) {
-    tracker_has_format = false;
-    var t = "", dt = "";
+function tracker_html(tracker) {
+    var t, dt = "";
+    t = '<div class="tracker-holder tracker-'
+        + (tracker.papers && tracker.papers[0].pid == hotcrp_paperid ? "match" : "nomatch")
+        + (tracker.tracker_here ? " tracker-active" : "");
+    if (tracker.listinfo || tracker.listid)
+        t += ' has-hotlist" data-hotlist="' + escape_entities(tracker.listinfo || tracker.listid);
+    t += '">';
     if (dl.is_admin) {
         dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
-        t += '<div class="need-tooltip" id="tracker-logo" data-tooltip="' + escape_entities(dt) + '"></div>';
+        t += '<div class="tracker-logo need-tooltip" data-tooltip="' + escape_entities(dt) + '"></div>';
     } else
-        t += '<div id="tracker-logo"></div>';
+        t += '<div class="tracker-logo"></div>';
     var rows = [], i, wwidth = $(window).width();
-    if (!dl.tracker.papers || !dl.tracker.papers[0]) {
-        rows.push('<td><a href=\"' + siteurl + dl.tracker.url + '\">Discussion list</a></td>');
+    if (!tracker.papers || !tracker.papers[0]) {
+        rows.push('<td><a href=\"' + siteurl + tracker.url + '\">Discussion list</a></td>');
     } else {
-        for (i = 0; i < dl.tracker.papers.length; ++i)
-            rows.push(tracker_paper_columns(i, dl.tracker.papers[i], wwidth));
+        for (i = 0; i < tracker.papers.length; ++i)
+            rows.push(tracker_paper_columns(i, tracker.papers[i], wwidth));
     }
     t += "<table class=\"tracker-info clearfix\"><tbody>";
     for (i = 0; i < rows.length; ++i) {
@@ -1726,37 +1736,36 @@ function tracker_html(mytracker) {
         if (i == 0)
             t += '<td rowspan="' + rows.length + '" class="tracker-logo-td"><div class="tracker-logo-space"></div></td>';
         t += rows[i];
-        if (i == 0 && (dl.is_admin || (dl.tracker && dl.tracker.position_at))) {
+        if (i == 0 && (dl.is_admin || (tracker && tracker.position_at))) {
             t += '<td rowspan="' + Math.min(2, rows.length) + '" class="tracker-elapsed nb">';
-            if (dl.tracker && dl.tracker.position_at)
-                t += '<span id="tracker-elapsed"></span>';
+            if (tracker && tracker.position_at)
+                t += '<span class="tracker-timer" data-trackerid="' + tracker.trackerid + '"></span>';
             if (dl.is_admin)
                 t += '<a class="ui tracker-ui stop closebtn need-tooltip" href="" data-tooltip="Stop meeting tracker">x</a>';
+            t += '</td>';
         }
         t += '</tr>';
     }
-    return t + '</tr></tbody></table>';
+    return t + '</tr></tbody></table></div>';
 }
 
 function display_tracker() {
-    var mne = $$("tracker"), mnspace = $$("tracker-space"),
-        mytracker = is_my_tracker(),
-        t, tt, i, e;
+    var mne = $$("tracker"), mnspace = $$("tracker-space"), t, e;
 
     // tracker button
     if ((e = $$("tracker-connect-btn"))) {
-        if (mytracker) {
+        if (dl.tracker_here) {
             e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui tracker-ui stop ttmenu\" href=\"\">Stop meeting tracker</a></div></div>");
         } else {
             e.setAttribute("data-tooltip", "Start meeting tracker");
         }
-        e.className = e.className.replace(/\btbtn(?:-on)*\b/, mytracker ? "tbtn-on" : "tbtn");
+        e.className = e.className.replace(/\btbtn(?:-on)*\b/, dl.tracker_here ? "tbtn-on" : "tbtn");
     }
 
     // tracker display management
     if (dl.tracker)
         had_tracker_at = now_sec();
-    else if (tracker_window_state())
+    else
         wstorage.site(true, "hotcrp-tracking", null);
     if (!dl.tracker || hasClass(document.body, "hide-tracker")) {
         if (mne)
@@ -1783,17 +1792,10 @@ function display_tracker() {
         had_tracker = true;
     }
 
-    t = tracker_html(mytracker);
+    tracker_has_format = false;
+    t = tracker_html(dl.tracker);
     if (t !== last_tracker_html) {
-        last_tracker_html = t;
-        if (dl.tracker.papers && dl.tracker.papers[0].pid != hotcrp_paperid)
-            mne.className = mytracker ? "active nomatch" : "nomatch";
-        else
-            mne.className = mytracker ? "active" : "match";
-        tt = '<div class="tracker-holder';
-        if (dl.tracker && (dl.tracker.listinfo || dl.tracker.listid))
-            tt += ' has-hotlist" data-hotlist="' + escape_entities(dl.tracker.listinfo || dl.tracker.listid);
-        mne.innerHTML = tt + '">' + t + '</div>';
+        last_tracker_html = mne.innerHTML = t;
         $(mne).find(".need-tooltip").each(tooltip);
         if (tracker_has_format)
             render_text.on_page();
@@ -1820,10 +1822,10 @@ function tracker_ui(event) {
             tracker_refresher = null;
         }
     } else if (wstorage()) {
-        var tstate = tracker_window_state();
+        var tstate = wstorage.site_json(true, "hotcrp-tracking");
         if (tstate && tstate[0] !== hoturl_absolute_base())
             tstate = null;
-        if (event && (!tstate || !is_my_tracker())) {
+        if (event && (!tstate || !dl.tracker_here)) {
             tstate = [hoturl_absolute_base(), Math.floor(Math.random() * 10000000), null,
                 document.body.getAttribute("data-hotlist") || null];
         }
@@ -1990,8 +1992,10 @@ function load(dlx, is_initial) {
     dl.rev = dl.rev || {};
     dl.tracker_status = dl.tracker_status || "off";
     if (dl.tracker
-        || (dl.tracker_status_at && dl.load - dl.tracker_status_at < 259200))
+        || (dl.tracker_status_at && dl.load - dl.tracker_status_at < 259200)) {
+        analyze_tracker();
         had_tracker_at = dl.load;
+    }
     display_main(is_initial);
     var evt = $.Event("hotcrpdeadlines");
     $(window).trigger(evt, [dl]);
@@ -2001,7 +2005,7 @@ function load(dlx, is_initial) {
             $(window).trigger(evt, [dl.p[i]]);
         }
     }
-    if (had_tracker_at && (!is_initial || !is_my_tracker()))
+    if (had_tracker_at && (!is_initial || !dl.tracker_here))
         display_tracker();
     if (had_tracker_at)
         comet_store(1);

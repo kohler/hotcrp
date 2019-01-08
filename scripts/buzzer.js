@@ -1,7 +1,7 @@
 var start_buzzer_page = (function ($) {
 var info, has_format, status, muted, show_papers, last_table;
 
-function make_row(hc, idx, paper) {
+function make_row(hc, idx, paper, trackerid) {
     var pcconf;
     if (paper.pc_conflicts) {
         pcconf = [];
@@ -29,7 +29,7 @@ function make_row(hc, idx, paper) {
         hc.push_pop("<i>No title</i>");
     hc.push("<td class=\"tracker-table remargin-right tracker-elapsed\">", "</td>");
     if (idx == 0)
-        hc.push("<span id=\"tracker-elapsed\"></span>");
+        hc.push("<span class=\"tracker-timer\" data-trackerid=\"" + escape_entities(trackerid) + "\"></span>");
     hc.pop_n(2);
     if (show_papers && pcconf) {
         hc.push("<tr class=\"tracker-table" + idx + " b\">", "</tr>");
@@ -49,7 +49,7 @@ function make_table() {
 
         hc.push("<tbody>", "</tbody>");
         for (var i = 0; i < dl.tracker.papers.length; ++i) {
-            make_row(hc, i, dl.tracker.papers[i]);
+            make_row(hc, i, dl.tracker.papers[i], dl.tracker.trackerid);
         }
     }
     var this_table = hc.render();
