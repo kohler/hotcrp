@@ -804,7 +804,7 @@ function url_absolute(url, loc) {
     if (x && !/^\//.test(url)
         && (m = loc.match(/^\w+:\/\/[^\/]+(\/[^?#]*)/))) {
         x = (x + m[1]).replace(/\/[^\/]+$/, "/");
-        while (url.substring(0, 3) == "../") {
+        while (url.substring(0, 3) === "../") {
             x = x.replace(/\/[^\/]*\/$/, "/");
             url = url.substring(3);
         }
