@@ -103,7 +103,7 @@ class CapabilityManager {
 
 
     static function upgrade_capabilities_0($caps) {
-        $ncaps = null;
+        $ncaps = [];
         foreach ($caps as $pid => $a) {
             if ($pid === 0) {
                 $ncaps = array_merge($ncaps, $a);
@@ -111,6 +111,6 @@ class CapabilityManager {
                 $ncaps[$pid] = "av";
             }
         }
-        return $ncaps;
+        return empty($ncaps) ? null : $ncaps;
     }
 }
