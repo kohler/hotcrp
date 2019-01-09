@@ -619,7 +619,7 @@ function pcsel_tag(event) {
             if (this.name === "pcs[]")
                 this.checked = f.call(this);
         });
-        event_prevent(event);
+        event.preventDefault();
     }
     var tags = [], functions = {};
     $g.find("a.js-pcsel-tag").each(function () {
