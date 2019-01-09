@@ -15,7 +15,7 @@ class Search_API {
             if ($q === "(All)")
                 $q = "";
         } else if (isset($qreq->qa) || isset($qreq->qo) || isset($qreq->qx))
-            $q = PaperSearch::canonical_query((string) $qreq->qa, (string) $qreq->qo, (string) $qreq->qx, $user->conf);
+            $q = PaperSearch::canonical_query((string) $qreq->qa, (string) $qreq->qo, (string) $qreq->qx, $qreq->qt, $user->conf);
         else
             return new JsonResult(400, "Missing parameter.");
 
@@ -65,7 +65,7 @@ class Search_API {
         foreach (preg_split('/\s+/', trim($qreq->f)) as $fid) {
             if ($user->conf->paper_columns($fid, $user))
                 $fdefs[] = $fid;
-            else
+            else if ($fid !== "")
                 return new JsonResult(404, "No such field “{$fid}”.");
         }
 

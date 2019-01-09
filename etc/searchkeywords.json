@@ -21,15 +21,18 @@
     },
     {
         "name": "aumatch",
-        "require": "src/search/st_author.php",
         "parse_callback": "AuthorMatch_SearchTerm::parse",
         "synonym": ["authormatch", "authmatch"]
     },
     {
         "name": "comatch",
-        "require": "src/search/st_author.php",
         "parse_callback": "AuthorMatch_SearchTerm::parse",
         "synonym": ["collabmatch", "collaboratormatch", "collaboratorsmatch"]
+    },
+    {
+        "name": "acmatch",
+        "parse_callback": "AuthorMatch_SearchTerm::parse",
+        "synonym": ["ac"]
     },
     {
         "name": "conf",

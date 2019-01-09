@@ -1342,7 +1342,8 @@ class PaperTable {
     }
 
     private function papstripCollaborators() {
-        if (!$this->conf->setting("sub_collab") || !$this->prow->collaborators
+        if (!$this->conf->setting("sub_collab")
+            || !$this->prow->collaborators
             || strcasecmp(trim($this->prow->collaborators), "None") == 0)
             return;
         $fold = $this->conf->session("foldpscollab", 1) ? 1 : 0;

@@ -31,7 +31,7 @@ if (isset($Qreq->q))
 if (isset($Qreq->q) && $Qreq->q === "(All)")
     $Qreq->q = "";
 if ((isset($Qreq->qa) || isset($Qreq->qo) || isset($Qreq->qx)) && !isset($Qreq->q))
-    $Qreq->q = PaperSearch::canonical_query((string) $Qreq->qa, $Qreq->qo, $Qreq->qx, $Conf);
+    $Qreq->q = PaperSearch::canonical_query((string) $Qreq->qa, $Qreq->qo, $Qreq->qx, $Qreq->qt, $Conf);
 else
     unset($Qreq->qa, $Qreq->qo, $Qreq->qx);
 
@@ -161,7 +161,7 @@ if (isset($Qreq->q)) {
 // set up the search form
 if ($Qreq->redisplay)
     $activetab = 3;
-else if (isset($Qreq->qa) || defval($Qreq, "qt", "n") != "n")
+else if (isset($Qreq->qa) || get($Qreq, "qt", "n") !== "n")
     $activetab = 2;
 else
     $activetab = 1;
@@ -388,8 +388,8 @@ function echo_request_as_hidden_inputs($specialscore = false) {
     global $pl, $pl_text, $Qreq;
     foreach (array("q", "qa", "qo", "qx", "qt", "t", "sort") as $x)
         if (isset($Qreq[$x])
-            && ($x != "q" || !isset($Qreq->qa))
-            && ($x != "sort" || !$specialscore || !$pl_text))
+            && ($x !== "q" || !isset($Qreq->qa))
+            && ($x !== "sort" || !$specialscore || !$pl_text))
             echo Ht::hidden($x, $Qreq[$x]);
     if ($specialscore && $pl_text)
         echo Ht::hidden("sort", $pl->sortdef(true));

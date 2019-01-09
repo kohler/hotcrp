@@ -1291,7 +1291,6 @@ class PaperSearch {
     public $user;
     public $cid;
 
-    private $fields;
     private $_reviewer_user = false;
     private $_named_limit;
     private $_limit_qe;
@@ -1300,6 +1299,8 @@ class PaperSearch {
     private $_quiet_count = 0;
 
     public $q;
+    private $_qt;
+    private $_qt_fields;
     private $_qe;
     public $test_review;
 
@@ -1358,25 +1359,18 @@ class PaperSearch {
         $this->user = $user;
         $this->cid = $user->contactId;
 
-        // default query fields
+        // query fields
         // NB: If a complex query field, e.g., "re", "tag", or "option", is
         // default, then it must be the only default or query construction
         // will break.
-        $this->fields = array();
-        $qtype = get($options, "qt", "n");
-        if ($qtype === "n" || $qtype === "ti")
-            $this->fields["ti"] = 1;
-        if ($qtype === "n" || $qtype === "ab")
-            $this->fields["ab"] = 1;
-        if ($user->can_view_some_authors()
-            && ($qtype === "n" || $qtype === "au" || $qtype === "ac"))
-            $this->fields["au"] = 1;
-        if ($user->privChair && $qtype === "ac")
-            $this->fields["co"] = 1;
-        if ($user->isPC && $qtype === "re")
-            $this->fields["re"] = 1;
-        if ($user->isPC && $qtype === "tag")
-            $this->fields["tag"] = 1;
+        $this->_qt = self::_canonical_qt(get($options, "qt"));
+        if ($this->_qt === "n") {
+            $this->_qt_fields = ["ti", "ab"];
+            if ($this->user->can_view_some_authors())
+                $this->_qt_fields[] = "au";
+        } else {
+            $this->_qt_fields = [$this->_qt];
+        }
 
         // the query itself
         $this->q = trim(get_s($options, "q"));
@@ -1431,8 +1425,8 @@ class PaperSearch {
             $this->_urlbase = $options["urlbase"];
         else
             $this->_urlbase = $this->conf->hoturl_site_relative_raw("search", "t=" . urlencode($limit));
-        if ($qtype !== "n")
-            $this->_urlbase = hoturl_add_raw($this->_urlbase, "qt=" . urlencode($qtype));
+        if ($this->_qt !== "n")
+            $this->_urlbase = hoturl_add_raw($this->_urlbase, "qt=" . urlencode($this->_qt));
         if ($this->_reviewer_user
             && $this->_reviewer_user->contactId !== $user->contactId
             && strpos($this->_urlbase, "reviewer=") === false)
@@ -1755,9 +1749,27 @@ class PaperSearch {
             $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
     }
 
+    static private function _search_word_breakdown($word) {
+        $ch = substr($word, 0, 1);
+        if ($ch !== ""
+            && (ctype_digit($ch) || ($ch === "#" && ctype_digit((string) substr($word, 1, 1))))
+            && preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/', $word)) {
+            return ["=", $word];
+        } else if ($ch === "#") {
+            return ["#", substr($word, 1)];
+        } else if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]")((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/', $word, $m)) {
+            return [$m[1], $m[2]];
+        } else {
+            return [false, $word];
+        }
+    }
+
     private function _search_word($word, $defkw) {
-        // check for paper numbers
-        if (preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/', $word)) {
+        $wordbrk = self::_search_word_breakdown($word);
+        $keyword = $defkw;
+
+        if ($wordbrk[0] === "=") {
+            // paper numbers
             $range = [];
             while (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\s*,?\s*(.*)\z/', $word, $m)) {
                 $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
@@ -1765,26 +1777,22 @@ class PaperSearch {
                 $word = $m[3];
             }
             return new PaperID_SearchTerm($range);
-        }
-
-        // check for `#TAG`
-        if (substr($word, 0, 1) === "#") {
+        } else if ($wordbrk[0] === "#") {
+            // `#TAG`
             ++$this->_quiet_count;
-            $qe = $this->_search_word("hashtag:" . substr($word, 1), $defkw);
+            $qe = $this->_search_word("hashtag:" . $wordbrk[1], $defkw);
             --$this->_quiet_count;
             if (!$qe->is_false())
                 return $qe;
-        }
-
-        $keyword = $defkw;
-        if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]+")((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/', $word, $m)) {
-            if ($m[2][0] === ":") {
-                $keyword = $m[1];
-                $word = ltrim((string) substr($m[2], 1));
+        } else if ($wordbrk[0] !== false) {
+            // `keyword:word` or (potentially) `keyword>word`
+            if ($wordbrk[1][0] === ":") {
+                $keyword = $wordbrk[0];
+                $word = ltrim((string) substr($wordbrk[1], 1));
             } else {
                 // Allow searches like "ovemer>2"; parse as "ovemer:>2".
                 ++$this->_quiet_count;
-                $qe = $this->_search_word($m[1] . ":" . $m[2], $defkw);
+                $qe = $this->_search_word($wordbrk[0] . ":" . $wordbrk[1], $defkw);
                 --$this->_quiet_count;
                 if (!$qe->is_false())
                     return $qe;
@@ -1805,7 +1813,7 @@ class PaperSearch {
             else if ($word === "NONE")
                 return new False_SearchTerm;
             // Otherwise check known keywords.
-            foreach ($this->fields as $kw => $x)
+            foreach ($this->_qt_fields as $kw)
                 $this->_search_keyword($qt, $sword, $kw, false);
         }
         return SearchTerm::make_op("or", $qt);
@@ -1948,6 +1956,13 @@ class PaperSearch {
     }
 
 
+    static private function _canonical_qt($qt) {
+        if (in_array($qt, ["ti", "ab", "au", "ac", "co", "re", "tag"]))
+            return $qt;
+        else
+            return "n";
+    }
+
     static private function _pop_canonicalize_stack($curqe, &$stack) {
         $x = array_pop($stack);
         if ($curqe)
@@ -1971,7 +1986,7 @@ class PaperSearch {
             return "(" . join(" " . $x->op->unparse() . " ", $x->qe) . ")";
     }
 
-    static private function _canonical_expression($str, $type, Conf $conf) {
+    static private function _canonical_expression($str, $type, $qt, Conf $conf) {
         $str = trim((string) $str);
         if ($str === "")
             return "";
@@ -1989,6 +2004,13 @@ class PaperSearch {
                 $op = SearchOperator::get($parens ? "SPACE" : $defaultop);
             if (!$op) {
                 $curqe = self::_shift_word($splitter, $conf);
+                if ($qt !== "n") {
+                    $wordbrk = self::_search_word_breakdown($curqe);
+                    if (!$wordbrk[0])
+                        $curqe = ($qt === "tag" ? "#" : $qt . ":") . $curqe;
+                    else if ($wordbrk[1] === ":")
+                        $curqe .= $splitter->shift_balanced_parens();
+                }
             } else if ($op->op === ")") {
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->op !== "(")
@@ -1999,7 +2021,7 @@ class PaperSearch {
                 }
             } else if ($op->op === "(") {
                 assert(!$curqe);
-                $stack[] = (object) array("op" => $op, "qe" => array());
+                $stack[] = (object) ["op" => $op, "qe" => []];
                 ++$parens;
             } else {
                 $end_precedence = $op->precedence - ($op->precedence <= 1);
@@ -2010,7 +2032,7 @@ class PaperSearch {
                 if ($top && !$op->unary && $top->op->op === $op->op)
                     $top->qe[] = $curqe;
                 else
-                    $stack[] = (object) array("op" => $op, "qe" => array($curqe));
+                    $stack[] = (object) ["op" => $op, "qe" => [$curqe]];
                 $curqe = null;
             }
         }
@@ -2022,13 +2044,14 @@ class PaperSearch {
         return $curqe;
     }
 
-    static function canonical_query($qa, $qo, $qx, Conf $conf) {
-        $x = array();
-        if (($qa = self::_canonical_expression($qa, "all", $conf)) !== "")
+    static function canonical_query($qa, $qo, $qx, $qt, Conf $conf) {
+        $qt = self::_canonical_qt($qt);
+        $x = [];
+        if (($qa = self::_canonical_expression($qa, "all", $qt, $conf)) !== "")
             $x[] = $qa;
-        if (($qo = self::_canonical_expression($qo, "any", $conf)) !== "")
+        if (($qo = self::_canonical_expression($qo, "any", $qt, $conf)) !== "")
             $x[] = $qo;
-        if (($qx = self::_canonical_expression($qx, "none", $conf)) !== "")
+        if (($qx = self::_canonical_expression($qx, "none", $qt, $conf)) !== "")
             $x[] = $qx;
         if (count($x) == 1)
             return preg_replace('/\A\((.*)\)\z/', '$1', $x[0]);

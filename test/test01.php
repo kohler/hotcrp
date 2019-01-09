@@ -1036,18 +1036,20 @@ xassert_eqq($paper16b->all_tags_text(), "");
 $Conf->check_invariants();
 
 // search canonicalization
-xassert_eqq(PaperSearch::canonical_query("(a b) OR (c d)", "", "", $Conf),
+xassert_eqq(PaperSearch::canonical_query("(a b) OR (c d)", "", "", "", $Conf),
             "(a b) OR (c d)");
-xassert_eqq(PaperSearch::canonical_query("", "a b (c d)", "", $Conf),
+xassert_eqq(PaperSearch::canonical_query("", "a b (c d)", "", "", $Conf),
             "a OR b OR (c d)");
-xassert_eqq(PaperSearch::canonical_query("e ", "a b (c d)", "", $Conf),
+xassert_eqq(PaperSearch::canonical_query("e ", "a b (c d)", "", "", $Conf),
             "e AND (a OR b OR (c d))");
-xassert_eqq(PaperSearch::canonical_query("", "a b", "c x m", $Conf),
+xassert_eqq(PaperSearch::canonical_query("", "a b", "c x m", "", $Conf),
             "(a OR b) AND NOT (c OR x OR m)");
-xassert_eqq(PaperSearch::canonical_query("", "a b", "(c OR m) (x y)", $Conf),
+xassert_eqq(PaperSearch::canonical_query("", "a b", "(c OR m) (x y)", "", $Conf),
             "(a OR b) AND NOT ((c OR m) OR (x y))");
-xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", $Conf),
+xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", "", $Conf),
             "foo HIGHLIGHT:pink bar");
+xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", "tag", $Conf),
+            "#foo HIGHLIGHT:pink #bar");
 
 // search types
 assert_search_papers($user_chair, "timers", "1 21");
