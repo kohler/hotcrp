@@ -117,8 +117,9 @@ class Conf {
     private $_decisions;
     private $_decision_matcher;
     private $_topic_map;
-    private $_topic_group_map;
     private $_topic_order_map;
+    private $_topic_groups;
+    private $_topic_html;
     private $_topic_separator_cache;
     private $_topic_abbrev_matcher;
     private $_pc_members_cache = null;
@@ -1034,26 +1035,36 @@ class Conf {
                     return strnatcasecmp($ta[1], $tb[1]);
             });
 
-            $this->_topic_map = $this->_topic_group_map = [];
-            $last_group = null;
-            foreach ($txs as $t) {
+            $this->_topic_map = [];
+            foreach ($txs as $t)
                 $this->_topic_map[$t[0]] = $t[1];
-                if ($last_group === null || strcasecmp($last_group, $t[3]) !== 0) {
-                    if ($t[3] === "")
-                        $last_group = " " . count($this->_topic_group_map);
-                    else
-                        $last_group = $t[3];
-                }
-                $this->_topic_group_map[$last_group][] = $t[0];
-            }
         }
         return $this->_topic_map;
     }
 
-    function topic_group_map() {
-        if ($this->_topic_group_map === null)
-            $this->topic_map();
-        return $this->_topic_group_map;
+    function topic_group_list() {
+        if ($this->_topic_groups === null) {
+            $this->_topic_groups = [];
+            $last_group = $last_gs = null;
+            foreach ($this->topic_map() as $tid => $tname) {
+                $colon = (int) strpos($tname, ":") ? : strlen($tname);
+                $group = substr($tname, 0, $colon);
+                if ($last_group !== null
+                    && strcasecmp($last_group, $group) === 0) {
+                    if ($last_gs[0] === false)
+                        $last_gs[0] = $last_group;
+                    $last_gs[] = $tid;
+                } else {
+                    if ($last_group !== null)
+                        $this->_topic_groups[] = $last_gs;
+                    $last_gs = [false, $tid];
+                    $last_group = $group;
+                }
+            }
+            if ($last_group !== null)
+                $this->_topic_groups[] = $last_gs;
+        }
+        return $this->_topic_groups;
     }
 
     function topic_order_map() {
@@ -1071,11 +1082,9 @@ class Conf {
             $this->_topic_abbrev_matcher = new AbbreviationMatcher;
             foreach ($this->topic_map() as $tid => $tname)
                 $this->_topic_abbrev_matcher->add($tname, $tid);
-            foreach ($this->topic_group_map() as $tgname => $tids) {
-                if ($tgname[0] !== " ") {
-                    foreach ($tids as $tid)
-                        $this->_topic_abbrev_matcher->add($tgname, $tid, 1);
-                }
+            foreach ($this->topic_group_list() as $tg) {
+                for ($i = 1; $tg[0] && $i !== count($tg); ++$i)
+                    $this->_topic_abbrev_matcher->add($tg[0], $tid, 1);
             }
         }
         return $this->_topic_abbrev_matcher;
@@ -1110,9 +1119,30 @@ class Conf {
             return "short";
     }
 
+    function unparse_topic_name_html($tid) {
+        if ($this->_topic_html === null)
+            $this->_topic_html = [];
+        if (!isset($this->_topic_html[$tid])) {
+            $t = "";
+            $tname = (string) get($this->topic_map(), $tid);
+            $colon = (int) strpos($tname, ":");
+            if ($colon > 0) {
+                foreach ($this->topic_group_list() as $tg)
+                    if ($tg[0] && in_array($tid, $tg, true)) {
+                        $t = '<span class="topicg">' . htmlspecialchars($tg[0]) . ':</span> ';
+                        $tname = ltrim(substr($tname, strlen($tg[0]) + 1));
+                        break;
+                    }
+            }
+            $this->_topic_html[$tid] = $t . htmlspecialchars($tname);
+        }
+        return $this->_topic_html[$tid];
+    }
+
     function invalidate_topics() {
-        $this->_topic_map = $this->_topic_group_map = $this->_topic_order_map = null;
-        $this->_topic_separator_cache = $this->_topic_abbrev_matcher = null;
+        $this->_topic_map = $this->_topic_order_map = $this->_topic_groups =
+            $this->_topic_html = $this->_topic_separator_cache =
+            $this->_topic_abbrev_matcher = null;
     }
 
 

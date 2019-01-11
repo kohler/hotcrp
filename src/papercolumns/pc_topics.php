@@ -34,16 +34,16 @@ class Topics_PaperColumn extends PaperColumn {
         return !isset($row->topicIds) || $row->topicIds == "";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if (!($tmap = $row->named_topic_map()))
+        if (!($tlist = $row->topic_list()))
             return "";
         $out = $interests = [];
         if ($this->interest_contact)
             $interests = $this->interest_contact->topic_interest_map();
-        foreach ($tmap as $tid => $tname) {
+        foreach ($tlist as $tid) {
             $t = '<li class="pl_topicti';
             if (!empty($interests) && ($i = get($interests, $tid)))
                 $t .= ' topic' . $i;
-            $out[] = $t . '">' . htmlspecialchars($tname) . '</li>';
+            $out[] = $t . '">' . $pl->conf->unparse_topic_name_html($tid) . '</li>';
         }
         return '<ul class="pl_topict">' . join("", $out) . '</ul>';
     }

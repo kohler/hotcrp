@@ -2795,12 +2795,14 @@ class PaperSearch {
         }
         if ($this->conf->has_topics() && (!$category || $category === "topic")) {
             $atopics = $this->conf->topic_map();
-            foreach ($this->conf->topic_group_map() as $tgname => $tids) {
-                if (count($tids) >= 3) {
-                    $res[] = "topic:" . SearchWord::quote($tgname);
+            foreach ($this->conf->topic_group_list() as $tg) {
+                if (count($tg) >= 4) {
+                    $res[] = "topic:" . SearchWord::quote($tg[0]);
                 }
-                foreach ($tids as $tid) {
-                    $res[] = "topic:" . SearchWord::quote($atopics[$tid]);
+                for ($i = 1; $i !== count($tg); ++$i) {
+                    if (count($tg) < 3 || $atopics[$tg[$i]] !== $tg[0]) {
+                        $res[] = "topic:" . SearchWord::quote($atopics[$tg[$i]]);
+                    }
                 }
             }
         }

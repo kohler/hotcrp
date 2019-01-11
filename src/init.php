@@ -104,6 +104,7 @@ class SiteLoader {
         "ReviewValues" => "src/review.php",
         "SearchSplitter" => "src/papersearch.php",
         "SearchTerm" => "src/papersearch.php",
+        "SearchWord" => "src/papersearch.php",
         "SettingParser" => "src/settingvalues.php",
         "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",

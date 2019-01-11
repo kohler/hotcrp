@@ -1086,9 +1086,9 @@ class PaperTable {
             $t = '<li class="topicti';
             if (($i = get($interests, $tid)))
                 $t .= ' topic' . $i;
-            $x = htmlspecialchars($tname);
-            if ($this->user->isPC && strpos($tname, "\"") === false)
-                $x = Ht::link($x, hoturl("search", ["q" => "topic:\"$tname\""]), ["class" => "qq"]);
+            $x = $this->conf->unparse_topic_name_html($tid);
+            if ($this->user->isPC)
+                $x = Ht::link($x, hoturl("search", ["q" => "topic:" . SearchWord::quote($tname)]), ["class" => "qq"]);
             $ts[] = $t . '">' . $x . '</li>';
             $lenclass = Conf::max_topici_lenclass($lenclass, $tname);
         }
@@ -1362,24 +1362,37 @@ class PaperTable {
             '<div class="ctable">';
         $ptopics = $this->prow ? $this->prow->topic_map() : [];
         $atopics = $this->conf->topic_map();
-        foreach ($this->conf->topic_group_map() as $tgname => $tgs) {
+        foreach ($this->conf->topic_group_list() as $tg) {
             $arg = ["class" => "uix js-range-click topic-entry", "id" => false,
                     "data-range-type" => "topic"];
-            $isgroup = count($tgs) >= 3;
-            if ($isgroup) {
-                echo '<div class="ctelt cteltg"><div class="ctelti">',
-                    '<div class="cteltx checki"><label class="strong"><span class="checkc">',
-                    Ht::checkbox("", 1, false, ["class" => "uix js-range-click is-range-group", "data-range-type" => "topic", "data-range-group" => "topicg" . $tgs[0], "id" => false]),
-                    ' </span>', htmlspecialchars($tgname), '</label></div>',
-                    '<div class="checki">';
-                $arg["data-range-group"] = "topicg" . $tgs[0];
-            }
-            foreach ($tgs as $tid) {
+            $isgroup = count($tg) >= 4;
+            if ($isgroup && strcasecmp($tg[0], $atopics[$tg[1]]) === 0) {
+                $tid = $tg[1];
                 $arg["data-default-checked"] = $pchecked = isset($ptopics[$tid]);
                 $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
-                $tname = $atopics[$tid];
-                if ($isgroup)
-                    $tname = ltrim(substr($tname, strlen($tgname) + 1));
+                echo '<div class="ctelt cteltg"><div class="ctelti">',
+                    '<div class="cteltx checki"><label><span class="checkc">',
+                    Ht::checkbox("top$tid", 1, $checked, $arg),
+                    ' </span>', htmlspecialchars($tg[0]), '</label></div>',
+                    '<div class="checki">';
+            } else if ($isgroup) {
+                echo '<div class="ctelt cteltg"><div class="ctelti">',
+                    '<div class="cteltx"><span class="topicg">',
+                    htmlspecialchars($tg[0]), '</span></div>',
+                    '<div class="checki">';
+            }
+            for ($i = 1; $i !== count($tg); ++$i) {
+                $tid = $tg[$i];
+                if ($isgroup) {
+                    $tname = ltrim(substr($atopics[$tid], strlen($tg[0]) + 1));
+                    if ($tname === "")
+                        continue;
+                    $tname = htmlspecialchars($tname);
+                } else {
+                    $tname = $this->conf->unparse_topic_name_html($tid);
+                }
+                $arg["data-default-checked"] = $pchecked = isset($ptopics[$tid]);
+                $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
                 echo ($isgroup ? '<div class="cteltx checki">' : '<div class="ctelt"><div class="ctelti checki">'),
                     '<label><span class="checkc">',
                     Ht::checkbox("top$tid", 1, $checked, $arg),
