@@ -1744,10 +1744,12 @@ function tracker_html(tr) {
     t += "<table class=\"tracker-info clearfix\"><tbody>";
     for (i = 0; i < rows.length; ++i) {
         t += '<tr class="tracker-row">';
-        if (i == 0)
+        if (i === 0)
             t += '<td rowspan="' + rows.length + '" class="tracker-logo-td"><div class="tracker-logo-space"></div></td>';
+        if (i === 0 && tr.name)
+            t += '<td rowspan="' + rows.length + '" class="tracker-name-td"><span class="tracker-name">' + escape_entities(tr.name) + '</span></td>';
         t += rows[i];
-        if (i == 0 && (dl.is_admin || tr.position_at)) {
+        if (i === 0 && (dl.is_admin || tr.position_at)) {
             t += '<td rowspan="' + Math.min(2, rows.length) + '" class="tracker-elapsed nb">';
             if (tr.position_at)
                 t += '<span class="tracker-timer" data-trackerid="' + tr.trackerid + '"></span>';

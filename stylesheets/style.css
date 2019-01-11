@@ -3312,16 +3312,14 @@ body {
 .tracker-logo {
 	float: left;
 	position: absolute;
-	top: 1px;
-	left: 7px;
-	padding: 5px 0 0 5px;
-	border-radius: 10px;
+	left: 12px;
 	color: #0b522b;
 }
 .tracker-logo:before {
 	content: "\261e";
 	font-size: 300%;
-	line-height: 24px;
+	line-height: 22px;
+	vertical-align: 10px;
 }
 .tracker-nomatch .tracker-logo {
 	/*background: rgba(255, 220, 215, 0.9);*/
@@ -3332,13 +3330,13 @@ body {
 	color: #b31028;
 }
 @keyframes trackernomatchlogo {
-	from, to { left: 7px; }
-	9% { left: 0px; animation-timing-function: ease-in; }
-	16% { left: 11px; animation-timing-function: ease-out; }
-	21% { left: 3px; animation-timing-function: ease-in; }
-	26% { left: 9px; animation-timing-function: ease-out; }
-	29% { left: 5px; animation-timing-function: ease-in; }
-	31% { left: 7px; animation-timing-function: ease-out; }
+	from, to { left: 12px; }
+	9% { left: 5px; animation-timing-function: ease-in; }
+	16% { left: 16px; animation-timing-function: ease-out; }
+	21% { left: 8px; animation-timing-function: ease-in; }
+	26% { left: 14px; animation-timing-function: ease-out; }
+	29% { left: 10px; animation-timing-function: ease-in; }
+	31% { left: 12px; animation-timing-function: ease-out; }
 }
 .tracker-logo-space {
 	display: inline-block;
@@ -3354,10 +3352,10 @@ body {
 .tracker-pid {
 	text-align: right;
 }
-.tracker-desc, .tracker-pid, .tracker-body {
+.tracker-desc, .tracker-pid, .tracker-body, .tracker-name-td {
 	padding-right: 0.5em;
 }
-.tracker-desc, .tracker-pid, .tracker-logo-td {
+.tracker-desc, .tracker-pid, .tracker-logo-td, .tracker-name-td {
 	white-space: nowrap;
 	width: 1px;
 }
@@ -3374,6 +3372,18 @@ body {
 	font-weight: bold;
 	color: #222222;
 	opacity: 0.5;
+}
+.tracker-name {
+	display: inline-block;
+	font-size: smaller;
+	line-height: 1;
+	padding: 2px 0.3em 3px;
+	border-radius: 0.3em;
+	border: 1px solid #222222;
+	white-space: nowrap;
+	font-weight: 500;
+	-webkit-text-decoration-line: none;
+	text-decoration-line: none;
 }
 
 #tracker-table {

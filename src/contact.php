@@ -2103,7 +2103,11 @@ class Contact {
 
     function can_view_tracker($tracker_json = null) {
         return $this->privChair
-            || ($this->isPC && $this->conf->check_default_track($this, Track::VIEWTRACKER))
+            || ($this->isPC
+                && $this->conf->check_default_track($this, Track::VIEWTRACKER)
+                && (!$tracker_json
+                    || !isset($tracker_json->visibility)
+                    || $this->has_tag($tracker_json->visibility)))
             || $this->tracker_kiosk_state;
     }
 

@@ -212,6 +212,18 @@ class MeetingTracker {
         // update tracker
         $position_at = self::tracker_next_position($tracker);
         if ($position !== "stop") {
+            $name = $qreq->name;
+            $visibility = null;
+            if (isset($qreq->visibility)) {
+                $visibility = trim($qreq->visibility);
+                if (str_starts_with($visibility, "#"))
+                    $visibility = substr($visibility, 1);
+                if ($visibility === "" || strcasecmp($visibility, "pc") === 0)
+                    $visibility = null;
+                else if (!$user->conf->pc_tag_exists($visibility))
+                    json_exit(400, "Parameter error: Visibility should be a PC tag.");
+            }
+
             // Default: start now, position now.
             // If update is to same list as old tracker, keep `start_at`.
             // If update is off-list, keep old position.
@@ -223,6 +235,10 @@ class MeetingTracker {
                     $position = $trs[$match]->position;
                 if ($trs[$match]->position == $position)
                     $position_at = $trs[$match]->position_at;
+                if ($name === null && isset($trs[$match]->name))
+                    $name = $trs[$match]->name;
+                if ($visibility === null && isset($trs[$match]->visibility))
+                    $visibility = $trs[$match]->visibility;
             } else
                 $start_at = $Now;
 
@@ -240,6 +256,10 @@ class MeetingTracker {
                 "sessionid" => session_id(),
                 "position" => $position
             ];
+            if ($name !== null)
+                $tr->name = $name;
+            if ($visibility !== null)
+                $tr->visibility = $visibility;
 
             if ($match === false) {
                 $trs[] = $tr;
@@ -294,6 +314,11 @@ class MeetingTracker {
             $ti->hide_conflicts = true;
         if ($tr->position !== false)
             $ti->papers = array_slice($tr->ids, $tr->position, 3);
+        if (isset($tr->name))
+            $ti->name = $tr->name;
+        if (isset($tr->visibility)
+            && ($user->privChair || !str_starts_with($tr->visibility, "~")))
+            $ti->visibility = $tr->visibility;
         return $ti;
     }
 
