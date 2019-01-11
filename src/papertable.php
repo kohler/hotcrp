@@ -1080,7 +1080,7 @@ class PaperTable {
         if (!($tmap = $this->prow->named_topic_map()))
             return "";
         $interests = $this->user->topic_interest_map();
-        $lenclass = "short";
+        $lenclass = count($tmap) < 4 ? "long" : "short";
         $ts = [];
         foreach ($tmap as $tid => $tname) {
             $t = '<li class="topicti';
@@ -1090,10 +1090,8 @@ class PaperTable {
             if ($this->user->isPC && strpos($tname, "\"") === false)
                 $x = Ht::link($x, hoturl("search", ["q" => "topic:\"$tname\""]), ["class" => "qq"]);
             $ts[] = $t . '">' . $x . '</li>';
-            $lenclass = Conf::max_topici_lenclass($topici_lenclass, $tname);
+            $lenclass = Conf::max_topici_lenclass($lenclass, $tname);
         }
-        if (count($ts) < 4)
-            $lenclass = "long";
         return '<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>';
     }
 
