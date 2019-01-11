@@ -835,7 +835,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
         $reqj_topics = (array) get($reqj, "topics", []);
         foreach ($us->conf->topic_map() as $id => $name) {
-            echo "      <tr><td class=\"ti_topic\">", htmlspecialchars($name), "</td>";
+            echo "      <tr><td class=\"ti_topic\">", $us->conf->unparse_topic_name_html($id), "</td>";
             $ival = (float) get($reqj_topics, $id);
             for ($j = -2; $j <= 2; ++$j) {
                 $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
