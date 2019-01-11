@@ -873,7 +873,7 @@ handle_ui.trigger = function (className, event) {
     var c = callbacks[className];
     if (c) {
         if (typeof event === "string")
-            event = new Event(event);
+            event = $.Event(event); // XXX IE8: `new Event` is not supported
         for (var j = 0; j < c.length; ++j) {
             c[j].call(this, event);
         }
