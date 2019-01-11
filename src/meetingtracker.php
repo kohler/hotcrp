@@ -181,10 +181,12 @@ class MeetingTracker {
             $trackerid = intval($trackerid);
         $position = false;
         $i = count($args) === 3 ? 2 : 1;
-        if (count($args) >= $i && isset($args[$i]) && ctype_digit($args[$i]))
-            $position = array_search((int) $args[$i], $xlist->ids);
-        else if ($args[$i] === "stop")
-            $position = "stop";
+        if (count($args) >= $i && isset($args[$i])) {
+            if (ctype_digit($args[$i]))
+                $position = array_search((int) $args[$i], $xlist->ids);
+            else if ($args[$i] === "stop")
+                $position = "stop";
+        }
 
         // find matching tracker
         $tracker = self::lookup($user->conf);
