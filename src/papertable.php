@@ -1080,26 +1080,21 @@ class PaperTable {
         if (!($tmap = $this->prow->named_topic_map()))
             return "";
         $interests = $this->user->topic_interest_map();
-        $k = 0;
+        $lenclass = "short";
         $ts = [];
         foreach ($tmap as $tid => $tname) {
-            $t = '<li class="topictp';
+            $t = '<li class="topicti';
             if (($i = get($interests, $tid)))
                 $t .= ' topic' . $i;
             $x = htmlspecialchars($tname);
             if ($this->user->isPC && strpos($tname, "\"") === false)
                 $x = Ht::link($x, hoturl("search", ["q" => "topic:\"$tname\""]), ["class" => "qq"]);
             $ts[] = $t . '">' . $x . '</li>';
-            if ($k < 2 && strlen($tname) > 50 && UnicodeHelper::utf8_glyphlen($tname) > 50)
-                $k = 2;
-            else if ($k < 1 && strlen($tname) > 20 && UnicodeHelper::utf8_glyphlen($tname) > 20)
-                $k = 1;
+            $lenclass = Conf::max_topici_lenclass($topici_lenclass, $tname);
         }
         if (count($ts) < 4)
-            $k = "long";
-        else
-            $k = get(["short", "medium", "long"], $k);
-        return '<ul class="topict topict-' . $k . '">' . join("", $ts) . '</ul>';
+            $lenclass = "long";
+        return '<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>';
     }
 
     private function paptabTopicsOptions() {

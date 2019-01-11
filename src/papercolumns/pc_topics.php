@@ -39,19 +39,13 @@ class Topics_PaperColumn extends PaperColumn {
         $out = $interests = [];
         if ($this->interest_contact)
             $interests = $this->interest_contact->topic_interest_map();
-        $sep = rtrim($row->conf->topic_separator()) . '</span> ';
         foreach ($tmap as $tid => $tname) {
-            if (!empty($out))
-                $out[] = $sep;
-            $t = '<span class="topicsp';
-            if (($i = get($interests, $tid)))
+            $t = '<li class="pl_topicti';
+            if (!empty($interests) && ($i = get($interests, $tid)))
                 $t .= ' topic' . $i;
-            if (strlen($tname) <= 50)
-                $t .= ' nw';
-            $out[] = $t . '">' . htmlspecialchars($tname);
+            $out[] = $t . '">' . htmlspecialchars($tname) . '</li>';
         }
-        $out[] = '</span>';
-        return join("", $out);
+        return '<ul class="pl_topict">' . join("", $out) . '</ul>';
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $row->unparse_topics_text();

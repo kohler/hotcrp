@@ -1097,6 +1097,19 @@ class Conf {
         return $this->_topic_separator_cache;
     }
 
+    static function max_topici_lenclass($lenclass, $tname) {
+        if ($lenclass === "long"
+            || (strlen($tname) > 50
+                && UnicodeHelper::utf8_glyphlen($tname) > 50))
+            return "long";
+        else if ($lenclass === "medium"
+                 || (strlen($tname) > 20
+                     && UnicodeHelper::utf8_glyphlen($tname) > 20))
+            return "medium";
+        else
+            return "short";
+    }
+
     function invalidate_topics() {
         $this->_topic_map = $this->_topic_group_map = $this->_topic_order_map = null;
         $this->_topic_separator_cache = $this->_topic_abbrev_matcher = null;

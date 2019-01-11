@@ -6092,7 +6092,7 @@ function set(f, $j, text) {
         if (elt.className == "")
             elt.className = "fx" + f.foldnum;
         if (f.title && (!f.column || text == "Loading")) {
-            if (text.charAt(0) == "<" && (m = /^(<(?:div|p)[^>]*>)([\s\S]*)$/.exec(text)))
+            if (text.charAt(0) == "<" && (m = /^((?:<(?:div|p|ul|ol|li)[^>]*>)+)([\s\S]*)$/.exec(text)))
                 text = m[1] + '<em class="plx">' + f.title + ':</em> ' + m[2];
             else
                 text = '<em class="plx">' + f.title + ':</em> ' + text;

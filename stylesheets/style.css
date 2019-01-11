@@ -279,6 +279,9 @@ span.nb {
 .n {
 	font-weight: normal;
 }
+.dim {
+	color: #777777;
+}
 
 
 /* generic vertical styles */
@@ -641,21 +644,16 @@ span.hastitle {
 .topic4, .topic3, .topic2, .topic1 {
 	font-weight: bold;
 }
-.topicp {
-	margin: 0;
-}
-.topicp > .topicsp {
-	display: inline-block;
-	margin-right: 1em;
-}
 .topict {
 	display: block;
 	padding-left: 0;
 	list-style: none;
-	-webkit-columns: 10rem 4;
-	columns: 10rem 4;
 	-webkit-column-gap: 18px;
 	column-gap: 18px;
+}
+.topict {
+	-webkit-columns: 10rem 4;
+	columns: 10rem 4;
 	margin: 0 0 -0.2em;
 }
 .topict.topict-medium {
@@ -666,15 +664,23 @@ span.hastitle {
 	-webkit-columns: 20rem 4;
 	columns: 20rem 4;
 }
-.topict > .topictp {
+.topicti {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
-	margin-left: 1.5em;
-	text-indent: -1.5em;
+	margin-left: 1.5rem;
+	text-indent: -1.5rem;
 }
-.dim {
-	color: #777777;
+.pl_topict {
+	display: flex;
+	flex-wrap: wrap;
+	padding-left: 0;
+	margin-top: 4px;
+	margin-bottom: 4px;
+}
+.pl_topicti {
+	display: block;
+	margin-right: 1.5rem;
 }
 
 

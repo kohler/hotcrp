@@ -982,7 +982,7 @@ class PaperList {
             if ($fdef->is_visible) {
                 if ($content !== "" && ($ch = $fdef->header($this, false))) {
                     if ($content[0] !== "<"
-                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $content, $cm))
+                        || !preg_match('/\A((?:<(?:div|p|ul|ol|li).*?>)*)([\s\S]*)\z/', $content, $cm))
                         $cm = [null, "", $content];
                     $content = $cm[1] . '<em class="plx">' . $ch . ':</em> ' . $cm[2];
                 }
