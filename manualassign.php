@@ -204,12 +204,12 @@ if ($reviewer) {
     foreach ($reviewer->topic_interest_map() as $topic => $ti)
         $interest[$ti > 0 ? 1 : 0][$topic] = $ti;
     if (!empty($interest[1]))
-        echo '<div class="f-i"><label>High interest topics</label>',
-            PaperInfo::unparse_topic_list_html($Conf, $interest[1]),
+        echo '<div class="f-i"><label>High-interest topics</label>',
+            $Conf->unparse_topic_list_html(array_keys($interest[1]), $interest[1]),
             "</div>";
     if (!empty($interest[0]))
-        echo '<div class="f-i"><label>Low interest topics</label>',
-            PaperInfo::unparse_topic_list_html($Conf, $interest[0]),
+        echo '<div class="f-i"><label>Low-interest topics</label>',
+            $Conf->unparse_topic_list_html(array_keys($interest[0]), $interest[0]),
             "</div>";
 
     // Conflict information

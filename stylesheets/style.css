@@ -638,11 +638,21 @@ span.hastitle {
 }
 
 /* topics */
-.topic-2, .topic-1 {
-	color: gray;
+.topic-2:before {
+	content: "⬇︎";
+	color: #bb5555;
 }
-.topic4, .topic3, .topic2, .topic1 {
-	font-weight: bold;
+.topic-1:before {
+	content: "↓";
+	color: #bb5555;
+}
+.topic1:before {
+	content: "↑";
+	color: #00aa00;
+}
+.topic2:before, .topic3:before, .topic4:before {
+	content: "⬆︎";
+	color: #00aa00;
 }
 .topict {
 	display: block;
@@ -675,12 +685,12 @@ span.hastitle {
 	display: flex;
 	flex-wrap: wrap;
 	padding-left: 0;
-	margin-top: 4px;
-	margin-bottom: 4px;
+	margin-top: 2px;
+	margin-bottom: 2px;
 }
 .pl_topicti {
 	display: block;
-	margin-right: 1.5rem;
+	margin-right: 1.5em;
 }
 .topicg {
 	color: #777777;
@@ -1710,6 +1720,7 @@ del .rto {
 	white-space: nowrap;
 	font-size: smaller;
 	text-align: center;
+	min-width: 2.2rem;
 }
 .ti_topic {
 	padding-right: 0.5em;

@@ -833,28 +833,6 @@ class PaperInfo {
         return join("; ", $this->named_topic_map());
     }
 
-    private static function render_topic($tname, $i, &$long) {
-        $s = '<span class="topicsp topic' . ($i ? : 0);
-        if (strlen($tname) <= 50)
-            $s .= ' nw';
-        else
-            $long = true;
-        return $s . '">' . htmlspecialchars($tname) . '</span>';
-    }
-
-    static function unparse_topic_list_html(Conf $conf, $ti) {
-        if (!$ti)
-            return "";
-        $out = array();
-        $tmap = $conf->topic_map();
-        $tomap = $conf->topic_order_map();
-        $long = false;
-        foreach ($ti as $t => $i)
-            $out[$tomap[$t]] = self::render_topic($tmap[$t], $i, $long);
-        ksort($out);
-        return join($conf->topic_separator(), $out);
-    }
-
     private static $topic_interest_values = [-0.7071, -0.5, 0, 0.7071, 1];
 
     function topic_interest_score($contact) {

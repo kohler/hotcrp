@@ -1861,18 +1861,19 @@ class Contact {
 
     function topic_interest_map() {
         global $Me;
-        if ($this->_topic_interest_map !== null)
-            return $this->_topic_interest_map;
-        if ($this->contactId <= 0 || !$this->conf->has_topics())
-            return array();
-        if (($this->roles & self::ROLE_PCLIKE)
-            && $this !== $Me
-            && ($pcm = $this->conf->pc_members())
-            && $this === get($pcm, $this->contactId))
-            self::load_topic_interests($pcm);
-        else {
-            $result = $this->conf->qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
-            $this->_topic_interest_map = Dbl::fetch_iimap($result);
+        if ($this->_topic_interest_map === null) {
+            if ($this->contactId <= 0 || !$this->conf->has_topics())
+                $this->_topic_interest_map = [];
+            else if (($this->roles & self::ROLE_PCLIKE)
+                     && $this !== $Me
+                     && ($pcm = $this->conf->pc_members())
+                     && $this === get($pcm, $this->contactId))
+                self::load_topic_interests($pcm);
+            else {
+                $result = $this->conf->qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
+                $this->_topic_interest_map = Dbl::fetch_iimap($result);
+                $this->_sort_topic_interest_map();
+            }
         }
         return $this->_topic_interest_map;
     }
@@ -1887,13 +1888,22 @@ class Contact {
         }
         $result = $c->conf->qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
         $c = null;
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             if (!$c || $c->contactId != $row[0])
                 $c = get($cbyid, $row[0]);
             if ($c)
                 $c->_topic_interest_map[(int) $row[1]] = (int) $row[2];
         }
         Dbl::free($result);
+        foreach ($contacts as $c)
+            $c->_sort_topic_interest_map();
+    }
+
+    private function _sort_topic_interest_map() {
+        $to = $this->conf->topic_order_map();
+        uksort($this->_topic_interest_map, function ($a, $b) use ($to) {
+            return $to[$a] - $to[$b];
+        });
     }
 
 

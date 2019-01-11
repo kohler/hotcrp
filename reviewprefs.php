@@ -310,7 +310,7 @@ if ($pl->has("abstract"))
     $show_data[] = '<span class="sep">'
         . Ht::checkbox("showabstract", 1, !$pl->is_folded("abstract"), ["class" => "paperlist-display"])
         . "&nbsp;" . Ht::label("Abstracts") . '</span>';
-if ($pl->has("topics"))
+if ($Conf->has_topics())
     $show_data[] = '<span class="sep">'
         . Ht::checkbox("showtopics", 1, !$pl->is_folded("topics"), ["class" => "paperlist-display"])
         . "&nbsp;" . Ht::label("Topics") . '</span>';

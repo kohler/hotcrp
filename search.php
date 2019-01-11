@@ -241,7 +241,7 @@ if ($pl_text) {
         $display_options->checkbox_item(1, "collab", "Collaborators", ["indent" => true]);
 
     // Abstract group
-    if ($pl->has("topics"))
+    if ($Conf->has_topics())
         $display_options->checkbox_item(1, "topics", "Topics");
 
     // Row numbers

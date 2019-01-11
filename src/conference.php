@@ -1139,6 +1139,20 @@ class Conf {
         return $this->_topic_html[$tid];
     }
 
+    function unparse_topic_list_html($tlist, $interests = null) {
+        $out = [];
+        foreach ($tlist as $tid) {
+            $n = $this->unparse_topic_name_html($tid);
+            $i = 0;
+            if (!empty($interests) && ($i = get($interests, $tid)) && empty($out)) {
+                $n = '<span class="topic' . $i . '">' . $n . '</span>';
+                $i = 0;
+            }
+            $out[] = '<li class="pl_topicti' . ($i ? " topic$i" : "") . '">' . $n . '</li>';
+        }
+        return '<ul class="pl_topict">' . join("", $out) . '</ul>';
+    }
+
     function invalidate_topics() {
         $this->_topic_map = $this->_topic_order_map = $this->_topic_groups =
             $this->_topic_html = $this->_topic_separator_cache =

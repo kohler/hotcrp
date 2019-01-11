@@ -4,7 +4,6 @@
 
 class Topics_PaperColumn extends PaperColumn {
     private $interest_contact;
-    private $need_has = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
@@ -13,8 +12,6 @@ class Topics_PaperColumn extends PaperColumn {
             return false;
         if ($visible)
             $pl->qopts["topics"] = 1;
-        else
-            $this->need_has = true;
         // only managers can see other users’ topic interests
         $this->interest_contact = $pl->reviewer_user();
         if ($this->interest_contact->contactId !== $pl->user->contactId
@@ -26,26 +23,10 @@ class Topics_PaperColumn extends PaperColumn {
         return "Topics";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        if (!isset($row->topicIds) && $this->need_has) {
-            $this->has_content = $this->has_content
-                || !!$pl->conf->fetch_ivalue("select exists(select * from PaperTopic where paperId?a) from dual", $pl->rowset()->paper_ids());
-            $this->need_has = false;
-        }
         return !isset($row->topicIds) || $row->topicIds == "";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if (!($tlist = $row->topic_list()))
-            return "";
-        $out = $interests = [];
-        if ($this->interest_contact)
-            $interests = $this->interest_contact->topic_interest_map();
-        foreach ($tlist as $tid) {
-            $t = '<li class="pl_topicti';
-            if (!empty($interests) && ($i = get($interests, $tid)))
-                $t .= ' topic' . $i;
-            $out[] = $t . '">' . $pl->conf->unparse_topic_name_html($tid) . '</li>';
-        }
-        return '<ul class="pl_topict">' . join("", $out) . '</ul>';
+        return $pl->conf->unparse_topic_list_html($row->topic_list(), $this->interest_contact ? $this->interest_contact->topic_interest_map() : null);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $row->unparse_topics_text();
