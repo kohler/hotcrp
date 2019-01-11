@@ -1119,6 +1119,14 @@ class Conf {
             return "short";
     }
 
+    function subtopic_name($tid) {
+        $n = get($this->topic_map(), $tid);
+        if ($n && ($colon = (int) strpos($n, ":")) !== 0)
+            return ltrim(substr($n, $colon + 1));
+        else
+            return false;
+    }
+
     function unparse_topic_name_html($tid) {
         if ($this->_topic_html === null)
             $this->_topic_html = [];

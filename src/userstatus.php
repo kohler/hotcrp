@@ -830,18 +830,28 @@ topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
             '  <table class="topicinterest"><thead>
     <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest"></th><th class="ti_interest"></th><th class="ti_interest"></th><th class="ti_interest">High</th></tr>
-    <tr><td></td><th class="topic-2"></th><th class="topic-1"></th><th class="topic0">-</th><th class="topic1"></th><th class="topic2"></th></tr></thead><tbody>', "\n";
+    <tr><td></td><th class="topic-2"></th><th class="topic-1"></th><th class="topic0">–</th><th class="topic1"></th><th class="topic2"></th></tr></thead><tbody>', "\n";
 
         $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
         $reqj_topics = (array) get($reqj, "topics", []);
-        foreach ($us->conf->topic_map() as $id => $name) {
-            echo "      <tr><td class=\"ti_topic\">", $us->conf->unparse_topic_name_html($id), "</td>";
-            $ival = (float) get($reqj_topics, $id);
-            for ($j = -2; $j <= 2; ++$j) {
-                $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
-                echo '<td class="ti_interest">', Ht::radio("ti$id", $j, $checked, ["class" => "uix js-range-click", "data-range-type" => "topicinterest$j"]), "</td>";
+        foreach ($us->conf->topic_group_list() as $tg) {
+            for ($i = 1; $i !== count($tg); ++$i) {
+                $tid = $tg[$i];
+                $tic = "ti_topic";
+                if ($i === 1) {
+                    $n = $us->conf->unparse_topic_name_html($tid);
+                } else {
+                    $n = htmlspecialchars($us->conf->subtopic_name($tid));
+                    $tic .= " ti_subtopic";
+                }
+                echo "      <tr><td class=\"{$tic}\">{$n}</td>";
+                $ival = (float) get($reqj_topics, $tid);
+                for ($j = -2; $j <= 2; ++$j) {
+                    $checked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
+                    echo '<td class="ti_interest">', Ht::radio("ti$tid", $j, $checked, ["class" => "uix js-range-click", "data-range-type" => "topicinterest$j"]), "</td>";
+                }
+                echo "</tr>\n";
             }
-            echo "</tr>\n";
         }
         echo "    </tbody></table></div>\n";
     }

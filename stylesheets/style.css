@@ -693,7 +693,8 @@ span.hastitle {
 	margin-right: 1.5em;
 }
 .topicg {
-	color: #777777;
+	font-weight: 500;
+	opacity: 0.7;
 }
 
 
@@ -1724,6 +1725,9 @@ del .rto {
 }
 .ti_topic {
 	padding-right: 0.5em;
+}
+.ti_subtopic {
+	padding-left: 1.75em;
 }
 table.reviewers, div.revnotes {
 	margin-bottom: 0.5em;

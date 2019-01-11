@@ -1384,10 +1384,9 @@ class PaperTable {
             for ($i = 1; $i !== count($tg); ++$i) {
                 $tid = $tg[$i];
                 if ($isgroup) {
-                    $tname = ltrim(substr($atopics[$tid], strlen($tg[0]) + 1));
+                    $tname = htmlspecialchars($this->conf->subtopic_name($tid));
                     if ($tname === "")
                         continue;
-                    $tname = htmlspecialchars($tname);
                 } else {
                     $tname = $this->conf->unparse_topic_name_html($tid);
                 }
