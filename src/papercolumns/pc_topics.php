@@ -4,6 +4,7 @@
 
 class Topics_PaperColumn extends PaperColumn {
     private $interest_contact;
+    private $need_has = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
@@ -12,6 +13,8 @@ class Topics_PaperColumn extends PaperColumn {
             return false;
         if ($visible)
             $pl->qopts["topics"] = 1;
+        else
+            $this->need_has = true;
         // only managers can see other users’ topic interests
         $this->interest_contact = $pl->reviewer_user();
         if ($this->interest_contact->contactId !== $pl->user->contactId
@@ -23,6 +26,11 @@ class Topics_PaperColumn extends PaperColumn {
         return "Topics";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
+        if (!isset($row->topicIds) && $this->need_has) {
+            $this->has_content = $this->has_content
+                || !!$pl->conf->fetch_ivalue("select exists(select * from PaperTopic where paperId?a) from dual", $pl->rowset()->paper_ids());
+            $this->need_has = false;
+        }
         return !isset($row->topicIds) || $row->topicIds == "";
     }
     function content(PaperList $pl, PaperInfo $row) {
