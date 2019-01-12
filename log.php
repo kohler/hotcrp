@@ -627,10 +627,9 @@ if (!$Me->privChair || !empty($exclude_pids)) {
         if ($page > 1 && $lrg->page_delta() > 0)
             $req["offset"] = $lrg->page_delta();
         if ($Qreq->forceShow)
-            $Conf->msg("xinfo", "Showing all entries. (" . Ht::link("Unprivileged view", selfHref($req + ["forceShow" => null])) . ")");
+            $Conf->msg("xinfo", "Showing all entries. (" . Ht::link("Unprivileged view", $Conf->selfurl($Qreq, $req + ["forceShow" => null])) . ")");
         else
             $Conf->msg("xinfo", "Not showing entries for " . Ht::link("conflicted administered papers", hoturl("search", "q=" . join("+", array_keys($exclude_pids)))) . ".");
-            //" (" . Ht::link("Override conflicts", selfHref($req + ["forceShow" => 1])) . ")");
     }
     echo '</div>';
 }

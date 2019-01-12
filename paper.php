@@ -22,7 +22,7 @@ if (isset($Qreq->p)
     && ctype_digit($Qreq->p)
     && !Navigation::path()
     && !$Qreq->post_ok()) {
-    go(SelfHref::make($Qreq));
+    $Conf->self_redirect($Qreq);
 }
 if (!isset($Qreq->p)
     && !isset($Qreq->paperId)
@@ -127,7 +127,7 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
         }
 
         $Me->log_activity("Withdrew", $prow->paperId);
-        SelfHref::redirect($Qreq);
+        $Conf->self_redirect($Qreq);
     } else
         Conf::msg_error(whyNotText($whyNot) . " The submission has not been withdrawn.");
 }
@@ -137,7 +137,7 @@ if (isset($Qreq->revive) && $prow && $Qreq->post_ok()) {
         $Conf->update_papersub_setting(0);
         loadRows();
         $Me->log_activity("Revived", $prow->paperId);
-        SelfHref::redirect($Qreq);
+        $Conf->self_redirect($Qreq);
     } else
         Conf::msg_error(whyNotText($whyNot));
 }
@@ -316,7 +316,7 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
 
     $whyNot = update_paper($Qreq, $action);
     if ($whyNot === true)
-        SelfHref::redirect($Qreq, ["p" => $prow->paperId, "m" => "edit"]);
+        $Conf->self_redirect($Qreq, ["p" => $prow->paperId, "m" => "edit"]);
 
     // If we get here, we failed to update.
     // Use the request unless the request failed because updates
@@ -336,7 +336,7 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
             else if ($ps->execute_save_paper_json($pj)) {
                 Conf::msg_confirm($Conf->_("Updated contacts for submission #%d.", $prow->paperId));
                 $Me->log_activity("Updated contacts", $prow->paperId);
-                SelfHref::redirect($Qreq);
+                $Conf->self_redirect($Qreq);
             }
         } else {
             Conf::msg_error("<ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>");

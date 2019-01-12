@@ -79,7 +79,7 @@ function complete_assignment($qreq, $callback) {
 // redirect if save cancelled
 if (isset($Qreq->saveassignment) && isset($Qreq->cancel)) {
     unset($Qreq->saveassignment);
-    SelfHref::redirect($Qreq); // should not return
+    $Conf->self_redirect($Qreq); // should not return
 }
 
 // perform quick assignments all at once
@@ -88,7 +88,7 @@ if (isset($Qreq->saveassignment)
     && isset($Qreq->file)
     && $Qreq->assignment_size_estimate < 1000
     && complete_assignment($Qreq, null)) {
-    SelfHref::redirect($Qreq);
+    $Conf->self_redirect($Qreq);
 }
 
 

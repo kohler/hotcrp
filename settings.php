@@ -11,7 +11,7 @@ $Sv = SettingValues::make_request($Me, $Qreq);
 $Sv->session_highlight();
 
 function choose_setting_group($qreq, SettingValues $sv) {
-    global $Me;
+    global $Conf, $Me;
     $req_group = $qreq->group;
     if (!$req_group && preg_match(',\A/\w+\z,', Navigation::path()))
         $req_group = substr(Navigation::path(), 1);
@@ -30,7 +30,7 @@ function choose_setting_group($qreq, SettingValues $sv) {
     if (!$want_group)
         $Me->escape();
     if ($want_group !== $req_group && !$qreq->post && $qreq->post_empty())
-        SelfHref::redirect($qreq, ["group" => $want_group]);
+        $Conf->self_redirect($qreq, ["group" => $want_group]);
     $sv->mark_interesting_group($want_group);
     return $want_group;
 }
@@ -45,11 +45,11 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
         else
             $Sv->conf->warnMsg("No changes.");
         $Sv->report();
-        SelfHref::redirect($Qreq);
+        $Conf->self_redirect($Qreq);
     }
 }
 if (isset($Qreq->cancel) && $Qreq->post_ok())
-    SelfHref::redirect($Qreq);
+    $Conf->self_redirect($Qreq);
 
 $Sv->crosscheck();
 

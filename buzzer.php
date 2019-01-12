@@ -40,7 +40,7 @@ if ($Me->privChair && $Qreq->signout_to_kiosk && $Qreq->post_ok()) {
     $Me = LoginHelper::logout($Me, false);
     ensure_session(ENSURE_SESSION_REGENERATE_ID);
     $Me->set_capability("tracker_kiosk", $kiosk_keys[$Qreq->buzzer_showpapers ? 1 : 0]);
-    SelfHref::redirect($Qreq);
+    $Conf->self_redirect($Qreq);
 }
 
 function kiosk_lookup($key) {

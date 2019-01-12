@@ -107,7 +107,7 @@ if (isset($Qreq->unsubmitreview)
         $Me->log_activity("$editRrowLogname unsubmitted", $prow);
         $Conf->confirmMsg("Unsubmitted review.");
     }
-    SelfHref::redirect($Qreq);             // normally does not return
+    $Conf->self_redirect($Qreq);             // normally does not return
     loadRows();
 } else if (isset($Qreq->update)
            && $paperTable->editrrow
@@ -125,7 +125,7 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
              && $tf->check_and_save($Me, $prow, $paperTable->editrrow)
              && !$tf->has_problem_at("ready")) {
         $tf->report();
-        SelfHref::redirect($Qreq); // normally does not return
+        $Conf->self_redirect($Qreq); // normally does not return
     }
     loadRows();
     $tf->report();
@@ -152,7 +152,7 @@ if (isset($Qreq->adoptreview) && $Qreq->post_ok()) {
     if (($my_rrow = $prow->fresh_review_of_user($Me))) {
         $Qreq->r = $my_rrow->reviewId;
     }
-    SelfHref::redirect($Qreq); // normally does not return
+    $Conf->self_redirect($Qreq); // normally does not return
 }
 
 
@@ -179,7 +179,7 @@ if (isset($Qreq->deletereview)
             $Qreq->paperId = $Qreq->p = $paperTable->editrrow->paperId;
             go(hoturl("paper", ["p" => $Qreq->paperId]));
         }
-        SelfHref::redirect($Qreq);         // normally does not return
+        $Conf->self_redirect($Qreq);         // normally does not return
         loadRows();
     }
 }

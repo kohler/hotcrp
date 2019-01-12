@@ -57,7 +57,7 @@ class Home_Partial {
         } else if ($signin) {
             LoginHelper::login_redirect($user->conf, $qreq);
         } else if (($signin || $qreq->signout) && $qreq->post) {
-            SelfHref::redirect($qreq);
+            $user->conf->self_redirect($qreq);
         } else if (isset($qreq->postlogin)) {
             LoginHelper::check_postlogin($user, $qreq);
         }

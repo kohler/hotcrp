@@ -82,64 +82,21 @@ function hoturl_absolute_raw($page, $options = null) {
 }
 
 
+// XXX obsolete
 class SelfHref {
-    static private $argmap = null;
-    static private function set_argmap() {
-        self::$argmap = [
-            "p" => true, "paperId" => "p", "pap" => "p",
-            "r" => true, "reviewId" => "r",
-            "c" => true, "commentId" => "c",
-            "m" => true, "mode" => true,
-            "u" => true,
-            "g" => true,
-            "q" => true, "t" => true, "qa" => true, "qo" => true, "qx" => true, "qt" => true,
-            "fx" => true, "fy" => true,
-            "forceShow" => true, "ls" => true,
-            "tab" => true, "atab" => true, "sort" => true,
-            "group" => true, "monreq" => true, "noedit" => true,
-            "contact" => true, "reviewer" => true,
-            "editcomment" => true
-        ];
-    }
-    static function make(Qrequest $qreq = null, $params = [], $options = null) {
-        global $Qreq;
-        $qreq = $qreq ? : $Qreq;
-        if (self::$argmap === null)
-            self::set_argmap();
-
-        $x = [];
-        foreach ($qreq->make_array() as $k => $v) {
-            $ak = get(self::$argmap, $k);
-            if ($ak === true)
-                $ak = $k;
-            if ($ak
-                && ($ak === $k || !isset($qreq[$ak]))
-                && !array_key_exists($ak, $params)
-                && !is_array($v))
-                $x[$ak] = $v;
-        }
-        foreach ($params as $k => $v)
-            if ($v !== null)
-                $x[$k] = $v;
-
-        $page = Navigation::page();
-        if ($options && get($options, "site_relative")) {
-            if (get($options, "raw"))
-                return hoturl_site_relative_raw($page, $x);
-            else
-                return hoturl_site_relative($page, $x);
-        } else if ($options && get($options, "raw"))
-            return hoturl_raw($page, $x);
-        else
-            return hoturl($page, $x);
+    static function make(Qrequest $qreq = null, $params = [], $flags = 0) {
+        global $Conf;
+        return $Conf->selfurl($qreq, $params, $flags);
     }
     static function redirect(Qrequest $qreq = null, $params = []) {
-        Navigation::redirect(self::make($qreq, $params, ["raw" => true]));
+        global $Conf;
+        $Conf->self_redirect($qreq, $params);
     }
 }
 
-function selfHref($params = [], $options = null) {
-    return SelfHref::make(null, $params, $options);
+// XXX obsolete
+function selfHref($params = [], $flags = 0) {
+    return SelfHref::make(null, $params, $flags);
 }
 
 class JsonResult {
@@ -252,9 +209,10 @@ function expander($open, $foldnum = null) {
 }
 
 function actas_link($cid, $contact = null) {
+    global $Conf;
     $contact = !$contact && is_object($cid) ? $cid : $contact;
     $cid = is_object($contact) ? $contact->email : $cid;
-    return '<a href="' . selfHref(array("actas" => $cid))
+    return '<a href="' . $Conf->selfurl(null, ["actas" => $cid])
         . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($contact))) . '</a>';
 }
 
@@ -578,7 +536,7 @@ function whyNotText($whyNot, $text_only = false) {
         $ms[] = $conf->_c("eperm", "Permission error.", "unknown", $paperId);
     // finish it off
     if (isset($whyNot["forceShow"]) && !$text_only)
-        $ms[] = $conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", selfHref(array("forceShow" => 1)));
+        $ms[] = $conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", $conf->selfurl(null, ["forceShow" => 1]));
     if (!empty($ms) && isset($whyNot["listViewable"]) && !$text_only)
         $ms[] = $conf->_("<a href=\"%s\">List the submissions you can view</a>", hoturl("search", "q="));
     return join(" ", $ms);

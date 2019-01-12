@@ -97,7 +97,7 @@ if (isset($Qreq->retract) && $Qreq->post_ok()) {
     $Conf->qe("unlock tables");
     if ($Conf->setting("rev_tokens") === -1)
         $Conf->update_rev_tokens_setting(0);
-    SelfHref::redirect($Qreq);
+    $Conf->self_redirect($Qreq);
     loadRows();
 }
 
@@ -160,8 +160,8 @@ function pcAssignments($qreq) {
             json_exit(["ok" => true]);
         else {
             $Conf->confirmMsg("Assignments saved." . $aset->errors_div_html());
-            SelfHref::redirect($qreq);
-            // NB normally SelfHref::redirect() does not return
+            $Conf->self_redirect($qreq);
+            // NB normally does not return
             loadRows();
         }
     } else {
@@ -191,7 +191,7 @@ if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
         else
             $Conf->confirmMsg($result->content["response"]);
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override);
-        SelfHref::redirect($Qreq);
+        $Conf->self_redirect($Qreq);
     } else {
         $error = $result->content["error"];
         if (isset($result->content["errf"]) && isset($result->content["errf"]["override"]))

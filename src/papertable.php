@@ -402,7 +402,7 @@ class PaperTable {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
                 $c .= "<a class=\"q fn ui js-foldup\" "
-                    . "href=\"" . SelfHref::make($this->qreq, ["atab" => $what])
+                    . "href=\"" . $this->conf->selfurl($this->qreq, ["atab" => $what])
                     . "\"" . $foldnumclass . ">" . $n
                     . "</a><span class=\"fx\">" . $n . "</span>";
             else
@@ -426,7 +426,7 @@ class PaperTable {
         if ($editfolder) {
             $c .= "<span class=\"pstedit fn\">"
                 . "<a class=\"ui xx need-tooltip js-foldup\" href=\""
-                . SelfHref::make($this->qreq, ["atab" => $what])
+                . $this->conf->selfurl($this->qreq, ["atab" => $what])
                 . "\"" . $foldnumclass . " data-tooltip=\"Edit\">"
                 . "<span class=\"psteditimg\">"
                 . Ht::img("edit48.png", "[Edit]", "editimg")
@@ -893,7 +893,9 @@ class PaperTable {
                 $t = trim($t);
                 if ($au->email !== "" && $au->contactId
                     && $viewAs !== null && $viewAs->email !== $au->email && $viewAs->privChair)
-                    $t .= " <a href=\"" . SelfHref::make($this->qreq, ["actas" => $au->email]) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";
+                    $t .= " <a href=\""
+                        . $this->conf->selfurl($this->qreq, ["actas" => $au->email])
+                        . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";
                 $names[] = '<p class="odname">' . $t . '</p>';
             }
             return join("\n", $names);
@@ -1818,7 +1820,7 @@ class PaperTable {
     }
     private function _forceShow_message() {
         if (!$this->admin && $this->allow_admin)
-            return " " . Ht::link("(Override your conflict)", SelfHref::make($this->qreq, ["forceShow" => 1]), ["class" => "nw"]);
+            return " " . Ht::link("(Override your conflict)", $this->conf->selfurl($this->qreq, ["forceShow" => 1]), ["class" => "nw"]);
         else
             return "";
     }
@@ -2302,7 +2304,7 @@ class PaperTable {
     }
 
     function _privilegeMessage() {
-        $a = "<a href=\"" . SelfHref::make($this->qreq, ["forceShow" => 0]) . "\">";
+        $a = "<a href=\"" . $this->conf->selfurl($this->qreq, ["forceShow" => 0]) . "\">";
         return $a . Ht::img("override24.png", "[Override]", "dlimg")
             . "</a>&nbsp;You have used administrator privileges to view and edit reviews for this submission. (" . $a . "Unprivileged view</a>)";
     }
@@ -2581,7 +2583,7 @@ class PaperTable {
         if ($pid !== null) {
             $qreq->paperId = $pid;
             unset($qreq->q, $qreq->p);
-            SelfHref::redirect($qreq);
+            $user->conf->self_redirect($qreq);
         } else if ((isset($qreq->paperId) || isset($qreq->q))
                    && !$user->is_empty()) {
             $q = "q=" . urlencode(isset($qreq->paperId) ? $qreq->paperId : $qreq->q);

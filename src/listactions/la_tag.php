@@ -114,7 +114,7 @@ class Tag_ListAction extends ListAction {
             foreach (array("tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
                 if (isset($qreq[$arg]))
                     $args[$arg] = $qreq[$arg];
-            SelfHref::redirect($qreq, $args);
+            $user->conf->self_redirect($qreq, $args);
         }
     }
 }

@@ -16,7 +16,7 @@ $want_topic = $help_topics->canonical_group($topic);
 if (!$want_topic)
     $want_topic = "topics";
 if ($want_topic !== $topic)
-    SelfHref::redirect($Qreq, ["t" => $want_topic]);
+    $Conf->self_redirect($Qreq, ["t" => $want_topic]);
 $topicj = $help_topics->get($topic);
 
 $Conf->header_head($topic === "topics" ? "Help" : "Help - {$topicj->title}");

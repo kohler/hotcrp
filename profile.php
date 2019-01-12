@@ -76,7 +76,7 @@ if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
                 $list = new SessionList("u/all/" . urlencode($Qreq->search), $cs->ids, "“" . htmlspecialchars($Qreq->u) . "”", hoturl_site_relative_raw("users", ["t" => "all"]));
                 $list->set_cookie();
                 $Qreq->u = $Acct->email;
-                SelfHref::redirect($Qreq);
+                $Conf->self_redirect($Qreq);
             }
         }
     }
@@ -95,7 +95,7 @@ if (!$Acct
     else if (isset($Qreq->save) || isset($Qreq->savebulk))
         Conf::msg_error("You’re logged in as a different user now, so your changes were ignored.");
     unset($Qreq->u, $Qreq->save, $Qreq->savebulk);
-    SelfHref::redirect($Qreq);
+    $Conf->self_redirect($Qreq);
 }
 
 $need_highlight = false;
@@ -284,14 +284,14 @@ else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
     else
         parseBulkFile($text, $Qreq->file_filename("bulk"));
     $Qreq->bulkentry = "";
-    SelfHref::redirect($Qreq, ["anchor" => "bulk"]);
+    $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
 } else if ($Qreq->savebulk && $newProfile) {
     $success = true;
     if ($Qreq->bulkentry && $Qreq->bulkentry !== "Enter users one per line")
         $success = parseBulkFile($Qreq->bulkentry, "");
     if (!$success)
         $Conf->save_session("profile_bulkentry", array($Now, $Qreq->bulkentry));
-    SelfHref::redirect($Qreq, ["anchor" => "bulk"]);
+    $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
 } else if (isset($Qreq->save)) {
     assert($Acct->is_empty() === $newProfile);
     $cj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
@@ -322,7 +322,7 @@ else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
             if ($UserStatus->has_warning())
                 $xcj["warning_fields"] = $UserStatus->problem_fields();
             $Conf->save_session("profile_redirect", $xcj);
-            SelfHref::redirect($Qreq);
+            $Conf->self_redirect($Qreq);
         }
     }
 } else if (isset($Qreq->merge) && !$newProfile
@@ -407,7 +407,7 @@ function echo_modes($hlbulk) {
     global $Me, $Acct, $newProfile;
     echo '<div class="psmode">',
         '<div class="', ($hlbulk == 0 ? "papmodex" : "papmode"), '">',
-        Ht::link($newProfile || $Me->email == $Acct->email ? "Your profile" : "Profile", selfHref(["u" => null])),
+        Ht::link($newProfile || $Me->email == $Acct->email ? "Your profile" : "Profile", $Me->conf->selfurl(null, ["u" => null])),
         '</div><div class="', ($hlbulk == 1 ? "papmodex" : "papmode"), '">';
     if ($newProfile)
         echo Ht::link("New account", "", ["class" => "ui tla has-focus-history", "data-fold-target" => "9c"]);

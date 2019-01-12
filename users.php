@@ -200,7 +200,7 @@ if ($Me->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel)) {
     else if ($Qreq->modifytype == "sendaccount")
         modify_confirm(UserActions::send_account_info($Me, $papersel), "Account information sent.", false);
     unset($Qreq->modifygo, $Qreq->modifytype);
-    SelfHref::redirect($Qreq);
+    $Conf->self_redirect($Qreq);
 }
 
 function do_tags($qreq) {
@@ -259,7 +259,7 @@ function do_tags($qreq) {
     if (!$us->has_error()) {
         $Conf->confirmMsg("Tags saved.");
         unset($qreq->tagact, $qreq->tag);
-        SelfHref::redirect($qreq);
+        $Conf->self_redirect($qreq);
     } else
         Conf::msg_error($us->errors());
 }

@@ -75,7 +75,7 @@ if ($Qreq->redisplay) {
         $forceShow = 0;
     else
         $forceShow = $Qreq->forceShow || $Qreq->showforce ? 1 : null;
-    SelfHref::redirect($Qreq, ["anchor" => "view", "forceShow" => $forceShow]);
+    $Conf->self_redirect($Qreq, ["anchor" => "view", "forceShow" => $forceShow]);
 }
 
 
@@ -111,10 +111,10 @@ function savesearch() {
 
     if ($Qreq->deletesearch) {
         Dbl::qe_raw("delete from Settings where name='ss:" . sqlq($name) . "'");
-        SelfHref::redirect($Qreq);
+        $Conf->self_redirect($Qreq);
     } else {
         Dbl::qe_raw("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode_db($arr)) . "') on duplicate key update value=values(value), data=values(data)");
-        SelfHref::redirect($Qreq, ["q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null]);
+        $Conf->self_redirect($Qreq, ["q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null]);
     }
 }
 
@@ -401,7 +401,7 @@ if ($Me->isPC || $Me->privChair) {
                     "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(defval($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
                 if ($Me->privChair || !defval($sv, "owner") || $sv->owner == $Me->contactId)
                     echo " <span class='barsep'>·</span> ",
-                        "<a href=\"", SelfHref::make($Qreq, ["deletesearch" => 1, "ssname" => $sn, "post" => post_value()]), "\">Delete</a>";
+                        "<a href=\"", $Conf->selfurl($Qreq, ["deletesearch" => 1, "ssname" => $sn, "post" => post_value()]), "\">Delete</a>";
                 echo "</div></td></tr></table>";
                 ++$n;
             }
@@ -499,7 +499,7 @@ if ($pl_text) {
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if ($pl->has("sel")) {
-        echo Ht::form(SelfHref::make($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel"]),
+        echo Ht::form($Conf->selfurl($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel"]),
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
             Ht::hidden("forceShow", (string) $Qreq->forceShow, ["id" => "forceShow"]),
             Ht::hidden_default_submit("default", 1);

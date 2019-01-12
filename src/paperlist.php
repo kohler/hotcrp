@@ -702,7 +702,7 @@ class PaperList {
                 if (is_string($lllg))
                     $lllg = [$lllg];
                 array_unshift($lllg, $rf->name, $rf->title);
-                $lllg[0] = SelfHref::make($this->qreq, ["atab" => $lllg[0], "anchor" => "plact"]);
+                $lllg[0] = $this->conf->selfurl($this->qreq, ["atab" => $lllg[0], "anchor" => "plact"]);
                 $lllgroups[] = $lllg;
                 if ($this->qreq->fn == $rf->name || $this->_atab == $rf->name)
                     $whichlll = count($lllgroups) - 1;
@@ -712,7 +712,7 @@ class PaperList {
         $footsel_ncol = $this->_view_columns ? 0 : 1;
         return self::render_footer_row($footsel_ncol, $ncol - $footsel_ncol,
             "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
-            . SelfHref::make($this->qreq, ["selectall" => 1, "anchor" => "plact"])
+            . $this->conf->selfurl($this->qreq, ["selectall" => 1, "anchor" => "plact"])
             . '">select all ' . $this->count . "</a>), then&nbsp;",
             $lllgroups, $whichlll, $extra);
     }

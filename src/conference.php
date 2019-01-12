@@ -2655,6 +2655,45 @@ class Conf {
     }
 
 
+    static $selfurl_safe = [
+        "p" => true, "paperId" => "p", "pap" => "p",
+        "r" => true, "reviewId" => "r",
+        "c" => true, "commentId" => "c",
+        "m" => true, "mode" => true, "u" => true, "g" => true,
+        "q" => true, "t" => true, "qa" => true, "qo" => true, "qx" => true, "qt" => true,
+        "fx" => true, "fy" => true,
+        "forceShow" => true, "tab" => true, "atab" => true, "sort" => true,
+        "group" => true, "monreq" => true, "noedit" => true,
+        "contact" => true, "reviewer" => true,
+        "editcomment" => true
+    ];
+
+    function selfurl(Qrequest $qreq = null, $params = [], $flags = 0) {
+        global $Qreq;
+        $qreq = $qreq ? : $Qreq;
+
+        $x = [];
+        foreach ($qreq->make_array() as $k => $v) {
+            $ak = get(self::$selfurl_safe, $k);
+            if ($ak === true)
+                $ak = $k;
+            if ($ak
+                && ($ak === $k || !isset($qreq[$ak]))
+                && !array_key_exists($ak, $params)
+                && !is_array($v))
+                $x[$ak] = $v;
+        }
+        foreach ($params as $k => $v)
+            if ($v !== null)
+                $x[$k] = $v;
+        return $this->hoturl(Navigation::page(), $x, $flags);
+    }
+
+    function self_redirect(Qrequest $qreq = null, $params = []) {
+        Navigation::redirect($this->selfurl($qreq, $params, self::HOTURL_RAW));
+    }
+
+
     //
     // Paper storage
     //
@@ -3358,7 +3397,8 @@ class Conf {
                 if (!$is_trueuser)
                     $actas = $_SESSION["u"];
                 if (strcasecmp($Me->email, $actas) !== 0)
-                    $profile_parts[] = "<a href=\"" . selfHref(array("actas" => $actas)) . "\">"
+                    $profile_parts[] = "<a href=\""
+                        . $this->selfurl(null, ["actas" => $actas]) . "\">"
                         . ($is_trueuser ? htmlspecialchars($actas) : "Admin")
                         . "&nbsp;" . Ht::img("viewas.png", "Act as " . htmlspecialchars($actas))
                         . "</a>";

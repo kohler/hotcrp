@@ -14,7 +14,7 @@ class AdminHome_Partial {
             $user->conf->save_setting("pcrev_informtime", $qreq->clearnewpcrev);
         if (isset($qreq->clearbug) || isset($qreq->clearnewpcrev)) {
             unset($qreq->clearbug, $qreq->clearnewpcrev);
-            SelfHref::redirect($qreq);
+            $user->conf->self_redirect($qreq);
         }
     }
     static function render(Contact $user) {

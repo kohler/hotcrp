@@ -30,6 +30,6 @@ class ReviewToken_Partial {
             $tokeninfo[] = "Review tokens cleared.";
         if (!empty($tokeninfo))
             $user->conf->confirmMsg(join("<br />\n", $tokeninfo));
-        SelfHref::redirect($qreq);
+        $user->conf->self_redirect($qreq);
     }
 }

@@ -900,7 +900,7 @@ class Contact {
                 $x["__PATH__"] = preg_replace(",^/+,", "", Navigation::path());
             if ($qreq->anchor)
                 $x["anchor"] = $qreq->anchor;
-            $url = SelfHref::make($qreq, $x, ["raw" => true, "site_relative" => true]);
+            $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITE_RELATIVE);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, $Now + 120];
             if ($qreq->post_ok())
                 error_go(false, "You’ve been signed out, so your changes were not saved. After signing in, you may submit them again.");

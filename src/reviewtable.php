@@ -3,10 +3,10 @@
 // Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
 
 function _review_table_actas($rr) {
-    global $Me;
+    global $Conf, $Me;
     if (!get($rr, "contactId") || $rr->contactId == $Me->contactId)
         return "";
-    return ' <a href="' . selfHref(array("actas" => $rr->email)) . '">'
+    return ' <a href="' . $Conf->selfurl(null, ["actas" => $rr->email]) . '">'
         . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($rr)))
         . "</a>";
 }
@@ -425,7 +425,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
 
     // override conflict
     if ($allow_admin && !$admin) {
-        $t[] = '<span class="revlink"><a href="' . selfHref(array("forceShow" => 1)) . '" class="xx">'
+        $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl(null, ["forceShow" => 1]) . '" class="xx">'
             . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing</span>";
     } else if ($Me->privChair && !$allow_admin) {
         $x = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
