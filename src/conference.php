@@ -2532,8 +2532,9 @@ class Conf {
 
     function hoturl($page, $options = null, $flags = 0) {
         global $Me;
+        $nav = Navigation::get();
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
-        $t = $page . Navigation::php_suffix();
+        $t = $page . $nav->php_suffix;
         // parse options, separate anchor; see also redirectSelf
         $anchor = "";
         if (is_array($options)) {
@@ -2619,7 +2620,7 @@ class Conf {
             return $t;
         $need_site_path = false;
         if ($page === "index") {
-            $expect = "index" . Navigation::php_suffix();
+            $expect = "index" . $nav->php_suffix;
             $lexpect = strlen($expect);
             if (substr($t, 0, $lexpect) === $expect
                 && ($t === $expect || $t[$lexpect] === "?" || $t[$lexpect] === "#")) {
@@ -2630,9 +2631,9 @@ class Conf {
         if (($flags & self::HOTURL_ABSOLUTE) || $this !== Conf::$g)
             return $this->opt("paperSite") . "/" . $t;
         else {
-            $siteurl = Navigation::siteurl();
+            $siteurl = $nav->site_path_relative;
             if ($need_site_path && $siteurl === "")
-                $siteurl = Navigation::site_path();
+                $siteurl = $nav->site_path;
             return $siteurl . $t;
         }
     }
