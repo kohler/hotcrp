@@ -10,7 +10,7 @@ class Decisions_SettingParser extends SettingParser {
         echo '<tr><td class="lmentry nw">',
             Ht::entry("dec_name_$ndec", $vx, ["size" => 35, "placeholder" => "Decision name", "data-default-value" => $v]),
             '</td><td class="lmentry nw">',
-            '<a href="" class="ui js-settings-remove-decision-type btn qx need-tooltip" data-tooltip="Delete" tabindex="-1">✖</a>',
+            '<a href="" class="ui js-settings-remove-decision-type btn qx need-tooltip" aria-label="Delete decision" tabindex="-1">✖</a>',
             '</td><td>';
         if ($isnew) {
             echo Ht::select("dec_class_$ndec",

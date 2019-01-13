@@ -1050,10 +1050,6 @@ td.rxcaption {
 td.sentry {
 	padding: 3px 0.75em;
 }
-th.ccaption {
-	padding-left: 0.25em;
-	padding-right: 0.25em;
-}
 td.lmcaption {
 	padding-right: 1em;
 }
@@ -1072,10 +1068,6 @@ td.lmentry {
 }
 td.rentry {
 	padding: 2px 0;
-	text-align: right;
-}
-td.rpentry {
-	padding: 2px 0.5em 2px 0;
 	text-align: right;
 }
 div.hint {
@@ -1344,6 +1336,9 @@ td.padl, th.padl, div.padl {
 }
 td.padlb, th.padlb, div.padlb {
 	padding-left: 2em;
+}
+td.padls, th.padls, div.padls {
+	padding-left: 0.5em;
 }
 
 .has-error > .f-c,

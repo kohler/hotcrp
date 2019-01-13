@@ -28,7 +28,7 @@ class Topics_SettingRenderer {
                 echo '<span class="float-right n"># PC interests: </span>';
             echo '<strong>Current topics</strong></th>';
             if (!empty($interests))
-                echo '<th class="ccaption">Low</th><th class="ccaption">High</th>';
+                echo '<th class="padls">Low</th><th class="padls">High</th>';
             echo '</tr></thead><tbody>';
             foreach ($sv->conf->topic_map() as $tid => $tname) {
                 if ($sv->use_req() && isset($sv->req["top$tid"]))
@@ -38,8 +38,8 @@ class Topics_SettingRenderer {
                     '</td>';
                 if (!empty($interests)) {
                     $tinterests = get($interests, $tid, array());
-                    echo '<td class="fx rpentry">', (get($tinterests, 0) ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
-                        '<td class="fx rpentry">', (get($tinterests, 1) ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
+                    echo '<td class="fx plr padls">', (get($tinterests, 0) ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
+                        '<td class="fx plr padls">', (get($tinterests, 1) ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
                 }
             }
             echo '</tbody></table>',
