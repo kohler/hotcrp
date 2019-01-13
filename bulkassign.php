@@ -193,13 +193,13 @@ if (isset($Qreq->saveassignment)
 echo Ht::form(hoturl_post("bulkassign", "upload=1"));
 
 // Upload
-echo '<div class="f-i" style="margin-top:1em">',
+echo '<div class="lg"><div class="f-i" style="margin-top:1em">',
     Ht::textarea("bulkentry", (string) $Qreq->bulkentry,
                  ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments", "class" => "need-autogrow"]),
     '</div>';
 
 echo '<div class="g"><strong>OR</strong> &nbsp;',
-    '<input type="file" name="bulk" accept="text/plain,text/csv" size="30" /></div>';
+    '<input type="file" name="bulk" accept="text/plain,text/csv" size="30"></div></div>';
 
 echo '<div id="foldoptions" class="lg foldc fold2c fold3c">',
     'By default,&nbsp; ',

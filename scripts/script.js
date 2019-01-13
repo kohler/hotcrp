@@ -5551,7 +5551,7 @@ function edit_anno(locator) {
         return false;
     }
     function ondeleteclick() {
-        var $div = $(this).closest(".settings-revfield"), annoid = $div.attr("data-anno-id");
+        var $div = $(this).closest(".settings-g"), annoid = $div.attr("data-anno-id");
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
         $div.append('<input type="hidden" name="deleted_' + annoid + '" value="1">');
         $div.find("input[name='heading_" + annoid + "']").prop("disabled", true);
@@ -5572,9 +5572,9 @@ function edit_anno(locator) {
         var annoid = anno.annoid;
         if (annoid == null)
             annoid = "n" + (last_newannoid += 1);
-        hc.push('<div class="settings-revfield" data-anno-id="' + annoid + '"><table><tbody>', '</tbody></table></div>');
-        hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32"></td></tr>');
-        hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5">', '</td></tr>');
+        hc.push('<div class="settings-g" data-anno-id="' + annoid + '">', '</div>');
+        hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-d">Heading</label><input id="htctl-taganno-' + annoid + '-d" name="heading_' + annoid + '" type="text" placeholder="none" size="32"></div>');
+        hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-tagval">Tag value</label><input id="htctl-taganno-' + annoid + '-tagval" name="tagval_' + annoid + '" type="text" size="5">', '</div>');
         if (anno.annoid)
             hc.push(' <a class="ui closebtn delete-link need-tooltip" href="" data-tooltip="Delete group">x</a>');
         hc.pop_n(2);
@@ -5582,14 +5582,17 @@ function edit_anno(locator) {
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
-        var hc = popup_skeleton();
-        hc.push('<h2>Annotate #' + mytag.replace(/^\d+~/, "~") + ' order</h2>');
+        var hc = popup_skeleton({style: "width: 32rem"});
+        var dtag = mytag.replace(/^\d+~/, "~");
+        hc.push('<h2>Annotate #' + dtag + ' order</h2>');
+        hc.push('<p>These annotations will appear in searches such as “order:' + dtag + '”.</p>');
         hc.push('<div class="tagannos">', '</div>');
         annos = rv.anno;
-        for (var i = 0; i < annos.length; ++i)
+        for (var i = 0; i < annos.length; ++i) {
             add_anno(hc, annos[i]);
+        }
         hc.pop();
-        hc.push('<div class="g"><button type="button" name="add">Add group</button></div>');
+        hc.push('<div class="g"><button type="button" name="add">Add heading</button></div>');
         hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save changes</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         for (var i = 0; i < annos.length; ++i) {
@@ -5634,7 +5637,8 @@ function popup_skeleton(options) {
     var hc = new HtmlCollector, $d = null;
     options = options || {};
     hc.push('<div class="popupbg"><div class="popupo'
-        + (options.anchor && options.anchor != window ? "" : " popupcenter")
+        + (options.anchor && options.anchor !== window ? "" : " popupcenter")
+        + (options.style ? '" style="' + escape_entities(options.style) : '')
         + '"><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form><div class="popup-bottom"></div></div></div>');
     hc.push_actions = function (actions) {
         hc.push('<div class="popup-actions">', '</div>');

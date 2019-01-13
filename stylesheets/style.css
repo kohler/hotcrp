@@ -286,7 +286,8 @@ span.nb {
 
 /* generic vertical styles */
 .lg { /* large gap */
-	margin: 1.5em 0;
+	margin-top: 1em;
+	margin-bottom: 2em;
 }
 .mg { /* medium gap */
 	margin: 1em 0;
@@ -302,9 +303,6 @@ td.g {
 }
 .ug { /* microgap */
 	margin: 0.35em 0;
-}
-td.ug {
-	padding-top: 0.35em;
 }
 .c, .clear {
 	clear: both;
