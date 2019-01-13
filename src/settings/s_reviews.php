@@ -15,12 +15,12 @@ class Reviews_SettingRenderer {
         echo '<div class="mg js-settings-review-round" data-review-round-number="', $rnum, '"><div>',
             $sv->label($rname, "Round"), ' &nbsp;',
             $sv->render_entry($rname);
-        echo '<div class="inb" style="min-width:7em;margin-left:2em">';
+        echo '<div class="d-inline-block" style="min-width:7em;margin-left:2em">';
         if ($rnum !== '$' && $review_count)
             echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $sv->conf->round_name($rnum) : "none"))), '">(', plural($review_count, "review"), ')</a>';
         echo '</div>';
         if ($deletable) {
-            echo '<div class="inb" style="padding-left:2em">',
+            echo '<div class="d-inline-block" style="padding-left:2em">',
                 Ht::hidden("deleteround_$rnum", "", ["data-default-value" => ""]),
                 Ht::button("Delete round", ["class" => "js-settings-review-round-delete"]),
                 '</div>';

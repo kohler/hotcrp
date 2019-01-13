@@ -23,14 +23,16 @@ else {
 $count = cvtint($Qreq->get("n", 50), -1);
 if ($count <= 0) {
     $count = 50;
-    Conf::msg_error("\"Show <i>n</i> records\" requires a number greater than 0.");
+    Conf::msg_error("“Show <i>n</i> records” requires a number greater than 0.");
     $Eclass["n"] = " has-error";
 }
 $count = min($count, 200);
 
 $Qreq->q = trim((string) $Qreq->q);
 $Qreq->p = trim((string) $Qreq->p);
-$Qreq->acct = trim((string) $Qreq->acct);
+if (isset($Qreq->acct) && !isset($Qreq->u))
+    $Qreq->u = $Qreq->acct;
+$Qreq->u = trim((string) $Qreq->u);
 $Qreq->date = trim($Qreq->get("date", "now"));
 
 $wheres = array();
@@ -58,9 +60,9 @@ if ($Qreq->p !== "") {
     }
 }
 
-if ($Qreq->acct !== "") {
+if ($Qreq->u !== "") {
     $ids = array();
-    $accts = new SearchSplitter($Qreq->acct);
+    $accts = new SearchSplitter($Qreq->u);
     while (($word = $accts->shift()) !== "") {
         $flags = ContactSearch::F_TAG | ContactSearch::F_USER | ContactSearch::F_ALLOW_DELETED;
         if (substr($word, 0, 1) === "\"") {
@@ -83,7 +85,7 @@ if ($Qreq->acct !== "") {
     if (count($where))
         $wheres[] = "(" . join(" or ", $where) . ")";
     else {
-        $Conf->infoMsg("No users match “" . htmlspecialchars($Qreq->acct) . "”.");
+        $Conf->infoMsg("No users match “" . htmlspecialchars($Qreq->u) . "”.");
         $wheres[] = "false";
     }
 }
@@ -304,32 +306,33 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
     else if ($first_timestamp)
         $dplaceholder = $Conf->unparse_time_short($first_timestamp);
 
-    echo Ht::form(hoturl("log"), array("method" => "get"));
+    echo Ht::form(hoturl("log"), ["method" => "get", "id" => "searchform"]);
     if ($Qreq->forceShow)
         echo Ht::hidden("forceShow", 1);
-    echo "<table id=\"searchform\"><tr>
-  <td class='lxcaption", get($Eclass, "q", ""), "'>Concerning action(s)</td>
-  <td class='lentry", get($Eclass, "q", ""), "'>", Ht::entry("q", $Qreq->q, ["size" => 40]),
-        "<span class=\"sep\"></span></td>
-  <td rowspan='3'>", Ht::submit("search", "Search"), "</td>
-</tr><tr>
-  <td class='lxcaption", get($Eclass, "p", ""), "'>Concerning paper(s)</td>
-  <td class='lentry", get($Eclass, "p", ""), "'>", Ht::entry("p", $Qreq->p, ["size" => 40]), "</td>
-</tr><tr>
-  <td class='lxcaption", get($Eclass, "acct", ""), "'>Concerning user(s)</td>
-  <td class='lentry", get($Eclass, "acct", ""), "'>", Ht::entry("acct", $Qreq->acct, ["size" => 40]), "</td>
-</tr><tr>
-  <td class='lxcaption", get($Eclass, "n", ""), "'>Show</td>
-  <td class='lentry", get($Eclass, "n", ""), "'>", Ht::entry("n", $count, ["size" => 4]), " &nbsp;records at a time</td>
-</tr><tr>
-  <td class='lxcaption", get($Eclass, "date"), "'>Starting at</td>
-  <td class='lentry", get($Eclass, "date"), "'>", Ht::entry("date", $date, ["size" => 40, "placeholder" => $dplaceholder]), "</td>
-</tr>
-</table></form>";
+    echo '<div class="d-inline-block" style="padding-right:2rem">',
+        '<div class="entryi medium', get($Eclass, "q", ""),
+        '"><label for="q">Concerning action(s)</label>',
+        Ht::entry("q", $Qreq->q, ["id" => "q", "size" => 40]), '</div>',
+        '<div class="entryi medium', get($Eclass, "p", ""),
+        '"><label for="p">Concerning paper(s)</label>',
+        Ht::entry("p", $Qreq->p, ["id" => "p", "size" => 40]), '</div>',
+        '<div class="entryi medium', get($Eclass, "u", ""),
+        '"><label for="u">Concerning user(s)</label>',
+        Ht::entry("u", $Qreq->u, ["id" => "u", "size" => 40]), '</div>',
+        '<div class="entryi medium', get($Eclass, "n", ""),
+        '"><label for="n">Show</label>',
+        Ht::entry("n", $count, ["id" => "n", "size" => 4]),
+        '  records at a time</div>',
+        '<div class="entryi medium', get($Eclass, "date", ""),
+        '"><label for="date">Starting at</label>',
+        Ht::entry("date", $date, ["id" => "date", "size" => 40, "placeholder" => $dplaceholder]), '</div>',
+        '</div>',
+        Ht::submit("search", "Search"),
+        '</form>';
 
     if ($page > 1 || $lrg->has_page(2)) {
         $urls = ["q=" . urlencode($Qreq->q)];
-        foreach (array("p", "acct", "n", "forceShow") as $x)
+        foreach (array("p", "u", "n", "forceShow") as $x)
             if ($Qreq[$x])
                 $urls[] = "$x=" . urlencode($Qreq[$x]);
         $lrg->set_log_url_base(hoturl("log", join("&amp;", $urls)));
@@ -494,7 +497,7 @@ function render_users($users) {
             if ($user->disabled === "deleted")
                 $t = "<del>" . $t . " &lt;" . htmlspecialchars($user->email) . "&gt;</del>";
             else {
-                $t = '<a href="' . hoturl("log", "q=&amp;acct=" . urlencode($user->email)) . '&amp;n=' . $count . '">' . $t . '</a>';
+                $t = '<a href="' . hoturl("log", "q=&amp;u=" . urlencode($user->email)) . '&amp;n=' . $count . '">' . $t . '</a>';
                 $roles = 0;
                 if (isset($user->roles) && ($user->roles & Contact::ROLE_PCLIKE))
                     $roles = $user->viewable_pc_roles($Me);
@@ -617,7 +620,7 @@ if (!$Me->privChair || !empty($exclude_pids)) {
              && (!$include_pids || array_intersect_key($include_pids, $exclude_pids))
              && array_keys($exclude_pids) != array_keys($Me->hidden_papers ? : [])) {
         $req = [];
-        foreach (["q", "p", "acct", "n"] as $k)
+        foreach (["q", "p", "u", "n"] as $k)
             if ($Qreq->$k !== "")
                 $req[$k] = $Qreq->$k;
         $req["page"] = $page;

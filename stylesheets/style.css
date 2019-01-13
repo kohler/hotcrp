@@ -259,6 +259,9 @@ span.nb {
 	text-align: right;
 	flex: 0 0 auto;
 }
+.entryi.medium > label {
+	width: 12rem;
+}
 .entryi.wide > label {
 	width: 19rem;
 }
@@ -1046,13 +1049,6 @@ td.rxcaption {
 }
 td.sentry {
 	padding: 3px 0.75em;
-}
-th.lcaption, td.lcaption {
-	padding: 3px 1em 3px 0;
-	font-weight: bold;
-}
-tbody.secondary-settings > tr > td.lcaption {
-	font-weight: normal;
 }
 th.lxcaption, td.lxcaption {
 	padding: 3px 1em 3px 0;
@@ -3578,7 +3574,7 @@ a.help {
 }
 
 /* scores */
-div.scorechart, div.inb {
+div.scorechart, .d-inline-block {
 	display: inline-block;
 }
 div.sc {
