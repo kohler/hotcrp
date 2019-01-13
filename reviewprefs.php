@@ -246,18 +246,15 @@ $pl_text = $pl->table_html("editpref",
 
 
 // DISPLAY OPTIONS
-echo "<table id='searchform' class='tablinks1'>
-<tr><td>"; // <div class='tlx'><div class='tld1'>";
-
 $showing_au = !$Conf->subBlindAlways() && !$pl->is_folded("au");
 $showing_anonau = (!$Conf->subBlindNever() || $Me->privChair) && !$pl->is_folded("anonau");
 
-echo Ht::form(hoturl("reviewprefs"), ["method" => "get", "id" => "redisplayform",
+echo Ht::form(hoturl("reviewprefs"), ["method" => "get", "id" => "searchform",
                                       "class" => "has-fold " . ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c")]),
-    "<table>";
+    '<div class="d-inline-block">';
 
 if ($Me->privChair) {
-    echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>";
+    echo '<div class="entryi"><label for="htctl-prefs-user">User</label>';
 
     $prefcount = array();
     $result = $Conf->qe_raw("select contactId, count(*) from PaperReviewPreference where preference!=0 or expertise is not null group by contactId");
@@ -271,14 +268,13 @@ if ($Me->privChair) {
     if (!isset($sel[$reviewer->email]))
         $sel[$reviewer->email] = Text::name_html($reviewer) . " &nbsp; [" . get($prefcount, $reviewer->contactId, 0) . "; not on PC]";
 
-    echo Ht::select("reviewer", $sel, $reviewer->email),
-        "<div class='g'></div></td><td></td></tr>\n";
-    Ht::stash_script('$("#redisplayform select[name=reviewer]").on("change", function () { $$("redisplayform").submit() })');
+    echo Ht::select("reviewer", $sel, $reviewer->email, ["id" => "htctl-prefs-user"]), '</div>';
+    Ht::stash_script('$("#searchform select[name=reviewer]").on("change", function () { $$("searchform").submit() })');
 }
 
-echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input type='text' size='32' name='q' value=\"", htmlspecialchars($Qreq->q), "\" /><span class='sep'></span></td>",
-    "<td>", Ht::submit("redisplay", "Redisplay"), "</td>",
-    "</tr>\n";
+echo '<div class="entryi"><label for="htctl-prefs-q">Search</label>',
+    Ht::entry("q", $Qreq->q, ["id" => "htctl-prefs-q", "size" => 32]),
+    '<div class="d-inline-block padl">', Ht::submit("redisplay", "Redisplay"), '</div></div>';
 
 $show_data = array();
 if (!$Conf->subBlindAlways()) {
@@ -315,11 +311,9 @@ if ($Conf->has_topics())
         . Ht::checkbox("showtopics", 1, !$pl->is_folded("topics"), ["class" => "paperlist-display"])
         . "&nbsp;" . Ht::label("Topics") . '</span>';
 if (!empty($show_data) && $pl->count)
-    echo '<tr><td class="lxcaption"><strong>Show:</strong> &nbsp;',
-        '</td><td colspan="2" class="lentry">',
-        join('', $show_data), '</td></tr>';
-echo "</table></form>"; // </div></div>
-echo "</td></tr></table>\n";
+    echo '<div class="entryi"><label>Show</label>',
+        join('', $show_data), '</div>';
+echo "</div></form>";
 Ht::stash_script("$(document).on(\"change\",\"input.paperlist-display\",plinfo.checkbox_change);$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
 
 
