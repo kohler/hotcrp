@@ -1666,15 +1666,20 @@ function find_tracker(trackerid) {
 
 function analyze_tracker() {
     var ts = wstorage.site_json(true, "hotcrp-tracking"), tr;
-    if (ts) {
-        if (ts[0] !== hoturl_absolute_base())
-            wstorage.site(true, "hotcrp-tracking", null);
-        else if ((tr = find_tracker(ts[1]))) {
-            dl.tracker_here = tr.tracker_here = true;
-            if (!ts[2] && tr.start_at) {
-                ts[2] = tr.start_at;
-                wstorage.site(true, "hotcrp-tracking", ts);
-            }
+    if (ts && (ts[0] !== hoturl_absolute_base()
+               || (ts[1] === "new" && !dl.new_trackerid))) {
+        ts = null;
+        wstorage.site(true, "hotcrp-tracking", ts);
+    }
+    if (ts && ts[1] === "new") {
+        ts[1] = dl.new_trackerid;
+        wstorage.site(true, "hotcrp-tracking", ts);
+    }
+    if (ts && (tr = find_tracker(ts[1]))) {
+        dl.tracker_here = tr.tracker_here = true;
+        if (!ts[2] && tr.start_at) {
+            ts[2] = tr.start_at;
+            wstorage.site(true, "hotcrp-tracking", ts);
         }
     }
 }
@@ -1857,7 +1862,7 @@ function tracker_ui(event) {
         if (tstate && tstate[0] !== hoturl_absolute_base())
             tstate = null;
         if (event && (!tstate || !dl.tracker_here)) {
-            tstate = [hoturl_absolute_base(), Math.floor(Math.random() * 10000000), null,
+            tstate = [hoturl_absolute_base(), "new", null,
                 document.body.getAttribute("data-hotlist") || null];
         }
         if (tstate) {

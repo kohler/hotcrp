@@ -151,6 +151,14 @@ class MeetingTracker {
                    "tracker_status_at" => $tracker->position_at]);
     }
 
+    static private function tracker_search($trackerid, $trs) {
+        foreach ($trs as $i => $tr) {
+            if ($tr->trackerid === $trackerid)
+                return $i;
+        }
+        return false;
+    }
+
     static function track_api(Contact $user, $qreq) {
         // NB: This is a special API function; it should either return nothing
         // (in which case the result of a `status` api call is returned),
@@ -176,26 +184,23 @@ class MeetingTracker {
             || !str_starts_with($xlist->listid, "p/")) {
             json_exit(400, "Parameter error.");
         }
+
+        // look up trackers
+        $tracker = self::lookup($user->conf);
+        $trs = self::expand($tracker);
+
+        // look up tracker id
         $trackerid = $args[0];
         if (ctype_digit($trackerid))
             $trackerid = intval($trackerid);
-        $position = false;
-        $i = count($args) === 3 ? 2 : 1;
-        if (count($args) >= $i && isset($args[$i])) {
-            if (ctype_digit($args[$i]))
-                $position = array_search((int) $args[$i], $xlist->ids);
-            else if ($args[$i] === "stop")
-                $position = "stop";
+        else if ($trackerid === "new") {
+            do {
+                $trackerid = mt_rand(1, 9999999);
+            } while (self::tracker_search($trackerid, $trs) !== false);
         }
 
         // find matching tracker
-        $tracker = self::lookup($user->conf);
-        $trs = self::expand($tracker);
-        $match = false;
-        foreach ($trs as $i => $tr) {
-            if ($tr->trackerid === $trackerid)
-                $match = $i;
-        }
+        $match = self::tracker_search($trackerid, $trs);
         if ($qreq->reset && $match === false) {
             $trs = [];
         }
@@ -210,6 +215,16 @@ class MeetingTracker {
         }
 
         // update tracker
+        $position = false;
+        $i = count($args) === 3 ? 2 : 1;
+        if (count($args) >= $i && isset($args[$i])) {
+            if (ctype_digit($args[$i]))
+                $position = array_search((int) $args[$i], $xlist->ids);
+            else if ($args[$i] === "stop")
+                $position = "stop";
+        }
+
+        $new_trackerid = false;
         $position_at = self::tracker_next_position($tracker);
         if ($position !== "stop") {
             $name = $qreq->name;
@@ -263,6 +278,7 @@ class MeetingTracker {
 
             if ($match === false) {
                 $trs[] = $tr;
+                $new_trackerid = $trackerid;
             } else {
                 $trs[$match] = $tr;
             }
@@ -287,6 +303,8 @@ class MeetingTracker {
                 "ts" => $trs
             ];
         }
+        if ($new_trackerid !== false)
+            $qreq->set_annex("new_trackerid", $new_trackerid);
         $user->conf->save_setting("tracker", 1, $tracker);
         self::contact_tracker_comet($user->conf);
     }

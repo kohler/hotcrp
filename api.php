@@ -101,7 +101,8 @@ if ($Qreq->fn === "searchcompletion") {
 }
 
 // from here on: `status` and `track` requests
-if ($Qreq->fn === "track")
+$is_track = $Qreq->fn === "track";
+if ($is_track)
     MeetingTracker::track_api($Me, $Qreq); // may fall through to act like `status`
 else if ($Qreq->fn !== "status")
     json_exit(404, "Unknown request “" . $Qreq->fn . "”");
@@ -115,5 +116,7 @@ if ($Conf->paper && $Me->can_view_tags($Conf->paper)) {
         $j->p = [$Conf->paper->paperId => $pj];
 }
 
+if ($is_track && ($new_trackerid = $Qreq->annex("new_trackerid")))
+    $j->new_trackerid = $new_trackerid;
 $j->ok = true;
 json_exit($j);
