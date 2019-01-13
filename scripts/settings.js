@@ -593,7 +593,7 @@ function add_dialog(fid, focus) {
         add_field(fid);
         template && fill_field(fid, samples[template - 1], false);
         $("#shortName_" + fid)[0].focus();
-        popup_close($d);
+        $d.close();
         event.preventDefault();
     }
     function click() {
@@ -602,7 +602,9 @@ function add_dialog(fid, focus) {
             template += dir;
             if (template < 0)
                 template = samples.length;
-            while (template && samples[template - 1] && !samples[template - 1].options != !has_options)
+            while (template
+                   && samples[template - 1]
+                   && !samples[template - 1].options !== !has_options)
                 template += dir;
             render_template();
         }

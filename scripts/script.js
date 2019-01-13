@@ -5574,7 +5574,7 @@ function edit_anno(locator) {
             setajaxcheck($d.find("button[name=save]"), rv);
             if (rv.ok) {
                 taganno_success(rv);
-                popup_close($d);
+                $d.close($d);
             }
         };
     }
@@ -5592,7 +5592,7 @@ function edit_anno(locator) {
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
-        var hc = popup_skeleton({style: "width: 32rem"});
+        var hc = popup_skeleton({minWidth: "32rem"});
         var dtag = mytag.replace(/^\d+~/, "~");
         hc.push('<h2>Annotate #' + dtag + ' order</h2>');
         hc.push('<p>These annotations will appear in searches such as “order:' + dtag + '”.</p>');
@@ -5646,32 +5646,55 @@ handle_ui.on("js-expand-archive", function (evt) {
 function popup_skeleton(options) {
     var hc = new HtmlCollector, $d = null;
     options = options || {};
-    hc.push('<div class="popupbg"><div class="popupo'
-        + (options.anchor && options.anchor !== window ? "" : " popupcenter")
-        + (options.style ? '" style="' + escape_entities(options.style) : '')
-        + '"><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form><div class="popup-bottom"></div></div></div>');
+    hc.push('<div class="popupbg'
+        + (!options.anchor || options.anchor === window ? " popup-center" : "")
+        + '"><div class="popup"'
+        + (options.style ? ' style="' + escape_entities(options.style) + '"' : '')
+        + '><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form><div class="popup-bottom"></div></div></div>');
     hc.push_actions = function (actions) {
         hc.push('<div class="popup-actions">', '</div>');
         if (actions)
             hc.push(actions.join("")).pop();
         return hc;
     };
+    function show_errors(data) {
+        var form = $d.find("form")[0],
+            dbody = $d.find(".popup-body"),
+            m = render_xmsg(2, data.error);
+        $d.find(".msg-error").remove();
+        dbody.length ? dbody.prepend(m) : $d.find("h2").after(m);
+        for (var f in data.errf || {}) {
+            var e = form[f];
+            if (e) {
+                var x = $(e).closest(".entryi, .f-i");
+                (x.length ? x : $(e)).addClass("has-error");
+            }
+        }
+        return $d;
+    }
+    function close() {
+        tooltip.erase();
+        $d.find("textarea, input").unautogrow();
+        $d.trigger("closedialog");
+        $d.remove();
+    }
     hc.show = function (visible) {
         if (!$d) {
             $d = $(hc.render()).appendTo(document.body);
             $d.find(".need-tooltip").each(tooltip);
             $d.on("click", function (event) {
-                event.target === $d[0] && popup_close($d);
+                event.target === $d[0] && close();
             });
-            $d.find("button[name=cancel]").on("click", function () {
-                popup_close($d);
-            });
+            $d.find("button[name=cancel]").on("click", close);
             if (options.action) {
                 $d.find("form").attr({action: options.action, method: options.method || "post"});
             }
-            if (options.maxWidth) {
-                $d.children().css("maxWidth", options.maxWidth);
+            for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
+                if (options[k] != null)
+                    $d.children().css(k, options[k]);
             }
+            $d.show_errors = show_errors;
+            $d.close = close;
         }
         if (visible !== false) {
             popup_near($d, options.anchor || window);
@@ -5686,24 +5709,22 @@ function popup_near(elt, anchor) {
     tooltip.erase();
     if (elt.jquery)
         elt = elt[0];
-    if (hasClass(elt, "popupbg"))
+    while (!hasClass(elt, "popup"))
         elt = elt.childNodes[0];
-    var parent_offset = {left: 0, top: 0};
-    if (hasClass(elt.parentNode, "popupbg")) {
-        elt.parentNode.style.display = "block";
-        parent_offset = $(elt.parentNode).offset();
+    var bgelt = elt.parentNode;
+    if (hasClass(bgelt, "popup-center")) {
+        bgelt.style.display = "flex";
+    } else {
+        bgelt.style.display = "block";
+        var anchorPos = $(anchor).geometry(),
+            wg = $(window).geometry(),
+            y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
+        y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y));
+        elt.style.top = y + "px";
+        var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
+        x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x));
+        elt.style.left = x + "px";
     }
-    var anchorPos = $(anchor).geometry();
-    var wg = $(window).geometry();
-    var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
-    var y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
-    if (anchor === window) {
-        y = Math.min((3 * anchorPos.top + anchorPos.bottom) / 4, y);
-    }
-    x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) - parent_offset.left;
-    y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - parent_offset.top;
-    elt.style.left = x + "px";
-    elt.style.top = y + "px";
     var efocus;
     $(elt).find("input, button, textarea, select").filter(":visible").each(function () {
         if (hasClass(this, "want-focus")) {
@@ -5711,21 +5732,16 @@ function popup_near(elt, anchor) {
             return false;
         } else if (!efocus
                    && !hasClass(this, "dangerous")
-                   && !hasClass(this, "no-focus"))
+                   && !hasClass(this, "no-focus")) {
             efocus = this;
+        }
     });
     efocus && focus_at(efocus);
 }
 
-function popup_close(popup) {
-    tooltip.erase();
-    popup.find("textarea, input").unautogrow();
-    popup.remove();
-}
-
 function override_deadlines(callback) {
     var ejq = $(this);
-    var djq = $('<div class="popupbg"><div class="popupo"><p>'
+    var djq = $('<div class="popupbg"><div class="popup"><p>'
                 + (ejq.attr("data-override-text") || "Are you sure you want to override the deadline?")
                 + '</p><form><div class="popup-actions">'
                 + '<button type="button" name="bsubmit" class="btn-primary"></button>'
@@ -7163,14 +7179,8 @@ handle_ui.on("js-edit-formulas", function () {
             function (data) {
                 if (data.ok)
                     location.reload(true);
-                else {
-                    $d.find(".msg-error").remove();
-                    $d.find(".editformulas").prepend($(render_xmsg(2, data.error)));
-                    $d.find(".has-error").removeClass("has-error");
-                    for (var f in data.errf || {}) {
-                        $d.find("input, textarea").filter("[name='" + f + "']").addClass("has-error");
-                    }
-                }
+                else
+                    $d.show_errors(data);
             });
     }
     function create(formulas) {
@@ -7178,7 +7188,7 @@ handle_ui.on("js-edit-formulas", function () {
         hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
         hc.push('<h2>Named formulas</h2>');
         hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
-        hc.push('<div class="editformulas">', '</div>');
+        hc.push('<div class="popup-body">', '</div>');
         for (i in formulas || [])
             push_formula(hc, formulas[i]);
         hc.pop_push('<button type="button" name="add">Add named formula</button>');
@@ -7201,7 +7211,7 @@ handle_ui.on("js-edit-view-options", function () {
             method: "POST", data: $(this).serialize(),
             success: function (data) {
                 if (data.ok)
-                    popup_close($d);
+                    $d.close();
             }
         });
         event.preventDefault();

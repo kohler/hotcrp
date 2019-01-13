@@ -3532,7 +3532,13 @@ a.help {
 	z-index: 59;
 	display: none;
 }
-.popupc, .popupo {
+.popup-center {
+	justify-content: center;
+	align-items: center;
+	padding-top: 5vh;
+	padding-bottom: 15vh;
+}
+.popup {
 	border: 1px solid rgba(0, 0, 0, 0.6);
 	border-radius: 4px;
 	padding: 0.75em 1em;
@@ -3543,15 +3549,13 @@ a.help {
 	z-index: 60;
 	box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
 }
-.popupo.popupcenter {
+.popup-center > .popup {
 	max-width: 64em;
-	max-height: 70%;
+	max-height: 80vh;
 	overflow-y: auto;
+	position: relative;
 }
-.popupc {
-	display: none;
-}
-.popupc p:first-child, .popupo p:first-child {
+.popup p:first-child {
 	margin-top: 0;
 }
 .popup-actions {
