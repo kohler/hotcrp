@@ -557,6 +557,20 @@ unparse_interval.NO_DATE = 1;
 unparse_interval.NO_PREP = 2;
 unparse_interval.SHORT = 4;
 
+function unparse_duration(d, include_msec) {
+    var neg = d < 0, t;
+    if (neg)
+        d = -d;
+    var p = Math.trunc(d);
+    if (p >= 3600)
+        t = sprintf("%d:%02d:%02d", p/3600, (p/60)%60, p%60)
+    else
+        t = sprintf("%d:%02d", p/60, p%60);
+    if (include_msec)
+        t += sprintf(".%03d", Math.trunc((d - p) * 1000));
+    return neg ? "-" + t : t;
+}
+
 
 // events
 var event_key = (function () {
@@ -1680,12 +1694,8 @@ function tracker_show_elapsed() {
     $(".tracker-timer").each(function () {
         var tr = find_tracker(+this.getAttribute("data-trackerid")), t = "";
         if (tr && tr.position_at) {
-            var delta = now - (tr.position_at + dl.load - dl.now),
-                s = Math.trunc(delta);
-            if (s >= 3600)
-                t = sprintf("%d:%02d:%02d", s/3600, (s/60)%60, s%60)
-            else
-                t = sprintf("%d:%02d", s/60, s%60);
+            var delta = now - (tr.position_at + dl.load - dl.now);
+            t = unparse_duration(delta);
             max_delta_ms = Math.max(max_delta_ms, (delta * 1000) % 1000);
         }
         this.innerHTML = t;
@@ -5694,13 +5704,14 @@ function popup_near(elt, anchor) {
     y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - parent_offset.top;
     elt.style.left = x + "px";
     elt.style.top = y + "px";
-    var viselts = $(elt).find("input, button, textarea, select").filter(":visible");
     var efocus;
     $(elt).find("input, button, textarea, select").filter(":visible").each(function () {
         if (hasClass(this, "want-focus")) {
             efocus = this;
             return false;
-        } else if (!hasClass(this, "dangerous") && !hasClass(this, "no-focus"))
+        } else if (!efocus
+                   && !hasClass(this, "dangerous")
+                   && !hasClass(this, "no-focus"))
             efocus = this;
     });
     efocus && focus_at(efocus);
