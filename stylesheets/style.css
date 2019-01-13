@@ -25,13 +25,16 @@ input, textarea, select, button {
 	line-height: 1.35;
 }
 dl {
-	margin: 1em 0;
+	margin: 0 0 1em;
 }
 dt {
 	font-weight: bolder;
 }
 dd {
-	margin: 0 0 0.5em 0;
+	margin: 0 0 0.5em;
+}
+dl.dd {
+	margin-bottom: 0.5em;
 }
 a > img {
 	border: none;
@@ -1038,24 +1041,12 @@ div.relative {
 td.textarea, td.top {
 	vertical-align: top;
 }
-td.rcaption {
-	text-align: right;
-	padding: 3px 0.5em 3px 0;
-	font-weight: bold;
-}
 td.rxcaption {
 	text-align: right;
 	padding: 3px 0.5em 3px 0;
 }
 td.sentry {
 	padding: 3px 0.75em;
-}
-td.lmcaption {
-	padding-right: 1em;
-}
-td.mcaption {
-	text-align: right;
-	padding-right: 1em;
 }
 td.lentry {
 	padding: 2px 0.5em 2px 0;
@@ -1615,6 +1606,10 @@ pre.email {
 	column-gap: 18px;
 	margin: 0 -12px -6px;
 }
+.ctable.no-hmargin {
+	margin-left: -6px;
+	margin-right: -6px;
+}
 .search-ctable {
 	-webkit-columns: 150px 4;
 	columns: 150px 4;
@@ -1625,8 +1620,12 @@ pre.email {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
-	margin: 0 6px;
+	margin-left: 6px;
+	margin-right: 6px;
 	padding-bottom: 6px;
+}
+dl.ctelt {
+	padding-bottom: initial;
 }
 .ctelti {
 	padding: 0 6px;

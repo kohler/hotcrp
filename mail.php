@@ -633,8 +633,8 @@ echo "<div class='aa' style='clear:both'>\n",
 
 <div id='mailref'>Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
 <div class='g'></div>
-<div class=\"ctable\">
-<dl class=\"ctelt\" style=\"padding-bottom:12px\">
+<div class=\"ctable no-hmargin\">
+<dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
 <dt><code>%URL%</code></dt>
     <dd>Site URL.</dd>
 <dt><code>%LOGINURL%</code></dt>
@@ -651,7 +651,7 @@ echo "<div class='aa' style='clear:both'>\n",
     <dd>Email address of recipient.</dd>
 <dt><code>%REVIEWDEADLINE%</code></dt>
     <dd>Reviewing deadline appropriate for recipient.</dd>
-</dl><dl class=\"ctelt\" style=\"padding-bottom:12px\">
+</dl><dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
 <dt><code>%NUMBER%</code></dt>
     <dd>Paper number relevant for mail.</dd>
 <dt><code>%TITLE%</code></dt>
@@ -660,14 +660,14 @@ echo "<div class='aa' style='clear:both'>\n",
     <dd>First couple words of paper title (useful for mail subject).</dd>
 <dt><code>%OPT(AUTHORS)%</code></dt>
     <dd>Paper authors (if recipient is allowed to see the authors).</dd>
-</dl><dl class=\"ctelt\" style=\"padding-bottom:12px\">
+</dl><dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
 <dt><code>%REVIEWS%</code></dt>
     <dd>Pretty-printed paper reviews.</dd>
 <dt><code>%COMMENTS%</code></dt>
     <dd>Pretty-printed paper comments, if any.</dd>
 <dt><code>%COMMENTS(<i>tag</i>)%</code></dt>
     <dd>Comments tagged #<code><i>tag</i></code>, if any.</dd>
-</dl><dl class=\"ctelt\" style=\"padding-bottom:12px\">
+</dl><dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
 <dt><code>%IF(SHEPHERD)%...%ENDIF%</code></dt>
     <dd>Include text if a shepherd is assigned.</dd>
 <dt><code>%SHEPHERD%</code></dt>
@@ -676,7 +676,7 @@ echo "<div class='aa' style='clear:both'>\n",
     <dd>Shepherd name, if any.</dd>
 <dt><code>%SHEPHERDEMAIL%</code></dt>
     <dd>Shepherd email, if any.</dd>
-</dl><dl class=\"ctelt\" style=\"padding-bottom:12px\">
+</dl><dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
 <dt><code>%IF(#<i>tag</i>)%...%ENDIF%</code></dt>
     <dd>Include text if paper has tag <code><i>tag</i></code>.</dd>
 <dt><code>%TAGVALUE(<i>tag</i>)%</code></dt>

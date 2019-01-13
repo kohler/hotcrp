@@ -600,43 +600,44 @@ if ($newProfile) {
         $bulkentry = $session_bulkentry[1];
         $Conf->save_session("profile_bulkentry", null);
     }
-    echo '<div class="f-i">',
+    echo '<div class="lg">',
         Ht::textarea("bulkentry", $bulkentry,
                      ["rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line", "class" => "want-focus need-autogrow"]),
-        '</div>';
+        '<div class="g"><strong>OR</strong> &nbsp;',
+        '<input type="file" name="bulk" size="30" /></div></div>';
 
-    echo '<div class="g"><strong>OR</strong> &nbsp;',
-        '<input type="file" name="bulk" size="30" /></div>';
+    echo '<div class="lg">', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>';
 
-    echo '<div>', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>';
-
-    echo "<p>Enter or upload CSV user data with header. For example:</p>\n",
+    echo "<p>Enter or upload CSV data with header, such as:</p>\n",
         '<pre class="entryexample">
 name,email,affiliation,roles
 John Adams,john@earbox.org,UC Berkeley,pc
 "Adams, John Quincy",quincy@whitehouse.gov
 </pre>', "\n",
         '<p>Or just enter an email address per line.</p>',
-        '<p>Supported CSV fields include:</p><table>',
-        '<tr><td class="lmcaption"><code>name</code></td>',
-          '<td>User name</td></tr>',
-        '<tr><td class="lmcaption"><code>first</code></td>',
-          '<td>First name</td></tr>',
-        '<tr><td class="lmcaption"><code>last</code></td>',
-          '<td>Last name</td></tr>',
-        '<tr><td class="lmcaption"><code>affiliation</code></td>',
-          '<td>Affiliation</td></tr>',
-        '<tr><td class="lmcaption"><code>roles</code></td>',
-          '<td>User roles: blank, “<code>pc</code>”, “<code>chair</code>”, or “<code>sysadmin</code>”</td></tr>',
-        '<tr><td class="lmcaption"><code>tags</code></td>',
-          '<td>PC tags (space-separated)</td></tr>',
-        '<tr><td class="lmcaption"><code>add_tags</code>, <code>remove_tags</code></td>',
-          '<td>PC tags to add or remove</td></tr>',
-        '<tr><td class="lmcaption"><code>collaborators</code></td>',
-          '<td>Collaborators</td></tr>',
-        '<tr><td class="lmcaption"><code>follow</code></td>',
-          '<td>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”</td></tr>',
-        "</table>\n";
+        '<p>Supported CSV fields include:</p>',
+        '<div class="ctable no-hmargin">',
+        '<dl class="ctelt dd"><dt><code>email</code></dt>',
+        '<dd>Email</dd></dl>',
+        '<dl class="ctelt dd"><dt><code>name</code></dt>',
+        '<dd>User name</dd></dl>',
+        '<dl class="ctelt dd"><dt><code>first</code></dt>',
+        '<dd>First name (given name)</dd></dl>',
+        '<dl class="ctelt dd"><dt><code>last</code></dt>',
+        '<dd>Last name (family name)</dd></dl>',
+        '<dl class="ctelt dd"><dt><code>affiliation</code></dt>',
+        '<dd>Affiliation</dd></dl>',
+        '<dl class="ctelt dd"><dt><code>roles</code></dt>',
+        '<dd>User roles: blank, “<code>pc</code>”, “<code>chair</code>”, or “<code>sysadmin</code>”</dd></dl>',
+        '<dl class="ctelt dd"><dt><code>tags</code></dt>',
+        '<dd>PC tags (space-separated)</dd></dl>',
+        '<dl class="ctelt dd"><dt><code>add_tags</code>, <code>remove_tags</code></dt>',
+        '<dd>PC tags to add or remove</dd></dl>',
+        '<dl class="ctelt dd"><dt><code>collaborators</code></dt>',
+        '<dd>Collaborators</dd></dl>',
+        '<dl class="ctelt dd"><dt><code>follow</code></dt>',
+        '<dd>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”</dd></dl>',
+        "</div>\n";
 
     echo '</div></form></div></div>';
 }
