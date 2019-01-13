@@ -218,9 +218,10 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
             }
             if (!rjson
                 || typeof rjson !== "object"
-                || rjson.ok !== false
-                || typeof rjson.error !== "string")
-                rjson = {ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)};
+                || rjson.ok !== false)
+                rjson = {ok: false};
+            if (!rjson.error)
+                rjson.error = jqxhr_error_message(jqxhr, status, errormsg);
             f(rjson, jqxhr, status);
         }
     }
