@@ -215,7 +215,7 @@ class Home_Partial {
             Ht::render_messages_at("email"),
             '</div><div class="', Ht::control_class("password", "f-i fx"), '">';
         if (!$is_external_login)
-            echo '<div class="floatright"><a href="" class="n x small ui js-forgot-password">Forgot your password?</a></div>';
+            echo '<div class="float-right"><a href="" class="n x small ui js-forgot-password">Forgot your password?</a></div>';
         echo Ht::label("Password", "signin_password"),
             Ht::password("password", "",
                          ["size" => 36, "id" => "signin_password", "class" => "fullw", "autocomplete" => "current-password", "tabindex" => 1, "autofocus" => !$focus_email]),
@@ -259,7 +259,7 @@ class Home_Partial {
                              "class" => "papersearch", "placeholder" => "(All)",
                              "aria-labelledby" => "homesearch-label")),
             " &nbsp;in&nbsp; ",
-            PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
+            PaperSearch::searchTypeSelector($tOpt, key($tOpt)), "
         &nbsp; ", Ht::submit("Search"),
             "</form></div>\n";
     }

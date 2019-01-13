@@ -1679,7 +1679,7 @@ class PaperTable {
     }
 
     private function papstrip_tag_float($tag, $kind, $type) {
-        $class = "is-nonempty-tags floatright";
+        $class = "is-nonempty-tags float-right";
         if (($totval = $this->prow->tag_value($tag)) === false) {
             $totval = "";
             $class .= " hidden";

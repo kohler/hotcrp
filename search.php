@@ -168,7 +168,7 @@ else
 if ($activetab == 3 && $pl->count == 0)
     $activetab = 1;
 
-$tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, 1);
+$tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["tabindex" => 1]);
 
 
 // SEARCH FORMS
@@ -315,21 +315,14 @@ echo Ht::form(hoturl("search"), ["method" => "get"]),
               ["size" => 40, "style" => "width:30em", "tabindex" => 1,
                "class" => "papersearch want-focus",
                "placeholder" => "(All)", "aria-label" => "Search"]),
-    " &nbsp;in &nbsp;$tselect &nbsp;\n",
-    Ht::submit("Search", ["tabindex" => 1]),
+    " &nbsp;in &nbsp;",
+    PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["tabindex" => 1]),
+    " &nbsp;\n", Ht::submit("Search", ["tabindex" => 1]),
     "</form>";
 
 echo '</div><div class="tld2">';
 
 // Advanced search
-echo Ht::form(hoturl("search"), ["method" => "get"]),
-    "<table><tr>
-  <td class=\"rxcaption\">Search</td>
-  <td class=\"lentry\">$tselect</td>
-</tr>
-<tr>
-  <td class=\"rxcaption\">Using these fields</td>
-  <td class=\"lentry\">";
 $qtOpt = array("ti" => "Title",
                "ab" => "Abstract");
 if ($Me->privChair || $Conf->subBlindNever()) {
@@ -349,38 +342,30 @@ if ($Me->isPC) {
     $qtOpt["re"] = "Reviewers";
     $qtOpt["tag"] = "Tags";
 }
-echo Ht::select("qt", $qtOpt, $Qreq->get("qt", "n")),
-    "</td>
-</tr>
-<tr><td colspan=\"2\"><div class='g'></div></td></tr>
-<tr>
-  <td class='rxcaption'>With <b>all</b> the words</td>
-  <td class='lentry'>",
-    Ht::entry("qa", htmlspecialchars($Qreq->get("qa", $Qreq->get("q", ""))), ["size" => 40, "style" => "width:30em", "class" => "want-focus"]),
-    "</td>
-</tr><tr>
-  <td class='rxcaption'>With <b>any</b> of the words</td>
-  <td class='lentry'>",
-    Ht::entry("qo", htmlspecialchars($Qreq->get("qo", "")), ["size" => 40, "style" => "width:30em"]),
-    "</td>
-</tr><tr>
-  <td class='rxcaption'><b>Without</b> the words</td>
-  <td class='lentry'>",
-    Ht::entry("qx", htmlspecialchars($Qreq->get("qx", "")), ["size" => 40, "style" => "width:30em"]),
-    "</td>
-</tr>
-<tr><td colspan=\"2\"><div class='g'></div></td></tr>
-<tr>
-  <td class='lxcaption'></td>
-  <td class=\"lentry\" style=\"padding-bottom:4px\"><div class=\"aab\">",
+
+echo Ht::form(hoturl("search"), ["method" => "get"]),
+    '<div class="d-inline-block">',
+    '<div class="entryi medium"><label for="htctl-advanced-q">Search</label>',
+    PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["id" => "htctl-advanced-q"]), '</div>',
+    '<div class="entryi medium"><label for="htctl-advanced-qt">Using these fields</label>',
+    Ht::select("qt", $qtOpt, $Qreq->get("qt", "n"), ["id" => "htctl-advanced-qt"]), '</div>',
+    '<hr class="g">',
+    '<div class="entryi medium"><label for="htctl-advanced-qa">With <b>all</b> the words</label>',
+    Ht::entry("qa", $Qreq->get("qa", $Qreq->get("q", "")), ["id" => "htctl-advanced-qa", "size" => 60, "class" => "want-focus"]), '</div>',
+    '<div class="entryi medium"><label for="htctl-advanced-qo">With <b>any</b> of the words</label>',
+    Ht::entry("qo", $Qreq->get("qo", ""), ["id" => "htctl-advanced-qo", "size" => 60]), '</div>',
+    '<div class="entryi medium"><label for="htctl-advanced-qx"><b>Without</b> the words</label>',
+    Ht::entry("qx", $Qreq->get("qx", ""), ["id" => "htctl-advanced-qx", "size" => 60]), '</div>',
+    '<hr class="g">',
+    '<div class="entryi medium"><label></label>',
     Ht::submit("Search"),
-    '<div style="float:right;font-size:x-small">',
+    '<div class="d-inline-block padlb" style="font-size:69%">',
     Ht::link("Search help", hoturl("help", "t=search")),
     ' <span class="barsep">·</span> ',
     Ht::link("Search keywords", hoturl("help", "t=keywords")),
-    '</div></div>
-  </td>
-</tr></table></form>';
+    '</div>',
+    '</div>',
+    '</div></form>';
 
 echo "</div>";
 

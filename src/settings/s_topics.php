@@ -25,7 +25,7 @@ class Topics_SettingRenderer {
         if ($sv->conf->topic_map()) {
             echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
             if (!empty($interests))
-                echo '<span class="floatright n"># PC interests: </span>';
+                echo '<span class="float-right n"># PC interests: </span>';
             echo '<strong>Current topics</strong></th>';
             if (!empty($interests))
                 echo '<th class="ccaption">Low</th><th class="ccaption">High</th>';

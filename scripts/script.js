@@ -3293,7 +3293,7 @@ function add_review(rrow) {
 
     // edit/text links
     if (rrow.editable)
-        hc.push('<div class="floatright"><a class="xx" href="' + hoturl_html("review", rlink) + '">'
+        hc.push('<div class="float-right"><a class="xx" href="' + hoturl_html("review", rlink) + '">'
                 + '<img class="b" src="' + assetsurl + 'images/edit48.png" alt="[Edit]" width="16" height="16">'
                 + '&nbsp;<u>Edit</u></a></div>');
 
@@ -3790,7 +3790,7 @@ function render_cmt($c, cj, editing, msg) {
     } else if (cj.is_new && !cj.response)
         hc.push('<h3>Add Comment</h3>');
     else if (cj.editable && !editing) {
-        t = '<div class="cmtinfo floatright"><a class="xx ui editor cmteditor" href=""><u>Edit</u></a></div>';
+        t = '<div class="cmtinfo float-right"><a class="xx ui editor cmteditor" href=""><u>Edit</u></a></div>';
         cj.response ? $(t).prependTo(chead) : hc.push(t);
     }
     t = comment_identity_time(cj);

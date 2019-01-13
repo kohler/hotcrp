@@ -966,7 +966,7 @@ $blind\n";
 
         // Links
         if ($rrow) {
-            echo '<div class="floatright"><a href="' . hoturl("review", "r=$reviewOrdinal&amp;text=1" . $forceShow) . '" class="xx">',
+            echo '<div class="float-right"><a href="' . hoturl("review", "r=$reviewOrdinal&amp;text=1" . $forceShow) . '" class="xx">',
                 Ht::img("txt.png", "[Text]", "b"),
                 "&nbsp;<u>Plain text</u></a>",
                 "</div>";

@@ -2688,7 +2688,7 @@ class PaperSearch {
         return $topt;
     }
 
-    static function searchTypeSelector($tOpt, $type, $tabindex) {
+    static function searchTypeSelector($tOpt, $type, $extra = []) {
         if (count($tOpt) > 1) {
             $sel_opt = array();
             foreach ($tOpt as $k => $v) {
@@ -2698,11 +2698,12 @@ class PaperSearch {
                     $sel_opt["xxxb"] = null;
                 $sel_opt[$k] = $v;
             }
-            $sel_extra = ["aria-label" => "Search collection"];
-            if ($tabindex)
-                $sel_extra["tabindex"] = $tabindex;
-            return Ht::select("t", $sel_opt, $type, $sel_extra);
-        } else
+            if (!isset($extra["aria-label"]))
+                $extra["aria-label"] = "Search collection";
+            return Ht::select("t", $sel_opt, $type, $extra);
+        } else if (isset($extra["id"]))
+            return '<span id="' . htmlspecialchars($extra["id"]) . '">' . current($tOpt) . '</span>';
+        else
             return current($tOpt);
     }
 

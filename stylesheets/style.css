@@ -249,7 +249,7 @@ span.nb {
 	padding-left: 0;
 }
 .entryi {
-	margin: 0.5em 0;
+	margin-bottom: 0.5em;
 	display: flex;
 	align-items: baseline;
 }
@@ -1475,11 +1475,11 @@ div.formatdescription {
 	padding-bottom: 5px;
 }
 
-.prevpaperlink, .floatleft {
+.prevpaperlink, .float-left {
 	float: left;
 	margin: 0;
 }
-.nextpaperlink, .floatright {
+.nextpaperlink, .float-right {
 	float: right;
 	margin: 0;
 }
@@ -2176,6 +2176,9 @@ hr {
 hr.c {
 	margin: 0;
 	border: 0 none;
+	height: 0;
+}
+hr.g {
 	height: 0;
 }
 
@@ -3136,7 +3139,7 @@ ul.xd > li {
 	clear: both;
 	display: table;
 }
-.cmtt .floatright {
+.cmtt .float-right {
 	padding-left: 0.5em;
 }
 .pavb, .revtext, .cmttext, .cmtattachments {
