@@ -1050,9 +1050,6 @@ td.rxcaption {
 td.sentry {
 	padding: 3px 0.75em;
 }
-th.lxcaption, td.lxcaption {
-	padding: 3px 1em 3px 0;
-}
 th.ccaption {
 	padding-left: 0.25em;
 	padding-right: 0.25em;

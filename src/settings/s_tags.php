@@ -60,7 +60,7 @@ class Tags_SettingRenderer {
             preg_match_all("{(?:\\A|\\s)(\\S+)=$k(?=\\s|\\z)}", $tag_color_data, $m);
             $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
             $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
-                . "<td class=\"lxcaption taghl\">$k</td>"
+                . "<td class=\"pad taghl\">$k</td>"
                 . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-tagcompletion"]) . "</td>"
                 . "<td class=\"remargin-left\"></td></tr>";
         }
