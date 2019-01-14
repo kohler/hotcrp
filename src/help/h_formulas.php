@@ -69,6 +69,10 @@ scores A, B, and D is A. For instance:</p>
         echo $hth->trow("au", "Number of authors");
         echo $hth->trow("au:pc", "Number of PC authors");
         echo $hth->trow("au:<em>text</em>", "Number of authors matching <em>text</em>");
+        if ($hth->conf->has_topics()) {
+            echo $hth->trow("topics", "Number of topics");
+            echo $hth->trow("topics:<em>text</em>", "Number of topics matching <em>text</em>");
+        }
         echo $hth->tgroup("Tags");
         echo $hth->trow("#<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
         echo $hth->trow("tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");

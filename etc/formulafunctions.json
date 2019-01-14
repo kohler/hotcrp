@@ -58,5 +58,9 @@
 
     {"name": "au", "callback": "+Author_Fexpr",
         "parse_modifier_callback": "Author_Fexpr::parse_modifier",
-        "synonym": "author"}
+        "synonym": "author"},
+
+    {"name": "topic", "callback": "+Topic_Fexpr",
+        "parse_modifier_callback": "Topic_Fexpr::parse_modifier",
+        "synonym": "topics"}
 ]
