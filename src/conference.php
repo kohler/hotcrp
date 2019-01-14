@@ -3948,11 +3948,10 @@ class Conf {
         return self::xt_enabled($uf) ? $uf : null;
     }
     function paper_columns($name, Contact $user) {
-        if ($name === "")
+        if ($name === "" || $name[0] === "?")
             return [];
         $checkf = function ($xt) use ($user) { return $this->xt_allowed($xt, $user); };
-        $map = $this->paper_column_map();
-        $uf = $name[0] !== "?" ? $this->xt_search_name($map, $name, $checkf) : null;
+        $uf = $this->xt_search_name($this->paper_column_map(), $name, $checkf);
         $expansions = $this->xt_search_factories($this->_paper_column_factories, $name, $checkf, $uf, $user, "i");
         return array_filter($expansions ? : [$uf], "Conf::xt_resolve_require");
     }

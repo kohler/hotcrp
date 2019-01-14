@@ -1128,7 +1128,7 @@ class PaperList {
             $j = ["name" => $fdef->name,
                   "title" => $fdef->header($this, false),
                   "position" => $fdef->position];
-            if ($fdef->className != "pl_" . $fdef->name)
+            if ($fdef->className !== "pl_" . $fdef->name)
                 $j["className"] = $fdef->className;
             if ($fdef->viewable_column()) {
                 $j["column"] = true;

@@ -118,8 +118,8 @@
         "className": "pl_score",
         "callback": "+Score_PaperColumn",
         "position": 1100,
-        "expand_callback": "Score_PaperColumnFactory::expand",
-        "completion_callback": "Score_PaperColumnFactory::completions"
+        "expand_callback": "Score_PaperColumn::expand",
+        "completion_callback": "Score_PaperColumn::completions"
     },
     {
         "name": "?graph",

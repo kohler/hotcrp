@@ -1021,9 +1021,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         // columns.
         return !$row->may_have_viewable_scores($this->format_field, $pl->user);
     }
-}
 
-class Score_PaperColumnFactory {
     static function xt_user_visible_fields($name, Conf $conf = null) {
         if ($name === "scores") {
             $fs = $conf->all_review_fields();
