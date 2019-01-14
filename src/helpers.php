@@ -167,7 +167,7 @@ class JsonResultException extends Exception {
 
 function json_exit($json, $arg2 = null) {
     global $Me, $Qreq;
-    $json = JsonResult::make($json, $Me, $arg2);
+    $json = JsonResult::make($json, $Me ? : null, $arg2);
     if (JsonResultException::$capturing)
         throw new JsonResultException($json);
     else {
