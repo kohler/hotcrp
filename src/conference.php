@@ -886,7 +886,7 @@ class Conf {
                 if ($prio <= 0 && call_user_func($checkf, $xt)) {
                     if ($prio < 0)
                         $xts = [];
-                    $xts[] = $xt;
+                    $xts[] = $found = $xt;
                 }
             }
         }
