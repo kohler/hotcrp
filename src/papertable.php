@@ -1622,7 +1622,7 @@ class PaperTable {
             if ($this->prow)
                 $editable = $this->prow->editable_tags($this->user);
             echo '<div style="position:relative">',
-                '<textarea cols="20" rows="4" name="tags" style="width:97%;margin:0" class="want-focus">',
+                '<textarea cols="20" rows="4" name="tags" style="width:97%;margin:0" class="want-focus need-suggest tags">',
                 $tagger->unparse($editable),
                 "</textarea></div>",
                 '<div class="aab aabr aab-compact"><div class="aabut">',

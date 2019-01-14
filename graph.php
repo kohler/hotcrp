@@ -39,7 +39,7 @@ echo $Conf->make_script_file("scripts/graph.js");
 function echo_graph($searchable, $fg, $h2) {
     echo '<div class="has-hotgraph" style="max-width:960px;margin-bottom:4em">';
     if ($searchable)
-        echo Ht::entry("q", "", ["placeholder" => "Highlight", "class" => "uich js-hotgraph-highlight papersearch float-right need-autogrow"]);
+        echo Ht::entry("q", "", ["placeholder" => "Highlight", "class" => "uich js-hotgraph-highlight papersearch float-right need-autogrow need-suggest"]);
     if ($h2)
         echo "<h2>", $h2, "</h2>\n";
     echo "<div class=\"hotgraph c\" id=\"hotgraph\"";

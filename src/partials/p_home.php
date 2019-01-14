@@ -256,7 +256,7 @@ class Home_Partial {
         $tOpt = PaperSearch::search_types($user);
         echo Ht::entry("q", (string) $qreq->q,
                        array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
-                             "class" => "papersearch", "placeholder" => "(All)",
+                             "class" => "papersearch need-suggest", "placeholder" => "(All)",
                              "aria-labelledby" => "homesearch-label")),
             " &nbsp;in&nbsp; ",
             PaperSearch::searchTypeSelector($tOpt, key($tOpt)), "

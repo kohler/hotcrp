@@ -2753,8 +2753,8 @@ function row_order_change(e, delta, action) {
            && (max_rows <= 0 || trs.length < max_rows)) {
         var $newtr = $($tbody[0].getAttribute("data-row-template")).appendTo($tbody);
         mktemptext($newtr);
-        suggest($newtr.find(".papersearch"), taghelp_q);
         $newtr.find(".need-tooltip").each(tooltip);
+        $newtr.find(".need-suggest").each(suggest);
         trs = $tbody.children();
         if (want_focus) {
             focus_within($newtr);
@@ -4273,46 +4273,6 @@ function completion_split(elt) {
         return null;
 }
 
-function taghelp_tset(elt, options) {
-    var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
-        n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
-        return demand_load.tags().then(make_suggestions(m[2], n[1], options, {suffix: n[2]}));
-    } else
-        return null;
-}
-
-function taghelp_q(elt, options) {
-    var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagvalue:))([^#\s()]*)$/))) {
-        n = x[1].match(/^([^#\s()]*)/);
-        return demand_load.tags().then(make_suggestions(m[2], n[1], options));
-    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):)([^"\s()]*|"[^"]*)$/))) {
-        n = x[1].match(/^([^\s()]*)/);
-        return demand_load.search_completion().then(make_suggestions(m[2], n[1], options, {prefix: m[1]}));
-    } else
-        return null;
-}
-
-function pc_tag_completion(elt, options) {
-    var x = completion_split(elt), m, n, f;
-    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
-        n = x[1].match(/^(\S*)/);
-        f = make_suggestions(m[2], n[1], options);
-        return demand_load.pc().then(function (pc) { f(pc.__tags__ || []) });
-    } else
-        return null;
-}
-
-function comment_completion_q(elt, options) {
-    var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/.*?(?:^|[\s,;])@([-\w_.]*)$/))) {
-        n = x[1].match(/^([-\w_.]*)/);
-        return demand_load.mentions().then(make_suggestions(m[1], n[1], options));
-    } else
-        return null;
-}
-
 function make_suggestions(precaret, postcaret, options) {
     // The region around the caret is divided into four parts:
     //     ... options.prefix precaret ^ postcaret options.suffix ...
@@ -4402,9 +4362,12 @@ function make_suggestions(precaret, postcaret, options) {
     };
 }
 
-function suggest(elt, suggestions_promise, options) {
-    var hintdiv, suggdata;
-    var blurring = false, hiding = false, lastkey = false, wasnav = 0;
+var suggest = (function () {
+var builders = {};
+
+function suggest() {
+    var elt = this, hintdiv, suggdata,
+        blurring = false, hiding = false, lastkey = false, wasnav = 0;
 
     function kill() {
         hintdiv && hintdiv.remove();
@@ -4523,7 +4486,7 @@ function suggest(elt, suggestions_promise, options) {
             pos = (pos + $sug.length) % $sug.length;
             if ($sug[pos] !== $active[0]) {
                 $active.removeClass("active");
-                $($sug[pos]).addClass("active");
+                addClass($sug[pos], "active");
             }
             wasnav = 2;
             return true;
@@ -4581,25 +4544,70 @@ function suggest(elt, suggestions_promise, options) {
         }, 10);
     }
 
-    if (typeof elt === "string")
-        elt = $(elt);
-    if (elt.jquery)
-        elt.each(function () { suggest(this, suggestions_promise, options); });
-    else if (elt) {
-        suggdata = $(elt).data("suggest");
-        if (!suggdata) {
-            suggdata = {promises: []};
-            $(elt).data("suggest", suggdata).on("keydown", kp).on("blur", blur);
-            elt.autocomplete = "off";
-        }
-        if ($.inArray(suggestions_promise, suggdata.promises) < 0)
-            suggdata.promises.push(suggestions_promise);
-        if (options)
-            suggdata.options = $.extend(suggdata.options || {}, options);
+    suggdata = $.data(elt, "suggest");
+    if (!suggdata) {
+        suggdata = {promises: []};
+        $.data(elt, "suggest", suggdata);
+        $(elt).on("keydown", kp).on("blur", blur);
+        elt.autocomplete = "off";
     }
+    classList(elt).forEach(function (x) {
+        if (builders[x] && $.inArray(builders[x], suggdata.promises) < 0)
+            suggdata.promises.push(builders[x]);
+    });
+    removeClass(elt, "need-suggest");
 }
 
-$(function () { suggest($(".papersearch"), taghelp_q); });
+suggest.add_builder = function (name, f) {
+    builders[name] = f;
+};
+
+return suggest;
+})();
+
+$(function () { $(".need-suggest").each(suggest); });
+
+suggest.add_builder("tags", function (elt, options) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
+        n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
+        return demand_load.tags().then(make_suggestions(m[2], n[1], options, {suffix: n[2]}));
+    } else
+        return null;
+});
+
+suggest.add_builder("papersearch", function (elt, options) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagvalue:))([^#\s()]*)$/))) {
+        n = x[1].match(/^([^#\s()]*)/);
+        return demand_load.tags().then(make_suggestions(m[2], n[1], options));
+    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):)([^"\s()]*|"[^"]*)$/))) {
+        n = x[1].match(/^([^\s()]*)/);
+        return demand_load.search_completion().then(make_suggestions(m[2], n[1], options, {prefix: m[1]}));
+    } else
+        return null;
+});
+
+suggest.add_builder("pc-tags", function (elt, options) {
+    var x = completion_split(elt), m, n, f;
+    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
+        n = x[1].match(/^(\S*)/);
+        f = make_suggestions(m[2], n[1], options);
+        return demand_load.pc().then(function (pc) { f(pc.__tags__ || []) });
+    } else
+        return null;
+});
+
+function comment_completion_q(elt, options) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/.*?(?:^|[\s,;])@([-\w_.]*)$/))) {
+        n = x[1].match(/^([-\w_.]*)/);
+        return demand_load.mentions().then(make_suggestions(m[1], n[1], options));
+    } else
+        return null;
+}
+
+
 
 
 // review preferences
@@ -6010,11 +6018,11 @@ function edittags_callback(rv) {
     if (!rv.ok || !rv.pid || !(div = pidfield(rv.pid, fields.tags)))
         return;
     $(div).html('<em class="plx">Tags:</em> '
-                + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" class="want-focus" data-tooltip-dir="v"></textarea>'
+                + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" class="want-focus need-suggest tags" data-tooltip-dir="v"></textarea>'
                 + ' &nbsp;<button type="button" name="tagsave ' + rv.pid + '">Save</button>'
                 + ' &nbsp;<button type="button" name="tagcancel ' + rv.pid + '">Cancel</button>');
     var $ta = $(div).find("textarea");
-    suggest($ta, taghelp_tset);
+    suggest.call($ta[0]);
     $ta.val(rv.tags_edit_text).autogrow()
         .on("keydown", make_onkey("Enter", edittags_submit))
         .on("keydown", make_onkey("Escape", edittags_cancel));
@@ -6804,7 +6812,6 @@ function prepare_pstags() {
             $f.find(".want-tag-report-warnings").html(render_xmsg(tx[0], tx[1]));
         }
     }
-    suggest($ta, taghelp_tset);
     $f.on("keydown", "textarea", function (event) {
         var key = event_key(event);
         if ((key === "Enter" || key === "Escape") && !event_modkey(event)) {
@@ -7249,9 +7256,6 @@ handle_ui.on("js-annotate-order", function (event) {
 var paperlist_ui = (function ($) {
 
 handle_ui.on("js-tag-list-action", function () {
-    $("input.js-submit-action-info-tag").each(function () {
-        this.name === "tag" && suggest(this, taghelp_tset);
-    });
     $("select.js-submit-action-info-tag").on("change", function () {
         var $t = $(this).closest(".linelink"),
             $ty = $t.find("select[name=tagfn]");

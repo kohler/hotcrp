@@ -11,23 +11,23 @@ class Tags_SettingRenderer {
     }
     static function render_tag_chair(SettingValues $sv) {
         $sv->set_oldv("tag_chair", self::render_tags($sv->conf->tags()->filter("chair")));
-        $sv->echo_entry_group("tag_chair", null, ["class" => "need-tagcompletion"], "PC members can see these tags, but only administrators can change them.");
+        $sv->echo_entry_group("tag_chair", null, ["class" => "need-suggest tags"], "PC members can see these tags, but only administrators can change them.");
     }
     static function render_tag_sitewide(SettingValues $sv) {
         $sv->set_oldv("tag_sitewide", self::render_tags($sv->conf->tags()->filter("sitewide")));
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
-            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-tagcompletion"], "Administrators can see and change these tags for every submission.");
+            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-suggest tags"], "Administrators can see and change these tags for every submission.");
     }
     static function render_tag_approval(SettingValues $sv) {
         $sv->set_oldv("tag_approval", self::render_tags($sv->conf->tags()->filter("approval")));
-        $sv->echo_entry_group("tag_approval", null, ["class" => "need-tagcompletion"], "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>");
+        $sv->echo_entry_group("tag_approval", null, ["class" => "need-suggest tags"], "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>");
     }
     static function render_tag_vote(SettingValues $sv) {
         $x = [];
         foreach ($sv->conf->tags()->filter("vote") as $t)
             $x[] = "{$t->tag}#{$t->vote}";
         $sv->set_oldv("tag_vote", join(" ", $x));
-        $sv->echo_entry_group("tag_vote", null, ["class" => "need-tagcompletion"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)");
+        $sv->echo_entry_group("tag_vote", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)");
     }
     static function render_tag_rank(SettingValues $sv) {
         $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
@@ -45,8 +45,6 @@ class Tags_SettingRenderer {
         echo '<div class="settings-g">';
         $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
         echo "</div>\n";
-
-        Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
     }
     static function render_styles(SettingValues $sv) {
         $skip_colors = [];
@@ -61,7 +59,7 @@ class Tags_SettingRenderer {
             $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
             $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
                 . "<td class=\"pad taghl\">$k</td>"
-                . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-tagcompletion"]) . "</td>"
+                . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-suggest tags"]) . "</td>"
                 . "<td class=\"remargin-left\"></td></tr>";
         }
 
@@ -70,8 +68,6 @@ class Tags_SettingRenderer {
             "<p class=\"settingtext\">Submissions tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
             '<table class="demargin"><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr>',
             join("", $tag_colors_rows), "</table>\n";
-
-        Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
     }
 }
 

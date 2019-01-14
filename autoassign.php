@@ -470,7 +470,7 @@ if (!isset($Qreq->q)) // XXX redundant
 echo Ht::entry("q", $Qreq->q,
                array("id" => "autoassignq", "placeholder" => "(All)",
                      "size" => 40, "title" => "Enter paper numbers or search terms",
-                     "class" => Ht::control_class("q", "papersearch js-autosubmit"),
+                     "class" => Ht::control_class("q", "papersearch js-autosubmit need-suggest"),
                      "data-autosubmit-type" => "requery")), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
     echo Ht::select("t", $tOpt, $Qreq->t);

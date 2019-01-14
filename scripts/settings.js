@@ -157,9 +157,8 @@ handle_ui.on("js-settings-add-track", function () {
     var $j = jQuery("#trackgroup" + i);
     $j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
     mktemptext($j);
+    $j.find(".need-suggest").each(suggest);
     $j.find("input[name^=name]").focus();
-    suggest($j.find(".settings-track-name"), taghelp_tset);
-    suggest($j.find(".settings-track-perm-tag"), pc_tag_completion);
 });
 
 handle_ui.on("js-settings-copy-topics", function () {
@@ -681,6 +680,6 @@ handle_ui.on("js-settings-resp-round-new", function () {
     j.html(jQuery("#response_n").html().replace(/_n\"/g, "_" + i + "\""));
     mktemptext(j);
     j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());
-    suggest(j.find(".papersearch"), taghelp_q);
+    j.find(".need-suggest").each(suggest);
     return false;
 });

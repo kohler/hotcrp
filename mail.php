@@ -538,7 +538,7 @@ else
         Ht::hidden("plimit", 1), '<span>';
 echo Ht::entry("q", (string) $Qreq->q,
                array("id" => "q", "placeholder" => "(All)",
-                     "class" => "papersearch", "size" => 36)),
+                     "class" => "papersearch need-suggest", "size" => 36)),
     " &nbsp;in&nbsp;";
 if (count($tOpt) == 1)
     echo htmlspecialchars($tOpt[$Qreq->t]);

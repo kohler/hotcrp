@@ -56,7 +56,7 @@ class Tracks_SettingRenderer {
                        $sv->sjs($track_ctl, ["class" => "uich js-foldup", "data-default-value" => $curv[0]])),
             " &nbsp;",
             Ht::entry($tag_ctl, $reqv[1],
-                      $sv->sjs($tag_ctl, ["class" => "fx settings-track-perm-tag", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
+                      $sv->sjs($tag_ctl, ["class" => "fx need-suggest pc-tags", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
         $sv->echo_messages_at($track_ctl);
         $sv->echo_messages_at($tag_ctl);
         if ($hint)
@@ -117,7 +117,7 @@ class Tracks_SettingRenderer {
             echo "For submissions not on other tracks:", Ht::hidden("name_track$tnum", "_");
         } else {
             echo $sv->label("name_track$tnum", "For submissions with tag &nbsp;"),
-                Ht::entry("name_track$tnum", $req_trackname, $sv->sjs("name_track$tnum", ["placeholder" => "(tag)", "data-default-value" => $trackname, "class" => "settings-track-name"])), ":";
+                Ht::entry("name_track$tnum", $req_trackname, $sv->sjs("name_track$tnum", ["placeholder" => "(tag)", "data-default-value" => $trackname, "class" => "settings-track-name need-suggest tags"])), ":";
         }
 
         self::$nperm_rendered_folded = 0;
@@ -165,8 +165,6 @@ class Tracks_SettingRenderer {
         self::do_track($sv, "_", 1);
         self::do_cross_track($sv);
         echo Ht::button("Add track", ["class" => "ui js-settings-add-track", "id" => "settings_track_add"]);
-
-        Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
     }
 
     static function crosscheck(SettingValues $sv) {
