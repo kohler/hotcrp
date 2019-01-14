@@ -271,7 +271,7 @@ if ($Me->privChair && $Qreq->tagact && $Qreq->post_ok() && isset($papersel)
 
 // set scores to view
 if (isset($Qreq->redisplay)) {
-    $Conf->save_session("uldisplay", "");
+    $Me->save_session("uldisplay", "");
     foreach (ContactList::$folds as $key)
         displayOptionsSet("uldisplay", $key, $Qreq->get("show$key", 0));
     foreach ($Conf->all_review_fields() as $f)
@@ -281,7 +281,7 @@ if (isset($Qreq->redisplay)) {
 if (isset($Qreq->scoresort))
     $Qreq->scoresort = ListSorter::canonical_short_score_sort($Qreq->scoresort);
 if (isset($Qreq->scoresort))
-    $Conf->save_session("scoresort", $Qreq->scoresort);
+    $Me->save_session("scoresort", $Qreq->scoresort);
 
 
 if ($Qreq->t === "pc")
@@ -351,7 +351,7 @@ if (count($tOpt) > 1) {
                 $ss[$k] = $v;
         echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
             Ht::select("scoresort", $ss,
-                       ListSorter::canonical_long_score_sort($Conf->session("scoresort", "A"))),
+                       ListSorter::canonical_long_score_sort($Me->session("scoresort", "A"))),
             "</td></tr>";
     }
     echo "</table></form>";

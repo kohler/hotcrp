@@ -403,11 +403,11 @@ class Contact {
         }
 
         // Add capabilities from session and request
-        $cap = $this->conf->session("cap");
-        if (!$cap && ($cap = $this->conf->session("capabilities"))) {
+        $cap = $this->session("cap");
+        if (!$cap && ($cap = $this->session("capabilities"))) {
             $cap = CapabilityManager::upgrade_capabilities_0($cap);
-            $this->conf->save_session("capabilities", null);
-            $this->conf->save_session("cap", $cap);
+            $this->save_session("capabilities", null);
+            $this->save_session("cap", $cap);
         }
         if ($cap) {
             $this->capabilities = $cap;
@@ -419,7 +419,7 @@ class Contact {
         }
 
         // Add review tokens from session
-        if (($rtokens = $this->conf->session("rev_tokens"))) {
+        if (($rtokens = $this->session("rev_tokens"))) {
             $this->_review_tokens = $rtokens;
             ++self::$rights_version;
         }
@@ -427,10 +427,10 @@ class Contact {
         // Maybe auto-create a user
         if ($trueemail
             && strcasecmp($trueemail, $this->email) === 0) {
-            $trueuser_aucheck = $this->conf->session("trueuser_author_check", 0);
+            $trueuser_aucheck = $this->session("trueuser_author_check", 0);
             if (!$this->has_database_account()
                 && $trueuser_aucheck + 600 < $Now) {
-                $this->conf->save_session("trueuser_author_check", $Now);
+                $this->save_session("trueuser_author_check", $Now);
                 $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
                 if (!empty($aupapers))
                     $this->activate_database_account();
@@ -449,9 +449,9 @@ class Contact {
         // Maybe set up the shared contacts database
         if ($this->conf->opt("contactdb_dsn")
             && $this->has_database_account()
-            && $this->conf->session("contactdb_roles", 0) != $this->contactdb_roles()) {
+            && $this->session("contactdb_roles", 0) != $this->contactdb_roles()) {
             if ($this->contactdb_update())
-                $this->conf->save_session("contactdb_roles", $this->contactdb_roles());
+                $this->save_session("contactdb_roles", $this->contactdb_roles());
         }
 
         // Check forceShow
@@ -553,6 +553,16 @@ class Contact {
             $this->_contactdb_save_roles($cdbur);
         return $cdbur ? (int) $cdbur->contactDbId : false;
     }
+
+
+    function session($name, $defval = null) {
+        return $this->conf->session($name, $defval);
+    }
+
+    function save_session($name, $value) {
+        $this->conf->save_session($name, $value);
+    }
+
 
     function is_actas_user() {
         return $this->_activated
@@ -799,7 +809,7 @@ class Contact {
         if (empty($this->capabilities))
             $this->capabilities = null;
         if ($this->_activated)
-            $this->conf->save_session("cap", $this->capabilities);
+            $this->save_session("cap", $this->capabilities);
     }
 
     function capability($name) {
@@ -1852,7 +1862,7 @@ class Contact {
         if ($new_ntokens != $old_ntokens)
             self::update_rights();
         if ($this->_activated && $new_ntokens != $old_ntokens)
-            $this->conf->save_session("rev_tokens", $this->_review_tokens);
+            $this->save_session("rev_tokens", $this->_review_tokens);
         return $new_ntokens != $old_ntokens;
     }
 
@@ -3782,7 +3792,7 @@ class Contact {
                 else
                     $ok = false;
             } else
-                $this->conf->save_session($m[1], $m[3] ? intval(substr($m[3], 1)) : null);
+                $this->save_session($m[1], $m[3] ? intval(substr($m[3], 1)) : null);
         }
         return $ok;
     }

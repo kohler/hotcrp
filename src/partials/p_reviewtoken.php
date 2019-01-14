@@ -13,7 +13,7 @@ class ReviewToken_Partial {
                 /* no complaints */;
             else if (!($token = decode_token($x, "V")))
                 Conf::msg_error("Invalid review token &ldquo;" . htmlspecialchars($x) . "&rdquo;.  Check your typing and try again.");
-            else if ($user->conf->session("rev_token_fail", 0) >= 5)
+            else if ($user->session("rev_token_fail", 0) >= 5)
                 Conf::msg_error("Too many failed attempts to use a review token.  <a href='" . hoturl("index", "signout=1") . "'>Sign out</a> and in to try again.");
             else {
                 $result = Dbl::qe("select paperId from PaperReview where reviewToken=" . $token);
@@ -22,8 +22,8 @@ class ReviewToken_Partial {
                     $user->change_review_token($token, true);
                 } else {
                     Conf::msg_error("Review token “" . htmlspecialchars($x) . "” hasn’t been assigned.");
-                    $nfail = $user->conf->session("rev_token_fail", 0) + 1;
-                    $user->conf->save_session("rev_token_fail", $nfail);
+                    $nfail = $user->session("rev_token_fail", 0) + 1;
+                    $user->save_session("rev_token_fail", $nfail);
                 }
             }
         if ($cleared && !count($tokeninfo))

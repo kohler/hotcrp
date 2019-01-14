@@ -223,7 +223,7 @@ class PaperList {
             $viewdisplay |= $this->set_view_display($args["display"], ~$viewdisplay);
         if (($report = get($args, "report"))) {
             if (!get($args, "no_session_display")) {
-                $s = $this->conf->session("{$report}display", null);
+                $s = $this->user->session("{$report}display", null);
                 $viewdisplay |= $this->set_view_display($s, ~($viewdisplay | self::VIEWDISPLAY_SORT));
             }
             $s = $this->conf->setting_data("{$report}display_default", null);
@@ -1324,7 +1324,7 @@ class PaperList {
             if ($s->reverse === null)
                 $s->reverse = false;
             if ($s->score === null)
-                $s->score = ListSorter::default_score_sort($this->conf);
+                $s->score = ListSorter::default_score_sort($this->user);
         }
     }
 
@@ -1877,6 +1877,6 @@ class PaperList {
         $pl = new PaperList(new PaperSearch($user, "NONE"), ["report" => $report, "sort" => true]);
         if ($var)
             $pl->set_view($var, $val);
-        $user->conf->save_session("{$report}display", $pl->display("s", self::VIEWDISPLAY_VIEW));
+        $user->save_session("{$report}display", $pl->display("s", self::VIEWDISPLAY_VIEW));
     }
 }

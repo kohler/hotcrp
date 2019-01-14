@@ -39,7 +39,7 @@ $_SESSION["sg"] = $Group;
 
 if (isset($Qreq->update) && $Qreq->post_ok()) {
     if ($Sv->execute()) {
-        $Sv->conf->save_session("settings_highlight", $Sv->message_field_map());
+        $Me->save_session("settings_highlight", $Sv->message_field_map());
         if (!empty($Sv->changes))
             $Sv->conf->confirmMsg("Changes saved.");
         else

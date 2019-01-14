@@ -184,8 +184,7 @@ class LoginHelper {
 
         // activate
         $user = $xuser->activate($qreq);
-        $conf->save_session("freshlogin", true);
-        $conf->save_session("password_reset", null);
+        $user->save_session("password_reset", null);
 
         // give chair privilege to first user (external login or contactdb)
         if ($conf->setting("setupPhase", false)) {
@@ -219,8 +218,10 @@ class LoginHelper {
         else if (isset($_SESSION["login_bounce"])
                  && $_SESSION["login_bounce"][0] == $user->conf->dsn)
             $where = $_SESSION["login_bounce"][1];
-        else
+        else {
+            $user->save_session("freshlogin", true);
             $where = hoturl("index");
+        }
         go($where);
         exit;
     }

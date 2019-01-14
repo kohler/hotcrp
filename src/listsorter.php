@@ -67,11 +67,11 @@ class ListSorter {
                 "maxmin" => "Max &minus; min", "my" => "My score"];
     }
 
-    static function default_score_sort(Conf $conf, $nosession = false) {
-        if (!$nosession && ($x = $conf->session("scoresort")))
+    static function default_score_sort(Contact $user, $nosession = false) {
+        if (!$nosession && ($x = $user->session("scoresort")))
             return $x;
         else
-            return $conf->opt("defaultScoreSort", "C");
+            return $user->conf->opt("defaultScoreSort", "C");
     }
 
     static function append(&$output, $sinput) {

@@ -3442,8 +3442,10 @@ class Conf {
         echo "<div id=\"msg-initial\">\n";
         if (($x = $this->opt("maintenance")))
             echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
-        if (($msgs = $this->session("msgs")) && !empty($msgs)) {
-            $this->save_session("msgs", null);
+        if ($Me
+            && ($msgs = $Me->session("msgs"))
+            && !empty($msgs)) {
+            $Me->save_session("msgs", null);
             foreach ($msgs as $m)
                 $this->msg($m[0], $m[1]);
         }
@@ -3456,7 +3458,8 @@ class Conf {
             echo Ht::unstash();
 
         // Callback for version warnings
-        if ($Me && $Me->privChair
+        if ($Me
+            && $Me->privChair
             && (!isset($_SESSION["updatecheck"])
                 || $_SESSION["updatecheck"] + 3600 <= $Now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {

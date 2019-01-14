@@ -58,7 +58,7 @@ if ($Qreq->redisplay) {
     foreach ($Qreq as $k => $v)
         if (substr($k, 0, 4) == "show" && $v)
             $pld .= substr($k, 4) . " ";
-    $Conf->save_session("pldisplay", $pld);
+    $Me->save_session("pldisplay", $pld);
 }
 if ($Qreq->scoresort)
     $Qreq->scoresort = ListSorter::canonical_short_score_sort($Qreq->scoresort);
@@ -67,9 +67,9 @@ else if ($Qreq->sort
          && $s->score)
     $Qreq->scoresort = ListSorter::canonical_short_score_sort($s->score);
 if ($Qreq->scoresort)
-    $Conf->save_session("scoresort", $Qreq->scoresort);
-if (!$Conf->session("scoresort"))
-    $Conf->save_session("scoresort", ListSorter::default_score_sort($Conf));
+    $Me->save_session("scoresort", $Qreq->scoresort);
+if (!$Me->session("scoresort"))
+    $Me->save_session("scoresort", ListSorter::default_score_sort($Me));
 if ($Qreq->redisplay) {
     if (isset($Qreq->forceShow) && !$Qreq->forceShow && $Qreq->showforce)
         $forceShow = 0;
@@ -130,7 +130,7 @@ if ($Qreq->ajax)
 
 
 // set display options, including forceShow if chair
-$pldisplay = $Conf->session("pldisplay");
+$pldisplay = $Me->session("pldisplay");
 if ($Me->privChair && !isset($Qreq->forceShow)
     && preg_match('/\b(show:|)force\b/', $pldisplay)) {
     $Qreq->forceShow = 1;
@@ -288,7 +288,7 @@ if ($pl_text) {
         $display_options->set_header(30, "<strong>Scores:</strong>");
         $sortitem = '<div class="dispopt-item" style="margin-top:1ex">Sort by: &nbsp;'
             . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
-                         ListSorter::canonical_long_score_sort($Conf->session("scoresort")),
+                         ListSorter::canonical_long_score_sort($Me->session("scoresort")),
                          ["id" => "scoresort", "style" => "font-size:100%"])
             . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
         $display_options->item(30, $sortitem);

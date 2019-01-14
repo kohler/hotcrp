@@ -928,7 +928,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         if ($sorter && $sorter->score)
             $score = $sorter->score;
         else
-            $score = ListSorter::default_score_sort($pl->conf);
+            $score = ListSorter::default_score_sort($pl->user);
         $score = ListSorter::canonical_long_score_sort($score);
         return $this->name . ($score ? " $score" : "");
     }

@@ -74,12 +74,12 @@ class Home_Partial {
 
     static function profile_redirect_request(Contact $user, Qrequest $qreq) {
         if ($user->has_database_account()
-            && $user->conf->session("freshlogin") === true) {
+            && $user->session("freshlogin") === true) {
             if (self::need_profile_redirect($user)) {
-                $user->conf->save_session("freshlogin", "redirect");
+                $user->save_session("freshlogin", "redirect");
                 go($user->conf->hoturl("profile", "redirect=1"));
             }
-            $user->conf->save_session("freshlogin", null);
+            $user->save_session("freshlogin", null);
         }
     }
 
@@ -200,12 +200,12 @@ class Home_Partial {
         if ($conf->opt("contactdb_dsn")
             && ($x = $conf->opt("contactdb_loginFormHeading")))
             echo $x;
-        $password_reset = $conf->session("password_reset");
+        $password_reset = $user->session("password_reset");
         $focus_email = !Ht::problem_status_at("password")
             && (!$qreq->email || Ht::problem_status_at("email"));
         if ($password_reset && $password_reset->time < $Now - 900) {
             $password_reset = null;
-            $conf->save_session("password_reset", null);
+            $user->save_session("password_reset", null);
         }
         $is_external_login = $conf->external_login();
         echo '<div class="', Ht::control_class("email", "f-i"), '">',
@@ -432,7 +432,7 @@ class Home_Partial {
                 foldupbutton(20),
                 "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class='fx20'>:</span></a>",
                 "</div>";
-            if (!$conf->session("foldhomeactivity", 1))
+            if (!$user->session("foldhomeactivity", 1))
                 Ht::stash_script("foldup.call(\$(\"#homeactivity\")[0],null,20)");
         }
 
@@ -448,7 +448,7 @@ class Home_Partial {
             return;
 
         $tokens = [];
-        foreach ($user->conf->session("rev_tokens", []) as $tt)
+        foreach ($user->session("rev_tokens", []) as $tt)
             $tokens[] = encode_token((int) $tt);
 
         if (!$this->_in_reviews)

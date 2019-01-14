@@ -48,7 +48,7 @@ if (isset($Qreq->go) && $Qreq->post_ok()) {
         $log_acct->log_activity("Password reset via " . substr($resetcap, 0, 8) . "...");
         $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");
         $capmgr->delete($capdata);
-        $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $Qreq->password));
+        $Me->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $Qreq->password));
         go(hoturl("index"));
     }
     Ht::error_at("password");

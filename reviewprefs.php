@@ -225,7 +225,7 @@ if (isset($Qreq->redisplay)) {
     foreach ($Qreq as $k => $v)
         if (substr($k, 0, 4) == "show" && $v)
             $pfd .= substr($k, 4) . " ";
-    $Conf->save_session("pfdisplay", $pfd);
+    $Me->save_session("pfdisplay", $pfd);
     $Conf->self_redirect($Qreq);
 }
 

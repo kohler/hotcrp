@@ -351,9 +351,9 @@ class SettingValues extends MessageSet {
         }
     }
     function session_highlight() {
-        foreach ($this->conf->session("settings_highlight", []) as $f => $v)
+        foreach ($this->user->session("settings_highlight", []) as $f => $v)
             $this->msg($f, null, $v);
-        $this->conf->save_session("settings_highlight", null);
+        $this->user->save_session("settings_highlight", null);
     }
 
 

@@ -127,19 +127,19 @@ class JsonResult {
         } else
             $this->content = $values;
     }
-    static function make($json, Conf $conf = null, $arg2 = null) {
+    static function make($json, Contact $user = null, $arg2 = null) {
         if (is_int($json))
             $json = new JsonResult($json, $arg2);
         else if (!is_object($json) || !($json instanceof JsonResult))
             $json = new JsonResult($json);
-        if (!$json->has_messages && $conf)
-            $json->transfer_messages($conf);
+        if (!$json->has_messages && $user)
+            $json->transfer_messages($user);
         return $json;
     }
-    function transfer_messages(Conf $conf, $div = false) {
+    function transfer_messages(Contact $user, $div = false) {
         if (session_id() !== ""
-            && ($msgs = $conf->session("msgs", []))) {
-            $conf->save_session("msgs", null);
+            && ($msgs = $user->session("msgs", []))) {
+            $user->save_session("msgs", null);
             $t = "";
             foreach ($msgs as $msg) {
                 if (($msg[0] === "merror" || $msg[0] === "xmerror")
@@ -166,8 +166,8 @@ class JsonResultException extends Exception {
 }
 
 function json_exit($json, $arg2 = null) {
-    global $Conf, $Qreq;
-    $json = JsonResult::make($json, $Conf, $arg2);
+    global $Me, $Qreq;
+    $json = JsonResult::make($json, $Me, $arg2);
     if (JsonResultException::$capturing)
         throw new JsonResultException($json);
     else {
@@ -712,8 +712,8 @@ function review_shepherd_icon() {
 }
 
 function displayOptionsSet($sessionvar, $var = null, $val = null) {
-    global $Conf;
-    if (($x = $Conf->session($sessionvar)) !== null)
+    global $Conf, $Me;
+    if (($x = $Me->session($sessionvar)) !== null)
         /* use session value */;
     else if ($sessionvar === "pldisplay")
         $x = $Conf->setting_data("pldisplay_default", "");
@@ -740,7 +740,7 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
     }
 
     // store list in $_SESSION
-    $Conf->save_session($sessionvar, $x);
+    $Me->save_session($sessionvar, $x);
     return $x;
 }
 

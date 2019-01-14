@@ -35,7 +35,7 @@ class PaperApi {
 
     static function tagreport_api(Contact $user, $qreq, $prow) {
         $jr = new JsonResult((array) self::tagreport($user, $prow));
-        $jr->transfer_messages($user->conf, true);
+        $jr->transfer_messages($user, true);
         return $jr;
     }
 

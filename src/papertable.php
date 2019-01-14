@@ -285,10 +285,10 @@ class PaperTable {
     private function echoDivEnter() {
         // 5: topics, 6: abstract, 8: blind authors, 9: full authors
         $folds = [
-            5 => $this->allFolded && $this->conf->session("foldpapert", 1),
-            6 => $this->allFolded && $this->conf->session("foldpaperb", 1),
-            8 => !!$this->conf->session("foldpapera", 1),
-            9 => $this->allFolded && $this->conf->session("foldpaperp", 1)
+            5 => $this->allFolded && $this->user->session("foldpapert", 1),
+            6 => $this->allFolded && $this->user->session("foldpaperb", 1),
+            8 => !!$this->user->session("foldpapera", 1),
+            9 => $this->allFolded && $this->user->session("foldpaperp", 1)
         ];
 
         // if highlighting, automatically unfold abstract/authors
@@ -1341,7 +1341,7 @@ class PaperTable {
             || !$this->prow->collaborators
             || strcasecmp(trim($this->prow->collaborators), "None") == 0)
             return;
-        $fold = $this->conf->session("foldpscollab", 1) ? 1 : 0;
+        $fold = $this->user->session("foldpscollab", 1) ? 1 : 0;
 
         $data = $this->entryData("collaborators", "col");
         if ($this->entryMatches || !$this->allFolded)

@@ -290,7 +290,7 @@ else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
     if ($Qreq->bulkentry && $Qreq->bulkentry !== "Enter users one per line")
         $success = parseBulkFile($Qreq->bulkentry, "");
     if (!$success)
-        $Conf->save_session("profile_bulkentry", array($Now, $Qreq->bulkentry));
+        $Me->save_session("profile_bulkentry", array($Now, $Qreq->bulkentry));
     $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
 } else if (isset($Qreq->save)) {
     assert($Acct->is_empty() === $newProfile);
@@ -321,7 +321,7 @@ else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
             }
             if ($UserStatus->has_warning())
                 $xcj["warning_fields"] = $UserStatus->problem_fields();
-            $Conf->save_session("profile_redirect", $xcj);
+            $Me->save_session("profile_redirect", $xcj);
             $Conf->self_redirect($Qreq);
         }
     }
@@ -442,8 +442,8 @@ $useRequest = !$Acct->has_database_account() && isset($Qreq->watchreview);
 if ($UserStatus->has_error())
     $need_highlight = $useRequest = true;
 
-if (!$UserStatus->has_error() && $Conf->session("freshlogin") === "redirect")
-    $Conf->save_session("freshlogin", null);
+if (!$UserStatus->has_error() && $Me->session("freshlogin"))
+    $Me->save_session("freshlogin", null);
 // Set warnings
 if (!$newProfile) {
     if (!$Acct->firstName && !$Acct->lastName) {
@@ -475,8 +475,8 @@ if ($useRequest) {
 } else {
     $formcj = $userj;
 }
-if (($prdj = $Conf->session("profile_redirect"))) {
-    $Conf->save_session("profile_redirect", null);
+if (($prdj = $Me->session("profile_redirect"))) {
+    $Me->save_session("profile_redirect", null);
     foreach ($prdj as $k => $v) {
         if ($k === "warning_fields") {
             foreach ($v as $k)
@@ -595,10 +595,10 @@ if ($newProfile) {
 
     $bulkentry = $Qreq->bulkentry;
     if ($bulkentry === null
-        && ($session_bulkentry = $Conf->session("profile_bulkentry"))
+        && ($session_bulkentry = $Me->session("profile_bulkentry"))
         && is_array($session_bulkentry) && $session_bulkentry[0] > $Now - 5) {
         $bulkentry = $session_bulkentry[1];
-        $Conf->save_session("profile_bulkentry", null);
+        $Me->save_session("profile_bulkentry", null);
     }
     echo '<div class="lg">',
         Ht::textarea("bulkentry", $bulkentry,
