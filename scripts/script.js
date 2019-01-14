@@ -4593,7 +4593,7 @@ suggest.add_builder("pc-tags", function (elt, options) {
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^(\S*)/);
         f = make_suggestions(m[2], n[1], options);
-        return demand_load.pc().then(function (pc) { f(pc.__tags__ || []) });
+        return demand_load.pc().then(function (pc) { return f(pc.__tags__ || []) });
     } else
         return null;
 });
