@@ -1084,7 +1084,7 @@ class Conf {
                 $this->_topic_abbrev_matcher->add($tname, $tid);
             foreach ($this->topic_group_list() as $tg) {
                 for ($i = 1; $tg[0] && $i !== count($tg); ++$i)
-                    $this->_topic_abbrev_matcher->add($tg[0], $tid, 1);
+                    $this->_topic_abbrev_matcher->add($tg[0], $tg[$i], 1);
             }
         }
         return $this->_topic_abbrev_matcher;
