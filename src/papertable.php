@@ -1591,7 +1591,7 @@ class PaperTable {
             Ht::stash_script('edit_paper_ui.prepare_pstags.call($$("foldtags"))');
         }
 
-        echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($is_editable ? "tags" : 0))),
+        echo $this->papt("tags", "Tags", ["type" => "ps", "editfolder" => ($is_editable ? "tags" : 0)]),
             '<div class="psv">';
         if ($is_editable) {
             // tag report form

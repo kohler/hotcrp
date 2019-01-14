@@ -6768,12 +6768,15 @@ function prepare_pstags() {
         }
     }
     suggest($ta, taghelp_tset);
-    $ta.on("keydown", make_onkey("Enter", function () {
-        $f.find("input[name=save]").click();
-    })).on("keydown", make_onkey("Escape", function () {
-        $f.find("input[name=cancel]").click();
-    }));
-    $f.find("input[name=cancel]").on("click", function (evt) {
+    $f.on("keydown", "textarea", function (event) {
+        var key = event_key(event);
+        if ((key === "Enter" || key === "Escape") && !event_modkey(event)) {
+            $f[0][key === "Enter" ? "save" : "cancel"].click();
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    });
+    $f.find("button[name=cancel]").on("click", function (evt) {
         $ta.val($ta.prop("defaultValue"));
         $f.find(".msg-error").remove();
         foldup.call($ta[0], evt, {f: true});
