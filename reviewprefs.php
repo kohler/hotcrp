@@ -272,9 +272,9 @@ if ($Me->privChair) {
     Ht::stash_script('$("#searchform select[name=reviewer]").on("change", function () { $$("searchform").submit() })');
 }
 
-echo '<div class="entryi"><label for="htctl-prefs-q">Search</label>',
+echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="entry">',
     Ht::entry("q", $Qreq->q, ["id" => "htctl-prefs-q", "size" => 32]),
-    '<div class="d-inline-block padl">', Ht::submit("redisplay", "Redisplay"), '</div></div>';
+    '  ', Ht::submit("redisplay", "Redisplay"), '</div></div>';
 
 $show_data = array();
 if (!$Conf->subBlindAlways()) {
@@ -312,7 +312,7 @@ if ($Conf->has_topics())
         . "&nbsp;" . Ht::label("Topics") . '</span>';
 if (!empty($show_data) && $pl->count)
     echo '<div class="entryi"><label>Show</label>',
-        join('', $show_data), '</div>';
+        '<div class="entry">', join('', $show_data), '</div></div>';
 echo "</div></form>";
 Ht::stash_script("$(document).on(\"change\",\"input.paperlist-display\",plinfo.checkbox_change);$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
 
