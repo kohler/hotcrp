@@ -4687,9 +4687,9 @@ function suggest() {
         $(elt).on("keydown", kp).on("blur", blur);
         elt.autocomplete = "off";
     }
-    classList(elt).forEach(function (x) {
-        if (builders[x] && $.inArray(builders[x], suggdata.promises) < 0)
-            suggdata.promises.push(builders[x]);
+    $.each(classList(elt), function (i, c) {
+        if (builders[c] && $.inArray(builders[c], suggdata.promises) < 0)
+            suggdata.promises.push(builders[c]);
     });
     removeClass(elt, "need-suggest");
 }
