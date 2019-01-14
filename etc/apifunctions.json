@@ -112,6 +112,10 @@
         "callback": "PaperApi::tagreport_api"
     },
     {
+        "name": "trackerconfig", "post": true,
+        "callback": "MeetingTracker::trackerconfig_api"
+    },
+    {
         "name": "trackerstatus", "get": true, "post": true,
         "callback": "MeetingTracker::trackerstatus_api"
     },

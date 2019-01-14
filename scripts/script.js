@@ -1649,8 +1649,9 @@ function redisplay_main() {
 
 
 // tracker
-var had_tracker, had_tracker_at, last_tracker_html,
-    tracker_has_format, tracker_timer, tracker_refresher;
+var had_tracker_at = 0, had_tracker_display = false, last_tracker_html,
+    tracker_has_format, tracker_timer, tracker_refresher,
+    tracker_configured = false;
 
 function find_tracker(trackerid) {
     if (dl.tracker && dl.tracker.ts) {
@@ -1666,17 +1667,9 @@ function find_tracker(trackerid) {
 
 function analyze_tracker() {
     var ts = wstorage.site_json(true, "hotcrp-tracking"), tr;
-    if (ts && (ts[0] !== hoturl_absolute_base()
-               || (ts[1] === "new" && !dl.new_trackerid))) {
-        ts = null;
-        wstorage.site(true, "hotcrp-tracking", ts);
-    }
-    if (ts && ts[1] === "new") {
-        ts[1] = dl.new_trackerid;
-        wstorage.site(true, "hotcrp-tracking", ts);
-    }
     if (ts && (tr = find_tracker(ts[1]))) {
-        dl.tracker_here = tr.tracker_here = true;
+        dl.tracker_here = ts[1];
+        tr.tracker_here = true;
         if (!ts[2] && tr.start_at) {
             ts[2] = tr.start_at;
             wstorage.site(true, "hotcrp-tracking", ts);
@@ -1698,7 +1691,8 @@ function tracker_show_elapsed() {
         return;
     var now = now_sec(), max_delta_ms = 0;
     $(".tracker-timer").each(function () {
-        var tr = find_tracker(+this.getAttribute("data-trackerid")), t = "";
+        var tr = find_tracker(+this.closest(".has-tracker").getAttribute("data-trackerid")),
+            t = "";
         if (tr && tr.position_at) {
             var delta = now - (tr.position_at + dl.load - dl.now);
             t = unparse_duration(delta);
@@ -1739,15 +1733,17 @@ function tracker_paper_columns(tr, idx, wwidth) {
 
 function tracker_html(tr) {
     var t, dt = "";
-    t = '<div class="tracker-holder tracker-'
+    if (wstorage.site(true, "hotcrp-tracking-hide-" + tr.trackerid))
+        return "";
+    t = '<div class="has-tracker tracker-holder tracker-'
         + (tr.papers && tr.papers[0].pid == hotcrp_paperid ? "match" : "nomatch")
         + (tr.tracker_here ? " tracker-active" : "");
     if (tr.listinfo || tr.listid)
         t += ' has-hotlist" data-hotlist="' + escape_entities(tr.listinfo || tr.listid);
-    t += '">';
+    t += '" data-trackerid="' + tr.trackerid + '">';
     if (dl.is_admin) {
         dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
-        t += '<div class="tracker-logo need-tooltip" data-tooltip="' + escape_entities(dt) + '"></div>';
+        t += '<a class="ui nn js-tracker tracker-logo need-tooltip" aria-label="Tracker settings"></a>';
     } else
         t += '<div class="tracker-logo"></div>';
     var rows = [], i, wwidth = $(window).width();
@@ -1770,7 +1766,7 @@ function tracker_html(tr) {
             if (tr.position_at)
                 t += '<span class="tracker-timer" data-trackerid="' + tr.trackerid + '"></span>';
             if (dl.is_admin)
-                t += '<a class="ui tracker-ui stop closebtn need-tooltip" href="" data-tooltip="Stop meeting tracker">x</a>';
+                t += '<a class="ui js-tracker-stop closebtn need-tooltip" href="" aria-label="Stop this tracker">x</a>';
             t += '</td>';
         }
         t += '</tr>';
@@ -1783,12 +1779,10 @@ function display_tracker() {
 
     // tracker button
     if ((e = $$("tracker-connect-btn"))) {
-        if (dl.tracker_here) {
-            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ui tracker-ui stop ttmenu\" href=\"\">Stop meeting tracker</a></div></div>");
-        } else {
-            e.setAttribute("data-tooltip", "Start meeting tracker");
-        }
-        e.className = e.className.replace(/\btbtn(?:-on)*\b/, dl.tracker_here ? "tbtn-on" : "tbtn");
+        e.setAttribute("aria-label", dl.tracker ? "Tracker settings" : "Start meeting tracker");
+        var hastr = dl.tracker && (!dl.tracker.ts || dl.tracker.ts.length !== 0);
+        toggleClass(e, "tbtn-here", !!dl.tracker_here);
+        toggleClass(e, "tbtn-on", hastr && !dl.tracker_here);
     }
 
     // tracker display management
@@ -1818,9 +1812,9 @@ function display_tracker() {
         document.body.insertBefore(mne, document.body.firstChild);
         last_tracker_html = null;
     }
-    if (!had_tracker) {
+    if (!had_tracker_display) {
         $(window).on("resize", display_tracker);
-        had_tracker = true;
+        had_tracker_display = true;
     }
 
     tracker_has_format = false;
@@ -1841,49 +1835,182 @@ function display_tracker() {
         tracker_show_elapsed();
 }
 
-function tracker_ui(event) {
-    if (typeof event !== "number") {
-        if (hasClass(this, "stop"))
-            event = -1;
-        else if (hasClass(this, "start"))
-            event = event.shiftKey ? 2 : 1;
-        else
-            event = 0;
-    }
-    tooltip.erase();
-    if (event < 0) {
-        $.post(hoturl_post("api/track", {track: "stop"}), load_success);
-        if (tracker_refresher) {
-            clearInterval(tracker_refresher);
-            tracker_refresher = null;
-        }
-    } else if (wstorage()) {
-        var tstate = wstorage.site_json(true, "hotcrp-tracking");
-        if (tstate && tstate[0] !== hoturl_absolute_base())
-            tstate = null;
-        if (event && (!tstate || !dl.tracker_here)) {
-            tstate = [hoturl_absolute_base(), "new", null,
-                document.body.getAttribute("data-hotlist") || null];
-        }
-        if (tstate) {
-            var req = "track=" + tstate[1], reqdata = {};
-            if (hotcrp_paperid)
-                req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
-            if (tstate[2])
-                req += "&tracker_start_at=" + tstate[2];
-            if (event === 1)
-                req += "&reset=1";
-            if (tstate[3])
-                reqdata["hotlist-info"] = tstate[3];
-            $.post(hoturl_post("api/track", req), reqdata, load_success);
-            if (!tracker_refresher)
-                tracker_refresher = setInterval(tracker_ui, 25000, 0);
-            wstorage.site(true, "hotcrp-tracking", tstate);
-        }
+function tracker_refresh() {
+    if (dl.tracker_here) {
+        var ts = wstorage.site_json(true, "hotcrp-tracking"),
+            req = "track=" + ts[1], reqdata = {};
+        if (hotcrp_paperid)
+            req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
+        if (ts[2])
+            req += "&tracker_start_at=" + ts[2];
+        if (ts[3])
+            reqdata["hotlist-info"] = ts[3];
+        $.post(hoturl_post("api/track", req), reqdata, load_success);
+        if (!tracker_refresher)
+            tracker_refresher = setInterval(tracker_refresh, 25000);
+        wstorage.site(true, "hotcrp-tracking", ts);
+    } else if (tracker_refresher) {
+        clearInterval(tracker_refresher);
+        tracker_refresher = null;
     }
 }
 
-handle_ui.on("tracker-ui", tracker_ui);
+handle_ui.on("js-tracker", function (event) {
+    var $d, trno = 1, elapsed_timer;
+    function push_tracker(hc, tr) {
+        hc.push('<div class="lg tracker-group" data-index="' + trno + '" data-trackerid="' + tr.trackerid + '">', '</div>');
+        hc.push('<input type="hidden" name="tr' + trno + '-id" value="' + escape_entities(tr.trackerid) + '">');
+        if (tr.trackerid === "new" && hotcrp_paperid)
+            hc.push('<input type="hidden" name="tr' + trno + '-p" value="' + hotcrp_paperid + '">');
+        if (tr.listinfo)
+            hc.push('<input type="hidden" name="tr' + trno + '-listinfo" value="' + escape_entities(tr.listinfo) + '">');
+        hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus" value="' + escape_entities(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div>');
+        var vis = tr.visibility || "", vistype = vis === "" ? "" : vis.charAt(0);
+        hc.push('<div class="entryi has-fold fold' + (vistype === "" ? "c" : "o") + '" data-fold-values="+ -"><label for="htctl-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
+        hc.push('<span class="select"><select id="htctl-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup">', '</select></span>');
+        var vismap = {"": "Whole PC", "+": "PC members with tag", "-": "PC members without tag"};
+        for (var i in vismap)
+            hc.push('<option value="' + i + '"' + (i === vistype ? " selected" : "") + '>' + vismap[i] + '</option>');
+        hc.pop();
+        hc.push_pop('  <input type="text" name="tr' + trno + '-vis" value="' + escape_entities(vis.substring(1)) + '" placeholder="(tag)" class="need-suggest pc-tags fx">');
+        if (tr.start_at)
+            hc.push('<div class="entryi"><label>Elapsed time</label><span class="trackerdialog-elapsed" data-start-at="' + tr.start_at + '"></span></div>');
+        try {
+            var j = JSON.parse(tr.listinfo || "null"), ids, pos;
+            if (j && j.ids && (ids = decode_session_list_ids(j.ids))) {
+                if (tr.papers && tr.papers[0] && tr.papers[0].pid
+                    && (pos = ids.indexOf(tr.papers[0].pid)) > -1)
+                    ids[pos] = '<b>' + ids[pos] + '</b>';
+                hc.push('<div class="entryi"><label>Papers</label><div class="entry">' + ids.join(" ") + '</div></div>');
+            }
+        } catch (e) {
+        }
+        if (tr.start_at) {
+            hc.push('<div class="entryi"><label></label><div class="entry">', '</div></div>');
+            hc.push('<label><input name="tr' + trno + '-hide" value="1" type="checkbox"' + (wstorage.site(true, "hotcrp-tracking-hide-" + tr.trackerid) ? " checked" : "") + '> Hide on this tab</label>');
+            hc.push('<label class="padl"><input name="tr' + trno + '-stop" value="1" type="checkbox"> Stop</label>');
+            hc.pop();
+        }
+        hc.pop();
+        ++trno;
+    }
+    function show_elapsed() {
+        var now = now_sec();
+        $d.find(".trackerdialog-elapsed").each(function () {
+            this.innerHTML = unparse_duration(now - this.getAttribute("data-start-at"));
+        });
+    }
+    function clear_elapsed() {
+        clearInterval(elapsed_timer);
+    }
+    function new_tracker() {
+        var tr = {
+            is_new: true, trackerid: "new",
+            visibility: wstorage.site(false, "hotcrp-tracking-visibility"),
+            listinfo: document.body.getAttribute("data-hotlist")
+        }, $myg = $(this).closest("div.lg"), hc = new HtmlCollector;
+        if (hotcrp_paperid)
+            tr.papers = [{pid: hotcrp_paperid}];
+        push_tracker(hc, tr);
+        focus_within($(hc.render()).insertBefore($myg));
+        $myg.remove();
+        $d.find(".need-suggest").each(suggest);
+    }
+    function make_submit_success(hiding) {
+        return function (data) {
+            if (data.ok) {
+                $d && $d.close();
+                if (data.new_trackerid) {
+                    wstorage.site(true, "hotcrp-tracking", [null, +data.new_trackerid, null, document.body.getAttribute("data-hotlist") || null]);
+                    if ("new" in hiding)
+                        hiding[data.new_trackerid] = hiding["new"];
+                }
+                for (var i in hiding)
+                    if (i !== "new")
+                        wstorage.site(true, "hotcrp-tracking-hide-" + i, hiding[i] ? 1 : null);
+                tracker_configured = true;
+                reload();
+            } else
+                $d && $d.show_errors(data);
+        };
+    }
+    function submit(event) {
+        var f = $d.find("form")[0], hiding = {};
+        $d.find(".tracker-group").each(function () {
+            var trno = this.getAttribute("data-index"),
+                id = this.getAttribute("data-trackerid"),
+                e = f["tr" + trno + "-hide"];
+            if (e)
+                hiding[id] = e.checked;
+        });
+        $.post(hoturl_post("api/trackerconfig"),
+               $d.find("form").serialize(),
+               make_submit_success(hiding));
+        event.preventDefault();
+    }
+    function stop_all() {
+        $.post(hoturl_post("api/trackerconfig"), {stopall: 1},
+               make_submit_success({}));
+        $d.close();
+    }
+    function start() {
+        var hc = popup_skeleton({minWidth: "38rem"});
+        hc.push('<h2>Meeting tracker</h2>');
+        var trackers, trno = 1;
+        if (!dl.tracker)
+            trackers = [];
+        else if (!dl.tracker.ts)
+            trackers = [dl.tracker];
+        else
+            trackers = dl.tracker.ts;
+        for (var i = 0; i !== trackers.length; ++i)
+            push_tracker(hc, trackers[i]);
+        if (document.body
+            && hasClass(document.body, "has-hotlist")
+            && hotcrp_status.is_admin
+            && !hotcrp_status.tracker_here)
+            hc.push('<div class="lg"><button type="button" name="new">Start new tracker</button></div>');
+        hc.push_actions();
+        hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
+        if (trackers.length)
+            hc.push('<button type="button" name="stopall" class="dangerous action-sep">Stop all</button>');
+        $d = hc.show();
+        show_elapsed();
+        elapsed_timer = setInterval(show_elapsed, 1000);
+        $d.on("closedialog", clear_elapsed)
+            .on("click", "button[name=new]", new_tracker)
+            .on("click", "button[name=stopall]", stop_all)
+            .on("submit", "form", submit);
+        $d.find(".need-suggest").each(suggest);
+    }
+    if (event.shiftKey
+        || event.ctrlKey
+        || event.metaKey
+        || hotcrp_status.tracker
+        || !hasClass(document.body, "has-hotlist")) {
+        start();
+    } else {
+        $.post(hoturl_post("api/trackerconfig"),
+               {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": hotcrp_paperid},
+               make_submit_success({}));
+    }
+});
+
+function tracker_configure_success() {
+    if (dl.tracker_here) {
+        var visibility = find_tracker(dl.tracker_here).visibility || null;
+        wstorage.site(false, "hotcrp-tracking-visibility", visibility);
+    }
+    tracker_configured = false;
+}
+
+handle_ui.on("js-tracker-stop", function (event) {
+    var e = event.target.closest(".has-tracker");
+    if (e && e.hasAttribute("data-trackerid"))
+        $.post(hoturl_post("api/trackerconfig"),
+            {"tr1-id": e.getAttribute("data-trackerid"), "tr1-stop": 1},
+            reload);
+});
 
 
 // Comet tracker
@@ -2048,6 +2175,10 @@ function load(dlx, is_initial) {
         display_tracker();
     if (had_tracker_at)
         comet_store(1);
+    if (!dl.tracker_here !== !tracker_refresher)
+        tracker_refresh();
+    if (tracker_configured)
+        tracker_configure_success();
     if (!reload_timeout) {
         var t;
         if (is_initial && $$("msg-clock-drift"))
@@ -2098,7 +2229,6 @@ function reload() {
 
 return {
     init: function (dlx) { load(dlx, true); },
-    tracker_ui: tracker_ui,
     tracker_show_elapsed: tracker_show_elapsed
 };
 })(jQuery);
@@ -5600,7 +5730,7 @@ function edit_anno(locator) {
         hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-d">Heading</label><input id="htctl-taganno-' + annoid + '-d" name="heading_' + annoid + '" type="text" placeholder="none" size="32"></div>');
         hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-tagval">Tag value</label><div class="entry"><input id="htctl-taganno-' + annoid + '-tagval" name="tagval_' + annoid + '" type="text" size="5">', '</div></div>');
         if (anno.annoid)
-            hc.push(' <a class="ui closebtn delete-link need-tooltip" href="" data-tooltip="Delete group">x</a>');
+            hc.push(' <a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete heading">x</a>');
         hc.pop_n(2);
     }
     function show_dialog(rv) {
@@ -7151,7 +7281,7 @@ handle_ui.on("js-edit-formulas", function () {
         hc.push('<div class="editformulas-formula" data-formula-number="' + nformulas + '">', '</div>');
         hc.push('<div class="f-i"><div class="f-c">Name</div>');
         if (f.editable) {
-            hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="" data-tooltip="Delete formula">x</a></div>');
+            hc.push('<div style="float:right"><a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete formula">x</a></div>');
             hc.push('<textarea class="editformulas-name" name="formulaname_' + nformulas + '" rows="1" cols="60" style="width:37.5rem;width:calc(99% - 2.5em)">' + escape_entities(f.name) + '</textarea>');
             hc.push('<hr class="c">');
         } else

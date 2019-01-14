@@ -582,7 +582,7 @@ function actionBar($mode = null, $qreq = null) {
         $x .= '</td>';
 
         if ($Me->privChair && $listtype == "p")
-            $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui tracker-ui start tbtn need-tooltip" href="" data-tooltip="Start meeting tracker">&#9759;</a><td>';
+            $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" href="" aria-label="Start meeting tracker">&#9759;</a><td>';
     }
 
     // paper search form

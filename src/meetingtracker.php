@@ -159,6 +159,49 @@ class MeetingTracker {
         return false;
     }
 
+    static private function tracker_new(Contact $user, $trackerid, $xlist,
+                                        $start_at, $position, $position_at) {
+        global $Now;
+        return (object) [
+            "trackerid" => $trackerid,
+            "listid" => $xlist->listid,
+            "ids" => $xlist->ids,
+            "url" => $xlist->full_site_relative_url(),
+            "description" => $xlist->description,
+            "start_at" => $start_at,
+            "position_at" => $position_at,
+            "update_at" => max($Now, $position_at),
+            "owner" => $user->contactId,
+            "sessionid" => session_id(),
+            "position" => $position
+        ];
+    }
+
+    static private function tracker_save(Conf $conf, $trs, $tracker, $position_at) {
+        global $Now;
+        if (empty($trs)) {
+            $tracker = (object) [
+                "trackerid" => false,
+                "position_at" => $position_at,
+                "update_at" => $position_at
+            ];
+        } else if (count($trs) === 1
+                   && (!$tracker->trackerid
+                       || ($trs[0]->trackerid === $tracker->trackerid
+                           && $trs[0]->position_at === $position_at))) {
+            $tracker = $trs[0];
+        } else {
+            $tracker = (object) [
+                "trackerid" => $tracker->trackerid,
+                "position_at" => $position_at,
+                "update_at" => max($Now, $position_at),
+                "ts" => $trs
+            ];
+        }
+        $conf->save_setting("tracker", 1, $tracker);
+        self::contact_tracker_comet($conf);
+    }
+
     static function track_api(Contact $user, $qreq) {
         // NB: This is a special API function; it should either return nothing
         // (in which case the result of a `status` api call is returned),
@@ -191,9 +234,9 @@ class MeetingTracker {
 
         // look up tracker id
         $trackerid = $args[0];
-        if (ctype_digit($trackerid))
+        if (ctype_digit($trackerid)) {
             $trackerid = intval($trackerid);
-        else if ($trackerid === "new") {
+        } else if ($trackerid === "new") {
             do {
                 $trackerid = mt_rand(1, 9999999);
             } while (self::tracker_search($trackerid, $trs) !== false);
@@ -227,18 +270,6 @@ class MeetingTracker {
         $new_trackerid = false;
         $position_at = self::tracker_next_position($tracker);
         if ($position !== "stop") {
-            $name = $qreq->name;
-            $visibility = null;
-            if (isset($qreq->visibility)) {
-                $visibility = trim($qreq->visibility);
-                if (str_starts_with($visibility, "#"))
-                    $visibility = substr($visibility, 1);
-                if ($visibility === "" || strcasecmp($visibility, "pc") === 0)
-                    $visibility = null;
-                else if (!$user->conf->pc_tag_exists($visibility))
-                    json_exit(400, "Parameter error: Visibility should be a PC tag.");
-            }
-
             // Default: start now, position now.
             // If update is to same list as old tracker, keep `start_at`.
             // If update is off-list, keep old position.
@@ -250,31 +281,15 @@ class MeetingTracker {
                     $position = $trs[$match]->position;
                 if ($trs[$match]->position == $position)
                     $position_at = $trs[$match]->position_at;
-                if ($name === null && isset($trs[$match]->name))
-                    $name = $trs[$match]->name;
-                if ($visibility === null && isset($trs[$match]->visibility))
-                    $visibility = $trs[$match]->visibility;
             } else
                 $start_at = $Now;
 
             ensure_session();
-            $tr = (object) [
-                "trackerid" => $trackerid,
-                "listid" => $xlist->listid,
-                "ids" => $xlist->ids,
-                "url" => $xlist->full_site_relative_url(),
-                "description" => $xlist->description,
-                "start_at" => $start_at,
-                "position_at" => $position_at,
-                "update_at" => max($Now, $position_at),
-                "owner" => $user->contactId,
-                "sessionid" => session_id(),
-                "position" => $position
-            ];
-            if ($name !== null)
-                $tr->name = $name;
-            if ($visibility !== null)
-                $tr->visibility = $visibility;
+            $tr = self::tracker_new($user, $trackerid, $xlist, $start_at, $position, $position_at);
+            if ($match !== false && isset($trs[$match]->name))
+                $tr->name = $trs[$match]->name;
+            if ($match !== false && isset($trs[$match]->visibility))
+                $tr->visibility = $trs[$match]->visibility;
 
             if ($match === false) {
                 $trs[] = $tr;
@@ -286,27 +301,120 @@ class MeetingTracker {
             array_splice($trs, $match, 1);
         }
 
-        if (empty($trs)) {
-            if (!$tracker->trackerid)
-                return;
-            $tracker = (object) ["trackerid" => false, "position_at" => $position_at, "update_at" => $position_at];
-        } else if (count($trs) === 1
-                   && (!$tracker->trackerid
-                       || ($trs[0]->trackerid === $tracker->trackerid
-                           && $trs[0]->position_at === $position_at))) {
-            $tracker = $trs[0];
-        } else {
-            $tracker = (object) [
-                "trackerid" => $tracker->trackerid,
-                "position_at" => $position_at,
-                "update_at" => max($Now, $position_at),
-                "ts" => $trs
-            ];
-        }
+        if (empty($trs) && !$tracker->trackerid)
+            return;
+
+        self::tracker_save($user->conf, $trs, $tracker, $position_at);
         if ($new_trackerid !== false)
             $qreq->set_annex("new_trackerid", $new_trackerid);
-        $user->conf->save_setting("tracker", 1, $tracker);
-        self::contact_tracker_comet($user->conf);
+    }
+
+    static function trackerconfig_api(Contact $user, $qreq) {
+        global $Now;
+
+        if (!$user->privChair || !$qreq->post_ok())
+            json_exit(403, "Permission error.");
+
+        if ($qreq->stopall)
+            self::clear($user->conf);
+
+        $tracker = self::lookup($user->conf);
+        $trs = self::expand($tracker);
+        $position_at = self::tracker_next_position($tracker);
+        $errf = $error = [];
+        $changed = false;
+        $new_trackerid = false;
+        ensure_session();
+
+        for ($i = 1; isset($qreq["tr{$i}-id"]); ++$i) {
+            // Parse arguments
+            $trackerid = $qreq["tr{$i}-id"];
+            if (ctype_digit($trackerid))
+                $trackerid = intval($trackerid);
+            $name = trim($qreq["tr{$i}-name"]);
+
+            $vistype = trim($qreq["tr{$i}-vistype"]);
+            if ($vistype === "+" || $vistype === "-") {
+                $vis = trim($qreq["tr{$i}-vis"]);
+                if ($vis !== "" && str_starts_with($vis, "#"))
+                    $vis = substr($vis, 1);
+                if (strcasecmp($vis, "pc") === 0)
+                    $vistype = $vis = "";
+                if ($vis !== "" && !$user->conf->pc_tag_exists($vis)) {
+                    $errf["tr{$i}-vis"] = true;
+                    $error[] = "A PC tag is expected here.";
+                }
+            } else
+                $vis = "";
+
+            $xlist = null;
+            if ($qreq["tr{$i}-listinfo"])
+                $xlist = SessionList::decode_info_string($qreq["tr{$i}-listinfo"]);
+
+            $p = trim($qreq["tr{$i}-p"]);
+            if ($p !== "" && !ctype_digit($p)) {
+                $errf["tr{$i}-p"] = true;
+                $error[] = "Bad paper number.";
+            }
+            $position = false;
+            if ($p !== "" && $xlist)
+                $position = array_search((int) $p, $xlist->ids);
+
+            // Save tracker
+            if ($trackerid === "new") {
+                if (!$xlist || !str_starts_with($xlist->listid, "p/")) {
+                    $errf["tr{$i}-name"] = true;
+                    $error[] = "Internal error (xlist).";
+                } else {
+                    do {
+                        $new_trackerid = mt_rand(1, 9999999);
+                    } while (self::tracker_search($new_trackerid, $trs) !== false);
+
+                    $tr = self::tracker_new($user, $new_trackerid, $xlist, $Now, $position, $position_at);
+                    if ($name !== "")
+                        $tr->name = $name;
+                    if ($vis !== "")
+                        $tr->visibility = $vistype . $vis;
+                    $trs[] = $tr;
+                    $changed = true;
+                }
+            } else if (($match = self::tracker_search($trackerid, $trs)) !== false) {
+                $tr = $trs[$match];
+                if ($name !== (string) get($tr, "name")) {
+                    if ($name !== "")
+                        $tr->name = $name;
+                    else
+                        unset($tr->name);
+                    $changed = true;
+                }
+                if ($vistype . $vis !== (string) get($tr, "visibility")) {
+                    if ($vis !== "")
+                        $tr->visibility = $vistype . $vis;
+                    else
+                        unset($tr->visibility);
+                    $changed = true;
+                }
+                if (isset($qreq["tr{$i}-stop"]) && $qreq["tr{$i}-stop"]) {
+                    array_splice($trs, $match, 1);
+                    $changed = true;
+                }
+            } else {
+                $errf["tr{$i}-name"] = true;
+                $error[] = "This tracker no longer exists.";
+            }
+        }
+
+        if (empty($errf)) {
+            if ($changed)
+                self::tracker_save($user->conf, $trs, $tracker, $position_at);
+            $j = (object) ["ok" => true];
+            if ($new_trackerid !== false)
+                $j->new_trackerid = $new_trackerid;
+            self::my_deadlines($j, $user);
+            return $j;
+        } else {
+            json_exit(400, ["ok" => false, "errf" => $errf, "error" => $error]);
+        }
     }
 
 
@@ -335,7 +443,7 @@ class MeetingTracker {
         if (isset($tr->name))
             $ti->name = $tr->name;
         if (isset($tr->visibility)
-            && ($user->privChair || !str_starts_with($tr->visibility, "~")))
+            && ($user->privChair || substr($tr->visibility, 1, 1) !== "~"))
             $ti->visibility = $tr->visibility;
         return $ti;
     }

@@ -777,19 +777,30 @@ span.expander {
 	color: #aaaaaa;
 }
 
-a.tbtn, a.tbtn-on {
-	border-radius: 5px;
+a.tbtn {
 	display: inline-block;
 	padding: 2px 4px;
+	border-radius: 5px;
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	color: white;
+	background: #63639c;
 }
-.tbtn {
+a.tbtn:hover {
+	background: #5a5a8c;
+	color: white;
+}
+a.tbtn-on {
 	background: #4444cc;
 }
-.tbtn-on {
+a.tbtn-on:hover {
+	background: #2c2ca0;
+}
+a.tbtn-here {
 	background: #cc4444;
+}
+a.tbtn-here:hover {
+	background: #a02c2c;
 }
 a.closebtn {
 	display: inline-block;
@@ -3360,6 +3371,9 @@ body {
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 }
+.tracker-nomatch .tracker-name {
+	border-color: #e33355;
+}
 
 #tracker-table {
 	font-size: larger;
@@ -3548,6 +3562,9 @@ a.help {
 .popup-actions .btn, .popup-actions button {
 	float: right;
 	margin-left: 1em;
+}
+.popup-actions > .action-sep {
+	margin-right: 2em;
 }
 .popup-bottom {
 	clear: both;

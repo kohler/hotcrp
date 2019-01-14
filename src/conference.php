@@ -3358,12 +3358,6 @@ class Conf {
         if ($this->default_format)
             Ht::stash_script("render_text.set_default_format(" . $this->default_format . ")");
 
-        // meeting tracker
-        $trackerowner = $this->setting("tracker")
-            && MeetingTracker::session_owns_tracker($this);
-        if ($trackerowner)
-            Ht::stash_script("hotcrp_deadlines.tracker_ui(0)");
-
         echo '<div id="header">';
 
         // site header
@@ -3454,7 +3448,8 @@ class Conf {
         echo "<div id=\"body\" class=\"body\">\n";
 
         // If browser owns tracker, send it the script immediately
-        if ($trackerowner)
+        if ($this->setting("tracker")
+            && MeetingTracker::session_owns_tracker($this))
             echo Ht::unstash();
 
         // Callback for version warnings
