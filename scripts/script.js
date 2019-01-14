@@ -2310,12 +2310,18 @@ function foldup(event, opts) {
         foldname = "fold" + (opts.n || "");
     }
     if (!("f" in opts)
-        && this.tagName === "INPUT") {
+        && (this.tagName === "INPUT" || this.tagName === "SELECT")) {
+        var value = null;
         if (this.type === "checkbox")
             opts.f = !this.checked;
         else if (this.type === "radio") {
             if (!this.checked)
                 return true;
+            value = this.value;
+        } else if (this.type === "select-one") {
+            value = this.selectedIndex < 0 ? "" : this.options[this.selectedIndex].value;
+        }
+        if (value !== null) {
             var values = (e.getAttribute("data-" + foldname + "-values") || "").split(/\s+/);
             opts.f = values.indexOf(this.value) < 0;
         }
@@ -2339,7 +2345,7 @@ $(document).on("fold unfold", ".js-fold-focus", function (event, opts) {
     focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
 });
 $(function () {
-    $("input.uich.js-foldup").each(function () { foldup.call(this, null); });
+    $(".uich.js-foldup").each(function () { foldup.call(this, null); });
 });
 
 

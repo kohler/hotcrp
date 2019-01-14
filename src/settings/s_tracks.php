@@ -49,11 +49,11 @@ class Tracks_SettingRenderer {
         echo '<div class="', $sv->control_class($track_ctl, "entryi wide"),
             ' has-fold fold', ($reqv[0] == "" || $reqv[0] === "none" ? "c" : "o"),
             ($unfolded ? "" : " fx3"),
-            '">',
+            '" data-fold-values="+ -">',
             $sv->label([$track_ctl, $tag_ctl], $question, $ljs),
             '<div class="entry">',
             Ht::select($track_ctl, $permts, $reqv[0],
-                       $sv->sjs($track_ctl, ["class" => "js-track-perm", "data-default-value" => $curv[0]])),
+                       $sv->sjs($track_ctl, ["class" => "uich js-foldup", "data-default-value" => $curv[0]])),
             " &nbsp;",
             Ht::entry($tag_ctl, $reqv[1],
                       $sv->sjs($tag_ctl, ["class" => "fx settings-track-perm-tag", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
@@ -167,7 +167,6 @@ class Tracks_SettingRenderer {
         echo Ht::button("Add track", ["class" => "ui js-settings-add-track", "id" => "settings_track_add"]);
 
         Ht::stash_script('suggest($(".need-tagcompletion"), taghelp_tset)', "taghelp_tset");
-        Ht::stash_script('$(document).on("change", "select.js-track-perm", function (event) { foldup.call(this, event, {f: this.selectedIndex == 0 || this.selectedIndex == 3}) })');
     }
 
     static function crosscheck(SettingValues $sv) {
