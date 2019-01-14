@@ -5862,11 +5862,12 @@ function popup_near(elt, anchor) {
         bgelt.style.display = "block";
         var anchorPos = $(anchor).geometry(),
             wg = $(window).geometry(),
+            po = $(bgelt).offset(),
             y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
-        y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y));
+        y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - po.top;
         elt.style.top = y + "px";
         var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
-        x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x));
+        x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) - po.left;
         elt.style.left = x + "px";
     }
     var efocus;
