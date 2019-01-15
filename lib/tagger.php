@@ -23,12 +23,13 @@ class TagMapItem {
     public $sitewide = false;
     public $rank = false;
     public $order_anno = false;
-    private $order_anno_list = false;
-    public $colors = null;
+    private $_order_anno_list;
+    private $_order_anno_search;
+    public $colors;
     public $basic_color = false;
-    public $badges = null;
-    public $emoji = null;
-    public $autosearch = null;
+    public $badges;
+    public $emoji;
+    public $autosearch;
     function __construct($tag, TagMap $tagmap) {
         $this->conf = $tagmap->conf;
         $this->set_tag($tag, $tagmap);
@@ -63,14 +64,15 @@ class TagMapItem {
         return $t;
     }
     function order_anno_list() {
-        if ($this->order_anno_list == false) {
-            $this->order_anno_list = [];
+        if ($this->_order_anno_list === null) {
+            $this->_order_anno_list = [];
+            $this->_order_anno_search = 0;
             $result = $this->conf->qe("select * from PaperTagAnno where tag=?", $this->tag);
             while (($ta = TagAnno::fetch($result, $this->conf)))
-                $this->order_anno_list[] = $ta;
+                $this->_order_anno_list[] = $ta;
             Dbl::free($result);
-            $this->order_anno_list[] = TagAnno::make_tag_fencepost($this->tag);
-            usort($this->order_anno_list, function ($a, $b) {
+            $this->_order_anno_list[] = TagAnno::make_tag_fencepost($this->tag);
+            usort($this->_order_anno_list, function ($a, $b) {
                 if ($a->tagIndex != $b->tagIndex)
                     return $a->tagIndex < $b->tagIndex ? -1 : 1;
                 else if (($x = strcasecmp($a->heading, $b->heading)) != 0)
@@ -78,11 +80,28 @@ class TagMapItem {
                 else
                     return $a->annoId < $b->annoId ? -1 : 1;
             });
+            $last_la = null;
+            foreach ($this->_order_anno_list as $i => $la) {
+                $la->annoIndex = $i;
+                if ($last_la)
+                    $last_la->endTagIndex = $la->tagIndex;
+                $last_la = $la;
+            }
         }
-        return $this->order_anno_list;
+        return $this->_order_anno_list;
     }
     function order_anno_entry($i) {
         return get($this->order_anno_list(), $i);
+    }
+    function order_anno_search($tagIndex) {
+        $ol = $this->order_anno_list();
+        $i = $this->_order_anno_search;
+        if ($i > 0 && $tagIndex < $ol[$i - 1]->tagIndex)
+            $i = 0;
+        while ($tagIndex >= $ol[$i]->tagIndex)
+            ++$i;
+        $this->_order_anno_search = $i;
+        return $i - 1;
     }
     function has_order_anno() {
         return count($this->order_anno_list()) > 1;
@@ -90,17 +109,20 @@ class TagMapItem {
 }
 
 class TagAnno implements JsonSerializable {
-    public $tag = null;
-    public $annoId = null;
-    public $tagIndex = null;
-    public $heading = null;
-    public $annoFormat = null;
-    public $infoJson = null;
-    public $count = null;
-    public $pos = null;
+    public $tag;
+    public $annoId;
+    public $tagIndex;
+    public $heading;
+    public $annoFormat;
+    public $infoJson;
+
+    public $annoIndex;      // index in array
+    public $endTagIndex;    // tagIndex of next anno
+    public $pos;
+    public $count;
 
     function is_empty() {
-        return $this->heading === null || strcasecmp($this->heading, "none") == 0;
+        return $this->heading === null || strcasecmp($this->heading, "none") === 0;
     }
     static function fetch($result, Conf $conf) {
         $ta = $result ? $result->fetch_object("TagAnno") : null;
@@ -123,7 +145,7 @@ class TagAnno implements JsonSerializable {
     static function make_tag_fencepost($tag) {
         $ta = new TagAnno;
         $ta->tag = $tag;
-        $ta->tagIndex = (float) TAG_INDEXBOUND;
+        $ta->tagIndex = $ta->endTagIndex = (float) TAG_INDEXBOUND;
         $ta->heading = "Untagged";
         return $ta;
     }
@@ -141,7 +163,8 @@ class TagAnno implements JsonSerializable {
             $j["empty"] = true;
         if ($this->heading !== null)
             $j["heading"] = $this->heading;
-        if ($this->heading !== null && $this->heading !== ""
+        if ($this->heading !== null
+            && $this->heading !== ""
             && ($format = $Conf->check_format($this->annoFormat, $this->heading)))
             $j["format"] = +$format;
         return $j;
