@@ -134,7 +134,7 @@ echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
     '<div class="papmode"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
     '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
-    '</div><hr class="c" />';
+    '</div><hr class="c">';
 
 
 class AutoassignerInterface {
@@ -446,21 +446,21 @@ function divClass($name, $classes = null) {
 }
 
 echo Ht::form(hoturl_post("autoassign", array("profile" => $Qreq->profile, "seed" => $Qreq->seed, "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE)), ["id" => "autoassignform"]),
-    "<div class='helpside'><div class='helpinside'>
+    '<div class="helpside"><div class="helpinside">
 Assignment methods:
-<ul><li><a href='", hoturl("autoassign"), "' class='q'><strong>Automatic</strong></a></li>
- <li><a href=\"", hoturl("manualassign"), "\">Manual by PC member</a></li>
- <li><a href=\"", hoturl("assign") . "\">Manual by paper</a></li>
- <li><a href=\"", hoturl("conflictassign"), "\">Potential conflicts</a></li>
- <li><a href=\"", hoturl("bulkassign"), "\">Bulk update</a></li>
+<ul><li><a href="', hoturl("autoassign"), '" class="q"><strong>Automatic</strong></a></li>
+ <li><a href="', hoturl("manualassign"), '">Manual by PC member</a></li>
+ <li><a href="', hoturl("assign") . '">Manual by paper</a></li>
+ <li><a href="', hoturl("conflictassign"), '">Potential conflicts</a></li>
+ <li><a href="', hoturl("bulkassign"), '">Bulk update</a></li>
 </ul>
-<hr class='hr' />
-Types of PC review:
-<dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory review</dd>
-  <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>May be delegated to external reviewers</dd>
-  <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd>
-  <dt>" . review_type_icon(REVIEW_META) . " Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
-</div></div>\n";
+<hr class="hr">
+<p>Types of PC review:</p>
+<dl><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
+  <dt>', review_type_icon(REVIEW_SECONDARY), ' Secondary</dt><dd>May be delegated to external reviewers</dd>
+  <dt>', review_type_icon(REVIEW_PC), ' Optional</dt><dd>May be declined</dd>
+  <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
+</div></div>', "\n";
 echo Ht::unstash_script("hiliter_children(\"#autoassignform\")");
 
 // paper selection
@@ -484,7 +484,7 @@ if (isset($Qreq->requery) || isset($Qreq->haspap)) {
     $plist->set_selection($SSel);
 
     if ($search->paper_ids())
-        echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>";
+        echo "<br><span class=\"hint\">Assignments will apply to the selected papers.</span>";
 
     echo '<div class="g"></div>';
     echo $plist->table_html("reviewersSel", ["nofooter" => true]),
@@ -675,7 +675,7 @@ function bpSelector($i, $which) {
         ["class" => "need-pcselector badpairs", "data-pcselector-selected" => $Qreq["bp$which$i"], "data-pcselector-options" => "[\"(PC member)\",\"*\"]", "data-default-value" => $Qreq["bp$which$i"]]);
 }
 
-echo "<div class='g'></div><div class='relative'><table id=\"bptable\"><tbody>\n";
+echo '<div class="g"></div><div class="relative"><table id="bptable"><tbody>', "\n";
 for ($i = 1; $i == 1 || isset($Qreq["bpa$i"]); ++$i) {
     $selector_text = bpSelector($i, "a") . " &nbsp;and&nbsp; " . bpSelector($i, "b");
     echo '    <tr><td class="rentry nw">';

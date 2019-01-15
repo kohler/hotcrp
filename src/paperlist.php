@@ -670,7 +670,7 @@ class PaperList {
                 }
             }
             if ($i < count($lllgroups) - 1)
-                $foot .= "    <td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>\n";
+                $foot .= "    <td>&nbsp;<span class=\"barsep\">·</span>&nbsp;</td>\n";
             $foot .= "   </tr></tbody></table>";
         }
         return $foot . (string) $extra . "<hr class=\"c\" /></td>\n </tr>";

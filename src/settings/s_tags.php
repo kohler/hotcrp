@@ -31,7 +31,7 @@ class Tags_SettingRenderer {
     }
     static function render_tag_rank(SettingValues $sv) {
         $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
-        $sv->echo_entry_group("tag_rank", null, null, "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href='" . hoturl("help", "t=ranking") . "'>Help</a>)");
+        $sv->echo_entry_group("tag_rank", null, null, 'The <a href="' . hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . hoturl("help", "t=ranking") . '">Help</a>)');
     }
     static function render(SettingValues $sv) {
         // Tags

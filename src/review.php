@@ -982,8 +982,8 @@ $blind\n";
             echo "Write Review";
         echo "</h3>\n";
 
-        $open = $sep = " <span class='revinfo'>";
-        $xsep = " <span class='barsep'>·</span> ";
+        $open = $sep = ' <span class="revinfo">';
+        $xsep = ' <span class="barsep">·</span> ';
         $showtoken = $rrow && $Me->active_review_token_for($prow, $rrow);
         $type = "";
         if ($rrow && $Me->can_view_review_round($prow, $rrow)) {
@@ -1017,16 +1017,16 @@ $blind\n";
             echo '<div class="hint">', $options["editmessage"], "</div>\n";
 
         // download?
-        echo '<hr class="c" />';
-        echo "<table class='revoff'><tr>
+        echo '<hr class="c">';
+        echo "<table class=\"revoff\"><tr>
       <td><strong>Offline reviewing</strong> &nbsp;</td>
-      <td>Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
+      <td>Upload form: &nbsp; <input type=\"file\" name=\"uploadedFile\" accept=\"text/plain\" size=\"30\">
       &nbsp; ", Ht::submit("uploadForm", "Go"), "</td>
     </tr><tr>
       <td></td>
-      <td><a href='$reviewDownloadLink'>Download form</a>
-      <span class='barsep'>·</span>
-      <span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search"), "'>Search</a> or <a href='", hoturl("offline"), "'>Offline reviewing</a> to download or upload many forms at once.</span></td>
+      <td><a href=\"$reviewDownloadLink\">Download form</a>
+      <span class=\"barsep\">·</span>
+      <span class=\"hint\"><strong>Tip:</strong> Use <a href=\"", hoturl("search"), "\">Search</a> or <a href=\"", hoturl("offline"), "\">Offline reviewing</a> to download or upload many forms at once.</span></td>
     </tr></table></div>\n";
 
         // review card
@@ -1202,7 +1202,7 @@ $blind\n";
             $t .= $barsep . $time;
         }
         if ($contact->can_view_review_identity($prow, $rrow))
-            $t .= $barsep . "<span class='hint'>review by</span> " . $contact->reviewer_html_for($rrow);
+            $t .= $barsep . '<span class="hint">review by</span> ' . $contact->reviewer_html_for($rrow);
         $t .= "</small><br>";
 
         $revViewScore = $contact->view_score_bound($prow, $rrow);
@@ -1758,7 +1758,7 @@ class ReviewValues extends MessageSet {
 
         if (!$user->timeReview($prow, $rrow)
             && (!isset($this->req["override"]) || !$admin)) {
-            $this->rmsg(null, "The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($admin ? " Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""), self::ERROR);
+            $this->rmsg(null, 'The <a href="' . hoturl("deadlines") . '">deadline</a> for entering this review has passed.' . ($admin ? " Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""), self::ERROR);
             return false;
         }
 

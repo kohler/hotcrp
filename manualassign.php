@@ -111,40 +111,40 @@ echo '<div class="psmode">',
     '<div class="papmodex"><a href="', hoturl("manualassign"), '">Manual</a></div>',
     '<div class="papmode"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
     '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
-    '</div><hr class="c" />';
+    '</div><hr class="c">';
 
 
 // Help list
-echo "<div class='helpside'><div class='helpinside'>
+echo '<div class="helpside"><div class="helpinside">
 Assignment methods:
-<ul><li><a href='", hoturl("autoassign"), "'>Automatic</a></li>
- <li><a href='", hoturl("manualassign"), "' class='q'><strong>Manual by PC member</strong></a></li>
- <li><a href='", hoturl("assign"), "'>Manual by paper</a></li>
- <li><a href='", hoturl("conflictassign"), "'>Potential conflicts</a></li>
- <li><a href='", hoturl("bulkassign"), "'>Bulk update</a></li>
+<ul><li><a href="', hoturl("autoassign"), '">Automatic</a></li>
+ <li><a href="', hoturl("manualassign"), '" class="q"><strong>Manual by PC member</strong></a></li>
+ <li><a href="', hoturl("assign"), '">Manual by paper</a></li>
+ <li><a href="', hoturl("conflictassign"), '">Potential conflicts</a></li>
+ <li><a href="', hoturl("bulkassign"), '">Bulk update</a></li>
 </ul>
-<hr class='hr' />\n";
-echo "Types of PC review:
-<dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory review</dd>
-  <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>May be delegated to external reviewers</dd>
-  <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd>
-  <dt>" . review_type_icon(REVIEW_META) . " Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
-<hr class='hr' />\n";
-echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
-echo "<dt>Preference</dt><dd><a href='", hoturl("reviewprefs"), "'>Review preference</a></dd>
+<hr class="hr">
+<p>Types of PC review:</p>
+<dl><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
+  <dt>', review_type_icon(REVIEW_SECONDARY), ' Secondary</dt><dd>May be delegated to external reviewers</dd>
+  <dt>', review_type_icon(REVIEW_PC), ' Optional</dt><dd>May be declined</dd>
+  <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
+<hr class="hr">
+<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>
+  <dt>Preference</dt><dd><a href="', hoturl("reviewprefs"), '">Review preference</a></dd>
   <dt>Topic score</dt><dd>High value means PC member has interest in many paper topics</dd>
-  <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
-echo "</dl>\nClick a heading to sort.\n</div></div>";
+  <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>
+</dl><p>Click a heading to sort.</div></div>';
 
 
 if ($reviewer)
-    echo "<h2 style='margin-top:1em'>Assignments for ", $Me->name_html_for($reviewer), ($reviewer->affiliation ? " (" . htmlspecialchars($reviewer->affiliation) . ")" : ""), "</h2>\n";
+    echo "<h2 style=\"margin-top:1em\">Assignments for ", $Me->name_html_for($reviewer), ($reviewer->affiliation ? " (" . htmlspecialchars($reviewer->affiliation) . ")" : ""), "</h2>\n";
 else
-    echo "<h2 style='margin-top:1em'>Assignments by PC member</h2>\n";
+    echo "<h2 style=\"margin-top:1em\">Assignments by PC member</h2>\n";
 
 
 // Change PC member
-echo "<table><tr><td><div class='assignpc_pcsel'>",
+echo "<table><tr><td><div class=\"assignpc_pcsel\">",
     Ht::form(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
 Ht::stash_script('hiliter_children("#selectreviewerform")');
 
@@ -167,7 +167,7 @@ foreach ($Conf->pc_members() as $pc)
 
 echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<td>", Ht::select("reviewer", $rev_opt, $reviewer ? $reviewer->email : 0), "</td></tr>",
-    "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
+    "<tr><td colspan=\"2\"><hr class=\"g\"></td></tr>\n";
 
 // Paper selection
 echo "<tr><td>Paper selection: &nbsp;</td><td>",
@@ -180,7 +180,7 @@ if (count($tOpt) > 1)
 else
     echo join("", $tOpt);
 echo "</td></tr>\n",
-    "<tr><td colspan='2'><div class='g'></div>\n";
+    "<tr><td colspan=\"2\"><hr class=\"g\">\n";
 
 echo '<tr><td colspan="2"><div class="aab aabr">',
     '<div class="aabut">', Ht::submit("Go", ["class" => "btn-primary"]), '</div>',
@@ -234,8 +234,8 @@ if ($reviewer) {
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     $paperList = new PaperList($search, ["sort" => true, "display" => "show:topics show:reviewers"], $Qreq);
-    echo "<form class='assignpc ignore-diff' method='post' action=\"", hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]),
-        "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
+    echo '<form class="assignpc ignore-diff" method="post" action="', hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]),
+        '" enctype="multipart/form-data" accept-charset="UTF-8"><div>', "\n",
         Ht::hidden("t", $Qreq->t),
         Ht::hidden("q", $Qreq->q),
         Ht::hidden("papx", join(" ", $search->paper_ids())),

@@ -336,31 +336,31 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
             if ($Qreq[$x])
                 $urls[] = "$x=" . urlencode($Qreq[$x]);
         $lrg->set_log_url_base(hoturl("log", join("&amp;", $urls)));
-        echo "<table class='lognav'><tr><td><div class='lognavdr'>";
+        echo "<table class=\"lognav\"><tr><td><div class=\"lognavdr\">";
         if ($page > 1)
             echo $lrg->page_link_html(1, "<strong>Newest</strong>"), " &nbsp;|&nbsp;&nbsp;";
-        echo "</div></td><td><div class='lognavxr'>";
+        echo "</div></td><td><div class=\"lognavxr\">";
         if ($page > 1)
             echo $lrg->page_link_html($page - 1, "<strong>" . Icons::ui_linkarrow(3) . "Newer</strong>");
-        echo "</div></td><td><div class='lognavdr'>";
+        echo "</div></td><td><div class=\"lognavdr\">";
         if ($page - $nlinks > 1)
             echo "&nbsp;...";
         for ($p = max($page - $nlinks, 1); $p < $page; ++$p)
             echo "&nbsp;", $lrg->page_link_html($p, $p);
-        echo "</div></td><td><div><strong class='thispage'>&nbsp;", $page, "&nbsp;</strong></div></td><td><div class='lognavd'>";
+        echo "</div></td><td><div><strong class=\"thispage\">&nbsp;", $page, "&nbsp;</strong></div></td><td><div class=\"lognavd\">";
         for ($p = $page + 1; $p <= $page + $nlinks && $lrg->has_page($p); ++$p)
             echo $lrg->page_link_html($p, $p), "&nbsp;";
         if ($lrg->has_page($page + $nlinks + 1))
             echo "...&nbsp;";
-        echo "</div></td><td><div class='lognavx'>";
+        echo "</div></td><td><div class=\"lognavx\">";
         if ($lrg->has_page($page + 1))
             echo $lrg->page_link_html($page + 1, "<strong>Older" . Icons::ui_linkarrow(1) . "</strong>");
-        echo "</div></td><td><div class='lognavd'>";
+        echo "</div></td><td><div class=\"lognavd\">";
         if ($lrg->has_page($page + $nlinks + 1))
             echo "&nbsp;&nbsp;|&nbsp; ", $lrg->page_link_html("earliest", "<strong>Oldest</strong>");
         echo "</div></td></tr></table>";
     }
-    echo "<div class='g'></div>\n";
+    echo "<hr class=\"g\">\n";
 }
 
 $lrg = new LogRowGenerator($Conf, $wheres, $count);

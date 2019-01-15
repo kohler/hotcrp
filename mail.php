@@ -190,16 +190,16 @@ class MailSender {
             echo Ht::hidden("ungroup", 1);
         $recipients = (string) $this->qreq->recipients;
         if ($this->sending) {
-            echo "<div id='foldmail' class='foldc fold2c'>",
-                "<div class='fn fx2 merror'>In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br /><span id='mailcount'></span></div>",
-                "<div id='mailwarnings'></div>",
-                "<div class='fx'><div class='confirm'>Sent to:&nbsp;", $this->recip->unparse(),
+            echo '<div id="foldmail" class="foldc fold2c">',
+                '<div class="fn fx2 merror">In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br><span id="mailcount"></span></div>',
+                '<div id="mailwarnings"></div>',
+                '<div class="fx"><div class="confirm">Sent to:&nbsp;', $this->recip->unparse(),
                 '<span id="mailinfo"></span></div>',
                 '<div class="aa">',
                 Ht::submit("go", "Prepare more mail"),
                 "</div></div>",
                 // This next is only displayed when Javascript is off
-                "<div class='fn2 warning'>Sending mail. <strong>Do not leave this page until it finishes rendering!</strong></div>",
+                '<div class="fn2 warning">Sending mail. <strong>Do not leave this page until it finishes rendering!</strong></div>',
                 "</div>";
         } else {
             if (isset($this->qreq->emailBody)
@@ -207,20 +207,20 @@ class MailSender {
                 && (strpos($this->qreq->emailBody, "%REVIEWS%")
                     || strpos($this->qreq->emailBody, "%COMMENTS%"))) {
                 if (!$Conf->can_some_author_view_review())
-                    echo "<div class='warning'>Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href='", hoturl("settings", "group=dec"), "' class='nw'>Change this setting</a>)</div>\n";
+                    echo '<div class="warning">Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href="', hoturl("settings", "group=dec"), '" class="nw">Change this setting</a>)</div>', "\n";
                 else if (!$Conf->can_some_author_view_review(true))
-                    echo "<div class='warning'>Mails to users who have not completed their own reviews will not include reviews or comments. (<a href='", hoturl("settings", "group=dec"), "' class='nw'>Change the setting</a>)</div>\n";
+                    echo '<div class="warning">Mails to users who have not completed their own reviews will not include reviews or comments. (<a href="', hoturl("settings", "group=dec"), '" class="nw">Change the setting</a>)</div>', "\n";
             }
             if (isset($this->qreq->emailBody)
                 && $Me->privChair
                 && substr($recipients, 0, 4) == "dec:") {
                 if (!$Conf->can_some_author_view_decision())
-                    echo "<div class='warning'>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href='", hoturl("settings", "group=dec"), "' class='nw'>Change this setting</a>)</div>\n";
+                    echo '<div class="warning">You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href="', hoturl("settings", "group=dec"), '" class="nw">Change this setting</a>)</div>', "\n";
             }
-            echo "<div id='foldmail' class='foldc fold2c'>",
-                "<div class='fn fx2 warning'>In the process of preparing mail.  You will be able to send the prepared mail once this message disappears.<br /><span id='mailcount'></span></div>",
-                "<div id='mailwarnings'></div>",
-                "<div class='fx info'>Verify that the mails look correct, then select “Send” to send the checked mails.<br />",
+            echo '<div id="foldmail" class="foldc fold2c">',
+                '<div class="fn fx2 warning">In the process of preparing mail. You will be able to send the prepared mail once this message disappears.<br><span id="mailcount"></span></div>',
+                '<div id="mailwarnings"></div>',
+                '<div class="fx info">Verify that the mails look correct, then select “Send” to send the checked mails.<br>',
                 "Mailing to:&nbsp;", $this->recip->unparse(),
                 '<span id="mailinfo"></span>';
             if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $recipients)
@@ -301,9 +301,9 @@ class MailSender {
                 continue;
             echo " <tr>";
             if (++$nprintrows > 1)
-                echo "<td class='mhpad'></td>";
+                echo '<td class="mhpad"></td>';
             else if ($this->sending)
-                echo "<td class='mhx'></td>";
+                echo '<td class="mhx"></td>';
             else {
                 ++$this->cbcount;
                 echo '<td class="mhcb"><input type="checkbox" class="uix js-range-click" name="', $cbkey,
@@ -314,10 +314,10 @@ class MailSender {
                 '<td class="mhdp">', $vh, "</td></tr>\n";
         }
 
-        echo " <tr><td></td><td></td><td class='mhb'><pre class='email'>",
+        echo ' <tr><td></td><td></td><td class="mhb"><pre class="email">',
             Ht::link_urls(htmlspecialchars($show_prep->body)),
             "</pre></td></tr>\n",
-            "<tr><td class='mhpad'></td><td></td><td class='mhpad'></td></tr>",
+            '<tr><td class="mhpad"></td><td></td><td class="mhpad"></td></tr>',
             "</table></div>\n";
     }
 
@@ -424,7 +424,7 @@ class MailSender {
             if ($nwarnings != $mailer->nwarnings()) {
                 $this->echo_prologue();
                 $nwarnings = $mailer->nwarnings();
-                echo "<div id='foldmailwarn$nwarnings' class='hidden'><div class='warning'>", join("<br />", $mailer->warnings()), "</div></div>";
+                echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"warning\">", join("<br>", $mailer->warnings()), "</div></div>";
                 echo Ht::unstash_script("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
             }
 
@@ -479,13 +479,13 @@ if (isset($Qreq->monreq)) {
     $plist->set_table_id_class("foldpl", "pltable_full");
     $ptext = $plist->table_html("reqrevs", ["header_links" => true, "list" => true]);
     if ($plist->count == 0)
-        $Conf->infoMsg("You have not requested any external reviews.  <a href='" . hoturl("index") . "'>Return home</a>");
+        $Conf->infoMsg('You have not requested any external reviews.  <a href="' . hoturl("index") . '">Return home</a>');
     else {
         echo "<h2>Requested reviews</h2>\n\n", $ptext, '<div class="info">';
         if ($plist->has("need_review"))
             echo "Some of your requested external reviewers have not completed their reviews.  To send them an email reminder, check the text below and then select &ldquo;Prepare mail.&rdquo;  You’ll get a chance to review the emails and select specific reviewers to remind.";
         else
-            echo "All of your requested external reviewers have completed their reviews.  <a href='", hoturl("index"), "'>Return home</a>";
+            echo 'All of your requested external reviewers have completed their reviews.  <a href="', hoturl("index"), '">Return home</a>';
         echo "</div>\n";
     }
     if (!$plist->has("need_review")) {
@@ -495,10 +495,10 @@ if (isset($Qreq->monreq)) {
 }
 
 echo Ht::form(hoturl_post("mail", "check=1")),
-    Ht::hidden_default_submit("default", 1), "
+    Ht::hidden_default_submit("default", 1), '
 
-<div class='aa' style='padding-left:8px'>
-  <strong>Template:</strong> &nbsp;";
+<div class="aa" style="padding-left:8px">
+  <strong>Template:</strong> &nbsp;';
 $tmpl = $tmploptions = [];
 foreach (array_keys($Conf->mail_template_map()) as $tname) {
     if (($template = $Conf->mail_template($tname))
@@ -515,16 +515,16 @@ if (!isset($Qreq->template) || !isset($tmploptions[$Qreq->template]))
 echo Ht::select("template", $tmploptions, $Qreq->template),
     " &nbsp;",
     Ht::submit("loadtmpl", "Load", ["id" => "loadtmpl"]),
-    " &nbsp;
- <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
+    ' &nbsp;
+ <span class="hint">Templates are mail texts tailored for common conference tasks.</span>
 </div>
 
-<div class='mail' style='float:left;margin:4px 1em 12px 0'><table id=\"foldpsel\" class=\"fold8c fold9o fold10c\">\n";
+<div class="mail" style="float:left;margin:4px 1em 12px 0"><table id="foldpsel" class="fold8c fold9o fold10c">', "\n";
 
 // ** TO
 echo '<tr><td class="mhnp nw"><label for="recipients">To:</label></td><td class="mhdd">',
     $recip->selectors(),
-    "<div class='g'></div>\n";
+    "<div class=\"g\"></div>\n";
 
 // paper selection
 echo '<table class="fx9"><tr>';
@@ -532,7 +532,7 @@ if ($Me->privChair)
     echo '<td class="nw">',
         Ht::checkbox("plimit", 1, isset($Qreq->plimit), ["id" => "plimit"]),
         "&nbsp;</td><td>", Ht::label("Choose papers", "plimit"),
-        "<span class='fx8'>:&nbsp; ";
+        "<span class=\"fx8\">:&nbsp; ";
 else
     echo '<td class="nw">Papers: &nbsp;</td><td>',
         Ht::hidden("plimit", 1), '<span>';
@@ -551,7 +551,7 @@ if (isset($Qreq->plimit)
     && (isset($Qreq->loadtmpl) || isset($Qreq->psearch))) {
     $plist = new PaperList(new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q]));
     $ptext = $plist->table_html("reviewers", ["noheader" => true, "nofooter" => true]);
-    echo "<div class='fx8'>";
+    echo "<div class=\"fx8\">";
     if ($plist->count == 0)
         echo "No papers match that search.";
     else
@@ -589,20 +589,20 @@ if ($Me->is_manager()) {
         if ($lcfield !== "to" && $lcfield !== "bcc") {
             $xfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
             $ec = Ht::control_class($xfield);
-            echo "  <tr><td class=\"mhnp nw$ec\"><label for=\"$xfield\">$field:</label></td><td class='mhdp'>",
+            echo "  <tr><td class=\"mhnp nw$ec\"><label for=\"$xfield\">$field:</label></td><td class=\"mhdp\">",
                 Ht::entry($xfield, $Qreq[$xfield], ["size" => 64, "class" => "textlite-tt$ec", "id" => $xfield]),
-                ($xfield == "replyto" ? "<div class='g'></div>" : ""),
+                ($xfield == "replyto" ? "<hr class=\"g\">" : ""),
                 "</td></tr>\n\n";
         }
 }
 
 // ** SUBJECT
-echo "  <tr><td class='mhnp nw'><label for=\"subject\">Subject:</label></td><td class='mhdp'>",
+echo "  <tr><td class=\"mhnp nw\"><label for=\"subject\">Subject:</label></td><td class=\"mhdp\">",
     "<tt>[", htmlspecialchars($Conf->short_name), "]&nbsp;</tt>",
     Ht::entry("subject", $Qreq->subject, ["size" => 64, "class" => Ht::control_class("subject", "textlite-tt"), "id" => "subject"]),
     "</td></tr>
 
- <tr><td></td><td class='mhb'>\n",
+ <tr><td></td><td class=\"mhb\">\n",
     Ht::textarea("emailBody", $Qreq->emailBody,
             array("class" => "tt", "rows" => 20, "cols" => 80, "spellcheck" => "true")),
     "</td></tr>
@@ -612,13 +612,13 @@ echo "  <tr><td class='mhnp nw'><label for=\"subject\">Subject:</label></td><td 
 if ($Me->privChair) {
     $result = $Conf->qe_raw("select mailId, subject, emailBody from MailLog where fromNonChair=0 order by mailId desc limit 200");
     if (edb_nrows($result)) {
-        echo "<div style='padding-top:12px;max-height:24em;overflow-y:auto'>",
+        echo '<div style="padding-top:12px;max-height:24em;overflow-y:auto">',
             "<strong>Recent mails:</strong>\n";
         $i = 1;
         while (($row = edb_orow($result))) {
-            echo "<div class='mhdd'><div style='position:relative;overflow:hidden'>",
-                "<div style='position:absolute;white-space:nowrap'><span style='min-width:2em;text-align:right;display:inline-block' class='dim'>$i.</span> <a class='q' href=\"", hoturl("mail", "fromlog=" . $row->mailId), "\">", htmlspecialchars($row->subject), " &ndash; <span class='dim'>", htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)), "</span></a></div>",
-                "<br /></div></div>\n";
+            echo '<div class="mhdd"><div style="position:relative;overflow:hidden">',
+                '<div style="position:absolute;white-space:nowrap"><span style="min-width:2em;text-align:right;display:inline-block" class="dim">', $i, '.</span> <a class="q" href="', hoturl("mail", "fromlog=" . $row->mailId), '">', htmlspecialchars($row->subject), ' &ndash; <span class="dim">', htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)), "</span></a></div>",
+                "<br></div></div>\n";
             ++$i;
         }
         echo "</div>\n\n";
@@ -626,15 +626,15 @@ if ($Me->privChair) {
 }
 
 
-echo "<div class='aa' style='clear:both'>\n",
-    Ht::submit("Prepare mail"), " &nbsp; <span class='hint'>You’ll be able to review the mails before they are sent.</span>
+echo '<div class="aa c">',
+    Ht::submit("Prepare mail"), ' &nbsp; <span class="hint">You’ll be able to review the mails before they are sent.</span>
 </div>
 
 
-<div id='mailref'>Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
-<div class='g'></div>
-<div class=\"ctable no-hmargin\">
-<dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
+<div id="mailref">Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
+<hr class="g">
+<div class="ctable no-hmargin">
+<dl class="ctelt" style="margin-bottom:1.5em">
 <dt><code>%URL%</code></dt>
     <dd>Site URL.</dd>
 <dt><code>%LOGINURL%</code></dt>
@@ -651,7 +651,7 @@ echo "<div class='aa' style='clear:both'>\n",
     <dd>Email address of recipient.</dd>
 <dt><code>%REVIEWDEADLINE%</code></dt>
     <dd>Reviewing deadline appropriate for recipient.</dd>
-</dl><dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
+</dl><dl class="ctelt" style="margin-bottom:1.5em">
 <dt><code>%NUMBER%</code></dt>
     <dd>Paper number relevant for mail.</dd>
 <dt><code>%TITLE%</code></dt>
@@ -660,14 +660,14 @@ echo "<div class='aa' style='clear:both'>\n",
     <dd>First couple words of paper title (useful for mail subject).</dd>
 <dt><code>%OPT(AUTHORS)%</code></dt>
     <dd>Paper authors (if recipient is allowed to see the authors).</dd>
-</dl><dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
+</dl><dl class="ctelt" style="margin-bottom:1.5em">
 <dt><code>%REVIEWS%</code></dt>
     <dd>Pretty-printed paper reviews.</dd>
 <dt><code>%COMMENTS%</code></dt>
     <dd>Pretty-printed paper comments, if any.</dd>
 <dt><code>%COMMENTS(<i>tag</i>)%</code></dt>
     <dd>Comments tagged #<code><i>tag</i></code>, if any.</dd>
-</dl><dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
+</dl><dl class="ctelt" style="margin-bottom:1.5em">
 <dt><code>%IF(SHEPHERD)%...%ENDIF%</code></dt>
     <dd>Include text if a shepherd is assigned.</dd>
 <dt><code>%SHEPHERD%</code></dt>
@@ -676,7 +676,7 @@ echo "<div class='aa' style='clear:both'>\n",
     <dd>Shepherd name, if any.</dd>
 <dt><code>%SHEPHERDEMAIL%</code></dt>
     <dd>Shepherd email, if any.</dd>
-</dl><dl class=\"ctelt\" style=\"margin-bottom:1.5em\">
+</dl><dl class="ctelt" style="margin-bottom:1.5em">
 <dt><code>%IF(#<i>tag</i>)%...%ENDIF%</code></dt>
     <dd>Include text if paper has tag <code><i>tag</i></code>.</dd>
 <dt><code>%TAGVALUE(<i>tag</i>)%</code></dt>
@@ -684,6 +684,6 @@ echo "<div class='aa' style='clear:both'>\n",
 </dl>
 </div></div>
 
-</form>\n";
+</form>';
 
 $Conf->footer();

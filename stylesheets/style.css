@@ -19,7 +19,7 @@ table, tr, td, th {
 	border-collapse: collapse;
 	empty-cells: show;
 }
-table.p {
+.p {
 	margin-bottom: 1em;
 }
 tr, textarea, select {
@@ -1554,9 +1554,10 @@ pre.entryexample {
 	padding: 0.5em;
 	background: #eeeeee;
 	border: 1px solid #dddddd;
-	display: table-cell;
+	display: table;
 	overflow-wrap: break-word;
 	white-space: pre-wrap;
+	margin-bottom: 1em;
 }
 pre.entryexample.dark {
 	background: rgba(66, 66, 88, 0.95);

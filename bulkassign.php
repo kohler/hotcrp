@@ -38,16 +38,16 @@ function keep_browser_alive($assignset, $lineno, $line) {
         $csv_started = $time;
     else if ($time - $csv_started > 1) {
         if (!$csv_preparing) {
-            echo "<div id='foldmail' class='foldc fold2o'>",
-                "<div class='fn fx2 merror'>Preparing assignments.<br /><span id='mailcount'></span></div>",
+            echo '<div id="foldmail" class="foldc fold2o">',
+                '<div class="fn fx2 merror">Preparing assignments.<br><span id="mailcount"></span></div>',
                 "</div>";
             $csv_preparing = true;
         }
         if ($assignset->filename)
-            $text = "<span class='lineno'>"
+            $text = '<span class="lineno">'
                 . htmlspecialchars($assignset->filename) . ":$lineno:</span>";
         else
-            $text = "<span class='lineno'>line $lineno:</span>";
+            $text = "<span class=\"lineno\">line $lineno:</span>";
         if ($line === false)
             $text .= " processing";
         else
@@ -102,21 +102,21 @@ echo '<div class="psmode">',
 
 
 // Help list
-echo "<div class='helpside'><div class='helpinside'>
+echo '<div class="helpside"><div class="helpinside">
 Assignment methods:
-<ul><li><a href='", hoturl("autoassign"), "'>Automatic</a></li>
- <li><a href='", hoturl("manualassign"), "'>Manual by PC member</a></li>
- <li><a href='", hoturl("assign"), "'>Manual by paper</a></li>
- <li><a href='", hoturl("conflictassign"), "'>Potential conflicts</a></li>
- <li><a href='", hoturl("bulkassign"), "' class='q'><strong>Bulk update</strong></a></li>
+<ul><li><a href="', hoturl("autoassign"), '">Automatic</a></li>
+ <li><a href="', hoturl("manualassign"), '">Manual by PC member</a></li>
+ <li><a href="', hoturl("assign"), '">Manual by paper</a></li>
+ <li><a href="', hoturl("conflictassign"), '">Potential conflicts</a></li>
+ <li><a href="', hoturl("bulkassign"), '" class="q"><strong>Bulk update</strong></a></li>
 </ul>
-<hr class='hr' />
-Types of PC review:
-<dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory review</dd>
-  <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>May be delegated to external reviewers</dd>
-  <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd>
-  <dt>" . review_type_icon(REVIEW_META) . " Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
-</div></div>";
+<hr class="hr">
+<p>Types of PC review:</p>
+<dl><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
+  <dt>', review_type_icon(REVIEW_SECONDARY), ' Secondary</dt><dd>May be delegated to external reviewers</dd>
+  <dt>', review_type_icon(REVIEW_PC), ' Optional</dt><dd>May be declined</dd>
+  <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
+</div></div>';
 
 
 // upload review form action
@@ -238,7 +238,7 @@ if (($requestreview_template = $null_mailer->expand_template("requestreview"))) 
         $t = $Qreq->requestreview_body;
     else
         $t = $requestreview_template["body"];
-    echo "<table class='fx'><tr><td>",
+    echo "<table class=\"fx\"><tr><td>",
         Ht::checkbox("requestreview_notify", 1, true),
         "&nbsp;</td><td>", Ht::label("Send email to external reviewers:"), "</td></tr>
     <tr><td></td><td>",
@@ -247,15 +247,15 @@ if (($requestreview_template = $null_mailer->expand_template("requestreview"))) 
 }
 
 echo '<div class="lg"></div>', Ht::submit("Prepare assignments", ["class" => "btn-primary"]),
-    " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
+    " &nbsp; <span class=\"hint\">You’ll be able to check the assignment before it is saved.</span></div>\n";
 
 echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC assignments</a></div>';
 
 echo "</form>
 
-<hr style='margin-top:1em' />
+<hr style=\"margin-top:1em\" />
 
-<div class='settingstext'>
+<div class=\"settingstext\">
 <h3>Instructions</h3>
 
 <p>Upload a comma-separated value file to prepare an assignment of reviews,
@@ -265,7 +265,7 @@ changes before they are committed.</p>
 
 <p>A simple example:</p>
 
-<pre class='entryexample'>paper,assignment,email
+<pre class=\"entryexample\">paper,assignment,email
 1,primary,man@alice.org
 2,secondary,slugger@manny.com
 1,primary,slugger@manny.com</pre>
@@ -277,7 +277,7 @@ members, or if they have conflicts with their assigned papers.</p>
 
 <p>A more complex example:</p>
 
-<pre class='entryexample'>paper,assignment,email,round
+<pre class=\"entryexample\">paper,assignment,email,round
 all,clearreview,all,R2
 1,primary,man@alice.org,R2
 10,primary,slugger@manny.com,R2

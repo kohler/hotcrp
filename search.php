@@ -385,7 +385,7 @@ $ss = array();
 if ($Me->isPC || $Me->privChair) {
     $ss = $Conf->saved_searches();
     if (count($ss) > 0 || $pl_text) {
-        echo "<div class='tld4' style='padding-bottom:1ex'>";
+        echo '<div class="tld4" style="padding-bottom:1ex">';
         ksort($ss);
         if (count($ss)) {
             $n = 0;
@@ -397,27 +397,27 @@ if ($Me->isPC || $Me->privChair) {
                 foreach (array("qt", "t", "sort") as $k)
                     if (isset($sv->$k))
                         $arest .= "&amp;" . $k . "=" . urlencode($sv->$k);
-                echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), "</a><div class='fx' style='padding-bottom:0.5ex;font-size:smaller'>",
+                echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), '</a><div class="fx" style="padding-bottom:0.5ex;font-size:smaller">',
                     "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(defval($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
                 if ($Me->privChair || !defval($sv, "owner") || $sv->owner == $Me->contactId)
-                    echo " <span class='barsep'>·</span> ",
+                    echo ' <span class="barsep">·</span> ',
                         "<a href=\"", $Conf->selfurl($Qreq, ["deletesearch" => 1, "ssname" => $sn, "post" => post_value()]), "\">Delete</a>";
                 echo "</div></td></tr></table>";
                 ++$n;
             }
-            echo "<div class='g'></div>\n";
+            echo '<hr class="g">';
         }
         echo Ht::form(hoturl_post("search", "savesearch=1"));
         echo_request_as_hidden_inputs(true);
         echo "<table id=\"ssearchnew\" class=\"has-fold foldc\">",
             "<tr><td>", foldupbutton(), "</td>",
-            "<td><a class='ui q fn js-foldup' href='#'>New saved search</a><div class='fx'>",
+            '<td><a class="ui q fn js-foldup" href="">New saved search</a><div class="fx">',
             "Save ";
         if ($Qreq->q)
             echo "search “", htmlspecialchars($Qreq->q), "”";
         else
             echo "empty search";
-        echo " as:<br />ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;",
+        echo ' as:<br />ss:<input type="text" name="ssname" value="" size="20"> &nbsp;',
             Ht::submit("Save"),
             "</div></td></tr></table>",
             "</form>";
@@ -430,7 +430,7 @@ if ($Me->isPC || $Me->privChair) {
 
 // Display options
 if ($pl->count > 0) {
-    echo "<div class='tld3' style='padding-bottom:1ex'>";
+    echo '<div class="tld3" style="padding-bottom:1ex">';
 
     echo Ht::form(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
     echo_request_as_hidden_inputs();
@@ -449,16 +449,16 @@ if ($pl->count > 0) {
     echo "</div>\n";
 
     // "Redisplay" row
-    echo "<div style='padding-top:2ex'><table style='margin:0 0 0 auto'><tr>";
+    echo '<div style="padding-top:2ex"><table style="margin:0 0 0 auto"><tr>';
 
     // Conflict display
     if ($Me->privChair)
-        echo "<td class='padlb'>",
+        echo '<td class="padlb">',
             Ht::checkbox("showforce", 1, !!$Qreq->forceShow,
                          ["id" => "showforce", "class" => "paperlist-display"]),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
-    echo "<td class='padlb'>";
+    echo '<td class="padlb">';
     if ($Me->privChair)
         echo Ht::button("Change default view", ["class" => "ui js-edit-view-options"]), "&nbsp; ";
     echo Ht::submit("Redisplay", array("id" => "redisplay"));
@@ -475,12 +475,12 @@ echo "</div>";
 
 // Tab selectors
 echo '<div class="tllx"><table><tr>',
-  "<td><div class='tll1'><a class='ui tla has-focus-history' href=\"\">Search</a></div></td>
-  <td><div class='tll2'><a class='ui tla nw has-focus-history' href=\"#advanced\">Advanced search</a></div></td>\n";
+  '<td><div class="tll1"><a class="ui tla has-focus-history" href="">Search</a></div></td>
+  <td><div class="tll2"><a class="ui tla nw has-focus-history" href="#advanced">Advanced search</a></div></td>', "\n";
 if ($ss)
-    echo "  <td><div class='tll4'><a class='ui tla nw has-focus-history' href=\"#savedsearches\">Saved searches</a></div></td>\n";
+    echo '  <td><div class="tll4"><a class="ui tla nw has-focus-history" href="#savedsearches">Saved searches</a></div></td>', "\n";
 if ($pl->count > 0)
-    echo "  <td><div class='tll3'><a class='ui tla nw has-focus-history' href=\"#view\">View options</a></div></td>\n";
+    echo '  <td><div class="tll3"><a class="ui tla nw has-focus-history" href="#view">View options</a></div></td>', "\n";
 echo "</tr></table></div></div>\n\n";
 if ($pl->count == 0)
     Ht::stash_script("focus_fold.autofocus()");
@@ -496,7 +496,7 @@ if ($pl_text) {
         echo '</div>';
     }
 
-    echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
+    echo "<div class=\"maintabsep\"></div>\n\n<div class=\"pltable_full_ctr\">";
 
     if ($pl->has("sel")) {
         echo Ht::form($Conf->selfurl($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel"]),
@@ -523,6 +523,6 @@ if ($pl_text) {
         echo "</form>";
     echo "</div>\n";
 } else
-    echo "<div class='g'></div>\n";
+    echo '<hr class="g">';
 
 $Conf->footer();

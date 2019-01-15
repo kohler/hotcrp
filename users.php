@@ -182,7 +182,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
 function modify_confirm($j, $ok_message, $ok_message_optional) {
     global $Conf;
     if (get($j, "ok") && get($j, "warnings"))
-        $Conf->warnMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $j->warnings) . "</div>");
+        $Conf->warnMsg("<div>" . join('</div><div style="margin-top:0.5em">', $j->warnings) . "</div>");
     if (get($j, "ok") && $ok_message
         && (!$ok_message_optional || !get($j, "warnings"))
         && (!isset($j->users) || !empty($j->users)))
@@ -299,10 +299,10 @@ $pl_text = $pl->table_html($Qreq->t, hoturl("users", ["t" => $Qreq->t]),
 
 
 // form
-echo "<div class='g'></div>\n";
+echo '<hr class="g">';
 if (count($tOpt) > 1) {
-    echo "<table id='contactsform' class='tablinks1'>
-<tr><td><div class='tlx'><div class='tld1'>";
+    echo '<table id="contactsform" class="tablinks1">
+<tr><td><div class="tlx"><div class="tld1">';
 
     echo Ht::form(hoturl("users"), ["method" => "get"]);
     if (isset($Qreq->sort))
@@ -310,7 +310,7 @@ if (count($tOpt) > 1) {
     echo Ht::select("t", $tOpt, $Qreq->t, ["class" => "want-focus"]),
         " &nbsp;", Ht::submit("Go"), "</form>";
 
-    echo "</div><div class='tld2'>";
+    echo '</div><div class="tld2">';
 
     // Display options
     echo Ht::form(hoturl("users"), ["method" => "get"]);
@@ -318,8 +318,8 @@ if (count($tOpt) > 1) {
         if (isset($Qreq[$x]))
             echo Ht::hidden($x, $Qreq[$x]);
 
-    echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
-  <td class='pad'>";
+    echo '<table><tr><td><strong>Show:</strong> &nbsp;</td>
+  <td class="pad">';
     foreach (array("tags" => "Tags",
                    "aff" => "Affiliations", "collab" => "Collaborators",
                    "topics" => "Topics") as $fold => $text)
@@ -331,7 +331,7 @@ if (count($tOpt) > 1) {
         }
     echo "</td>";
     if (isset($pl->scoreMax)) {
-        echo "<td class='pad'>";
+        echo '<td class="pad">';
         $revViewScore = $Me->permissive_view_score_bound();
         foreach ($Conf->all_review_fields() as $f)
             if ($f->view_score > $revViewScore
@@ -349,7 +349,7 @@ if (count($tOpt) > 1) {
         foreach (ListSorter::score_sort_selector_options() as $k => $v)
             if (in_array($k, ["average", "variance", "maxmin"]))
                 $ss[$k] = $v;
-        echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
+        echo '<tr><td colspan="3"><hr class="g"><b>Sort scores by:</b> &nbsp;',
             Ht::select("scoresort", $ss,
                        ListSorter::canonical_long_score_sort($Me->session("scoresort", "A"))),
             "</td></tr>";
@@ -359,18 +359,18 @@ if (count($tOpt) > 1) {
     echo "</div></div></td></tr>\n";
 
     // Tab selectors
-    echo "<tr><td class='tllx'><table><tr>
-  <td><div class='tll1'><a class='ui tla' href=''>User selection</a></div></td>
-  <td><div class='tll2'><a class='ui tla' href=''>Display options</a></div></td>
+    echo '<tr><td class="tllx"><table><tr>
+  <td><div class="tll1"><a class="ui tla" href="">User selection</a></div></td>
+  <td><div class="tll2"><a class="ui tla" href="">Display options</a></div></td>
 </tr></table></td></tr>
-</table>\n\n";
+</table>', "\n\n";
 }
 
 
 if ($Me->privChair && $Qreq->t == "pc")
-    $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new&amp;role=pc") . "' class='btn'>Create accounts</a></p><p>Select a PC member’s name to edit their profile or remove them from the PC.</p>");
+    $Conf->infoMsg('<p><a href="' . hoturl("profile", "u=new&amp;role=pc") . '" class="btn">Create accounts</a></p>Select a PC member’s name to edit their profile or remove them from the PC.');
 else if ($Me->privChair && $Qreq->t == "all")
-    $Conf->infoMsg("<p><a href='" . hoturl("profile", "u=new") . "' class='btn'>Create accounts</a></p><p>Select a user to edit their profile.  Select " . Ht::img("viewas.png", "[Act as]") . " to view the site as that user would see it.</p>");
+    $Conf->infoMsg('<p><a href="' . hoturl("profile", "u=new") . '" class="btn">Create accounts</a></p>Select a user to edit their profile.  Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user would see it.');
 
 
 if ($pl->any->sel) {

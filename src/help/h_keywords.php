@@ -8,9 +8,9 @@ class Keywords_HelpTopic {
         if ($hth->conf->subBlindNever())
             $aunote = "";
         else if (!$hth->conf->subBlindAlways())
-            $aunote = "<br /><span class='hint'>Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</span>";
+            $aunote = "<br /><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</span>";
         else
-            $aunote = "<br /><span class='hint'>Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
+            $aunote = "<br /><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
 
         // does a reviewer tag exist?
         $retag = meaningful_pc_tag($hth->user) ? : "";
@@ -149,7 +149,7 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("shep:fdabek", "“fdabek” (in name/email) is shepherd (“none” and “any” also work)");
         echo $hth->tgroup("Conflicts");
         echo $hth->search_trow("conflict:me", "you have a conflict with the submission");
-        echo $hth->search_trow("conflict:fdabek", "“fdabek” (in name/email) has a conflict with the submission<br /><span class='hint'>This search is only available to chairs and to PC members who can see the submission’s author list.</span>");
+        echo $hth->search_trow("conflict:fdabek", "“fdabek” (in name/email) has a conflict with the submission<br /><span class=\"hint\">This search is only available to chairs and to PC members who can see the submission’s author list.</span>");
         echo $hth->search_trow("conflict:pc", "some PC member has a conflict with the submission");
         echo $hth->search_trow("conflict:pc>2", "at least three PC members have conflicts with the submission");
         echo $hth->search_trow("reconflict:\"1 2 3\"", "a reviewer of submission 1, 2, or 3 has a conflict with the submission");
@@ -234,7 +234,7 @@ class Keywords_HelpTopic {
             echo $hth->tgroup("<a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a>");
             echo $hth->search_trow("formula:all({$r->search_keyword()}={$r->typical_score()})",
                 "all reviews have $r->name_html score {$r->typical_score()}<br />"
-                . "<span class='hint'><a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a> can express complex numerical queries across review scores and preferences.</span>");
+                . "<span class=\"hint\"><a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a> can express complex numerical queries across review scores and preferences.</span>");
             echo $hth->search_trow("f:all({$r->search_keyword()}={$r->typical_score()})", "“f” is shorthand for “formula”");
             echo $hth->search_trow("formula:var({$r->search_keyword()})>0.5", "variance in {$r->search_keyword()} is above 0.5");
             echo $hth->search_trow("formula:any({$r->search_keyword()}={$r->typical_score()} && pref<0)", "at least one reviewer had $r->name_html score {$r->typical_score()} and review preference &lt; 0");

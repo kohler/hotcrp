@@ -34,17 +34,19 @@ visible only to PC chairs.</p>";
         echo $hth->subhead("Finding tags");
         echo "<p>A paper’s tags are shown like this on the paper page:</p>
 
-<div class='pspcard' style='position:static'><div class='pspcard_body'>
-<div class='psc psc1'>
- <div class='pst'>
-  <span class='psfn'>Tags</span>
-  <span class='pstedit'><a class='xx'><span style='display:inline-block;position:relative;width:16px'>",
-    Ht::img("edit48.png", "[Edit]", "editimg"), "</span>&nbsp;<u class='x'>Edit</u></a></span>
-  <hr class='c' /></div>
-<div class='psv'><div class='taghl'>#earlyaccept</div></div></div>
-</div></div><hr class='c' />
+<div class=\"pspcard p\" style=\"position:static\"><div class=\"pspcard_body\">
+<div class=\"psc psc1\">
+ <div class=\"pst\">
+  <span class=\"psfn\">Tags</span>
+  <span class=\"pstedit\"><a class=\"xx\"><span style=\"display:inline-block;position:relative;width:16px\">",
+    Ht::img("edit48.png", "[Edit]", "editimg"), "</span>&nbsp;<u class=\"x\">Edit</u></a></span>
+  <hr class=\"c\"></div>
+<div class=\"psv\"><div class=\"taghl\">#earlyaccept</div></div></div>
+</div></div><hr class=\"c\">
 
-<p>To find all papers with tag “#discuss”:&nbsp; ", $hth->search_form("#discuss"), "</p>
+<p>To find all papers with tag “#discuss”:</p>
+
+<div class=\"p\">", $hth->search_form("#discuss"), "</div>
 
 <p>You can also search with “", $hth->search_link("show:tags"), "” to see each
 paper’s tags, or “", $hth->search_link("show:#tagname"), "” to see a particular tag
@@ -84,14 +86,14 @@ papers and removes it from all others.</p>
 <li><p><strong>With search keywords:</strong> Search for “"
 . $hth->search_link("edit:tag:tagname") . "” to add tags with checkboxes;
 search for “" . $hth->search_link("edit:tagval:tagname") . "” to type in <a
-href='#values'>tag values</a>; or search for “" . $hth->search_link("edit:tags") . "”
+href=\"#values\">tag values</a>; or search for “" . $hth->search_link("edit:tags") . "”
 to edit papers’ full tag lists.</p>
 
 <p>" . Ht::img("extagseditkw.png", "[Tag editing search keywords]", ["width" => 543, "height" => 133]) . "</p></li>
 
 <li><p><strong>In bulk:</strong> Administrators can also upload tag
-assignments using <a href='" .
-hoturl("bulkassign") . "'>bulk assignment</a>.</p></li>
+assignments using <a href=\"" .
+hoturl("bulkassign") . "\">bulk assignment</a>.</p></li>
 
 </ul>
 
@@ -110,7 +112,7 @@ like “" . $hth->search_link("#discuss#2") . "” or “" . $hth->search_link("
 "”.</p>
 
 <p>It’s common to assign increasing tag values to a set of papers.  Do this
-using the <a href='" . hoturl("search") . "'>search screen</a>.  Search for the
+using the <a href=\"" . hoturl("search") . "\">search screen</a>.  Search for the
 papers you want, sort them into the right order, select their checkboxes, and
 choose <b>Define order</b> in the tag action area.  If no sort gives what
 you want, search for the desired paper numbers in order—for instance,
@@ -176,9 +178,9 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
 
     function render_example_pcpaper() {
         echo "<p><strong>Mark PC-authored papers for extra scrutiny.</strong>
- First, <a href='" . hoturl("search", "t=s&amp;qt=au") . "'>search for PC members’ last names in author fields</a>.
+ First, <a href=\"" . hoturl("search", "t=s&amp;qt=au") . "\">search for PC members’ last names in author fields</a>.
  Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag “#pcpaper”.
- A <a href='" . hoturl("search", "t=s&amp;q=-%23pcpaper") . "'>search</a> shows papers without PC authors.</p>\n";
+ A <a href=\"" . hoturl("search", "t=s&amp;q=-%23pcpaper") . "\">search</a> shows papers without PC authors.</p>\n";
     }
 
     function render_example_allotment() {

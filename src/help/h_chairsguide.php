@@ -89,14 +89,14 @@ form also can include:</p>
         } else if ($gj->index === 1) {
             echo "<li><p>Consider checking ", $hth->search_link("the papers", ["q" => "", "t" => "all"]),
   " for anomalies.  Withdraw and/or delete duplicates or update details on the <a
-  href='" . hoturl("paper") . "'>paper pages</a> (via “Edit paper”).
+  href=\"" . hoturl("paper") . "\">paper pages</a> (via “Edit paper”).
   Also consider contacting the authors of ",
   $hth->search_link("incomplete submissions", ["q" => "status:unsub", "t" => "all"]),
   ", especially if a PDF document was uploaded; sometimes a
   user will uncheck “The submission is ready for review” by mistake.</p></li>\n";
 
         } else if ($gj->index === 2) {
-            echo "<li><p><strong>Check for formatting violations (optional).</strong> <a href='" . hoturl("search", "q=") . "'>Search</a>
+            echo "<li><p><strong>Check for formatting violations (optional).</strong> <a href=\"" . hoturl("search", "q=") . "\">Search</a>
   &gt; Download &gt; Format check will download a summary report. Serious errors
   are also shown on paper pages (problematic PDFs are distinguished by an
   “X”).</p></li>\n";
@@ -119,13 +119,13 @@ form also can include:</p>
   multi-track conferences.</li>\n";
 
         } else if ($gj->index === 6) {
-            echo "<li><p><strong><a href='" . hoturl("reviewprefs") . "'>Collect review
+            echo "<li><p><strong><a href=\"" . hoturl("reviewprefs") . "\">Collect review
   preferences from the PC.</a></strong> PC members can rank-order papers they
   want or don’t want to review.  They can either set their preferences <a
-  href='" . hoturl("reviewprefs") . "'>all at once</a>, or (often more
+  href=\"" . hoturl("reviewprefs") . "\">all at once</a>, or (often more
   convenient) page through the ", $hth->search_link("list of submitted papers", ""),
   " and set their preferences on the <a
-  href='" . hoturl("paper") . "'>paper pages</a>.</p>
+  href=\"" . hoturl("paper") . "\">paper pages</a>.</p>
 
   <p>If desired, review preferences can be collected before the submission
   deadline.  Select ", $hth->settings_link("“PC can see <em>all registered papers</em> until submission deadline”", "sub"),
@@ -133,7 +133,7 @@ form also can include:</p>
   been submitted.</p></li>\n";
 
         } else if ($gj->index === 7) {
-            echo "<li><p><strong><a href='" . hoturl("conflictassign") . "'>Check for
+            echo "<li><p><strong><a href=\"" . hoturl("conflictassign") . "\">Check for
   missing conflicts.</a></strong> HotCRP does not automatically confirm all conflicts, such
   as conflicts indicated by PC members’ “Collaborators and other affiliations.”
   Use <a href=\"" .
@@ -141,13 +141,13 @@ form also can include:</p>
   such conflicts.</p></li>\n";
 
         } else if ($gj->index === 8) {
-            echo "<li><p><strong><a href='" . hoturl("manualassign") . "'>Assign
+            echo "<li><p><strong><a href=\"" . hoturl("manualassign") . "\">Assign
   reviews.</a></strong> You can make assignments <a
-  href='" . hoturl("assign") . "'>by paper</a>, <a
-  href='" . hoturl("manualassign") . "'>by PC member</a>, <a
-  href='" . hoturl("bulkassign") . "'>by uploading an assignment
+  href=\"" . hoturl("assign") . "\">by paper</a>, <a
+  href=\"" . hoturl("manualassign") . "\">by PC member</a>, <a
+  href=\"" . hoturl("bulkassign") . "\">by uploading an assignment
   file</a>, or, even easier, <a
-  href='" . hoturl("autoassign") . "'>automatically</a>.  PC
+  href=\"" . hoturl("autoassign") . "\">automatically</a>.  PC
   review assignments can be “primary” or “secondary”; the difference is
   that primary reviewers are expected to complete their review, but a
   secondary reviewer can delegate their review to someone else. You can
@@ -174,7 +174,7 @@ does offer other mechanisms for conflicted reviews.</p>
 
 <p>First, each paper can be assigned a <em>paper administrator</em>: a PC member
 who manages that paper’s reviewing and discussion. Use the left-hand side of a
-<a href='" . hoturl("assign") . "'>paper’s assignment page</a> to enter its administrator. (You may need to
+<a href=\"" . hoturl("assign") . "\">paper’s assignment page</a> to enter its administrator. (You may need to
 “Override conflicts” to access the assignment page.)
 Paper administrators have full privilege to assign and view reviews for their
 papers, and can, for example, use the autoassignment tool, but they cannot change
@@ -186,7 +186,7 @@ conflicted chairs’ access. Usually this suffices.
 For additional privacy, use
 <em>review tokens</em>, which are completely anonymous
 review slots. To create a token, an administrator
-goes to an <a href='" . hoturl("assign") . "'>assignment page</a>
+goes to an <a href=\"" . hoturl("assign") . "\">assignment page</a>
 and clicks on “Request review” without entering a name
 or email address. This reports the token, a short string of letters and
 numbers such as “9HDZYUB”. Any user who knows the token can
@@ -212,7 +212,7 @@ administrator’s identity.</p>\n\n";
   "</strong>  Authors’ responses (also called rebuttals) let authors correct reviewer misconceptions
   before decisions are made.  Responses are entered
   into the system as comments.  On the ", $hth->settings_link("decision settings page", "dec"),
-  ", update “Collect responses to the reviews,” then <a href='" . hoturl("mail") . "'>send mail to
+  ", update “Collect responses to the reviews,” then <a href=\"" . hoturl("mail") . "\">send mail to
   authors</a> informing them of the response deadline.  PC members can still
   update their reviews up to the ", $hth->settings_link("review deadline", "reviews"),
   "; authors are informed via email of any review changes.</p></li>\n";
@@ -242,11 +242,11 @@ administrator’s identity.</p>\n\n";
   Explicit tag-based orders make it easier for the PC to follow along.</p></li>\n";
 
         } else if ($gj->index === 5) {
-            echo "<li><p><strong><a href='" . hoturl("autoassign") . "'>Assign discussion leads
+            echo "<li><p><strong><a href=\"" . hoturl("autoassign") . "\">Assign discussion leads
   (optional).</a></strong> Discussion leads are expected to be able to
   summarize the paper and the reviews.  You can assign leads either <a
-  href='" . hoturl("assign") . "'>paper by paper</a> or <a
-  href='" . hoturl("autoassign") . "'>automatically</a>.</p></li>\n";
+  href=\"" . hoturl("assign") . "\">paper by paper</a> or <a
+  href=\"" . hoturl("autoassign") . "\">automatically</a>.</p></li>\n";
 
         } else if ($gj->index === 6) {
             echo "<li><p><strong>", $hth->settings_link("Define decision types (optional).", "dec"),
@@ -289,15 +289,15 @@ administrator’s identity.</p>\n\n";
 
         } else if ($gj->index === 3) {
             echo "<li><p><strong>Paper decisions</strong> can be recorded on the <a
-  href='" . hoturl("review") . "'>paper pages</a> or en masse via ",
+  href=\"" . hoturl("review") . "\">paper pages</a> or en masse via ",
   $hth->search_link("search", ""), ".  Use ", $hth->settings_link("decision settings", "dec"),
   " to expose decisions to PC members if desired.</p></li>\n";
 
         } else if ($gj->index === 4) {
             echo "<li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either <a
-  href='" . hoturl("paper") . "'>paper by paper</a> or <a
-  href='" . hoturl("autoassign", "t=acc") . "'>automatically</a>.</p></li>\n";
+  href=\"" . hoturl("paper") . "\">paper by paper</a> or <a
+  href=\"" . hoturl("autoassign", "t=acc") . "\">automatically</a>.</p></li>\n";
         }
     }
 
@@ -325,7 +325,7 @@ administrator’s identity.</p>\n\n";
             echo "</p></li>\n";
 
         } else if ($gj->index === 4) {
-            echo "<li><p><strong><a href='" . hoturl("mail") . "'>Send mail to
+            echo "<li><p><strong><a href=\"" . hoturl("mail") . "\">Send mail to
 authors</a></strong> informing them that reviews and decisions are
 available.  The mail can also contain the reviews and comments
 themselves.</p></li>\n";

@@ -351,13 +351,13 @@ if ($Me->can_administer($prow)) {
         if (!$numReviews)
             echo "0 reviews";
         else {
-            echo "<a class='q' href=\""
-                . hoturl("search", "q=re:" . urlencode($pc->email)) . "\">"
-                . plural($numReviews, "review") . "</a>";
+            echo '<a class="q" href="',
+                hoturl("search", "q=re:" . urlencode($pc->email)), '">',
+                plural($numReviews, "review"), "</a>";
             if ($numPrimary && $numPrimary < $numReviews)
-                echo "&nbsp; (<a class='q' href=\""
-                    . hoturl("search", "q=pri:" . urlencode($pc->email))
-                    . "\">$numPrimary primary</a>)";
+                echo '&nbsp; (<a class="q" href="',
+                    hoturl("search", "q=pri:" . urlencode($pc->email)),
+                    "\">$numPrimary primary</a>)";
         }
         echo "</div></div></div>\n"; // .pctbnrev .ctelti .ctelt
     }

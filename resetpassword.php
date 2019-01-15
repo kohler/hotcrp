@@ -62,13 +62,13 @@ if (!isset($Qreq->autopassword)
     || !preg_match("/\\A[-0-9A-Za-z@_+=]*\\z/", $Qreq->autopassword))
     $Qreq->autopassword = Contact::random_password();
 
-echo "<div class='homegrp'>
-Welcome to the ", htmlspecialchars($Conf->full_name()), " submissions site.";
+echo '<div class="homegrp">
+Welcome to the ', htmlspecialchars($Conf->full_name()), " submissions site.";
 if ($Conf->opt("conferenceSite"))
     echo " For general information about ", htmlspecialchars($Conf->short_name), ", see <a href=\"", htmlspecialchars($Conf->opt("conferenceSite")), "\">the conference site</a>.";
 
 echo "</div>
-<div class='homegrp' id='homereset'>\n",
+<div class=\"homegrp\" id=\"homereset\">\n",
     Ht::form(hoturl_post("resetpassword")),
     '<div class="f-contain">',
     Ht::hidden("resetcap", $resetcap),

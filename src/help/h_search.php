@@ -8,12 +8,12 @@ class Search_HelpTopic {
 search. Some hints for PC members and chairs:</p>
 
 <ul>
-<li><div style='display:inline-block'>", $hth->search_form(""), "</div>&nbsp; finds all submissions.  (Leave the search field blank.)</li>
-<li><div style='display:inline-block'>", $hth->search_form("12"), "</div>&nbsp; finds submission #12.  When entered from a
- <a href='#quicklinks'>quicksearch</a> box, this search will jump to #12 directly.</li>
+<li><div class=\"d-inline-block\">", $hth->search_form(""), "</div>&nbsp; finds all submissions.  (Leave the search field blank.)</li>
+<li><div class=\"d-inline-block\">", $hth->search_form("12"), "</div>&nbsp; finds submission #12.  When entered from a
+ <a href=\"#quicklinks\">quicksearch</a> box, this search will jump to #12 directly.</li>
 <li>", $hth->help_link("Search keywords", "keywords"), "
  let you search specific fields, review scores, and more.</li>
-<li>Use <a href='#quicklinks'>quicklinks</a> on paper pages to navigate
+<li>Use <a href=\"#quicklinks\">quicklinks</a> on paper pages to navigate
  through search results. Typing <code>j</code> and <code>k</code> also goes
  from paper to paper.</li>
 <li>On list pages, shift-click checkboxes to
@@ -30,7 +30,7 @@ To find <em>some</em> of the terms,
 type “term1 OR term2”.
 To find submissions that <em>don’t</em> match a term,
 try “-term”.  Or select
-<a href='" . hoturl("search", "opt=1") . "'>Advanced search</a>
+<a href=\"" . hoturl("search", "opt=1") . "\">Advanced search</a>
 and use “With <b>any</b> of the words” and “<b>Without</b> the words.”</p>
 
 <p>You can search several categories, depending on your role in the
@@ -48,7 +48,7 @@ authors can only search their own submissions, and if the conference used
 anonymous submission, then only the PC chairs can search by author.</p>
 
 <p>By default, search examines paper titles, abstracts, and authors.
-<a href='" . hoturl("search", "opt=1") . "'>Advanced search</a>
+<a href=\"" . hoturl("search", "opt=1") . "\">Advanced search</a>
 can search other fields, including authors/collaborators and reviewers.
 Also, <b>keywords</b> search specific characteristics such as titles,
 authors, reviewer names, and numbers of reviewers.  For example,
@@ -58,8 +58,8 @@ titles.”  Keywords are listed in the ", $hth->help_link("search keywords refer
     echo $hth->subhead("Search results");
     echo "
 <p>Click on a paper number or title to jump to that paper.
-Search matches are <span class='match'>highlighted</span> on paper screens.
-Once on a paper screen use <a href='#quicklinks'>quicklinks</a>
+Search matches are <span class=\"match\">highlighted</span> on paper screens.
+Once on a paper screen use <a href=\"#quicklinks\">quicklinks</a>
 to navigate through the rest of the search matches.</p>
 
 <p>Underneath the paper list is the action area:</p>

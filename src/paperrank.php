@@ -84,7 +84,7 @@ class PaperRank {
         if (!$this->info_printed) {
             if ($this->header_title)
                 $Conf->header($this->header_title, $this->header_id);
-            echo "<div id='foldrankcalculation' class='foldc'><div class='fn info'>Calculating ranks; this can take a while.  <span id='rankpercentage'>$pct</span>% of ranks assigned<span id='rankdeletedpref'></span>.</div></div>";
+            echo '<div id="foldrankcalculation" class="foldc"><div class="fn info">Calculating ranks; this can take a while.  <span id="rankpercentage">', $pct, '</span>% of ranks assigned<span id="rankdeletedpref"></span>.</div></div>';
             $this->info_printed = true;
         }
         if ($n < count($this->papersel)) {

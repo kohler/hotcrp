@@ -332,7 +332,7 @@ class Home_Partial {
                 $this->_merit_field && $npcScore ? $this->_merit_field->name_html : false,
                 $this->_merit_field && $npcScore ? $this->_merit_field->unparse_average($sumpcScore / $npcScore) : false);
             if ($user->isPC || $user->privChair)
-                echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class='barsep'>·</span><a href=\"", $conf->hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
+                echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class=\"barsep\">·</span><a href=\"", $conf->hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
             echo "<br />\n";
         }
         if ($this->_my_rinfo
@@ -364,21 +364,21 @@ class Home_Partial {
         } else if ($user->isPC && $user->can_review_any()) {
             $d = $conf->printableTimeSetting($conf->review_deadline(null, $user->isPC, false), "span");
             if ($d != "N/A")
-                echo " <span class='deadline'>The review deadline is $d.</span><br />\n";
+                echo " <span class=\"deadline\">The review deadline is $d.</span><br />\n";
         }
         if ($user->isPC && $user->can_review_any())
-            echo "  <span class='hint'>As a PC member, you may review <a href='", $conf->hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
+            echo '  <span class="hint">As a PC member, you may review <a href="', $conf->hoturl("search", "q=&amp;t=s"), "\">any submitted paper</a>.</span><br>\n";
         else if ($user->privChair)
-            echo "  <span class='hint'>As an administrator, you may review <a href='", $conf->hoturl("search", "q=&amp;t=s"), "'>any submitted paper</a>.</span><br />\n";
+            echo '  <span class="hint">As an administrator, you may review <a href="', $conf->hoturl("search", "q=&amp;t=s"), "\">any submitted paper</a>.</span><br>\n";
 
         if ($this->_my_rinfo)
             echo '<div id="foldre" class="homesubgrp foldo">';
 
         // Actions
         $sep = "";
-        $xsep = " <span class='barsep'>·</span> ";
+        $xsep = ' <span class="barsep">·</span> ';
         if ($this->_my_rinfo) {
-            echo $sep, foldupbutton(), "<a href=\"", $conf->hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
+            echo $sep, foldupbutton(), "<a href=\"", $conf->hoturl("search", "q=re%3Ame"), "\" title=\"Search in your reviews (more display and download options)\"><strong>Your Reviews</strong></a>";
             $sep = $xsep;
         }
         if ($user->isPC && $user->is_discussion_lead()) {
@@ -421,7 +421,7 @@ class Home_Partial {
             $plist->set_table_id_class(null, "pltable_reviewerhome");
             $ptext = $plist->table_html("reviewerHome", ["list" => true]);
             if ($plist->count > 0)
-                echo "<div class='fx'><div class='g'></div>", $ptext, "</div>";
+                echo "<div class=\"fx\"><hr class=\"g\">", $ptext, "</div>";
         }
 
         if ($this->_my_rinfo)
@@ -430,7 +430,7 @@ class Home_Partial {
         if ($user->is_reviewer()) {
             echo "<div class=\"homesubgrp has-fold fold20c ui-unfold js-open-activity\" id=\"homeactivity\" data-fold-session=\"foldhomeactivity\">",
                 foldupbutton(20),
-                "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class='fx20'>:</span></a>",
+                "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class=\"fx20\">:</span></a>",
                 "</div>";
             if (!$user->session("foldhomeactivity", 1))
                 Ht::stash_script("foldup.call(\$(\"#homeactivity\")[0],null,20)");
@@ -499,11 +499,11 @@ class Home_Partial {
 
         $startable = $conf->timeStartPaper();
         if ($startable && !$user->has_email())
-            echo "<span class='deadline'>", $conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to start a submission.</small>";
+            echo '<span class="deadline">', $conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to start a submission.</small>";
         else if ($startable || $user->privChair) {
-            echo "<strong><a href='", $conf->hoturl("paper", "p=new"), "'>New submission</a></strong> <span class='deadline'>(", $conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
+            echo '<strong><a href="', $conf->hoturl("paper", "p=new"), '">New submission</a></strong> <span class="deadline">(', $conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
             if ($user->privChair)
-                echo "<br />\n<span class='hint'>As an administrator, you can start a submission regardless of deadlines and on behalf of others.</span>";
+                echo '<br><span class="hint">As an administrator, you can start a submission regardless of deadlines and on behalf of others.</span>';
         }
 
         $plist = null;
@@ -511,7 +511,7 @@ class Home_Partial {
             $plist = new PaperList(new PaperSearch($user, ["t" => "a"]));
             $ptext = $plist->table_html("authorHome", ["noheader" => true, "list" => true]);
             if ($plist->count > 0)
-                echo "<div class='g'></div>\n", $ptext;
+                echo '<hr class="g">', $ptext;
         }
 
         $deadlines = array();
@@ -522,9 +522,9 @@ class Home_Partial {
                 if ($conf->deadlinesBetween("", "sub_sub", "sub_grace"))
                     $deadlines[] = "The site is not open for submissions at the moment.";
                 else
-                    $deadlines[] = "The <a href='" . $conf->hoturl("deadlines") . "'>submission deadline</a> has passed.";
+                    $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">submission deadline</a> has passed.';
             } else if (!$conf->timeUpdatePaper()) {
-                $deadlines[] = "The <a href='" . $conf->hoturl("deadlines") . "'>update deadline</a> has passed, but you can still submit.";
+                $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">update deadline</a> has passed, but you can still submit.';
                 $time = $conf->printableTimeSetting("sub_sub", "span", " to submit papers");
                 if ($time != "N/A")
                     $deadlines[] = "You have until $time.";
@@ -536,7 +536,7 @@ class Home_Partial {
         }
         if (!$startable && !count($deadlines)) {
             if ($conf->deadlinesAfter("sub_open"))
-                $deadlines[] = "The <a href='" . $conf->hoturl("deadlines") . "'>deadline</a> for registering submissions has passed.";
+                $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.';
             else
                 $deadlines[] = "The site is not open for submissions at the moment.";
         }
@@ -544,17 +544,17 @@ class Home_Partial {
         if ($plist && $plist->has("accepted")) {
             $time = $conf->printableTimeSetting("final_soft");
             if ($conf->deadlinesAfter("final_soft") && $plist->has("need_final"))
-                $deadlines[] = "<strong class='overdue'>Final versions are overdue.</strong> They were requested by $time.";
+                $deadlines[] = "<strong class=\"overdue\">Final versions are overdue.</strong> They were requested by $time.";
             else if ($time != "N/A")
                 $deadlines[] = "Submit final versions of your accepted papers by $time.";
         }
         if (!empty($deadlines)) {
             if ($plist && $plist->count > 0)
-                echo "<div class='g'></div>";
+                echo '<hr class="g">';
             else if ($startable || $user->privChair)
-                echo "<br />";
-            echo "<span class='deadline'>",
-                join("</span><br>\n<span class='deadline'>", $deadlines),
+                echo "<br>";
+            echo '<span class="deadline">',
+                join("</span><br>\n<span class=\"deadline\">", $deadlines),
                 "</span>";
         }
 

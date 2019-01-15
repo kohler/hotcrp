@@ -14,11 +14,11 @@ class ReviewToken_Partial {
             else if (!($token = decode_token($x, "V")))
                 Conf::msg_error("Invalid review token &ldquo;" . htmlspecialchars($x) . "&rdquo;.  Check your typing and try again.");
             else if ($user->session("rev_token_fail", 0) >= 5)
-                Conf::msg_error("Too many failed attempts to use a review token.  <a href='" . hoturl("index", "signout=1") . "'>Sign out</a> and in to try again.");
+                Conf::msg_error('Too many failed attempts to use a review token.  <a href="' . hoturl("index", "signout=1") . '">Sign out</a> and in to try again.');
             else {
                 $result = Dbl::qe("select paperId from PaperReview where reviewToken=" . $token);
                 if (($row = edb_row($result))) {
-                    $tokeninfo[] = "Review token “" . htmlspecialchars($x) . "” lets you review <a href='" . hoturl("paper", "p=$row[0]") . "'>paper #" . $row[0] . "</a>.";
+                    $tokeninfo[] = "Review token “" . htmlspecialchars($x) . "” lets you review <a href=\"" . hoturl("paper", "p=$row[0]") . "\">paper #" . $row[0] . "</a>.";
                     $user->change_review_token($token, true);
                 } else {
                     Conf::msg_error("Review token “" . htmlspecialchars($x) . "” hasn’t been assigned.");

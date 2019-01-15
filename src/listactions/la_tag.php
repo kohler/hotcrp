@@ -23,13 +23,13 @@ class Tag_ListAction extends ListAction {
                         ["size" => 15, "class" => "want-focus js-autosubmit js-submit-action-info-tag need-suggest tags", "data-autosubmit-type" => "tag"])
             . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uix js-submit-mark"]);
         if ($pl->user->privChair) {
-            $t .= "<div class='fx'><div style='margin:2px 0'>"
+            $t .= '<div class="fx"><div style="margin:2px 0">'
                 . Ht::checkbox("tagcr_gapless", 1, !!$pl->qreq->tagcr_gapless, array("style" => "margin-left:0"))
                 . "&nbsp;" . Ht::label("Gapless order") . "</div>"
-                . "<div style='margin:2px 0'>Using: &nbsp;"
+                . '<div style="margin:2px 0">Using: &nbsp;'
                 . Ht::select("tagcr_method", PaperRank::methods(), $pl->qreq->tagcr_method)
                 . "</div>"
-                . "<div style='margin:2px 0'>Source tag: &nbsp;~"
+                . '<div style="margin:2px 0">Source tag: &nbsp;~'
                 . Ht::entry("tagcr_source", $pl->qreq->tagcr_source, array("size" => 15))
                 . "</div></div>";
         }

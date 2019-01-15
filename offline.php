@@ -143,7 +143,7 @@ function setTagIndexes($qreq) {
         $Conf->confirmMsg("Votes saved.");
     } else {
         $dtag = $tagger->unparse($tag);
-        $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=" . urlencode("editsort:#{$dtag}")) . "'>search for “editsort:#{$dtag}”</a>.");
+        $Conf->confirmMsg('Ranking saved. To view it, <a href="' . hoturl("search", "q=" . urlencode("editsort:#{$dtag}")) . '">search for “editsort:#' . $dtag . '”</a>.');
     }
 }
 if ((isset($Qreq->setvote) || isset($Qreq->setrank))
@@ -174,30 +174,30 @@ if ($Me->is_reviewer()) {
     $Conf->infoMsg("You aren’t registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
 
 
-echo "<table id='offlineform'>";
+echo '<table id="offlineform">';
 
 // Review forms
 echo "<tr><td><h3>Download forms</h3>\n<div>";
 if ($Me->is_reviewer()) {
-    echo "<a href='", hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=r&amp;p=all"), "'>Your reviews</a><br />\n";
+    echo '<a href="', hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=r&amp;p=all"), '">Your reviews</a><br>', "\n";
     if ($Me->has_outstanding_review())
-        echo "<a href='", hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=rout&amp;p=all"), "'>Your incomplete reviews</a><br />\n";
-    echo "<a href='", hoturl("offline", "downloadForm=1"), "'>Blank form</a></div>
-<div class='g'></div>
-<span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search", "q="), "'>Search</a> &gt; Download to choose individual papers.\n";
+        echo '<a href="', hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=rout&amp;p=all"), '">Your incomplete reviews</a><br>', "\n";
+    echo '<a href="', hoturl("offline", "downloadForm=1"), '">Blank form</a></div>
+<hr class="g">
+<span class="hint"><strong>Tip:</strong> Use <a href="', hoturl("search", "q="), '">Search</a> &gt; Download to choose individual papers.</span>', "\n";
 } else
-    echo "<a href='", hoturl("offline", "downloadForm=1"), "'>Blank form</a></div>\n";
+    echo '<a href="', hoturl("offline", "downloadForm=1"), '">Blank form</a></div>', "\n";
 echo "</td>\n";
 if ($Me->is_reviewer()) {
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled" : "");
     echo "<td><h3>Upload filled-out forms</h3>\n",
         Ht::form(hoturl_post("offline", "uploadForm=1")),
         Ht::hidden("postnonempty", 1),
-        "<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; ",
+        '<input type="file" name="uploadedFile" accept="text/plain" size="30"', $disabled, '>&nbsp; ',
         Ht::submit("Go", array("disabled" => !!$disabled));
     if ($pastDeadline && $Me->privChair)
         echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
-    echo "<br /><span class='hint'><strong>Tip:</strong> You may upload a file containing several forms.</span>";
+    echo '<br><span class="hint"><strong>Tip:</strong> You may upload a file containing several forms.</span>';
     echo "</form></td>\n";
 }
 echo "</tr>\n";
@@ -206,23 +206,23 @@ echo "</tr>\n";
 // Ranks
 if ($Conf->setting("tag_rank") && $Me->is_reviewer()) {
     $ranktag = $Conf->setting_data("tag_rank");
-    echo "<tr><td><div class='g'></div></td></tr>\n",
+    echo '<tr><td><hr class="g"></td></tr>', "\n",
         "<tr><td><h3>Download ranking file</h3>\n<div>";
     echo "<a href=\"", hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=r&amp;p=all"), "\">Your reviews</a>";
     if ($Me->isPC)
         echo "<br />\n<a href=\"", hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;p=all"), "\">All submitted papers</a>";
     echo "</div></td>\n";
 
-    $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
+    $disabled = ($pastDeadline && !$Me->privChair ? " disabled" : "");
     echo "<td><h3>Upload ranking file</h3>\n",
         Ht::form(hoturl_post("offline", "setrank=1&amp;tag=%7E$ranktag")),
         Ht::hidden("upload", 1),
-        "<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; ",
+        '<input type="file" name="file" accept="text/plain" size="30"', $disabled, '>&nbsp; ',
         Ht::submit("Go", array("disabled" => !!$disabled));
     if ($pastDeadline && $Me->privChair)
-        echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
-    echo "<br /><span class='hint'><strong>Tip:</strong> Use “<a href='", hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), "'>editsort:#~$ranktag</a>” to drag and drop your ranking.</span>";
-    echo "<br /><span class='hint'><strong>Tip:</strong> “<a href='", hoturl("search", "q=order:%7E$ranktag"), "'>order:~$ranktag</a>” searches by your ranking.</span>";
+        echo "<br>", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
+    echo '<br><span class="hint"><strong>Tip:</strong> Use “<a href="', hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), '">editsort:#~', $ranktag, '</a>” to drag and drop your ranking.</span>';
+    echo '<br><span class="hint"><strong>Tip:</strong> “<a href="', hoturl("search", "q=order:%7E$ranktag"), '">order:~', $ranktag, '</a>” searches by your ranking.</span>';
     echo "</form></td>\n";
     echo "</tr>\n";
 }

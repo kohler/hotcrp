@@ -87,7 +87,7 @@ if (isset($Qreq->uploadForm)
     if ($tf->parse_text($Qreq->override))
         $tf->check_and_save($Me, $prow, $paperTable->editrrow);
     if (!$tf->has_error() && $tf->parse_text($Qreq->override))
-        $tf->msg(null, "Only the first review form in the file was parsed. <a href='" . hoturl("offline") . "'>Upload multiple-review files here.</a>", MessageSet::WARNING);
+        $tf->msg(null, 'Only the first review form in the file was parsed. <a href="' . hoturl("offline") . '">Upload multiple-review files here.</a>', MessageSet::WARNING);
     $tf->report();
     loadRows();
 } else if (isset($Qreq->uploadForm))
@@ -293,10 +293,10 @@ if (isset($Qreq->refuse) || isset($Qreq->decline)) {
     else if ($paperTable->editrrow->reviewSubmitted)
         Conf::msg_error("This review has already been submitted; you can’t decline it now.");
     else if ($Qreq->refuse === "1" || $Qreq->decline === "1") {
-        $Conf->confirmMsg("<p>Select “Decline review” to decline this review (you may enter a brief explanation, if you’d like). Thank you for telling us that you cannot complete your review.</p><div class='g'></div><form method='post' action=\"" . hoturl_post("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId) . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>"
+        $Conf->confirmMsg("<p>Select “Decline review” to decline this review (you may enter a brief explanation, if you’d like). Thank you for telling us that you cannot complete your review.</p><hr class=\"g\"><form method=\"post\" action=\"" . hoturl_post("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId) . "\" enctype=\"multipart/form-data\" accept-charset=\"UTF-8\"><div>"
                           . Ht::hidden("refuse", "refuse") . "  "
                           . Ht::textarea("reason", "", array("rows" => 3, "cols" => 40, "spellcheck" => "true"))
-                          . "\n  <span class='sep'></span>"
+                          . "\n  <span class=\"sep\"></span>"
                           . Ht::submit("Decline review")
                           . "</div></form>");
     } else {

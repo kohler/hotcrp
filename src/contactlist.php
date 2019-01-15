@@ -238,13 +238,13 @@ class ContactList {
         case self::FIELD_LOWTOPICS:
             return "Low-interest topics";
         case self::FIELD_REVIEWS:
-            return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>Reviews</span>";
+            return '<span class="hastitle" title="“1/2” means 1 complete review out of 2 assigned reviews">Reviews</span>';
         case self::FIELD_LEADS:
             return "Leads";
         case self::FIELD_SHEPHERDS:
             return "Shepherds";
         case self::FIELD_REVIEW_RATINGS:
-            return "<span class='hastitle' title='Ratings of reviews'>Rating</a>";
+            return '<span class="hastitle" title="Ratings of reviews">Rating</a>';
         case self::FIELD_SELECTOR:
             return "";
         case self::FIELD_PAPERS:
@@ -274,7 +274,7 @@ class ContactList {
                 $t = "[No name]";
             $t = '<span class="taghl">' . $t . '</span>';
             if ($this->user->privChair)
-                $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? " class='uu'" : "") . ">$t</a>";
+                $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? ' class="uu"' : "") . ">$t</a>";
             $roles = $row->viewable_pc_roles($this->user);
             if ($roles === Contact::ROLE_PC && $this->limit === "pc")
                 $roles = 0;
@@ -351,7 +351,7 @@ class ContactList {
                 $a[] = $row->numBadRatings . " negative";
                 $b[] = "<a href=\"" . hoturl("search", "q=re:" . urlencode($row->email) . "+rate:bad") . "\">&minus;" . $row->numBadRatings . "</a>";
             }
-            return "<span class='hastitle' title='" . join(", ", $a) . "'>" . join(" ", $b) . "</span>";
+            return '<span class="hastitle" title="' . join(", ", $a) . '">' . join(" ", $b) . "</span>";
         case self::FIELD_PAPERS:
             if (!$row->paperIds)
                 return "";

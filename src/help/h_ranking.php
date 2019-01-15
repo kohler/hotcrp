@@ -6,7 +6,7 @@ class Ranking_HelpTopic {
     static function render($hth) {
         echo "<p>Paper ranking is a way to extract the PC’s preference order for
 submitted papers.  Each PC member ranks the submitted papers, and a voting
-algorithm, <a href='http://en.wikipedia.org/wiki/Schulze_method'>the Schulze
+algorithm, <a href=\"http://en.wikipedia.org/wiki/Schulze_method\">the Schulze
 method</a> by default, combines these rankings into a global preference order.</p>
 
 <p>HotCRP supports ranking through ", $hth->help_link("tags", "tags"), ". The chair chooses
@@ -27,12 +27,12 @@ $hth->search_link("search for “editsort:#~rank”", "editsort:#~rank"), ".
 Ranks can be entered directly in the text fields, or the rows can be dragged
 into position using the dotted areas on the right-hand side of the list.</p>
 
-<p>Alternately, PC members can use an <a href='" . hoturl("offline") . "'>offline
+<p>Alternately, PC members can use an <a href=\"" . hoturl("offline") . "\">offline
 ranking form</a>. Download a ranking file, rearrange the lines to create a
 rank, and upload the form again.  For example, here is an initial ranking
 file:</p>
 
-<pre class='entryexample'>
+<pre class=\"entryexample\">
 # Edit the rank order by rearranging this file's lines.
 # The first line has the highest rank.
 
@@ -59,7 +59,7 @@ X       11      Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
 
 <p>The user might edit the file as follows:</p>
 
-<pre class='entryexample'>
+<pre class=\"entryexample\">
         8       Rooter: A Methodology for the Typical Unification of Access Points and Redundancy
         5       The Effect of Collaborative Epistemologies on Theory
 =       1       Write-Back Caches Considered Harmful
@@ -73,12 +73,12 @@ X       11      Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
 
 <p>Uploading this file produces the following ranking:</p>
 
-<p><table><tr><th class='pad'>ID</th><th>Title</th><th>Rank tag</th></tr>
-<tr><td class='pad'>#8</td><td class='pad'>Rooter: A Methodology for the Typical Unification of Access Points and Redundancy</td><td class='pad'>~rank#1</td></tr>
-<tr><td class='pad'>#5</td><td class='pad'>The Effect of Collaborative Epistemologies on Theory</td><td class='pad'>~rank#2</td></tr>
-<tr><td class='pad'>#1</td><td class='pad'>Write-Back Caches Considered Harmful</td><td class='pad'>~rank#2</td></tr>
-<tr><td class='pad'>#2</td><td class='pad'>Deconstructing Suffix Trees</td><td class='pad'>~rank#3</td></tr>
-<tr><td class='pad'>#4</td><td class='pad'>Deploying Congestion Control Using Homogeneous Modalities</td><td class='pad'>~rank#5</td></tr></table></p>
+<p><table><tr><th class=\"pad\">ID</th><th>Title</th><th>Rank tag</th></tr>
+<tr><td class=\"pad\">#8</td><td class=\"pad\">Rooter: A Methodology for the Typical Unification of Access Points and Redundancy</td><td class=\"pad\">~rank#1</td></tr>
+<tr><td class=\"pad\">#5</td><td class=\"pad\">The Effect of Collaborative Epistemologies on Theory</td><td class=\"pad\">~rank#2</td></tr>
+<tr><td class=\"pad\">#1</td><td class=\"pad\">Write-Back Caches Considered Harmful</td><td class=\"pad\">~rank#2</td></tr>
+<tr><td class=\"pad\">#2</td><td class=\"pad\">Deconstructing Suffix Trees</td><td class=\"pad\">~rank#3</td></tr>
+<tr><td class=\"pad\">#4</td><td class=\"pad\">Deploying Congestion Control Using Homogeneous Modalities</td><td class=\"pad\">~rank#5</td></tr></table></p>
 
 <p>Since #6, #10, and #11 still had X prefixes, they were not assigned a rank.
  Searching for “order:~rank” returns the user’s personal ranking;

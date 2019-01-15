@@ -34,7 +34,7 @@ To see the current voting status, search by
 <a href=\"" . hoturl("search", "q=rorder:" . $votetag . "") . "\">
 rorder:". $votetag . "</a>. Use view options to show tags
 in the search results (or set up a
-<a href='" . hoturl("help", "t=formulas") . "'>formula</a>).
+<a href=\"" . hoturl("help", "t=formulas") . "\">formula</a>).
 </p>
 
 <p>

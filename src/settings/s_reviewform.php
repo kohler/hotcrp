@@ -411,7 +411,7 @@ submitted. Add a “<code>No entry</code>” line to make the score optional.</p
         "<div id=\"reviewform_container\"></div>",
         "<div id=\"reviewform_removedcontainer\"></div>",
         Ht::button("Add score field", ["class" => "settings-add-review-field score"]),
-        "<span class='sep'></span>",
+        "<span class=\"sep\"></span>",
         Ht::button("Add text field", ["class" => "settings-add-review-field"]);
     Ht::stash_script('$("button.settings-add-review-field").on("click", function () { review_form_settings.add(hasClass(this,"score")?1:0) })');
 }

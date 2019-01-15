@@ -799,7 +799,7 @@ class UserStatus extends MessageSet {
         }
         Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
 
-        echo "</td><td><span class='sep'></span></td><td>";
+        echo "</td><td><span class=\"sep\"></span></td><td>";
         $is_ass = isset($reqj->roles) && get($reqj->roles, "sysadmin");
         $cis_ass = isset($cj->roles) && get($cj->roles, "sysadmin");
         echo '<div class="checki"><label><span class="checkc">',
@@ -866,9 +866,9 @@ topics. We use this information to help match papers to reviewers.</p>',
             echo '<div class="', $us->control_class("contactTags", "f-i"), '">',
                 Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),
                 "</div>
-  <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=tags"), "'>tag colors</a> to highlight subgroups in review lists.</p>\n";
+  <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p>\n";
         } else {
-            echo join(" ", $tags), "<div class='hint'>Tags represent PC subgroups and are set by administrators.</div>\n";
+            echo join(" ", $tags), "<div class=\"hint\">Tags represent PC subgroups and are set by administrators.</div>\n";
         }
         echo "</div>\n";
     }

@@ -228,7 +228,7 @@ function parseBulkFile($text, $filename) {
                     $lcline[] = "unknown";
             $csv->set_header($lcline);
             $csv->unshift($line);
-            $errors[] = "<span class='lineno'>" . $filename . $csv->lineno() . ":</span> Header missing, assuming “<code>" . join(",", $lcline) . "</code>”";
+            $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> Header missing, assuming “<code>" . join(",", $lcline) . "</code>”";
         }
 
     }
@@ -264,7 +264,7 @@ function parseBulkFile($text, $filename) {
     else if (count($success))
         $successMsg = "Saved " . plural($success, "account") . ": " . commajoin($success) . ".";
     if (count($errors))
-        $errorMsg = "<div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>";
+        $errorMsg = '<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . "</p></div>";
     if (count($success) && count($errors))
         $Conf->confirmMsg($successMsg . "<br />$errorMsg");
     else if (count($success))
@@ -366,7 +366,7 @@ function databaseTracks($who) {
 }
 
 function textArrayPapers($pids) {
-    return commajoin(preg_replace('/(\d+)/', "<a href='" . hoturl("paper", "p=\$1&amp;ls=" . join("+", $pids)) . "'>\$1</a>", $pids));
+    return commajoin(preg_replace('/(\d+)/', '<a href="' . hoturl("paper", "p=\$1&amp;ls=" . join("+", $pids)) . "\">\$1</a>", $pids));
 }
 
 if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
@@ -586,7 +586,7 @@ echo "</div>\n", // foldaccount
 if ($newProfile) {
     echo '</div><div class="fx9">';
     echo Ht::form(hoturl_post("profile", join("&amp;", $form_params))),
-        "<div class='profiletext", ($UserStatus->has_error() ? " alert" : ""), "'>\n",
+        '<div class="profiletext', ($UserStatus->has_error() ? " alert" : ""), "\">\n",
         // Don't want chrome to autofill the password changer.
         // But chrome defaults to autofilling the password changer
         // unless we supply an earlier password input.

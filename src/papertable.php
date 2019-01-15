@@ -518,7 +518,7 @@ class PaperTable {
         }
 
         if (!empty($t))
-            return '<span class="hint">' . join(" <span class='barsep'>·</span> ", $t) . "</span>";
+            return '<span class="hint">' . join(' <span class="barsep">·</span> ', $t) . "</span>";
         else
             return "";
     }
@@ -534,7 +534,7 @@ class PaperTable {
             $dtype = $prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
             if (($doc = $prow->document($dtype)) && $doc->paperStorageId > 1) {
                 if (($stamps = self::pdf_stamps_html($doc)))
-                    $stamps = "<span class='sep'></span>" . $stamps;
+                    $stamps = '<span class="sep"></span>' . $stamps;
                 if ($dtype == DTYPE_FINAL)
                     $dname = $this->conf->_c("paper_field", "Final version");
                 else if ($prow->timeSubmitted != 0)
@@ -1149,9 +1149,9 @@ class PaperTable {
             }
 
             if ($topicdata !== "") {
-                echo "<div class='pg'>",
+                echo '<div class="pg">',
                     $this->papt("topics", array("Topics", $tanda), $extra),
-                    "<div class='pavb$eclass'>", $topicdata, "</div></div>\n\n";
+                    '<div class="pavb', $eclass, '">', $topicdata, "</div></div>\n\n";
                 $extra = null;
                 $tanda = $options_name;
             }
@@ -1289,9 +1289,9 @@ class PaperTable {
         at the authors’ own institutions.";
         else
             echo "List people and institutions with which the authors have
-        conflicts of interest. ", $this->conf->_i("conflictdef", false), "
-        Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
-        We use this information when assigning PC and external reviews.";
+        conflicts of interest. ", $this->conf->_i("conflictdef", false), '
+        Be sure to include conflicted <a href="', hoturl("users", "t=pc"), '">PC members</a>.
+        We use this information when assigning PC and external reviews.';
         echo "</div><div class=\"mmm\"><strong>List one conflict per line</strong>, using parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</div></div>",
             '<div class="papev">',
             $this->editable_textarea("collaborators"),
@@ -1350,7 +1350,7 @@ class PaperTable {
         $this->_papstripBegin("pscollab", $fold, ["data-fold-session" => "foldpscollab"]);
         echo $this->papt("collaborators", $this->conf->_c("paper_field", "Collaborators", $this->conf->setting("sub_pcconf")),
                          ["type" => "ps", "fold" => "pscollab", "folded" => $fold]),
-            "<div class='psv'><div class='fx'>", $data,
+            '<div class="psv"><div class="fx">', $data,
             "</div></div></div>\n\n";
     }
 
@@ -1444,7 +1444,7 @@ class PaperTable {
         }
 
         echo $this->editable_papt("pcconf", $this->field_name("PC conflicts"), ["id" => "pcconf"]),
-            "<div class='paphint'>Select the PC members who have conflicts of interest with this submission. ", $this->conf->_i("conflictdef", false), "</div>\n",
+            '<div class="paphint">Select the PC members who have conflicts of interest with this submission. ', $this->conf->_i("conflictdef", false), "</div>\n",
             '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
             '<div class="pc-ctable">';
@@ -1525,7 +1525,7 @@ class PaperTable {
             $pcconf[] = "<p class=\"odname\">None</p>";
         $this->_papstripBegin();
         echo $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
-            "<div class='psv psconf'>", join("", $pcconf), "</div></div>\n";
+            '<div class="psv psconf">', join("", $pcconf), "</div></div>\n";
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit) {
@@ -1632,7 +1632,7 @@ class PaperTable {
                 '</div><div class="aabut">',
                 Ht::submit("cancel", "Cancel"),
                 "</div></div>",
-                "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
+                '<span class="hint"><a href="', hoturl("help", "t=tags"), '">Learn more</a> <span class="barsep">·</span> <strong>Tip:</strong> Twiddle tags like “~tag” are visible only to you.</span>',
                 "</div>";
         } else
             echo '<div class="js-tag-result">', ($tx === "" ? "None" : $tx), '</div>';
@@ -1722,7 +1722,7 @@ class PaperTable {
                             "data-tag-base" => "~$tag")),
             ' <span class="barsep">·</span> ',
             '<a href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
-            " <div class='hint' style='margin-top:4px'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~{$tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
+            ' <div class="hint" style="margin-top:4px"><strong>Tip:</strong> <a href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Search “editsort:#~', $tag, '”</a> to drag and drop your ranking, or <a href="', hoturl("offline"), '">use offline reviewing</a> to rank many papers at once.</div>',
             "</div></div></form></div>\n";
         Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
@@ -1950,7 +1950,7 @@ class PaperTable {
             if ($revivable)
                 $b = Ht::submit("revive", "Revive submission", ["class" => "btn-primary"]);
             else {
-                $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?";
+                $b = 'The <a href="' . hoturl("deadlines") . '">deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?';
                 if ($this->admin)
                     $b = array(Ht::button("Revive submission", ["class" => "ui js-override-deadlines", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
             }
@@ -2250,7 +2250,7 @@ class PaperTable {
                 $this->_echo_editable_body();
         } else {
             if ($this->mode === "edit" && ($m = $this->_edit_message()))
-                echo $m, "<div class='g'></div>\n";
+                echo $m, "<hr class=\"g\">\n";
             $status_info = $this->user->paper_status_info($this->prow);
             echo '<p class="xd"><span class="pstat ', $status_info[0], '">',
                 htmlspecialchars($status_info[1]), "</span></p>";
@@ -2327,7 +2327,7 @@ class PaperTable {
                  && $this->user->contactId > 0)
             $this->_paptabSepContaining("You are this submission’s administrator.");
 
-        $empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
+        $empty = $this->_paptabReviewLinks(true, null, '<p>There are no reviews or comments for you to view.</p>');
         if ($empty)
             return;
 
@@ -2345,7 +2345,7 @@ class PaperTable {
             }
         if (count($viewable))
             echo '<div class="notecard"><div class="notecard_body">',
-                "<a href='", hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1"), "' class='xx'>",
+                '<a href="', hoturl("review", "p=$prow->paperId&amp;m=r&amp;text=1"), '" class="xx">',
                 Ht::img("txt24.png", "[Text]", "dlimg"),
                 "&nbsp;<u>", ucfirst(join(" and ", $viewable)),
                 " in plain text</u></a></div></div>\n";
@@ -2489,7 +2489,7 @@ class PaperTable {
                     $opt["edit"] = false;
             }
             if ($this->conf->time_review_open())
-                $opt["editmessage"] = "The <a href='" . hoturl("deadlines") . "'>review deadline</a> has passed, so the review can no longer be changed.$override";
+                $opt["editmessage"] = 'The <a href="' . hoturl("deadlines") . '">review deadline</a> has passed, so the review can no longer be changed.' . $override;
             else
                 $opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed.$override";
         } else if (!$this->user->can_review($prow, $this->editrrow))
