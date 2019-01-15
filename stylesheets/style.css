@@ -1043,6 +1043,19 @@ button > .licon, .btn > .licon {
 }
 
 
+/* Key-value tables */
+table.key-value th:first-child {
+	text-align: left;
+	padding-right: 1em;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	font-weight: 500;
+}
+table.key-value {
+	margin-bottom: 1em;
+}
+
+
 /* Other types of captions and entries */
 table.paper, table.settings {
 	width: 100%;
