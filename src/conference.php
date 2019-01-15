@@ -2964,6 +2964,8 @@ class Conf {
             . "\nfrom " . join("\n    ", $joins);
         if (!empty($where))
             $pq .= "\nwhere " . join("\n    and ", $where);
+        // This `having` is probably faster than a `where exists` if most papers
+        // have at least one tag.
         if (get($options, "tags") === "require")
             $pq .= "\nhaving paperTags!=''";
 

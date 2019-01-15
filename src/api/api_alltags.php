@@ -54,7 +54,7 @@ class AllTags_API {
 
     static private function hard_alltags_api(Contact $user) {
         $tags = [];
-        foreach ($user->paper_set(["minimal" => true, "finalized" => true, "tags" => "required"]) as $prow) {
+        foreach ($user->paper_set(["minimal" => true, "finalized" => true, "tags" => "require"]) as $prow) {
             if ($user->can_view_paper($prow)) {
                 foreach (TagInfo::split_unpack($prow->all_tags_text()) as $ti) {
                     $lt = strtolower($ti[0]);
