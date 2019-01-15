@@ -101,7 +101,7 @@ class TagMapItem {
         while ($tagIndex >= $ol[$i]->tagIndex)
             ++$i;
         $this->_order_anno_search = $i;
-        return $i - 1;
+        return $i ? $ol[$i - 1] : null;
     }
     function has_order_anno() {
         return count($this->order_anno_list()) > 1;
@@ -123,6 +123,9 @@ class TagAnno implements JsonSerializable {
 
     function is_empty() {
         return $this->heading === null || strcasecmp($this->heading, "none") === 0;
+    }
+    function is_fencepost() {
+        return $this->tagIndex >= (float) TAG_INDEXBOUND;
     }
     static function fetch($result, Conf $conf) {
         $ta = $result ? $result->fetch_object("TagAnno") : null;
