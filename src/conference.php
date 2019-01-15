@@ -2964,14 +2964,13 @@ class Conf {
             . "\nfrom " . join("\n    ", $joins);
         if (!empty($where))
             $pq .= "\nwhere " . join("\n    and ", $where);
+
+        $pq .= "\ngroup by Paper.paperId\n";
         // This `having` is probably faster than a `where exists` if most papers
         // have at least one tag.
         if (get($options, "tags") === "require")
-            $pq .= "\nhaving paperTags!=''";
-
-        // grouping and ordering
-        $pq .= "\ngroup by Paper.paperId\n"
-            . get($options, "order", "order by Paper.paperId") . "\n";
+            $pq .= "having paperTags!=''\n";
+        $pq .= get($options, "order", "order by Paper.paperId") . "\n";
 
         //Conf::msg_debugt($pq);
         return $this->qe_raw($pq);
