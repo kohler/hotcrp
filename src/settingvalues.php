@@ -438,18 +438,25 @@ class SettingValues extends MessageSet {
         return isset($this->interesting_groups[$g]);
     }
 
-    function sclass($name, $class = null) { // XXXXXX backwards compat
-        error_log("SettingValues::sclass called");
-        return $this->control_class($name, $class);
+    static function add_class($c1, $c2) {
+        if ((string) $c1 !== "" && (string) $c2 !== "")
+            return $c1 . " " . $c2;
+        else
+            return (string) $c1 !== "" ? $c1 : $c2;
     }
+
     function label($name, $html, $label_js = null) {
         $name1 = is_array($name) ? $name[0] : $name;
-        foreach (is_array($name) ? $name : array($name) as $n) {
-            if (($sc = $this->control_class($n))) {
-                if ($label_js && ($ec = get_s($label_js, "class")) !== "")
-                    $sc = $ec . " " . $sc;
-                $label_js["class"] = $sc;
-                break;
+        if ($label_js
+            && (get($label_js, "class") === false
+                || get($label_js, "no_control_class"))) {
+            unset($label_js["no_control_class"]);
+        } else {
+            foreach (is_array($name) ? $name : array($name) as $n) {
+                if (($sc = $this->control_class($n))) {
+                    $label_js["class"] = self::add_class($sc, get_s($label_js, "class"));
+                    break;
+                }
             }
         }
         $post = "";
@@ -624,6 +631,18 @@ class SettingValues extends MessageSet {
         echo $this->render_messages_at($field);
     }
 
+    private function strip_group_js($js) {
+        $njs = [];
+        foreach ($js ? : [] as $k => $v) {
+            if (strlen($k) < 10
+                || (!str_starts_with($k, "group_")
+                    && !str_starts_with($k, "hint_")
+                    && !str_starts_with($k, "control_")
+                    && !str_starts_with($k, "label_")))
+                $njs[$k] = $v;
+        }
+        return $njs;
+    }
     function echo_checkbox_only($name, $js = null) {
         $js["id"] = "cb$name";
         $x = $this->curv($name);
@@ -631,19 +650,14 @@ class SettingValues extends MessageSet {
             Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js));
     }
     function echo_checkbox($name, $text, $js = null, $hint = null) {
-        $item_class = get($js, "item_class");
-        $hint_class = get($js, "hint_class");
-        $item_open = get($js, "item_open");
-        unset($js["item_class"], $js["hint_class"], $js["item_open"]);
-
-        echo '<div class="checki', ($item_class ? " " . $item_class : ""),
+        echo '<div class="', self::add_class("checki", get($js, "group_class")),
             '"><span class="checkc">';
-        $this->echo_checkbox_only($name, $js);
+        $this->echo_checkbox_only($name, self::strip_group_js($js));
         echo ' </span>', $this->label($name, $text, ["for" => "cb$name"]);
         $this->echo_messages_at($name);
         if ($hint)
-            echo '<p class="settings-ap f-hx', ($hint_class ? " " . $hint_class : ""), '">', $hint, '</p>';
-        if (!$item_open)
+            echo '<p class="', self::add_class("settings-ap f-hx", get($js, "hint_class")), '">', $hint, '</p>';
+        if (!get($js, "group_open"))
             echo "</div>\n";
     }
     function echo_radio_table($name, $varr, $heading = null, $rest = null) {
@@ -707,21 +721,20 @@ class SettingValues extends MessageSet {
     function echo_entry($name) {
         echo $this->render_entry($name);
     }
-    function echo_entry_group($name, $description, $js = null, $hint = null) {
-        $after_entry = get($js, "after_entry");
-        $horizontal = get($js, "horizontal");
-        $item_open = get($js, "item_open");
-        unset($js["after_entry"], $js["horizontal"], $js["item_open"]);
+    function echo_control_group($name, $description, $control,
+                                $js = null, $hint = null) {
+        if (($horizontal = get($js, "horizontal")) !== null)
+            unset($js["horizontal"]);
         $klass = $horizontal ? "entryi" : "f-i";
         $si = $this->si($name);
         if ($description === null && $si)
             $description = $si->title;
 
         echo '<div class="', $this->control_class($name, $klass), '">',
-            $this->label($name, $description, ["class" => false]);
+            $this->label($name, $description, ["class" => get($js, "label_class"), "no_control_class" => true]);
         if ($horizontal)
             echo '<div class="entry">';
-        echo $this->render_entry($name, $js), ($after_entry ? : "");
+        echo $control, get_s($js, "control_after");
         $this->echo_messages_at($name);
         $thint = $si ? $this->type_hint($si->type) : null;
         if ($hint || $thint) {
@@ -734,15 +747,25 @@ class SettingValues extends MessageSet {
         }
         if ($horizontal)
             echo "</div>";
-        if (!$item_open)
+        if (!get($js, "group_open"))
             echo "</div>\n";
     }
-    function render_select($name, $values, $js = []) {
+    function echo_entry_group($name, $description, $js = null, $hint = null) {
+        $this->echo_control_group($name, $description,
+            $this->render_entry($name, self::strip_group_js($js)),
+            $js, $hint);
+    }
+    function render_select($name, $values, $js = null) {
         $v = $this->curv($name);
         $t = "";
         if (($si = $this->si($name)) && $si->parser_class)
             $t = Ht::hidden("has_$name", 1);
         return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($name, $js)) . $t;
+    }
+    function echo_select_group($name, $values, $description, $js = null, $hint = null) {
+        $this->echo_control_group($name, $description,
+            $this->render_select($name, $values, self::strip_group_js($js)),
+            $js, $hint);
     }
     function render_textarea($name, $js = []) {
         $v = $this->curv($name);

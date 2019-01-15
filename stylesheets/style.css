@@ -9,12 +9,18 @@ html {
 *, *:before, *:after {
 	box-sizing: inherit;
 }
+p {
+	margin-top: 0;
+}
 table, tr, td, th {
 	padding: 0;
 	border-spacing: 0;
 	border: 0 none;
 	border-collapse: collapse;
 	empty-cells: show;
+}
+table.p {
+	margin-bottom: 1em;
 }
 tr, textarea, select {
 	vertical-align: baseline;
@@ -42,9 +48,6 @@ a > img {
 input[type=text], input[type=email], input[type=password], input[type=date], textarea {
 	border: 1px solid silver;
 	padding: 3px 5px;
-}
-p {
-	margin-top: 0;
 }
 
 
@@ -2176,7 +2179,7 @@ hr.c {
 	border: 0 none;
 	height: 0;
 }
-hr.g {
+hr.g, hr.ug {
 	height: 0;
 }
 

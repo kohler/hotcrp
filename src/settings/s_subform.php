@@ -13,14 +13,14 @@ class BanalSettings {
             $sv->set_oldv("sub_banal_$k$suffix", $val == "" ? "N/A" : $val);
         }
 
-        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "item_class" => "settings-g has-fold fold" . ($sv->curv("sub_banal$suffix") > 0 ? "o" : "c"), "item_open" => true]);
+        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "settings-g has-fold fold" . ($sv->curv("sub_banal$suffix") > 0 ? "o" : "c"), "group_open" => true]);
         echo Ht::hidden("has_sub_banal$suffix", 1),
             '<div class="settings-2col fx">';
         $sv->echo_entry_group("sub_banal_papersize$suffix", "Paper size", ["horizontal" => true], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
         $sv->echo_entry_group("sub_banal_pagelimit$suffix", "Page limit", ["horizontal" => true]);
         $sv->echo_entry_group("sub_banal_textblock$suffix", "Text block", ["horizontal" => true], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
-        $sv->echo_entry_group("sub_banal_bodyfontsize$suffix", "Body font size", ["horizontal" => true, "after_entry" => "&nbsp;pt"]);
-        $sv->echo_entry_group("sub_banal_bodylineheight$suffix", "Line height", ["horizontal" => true, "after_entry" => "&nbsp;pt"]);
+        $sv->echo_entry_group("sub_banal_bodyfontsize$suffix", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt"]);
+        $sv->echo_entry_group("sub_banal_bodylineheight$suffix", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt"]);
         $sv->echo_entry_group("sub_banal_columns$suffix", "Columns", ["horizontal" => true]);
         echo "</div></div>\n";
     }
@@ -233,7 +233,7 @@ class SubForm_SettingRenderer {
             if ($n)
                 $cflt[] = "“{$d}”";
         }
-        $sv->echo_checkbox("sub_pcconfsel", "Collect PC conflict descriptions (" . commajoin($cflt, "or") . ")", ["item_class" => "fx"]);
+        $sv->echo_checkbox("sub_pcconfsel", "Collect PC conflict descriptions (" . commajoin($cflt, "or") . ")", ["group_class" => "fx"]);
         $sv->echo_checkbox("sub_collab", "Collect authors’ other collaborators as text");
         echo "</div>\n";
 
