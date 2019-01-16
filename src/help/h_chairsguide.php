@@ -271,15 +271,17 @@ administrator’s identity.</p>\n\n";
             echo "</ol>\n\n";
 
         } else if ($gj->index === 1) {
-            echo "<li><p>The <b>meeting tracker</b> can keep the PC coordinated.
+            echo "<li><p>The <b>meeting tracker</b> can keep the PC coordinated
+  by sharing your browser’s status.
   Search for papers in whatever order you like (you may want an explicit ",
-  $hth->help_link("discussion order", "tags#values"), ").
-  Then open a browser tab to manage the tracker, navigate to the first paper in
-  the order, and select “&#9759;” to activate the tracker.
-  From that point on, PC members see a banner with the tracker
-  tab’s current position in the order:</p>
+  $hth->help_link("discussion order", "tags#values"), "),
+  navigate to the first paper in
+  the order, and select “&#9759;” to activate the tracker in that tab.
+  As you use that tab to navigate through the order, its current
+  position is broadcast to all logged-in PC members’ browsers:</p>
   " . Ht::img("extracker.png", "[Meeting tracker]", ["style" => "max-width:714px"]) . "
-  <p>You can also view the discussion
+  <p>Manage multiple trackers and limit PC visibility
+  by clicking on “&#9759;” again. You can also view the discussion
   status on the <a href=\"" . hoturl("buzzer") . "\">discussion
   status page</a>.</p></li>\n";
 
