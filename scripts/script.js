@@ -1725,7 +1725,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
         if (paper.format)
             tracker_has_format = true;
     }
-    for (var i = 0; i != tracker_map.length; ++i)
+    for (var i = 0; i !== tracker_map.length; ++i)
         if (paper[tracker_map[i][0]])
             x.push('<span class="tracker-' + tracker_map[i][1] + '">' + tracker_map[i][2] + '</span>');
     return t + x.join(" &nbsp;&#183;&nbsp; ") + '</td>';
@@ -1872,6 +1872,16 @@ handle_ui.on("js-tracker", function (event) {
             hc.push('<option value="' + i + '"' + (i === vistype ? " selected" : "") + '>' + vismap[i] + '</option>');
         hc.pop();
         hc.push_pop('  <input type="text" name="tr' + trno + '-vis" value="' + escape_entities(vis.substring(1)) + '" placeholder="(tag)" class="need-suggest pc-tags fx">');
+        if ((vis = dl.tracker.global_visibility)) {
+            hc.push('<div class="entryi"><label><a href="' + hoturl("settings", "group=tracks") + '" target="_blank">Global visibility</a></label><div class="entry">', '</div></div>');
+            if (vis === "+none")
+                hc.push('Administrators only');
+            else if (vis.charAt(0) === "+")
+                hc.push('PC members with tag ' + vis.substring(1));
+            else
+                hc.push('PC members without tag ' + vis.substring(1));
+            hc.push_pop('<div class="f-h">This setting restricts all trackers.</div>');
+        }
         if (tr.start_at)
             hc.push('<div class="entryi"><label>Elapsed time</label><span class="trackerdialog-elapsed" data-start-at="' + tr.start_at + '"></span></div>');
         try {

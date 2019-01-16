@@ -655,6 +655,8 @@ class MeetingTracker {
                     "ts" => $tis
                 ];
             }
+            if (($perm = $user->conf->track_permission("_", Track::VIEWTRACKER)))
+                $dl->tracker->global_visibility = $perm;
             $dl->tracker_status = self::tracker_status($tracker);
             $dl->now = microtime(true);
         }
