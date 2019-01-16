@@ -1780,7 +1780,7 @@ function display_tracker() {
     // tracker button
     if ((e = $$("tracker-connect-btn"))) {
         e.setAttribute("aria-label", dl.tracker ? "Tracker settings" : "Start meeting tracker");
-        var hastr = dl.tracker && (!dl.tracker.ts || dl.tracker.ts.length !== 0);
+        var hastr = !!dl.tracker && (!dl.tracker.ts || dl.tracker.ts.length !== 0);
         toggleClass(e, "tbtn-here", !!dl.tracker_here);
         toggleClass(e, "tbtn-on", hastr && !dl.tracker_here);
     }
