@@ -369,6 +369,10 @@ class SettingValues extends MessageSet {
         $gj = $this->gxt()->get($g);
         return $gj && $gj->name == $gj->group && isset($gj->title);
     }
+    function group_anchorid($g) {
+        $gj = $this->gxt()->get($g);
+        return $gj && isset($gj->anchorid) ? $gj->anchorid : null;
+    }
     function group_titles() {
         return array_map(function ($gj) { return $gj->title; }, $this->gxt()->groups());
     }
