@@ -4379,7 +4379,7 @@ demand_load.tags = demand_load.make(function (resolve, reject) {
             resolve(tlist);
         });
     else
-        resolve(tlist);
+        resolve([]);
 });
 
 demand_load.mentions = demand_load.make(function (resolve, reject) {
