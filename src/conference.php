@@ -1333,7 +1333,7 @@ class Conf {
     function track_permission($tag, $ttype) {
         if ($this->tracks)
             foreach ($this->tracks as $t => $tr)
-                if (strcasecmp($t, $tag) == 0)
+                if (strcasecmp($t, $tag) === 0)
                     return $tr[$ttype];
         return null;
     }

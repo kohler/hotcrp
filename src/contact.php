@@ -3600,6 +3600,8 @@ class Contact {
         $dl = (object) ["now" => $Now, "email" => $this->email ? : null];
         if ($this->privChair)
             $dl->is_admin = true;
+        else if ($this->is_track_manager())
+            $dl->is_track_admin = true;
         if ($this->is_author())
             $dl->is_author = true;
         $dl->sub = (object) [];

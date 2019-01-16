@@ -1711,7 +1711,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
     if (paper.pid)
         t += '<a class="uu" href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
     t += '</td><td class="tracker-body"';
-    if (idx >= 2 && (dl.is_admin || tr.position_at))
+    if (idx >= 2 && (tr.allow_administer || tr.position_at))
         t += ' colspan="2"';
     t += '>';
     if (paper.title) {
@@ -1732,7 +1732,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
 }
 
 function tracker_html(tr) {
-    var t, dt = "";
+    var t;
     if (wstorage.site(true, "hotcrp-tracking-hide-" + tr.trackerid))
         return "";
     t = '<div class="has-tracker tracker-holder tracker-'
@@ -1741,10 +1741,9 @@ function tracker_html(tr) {
     if (tr.listinfo || tr.listid)
         t += ' has-hotlist" data-hotlist="' + escape_entities(tr.listinfo || tr.listid);
     t += '" data-trackerid="' + tr.trackerid + '">';
-    if (dl.is_admin) {
-        dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
+    if (tr.allow_administer)
         t += '<a class="ui nn js-tracker tracker-logo need-tooltip" aria-label="Tracker settings"></a>';
-    } else
+    else
         t += '<div class="tracker-logo"></div>';
     var rows = [], i, wwidth = $(window).width();
     if (!tr.papers || !tr.papers[0]) {
@@ -1761,11 +1760,11 @@ function tracker_html(tr) {
         if (i === 0 && tr.name)
             t += '<td rowspan="' + rows.length + '" class="tracker-name-td"><span class="tracker-name">' + escape_entities(tr.name) + '</span></td>';
         t += rows[i];
-        if (i === 0 && (dl.is_admin || tr.position_at)) {
+        if (i === 0 && (tr.allow_administer || tr.position_at)) {
             t += '<td rowspan="' + Math.min(2, rows.length) + '" class="tracker-elapsed nb">';
             if (tr.position_at)
                 t += '<span class="tracker-timer" data-trackerid="' + tr.trackerid + '"></span>';
-            if (dl.is_admin)
+            if (tr.allow_administer)
                 t += '<a class="ui js-tracker-stop closebtn need-tooltip" href="" aria-label="Stop this tracker">x</a>';
             t += '</td>';
         }
@@ -1881,7 +1880,7 @@ handle_ui.on("js-tracker", function (event) {
                 if (tr.papers && tr.papers[0] && tr.papers[0].pid
                     && (pos = ids.indexOf(tr.papers[0].pid)) > -1)
                     ids[pos] = '<b>' + ids[pos] + '</b>';
-                hc.push('<div class="entryi"><label>Papers</label><div class="entry">' + ids.join(" ") + '</div></div>');
+                hc.push('<div class="entryi"><label>Submissions</label><div class="entry"><input type="hidden" name="tr' + trno + '-p" disabled>' + ids.join(" ") + '</div></div>');
             }
         } catch (e) {
         }
@@ -1955,30 +1954,33 @@ handle_ui.on("js-tracker", function (event) {
         event.preventDefault();
     }
     function stop_all() {
-        $.post(hoturl_post("api/trackerconfig"), {stopall: 1},
-               make_submit_success({}));
-        $d.close();
+        $d.find("input[name$='stop']").prop("checked", true);
+        $d.find("form").submit();
     }
     function start() {
         var hc = popup_skeleton({minWidth: "38rem"});
         hc.push('<h2>Meeting tracker</h2>');
-        var trackers, trno = 1;
+        var trackers, trno = 1, nshown = 0;
         if (!dl.tracker)
             trackers = [];
         else if (!dl.tracker.ts)
             trackers = [dl.tracker];
         else
             trackers = dl.tracker.ts;
-        for (var i = 0; i !== trackers.length; ++i)
-            push_tracker(hc, trackers[i]);
+        for (var i = 0; i !== trackers.length; ++i) {
+            if (trackers[i].allow_administer) {
+                push_tracker(hc, trackers[i]);
+                ++nshown;
+            }
+        }
         if (document.body
             && hasClass(document.body, "has-hotlist")
-            && hotcrp_status.is_admin
+            && (hotcrp_status.is_admin || hotcrp_status.is_track_admin)
             && !hotcrp_status.tracker_here)
             hc.push('<div class="lg"><button type="button" name="new">Start new tracker</button></div>');
         hc.push_actions();
         hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
-        if (trackers.length)
+        if (nshown)
             hc.push('<button type="button" name="stopall" class="dangerous action-sep">Stop all</button>');
         $d = hc.show();
         show_elapsed();
@@ -1997,7 +1999,7 @@ handle_ui.on("js-tracker", function (event) {
         start();
     } else {
         $.post(hoturl_post("api/trackerconfig"),
-               {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": hotcrp_paperid},
+               {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": hotcrp_paperid, "tr1-vis": wstorage.site(false, "hotcrp-tracking-visibility")},
                make_submit_success({}, "new"));
     }
 });

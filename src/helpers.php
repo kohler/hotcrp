@@ -581,7 +581,7 @@ function actionBar($mode = null, $qreq = null) {
             $x .= " " . _one_quicklink($next, $goBase, $xmode, $listtype, false);
         $x .= '</td>';
 
-        if ($Me->privChair && $listtype == "p")
+        if ($Me->is_track_manager() && $listtype == "p")
             $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" href="" aria-label="Start meeting tracker">&#9759;</a><td>';
     }
 
