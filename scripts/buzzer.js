@@ -1,5 +1,5 @@
 var start_buzzer_page = (function ($) {
-var info, has_format, status, muted, show_papers, last_table;
+var info, has_format, muted, show_papers, last_html = {};
 
 function make_row(hc, idx, paper) {
     var pcconf;
@@ -39,36 +39,74 @@ function make_row(hc, idx, paper) {
         hc.pop();
     }
 }
-function make_table() {
-    var dl = hotcrp_status, hc = new HtmlCollector;
+function make_table(initial) {
+    var dl = hotcrp_status, hc = new HtmlCollector, ts = [], any = false;
     has_format = false;
-    if (!dl.tracker || !dl.tracker.papers)
-        hc.push(info.no_discussion);
-    else {
-        hc.push("<table style=\"width:100%\">", "</table>");
+    if (dl.tracker)
+        ts = dl.tracker.ts || [dl.tracker];
 
-        hc.push("<tbody class=\"has-tracker\" data-trackerid=\"" + dl.tracker.trackerid + "\">", "</tbody>");
-        for (var i = 0; i < dl.tracker.papers.length; ++i) {
-            make_row(hc, i, dl.tracker.papers[i]);
+    // collect current html, assign existing
+    var this_html = {};
+    for (var i = 0; i !== ts.length; ++i) {
+        var tr = ts[i];
+        if (tr.papers) {
+            hc.push("<tbody class=\"has-tracker\" data-trackerid=\"" + tr.trackerid + "\">", "</tbody>");
+            if (tr.name)
+                hc.push('<tr><td class="tracker-table remargin-left remargin-right" colspan="4"><span class="tracker-name">' + escape_entities(tr.name) + '</span></td></tr>');
+            for (var p = 0; p < tr.papers.length; ++p)
+                make_row(hc, p, tr.papers[p]);
+            this_html[tr.trackerid] = hc.render();
+            any = true;
+            hc.clear();
         }
     }
-    var this_table = hc.render();
-    if (this_table !== last_table) {
-        $("#tracker-table").html(this_table);
-        last_table = this_table;
+
+    // walk existing html, create new tables, step over old
+    var holder = document.getElementById("tracker-table"),
+        child = holder.firstChild, changes = [];
+    while (child && child.tagName !== "TABLE") {
+        if (any) {
+            holder.removeChild(child);
+            child = holder.firstChild;
+        } else
+            child = child.nextSibling;
     }
+    for (i = 0; i !== ts.length || child; ) {
+        var last_trid = child ? child.id.replace(/^tracker-table-/, "") : null,
+            this_trid = i !== ts.length ? ts[i].trackerid : null;
+        if (last_trid && !(last_trid in this_html)) {
+            var nextChild = child.nextSibling;
+            holder.removeChild(child);
+            child = nextChild;
+        } else if (this_trid && !ts[i].papers) {
+            ++i;
+        } else if (this_trid == last_trid) {
+            if (this_html[this_trid] !== last_html[this_trid]) {
+                child.innerHTML = this_html[this_trid];
+                changes.push("tracker-table-" + this_trid);
+            }
+            ++i;
+            child = child.nextSibling;
+        } else {
+            holder.insertBefore($('<table class="tracker-table-instance" id="tracker-table-' + this_trid + '">' + this_html[this_trid] + '</table>')[0], child);
+            changes.push("tracker-table-" + this_trid);
+            ++i;
+        }
+    }
+    if (!any && !holder.firstChild)
+        holder.innerHTML = info.no_discussion;
+    last_html = this_html;
+
     if (dl.tracker && dl.tracker.position != null)
         hotcrp_deadlines.tracker_show_elapsed();
     if (has_format)
         render_text.on_page();
-    if (status !== "open"
-        && (dl.tracker_status || "off") !== "off"
-        && status !== dl.tracker_status) {
-        $("#tracker-table .tracker-table0").addClass("change");
+    if (changes.length && initial !== true) {
+        for (i = 0; i !== changes.length; ++i)
+            $("#" + changes[i] + " .tracker-table0").addClass("change");
         if (!muted)
             play(false);
     }
-    status = dl.tracker_status || "off";
 }
 $(window).on("hotcrpdeadlines", function (evt, dl) {
     $(make_table);
@@ -126,10 +164,9 @@ function do_kiosk() {
 
 return function (initial_info) {
     info = initial_info;
-    status = info.status;
     muted = info.muted;
     show_papers = info.show_papers;
-    make_table();
+    make_table(true);
     $("#tracker-table-showpapers").on("change", do_show_papers).each(do_show_papers);
     $("#tracker-table-kioskmode").on("click", do_kiosk);
     if (info.is_kiosk) {

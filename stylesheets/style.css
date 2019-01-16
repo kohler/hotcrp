@@ -3397,6 +3397,10 @@ body {
 #tracker-table {
 	font-size: larger;
 }
+.tracker-table-instance {
+	width: 100%;
+	margin-bottom: 3rem;
+}
 .tracker-table0 {
 	background: #ffffff;
 }

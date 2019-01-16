@@ -1980,8 +1980,10 @@ handle_ui.on("js-tracker", function (event) {
             hc.push('<div class="lg"><button type="button" name="new">Start new tracker</button></div>');
         hc.push_actions();
         hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
-        if (nshown)
+        if (nshown) {
             hc.push('<button type="button" name="stopall" class="dangerous action-sep">Stop all</button>');
+            hc.push('<a class="btn" target="_blank" href="' + hoturl("buzzer") + '">Tracker status page</a>');
+        }
         $d = hc.show();
         show_elapsed();
         elapsed_timer = setInterval(show_elapsed, 1000);

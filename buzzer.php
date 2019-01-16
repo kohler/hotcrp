@@ -7,7 +7,7 @@ require_once("src/initweb.php");
 $show_papers = true;
 
 // kiosk mode
-if ($Me->privChair) {
+if ($Me->is_track_manager()) {
     $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : array());
     uasort($kiosks, function ($a, $b) {
         return $a->update_at - $b->update_at;
@@ -36,7 +36,7 @@ if ($Me->privChair) {
         $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
 }
 
-if ($Me->privChair && $Qreq->signout_to_kiosk && $Qreq->post_ok()) {
+if ($Me->is_track_manager() && $Qreq->signout_to_kiosk && $Qreq->post_ok()) {
     $Me = LoginHelper::logout($Me, false);
     ensure_session(ENSURE_SESSION_REGENERATE_ID);
     $Me->set_capability("tracker_kiosk", $kiosk_keys[$Qreq->buzzer_showpapers ? 1 : 0]);
@@ -99,7 +99,7 @@ if ($Me->has_database_account()) {
 }
 
 // kiosk mode
-if ($Me->privChair) {
+if ($Me->is_track_manager()) {
     echo '<td style="padding-left:2em">',
         Ht::button("Kiosk mode", ["id" => "tracker-table-kioskmode"]),
         '</td>';
