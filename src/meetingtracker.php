@@ -471,7 +471,7 @@ class MeetingTracker {
                     $tr = self::tracker_new($user, $new_trackerid, $xlist, $Now, $position, $position_at);
                     if ($name !== "")
                         $tr->name = $name;
-                    if ($vis === "" && count($admin_perm) === 1)
+                    if ($vis === "" && $admin_perm && count($admin_perm) === 1)
                         $vis = self::compute_default_visibility($user, $admin_perm);
                     if ($vis !== "")
                         $tr->visibility = $vis;
