@@ -281,7 +281,7 @@ administrator’s identity.</p>\n\n";
   position is broadcast to all logged-in PC members’ browsers:</p>
   " . Ht::img("extracker.png", "[Meeting tracker]", ["style" => "max-width:714px"]) . "
   <p>Manage multiple trackers and limit PC visibility
-  by clicking on “&#9759;” again. You can also view the discussion
+  by shift-clicking “&#9759;” or clicking it again. You can also view the discussion
   status on the <a href=\"" . hoturl("buzzer") . "\">discussion
   status page</a>.</p></li>\n";
 
