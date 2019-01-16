@@ -23,7 +23,7 @@ function change_email_by_capability($Qreq) {
     if (!$Acct)
         error_go(false, "No such account.");
     else if (isset($capdata->data->oldemail)
-             && strcasecmp($Acct->email, $capdata->data->oldemail))
+             && strcasecmp($Acct->email, $capdata->data->oldemail) !== 0)
         error_go(false, "You have changed your email address since creating that email change code.");
 
     $email = $capdata->data->uemail;
@@ -37,7 +37,8 @@ function change_email_by_capability($Qreq) {
     if (!$Me->has_database_account() || $Me->contactId == $Acct->contactId)
         $Me = $Acct->activate($Qreq);
 }
-if ($Qreq->changeemail)
+if ($Qreq->changeemail
+    && !$Me->is_actas_user())
     change_email_by_capability($Qreq);
 
 if (!$Me->has_email())

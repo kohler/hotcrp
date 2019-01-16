@@ -120,7 +120,7 @@ function initialize_user() {
     if (!$Me) {
         $Me = new Contact($trueemail ? (object) ["email" => $trueemail] : null);
     }
-    $Me = $Me->activate($Qreq);
+    $Me = $Me->activate($Qreq, true);
 
     // redirect if disabled
     if ($Me->is_disabled()) {

@@ -13,7 +13,7 @@ class Contact_Update {
 
 class Contact {
     static public $rights_version = 1;
-    static public $trueuser_privChair = null;
+    static public $true_user;
     static public $allow_nonexistent_properties = false;
 
     public $contactId = 0;
@@ -105,11 +105,11 @@ class Contact {
     static private $status_info_cache = array();
 
 
-    function __construct($trueuser = null, Conf $conf = null) {
+    function __construct($user = null, Conf $conf = null) {
         global $Conf;
         $this->conf = $conf ? : $Conf;
-        if ($trueuser)
-            $this->merge($trueuser);
+        if ($user)
+            $this->merge($user);
         else if ($this->contactId || $this->contactDbId)
             $this->db_load();
     }
@@ -331,33 +331,27 @@ class Contact {
         return false;
     }
 
-    private function actas_user($x, $trueemail) {
+    private function actas_user($x) {
+        assert(!self::$true_user || self::$true_user === $this);
+
         // translate to email
         if (is_numeric($x)) {
             $acct = $this->conf->user_by_id($x);
             $email = $acct ? $acct->email : null;
         } else if ($x === "admin")
-            $email = $trueemail;
+            $email = $this->email;
         else
             $email = $x;
-        if (!$email || strcasecmp($email, $this->email) == 0)
-            return $this;
-
-        // can always turn back into baseuser
-        $baseuser = $this;
-        if (strcasecmp($this->email, $trueemail) !== 0
-            && ($u = $this->conf->user_by_email($trueemail)))
-            $baseuser = $u;
-        if (strcasecmp($email, $baseuser->email) == 0)
-            return $baseuser;
-
-        // cannot actas unless chair
-        if (!$this->privChair && !$baseuser->privChair)
+        if (!$email
+            || strcasecmp($email, $this->email) === 0
+            || !$this->privChair)
             return $this;
 
         // new account must exist
         $u = $this->conf->user_by_email($email);
-        if (!$u && validate_email($email) && get($this->conf->opt, "debugShowSensitiveEmail"))
+        if (!$u
+            && validate_email($email)
+            && get($this->conf->opt, "debugShowSensitiveEmail"))
             $u = Contact::create($this->conf, null, ["email" => $email]);
         if (!$u)
             return $this;
@@ -374,24 +368,19 @@ class Contact {
         return $u;
     }
 
-    function activate($qreq) {
+    function activate($qreq, $signin = false) {
         global $Now;
         $this->_activated = true;
-        $trueemail = isset($_SESSION["u"]) ? $_SESSION["u"] : null;
-        $truecontact = null;
 
         // Handle actas requests
-        if ($qreq && $qreq->actas && $trueemail) {
+        if ($qreq && $qreq->actas && $signin && $this->email) {
             $actas = $qreq->actas;
             unset($qreq->actas, $_GET["actas"], $_POST["actas"]);
-            $actascontact = $this->actas_user($actas, $trueemail);
+            $actascontact = $this->actas_user($actas);
             if ($actascontact !== $this) {
-                if (strcasecmp($actascontact->email, $trueemail) !== 0) {
-                    Conf::$hoturl_defaults["actas"] = urlencode($actascontact->email);
-                    $_SESSION["last_actas"] = $actascontact->email;
-                }
-                if ($this->privChair)
-                    self::$trueuser_privChair = $actascontact;
+                Conf::$hoturl_defaults["actas"] = urlencode($actascontact->email);
+                $_SESSION["last_actas"] = $actascontact->email;
+                self::$true_user = $this;
                 return $actascontact->activate($qreq);
             }
         }
@@ -425,8 +414,7 @@ class Contact {
         }
 
         // Maybe auto-create a user
-        if ($trueemail
-            && strcasecmp($trueemail, $this->email) === 0) {
+        if (!self::$true_user) {
             $trueuser_aucheck = $this->session("trueuser_author_check", 0);
             if (!$this->has_database_account()
                 && $trueuser_aucheck + 600 < $Now) {
@@ -565,9 +553,7 @@ class Contact {
 
 
     function is_actas_user() {
-        return $this->_activated
-            && isset($_SESSION["u"])
-            && strcasecmp($_SESSION["u"], $this->email) !== 0;
+        return $this->_activated && self::$true_user;
     }
 
     function is_empty() {
@@ -2062,8 +2048,8 @@ class Contact {
             return $acct
                 && $this->contactId > 0
                 && $this->contactId == $acct->contactId
-                && isset($_SESSION["u"])
-                && strcasecmp($_SESSION["u"], $acct->email) === 0;
+                && $this->_activated
+                && !self::$true_user;
     }
 
     function can_administer(PaperInfo $prow = null) {

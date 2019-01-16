@@ -3387,18 +3387,15 @@ class Conf {
 
             // "act as" link
             if (($actas = get($_SESSION, "last_actas"))
-                && isset($_SESSION["u"])
-                && ($Me->privChair || Contact::$trueuser_privChair === $Me)) {
+                && (($Me->privChair && strcasecmp($actas, $Me->email) !== 0)
+                    || Contact::$true_user)) {
                 // Link becomes true user if not currently chair.
-                $is_trueuser = strcasecmp($Me->email, $_SESSION["u"]) === 0;
-                if (!$is_trueuser)
-                    $actas = $_SESSION["u"];
-                if (strcasecmp($Me->email, $actas) !== 0)
-                    $profile_parts[] = "<a href=\""
-                        . $this->selfurl(null, ["actas" => $actas]) . "\">"
-                        . ($is_trueuser ? htmlspecialchars($actas) : "Admin")
-                        . "&nbsp;" . Ht::img("viewas.png", "Act as " . htmlspecialchars($actas))
-                        . "</a>";
+                $actas = Contact::$true_user ? Contact::$true_user->email : $actas;
+                $profile_parts[] = "<a href=\""
+                    . $this->selfurl(null, ["actas" => Contact::$true_user ? null : $actas]) . "\">"
+                    . (Contact::$true_user ? "Admin" : htmlspecialchars($actas))
+                    . "&nbsp;" . Ht::img("viewas.png", "Act as " . htmlspecialchars($actas))
+                    . "</a>";
             }
 
             // help, sign out

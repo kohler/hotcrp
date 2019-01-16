@@ -13,7 +13,7 @@ function crpmerge($qreq, $MiniMe) {
     if (!$MiniMe->contactId && !$Me->contactId)
         return ($MergeError = "Neither of those accounts has any data associated with this conference.");
     // XXX `act as` merging might be useful?
-    if (strcasecmp($Me->email, $_SESSION["u"]) !== 0)
+    if ($Me->is_actas_user())
         return ($MergeError = "You can’t merge accounts when acting as a different user.");
     if ($MiniMe->data("locked") || $Me->data("locked"))
         return ($MergeError = "Attempt to merge a locked account.");
@@ -31,10 +31,6 @@ function crpmerge($qreq, $MiniMe) {
 
     // actually merge users or change email
     $merger->run();
-
-    // update trueuser
-    if (strcasecmp($_SESSION["u"], $merger->newu->email) !== 0)
-        $_SESSION["u"] = $merger->newu->email;
 
     if (!$merger->has_error()) {
         $Conf->confirmMsg("Merged account " . htmlspecialchars($merger->oldu->email) . ".");
