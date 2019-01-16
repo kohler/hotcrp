@@ -3544,8 +3544,8 @@ class Conf {
         return $hpcj;
     }
 
-    function stash_hotcrp_pc(Contact $user) {
-        if (Ht::mark_stash("hotcrp_pc") && !$this->opt("largePC"))
+    function stash_hotcrp_pc(Contact $user, $always = false) {
+        if (($always || !$this->opt("largePC")) && Ht::mark_stash("hotcrp_pc"))
             Ht::stash_script("demand_load.pc(" . json_encode_browser($this->hotcrp_pc_json($user)) . ");");
     }
 

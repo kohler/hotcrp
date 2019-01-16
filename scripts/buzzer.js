@@ -1,25 +1,62 @@
 var start_buzzer_page = (function ($) {
-var info, has_format, muted, show_papers, last_html = {};
+var info, has_format, muted, show_papers, initial = true, last_html = {};
 
-function make_row(hc, idx, paper) {
-    var pcconf;
+function render_pc(pc) {
+    var x = text_to_html(cur_conf[i].name);
+}
+
+function render_conflict_list(l) {
+    if (l.length)
+        return '<span class="nb">' + l.join(',</span> <span class="nb">') + '</span>';
+    else
+        return 'None';
+}
+
+function render_conflicts(cur, prev, paper, pcm) {
+    var i, pc, conf = [];
+    for (i = 0; i !== cur.length; ++i)
+        if ((pc = pcm[cur[i]])) {
+            var x = render_user(pc);
+            if (prev && $.inArray(cur[i], prev) < 0)
+                x = '✶' + x;
+            conf.push(x);
+        }
+    if (paper.other_pc_conflicts)
+        conf.push('<em>others</em>');
+    var t = '<em class="plx">PC conflicts:</em> ' + render_conflict_list(conf);
+    if (prev) {
+        var oldconf = [];
+        for (i = 0; i !== prev.length; ++i)
+            if ($.inArray(prev[i], cur) < 0 && (pc = pcm[prev[i]]))
+                oldconf.push(render_user(pc));
+        if (oldconf.length) {
+            t += '<div style="margin-top:0.25rem;font-size:smaller"><em class="plx">No longer conflicted:</em> ' + render_conflict_list(oldconf) + '</div>';
+        }
+    }
+    return t;
+}
+
+function make_row(hc, idx, paper, pcm) {
+    var pcconf_text = "";
     if (paper.pc_conflicts) {
-        pcconf = [];
-        for (var i = 0; i < paper.pc_conflicts.length; ++i)
-            pcconf.push(text_to_html(paper.pc_conflicts[i].name));
-        pcconf = "<em class=\"plx\">PC conflicts:</em> " +
-            (pcconf.length ? "<span class=\"nb\">" + pcconf.join(",</span> <span class=\"nb\">") + "</span>" : "None");
+        var cur_conf = paper.pc_conflicts, prev_conf = null;
+        if (idx === 0) {
+            var poff = hotcrp_status.tracker.paper_offset;
+            if (poff > 0)
+                prev_conf = hotcrp_status.tracker.papers[poff - 1].pc_conflicts;
+        }
+        pcconf_text = render_conflicts(cur_conf, prev_conf, paper, pcm);
     }
 
     hc.push("<tr class=\"tracker-table" + idx +
-            (show_papers && pcconf ? " t" : " t b") + "\">", "</tr>");
+            (show_papers && pcconf_text ? " t" : " t b") + "\">", "</tr>");
     hc.push("<td class=\"tracker-table tracker-desc remargin-left\">", "</td>");
     hc.push_pop(idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     hc.push("<td class=\"tracker-table tracker-pid\">", "</td>");
     hc.push_pop(paper.pid && show_papers ? "#" + paper.pid : "");
     hc.push("<td class=\"tracker-table tracker-title\">", "</td>");
     if (!show_papers)
-        hc.push_pop(pcconf ? pcconf : "");
+        hc.push_pop(pcconf_text);
     else if (paper.title && paper.format) {
         hc.push_pop("<span class=\"ptitle need-format\" data-format=\"" + paper.format + "\">" + text_to_html(paper.title) + "</span>");
         has_format = true;
@@ -31,15 +68,16 @@ function make_row(hc, idx, paper) {
     if (idx == 0)
         hc.push("<span class=\"tracker-timer\"></span>");
     hc.pop_n(2);
-    if (show_papers && pcconf) {
+    if (show_papers && pcconf_text) {
         hc.push("<tr class=\"tracker-table" + idx + " b\">", "</tr>");
         hc.push("<td class=\"tracker-table remargin-left\" colspan=\"2\"></td>");
-        hc.push("<td class=\"tracker-table tracker-pcconf\">" + pcconf + "</td>");
+        hc.push("<td class=\"tracker-table tracker-pcconf\">" + pcconf_text + "</td>");
         hc.push("<td class=\"tracker-table remargin-right\"></td>");
         hc.pop();
     }
 }
-function make_table(initial) {
+
+function render_table(pcm) {
     var dl = hotcrp_status, hc = new HtmlCollector, ts = [], any = false;
     has_format = false;
     if (dl.tracker)
@@ -51,10 +89,12 @@ function make_table(initial) {
         var tr = ts[i];
         if (tr.papers) {
             hc.push("<tbody class=\"has-tracker\" data-trackerid=\"" + tr.trackerid + "\">", "</tbody>");
-            if (tr.name)
+            if (tr.name) {
                 hc.push('<tr><td class="tracker-table remargin-left remargin-right" colspan="4"><span class="tracker-name">' + escape_entities(tr.name) + '</span></td></tr>');
-            for (var p = 0; p < tr.papers.length; ++p)
-                make_row(hc, p, tr.papers[p]);
+            }
+            for (var p = tr.paper_offset; p < tr.papers.length; ++p) {
+                make_row(hc, p - tr.paper_offset, tr.papers[p], pcm);
+            }
             this_html[tr.trackerid] = hc.render();
             any = true;
             hc.clear();
@@ -101,13 +141,19 @@ function make_table(initial) {
         hotcrp_deadlines.tracker_show_elapsed();
     if (has_format)
         render_text.on_page();
-    if (changes.length && initial !== true) {
+    if (changes.length && !initial) {
         for (i = 0; i !== changes.length; ++i)
             $("#" + changes[i] + " .tracker-table0").addClass("change");
         if (!muted)
             play(false);
     }
+    initial = false;
 }
+
+function make_table() {
+    demand_load.pc().then(render_table);
+}
+
 $(window).on("hotcrpdeadlines", function (evt, dl) {
     $(make_table);
 });
@@ -166,7 +212,7 @@ return function (initial_info) {
     info = initial_info;
     muted = info.muted;
     show_papers = info.show_papers;
-    make_table(true);
+    make_table();
     $("#tracker-table-showpapers").on("change", do_show_papers).each(do_show_papers);
     $("#tracker-table-kioskmode").on("click", do_kiosk);
     if (info.is_kiosk) {

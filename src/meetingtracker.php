@@ -555,8 +555,10 @@ class MeetingTracker {
         }
         if ($user->conf->opt("trackerHideConflicts"))
             $ti->hide_conflicts = true;
-        if ($tr->position !== false)
-            $ti->papers = array_slice($tr->ids, $tr->position, 3);
+        if ($tr->position !== false) {
+            $ti->paper_offset = $tr->position === 0 ? 0 : 1;
+            $ti->papers = array_slice($tr->ids, $tr->position - $ti->paper_offset, 3 + $ti->paper_offset);
+        }
         if (isset($tr->name))
             $ti->name = $tr->name;
         if (isset($tr->visibility)
@@ -565,7 +567,7 @@ class MeetingTracker {
         return $ti;
     }
 
-    static private function trinfo_papers($tis, Contact $user) {
+    static private function trinfo_papers($tis, $trs, Contact $user) {
         $pids = [];
         foreach ($tis as $ti) {
             if (isset($ti->papers))
@@ -574,9 +576,12 @@ class MeetingTracker {
         if (empty($pids))
             return;
 
-        $pc_conflicts = $user->privChair || $user->tracker_kiosk_state;
+        $track_manager = $user->is_track_manager();
+        $show_pc_conflicts = $track_manager || $user->tracker_kiosk_state > 0;
+        $hide_conflicted_papers = $user->conf->opt("trackerHideConflicts");
+
         $col = "";
-        if ($pc_conflicts) {
+        if ($show_pc_conflicts) {
             $col = ", (select group_concat(contactId) conflictIds from PaperConflict where paperId=p.paperId) conflictIds";
             $pcm = $user->conf->pc_members();
         }
@@ -592,58 +597,68 @@ class MeetingTracker {
             left join PaperConflict conf on (conf.paperId=p.paperId and conf.$cid_join)
             where p.paperId in (" . join(",", $pids) . ")
             group by p.paperId");
-        $papers = [];
-        $hide_conflicts = $user->conf->opt("trackerHideConflicts");
-        while (($row = PaperInfo::fetch($result, $user))) {
-            $papers[$row->paperId] = $p = (object) [];
-            if (($user->privChair
-                 || !$row->conflictType
-                 || !$hide_conflicts)
-                && $user->tracker_kiosk_state != 1) {
-                $p->pid = (int) $row->paperId;
-                $p->title = $row->title;
-                if (($format = $row->title_format()))
-                    $p->format = $format;
-            }
-            if ($user->contactId > 0) {
-                if ($row->managerContactId == $user->contactId)
-                    $p->is_manager = true;
-                if ($row->has_reviewer($user))
-                    $p->is_reviewer = true;
-                if ($row->conflictType)
-                    $p->is_conflict = true;
-                if ($row->leadContactId == $user->contactId)
-                    $p->is_lead = true;
-            }
-            if ($pc_conflicts) {
-                $p->pc_conflicts = [];
-                foreach (explode(",", (string) $row->conflictIds) as $cid)
-                    if (($pc = get($pcm, $cid)))
-                        $p->pc_conflicts[$pc->sort_position] = (object) ["email" => $pc->email, "name" => $user->name_text_for($pc)];
-                ksort($p->pc_conflicts);
-                $p->pc_conflicts = array_values($p->pc_conflicts);
-            }
-        }
+        $prows = new PaperInfoSet;
+        while (($prow = PaperInfo::fetch($result, $user)))
+            $prows->add($prow);
         Dbl::free($result);
 
-        foreach ($tis as $ti)
+        foreach ($tis as $ti_index => $ti) {
+            $papers = [];
+            foreach (isset($ti->papers) ? $ti->papers : [] as $pid) {
+                $prow = $prows->get($pid);
+                $papers[] = $p = (object) [];
+                if (($track_manager || !$prow->conflictType || !$hide_conflicted_papers)
+                    && $user->tracker_kiosk_state != 1) {
+                    $p->pid = $prow->paperId;
+                    $p->title = $prow->title;
+                    if (($format = $prow->title_format()))
+                        $p->format = $format;
+                }
+                if ($user->contactId > 0) {
+                    if ($prow->managerContactId == $user->contactId)
+                        $p->is_manager = true;
+                    if ($prow->has_reviewer($user))
+                        $p->is_reviewer = true;
+                    if ($prow->conflictType)
+                        $p->is_conflict = true;
+                    if ($prow->leadContactId == $user->contactId)
+                        $p->is_lead = true;
+                }
+                if ($show_pc_conflicts) {
+                    $pcc = [];
+                    $more = false;
+                    foreach (explode(",", (string) $prow->conflictIds) as $cid) {
+                        if (($pc = get($pcm, $cid))) {
+                            if ($pc->include_tracker_conflict($trs[$ti_index]))
+                                $pcc[$pc->sort_position] = $pc->contactId;
+                            else
+                                $more = true;
+                        }
+                    }
+                    ksort($pcc);
+                    $p->pc_conflicts = array_values($pcc);
+                    if ($more)
+                        $p->other_pc_conflicts = $more;
+                }
+            }
             if (isset($ti->papers))
-                $ti->papers = array_map(function ($pid) use ($papers) {
-                    return $papers[$pid];
-                }, $ti->papers);
+                $ti->papers = $papers;
+        }
     }
 
     static function my_deadlines($dl, Contact $user) {
         global $Now;
         $tracker = self::lookup($user->conf);
         if ($tracker->trackerid && $user->can_view_tracker()) {
-            $tis = [];
+            $tis = $trs = [];
             foreach (self::expand($tracker) as $tr) {
-                if ($user->can_view_tracker($tr))
+                if ($user->can_view_tracker($tr)) {
+                    $trs[] = $tr;
                     $tis[] = self::trinfo($tr, $user);
+                }
             }
             if (!empty($tis))
-                self::trinfo_papers($tis, $user);
+                self::trinfo_papers($tis, $trs, $user);
 
             if (count($tis) === 1
                 && $tis[0]->trackerid === $tracker->trackerid) {

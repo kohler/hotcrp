@@ -1705,6 +1705,7 @@ function tracker_show_elapsed() {
 
 function tracker_paper_columns(tr, idx, wwidth) {
     var paper = tr.papers[idx], url = hoturl("paper", {p: paper.pid}), x = [];
+    idx -= tr.paper_offset;
     var t = '<td class="tracker-desc">';
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     t += '</td><td class="tracker-pid">';
@@ -1736,7 +1737,7 @@ function tracker_html(tr) {
     if (wstorage.site(true, "hotcrp-tracking-hide-" + tr.trackerid))
         return "";
     t = '<div class="has-tracker tracker-holder tracker-'
-        + (tr.papers && tr.papers[0].pid == hotcrp_paperid ? "match" : "nomatch")
+        + (tr.papers && tr.papers[tr.paper_offset].pid == hotcrp_paperid ? "match" : "nomatch")
         + (tr.tracker_here ? " tracker-active" : "");
     if (tr.listinfo || tr.listid)
         t += ' has-hotlist" data-hotlist="' + escape_entities(tr.listinfo || tr.listid);
@@ -1749,7 +1750,7 @@ function tracker_html(tr) {
     if (!tr.papers || !tr.papers[0]) {
         rows.push('<td><a href=\"' + siteurl + tr.url + '\">Discussion list</a></td>');
     } else {
-        for (i = 0; i < tr.papers.length; ++i)
+        for (i = tr.paper_offset; i < tr.papers.length; ++i)
             rows.push(tracker_paper_columns(tr, i, wwidth));
     }
     t += "<table class=\"tracker-info clearfix\"><tbody>";
@@ -1887,8 +1888,10 @@ handle_ui.on("js-tracker", function (event) {
         try {
             var j = JSON.parse(tr.listinfo || "null"), ids, pos;
             if (j && j.ids && (ids = decode_session_list_ids(j.ids))) {
-                if (tr.papers && tr.papers[0] && tr.papers[0].pid
-                    && (pos = ids.indexOf(tr.papers[0].pid)) > -1)
+                if (tr.papers
+                    && tr.papers[tr.paper_offset]
+                    && tr.papers[tr.paper_offset].pid
+                    && (pos = ids.indexOf(tr.papers[tr.paper_offset].pid)) > -1)
                     ids[pos] = '<b>' + ids[pos] + '</b>';
                 hc.push('<div class="entryi"><label>Submissions</label><div class="entry"><input type="hidden" name="tr' + trno + '-p" disabled>' + ids.join(" ") + '</div></div>');
             }
@@ -5972,6 +5975,16 @@ function check_version(url, versionstr) {
 }
 
 
+// user rendering
+function render_user(u) {
+    if (!u.name_html)
+        u.name_html = escape_entities(u.name);
+    if (u.color_classes && !u.user_html)
+        u.user_html = '<span class="' + u.color_classes + ' taghh">' + u.name_html + '</span>';
+    return u.user_html || u.name_html;
+}
+
+
 // ajax loading of paper information
 var plinfo = (function () {
 var self, fields, field_order, aufull = {},
@@ -6051,15 +6064,9 @@ function render_allpref() {
             atomre = /(\d+)([PT])(\S+)/g;
         while ((m = atomre.exec(allpref)) !== null) {
             var pc = pcs[m[1]];
-            if (!pc.name_html)
-                pc.name_html = escape_entities(pc.name);
-            var x = '';
-            if (pc.color_classes)
-                x += '<span class="' + pc.color_classes + '">' + pc.name_html + '</span>';
-            else
-                x += pc.name_html;
             var pref = parseInt(m[3]);
-            x += ' <span class="asspref' + (pref < 0 ? "-1" : "1") +
+            var x = render_user(pc) +
+                ' <span class="asspref' + (pref < 0 ? "-1" : "1") +
                 '">' + m[2] + (pref < 0 ? m[3].replace(/-/, "−") /* minus */ : m[3]) +
                 '</span>';
             t.push([m[2] === "P" ? pref : 0, pref, t.length, x]);

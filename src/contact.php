@@ -83,7 +83,7 @@ class Contact {
     public $isPC = false;
     public $privChair = false;
     public $contactTags;
-    public $tracker_kiosk_state = false;
+    public $tracker_kiosk_state = 0;
     private $capabilities;
     private $_review_tokens;
     private $_activated = false;
@@ -414,7 +414,7 @@ class Contact {
         }
 
         // Maybe auto-create a user
-        if (!self::$true_user) {
+        if (!self::$true_user && $this->email) {
             $trueuser_aucheck = $this->session("trueuser_author_check", 0);
             if (!$this->has_database_account()
                 && $trueuser_aucheck + 600 < $Now) {
@@ -604,7 +604,8 @@ class Contact {
         if ($pfx === "t")
             return Text::name_text($user);
         $n = Text::name_html($user);
-        if ($pfx === "r" && isset($user->contactTags)
+        if ($pfx === "r"
+            && isset($user->contactTags)
             && ($colors = $this->user_color_classes_for($user)))
             $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
         return $n;
@@ -784,7 +785,7 @@ class Contact {
     }
 
     function viewable_color_classes(Contact $viewer) {
-        if ($viewer->isPC && ($tags = $this->viewable_tags($viewer)))
+        if (($tags = $this->viewable_tags($viewer)))
             return $this->conf->tags()->color_classes($tags);
         else
             return "";
@@ -2083,7 +2084,7 @@ class Contact {
     function can_view_pc() {
         $this->check_rights_version();
         if ($this->_can_view_pc === null) {
-            if ($this->is_manager())
+            if ($this->is_manager() || $this->tracker_kiosk_state > 0)
                 $this->_can_view_pc = 2;
             else if ($this->isPC)
                 $this->_can_view_pc = $this->conf->opt("secretPC") ? 0 : 2;
@@ -2105,7 +2106,15 @@ class Contact {
                     || !isset($tracker_json->visibility)
                     || ($this->has_tag(substr($tracker_json->visibility, 1))
                         === ($tracker_json->visibility[0] === "+"))))
-            || $this->tracker_kiosk_state;
+            || $this->tracker_kiosk_state > 0;
+    }
+
+    function include_tracker_conflict($tracker_json = null) {
+        return $this->isPC
+            && (!$tracker_json
+                || !isset($tracker_json->visibility)
+                || ($this->has_tag(substr($tracker_json->visibility, 1))
+                    === ($tracker_json->visibility[0] === "+")));
     }
 
     function view_conflict_type(PaperInfo $prow = null) {
@@ -3686,7 +3695,7 @@ class Contact {
         }
 
         // add meeting tracker
-        if (($this->isPC || $this->tracker_kiosk_state)
+        if (($this->isPC || $this->tracker_kiosk_state > 0)
             && $this->can_view_tracker())
             MeetingTracker::my_deadlines($dl, $this);
 

@@ -53,7 +53,6 @@ function kiosk_lookup($key) {
 
 $kiosk = null;
 if (!$Me->has_email()
-    && !$Me->capability("tracker_kiosk")
     && ($key = Navigation::path_component(0))
     && ($kiosk = kiosk_lookup($key)))
     $Me->set_capability("tracker_kiosk", $key);
@@ -71,6 +70,7 @@ if (!$Me->isPC && !$Me->tracker_kiosk_state)
 
 
 $Conf->header("Discussion status", "buzzer", ["action_bar" => false, "class" => "hide-tracker"]);
+$Conf->stash_hotcrp_pc($Me, true);
 
 echo '<div id="tracker-table" class="demargin" style="margin-top:1em"></div>';
 echo "<audio id=\"tracker-sound\" crossorigin=\"anonymous\" preload=\"auto\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
