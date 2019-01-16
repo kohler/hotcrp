@@ -189,6 +189,7 @@ $("#tracker-table-mute").on("click", function () {
 function do_show_papers() {
     if (!show_papers !== !this.checked) {
         show_papers = !show_papers;
+        initial = true;
         make_table();
     }
 }

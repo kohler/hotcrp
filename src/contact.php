@@ -2111,6 +2111,9 @@ class Contact {
 
     function include_tracker_conflict($tracker_json = null) {
         return $this->isPC
+            && (!($perm = $this->conf->track_permission("_", Track::VIEWTRACKER))
+                || $perm === "+none"
+                || Track::match_perm($this, $perm))
             && (!$tracker_json
                 || !isset($tracker_json->visibility)
                 || ($this->has_tag(substr($tracker_json->visibility, 1))

@@ -3319,12 +3319,12 @@ body {
 	position: absolute;
 	left: 12px;
 	color: #0b522b;
+	vertical-align: 10px;
 }
 .tracker-logo:before {
 	content: "\261e";
 	font-size: 300%;
 	line-height: 22px;
-	vertical-align: 10px;
 }
 .tracker-nomatch .tracker-logo {
 	/*background: rgba(255, 220, 215, 0.9);*/
