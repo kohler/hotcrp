@@ -192,12 +192,13 @@ class MeetingTracker {
         return false;
     }
 
-    static private function compute_default_visibility(Conf $conf, $admin_perm) {
-        foreach ($conf->track_tags() as $tag)
-            if (in_array($conf->track_permission($tag, Track::ADMIN), $admin_perm)) {
+    static private function compute_default_visibility(Contact $user, $admin_perm) {
+        foreach ($user->conf->track_tags() as $tag)
+            if (in_array($user->conf->track_permission($tag, Track::ADMIN), $admin_perm)) {
                 foreach ([Track::VIEW, Track::VIEWREV, Track::ASSREV] as $p)
-                    if (($perm = $conf->track_permission($tag, $p))
-                        && $perm !== "+none")
+                    if (($perm = $user->conf->track_permission($tag, $p))
+                        && $perm !== "+none"
+                        && Track::match_perm($user, $perm))
                         return $perm;
             }
         return "";
@@ -420,6 +421,12 @@ class MeetingTracker {
                 $vis = $vistype . $vis;
             } else
                 $vis = "";
+            if ($vis !== ""
+                && !$user->privChair
+                && !Track::match_perm($user, $vis)) {
+                $errf["tr{$i}-vis"] = true;
+                $error[] = "You aren’t allowed to configure a tracker that you can’t see. Try “Whole PC”.";
+            }
 
             $xlist = $admin_perm = null;
             if ($qreq["tr{$i}-listinfo"]) {
@@ -465,7 +472,7 @@ class MeetingTracker {
                     if ($name !== "")
                         $tr->name = $name;
                     if ($vis === "" && count($admin_perm) === 1)
-                        $vis = self::compute_default_visibility($user->conf, $admin_perm);
+                        $vis = self::compute_default_visibility($user, $admin_perm);
                     if ($vis !== "")
                         $tr->visibility = $vis;
                     if ($admin_perm)

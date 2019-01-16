@@ -1365,16 +1365,18 @@ h3.has-error,
 .is-error {
 	color: #ee0000;
 }
-.has-error > input[type=text],
-.has-error > input[type=email],
-.has-error > input[type=password],
-.has-error > input[type=date],
-.has-error > textarea,
+.has-error input[type=text],
+.has-error input[type=email],
+.has-error input[type=password],
+.has-error input[type=date],
+.has-error textarea,
+.has-error select,
 input[type=text].has-error,
 input[type=email].has-error,
 input[type=password].has-error,
 input[type=date].has-error,
-textarea.has-error {
+textarea.has-error,
+select.has-error {
 	border: 1px solid red;
 }
 .has-warning > .f-c,
