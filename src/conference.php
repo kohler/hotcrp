@@ -2535,7 +2535,9 @@ class Conf {
         $nav = Navigation::get();
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
         $t = $page . $nav->php_suffix;
-        // parse options, separate anchor; see also redirectSelf
+        $are = '/\A(|.*?(?:&|&amp;))';
+        $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
+        // parse options, separate anchor
         $anchor = "";
         if (is_array($options)) {
             $x = "";
@@ -2547,23 +2549,24 @@ class Conf {
                 else
                     $x .= ($x === "" ? "" : $amp) . $k . "=" . urlencode($v);
             }
+            if (Conf::$hoturl_defaults && !($flags & self::HOTURL_NO_DEFAULTS))
+                foreach (Conf::$hoturl_defaults as $k => $v)
+                    if (!array_key_exists($k, $options))
+                        $x .= ($x === "" ? "" : $amp) . $k . "=" . $v;
             $options = $x;
-        } else if (is_string($options)) {
+        } else {
+            $options = (string) $options;
             if (($pos = strpos($options, "#"))) {
                 $anchor = substr($options, $pos);
                 $options = substr($options, 0, $pos);
             }
-        } else
-            $options = "";
+            if (Conf::$hoturl_defaults && !($flags & self::HOTURL_NO_DEFAULTS))
+                foreach (Conf::$hoturl_defaults as $k => $v)
+                    if (!preg_match($are . preg_quote($k) . '=/', $options))
+                        $options .= ($options === "" ? "" : $amp) . $k . "=" . $v;
+        }
         if ($flags & self::HOTURL_POST)
             $options .= ($options === "" ? "" : $amp) . "post=" . post_value();
-        // append defaults
-        $are = '/\A(|.*?(?:&|&amp;))';
-        $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
-        if (Conf::$hoturl_defaults && !($flags & self::HOTURL_NO_DEFAULTS))
-            foreach (Conf::$hoturl_defaults as $k => $v)
-                if (!preg_match($are . preg_quote($k) . '=/', $options))
-                    $options .= $amp . $k . "=" . $v;
         // append forceShow to links to same paper if appropriate
         $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
         if ($is_paper_page
@@ -2684,8 +2687,7 @@ class Conf {
                 $x[$ak] = $v;
         }
         foreach ($params as $k => $v)
-            if ($v !== null)
-                $x[$k] = $v;
+            $x[$k] = $v;
         return $this->hoturl(Navigation::page(), $x, $flags);
     }
 
