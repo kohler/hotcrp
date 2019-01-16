@@ -813,9 +813,10 @@ class Topic_Fexpr extends Sub_Fexpr {
     function __construct(FormulaCall $ff, Formula $formula) {
         if ($ff->modifier === false || $ff->modifier === true)
             $this->match = true;
-        else if ($ff->modifier === [false])
+        else if ($ff->modifier === [false]) {
             $this->match = false;
-        else
+            $this->format_ = self::FBOOL;
+        } else
             $this->match = $ff->modifier;
     }
     static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
