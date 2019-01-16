@@ -1916,7 +1916,7 @@ handle_ui.on("js-tracker", function (event) {
         $myg.remove();
         $d.find(".need-suggest").each(suggest);
     }
-    function make_submit_success(hiding) {
+    function make_submit_success(hiding, why) {
         return function (data) {
             if (data.ok) {
                 $d && $d.close();
@@ -1930,8 +1930,14 @@ handle_ui.on("js-tracker", function (event) {
                         wstorage.site(true, "hotcrp-tracking-hide-" + i, hiding[i] ? 1 : null);
                 tracker_configured = true;
                 reload();
-            } else
-                $d && $d.show_errors(data);
+            } else {
+                if (!$d && why === "new") {
+                    start();
+                    $d.find("button[name=new]").click();
+                }
+                if ($d)
+                    $d.show_errors(data);
+            }
         };
     }
     function submit(event) {
@@ -1992,7 +1998,7 @@ handle_ui.on("js-tracker", function (event) {
     } else {
         $.post(hoturl_post("api/trackerconfig"),
                {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": hotcrp_paperid},
-               make_submit_success({}));
+               make_submit_success({}, "new"));
     }
 });
 
