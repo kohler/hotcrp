@@ -6,7 +6,8 @@ DROP TABLE IF EXISTS `ActionLog`;
 CREATE TABLE `ActionLog` (
   `logId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
-  `destContactId` int(11) NOT NULL DEFAULT '0',
+  `destContactId` int(11) DEFAULT NULL,
+  `trueContactId` int(11) DEFAULT NULL,
   `paperId` int(11) DEFAULT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `ipaddr` varbinary(39) DEFAULT NULL,
@@ -499,7 +500,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 200);
+insert into Settings (name, value) values ('allowPaperOption', 201);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

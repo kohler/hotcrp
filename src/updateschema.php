@@ -1446,6 +1446,11 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 199
         && update_schema_missing_review_ordinals($conf))
         $conf->update_schema_version(200);
+    if ($conf->sversion == 200
+        && $conf->ql("alter table ActionLog change `destContactId` `destContactId` int(11) DEFAULT NULL")
+        && $conf->ql("update ActionLog set destContactId=null where destContactId=0 or destContactId=contactId")
+        && $conf->ql("alter table ActionLog add `trueContactId` int(11) DEFAULT NULL"))
+        $conf->update_schema_version(201);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

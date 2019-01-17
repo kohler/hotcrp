@@ -193,7 +193,7 @@ class LogRowGenerator {
             $db_offset = $xpageno > 1 ? $this->page_to_offset[$xpageno] : 0;
         }
 
-        $q = "select logId, unix_timestamp(time) timestamp, ipaddr, contactId, destContactId, action, paperId from ActionLog";
+        $q = "select logId, unix_timestamp(time) timestamp, ipaddr, contactId, destContactId, trueContactId, action, paperId from ActionLog";
         if (!empty($this->wheres))
             $q .= " where " . join(" and ", $this->wheres);
         $q .= " order by logId desc";
@@ -206,12 +206,12 @@ class LogRowGenerator {
             $result = $this->conf->qe_raw($q . " limit $db_offset,$limit");
             $first_db_offset = $db_offset;
             while ($result && ($row = $result->fetch_object())) {
+                $destuid = $row->destContactId ? : $row->contactId;
                 ++$db_offset;
                 if (!$this->explode_mail
                     && $this->mail_stash
                     && $this->mail_stash->action === $row->action) {
-                    if ($row->destContactId)
-                        $this->mail_stash->destContactIdArray[] = $row->destContactId;
+                    $this->mail_stash->destContactIdArray[] = $destuid;
                     if ($row->paperId)
                         $this->mail_stash->paperIdArray[] = $row->paperId;
                     continue;
@@ -224,11 +224,9 @@ class LogRowGenerator {
                     if (!$this->explode_mail) {
                         if (substr($row->action, 0, 11) === "Sent mail #") {
                             $this->mail_stash = $row;
-                            $row->destContactIdArray = $row->paperIdArray = [];
-                            if ($row->destContactId) {
-                                $row->destContactIdArray[] = $row->destContactId;
-                                $row->destContactId = null;
-                            }
+                            $row->destContactIdArray = [$destuid];
+                            $row->destContactId = null;
+                            $row->paperIdArray = [];
                             if ($row->paperId) {
                                 $row->paperIdArray[] = $row->paperId;
                                 $row->paperId = null;
@@ -482,7 +480,7 @@ if (!empty($unknown_cids)) {
 }
 
 // render rows
-function render_users($users) {
+function render_users($users, $via_chair) {
     global $Conf, $Me, $count;
     $all_pc = true;
     $ts = [];
@@ -504,7 +502,9 @@ function render_users($users) {
                 if (!($roles & Contact::ROLE_PCLIKE))
                     $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';
                 if ($roles !== 0 && ($rolet = Contact::role_html_for($roles)))
-                    $t .= " $rolet";
+                    $t .= " $rolet";
+                if ($via_chair)
+                    $t .= ' <i>via chair</i>';
             }
             $ts[] = $t;
         }
@@ -545,13 +545,14 @@ foreach ($visible_rows as $row) {
     }
     if (empty($xusers) && !empty($xdest_users))
         $xusers[] = $xdest_users[0];
+    $via_chair = $row->trueContactId;
 
     if ($xdest_users && $xusers != $xdest_users) {
-        $t[] = '<td class="pl pl_logname">' . render_users($xusers) . '</td>'
-            . '<td class="pl pl_logname">' . render_users($xdest_users) . '</td>';
+        $t[] = '<td class="pl pl_logname">' . render_users($xusers, $via_chair) . '</td>'
+            . '<td class="pl pl_logname">' . render_users($xdest_users, false) . '</td>';
         $has_dest_user = true;
     } else {
-        $t[] = '<td class="pl pl_logname" colspan="2">' . render_users($xusers) . '</td>';
+        $t[] = '<td class="pl pl_logname" colspan="2">' . render_users($xusers, $via_chair) . '</td>';
     }
 
     // XXX users that aren't in contactId slot
