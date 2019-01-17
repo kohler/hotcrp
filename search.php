@@ -232,13 +232,13 @@ if ($pl_text) {
                          ["id" => "showau_hidden", "class" => "paperlist-display hidden"]);
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
-        $display_options->checkbox_item(1, "aufull", "Full author info", ["id" => "showaufull", "indent" => true]);
+        $display_options->checkbox_item(1, "aufull", "Full author info", ["id" => "showaufull"]);
     if ($Me->privChair
         && !$Conf->subBlindNever()
         && (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors))
-        $display_options->checkbox_item(1, "anonau", "Deblinded authors", ["disabled" => !$pl->has("anonau"), "indent" => true]);
+        $display_options->checkbox_item(1, "anonau", "Deblinded authors", ["disabled" => !$pl->has("anonau")]);
     if ($pl->has("collab"))
-        $display_options->checkbox_item(1, "collab", "Collaborators", ["indent" => true]);
+        $display_options->checkbox_item(1, "collab", "Collaborators");
 
     // Abstract group
     if ($Conf->has_topics())
@@ -266,7 +266,6 @@ if ($pl_text) {
         $opt = array("disabled" => ($Qreq->t == "a" && !$Me->privChair));
         $display_options->checkbox_item(20, "tags", "Tags", $opt);
         if ($Me->privChair) {
-            $opt["indent"] = true;
             foreach ($Conf->tags() as $t)
                 if ($t->vote || $t->approval || $t->rank)
                     $display_options->checkbox_item(20, "tagreport:{$t->tag}", "#~{$t->tag} report", $opt);
