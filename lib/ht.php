@@ -494,6 +494,10 @@ class Ht {
         self::$_msgset || (self::$_msgset = new MessageSet);
         self::$_msgset->error_at($field, $msg);
     }
+    static function warning_at($field, $msg = "") {
+        self::$_msgset || (self::$_msgset = new MessageSet);
+        self::$_msgset->warning_at($field, $msg);
+    }
     static function problem_status_at($field) {
         return self::$_msgset ? self::$_msgset->problem_status_at($field) : 0;
     }

@@ -294,6 +294,9 @@ span.nb {
 .dim {
 	color: #777777;
 }
+.ml3 {
+	margin-left: 1em;
+}
 
 
 /* generic vertical styles */
@@ -1386,16 +1389,18 @@ h3.has-warning,
 .is-warning {
 	color: #c07700;
 }
-.has-warning > input[type=text],
-.has-warning > input[type=email],
-.has-warning > input[type=password],
-.has-warning > input[type=date],
-.has-warning > textarea,
+.has-warning input[type=text],
+.has-warning input[type=email],
+.has-warning input[type=password],
+.has-warning input[type=date],
+.has-warning textarea,
+.has-warning select,
 input[type=text].has-warning,
 input[type=email].has-warning,
 input[type=password].has-warning,
 input[type=date].has-warning,
-textarea.has-warning {
+textarea.has-warning,
+select.has-warning {
 	border: 1px solid #855c04;
 }
 
@@ -1804,15 +1809,6 @@ span.pstat {
 
 .auaff {
 	color: #666666;
-}
-
-.ptb_explain {
-	padding: 0 1em 0 0;
-	text-align: center;
-	font-size: smaller;
-}
-.ptb_button {
-	padding: 0 1em 0 0;
 }
 
 /* list footers */
