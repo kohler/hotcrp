@@ -500,10 +500,6 @@ if ($newProfile)
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "profile-form")),
-    // Don't want chrome to autofill the password changer.
-    // But chrome defaults to autofilling the password changer
-    // unless we supply an earlier password input.
-    Ht::password("chromefooler", "", ["class" => "ignore-diff hidden"]),
     Ht::hidden("profile_contactid", $Acct->contactId);
 if (isset($Qreq->redirect))
     echo Ht::hidden("redirect", $Qreq->redirect);

@@ -52,7 +52,7 @@ class UserStatus extends MessageSet {
     function autocomplete($what) {
         if ($this->self)
             return $what;
-        else if ($what === "email" || $what === "current-password")
+        else if ($what === "email" || $what === "username" || $what === "current-password")
             return "nope";
         else
             return "off";
@@ -671,17 +671,17 @@ class UserStatus extends MessageSet {
         echo "<div class=\"profile-g\">\n";
         if (!$us->conf->external_login()) {
             $us->render_field("uemail", "Email" . $actas,
-                Ht::entry("uemail", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "data-default-value" => get_s($cj, "email"), "type" => "email"]));
+                Ht::entry("uemail", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => get_s($cj, "email"), "type" => "email"]));
         } else if (!$us->user->is_empty()) {
             $us->render_field(false, "Username" . $actas,
                 htmlspecialchars(get_s($cj, "email")));
             $us->render_field("preferredEmail", "Email",
-                Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail", "data-default-value" => get_s($cj, "preferred_email"), "type" => "email"]));
+                Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => get_s($cj, "preferred_email"), "type" => "email"]));
         } else {
             $us->render_field("uemail", "Username",
-                Ht::entry("newUsername", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "data-default-value" => get_s($cj, "email")]));
+                Ht::entry("newUsername", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => get_s($cj, "email")]));
             $us->render_field("preferredEmail", "Email",
-                      Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "data-default-value" => get_s($cj, "preferred_email"), "type" => "email"]));
+                      Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => get_s($cj, "preferred_email"), "type" => "email"]));
         }
 
         echo '<div class="f-2col">';
@@ -730,7 +730,7 @@ class UserStatus extends MessageSet {
         echo '</div>
     <div class="', $us->control_class("password", "f-i"), ' fn">
       <div class="f-c">Repeat new password</div>',
-            Ht::password("upassword2", $pws[1], ["size" => 52]), "</div>\n";
+            Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]), "</div>\n";
         if ($us->user->plaintext_password()
             && ($us->viewer->privChair || $us->conf->password_storage_cleartext())) {
             echo "  <div class=\"f-h\">";
