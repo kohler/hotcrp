@@ -2790,6 +2790,7 @@ ul.xd > li {
 }
 .papet {
 	color: #313168;
+	margin-bottom: 0.25rem;
 }
 .papfn .n {
 	font-variant: normal;
@@ -2919,6 +2920,9 @@ ul.xd > li {
 	margin-right: 2em;
 	padding-bottom: 2px;
 }
+.revet {
+	margin-bottom: 0.25rem;
+}
 .revet > .revfn {
 	color: #683131;
 }
@@ -2944,13 +2948,10 @@ ul.xd > li {
 .paphint, .revhint, .cmthint {
 	max-width: 720px;
 	color: #555555;
-	margin: 0.25rem 0;
+	margin-bottom: 0.5rem;
 }
 .paphint > p, .revhint > p, .cmthint > p {
 	margin-bottom: 0.5em;
-}
-.paphint > p:last-child, .revhint > p:last-child, .cmthint > p:last-child {
-	margin-bottom: 0;
 }
 .rvl, .rvr {
 	width: 50%;
