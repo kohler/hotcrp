@@ -7252,11 +7252,12 @@ handle_ui.on("js-delete-user", function (event) {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({anchor: this, action: $f[0].action}), x;
     hc.push('<p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>');
-    if ((x = $(this).data("deleteInfo")))
+    if ((x = this.getAttribute("data-delete-info")))
         hc.push(x);
     hc.push_actions(['<button type="submit" name="delete" value="1" class="dangerous">Delete user</button>',
         '<button type="button" name="cancel">Cancel</button>']);
-    hc.show();
+    var $d = hc.show();
+    $d.on("submit", "form", function () { $f.addClass("submitting"); });
 });
 
 handle_ui.on("js-plaintext-password", function (event) {

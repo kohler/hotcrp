@@ -549,20 +549,20 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $args = ["class" => "ui"];
     if (!empty($tracks->soleAuthor)) {
         $args["class"] .= " js-cannot-delete-user";
-        $args["data-sole-author"] = pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor);
+        $args["data-sole-author"] = pluralx($tracks->soleAuthor, "submission") . " " . textArrayPapers($tracks->soleAuthor);
     } else {
         $args["class"] .= " js-delete-user";
         $x = $y = array();
         if (!empty($tracks->author)) {
-            $x[] = "contact for " . pluralx($tracks->author, "paper") . " " . textArrayPapers($tracks->author);
+            $x[] = "contact for " . pluralx($tracks->author, "submission") . " " . textArrayPapers($tracks->author);
             $y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
         }
         if (!empty($tracks->review)) {
-            $x[] = "reviewer for " . pluralx($tracks->review, "paper") . " " . textArrayPapers($tracks->review);
+            $x[] = "reviewer for " . pluralx($tracks->review, "submission") . " " . textArrayPapers($tracks->review);
             $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this") . " " . pluralx($tracks->review, "review");
         }
         if (!empty($tracks->comment)) {
-            $x[] = "commenter for " . pluralx($tracks->comment, "paper") . " " . textArrayPapers($tracks->comment);
+            $x[] = "commenter for " . pluralx($tracks->comment, "submission") . " " . textArrayPapers($tracks->comment);
             $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
         }
         if (!empty($x)) {
