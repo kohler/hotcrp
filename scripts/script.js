@@ -3762,7 +3762,7 @@ function activate_editing($c, cj) {
     var elt, tags = [], i;
     $c.find("textarea[name=text]").text(cj.text || "")
         .on("keydown", keydown_editor)
-        .on("hotcrp_renderPreview", render_preview)
+        .on("hotcrprenderpreview", render_preview)
         .autogrow();
     /*suggest($c.find("textarea")[0], comment_completion_q, {
         filter_length: 1, decorate: true
@@ -4115,7 +4115,7 @@ function switch_preview(evt) {
             var format = +this.getAttribute("data-format");
             $ta.addClass("hidden");
             $ta.after('<div class="preview"><div class="preview-border" style="margin-bottom:6px"></div><div></div><div class="preview-border" style="margin-top:6px"></div></div>');
-            $ta.trigger("hotcrp_renderPreview", [format, $ta[0].value, $ta[0].nextSibling.firstChild.nextSibling]);
+            $ta.trigger("hotcrprenderpreview", [format, $ta[0].value, $ta[0].nextSibling.firstChild.nextSibling]);
             this.innerHTML = "Edit";
         } else {
             $ta.next().remove();
@@ -4126,7 +4126,7 @@ function switch_preview(evt) {
     }
     return false;
 }
-$(document).on("hotcrp_renderPreview", function (evt, format, value, dest) {
+$(document).on("hotcrprenderpreview", function (evt, format, value, dest) {
     var t = render_text(format, value);
     dest.className = "format" + (t.format || 0);
     dest.innerHTML = t.content;

@@ -601,16 +601,17 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
     function watch_callback($prow, $minic) {
         $ctype = $this->commentType;
-        if (($ctype & COMMENTTYPE_RESPONSE) && ($ctype & COMMENTTYPE_DRAFT))
-            $tmpl = "@responsedraftnotify";
-        else if ($ctype & COMMENTTYPE_RESPONSE)
-            $tmpl = "@responsenotify";
-        else
-            $tmpl = "@commentnotify";
         if ($minic->can_view_comment($prow, $this)
             // Don't send notifications about draft responses to the chair,
             // even though the chair can see draft responses.
-            && ($tmpl !== "@responsedraftnotify" || $minic->act_author_view($prow)))
-            HotCRPMailer::send_to($minic, $tmpl, $prow, array("comment_row" => $this));
+            && (!($ctype & COMMENTTYPE_DRAFT) || $minic->act_author_view($prow))) {
+            if (($ctype & COMMENTTYPE_RESPONSE) && ($ctype & COMMENTTYPE_DRAFT))
+                $tmpl = "@responsedraftnotify";
+            else if ($ctype & COMMENTTYPE_RESPONSE)
+                $tmpl = "@responsenotify";
+            else
+                $tmpl = "@commentnotify";
+            HotCRPMailer::send_to($minic, $tmpl, $prow, ["comment_row" => $this]);
+        }
     }
 }
