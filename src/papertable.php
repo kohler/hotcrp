@@ -597,10 +597,10 @@ class PaperTable {
             Ht::checkbox("submitpaper", 1, $checked, ["class" => "js-check-submittable"]),
             " </span>";
         if ($this->conf->setting("sub_freeze"))
-            echo Ht::label("<strong>" . $this->conf->_("The submission is complete.") . "</strong>"),
+            echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>"),
                 '<p class="settings-ap hint">You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
         else
-            echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review.") . "</strong>");
+            echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>");
         echo "</div></div>\n";
     }
 

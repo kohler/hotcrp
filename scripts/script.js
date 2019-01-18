@@ -3611,7 +3611,7 @@ function edit_allowed(cj, override) {
 function render_editing(hc, cj) {
     var i, x, actions = [], btnbox = [], cid = cj_cid(cj), bnote;
 
-    var msgx = [], msg, msgx_status = 0;
+    var msgx = [], msg;
     if (cj.response
         && resp_rounds[cj.response].instrux)
         msgx.push(resp_rounds[cj.response].instrux);
@@ -3632,18 +3632,15 @@ function render_editing(hc, cj) {
             msg = "You didn’t write this comment, but as an administrator you can edit it.";
         msgx.push(msg);
     }
-    if (cj.response
-        && resp_rounds[cj.response].done > now_sec()) {
-        msg = strftime("The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000));
-        if (cj.draft && !cj.is_new) {
-            msg = "<strong>This is a draft response.</strong> It will not be shown to reviewers unless submitted. " + msg;
-            msgx_status = 1;
+    if (cj.response) {
+        if (resp_rounds[cj.response].done > now_sec()) {
+            msgx.push(strftime("The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000)));
+        } else if (cj.draft) {
+            msgx.push("The response deadline has passed and this draft response will not be shown to reviewers.");
         }
-        msgx.push(msg);
-    } else if (cj.response && cj.draft)
-        msgx.push("<strong>This is a draft response.</strong> It will not be shown to reviewers.");
+    }
     if (msgx.length)
-        hc.push(render_xmsg(msgx_status, msgx));
+        hc.push('<div class="cmthint"><p>' + msgx.join('</p><p>') + '</p></div>');
 
     hc.push('<form><div style="font-weight:normal;font-style:normal">', '</div></form>');
     if (cj.review_token)
@@ -3683,7 +3680,7 @@ function render_editing(hc, cj) {
         hc.push_pop('<option value="admin">Administrators only</option>');
         hc.push('<div class="fx2">', '</div>')
         if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true) {
-            hc.push('<div class="checki"><label><span class="checkc"><input type="checkbox" name="blind" value="1">&nbsp;</span>Anonymous to authors</label></div>');
+            hc.push('<div class="checki"><label><span class="checkc"><input type="checkbox" name="blind" value="1"></span>Anonymous to authors</label></div>');
         }
         hc.push('<p class="f-h">', '</p>');
         hc.push_pop(au_description);
@@ -3707,22 +3704,23 @@ function render_editing(hc, cj) {
         btnbox.push('<button type="button" name="delete" class="btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="' + bnote + '">' + $("#licon-trash").html() + '</button>');
     }
 
+    // response ready
+    if (cj.response) {
+        x = !cj.is_new && !cj.draft;
+        hc.push('<div class="checki has-fold fold' + (x ? "o" : "c") + '"><label><span class="checkc"><input type="checkbox" class="uich js-foldup" name="ready" value="1"' + (x ? " checked" : "") + '></span><strong>The response is ready for review</strong><div class="f-h fx">Reviewers will be notified when you submit the response.</div></div>');
+    }
+
     // close .cmteditinfo
     hc.pop();
 
     // actions: save, [save draft], cancel, [btnbox], [word count]
     bnote = edit_allowed(cj) ? "" : '<div class="hint">(admin only)</div>';
-    if (!cj.response)
-        actions.push('<button type="button" name="bsubmit" class="btn-primary">Save</button>' + bnote);
-    else {
-        // actions
+    if (cj.response) {
         // XXX allow_administer
         actions.push('<button type="button" name="bsubmit" class="btn-primary">Submit</button>' + bnote);
-        if (cj.response) {
-            hc.push('<input type="hidden" name="response" value="' + cj.response + '">');
-            if (cj.is_new || cj.draft)
-                actions.push('<button type="button" name="savedraft">Save draft</button>' + bnote);
-        }
+        hc.push('<input type="hidden" name="response" value="' + cj.response + '">');
+    } else {
+        actions.push('<button type="button" name="bsubmit" class="btn-primary">Save</button>' + bnote);
     }
     actions.push('<button type="button" name="cancel">Cancel</button>');
     if (btnbox.length)
@@ -3741,6 +3739,10 @@ function visibility_change() {
     var j = $(this).closest(".cmteditinfo"),
         dofold = j.find("select[name=visibility]").val() != "au";
     fold(j[0], dofold, 2);
+}
+
+function ready_change() {
+    $(this).closest("form").find("button[name=bsubmit]").text(this.checked ? "Submit" : "Save draft");
 }
 
 function make_update_words(jq, wlimit) {
@@ -3788,8 +3790,12 @@ function activate_editing($c, cj) {
     if (!cj.visiblity || cj.blind)
         $c.find("input[name=blind]").prop("checked", true);
 
-    if (cj.response && resp_rounds[cj.response].words > 0)
-        make_update_words($c, resp_rounds[cj.response].words);
+    if (cj.response) {
+        if (resp_rounds[cj.response].words > 0)
+            make_update_words($c, resp_rounds[cj.response].words);
+        var $ready = $c.find("input[name=ready]").on("click", ready_change);
+        ready_change.call($ready[0]);
+    }
 
     var $f = $c.find("form");
     $f.on("submit", submit_editor).on("click", "button", buttonclick_editor);
@@ -3839,14 +3845,26 @@ function beforeunload() {
 
 function save_editor(elt, action, really) {
     var $c = $cmt(elt), $f = $c.find("form");
-    if (!edit_allowed($c.c) && !really) {
-        override_deadlines.call(elt, function () {
-            save_editor(elt, action, true);
-        });
-        return;
+    if (!really) {
+        if (!edit_allowed($c.c)) {
+            override_deadlines.call(elt, function () {
+                save_editor(elt, action, true);
+            });
+            return;
+        } else if ($c.c.response
+                   && !$c.c.is_new
+                   && !$c.c.draft
+                   && (action === "delete" || !$f.find("input[name=ready]").prop("checked"))) {
+            elt.setAttribute("data-override-text", "The response is currently visible to reviewers. Are you sure you want to " + (action === "submit" ? "unsubmit" : "delete") + " it?");
+            override_deadlines.call(elt, function () {
+                save_editor(elt, action, true);
+            });
+            return;
+        }
     }
     $f.find("input[name=draft]").remove();
-    if (action === "savedraft")
+    var $ready = $f.find("input[name=ready]");
+    if ($ready.length && !$ready[0].checked)
         $f.children("div").append('<input type="hidden" name="draft" value="1">');
     var carg = {p: hotcrp_paperid};
     if ($c.c.cid)
@@ -3873,7 +3891,8 @@ function save_editor(elt, action, really) {
             return;
         }
         var cid = cj_cid($c.c),
-            editing_response = $c.c.response && edit_allowed($c.c, true);
+            editing_response = $c.c.response && edit_allowed($c.c, true)
+                && (!data.cmt || data.cmt.draft);
         if (!data.cmt && !$c.c.is_new)
             delete cmts[cid];
         if (!data.cmt && editing_response)
@@ -3910,9 +3929,7 @@ function buttonclick_editor(evt) {
     if (this.name === "bsubmit") {
         evt.preventDefault();
         save_editor(this, "submit");
-    } else if (this.name === "savedraft")
-        save_editor(this, this.name);
-    else if (this.name === "cancel")
+    } else if (this.name === "cancel")
         render_cmt($c, $c.c, false);
     else if (this.name === "delete")
         override_deadlines.call(this, function () {
@@ -3975,8 +3992,8 @@ function render_cmt($c, cj, editing, msg) {
     hc.push('<div class="cmtmsg">', '</div>');
     if (msg)
         hc.push(msg);
-    else if (cj.response && cj.draft && cj.text)
-        hc.push('<div class="msg msg-warning"><strong>This response is a draft.</strong></div>');
+    if (cj.response && cj.draft && cj.text)
+        hc.push('<div class="msg msg-warning"><strong>This response is a draft.</strong> It will not be shown to reviewers.</div>');
     hc.pop();
     if (editing)
         render_editing(hc, cj);
