@@ -8,7 +8,6 @@ if (!$Me->is_manager())
 
 $Conf->header("Log", "actionlog");
 unset($Qreq->forceShow, $_GET["forceShow"], $_POST["forceShow"]);
-$Eclass = [];
 $nlinks = 6;
 
 $page = $Qreq->page;
@@ -23,8 +22,7 @@ else {
 $count = cvtint($Qreq->get("n", 50), -1);
 if ($count <= 0) {
     $count = 50;
-    Conf::msg_error("“Show <i>n</i> records” requires a number greater than 0.");
-    $Eclass["n"] = " has-error";
+    Ht::error_at("n", "Show records: Expected a number greater than 0.");
 }
 $count = min($count, 200);
 
@@ -110,10 +108,8 @@ if ($Qreq->date === "")
     $Qreq->date = "now";
 if ($Qreq->date !== "now" && isset($Qreq->search)) {
     $first_timestamp = $Conf->parse_time($Qreq->date);
-    if ($first_timestamp === false) {
-        Conf::msg_error("“" . htmlspecialchars($Qreq->date) . "” is not a valid date.");
-        $Eclass["date"] = " has-error";
-    }
+    if ($first_timestamp === false)
+        Ht::error_at("date", "Invalid date. Try format “YYYY-MM-DD HH:MM:SS”.");
 }
 
 class LogRowGenerator {
@@ -291,11 +287,11 @@ class LogRowGenerator {
 }
 
 function searchbar(LogRowGenerator $lrg, $page, $count) {
-    global $Conf, $Me, $Eclass, $nlinks, $Qreq, $first_timestamp;
+    global $Conf, $Me, $nlinks, $Qreq, $first_timestamp;
 
     $date = "";
     $dplaceholder = null;
-    if (isset($Eclass["date"]))
+    if (Ht::problem_status_at("date"))
         $date = $Qreq->date;
     else if ($page === 1)
         $dplaceholder = "now";
@@ -308,23 +304,28 @@ function searchbar(LogRowGenerator $lrg, $page, $count) {
     if ($Qreq->forceShow)
         echo Ht::hidden("forceShow", 1);
     echo '<div class="d-inline-block" style="padding-right:2rem">',
-        '<div class="entryi medium', get($Eclass, "q", ""),
-        '"><label for="q">Concerning action(s)</label>',
-        Ht::entry("q", $Qreq->q, ["id" => "q", "size" => 40]), '</div>',
-        '<div class="entryi medium', get($Eclass, "p", ""),
-        '"><label for="p">Concerning paper(s)</label>',
-        Ht::entry("p", $Qreq->p, ["id" => "p", "size" => 40]), '</div>',
-        '<div class="entryi medium', get($Eclass, "u", ""),
-        '"><label for="u">Concerning user(s)</label>',
-        Ht::entry("u", $Qreq->u, ["id" => "u", "size" => 40]), '</div>',
-        '<div class="entryi medium', get($Eclass, "n", ""),
+        '<div class="', Ht::control_class("q", "entryi medium"),
+        '"><label for="q">Concerning action(s)</label><div class="entry">',
+        Ht::entry("q", $Qreq->q, ["id" => "q", "size" => 40]),
+        Ht::render_messages_at("q"),
+        '</div></div><div class="', Ht::control_class("p", "entryi medium"),
+        '"><label for="p">Concerning paper(s)</label><div class="entry">',
+        Ht::entry("p", $Qreq->p, ["id" => "p", "size" => 40]),
+        Ht::render_messages_at("p"),
+        '</div></div><div class="', Ht::control_class("u", "entryi medium"),
+        '"><label for="u">Concerning user(s)</label><div class="entry">',
+        Ht::entry("u", $Qreq->u, ["id" => "u", "size" => 40]),
+        Ht::render_messages_at("u"),
+        '</div></div><div class="', Ht::control_class("n", "entryi medium"),
         '"><label for="n">Show</label><div class="entry">',
         Ht::entry("n", $count, ["id" => "n", "size" => 4]),
-        '  records at a time</div></div>',
-        '<div class="entryi medium', get($Eclass, "date", ""),
-        '"><label for="date">Starting at</label>',
-        Ht::entry("date", $date, ["id" => "date", "size" => 40, "placeholder" => $dplaceholder]), '</div>',
-        '</div>',
+        '  records at a time',
+        Ht::render_messages_at("n"),
+        '</div></div><div class="', Ht::control_class("date", "entryi medium"),
+        '"><label for="date">Starting at</label><div class="entry">',
+        Ht::entry("date", $date, ["id" => "date", "size" => 40, "placeholder" => $dplaceholder]),
+        Ht::render_messages_at("date"),
+        '</div></div></div>',
         Ht::submit("search", "Search"),
         '</form>';
 
