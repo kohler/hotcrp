@@ -1703,13 +1703,16 @@ del .rto {
 	background-color: #ffffbb;
 }
 .rtlead, .rtshep {
-	background-color: #ffdfc9;
+	background-color: #a83e5a;
+	font-weight: bold;
+	color: white;
+	border: 1px solid black;
 }
 .rt5n, .rt4n, .rt3n, .rt2n, .rt1n {
 	color: red;
 	border: 1px solid red;
 }
-.rt5, .rt4, .rt3, .rt2, .rt1, .rtlead, .rtshep {
+.rt5, .rt4, .rt3, .rt2, .rt1 {
 	color: black;
 	border: 1px solid black;
 }
