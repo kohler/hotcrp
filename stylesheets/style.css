@@ -70,8 +70,7 @@ select, button {
 
 /* header */
 #header {
-	background-repeat: repeat-x;
-	background-position: top;
+	padding-bottom: 24px;
 }
 #header-right {
 	padding: 8px 24px 0;
@@ -93,8 +92,6 @@ select, button {
 	border-right: 1px solid #f33360;
 	border-bottom-right-radius: 4px;
 	background: #ffc9d6; /* #ed6182; */
-}
-#header-site {
 	color: #f33360;
 }
 h1 {
@@ -102,9 +99,6 @@ h1 {
 	font-size: 144%;
 	line-height: 1.25;
 	margin: 0;
-}
-#header {
-	padding-bottom: 24px;
 }
 #header-site > h1 {
 	font-weight: normal;
