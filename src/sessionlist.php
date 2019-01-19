@@ -1,6 +1,6 @@
 <?php
 // sessionlist.php -- HotCRP helper class for lists carried across pageloads
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class SessionList {
     public $listid;

@@ -1,6 +1,6 @@
 <?php
 // conflict.php -- HotCRP conflict type class
-// Copyright (c) 2008-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
 
 class Conflict {
     static $type_descriptions = array(0 => "No conflict",

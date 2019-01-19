@@ -1,6 +1,6 @@
 /* -*- mode: css; indent-tabs-mode: t; css-indent-offset: 8 -*- */
 /* mobile.css -- HotCRP mobile CSS styles */
-/* Copyright (c) 2006-2018 Eddie Kohler; see LICENSE. */
+/* Copyright (c) 2006-2019 Eddie Kohler; see LICENSE. */
 
 @media screen and (max-width: 1024px) {
 .paperinfo, .paperinfo-row, .paperinfo-cl, .paperinfo-cr, .paperinfo-cb {

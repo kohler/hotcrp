@@ -1,6 +1,6 @@
 <?php
 // settingvalues.php -- HotCRP conference settings management helper classes
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 // setting information
 class Si {

@@ -1,6 +1,6 @@
 <?php
 // review.php -- HotCRP helper class for producing review forms and tables
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 // JSON schema for settings["review_form"]:
 // {FIELD:{"name":NAME,"description":DESCRIPTION,"position":POSITION,

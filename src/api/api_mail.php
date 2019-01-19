@@ -1,6 +1,6 @@
 <?php
 // api_mail.php -- HotCRP mail API calls
-// Copyright (c) 2008-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
 
 class Mail_API {
     static function mailtext(Contact $user, Qrequest $qreq, $prow) {

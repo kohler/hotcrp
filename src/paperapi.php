@@ -1,6 +1,6 @@
 <?php
 // paperapi.php -- HotCRP paper-related API calls
-// Copyright (c) 2008-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
 
 class PaperApi {
     static function tagreport(Contact $user, $prow) {

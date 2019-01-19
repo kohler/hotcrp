@@ -1,6 +1,6 @@
 <?php
 // reviewtable.php -- HotCRP helper class for table of all reviews
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 function _review_table_actas($rr) {
     global $Conf, $Me;

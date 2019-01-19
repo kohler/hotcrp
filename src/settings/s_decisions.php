@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_decisions.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class Decisions_SettingParser extends SettingParser {
     static private function render_row(SettingValues $sv, $ndec, $k, $v, $isnew, $count) {

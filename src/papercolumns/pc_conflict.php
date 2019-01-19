@@ -1,6 +1,6 @@
 <?php
 // pc_conflict.php -- HotCRP conflict list column
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class Conflict_PaperColumn extends PaperColumn {
     private $contact;

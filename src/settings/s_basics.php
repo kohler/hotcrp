@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_basics.php -- HotCRP settings > info page
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class Basics_SettingParser {
     static function render_names(SettingValues $sv) {

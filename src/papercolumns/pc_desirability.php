@@ -1,6 +1,6 @@
 <?php
 // pc_desirability.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class Desirability_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {

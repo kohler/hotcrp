@@ -1,6 +1,6 @@
 <?php
 // capability.php -- HotCRP capability management
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class CapabilityManager {
     private $dblink;

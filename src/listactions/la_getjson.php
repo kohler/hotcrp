@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getjson.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class GetJson_ListAction extends ListAction {
     private $iszip;

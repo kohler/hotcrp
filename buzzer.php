@@ -1,6 +1,6 @@
 <?php
 // buzzer.php -- HotCRP buzzer page
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 // First buzzer version by Nickolai B. Zeldovich
 
 require_once("src/initweb.php");

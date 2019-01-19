@@ -1,6 +1,6 @@
 <?php
 // src/partials/p_reviewtoken.php -- HotCRP review token handler
-// Copyright (c) 2006-2018 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class ReviewToken_Partial {
     static function request(Contact $user, Qrequest $qreq) {
