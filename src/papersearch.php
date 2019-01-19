@@ -686,10 +686,41 @@ class Limit_SearchTerm extends SearchTerm {
     public $limit;
     public $lflag;
 
-    function __construct($limit, $lflag) {
+    const LFLAG_ACTIVE = 1;
+    const LFLAG_SUBMITTED = 2;
+
+    function __construct($conf, $limit) {
         parent::__construct("in");
         $this->limit = $limit;
-        $this->lflag = $lflag;
+        $this->lflag = 0;
+        if (!in_array($limit, ["a", "ar", "vis", "all"], true)) {
+            if (in_array($limit, ["r", "act", "unsub"], true)
+                || ($conf->can_pc_see_active_submissions()
+                    && !in_array($limit, ["s", "acc"], true)))
+                $this->lflag = self::LFLAG_ACTIVE;
+            else
+                $this->lflag = self::LFLAG_SUBMITTED;
+        }
+    }
+
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        if ($word === "editpref")
+            $word = "rable";
+        else if ($word === "reqrevs")
+            $word = "req";
+        if ($word === "rable") {
+            $u = $srch->reviewer_user();
+            if ($srch->user->privChair || $srch->user === $u) {
+                if ($u->can_accept_review_assignment_ignore_conflict(null)) {
+                    if ($srch->conf->can_pc_see_active_submissions())
+                        $word = "act";
+                    else
+                        $word = "s";
+                } else if (!$u->isPC)
+                    $word = "r";
+            }
+        }
+        return new Limit_SearchTerm($srch->conf, $word);
     }
 
     function trivial_rights(Contact $user, PaperSearch $srch) {
@@ -705,9 +736,9 @@ class Limit_SearchTerm extends SearchTerm {
 
     function sqlexpr(SearchQueryInfo $sqi) {
         $ff = ["true"];
-        if ($this->lflag === PaperSearch::LFLAG_SUBMITTED)
+        if ($this->lflag === self::LFLAG_SUBMITTED)
             $ff[] = "Paper.timeSubmitted>0";
-        else if ($this->lflag === PaperSearch::LFLAG_ACTIVE)
+        else if ($this->lflag === self::LFLAG_ACTIVE)
             $ff[] = "Paper.timeWithdrawn<=0";
 
         if (in_array($this->limit, ["a", "ar", "manager"], true))
@@ -781,8 +812,8 @@ class Limit_SearchTerm extends SearchTerm {
 
     function exec(PaperInfo $row, PaperSearch $srch) {
         if (!$srch->user->can_view_paper($row)
-            || ($this->lflag === PaperSearch::LFLAG_SUBMITTED && $row->timeSubmitted <= 0)
-            || ($this->lflag === PaperSearch::LFLAG_ACTIVE && $row->timeWithdrawn > 0))
+            || ($this->lflag === self::LFLAG_SUBMITTED && $row->timeSubmitted <= 0)
+            || ($this->lflag === self::LFLAG_ACTIVE && $row->timeWithdrawn > 0))
             return false;
         switch ($this->limit) {
         case "all":
@@ -1433,41 +1464,9 @@ class PaperSearch {
             $this->_urlbase = hoturl_add_raw($this->_urlbase, "reviewer=" . urlencode($this->_reviewer_user->email));
         assert(strpos($this->_urlbase, "&amp;") === false);
 
-        $this->set_limit($limit);
-    }
-
-    private function set_limit($limit) {
-        assert($this->_qe === null);
         $this->_named_limit = $limit;
-
-        if ($limit === "editpref")
-            $limit = "rable";
-        else if ($limit === "reqrevs")
-            $limit = "req";
-        if ($limit === "rable") {
-            $u = $this->reviewer_user();
-            if ($this->user->privChair || $this->user === $u) {
-                if ($u->can_accept_review_assignment_ignore_conflict(null)) {
-                    if ($this->conf->can_pc_see_active_submissions())
-                        $limit = "act";
-                    else
-                        $limit = "s";
-                } else if (!$u->isPC)
-                    $limit = "r";
-            }
-        }
-
-        $lflag = 0;
-        if (!in_array($limit, ["a", "ar", "vis", "all"], true)) {
-            if (in_array($limit, ["r", "act", "unsub"], true)
-                || ($this->conf->can_pc_see_active_submissions()
-                    && !in_array($limit, ["s", "acc"], true)))
-                $lflag = self::LFLAG_ACTIVE;
-            else
-                $lflag = self::LFLAG_SUBMITTED;
-        }
-
-        $this->_limit_qe = new Limit_SearchTerm($limit, $lflag);
+        $lword = new SearchWord($limit);
+        $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
     }
 
     function set_allow_deleted($x) {
@@ -1487,7 +1486,7 @@ class PaperSearch {
         return $this->_limit_qe->limit;
     }
     function limit_submitted() {
-        return $this->_limit_qe->lflag === self::LFLAG_SUBMITTED;
+        return $this->_limit_qe->lflag === Limit_SearchTerm::LFLAG_SUBMITTED;
     }
     function limit_author() {
         return $this->_limit_qe->limit === "a";
@@ -2216,7 +2215,7 @@ class PaperSearch {
 
     private function _prepare_result($qe) {
         if ($this->q === "re:me")
-            $qe = new Limit_SearchTerm("r", 0);
+            $qe = new Limit_SearchTerm($this->conf, "r");
 
         $sqi = new SearchQueryInfo($this);
         $sqi->add_table("Paper");
