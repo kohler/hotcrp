@@ -434,7 +434,8 @@ class Collab_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $x = "";
         foreach (explode("\n", $row->collaborators) as $c)
-            $x .= ($x === "" ? "" : ", ") . trim($c);
+            if ($c !== "")
+                $x .= ($x === "" ? "" : "; ") . trim($c);
         return Text::highlight($x, $pl->search->field_highlighter("collaborators"));
     }
     function text(PaperList $pl, PaperInfo $row) {
