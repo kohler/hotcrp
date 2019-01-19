@@ -294,6 +294,9 @@ span.nb {
 .dim {
 	color: #777777;
 }
+.ml2 {
+	margin-left: 0.5em;
+}
 .ml3 {
 	margin-left: 1em;
 }
@@ -1621,7 +1624,7 @@ pre.email {
 	color: gray;
 }
 .pctbname3, .pctbname4 {
-	font-weight: bold;
+	color: #ee0000;
 }
 .pctbnrev {
 	font-size: 69%;

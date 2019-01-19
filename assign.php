@@ -315,9 +315,8 @@ if ($Me->can_administer($prow)) {
         if ($show_possible_conflicts && $revtype != -2)
             $pcconfmatch = $prow->potential_conflict_html($pc, $conflict_type <= 0);
 
-        $color = $pc->viewable_color_classes($Me);
         echo '<div class="ctelt">',
-            '<div class="ctelti', ($color ? " $color" : ""), ' has-assignment has-fold foldc" data-pid="', $prow->paperId,
+            '<div class="ctelti has-assignment has-fold foldc" data-pid="', $prow->paperId,
             '" data-uid="', $pc->contactId,
             '" data-review-type="', $revtype;
         if ($conflict_type)
@@ -329,10 +328,10 @@ if ($Me->can_administer($prow)) {
         if ($rrow && $rrow->reviewModified > 1)
             echo '" data-review-in-progress="';
         echo '"><div class="pctbname pctbname', $revtype, ' ui js-assignment-fold">',
-            '<a class="qq taghl ui js-assignment-fold" href="">', expander(null, 0),
-            $Me->name_html_for($pc), '</a>';
+            '<a class="qq ui js-assignment-fold" href="">', expander(null, 0),
+            $Me->reviewer_html_for($pc), '</a>';
         if ($revtype != 0) {
-            echo ' ', review_type_icon($revtype, $rrow && !$rrow->reviewSubmitted);
+            echo review_type_icon($revtype, $rrow && !$rrow->reviewSubmitted, null, "ml2");
             if ($rrow && $rrow->reviewRound > 0)
                 echo ' <span class="revround" title="Review round">',
                     htmlspecialchars($Conf->round_name($rrow->reviewRound)),
