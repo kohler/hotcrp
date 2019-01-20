@@ -26,8 +26,8 @@ class Fexpr_Error {
 }
 
 class Fexpr implements JsonSerializable {
-    public $op;
-    public $args = array();
+    public $op = "";
+    public $args = [];
     public $text;
     public $format_ = false;
     public $left_landmark;
@@ -51,15 +51,20 @@ class Fexpr implements JsonSerializable {
     const FTAG = 7; // used in formulagraph.php
     const FSEARCH = 8; // used in formulagraph.php
 
-    function __construct($op = null) {
-        $this->op = $op;
-        if ($this->op === "trunc")
-            $this->op = "floor";
-        $args = func_get_args();
-        if (count($args) === 2 && is_array($args[1]))
-            $this->args = $args[1];
-        else if (count($args) > 1)
-            $this->args = array_slice($args, 1);
+    function __construct($op) {
+        if (is_string($op)) {
+            $this->op = $op;
+            if ($this->op === "trunc")
+                $this->op = "floor";
+            $args = func_get_args();
+            if (count($args) === 2 && is_array($args[1]))
+                $this->args = $args[1];
+            else if (count($args) > 1)
+                $this->args = array_slice($args, 1);
+        } else {
+            assert($op instanceof FormulaCall);
+            $this->op = $op->name;
+        }
     }
     function add($x) {
         $this->args[] = $x;
@@ -268,7 +273,6 @@ class Fexpr implements JsonSerializable {
 class ConstantFexpr extends Fexpr {
     private $x;
     function __construct($x, $format = null) {
-        parent::__construct("");
         $this->x = $x;
         $this->format_ = $format;
     }
@@ -534,24 +538,21 @@ class AggregateFexpr extends Fexpr {
 }
 
 class Sub_Fexpr extends Fexpr {
+    function __construct($op) {
+        parent::__construct($op);
+    }
     function can_combine() {
         return false;
     }
 }
 
 class Pid_Fexpr extends Sub_Fexpr {
-    function __construct() {
-        parent::__construct("");
-    }
     function compile(FormulaCompiler $state) {
         return '$prow->paperId';
     }
 }
 
 class PdfSize_Fexpr extends Sub_Fexpr {
-    function __construct() {
-        parent::__construct("");
-    }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["pdfSize"] = true;
         return '($contact->can_view_pdf($prow) ? (int) $prow->size : null)';
