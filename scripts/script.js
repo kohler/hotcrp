@@ -5279,7 +5279,7 @@ var plt_tbody, full_ordertag, dragtag, full_dragtag,
 
 function set_plt_tbody(e) {
     var table = $(e).closest("table.pltable");
-    full_ordertag = tag_canonicalize(table.attr("data-order-tag"));
+    full_ordertag = table.attr("data-order-tag");
     full_ordertag && plinfo.on_set_tags(set_tags_callback);
     dragtag = table.attr("data-drag-tag");
     full_dragtag = tag_canonicalize(dragtag);
@@ -5312,7 +5312,7 @@ function make_tag_save_callback(elt) {
 
 function set_tags_callback(pid) {
     var si = analyze_rows(pid);
-    if (rowanal[si].entry && highlight_entries)
+    if (highlight_entries && rowanal[si].entry)
         setajaxcheck(rowanal[si].entry);
     row_move(si);
 }

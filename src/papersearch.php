@@ -2158,6 +2158,7 @@ class PaperSearch {
         if (!($dt = $this->_find_order_anno_tag($qe)))
             return false;
         $this->is_order_anno = $dt->tag;
+        assert(!$this->is_order_anno || $this->is_order_anno[0] !== "~" || $this->is_order_anno[1] === "~");
 
         $tag_order = [];
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);

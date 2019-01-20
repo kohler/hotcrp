@@ -749,11 +749,13 @@ class Tagger {
         } else {
             if ($flags & self::NOPRIVATE)
                 return $this->set_error_html("Twiddle tags aren’t allowed here.");
-            if ($m[1] === "~" && $this->_contactId)
-                $m[1] = $this->_contactId . "~";
-            if ($m[1] !== "~" && $m[1] !== $this->_contactId . "~"
-                && !($flags & self::ALLOWCONTACTID))
+            if ($m[1] === "~") {
+                if ($this->_contactId)
+                    $m[1] = $this->_contactId . "~";
+            } else if ($m[1] !== $this->_contactId . "~"
+                       && !($flags & self::ALLOWCONTACTID)) {
                 return $this->set_error_html("Other users’ twiddle tags are off limits.");
+            }
         }
         if ($m[3] !== "" && ($flags & self::NOVALUE))
             return $this->set_error_html("Tag values aren’t allowed here.");
