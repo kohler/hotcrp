@@ -13,17 +13,29 @@ function render_conflict_list(l) {
 }
 
 function render_conflicts(cur, prev, paper, pcm) {
-    var i, pc, conf = [];
+    var i, pc, newconf = [], curconf = [];
     for (i = 0; i !== cur.length; ++i)
         if ((pc = pcm[cur[i]])) {
             var x = render_user(pc);
             if (prev && $.inArray(cur[i], prev) < 0)
-                x = '✶' + x;
-            conf.push(x);
+                newconf.push(x);
+            else
+                curconf.push(x);
         }
     if (paper.other_pc_conflicts)
-        conf.push('<em>others</em>');
-    var t = '<em class="plx">PC conflicts:</em> ' + render_conflict_list(conf);
+        curconf.push('<em>others</em>');
+    var t;
+    if (newconf.length && curconf.length) {
+        t = '<em class="plx">Newly conflicted:</em> ' + render_conflict_list(newconf)
+            + '<div style="margin-top:0.25rem"><em class="plx">Still conflicted:</em> ' + render_conflict_list(curconf);
+    } else if (newconf.length) {
+        if (paper.other_pc_conflicts)
+            newconf.push('<em>others</em>');
+        t = '<em class="plx">Newly conflicted:</em> ' + render_conflict_list(newconf);
+    } else {
+        t = '<em class="plx">' + (prev ? 'Still conflicted' : 'PC conflicts')
+            + ':</em> ' + render_conflict_list(curconf);
+    }
     if (prev) {
         var oldconf = [];
         for (i = 0; i !== prev.length; ++i)
