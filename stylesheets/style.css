@@ -3364,6 +3364,7 @@ body {
 	display: inline-block;
 	min-width: 5em;
 	font-weight: bold;
+	font-variant-numeric: tabular-nums;
 	color: #222222;
 	opacity: 0.5;
 }
