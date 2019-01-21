@@ -40,7 +40,7 @@ class PaperListTableRender {
             $x = "  <tr class=\"plheading\"";
             foreach ($attr as $k => $v)
                 if ($k !== "no_titlecol" && $k !== "tdclass")
-                    $x .= " $k=\"" . str_replace("\"", "&quot;", $v) . "\"";
+                    $x .= " $k=\"" . htmlspecialchars($v) . "\"";
             $x .= ">";
             $titlecol = get($attr, "no_titlecol") ? 0 : $this->titlecol;
             if ($titlecol)
@@ -1612,7 +1612,7 @@ class PaperList {
                     $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
                     if ($rstate->titlecol)
                         $colhead .= "<td class=\"plh\" colspan=\"$rstate->titlecol\"></td>";
-                    $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a class=\"ui js-annotate-order\" href=\"\">Annotate order</a></td></tr>\n";
+                    $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a class=\"ui js-annotate-order\" data-anno-tag=\"{$this->search->is_order_anno}\" href=\"\">Annotate order</a></td></tr>\n";
                 }
             }
 
@@ -1624,7 +1624,7 @@ class PaperList {
         foreach ($this->table_attr as $k => $v) {
             if (is_array($v) || is_object($v))
                 $v = $k === "class" ? join(" ", $v) : json_encode_browser($v);
-            if ($k === "data-columns")
+            if ($k === "data-columns" || $k === "data-groups")
                 $enter .= " $k='" . str_replace("'", "&#039;", htmlspecialchars($v, ENT_NOQUOTES)) . "'";
             else
                 $enter .= " $k=\"" . htmlspecialchars($v) . "\"";

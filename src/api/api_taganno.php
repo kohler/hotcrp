@@ -67,7 +67,7 @@ class TagAnno_API {
         }
         // return error if any
         if (!empty($errors))
-            json_exit(["ok" => false, "error" => join("<br />", $errors), "errf" => $errf]);
+            json_exit(["ok" => false, "error" => join("<br>", $errors), "errf" => $errf]);
         // apply changes
         if (!empty($q)) {
             $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);

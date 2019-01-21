@@ -865,7 +865,6 @@ function scatter_union(p) {
     if (!p.next)
         return p;
     if (!p.union) {
-        console.log(p);
         var u = [p[0], p[1], [].concat(p[2]), p[3]], pp = p.next;
         u.r = p.r;
         while (pp) {

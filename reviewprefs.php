@@ -277,44 +277,47 @@ echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="e
     '  ', Ht::submit("redisplay", "Redisplay"), '</div></div>';
 
 $show_data = array();
+if ($pl->has("abstract")) {
+    $show_data[] = '<span class="sep">'
+        . Ht::checkbox("showabstract", 1, !$pl->is_folded("abstract"), ["class" => "uich js-plinfo"])
+        . "&nbsp;" . Ht::label("Abstracts") . '</span>';
+}
 if (!$Conf->subBlindAlways()) {
     $show_data[] = '<span class="sep">'
         . Ht::checkbox("showau", 1, !$pl->is_folded("au"),
-                ["id" => "showau", "class" => "paperlist-display"])
+                ["id" => "showau", "class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Authors") . "</span>";
 } else if ($Me->privChair && $Conf->subBlindAlways()) {
     $show_data[] = '<span class="sep">'
         . Ht::checkbox("showanonau", 1, !$pl->is_folded("anonau"),
-                ["id" => "showau", "class" => "paperlist-display"])
+                ["id" => "showau", "class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Authors (deblinded)") . "</span>"
         . Ht::checkbox("showau", 1, !$pl->is_folded("anonau") !== false,
-                ["id" => "showau_hidden", "class" => "paperlist-display hidden"]);
+                ["id" => "showau_hidden", "class" => "uich js-plinfo hidden"]);
 }
 if (!$Conf->subBlindAlways() || $Me->privChair) {
     $show_data[] = '<span class="sep fx10">'
         . Ht::checkbox("showaufull", 1, !$pl->is_folded("aufull"),
-                ["id" => "showaufull", "class" => "paperlist-display"])
+                ["id" => "showaufull", "class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Full author info") . "</span>";
 }
 if ($Me->privChair && !$Conf->subBlindAlways() && !$Conf->subBlindNever()) {
     $show_data[] = '<span class="sep fx10">'
         . Ht::checkbox("showanonau", 1, !$pl->is_folded("anonau"),
-                ["id" => "showanonau", "class" => "paperlist-display"])
+                ["id" => "showanonau", "class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Deblinded authors") . "</span>";
 }
-if ($pl->has("abstract"))
+if ($Conf->has_topics()) {
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showabstract", 1, !$pl->is_folded("abstract"), ["class" => "paperlist-display"])
-        . "&nbsp;" . Ht::label("Abstracts") . '</span>';
-if ($Conf->has_topics())
-    $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showtopics", 1, !$pl->is_folded("topics"), ["class" => "paperlist-display"])
+        . Ht::checkbox("showtopics", 1, !$pl->is_folded("topics"), ["class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Topics") . '</span>';
-if (!empty($show_data) && $pl->count)
+}
+if (!empty($show_data) && $pl->count) {
     echo '<div class="entryi"><label>Show</label>',
         '<div class="entry">', join('', $show_data), '</div></div>';
+}
 echo "</div></form>";
-Ht::stash_script("$(document).on(\"change\",\"input.paperlist-display\",plinfo.checkbox_change);$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
+Ht::stash_script("$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
 
 
 // main form

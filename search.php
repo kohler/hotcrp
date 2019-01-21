@@ -190,7 +190,7 @@ class Search_DisplayOptions {
     }
     function checkbox_item($column, $type, $title, $options = []) {
         global $pl;
-        $options["class"] = "paperlist-display";
+        $options["class"] = "uich js-plinfo";
         $x = '<div class="checki"><label><span class="checkc">'
             . Ht::checkbox("show$type", 1, !$pl->is_folded($type), $options)
             . ' </span>' . $title . '</div>';
@@ -203,8 +203,6 @@ $display_options = new Search_DisplayOptions;
 // Create checkboxes
 
 if ($pl_text) {
-    Ht::stash_script("$(document).on(\"change\",\"input.paperlist-display\",plinfo.checkbox_change)");
-
     // Abstract
     if ($pl->has("abstract"))
         $display_options->checkbox_item(1, "abstract", "Abstracts");
@@ -220,12 +218,12 @@ if ($pl_text) {
         if ($Me->privChair && $viewAllAuthors)
             $display_options_extra .=
                 Ht::checkbox("showanonau", 1, !$pl->is_folded("au"),
-                             ["id" => "showau_hidden", "class" => "paperlist-display hidden"]);
+                             ["id" => "showau_hidden", "class" => "uich js-plinfo hidden"]);
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
         $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl->has("anonau")]);
         $display_options_extra .=
             Ht::checkbox("showau", 1, !$pl->is_folded("anonau"),
-                         ["id" => "showau_hidden", "class" => "paperlist-display hidden"]);
+                         ["id" => "showau_hidden", "class" => "uich js-plinfo hidden"]);
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
         $display_options->checkbox_item(1, "aufull", "Full author info", ["id" => "showaufull"]);
@@ -450,7 +448,7 @@ if ($pl->count > 0) {
     if ($Me->privChair)
         echo '<td class="padlb">',
             Ht::checkbox("showforce", 1, !!$Qreq->forceShow,
-                         ["id" => "showforce", "class" => "paperlist-display"]),
+                         ["id" => "showforce", "class" => "uich js-plinfo"]),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     echo '<td class="padlb">';
