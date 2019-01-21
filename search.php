@@ -190,14 +190,10 @@ class Search_DisplayOptions {
     }
     function checkbox_item($column, $type, $title, $options = []) {
         global $pl;
-        $x = '<div class="dispopt-checkitem"';
-        if (get($options, "indent"))
-            $x .= ' style="padding-left:2em"';
-        unset($options["indent"]);
-        $options["class"] = "dispopt-checkctrl paperlist-display";
-        $x .= '><span class="dispopt-check">'
+        $options["class"] = "paperlist-display";
+        $x = '<div class="checki"><label><span class="checkc">'
             . Ht::checkbox("show$type", 1, !$pl->is_folded($type), $options)
-            . '&nbsp;</span>' . Ht::label($title) . '</div>';
+            . ' </span>' . $title . '</div>';
         $this->item($column, $x);
     }
 }
@@ -285,10 +281,10 @@ if ($pl_text) {
             $display_options->checkbox_item(30, $f->search_keyword(), $f->name_html);
     if (!empty($display_options->items[30])) {
         $display_options->set_header(30, "<strong>Scores:</strong>");
-        $sortitem = '<div class="dispopt-item" style="margin-top:1ex">Sort by: &nbsp;'
+        $sortitem = '<div class="mt2">Sort by: &nbsp;'
             . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
                          ListSorter::canonical_long_score_sort($Me->session("scoresort")),
-                         ["id" => "scoresort", "style" => "font-size:100%"])
+                         ["id" => "scoresort"])
             . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
         $display_options->item(30, $sortitem);
     }
@@ -300,7 +296,7 @@ if ($pl_text) {
     if ($named_formulas)
         $display_options->set_header(40, "<strong>Formulas:</strong>");
     if ($Me->isPC && $Qreq->t != "a") {
-        $display_options->item(40, '<div class="dispopt-item"><a class="ui js-edit-formulas" href="">Edit formulas</a></div>');
+        $display_options->item(40, '<div class="mt2"><a class="ui js-edit-formulas" href="">Edit formulas</a></div>');
     }
 }
 

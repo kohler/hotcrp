@@ -239,12 +239,12 @@ span.nb {
 	cursor: wait !important;
 }
 .checki {
-	padding-left: 20px;
+	padding-left: 1.3125em;
 }
 .checkc {
 	display: inline-block;
-	margin-left: -20px;
-	width: 20px;
+	margin-left: -1.3125em;
+	width: 1.3125em;
 	white-space: nowrap;
 }
 .checkc > input {
@@ -287,6 +287,13 @@ span.nb {
 }
 .dim {
 	color: #777777;
+}
+
+.mt2 {
+	margin-top: 0.5em;
+}
+.mt3 {
+	margin-top: 1em;
 }
 .ml2 {
 	margin-left: 0.5em;
@@ -623,25 +630,6 @@ span.hastitle {
 	display: block;
 }
 
-
-/* search > display options */
-.dispopt-item, .dispopt-checkitem {
-	margin-top: 2px;
-	margin-bottom: 2px;
-}
-.dispopt-checkitem {
-	margin-left: 1.5em;
-}
-.dispopt-check {
-	display: inline-block;
-	margin-left: -1.4em;
-	width: 1.4em;
-	text-align: left;
-	white-space: nowrap;
-}
-.dispopt-checkctrl {
-	margin: 0;
-}
 
 /* topics */
 .topic-2:before {
