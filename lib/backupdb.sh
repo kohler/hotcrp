@@ -35,6 +35,7 @@ structure=false
 pc=false
 gzip=false
 max_allowed_packet=1000M
+column_statistics=
 output=
 options_file=
 while [ $# -gt 0 ]; do
@@ -58,6 +59,8 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     --max_allowed_packet=*)
         max_allowed_packet="`echo "$1" | sed 's/^[^=]*=//'`";;
+    --column_statistics=*|--column-statistics=*)
+        column_statistics=" $1";;
     --help) help;;
     -*) FLAGS="$FLAGS $1";;
     *)  test -z "$output" || usage; output="$1";;
@@ -77,6 +80,8 @@ FLAGS="$FLAGS --max_allowed_packet=$max_allowed_packet"
 check_mysqlish MYSQL mysql
 check_mysqlish MYSQLDUMP mysqldump
 set_myargs "$dbuser" "$dbpass"
+mydumpargs="$myargs$column_statistics"
+mydumpargs_redacted="$myargs_redacted$column_statistics"
 
 if $gzip && test -n "$output"; then
     echotail="$dbname | gzip > $output"
@@ -94,12 +99,12 @@ fi
 
 database_dump () {
     if $pc; then
-        eval "$MYSQLDUMP $FLAGS $myargs $dbname --where='(roles & 7) != 0' ContactInfo"
+        eval "$MYSQLDUMP $FLAGS $mydumpargs $dbname --where='(roles & 7) != 0' ContactInfo"
         pcs=`echo 'select group_concat(contactId) from ContactInfo where (roles & 7) != 0' | eval "$MYSQL $myargs $FLAGS -N $dbname"`
-        eval "$MYSQLDUMP $myargs $FLAGS --where='contactId in ($pcs)' $dbname TopicInterest"
-        eval "$MYSQLDUMP $myargs $FLAGS $dbname Settings TopicArea"
+        eval "$MYSQLDUMP $mydumpargs $FLAGS --where='contactId in ($pcs)' $dbname TopicInterest"
+        eval "$MYSQLDUMP $mydumpargs $FLAGS $dbname Settings TopicArea"
     else
-        eval "$MYSQLDUMP $myargs $FLAGS $dbname"
+        eval "$MYSQLDUMP $mydumpargs $FLAGS $dbname"
     fi
     echo
     echo "--"
@@ -113,9 +118,9 @@ get_sversion () {
     echo "select concat('insert into Settings (name, value) values (''', name, ''', ', value, ');') from Settings where name='sversion' or name='allowPaperOption';" | eval "$MYSQL $myargs $FLAGS -N $dbname"
 }
 
-echo + $MYSQLDUMP $myargs_redacted $FLAGS $echotail 1>&2
+echo + $MYSQLDUMP $mydumpargs_redacted $FLAGS $echotail 1>&2
 if $structure; then
-    eval "$MYSQLDUMP $myargs $FLAGS $dbname" | sed '/^LOCK/d
+    eval "$MYSQLDUMP $mydumpargs $FLAGS $dbname" | sed '/^LOCK/d
 /^INSERT/d
 /^UNLOCK/d
 /^\/\*/d
