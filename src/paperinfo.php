@@ -271,6 +271,7 @@ class PaperInfo {
     private $_comment_array;
     private $_comment_skeleton_array;
     private $_potential_conflicts;
+    private $_refusal_array;
     public $_row_set;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
@@ -1221,6 +1222,7 @@ class PaperInfo {
             return "''";
     }
 
+
     function load_reviews($always = false) {
         ++$this->_review_array_version;
 
@@ -1597,6 +1599,47 @@ class PaperInfo {
                 return true;
         return false;
     }
+
+
+    function load_review_refusals($always = false) {
+        if ($this->_row_set && ($this->_refusal_array === null || $always))
+            $row_set = $this->_row_set;
+        else
+            $row_set = new PaperInfoSet($this);
+        foreach ($row_set as $prow)
+            $prow->_refusal_array = [];
+
+        $result = $this->conf->qe("select * from PaperReviewRefused where paperId?a", $row_set->paper_ids());
+        while (($ref = $result->fetch_object())) {
+            $prow = $row_set->get($ref->paperId);
+            $prow->_refusal_array[] = $ref;
+        }
+        Dbl::free($result);
+    }
+
+    function review_refusals() {
+        if ($this->_refusal_array === null)
+            $this->load_review_refusals();
+        return $this->_refusal_array;
+    }
+
+    function review_refusals_of_user(Contact $user) {
+        $a = [];
+        foreach ($this->review_refusals() as $ref)
+            if ($ref->contactId == $user->contactId
+                || strcasecmp($ref->email, $user->email) === 0)
+                $a[] = $ref;
+        return $a;
+    }
+
+    function review_refusals_of_email($email) {
+        $a = [];
+        foreach ($this->review_refusals() as $ref)
+            if (strcasecmp($ref->email, $email) === 0)
+                $a[] = $ref;
+        return $a;
+    }
+
 
     static function fetch_comment_query() {
         return "select PaperComment.*,

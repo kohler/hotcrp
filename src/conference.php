@@ -249,7 +249,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 201) {
+        if ($this->sversion < 205) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -3819,30 +3819,32 @@ class Conf {
         $method = $qreq->method();
         if ($method !== "GET" && $method !== "HEAD" && $method !== "OPTIONS"
             && (!$uf || !get($uf, "allow_xss")) && !$qreq->post_ok())
-            return new JsonResult(403, ["ok" => false, "error" => "Missing credentials."]);
+            return new JsonResult(403, "Missing credentials.");
         if (!$uf) {
             if ($this->has_api($fn, $user, null))
-                return new JsonResult(405, ["ok" => false, "error" => "Method not supported."]);
+                return new JsonResult(405, "Method not supported.");
             else if ($this->has_api($fn, null, $qreq->method()))
-                return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
+                return new JsonResult(403, "Permission error.");
             else
-                return new JsonResult(404, ["ok" => false, "error" => "Function not found."]);
+                return new JsonResult(404, "Function not found.");
         }
-        if (!$prow && get($uf, "paper")) {
-            $result = ["ok" => false];
-            if (($whynot = $qreq->annex("paper_whynot"))) {
-                $status = isset($result["noPaper"]) ? 404 : 403;
-                $result["error"] = whyNotText($whynot, true);
-                if (isset($whynot["signin"]))
-                    $result["loggedout"] = true;
-            } else {
-                $status = 400;
-                $result["error"] = "No paper specified.";
-            }
-            return new JsonResult($status, $result);
-        }
+        if (!$prow && get($uf, "paper"))
+            return self::paper_error_json_result($qreq->annex("paper_whynot"));
         self::xt_resolve_require($uf);
         return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
+    }
+    static function paper_error_json_result($whynot) {
+        $result = ["ok" => false];
+        if ($whynot) {
+            $status = isset($whynot["noPaper"]) ? 404 : 403;
+            $result["error"] = whyNotText($whynot, true);
+            if (isset($whynot["signin"]))
+                $result["loggedout"] = true;
+        } else {
+            $status = 400;
+            $result["error"] = "Bad request, missing submission.";
+        }
+        return new JsonResult($status, $result);
     }
     function call_api_exit($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow

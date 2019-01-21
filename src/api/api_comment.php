@@ -25,7 +25,7 @@ class Comment_API {
     static function run(Contact $user, Qrequest $qreq, $prow) {
         // check parameters
         if (!isset($qreq->text) && !isset($qreq->delete))
-            return new JsonResult(400, "Parameter error.");
+            return new JsonResult(400, "Bad request.");
 
         // check response
         $round = false;

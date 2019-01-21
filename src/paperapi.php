@@ -35,7 +35,7 @@ class PaperApi {
 
     static function tagreport_api(Contact $user, $qreq, $prow) {
         $jr = new JsonResult((array) self::tagreport($user, $prow));
-        $jr->transfer_messages($user, true);
+        $jr->take_messages($user, true);
         return $jr;
     }
 
@@ -226,7 +226,7 @@ class PaperApi {
         if (isset($qreq->r)) {
             $rrow = $prow->full_review_of_textual_id($qreq->r);
             if ($rrow === false)
-                return new JsonResult(400, "Parameter error.");
+                return new JsonResult(400, "Bad request.");
             $rrows = $rrow ? [$rrow] : [];
         } else if (isset($qreq->u)) {
             $need_id = true;
@@ -255,7 +255,7 @@ class PaperApi {
     static function reviewrating_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$qreq->r
             || ($rrow = $prow->full_review_of_textual_id($qreq->r)) === false)
-            return new JsonResult(400, "Parameter error.");
+            return new JsonResult(400, "Bad request.");
         else if (!$user->can_view_review($prow, $rrow))
             return new JsonResult(403, "Permission error.");
         else if (!$rrow)
@@ -264,7 +264,7 @@ class PaperApi {
         if ($qreq->method() !== "GET") {
             if (!isset($qreq->user_rating)
                 || ($rating = ReviewInfo::parse_rating($qreq->user_rating)) === false)
-                return new JsonResult(400, "Parameter error.");
+                return new JsonResult(400, "Bad request.");
             else if (!$editable)
                 return new JsonResult(403, "Permission error.");
             if ($rating === null)
@@ -285,7 +285,7 @@ class PaperApi {
     static function reviewround_api(Contact $user, $qreq, $prow) {
         if (!$qreq->r
             || ($rrow = $prow->full_review_of_textual_id($qreq->r)) === false)
-            return new JsonResult(400, "Parameter error.");
+            return new JsonResult(400, "Bad request.");
         else if (!$user->can_administer($prow))
             return new JsonResult(403, "Permission error.");
         else if (!$rrow)

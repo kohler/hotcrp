@@ -133,10 +133,10 @@ class JsonResult {
         else if (!is_object($json) || !($json instanceof JsonResult))
             $json = new JsonResult($json);
         if (!$json->has_messages && $user)
-            $json->transfer_messages($user);
+            $json->take_messages($user);
         return $json;
     }
-    function transfer_messages(Contact $user, $div = false) {
+    function take_messages(Contact $user, $div = false) {
         if (session_id() !== ""
             && ($msgs = $user->session("msgs", []))) {
             $user->save_session("msgs", null);
@@ -153,6 +153,14 @@ class JsonResult {
             if ($t !== "")
                 $this->content["response"] = $t . get_s($this->content, "response");
             $this->has_messages = true;
+        }
+    }
+    function export_errors() {
+        if (isset($this->content["error"]))
+            Conf::msg_error($this->content["error"]);
+        if (isset($this->content["errf"])) {
+            foreach ($this->content["errf"] as $f => $x)
+                Ht::error_at($f);
         }
     }
 }
@@ -482,14 +490,18 @@ function whyNotText($whyNot, $text_only = false) {
         $ms[] = $conf->_("You are not assigned to review submission #%d.", $paperId);
     if (isset($whyNot["deadline"])) {
         $dname = $whyNot["deadline"];
-        if ($dname[0] == "s")
+        if ($dname[0] === "s")
             $open_dname = "sub_open";
-        else if ($dname[0] == "p" || $dname[0] == "e")
+        else if ($dname[0] === "p" || $dname[0] === "e")
             $open_dname = "rev_open";
         else
             $open_dname = false;
         $start = $open_dname ? $conf->setting($open_dname, -1) : 1;
-        $end = $conf->setting($dname, -1);
+        if ($dname === "extrev_chairreq")
+            $end_dname = $conf->review_deadline(get($whyNot, "reviewRound"), false, true);
+        else
+            $end_dname = $dname;
+        $end = $conf->setting($end_dname, -1);
         if ($dname == "au_seerev") {
             if ($conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE) {
                 $ms[] = $conf->_("You will get access to the reviews for this submission when you have completed your own reviews.");
@@ -503,8 +515,9 @@ function whyNotText($whyNot, $text_only = false) {
             $ms[] = $conf->_c("etime", "Action not available until %3$s.", $open_dname, $paperId, $conf->printableTime($start, "span"));
         } else if ($end > 0 && $Now > $end) {
             $ms[] = $conf->_c("etime", "Deadline passed.", $dname, $paperId, $conf->printableTime($end, "span"));
-        } else
-            $ms[] = $conf->_c("etime", "Action not available.", "", $paperId);
+        } else {
+            $ms[] = $conf->_c("etime", "Action not available.", $dname, $paperId);
+        }
     }
     if (isset($whyNot["override"]))
         $ms[] = $conf->_("“Override deadlines” can override this restriction.");

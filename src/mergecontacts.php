@@ -95,6 +95,7 @@ class MergeContacts extends MessageSet {
         $this->merge1_ignore("PaperReviewPreference", "contactId");
         $this->merge1("PaperReviewRefused", "contactId");
         $this->merge1("PaperReviewRefused", "requestedBy");
+        $this->merge1("PaperReviewRefused", "refusedBy");
         $this->merge1("ReviewRequest", "requestedBy");
         $this->merge1_ignore("PaperWatch", "contactId");
         $this->merge1_ignore("ReviewRating", "contactId");

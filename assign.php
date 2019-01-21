@@ -30,76 +30,12 @@ function loadRows() {
     global $prow, $Conf, $Me, $Qreq;
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me)))
         errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
-    if (($whynot = $Me->perm_request_review($prow, false)))
+    if (($whynot = $Me->perm_request_review($prow, null, false)))
         error_go(hoturl("paper", ["p" => $prow->paperId]), whyNotText($whynot));
 }
 
 
 loadRows();
-
-
-
-// retract review request
-function retractRequest($email, $prow, $confirm = true) {
-    global $Conf, $Me;
-
-    $Conf->qe("lock tables PaperReview write, ReviewRequest write, ContactInfo read, PaperConflict read");
-    $email = trim($email);
-    // NB caller unlocks tables
-
-    // check for outstanding review
-    $contact_fields = "firstName, lastName, ContactInfo.email, password, roles, preferredEmail, disabled";
-    $result = $Conf->qe("select reviewId, reviewType, reviewModified, reviewSubmitted, reviewToken, requestedBy, $contact_fields
-                from ContactInfo
-                join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
-                where ContactInfo.email=?", $email);
-    $row = edb_orow($result);
-
-    // check for outstanding review request
-    $result2 = Dbl::qe("select * from ReviewRequest where paperId=? and email=?", $prow->paperId, $email);
-    $row2 = edb_orow($result2);
-
-    // act
-    if (!$row && !$row2)
-        return Conf::msg_error("No such review request.");
-    if ($row && $row->reviewModified > 0)
-        return Conf::msg_error("You can’t retract that review request since the reviewer has already started their review.");
-    if (!$Me->allow_administer($prow)
-        && (($row && $row->requestedBy && $Me->contactId != $row->requestedBy)
-            || ($row2 && $row2->requestedBy && $Me->contactId != $row2->requestedBy)))
-        return Conf::msg_error("You can’t retract that review request since you didn’t make the request in the first place.");
-
-    // at this point, success; remove the review request
-    if ($row) {
-        $Conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $row->reviewId);
-        $Me->update_review_delegation($prow->paperId, $row->requestedBy, -1);
-    }
-    if ($row2)
-        $Conf->qe("delete from ReviewRequest where paperId=? and email=?", $prow->paperId, $email);
-
-    if (get($row, "reviewToken", 0) != 0)
-        $Conf->settings["rev_tokens"] = -1;
-    // send confirmation email, if the review site is open
-    if ($Conf->time_review_open() && $row) {
-        $Reviewer = new Contact($row);
-        HotCRPMailer::send_to($Reviewer, "@retractrequest", $prow,
-                              array("requester_contact" => $Me,
-                                    "cc" => Text::user_email_to($Me)));
-    }
-
-    // confirmation message
-    if ($confirm)
-        $Conf->confirmMsg("Retracted request that " . Text::user_html($row ? $row : $row2) . " review paper #$prow->paperId.");
-}
-
-if (isset($Qreq->retract) && $Qreq->post_ok()) {
-    retractRequest($Qreq->retract, $prow);
-    $Conf->qe("unlock tables");
-    if ($Conf->setting("rev_tokens") === -1)
-        $Conf->update_rev_tokens_setting(0);
-    $Conf->self_redirect($Qreq);
-    loadRows();
-}
 
 
 // change PC assignments
@@ -193,46 +129,44 @@ if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override);
         $Conf->self_redirect($Qreq);
     } else {
-        $error = $result->content["error"];
         if (isset($result->content["errf"]) && isset($result->content["errf"]["override"]))
-            $error .= "<div>To request a review anyway, submit again with the “Override” checkbox checked.</div>";
-        Conf::msg_error($error);
-        if (isset($result->content["errf"])) {
-            foreach ($result->content["errf"] as $f => $x)
-                Ht::error_at($f);
-        }
-        Ht::error_at("need-override-requestreview-" . $Qreq->email);
+            $result->content["error"] .= "<p>To request a review anyway, submit again with the “Override” checkbox checked.</p>";
+        $result->content["errf"]["need-override-requestreview-" . $Qreq->email] = true;
+        $result->export_errors();
         loadRows();
     }
 }
 
-
 // deny review request
 if ((isset($Qreq->deny) || isset($Qreq->denyreview))
-    && $Me->allow_administer($prow)
-    && $Qreq->post_ok()
-    && ($email = trim($Qreq->email))) {
-    $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperConflict read, PaperReview read, PaperReviewRefused write");
-    // Need to be careful and not expose inappropriate information:
-    // this email comes from the chair, who can see all, but goes to a PC
-    // member, who can see less.
-    $result = $Conf->qe("select requestedBy from ReviewRequest where paperId=$prow->paperId and email=?", $email);
-    if (($row = edb_row($result))) {
-        $Requester = $Conf->user_by_id($row[0]);
-        $Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email=?", $email);
-        if (($reqId = $Conf->user_id_by_email($email)) > 0)
-            $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')");
-
-        // send anticonfirmation email
-        HotCRPMailer::send_to($Requester, "@denyreviewrequest", $prow,
-                              array("reviewer_contact" => (object) array("fullName" => trim($Qreq->name), "email" => $email)));
-
+    && $Qreq->post_ok()) {
+    $result = RequestReview_API::denyreview($Me, $Qreq, $prow);
+    $result = JsonResult::make($result);
+    if ($result->content["ok"]) {
         $Conf->confirmMsg("Proposed reviewer denied.");
-    } else
-        Conf::msg_error("No one has proposed that " . htmlspecialchars($email) . " review this paper.");
-    Dbl::qx_raw("unlock tables");
-    unset($Qreq->email, $Qreq->name);
+        unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->deny, $Qreq->denyreview);
+        $Conf->self_redirect($Qreq);
+    } else {
+        $result->export_errors();
+        loadRows();
+    }
 }
+
+// retract review request
+if (isset($Qreq->retract)
+    && $Qreq->post_ok()) {
+    $result = RequestReview_API::retractreview($Me, $Qreq, $prow);
+    $result = JsonResult::make($result);
+    if ($result->content["ok"]) {
+        $Conf->confirmMsg("Review retracted.");
+        unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retract);
+        $Conf->self_redirect($Qreq);
+    } else {
+        $result->export_errors();
+        loadRows();
+    }
+}
+
 
 
 // paper table
@@ -267,15 +201,13 @@ if ($t !== "")
 
 // PC assignments
 if ($Me->can_administer($prow)) {
-    $result = $Conf->qe("select ContactInfo.contactId, allReviews,
-        exists(select paperId from PaperReviewRefused where paperId=? and contactId=ContactInfo.contactId) refused
+    $result = $Conf->qe("select ContactInfo.contactId, allReviews
         from ContactInfo
         left join (select contactId, group_concat(reviewType separator '') allReviews
             from PaperReview join Paper using (paperId)
             where reviewType>=" . REVIEW_PC . " and timeSubmitted>=0
             group by contactId) A using (contactId)
-        where ContactInfo.roles!=0 and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0",
-        $prow->paperId);
+        where ContactInfo.roles!=0 and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0");
     $pcx = array();
     while (($row = edb_orow($result)))
         $pcx[$row->contactId] = $row;
@@ -321,8 +253,8 @@ if ($Me->can_administer($prow)) {
             '" data-review-type="', $revtype;
         if ($conflict_type)
             echo '" data-conflict-type="1';
-        if (!$revtype && $p->refused)
-            echo '" data-assignment-refused="', htmlspecialchars($p->refused);
+        if (!$revtype && $prow->review_refusals_of_user($pc))
+            echo '" data-assignment-refused="1';
         if ($rrow && $rrow->reviewRound && ($rn = $rrow->round_name()))
             echo '" data-review-round="', htmlspecialchars($rn);
         if ($rrow && $rrow->reviewModified > 1)

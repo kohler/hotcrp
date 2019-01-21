@@ -1451,6 +1451,24 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("update ActionLog set destContactId=null where destContactId=0 or destContactId=contactId")
         && $conf->ql("alter table ActionLog add `trueContactId` int(11) DEFAULT NULL"))
         $conf->update_schema_version(201);
+    if ($conf->sversion == 201
+        && $conf->ql("alter table PaperReviewRefused add `timeRequested` bigint(11) DEFAULT NULL")
+        && $conf->ql("alter table PaperReviewRefused add `refusedBy` int(11) DEFAULT NULL"))
+        $conf->update_schema_version(202);
+    if ($conf->sversion == 202
+        && $conf->ql("alter table ReviewRequest add `timeRequested` bigint(11) DEFAULT NULL"))
+        $conf->update_schema_version(203);
+    if ($conf->sversion == 203
+        && $conf->ql("alter table PaperReviewRefused add `timeRefused` bigint(11) DEFAULT NULL"))
+        $conf->update_schema_version(204);
+    if ($conf->sversion == 204
+        && $conf->ql("alter table PaperReviewRefused add `email` varchar(120) DEFAULT NULL")
+        && $conf->ql("update PaperReviewRefused join ContactInfo using (contactId) set PaperReviewRefused.email=ContactInfo.email")
+        && $conf->ql("delete from PaperReviewRefused where email is null")
+        && $conf->ql("alter table PaperReviewRefused change `email` `email` varchar(120) NOT NULL")
+        && $conf->ql("alter table PaperReviewRefused drop primary key")
+        && $conf->ql("alter table PaperReviewRefused add primary key (`paperId`,`email`)"))
+        $conf->update_schema_version(205);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

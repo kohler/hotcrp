@@ -21,6 +21,10 @@
         "callback": "Comment_API::run"
     },
     {
+        "name": "declinereview", "post": true, "redirect": true,
+        "callback": "RequestReview_API::declinereview"
+    },
+    {
         "name": "decision", "paper": true, "get": true, "post": true,
         "callback": "Decision_API::run"
     },

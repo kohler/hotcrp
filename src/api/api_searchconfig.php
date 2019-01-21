@@ -6,10 +6,10 @@ class SearchConfig_API {
     static function viewoptions(Contact $user, Qrequest $qreq) {
         $report = get($qreq, "report", "pl");
         if ($report !== "pl" && $report !== "pf")
-            return new JsonResult(400, "Parameter error.");
+            return new JsonResult(400, "Bad request.");
         if ($qreq->method() !== "GET" && $user->privChair) {
             if (!isset($qreq->display))
-                return new JsonResult(400, "Parameter error.");
+                return new JsonResult(400, "Bad request.");
             $base_display = "";
             if ($report === "pl")
                 $base_display = $user->conf->review_form()->default_display();

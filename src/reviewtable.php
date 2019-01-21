@@ -13,9 +13,8 @@ function _review_table_actas($rr) {
 
 function _retract_review_request_form(PaperInfo $prow, ReviewInfo $rr) {
     return '<small>'
-        . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
+        . Ht::form(hoturl_post("assign", "p=$prow->paperId&amp;email=" . htmlspecialchars($rr->email) . "&amp;retract=1"))
         . '<div class="inline">'
-        . Ht::hidden("retract", $rr->email)
         . Ht::submit("Retract review", ["title" => "Retract this review request", "class" => "btn-sm"])
         . '</div></form></small>';
 }
@@ -249,7 +248,9 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
 
     // unfinished review notification
     $notetxt = "";
-    if ($cflttype >= CONFLICT_AUTHOR && !$admin && $notShown
+    if ($cflttype >= CONFLICT_AUTHOR
+        && !$admin
+        && $notShown
         && $Me->can_view_review($prow, null)) {
         if ($notShown == 1)
             $t = "1 review remains outstanding.";
@@ -383,7 +384,7 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     // review assignments
     if ($mode !== "assign"
         && $mode !== "edit"
-        && $Me->can_request_review($prow, true)) {
+        && $Me->can_request_review($prow, null, true)) {
         $t[] = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx revlink">'
             . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
     }

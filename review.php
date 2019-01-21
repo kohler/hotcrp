@@ -241,67 +241,29 @@ if (isset($Qreq->text)) {
 }
 
 
-// refuse review action
-function refuseReview($qreq) {
-    global $Conf, $Me, $prow, $paperTable;
-
-    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write");
-
-    $rrow = $paperTable->editrrow;
-    $hadToken = defval($rrow, "reviewToken", 0) != 0;
-
-    $result = Dbl::qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $rrow->reviewId);
-    if (!$result)
-        return;
-    $reason = (string) $qreq->reason;
-    if ($reason === "Optional explanation")
-        $reason = "";
-    $result = Dbl::qe("insert into PaperReviewRefused set paperId=?, contactId=?, requestedBy=?, reason=?", $rrow->paperId, $rrow->contactId, $rrow->requestedBy, trim($reason));
-    if (!$result)
-        return;
-
-    // now the requester must potentially complete their review
-    if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0)
-        $Me->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
-
-    Dbl::qe_raw("unlock tables");
-
-    // send confirmation email
-    $Requester = $Conf->user_by_id($rrow->requestedBy);
-    $reqprow = $Conf->fetch_paper($prow->paperId, $Requester);
-    HotCRPMailer::send_to($Requester, "@refusereviewrequest", $reqprow,
-                          ["reviewer_contact" => $rrow, "reason" => $reason]);
-
-    // confirmation message
-    $Conf->confirmMsg("The request that you review paper #$prow->paperId has been removed.  Mail was sent to the person who originally requested the review.");
-    if ($hadToken)
-        $Conf->update_rev_tokens_setting(-1);
-
-    $prow = null;
-    confHeader();
-    $Conf->footer();
-    exit;
-}
-
+// retract review request
 if (isset($Qreq->refuse) || isset($Qreq->decline)) {
-    // XXX post_ok()
-    if (!$paperTable->editrrow
-        || (!$Me->is_my_review($paperTable->editrrow) && !$Me->can_administer($prow)))
-        Conf::msg_error("This review was not assigned to you, so you can’t decline it.");
-    else if ($paperTable->editrrow->reviewType >= REVIEW_SECONDARY)
-        Conf::msg_error("PC members can’t decline their primary or secondary reviews.  Contact the PC chairs directly if you really cannot finish this review.");
-    else if ($paperTable->editrrow->reviewSubmitted)
-        Conf::msg_error("This review has already been submitted; you can’t decline it now.");
-    else if ($Qreq->refuse === "1" || $Qreq->decline === "1") {
-        $Conf->confirmMsg("<p>Select “Decline review” to decline this review (you may enter a brief explanation, if you’d like). Thank you for telling us that you cannot complete your review.</p><hr class=\"g\"><form method=\"post\" action=\"" . hoturl_post("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId) . "\" enctype=\"multipart/form-data\" accept-charset=\"UTF-8\"><div>"
-                          . Ht::hidden("refuse", "refuse") . "  "
-                          . Ht::textarea("reason", "", array("rows" => 3, "cols" => 40, "spellcheck" => "true"))
-                          . "\n  <span class=\"sep\"></span>"
-                          . Ht::submit("Decline review")
-                          . "</div></form>");
+    if ($paperTable->editrrow)
+        $Qreq->email = $paperTable->editrrow->email;
+    $result = RequestReview_API::declinereview($Me, $Qreq, $prow);
+    $result = JsonResult::make($result);
+    if ($result->content["ok"]) {
+        if (($Qreq->refuse === "1" || $Qreq->decline === "1")
+            && $paperTable->editrrow
+            && !isset($Qreq->reason)) {
+            $Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review. If you’d like, you may enter a brief explanation here.</p>"
+                . Ht::form(hoturl_post("api/declinereview", ["p" => $paperTable->prow->paperId, "email" => $Me->email, "redirect" => $Conf->hoturl("index")]))
+                . Ht::textarea("reason", "", ["rows" => 3, "cols" => 40, "spellcheck" => true])
+                . '<hr class="c">'
+                . Ht::submit("Update explanation", ["class" => "btn-primary"])
+                . '</form>');
+        } else {
+            $Conf->confirmMsg("Review declined. Thank you for telling us that you cannot complete your review.");
+        }
+        unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retract);
+        $Conf->self_redirect($Qreq);
     } else {
-        refuseReview($Qreq);
-        Dbl::qe_raw("unlock tables");
+        $result->export_errors();
         loadRows();
     }
 }
