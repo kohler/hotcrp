@@ -1373,9 +1373,9 @@ class PaperTable {
                 $arg["data-default-checked"] = $pchecked = isset($ptopics[$tid]);
                 $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
                 echo '<div class="ctelt cteltg"><div class="ctelti">',
-                    '<div class="cteltx checki"><label><span class="checkc">',
+                    '<label class="checki cteltx"><span class="checkc">',
                     Ht::checkbox("top$tid", 1, $checked, $arg),
-                    ' </span>', htmlspecialchars($tg[0]), '</label></div>',
+                    ' </span>', htmlspecialchars($tg[0]), '</label>',
                     '<div class="checki">';
             } else if ($isgroup) {
                 echo '<div class="ctelt cteltg"><div class="ctelti">',
@@ -1394,10 +1394,10 @@ class PaperTable {
                 }
                 $arg["data-default-checked"] = $pchecked = isset($ptopics[$tid]);
                 $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
-                echo ($isgroup ? '<div class="cteltx checki">' : '<div class="ctelt"><div class="ctelti checki">'),
-                    '<label><span class="checkc">',
+                echo ($isgroup ? '<label class="checki cteltx">' : '<div class="ctelt"><label class="checki ctelti">'),
+                    '<span class="checkc">',
                     Ht::checkbox("top$tid", 1, $checked, $arg),
-                    ' </span>', htmlspecialchars($tname), '</label></div>',
+                    ' </span>', htmlspecialchars($tname), '</label>',
                     ($isgroup ? '' : '</div>');
             }
             if ($isgroup)
@@ -1471,7 +1471,7 @@ class PaperTable {
             if ($pct)
                 echo ' boldtag';
             if ($pcconfmatch)
-                echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', $pcconfmatch[1]);
+                echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($pcconfmatch));
             echo '"><label>';
 
             $js = ["id" => "pcc$id"];

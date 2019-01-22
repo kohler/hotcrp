@@ -1469,6 +1469,14 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperReviewRefused drop primary key")
         && $conf->ql("alter table PaperReviewRefused add primary key (`paperId`,`email`)"))
         $conf->update_schema_version(205);
+    if ($conf->sversion == 205
+        && $conf->ql("alter table PaperReviewRefused add `reviewRound` int(1) DEFAULT NULL"))
+        $conf->update_schema_version(206);
+    if ($conf->sversion == 206
+        && $conf->ql("alter table PaperReviewRefused add `firstName` varbinary(120) DEFAULT NULL")
+        && $conf->ql("alter table PaperReviewRefused add `lastName` varbinary(120) DEFAULT NULL")
+        && $conf->ql("alter table PaperReviewRefused add `affiliation` varbinary(2048) DEFAULT NULL"))
+        $conf->update_schema_version(207);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

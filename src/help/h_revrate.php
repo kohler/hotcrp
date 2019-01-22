@@ -16,7 +16,7 @@ their reviews.</p>
   focused, and provide direction for the authors’ future work.
   The rating options are:</p>
 
-<ul class=\"xd\">
+<ul class=\"x\">
 <li><strong>Good review</strong>: Thorough, clear, constructive, and gives good
   ideas for next steps.</li>
 <li><strong>Needs work</strong>: The review needs revision. If possible,

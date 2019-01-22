@@ -249,7 +249,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 205) {
+        if ($this->sversion < 207) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2298,6 +2298,38 @@ class Conf {
     }
     function unparse_time_log($value) {
         return date("d/M/Y:H:i:s O", $value);
+    }
+    function unparse_interval($when, $now = 0, $format = 0) {
+        global $Now;
+        $d = abs($when - ($now ? : $Now));
+        $unit = 0;
+        if ($d >= 5227200) {
+            if (!($format & 1))
+                return ($format & 4 ? "" : "on ") . date($this->_dateFormat(false), $when);
+            $unit = 5;
+        } else if ($d >= 259200)
+            $unit = 4;
+        else if ($d >= 28800)
+            $unit = 3;
+        else if ($d >= 3630)
+            $unit = 2;
+        else if ($d >= 180.5)
+            $unit = 1;
+        $units = [1, 60, 1800, 3600, 86400, 604800];
+        $x = $units[$unit];
+        $d = ceil(($d - $x / 2) / $x);
+        if ($unit === 2)
+            $d /= 2;
+        if ($format & 4)
+            $d .= substr("smhhdw", $unit, 1);
+        else {
+            $unit_names = ["second", "minute", "hour", "hour", "day", "week"];
+            $d .= " " . $unit_names[$unit] . ($d == 1 ? "" : "s");
+        }
+        if ($format & 2)
+            return $d;
+        else
+            return $when < ($now ? : $Now) ? $d . " ago" : "in " . $d;
     }
 
     function printableTimeSetting($what, $useradjust = false, $preadjust = null) {

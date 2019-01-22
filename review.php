@@ -275,7 +275,9 @@ if (isset($Qreq->accept)) {
         Conf::msg_error("This review was not assigned to you, so you cannot confirm your intention to write it.");
     else {
         if ($paperTable->editrrow->reviewModified <= 0)
-            Dbl::qe("update PaperReview set reviewModified=1 where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0", $prow->paperId, $paperTable->editrrow->reviewId);
+            Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
+                where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0",
+                $Now, $prow->paperId, $paperTable->editrrow->reviewId);
         $Conf->confirmMsg("Thank you for confirming your intention to finish this review.  You can download the paper and review form below.");
         loadRows();
     }

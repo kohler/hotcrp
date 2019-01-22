@@ -2605,10 +2605,13 @@ class Contact {
                     && in_array($rrow->reviewToken, $this->_review_tokens)));
     }
 
-    function is_owned_review(ReviewInfo $rrow = null) {
+    function is_owned_review($rrow = null) {
         return $rrow
+            && $rrow->contactId > 0
             && ($rrow->contactId == $this->contactId
-                || ($this->_review_tokens && $rrow->reviewToken && in_array($rrow->reviewToken, $this->_review_tokens))
+                || ($this->_review_tokens
+                    && $rrow->reviewToken
+                    && in_array($rrow->reviewToken, $this->_review_tokens))
                 || ($rrow->requestedBy == $this->contactId
                     && $rrow->reviewType == REVIEW_EXTERNAL
                     && $this->conf->setting("pcrev_editdelegate")));
@@ -2779,7 +2782,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_review_identity(PaperInfo $prow, ReviewInfo $rrow = null) {
+    function can_view_review_identity(PaperInfo $prow, $rrow = null) {
         $rights = $this->rights($prow);
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
@@ -2819,7 +2822,7 @@ class Contact {
         return $answer;
     }
 
-    function can_view_review_round(PaperInfo $prow, ReviewInfo $rrow = null) {
+    function can_view_review_round(PaperInfo $prow, $rrow = null) {
         $rights = $this->rights($prow);
         return $rights->can_administer
             || $rights->allow_pc
@@ -2834,7 +2837,7 @@ class Contact {
                 && $rrow->reviewAuthorSeen <= $rrow->reviewAuthorModified);
     }
 
-    function can_view_review_requester(PaperInfo $prow, ReviewInfo $rrow = null) {
+    function can_view_review_requester(PaperInfo $prow, $rrow = null) {
         $rights = $this->rights($prow);
         return $this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || ($rrow && $rrow->requestedBy == $this->contactId && $rights->allow_pc)

@@ -386,6 +386,8 @@ class Round_SettingParser extends SettingParser {
                 $qx .= " when reviewRound=$old then $new";
             $qx .= " else reviewRound end";
             $sv->conf->qe_raw("update PaperReview set reviewRound=" . $qx);
+            $sv->conf->qe_raw("update ReviewRequest set reviewRound=" . $qx);
+            $sv->conf->qe_raw("update PaperReviewRefused set reviewRound=" . $qx);
         }
     }
 }

@@ -208,9 +208,6 @@ a.mailto:hover, a:hover u.x, .ul {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
-a.small {
-	font-size: smaller;
-}
 span.barsep {
 	opacity: 0.8;
 	padding: 0 0.5em;
@@ -240,6 +237,9 @@ span.nb {
 }
 .checki {
 	padding-left: 1.3125em;
+}
+label.checki {
+	display: block;
 }
 .checkc {
 	display: inline-block;
@@ -288,7 +288,13 @@ span.nb {
 .dim {
 	color: #777777;
 }
+.small {
+	font-size: smaller;
+}
 
+.mb0 {
+	margin-bottom: 0 !important;
+}
 .mt2 {
 	margin-top: 0.5em;
 }
@@ -888,8 +894,22 @@ button:hover, button:focus, button:active, button:focus-within,
 	border: 1px solid #505799;
 	background-image: linear-gradient(#8089d1, #6b73b5);
 }
-.alert .btn-default, .alert .btn-primary, .alert .btn-alertable,
-.btn-highlight, button.dangerous {
+.btn-success {
+	border: 1px solid #007f00;
+	background: #00ba00;
+	background-image: linear-gradient(#00ba00, #009c00);
+	color: white;
+}
+.btn-success:hover, .btn-success:active {
+	border: 1px solid #005f00;
+	background-image: linear-gradient(#00a200, #007f00);
+}
+.alert .btn-default,
+.alert .btn-primary,
+.alert .btn-alertable,
+.btn-highlight,
+.btn-danger,
+button.dangerous {
 	border: 1px solid #cc0000;
 	background: #ff0000;
 	background-image: linear-gradient(#ff4040, #ff0000);
@@ -898,11 +918,13 @@ button:hover, button:focus, button:active, button:focus-within,
 .alert .btn-default:hover, .alert .btn-default:active,
 .alert .btn-primary:hover, .alert .btn-primary:active,
 .alert .btn-alertable:hover, .alert .btn-alertable:active,
+.btn-danger:hover, .btn-danger:active,
 .btn-highlight:hover, .btn-highlight:active {
 	border: 1px solid #b00000;
 	background-image: linear-gradient(#ee0000, #cc0000);
 }
-button:disabled, button:disabled:hover, .btn:disabled, .btn:disabled:hover,
+button:disabled, button:disabled:hover,
+.btn:disabled, .btn:disabled:hover,
 .btn-default:disabled, .btn-default:disabled:hover,
 .btn-primary:disabled, .btn-primary:disabled:hover,
 .alert .btn-default:disabled, .alert .btn-default:disabled:hover,
@@ -1258,10 +1280,6 @@ h3 + .profile-g {
 }
 #helpcontent > ul, #helpcontent > ol {
 	padding-left: 28px;
-}
-#helpcontent > ul.xd {
-	max-width: 800px;
-	padding-left: 0;
 }
 .helplist-item {
 	padding: 3px 0;
@@ -1624,6 +1642,13 @@ pre.email {
 	column-gap: 18px;
 	margin: 0 -12px -6px;
 }
+.ctable-wide {
+	-webkit-columns: 450px 4;
+	columns: 450px 4;
+	-webkit-column-gap: 18px;
+	column-gap: 18px;
+	margin: 0 -12px -12px;
+}
 .ctable.no-hmargin {
 	margin-left: -6px;
 	margin-right: -6px;
@@ -1641,6 +1666,9 @@ pre.email {
 	margin-left: 6px;
 	margin-right: 6px;
 	padding-bottom: 6px;
+}
+.ctable-wide > .ctelt {
+	padding-bottom: 12px;
 }
 dl.ctelt {
 	padding-bottom: initial;
@@ -2569,17 +2597,21 @@ div.pst span.hint {
 .xd:last-child, .sd:last-child {
 	margin-bottom: 0;
 }
-ul.xd {
-	margin: 1em 0 1em 40px;
-}
-ul.xd > li {
-	margin: 0.25em 0;
-	text-indent: -40px;
-	list-style-type: none;
-}
 .archiveexpansion {
 	font-size: smaller;
 	color: #777777;
+}
+
+ul.x {
+	margin: 0 0 1em;
+	padding-left: 0 !important;
+}
+ul.x > li {
+	margin: 0 0 0.25em;
+	list-style-type: none;
+}
+ul.x > li:last-child {
+	margin-bottom: 0;
 }
 
 /* suggestions */
@@ -2721,7 +2753,7 @@ ul.xd > li {
 .bubcontent > p {
 	max-width: 280px;
 }
-.bubcontent > p:last-child {
+.bubcontent > :last-child {
 	margin-bottom: 0;
 }
 

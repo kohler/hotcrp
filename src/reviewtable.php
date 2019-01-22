@@ -11,23 +11,15 @@ function _review_table_actas($rr) {
         . "</a>";
 }
 
-function _retract_review_request_form(PaperInfo $prow, ReviewInfo $rr) {
-    return '<small>'
-        . Ht::form(hoturl_post("assign", "p=$prow->paperId&amp;email=" . htmlspecialchars($rr->email) . "&amp;retract=1"))
-        . '<div class="inline">'
-        . Ht::submit("Retract review", ["title" => "Retract this review request", "class" => "btn-sm"])
-        . '</div></form></small>';
-}
-
 // reviewer information
-function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
+function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode) {
     global $Me;
     $conf = $prow->conf;
     $subrev = array();
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
     $cflttype = $Me->view_conflict_type($prow);
-    $allow_admin = $Me->allow_administer($prow);
+    $allow_actas = $Me->privChair && $Me->allow_administer($prow);
     $admin = $Me->can_administer($prow);
     $hideUnviewable = ($cflttype > 0 && !$admin)
         || (!$Me->act_pc($prow) && !$conf->setting("extrev_view"));
@@ -53,10 +45,15 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
 
         // skip unsubmitted reviews
         if (!$canView && $hideUnviewable) {
-            if ($rr->reviewNeedsSubmit == 1 && $rr->reviewModified)
+            if ($rr->reviewNeedsSubmit == 1 && $rr->reviewModified > 0)
                 $notShown++;
             continue;
         }
+        // assign page lists actionable reviews separately
+        if ($rr->reviewModified <= 1
+            && $mode === "assign"
+            && ($admin || $rr->requestedBy == $Me->contactId))
+            continue;
 
         $t = "";
         $tclass = ($rrow && $highlight ? "reviewers-highlight" : "");
@@ -130,7 +127,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 $n = $Me->name_html_for($rr);
             else
                 $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
-            if ($allow_admin)
+            if ($allow_actas)
                 $n .= _review_table_actas($rr);
             $t .= '<td class="rl"><span class="taghl">' . $n . '</span>'
                 . ($rtype ? " $rtype" : "") . "</td>";
@@ -147,17 +144,13 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
                 && $rr->requestedBy
                 && $rr->requestedBy != $rr->contactId
                 && $Me->can_view_review_requester($prow, $rr)) {
-                $t .= '<td class="rl" style="font-size:smaller">';
+                $t .= '<td class="rl small">requested by ';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
                 else
                     $t .= $Me->reviewer_html_for($rr->requestedBy);
                 $t .= '</td>';
                 $want_requested_by = true;
-
-                if ($rr->reviewModified <= 0
-                    && ($rr->requestedBy == $Me->contactId || $admin))
-                    $t .= '<td class="rl">' . _retract_review_request_form($prow, $rr) . '</td>';
             } else
                 $t .= '<td></td>';
         }
@@ -185,67 +178,6 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
             $subrev[] = array($tclass, $t, $scores);
     }
 
-    // proposed review rows
-    if ($proposals)
-        foreach ($proposals as $rr) {
-            $t = "";
-
-            // review ID
-            $t = '<td class="rl">Proposed review</td>';
-
-            // reviewer identity
-            $t .= '<td class="rl">' . Text::user_html($rr);
-            if ($allow_admin)
-                $t .= _review_table_actas($rr);
-            $t .= "</td>";
-
-            // requester
-            if ($cflttype <= 0 || $admin) {
-                $t .= '<td class="rl" style="font-size:smaller">';
-                if ($rr->requestedBy) {
-                    if ($rr->requestedBy == $Me->contactId)
-                        $t .= "you";
-                    else
-                        $t .= $Me->reviewer_html_for($rr->requestedBy);
-                }
-                $t .= '</td>';
-                $want_requested_by = true;
-            }
-
-            $t .= '<td class="rl">';
-            if ($admin) {
-                $t .= '<small>'
-                    . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
-                    . Ht::hidden("firstName", $rr->firstName)
-                    . Ht::hidden("lastName", $rr->lastName)
-                    . Ht::hidden("email", $rr->email)
-                    . Ht::hidden("affiliation", $rr->affiliation)
-                    . Ht::hidden("reason", $rr->reason);
-                if ($rr->reviewRound !== null) {
-                    if ($rr->reviewRound == 0)
-                        $rname = "unnamed";
-                    else
-                        $rname = $conf->round_name($rr->reviewRound);
-                    if ($rname)
-                        $t .= Ht::hidden("round", $rname);
-                }
-                $apptext = "Approve review";
-                if (Ht::control_class("need-override-requestreview-" . $rr->email)) {
-                    $t .= Ht::hidden("override", 1);
-                    $apptext = "Override conflict and approve review";
-                }
-                $t .= Ht::submit("approvereview", $apptext, ["class" => "btn-sm"])
-                    . ' '
-                    . Ht::submit("denyreview", "Deny request", ["class" => "btn-sm"])
-                    . '</form>';
-            } else if ($Me->contactId && $rr->requestedBy === $Me->contactId)
-                $t .= _retract_review_request_form($prow, $rr);
-            $t .= '</td>';
-
-            // affix
-            $nonsubrev[] = array("", $t);
-        }
-
     // unfinished review notification
     $notetxt = "";
     if ($cflttype >= CONFLICT_AUTHOR
@@ -256,14 +188,14 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals =
             $t = "1 review remains outstanding.";
         else
             $t = "$notShown reviews remain outstanding.";
-        $t .= '<br /><span class="hint">You will be emailed if new reviews are submitted or existing reviews are changed.</span>';
+        $t .= '<div class="f-h">You will be emailed if new reviews are submitted or existing reviews are changed.</div>';
         $notetxt = '<div class="revnotes">' . $t . "</div>";
     }
 
     // completion
     if (count($nonsubrev) + count($subrev)) {
         if ($want_requested_by)
-            array_unshift($score_header, '<th class="rl">Requester</th>');
+            array_unshift($score_header, '<th class="rl"></th>');
         $score_header_text = join("", $score_header);
         $t = "<div class=\"reviewersdiv\"><table class=\"reviewers";
         if ($score_header_text)

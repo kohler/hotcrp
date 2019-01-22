@@ -529,7 +529,7 @@ function unparse_interval(t, now, format) {
     now = now || now_sec();
     format = format || 0;
     var d = Math.abs(now - t), unit = 0;
-    if (d >= 2592000) { // 30d
+    if (d >= 5227200) { // 60.5d
         if (!(format & 1))
             return strftime((format & 4 ? "" : "on ") + "%#e %b %Y", t);
         unit = 5;
@@ -2444,6 +2444,8 @@ function fold(elt, dofold, foldnum) {
 
 function foldup(event, opts) {
     var e = this, dofold = false, m, x;
+    if (this.tagName === "DIV" && event.target.tagName === "A")
+        return;
     if (typeof opts === "number")
         opts = {n: opts};
     else if (!opts)
@@ -6133,7 +6135,7 @@ handle_ui.on("js-plinfo-edittags", function () {
 });
 
 
-var self, fields, field_order, aufull = {},
+var self = false, fields, field_order, aufull = {},
     tagmap = false, _bypid = {}, _bypidx = {};
 
 function foldmap(type) {
@@ -6466,6 +6468,8 @@ function plinfo(type, dofold) {
 
 function initialize() {
     self = $("table.pltable")[0];
+    if (!self)
+        return false;
     field_order = JSON.parse(self.getAttribute("data-columns"));
     fields = {};
     var fold_prefix = self.getAttribute("data-fold-session-prefix");
@@ -6495,7 +6499,8 @@ plinfo.set_scoresort = function (ss) {
 plinfo.render_needed = render_needed;
 
 $(window).on("hotcrptags", function (evt, rv) {
-    self || initialize();
+    if (self === false || initialize() === false)
+        return;
     var $pr = pidrow(rv.pid);
     if (!$pr.length)
         return;
@@ -6659,28 +6664,18 @@ return function (classes, class_prefix) {
 
 /* form value transfer */
 function transfer_form_values($dst, $src, names) {
-    var smap = {};
-    $src.find("input, select, textarea").each(function () {
-        smap[this.name] = this;
-    });
-    if ($dst.length == 1 && $dst[0].firstChild.tagName === "DIV")
-        $dst = $dst.children();
+    var $si = $src.find("input, select, textarea"), $di = $dst.find("input, select, textarea");
     for (var i = 0; i != names.length; ++i) {
-        var n = names[i], v = null;
-        if (!smap[n])
-            /* skip */;
-        else if (smap[n].type === "checkbox" || smap[n].type === "radio") {
-            if (smap[n].checked)
-                v = smap[n].value;
-        } else
-            v = $(smap[n]).val();
-        var $d = $dst.find("input[name='" + n + "']");
-        if (v === null)
-            $d.remove();
-        else {
+        var n = names[i], $s = $si.filter("[name='" + n + "']");
+        if ($s.length > 0 && ($s[0].type === "checkbox" || $s[0].type === "radio"))
+            $s = $s.filter(":checked");
+        var $d = $di.filter("[name='" + n + "']");
+        if ($s.length === 0) {
+            $d.filter("input[type=hidden]").remove();
+        } else {
             if (!$d.length)
                 $d = $('<input type="hidden" name="' + n + '">').appendTo($dst);
-            $d.val(v);
+            $d.val($s.val());
         }
     }
 }
@@ -6838,7 +6833,7 @@ handle_ui.on("js-withdraw", function (event) {
     hc.push('<textarea name="reason" rows="3" cols="40" style="width:99%" placeholder="Optional explanation" spellcheck="true"></textarea>');
     if (!this.hasAttribute("data-withdrawable")) {
         var idctr = hc.next_htctl_id();
-        hc.push('<div><input type="checkbox" name="override" value="1" id="' + idctr + '">&nbsp;<label for="' + idctr + '">Override deadlines</label></div>');
+        hc.push('<label class="checki"><span class="checkc"><input type="checkbox" name="override" value="1"> </span>Override deadlines</label>');
     }
     hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn-primary">Withdraw</button>',
         '<button type="button" name="cancel">Cancel</button>']);
@@ -7295,10 +7290,21 @@ handle_ui.on("js-decline-review", function () {
     var $f = $(this).closest("form"),
         hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
-    hc.push('<textarea name="reason" rows="3" cols="40" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
+    hc.push('<textarea name="reason" rows="3" cols="60" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
     hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn-primary">Decline review</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
+});
+
+handle_ui.on("js-deny-review-request", function () {
+    var $f = $(this).closest("form"),
+        hc = popup_skeleton({anchor: this, action: $f[0].action});
+    hc.push('<p>Select “Deny request” to deny this review request.</p>');
+    hc.push('<textarea name="reason" rows="3" cols="60" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
+    hc.push_actions(['<button type="submit" name="denyreview" value="1" class="btn-primary">Deny request</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
+    var $d = hc.show();
+    transfer_form_values($d, $f, ["firstName", "lastName", "affiliation", "reason"]);
 });
 
 handle_ui.on("js-delete-review", function () {

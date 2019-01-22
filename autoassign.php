@@ -652,7 +652,7 @@ $summary = [];
 $nrev = new AssignmentCountSet($Conf);
 $nrev->load_rev();
 foreach ($Conf->pc_members() as $id => $p) {
-    $t = '<div class="ctelt"><label class="ctelti checki';
+    $t = '<div class="ctelt"><label class="checki ctelti';
     if (($k = $p->viewable_color_classes($Me)))
         $t .= ' ' . $k;
     $t .= '"><span class="checkc">'

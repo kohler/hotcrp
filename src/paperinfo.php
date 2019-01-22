@@ -559,18 +559,18 @@ class PaperInfo {
         if ($aunum) {
             if ($matcher->nonauthor) {
                 $aumatcher = new AuthorMatcher($conflict);
-                $what = "PC collaborator " . $aumatcher->highlight($matcher) . "<br>matches author #$aunum " . $matcher->highlight($conflict);
+                $what = "collaborator " . $aumatcher->highlight($matcher) . "<br>matches author #$aunum " . $matcher->highlight($conflict);
             } else if ($why == AuthorMatcher::MATCH_AFFILIATION)
-                $what = "PC affiliation matches author #$aunum affiliation " . $matcher->highlight($conflict->affiliation);
+                $what = "affiliation matches author #$aunum affiliation " . $matcher->highlight($conflict->affiliation);
             else
-                $what = "PC name matches author #$aunum name " . $matcher->highlight($conflict->name());
-            $this->_potential_conflicts[] = ["#$aunum", '<div class="mmm">' . $what . '</div>'];
+                $what = "name matches author #$aunum name " . $matcher->highlight($conflict->name());
+            $this->_potential_conflicts[] = ["#$aunum", $what];
         } else {
             if ($why == AuthorMatcher::MATCH_AFFILIATION)
-                $what = "PC affiliation matches paper collaborator ";
+                $what = "affiliation matches paper collaborator ";
             else
-                $what = "PC name matches paper collaborator ";
-            $this->_potential_conflicts[] = ["other conflicts", '<div class="mmm">' . $what . $matcher->highlight($conflict) . '</div>'];
+                $what = "name matches paper collaborator ";
+            $this->_potential_conflicts[] = ["other conflicts", $what . $matcher->highlight($conflict)];
         }
     }
 
@@ -581,7 +581,7 @@ class PaperInfo {
         usort($this->_potential_conflicts, function ($a, $b) { return strnatcmp($a[0], $b[0]); });
         $authors = array_unique(array_map(function ($x) { return $x[0]; }, $this->_potential_conflicts));
         $authors = array_filter($authors, function ($f) { return $f !== "other conflicts"; });
-        $messages = join("", array_map(function ($x) { return $x[1]; }, $this->_potential_conflicts));
+        $messages = array_map(function ($x) { return $x[1]; }, $this->_potential_conflicts);
         $this->_potential_conflicts = null;
         return ['<div class="pcconfmatch'
             . ($highlight ? " pcconfmatch-highlight" : "")
@@ -589,6 +589,11 @@ class PaperInfo {
             . (empty($authors) ? "" : " with " . pluralx($authors, "author") . " " . numrangejoin($authors))
             . '…</div>', $messages];
     }
+
+    static function potential_conflict_tooltip_html($potconf) {
+        return $potconf ? '<ul class="x"><li>' . join('</li><li>', $potconf[1]) . '</li></ul>' : '';
+    }
+
 
     function field_deaccent($field, $want_false = false) {
         $data = $this->$field;
@@ -1609,8 +1614,10 @@ class PaperInfo {
         foreach ($row_set as $prow)
             $prow->_refusal_array = [];
 
-        $result = $this->conf->qe("select * from PaperReviewRefused where paperId?a", $row_set->paper_ids());
+        $result = $this->conf->qe("select *, null reviewToken, ? reviewType from PaperReviewRefused where paperId?a", REVIEW_REFUSAL, $row_set->paper_ids());
         while (($ref = $result->fetch_object())) {
+            $ref->reviewRound = (int) $ref->reviewRound;
+            $ref->reviewType = (int) $ref->reviewType;
             $prow = $row_set->get($ref->paperId);
             $prow->_refusal_array[] = $ref;
         }

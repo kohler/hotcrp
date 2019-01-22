@@ -130,8 +130,7 @@ if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
         $Conf->self_redirect($Qreq);
     } else {
         if (isset($result->content["errf"]) && isset($result->content["errf"]["override"]))
-            $result->content["error"] .= "<p>To request a review anyway, submit again with the “Override” checkbox checked.</p>";
-        $result->content["errf"]["need-override-requestreview-" . $Qreq->email] = true;
+            $result->content["error"] .= "<p>To request a review anyway, either retract the refusal or submit again with “Override” checked.</p>";
         $result->export_errors();
         loadRows();
     }
@@ -153,13 +152,32 @@ if ((isset($Qreq->deny) || isset($Qreq->denyreview))
 }
 
 // retract review request
-if (isset($Qreq->retract)
+if (isset($Qreq->retractreview)
     && $Qreq->post_ok()) {
     $result = RequestReview_API::retractreview($Me, $Qreq, $prow);
     $result = JsonResult::make($result);
     if ($result->content["ok"]) {
-        $Conf->confirmMsg("Review retracted.");
-        unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retract);
+        if ($result->content["notified"])
+            $Conf->confirmMsg("Review retracted. The reviewer was notified that they do not need to complete their review.");
+        else
+            $Conf->confirmMsg("Review request retracted.");
+        unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retractreview);
+        $Conf->self_redirect($Qreq);
+    } else {
+        $result->export_errors();
+        loadRows();
+    }
+}
+
+// retract review request
+if (isset($Qreq->undeclinereview)
+    && $Qreq->post_ok()) {
+    $result = RequestReview_API::undeclinereview($Me, $Qreq, $prow);
+    $result = JsonResult::make($result);
+    if ($result->content["ok"]) {
+        $email = $Qreq->email ? : "You";
+        $Conf->confirmMsg("Review refusal retracted. " . htmlspecialchars($email) . " may now be asked again to review this submission.");
+        unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->unrefusereview);
         $Conf->self_redirect($Qreq);
     } else {
         $result->export_errors();
@@ -182,21 +200,180 @@ $paperTable->paptabBegin();
 
 
 // reviewer information
-$proposals = null;
-if ($Conf->setting("extrev_chairreq")) {
-    $qv = [$prow->paperId];
-    $q = "";
-    if (!$Me->allow_administer($prow)) {
-        $q = " and requestedBy=?";
-        $qv[] = $Me->contactId;
-    }
-    $result = $Conf->qe_apply("select * from ReviewRequest where paperId=?$q", $qv);
-    $proposals = edb_orows($result);
-}
-$t = reviewTable($prow, $paperTable->all_reviews(), null, null, "assign", $proposals);
-$t .= reviewLinks($prow, $paperTable->all_reviews(), null, null, "assign", $allreviewslink);
+$t = reviewTable($prow, $paperTable->all_reviews(), null, null, "assign");
 if ($t !== "")
-    echo '<hr class="papcard_sep" />', $t;
+    echo '<hr class="papcard_sep"><h3>Reviews</h3>', $t;
+
+
+// requested reviews
+$requests = [];
+foreach ($paperTable->all_reviews() as $rrow) {
+    if ($rrow->reviewType < REVIEW_SECONDARY
+        && $rrow->reviewModified <= 1
+        && $Me->can_view_review_identity($prow, $rrow)
+        && ($Me->can_administer($prow) || $rrow->requestedBy == $Me->contactId))
+        $requests[] = [0, max((int) $rrow->timeRequestNotified, (int) $rrow->timeRequested), count($requests), $rrow];
+}
+$result = $Conf->qe("select *, null contactId, null reviewToken, ? reviewType from ReviewRequest where paperId=?",
+    REVIEW_REQUEST, $prow->paperId);
+while (($rrow = $result->fetch_object())) {
+    $rrow->reviewRound = (int) $rrow->reviewRound;
+    $rrow->reviewType = (int) $rrow->reviewType;
+    if ($Me->can_view_review_identity($prow, $rrow))
+        $requests[] = [1, (int) $rrow->timeRequested, count($requests), $rrow];
+}
+Dbl::free($result);
+foreach ($prow->review_refusals() as $rrow) {
+    if ($Me->can_view_review_identity($prow, $rrow))
+        $requests[] = [2, (int) $rrow->timeRefused, count($requests), $rrow];
+}
+usort($requests, function ($a, $b) {
+    if ($a[0] !== $b[0]) {
+        return $a[0] - $b[0];
+    } else if ($a[1] !== $b[1]) {
+        if ($a[1] === 0 || $b[1] === 0)
+            return $a[1] === 0 ? 1 : -1;
+        else
+            return $a[1] < $b[1] ? -1 : 1;
+    } else {
+        return $a[2] - $b[2];
+    }
+});
+
+if ($requests)
+    echo '<hr class="papcard_sep"><h3>Review requests</h3><div class="ctable-wide">';
+foreach ($requests as $req) {
+    echo '<div class="ctelt"><div class="ctelti has-fold';
+    $rrow = $req[3];
+    if ($req[0] === 1
+        && ($Me->can_administer($prow) || $rrow->requestedBy == $Me->contactId))
+        echo ' foldo';
+    else
+        echo ' foldc';
+    echo '">';
+
+    $rrowid = null;
+    if (isset($rrow->contactId) && $rrow->contactId > 0)
+        $rrowid = $Conf->cached_user_by_id($rrow->contactId);
+    else if ($req[0] === 1)
+        $rrowid = $Conf->cached_user_by_email($rrow->email);
+    if ($rrowid === null) {
+        if ($req[0] === 1)
+            $rrowid = new Contact($rrow, $Conf);
+        else
+            $rrowid = $rrow;
+    }
+
+    $actas = "";
+    if (isset($rrow->contactId) && $rrow->contactId > 0) {
+        $name = $Me->reviewer_html_for($rrowid);
+        if ($rrow->contactId != $Me->contactId
+            && $Me->privChair
+            && $Me->allow_administer($prow))
+            $actas = ' ' . Ht::link(Ht::img("viewas.png", "[Act as]", ["title" => "Become user"]),
+                $Conf->hoturl("review", ["actas" => $rrow->email]));
+    } else
+        $name = Text::name_html($rrowid);
+    $fullname = $name;
+    if ($rrowid->affiliation !== "")
+        $fullname .= ' <span class="auaff">(' . htmlspecialchars($rrowid->affiliation) . ')</span>';
+    if ((string) $rrowid->firstName !== "" || (string) $rrowid->lastName !== "")
+        $fullname .= ' &lt;' . Ht::link(htmlspecialchars($rrowid->email), "mailto:" . $rrowid->email, ["class" => "mailto"]) . '&gt;';
+
+    $namex = '<span class="fn">' . $name . '</span>'
+        . '<span class="fx">' . $fullname . '</span>'
+        . $actas;
+    if ($req[0] <= 1)
+        $namex .= ' ' . review_type_icon($rrowid->isPC ? REVIEW_PC : REVIEW_EXTERNAL, true);
+    if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow))
+        $namex .= '&nbsp;<span class="revround" title="Review round">'
+            . htmlspecialchars($Conf->round_name($rrow->reviewRound))
+            . "</span>";
+
+    echo '<div class="ui js-foldup"><a href="" class="ui js-foldup">', expander(null, 0), '</a>';
+    $reason = null;
+
+    if ($req[0] === 0) {
+        $rname = "Review " . ($rrow->reviewModified > 0 ? " (accepted)" : " (not started)");
+        if ($Me->can_view_review($prow, $rrow))
+            $rname = Ht::link($rname, hoturl("review", "p={$prow->paperId}&amp;r={$rrow->reviewId}"));
+        echo $rname, ': ', $namex,
+            '</div><div class="f-h">';
+        if ($rrow->reviewModified == 1)
+            echo 'accepted ', $Conf->unparse_interval($req[1]), '<br>';
+        echo 'requested ', $Conf->unparse_interval((int) $rrow->timeRequested);
+        if ($rrow->requestedBy == $Me->contactId)
+            echo " by you";
+        else if ($Me->can_view_review_requester($prow, $rrow))
+            echo " by ", $Me->reviewer_html_for($rrow->requestedBy);
+        echo '</div>';
+    } else if ($req[0] === 1) {
+        echo "Proposed review: ", $namex, '</div><div class="f-h"><ul class="x mb0">',
+            '<li>requested ', $Conf->unparse_interval((int) $rrow->timeRequested);
+        if ($rrow->requestedBy == $Me->contactId)
+            echo " by you";
+        else if ($Me->can_view_review_requester($prow, $rrow))
+            echo " by ", $Me->reviewer_html_for($rrow->requestedBy);
+        echo '</li>';
+        if ($Me->allow_view_authors($prow)
+            && ($pt = $prow->potential_conflict_html($rrowid, true))) {
+            foreach ($pt[1] as $i => $pcx)
+                echo '<li class="fx">possible conflict: ', $pcx, '</li>';
+            $reason = "This reviewer appears to have a conflict with the submission authors.";
+        }
+        echo '</ul></div>';
+    } else {
+        echo "Review declined: ", $namex,
+            '</div><div class="f-h fx"><ul class="x mb0">',
+            '<li>requested ', $Conf->unparse_interval((int) $rrow->timeRequested);
+        if ($rrow->requestedBy == $Me->contactId)
+            echo " by you";
+        else if ($Me->can_view_review_requester($prow, $rrow))
+            echo " by ", $Me->reviewer_html_for($rrow->requestedBy);
+        echo '</li><li>declined ', $Conf->unparse_interval((int) $rrow->timeRefused);
+        if ($rrow->refusedBy && (!$rrow->contactId || $rrow->contactId != $rrow->refusedBy)) {
+            if ($rrow->refusedBy == $Me->contactId)
+                echo " by you";
+            else
+                echo " by ", $Me->reviewer_html_for($rrow->refusedBy);
+        }
+        echo '</li>';
+        if ((string) $rrow->reason !== "" && $rrow->reason !== "request denied by chair")
+            echo '<li>', Ht::format0("reason: " . $rrow->reason), '</li>';
+        echo '</ul></div>';
+    }
+
+    if ($Me->can_administer($prow)
+        || ($req[0] !== 2 && $Me->contactId > 0 && $rrow->requestedBy == $Me->contactId)) {
+        echo Ht::form(hoturl_post("assign", ["p" => $prow->paperId, "action" => "managerequest", "email" => $rrow->email, "round" => $rrow->reviewRound]), ["class" => "fx"]);
+        if (!isset($rrow->contactId) || !$rrow->contactId) {
+            foreach (["firstName", "lastName", "affiliation"] as $k)
+                echo Ht::hidden($k, $rrow->$k);
+        }
+        $buttons = [];
+        if ($reason)
+            echo Ht::hidden("reason", $reason);
+        if ($req[0] === 1 && $Me->can_administer($prow)) {
+            echo Ht::hidden("override", 1);
+            $buttons[] = Ht::submit("approvereview", "Approve request", ["class" => "btn-sm btn-success"]);
+            $buttons[] = Ht::submit("denyreview", "Deny request", ["class" => "btn-sm ui js-deny-review-request"]); // XXX reason
+        }
+        if ($req[0] === 0)
+            $buttons[] = Ht::submit("retractreview", "Retract review", ["class" => "btn-sm"]);
+        else if ($req[0] === 1 && $Me->contactId > 0 && $rrow->requestedBy == $Me->contactId)
+            $buttons[] = Ht::submit("retractreview", "Retract request", ["class" => "btn-sm"]);
+        if ($req[0] === 2)
+            $buttons[] = Ht::submit("undeclinereview", "Retract refusal", ["class" => "btn-sm"]);
+        if ($buttons)
+            echo '<div class="btnp">', join("", $buttons), '</div>';
+        echo '</form>';
+    }
+
+    echo '</div></div>';
+}
+if ($requests)
+    echo '</div>';
+
 
 
 // PC assignments
@@ -213,8 +390,7 @@ if ($Me->can_administer($prow)) {
         $pcx[$row->contactId] = $row;
 
     // PC conflicts row
-    echo '<hr class="papcard_sep" />',
-        "<h3 style=\"margin-top:0\">PC review assignments</h3>",
+    echo '<hr class="papcard_sep"><h3>PC assignments</h3>',
         Ht::form(hoturl_post("assign", "p=$prow->paperId"), array("id" => "ass")),
         '<p>';
     Ht::stash_script('hiliter_children("#ass", true)');
@@ -273,7 +449,7 @@ if ($Me->can_administer($prow)) {
             echo unparse_preference_span($prow->reviewer_preference($pc, true));
         echo '</div>'; // .pctbname
         if ($pcconfmatch)
-            echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', $pcconfmatch[1]), '">', $pcconfmatch[0], '</div>';
+            echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($pcconfmatch)), '">', $pcconfmatch[0], '</div>';
 
         // then, number of reviews
         echo '<div class="pctbnrev">';
@@ -351,9 +527,9 @@ if ($reqbody && strpos($reqbody["body"], "%REASON%") !== false) {
 }
 
 if ($Me->can_administer($prow))
-    echo '<div class="', Ht::control_class("override", "checki"), '"><label><span class="checkc">',
+    echo '<label class="', Ht::control_class("override", "checki"), '"><span class="checkc">',
         Ht::checkbox("override"),
-        ' </span>Override deadlines, declined requests, and potential conflicts</label></div>';
+        ' </span>Override deadlines and declined requests</label>';
 
 echo '<div class="aab aabr">',
     '<div class="aabut aabutsp">', Ht::submit("requestreview", "Request review", ["class" => "btn-primary"]), '</div>',

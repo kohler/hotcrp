@@ -32,27 +32,27 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     function _conflict_match($user, $matcher, $conflict, $aunum, $why) {
         $aumatcher = new AuthorMatcher($conflict);
         if ($aunum) {
-            $pfx = "<em>Author #$aunum</em> ";
+            $pfx = "<em>author #$aunum</em> ";
             if ($matcher->nonauthor) {
                 $match = $aumatcher->highlight($matcher);
                 if (!$matcher->name())
                     $match = "All " . $match;
-                $this->_potconf[$aunum][] = [$pfx . $matcher->highlight($conflict), "Author matches PC collaborator " . $match];
+                $this->_potconf[$aunum][] = [$pfx . $matcher->highlight($conflict), "matches PC collaborator " . $match];
             } else if ($why == AuthorMatcher::MATCH_AFFILIATION) {
-                $this->_potconf[$aunum][] = [$pfx . htmlspecialchars($conflict->name()) . " (" . $matcher->highlight($conflict->affiliation) . ")", "Author matches PC affiliation " . $aumatcher->highlight($user->affiliation)];
+                $this->_potconf[$aunum][] = [$pfx . htmlspecialchars($conflict->name()) . " (" . $matcher->highlight($conflict->affiliation) . ")", "matches PC affiliation " . $aumatcher->highlight($user->affiliation)];
             } else {
-                $this->_potconf[$aunum][] = [$pfx . $matcher->highlight($conflict), "Author matches PC " . $aumatcher->highlight($user)];
+                $this->_potconf[$aunum][] = [$pfx . $matcher->highlight($conflict), "matches PC " . $aumatcher->highlight($user)];
             }
         } else {
             $num = "x" . count($this->_potconf);
-            $pfx = "<em>Collaborator</em> ";
+            $pfx = "<em>collaborator</em> ";
             if (!$conflict->name())
                 $pfx .= "All ";
             $pfx .= $matcher->highlight($conflict);
             if ($why == AuthorMatcher::MATCH_AFFILIATION) {
-                $this->_potconf[$num][] = [$pfx, "Paper collaborator matches PC affiliation " . $aumatcher->highlight($user->affiliation)];
+                $this->_potconf[$num][] = [$pfx, "matches PC affiliation " . $aumatcher->highlight($user->affiliation)];
             } else {
-                $this->_potconf[$num][] = [$pfx, "Paper collaborator matches PC " . $aumatcher->highlight($user)];
+                $this->_potconf[$num][] = [$pfx, "matches PC " . $aumatcher->highlight($user)];
             }
         }
     }

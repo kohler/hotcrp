@@ -333,11 +333,15 @@ DROP TABLE IF EXISTS `PaperReviewRefused`;
 CREATE TABLE `PaperReviewRefused` (
   `paperId` int(11) NOT NULL,
   `email` varchar(120) NOT NULL,
+  `firstName` varbinary(120) DEFAULT NULL,
+  `lastName` varbinary(120) DEFAULT NULL,
+  `affiliation` varbinary(2048) DEFAULT NULL,
   `contactId` int(11) NOT NULL,
   `requestedBy` int(11) NOT NULL,
   `timeRequested` bigint(11) DEFAULT NULL,
   `refusedBy` int(11) DEFAULT NULL,
   `timeRefused` bigint(11) DEFAULT NULL,
+  `reviewRound` int(1) DEFAULT NULL,
   `reason` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`paperId`,`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -505,7 +509,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 205);
+insert into Settings (name, value) values ('allowPaperOption', 207);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

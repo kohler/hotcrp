@@ -191,9 +191,9 @@ class Search_DisplayOptions {
     function checkbox_item($column, $type, $title, $options = []) {
         global $pl;
         $options["class"] = "uich js-plinfo";
-        $x = '<div class="checki"><label><span class="checkc">'
+        $x = '<label class="checki"><span class="checkc">'
             . Ht::checkbox("show$type", 1, !$pl->is_folded($type), $options)
-            . ' </span>' . $title . '</div>';
+            . ' </span>' . $title . '</label>';
         $this->item($column, $x);
     }
 }

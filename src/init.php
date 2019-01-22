@@ -10,6 +10,8 @@ define("REVIEW_PRIMARY", 4);
 define("REVIEW_SECONDARY", 3);
 define("REVIEW_PC", 2);
 define("REVIEW_EXTERNAL", 1);
+define("REVIEW_REQUEST", -1);
+define("REVIEW_REFUSAL", -2);
 
 define("CONFLICT_NONE", 0);
 define("CONFLICT_PCMARK", 1); /* unused */

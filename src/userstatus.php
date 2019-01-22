@@ -759,23 +759,23 @@ class UserStatus extends MessageSet {
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
             echo Ht::hidden("has_watchallreviews", 1);
             echo "<table><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td>",
-                "<td><div class=\"checki\"><label><span class=\"checkc\">",
+                "<td><label class=\"checki\"><span class=\"checkc\">",
                 Ht::checkbox("watchreview", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]),
-                "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label></div>\n";
+                "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label>\n";
             if (!$us->user->is_empty() && $us->user->is_manager()) {
-                echo "<div class=\"checki\"><label><span class=\"checkc\">",
+                echo "<label class=\"checki\"><span class=\"checkc\">",
                     Ht::checkbox("watchmanagedreviews", 1, !!get($follow, "managedreviews"), ["data-default-checked" => !!get($cfollow, "managedreviews")]),
                     "</span>", $us->conf->_("Reviews and comments on submissions you administer"),
-                    Ht::hidden("has_watchmanagedreviews", 1), "</label></div>\n";
+                    Ht::hidden("has_watchmanagedreviews", 1), "</label>\n";
             }
-            echo "<div class=\"checki\"><label><span class=\"checkc\">",
+            echo "<label class=\"checki\"><span class=\"checkc\">",
                 Ht::checkbox("watchallreviews", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]),
-                "</span>", $us->conf->_("Reviews and comments on <i>all</i> submissions"), "</label></div>\n";
+                "</span>", $us->conf->_("Reviews and comments on <i>all</i> submissions"), "</label>\n";
             if (!$us->user->is_empty() && $us->user->is_manager()) {
-                echo "<div class=\"checki\"><label><span class=\"checkc\">",
+                echo "<label class=\"checki\"><span class=\"checkc\">",
                     Ht::checkbox("watchallfinal", 1, !!get($follow, "allfinal"), ["data-default-checked" => !!get($cfollow, "allfinal")]),
                     "</span>", $us->conf->_("Updates to final versions for submissions you administer"),
-                    Ht::hidden("has_watchallfinal", 1), "</label></div>\n";
+                    Ht::hidden("has_watchallfinal", 1), "</label>\n";
             }
             echo "</td></tr></table>";
         } else
@@ -793,9 +793,9 @@ class UserStatus extends MessageSet {
         $cpcrole = self::pcrole_text($cj);
         foreach (["chair" => "PC chair", "pc" => "PC member",
                   "no" => "Not on the PC"] as $k => $v) {
-            echo '<div class="checki"><label><span class="checkc">',
+            echo '<label class="checki"><span class="checkc">',
                 Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role keep-focus", "data-default-checked" => $cpcrole === $k]),
-                '</span>', $v, "</label></div>\n";
+                '</span>', $v, "</label>\n";
         }
         Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
 
