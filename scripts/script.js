@@ -2444,7 +2444,7 @@ function fold(elt, dofold, foldnum) {
 
 function foldup(event, opts) {
     var e = this, dofold = false, m, x;
-    if (this.tagName === "DIV" && event.target.tagName === "A")
+    if (this.tagName === "DIV" && event && event.target.tagName === "A")
         return;
     if (typeof opts === "number")
         opts = {n: opts};

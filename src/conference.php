@@ -2196,9 +2196,9 @@ class Conf {
                 $this->opt["dateFormatTimezone"] = null;
             $this->_date_format_initialized = true;
         }
-        if ($type == "timestamp")
+        if ($type === "timestamp")
             return $this->opt["timestampFormat"];
-        else if ($type == "obscure")
+        else if ($type === "obscure")
             return $this->opt["dateFormatObscure"];
         else if ($type)
             return $this->opt["dateFormatLong"];
@@ -2305,7 +2305,7 @@ class Conf {
         $unit = 0;
         if ($d >= 5227200) {
             if (!($format & 1))
-                return ($format & 4 ? "" : "on ") . date($this->_dateFormat(false), $when);
+                return ($format & 4 ? "" : "on ") . date($this->_dateFormat("obscure"), $when);
             $unit = 5;
         } else if ($d >= 259200)
             $unit = 4;
