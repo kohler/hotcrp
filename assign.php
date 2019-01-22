@@ -298,23 +298,34 @@ foreach ($requests as $req) {
         if ($Me->can_view_review($prow, $rrow))
             $rname = Ht::link($rname, hoturl("review", "p={$prow->paperId}&amp;r={$rrow->reviewId}"));
         echo $rname, ': ', $namex,
-            '</div><div class="f-h">';
-        if ($rrow->reviewModified == 1)
-            echo 'accepted ', $Conf->unparse_interval($req[1]), '<br>';
-        echo 'requested ', $Conf->unparse_interval((int) $rrow->timeRequested);
-        if ($rrow->requestedBy == $Me->contactId)
-            echo " by you";
-        else if ($Me->can_view_review_requester($prow, $rrow))
-            echo " by ", $Me->reviewer_html_for($rrow->requestedBy);
-        echo '</div>';
-    } else if ($req[0] === 1) {
-        echo "Proposed review: ", $namex, '</div><div class="f-h"><ul class="x mb0">',
-            '<li>requested ', $Conf->unparse_interval((int) $rrow->timeRequested);
+            '</div><div class="f-h"><ul class="x mb0">';
+        echo '<li>requested';
+        if ($rrow->timeRequested)
+            echo ' ', $Conf->unparse_interval((int) $rrow->timeRequested);
         if ($rrow->requestedBy == $Me->contactId)
             echo " by you";
         else if ($Me->can_view_review_requester($prow, $rrow))
             echo " by ", $Me->reviewer_html_for($rrow->requestedBy);
         echo '</li>';
+        if ($rrow->reviewModified == 1) {
+            echo '<li>accepted';
+            if ($req[1])
+                echo ' ', $Conf->unparse_interval($req[1]);
+            echo '</li>';
+        }
+        echo '</ul></div>';
+    } else if ($req[0] === 1) {
+        echo "Proposed review: ", $namex, '</div><div class="f-h"><ul class="x mb0">';
+        if ($rrow->timeRequested || $Me->can_view_review_requester($prow, $rrow)) {
+            echo '<li>requested';
+            if ($rrow->timeRequested)
+                echo ' ', $Conf->unparse_interval((int) $rrow->timeRequested);
+            if ($rrow->requestedBy == $Me->contactId)
+                echo " by you";
+            else if ($Me->can_view_review_requester($prow, $rrow))
+                echo " by ", $Me->reviewer_html_for($rrow->requestedBy);
+            echo '</li>';
+        }
         if ($Me->allow_view_authors($prow)
             && ($pt = $prow->potential_conflict_html($rrowid, true))) {
             foreach ($pt[1] as $i => $pcx)
@@ -324,13 +335,20 @@ foreach ($requests as $req) {
         echo '</ul></div>';
     } else {
         echo "Review declined: ", $namex,
-            '</div><div class="f-h fx"><ul class="x mb0">',
-            '<li>requested ', $Conf->unparse_interval((int) $rrow->timeRequested);
-        if ($rrow->requestedBy == $Me->contactId)
-            echo " by you";
-        else if ($Me->can_view_review_requester($prow, $rrow))
-            echo " by ", $Me->reviewer_html_for($rrow->requestedBy);
-        echo '</li><li>declined ', $Conf->unparse_interval((int) $rrow->timeRefused);
+            '</div><div class="f-h fx"><ul class="x mb0">';
+        if ($rrow->timeRequested || $Me->can_view_review_requester($prow, $rrow)) {
+            echo '<li>requested';
+            if ($rrow->timeRequested)
+                echo ' ', $Conf->unparse_interval((int) $rrow->timeRequested);
+            if ($rrow->requestedBy == $Me->contactId)
+                echo " by you";
+            else if ($Me->can_view_review_requester($prow, $rrow))
+                echo " by ", $Me->reviewer_html_for($rrow->requestedBy);
+            echo '</li>';
+        }
+        echo '<li>declined';
+        if ($rrow->timeRefused)
+            echo ' ', $Conf->unparse_interval((int) $rrow->timeRefused);
         if ($rrow->refusedBy && (!$rrow->contactId || $rrow->contactId != $rrow->refusedBy)) {
             if ($rrow->refusedBy == $Me->contactId)
                 echo " by you";
