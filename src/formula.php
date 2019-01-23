@@ -51,17 +51,18 @@ class Fexpr implements JsonSerializable {
     const FTAG = 7; // used in formulagraph.php
     const FSEARCH = 8; // used in formulagraph.php
 
-    function __construct($op) {
+    function __construct($op = null, $args = []) {
         if (is_string($op)) {
             $this->op = $op;
             if ($this->op === "trunc")
                 $this->op = "floor";
-            $args = func_get_args();
-            if (count($args) === 2 && is_array($args[1]))
-                $this->args = $args[1];
-            else if (count($args) > 1)
-                $this->args = array_slice($args, 1);
-        } else {
+            if (func_num_args() <= 2 && is_array($args))
+                $this->args = $args;
+            else {
+                assert(func_num_args() <= 2 && is_array($args));
+                $this->args = array_slice(func_get_args(), 1);
+            }
+        } else if ($op !== null) {
             assert($op instanceof FormulaCall);
             $this->op = $op->name;
         }
@@ -351,7 +352,7 @@ class ConstantFexpr extends Fexpr {
 
 class NegateFexpr extends Fexpr {
     function __construct(Fexpr $e) {
-        parent::__construct("!", $e);
+        parent::__construct("!", [$e]);
         $this->format_ = self::FBOOL;
     }
     function compile(FormulaCompiler $state) {
@@ -363,7 +364,7 @@ class NegateFexpr extends Fexpr {
 class InFexpr extends Fexpr {
     private $values;
     function __construct(Fexpr $e, array $values) {
-        parent::__construct("in", $e);
+        parent::__construct("in", [$e]);
         $this->values = $values;
         $this->format_ = self::FBOOL;
     }
@@ -538,9 +539,6 @@ class AggregateFexpr extends Fexpr {
 }
 
 class Sub_Fexpr extends Fexpr {
-    function __construct($op) {
-        parent::__construct($op);
-    }
     function can_combine() {
         return false;
     }
@@ -1436,7 +1434,7 @@ class Formula {
             if (($t = ltrim($t)) !== "" && $t[0] === ":") {
                 $t = substr($t, 1);
                 if (($e2 = $this->_parse_ternary($t, $in_qc))) {
-                    $e = new Fexpr("?:", $e, $e1, $e2);
+                    $e = new Fexpr("?:", [$e, $e1, $e2]);
                     $e->set_landmark($lpos, -strlen($t));
                     return $e;
                 }
@@ -1559,10 +1557,10 @@ class Formula {
             $v = $fval[$i + 1];
             $fx = ($k === "outcome" ? new Decision_Fexpr : new TimeField_Fexpr($k));
             if (is_string($v))
-                $fx = new Fexpr(str_replace("0", "", $v), $fx, ConstantFexpr::czero());
+                $fx = new Fexpr(str_replace("0", "", $v), [$fx, ConstantFexpr::czero()]);
             else
                 $fx = new InFexpr($fx, $v);
-            $fn = $fn ? new Fexpr("&&", $fn, $fx) : $fx;
+            $fn = $fn ? new Fexpr("&&", [$fn, $fx]) : $fx;
         }
         return $fn;
     }
@@ -1595,7 +1593,7 @@ class Formula {
                 $e0 = $this->_reviewer_base($m[1]);
             } else if ($rsm->apply_review_type($m[1], true)) {
                 $op = strtolower($m[1][0]) === "p" ? ">=" : "==";
-                $ee = new Fexpr($op, new Revtype_Fexpr, new ConstantFexpr($rsm->review_type(), Fexpr::FREVTYPE));
+                $ee = new Fexpr($op, [new Revtype_Fexpr, new ConstantFexpr($rsm->review_type(), Fexpr::FREVTYPE)]);
             } else if ($rsm->apply_round($m[1], $this->conf))
                 /* OK */;
             else {
@@ -1604,15 +1602,15 @@ class Formula {
                 $ee = new ReviewerMatch_Fexpr($this->user, $m[1]);
             }
             if ($ee)
-                $e1 = $e1 ? new Fexpr("&&", $e1, $ee) : $ee;
+                $e1 = $e1 ? new Fexpr("&&", [$e1, $ee]) : $ee;
             $ex = $m[2];
         }
         if ($rsm->round) {
             $ee = new InFexpr(new ReviewRound_Fexpr, $rsm->round);
-            $e1 = $e1 ? new Fexpr("&&", $e1, $ee) : $ee;
+            $e1 = $e1 ? new Fexpr("&&", [$e1, $ee]) : $ee;
         }
         if ($e0 && $e1)
-            return new Fexpr("?:", $e1, $e0, ConstantFexpr::cnull());
+            return new Fexpr("?:", [$e1, $e0, ConstantFexpr::cnull()]);
         else
             return $e0 ? : $e1;
     }
@@ -1634,9 +1632,9 @@ class Formula {
                 $ex = new InFexpr($ex, $o->value);
             } else {
                 $ex = new Fexpr(get(self::$_oprewrite, $o->compar, $o->compar),
-                                $ex, new ConstantFexpr($o->value, $o->option));
+                                [$ex, new ConstantFexpr($o->value, $o->option)]);
             }
-            $e = $e ? new Fexpr("||", $e, $ex) : $ex;
+            $e = $e ? new Fexpr("||", [$e, $ex]) : $ex;
         }
         if ($e && $os->negated) {
             $e = new NegateFexpr($e);
@@ -1662,7 +1660,7 @@ class Formula {
             $t = substr($t, 1);
             if (!($e = $this->_parse_expr($t, self::$opprec["u$op"], $in_qc)))
                 return null;
-            $e = $op === "!" ? new NegateFexpr($e) : new Fexpr($op, $e);
+            $e = $op === "!" ? new NegateFexpr($e) : new Fexpr($op, [$e]);
         } else if (preg_match('/\Anot([\s(].*|)\z/si', $t, $m)) {
             $t = $m[1];
             if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc)))
@@ -1689,13 +1687,13 @@ class Formula {
             $e = new Decision_Fexpr;
             $t = $m[1];
         } else if (preg_match('/\Ais:?rev?\b(.*)\z/is', $t, $m)) {
-            $e = new Fexpr(">=", new Revtype_Fexpr, new ConstantFexpr(0, Fexpr::FREVTYPE));
+            $e = new Fexpr(">=", [new Revtype_Fexpr, new ConstantFexpr(0, Fexpr::FREVTYPE)]);
             $t = $m[1];
         } else if (preg_match('/\A(?:is:?)?pcrev?\b(.*)\z/is', $t, $m)) {
-            $e = new Fexpr(">=", new Revtype_Fexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE));
+            $e = new Fexpr(">=", [new Revtype_Fexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE)]);
             $t = $m[1];
         } else if (preg_match('/\A(?:is:?)?(meta|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?|optional)\b(.*)\z/is', $t, $m)) {
-            $e = new Fexpr("==", new Revtype_Fexpr, new ConstantFexpr($m[1], Fexpr::FREVTYPE));
+            $e = new Fexpr("==", [new Revtype_Fexpr, new ConstantFexpr($m[1], Fexpr::FREVTYPE)]);
             $t = $m[2];
         } else if (preg_match('/\A(?:is|status):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($this->conf, $m[1]));
@@ -1796,7 +1794,7 @@ class Formula {
                 $t = ":" . $tn;
                 return $e;
             }
-            $e = new Fexpr($opx, $e, $e2);
+            $e = new Fexpr($opx, [$e, $e2]);
             $e->set_landmark($lpos, -strlen($t));
         }
     }
