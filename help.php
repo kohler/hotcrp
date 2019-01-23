@@ -77,13 +77,15 @@ class HtHead extends Ht {
     function end_table() {
         return $this->_tabletype ? "" : "</tbody></table>\n";
     }
+    function hotlink($html, $page, $arguments = [], $extra = null) {
+        return Ht::link($html, $this->conf->hoturl($page, $arguments), $extra);
+    }
     function search_link($html, $q = null) {
         if ($q === null)
             $q = $html;
         if (is_string($q))
             $q = ["q" => $q];
-        return '<a href="' . hoturl("search", $q) . '">'
-            . ($html ? : htmlspecialchars($q["q"])) . '</a>';
+        return $this->hotlink($html ? : htmlspecialchars($q["q"]), "search", $q);
     }
     function help_link($html, $topic = null) {
         if ($topic === null) {
@@ -96,10 +98,10 @@ class HtHead extends Ht {
             $topic = ["t" => $topic];
         if (isset($topic["t"]) && ($group = $this->_help_topics->canonical_group($topic["t"])))
             $topic["t"] = $group;
-        return '<a href="' . hoturl("help", $topic) . '">' . $html . '</a>';
+        return $this->hotlink($html, "help", $topic);
     }
     function settings_link($html, $group = null) {
-        if ($this->user->privChair) {
+        if ($this->user->privChair || $group !== null) {
             $pre = $post = "";
             if ($group === null) {
                 $group = $html;
@@ -111,18 +113,18 @@ class HtHead extends Ht {
                 $group = ["group" => substr($group, 0, $hash), "anchor" => substr($group, $hash + 1)];
             else if (is_string($group))
                 $group = ["group" => $group];
-            return $pre . '<a href="' . hoturl("settings", $group) . '">' . $html . '</a>' . $post;
+            $t = $pre . '<a href="' . $this->conf->hoturl("settings", $group);
+            if (!$this->user->privChair)
+                $t .= '" class="u need-tooltip" aria-label="This link to a settings page only works for administrators.';
+            return $t . '">' . $html . '</a>' . $post;
         } else {
-            if ($group === null)
-                return '';
-            else
-                return $html;
+            return '';
         }
     }
     function search_form($q, $size = 20) {
         if (is_string($q))
             $q = ["q" => $q];
-        $t = Ht::form(hoturl("search"), ["method" => "get", "class" => "nw"])
+        $t = Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "nw"])
             . Ht::entry("q", $q["q"], ["size" => $size])
             . " &nbsp;"
             . Ht::submit("go", "Search");
@@ -170,7 +172,7 @@ function show_help_topics($hth) {
     echo "<dl>\n";
     foreach ($hth->groups() as $ht) {
         if ($ht->name !== "topics" && isset($ht->title)) {
-            echo '<dt><strong><a href="', hoturl("help", "t=$ht->name"), '">', $ht->title, '</a></strong></dt>';
+            echo '<dt><strong><a href="', $this->conf->hoturl("help", "t=$ht->name"), '">', $ht->title, '</a></strong></dt>';
             if (isset($ht->description))
                 echo '<dd>', get($ht, "description", ""), '</dd>';
             echo "\n";

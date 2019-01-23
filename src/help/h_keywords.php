@@ -84,7 +84,7 @@ class Keywords_HelpTopic {
             }
         }
 
-        echo $hth->tgroup("<a href=\"" . hoturl("help", "t=tags") . "\">Tags</a>");
+        echo $hth->tgroup($hth->help_link("Tags", "tags"));
         echo $hth->search_trow("#discuss", "tagged “discuss” (“tag:discuss” also works)");
         echo $hth->search_trow("-#discuss", "not tagged “discuss”");
         echo $hth->search_trow("order:discuss", "tagged “discuss”, sort by tag order (“rorder:” for reverse order)");
@@ -231,10 +231,10 @@ class Keywords_HelpTopic {
 
         if (count($farr[0])) {
             $r = $farr[0][0];
-            echo $hth->tgroup("<a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a>");
+            echo $hth->tgroup($hth->help_link("Formulas", "formulas"));
             echo $hth->search_trow("formula:all({$r->search_keyword()}={$r->typical_score()})",
-                "all reviews have $r->name_html score {$r->typical_score()}<br />"
-                . "<span class=\"hint\"><a href=\"" . hoturl("help", "t=formulas") . "\">Formulas</a> can express complex numerical queries across review scores and preferences.</span>");
+                "all reviews have $r->name_html score {$r->typical_score()}<br />",
+                "<span class=\"hint\">", $hth->help_link("Formulas", "formulas"), " can express complex numerical queries across review scores and preferences.</span>");
             echo $hth->search_trow("f:all({$r->search_keyword()}={$r->typical_score()})", "“f” is shorthand for “formula”");
             echo $hth->search_trow("formula:var({$r->search_keyword()})>0.5", "variance in {$r->search_keyword()} is above 0.5");
             echo $hth->search_trow("formula:any({$r->search_keyword()}={$r->typical_score()} && pref<0)", "at least one reviewer had $r->name_html score {$r->typical_score()} and review preference &lt; 0");
@@ -245,7 +245,7 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("hide:title", "hide title in the results");
         if (count($farr[0])) {
             $r = $farr[0][0];
-            echo $hth->search_trow("show:max({$r->search_keyword()})", "show a <a href=\"" . hoturl("help", "t=formulas") . "\">formula</a>");
+            echo $hth->search_trow("show:max({$r->search_keyword()})", "show a " . $hth->help_link("formula", "formulas"));
             echo $hth->search_trow("sort:{$r->search_keyword()}", "sort by score");
             echo $hth->search_trow("sort:\"{$r->search_keyword()} variance\"", "sort by score variance");
         }

@@ -27,8 +27,8 @@ $hth->search_link("search for “editsort:#~rank”", "editsort:#~rank"), ".
 Ranks can be entered directly in the text fields, or the rows can be dragged
 into position using the dotted areas on the right-hand side of the list.</p>
 
-<p>Alternately, PC members can use an <a href=\"" . hoturl("offline") . "\">offline
-ranking form</a>. Download a ranking file, rearrange the lines to create a
+<p>Alternately, PC members can use an ", $hth->hotlink("offline ranking form", "offline"),
+". Download a ranking file, rearrange the lines to create a
 rank, and upload the form again.  For example, here is an initial ranking
 file:</p>
 

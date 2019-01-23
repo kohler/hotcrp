@@ -29,9 +29,8 @@ a prefix, try “term*”.
 To find <em>some</em> of the terms,
 type “term1 OR term2”.
 To find submissions that <em>don’t</em> match a term,
-try “-term”.  Or select
-<a href=\"" . hoturl("search", "opt=1") . "\">Advanced search</a>
-and use “With <b>any</b> of the words” and “<b>Without</b> the words.”</p>
+try “-term”.  Or select ", $hth->hotlink("Advanced search", "search", "opt=1"),
+" and use “With <b>any</b> of the words” and “<b>Without</b> the words.”</p>
 
 <p>You can search several categories, depending on your role in the
 conference. Options include:</p>
@@ -47,8 +46,8 @@ conference. Options include:</p>
 authors can only search their own submissions, and if the conference used
 anonymous submission, then only the PC chairs can search by author.</p>
 
-<p>By default, search examines paper titles, abstracts, and authors.
-<a href=\"" . hoturl("search", "opt=1") . "\">Advanced search</a>
+<p>By default, search examines paper titles, abstracts, and authors. ",
+$hth->hotlink("Advanced search", "search", "opt=1"), "
 can search other fields, including authors/collaborators and reviewers.
 Also, <b>keywords</b> search specific characteristics such as titles,
 authors, reviewer names, and numbers of reviewers.  For example,

@@ -75,8 +75,8 @@ Tags are not case sensitive.</p>";
 
 <p>" . Ht::img("extagsset.png", "[Tag entry on review screen]", ["width" => 142, "height" => 87]) . "</p></li>
 
-<li><p><strong>For many papers:</strong> <a href=\"" . hoturl("search")
-. "\">Search</a> for papers, select them, and use the action area underneath the
+<li><p><strong>For many papers:</strong> ", $hth->hotlink("Search", "search"),
+" for papers, select them, and use the action area underneath the
 search list. <b>Add</b> adds tags to the selected papers, <b>Remove</b> removes
 tags from the selected papers, and <b>Define</b> adds the tag to the selected
 papers and removes it from all others.</p>
@@ -92,8 +92,7 @@ to edit papers’ full tag lists.</p>
 <p>" . Ht::img("extagseditkw.png", "[Tag editing search keywords]", ["width" => 543, "height" => 133]) . "</p></li>
 
 <li><p><strong>In bulk:</strong> Administrators can also upload tag
-assignments using <a href=\"" .
-hoturl("bulkassign") . "\">bulk assignment</a>.</p></li>
+assignments using ", $hth->hotlink("bulk assignment", "bulkassign"), ".</p></li>
 
 </ul>
 
@@ -112,7 +111,7 @@ like “" . $hth->search_link("#discuss#2") . "” or “" . $hth->search_link("
 "”.</p>
 
 <p>It’s common to assign increasing tag values to a set of papers.  Do this
-using the <a href=\"" . hoturl("search") . "\">search screen</a>.  Search for the
+using the ", $hth->hotlink("search screen", "search"), ". Search for the
 papers you want, sort them into the right order, select their checkboxes, and
 choose <b>Define order</b> in the tag action area.  If no sort gives what
 you want, search for the desired paper numbers in order—for instance,
@@ -135,7 +134,7 @@ strictly sequential values, like “#tag#1”,
 “#tag#2”, “#tag#3”, “#tag#4”.
 <b>Define order</b> is better for most purposes.</p>
 
-<p>The <a href=\"" . hoturl("autoassign", "a=discorder") . "\">autoassigner</a>
+<p>The ", $hth->hotlink("autoassigner", "autoassign", "a=discorder"), "
 has special support for creating discussion orders. It tries to group papers
 with similar PC conflicts, which can make the meeting run smoother.</p>";
     }
@@ -172,15 +171,15 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
     function render_example_controversial() {
         echo "<p><strong>Mark controversial papers that would benefit from additional review.</strong>
  PC members could add the “#controversial” tag when the current reviewers disagree.
- A ", $this->hth->link("search", hoturl("search", ["q" => "#controversial"])),
+ A ", $this->hth->hotlink("search", "search", ["q" => "#controversial"]),
     " shows where the PC thinks more review is needed.</p>\n";
     }
 
     function render_example_pcpaper() {
         echo "<p><strong>Mark PC-authored papers for extra scrutiny.</strong>
- First, <a href=\"" . hoturl("search", "t=s&amp;qt=au") . "\">search for PC members’ last names in author fields</a>.
+ First, ", $this->hth->hotlink("search for PC members’ last names in author fields", "search", "t=s&amp;qt=au"), ".
  Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag “#pcpaper”.
- A <a href=\"" . hoturl("search", "t=s&amp;q=-%23pcpaper") . "\">search</a> shows papers without PC authors.</p>\n";
+ A ", $this->hth->hotlink("search", "search", "t=s&amp;q=-%23pcpaper"), " shows papers without PC authors.</p>\n";
     }
 
     function render_example_allotment() {

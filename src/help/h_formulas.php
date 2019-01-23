@@ -12,7 +12,7 @@ merit among reviewers with high Reviewer expertise.</p>
 <p>To display a formula, use a search term such as “",
 $hth->search_link("show:var(OveMer)"), "” (show
 the variance in Overall merit scores, along with statistics for all papers).
-You can also <a href=\"" . hoturl("graph", "g=formula") . "\">graph formulas</a>.
+You can also ", $hth->hotlink("graph formulas", "graph", "g=formula"), ".
 To search for a formula, use a search term such as “",
 $hth->search_link("formula:var(OveMer)>0.5"), "”
 (select papers with variance in Overall merit greater than 0.5).
