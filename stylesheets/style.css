@@ -897,7 +897,7 @@ button:hover, button:focus, button:active, button:focus-within,
 .btn-success {
 	border: 1px solid #007f00;
 	background: #00ba00;
-	background-image: linear-gradient(#00ba00, #009c00);
+	background-image: linear-gradient(#00ba00, #00a500);
 	color: white;
 }
 .btn-success:hover, .btn-success:active {
@@ -926,6 +926,7 @@ button.dangerous {
 button:disabled, button:disabled:hover,
 .btn:disabled, .btn:disabled:hover,
 .btn-default:disabled, .btn-default:disabled:hover,
+.btn-success:disabled, .btn-success:disabled:hover,
 .btn-primary:disabled, .btn-primary:disabled:hover,
 .alert .btn-default:disabled, .alert .btn-default:disabled:hover,
 .alert .btn-primary:disabled, .alert .btn-primary:disabled:hover,
