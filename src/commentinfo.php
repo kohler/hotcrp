@@ -326,7 +326,7 @@ class CommentInfo {
         }
         if ($this->timeModified > 0 && $idable_override) {
             $cj->modified_at = (int) $this->timeModified;
-            $cj->modified_at_text = $this->conf->printableTime($cj->modified_at);
+            $cj->modified_at_text = $this->conf->unparse_time_long($cj->modified_at);
         } else if ($this->timeModified > 0) {
             $cj->modified_at = $this->conf->obscure_time($this->timeModified);
             $cj->modified_at_text = $this->conf->unparse_time_obscure($cj->modified_at);

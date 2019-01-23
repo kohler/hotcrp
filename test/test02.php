@@ -198,14 +198,15 @@ for ($i = 0; $i < 1000; ++$i) {
 $t = $Conf->parse_time("1 Sep 2010 00:00:01");
 $t0 = $Conf->obscure_time($t);
 xassert_eqq($Conf->unparse_time_obscure($t0), "1 Sep 2010");
-xassert_eqq($Conf->printableTime($t0), "1 Sep 2010 12pm EDT");
+xassert_eqq($Conf->unparse_time($t0), "1 Sep 2010 12pm EDT");
 
 $t = $Conf->parse_time("1 Sep 2010 23:59:59");
 $t0 = $Conf->obscure_time($t);
 xassert_eqq($Conf->unparse_time_obscure($t0), "1 Sep 2010");
-xassert_eqq($Conf->printableTime($t0), "1 Sep 2010 12pm EDT");
+xassert_eqq($Conf->unparse_time($t0), "1 Sep 2010 12pm EDT");
 
 // timezone tests
+xassert_eqq(true === "obscure", false);
 $t = $Conf->parse_time("29 May 2018 11:00:00 EDT");
 xassert_eqq($t, 1527606000);
 $t = $Conf->parse_time("29 May 2018 03:00:00 AoE");
@@ -214,7 +215,7 @@ $Conf->set_opt("timezone", "Etc/GMT+12");
 $Conf->crosscheck_options();
 $t = $Conf->parse_time("29 May 2018 03:00:00");
 xassert_eqq($t, 1527606000);
-$t = $Conf->printableTime(1527606000);
+$t = $Conf->unparse_time(1527606000);
 xassert_eqq($t, "29 May 2018 3am AoE");
 
 // review ordinal tests

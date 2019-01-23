@@ -2200,7 +2200,7 @@ class Conf {
             return $this->opt["timestampFormat"];
         else if ($type === "obscure")
             return $this->opt["dateFormatObscure"];
-        else if ($type)
+        else if ($type === "long")
             return $this->opt["dateFormatLong"];
         else
             return $this->opt["dateFormat"];
@@ -2257,7 +2257,7 @@ class Conf {
         return strtotime($d, $reference);
     }
 
-    function _printableTime($value, $type, $useradjust, $preadjust = null) {
+    private function _unparse_time($value, $type, $useradjust, $preadjust = null) {
         if ($value <= 0)
             return "N/A";
         $t = date($this->_dateFormat($type), $value);
@@ -2273,9 +2273,6 @@ class Conf {
         }
         return $t;
     }
-    function printableTime($value, $useradjust = false, $preadjust = null) {
-        return $this->_printableTime($value, true, $useradjust, $preadjust);
-    }
     function obscure_time($timestamp) {
         if ($timestamp !== null)
             $timestamp = (int) ($timestamp + 0.5);
@@ -2287,25 +2284,25 @@ class Conf {
         }
         return $timestamp;
     }
-    function unparse_time_short($value) {
-        return $this->_printableTime($value, false, false, null);
+    function unparse_time_long($value, $useradjust = false, $preadjust = null) {
+        return $this->_unparse_time($value, "long", $useradjust, $preadjust);
     }
-    function unparse_time_full($value) {
-        return $this->_printableTime($value, "timestamp", false, null);
+    function unparse_time($value) {
+        return $this->_unparse_time($value, "timestamp", false, null);
     }
     function unparse_time_obscure($value) {
-        return $this->_printableTime($value, "obscure", false, null);
+        return $this->_unparse_time($value, "obscure", false, null);
     }
     function unparse_time_log($value) {
         return date("d/M/Y:H:i:s O", $value);
     }
-    function unparse_interval($when, $now = 0, $format = 0) {
+    function unparse_time_relative($when, $now = 0, $format = 0) {
         global $Now;
         $d = abs($when - ($now ? : $Now));
         $unit = 0;
         if ($d >= 5227200) {
             if (!($format & 1))
-                return ($format & 4 ? "" : "on ") . date($this->_dateFormat("obscure"), $when);
+                return ($format & 8 ? "on " : "") . date($this->_dateFormat("obscure"), $when);
             $unit = 5;
         } else if ($d >= 259200)
             $unit = 4;
@@ -2333,13 +2330,13 @@ class Conf {
     }
 
     function printableTimeSetting($what, $useradjust = false, $preadjust = null) {
-        return $this->printableTime(defval($this->settings, $what, 0), $useradjust, $preadjust);
+        return $this->unparse_time_long(defval($this->settings, $what, 0), $useradjust, $preadjust);
     }
     function printableDeadlineSetting($what, $useradjust = false, $preadjust = null) {
         if (!isset($this->settings[$what]) || $this->settings[$what] <= 0)
             return "No deadline";
         else
-            return "Deadline: " . $this->printableTime($this->settings[$what], $useradjust, $preadjust);
+            return "Deadline: " . $this->unparse_time_long($this->settings[$what], $useradjust, $preadjust);
     }
 
     function settingsAfter($name) {

@@ -715,7 +715,7 @@ class ReviewForm implements JsonSerializable {
         }
         $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
         if ($time > 1)
-            $x .= "==-== Updated " . $this->conf->printableTime($time) . "\n";
+            $x .= "==-== Updated " . $this->conf->unparse_time($time) . "\n";
 
         if ($prow)
             $x .= "\n==+== Paper #$prow->paperId\n"
@@ -827,7 +827,7 @@ $blind\n";
             $x .= "* Reviewer: " . Text::user_text($rrow) . "\n";
         $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
         if ($time > 1)
-            $x .= "* Updated: " . $this->conf->printableTime($time) . "\n";
+            $x .= "* Updated: " . $this->conf->unparse_time($time) . "\n";
 
         foreach ($this->forder as $fid => $f) {
             if ($f->view_score <= $revViewScore
@@ -1007,7 +1007,7 @@ $blind\n";
             $sep = $xsep;
         }
         if ($rrow && $rrow->reviewModified > 1 && $Me->can_view_review_time($prow, $rrow)) {
-            echo $sep, "Updated ", $this->conf->printableTime($rrow->reviewModified);
+            echo $sep, "Updated ", $this->conf->unparse_time($rrow->reviewModified);
             $sep = $xsep;
         }
         if ($sep != $open)
@@ -1145,7 +1145,7 @@ $blind\n";
         $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
         if ($time > 1) {
             $rj["modified_at"] = (int) $time;
-            $rj["modified_at_text"] = $this->conf->printableTime($time);
+            $rj["modified_at_text"] = $this->conf->unparse_time($time);
         }
 
         // ratings

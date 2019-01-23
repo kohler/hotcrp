@@ -301,8 +301,6 @@ class ContactList {
         case self::FIELD_LASTVISIT:
             if (!$row->activity_at)
                 return "Never";
-            else if ($this->user->privChair)
-                return $this->conf->unparse_time_short($row->activity_at);
             else
                 return $this->conf->unparse_time_obscure($row->activity_at);
         case self::FIELD_SELECTOR:

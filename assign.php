@@ -301,7 +301,7 @@ foreach ($requests as $req) {
             '</div><div class="f-h"><ul class="x mb0">';
         echo '<li>requested';
         if ($rrow->timeRequested)
-            echo ' ', $Conf->unparse_interval((int) $rrow->timeRequested);
+            echo ' ', $Conf->unparse_time_relative((int) $rrow->timeRequested);
         if ($rrow->requestedBy == $Me->contactId)
             echo " by you";
         else if ($Me->can_view_review_requester($prow, $rrow))
@@ -310,7 +310,7 @@ foreach ($requests as $req) {
         if ($rrow->reviewModified == 1) {
             echo '<li>accepted';
             if ($req[1])
-                echo ' ', $Conf->unparse_interval($req[1]);
+                echo ' ', $Conf->unparse_time_relative($req[1]);
             echo '</li>';
         }
         echo '</ul></div>';
@@ -319,7 +319,7 @@ foreach ($requests as $req) {
         if ($rrow->timeRequested || $Me->can_view_review_requester($prow, $rrow)) {
             echo '<li>requested';
             if ($rrow->timeRequested)
-                echo ' ', $Conf->unparse_interval((int) $rrow->timeRequested);
+                echo ' ', $Conf->unparse_time_relative((int) $rrow->timeRequested);
             if ($rrow->requestedBy == $Me->contactId)
                 echo " by you";
             else if ($Me->can_view_review_requester($prow, $rrow))
@@ -339,7 +339,7 @@ foreach ($requests as $req) {
         if ($rrow->timeRequested || $Me->can_view_review_requester($prow, $rrow)) {
             echo '<li>requested';
             if ($rrow->timeRequested)
-                echo ' ', $Conf->unparse_interval((int) $rrow->timeRequested);
+                echo ' ', $Conf->unparse_time_relative((int) $rrow->timeRequested);
             if ($rrow->requestedBy == $Me->contactId)
                 echo " by you";
             else if ($Me->can_view_review_requester($prow, $rrow))
@@ -348,7 +348,7 @@ foreach ($requests as $req) {
         }
         echo '<li>declined';
         if ($rrow->timeRefused)
-            echo ' ', $Conf->unparse_interval((int) $rrow->timeRefused);
+            echo ' ', $Conf->unparse_time_relative((int) $rrow->timeRefused);
         if ($rrow->refusedBy && (!$rrow->contactId || $rrow->contactId != $rrow->refusedBy)) {
             if ($rrow->refusedBy == $Me->contactId)
                 echo " by you";

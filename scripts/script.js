@@ -525,13 +525,13 @@ var strftime = (function () {
     return strftime;
 })();
 
-function unparse_interval(t, now, format) {
+function unparse_time_relative(t, now, format) {
     now = now || now_sec();
     format = format || 0;
     var d = Math.abs(now - t), unit = 0;
     if (d >= 5227200) { // 60.5d
         if (!(format & 1))
-            return strftime((format & 4 ? "" : "on ") + "%#e %b %Y", t);
+            return strftime((format & 8 ? "on " : "") + "%#e %b %Y", t);
         unit = 5;
     } else if (d >= 259200) // 3d
         unit = 4;
@@ -554,9 +554,9 @@ function unparse_interval(t, now, format) {
     else
         return t < now ? d + " ago" : "in " + d;
 }
-unparse_interval.NO_DATE = 1;
-unparse_interval.NO_PREP = 2;
-unparse_interval.SHORT = 4;
+unparse_time_relative.NO_DATE = 1;
+unparse_time_relative.NO_PREP = 2;
+unparse_time_relative.SHORT = 4;
 
 function unparse_duration(d, include_msec) {
     var neg = d < 0, t;
@@ -1626,7 +1626,7 @@ function display_main(is_initial) {
         if (!dltime || dltime - now < 0.5)
             s += "is NOW";
         else
-            s += unparse_interval(dltime, now);
+            s += unparse_time_relative(dltime, now, 8);
         if (!dltime || dltime - now < 180.5)
             s = '<span class="impending">' + s + '</span>';
     }
