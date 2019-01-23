@@ -172,7 +172,7 @@ function show_help_topics($hth) {
     echo "<dl>\n";
     foreach ($hth->groups() as $ht) {
         if ($ht->name !== "topics" && isset($ht->title)) {
-            echo '<dt><strong><a href="', $this->conf->hoturl("help", "t=$ht->name"), '">', $ht->title, '</a></strong></dt>';
+            echo '<dt><strong><a href="', $hth->conf->hoturl("help", "t=$ht->name"), '">', $ht->title, '</a></strong></dt>';
             if (isset($ht->description))
                 echo '<dd>', get($ht, "description", ""), '</dd>';
             echo "\n";
