@@ -2605,15 +2605,15 @@ class Contact {
                     && in_array($rrow->reviewToken, $this->_review_tokens)));
     }
 
-    function is_owned_review($rrow = null) {
-        return $rrow
-            && $rrow->contactId > 0
-            && ($rrow->contactId == $this->contactId
+    function is_owned_review($rbase = null) { // review/request/refusal
+        return $rbase
+            && $rbase->contactId > 0
+            && ($rbase->contactId == $this->contactId
                 || ($this->_review_tokens
-                    && $rrow->reviewToken
-                    && in_array($rrow->reviewToken, $this->_review_tokens))
-                || ($rrow->requestedBy == $this->contactId
-                    && $rrow->reviewType == REVIEW_EXTERNAL
+                    && $rbase->reviewToken
+                    && in_array($rbase->reviewToken, $this->_review_tokens))
+                || ($rbase->requestedBy == $this->contactId
+                    && $rbase->reviewType == REVIEW_EXTERNAL
                     && $this->conf->setting("pcrev_editdelegate")));
     }
 
@@ -2655,8 +2655,8 @@ class Contact {
                     || $this->conf->any_response_open));
     }
 
-    private function seerev_setting(PaperInfo $prow, $rrow, $rights) {
-        $round = $rrow ? $rrow->reviewRound : "max";
+    private function seerev_setting(PaperInfo $prow, $rbase, $rights) {
+        $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
             $rs = $this->conf->round_setting("pc_seeallrev", $round);
             if (!$this->conf->has_tracks())
@@ -2675,8 +2675,8 @@ class Contact {
         return -1;
     }
 
-    private function seerevid_setting(PaperInfo $prow, $rrow, $rights) {
-        $round = $rrow ? $rrow->reviewRound : "max";
+    private function seerevid_setting(PaperInfo $prow, $rbase, $rights) {
+        $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
             if ($this->conf->check_required_tracks($prow, $this, Track::VIEWREVOVERRIDE))
                 return Conf::PCSEEREV_YES;
@@ -2782,22 +2782,22 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_review_identity(PaperInfo $prow, $rrow = null) {
+    function can_view_review_identity(PaperInfo $prow, $rbase = null) {
         $rights = $this->rights($prow);
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || $rights->reviewType == REVIEW_META
-            || ($rrow && $rrow->requestedBy == $this->contactId && $rights->allow_pc)
-            || ($rrow && $this->is_owned_review($rrow)))
+            || ($rbase && $rbase->requestedBy == $this->contactId && $rights->allow_pc)
+            || ($rbase && $this->is_owned_review($rbase)))
             return true;
-        $seerevid_setting = $this->seerevid_setting($prow, $rrow, $rights);
+        $seerevid_setting = $this->seerevid_setting($prow, $rbase, $rights);
         return ($rights->allow_pc
                 && $seerevid_setting == Conf::PCSEEREV_YES)
             || ($rights->allow_review
                 && $prow->review_not_incomplete($this)
                 && $seerevid_setting >= 0)
-            || !$this->conf->is_review_blind($rrow);
+            || !$this->conf->is_review_blind($rbase);
     }
 
     function can_view_some_review_identity() {
@@ -2822,7 +2822,7 @@ class Contact {
         return $answer;
     }
 
-    function can_view_review_round(PaperInfo $prow, $rrow = null) {
+    function can_view_review_round(PaperInfo $prow, $rbase = null) {
         $rights = $this->rights($prow);
         return $rights->can_administer
             || $rights->allow_pc
@@ -2837,12 +2837,12 @@ class Contact {
                 && $rrow->reviewAuthorSeen <= $rrow->reviewAuthorModified);
     }
 
-    function can_view_review_requester(PaperInfo $prow, $rrow = null) {
+    function can_view_review_requester(PaperInfo $prow, $rbase = null) {
         $rights = $this->rights($prow);
         return $this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
-            || ($rrow && $rrow->requestedBy == $this->contactId && $rights->allow_pc)
-            || ($rrow && $this->is_owned_review($rrow))
-            || ($rights->allow_pc && $this->can_view_review_identity($prow, $rrow));
+            || ($rbase && $rbase->requestedBy == $this->contactId && $rights->allow_pc)
+            || ($rbase && $this->is_owned_review($rbase))
+            || ($rights->allow_pc && $this->can_view_review_identity($prow, $rbase));
     }
 
     function can_request_review(PaperInfo $prow, $round, $check_time) {
