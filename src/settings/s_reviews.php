@@ -373,7 +373,8 @@ class Round_SettingParser extends SettingParser {
         }
 
         if (count($this->rev_round_changes)) {
-            $sv->need_lock["PaperReview"] = true;
+            $sv->need_lock["PaperReview"] = $sv->need_lock["ReviewRequest"] =
+                $sv->need_lock["PaperReviewRefused"] = true;
             return true;
         } else
             return false;
