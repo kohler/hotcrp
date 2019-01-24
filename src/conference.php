@@ -2674,10 +2674,6 @@ class Conf {
         return $this->hoturl($page, $options, self::HOTURL_ABSOLUTE | $flags);
     }
 
-    function hoturl_site_relative($page, $options = null, $flags = 0) {
-        return $this->hoturl($page, $options, self::HOTURL_SITE_RELATIVE | $flags);
-    }
-
     function hoturl_site_relative_raw($page, $options = null) {
         return $this->hoturl($page, $options, self::HOTURL_SITE_RELATIVE | self::HOTURL_RAW);
     }
