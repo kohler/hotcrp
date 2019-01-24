@@ -25,10 +25,10 @@
 # -- computer modern roman fonts
 # -- embedded java script, remoteapproach.com
 
+use POSIX;
 use Data::Dumper;
 use File::Basename;
-use File::Temp;
-use POSIX;
+require File::Temp;
 use List::Util qw(min max);
 my($FILE, $banal_text_fudge);
 
@@ -105,12 +105,12 @@ EOF
 $banal_version = 1.2;
 
 # parse args
-local($report, $stats, $judge, $no_app, $json, $version, $debug_pdftohtml,
+local($stats, $judge, $no_app, $json, $version, $debug_pdftohtml,
       $paper, $pages, $font, $leading, $cols, $width, $height, $fudge, $format,
       $zoom, $max_pages);
 for (my $i = 0; $i < @ARGV; ) {
     no strict "refs";
-    if ($ARGV[$i] =~ /\A--?(report|stats|judge|no[-_]app|json|version|debug[-_]pdftohtml)\z/) {
+    if ($ARGV[$i] =~ /\A--?(stats|judge|no[-_]app|json|version|debug[-_]pdftohtml)\z/) {
         my($name) = $1;
         $name =~ s/-/_/g;
         ${$name} = 1;
@@ -125,6 +125,8 @@ for (my $i = 0; $i < @ARGV; ) {
         $name =~ s/-/_/g;
         ${$name} = $ARGV[$i + 1];
         splice @ARGV, $i, 2;
+    } elsif ($ARGV[$i] =~ /\A--?report\z/) {
+        splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A-/) {
         print STDERR "banal: bad option ", $ARGV[$i], "\n";
         usage;
@@ -505,7 +507,7 @@ sub calc_doc_app ($) {
             $pdf_tools{'** cmrfont in word doc'}++;
         }
     }
-    
+
     # TeX
     if ($creator =~ /TeX/) {
         $pdf_tools{'tex in creator'}++;
@@ -616,22 +618,13 @@ sub calc_doc_app ($) {
 sub calc_page_leading ($) {
     my ($page) = @_;
 #    my ($mode) = modevalkey ($page->{pagedata}->{segdata}->{leads});
-    my ($mode, $segs);
 
-    $segs = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
-    $mode = modevalkey ($segs->{leads});
-
-    $count = $segs->{leads}->{$mode} +
-        $segs->{leads}->{$mode - 1} +
-        $segs->{leads}->{$mode + 1};
-    if ($count <= 0) {
-        $page->{pagespec}->{lead} = 0;
-        return;
-    }
+    my ($segs) = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
+    my ($mode) = modevalkey ($segs->{leads});
 
     if ($banal_leading_policy eq 'mode') {
         print "using leading policy 'mode'\n" if ($debug_leading);
-        $lead = $mode * $p2h_to_points;
+        my ($lead) = $mode * $p2h_to_points;
         $lead *= 10;
         $lead = int ($lead + 0.5);
         $lead /= 10;
@@ -642,8 +635,8 @@ sub calc_page_leading ($) {
 
     if ($debug_leading) {
         # leading histogram
-        $ll = $segs->{leads};
-        foreach $k (sort { $a <=> $b } keys %$ll) {
+        my ($ll) = $segs->{leads};
+        foreach my $k (sort { $a <=> $b } keys %$ll) {
             my ($l) = int (($k * $p2h_to_points * 10) + 0.5);
             $l /= 10;
             print "$l ($segs->{leads}->{$k}) ";
@@ -651,10 +644,20 @@ sub calc_page_leading ($) {
         print "\n";
     }
 
-    $wsum = $mode * ($segs->{leads}->{$mode} / $count);
-    $wsum += ($mode - 1) * ($segs->{leads}->{$mode - 1} / $count);
-    $wsum += ($mode + 1) * ($segs->{leads}->{$mode + 1} / $count);
-    $lead = $wsum * $p2h_to_points;
+    my ($mcount) = $segs->{leads}->{$mode};
+    my ($mcountm1, $mcountp1) = (0, 0);
+    $mcountm1 = $segs->{leads}->{$mode - 1} if exists($segs->{leads}->{$mode - 1});
+    $mcountp1 = $segs->{leads}->{$mode + 1} if exists($segs->{leads}->{$mode + 1});
+
+    my ($count) = $mcount + $mcountm1 + $mcountp1;
+    if ($count <= 0) {
+        $page->{pagespec}->{lead} = 0;
+        return;
+    }
+
+    my ($wsum) = $mode * ($mcount / $count) + ($mode - 1) * ($mcountm1 / $count)
+        + ($mode + 1) * ($mcountp1 / $count);
+    my ($lead) = $wsum * $p2h_to_points;
     $lead *= 10;
     $lead = int ($lead + 0.5);
     $lead /= 10;
@@ -725,7 +728,7 @@ sub calc_page_text_region ($$) {
         $minw = $s if (($s < $minw) && ($segs_minw->{$s} > 3));
     }
 
-    # all consistency bets are off with low density pages 
+    # all consistency bets are off with low density pages
     $minw = minkey ($segs_minw) if ($minw > 4 * $p2h_per_inch);
 
     # find the maximum right position among segments (must be
@@ -874,9 +877,8 @@ sub calc_doc_text_region ($) {
     $mint = $page->{pagespec}->{textbb}->{top};
 
     for $i (2..$doc->{npages}) {
-        next if ($page->{density} < $banal_min_density);
-
         $page = $doc->{pages}->{$i};
+        next if $page->{pagespec}->{density} < $banal_min_density;
         $maxw = max $maxw, $page->{pagespec}->{textbb}->{width};
         $maxh = max $maxh, $page->{pagespec}->{textbb}->{height};
         $minl = min $minl, $page->{pagespec}->{textbb}->{left};
@@ -902,7 +904,7 @@ sub calc_doc_text_region ($) {
 sub calc_doc_page_types ($) {
     my ($doc) = @_;
     my ($page, $font, $type);
-    
+
     $font = $doc->{pagespec}->{bodyfont};
 
     for $i (1..$doc->{npages}) {
@@ -943,18 +945,7 @@ sub calc_doc_columns ($) {
 
 sub p2h_font_to_font_size ($) {
     my ($font) = @_;
-    my ($pt) = ($font->{size} + 3) / $zoom;
-
-    if ($font->{family} eq 'Times'
-        || $font->{family} eq 'Helvetica'
-        || $font->{family} eq 'Courier'
-        || $font->{family} eq 'Symbol') {
-    } else {
-        print STDERR "$banal_filename: Error: Unknown font family.\n";
-#       print Dumper ($font);
-    }
-
-    return $pt;
+    ($font->{size} + 3) / $zoom;
 }
 
 sub p2h_font_bug ($) {
@@ -1113,7 +1104,7 @@ sub report_verbose ($) {
         printf ("  text region: %.2fin x %.2fin\n", $page->{pagespec}->{textbb}->{width}, $page->{pagespec}->{textbb}->{height});
 
         $left_i = $page->{pagespec}->{textbb}->{left};
-        $right_i = $page->{pagespec}->{paperbb}->{width} - 
+        $right_i = $page->{pagespec}->{paperbb}->{width} -
             ($left_i + $page->{pagespec}->{textbb}->{width});
         $top_i = $page->{pagespec}->{textbb}->{top};
         $bot_i = $page->{pagespec}->{paperbb}->{height} -
@@ -1291,7 +1282,7 @@ sub judge_text_region ($$) {
         next unless ($spec->{width} &&
                      ($width > ($spec->{width} + $spec->{fudge})));
         $width_fail++;
-        
+
         $wmsg = sprintf ("Width: text too wide %.2fin (max %.2fin)\n",
                          $width, $spec->{width});
     }
@@ -1313,7 +1304,7 @@ sub judge_text_region ($$) {
         next if ($page->{pagespec}->{density} < $banal_min_density);
 
         $height = $page->{pagespec}->{textbb}->{height};
-        next unless ($spec->{height} && 
+        next unless ($spec->{height} &&
                      ($height > ($spec->{height} + $spec->{fudge})));
         $height_fail++;
 
@@ -1354,7 +1345,7 @@ sub pass_judgement ($$) {
     $msg .= judge_text_region ($doc, $spec) if ($spec->{width} || $spec->{height});
 
     return if (!$msg);
-    
+
     if ($format eq 'list') {
         chop $msg;         # remove trailing newline
         $msg =~ s/\n/,/g;  # convert newlines to commas
@@ -1374,9 +1365,9 @@ sub parse_p2h_fonts ($$) {
 #       print "p2h_font: $line";
         return $line if ($line =~ /<\/page>/);
 
-        last unless ($line =~ /<fontspec id=\"(\d+)\" size=\"([-]*\d+)\" family=\"([A-Za-z0-9]+)\" color=\"(\#[a-fA-F0-9]+)\"\/>/);
+        last unless ($line =~ /<fontspec id=\"(\d+)\" size=\"(-?\d+(?:\.\d*)?)\" family=\"([^\"]+)\" color=\"([^\"]+)\"\/>/);
 
-        $font = { id => $1, size => $2, family => $3, color => $4 };
+        $font = { id => $1, size => +$2, family => $3, color => $4 };
         $fontid = "$3//$2//$4";
         if (exists $fonts{$fontid}) {
             $font->{id} = $fonts{$fontid};
@@ -1391,9 +1382,8 @@ sub parse_p2h_fonts ($$) {
     return $line;
 }
 
-sub update_segdata ($$$) {
-    my ($page, $segdata, $seg) = @_;
-    my ($top, $left, $width, $height, $font, $lead) = @$seg;
+sub update_segdata ($$$$$$$$) {
+    my ($page, $segdata, $top, $left, $width, $height, $font, $lead) = @_;
     my ($bottom) = $top + $height;
     my ($right) = $left + $width;
     my ($pagew) = $page->{pagedata}->{pagebb}->{width};
@@ -1424,19 +1414,19 @@ sub check_p2h_error ($) {
 
 sub parse_p2h_text ($$) {
     my ($line, $page) = @_;
-    my ($top, $bottom, $left, $right, $width, $height, $font);
-    my ($text, $lead, $prevheight);
+    my ($pagewidth) = $page->{pagedata}->{pagebb}->{width};
+    my ($pageheight) = $page->{pagedata}->{pagebb}->{height};
 
-    $segs_all = {};
-    $segs_byfont = {};
+    my ($segs_all) = {};
+    my ($segs_byfont) = {};
 
-    $prevheight = 0;
-    $lowest_number = 0;
+    my ($prevtop) = 0;
+    my ($lowest_number) = 0;
 
     while (1) {
 #       next if (check_p2h_error ($line));
 
-        unless ($line =~ /<text top=\"(-?\d+)\" left=\"(-?\d+)\" width=\"(-?\d+)\" height=\"(-?\d+)\" font=\"(-?\d+)\"/) {
+        unless ($line =~ /<text top=\"(-?\d+(?:\.\d*)?)\" left=\"(-?\d+(?:\.\d*)?)\" width=\"(-?\d+(?:\.\d*)?)\" height=\"(-?\d+(?:\.\d*)?)\" font=\"(-?\d+)\"/) {
             # if we didn't match a <text>, then it should be an end of page or <image>
             if ($line =~ /<image/) {
                 $line = <$FILE>;
@@ -1451,54 +1441,48 @@ sub parse_p2h_text ($$) {
             last;
         }
 
-        $height = $1;
-        if ($prevheight < $height) {
-            $lead = $height - $prevheight;
+        my ($top, $left, $width, $height, $font) = (+$1, +$2, +$3, +$4, $5);
+        my ($lead);
+
+        if ($prevtop < $top) {
+            $lead = $top - $prevtop;
         } else {
             $lead = -1;
         }
-        $prevheight = $height;
+        $prevtop = $top;
 
-        @seginfo = ($1, $2, $3, $4, $5, $lead);
-        if (($font = $page->{doc}->{fonts}{$5})) {
-            $seginfo[4] = $font->{id};
+        my ($fontspec) = $page->{doc}->{fonts}{$font};
+        if ($fontspec) {
+            $font = $fontspec->{id};
+        }
+
+        # embedded newlines will split <text>...</text> across multiple lines
+        while ($line !~ /<\/text>/ && defined($continuation = <$FILE>)) {
+            $line .= $continuation;
         }
 
         # sanity check the data somewhat...text from embedded figures
         # can produce surprising values
-        if ($1 < 0 || $2 < 0 ||
-            ($1 > $page->{pagedata}->{pagebb}->{height}) ||
-            ($2 > $page->{pagedata}->{pagebb}->{width})) {
+        if ($top < 0 || $left < 0 || $top >= $pagewidth || $left >= $pageheight) {
             $line = <$FILE>;
             next;
         }
 
         $nsegs++;
 
-        $segs_byfont->{$seginfo[4]} = {}
-           unless (defined $segs_byfont->{$seginfo[4]});
-        $byfont = $segs_byfont->{$seginfo[4]};
-        update_segdata ($page, $byfont, \@seginfo);
-        $segs_byfont{$seginfo[4]} = $byfont;
-        update_segdata ($page, $segs_all, \@seginfo);
+        if (!exists($segs_byfont->{$font})) {
+            $segs_byfont->{$font} = {};
+        }
+        update_segdata ($page, $segs_byfont->{$font}, $top, $left, $width, $height, $font, $lead);
+        update_segdata ($page, $segs_all, $top, $left, $width, $height, $font, $lead);
 
         # page number detection
         if ($line =~ /<text[^>]*>[- ,.\/]*[0-9][- ,.\/0-9]*<\/text>/) {
-            my($bottom) = $seginfo[0] + $seginfo[3];
-            $lowest_number = max $lowest_number, $bottom;
-        }
-
-        # embedded newlines will split <text>...</text> across multiple lines
-        if ($line !~ /<\/text>/) {
-            while ($line = <$FILE>) {
-                print STDERR "$banal_filename: skipping: $line" if ($debug_parse);
-                last if ($line  =~/<\/text>/);
-            }
+            $lowest_number = max $lowest_number, ($top + $height);
         }
 
         $line = <$FILE>;
     }
-
 
     $page->{pagedata}->{nsegs} = $nsegs;
     $page->{pagedata}->{segdata} = $segs_all;
