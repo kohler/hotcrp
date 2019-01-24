@@ -2670,8 +2670,12 @@ class Conf {
         }
     }
 
-    function hoturl_site_relative($page, $options = null) {
-        return $this->hoturl($page, $options, self::HOTURL_SITE_RELATIVE);
+    function hoturl_absolute($page, $options = null, $flags = 0) {
+        return $this->hoturl($page, $options, self::HOTURL_ABSOLUTE | $flags);
+    }
+
+    function hoturl_site_relative($page, $options = null, $flags = 0) {
+        return $this->hoturl($page, $options, self::HOTURL_SITE_RELATIVE | $flags);
     }
 
     function hoturl_site_relative_raw($page, $options = null) {
@@ -2682,8 +2686,8 @@ class Conf {
         return $this->hoturl($page, $options, self::HOTURL_POST);
     }
 
-    function hoturl_raw($page, $options = null) {
-        return $this->hoturl($page, $options, self::HOTURL_RAW);
+    function hotlink($html, $page, $options = null, $js = null) {
+        return Ht::link($html, $this->hoturl($page, $options), $js);
     }
 
 

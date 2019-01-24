@@ -628,14 +628,14 @@ class Autoassigner {
         $b = array();
         $pidx = join("+", $badpids);
         foreach ($badpids as $pid)
-            $b[] = '<a href="' . hoturl("assign", "p=$pid&amp;ls=$pidx") . '">' . $pid . '</a>';
+            $b[] = $this->conf->hotlink($pid, "assign", "p=$pid&amp;ls=$pidx");
         $x = "";
         if ($action === "rev" || $action === "revadd")
             $x = ", possibly because of conflicts or previously declined reviews in the PC members you selected";
         else
-            $x = ", possibly because the selected PC members didn’t review these papers";
-        $y = (count($b) > 1 ? ' (<a class="nw" href="' . hoturl("search", "q=$pidx") . '">list them</a>)' : '');
-        $this->conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
+            $x = ", possibly because the selected PC members didn’t review these submissions";
+        $y = (count($b) > 1 ? ' (' . $this->conf->hotlink("list them", "search", "q=$pidx", ["class" => "nw"]) . ')' : '');
+        $this->conf->warnMsg("I wasn’t able to complete the assignment$x. The following submissions got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
     }
 
     function run_paperpc($action, $preference) {

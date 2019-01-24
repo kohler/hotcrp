@@ -40,11 +40,6 @@ function hoturl_add_raw($url, $component) {
     return $url . (strpos($url, "?") === false ? "?" : "&") . $component;
 }
 
-function hoturl_site_relative($page, $options = null) {
-    global $Conf;
-    return $Conf->hoturl($page, $options, Conf::HOTURL_SITE_RELATIVE);
-}
-
 function hoturl($page, $options = null) {
     global $Conf;
     return $Conf->hoturl($page, $options);
@@ -55,49 +50,6 @@ function hoturl_post($page, $options = null) {
     return $Conf->hoturl($page, $options, Conf::HOTURL_POST);
 }
 
-function hoturl_absolute($page, $options = null) {
-    global $Conf;
-    return $Conf->hoturl($page, $options, Conf::HOTURL_ABSOLUTE);
-}
-
-function hoturl_absolute_nodefaults($page, $options = null) {
-    global $Conf;
-    return $Conf->hoturl($page, $options, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
-}
-
-function hoturl_site_relative_raw($page, $options = null) {
-    return htmlspecialchars_decode(hoturl_site_relative($page, $options));
-}
-
-function hoturl_raw($page, $options = null) {
-    return htmlspecialchars_decode(hoturl($page, $options));
-}
-
-function hoturl_post_raw($page, $options = null) {
-    return htmlspecialchars_decode(hoturl_post($page, $options));
-}
-
-function hoturl_absolute_raw($page, $options = null) {
-    return htmlspecialchars_decode(hoturl_absolute($page, $options));
-}
-
-
-// XXX obsolete
-class SelfHref {
-    static function make(Qrequest $qreq = null, $params = [], $flags = 0) {
-        global $Conf;
-        return $Conf->selfurl($qreq, $params, $flags);
-    }
-    static function redirect(Qrequest $qreq = null, $params = []) {
-        global $Conf;
-        $Conf->self_redirect($qreq, $params);
-    }
-}
-
-// XXX obsolete
-function selfHref($params = [], $flags = 0) {
-    return SelfHref::make(null, $params, $flags);
-}
 
 class JsonResult {
     public $status;

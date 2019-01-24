@@ -27,7 +27,7 @@ echo "</div>\n";
 
 
 $search = new PaperSearch($Me, ["t" => "manager", "q" => "",
-                                "urlbase" => hoturl_site_relative_raw("conflictassign")]);
+        "urlbase" => $Conf->hoturl_site_relative_raw("conflictassign")]);
 $rowset = $Conf->paper_set(["allConflictType" => 1, "allReviewerPreference" => 1, "tags" => 1, "paperId" => $search->paper_ids()], $Me);
 
 if ($Qreq->neg) {

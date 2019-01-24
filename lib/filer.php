@@ -104,10 +104,10 @@ class Filer {
 
     // download
     static function download_file($filename, $no_accel = false) {
-        global $zlib_output_compression;
+        global $Conf, $zlib_output_compression;
         // if docstoreAccelRedirect, output X-Accel-Redirect header
-        if (($dar = opt("docstoreAccelRedirect"))
-            && ($ds = opt("docstore"))
+        if (($dar = $Conf->opt("docstoreAccelRedirect"))
+            && ($ds = $Conf->opt("docstore"))
             && !$no_accel) {
             if (!str_ends_with($ds, "/"))
                 $ds .= "/";

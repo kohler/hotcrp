@@ -264,11 +264,6 @@ function get_f($var, $idx, $default = null) {
     return (float) get($var, $idx, $default);
 }
 
-function opt($idx, $default = null) {
-    global $Conf, $Opt;
-    return get($Conf ? $Conf->opt : $Opt, $idx, $default);
-}
-
 function uploaded_file_error($finfo) {
     $e = $finfo["error"];
     $name = get($finfo, "name") ? "<span class=\"lineno\">" . htmlspecialchars($finfo["name"]) . ":</span> " : "";

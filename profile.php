@@ -74,7 +74,7 @@ if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
             $cs = new ContactSearch(ContactSearch::F_USER, $Qreq->u, $Me);
             if ($cs->ids) {
                 $Acct = $Conf->user_by_id($cs->ids[0]);
-                $list = new SessionList("u/all/" . urlencode($Qreq->search), $cs->ids, "“" . htmlspecialchars($Qreq->u) . "”", hoturl_site_relative_raw("users", ["t" => "all"]));
+                $list = new SessionList("u/all/" . urlencode($Qreq->search), $cs->ids, "“" . htmlspecialchars($Qreq->u) . "”", $Conf->hoturl_site_relative_raw("users", ["t" => "all"]));
                 $list->set_cookie();
                 $Qreq->u = $Acct->email;
                 $Conf->self_redirect($Qreq);

@@ -229,7 +229,7 @@ if ($reviewer) {
 
     // main assignment form
     $search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q,
-                                    "urlbase" => hoturl_site_relative_raw("manualassign"),
+                                    "urlbase" => $Conf->hoturl_site_relative_raw("manualassign"),
                                     "reviewer" => $reviewer]);
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));

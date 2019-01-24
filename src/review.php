@@ -683,7 +683,7 @@ class ReviewForm implements JsonSerializable {
         $x = "==+== " . $this->conf->short_name . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
         $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== For further guidance, or to upload this file when you are done, go to:
-==-== " . hoturl_absolute_raw("offline") . "\n\n";
+==-== " . $this->conf->hoturl_absolute("offline", null, Conf::HOTURL_RAW) . "\n\n";
         return $x;
     }
 

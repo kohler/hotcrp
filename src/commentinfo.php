@@ -387,7 +387,7 @@ class CommentInfo {
 
     function unparse_flow_entry(Contact $contact) {
         // See also ReviewForm::reviewFlowEntry
-        $a = "<a href=\"" . hoturl("paper", "p=$this->paperId#" . $this->unparse_html_id()) . "\"";
+        $a = '<a href="' . $this->conf->hoturl("paper", "p=$this->paperId#" . $this->unparse_html_id()) . '"';
         $t = '<tr class="pl"><td class="pl_eventicon">' . $a . ">"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_eventid pl_rowclick">'

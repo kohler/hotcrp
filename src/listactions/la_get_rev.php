@@ -265,7 +265,7 @@ class GetRank_ListAction extends ListAction {
 # same rank as the preceding paper. Lines starting with \">>\", \">>>\",
 # and so forth indicate rank gaps between papers. When you are done,
 # upload the file at\n"
-                . "#   " . hoturl_absolute("offline") . "\n\n"
+                . "#   " . $Conf->hoturl_absolute("offline", null, Conf::HOTURL_RAW) . "\n\n"
                 . "Tag: " . trim($qreq->tag) . "\n"
                 . "\n"
                 . $real . $null;

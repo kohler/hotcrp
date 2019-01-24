@@ -1712,7 +1712,7 @@ class AssignmentSet {
         // confirmation message
         if ($verbose) {
             if ($this->conf->setting("pcrev_assigntime") == $Now)
-                $this->conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
+                $this->conf->confirmMsg("Assignments saved! You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".");
             else
                 $this->conf->confirmMsg("Assignments saved!");
         }

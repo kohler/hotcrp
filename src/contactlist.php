@@ -803,7 +803,7 @@ class ContactList {
         $x .= "<tbody class=\"pltable" . ($hascolors ? " pltable_colored" : "");
         if ($this->user->privChair) {
             $l = new SessionList("u/" . $listname, $ids, $listtitle ? : "Users",
-                                 hoturl_site_relative_raw("users", ["t" => $listname]));
+                $this->conf->hoturl_site_relative_raw("users", ["t" => $listname]));
             $x .= " has-hotlist\" data-hotlist=\"" . htmlspecialchars($l->info_string());
         }
         return $x . "\">" . $body . "</tbody></table>";

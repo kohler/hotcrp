@@ -127,7 +127,7 @@ function initialize_user() {
         if ($nav->page === "api") {
             json_exit(["ok" => false, "error" => "Your account is disabled."]);
         } else if ($nav->page !== "index" && $nav->page !== "resetpassword") {
-            Navigation::redirect_site(hoturl_site_relative("index"));
+            Navigation::redirect_site($Conf->hoturl_site_relative_raw("index"));
         }
     }
 

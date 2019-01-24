@@ -209,7 +209,7 @@ else if ($Qreq->fn === "uploadpref")
 
 
 // Prepare search
-$Qreq->urlbase = hoturl_site_relative_raw("reviewprefs");
+$Qreq->urlbase = $Conf->hoturl_site_relative_raw("reviewprefs");
 $Qreq->q = get($Qreq, "q", "");
 $Qreq->t = "editpref";
 

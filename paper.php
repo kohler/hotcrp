@@ -237,7 +237,7 @@ function update_paper(Qrequest $qreq, $action) {
     } else {
         if (get($pj, "submitted"))
             $notes[] = $Conf->_("You will receive email when reviews are available.");
-        else if ($prow->size == 0 && !opt("noPapers"))
+        else if ($prow->size == 0 && !$Conf->opt("noPapers"))
             $notes[] = $Conf->_("The submission has not yet been uploaded.");
         else if ($Conf->setting("sub_freeze") > 0)
             $notes[] = $Conf->_("The submission has not yet been completed.");
@@ -311,7 +311,7 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
     else if ($Qreq->submitpaper
              && (($prow && $prow->size > 0)
                  || $Qreq->has_file("paperUpload")
-                 || opt("noPapers")))
+                 || $Conf->opt("noPapers")))
         $action = "submit";
 
     $whyNot = update_paper($Qreq, $action);

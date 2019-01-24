@@ -19,7 +19,7 @@ if (isset($Qreq->email)
     foreach (array("p", "r", "c", "accept", "refuse", "decline") as $opt)
         if (isset($Qreq[$opt]))
             $after .= ($after === "" ? "" : "&") . $opt . "=" . urlencode($Qreq[$opt]);
-    $url = hoturl_site_relative_raw("review", $after);
+    $url = $Conf->hoturl_site_relative_raw("review", $after);
     go(hoturl("index", "email=" . urlencode($Qreq->email) . "&password=" . urlencode($Qreq->password) . "&go=" . urlencode($url)));
 }
 

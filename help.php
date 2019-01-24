@@ -77,8 +77,8 @@ class HtHead extends Ht {
     function end_table() {
         return $this->_tabletype ? "" : "</tbody></table>\n";
     }
-    function hotlink($html, $page, $arguments = [], $extra = null) {
-        return Ht::link($html, $this->conf->hoturl($page, $arguments), $extra);
+    function hotlink($html, $page, $options = null, $js = null) {
+        return $this->conf->hotlink($html, $page, $options, $js);
     }
     function search_link($html, $q = null) {
         if ($q === null)

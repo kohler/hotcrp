@@ -479,7 +479,7 @@ else
 echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);
 if (isset($Qreq->requery) || isset($Qreq->haspap)) {
     $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q,
-                                         "urlbase" => hoturl_site_relative_raw("autoassign")));
+         "urlbase" => $Conf->hoturl_site_relative_raw("autoassign")));
     $plist = new PaperList($search, ["display" => "show:reviewers"]);
     $plist->set_selection($SSel);
 
