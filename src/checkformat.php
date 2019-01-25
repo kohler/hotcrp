@@ -79,8 +79,10 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     static function banal_page_is_body($pg) {
-        return get($pg, "pagetype", "body") == "body"
-            && (!isset($pg->d) || $pg->d >= 16000 || !isset($pg->columns) || $pg->columns <= 2);
+        return get($pg, "pagetype", "body") === "body"
+            && (isset($pg->c)
+                ? $pg->c >= 800
+                : (!isset($pg->d) || $pg->d >= 16000 || !isset($pg->columns) || $pg->columns <= 2));
     }
 
     static function page_message($px) {
@@ -145,7 +147,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
             else
                 $this->msg(false, "Warning: Only " . plural($this->body_pages, "page") . " seemed to contain body text; results may be off.", self::WARNING);
             $nd0_pages = count(array_filter($bj->pages, function ($pg) {
-                return isset($pg->d) && $pg->d == 0;
+                return (isset($pg->pagetype) && $pg->pagetype === "blank")
+                    || (isset($pg->c) && $pg->c === 0)
+                    || (isset($pg->d) && $pg->d === 0);
             }));
             if ($nd0_pages == $this->pages)
                 $this->msg("notext", "This document appears to contain no text. Perhaps the PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", self::ERROR);

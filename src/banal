@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 #
 # Copyright (C) 2007 Geoffrey M. Voelker
 # Copyright (c) 2016-2019 Eddie Kohler; see LICENSE.
@@ -104,7 +104,7 @@ my($banal_version) = 1.2;
 
 # parse args
 my ($banal_mode) = "report";
-my (%banal_param);
+my (%banal_param, $json_pagenum);
 my ($debug_pdftohtml);
 for (my $i = 0; $i < @ARGV; ) {
     if ($ARGV[$i] =~ /\A--?(stats|judge|json|report|version)\z/) {
@@ -112,6 +112,9 @@ for (my $i = 0; $i < @ARGV; ) {
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?debug[-_]pdftohtml\z/) {
         $debug_pdftohtml = 1;
+        splice @ARGV, $i, 1;
+    } elsif ($ARGV[$i] =~ /\A--?pagen(?:um|o)\z/) {
+        $json_pagenum = 1;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom|max[-_]pages)=(.*)\z/) {
         my($name) = $1;
@@ -151,7 +154,7 @@ my $p2h_per_inch;
 my $p2h_to_points;
 
 # minimum amount of text on page for it to be interesting
-my $banal_min_density = 8000;
+my $banal_min_nchars = 800;
 
 # fudge factor when judging text regions (in inches).
 $banal_text_fudge = 0.05;
@@ -187,8 +190,6 @@ my $banal_fullpath = '';
 # file name of file being analyzed
 my $banal_filename = '';
 
-my $use_raw_leading;
-
 # debug settings
 my $debug_leading = 0;
 my $debug_parse = 0;
@@ -209,9 +210,27 @@ sub maxkey ($) {
 # return key of mode of values in hash
 sub modevalkey ($) {
     my ($href) = @_;
-    my ($mode) = (keys %$href)[0];
-    map { $mode = $_ if ($href->{$_} > $href->{$mode}) } keys %$href;
-    return $mode;
+    my ($modekey, $mode);
+    while (my ($k, $v) = each %$href) {
+        if (!defined($modekey)
+            || $v > $mode
+            || ($v == $mode && $k < $modekey)) {
+            $modekey = $k;
+            $mode = $v;
+        }
+    }
+    $modekey;
+}
+
+# return total count of values with keys within `$delta` of `$center`
+sub count_keys_near ($$$) {
+    my ($href, $center, $delta) = @_;
+    my ($count) = 0;
+    my ($k, $v);
+    while (($k, $v) = each %$href) {
+        $count += $v if $k >= $center - $delta && $k <= $center + $delta;
+    }
+    $count;
 }
 
 # return max val in hash
@@ -241,177 +260,156 @@ sub bb_merge ($$) {
     $b->{width} = max $a->{width}, $b->{width};
 }
 
-sub calc_page_body_font ($) {
-    my ($page) = @_;
-    my ($mode) = modevalkey ($page->{pagedata}->{segdata}->{byfont});
-    $page->{pagedata}->{bodyfont} = $page->{doc}->{fonts}->{$mode};
-    $page->{pagespec}->{bodyfont} = p2h_font_to_font_size ($page->{pagedata}->{bodyfont});
-    if ($page->{pagespec}->{bodyfont} == 0) {
-        print STDERR "$banal_filename: Error: Zero font on page $page->{num}, font id $mode\n";
+sub calc_page_bodyfontsize ($$$) {
+    my ($page, $alen_bysize, $tlen_bysize) = @_;
+
+    my ($asize) = %$alen_bysize ? modevalkey($alen_bysize) : 0;
+    my ($tsize) = %$tlen_bysize ? modevalkey($tlen_bysize) : 0;
+    if ($tsize && (!$asize || $alen_bysize->{$asize} < 0.6 * $tlen_bysize->{$tsize})) {
+        $asize = $tsize;
     }
+    $page->{pagespec}->{bodyfont} = p2h_font_size_to_point($asize);
+    $asize;
 }
 
-sub calc_page_leading ($) {
-    my ($page) = @_;
-#    my ($mode) = modevalkey ($page->{pagedata}->{segdata}->{leads});
+sub calc_page_leading ($$$) {
+    my ($page, $texts, $bodyfontsize) = @_;
+    my ($minlead) = $p2h_per_inch / 16;
 
-    my ($segs) = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
-    my ($mode) = modevalkey ($segs->{leads});
-
-    if ($banal_leading_policy eq 'mode') {
-        print "using leading policy 'mode'\n" if ($debug_leading);
-        my ($lead) = $mode * $p2h_to_points;
-        $lead *= 10;
-        $lead = int ($lead + 0.5);
-        $lead /= 10;
-        print "leading: $lead\n" if ($debug_leading);
-        $page->{pagespec}->{lead} = $lead;
-        return;
-    }
-
-    if ($debug_leading) {
-        # leading histogram
-        my ($ll) = $segs->{leads};
-        foreach my $k (sort { $a <=> $b } keys %$ll) {
-            my ($l) = int (($k * $p2h_to_points * 10) + 0.5);
-            $l /= 10;
-            print "$l ($segs->{leads}->{$k}) ";
+    my (%leads);
+    my ($colpos) = $page->{pagedata}->{colpos};
+    for (my $col = 0; $col < @$colpos; $col += 2) {
+        my ($x) = POSIX::floor(0.8 * $colpos->[$col] + 0.2 * $colpos->[$col + 1]);
+        my (@ypos);
+        foreach my $text (@$texts) {
+            if ($text->{sz} >= $bodyfontsize
+                && $text->{l} <= $x
+                && $text->{l} + $text->{w} >= $x) {
+                push @ypos, $text->{t};
+            }
         }
-        print "\n";
+        @ypos = sort { $a <=> $b } @ypos;
+        for (my $j = 1; $j < @ypos; ++$j) {
+            my ($lead) = $ypos[$j] - $ypos[$j - 1];
+            if ($lead >= $minlead) {
+                $leads{$lead} = 0 if !exists $leads{$lead};
+                $leads{$lead} += 1;
+            }
+        }
     }
+    $leads{0} = 1 if !%leads;
 
-    my ($mcount) = $segs->{leads}->{$mode};
-    my ($mcountm1, $mcountp1) = (0, 0);
-    $mcountm1 = $segs->{leads}->{$mode - 1} if exists($segs->{leads}->{$mode - 1});
-    $mcountp1 = $segs->{leads}->{$mode + 1} if exists($segs->{leads}->{$mode + 1});
-
-    my ($count) = $mcount + $mcountm1 + $mcountp1;
-    if ($count <= 0) {
-        $page->{pagespec}->{lead} = 0;
-        return;
-    }
-
-    my ($wsum) = $mode * ($mcount / $count) + ($mode - 1) * ($mcountm1 / $count)
-        + ($mode + 1) * ($mcountp1 / $count);
-    my ($lead) = $wsum * $p2h_to_points;
-    $lead *= 10;
-    $lead = int ($lead + 0.5);
-    $lead /= 10;
-
-    $page->{pagespec}->{lead} = $lead;
-
-#    print Dumper ($segs->{leads});
+    my ($lead) = modevalkey(\%leads);
+    $page->{pagespec}->{lead} = int ($lead * $p2h_to_points * 10 + 0.5) / 10;
 }
 
-sub calc_page_columns ($) {
-    my ($page) = @_;
-    my ($segs, $maxw, $colw, $ncols);
+sub calc_xmap_mode_columns ($) {
+    my ($xmap) = @_;
 
-    # use estimated width of text region as base
-    my $pagew = $page->{pagespec}->{textbb}->{width};
-    my $leftmargin = $page->{pagespec}->{textbb}->{left};
-    my $paperw = $page->{pagespec}->{paperbb}->{width};
-    my $expected_pagew = $paperw - 2 * max(min($leftmargin, $paperw - $pagew - $leftmargin), 0);
-    $pagew = $expected_pagew if $pagew < 0.9 * $expected_pagew;
+    my (%ncols);
+    foreach my $z (@{$xmap->{rows}}) {
+        if (@$z > 0) {
+            $ncols{@$z} = 0 if !exists $ncols{@$z};
+            $ncols{@$z} += 1;
+        }
+    }
+    my ($ncols2) = modevalkey(\%ncols);
 
-    # use the maximum width segment in the body font to estimate
-    # column width
-    $segs = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
-#    $maxw = maxkey ($segs->{widths});
-    my $modew = modevalkey ($segs->{widths});
-    my $colw = $modew / $p2h_per_inch;
-
-    if ($colw >= ($pagew / 2.0)) {
-        $ncols = 1;
-    } elsif (($colw < ($pagew / 2.0)) && ($colw >= ($pagew / 3.0))) {
-        $ncols = 2;
-    } elsif (($colw < ($pagew / 3.0)) && ($colw >= ($pagew / 4.0))) {
-        $ncols = 3;
-    } elsif (($colw < ($pagew / 4.0)) && ($colw >= ($pagew / 5.0))) {
-        $ncols = 4;
-    } elsif (($colw < ($pagew / 5.0)) && ($colw >= ($pagew / 6.0))) {
-        $ncols = 5;
-    } elsif (($colw < ($pagew / 6.0)) && ($colw >= ($pagew / 7.0))) {
-        $ncols = 6;
-    } elsif (($colw < ($pagew / 7.0)) && ($colw >= ($pagew / 8.0))) {
-        $ncols = 7;
-    } elsif ($page->{pagespec}->{density} < $banal_min_density) {
-        $ncols = 1;
-    } else {
-        my ($num) = $page->{num};
-#       print Dumper ($segs->{widths});
-        printf STDERR "$banal_filename: Error (page $num): Unknown number of columns: width of typical text segment %.2fin, page %.2fin.\n", $colw, $pagew;
-        $ncols = 1;
+    # XXX should use KDE
+    my (@colpos);
+    for (my $i = 0; $i < $ncols2; $i += 1) {
+        push @colpos, {};
+    }
+    foreach my $z (@{$xmap->{rows}}) {
+        if (@$z == $ncols2) {
+            for (my $i = 0; $i < $ncols2; $i += 1) {
+                my $x = $z->[$i];
+                $colpos[$i]->{$x} = 0 if !exists $colpos[$i]->{$x};
+                $colpos[$i]->{$x} += 1;
+            }
+        }
     }
 
-    $page->{pagedata}->{ncols} = $ncols;
-    $page->{pagespec}->{ncols} = $ncols;
+    my ($delta) = $p2h_per_inch / 8;
+    my (@columns);
+    for (my $i = 0; $i < $ncols2; $i += 2) {
+        my $l = modevalkey($colpos[$i]);
+        my $r = modevalkey($colpos[$i + 1]);
+
+        if (count_keys_near($colpos[$i], $l, $delta) >= 3
+            && count_keys_near($colpos[$i + 1], $r, $delta) >= 3) {
+            push @columns, $l, $r;
+        }
+    }
+    @columns;
 }
 
-sub calc_page_text_region ($$) {
-    my ($page, $segdata) = @_;
+sub calc_page_columns ($$) {
+    my ($page, $xmap) = @_;
+    $xmap = xmap_close_gaps($xmap);
+    my ($nxmap) = $xmap;
 
-    my ($segs_minw) = $segdata->{lefts};
-    my ($segs_maxw) = $segdata->{rights};
+    my (@columns);
+    while (1) {
+        my (@ncolumns) = calc_xmap_mode_columns($nxmap);
+        last if !@ncolumns;
 
-    # find the minimum left position among segments (must be
-    # multiple segments with that position to skip outliers)
-    my ($minw) = 8 * $p2h_per_inch;
-    foreach my $s (keys %$segs_minw) {
-        $minw = $s if (($s < $minw) && ($segs_minw->{$s} > 3));
+        my ($i, $j);
+        for ($i = $j = 0; $j < @ncolumns; ) {
+            if ($i == @columns || $ncolumns[$j] < $columns[$i]) {
+                splice @columns, $i, 0, $ncolumns[$j], $ncolumns[$j + 1];
+                $nxmap = xmap_strip_overlap($nxmap, $ncolumns[$j], $ncolumns[$j + 1]);
+                $j += 2;
+            } else {
+                $i += 2;
+            }
+        }
+
+        last if xmap_count_nonempty($nxmap) < @{$nxmap->{rows}} / 16;
     }
 
-    # all consistency bets are off with low density pages
-    $minw = minkey ($segs_minw) if ($minw > 4 * $p2h_per_inch);
+    $page->{pagedata}->{ncols} = @columns / 2;
+    $page->{pagespec}->{ncols} = @columns / 2;
+    $page->{pagedata}->{colpos} = [@columns];
+    #print STDERR $page->{num}, " : ", @columns / 2, " [", join(",", @columns), "]\n";
+    #xmap_print($xmap);
+    #print STDERR "\n\n";
+}
 
-    # find the maximum right position among segments (must be
-    # multiple segments with that position to skip outliers)
-    my ($maxw) = 0;
-    foreach my $s (keys %$segs_maxw) {
-        $maxw = $s if (($s > $maxw) && ($segs_maxw->{$s} >= 2));
-    }
+sub calc_page_text_region ($$$) {
+    my ($page, $xmap, $ymap) = @_;
 
-#    print "tmpw $tmpw maxw $maxw\n";
-#    if ($maxw < 600) {
-#       print Dumper ($segs_maxw);
-#    }
-
-    # unjustified text may not have multiple segments with the same
-    # max right position...fall back to just using the max right position
-    $maxw = maxkey ($segs_maxw) if ($maxw < $minw);
-    $maxw = $minw + minkey ($segdata->{widths}) if (!defined $maxw);
-    $maxw = $minw if ($maxw < $minw);
-
-    my ($minh) = minkey ($segdata->{tops});
-    my ($maxh) = maxkey ($segdata->{bots});
+    my ($left, $right) = xmap_find_bounds($xmap, 0.1);
+    my ($top, $bottom) = xmap_find_bounds($ymap, 0.1);
 
     $page->{pagedata}->{textbb} = {
-        top => $minh,
-        left => $minw,
-        width => ($maxw - $minw),
-        height => ($maxh - $minh),
+        top => $top,
+        left => $left,
+        width => $right - $left,
+        height => $bottom - $top
     };
-
-#    print "$minw $maxw\n";
-#    print Dumper ($page->{pagedata}->{textbb});
 
     $page->{pagespec}->{textbb} = {
-        top => $minh / $p2h_per_inch,
-        left => $minw / $p2h_per_inch,
-        width => ($maxw - $minw) / $p2h_per_inch,
-        height => ($maxh - $minh) / $p2h_per_inch,
+        top => $top / $p2h_per_inch,
+        left => $left / $p2h_per_inch,
+        width => ($right - $left) / $p2h_per_inch,
+        height => ($bottom - $top) / $p2h_per_inch
     };
 
-    return 1;
+    if ($left < $right && $page->{pagespec}->{ncols} == 0) {
+        $page->{pagedata}->{colpos} = [$left, $right];
+    }
 }
 
-sub calc_page_density ($) {
-    my ($page) = @_;
-    my ($bfont, $density);
+sub calc_page_nchars ($$$) {
+    my ($page, $tlen_bysize, $bodyfontsize) = @_;
 
-    $bfont = $page->{pagedata}->{bodyfont}->{id};
-    $density = maxval ($page->{pagedata}->{segdata_byfont}->{$bfont}->{byfont});
-    $page->{pagespec}->{density} = $density;
+    my ($nc) = 0;
+    foreach my $size (keys %$tlen_bysize) {
+        next if $size < $bodyfontsize || $size > 1.5 * $bodyfontsize;
+        $nc += $tlen_bysize->{$size};
+    }
+    $page->{pagespec}->{nchars} = $nc;
 }
 
 sub calc_doc_body_font ($) {
@@ -436,67 +434,7 @@ sub calc_doc_leading ($) {
         next if !exists $page->{pagespec}->{lead};
         $leads->{$page->{pagespec}->{lead}}++;
     }
-    my ($lmode) = modevalkey ($leads);
-
-#    $use_raw_leading = 1;
-    if (!defined $use_raw_leading) {
-#       print "mode: $lmode\n";
-#       print "pages w mode: $leads->{$lmode}\n";
-        if ($leads->{$lmode} >= $doc->{npages} / 2) {
-            foreach my $i (1..$doc->{npages}) {
-                my ($page) = $doc->{pages}->{$i};
-                next if ($page->{pagespec}->{lead} == $lmode);
-
-#               print "abs diff: ", $lmode - $page->{pagespec}->{lead}, "\n";
-                if (abs ($lmode - $page->{pagespec}->{lead}) < 0.2) {
-#                   print "setting to ", $lmode, "\n";
-                    $page->{pagespec}->{lead} = $lmode;
-                }
-            }
-        }
-    }
-
-    if ($debug_leading) {
-
-        print "entire doc\n";
-
-        my (%doc_leads);
-        foreach my $i (1..$doc->{npages}) {
-            my ($page) = $doc->{pages}->{$i};
-            my ($segs) = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
-            $leads = $segs->{leads};
-            foreach my $k (keys %$leads) {
-                $doc_leads{$k} += $segs->{leads}->{$k};
-            }
-        }
-
-        foreach my $k (sort { $a <=> $b } keys %doc_leads) {
-            my ($l) = int (($k * $p2h_to_points * 10) + 0.5);
-            $l /= 10;
-            print "$l ($doc_leads{$k}) ";
-        }
-        print "\n";
-
-        my ($mode) = modevalkey (\%doc_leads);
-        print "mvk $mode\n";
-        my ($count) = $doc_leads{$mode} +
-            $doc_leads{$mode - 1} +
-            $doc_leads{$mode + 1};
-
-        my ($wsum) = $mode * ($doc_leads{$mode} / $count);
-        print "b: ", $wsum, "\n";
-        $wsum += ($mode - 1) * ($doc_leads{$mode - 1} / $count);
-        $wsum += ($mode + 1) * ($doc_leads{$mode + 1} / $count);
-        my ($lead) = $wsum * $p2h_to_points;
-        print "c: ", $lead, "\n";
-        $lead *= 10;
-        print "d: ", $lead, "\n";
-        $lead = int ($lead + 0.5);
-        $lead /= 10;
-        print "lead: $lead\n";
-    }
-
-    $doc->{pagespec}->{lead} = $lmode;
+    $doc->{pagespec}->{lead} = modevalkey ($leads);
 }
 
 sub calc_doc_text_region ($) {
@@ -511,8 +449,8 @@ sub calc_doc_text_region ($) {
 
     foreach my $i (2..$doc->{npages}) {
         $page = $doc->{pages}->{$i};
-        next if !exists $page->{pagespec}->{density}
-            || $page->{pagespec}->{density} < $banal_min_density;
+        next if !exists $page->{pagespec}->{nchars}
+            || $page->{pagespec}->{nchars} < $banal_min_nchars;
         $maxw = max $maxw, $page->{pagespec}->{textbb}->{width};
         $maxh = max $maxh, $page->{pagespec}->{textbb}->{height};
         $minl = min $minl, $page->{pagespec}->{textbb}->{left};
@@ -544,20 +482,22 @@ sub calc_doc_page_types ($) {
         my ($page) = $doc->{pages}->{$i};
         my ($type) = 'body';
 
-        if (!exists $page->{pagespec}->{density}) {
+        if (!exists $page->{pagespec}->{nchars}) {
             $type = 'blank';
-        } elsif ($i == 1 && $page->{pagespec}->{density} < 3000) {
+        } elsif ($i == 1 && $page->{pagespec}->{nchars} < 800) {
             $type = 'cover';
-        } elsif ($page->{pagespec}->{bodyfont} < $font) {
-            if (($doc->{npages} - $i) < ($doc->{npages} / 3)) {
-                $type = 'bib';
-            }
-        } elsif ($page->{pagespec}->{density} < $banal_min_density) {
+        } elsif ($page->{pagespec}->{nchars} < $banal_min_nchars) {
             if ($i == $doc->{npages}) {
                 $type = 'bib';
             } else {
                 $type = 'figure';
             }
+        } elsif ($page->{pagespec}->{bodyfont} < $font) {
+            if (($doc->{npages} - $i) < ($doc->{npages} / 3)) {
+                $type = 'bib';
+            }
+        } elsif ($page->{pagespec}->{ncols} == 0) {
+            $type = 'figure';
         }
 
         $page->{pagespec}->{type} = $type;
@@ -578,9 +518,9 @@ sub calc_doc_columns ($) {
     $doc->{ncols} = modevalkey (\%cols);
 }
 
-sub p2h_font_to_font_size ($) {
-    my ($font) = @_;
-    ($font->{size} + 3) / $banal_param{zoom};
+sub p2h_font_size_to_point ($) {
+    my ($size) = @_;
+    $size ? ($size + 3) / $banal_param{zoom} : 0;
 }
 
 sub p2h_font_bug ($) {
@@ -617,19 +557,19 @@ sub json_quote ($) {
 
 sub report_json ($) {
     my ($doc) = @_;
+    binmode STDOUT, ':utf8';
 
     printf "{\n  \"at\": %d,\n", time;
     printf "  \"args\": %s,\n", json_quote(join(" ", @switches)) if @switches;
 
     my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}, "mr" => {}, "mb" => {}};
     my $px = {};
-    my $nummargin = 10000;
     for my $i (1 .. $doc->{npages}) {
         my $page = $doc->{pages}->{$i};
 
         my($pbb) = $page->{pagespec}->{paperbb};
-        my($pw) = POSIX::floor($pbb->{width} * 72 / $grid) * $grid;
-        my($ph) = POSIX::floor($pbb->{height} * 72 / $grid) * $grid;
+        my($pw) = POSIX::floor($pbb->{width} * 72 + 0.5);
+        my($ph) = POSIX::floor($pbb->{height} * 72 + 0.5);
         my($pd) = {"pw" => $pw, "ph" => $ph};
 
         if (exists $page->{pagespec}->{textbb}) {
@@ -644,9 +584,6 @@ sub report_json ($) {
             $pd->{mr} = $pw - $tr;
             $pd->{tw} = $tr - $tl;
             $pd->{th} = $tb - $tt;
-
-            my($pnummargin) = POSIX::floor($pd->{ph} - $page->{pagedata}->{lowest_number} * $p2h_to_points);
-            $nummargin = min($pnummargin, $nummargin) if $pnummargin < $pd->{ph} - $tb;
         }
 
         $px->{$i} = $pd;
@@ -669,9 +606,8 @@ sub report_json ($) {
         $doc_bfs = sprintf "\"bodyfontsize\": %g", $doc->{pagespec}->{bodyfont};
     }
     my ($doc_l) = sprintf "\"leading\": %g", $doc->{pagespec}->{lead};
-    my ($doc_c) = sprintf "\"columns\": %d", $doc->{pages}->{1}->{pagespec}->{ncols};
+    my ($doc_c) = sprintf "\"columns\": %d", $doc->{ncols};
     print "  $doc_ps,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n";
-    printf "  \"nummargin\": %.0f,\n", $nummargin if $nummargin < 10000;
     if (exists $banal_param{max_pages} && $doc->{npages} > $banal_param{max_pages}) {
         printf "  \"npages\": %d,\n", $doc->{npages};
     }
@@ -686,7 +622,7 @@ sub report_json ($) {
 
         if ($page->{num} =~ /\A\d+\z/ && $page->{num} ne $i) {
             push @val, sprintf "\"pageno\": %d", $page->{num};
-        } elsif ($page->{num} ne $i) {
+        } elsif ($page->{num} ne $i || $json_pagenum) {
             push @val, sprintf "\"pageno\": %s", json_quote($page->{num});
         }
 
@@ -704,8 +640,8 @@ sub report_json ($) {
             my($page_l) = sprintf "\"leading\": %g", $page->{pagespec}->{lead};
             push @val, $page_l if $page_l ne $doc_l;
             my($page_c) = sprintf "\"columns\": %d", $page->{pagespec}->{ncols};
-            push @val, $page_c if $page_c ne $doc_c;
-            push @val, sprintf "\"d\": %d", $page->{pagespec}->{density};
+            push @val, $page_c if $page_c ne $doc_c && $page->{pagespec}->{type} ne "figure";
+            push @val, sprintf "\"c\": %d", $page->{pagespec}->{nchars};
             push @val, sprintf "\"pagetype\": %s", json_quote($page->{pagespec}->{type})
                 if $page->{pagespec}->{type} ne "body";
         }
@@ -764,8 +700,8 @@ sub report_verbose ($) {
         printf "  columns: %d\n", $page->{pagespec}->{ncols};
         print   "  type: ", $page->{pagespec}->{type}, "\n";
 
-        my ($density) = $page->{pagespec}->{density};
-        printf "  density: %d\n", $density;
+        my ($nchars) = $page->{pagespec}->{nchars};
+        printf "  nchars: %d\n", $nchars;
     }
 }
 
@@ -895,7 +831,7 @@ sub judge_columns ($$) {
     for $i (1..($doc->{npages} - 1)) {
         $page = $doc->{pages}->{$i};
 
-        next if ($page->{pagespec}->{density} < $banal_min_density);
+        next if ($page->{pagespec}->{nchars} < $banal_min_nchars);
 
         next unless ($spec->{cols} != $page->{pagespec}->{ncols});
 
@@ -918,7 +854,7 @@ sub judge_text_region ($$) {
         $page = $doc->{pages}->{$i};
 
         # ignore pages without much text
-        next if ($page->{pagespec}->{density} < $banal_min_density);
+        next if ($page->{pagespec}->{nchars} < $banal_min_nchars);
 
         $width = $page->{pagespec}->{textbb}->{width};
         next unless ($spec->{width} &&
@@ -943,7 +879,7 @@ sub judge_text_region ($$) {
     for $i (1..$doc->{npages}) {
         $page = $doc->{pages}->{$i};
 
-        next if ($page->{pagespec}->{density} < $banal_min_density);
+        next if ($page->{pagespec}->{nchars} < $banal_min_nchars);
 
         $height = $page->{pagespec}->{textbb}->{height};
         next unless ($spec->{height} &&
@@ -1024,27 +960,6 @@ sub parse_p2h_fonts ($$) {
     return $line;
 }
 
-sub update_segdata ($$$$$$$$) {
-    my ($page, $segdata, $top, $left, $width, $height, $font, $lead) = @_;
-    my ($bottom) = $top + $height;
-    my ($right) = $left + $width;
-    my ($pagew) = $page->{pagedata}->{pagebb}->{width};
-
-    $segdata->{widths}{$width}++ if ($width > $p2h_per_inch);
-    $segdata->{lefts}{$left}++ if ($left < ($pagew / 3));
-    $segdata->{rights}{$right}++ if ($right > ($pagew / 3));
-    $segdata->{tops}{$top}++ if ($width > $p2h_per_inch);
-    $segdata->{bots}{$bottom}++ if ($width > $p2h_per_inch);
-#    $segdata->{leads}{$lead}++ if ($lead > 0 && $width > $p2h_per_inch);
-    $segdata->{leads}{$lead}++ if ($lead > 0);
-
-    # count number of segments in a given font size, weighted by the
-    # width of the segment.  the font with the greatest weight
-    # will be the body font.
-
-    $segdata->{byfont}{$font} += $width;
-}
-
 sub check_p2h_error ($) {
     my ($line) = @_;
 
@@ -1054,16 +969,167 @@ sub check_p2h_error ($) {
     return 0;
 }
 
+sub xmap_make ($$;$) {
+    my ($h, $rowh, $snap) = @_;
+    $snap = 0 if !$snap;
+    my ($nrows) = POSIX::ceil($h / $rowh);
+    my ($xmap) = { rowh => $rowh, nrows => $nrows, snap => $snap, rows => [] };
+    while (@{$xmap->{rows}} < $nrows) {
+        push @{$xmap->{rows}}, [];
+    }
+    $xmap;
+}
+
+sub xmap_add ($$$$$) {
+    my ($xmap, $top, $left, $width, $height) = @_;
+    my ($t) = max(0, POSIX::floor($top / $xmap->{rowh}));
+    my ($b) = min($xmap->{nrows}, POSIX::ceil(($top + $height) / $xmap->{rowh}));
+    my ($snap) = $xmap->{snap};
+    my ($right) = $left + $width;
+
+    for (; $t < $b; $t += 1) {
+        my ($z) = $xmap->{rows}->[$t];
+        my ($i, $j);
+        for ($i = 0; $i < @$z && $z->[$i + 1] < $left - $snap; $i += 2) {
+        }
+        for ($j = $i; $j < @$z && $z->[$j] <= $right + $snap; $j += 2) {
+        }
+        if ($j > $i + 2) {
+            splice(@$z, $i + 1, $j - $i - 2);
+        }
+        if ($j == $i && ($i == @$z || $right < $z->[$i])) {
+            splice(@$z, $i, 0, $left, $right);
+        } else {
+            $z->[$i] = min($z->[$i], $left);
+            $z->[$i + 1] = max($z->[$i + 1], $right);
+        }
+    }
+}
+
+sub xmap_close_gaps ($) {
+    my ($xmap) = @_;
+    my ($nxmap) = xmap_make($xmap->{nrows} * $xmap->{rowh}, $xmap->{rowh}, $xmap->{snap});
+
+    my ($t) = 0;
+    foreach my $z (@{$nxmap->{rows}}) {
+        push @$z, @{$xmap->{rows}->[$t]};
+        my ($pz) = $t == 0 ? [] : $xmap->{rows}->[$t - 1];
+        my ($pi) = 0;
+        my ($nz) = $t == @{$xmap->{rows}} - 1 ? [] : $xmap->{rows}->[$t + 1];
+        my ($ni) = 0;
+
+        for (my $i = 0; $i < @$z - 2; ) {
+            while ($pi < @$pz && $pz->[$pi + 1] < $z->[$i + 1]) {
+                $pi += 2;
+            }
+            while ($ni < @$nz && $nz->[$ni + 1] < $z->[$i + 1]) {
+                $ni += 2;
+            }
+            if (($pi < @$pz || $ni < @$nz)
+                && ($pi == @$pz || $pz->[$pi] < $z->[$i + 2])
+                && ($ni == @$nz || $nz->[$ni] < $z->[$i + 2])) {
+                splice(@$z, $i + 1, 2);
+            } else {
+                $i += 2;
+            }
+        }
+
+        $t += 1;
+    }
+    $nxmap;
+}
+
+sub xmap_strip_overlap ($$$) {
+    my ($xmap, $left, $right) = @_;
+    my ($nxmap) = xmap_make($xmap->{nrows} * $xmap->{rowh}, $xmap->{rowh}, $xmap->{snap});
+
+    my ($yi) = 0;
+    foreach my $z (@{$xmap->{rows}}) {
+        my $i = 0;
+        for (; $i < @$z && $z->[$i + 1] < $left; $i += 2) {
+            push @{$nxmap->{rows}->[$yi]}, $z->[$i], $z->[$i + 1];
+        }
+        for (; $i < @$z && $z->[$i] < $right; $i += 2) {
+        }
+        for (; $i < @$z; $i += 2) {
+            push @{$nxmap->{rows}->[$yi]}, $z->[$i], $z->[$i + 1];
+        }
+        $yi += 1;
+    }
+    $nxmap;
+}
+
+sub xmap_count_nonempty ($) {
+    my ($xmap) = @_;
+    my ($n) = 0;
+
+    foreach my $z (@{$xmap->{rows}}) {
+        $n += 1 if @$z > 0;
+    }
+    $n;
+}
+
+sub xmap_find_bounds ($;$) {
+    my ($xmap, $frac) = @_;
+
+    my (@lows, @highs);
+    foreach my $z (@{$xmap->{rows}}) {
+        if (@$z) {
+            push @lows, $z->[0];
+            push @highs, $z->[@$z - 1];
+        }
+    }
+
+    @lows = sort { $a <=> $b } @lows;
+    @highs = sort { $a <=> $b } @highs;
+
+    $frac = 0 if !$frac;
+    $frac = POSIX::floor($frac * @lows) if $frac;
+
+    if (!@lows || $frac >= @lows) {
+        (0, 0);
+    } elsif (!$frac || $frac < 0) {
+        ($lows[0], $highs[@highs - 1]);
+    } else {
+        ($lows[$frac], $highs[@highs - 1 - $frac]);
+    }
+}
+
+sub xmap_print ($) {
+    my ($xmap) = @_;
+
+    for (my $y = 0; $y < @{$xmap->{rows}}; $y += 1) {
+        print STDERR $y, " [", join(", ", @{$xmap->{rows}->[$y]}), "]\n";
+    }
+}
+
+sub unxml ($) {
+    my ($t) = @_;
+    $t =~ s{<.*?>}{}g;
+    $t =~ s{&.*?;}{
+        if ($& eq "&gt;") {
+            ">";
+        } elsif ($& eq "&lt;") {
+            "<";
+        } elsif ($& eq "&amp;") {
+            "&";
+        } elsif ($& eq "&#34;") {
+            "\"";
+        } else {
+            print STDERR "bad xml $&\n";
+            $&;
+        }
+    }ge;
+    $t;
+}
+
 sub parse_p2h_text ($$) {
     my ($line, $page) = @_;
     my ($pagewidth) = $page->{pagedata}->{pagebb}->{width};
     my ($pageheight) = $page->{pagedata}->{pagebb}->{height};
 
-    my ($segs_all) = {};
-    my ($segs_byfont) = {};
-
-    my ($prevtop) = 0;
-    my ($lowest_number) = 0;
+    my (@texts);
+    my (%tlen_bysize, %alen_bysize);
 
     while (1) {
 #       next if (check_p2h_error ($line));
@@ -1084,19 +1150,12 @@ sub parse_p2h_text ($$) {
         }
 
         my ($top, $left, $width, $height, $font) = (+$1, +$2, +$3, +$4, $5);
-        my ($lead);
 
-        if ($prevtop < $top) {
-            $lead = $top - $prevtop;
-        } else {
-            $lead = -1;
-        }
-        $prevtop = $top;
-
-        my ($fontspec) = $page->{doc}->{fonts}{$font};
+        my ($fontspec) = $page->{doc}->{fonts}->{$font};
         if ($fontspec) {
             $font = $fontspec->{id};
         }
+        my ($size) = $fontspec->{size};
 
         # embedded newlines will split <text>...</text> across multiple lines
         my ($continuation);
@@ -1111,29 +1170,52 @@ sub parse_p2h_text ($$) {
             next;
         }
 
-        if (!exists($segs_byfont->{$font})) {
-            $segs_byfont->{$font} = {};
+        my ($content) = "";
+        if ($line =~ /<text.*?>(.*)<\/text>/s) {
+            $content = unxml($1);
         }
-        update_segdata ($page, $segs_byfont->{$font}, $top, $left, $width, $height, $font, $lead);
-        update_segdata ($page, $segs_all, $top, $left, $width, $height, $font, $lead);
+        my ($isnum) = length($content) <= 5 && $content =~ /\A[- ,.:\/]*[0-9][- ,.:\/0-9]*\z/;
 
-        # page number detection
-        if ($line =~ /<text[^>]*>[- ,.\/]*[0-9][- ,.\/0-9]*<\/text>/) {
-            $lowest_number = max $lowest_number, ($top + $height);
+        push @texts, {
+            t => $top, l => $left, w => $width, h => $height, f => $font,
+            sz => $size, content => $content, num => $isnum
+        };
+
+        $alen_bysize{$size} = 0 if !exists $alen_bysize{$size};
+        $alen_bysize{$size} += length($content) + 1;
+        if (!$isnum) {
+            $tlen_bysize{$size} = 0 if !exists $tlen_bysize{$size};
+            $tlen_bysize{$size} += length($content) + 1;
         }
 
         $line = <$FILE>;
     }
 
-    $page->{pagedata}->{segdata} = $segs_all;
-    $page->{pagedata}->{segdata_byfont} = $segs_byfont;
-    $page->{pagedata}->{lowest_number} = $lowest_number;
+    # compute page body font: the font with the most characters
+    my ($bodyfontsize) = calc_page_bodyfontsize($page, \%alen_bysize, \%tlen_bysize);
 
-    calc_page_body_font ($page);
-    calc_page_leading ($page);
-    calc_page_density ($page);
-    calc_page_text_region ($page, $segs_all);
-    calc_page_columns ($page);
+    # compute extent map, using extents larger than the body font
+    # plus other extents that aren’t short numbers
+    my ($xmap) = xmap_make($pageheight, $p2h_per_inch / 4, $p2h_per_inch / 16);
+    my ($ymap) = xmap_make($pagewidth, $p2h_per_inch / 4, $p2h_per_inch / 16);
+    foreach my $text (@texts) {
+        if ($text->{sz} > $bodyfontsize || !$text->{num}) {
+            xmap_add($xmap, $text->{t}, $text->{l}, $text->{w}, $text->{h});
+            xmap_add($ymap, $text->{l}, $text->{t}, $text->{h}, $text->{w});
+        }
+    }
+
+    # compute columns using extent map
+    calc_page_columns($page, $xmap);
+
+    # compute text region using extent maps
+    calc_page_text_region($page, $xmap, $ymap);
+
+    # compute leading using bodyfontsize and column specs
+    calc_page_leading($page, \@texts, $bodyfontsize);
+
+    # compute page character count using content lengths
+    calc_page_nchars($page, \%alen_bysize, $bodyfontsize);
 }
 
 sub parse_p2h_page ($) {
