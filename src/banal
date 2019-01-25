@@ -89,8 +89,6 @@ banal has three modes of operation:
 
 -zoom=N   passed to pdftohtml.
 
--no_app   do not calculate application
-
 -json     JSON output
 
 -max-pages=N  maximum number of pages for JSON
@@ -105,12 +103,12 @@ EOF
 $banal_version = 1.2;
 
 # parse args
-local($stats, $judge, $no_app, $json, $version, $debug_pdftohtml,
+local($stats, $judge, $json, $version, $debug_pdftohtml,
       $paper, $pages, $font, $leading, $cols, $width, $height, $fudge, $format,
       $zoom, $max_pages);
 for (my $i = 0; $i < @ARGV; ) {
     no strict "refs";
-    if ($ARGV[$i] =~ /\A--?(stats|judge|no[-_]app|json|version|debug[-_]pdftohtml)\z/) {
+    if ($ARGV[$i] =~ /\A--?(stats|judge|json|version|debug[-_]pdftohtml)\z/) {
         my($name) = $1;
         $name =~ s/-/_/g;
         ${$name} = 1;
@@ -125,7 +123,7 @@ for (my $i = 0; $i < @ARGV; ) {
         $name =~ s/-/_/g;
         ${$name} = $ARGV[$i + 1];
         splice @ARGV, $i, 2;
-    } elsif ($ARGV[$i] =~ /\A--?report\z/) {
+    } elsif ($ARGV[$i] =~ /\A--?(?:report|no[-_]app)\z/) {
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A-/) {
         print STDERR "banal: bad option ", $ARGV[$i], "\n";
@@ -249,370 +247,6 @@ sub calc_page_body_font ($) {
     if ($page->{pagespec}->{bodyfont} == 0) {
         print STDERR "$banal_filename: Error: Zero font on page $page->{num}, font id $mode\n";
     }
-}
-
-sub utf8ascii_undo ($) {
-    my ($str) = @_;
-
-    return $str unless ($str =~ /^\\376\\377(\\\d\d\d.)*$/);
-
-    # string is UTF-8 in ASCII (not binary)
-    #   (PDFCreator seems to like to do this, also freepdfconvert)
-    print "$banal_filename: ascii UTF-8: $title\n" if ($debug_docapp);
-
-    $str =~ s/\\376\\377//;
-    $str =~ s/\\000//g;
-
-    print "$banal_filename: unencoded: $str\n" if ($debug_docapp);
-    return $str;
-}
-
-sub utf8bin_undo ($) {
-    my ($str) = @_;
-
-    return $str unless ($str =~ /^\376\377(\000.)*$/);
-
-    # string is UTF-8 in binary
-    print "$banal_filename: bin UTF-8: $str\n" if ($debug_docapp);
-
-    $str =~ s/\376\377//;
-    $str =~ s/\000//g;
-
-    print "$banal_filename: unencoded $str\n" if ($debug_docapp);
-    return $str;
-}
-
-sub utf8revbin_undo ($) {
-    my ($str) = @_;
-
-    # bytes reversed: character then null bytes (ScanSoft on the Mac)
-
-    return $str unless ($str =~ /^\377\376(.\000)*$/);
-
-    # string is UTF-8 in binary
-    print "$banal_filename: rev bin UTF-8: $str\n" if ($debug_docapp);
-
-    $str =~ s/\377\376//;
-    $str =~ s/\000//g;
-
-    print "$banal_filename: unencoded $str\n" if ($debug_docapp);
-    return $str;
-}
-
-sub utf8hex_undo ($) {
-    my ($str) = @_;
-
-    return $str unless ($str =~ /^FEFF(00..)*$/i);
-
-    print "$banal_filename: hex UTF-8: $str\n" if ($debug_docapp);
-
-    $str =~ s/^FEFF//i;
-    $str =~ s/00//g;
-    print "$banal_filename: hex ascii: $str\n" if ($debug_docapp);
-    $str = pack ("H*", $str);
-
-    print "$banal_filename: packed $str\n" if ($debug_docapp);
-    return $str;
-}
-
-# inferring the document application has two steps:
-#   1) extracting the doc metadata
-#   2) mapping metadata info to an application
-#
-# for (1), ideally we could use a module or tool to extract the
-# InfoDict from the end of the pdf file.  but there are some cases
-# where we need to peek outside the InfoDict for additional hints, so
-# in the end we still have to scan through the pdf file ourselves.
-#
-# for (2), the world would be a simpler place if applications followed
-# some kind of convention.  but given the large combination of apps,
-# pdf converters, and OSes, of course the world is not so simple.  so,
-# as usual, it's back to heuristics gathered from samples...
-
-sub calc_doc_app ($) {
-    my ($doc) = @_;
-    my ($fname) = $doc->{fullpath};
-
-    my ($creator, $producer, $creatortool, $ptex);
-    my ($rdftitle, $pdfproducer);
-    my ($indirect, $quartzpdf, $pdfmachine, $cmrfont, $texfont);
-
-    $creator = $title = $producer = $creatortool = $ptex = '';
-    $rdftitle = $pdfproducer =  '';
-    $indirect = $quartzpdf = $pdfmachine = $cmrfont = $texfont = 0;
-
-    my ($app, @allapps);
-    $app = '';
-    @allapps = ();
-
-    if (!open (PDF, $fname)) {
-        print STDERR "$banal_filename: Error: Failed to open $fname for inferring doc app.";
-        $doc->{app} = 'unknown';
-        return;
-    }
-
-    while (<PDF>) {
-
-        if (m|\/Creator\s*\(([^\)]+)\)|) {
-            $creator = $1;
-        } elsif (m|\/Creator\s*<([^\)]+)>|) {
-            # UTF-8 ascii hex
-            $creator = utf8hex_undo ($1);
-        } elsif (m|\/Creator \d+ \d+ R|) {
-            # Indirection:
-            # << /Producer 313 0 R /Creator 314 0 R ...
-            $indirect = 1;
-        }
-
-        if (m|\/Title\s*\(([^\)]+)\)|) {
-            $title = $1;
-        } elsif (m|\/Title\s*<([^\)]+)>|) {
-            # UTF-8 ascii hex
-            $title = utf8hex_undo ($1);
-        } elsif (m|<dc:title>.+<rdf:li.+>(.+)</rdf:li>.+</dc:title>|) {
-            $rdftitle = $1;
-        } elsif (m|<dc:title>|) {
-            unless (m|</dc:title>|) {
-                while (<PDF>) {
-                    last if (m|</dc:title>|);
-                    next unless (m|<rdf:li.+>(.+)</rdf:li>|);
-                    $rdftitle = $1;
-                }
-            }
-        }
-
-        if (m|\/Producer\s*\(([^\)]+)\)|) {
-            $producer = $1;
-        } elsif (m|\/Producer\s*<([^\)]+)>|) {
-            # UTF-8 ascii hex
-            $producer = utf8hex_undo ($1);
-        } elsif (m|<pdf:Producer>(.+)</pdf:Producer>|) {
-            $pdfproducer = $1;
-        }
-
-        # xap: Adobe Extensible Authoring and Publishing (early name, 5.0)
-        # xmp: Adobe Extensible Metadata Platform (final name)
-        if (m|<x[am]p:CreatorTool>(.+)<\/x[am]p:CreatorTool>|) {
-            $creatortool = $1;
-        }
-
-        if (m|<pdfx:PTEX|) {
-            # <pdfx:PTEX.Fullbanner>This is pdfTeX...</pdfx:PTEX.Fullbanner>
-            $ptex = 1;
-        }
-
-        if (m|\(Mac OS.+Quartz PDFContext\)|) {
-            # (Mac OS X 10.6.2 Quartz PDFContext) [producer indirection]
-            $quartzpdf = 1;
-        } elsif (m|\(TeX\)|) {
-            # (TeX) [creator indirection]
-            $tex = 1;
-        } elsif (m|% created by pdfMachine|) {
-            # tool doesn't bother to create any metadata whatsoever...
-            $pdfmachine = 1;
-        }
-
-        if (!$cmrfont && m|(\/BaseFont\s*\/\w+\+[Cc][Mm][Rr]\d+)|) {
-            # /BaseFont/EGYAWT+CMR8
-            $pdf_tools{'cmr fonts'}++;
-            $cmrfont = 1;
-        } elsif (!$texfont && m|/BaseFont\s*/\w+\+([Cc][Mm]\w\w\d+)|) {
-            $pdf_tools{'tex fonts'}++;
-            $texfont = $1;
-        }
-
-    }
-
-    close (PDF);
-
-    # undo any UTF-8 in ascii (literally "\376\377\000P\000r\000o...")
-    $title = utf8ascii_undo ($title) if ($title);
-    $creator = utf8ascii_undo ($creator) if ($creator);
-    $producer = utf8ascii_undo ($producer) if ($producer);
-    $creatortool = utf8ascii_undo ($creatortool) if ($creatortool);
-    $rdftitle = utf8ascii_undo  ($rdftitle) if ($rdftitle);
-    $pdfproducer = utf8ascii_undo ($pdfproducer) if ($pdfproducer);
-
-    # undo any UTF-8 in binary
-    $title = utf8bin_undo ($title) if ($title);
-    $creator = utf8bin_undo ($creator) if ($creator);
-    $producer = utf8bin_undo ($producer) if ($producer);
-    $creatortool = utf8bin_undo ($creatortool) if ($creatortool);
-    $rdftitle = utf8bin_undo  ($rdftitle) if ($rdftitle);
-    $pdfproducer = utf8bin_undo ($pdfproducer) if ($pdfproducer);
-
-    # undo any UTF-8 in binary (reversed)
-    $title = utf8revbin_undo ($title) if ($title);
-    $creator = utf8revbin_undo ($creator) if ($creator);
-    $producer = utf8revbin_undo ($producer) if ($producer);
-    $creatortool = utf8revbin_undo ($creatortool) if ($creatortool);
-    $rdftitle = utf8revbin_undo  ($rdftitle) if ($rdftitle);
-    $pdfproducer = utf8revbin_undo ($pdfproducer) if ($pdfproducer);
-
-    $title = $rdftitle if (!$title && $rdftitle);
-
-    # Word
-    if ($creator =~ /Microsoft.+Word/) {
-        # Mac OS Quartz PDFContext, doPDF
-        $pdf_tools{'word in creator'}++;
-        $app = 'word';
-    } elsif ($title =~ /Microsoft Word \-/) {
-        # ps->pdf w/ gs, distiller
-        # often doc name in title after '-' (but not always)
-        $pdf_tools{'gs, distiller'}++;
-        $app = 'word';
-    } elsif ($title =~ /Proceedings Template \- WORD/i) {
-        $pdf_tools{'template'}++;
-        $app = 'word';
-    } elsif ($creator =~ /easyPDF/) {
-        # BCL easyPDF
-        $pdf_tools{'easyPDF'}++;
-        $app = 'word';
-    } elsif ($creator =~ /PDFCreator/) {
-        $pdf_tools{'PDFCreator'}++;
-        $app = 'word';
-    } elsif ($creator =~ /PDFMaker.+Word/) {
-        $pdf_tools{'PDFMaker'}++;
-        $app = 'word';
-    } elsif ($creator =~ /Sonic PDF/) {
-        $pdf_tools{'sonic pdf'}++;
-        $app = 'word';
-    } elsif ($creatortool =~ /Word/) {
-        # Adobe XMP metadata
-        $pdf_tools{'Acrobat PDFMaker'}++;
-        $app = 'word';
-    } elsif ($producer =~ /freepdfconvert|deskPDF|ReportLab|PDF reDirect/) {
-        $pdf_tools{'misc pdf tools'}++;
-        $app = 'word';
-#    } elsif ($creator =~ /\000M\000i\000c\000r\000o\000s\000o\000f\000t.+\000W\000o\000r\000d/i) {
-        # UTF-8 binary
-#       $pdf_tools{'Word (UTF-8)'}++;
-#       $app = 'word';
-    } elsif ($pdfmachine) {
-        $pdf_tools{'pdfmachine'}++;
-        $app = 'word';
-    } elsif ($title =~ /\.docx?$/i) {
-        # Amyuni puts the filename in the title
-        $pdf_tools{'doc(x) extension'}++;
-        $app = 'word';
-    }
-
-    if ($app) {
-        push (@allapps, $app);
-        $app = '';
-
-        # never seen this happen, but let's sanity check...
-        if ($cmrfont) {
-            print STDERR "$banal_filename: Warning: CMR font in Word doc?\n";
-            $pdf_tools{'** cmrfont in word doc'}++;
-        }
-    }
-
-    # TeX
-    if ($creator =~ /TeX/) {
-        $pdf_tools{'tex in creator'}++;
-        $app = 'tex';
-    } elsif ($creatortool =~ /(MiK)?TeX/) {
-        $pdf_tools{'(mik)tex in creatortool'}++;
-        $app = 'tex';
-    } elsif ($creator =~ /dvips/) {
-        $pdf_tools{'dvips in creator'}++;
-        $app = 'tex';
-    } elsif ($producer =~ /dvips/) {
-        $pdf_tools{'dvips in producer'}++;
-        $app = 'tex';
-    } elsif ($producer =~ /PrimoPDF/ && $title =~ /\.dvi$/) {
-        $pdf_tools{'primopdf'}++;
-        $app = 'tex';
-    } elsif (($creator =~ /gnuplot/) && ($producer =~ /Ghostscript|Distiller/)) {
-        # highly likely a tex document
-        $pdf_tools{'gnuplot + gs|dist'}++;
-        $app = 'tex';
-    } elsif ($producer =~ /Ghostscript|PDFContext|pstopdf|AntennaHouse PDF/ && !$creator && !$title) {
-        # just a producer tag, no other InfoDict metadata...
-        # have yet to see a Word doc that didn't like InfoDict metadata
-        $pdf_tools{'only producer'}++;
-        $app = 'tex';
-    } elsif ($indirect && $quartzpdf && $tex) {
-        if ($creator || $producer) {
-            print STDERR "$banal_filename: Warning: direct and indirect InfoDict entries\n";
-        }
-        $pdf_tools{'tex quartzpdf'}++;
-        $app = 'tex';
-    } elsif ($creatortool =~ /gnuplot/ && !$creator && !$producer && !$title) {
-        $pdf_tools{'only gnuplot'}++;
-        $app = 'tex';
-    } elsif ($ptex) {
-        $pdf_tools{'pdftex in pdfx'}++;
-        $app = 'tex';
-    } elsif ($producer =~ /Ghostscript/ && $title =~ /\.pdf$/) {
-        $pdf_tools{'gs ps to pdf'}++;
-        $app = 'tex';
-    } elsif ($cmrfont) {
-        $pdf_tools{'cmrfont'}++;
-        $app = 'tex';
-    }
-
-    if ($app) {
-        push (@allapps, $app);
-        $app = '';
-    }
-
-    # OpenOffice
-    if ($producer =~ /OpenOffice/) {
-        $pdf_tools{'open office'}++;
-        push (@allapps, 'openoffice');
-    }
-
-    if ($creator =~ /Interleaf/) {
-        $pdf_tools{'interleaf + distiller'}++;
-        push (@allapps, 'interleaf');
-    }
-
-    # FrameMaker (!)
-    if ($creator =~ /FrameMaker/) {
-        $pdf_tools{'frame'}++;
-        push (@allapps, 'framemaker');
-    }
-
-    # sanity check that we haven't matched more than one application,
-    # or whether we didn't match anything...
-    if (scalar (@allapps) > 1) {
-        print STDERR "$banal_filename: Error: multiple apps inferred: @allapps\n";
-        $app = 'unknown';
-    } elsif (scalar (@allapps) < 1) {
-        print STDERR "$banal_filename: Warning: failed to infer document app, using 'unknown'\n";
-#       print STDERR "$banal_filename:   Creator: $creator\n" if ($creator);
-#       print STDERR "$banal_filename:   Title: $title\n" if ($title);
-#       print STDERR "$banal_filename:   Producer: $producer\n" if ($producer);
-#       print STDERR "$banal_filename:   CreatorTool: $creatortool\n" if ($creatortool);
-#       print STDERR "$banal_filename:   RDFTitle: $rdftitle\n" if ($rdftitle);
-#       print STDERR "$banal_filename:   PDFProducer: $pdfproducer\n" if ($pdfproducer);
-#       print STDERR "$banal_filename:   cmrfont\n" if ($cmrfont);
-#       print STDERR "$banal_filename:   texfont $texfont\n" if ($texfont);
-        $app = 'unknown';
-    } else {
-        $app = $allapps[0];
-    }
-
-#    $pdf_tools{$app}++;
-    $doc->{app} = $app;
-
-    if ($debug_docapp) {
-        print STDERR "$banal_filename: Creator: $creator\n" if ($creator);
-        print STDERR "$banal_filename: Title: $title\n" if ($title);
-        print STDERR "$banal_filename: Producer: $producer\n" if ($producer);
-        print STDERR "$banal_filename: CreatorTool: $creatortool\n" if ($creatortool);
-        print STDERR "$banal_filename: RDFTitle: $rdftitle\n" if ($rdftitle);
-        print STDERR "$banal_filename: PDFProducer: $pdfproducer\n" if ($pdfproducer);
-        print STDERR "$banal_filename: cmrfont\n" if ($cmrfont);
-        print STDERR "$banal_filename: texfont $texfont\n" if ($texfont);
-        foreach $t (keys %pdf_tools) {
-            print "$t: $pdf_tools{$t}\n";
-        }
-    }
-
-    return;
 }
 
 sub calc_page_leading ($) {
@@ -1094,7 +728,6 @@ sub report_verbose ($) {
     printf "Leading: %.1fpt\n", $doc->{pagespec}->{lead};
     print "Columns: ", $page->{pagespec}->{ncols}, "\n";
     print "Pages: ", $doc->{npages}, "\n";
-    print "App: ", $doc->{app}, "\n" if $doc->{app} ne "";
 
     print "\n";
     for $i (1..$doc->{npages}) {
@@ -1157,7 +790,7 @@ sub report_stats ($) {
             # pages
             $doc->{npages},
             # app
-            $doc->{app};
+            "-";
 }
 
 sub judge_paper_size ($$) {
@@ -1219,11 +852,6 @@ sub judge_body_font ($$) {
     return $msg;
 }
 
-sub app_msg ($) {
-    my ($doc) = @_;
-    return ($doc->{app} ne "" ? " using " . $doc->{app} : "");
-}
-
 sub judge_leading ($$) {
     my ($doc, $spec) = @_;
     my ($msg) = '';
@@ -1231,8 +859,8 @@ sub judge_leading ($$) {
 
     $lead = $doc->{pagespec}->{lead};
     if (($spec->{lead} - 0.1) > $lead) {
-        $msg .= sprintf ("Leading: too small %.1fpt (min %.1fpt)%s\n",
-                         $lead, $spec->{lead}, app_msg($doc));
+        $msg .= sprintf ("Leading: too small %.1fpt (min %.1fpt)\n",
+                         $lead, $spec->{lead});
     }
 }
 
@@ -1669,8 +1297,6 @@ sub banal_file ($$) {
         return;
     }
 
-    calc_doc_app ($doc) if !$no_app;
-
     while ($page = parse_p2h_page ($doc)) {
         merge_page ($doc, $page);
     }
@@ -1815,36 +1441,3 @@ sub main () {
 }
 
 exit (main ());
-
-#
-# 2011-1-25
-#    (utf8revbin_undo): new function; a tool incorrectly reverses multibytes
-#
-# 2011-1-19
-#    (check_p2h_error): skip 'stroke seems...' pdftohtml output that can
-#    appear between page output.
-#
-# 2011-1-18
-#    (parse_p2h_page, parse_p2h_text, parse_p2h_fonts): handle <text>
-#    segments that span multiple lines from embedded newlines accurately.
-#    handle optional <fontspecc> commands more gracefully.
-#    (debug_parse): new flag.
-#
-# 2011-1-17
-#    (update_segdata): fix reporting negative leadings.
-#
-# 2011-1-11
-#    (utf8ascii_undo, utf8bin_undo, utf8hex_undo, calc_doc_app): new functions
-#    for inferring the application used to create the document.
-#    (report_verbose, report_stats, judge_leading): report doc application.
-#    (debug_docapp): new flag.
-#
-# 2011-1-07
-#    uniformly print filename in error messages.
-#
-# 2010-12-31
-#
-#    (judge_format): new flag, option 'list' reports all violations
-#    on a single line in CSV format.  default option 'lines' is original
-#    behavior with one per line.
-#
