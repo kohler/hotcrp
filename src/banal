@@ -100,30 +100,30 @@ EOF
 }
 
 # version
-$banal_version = 1.2;
+my($banal_version) = 1.2;
 
 # parse args
-local($stats, $judge, $json, $version, $debug_pdftohtml,
-      $paper, $pages, $font, $leading, $cols, $width, $height, $fudge, $format,
-      $zoom, $max_pages);
+my ($banal_mode) = "report";
+my (%banal_param);
+my ($debug_pdftohtml);
 for (my $i = 0; $i < @ARGV; ) {
-    no strict "refs";
-    if ($ARGV[$i] =~ /\A--?(stats|judge|json|version|debug[-_]pdftohtml)\z/) {
-        my($name) = $1;
-        $name =~ s/-/_/g;
-        ${$name} = 1;
+    if ($ARGV[$i] =~ /\A--?(stats|judge|json|report|version)\z/) {
+        $banal_mode = $1;
+        splice @ARGV, $i, 1;
+    } elsif ($ARGV[$i] =~ /\A--?debug[-_]pdftohtml\z/) {
+        $debug_pdftohtml = 1;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom|max[-_]pages)=(.*)\z/) {
         my($name) = $1;
         $name =~ s/-/_/g;
-        ${$name} = $2;
+        $banal_param{$name} = $2;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom|max[-_]pages)\z/ && $i + 1 < @ARGV) {
         my($name) = $1;
         $name =~ s/-/_/g;
-        ${$name} = $ARGV[$i + 1];
+        $banal_param{$name} = $ARGV[$i + 1];
         splice @ARGV, $i, 2;
-    } elsif ($ARGV[$i] =~ /\A--?(?:report|no[-_]app)\z/) {
+    } elsif ($ARGV[$i] =~ /\A--?(?:no[-_]app)\z/) {
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A-/) {
         print STDERR "banal: bad option ", $ARGV[$i], "\n";
@@ -134,10 +134,10 @@ for (my $i = 0; $i < @ARGV; ) {
 }
 
 my(@switches);
-push @switches, "-zoom=$zoom" if defined $zoom;
+push @switches, "-zoom=" . $banal_param{zoom} if defined $banal_param{zoom};
 
 # zoom value
-if ((defined $zoom) && ($zoom !~ /^[1-9]\d*(\.\d*)?$/)) {
+if (exists $banal_param{zoom} && ($banal_param{zoom} !~ /^[1-9]\d*(\.\d*)?$/)) {
     print STDERR "banal: bad -zoom\n";
     usage;
 }
@@ -173,8 +173,6 @@ if (exists $ENV{"PDFTOHTML"}) {
     $pdftohtml = $ENV{"PDFTOHTML"};
 } elsif (exists $ENV{"PHP_PDFTOHTML"}) {
     $pdftohtml = $ENV{"PHP_PDFTOHTML"};
-} elsif (defined $pdftohtml_prog) {
-    $pdftohtml = $pdftohtml_prog;
 } else {
     $pdftohtml = "pdftohtml";
 }
@@ -190,7 +188,11 @@ my $banal_fullpath = '';
 my $banal_filename = '';
 
 my $use_raw_leading;
-my $title = '';
+
+# debug settings
+my $debug_leading = 0;
+my $debug_parse = 0;
+
 
 # return min key in hash
 sub minkey ($) {
@@ -316,8 +318,8 @@ sub calc_page_columns ($) {
     # column width
     $segs = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
 #    $maxw = maxkey ($segs->{widths});
-    $modew = modevalkey ($segs->{widths});
-    $colw = $modew / $p2h_per_inch;
+    my $modew = modevalkey ($segs->{widths});
+    my $colw = $modew / $p2h_per_inch;
 
     if ($colw >= ($pagew / 2.0)) {
         $ncols = 1;
@@ -348,17 +350,14 @@ sub calc_page_columns ($) {
 
 sub calc_page_text_region ($$) {
     my ($page, $segdata) = @_;
-    my ($minw, $maxw, $minh, $maxh);
-    my ($segs_minw, $segs_maxw);
 
-    $segs_minw = $segdata->{lefts};
-    $segs_maxw = $segdata->{rights};
+    my ($segs_minw) = $segdata->{lefts};
+    my ($segs_maxw) = $segdata->{rights};
 
     # find the minimum left position among segments (must be
     # multiple segments with that position to skip outliers)
-    $minw = 8 * $p2h_per_inch;
-
-    foreach $s (keys %$segs_minw) {
+    my ($minw) = 8 * $p2h_per_inch;
+    foreach my $s (keys %$segs_minw) {
         $minw = $s if (($s < $minw) && ($segs_minw->{$s} > 3));
     }
 
@@ -367,8 +366,8 @@ sub calc_page_text_region ($$) {
 
     # find the maximum right position among segments (must be
     # multiple segments with that position to skip outliers)
-    $maxw = 0;
-    foreach $s (keys %$segs_maxw) {
+    my ($maxw) = 0;
+    foreach my $s (keys %$segs_maxw) {
         $maxw = $s if (($s > $maxw) && ($segs_maxw->{$s} >= 2));
     }
 
@@ -383,8 +382,8 @@ sub calc_page_text_region ($$) {
     $maxw = $minw + minkey ($segdata->{widths}) if (!defined $maxw);
     $maxw = $minw if ($maxw < $minw);
 
-    $minh = minkey ($segdata->{tops});
-    $maxh = maxkey ($segdata->{bots});
+    my ($minh) = minkey ($segdata->{tops});
+    my ($maxh) = maxkey ($segdata->{bots});
 
     $page->{pagedata}->{textbb} = {
         top => $minh,
@@ -419,8 +418,9 @@ sub calc_doc_body_font ($) {
     my ($doc) = @_;
     my ($fonts) = {};
 
-    for $i (1..$doc->{npages}) {
-        $page = $doc->{pages}->{$i};
+    foreach my $i (1..$doc->{npages}) {
+        my ($page) = $doc->{pages}->{$i};
+        next if !exists $page->{pagespec}->{bodyfont};
         $fonts->{$page->{pagespec}->{bodyfont}}++;
     }
 
@@ -429,22 +429,22 @@ sub calc_doc_body_font ($) {
 
 sub calc_doc_leading ($) {
     my ($doc) = @_;
-    my ($leads) = {};
-    my ($lmode, $page);
 
-    for $i (1..$doc->{npages}) {
-        $page = $doc->{pages}->{$i};
+    my ($leads) = {};
+    foreach my $i (1..$doc->{npages}) {
+        my ($page) = $doc->{pages}->{$i};
+        next if !exists $page->{pagespec}->{lead};
         $leads->{$page->{pagespec}->{lead}}++;
     }
-    $lmode = modevalkey ($leads);
+    my ($lmode) = modevalkey ($leads);
 
 #    $use_raw_leading = 1;
     if (!defined $use_raw_leading) {
 #       print "mode: $lmode\n";
 #       print "pages w mode: $leads->{$lmode}\n";
         if ($leads->{$lmode} >= $doc->{npages} / 2) {
-            for $i (1..$doc->{npages}) {
-                $page = $doc->{pages}->{$i};
+            foreach my $i (1..$doc->{npages}) {
+                my ($page) = $doc->{pages}->{$i};
                 next if ($page->{pagespec}->{lead} == $lmode);
 
 #               print "abs diff: ", $lmode - $page->{pagespec}->{lead}, "\n";
@@ -460,41 +460,40 @@ sub calc_doc_leading ($) {
 
         print "entire doc\n";
 
-        for $i (1..$doc->{npages}) {
-            $page = $doc->{pages}->{$i};
-            $segs = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
+        my (%doc_leads);
+        foreach my $i (1..$doc->{npages}) {
+            my ($page) = $doc->{pages}->{$i};
+            my ($segs) = $page->{pagedata}->{segdata_byfont}->{$page->{pagedata}->{bodyfont}->{id}};
             $leads = $segs->{leads};
-            foreach $k (keys %$leads) {
+            foreach my $k (keys %$leads) {
                 $doc_leads{$k} += $segs->{leads}->{$k};
             }
         }
 
-        foreach $k (sort { $a <=> $b } keys %doc_leads) {
+        foreach my $k (sort { $a <=> $b } keys %doc_leads) {
             my ($l) = int (($k * $p2h_to_points * 10) + 0.5);
             $l /= 10;
             print "$l ($doc_leads{$k}) ";
         }
         print "\n";
 
-        {
-            $mode = modevalkey (\%doc_leads);
-            print "mvk $mode\n";
-            $count = $doc_leads{$mode} +
-                $doc_leads{$mode - 1} +
-                $doc_leads{$mode + 1};
+        my ($mode) = modevalkey (\%doc_leads);
+        print "mvk $mode\n";
+        my ($count) = $doc_leads{$mode} +
+            $doc_leads{$mode - 1} +
+            $doc_leads{$mode + 1};
 
-            $wsum = $mode * ($doc_leads{$mode} / $count);
-            print "b: ", $wsum, "\n";
-            $wsum += ($mode - 1) * ($doc_leads{$mode - 1} / $count);
-            $wsum += ($mode + 1) * ($doc_leads{$mode + 1} / $count);
-            $lead = $wsum * $p2h_to_points;
-            print "c: ", $lead, "\n";
-            $lead *= 10;
-            print "d: ", $lead, "\n";
-            $lead = int ($lead + 0.5);
-            $lead /= 10;
-            print "lead: $lead\n";
-        }
+        my ($wsum) = $mode * ($doc_leads{$mode} / $count);
+        print "b: ", $wsum, "\n";
+        $wsum += ($mode - 1) * ($doc_leads{$mode - 1} / $count);
+        $wsum += ($mode + 1) * ($doc_leads{$mode + 1} / $count);
+        my ($lead) = $wsum * $p2h_to_points;
+        print "c: ", $lead, "\n";
+        $lead *= 10;
+        print "d: ", $lead, "\n";
+        $lead = int ($lead + 0.5);
+        $lead /= 10;
+        print "lead: $lead\n";
     }
 
     $doc->{pagespec}->{lead} = $lmode;
@@ -510,9 +509,10 @@ sub calc_doc_text_region ($) {
     $minl = $page->{pagespec}->{textbb}->{left};
     $mint = $page->{pagespec}->{textbb}->{top};
 
-    for $i (2..$doc->{npages}) {
+    foreach my $i (2..$doc->{npages}) {
         $page = $doc->{pages}->{$i};
-        next if $page->{pagespec}->{density} < $banal_min_density;
+        next if !exists $page->{pagespec}->{density}
+            || $page->{pagespec}->{density} < $banal_min_density;
         $maxw = max $maxw, $page->{pagespec}->{textbb}->{width};
         $maxh = max $maxh, $page->{pagespec}->{textbb}->{height};
         $minl = min $minl, $page->{pagespec}->{textbb}->{left};
@@ -537,15 +537,16 @@ sub calc_doc_text_region ($) {
 
 sub calc_doc_page_types ($) {
     my ($doc) = @_;
-    my ($page, $font, $type);
 
-    $font = $doc->{pagespec}->{bodyfont};
+    my ($font) = $doc->{pagespec}->{bodyfont};
 
-    for $i (1..$doc->{npages}) {
-        $page = $doc->{pages}->{$i};
-        $type = 'body';
+    foreach my $i (1..$doc->{npages}) {
+        my ($page) = $doc->{pages}->{$i};
+        my ($type) = 'body';
 
-        if ($i == 1 && $page->{pagespec}->{density} < 3000) {
+        if (!exists $page->{pagespec}->{density}) {
+            $type = 'blank';
+        } elsif ($i == 1 && $page->{pagespec}->{density} < 3000) {
             $type = 'cover';
         } elsif ($page->{pagespec}->{bodyfont} < $font) {
             if (($doc->{npages} - $i) < ($doc->{npages} / 3)) {
@@ -565,21 +566,21 @@ sub calc_doc_page_types ($) {
 
 sub calc_doc_columns ($) {
     my ($doc) = @_;
-    my ($page);
-    my ($cols) = {};
 
-    for $i (1..$doc->{npages}) {
-        $page = $doc->{pages}->{$i};
-        $cols->{$page->{pagespec}->{ncols}}++;
+    my (%cols);
+    foreach my $i (1..$doc->{npages}) {
+        my ($page) = $doc->{pages}->{$i};
+        next if !exists $page->{pagespec}->{ncols};
+        $cols{$page->{pagespec}->{ncols}}++;
     }
 
     # number of columns on greatest number of pages
-    $doc->{ncols} = modevalkey ($cols);
+    $doc->{ncols} = modevalkey (\%cols);
 }
 
 sub p2h_font_to_font_size ($) {
     my ($font) = @_;
-    ($font->{size} + 3) / $zoom;
+    ($font->{size} + 3) / $banal_param{zoom};
 }
 
 sub p2h_font_bug ($) {
@@ -621,31 +622,38 @@ sub report_json ($) {
     printf "  \"args\": %s,\n", json_quote(join(" ", @switches)) if @switches;
 
     my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}, "mr" => {}, "mb" => {}};
-    my $px = {}, $nummargin = 10000;
+    my $px = {};
+    my $nummargin = 10000;
     for my $i (1 .. $doc->{npages}) {
         my $page = $doc->{pages}->{$i};
-        my($pbb, $tbb) = ($page->{pagespec}->{paperbb}, $page->{pagespec}->{textbb});
+
+        my($pbb) = $page->{pagespec}->{paperbb};
         my($pw) = POSIX::floor($pbb->{width} * 72 / $grid) * $grid;
         my($ph) = POSIX::floor($pbb->{height} * 72 / $grid) * $grid;
-        my($tl) = POSIX::floor($tbb->{left} * 72 / $grid) * $grid;
-        my($tt) = POSIX::floor($tbb->{top} * 72 / $grid) * $grid;
-        my($tr) = POSIX::ceil(($tbb->{left} + $tbb->{width}) * 72 / $grid) * $grid;
-        my($tb) = POSIX::ceil(($tbb->{top} + $tbb->{height}) * 72 / $grid) * $grid;
-        my($pd) = {"pw" => $pw,
-                   "ph" => $ph,
-                   "mt" => $tt,
-                   "ml" => $tl,
-                   "mb" => $ph - $tb,
-                   "mr" => $pw - $tr,
-                   "tw" => $tr - $tl,
-                   "th" => $tb - $tt};
+        my($pd) = {"pw" => $pw, "ph" => $ph};
+
+        if (exists $page->{pagespec}->{textbb}) {
+            my($tbb) = $page->{pagespec}->{textbb};
+            my($tl) = POSIX::floor($tbb->{left} * 72 / $grid) * $grid;
+            my($tt) = POSIX::floor($tbb->{top} * 72 / $grid) * $grid;
+            my($tr) = POSIX::ceil(($tbb->{left} + $tbb->{width}) * 72 / $grid) * $grid;
+            my($tb) = POSIX::ceil(($tbb->{top} + $tbb->{height}) * 72 / $grid) * $grid;
+            $pd->{mt} = $tt;
+            $pd->{ml} = $tl;
+            $pd->{mb} = $ph - $tb;
+            $pd->{mr} = $pw - $tr;
+            $pd->{tw} = $tr - $tl;
+            $pd->{th} = $tb - $tt;
+
+            my($pnummargin) = POSIX::floor($pd->{ph} - $page->{pagedata}->{lowest_number} * $p2h_to_points);
+            $nummargin = min($pnummargin, $nummargin) if $pnummargin < $pd->{ph} - $tb;
+        }
+
         $px->{$i} = $pd;
         my($k, $v);
         while (($k, $v) = each %$pd) {
             $dx->{$k}->{$v} += 1;
         }
-        my($pnummargin) = POSIX::floor($pd->{ph} - $page->{pagedata}->{lowest_number} * $p2h_to_points);
-        $nummargin = min($pnummargin, $nummargin) if $pnummargin < $pd->{ph} - $tb;
     }
     my($pw, $ph) = (modevalkey($dx->{pw}), modevalkey($dx->{ph}));
     my($tw, $th) = (modevalkey($dx->{tw}), modevalkey($dx->{th}));
@@ -664,15 +672,15 @@ sub report_json ($) {
     my ($doc_c) = sprintf "\"columns\": %d", $doc->{pages}->{1}->{pagespec}->{ncols};
     print "  $doc_ps,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n";
     printf "  \"nummargin\": %.0f,\n", $nummargin if $nummargin < 10000;
-    if ($max_pages && $doc->{npages} > $max_pages) {
+    if (exists $banal_param{max_pages} && $doc->{npages} > $banal_param{max_pages}) {
         printf "  \"npages\": %d,\n", $doc->{npages};
     }
     print "  \"pages\": [";
-    $sep = "\n";
+    my ($sep) = "\n";
 
     my %pages;
     for my $i (1 .. $doc->{npages}) {
-        last if $max_pages && $i > $max_pages;
+        last if exists $banal_param{max_pages} && $i > $banal_param{max_pages};
         my $page = $doc->{pages}->{$i};
         my @val = ();
 
@@ -685,17 +693,22 @@ sub report_json ($) {
         my($pd) = $px->{$i};
         my($page_ps) = sprintf "\"papersize\": [%.0f,%.0f]", $pd->{ph}, $pd->{pw};
         push @val, $page_ps if $page_ps ne $doc_ps;
-        my($page_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
-        push @val, $page_margin if $page_margin ne $doc_margin;
-        my($page_bfs) = sprintf "\"bodyfontsize\": %g", $page->{pagespec}->{bodyfont};
-        push @val, $page_bfs if $page_bfs ne $doc_bfs;
-        my($page_l) = sprintf "\"leading\": %g", $page->{pagespec}->{lead};
-        push @val, $page_l if $page_l ne $doc_l;
-        my($page_c) = sprintf "\"columns\": %d", $page->{pagespec}->{ncols};
-        push @val, $page_c if $page_c ne $doc_c;
-        push @val, sprintf "\"d\": %d", $page->{pagespec}->{density};
-        push @val, sprintf "\"pagetype\": %s", json_quote($page->{pagespec}->{type})
-            if $page->{pagespec}->{type} ne "body";
+
+        if ($page->{pagespec}->{type} eq "blank") {
+            push @val, sprintf "\"pagetype\": \"blank\"";
+        } else {
+            my($page_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
+            push @val, $page_margin if $page_margin ne $doc_margin;
+            my($page_bfs) = sprintf "\"bodyfontsize\": %g", $page->{pagespec}->{bodyfont};
+            push @val, $page_bfs if $page_bfs ne $doc_bfs;
+            my($page_l) = sprintf "\"leading\": %g", $page->{pagespec}->{lead};
+            push @val, $page_l if $page_l ne $doc_l;
+            my($page_c) = sprintf "\"columns\": %d", $page->{pagespec}->{ncols};
+            push @val, $page_c if $page_c ne $doc_c;
+            push @val, sprintf "\"d\": %d", $page->{pagespec}->{density};
+            push @val, sprintf "\"pagetype\": %s", json_quote($page->{pagespec}->{type})
+                if $page->{pagespec}->{type} ne "body";
+        }
 
         print $sep, "    {", join(", ", @val), "}";
         $sep = ",\n";
@@ -707,9 +720,9 @@ sub report_verbose ($) {
     my ($doc) = @_;
     my ($page) = $doc->{pages}->{1};
 
-    print $file, "\n";
+    print $doc->{fullpath}, "\n";
     if (p2h_font_bug ($doc)) {
-        print STDERR $file, "\n";
+        print STDERR $doc->{fullpath}, "\n";
         print STDERR "$banal_filename: Error: pdftohtml encountered font problems...some info likely bogus.\n";
     }
     printf "Paper size: %.2fin x %.2fin\n", $doc->{pagespec}->{paperbb}->{width}, $doc->{pagespec}->{paperbb}->{height};
@@ -730,17 +743,17 @@ sub report_verbose ($) {
     print "Pages: ", $doc->{npages}, "\n";
 
     print "\n";
-    for $i (1..$doc->{npages}) {
+    foreach my $i (1..$doc->{npages}) {
         $page = $doc->{pages}->{$i};
 
         print "Page $page->{num}:\n";
         printf ("  text region: %.2fin x %.2fin\n", $page->{pagespec}->{textbb}->{width}, $page->{pagespec}->{textbb}->{height});
 
-        $left_i = $page->{pagespec}->{textbb}->{left};
-        $right_i = $page->{pagespec}->{paperbb}->{width} -
+        my ($left_i) = $page->{pagespec}->{textbb}->{left};
+        my ($right_i) = $page->{pagespec}->{paperbb}->{width} -
             ($left_i + $page->{pagespec}->{textbb}->{width});
-        $top_i = $page->{pagespec}->{textbb}->{top};
-        $bot_i = $page->{pagespec}->{paperbb}->{height} -
+        my ($top_i) = $page->{pagespec}->{textbb}->{top};
+        my ($bot_i) = $page->{pagespec}->{paperbb}->{height} -
             ($top_i + $page->{pagespec}->{textbb}->{height});
         printf "  margins: %.2fin x %.2fin x %.2fin x %.2fin (l/r/t/b)\n",
                $left_i, $right_i, $top_i, $bot_i;
@@ -751,7 +764,7 @@ sub report_verbose ($) {
         printf "  columns: %d\n", $page->{pagespec}->{ncols};
         print   "  type: ", $page->{pagespec}->{type}, "\n";
 
-        $density = $page->{pagespec}->{density};
+        my ($density) = $page->{pagespec}->{density};
         printf "  density: %d\n", $density;
     }
 }
@@ -769,7 +782,8 @@ sub report_stats ($) {
         print STDERR "$banal_filename: Warning: pdftohtml encountered font problems...some info likely bogus.\n";
     }
 
-    printf  "$file\t%.2fx%.2f\t%.2fx%.2f\t%.2fx%.2fx%.2fx%.2f\t%d\t%.1f\t%d\t%d\t%s\n",
+    printf  "%s\t%.2fx%.2f\t%.2fx%.2f\t%.2fx%.2fx%.2fx%.2f\t%d\t%.1f\t%d\t%d\t%s\n",
+            $doc->{fullpath},
             # page width x height
             $doc->{pagespec}->{paperbb}->{width},
             $doc->{pagespec}->{paperbb}->{height},
@@ -796,10 +810,10 @@ sub report_stats ($) {
 sub judge_paper_size ($$) {
     my ($doc, $spec) = @_;
     my ($msg) = '';
-    my ($w, $h);
 
-    $w = $doc->{pagespec}->{paperbb}->{width};
-    $h = $doc->{pagespec}->{paperbb}->{height};
+    my ($w) = $doc->{pagespec}->{paperbb}->{width};
+    my ($h) = $doc->{pagespec}->{paperbb}->{height};
+    my ($paperw, $paperh);
     if ($spec->{paper} eq 'letter') {
         $paperw = 8.5;
         $paperh = 11;
@@ -974,13 +988,13 @@ sub pass_judgement ($$) {
 
     return if (!$msg);
 
-    if ($format eq 'list') {
+    if ($banal_param{format} eq 'list') {
         chop $msg;         # remove trailing newline
         $msg =~ s/\n/,/g;  # convert newlines to commas
-        print basename ($file), ",$msg\n";
+        print basename ($doc->{fullpath}), ",$msg\n";
     } else {
         $msg =~ s/^(.)/  $1/mg;  # indent
-        print $file, ":\n";
+        print $doc->{fullpath}, ":\n";
         print $msg;
     }
 }
@@ -1085,18 +1099,17 @@ sub parse_p2h_text ($$) {
         }
 
         # embedded newlines will split <text>...</text> across multiple lines
+        my ($continuation);
         while ($line !~ /<\/text>/ && defined($continuation = <$FILE>)) {
             $line .= $continuation;
         }
 
         # sanity check the data somewhat...text from embedded figures
         # can produce surprising values
-        if ($top < 0 || $left < 0 || $top >= $pagewidth || $left >= $pageheight) {
+        if ($top < 0 || $left < 0 || $top >= $pageheight || $left >= $pagewidth) {
             $line = <$FILE>;
             next;
         }
-
-        $nsegs++;
 
         if (!exists($segs_byfont->{$font})) {
             $segs_byfont->{$font} = {};
@@ -1112,7 +1125,6 @@ sub parse_p2h_text ($$) {
         $line = <$FILE>;
     }
 
-    $page->{pagedata}->{nsegs} = $nsegs;
     $page->{pagedata}->{segdata} = $segs_all;
     $page->{pagedata}->{segdata_byfont} = $segs_byfont;
     $page->{pagedata}->{lowest_number} = $lowest_number;
@@ -1128,7 +1140,9 @@ sub parse_p2h_page ($) {
     my ($doc) = @_;
 
     # assume we've just read the header
+    my ($line);
     $line = <$FILE>;
+    return '' if !defined($line);
 
     # skip any error strings embedded between pages
     while (check_p2h_error ($line)) {
@@ -1156,21 +1170,21 @@ sub parse_p2h_page ($) {
     }
 
     # initialize page data structures
-    $pagebb = {
+    my ($pagebb) = {
         top => $3,
         left => $4,
         height => $5,
         width => $6,
     };
 
-    $paperbb = {
+    my ($paperbb) = {
         top => $3 / $p2h_per_inch,
         left => $4 / $p2h_per_inch,
         height => $5 / $p2h_per_inch,
         width => $6 / $p2h_per_inch,
     };
 
-    $page = {
+    my ($page) = {
         doc => $doc,
         num => $1,
         pagedata => {
@@ -1230,28 +1244,28 @@ sub merge_page ($$) {
 sub banal_get_spec () {
     my ($s) = {};
 
-    return $s unless (defined $judge);
+    return $s unless $banal_mode eq "judge";
 
-    if (defined $paper) {
-        if ($paper ne 'letter' && $paper ne 'A4') {
-            die ("$banal_filename: Error: Unknown paper type '$paper'.\n");
+    if (exists $banal_param{paper}) {
+        if ($banal_param{paper} ne 'letter' && $banal_param{paper} ne 'A4') {
+            die ("$banal_filename: Error: Unknown paper type.\n");
         }
-        $s->{paper} = $paper;
+        $s->{paper} = $banal_param{paper};
     }
-    $s->{pages} = $pages if (defined $pages);
-    $s->{font} = $font if (defined $font);
-    $s->{lead} = $leading if (defined $leading);
-    $s->{cols} = $cols if (defined $cols);
-    if (defined $width) {
-        $s->{width} = $width;
+    $s->{pages} = $banal_param{pages} if exists $banal_param{pages};
+    $s->{font} = $banal_param{font} if exists $banal_param{font};
+    $s->{lead} = $banal_param{leading} if exists $banal_param{leading};
+    $s->{cols} = $banal_param{cols} if exists $banal_param{cols};
+    if (defined $banal_param{width}) {
+        $s->{width} = $banal_param{width};
         $s->{fudge} = $banal_text_fudge;
     }
-    if (defined $height) {
-        $s->{height} = $height;
+    if (defined $banal_param{height}) {
+        $s->{height} = $banal_param{height};
         $s->{fudge} = $banal_text_fudge;
     }
-    if (defined $fudge) {
-        $s->{fudge} = $fudge;
+    if (defined $banal_param{fudge}) {
+        $s->{fudge} = $banal_param{fudge};
     }
     return $s;
 }
@@ -1274,7 +1288,7 @@ sub banal_file ($$) {
     my ($file, $spec) = @_;
 
     # initialize doc data structure
-    $doc = {
+    my ($doc) = {
         width => 0,
         height => 0,
         npages => 0,
@@ -1283,20 +1297,19 @@ sub banal_file ($$) {
         pages => {},
         textbb => {},
         app => '',
-        fullpath => '',
-        filename => '',
+        fullpath => $file,
+        filename => basename($file),
     };
 
-    $doc->{fullpath} = $file;
-    $banal_fullpath = $file;
-    $doc->{filename} = basename ($file);
-    $banal_filename = basename ($file);
+    $banal_fullpath = $doc->{fullpath};
+    $banal_filename = $doc->{filename};
 
     if (!parse_p2h_header ($doc)) {
         print STDERR "$banal_filename: Error: No pdftohtml output...corrupted pdf file?\n";
         return;
     }
 
+    my ($page);
     while ($page = parse_p2h_page ($doc)) {
         merge_page ($doc, $page);
     }
@@ -1307,11 +1320,11 @@ sub banal_file ($$) {
     calc_doc_page_types ($doc);
     calc_doc_columns ($doc);
 
-    if (defined $judge) {
+    if ($banal_mode eq "judge") {
         pass_judgement ($doc, $spec);
-    } elsif (defined $stats) {
+    } elsif ($banal_mode eq "stats") {
         report_stats ($doc);
-    } elsif (defined $json) {
+    } elsif ($banal_mode eq "json") {
         report_json ($doc);
     } else {
         report_verbose ($doc);
@@ -1338,7 +1351,7 @@ sub banal_open_input ($) {
     # 2>&1
     if ($ext =~ /^pdf$/i) {
         ($FILE, $oname) = File::Temp::tempfile("banalXXXXX", UNLINK => 1, SUFFIX => ".xml", TMPDIR => 1);
-        $zoomarg = "-zoom $zoom";
+        my ($zoomarg) = "-zoom " . $banal_param{zoom};
         $cmd = "$pdftohtml -enc UTF-8 -xml -i $zoomarg " . shell_quote($fname) . " " . shell_quote($oname) . " 2>&1";
         print STDERR "$cmd\n" if ($debug_pdftohtml);
 
@@ -1366,7 +1379,7 @@ sub banal_config_p2h ($) {
     $fname = basename($fname);
     my ($major, $minor, $poppler);
 
-    if (!defined($zoom)) {
+    if (!exists $banal_param{zoom}) {
         unless (open(P2H, "$pdftohtml -v 2>&1 |")) {
             print STDERR "$fname: Error: Failed to run $pdftohtml.\n";
             while (defined($_ = <P2H>)) {
@@ -1385,28 +1398,24 @@ sub banal_config_p2h ($) {
 
         if (($major >= 0.40) && $minor && (($minor cmp "c") >= 0)) {
             # configure for versions 0.40c and above
-            $zoom = 10;
+            $banal_param{zoom} = 10;
         } else {
-            $zoom = 3;
+            $banal_param{zoom} = 3;
         }
     }
 
-    if ($leading_policy) {
-        $banal_leading_policy = $leading_policy;
+    # use a default policy according to the zoom level we can use
+    # at low zoom, interpolate
+    if ($banal_param{zoom} >= 10) {
+        $banal_leading_policy = 'mode';
     } else {
-        # use a default policy according to the zoom level we can use
-        # at low zoom, interpolate
-        if ($zoom >= 10) {
-            $banal_leading_policy = 'mode';
-        } else {
-            $banal_leading_policy = 'interpolate';
-        }
+        $banal_leading_policy = 'interpolate';
     }
 
     print "leading policy: $banal_leading_policy\n" if ($debug_leading);
 
 
-    $p2h_per_inch = 72 * $zoom;
+    $p2h_per_inch = 72 * $banal_param{zoom};
     $p2h_to_points = 72 / $p2h_per_inch;
 
     return 1;
@@ -1420,18 +1429,18 @@ sub banal_version () {
 sub main () {
     my ($spec);
 
-    return banal_version () if (defined $version);
+    return banal_version () if $banal_mode eq "version";
 
     usage if ($#ARGV < 0);
 
     $spec = banal_get_spec ();
-    banal_report_spec ($spec) if (defined $judge);
+    banal_report_spec ($spec) if $banal_mode eq "judge";
 
     if (!banal_config_p2h ($ARGV[0])) {
         return 1;
     }
 
-    foreach $file (@ARGV) {
+    foreach my $file (@ARGV) {
         # open input file into FILE
         next unless (banal_open_input ($file));
         banal_file ($file, $spec);
