@@ -452,11 +452,15 @@ sub calc_page_headings ($$$) {
         next if $text->{sz} < $bodyfontsize;
         $near_top = 0 if $near_top && $text->{t} + $text->{h} > $top;
         next if $text->{content} !~ /\A[\dABCDEIRVX]/;
-        my ($i) = 0;
-        while ($i < @$colpos && $colpos->[$i] < $text->{l} - $slack) {
-            $i += 2;
+        my ($coli) = 0;
+        while ($coli < @$colpos && $colpos->[$coli] < $text->{l} - $slack) {
+            $coli += 2;
         }
-        next if $i == @$colpos || $colpos->[$i] > $text->{l} + $slack;
+        next if $coli == @$colpos || $colpos->[$coli] > $text->{l} + $slack;
+        my ($colj) = $coli + 1;
+        while ($colj + 2 < @$colpos && $colpos->[$colj] < $colpos->[$coli] + $p2h_per_inch) {
+            $colj += 2;
+        }
 
         # It must look like a heading (end before end of column, not end with
         # period).
@@ -473,7 +477,7 @@ sub calc_page_headings ($$$) {
             $tr = $texts->[$xp]->{l} + $texts->[$xp]->{w};
             $xp += 1;
         }
-        next if $tr >= $colpos->[$i + 1] - $slack;
+        next if $tr >= $colpos->[$colj] - $slack;
         $content =~ s/\s+\z//;
         next if $content !~ /\A(?:(?:X+V?I+[VX]?|X+V?|V)\.? +[^,;]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;]*|[ABCDE]\.? +[A-Za-z_][^,;]*|Abstract|Acknowledge?ments?|References?|Bibliography|Introduction|Appendix\s+.*)\z/i
             || $content =~ /[.,:]\z/;
