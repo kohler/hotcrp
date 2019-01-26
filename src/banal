@@ -470,9 +470,8 @@ sub calc_page_headings ($$$) {
         my ($th) = $text->{h};
         my ($xp) = $tpos + 1;
         while ($xp < @$texts
-               && abs($texts->[$xp]->{t} - $tt) < $slack
                && interval_overlap($tt, $th, $texts->[$xp]->{t}, $texts->[$xp]->{h})
-               && $texts->[$xp]->{l} >= $tr) {
+               && $texts->[$xp]->{l} >= $tr - $slack) {
             $content .= " " if $texts->[$xp]->{l} - $tr > $text->{sz} / 6;
             $content .= $texts->[$xp]->{content};
             $tr = $texts->[$xp]->{l} + $texts->[$xp]->{w};
@@ -480,7 +479,7 @@ sub calc_page_headings ($$$) {
         }
         next if $tr >= $colpos->[$colj] - $slack;
         $content =~ s/\s+\z//;
-        next if $content !~ /\A(?:(?:X+V?I+[VX]?|X+V?|V)\.? +[^,;]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;]*|[ABCDE]\.? +[A-Za-z_][^,;]*|Abstract|Acknowledge?ments?|References?|Bibliography|Introduction|Appendix\s+.*)\z/i
+        next if $content !~ /\A(?:(?:X+V?I+[VX]?|X+V?|V)\.? +[^,;]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;]*|[ABCDE](?:\.\d+)*\.? +[A-Za-z_][^,;]*|Abstract|Acknowledge?ments?|References?|Bibliography|Introduction|Appendix\s+.*)\z/i
             || $content =~ /[.,:]\z/;
 
         $page->{pagedata}->{headings} = [] if !exists $page->{pagedata}->{headings};
