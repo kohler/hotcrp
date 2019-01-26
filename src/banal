@@ -479,7 +479,7 @@ sub calc_page_headings ($$$) {
         }
         next if $tr >= $colpos->[$colj] - $slack;
         $content =~ s/\s+\z//;
-        next if $content !~ /\A(?:(?:X+V?I+[VX]?|X+V?|V)\.? +[^,;]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;]*|[ABCDE](?:\.\d+)*\.? +[A-Za-z_][^,;]*|Abstract|Acknowledge?ments?|References?|Bibliography|Introduction|Appendix\s+.*)\z/i
+        next if $content !~ /\A(?:(?:X+V?I+[VX]?|X+V?|V)\.? +[^,;()]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;()]*|[ABCDE](?:\.\d+)*\.? +[A-Za-z_][^,;()]*|Abstract|Acknowledge?ments?|References?|Bibliography|Introduction|Appendix(?:es)?[^,;()]*)\z/i
             || $content =~ /[.,:]\z/;
 
         $page->{pagedata}->{headings} = [] if !exists $page->{pagedata}->{headings};
@@ -516,30 +516,27 @@ sub calc_doc_leading ($) {
 
 sub calc_doc_text_region ($) {
     my ($doc) = @_;
-    my ($page, $maxw, $maxh, $minl, $mint, $rmarg, $bmarg);
 
-    $page = $doc->{pages}->{1};
-    $maxw = $page->{pagespec}->{textbb}->{width};
-    $maxh = $page->{pagespec}->{textbb}->{height};
-    $minl = $page->{pagespec}->{textbb}->{left};
-    $mint = $page->{pagespec}->{textbb}->{top};
-
-    foreach my $i (2..$doc->{npages}) {
-        $page = $doc->{pages}->{$i};
-        next if !exists $page->{pagespec}->{nchars}
-            || $page->{pagespec}->{nchars} < $banal_min_nchars;
-        $maxw = max $maxw, $page->{pagespec}->{textbb}->{width};
-        $maxh = max $maxh, $page->{pagespec}->{textbb}->{height};
-        $minl = min $minl, $page->{pagespec}->{textbb}->{left};
-        $mint = min $mint, $page->{pagespec}->{textbb}->{top};
+    my ($maxw, $maxh, $minl, $mint);
+    foreach my $i (1..$doc->{npages}) {
+        my ($page) = $doc->{pages}->{$i};
+        next if !exists $page->{pagespec}->{textbb};
+        next if defined($maxw)
+            && (!exists $page->{pagespec}->{nchars}
+                || $page->{pagespec}->{nchars} < $banal_min_nchars);
+        my ($tbb) = $page->{pagespec}->{textbb};
+        $maxw = $tbb->{width} if !defined($maxw) || $maxw < $tbb->{width};
+        $maxh = $tbb->{height} if !defined($maxh) || $maxh < $tbb->{height};
+        $minl = $tbb->{left} if !defined($minl) || $minl > $tbb->{left};
+        $mint = $tbb->{top} if !defined($mint) || $mint > $tbb->{top};
     }
     $doc->{textbb}->{width} = $maxw;
     $doc->{textbb}->{height} = $maxh;
     $doc->{textbb}->{left} = $minl;
     $doc->{textbb}->{top} = $mint;
 
-    $rmarg = $doc->{pagespec}->{paperbb}->{width} - ($doc->{textbb}->{width} + $doc->{textbb}->{left});
-    $bmarg = $doc->{pagespec}->{paperbb}->{height} - ($doc->{textbb}->{height} + $doc->{textbb}->{top});
+    my ($rmarg) = $doc->{pagespec}->{paperbb}->{width} - ($maxw + $minl);
+    my ($bmarg) = $doc->{pagespec}->{paperbb}->{height} - ($maxh + $mint);
     if ($rmarg < 0) {
         print STDERR "r MARGIN\n";
     }
@@ -550,25 +547,68 @@ sub calc_doc_text_region ($) {
     $doc->{textbb}->{bmarg} = $bmarg;
 }
 
+sub version_compare ($$) {
+    my ($a, $b) = @_;
+    my (@a, @b);
+    @a = split(/\./, $a);
+    @b = split(/\./, $b);
+    for ($i = 0; $i < @a && $i < @b; $i += 1) {
+        my ($al) = scalar($a[$i] =~ /\A[A-Z]\z/);
+        my ($bl) = scalar($b[$i] =~ /\A[A-Z]\z/);
+        if ($al != $bl) {
+            return -100;
+        } elsif ($al ? $a[$i] lt $b[$i] : +$a[$i] < +$b[$i]) {
+            return -1;
+        } elsif ($al ? $a[$i] gt $b[$i] : +$a[$i] > +$b[$i]) {
+            return 1;
+        }
+    }
+    if ($i == 0) {
+        return -100;
+    } elsif ($i >= @a && $i < @b) {
+        return -1;
+    } elsif ($i < @a && $i >= @b) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 sub calc_doc_page_types ($) {
     my ($doc) = @_;
 
     my ($font) = $doc->{pagespec}->{bodyfont};
     my ($saw_acks_refs) = 0;
+    my ($saw_appendix) = 0;
+    my ($saw_conclusion) = 0;
 
     foreach my $i (1..$doc->{npages}) {
         my ($page) = $doc->{pages}->{$i};
         my ($type) = 'body';
 
         my ($see_acks_refs) = $saw_acks_refs;
+        my ($see_appendix) = $saw_appendix;
         if (exists $page->{pagedata}->{headings}) {
             foreach my $h (@{$page->{pagedata}->{headings}}) {
-                if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography)\z/i) {
+                if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography|Appendix(?:es)?)\z/i) {
                     $see_acks_refs = 1;
-                    $saw_acks_refs = 1 if exists $page->{pagedata}->{heading1}
+                    $saw_acks_refs = 1 if !$saw_acks_refs
+                        && exists $page->{pagedata}->{heading1}
                         && $h eq $page->{pagedata}->{headings}->[0];
+                    $see_appendix = 0;
+                } elsif ($h =~ /\A[\dIVX]+\.? *Conclusions?(?: and future work|)\z/i) {
+                    $saw_conclusion = 1;
+                } elsif ($h =~ /\A([A-F](?:\.\d+)*)\.?/
+                         && ($see_acks_refs || $saw_conclusion)
+                         && (!$saw_appendix || version_compare($1, $saw_appendix) == 1)) {
+                    $see_appendix = $1;
+                    $saw_appendix = $see_appendix if !$saw_appendix
+                        && ($saw_acks_refs
+                            || ($saw_conclusion
+                                && exists $page->{pagedata}->{heading1}
+                                && $h eq $page->{pagedata}->{headings}->[0]));
                 } else {
-                    $see_acks_refs = $saw_acks_refs = 0;
+                    $see_acks_refs = $saw_acks_refs = $saw_appendix = $saw_conclusion = 0;
                 }
             }
         }
@@ -577,6 +617,8 @@ sub calc_doc_page_types ($) {
             $type = 'blank';
         } elsif ($i == 1 && $page->{pagespec}->{nchars} < 800) {
             $type = 'cover';
+        } elsif ($saw_appendix) {
+            $type = 'appendix';
         } elsif ($saw_acks_refs) {
             $type = 'bib';
         } elsif ($page->{pagespec}->{nchars} < $banal_min_nchars
@@ -586,6 +628,7 @@ sub calc_doc_page_types ($) {
 
         $page->{pagespec}->{type} = $type;
         $saw_acks_refs = $see_acks_refs;
+        $saw_appendix = $see_appendix;
     }
 }
 
