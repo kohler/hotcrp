@@ -2401,7 +2401,7 @@ class Contact {
             if ($pdf
                 && count($whyNot) == $base_count
                 && $this->can_view_paper($prow))
-                $whyNot["pdfPermission"] = 1;
+                $whyNot["permission"] = "view_doc";
         }
         return $whyNot;
     }
@@ -2577,12 +2577,15 @@ class Contact {
                       && !$rights->review_status
                       && !$rights->allow_pc_broad)
                   || ($oview == "nonblind"
-                      && !$this->can_view_authors($prow))))
+                      && !$this->can_view_authors($prow)))) {
+            $whyNot["permission"] = "view_option";
             $whyNot["optionPermission"] = $opt;
-        else if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow)))
+        } else if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow))) {
             $whyNot["optionNotAccepted"] = $opt;
-        else
+        } else {
+            $whyNot["permission"] = "view_option";
             $whyNot["optionPermission"] = $opt;
+        }
         return $whyNot;
     }
 

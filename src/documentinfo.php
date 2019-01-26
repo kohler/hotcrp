@@ -1,5 +1,5 @@
 <?php
-// paperinfo.php -- HotCRP document objects
+// documentinfo.php -- HotCRP document objects
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class DocumentInfo implements JsonSerializable {

@@ -401,14 +401,16 @@ function whyNotText($whyNot, $text_only = false) {
         $ms[] = $whyNot["dbError"];
     if (isset($whyNot["administer"]))
         $ms[] = $conf->_("You can’t administer submission #%d.", $paperId);
-    if (isset($whyNot["permission"]))
-        $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId);
-    if (isset($whyNot["pdfPermission"]))
-        $ms[] = $conf->_c("eperm", "Permission error.", "view_pdf", $paperId);
-    if (isset($whyNot["optionPermission"]))
-        $ms[] = $conf->_("You don’t have permission to view the %2\$s for submission #%1\$d.", $paperId, $whyNot["optionPermission"]->message_title);
+    if (isset($whyNot["permission"])) {
+        if ($whyNot["permission"] === "view_option")
+            $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId, $quote($whyNot["optionPermission"]->message_title));
+        else
+            $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId);
+    }
     if (isset($whyNot["optionNotAccepted"]))
-        $ms[] = $conf->_("Non-accepted submission #%d can have no %s.", $paperId, $whyNot["optionNotAccepted"]->message_title);
+        $ms[] = $conf->_("%2\$s is reserved for accepted submissions.", $paperId, $quote($whyNot["optionNotAccepted"]->message_title));
+    if (isset($whyNot["documentNotFound"]))
+        $ms[] = $conf->_("No such document “%s”.", $quote($whyNot["documentNotFound"]));
     if (isset($whyNot["signin"]))
         $ms[] = $conf->_c("eperm", "You have been signed out.", $whyNot["signin"], $paperId);
     if (isset($whyNot["withdrawn"]))
