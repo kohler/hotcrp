@@ -589,29 +589,29 @@ sub calc_doc_page_types ($) {
         my ($see_acks_refs) = $saw_acks_refs;
         my ($see_appendix) = $saw_appendix;
         if (exists $page->{pagedata}->{headings}) {
+            my ($is_first) = exists $page->{pagedata}->{heading1};
             foreach my $h (@{$page->{pagedata}->{headings}}) {
                 if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography|\AAppendix(?:es)?)\z/i) {
                     $see_acks_refs = 1;
-                    $saw_acks_refs = 1 if !$saw_acks_refs
-                        && exists $page->{pagedata}->{heading1}
-                        && $h eq $page->{pagedata}->{headings}->[0];
+                    $saw_acks_refs = 1 if $is_first;
                     $see_appendix = 0;
                 } elsif ($h =~ /\A[\dIVX]+\.? *Conclusions?(?: and future work|)\z/i) {
                     $saw_conclusion = 1;
-                } elsif ($h =~ /\A(?:Appendix |)((?:[A-F]|\d+)(?:\.\d+)*)\.?\s+(Appendix(?:es)?\z|)(.*)\z/i
+                } elsif ($h =~ /\A(Appendix\s* |)((?:[A-F]|\d+)(?:\.\d+)*)\.?\s+(Appendix(?:es)?\z|)(.*)\z/i
                          && ($see_acks_refs || $saw_conclusion)
                          && ($see_appendix
                              ? version_compare($1, $see_appendix) == 1
-                             : substr($1, 0, 1) ge "A" || $2 ne "")) {
-                    $see_appendix = $1;
-                    $saw_appendix = $see_appendix if !$saw_appendix
-                        && ($saw_acks_refs
-                            || ($saw_conclusion
-                                && exists $page->{pagedata}->{heading1}
-                                && $h eq $page->{pagedata}->{headings}->[0]));
+                             : $1 ne "" || substr($2, 0, 1) ge "A" || $3 ne "")) {
+                    $see_appendix = $2;
+                    $saw_appendix = $see_appendix if $saw_acks_refs
+                        || ($is_first && ($1 ne "" || $saw_conclusion || $3 ne ""));
+                } elsif ($h =~ /\AAppendix/i) {
+                    $see_appendix = "yes";
+                    $saw_appendix = $see_appendix if $saw_acks_refs || $is_first;
                 } else {
                     $see_acks_refs = $saw_acks_refs = $saw_appendix = $saw_conclusion = 0;
                 }
+                $is_first = 0;
             }
         }
 
