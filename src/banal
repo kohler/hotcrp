@@ -305,24 +305,46 @@ sub calc_xmap_mode_columns ($) {
     my ($ncols2) = modevalkey(\%ncols);
 
     # XXX should use KDE
+    # find column boundaries
     my (@colpos);
     for (my $i = 0; $i < $ncols2; $i += 1) {
         push @colpos, {};
     }
+
+    # find left edges
     foreach my $z (@{$xmap->{rows}}) {
         if (@$z == $ncols2) {
-            for (my $i = 0; $i < $ncols2; $i += 1) {
+            for (my $i = 0; $i < $ncols2; $i += 2) {
                 my $x = $z->[$i];
                 $colpos[$i]->{$x} = 0 if !exists $colpos[$i]->{$x};
                 $colpos[$i]->{$x} += 1;
             }
         }
     }
+    my (@modes);
+    for (my $i = 0; $i < $ncols2; $i += 2) {
+        push @modes, modevalkey($colpos[$i]), 0;
+    }
+
+    # find right edges
+    foreach my $z (@{$xmap->{rows}}) {
+        if (@$z == $ncols2) {
+            for (my $i = 0; $i < $ncols2; $i += 2) {
+                my $x = $z->[$i + 1];
+                if ($x > $modes[$i]) {
+                    $colpos[$i + 1]->{$x} = 0 if !exists $colpos[$i + 1]->{$x};
+                    $colpos[$i + 1]->{$x} += 1;
+                }
+            }
+        }
+    }
+    for (my $i = 1; $i < $ncols2; $i += 2) {
+        $modes[$i] = modevalkey($colpos[$i]);
+    }
 
     my (@columns);
     for (my $i = 0; $i < $ncols2; $i += 2) {
-        my ($l1) = modevalkey($colpos[$i]);
-        my ($r1) = modevalkey($colpos[$i + 1]);
+        my ($l1, $r1) = ($modes[$i], $modes[$i + 1]);
         my ($overlap) = min($p2h_per_inch * 0.75, $r1 - $l1 - $p2h_per_inch / 8);
         my ($l, $r, $n) = ($l1, $r1, 0);
 
