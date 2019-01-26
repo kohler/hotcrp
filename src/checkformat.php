@@ -7,7 +7,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     const RUN_PREFER_NO = 1;
     const RUN_NO = 2;
 
-    const DEBUG = 1;
+    const DEBUG = 0;
 
     public $pages = 0;
     private $body_pages;

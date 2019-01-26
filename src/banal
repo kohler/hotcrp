@@ -222,17 +222,6 @@ sub modevalkey ($) {
     $modekey;
 }
 
-# return total count of values with keys within `$delta` of `$center`
-sub count_keys_near ($$$) {
-    my ($href, $center, $delta) = @_;
-    my ($count) = 0;
-    my ($k, $v);
-    while (($k, $v) = each %$href) {
-        $count += $v if $k >= $center - $delta && $k <= $center + $delta;
-    }
-    $count;
-}
-
 # return max val in hash
 sub maxval ($) {
     my ($href) = @_;
@@ -330,14 +319,25 @@ sub calc_xmap_mode_columns ($) {
         }
     }
 
-    my ($delta) = $p2h_per_inch / 8;
     my (@columns);
     for (my $i = 0; $i < $ncols2; $i += 2) {
-        my $l = modevalkey($colpos[$i]);
-        my $r = modevalkey($colpos[$i + 1]);
+        my ($l1) = modevalkey($colpos[$i]);
+        my ($r1) = modevalkey($colpos[$i + 1]);
+        my ($overlap) = min($p2h_per_inch * 0.75, $r1 - $l1 - $p2h_per_inch / 8);
+        my ($l, $r, $n) = ($l1, $r1, 0);
 
-        if (count_keys_near($colpos[$i], $l, $delta) >= 3
-            && count_keys_near($colpos[$i + 1], $r, $delta) >= 3) {
+        foreach my $z (@{$xmap->{rows}}) {
+            if (@$z == $ncols2) {
+                my ($l2, $r2) = ($z->[$i], $z->[$i + 1]);
+                if (min($r1, $r2) - max($l1, $l2) >= $overlap) {
+                    $l = min $l, $l2 if $colpos[$i]->{$l2} > 3;
+                    $r = max $r, $r2 if $colpos[$i + 1]->{$r2} > 3;
+                    ++$n;
+                }
+            }
+        }
+
+        if ($n >= 3) {
             push @columns, $l, $r;
         }
     }
@@ -1254,6 +1254,7 @@ sub parse_p2h_text ($$) {
             t => $top, l => $left, w => $right - $left, h => $bottom - $top,
             f => $font, sz => $size, content => $content, num => $isnum
         };
+        # print STDERR $page->{num}, " ", int($left * 72 / $p2h_per_inch), " ", $top, " ", $content, "\n";
 
         $alen_bysize{$size} = 0 if !exists $alen_bysize{$size};
         $alen_bysize{$size} += length($content) + 1;
