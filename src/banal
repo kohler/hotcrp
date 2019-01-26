@@ -590,7 +590,7 @@ sub calc_doc_page_types ($) {
         my ($see_appendix) = $saw_appendix;
         if (exists $page->{pagedata}->{headings}) {
             foreach my $h (@{$page->{pagedata}->{headings}}) {
-                if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography|Appendix(?:es)?)\z/i) {
+                if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography)\z/i) {
                     $see_acks_refs = 1;
                     $saw_acks_refs = 1 if !$saw_acks_refs
                         && exists $page->{pagedata}->{heading1}
@@ -598,9 +598,11 @@ sub calc_doc_page_types ($) {
                     $see_appendix = 0;
                 } elsif ($h =~ /\A[\dIVX]+\.? *Conclusions?(?: and future work|)\z/i) {
                     $saw_conclusion = 1;
-                } elsif ($h =~ /\A([A-F](?:\.\d+)*)\.?/
+                } elsif ($h =~ /\A((?:[A-F]|\d+)(?:\.\d+)*)\.?\s+(Appendix(?:es)?\z|)(.*)\z/i
                          && ($see_acks_refs || $saw_conclusion)
-                         && (!$saw_appendix || version_compare($1, $saw_appendix) == 1)) {
+                         && ($see_appendix
+                             ? version_compare($1, $see_appendix) == 1
+                             : substr($1, 0, 1) ge "A" || $2 ne "")) {
                     $see_appendix = $1;
                     $saw_appendix = $see_appendix if !$saw_appendix
                         && ($saw_acks_refs
