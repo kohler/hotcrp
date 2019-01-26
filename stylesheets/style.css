@@ -58,6 +58,10 @@ html {
 		"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 	line-height: 1.4;
 }
+code, kbd, pre, samp, .text-monospace {
+	font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+	font-size: 90%;
+}
 body {
 	color: #333333;
 	background-color: white;
@@ -1475,9 +1479,6 @@ span.textlite {
 	border: solid 1px #aaaadd;
 	padding: 0 4px;
 	background: #fcfcfc;
-}
-input.textlite-tt, textarea.tt {
-	font-family: monospace;
 }
 .papertext {
 	width: 96%;
@@ -3459,7 +3460,7 @@ body {
 	text-align: right;
 	font-weight: bold;
 }
-.mhnp, .mhdd, .mhdp {
+.mhnp, .mhdd {
 	padding: 2px 4px;
 }
 .mhcb {
@@ -3475,9 +3476,6 @@ body {
 }
 .mail tbody.pltable {
 	background-color: #ffffff;
-}
-.mhdp {
-	font-family: monospace;
 }
 .mhpad {
 	padding: 4px;

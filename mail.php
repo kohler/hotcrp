@@ -311,7 +311,7 @@ class MailSender {
                     '" /></td>';
             }
             echo '<td class="mhnp nw">', $k, ":</td>",
-                '<td class="mhdp">', $vh, "</td></tr>\n";
+                '<td class="mhdp text-monospace">', $vh, "</td></tr>\n";
         }
 
         echo ' <tr><td></td><td></td><td class="mhb"><pre class="email">',
@@ -405,7 +405,7 @@ class MailSender {
                 foreach ($prep->errors as $lcfield => $hline) {
                     $reqfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
                     Ht::error_at($reqfield);
-                    $emsg = Mailer::$email_fields[$lcfield] . " destination isn’t a valid email list: <blockquote><tt>" . htmlspecialchars($hline) . "</tt></blockquote> Make sure email address are separated by commas; put names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
+                    $emsg = Mailer::$email_fields[$lcfield] . " destination isn’t a valid email list: <blockquote><samp>" . htmlspecialchars($hline) . "</samp></blockquote> Make sure email address are separated by commas; put names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
                     if (!isset($preperrors[$emsg]))
                         Conf::msg_error($emsg);
                     $preperrors[$emsg] = true;
@@ -590,7 +590,7 @@ if ($Me->is_manager()) {
             $xfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
             $ec = Ht::control_class($xfield);
             echo "  <tr><td class=\"mhnp nw$ec\"><label for=\"$xfield\">$field:</label></td><td class=\"mhdp\">",
-                Ht::entry($xfield, $Qreq[$xfield], ["size" => 64, "class" => "textlite-tt$ec", "id" => $xfield]),
+                Ht::entry($xfield, $Qreq[$xfield], ["size" => 64, "class" => "text-monospace$ec", "id" => $xfield]),
                 ($xfield == "replyto" ? "<hr class=\"g\">" : ""),
                 "</td></tr>\n\n";
         }
@@ -598,13 +598,13 @@ if ($Me->is_manager()) {
 
 // ** SUBJECT
 echo "  <tr><td class=\"mhnp nw\"><label for=\"subject\">Subject:</label></td><td class=\"mhdp\">",
-    "<tt>[", htmlspecialchars($Conf->short_name), "]&nbsp;</tt>",
-    Ht::entry("subject", $Qreq->subject, ["size" => 64, "class" => Ht::control_class("subject", "textlite-tt"), "id" => "subject"]),
+    "<samp>[", htmlspecialchars($Conf->short_name), "]&nbsp;</samp>",
+    Ht::entry("subject", $Qreq->subject, ["size" => 64, "class" => Ht::control_class("subject", "text-monospace"), "id" => "subject"]),
     "</td></tr>
 
  <tr><td></td><td class=\"mhb\">\n",
     Ht::textarea("emailBody", $Qreq->emailBody,
-            array("class" => "tt", "rows" => 20, "cols" => 80, "spellcheck" => "true")),
+            array("class" => "text-monospace", "rows" => 20, "cols" => 80, "spellcheck" => "true")),
     "</td></tr>
 </table></div>\n\n";
 

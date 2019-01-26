@@ -242,7 +242,7 @@ if (($requestreview_template = $null_mailer->expand_template("requestreview"))) 
         Ht::checkbox("requestreview_notify", 1, true),
         "&nbsp;</td><td>", Ht::label("Send email to external reviewers:"), "</td></tr>
     <tr><td></td><td>",
-        Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true", "class" => "need-autogrow")),
+        Ht::textarea("requestreview_body", $t, array("cols" => 80, "rows" => 20, "spellcheck" => "true", "class" => "text-monospace need-autogrow")),
         "</td></tr></table>\n";
 }
 
