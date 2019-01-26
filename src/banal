@@ -456,7 +456,7 @@ sub calc_page_headings ($$$) {
         while ($coli < @$colpos && $colpos->[$coli] < $text->{l} - $slack) {
             $coli += 2;
         }
-        next if $coli == @$colpos || $colpos->[$coli] > $text->{l} + $slack;
+        next if $coli == @$colpos || $colpos->[$coli] > $text->{l} + 2 * $slack;
         my ($colj) = $coli + 1;
         while ($colj + 2 < @$colpos && $colpos->[$colj] < $colpos->[$coli] + $p2h_per_inch) {
             $colj += 2;
