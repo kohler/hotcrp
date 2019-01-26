@@ -598,7 +598,7 @@ sub calc_doc_page_types ($) {
                     $see_appendix = 0;
                 } elsif ($h =~ /\A[\dIVX]+\.? *Conclusions?(?: and future work|)\z/i) {
                     $saw_conclusion = 1;
-                } elsif ($h =~ /\A((?:[A-F]|\d+)(?:\.\d+)*)\.?\s+(Appendix(?:es)?\z|)(.*)\z/i
+                } elsif ($h =~ /\A(?:Appendix |)((?:[A-F]|\d+)(?:\.\d+)*)\.?\s+(Appendix(?:es)?\z|)(.*)\z/i
                          && ($see_acks_refs || $saw_conclusion)
                          && ($see_appendix
                              ? version_compare($1, $see_appendix) == 1
