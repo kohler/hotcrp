@@ -212,6 +212,10 @@ function update_schema_drop_keys_if_exist($conf, $table, $key) {
         return true;
 }
 
+function update_schema_check_column_exists($conf, $table, $column) {
+    return Dbl::fetch_ivalue($conf->dblink, "select exists (select * from information_schema.columns where table_schema=database() and `table_name`='$table' and `column_name`='$column') from dual");
+}
+
 function update_schema_mimetype_extensions($conf) {
     if (!($result = $conf->ql("select * from Mimetype where extension is null")))
         return false;
@@ -1334,10 +1338,13 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         }
         $conf->update_schema_version(177);
     }
-    if ($conf->sversion == 177
-        && $conf->ql("alter table PaperStorage drop `mimetypeid`")
-        && $conf->ql("drop table if exists `Mimetype`"))
-        $conf->update_schema_version(178);
+    if ($conf->sversion == 177) {
+        set_time_limit(300); // might take a while
+        if ((!update_schema_check_column_exists($conf, "PaperStorage", "mimetypeid")
+             || $conf->ql("alter table PaperStorage drop `mimetypeid`"))
+            && $conf->ql("drop table if exists `Mimetype`"))
+            $conf->update_schema_version(178);
+    }
     if ($conf->sversion == 178
         && $conf->ql("delete from Settings where name='papersub'")) {
         $conf->update_papersub_setting(0);
@@ -1420,13 +1427,15 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperReview drop key `reviewNeedsSubmit`")
         && $conf->ql("alter table PaperReview drop key `paperId`"))
         $conf->update_schema_version(195);
-    if ($conf->sversion == 195
-        && $conf->ql("alter table PaperStorage add `inactive` tinyint(1) NOT NULL DEFAULT '0'")
-        && $conf->ql("update PaperStorage set inactive=1")
-        && $conf->ql("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.paperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
-        && $conf->ql("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.finalPaperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
-        && $conf->ql("update PaperStorage join PaperOption on (PaperOption.paperId=PaperStorage.paperId and PaperOption.value=PaperStorage.paperStorageId) set PaperStorage.inactive=0"))
-        $conf->update_schema_version(196);
+    if ($conf->sversion == 195) {
+        set_time_limit(300);
+        if ($conf->ql("alter table PaperStorage add `inactive` tinyint(1) NOT NULL DEFAULT '0'")
+            && $conf->ql("update PaperStorage set inactive=1")
+            && $conf->ql("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.paperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
+            && $conf->ql("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.finalPaperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
+            && $conf->ql("update PaperStorage join PaperOption on (PaperOption.paperId=PaperStorage.paperId and PaperOption.value=PaperStorage.paperStorageId) set PaperStorage.inactive=0"))
+            $conf->update_schema_version(196);
+    }
     if ($conf->sversion == 196
         && $conf->ql("drop table if exists `DocumentLink`")
         && $conf->ql("create table `DocumentLink` (
