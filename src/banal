@@ -1085,15 +1085,15 @@ sub xmap_close_gaps ($) {
         my ($ni) = 0;
 
         for (my $i = 0; $i < @$z - 2; ) {
-            while ($pi < @$pz && $pz->[$pi + 1] < $z->[$i + 1]) {
+            while ($pi < @$pz && $pz->[$pi + 1] < $z->[$i + 2]) {
                 $pi += 2;
             }
-            while ($ni < @$nz && $nz->[$ni + 1] < $z->[$i + 1]) {
+            while ($ni < @$nz && $nz->[$ni + 1] < $z->[$i + 2]) {
                 $ni += 2;
             }
             if (($pi < @$pz || $ni < @$nz)
-                && ($pi == @$pz || $pz->[$pi] < $z->[$i + 2])
-                && ($ni == @$nz || $nz->[$ni] < $z->[$i + 2])) {
+                && ($pi == @$pz || $pz->[$pi] < $z->[$i + 1])
+                && ($ni == @$nz || $nz->[$ni] < $z->[$i + 1])) {
                 splice(@$z, $i + 1, 2);
             } else {
                 $i += 2;
@@ -1215,7 +1215,11 @@ sub parse_p2h_text ($$) {
             last;
         }
 
-        my ($top, $left, $width, $height, $font) = (+$1, +$2, +$3, +$4, $5);
+        my ($top) = +$1;
+        my ($left) = +$2;
+        my ($bottom) = $top + +$4;
+        my ($right) = $left + +$3;
+        my ($font) = $5;
 
         my ($fontspec) = $page->{doc}->{fonts}->{$font};
         if ($fontspec) {
@@ -1231,7 +1235,11 @@ sub parse_p2h_text ($$) {
 
         # sanity check the data somewhat...text from embedded figures
         # can produce surprising values
-        if ($top < 0 || $left < 0 || $top >= $pageheight || $left >= $pagewidth) {
+        $left = 0 if $left < 0;
+        $right = $pagewidth if $right > $pagewidth;
+        $top = 0 if $top < 0;
+        $bottom = $pageheight if $bottom > $pageheight;
+        if ($top >= $bottom || $left >= $right) {
             $line = <$FILE>;
             next;
         }
@@ -1243,8 +1251,8 @@ sub parse_p2h_text ($$) {
         my ($isnum) = length($content) <= 5 && $content =~ /\A[- ,.:\/]*[0-9][- ,.:\/0-9]*\z/;
 
         push @texts, {
-            t => $top, l => $left, w => $width, h => $height, f => $font,
-            sz => $size, content => $content, num => $isnum
+            t => $top, l => $left, w => $right - $left, h => $bottom - $top,
+            f => $font, sz => $size, content => $content, num => $isnum
         };
 
         $alen_bysize{$size} = 0 if !exists $alen_bysize{$size};
