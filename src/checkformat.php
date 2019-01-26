@@ -427,7 +427,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $status = "warning";
                 $start = "This document may violate the submission format requirements.";
             }
-            $t .= Ht::msg("<p>$start</p>\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\n<p>Submissions that violate the requirements will not be considered. <strong>However,</strong> the automated format checker uses heuristics and can misreport errors (for instance, it can miscalculate margins or text sizes in figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.</p>", $status);
+            $t .= Ht::msg("<p>$start</p>\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\n<p>Submissions that violate the requirements will not be considered. <strong>However,</strong> the automated format checker can misreport errors (for instance, it can miscalculate margins and text sizes for certain figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.</p>", $status);
         } else if (!$this->has_problem())
             $t .= Ht::msg("Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", "confirm");
         return $t;
