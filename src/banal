@@ -473,7 +473,8 @@ sub calc_page_headings ($$$) {
                && abs($texts->[$xp]->{t} - $tt) < $slack
                && interval_overlap($tt, $th, $texts->[$xp]->{t}, $texts->[$xp]->{h})
                && $texts->[$xp]->{l} >= $tr) {
-            $content .= " " . $texts->[$xp]->{content};
+            $content .= " " if $texts->[$xp]->{l} - $tr > $text->{sz} / 6;
+            $content .= $texts->[$xp]->{content};
             $tr = $texts->[$xp]->{l} + $texts->[$xp]->{w};
             $xp += 1;
         }
