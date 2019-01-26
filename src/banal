@@ -590,7 +590,7 @@ sub calc_doc_page_types ($) {
         my ($see_appendix) = $saw_appendix;
         if (exists $page->{pagedata}->{headings}) {
             foreach my $h (@{$page->{pagedata}->{headings}}) {
-                if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography)\z/i) {
+                if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography|\AAppendix(?:es)?)\z/i) {
                     $see_acks_refs = 1;
                     $saw_acks_refs = 1 if !$saw_acks_refs
                         && exists $page->{pagedata}->{heading1}
