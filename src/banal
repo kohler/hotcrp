@@ -421,7 +421,7 @@ sub interval_overlap ($$$$) {
 sub calc_page_headings ($$$) {
     my ($page, $texts, $bodyfontsize) = @_;
     my ($colpos) = $page->{pagedata}->{colpos};
-    my ($slack) = $p2h_per_inch / 16;
+    my ($slack) = $p2h_per_inch / 8;
     my ($top) = $page->{pagedata}->{textbb}->{top} + 0.075 * $page->{pagedata}->{textbb}->{height};
     my ($near_top) = 1;
 
