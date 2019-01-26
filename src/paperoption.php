@@ -1025,6 +1025,8 @@ class DocumentPaperOption extends PaperOption {
             $fspec->merge($this->conf->setting_data($speckey, ""), $spects);
         else if ($spects < 0)
             $fspec->clear_banal();
+        if (!$fspec->is_banal_empty())
+            $fspec->merge_banal();
         return $fspec;
     }
 }

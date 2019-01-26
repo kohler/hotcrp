@@ -66,6 +66,12 @@ class FormatSpec {
             $this->$k = $v;
     }
 
+    function merge_banal() {
+        global $ConfSitePATH;
+        if (($ts = @filemtime("$ConfSitePATH/src/banal")) !== false)
+            $this->timestamp = max($ts, $this->timestamp);
+    }
+
     function clear_banal() {
         $this->papersize = [];
         $this->pagelimit = $this->unlimitedref = $this->columns = $this->textblock =

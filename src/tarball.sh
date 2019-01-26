@@ -160,6 +160,7 @@ src/api/api_alltags.php
 src/api/api_comment.php
 src/api/api_decision.php
 src/api/api_error.php
+src/api/api_formatcheck.php
 src/api/api_graphdata.php
 src/api/api_mail.php
 src/api/api_paperpc.php

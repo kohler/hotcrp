@@ -6715,13 +6715,44 @@ handle_ui.on("js-check-format", function () {
     var running = setTimeout(function () {
         $cf.html(render_xmsg(0, "Checking format (this can take a while)..."));
     }, 1000);
-    $.ajax(hoturl_post("api/checkformat", {p: hotcrp_paperid}), {
-        timeout: 20000, data: {dt: $d.data("dtype"), docid: $d.data("docid")},
+    $.ajax(hoturl_post("api/formatcheck", {p: hotcrp_paperid}), {
+        timeout: 20000, data: {
+            dt: $d[0].getAttribute("data-dtype"), docid: $d[0].getAttribute("data-docid")
+        },
         success: function (data) {
             clearTimeout(running);
             data.ok && $cf.html(data.response);
         }
     });
+});
+
+$(function () {
+var failures = 0;
+function background_format_check() {
+    var needed = $(".need-format-check"), m;
+    if (!needed.length)
+        return;
+    needed = needed[Math.floor(Math.random() * needed.length)];
+    removeClass(needed, "need-format-check");
+    if (needed.tagName === "A"
+        && (m = needed.href.match(/\/doc(?:\.php)?\/([^?#]*)/))) {
+        $.ajax(hoturl("api/formatcheck", {doc: m[1], soft: 1}), {
+            success: function (data) {
+                var img = needed.firstChild, m;
+                if (data.ok
+                    && img
+                    && img.tagName === "IMG"
+                    && (m = img.src.match(/^(.*\/pdff?)x?((?:24)?\.png(?:\?.*)?)$/)))
+                    img.src = m[1] + (data.has_error ? "x" : "") + m[2];
+                if (data.ok || ++failures <= 2)
+                    setTimeout(background_format_check, 2000 + Math.random() * 1000);
+            }
+        });
+    } else {
+        setTimeout(background_format_check, 100);
+    }
+}
+$(background_format_check);
 });
 
 handle_ui.on("js-check-submittable", function (event) {

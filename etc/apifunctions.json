@@ -9,10 +9,6 @@
         "callback": "AllTags_API::run"
     },
     {
-        "name": "checkformat", "paper": true, "get": true, "post": true,
-        "callback": "PaperApi::checkformat_api"
-    },
-    {
         "name": "clickthrough", "post": true,
         "callback": "User_API::clickthrough"
     },
@@ -39,6 +35,11 @@
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
         "callback": "PaperApi::follow_api"
+    },
+    {
+        "name": "formatcheck", "get": true, "post": true,
+        "callback": "FormatCheck_API::run",
+        "synonym": ["checkformat"]
     },
     {
         "name": "graphdata", "get": true,

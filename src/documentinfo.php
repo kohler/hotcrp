@@ -808,9 +808,10 @@ class DocumentInfo implements JsonSerializable {
             $title = "Final version";
 
         assert(!($flags & self::L_REQUIREFORMAT) || !!$this->prow);
+        $need_run = false;
         if (($this->documentType == DTYPE_SUBMISSION || $this->documentType == DTYPE_FINAL)
             && $this->prow)
-            list($info, $suffix) = $this->link_html_format_info($flags, $suffix);
+            list($info, $suffix, $need_run) = $this->link_html_format_info($flags, $suffix);
 
         if ($this->mimetype == "application/pdf")
             list($img, $alt) = ["pdf", "[PDF]"];
@@ -822,7 +823,7 @@ class DocumentInfo implements JsonSerializable {
             $alt = "[" . ($m && $m->description ? $m->description : $this->mimetype) . "]";
         }
 
-        $x = '<a href="' . $p . '" class="q">'
+        $x = '<a href="' . $p . '" class="q' . ($need_run ? " need-format-check" : "") . '">'
             . Ht::img($img . $suffix . ($small ? "" : "24") . ".png", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
         if ($html)
             $x .= "&nbsp;" . $html;
@@ -837,28 +838,29 @@ class DocumentInfo implements JsonSerializable {
         return $x . "</a>" . ($info ? "&nbsp;$info" : "");
     }
     private function link_html_format_info($flags, $suffix) {
+        $need_run = false;
         if (($spects = $this->conf->format_spec($this->documentType)->timestamp)) {
             if ($this->prow->is_joindoc($this)) {
                 $specstatus = $this->prow->pdfFormatStatus;
                 if ($specstatus == -$spects && ($flags & self::L_SMALL))
-                    return ["", $suffix . "x"];
+                    return ["", $suffix . "x", false];
                 else if ($specstatus == $spects)
-                    return ["", $suffix];
+                    return ["", $suffix, false];
             }
             $runflag = CheckFormat::RUN_NO;
-            if (($flags & self::L_REQUIREFORMAT)
-                || (CheckFormat::$runcount < 3 && mt_rand(0, 7) == 0))
+            if ($flags & self::L_REQUIREFORMAT)
                 $runflag = CheckFormat::RUN_PREFER_NO;
             $cf = new CheckFormat($this->conf, $runflag);
             $cf->check_document($this->prow, $this);
             if ($cf->has_error()) {
                 if (($flags & self::L_SMALL) || $cf->failed)
-                    return ["", $suffix . "x"];
+                    return ["", $suffix . "x", $cf->need_run];
                 else
-                    return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>', $suffix . "x"];
-            }
+                    return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>', $suffix . "x", $cf->need_run];
+            } else
+                $need_run = $cf->need_run;
         }
-        return ["", $suffix];
+        return ["", $suffix, $need_run];
     }
 
     function metadata() {

@@ -176,17 +176,6 @@ class PaperApi {
         return $jr;
     }
 
-    static function checkformat_api(Contact $user, $qreq, $prow) {
-        $dtype = cvtint($qreq->dt, 0);
-        $opt = $user->conf->paper_opts->get($dtype);
-        if (!$opt || !$user->can_view_paper_option($prow, $opt))
-            return ["ok" => false, "error" => "Permission error."];
-        $cf = new CheckFormat($prow->conf);
-        $doc = $cf->fetch_document($prow, $dtype, $qreq->docid);
-        $cf->check_document($prow, $doc);
-        return ["ok" => !$cf->failed, "response" => $cf->document_report($prow, $doc)];
-    }
-
     static function follow_api(Contact $user, $qreq, $prow) {
         $reviewer = self::get_reviewer($user, $qreq, $prow);
         $following = friendly_boolean($qreq->following);

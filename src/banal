@@ -694,6 +694,7 @@ sub report_json ($) {
 
     my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}, "mr" => {}, "mb" => {}};
     my $px = {};
+    my $nummargin = 10000;
     for my $i (1 .. $doc->{npages}) {
         my $page = $doc->{pages}->{$i};
 
@@ -714,6 +715,9 @@ sub report_json ($) {
             $pd->{mr} = $pw - $tr;
             $pd->{tw} = $tr - $tl;
             $pd->{th} = $tb - $tt;
+
+            my ($pnummargin) = POSIX::floor($ph - $page->{pagedata}->{lowest_number} * $p2h_to_points);
+            $nummargin = min($nummargin, $pnummargin) if $pnummargin < $ph - $tb;
         }
 
         $px->{$i} = $pd;
@@ -738,6 +742,7 @@ sub report_json ($) {
     my ($doc_l) = sprintf "\"leading\": %g", $doc->{pagespec}->{lead};
     my ($doc_c) = sprintf "\"columns\": %d", $doc->{ncols};
     print "  $doc_ps,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n";
+    printf "  \"nummargin\": %.0f,\n", $nummargin if $nummargin < 10000;
     if (exists $banal_param{max_pages} && $doc->{npages} > $banal_param{max_pages}) {
         printf "  \"npages\": %d,\n", $doc->{npages};
     }
@@ -1267,6 +1272,7 @@ sub parse_p2h_text ($$) {
 
     my (@texts);
     my (%tlen_bysize, %alen_bysize);
+    my ($lowest_number) = 0;
 
     while (1) {
 #       next if (check_p2h_error ($line));
@@ -1329,7 +1335,11 @@ sub parse_p2h_text ($$) {
 
         $alen_bysize{$size} = 0 if !exists $alen_bysize{$size};
         $alen_bysize{$size} += length($content) + 1;
-        if (!$isnum) {
+        if ($isnum) {
+            if ($content =~ /\d/) {
+                $lowest_number = max $lowest_number, $bottom;
+            }
+        } else {
             $tlen_bysize{$size} = 0 if !exists $tlen_bysize{$size};
             $tlen_bysize{$size} += length($content) + 1;
         }
@@ -1356,6 +1366,7 @@ sub parse_p2h_text ($$) {
 
     # compute text region using extent maps
     calc_page_text_region($page, $xmap, $ymap);
+    $page->{pagedata}->{lowest_number} = $lowest_number;
 
     # compute leading using bodyfontsize and column specs
     calc_page_leading($page, \@texts, $bodyfontsize);
