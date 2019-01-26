@@ -453,7 +453,7 @@ sub calc_page_headings ($$$) {
         }
         next if $tr >= $colpos->[$i + 1] - $slack;
         $content =~ s/\s+\z//;
-        next if $content !~ /\A(?:X+V?I+[VX]?[. ]+.*|X+V?[. ]+.*|V[. ]+.*|\d+[. ]+.*|[ABCDE][. ]+.*|Abstract|Acknowledge?ments?|References?|Bibliography|Introduction|Appendix\s+.*)\z/i
+        next if $content !~ /\A(?:(?:X+V?I+[VX]?|X+V?|V)\.? +[^,;]*|\d+(?:\.\d+)*\.? +[^,;]*|[ABCDE]\.? +[^,;]*|Abstract|Acknowledge?ments?|References?|Bibliography|Introduction|Appendix\s+.*)\z/i
             || $content =~ /[.,:]\z/;
 
         $page->{pagedata}->{headings} = [] if !exists $page->{pagedata}->{headings};
