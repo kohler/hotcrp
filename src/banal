@@ -412,6 +412,57 @@ sub calc_page_nchars ($$$) {
     $page->{pagespec}->{nchars} = $nc;
 }
 
+sub interval_overlap ($$$$) {
+    my ($a, $da, $b, $db) = @_;
+    return ($a + $da >= $b && $a + $da <= $b + $db)
+        || ($b + $db >= $a && $b + $db <= $a + $da);
+}
+
+sub calc_page_headings ($$$) {
+    my ($page, $texts, $bodyfontsize) = @_;
+    my ($colpos) = $page->{pagedata}->{colpos};
+    my ($slack) = $p2h_per_inch / 16;
+    my ($top) = $page->{pagedata}->{textbb}->{top} + 0.075 * $page->{pagedata}->{textbb}->{height};
+    my ($near_top) = 1;
+
+    for (my $tpos = 0; $tpos < @$texts; ++$tpos) {
+        my ($text) = $texts->[$tpos];
+        next if $text->{sz} < $bodyfontsize;
+        $near_top = 0 if $near_top && $text->{t} + $text->{h} > $top;
+        next if $text->{content} !~ /\A[\dABCDEIRVX]/;
+        my ($i) = 0;
+        while ($i < @$colpos && $colpos->[$i] < $text->{l} - $slack) {
+            $i += 2;
+        }
+        next if $i == @$colpos || $colpos->[$i] > $text->{l} + $slack;
+
+        # It must look like a heading (end before end of column, not end with
+        # period).
+        my ($content) = $text->{content};
+        my ($tr) = $text->{l} + $text->{w};
+        my ($tt) = $text->{t};
+        my ($th) = $text->{h};
+        my ($xp) = $tpos + 1;
+        while ($xp < @$texts
+               && abs($texts->[$xp]->{t} - $tt) < $slack
+               && interval_overlap($tt, $th, $texts->[$xp]->{t}, $texts->[$xp]->{h})
+               && $texts->[$xp]->{l} >= $tr) {
+            $content .= " " . $texts->[$xp]->{content};
+            $tr = $texts->[$xp]->{l} + $texts->[$xp]->{w};
+            $xp += 1;
+        }
+        next if $tr >= $colpos->[$i + 1] - $slack;
+        $content =~ s/\s+\z//;
+        next if $content !~ /\A(?:X+V?I+[VX]?[. ]+.*|X+V?[. ]+.*|V[. ]+.*|\d+[. ]+.*|[ABCDE][. ]+.*|Abstract|Acknowledge?ments?|References?|Bibliography|Introduction|Appendix\s+.*)\z/i
+            || $content =~ /[.,:]\z/;
+
+        $page->{pagedata}->{headings} = [] if !exists $page->{pagedata}->{headings};
+        push @{$page->{pagedata}->{headings}}, $content;
+        $page->{pagedata}->{heading1} = 1 if $near_top;
+        $tpos = $xp - 1;
+    }
+}
+
 sub calc_doc_body_font ($) {
     my ($doc) = @_;
     my ($fonts) = {};
@@ -477,30 +528,38 @@ sub calc_doc_page_types ($) {
     my ($doc) = @_;
 
     my ($font) = $doc->{pagespec}->{bodyfont};
+    my ($saw_acks_refs) = 0;
 
     foreach my $i (1..$doc->{npages}) {
         my ($page) = $doc->{pages}->{$i};
         my ($type) = 'body';
 
+        my ($see_acks_refs) = $saw_acks_refs;
+        if (exists $page->{pagedata}->{headings}) {
+            foreach my $h (@{$page->{pagedata}->{headings}}) {
+                if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography)\z/i) {
+                    $see_acks_refs = 1;
+                    $saw_acks_refs = 1 if exists $page->{pagedata}->{heading1}
+                        && $h eq $page->{pagedata}->{headings}->[0];
+                } else {
+                    $see_acks_refs = $saw_acks_refs = 0;
+                }
+            }
+        }
+
         if (!exists $page->{pagespec}->{nchars}) {
             $type = 'blank';
         } elsif ($i == 1 && $page->{pagespec}->{nchars} < 800) {
             $type = 'cover';
-        } elsif ($page->{pagespec}->{nchars} < $banal_min_nchars) {
-            if ($i == $doc->{npages}) {
-                $type = 'bib';
-            } else {
-                $type = 'figure';
-            }
-        } elsif ($page->{pagespec}->{bodyfont} < $font) {
-            if (($doc->{npages} - $i) < ($doc->{npages} / 3)) {
-                $type = 'bib';
-            }
-        } elsif ($page->{pagespec}->{ncols} == 0) {
+        } elsif ($saw_acks_refs) {
+            $type = 'bib';
+        } elsif ($page->{pagespec}->{nchars} < $banal_min_nchars
+                 || $page->{pagespec}->{ncols} == 0) {
             $type = 'figure';
         }
 
         $page->{pagespec}->{type} = $type;
+        $saw_acks_refs = $see_acks_refs;
     }
 }
 
@@ -644,6 +703,13 @@ sub report_json ($) {
             push @val, sprintf "\"c\": %d", $page->{pagespec}->{nchars};
             push @val, sprintf "\"pagetype\": %s", json_quote($page->{pagespec}->{type})
                 if $page->{pagespec}->{type} ne "body";
+            if (exists $page->{pagedata}->{headings} && $json_pagenum) {
+                my (@ht);
+                foreach my $heading (@{$page->{pagedata}->{headings}}) {
+                    push @ht, json_quote($heading);
+                }
+                push @val, "\"headings\": [" . join(",", @ht) . "]";
+            }
         }
 
         print $sep, "    {", join(", ", @val), "}";
@@ -1216,6 +1282,9 @@ sub parse_p2h_text ($$) {
 
     # compute page character count using content lengths
     calc_page_nchars($page, \%alen_bysize, $bodyfontsize);
+
+    # compute headings
+    calc_page_headings($page, \@texts, $bodyfontsize);
 }
 
 sub parse_p2h_page ($) {

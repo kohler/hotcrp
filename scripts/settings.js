@@ -113,6 +113,12 @@ function settings_option_move_enable() {
 }
 
 
+handle_ui.on("js-settings-banal-pagelimit", function () {
+    var s = $.trim(this.value);
+    foldup.call(this, null, {n: 2, f: s === "" || s.toUpperCase() === "N/A"});
+});
+
+
 handle_ui.on("js-settings-add-decision-type", function (event) {
     var $t = $("#settings-decision-types"), next = 1;
     while ($t.find("input[name=dec_name_" + next + "]").length)

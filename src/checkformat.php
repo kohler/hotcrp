@@ -7,7 +7,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     const RUN_PREFER_NO = 1;
     const RUN_NO = 2;
 
-    const DEBUG = 0;
+    const DEBUG = 1;
 
     public $pages = 0;
     private $body_pages;
@@ -126,14 +126,23 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
         // number of pages
         $minpages = $maxpages = null;
-        $this->pages = count($bj->pages);
+        $pages = $this->pages = count($bj->pages);
         if (isset($bj->npages) && is_int($bj->npages))
-            $this->pages = $bj->npages;
+            $pages = $this->pages = $bj->npages;
         if ($spec->pagelimit) {
-            if ($this->pages < $spec->pagelimit[0])
-                $this->msg("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $this->pages . ".", self::WARNING);
-            else if ($this->pages > $spec->pagelimit[1])
-                $this->msg("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], "page") . ", found " . $this->pages . ".", self::ERROR);
+            if ($pages < $spec->pagelimit[0])
+                $this->msg("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $pages . ".", self::WARNING);
+            if ($pages > $spec->pagelimit[1]
+                && $spec->unlimitedref
+                && count($bj->pages) === $pages) {
+                while ($pages > 0
+                       && !CheckFormat::banal_page_is_body($bj->pages[$pages - 1])) {
+                    --$pages;
+                }
+            }
+            if ($pages > $spec->pagelimit[1]) {
+                $this->msg("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], $spec->unlimitedref ? "non-reference page" : "page") . ", found " . $pages . ".", self::ERROR);
+            }
         }
         $this->body_pages = count(array_filter($bj->pages, function ($pg) {
             return CheckFormat::banal_page_is_body($pg);

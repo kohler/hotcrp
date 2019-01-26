@@ -5,6 +5,7 @@
 class FormatSpec {
     public $papersize = []; // [DIMEN, ...]
     public $pagelimit;      // [MIN, MAX]
+    public $unlimitedref;
     public $columns;        // NCOLUMNS
     public $textblock;      // [WIDTH, HEIGHT]
     public $bodyfontsize;   // [MIN, MAX, GRACE]
@@ -32,6 +33,7 @@ class FormatSpec {
             $this->merge1("textblock", get($x, 3));
             $this->merge1("bodyfontsize", get($x, 4));
             $this->merge1("bodylineheight", get($x, 5));
+            $this->merge1("unlimitedref", get($x, 6));
         } else if ($x && (is_object($x) || is_array($x))) {
             foreach ($x as $k => $v)
                 $this->merge1($k, $v);
@@ -52,6 +54,8 @@ class FormatSpec {
         } else if ($k === "pagelimit" && (is_string($v) || is_numeric($v))) {
             if (preg_match('/\A(\d+)(?:\s*(?:-|–)\s*(\d+))?\z/', $v, $m))
                 $this->pagelimit = isset($m[2]) && $m[2] !== "" ? [$m[1], $m[2]] : [0, $m[1]];
+        } else if ($k === "unlimitedref" && (is_string($v) || is_bool($v))) {
+            $this->unlimitedref = !!$v;
         } else if ($k === "columns" && is_string($v))
             $this->columns = cvtint($v, null);
         else if ($k === "textblock" && is_string($v))
@@ -64,7 +68,7 @@ class FormatSpec {
 
     function clear_banal() {
         $this->papersize = [];
-        $this->pagelimit = $this->columns = $this->textblock =
+        $this->pagelimit = $this->unlimitedref = $this->columns = $this->textblock =
             $this->bodyfontsize = $this->bodylineheight = null;
         $this->_is_banal_empty = true;
     }
@@ -94,18 +98,20 @@ class FormatSpec {
     function unparse_key($k) {
         if (!$this->$k)
             return "";
-        if ($k == "papersize")
+        if ($k === "papersize")
             return join(" OR ", array_map(function ($x) { return self::unparse_dimen($x, "basic"); }, $this->papersize));
-        if ($k == "pagelimit")
+        if ($k === "pagelimit")
             return $this->pagelimit[0] ? $this->pagelimit[0] . "-" . $this->pagelimit[1] : $this->pagelimit[1];
-        if ($k == "columns")
+        if ($k === "columns")
             return $this->columns;
-        if ($k == "textblock")
+        if ($k === "textblock")
             return self::unparse_dimen($this->textblock, "basic");
-        if ($k == "bodyfontsize")
+        if ($k === "bodyfontsize")
             return self::unparse_range($this->bodyfontsize);
-        if ($k == "bodylineheight")
+        if ($k === "bodylineheight")
             return self::unparse_range($this->bodylineheight);
+        if ($k === "unlimitedref")
+            return "1";
         return "";
     }
 
@@ -123,8 +129,8 @@ class FormatSpec {
     }
 
     function unparse_banal() {
-        $x = array_fill(0, 6, "");
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $i => $k)
+        $x = array_fill(0, 7, "");
+        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref"] as $i => $k)
             $x[$i] = $this->unparse_key($k);
         while (!empty($x) && !$x[count($x) - 1])
             array_pop($x);
@@ -159,19 +165,19 @@ class FormatSpec {
         $n = $text;
         $a = array();
         $unit = array();
-        while (preg_match('/^\s*(\d+\.?\d*|\.\d+)\s*(in?|cm?|mm|pt|)\s*(.*)$/', $n, $m)) {
+        while (preg_match('/^\s*(\d+\.?\d*|\.\d+)\s*("|″|in?|cm?|mm|pt|)\s*(.*)$/', $n, $m)) {
             $a[] = $m[1];
-            if ($m[2] == "i" || $m[2] == "in")
+            if ($m[2] === "i" || $m[2] === "in" || $m[2] === "\"" || $m[2] === "″")
                 $unit[] = 72;
-            else if ($m[2] == "c" || $m[2] == "cm")
+            else if ($m[2] === "c" || $m[2] === "cm")
                 $unit[] = 72 * 0.393700787;
-            else if ($m[2] == "mm")
+            else if ($m[2] === "mm")
                 $unit[] = 72 * 0.0393700787;
-            else if ($m[2] == "pt")
+            else if ($m[2] === "pt")
                 $unit[] = 1;
             else
                 $unit[] = 0;
-            if ($m[3] == "") {  // end of string
+            if ($m[3] === "") {  // end of string
                 // fail on bad number of dimensions
                 if ($ndimen > 0 && count($a) != $ndimen)
                     return false;
@@ -192,7 +198,7 @@ class FormatSpec {
                         return false;
 
                 return (count($a) == 1 ? $a[0] : $a);
-            } else if ($m[3][0] == "x")
+            } else if ($m[3][0] === "x")
                 $n = substr($m[3], 1);
             else if ($m[3][0] == 0xC3 && $m[3][1] == 0x97)
                 // \xC3\x97 is utf-8 for MULTIPLICATION SIGN
@@ -200,9 +206,9 @@ class FormatSpec {
             else
                 return false;
         }
-        if ($text == "letter")
+        if ($text === "letter")
             return self::parse_dimen("8.5in x 11in", $ndimen);
-        else if ($text == "a4")
+        else if ($text === "a4")
             return self::parse_dimen("210mm x 297mm", $ndimen);
         else
             return false;
@@ -217,13 +223,13 @@ class FormatSpec {
         }
         if (is_array($n)) {
             // \xC2\xA0 is utf-8 for U+00A0 NONBREAKING SPACE
-            $ex = $to == "paper" ? "\xC2\xA0x\xC2\xA0" : " x ";
+            $ex = $to === "paper" ? "\xC2\xA0x\xC2\xA0" : " x ";
             $t = "";
             foreach ($n as $v)
                 $t .= ($t == "" ? "" : $ex) . self::unparse_dimen($v, $to);
             return $t;
         }
-        if ($to == "basic" || $to == "paper")
+        if ($to === "basic" || $to === "paper")
             $to = null;
         if (!$to && $n < 18)
             $to = "pt";
@@ -231,13 +237,13 @@ class FormatSpec {
             $to = "in";
         else if (!$to)
             $to = "mm";
-        if ($to == "pt")
+        if ($to === "pt")
             return $n . $to;
-        else if ($to == "in" || $to == "i")
+        else if ($to === "in" || $to === "i")
             return ((int) (100 * $n / 72 + 0.5) / 100) . $to;
-        else if ($to == "cm")
+        else if ($to === "cm")
             return ((int) (100 * $n / 72 / 0.393700787 + 0.5) / 100) . $to;
-        else if ($to == "mm")
+        else if ($to === "mm")
             return (int) ($n / 72 / 0.0393700787 + 0.5) . $to;
         else
             return "??" . $to;

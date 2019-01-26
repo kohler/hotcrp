@@ -251,8 +251,10 @@ label.checki {
 	margin-left: 0;
 	padding-left: 0;
 }
-.entryi {
+.entryg, .entryi {
 	margin-bottom: 0.5em;
+}
+.entryi {
 	display: flex;
 	align-items: baseline;
 }
@@ -274,7 +276,7 @@ label.checki {
 .entry > textarea:first-child {
 	vertical-align: top;
 }
-.checki, .entryi {
+.checki, .entryi, .entryg {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
@@ -1197,12 +1199,15 @@ th.settings-simplehead {
 	columns: 20rem 2;
 	-webkit-column-gap: 18px;
 	column-gap: 18px;
-	margin: 0.25em 0;
+	margin-top: 0.5rem;
+	margin-bottom: 0.25rem;
 }
-.settings-2col > .checki, .settings-2col > .entryi {
-	margin: 0;
-	padding-top: 0.25em;
-	padding-bottom: 0.25em;
+.settings-2col > .entryi, .settings-2col > .entryg {
+	margin-bottom: 0;
+	padding-bottom: 0.5rem;
+}
+.settings-2col > .entryg > .entryi:last-child {
+	margin-bottom: 0;
 }
 
 /* help pages */

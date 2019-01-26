@@ -394,6 +394,12 @@
         "extensible": true
     },
     {
+        "name": "sub_banal_unlimitedref",
+        "title": "PDF format checker unlimited references",
+        "type": "checkbox", "novalue": true,
+        "extensible": true
+    },
+    {
         "name": "sub_blind",
         "title": "Submission anonymity", "group": "submissions",
         "type": "radio",
