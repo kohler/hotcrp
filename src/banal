@@ -600,7 +600,7 @@ sub calc_doc_page_types ($) {
                 } elsif ($h =~ /\A(Appendix\s* |)((?:[A-F]|\d+)(?:\.\d+)*)\.?\s+(Appendix(?:es)?\z|)(.*)\z/i
                          && ($see_acks_refs || $saw_conclusion)
                          && ($see_appendix
-                             ? version_compare($1, $see_appendix) == 1
+                             ? version_compare($2, $see_appendix) == 1
                              : $1 ne "" || substr($2, 0, 1) ge "A" || $3 ne "")) {
                     $see_appendix = $2;
                     $saw_appendix = $see_appendix if $saw_acks_refs
