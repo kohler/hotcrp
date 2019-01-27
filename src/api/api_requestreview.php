@@ -86,7 +86,7 @@ class RequestReview_API {
             } else {
                 $msg = "Proposed an external review from " . Text::user_html($xreviewer) . ". An administrator must approve this proposal for it to take effect.";
             }
-            $user->log_activity("Logged proposal for $email to review", $prow);
+            $user->log_activity("Proposed review for $email", $prow);
             return new JsonResult(["ok" => true, "action" => "propose", "response" => $msg]);
         }
 
@@ -170,7 +170,7 @@ class RequestReview_API {
             HotCRPMailer::send_to($requester, "@denyreviewrequest", $prow,
                 ["reviewer_contact" => $reviewer_contact]);
 
-            $user->log_activity_for($requester, "Denied proposal for $email to review", $prow);
+            $user->log_activity_for($requester, "Denied proposed review for $email", $prow);
             return new JsonResult(["ok" => true, "action" => "deny"]);
         } else {
             Dbl::qx_raw("unlock tables");

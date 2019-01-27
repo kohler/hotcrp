@@ -418,6 +418,9 @@ class ReviewForm implements JsonSerializable {
     static public $revtype_names = [
         "None", "External", "PC", "Secondary", "Primary", "Meta"
     ];
+    static public $revtype_names_lc = [
+        "none", "external", "PC", "secondary", "primary", "meta"
+    ];
 
     static private $review_author_seen = null;
 
@@ -1995,8 +1998,8 @@ class ReviewValues extends MessageSet {
         // log updates -- but not if review token is used
         if (!$usedReviewToken
             && $diffinfo->nonempty()) {
-            $text = "Review $reviewId "
-                . ($newsubmit ? "submitted" : ($submit ? "updated" : "updated draft"));
+            $text = ($newsubmit ? "Submitted" : ($submit ? "Updated" : "Updated draft"))
+                . " review $reviewId";
             if ($diffinfo->fields())
                 $text .= " " . join(", ", array_map(function ($f) { return $f->search_keyword(); }, $diffinfo->fields()));
             $user->log_activity_for($rrow ? $rrow->contactId : $user->contactId, $text, $prow);

@@ -99,7 +99,7 @@ if (isset($Qreq->unsubmitreview)
     $result = $Me->unsubmit_review_row($paperTable->editrrow);
     Dbl::qe_raw("unlock tables");
     if ($result) {
-        $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} unsubmitted", $prow);
+        $Me->log_activity_for($paperTable->editrrow->contactId, "Unsubmitted review {$paperTable->editrrow->reviewId}", $prow);
         $Conf->confirmMsg("Unsubmitted review.");
     }
     $Conf->self_redirect($Qreq);             // normally does not return
@@ -160,7 +160,7 @@ if (isset($Qreq->deletereview)
     else {
         $result = $Conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
         if ($result) {
-            $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} deleted", $prow);
+            $Me->log_activity_for($paperTable->editrrow->contactId, "Deleted review {$paperTable->editrrow->reviewId}", $prow);
             $Conf->confirmMsg("Deleted review.");
             $Conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
             if ($paperTable->editrrow->reviewToken != 0)

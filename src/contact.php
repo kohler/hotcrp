@@ -3882,7 +3882,7 @@ class Contact {
     }
 
     private function assign_review_explanation($type, $round) {
-        $t = ReviewForm::$revtype_names[$type] . " review";
+        $t = ReviewForm::$revtype_names_lc[$type] . " review";
         if ($round && ($rname = $this->conf->round_name($round)))
             $t .= " (round $rname)";
         return $t;
@@ -3936,7 +3936,7 @@ class Contact {
 
         if ($type && !$oldtype) {
             $reviewId = $result->insert_id;
-            $msg = "Added " . $this->assign_review_explanation($type, $round);
+            $msg = "Assigned " . $this->assign_review_explanation($type, $round);
         } else if (!$type) {
             $msg = "Removed " . $this->assign_review_explanation($oldtype, $rrow->reviewRound);
             $reviewId = 0;
