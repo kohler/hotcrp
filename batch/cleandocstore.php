@@ -311,7 +311,7 @@ class Fparts {
                     return false;
                 $di = &Cleaner::$dirinfo[$fm->fname];
                 $ndi = count($di) - 1;
-                if ($ndi <= 0)
+                if ($ndi <= 0 || $di[$ndi] <= 0)
                     break;
                 $idx = random_index($di);
                 for ($tries = $ndi >> 1; $tries > 0; --$tries) {
