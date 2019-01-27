@@ -113,9 +113,14 @@ function settings_option_move_enable() {
 }
 
 
-handle_ui.on("js-settings-banal-pagelimit", function () {
-    var s = $.trim(this.value);
-    foldup.call(this, null, {n: 2, f: s === "" || s.toUpperCase() === "N/A"});
+handle_ui.on("js-settings-banal-pagelimit", function (evt) {
+    var s = $.trim(this.value),
+        empty = s === "" || s.toUpperCase() === "N/A",
+        $ur = $(this).closest(".has-fold").find(".settings-banal-unlimitedref");
+    $ur.find("label").toggleClass("dim", empty);
+    $ur.find("input").prop("disabled", empty);
+    if (evt && evt.type === "change" && empty)
+        $ur.find("input").prop("checked", false);
 });
 
 

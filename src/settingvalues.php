@@ -657,7 +657,7 @@ class SettingValues extends MessageSet {
         echo '<div class="', self::add_class("checki", get($js, "group_class")),
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, self::strip_group_js($js));
-        echo ' </span>', $this->label($name, $text, ["for" => "cb$name"]);
+        echo ' </span>', $this->label($name, $text, ["for" => "cb$name", "class" => get($js, "label_class")]);
         $this->echo_messages_at($name);
         if ($hint)
             echo '<p class="', self::add_class("settings-ap f-hx", get($js, "hint_class")), '">', $hint, '</p>';

@@ -17,7 +17,7 @@ class BanalSettings {
 
         $open = $sv->curv("sub_banal$suffix") > 0;
         $uropen = $open && !in_array($sv->curv("sub_banal_pagelimit$suffix"), ["", "N/A"]);
-        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "settings-g has-fold " . ($open ? "foldo" : "foldc") . ($uropen ? " fold2o" : " fold2c"), "group_open" => true]);
+        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "settings-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
         echo Ht::hidden("has_sub_banal$suffix", 1),
             '<div class="settings-2col fx">';
         $sv->echo_entry_group("sub_banal_papersize$suffix", "Paper size", ["horizontal" => true], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
@@ -25,9 +25,9 @@ class BanalSettings {
         $sv->echo_entry_group("sub_banal_textblock$suffix", "Text block", ["horizontal" => true], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
         $sv->echo_entry_group("sub_banal_columns$suffix", "Columns", ["horizontal" => true]);
         echo '</div><div class="entryg">';
-        $sv->echo_entry_group("sub_banal_pagelimit$suffix", "Page limit", ["horizontal" => true, "class" => "uich js-settings-banal-pagelimit"]);
-        echo '<div class="entryi fx2"><label></label><div class="entry">';
-        $sv->echo_checkbox("sub_banal_unlimitedref$suffix", "Unlimited reference pages");
+        $sv->echo_entry_group("sub_banal_pagelimit$suffix", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit"]);
+        echo '<div class="entryi fx2"><label></label><div class="entry settings-banal-unlimitedref">';
+        $sv->echo_checkbox("sub_banal_unlimitedref$suffix", "Unlimited reference pages", ["disabled" => !$uropen, "label_class" => $uropen ? null : "dim"]);
         echo '</div></div></div>';
         $sv->echo_entry_group("sub_banal_bodyfontsize$suffix", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt"]);
         $sv->echo_entry_group("sub_banal_bodylineheight$suffix", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt"]);
