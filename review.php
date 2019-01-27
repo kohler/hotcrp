@@ -46,16 +46,11 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $Qreq, $prow, $paperTable, $editRrowLogname;
+    global $Conf, $Me, $Qreq, $prow, $paperTable;
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me)))
         errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
     $paperTable = new PaperTable($prow, $Qreq);
     $paperTable->resolveReview(true);
-
-    if ($paperTable->editrrow && $paperTable->editrrow->contactId == $Me->contactId)
-        $editRrowLogname = "Review " . $paperTable->editrrow->reviewId;
-    else if ($paperTable->editrrow)
-        $editRrowLogname = "Review " . $paperTable->editrrow->reviewId . " by " . $paperTable->editrrow->email;
 }
 
 loadRows();
@@ -104,7 +99,7 @@ if (isset($Qreq->unsubmitreview)
     $result = $Me->unsubmit_review_row($paperTable->editrrow);
     Dbl::qe_raw("unlock tables");
     if ($result) {
-        $Me->log_activity("$editRrowLogname unsubmitted", $prow);
+        $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} unsubmitted", $prow);
         $Conf->confirmMsg("Unsubmitted review.");
     }
     $Conf->self_redirect($Qreq);             // normally does not return
@@ -165,11 +160,13 @@ if (isset($Qreq->deletereview)
     else {
         $result = $Conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
         if ($result) {
-            $Me->log_activity("$editRrowLogname deleted", $prow);
+            $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
             $Conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
             if ($paperTable->editrrow->reviewToken != 0)
                 $Conf->update_rev_tokens_setting(-1);
+            if ($paperTable->editrrow->reviewType == REVIEW_META)
+                $Conf->update_metareviews_setting(-1);
 
             // perhaps a delegatee needs to redelegate
             if ($paperTable->editrrow->reviewType < REVIEW_SECONDARY && $paperTable->editrrow->requestedBy > 0)
