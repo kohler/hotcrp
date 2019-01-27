@@ -579,7 +579,7 @@ function render_users($users, $via_chair) {
                 if ($roles !== 0 && ($rolet = Contact::role_html_for($roles)))
                     $t .= " $rolet";
                 if ($via_chair)
-                    $t .= ' <i>via chair</i>';
+                    $t .= ' <i>via admin</i>';
             }
             $ts[] = $t;
         }
