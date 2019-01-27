@@ -2180,7 +2180,6 @@ class PaperTable {
     }
 
     private function _echo_editable_body() {
-        global $ConfSitePATH;
         $this->_echo_editable_form();
         echo '<div>';
 
