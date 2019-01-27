@@ -91,6 +91,8 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
             $reason = (string) $Qreq->emailNote;
         Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-timeSubmitted,0), withdrawReason=? where paperId=$prow->paperId", $reason !== "" ? $reason : null);
         $Conf->update_papersub_setting(-1);
+        if ($prow->outcome > 0)
+            $Conf->update_paperacc_setting(-1);
         loadRows();
 
         // email contact authors themselves
@@ -135,6 +137,8 @@ if (isset($Qreq->revive) && $prow && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
         Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,if(timeSubmitted<-100,-timeSubmitted,0)), withdrawReason=null where paperId=$prow->paperId");
         $Conf->update_papersub_setting(0);
+        if ($prow->outcome > 0)
+            $Conf->update_paperacc_setting(0);
         loadRows();
         $Me->log_activity("Revived", $prow->paperId);
         $Conf->self_redirect($Qreq);

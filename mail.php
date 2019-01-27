@@ -25,7 +25,7 @@ if (isset($Qreq->fromlog) && ctype_digit($Qreq->fromlog)
 $tOpt = array();
 if ($Me->privChair) {
     $tOpt["s"] = "Submitted papers";
-    if ($Conf->timePCViewDecision(false) && $Conf->setting("paperacc") > 0)
+    if ($Conf->timePCViewDecision(false) && $Conf->has_any_accepted())
         $tOpt["acc"] = "Accepted papers";
     $tOpt["unsub"] = "Unsubmitted papers";
     $tOpt["all"] = "All papers";

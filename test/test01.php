@@ -120,6 +120,16 @@ xassert_assign($user_chair, "paper,action,decision\n1,cleardecision,no\n");
 $paper1 = $Conf->fetch_paper(1, $user_chair);
 xassert_eq($paper1->outcome, 0);
 
+// check `paperacc` invariant
+xassert_eq($Conf->setting("paperacc", 0), 0);
+xassert_assign($user_chair, "paper,action,decision\n1,decision,yes\n");
+xassert_eq($Conf->setting("paperacc", 0), 1);
+xassert_assign($user_chair, "paper,action\n1,withdraw\n");
+xassert_eq($Conf->setting("paperacc", 0), 0);
+xassert_assign($user_chair, "paper,action\n1,revive\n");
+xassert_eq($Conf->setting("paperacc", 0), 1);
+xassert_assign($user_chair, "paper,action,decision\n1,cleardecision,yes\n");
+
 // change submission date
 $Conf->save_setting("sub_update", $Now - 5);
 $Conf->save_setting("sub_sub", $Now - 5);

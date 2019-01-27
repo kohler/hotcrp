@@ -42,19 +42,24 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         // XXX check permissions
         return $state->user->can_administer($prow);
     }
+    static function load_status_state(AssignmentState $state) {
+        if ($state->mark_type("status", ["pid"], "Status_Assigner::make")) {
+            foreach ($state->prows() as $prow)
+                $state->load(["type" => "status", "pid" => $prow->paperId,
+                              "_submitted" => (int) $prow->timeSubmitted,
+                              "_withdrawn" => (int) $prow->timeWithdrawn,
+                              "_withdraw_reason" => $prow->withdrawReason]);
+        }
+    }
     function load_state(AssignmentState $state) {
-        if (!$state->mark_type("status", ["pid"], "Status_Assigner::make"))
-            return;
-        foreach ($state->prows() as $prow)
-            $state->load(["type" => "status", "pid" => $prow->paperId,
-                          "_submitted" => (int) $prow->timeSubmitted,
-                          "_withdrawn" => (int) $prow->timeWithdrawn,
-                          "_withdraw_reason" => $prow->withdrawReason]);
+        Decision_AssignmentParser::load_decision_state($state);
+        Status_AssignmentParser::load_status_state($state);
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         global $Now;
         $m = $state->remove(["type" => "status", "pid" => $prow->paperId]);
         $res = $m[0];
+        $ch = false;
         if ($this->xtype === "submit") {
             if ($res["_submitted"] === 0)
                 $res["_submitted"] = ($res["_withdrawn"] > 0 ? -$Now : $Now);
@@ -130,9 +135,13 @@ class Status_Assigner extends Assigner {
         global $Now;
         $submitted = $this->item["_submitted"];
         $aset->stage_qe("update Paper set timeSubmitted=?, timeWithdrawn=?, withdrawReason=? where paperId=?", $submitted, $this->item["_withdrawn"], $this->item["_withdraw_reason"], $this->pid);
-        if (($submitted > 0) !== ($this->item->get(true, "_submitted") > 0))
+        if (($submitted > 0) !== ($this->item->get(true, "_submitted") > 0)) {
             $aset->cleanup_callback("papersub", function ($aset, $vals) {
                 $aset->conf->update_papersub_setting(min($vals));
             }, $submitted > 0 ? 1 : 0);
+            $aset->cleanup_callback("paperacc", function ($aset, $vals) {
+                $aset->conf->update_paperacc_setting(min($vals));
+            }, 0);
+        }
     }
 }

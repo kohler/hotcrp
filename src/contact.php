@@ -2528,6 +2528,7 @@ class Contact {
             return false;
         if ($opt->final
             && ($prow->outcome <= 0
+                || $prow->timeSubmitted <= 0
                 || !$this->can_view_decision($prow))
             && ($opt->id === DTYPE_FINAL
                 ? $prow->finalPaperStorageId <= 1
@@ -2580,7 +2581,10 @@ class Contact {
                       && !$this->can_view_authors($prow)))) {
             $whyNot["permission"] = "view_option";
             $whyNot["optionPermission"] = $opt;
-        } else if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow))) {
+        } else if ($opt->final
+                   && ($prow->outcome <= 0
+                       || $prow->timeSubmitted <= 0
+                       || !$this->can_view_decision($prow))) {
             $whyNot["optionNotAccepted"] = $opt;
         } else {
             $whyNot["permission"] = "view_option";
