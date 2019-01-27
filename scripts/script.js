@@ -2444,12 +2444,15 @@ function fold(elt, dofold, foldnum) {
 
 function foldup(event, opts) {
     var e = this, dofold = false, m, x;
-    if (this.tagName === "DIV" && event && event.target.tagName === "A")
-        return;
     if (typeof opts === "number")
         opts = {n: opts};
     else if (!opts)
         opts = {};
+    if (this.tagName === "DIV"
+        && event
+        && event.target.tagName === "A"
+        && !opts.required)
+        return;
     if (!("n" in opts) && (x = this.getAttribute("data-fold-target"))) {
         var sp = x.indexOf("#");
         if (sp > 0) {
@@ -2525,9 +2528,9 @@ handle_ui.on("js-aufoldup", function (event) {
         m9 = e.className.match(/\bfold9([co])\b/),
         m8 = e.className.match(/\bfold8([co])\b/);
     if (m9 && (!m8 || m8[1] == "o"))
-        foldup.call(e, event, 9);
+        foldup.call(e, event, {n: 9, required: true});
     if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o")) {
-        foldup.call(e, event, 8);
+        foldup.call(e, event, {n: 8, required: true});
         if (m8[1] == "o" && $$("foldpscollab"))
             fold("pscollab", 1);
     }
