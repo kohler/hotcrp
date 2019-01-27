@@ -129,6 +129,7 @@ xassert_eq($Conf->setting("paperacc", 0), 0);
 xassert_assign($user_chair, "paper,action\n1,revive\n");
 xassert_eq($Conf->setting("paperacc", 0), 1);
 xassert_assign($user_chair, "paper,action,decision\n1,cleardecision,yes\n");
+xassert_eq($Conf->setting("paperacc", 0), 0);
 
 // change submission date
 $Conf->save_setting("sub_update", $Now - 5);
