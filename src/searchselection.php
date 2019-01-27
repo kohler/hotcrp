@@ -95,7 +95,7 @@ class SearchSelection {
     }
 
     function reorder($a) {
-        $ax = array();
+        $ax = [];
         foreach ($this->sel as $pid)
             if (array_key_exists($pid, $a))
                 $ax[$pid] = $a[$pid];

@@ -170,7 +170,7 @@ class PaperInfo_Conflict {
     }
 }
 
-class PaperInfoSet implements IteratorAggregate {
+class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $prows = [];
     private $by_pid = [];
     public $loaded_allprefs = 0;
@@ -200,6 +200,9 @@ class PaperInfoSet implements IteratorAggregate {
     function size() {
         return count($this->prows);
     }
+    function count() {
+        return count($this->prows);
+    }
     function is_empty() {
         return empty($this->prows);
     }
@@ -224,6 +227,18 @@ class PaperInfoSet implements IteratorAggregate {
     }
     function getIterator() {
         return new ArrayIterator($this->prows);
+    }
+    function offsetExists($offset) {
+        return isset($this->by_pid[$offset]);
+    }
+    function offsetGet($offset) {
+        return isset($this->by_pid[$offset]) ? $this->by_pid[$offset] : null;
+    }
+    function offsetSet($offset, $value) {
+        assert(false);
+    }
+    function offsetUnset($offset) {
+        assert(false);
     }
 }
 
