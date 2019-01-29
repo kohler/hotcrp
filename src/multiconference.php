@@ -45,8 +45,10 @@ class Multiconference {
 
         if (!$confid)
             $confid = "__nonexistent__";
-        else if (!preg_match(',\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z,', $confid))
+        else if (!preg_match(',\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z,', $confid)) {
+            $Opt["__original_confid"] = $confid;
             $confid = "__invalid__";
+        }
 
         self::assign_confid($Opt, $confid);
     }
@@ -83,8 +85,9 @@ class Multiconference {
         if (PHP_SAPI == "cli") {
             fwrite(STDERR, join("\n", $errors) . "\n");
             exit(1);
-        } else if (get($_GET, "ajax")) {
+        } else if (Navigation::page() === "api" || get($_GET, "ajax")) {
             $ctype = get($_GET, "text") ? "text/plain" : "application/json";
+            header("HTTP/1.1 404 Not Found");
             header("Content-Type: $ctype; charset=utf-8");
             if (get($Opt, "maintenance"))
                 echo "{\"error\":\"maintenance\"}\n";
@@ -106,7 +109,9 @@ class Multiconference {
 
     static function fail_bad_options() {
         global $Opt;
-        $errors = array();
+        if (isset($Opt["multiconferenceFailureCallback"]))
+            call_user_func($Opt["multiconferenceFailureCallback"], "options");
+        $errors = [];
         if (get($Opt, "multiconference") && $Opt["confid"] === "__nonexistent__")
             $errors[] = "You haven’t specified a conference and this is a multiconference installation.";
         else if (get($Opt, "multiconference"))
@@ -126,7 +131,9 @@ class Multiconference {
 
     static function fail_bad_database() {
         global $Conf, $Opt;
-        $errors = array();
+        if (isset($Opt["multiconferenceFailureCallback"]))
+            call_user_func($Opt["multiconferenceFailureCallback"], "database");
+        $errors = [];
         if (get($Opt, "multiconference") && $Opt["confid"] === "__nonexistent__")
             $errors[] = "You haven’t specified a conference and this is a multiconference installation.";
         else if (get($Opt, "multiconference"))
