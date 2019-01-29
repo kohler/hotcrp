@@ -72,16 +72,18 @@ class CleanHTML {
                     if (strlen($attr) > 2 && $attr[0] === "o" && $attr[1] === "n")
                         return self::_cleanHTMLError($err, "an event handler attribute in some <code>&lt;$tag&gt;</code> tag");
                     else if ($attr === "style" || $attr === "script" || $attr === "id")
-                        return self::_cleanHTMLError($err, "a <code>$attr</code> attribute in some <code>&lt;$tag&gt;</code> tag");
-                    $x .= " " . $attr . "=";
+                        return self::_cleanHTMLError($err, "<code>$attr</code> attribute in some <code>&lt;$tag&gt;</code> tag");
+                    $x .= " " . $attr;
                     $t = $m[2];
                     if (preg_match(',\A=\s*(\'.*?\'|".*?"|\w+)\s*(.*)\z,s', $t, $m)) {
-                        if ($m[1][0] !== "'" && $m[1][0] !== "\"")
-                            $m[1] = "\"$m[1]\"";
-                        $x .= $m[1];
+                        if ($m[1][0] === "'" || $m[1][0] === "\"")
+                            $m[1] = substr($m[1], 1, -1);
+                        $m[1] = html_entity_decode($m[1], ENT_HTML5);
+                        if ($attr === "href" && preg_match(',\A\s*javascript\s*:,i', $m[1]))
+                            return self::_cleanHTMLError($err, "<code>href</code> attribute to JavaScript URL");
+                        $x .= "=\"" . htmlspecialchars($m[1]) . "\"";
                         $t = $m[2];
-                    } else
-                        $x .= "\"$attr\" ";
+                    }
                 }
                 if ($t === "")
                     return self::_cleanHTMLError($err, "an unclosed <code>&lt;$tag&gt;</code> tag");
