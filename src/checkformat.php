@@ -58,8 +58,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $tstart = microtime(true);
         $banal_proc = proc_open($banal_run . escapeshellarg($filename),
                                 [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
-        $this->banal_stdout = stream_get_contents($pipes[1]);
         $this->banal_stderr = stream_get_contents($pipes[2]);
+        $this->banal_stdout = stream_get_contents($pipes[1]);
         fclose($pipes[1]);
         fclose($pipes[2]);
         $this->banal_status = proc_close($banal_proc);
