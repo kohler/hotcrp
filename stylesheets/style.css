@@ -3335,11 +3335,12 @@ body {
 	position: absolute;
 	left: 12px;
 	color: #0b522b;
-	vertical-align: 10px;
+	user-select: none;
+	font-size: 250%;
+	line-height: 25px;
 }
-.tracker-logo:before {
-	content: "\261e";
-	font-size: 300%;
+.tracker-logo.tracker-logo-fist {
+	font-size: 280%;
 	line-height: 22px;
 }
 .tracker-nomatch .tracker-logo {

@@ -355,10 +355,11 @@ class MeetingTracker {
 
             ensure_session();
             $tr = self::tracker_new($user, $trackerid, $xlist, $start_at, $position, $position_at);
-            if ($match !== false && isset($trs[$match]->name))
-                $tr->name = $trs[$match]->name;
-            if ($match !== false && isset($trs[$match]->visibility))
-                $tr->visibility = $trs[$match]->visibility;
+            if ($match !== false) {
+                foreach (["name", "visibility", "logo"] as $k)
+                    if (isset($trs[$match]->$k))
+                        $tr->$k = $trs[$match]->$k;
+            }
             if ($admin_perm)
                 $tr->admin_perm = $admin_perm;
 
@@ -400,6 +401,9 @@ class MeetingTracker {
             if (ctype_digit($trackerid))
                 $trackerid = intval($trackerid);
             $name = trim($qreq["tr{$i}-name"]);
+            $logo = trim($qreq["tr{$i}-logo"]);
+            if ($logo === "☞")
+                $logo = "";
 
             $vis = trim($qreq["tr{$i}-vis"]);
             if ($vis !== ""
@@ -477,6 +481,8 @@ class MeetingTracker {
                         $tr->visibility = $vis;
                     if ($admin_perm)
                         $tr->admin_perm = $admin_perm;
+                    if ($logo !== "")
+                        $tr->logo = $logo;
                     $trs[] = $tr;
                     $changed = true;
                 }
@@ -486,8 +492,11 @@ class MeetingTracker {
                     $name = (string) get($tr, "name");
                 if (!isset($qreq["tr{$i}-vis"]))
                     $vis = (string) get($tr, "visibility");
+                if (!isset($qreq["tr{$i}-logo"]))
+                    $logo = (string) get($tr, "logo");
                 if ($name === (string) get($tr, "name")
                     && $vis === (string) get($tr, "visibility")
+                    && $logo === (string) get($tr, "logo")
                     && !$stop) {
                     /* do nothing */
                 } else if (!$user->privChair
@@ -495,15 +504,12 @@ class MeetingTracker {
                     $errf["tr{$i}-name"] = true;
                     $error[] = "You can’t administer that tracker.";
                 } else {
-                    if ($name !== "")
-                        $tr->name = $name;
-                    else
-                        unset($tr->name);
-
-                    if ($vis !== "")
-                        $tr->visibility = $vis;
-                    else
-                        unset($tr->visibility);
+                    foreach (["name" => $name, "visibility" => $vis, "logo" => $logo] as $k => $v) {
+                        if ($v !== "")
+                            $tr->$k = $v;
+                        else
+                            unset($tr->$k);
+                    }
 
                     if ($stop) {
                         array_splice($trs, $match, 1);
@@ -561,6 +567,8 @@ class MeetingTracker {
         }
         if (isset($tr->name))
             $ti->name = $tr->name;
+        if (isset($tr->logo))
+            $ti->logo = $tr->logo;
         if (isset($tr->visibility)
             && ($user->privChair || substr($tr->visibility, 1, 1) !== "~"))
             $ti->visibility = $tr->visibility;

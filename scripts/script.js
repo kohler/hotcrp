@@ -1742,10 +1742,12 @@ function tracker_html(tr) {
     if (tr.listinfo || tr.listid)
         t += ' has-hotlist" data-hotlist="' + escape_entities(tr.listinfo || tr.listid);
     t += '" data-trackerid="' + tr.trackerid + '">';
+    var logo = escape_entities(tr.logo || "☞");
+    var logo_class = logo === "☞" ? "tracker-logo tracker-logo-fist" : "tracker-logo";
     if (tr.allow_administer)
-        t += '<a class="ui nn js-tracker tracker-logo need-tooltip" aria-label="Tracker settings and status"></a>';
+        t += '<a class="ui nn js-tracker need-tooltip ' + logo_class + '" aria-label="Tracker settings and status" href="">' + logo + '</a>';
     else
-        t += '<div class="tracker-logo"></div>';
+        t += '<div class="' + logo_class + '">' + logo + '</div>';
     var rows = [], i, wwidth = $(window).width();
     if (!tr.papers || !tr.papers[0]) {
         rows.push('<td><a href=\"' + siteurl + tr.url + '\">Discussion list</a></td>');
