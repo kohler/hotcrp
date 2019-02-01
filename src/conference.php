@@ -918,7 +918,7 @@ class Conf {
     function emoji_code_map() {
         global $ConfSitePATH;
         if ($this->_emoji_codes === null) {
-            $this->_emoji_codes = json_decode(file_get_contents("$ConfSitePATH/etc/emojicodes.json"), true);
+            $this->_emoji_codes = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"), true);
             if (($olist = $this->opt("emojiCodes")))
                 expand_json_includes_callback($olist, [$this, "_add_emoji_code"]);
         }

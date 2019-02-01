@@ -39,35 +39,37 @@ if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
         header("Content-Type: text/javascript; charset=utf-8");
         if (isset($_GET["strictjs"]) && $_GET["strictjs"])
             $prefix = "\"use strict\";\n";
-    } else if ($s === ".map")
+    } else if ($s === ".map" || $s === ".json") {
         header("Content-Type: application/json; charset=utf-8");
-    else if ($s === ".css")
+    } else if ($s === ".css") {
         header("Content-Type: text/css; charset=utf-8");
-    else if ($s === ".gif")
+    } else if ($s === ".gif") {
         header("Content-Type: image/gif");
-    else if ($s === ".jpg")
+    } else if ($s === ".jpg") {
         header("Content-Type: image/jpeg");
-    else if ($s === ".png")
+    } else if ($s === ".png") {
         header("Content-Type: image/png");
-    else if ($s === ".svg")
+    } else if ($s === ".svg") {
         header("Content-Type: image/svg+xml");
-    else if ($s === ".mp3")
+    } else if ($s === ".mp3") {
         header("Content-Type: audio/mpeg");
-    else if ($s === ".woff")
+    } else if ($s === ".woff") {
         header("Content-Type: application/font-woff");
-    else if ($s === ".woff2")
+    } else if ($s === ".woff2") {
         header("Content-Type: application/font-woff2");
-    else if ($s === ".ttf")
+    } else if ($s === ".ttf") {
         header("Content-Type: application/x-font-ttf");
-    else if ($s === ".otf")
+    } else if ($s === ".otf") {
         header("Content-Type: font/opentype");
-    else if ($s === ".eot")
+    } else if ($s === ".eot") {
         header("Content-Type: application/vnd.ms-fontobject");
-    else
+    } else {
         fail("403 Forbidden", "File cannot be served");
+    }
     header("Access-Control-Allow-Origin: *");
-} else
+} else {
     fail("403 Forbidden", "File cannot be served");
+}
 
 $mtime = @filemtime($file);
 if ($mtime === false)

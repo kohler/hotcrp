@@ -94,7 +94,6 @@ etc/affiliationmatchers.json
 etc/apifunctions.json
 etc/assignmentparsers.json
 etc/capabilityhandlers.json
-etc/emojicodes.json
 etc/formulafunctions.json
 etc/helptopics.json
 etc/homepartials.json
@@ -362,6 +361,7 @@ images/viewas.png
 scripts/.htaccess
 scripts/d3-hotcrp.min.js
 scripts/buzzer.js
+scripts/emojicodes.json
 scripts/graph.js
 scripts/jquery-1.12.4.min.js
 scripts/jquery-1.12.4.min.map
