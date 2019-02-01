@@ -303,6 +303,7 @@ sub calc_xmap_mode_columns ($) {
         }
     }
     my ($ncols2) = modevalkey(\%ncols);
+    return () if !defined($ncols2);
 
     # XXX should use KDE
     # find column boundaries
@@ -640,12 +641,13 @@ sub calc_doc_columns ($) {
     my (%cols);
     foreach my $i (1..$doc->{npages}) {
         my ($page) = $doc->{pages}->{$i};
-        next if !exists $page->{pagespec}->{ncols};
+        next if !exists $page->{pagespec}->{ncols} || !$page->{pagespec}->{ncols};
         $cols{$page->{pagespec}->{ncols}}++;
     }
 
     # number of columns on greatest number of pages
     $doc->{ncols} = modevalkey (\%cols);
+    $doc->{ncols} = 0 if !defined($doc->{ncols});
 }
 
 sub p2h_font_size_to_point ($) {
@@ -775,7 +777,9 @@ sub report_json ($) {
             my($page_l) = sprintf "\"leading\": %g", $page->{pagespec}->{lead};
             push @val, $page_l if $page_l ne $doc_l;
             my($page_c) = sprintf "\"columns\": %d", $page->{pagespec}->{ncols};
-            push @val, $page_c if $page_c ne $doc_c && $page->{pagespec}->{type} ne "figure";
+            push @val, $page_c if $page_c ne $doc_c &&
+                $page->{pagespec}->{type} ne "figure" &&
+                $page->{pagespec}->{type} ne "appendix";
             push @val, sprintf "\"c\": %d", $page->{pagespec}->{nchars};
             push @val, sprintf "\"pagetype\": %s", json_quote($page->{pagespec}->{type})
                 if $page->{pagespec}->{type} ne "body";
