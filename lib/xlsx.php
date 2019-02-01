@@ -23,7 +23,7 @@ class XlsxGenerator {
         if ($col < 26)
             return chr($col + 65);
         else {
-            $x = int($col / 26);
+            $x = (int) ($col / 26);
             return chr($x + 65) . chr(($col % 26) + 65);
         }
     }
