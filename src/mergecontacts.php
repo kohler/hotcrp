@@ -86,6 +86,7 @@ class MergeContacts extends MessageSet {
 
         // merge more things
         $this->merge1("ActionLog", "contactId");
+        $this->merge1("ActionLog", "destContactId");
         $this->merge1_ignore("TopicInterest", "contactId");
         $this->merge1("PaperComment", "contactId");
 
