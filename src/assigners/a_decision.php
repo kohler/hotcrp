@@ -58,7 +58,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
                 $sm = $state->remove(["type" => "status", "pid" => $prow->paperId]);
                 $sres = $sm[0];
                 if ($sres["_submitted"] === 0)
-                    $sres["_submitted"] = ($res["_withdrawn"] > 0 ? -$Now : $Now);
+                    $sres["_submitted"] = ($sres["_withdrawn"] > 0 ? -$Now : $Now);
                 $state->add($sres);
                 if ($sres["_submitted"] > 0)
                     $decyes = 1;
