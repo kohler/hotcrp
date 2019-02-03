@@ -626,10 +626,12 @@ foreach ($lrg->page_rows($page) as $row) {
 
     $act = $lrg->cleaned_action($row);
     $at = "";
-    if (substr($act, 0, 6) === "Review"
-        && preg_match('/\AReview (\d+)(.*)\z/s', $act, $m)) {
-        $at = "<a href=\"" . hoturl("review", ["p" => $row->paperId, "r" => $m[1]]) . "\">Review " . $m[1] . "</a>";
-        $act = $m[2];
+    if (strpos($act, "eview ") !== false
+        && preg_match('/\A(.* |)([Rr]eview )(\d+)( .*|)\z/', $act, $m)) {
+        $at = htmlspecialchars($m[1])
+            . Ht::link($m[2] . $m[3], $Conf->hoturl("review", ["p" => $row->paperId, "r" => $m[3]]))
+            . "</a>";
+        $act = $m[4];
     } else if (substr($act, 0, 7) === "Comment"
                && preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
         $at = "<a href=\"" . hoturl("paper", "p=$row->paperId") . "\">Comment " . $m[1] . "</a>";
