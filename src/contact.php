@@ -3121,8 +3121,14 @@ class Contact {
                     && ($crow->commentType & COMMENTTYPE_BYAUTHOR)));
     }
 
-    function can_submit_comment(PaperInfo $prow, $crow) {
-        return $this->can_comment($prow, $crow, true);
+    function can_finalize_comment(PaperInfo $prow, $crow) {
+        global $Now;
+        return $crow
+            && ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) === (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)
+            && ($rrd = get($prow->conf->resp_rounds(), $crow->commentRound))
+            && $rrd->open > 0
+            && $rrd->open < $Now
+            && $prow->conf->setting("resp_active") > 0;
     }
 
     function perm_comment(PaperInfo $prow, $crow, $submit = false) {
@@ -3157,11 +3163,8 @@ class Contact {
         return $whyNot;
     }
 
-    function perm_submit_comment(PaperInfo $prow, $crow) {
-        return $this->perm_comment($prow, $crow, true);
-    }
-
     function can_respond(PaperInfo $prow, CommentInfo $crow, $submit = false) {
+        global $Now;
         if ($prow->timeSubmitted <= 0
             || !($crow->commentType & COMMENTTYPE_RESPONSE)
             || !($rrd = get($prow->conf->resp_rounds(), $crow->commentRound)))
@@ -3171,7 +3174,8 @@ class Contact {
                 || $rights->act_author)
             && (($rights->allow_administer
                  && (!$submit || $this->override_deadlines($rights)))
-                || $rrd->time_allowed(true))
+                || $rrd->time_allowed(true)
+                || ($submit === 2 && $this->can_finalize_comment($prow, $crow)))
             && (!$rrd->search
                 || $rrd->search->test($prow));
     }

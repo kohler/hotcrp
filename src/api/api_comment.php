@@ -56,37 +56,42 @@ class Comment_API {
                 $xcrow = CommentInfo::make_response_template($round, $prow);
         }
 
-        // check permission, other errors
-        if (($whyNot = $user->perm_submit_comment($prow, $xcrow)))
-            return new JsonResult(403, ["ok" => false, "msg" => whyNotText($whyNot)]);
-        if (($xcrow->is_response() && $round === false)
-            || (!$xcrow->is_response() && $round !== false)
-            || ($round !== false && $round != $xcrow->commentRound))
-            return new JsonResult(400, "Improper response.");
-
         // request skeleton
         $ok = true;
         $msg = false;
+        $response = $xcrow->is_response();
         $req = [
             "visibility" => $qreq->visibility,
-            "submit" => $xcrow->is_response() && !$qreq->draft,
-            "text" => rtrim((string) $qreq->text),
-            "tags" => $qreq->tags,
+            "submit" => $response && !$qreq->draft,
+            "text" => rtrim(cleannl((string) $qreq->text)),
             "blind" => $qreq->blind,
             "docs" => $crow ? $crow->attachments() : []
         ];
 
+        // check if response changed
+        $changed = true;
+        if ($response
+            && $req["text"] === rtrim(cleannl($xcrow->commentOverflow ? : $xcrow->comment)))
+            $changed = false;
+
+        // tags
+        if (!$response)
+            $req["tags"] = $qreq->tags;
+
         // attachments in request
         for ($i = count($req["docs"]) - 1; $i >= 0; --$i) {
-            if ($qreq["remove_cmtdoc_{$req["docs"][$i]->paperStorageId}_{$i}"])
+            if ($qreq["remove_cmtdoc_{$req["docs"][$i]->paperStorageId}_{$i}"]) {
                 array_splice($req["docs"], $i, 1);
+                $changed = true;
+            }
         }
         for ($i = 1; $qreq["has_cmtdoc_new_$i"] && count($req["docs"]) < 1000; ++$i) {
             if (($f = $qreq->file("cmtdoc_new_$i"))) {
                 $doc = DocumentInfo::make_file_upload($prow->paperId, DTYPE_COMMENT, $f);
-                if ($doc->save())
+                if ($doc->save()) {
                     $req["docs"][] = $doc;
-                else {
+                    $changed = true;
+                } else {
                     $msg = Ht::msg("Error uploading attachment.", 2);
                     $ok = false;
                     break;
@@ -101,9 +106,20 @@ class Comment_API {
             if (!$qreq->delete && (!$xcrow->commentId || !isset($qreq->text))) {
                 $msg = Ht::msg("Empty comment.", 2);
                 $ok = false;
-            } else
+            } else {
                 $qreq->delete = true;
+                $changed = true;
+            }
         }
+
+        // check permission, other errors
+        $submit_value = $response && !$changed ? 2 : true;
+        if (($whyNot = $user->perm_comment($prow, $xcrow, $submit_value)))
+            return new JsonResult(403, ["ok" => false, "msg" => whyNotText($whyNot)]);
+        if (($xcrow->is_response() && $round === false)
+            || (!$xcrow->is_response() && $round !== false)
+            || ($round !== false && $round != $xcrow->commentRound))
+            return new JsonResult(400, "Improper response.");
 
         // save
         if ($ok) {

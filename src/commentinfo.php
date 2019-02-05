@@ -295,6 +295,8 @@ class CommentInfo {
             $cj->by_shepherd = true;
         if ($contact->can_comment($this->prow, $this))
             $cj->editable = true;
+        else if ($contact->can_finalize_comment($this->prow, $this))
+            $cj->submittable = true;
 
         // tags
         if (($tags = $this->viewable_tags($contact))) {

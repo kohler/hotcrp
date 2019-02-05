@@ -33,7 +33,7 @@ function cleannl($text) {
         $text = str_replace("\r\n", "\n", $text);
         $text = strtr($text, "\r", "\n");
     }
-    if (strlen($text) && $text[strlen($text) - 1] !== "\n")
+    if ($text !== "" && $text[strlen($text) - 1] !== "\n")
         $text .= "\n";
     return $text;
 }

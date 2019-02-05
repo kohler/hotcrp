@@ -3845,11 +3845,53 @@ function beforeunload() {
     }
 }
 
+function make_save_callback($c) {
+    return function (data, textStatus, jqxhr) {
+        if (!data.ok) {
+            if (data.loggedout) {
+                has_unload = false;
+                var form = $c.find("form")[0];
+                form.method = "post";
+                var arg = {editcomment: 1, p: hotcrp_paperid};
+                if ($c.c.cid)
+                    arg.c = $c.c.cid;
+                form.action = hoturl_post("paper", arg);
+                form.submit();
+            }
+            var error = data.msg || data.error;
+            if (!/^<div/.test(error))
+                error = render_xmsg(2, error);
+            $c.find(".cmtmsg").html(error);
+            $c.find("button").prop("disabled", false);
+            return;
+        }
+        var cid = cj_cid($c.c),
+            editing_response = $c.c.response
+                && edit_allowed($c.c, true)
+                && (!data.cmt || data.cmt.draft);
+        if (!data.cmt && !$c.c.is_new)
+            delete cmts[cid];
+        if (!data.cmt && editing_response)
+            data.cmt = {is_new: true, response: $c.c.response, editable: true};
+        if (data.cmt) {
+            var data_cid = cj_cid(data.cmt);
+            if (cid !== data_cid) {
+                $c.closest(".cmtid")[0].id = data_cid;
+                delete cmts[cid];
+                newcmt && papercomment.add(newcmt);
+            }
+            render_cmt($c, data.cmt, editing_response, data.msg);
+        } else
+            $c.closest(".cmtg").html(data.msg);
+    };
+}
+
 function save_editor(elt, action, really) {
     var $c = $cmt(elt), $f = $c.find("form");
     if (!really) {
         if (!edit_allowed($c.c)) {
-            override_deadlines.call(elt, function () {
+            var submitter = $f.find("button[name=bsubmit]")[0] || elt;
+            override_deadlines.call(submitter, function () {
                 save_editor(elt, action, true);
             });
             return;
@@ -3868,48 +3910,18 @@ function save_editor(elt, action, really) {
     var $ready = $f.find("input[name=ready]");
     if ($ready.length && !$ready[0].checked)
         $f.children("div").append('<input type="hidden" name="draft" value="1">');
-    var carg = {p: hotcrp_paperid};
+    $c.find("button").prop("disabled", true);
+    var arg = {p: hotcrp_paperid};
     if ($c.c.cid)
-        carg.c = $c.c.cid;
-    var arg = $.extend({}, carg);
+        arg.c = $c.c.cid;
     if (really)
         arg.override = 1;
     if (hotcrp_want_override_conflict)
         arg.forceShow = 1;
     if (action === "delete")
         arg.delete = 1;
-    var url = hoturl_post("api/comment", arg);
-    $c.find("button").prop("disabled", true);
-    function callback(data, textStatus, jqxhr) {
-        if (!data.ok) {
-            if (data.loggedout) {
-                has_unload = false;
-                $f[0].method = "post";
-                $f[0].action = hoturl_post("paper", $.extend({editcomment: 1}, carg));
-                $f[0].submit();
-            }
-            $c.find(".cmtmsg").html(data.error ? render_xmsg(2, data.error) : data.msg);
-            $c.find("button").prop("disabled", false);
-            return;
-        }
-        var cid = cj_cid($c.c),
-            editing_response = $c.c.response && edit_allowed($c.c, true)
-                && (!data.cmt || data.cmt.draft);
-        if (!data.cmt && !$c.c.is_new)
-            delete cmts[cid];
-        if (!data.cmt && editing_response)
-            data.cmt = {is_new: true, response: $c.c.response, editable: true};
-        if (data.cmt) {
-            var data_cid = cj_cid(data.cmt);
-            if (cid !== data_cid) {
-                $c.closest(".cmtid")[0].id = data_cid;
-                delete cmts[cid];
-                newcmt && papercomment.add(newcmt);
-            }
-            render_cmt($c, data.cmt, editing_response, data.msg);
-        } else
-            $c.closest(".cmtg").html(data.msg);
-    }
+    var url = hoturl_post("api/comment", arg),
+        callback = make_save_callback($c);
     if (window.FormData)
         $.ajax(url, {
             method: "POST", data: new FormData($f[0]), success: callback,
@@ -3994,8 +4006,13 @@ function render_cmt($c, cj, editing, msg) {
     hc.push('<div class="cmtmsg">', '</div>');
     if (msg)
         hc.push(msg);
-    if (cj.response && cj.draft && cj.text)
-        hc.push('<div class="msg msg-warning"><strong>This response is a draft.</strong> It will not be shown to reviewers.</div>');
+    if (cj.response && cj.draft && cj.text) {
+        hc.push('<div class="msg msg-warning"><strong>This response is a draft.</strong>', '</div>');
+        if (cj.submittable)
+            hc.push_pop(' It will not be shown to reviewers unless you <a href="" class="ui js-submit-comment">submit it as is</a>.');
+        else
+            hc.push_pop(' It will not be shown to reviewers.');
+    }
     hc.pop();
     if (editing)
         render_editing(hc, cj);
@@ -4014,14 +4031,14 @@ function render_cmt($c, cj, editing, msg) {
     $c.html(hc.render());
 
     // fill body
-    if (editing)
+    if (editing) {
         activate_editing($c, cj);
-    else {
+    } else {
         (cj.response ? chead.parent() : $c).find("a.cmteditor").click(edit_this);
-        if (cj.text !== false)
+        if (cj.text !== false) {
             render_cmt_text(cj.format, cj.text || "", cj.response,
                             $c.find(".cmttext"), chead);
-        else {
+        } else {
             t = '<div class="is-warning">⚠️ ';
             if (cj.word_count)
                 t += cj.word_count + "-word draft";
@@ -4055,6 +4072,14 @@ function render_cmt_text(format, value, response, textj, chead) {
     }
     textj.html(t.content);
 }
+
+handle_ui.on("js-submit-comment", function () {
+    var $c = $cmt(this);
+    $.ajax(hoturl_post("api/comment", {p: hotcrp_paperid, c: $c.c.cid}), {
+        method: "POST", data: {override: 1, response: $c.c.response, text: $c.c.text},
+        success: make_save_callback($c)
+    });
+});
 
 function render_preview(evt, format, value, dest) {
     var $c = $cmt($(evt.target));
