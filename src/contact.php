@@ -3757,7 +3757,7 @@ class Contact {
                             $v = true;
                         else if ($admin && $this->can_respond($prow, $crow, false))
                             $v = "override";
-                        if ($v && !isset($perm->can_respond))
+                        if ($v && !isset($perm->can_responds))
                             $perm->can_responds = [];
                         if ($v)
                             $perm->can_responds[$rrd->name] = $v;
