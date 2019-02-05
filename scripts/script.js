@@ -1996,8 +1996,8 @@ handle_ui.on("js-tracker", function (event) {
         hc.push_actions();
         hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
         if (nshown) {
-            hc.push('<button type="button" name="stopall" class="dangerous action-sep">Stop all</button>');
-            hc.push('<a class="btn" target="_blank" href="' + hoturl("buzzer") + '">Tracker status page</a>');
+            hc.push('<button type="button" name="stopall" class="dangerous btnl">Stop all</button>');
+            hc.push('<a class="btn btnl" target="_blank" href="' + hoturl("buzzer") + '">Tracker status page</a>');
         }
         $d = hc.show();
         show_elapsed();
@@ -3615,7 +3615,7 @@ function edit_allowed(cj, override) {
 }
 
 function render_editing(hc, cj) {
-    var i, x, actions = [], btnbox = [], cid = cj_cid(cj), bnote;
+    var i, x, btnbox = [], cid = cj_cid(cj), bnote;
 
     var msgx = [], msg;
     if (cj.response
@@ -3714,30 +3714,26 @@ function render_editing(hc, cj) {
     if (cj.response) {
         x = !cj.is_new && !cj.draft;
         hc.push('<div class="checki has-fold fold' + (x ? "o" : "c") + '"><label><span class="checkc"><input type="checkbox" class="uich js-foldup" name="ready" value="1"' + (x ? " checked" : "") + '></span><strong>The response is ready for review</strong><div class="f-h fx">Reviewers will be notified when you submit the response.</div></div>');
+        hc.push('<input type="hidden" name="response" value="' + cj.response + '">');
     }
 
     // close .cmteditinfo
     hc.pop();
 
-    // actions: save, [save draft], cancel, [btnbox], [word count]
+    // actions: [btnbox], [wordcount] || cancel, save/submit
+    hc.push('<div class="reviewtext aabig aab aabr">', '</div>');
     bnote = edit_allowed(cj) ? "" : '<div class="hint">(admin only)</div>';
+    if (btnbox.length)
+        hc.push('<div class="aabut aabl"><div class="btnbox">' + btnbox.join("") + '</div></div>');
+    if (cj.response && resp_rounds[cj.response].words > 0)
+        hc.push('<div class="aabut aabl"><div class="words"></div></div>');
     if (cj.response) {
         // XXX allow_administer
-        actions.push('<button type="button" name="bsubmit" class="btn-primary">Submit</button>' + bnote);
-        hc.push('<input type="hidden" name="response" value="' + cj.response + '">');
+        hc.push('<div class="aabut"><button type="button" name="bsubmit" class="btn-primary">Submit</button>' + bnote + "</div>");
     } else {
-        actions.push('<button type="button" name="bsubmit" class="btn-primary">Save</button>' + bnote);
+        hc.push('<div class="aabut"><button type="button" name="bsubmit" class="btn-primary">Save</button>' + bnote + "</div>");
     }
-    actions.push('<button type="button" name="cancel">Cancel</button>');
-    if (btnbox.length)
-        actions.push('<div class="btnbox">' + btnbox.join("") + '</div>');
-    if (cj.response && resp_rounds[cj.response].words > 0)
-        actions.push("", '<div class="words"></div>');
-
-    hc.push('<div class="reviewtext aabig aab aabr">', '</div>');
-    for (i = 0; i < actions.length; ++i)
-        if (actions[i] !== "")
-            hc.push('<div class="aabut' + (actions[i+1] === "" ? " aabutsp" : "") + '">' + actions[i] + '</div>');
+    hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
     hc.pop();
 }
 
@@ -4007,7 +4003,7 @@ function render_cmt($c, cj, editing, msg) {
         hc.push('<div class="cmttext"></div>');
         if (cj.docs && cj.docs.length) {
             hc.push('<div class="cmtattachments">', '</div>');
-            for (i = 0; i != cj.docs.length; ++i)
+            for (i = 0; i !== cj.docs.length; ++i)
                 render_attachment_link(hc, cj.docs[i]);
             hc.pop();
         }

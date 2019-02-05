@@ -975,6 +975,11 @@ button:disabled, button:disabled:hover,
 	margin-right: 0;
 	margin-left: 1em;
 }
+.aabr > .aabut.aabl {
+	float: left;
+	margin-left: 0;
+	margin-right: 1em;
+}
 .aabut.aabutsp {
 	margin-right: 2.5em;
 }
@@ -3262,9 +3267,6 @@ del span.tagbg {
 .words {
 	color: #555555;
 }
-.aabut .words {
-	padding-top: 2px;
-}
 .wordsclose {
 	color: #cc0000;
 }
@@ -3597,12 +3599,14 @@ a.help {
 .popup-actions {
 	margin-top: 1em;
 }
-.popup-actions .btn, .popup-actions button {
+.popup-actions > .btn, .popup-actions > button {
 	float: right;
 	margin-left: 1em;
 }
-.popup-actions > .action-sep {
-	margin-right: 2em;
+.popup-actions > .btn.btnl, .popup-actions > button.btnl {
+	float: left;
+	margin-left: 0;
+	margin-right: 1em;
 }
 .popup-bottom {
 	clear: both;
