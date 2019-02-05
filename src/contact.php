@@ -3235,8 +3235,11 @@ class Contact {
 
     function can_view_comment_text(PaperInfo $prow, $crow) {
         // assume can_view_comment is true
-        return !$crow
-            || ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) !== (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT);
+        if (!$crow
+            || ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) !== (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
+            return true;
+        $rights = $this->rights($prow);
+        return $rights->can_administer || $rights->act_author_view;
     }
 
     function can_view_new_comment_ignore_conflict(PaperInfo $prow) {
