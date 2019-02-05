@@ -4033,7 +4033,8 @@ function render_cmt_text(format, value, response, textj, chead) {
     var t = render_text(format, value), wlimit, wc,
         fmt = "format" + (t.format || 0);
     textj.addClass(fmt);
-    if (response && resp_rounds[response]
+    if (response
+        && resp_rounds[response]
         && (wlimit = resp_rounds[response].words) > 0) {
         wc = count_words(value);
         chead && chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');

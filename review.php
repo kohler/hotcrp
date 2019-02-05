@@ -311,7 +311,8 @@ $paperTable->initialize(false, false);
 $paperTable->paptabBegin();
 $paperTable->resolveComments();
 
-if (!$viewAny && !$editAny
+if (!$viewAny
+    && !$editAny
     && (!$paperTable->rrow
         || !$Me->can_view_review($prow, $paperTable->rrow)))
     $paperTable->paptabEndWithReviewMessage();

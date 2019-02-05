@@ -438,7 +438,7 @@ else {
         if ($preferred_resp_round === false)
             $preferred_resp_round = $Me->preferred_resp_round_number($prow);
         $j = null;
-        foreach ($paperTable->viewable_comments() as $crow) {
+        foreach ($prow->viewable_comments($Me) as $crow) {
             if ($crow->commentId == $cid
                 || ($cid === null
                     && ($crow->commentType & COMMENTTYPE_RESPONSE) != 0

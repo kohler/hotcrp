@@ -2349,18 +2349,7 @@ class PaperTable {
                 "&nbsp;<u>", ucfirst(join(" and ", $viewable)),
                 " in plain text</u></a></div></div>\n";
 
-        $this->render_rc($this->reviews_and_comments());
-    }
-
-    function reviews_and_comments() {
-        $a = [];
-        foreach ($this->viewable_rrows as $rrow)
-            if ($rrow->reviewSubmitted || $rrow->reviewModified > 1)
-                $a[] = $rrow;
-        if ($this->include_comments())
-            $a = array_merge($a, $this->mycrows ? : []);
-        usort($a, "PaperInfo::review_or_comment_compare");
-        return $a;
+        $this->render_rc(true, $this->include_comments());
     }
 
     private function has_response($respround) {
@@ -2371,11 +2360,21 @@ class PaperTable {
         return false;
     }
 
-    private function render_rc($rcs) {
+    private function render_rc($reviews, $comments) {
+        $rcs = [];
+        if ($reviews) {
+            foreach ($this->viewable_rrows as $rrow)
+                if ($rrow->reviewSubmitted || $rrow->reviewModified > 1)
+                    $rcs[] = $rrow;
+        }
+        if ($comments && $this->mycrows)
+            $rcs = array_merge($rcs, $this->mycrows);
+        usort($rcs, "PaperInfo::review_or_comment_compare");
+
         $s = "";
         $ncmt = 0;
         $rf = $this->conf->review_form();
-        foreach ($rcs as $rc)
+        foreach ($rcs as $rc) {
             if (isset($rc->reviewId)) {
                 $rcj = $rf->unparse_review_json($this->prow, $rc, $this->user);
                 $s .= "review_form.add_review(" . json_encode_browser($rcj) . ");\n";
@@ -2384,8 +2383,9 @@ class PaperTable {
                 $rcj = $rc->unparse_json($this->user);
                 $s .= "papercomment.add(" . json_encode_browser($rcj) . ");\n";
             }
+        }
 
-        if ($this->include_comments()) {
+        if ($comments) {
             $cs = [];
             if ($this->user->can_comment($this->prow, null)) {
                 $ct = $this->prow->has_author($this->user) ? COMMENTTYPE_BYAUTHOR : 0;
@@ -2408,12 +2408,12 @@ class PaperTable {
 
         if ($ncmt)
             CommentInfo::echo_script($this->prow);
-        echo Ht::unstash_script($s);
+        if ($s !== "")
+            echo Ht::unstash_script($s);
     }
 
     function paptabComments() {
-        if ($this->include_comments())
-            $this->render_rc($this->mycrows);
+        $this->render_rc(false, $this->include_comments());
     }
 
     function paptabEndWithReviewMessage() {
@@ -2434,8 +2434,8 @@ class PaperTable {
             else
                 $m[] = "You can’t begin your assigned review because the site is not open for reviewing.";
         }
-        if (count($m))
-            $this->_paptabSepContaining(join("<br />", $m));
+        if (!empty($m))
+            $this->_paptabSepContaining(join("<br>", $m));
 
         $this->_paptabReviewLinks(false, null, "");
     }
@@ -2678,10 +2678,6 @@ class PaperTable {
 
     function all_reviews() {
         return $this->all_rrows;
-    }
-
-    function viewable_comments() {
-        return $this->mycrows;
     }
 
     function fixReviewMode() {
