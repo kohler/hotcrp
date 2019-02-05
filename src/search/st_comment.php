@@ -39,6 +39,13 @@ class Comment_SearchTerm extends SearchTerm {
     }
     static function response_factory($keyword, Conf $conf, $kwfj, $m) {
         $round = $conf->resp_round_number($m[2]);
+        if ($round === false
+            && $m[1] === ""
+            && preg_match('/\A(draft-?)(.*)\z/i', $m[2], $mm)) {
+            $m[1] = $mm[1];
+            $m[2] = $mm[2];
+            $round = $conf->resp_round_number($m[2]);
+        }
         if ($round === false || ($m[1] && $m[3]))
             return null;
         return (object) [

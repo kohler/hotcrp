@@ -1522,21 +1522,23 @@ class Conf {
     static function resp_round_name_error($rname) {
         if ((string) $rname === "")
             return "Empty round name.";
-        else if (!strcasecmp($rname, "none") || !strcasecmp($rname, "any")
-                 || stri_ends_with($rname, "response"))
-            return "Round name “{$rname}” is reserved.";
-        else if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $rname))
+        else if (!preg_match('/\A[a-zA-Z][a-zA-Z0-9]*\z/', $rname))
             return "Round names must start with a letter and contain letters and numbers.";
+        else if (preg_match('/\A(?:none|any|draft-?.*|.*response)\z/i', $rname))
+            return "Round name “{$rname}” is reserved.";
         else
             return false;
     }
 
     function resp_round_number($rname) {
-        if (!$rname || $rname === 1 || $rname === "1" || $rname === true
-            || !strcasecmp($rname, "none"))
+        if (!$rname
+            || $rname === 1
+            || $rname === "1"
+            || $rname === true
+            || strcasecmp($rname, "none") === 0)
             return 0;
         foreach ($this->resp_rounds() as $rrd)
-            if (!strcasecmp($rname, $rrd->name))
+            if (strcasecmp($rname, $rrd->name) === 0)
                 return $rrd->number;
         return false;
     }
