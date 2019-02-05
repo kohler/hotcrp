@@ -3223,7 +3223,7 @@ class Contact {
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->can_view_submitted_review_as_author($prow))
             || (!$rights->view_conflict_type
-                && !($ctype & COMMENTTYPE_DRAFT)
+                && ($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) !== COMMENTTYPE_DRAFT
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
                     : $ctype >= COMMENTTYPE_REVIEWER)
@@ -3231,6 +3231,12 @@ class Contact {
                 && ($this->conf->setting("cmt_revid")
                     || $ctype >= COMMENTTYPE_AUTHOR
                     || $this->can_view_review_identity($prow, null)));
+    }
+
+    function can_view_comment_text(PaperInfo $prow, $crow) {
+        // assume can_view_comment is true
+        return !$crow
+            || ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) !== (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT);
     }
 
     function can_view_new_comment_ignore_conflict(PaperInfo $prow) {

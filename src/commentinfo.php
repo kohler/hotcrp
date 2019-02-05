@@ -334,7 +334,12 @@ class CommentInfo {
         }
 
         // text
-        $cj->text = $this->commentOverflow ? : $this->comment;
+        if ($contact->can_view_comment_text($this->prow, $this))
+            $cj->text = $this->commentOverflow ? : $this->comment;
+        else {
+            $cj->text = false;
+            $cj->word_count = count_words($this->commentOverflow ? : $this->comment);
+        }
 
         // format
         if (($fmt = $this->commentFormat) === null)

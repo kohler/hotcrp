@@ -4022,8 +4022,19 @@ function render_cmt($c, cj, editing, msg) {
         activate_editing($c, cj);
     else {
         (cj.response ? chead.parent() : $c).find("a.cmteditor").click(edit_this);
-        render_cmt_text(cj.format, cj.text || "", cj.response,
-                        $c.find(".cmttext"), chead);
+        if (cj.text !== false)
+            render_cmt_text(cj.format, cj.text || "", cj.response,
+                            $c.find(".cmttext"), chead);
+        else {
+            t = '<div class="is-warning">⚠️ ';
+            if (cj.word_count)
+                t += cj.word_count + "-word draft";
+            else
+                t += "Draft";
+            t += " " + (cj.response == "1" ? "" : cj.response + " ") +
+                "response not shown</div>";
+            $c.find(".cmttext").html(t);
+        }
     }
 
     return $c;
@@ -4066,11 +4077,13 @@ function add(cj, editing) {
         }
         if (!$c.hasClass("cmtcard") || cj.response || $c.hasClass("response")) {
             var t;
-            if (cj.response)
-                t = iddiv + ' response cmtcard"><div class="cmtcard_head"><h3>' +
-                    (cj.response == "1" ? "Response" : cj.response + " Response") +
-                    '</h3></div>';
-            else
+            if (cj.response) {
+                t = iddiv + ' response cmtcard">';
+                if (cj.text !== false)
+                    t += '<div class="cmtcard_head"><h3>' +
+                        (cj.response == "1" ? "Response" : cj.response + " Response") +
+                        '</h3></div>';
+            } else
                 t = '<div class="cmtcard">';
             $c = $(t + '<div class="cmtcard_body"></div></div>').appendTo("#body");
             if (!cj.response && $pc && $pc.length)
