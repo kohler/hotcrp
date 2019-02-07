@@ -2395,16 +2395,6 @@ class Conf {
                 $allowed[$rrd->number] = $rrd->name;
         return $allowed;
     }
-    function time_author_respond($round = null) {
-        if (!$this->any_response_open)
-            return $round === null ? [] : false;
-        else if ($round === null)
-            return $this->time_author_respond_all_rounds();
-        else {
-            $rrd = get($this->resp_rounds(), $round);
-            return $rrd && $rrd->time_allowed(true);
-        }
-    }
     function can_all_author_view_decision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }

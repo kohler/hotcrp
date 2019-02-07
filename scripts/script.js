@@ -4009,7 +4009,7 @@ function render_cmt($c, cj, editing, msg) {
     if (cj.response && cj.draft && cj.text) {
         hc.push('<div class="msg msg-warning"><strong>This response is a draft.</strong>', '</div>');
         if (cj.submittable)
-            hc.push_pop(' It will not be shown to reviewers unless you <a href="" class="ui js-submit-comment">submit it as is</a>.');
+            hc.push_pop(' It will not be shown to reviewers unless you <a href="" class="ui js-submit-comment">submit it unchanged</a>.');
         else
             hc.push_pop(' It will not be shown to reviewers.');
     }
