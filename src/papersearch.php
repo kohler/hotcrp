@@ -125,14 +125,15 @@ class SearchOperator {
         if (!self::$list) {
             self::$list["("] = new SearchOperator("(", true, null);
             self::$list[")"] = new SearchOperator(")", true, null);
-            self::$list["NOT"] = new SearchOperator("not", true, 7);
-            self::$list["-"] = new SearchOperator("not", true, 7);
-            self::$list["!"] = new SearchOperator("not", true, 7);
-            self::$list["+"] = new SearchOperator("+", true, 7);
-            self::$list["SPACE"] = new SearchOperator("space", false, 6);
-            self::$list["AND"] = new SearchOperator("and", false, 5);
+            self::$list["NOT"] = new SearchOperator("not", true, 8);
+            self::$list["-"] = new SearchOperator("not", true, 8);
+            self::$list["!"] = new SearchOperator("not", true, 8);
+            self::$list["+"] = new SearchOperator("+", true, 8);
+            self::$list["SPACE"] = new SearchOperator("space", false, 7);
+            self::$list["AND"] = new SearchOperator("and", false, 6);
+            self::$list["XOR"] = new SearchOperator("xor", false, 5);
             self::$list["OR"] = new SearchOperator("or", false, 4);
-            self::$list["XOR"] = new SearchOperator("or", false, 3);
+            self::$list["SPACEOR"] = new SearchOperator("or", false, 3);
             self::$list["THEN"] = new SearchOperator("then", false, 2);
             self::$list["HIGHLIGHT"] = new SearchOperator("highlight", false, 1, "");
         }
@@ -155,6 +156,8 @@ class SearchTerm {
             $qr = new And_SearchTerm($opstr);
         else if ($opstr === "or")
             $qr = new Or_SearchTerm;
+        else if ($opstr === "xor")
+            $qr = new Xor_SearchTerm;
         else
             $qr = new Then_SearchTerm($op);
         foreach (is_array($terms) ? $terms : [$terms] as $qt)
@@ -596,6 +599,54 @@ class Or_SearchTerm extends Op_SearchTerm {
     }
     function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
         return self::compile_or_edit_condition($this->child, $row, $srch);
+    }
+    function extract_metadata($top, PaperSearch $srch) {
+        parent::extract_metadata($top, $srch);
+        foreach ($this->child as $qv)
+            $qv->extract_metadata(false, $srch);
+    }
+}
+
+class Xor_SearchTerm extends Op_SearchTerm {
+    function __construct() {
+        parent::__construct("xor");
+    }
+    protected function finish() {
+        $pn = $revadj = null;
+        $newchild = [];
+        foreach ($this->_flatten_children() as $qv) {
+            if ($qv->is_false())
+                /* skip */;
+            else if ($qv->type === "revadj")
+                $revadj = $qv->apply($revadj, true);
+            else if ($qv->type === "pn") {
+                if (!$pn)
+                    $newchild[] = $pn = $qv;
+                else
+                    $pn->pids = array_merge($pn->pids, $qv->pids);
+            } else
+                $newchild[] = $qv;
+        }
+        if ($revadj)
+            array_unshift($newchild, $revadj);
+        return $this->_finish_combine($newchild, false);
+    }
+
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $top = $sqi->top;
+        $sqi->top = false;
+        $ff = [];
+        foreach ($this->child as $subt)
+            $ff[] = $subt->sqlexpr($sqi);
+        $sqi->top = $top;
+        return empty($ff) ? "false" : "(" . join(" xor ", $ff) . ")";
+    }
+    function exec(PaperInfo $row, PaperSearch $srch) {
+        $x = false;
+        foreach ($this->child as $subt)
+            if ($subt->exec($row, $srch))
+                $x = !$x;
+        return $x;
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
@@ -1827,7 +1878,7 @@ class PaperSearch {
     }
 
     static private function _shift_keyword($splitter, $curqe) {
-        if (!$splitter->match('/\A(?:[-+!()]|(?:AND|and|OR|or|NOT|not|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $m))
+        if (!$splitter->match('/\A(?:[-+!()]|(?:AND|and|OR|or|NOT|not|XOR|xor|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $m))
             return null;
         $op = SearchOperator::get(strtoupper($m[0]));
         if (!$op) {
@@ -1966,9 +2017,9 @@ class PaperSearch {
         $x = array_pop($stack);
         if ($curqe)
             $x->qe[] = $curqe;
-        if (!count($x->qe))
+        if (empty($x->qe)) {
             return null;
-        if ($x->op->unary) {
+        } else if ($x->op->unary) {
             $qe = $x->qe[0];
             if ($x->op->op === "not") {
                 if (preg_match('/\A(?:[(-]|NOT )/i', $qe))
@@ -1977,12 +2028,13 @@ class PaperSearch {
                     $qe = "-$qe";
             }
             return $qe;
-        } else if (count($x->qe) == 1)
+        } else if (count($x->qe) === 1) {
             return $x->qe[0];
-        else if ($x->op->op === "space")
+        } else if ($x->op->op === "space") {
             return "(" . join(" ", $x->qe) . ")";
-        else
+        } else {
             return "(" . join(" " . $x->op->unparse() . " ", $x->qe) . ")";
+        }
     }
 
     static private function _canonical_expression($str, $type, $qt, Conf $conf) {
@@ -1992,7 +2044,7 @@ class PaperSearch {
 
         $stack = array();
         $parens = 0;
-        $defaultop = $type === "all" ? "SPACE" : "XOR";
+        $defaultop = $type === "all" ? "SPACE" : "SPACEOR";
         $curqe = null;
         $t = "";
         $splitter = new SearchSplitter($str);
