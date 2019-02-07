@@ -357,9 +357,17 @@ class Conf {
         $this->tag_au_seerev = null;
         if ($this->au_seerev == self::AUSEEREV_TAGS)
             $this->tag_au_seerev = explode(" ", get_s($this->settingTexts, "tag_au_seerev"));
-        $this->any_response_open = get($this->settings, "resp_active", 0) > 0
-            && $this->time_author_respond_all_rounds();
         $this->tag_seeall = get($this->settings, "tag_seeall", 0) > 0;
+
+        $this->any_response_open = false;
+        if (get($this->settings, "resp_active", 0) > 0) {
+            foreach ($this->resp_rounds() as $rrd) {
+                if ($rrd->time_allowed(true)) {
+                    $this->any_response_open = true;
+                    break;
+                }
+            }
+        }
     }
 
     private function crosscheck_round_settings() {
@@ -2387,13 +2395,6 @@ class Conf {
             || ($this->au_seerev > 0
                 && ($this->au_seerev != self::AUSEEREV_UNLESSINCOMPLETE
                     || !$reviewsOutstanding));
-    }
-    private function time_author_respond_all_rounds() {
-        $allowed = [];
-        foreach ($this->resp_rounds() as $rrd)
-            if ($rrd->time_allowed(true))
-                $allowed[$rrd->number] = $rrd->name;
-        return $allowed;
     }
     function can_all_author_view_decision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
