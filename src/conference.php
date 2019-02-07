@@ -52,10 +52,12 @@ class ResponseRound {
         if ($user->allow_administer($prow)
             && ($this->done || $this->search || $this->name !== "1"))
             return true;
+        else if ($user->isPC)
+            return $this->open > 0;
         else
-            return $this->open
-                && ($user->isPC || $this->open < $Now)
-                && ($user->isPC || !$this->search || $this->search->filter($prow ? [$prow] : $user->authored_papers()));
+            return $this->open > 0
+                && $this->open < $Now
+                && (!$this->search || $this->search->filter($prow ? [$prow] : $user->authored_papers()));
     }
     function time_allowed($with_grace) {
         global $Now;
@@ -359,12 +361,16 @@ class Conf {
             $this->tag_au_seerev = explode(" ", get_s($this->settingTexts, "tag_au_seerev"));
         $this->tag_seeall = get($this->settings, "tag_seeall", 0) > 0;
 
-        $this->any_response_open = false;
+        $this->any_response_open = 0;
         if (get($this->settings, "resp_active", 0) > 0) {
             foreach ($this->resp_rounds() as $rrd) {
                 if ($rrd->time_allowed(true)) {
-                    $this->any_response_open = true;
-                    break;
+                    if ($rrd->search) {
+                        $this->any_response_open = 1;
+                    } else {
+                        $this->any_response_open = 2;
+                        break;
+                    }
                 }
             }
         }

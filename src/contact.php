@@ -2632,8 +2632,23 @@ class Contact {
             || $this->can_view_review($prow, $rrow);
     }
 
+    function relevant_resp_rounds() {
+        $rrds = [];
+        foreach ($this->conf->resp_rounds() as $rrd)
+            if ($rrd->relevant($this))
+                $rrds[] = $rrd;
+        return $rrds;
+    }
+
     static function can_some_author_respond(PaperInfo $prow) {
-        return $prow->conf->any_response_open;
+        if ($prow->conf->any_response_open === 2)
+            return true;
+        if ($prow->conf->any_response_open) {
+            foreach ($prow->conf->resp_rounds() as $rrd)
+                if ($rrd->time_allowed(true) && $rrd->search->filter([$prow]))
+                    return true;
+        }
+        return false;
     }
 
     static function can_some_author_view_submitted_review(PaperInfo $prow) {
@@ -2658,8 +2673,10 @@ class Contact {
     function can_view_some_review() {
         return $this->is_reviewer()
             || ($this->is_author()
-                && ($this->conf->au_seerev != 0
-                    || $this->conf->any_response_open));
+                && ($this->conf->au_seerev !== 0
+                    || $this->conf->any_response_open === 2
+                    || ($this->conf->any_response_open === 1
+                        && !empty($this->relevant_resp_rounds()))));
     }
 
     private function seerev_setting(PaperInfo $prow, $rbase, $rights) {
@@ -3654,12 +3671,11 @@ class Contact {
         if ($this->conf->setting("resp_active") > 0
             && ($this->isPC || $this->is_author())) {
             $dlresps = [];
-            foreach ($this->conf->resp_rounds() as $rrd)
-                if ($rrd->relevant($this)) {
-                    $dlresp = (object) ["open" => $rrd->open, "done" => +$rrd->done];
-                    $dlresps[$rrd->name] = $dlresp;
-                    $graces[] = [$dlresp, $rrd->grace];
-                }
+            foreach ($this->relevant_resp_rounds() as $rrd) {
+                $dlresp = (object) ["open" => $rrd->open, "done" => +$rrd->done];
+                $dlresps[$rrd->name] = $dlresp;
+                $graces[] = [$dlresp, $rrd->grace];
+            }
             if (!empty($dlresps))
                 $dl->resps = $dlresps;
         }
