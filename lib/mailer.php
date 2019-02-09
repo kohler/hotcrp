@@ -60,7 +60,7 @@ class MailPreparation {
             $f = popen($extra ? "$sendmail $extra" : $sendmail, "wb");
             fwrite($f, $htext . $eol . $this->body);
             $status = pclose($f);
-            if (pcntl_wifexitedsuccess($status))
+            if (pcntl_wifexitedwith($status, 0))
                 return true;
             else {
                 $this->conf->set_opt("internalMailer", false);

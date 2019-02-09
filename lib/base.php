@@ -400,11 +400,11 @@ function assert_callback() {
 // pcntl helpers
 
 if (function_exists("pcntl_wifexited") && pcntl_wifexited(0) !== null) {
-    function pcntl_wifexitedsuccess($status) {
-        return pcntl_wifexited($status) && pcntl_wexitstatus($status) == 0;
+    function pcntl_wifexitedwith($status, $exitstatus = 0) {
+        return pcntl_wifexited($status) && pcntl_wexitstatus($status) == $exitstatus;
     }
 } else {
-    function pcntl_wifexitedsuccess($status) {
-        return ($status & 0x7f) == 0 && (($status & 0xff00) >> 8) == 0;
+    function pcntl_wifexitedwith($status, $exitstatus = 0) {
+        return ($status & 0xff7f) == ($exitstatus << 8);
     }
 }
