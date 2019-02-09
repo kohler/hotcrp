@@ -199,7 +199,7 @@ class LogRowGenerator {
             $db_offset = $xpageno > 1 ? $this->page_to_offset[$xpageno] : 0;
         }
 
-        $q = "select logId, unix_timestamp(time) timestamp, ipaddr, contactId, destContactId, trueContactId, action, paperId from ActionLog";
+        $q = "select logId, timestamp, contactId, destContactId, trueContactId, action, paperId from ActionLog";
         if (!empty($this->wheres))
             $q .= " where " . join(" and ", $this->wheres);
         $q .= " order by logId desc";

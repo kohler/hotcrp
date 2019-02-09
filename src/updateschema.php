@@ -1486,6 +1486,16 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table PaperReviewRefused add `lastName` varbinary(120) DEFAULT NULL")
         && $conf->ql("alter table PaperReviewRefused add `affiliation` varbinary(2048) DEFAULT NULL"))
         $conf->update_schema_version(207);
+    if ($conf->sversion == 207
+        && $conf->ql("alter table ActionLog add `timestamp` bigint(11) DEFAULT NULL")
+        && $conf->ql("update ActionLog set timestamp=unix_timestamp(time) where timestamp IS NULL"))
+        $conf->update_schema_version(208);
+    if ($conf->sversion == 208
+        && $conf->ql("update ActionLog set timestamp=unix_timestamp(time) where timestamp IS NULL")
+        && $conf->ql("alter table ActionLog change `timestamp` `timestamp` bigint(11) NOT NULL")
+        && $conf->ql("alter table ActionLog drop `time`")
+        && $conf->ql("alter table ActionLog add `data` varbinary(8192) DEFAULT NULL"))
+        $conf->update_schema_version(209);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

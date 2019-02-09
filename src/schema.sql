@@ -9,9 +9,10 @@ CREATE TABLE `ActionLog` (
   `destContactId` int(11) DEFAULT NULL,
   `trueContactId` int(11) DEFAULT NULL,
   `paperId` int(11) DEFAULT NULL,
-  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `timestamp` bigint(11) NOT NULL,
   `ipaddr` varbinary(39) DEFAULT NULL,
   `action` varbinary(4096) NOT NULL,
+  `data` varbinary(8192) DEFAULT NULL,
   PRIMARY KEY (`logId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -509,7 +510,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 207);
+insert into Settings (name, value) values ('allowPaperOption', 209);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

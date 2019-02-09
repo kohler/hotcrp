@@ -251,7 +251,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 207) {
+        if ($this->sversion < 209) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -3582,7 +3582,7 @@ class Conf {
     // Action recording
     //
 
-    const action_log_query = "insert into ActionLog (ipaddr, contactId, destContactId, trueContactId, paperId, action) values ?v";
+    const action_log_query = "insert into ActionLog (ipaddr, contactId, destContactId, trueContactId, paperId, timestamp, action) values ?v";
 
     function save_logs($on) {
         if ($on && $this->_save_logs === false)
@@ -3653,6 +3653,7 @@ class Conf {
     }
 
     private static function format_log_values($text, $user, $dest_user, $true_user, $pids) {
+        global $Now;
         $pid = null;
         if (count($pids) == 1)
             $pid = $pids[0];
@@ -3663,7 +3664,7 @@ class Conf {
         if ($dest_user === 0 || $dest_user === $user)
             $dest_user = null;
         return [get($_SERVER, "REMOTE_ADDR"), $user, $dest_user,
-                (int) $true_user ? : null, $pid, substr($text, 0, 4096)];
+                (int) $true_user ? : null, $pid, $Now, substr($text, 0, 4096)];
     }
 
 
