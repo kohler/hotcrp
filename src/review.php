@@ -1844,36 +1844,6 @@ class ReviewValues extends MessageSet {
             $qv[] = $now;
         }
 
-        // potentially assign review ordinal (requires table locking since
-        // mySQL is stupid)
-        $locked = $newordinal = false;
-        if ((!$rrow
-             && $newsubmit
-             && $diffinfo->view_score >= VIEWSCORE_AUTHORDEC)
-            || ($rrow
-                && !$rrow->reviewOrdinal
-                && ($rrow->reviewSubmitted > 0 || $newsubmit)
-                && ($diffinfo->view_score >= VIEWSCORE_AUTHORDEC
-                    || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
-            $table_suffix = "";
-            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
-                $table_suffix = ", PaperTag read";
-            $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
-            if (!$result)
-                return $result;
-            Dbl::free($result);
-            $locked = true;
-            $max_ordinal = $this->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
-            // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
-            $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
-            $qv[] = (int) $max_ordinal + 1;
-            $newordinal = true;
-        }
-        if ($newsubmit || $newordinal) {
-            $qf[] = "timeDisplayed=?";
-            $qv[] = $now;
-        }
-
         // check whether used a review token
         $usedReviewToken = $user->active_review_token_for($prow, $rrow);
 
@@ -1962,6 +1932,36 @@ class ReviewValues extends MessageSet {
                     $diffinfo->notify_author = true;
                 }
             }
+        }
+
+        // potentially assign review ordinal (requires table locking since
+        // mySQL is stupid)
+        $locked = $newordinal = false;
+        if ((!$rrow
+             && $newsubmit
+             && $diffinfo->view_score >= VIEWSCORE_AUTHORDEC)
+            || ($rrow
+                && !$rrow->reviewOrdinal
+                && ($rrow->reviewSubmitted > 0 || $newsubmit)
+                && ($diffinfo->view_score >= VIEWSCORE_AUTHORDEC
+                    || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
+            $table_suffix = "";
+            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
+                $table_suffix = ", PaperTag read";
+            $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
+            if (!$result)
+                return $result;
+            Dbl::free($result);
+            $locked = true;
+            $max_ordinal = $this->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
+            // NB `coalesce(reviewOrdinal,0)` is not necessary in modern schemas
+            $qf[] = "reviewOrdinal=if(coalesce(reviewOrdinal,0)=0,?,reviewOrdinal)";
+            $qv[] = (int) $max_ordinal + 1;
+            $newordinal = true;
+        }
+        if ($newsubmit || $newordinal) {
+            $qf[] = "timeDisplayed=?";
+            $qv[] = $now;
         }
 
         // actually affect database
