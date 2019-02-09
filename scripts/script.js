@@ -6539,7 +6539,7 @@ plinfo.set_scoresort = function (ss) {
 plinfo.render_needed = render_needed;
 
 $(window).on("hotcrptags", function (evt, rv) {
-    if (self === false || initialize() === false)
+    if (!self && (self === false || initialize() === false))
         return;
     var $pr = pidrow(rv.pid);
     if (!$pr.length)

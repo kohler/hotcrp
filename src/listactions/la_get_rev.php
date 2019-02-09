@@ -95,7 +95,8 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
         $texts = $errors = [];
         foreach ($user->paper_set($ssel) as $prow) {
             $whyNot = $user->perm_review($prow, null);
-            if ($whyNot && !isset($whyNot["deadline"])
+            if ($whyNot
+                && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"]))
                 $errors[whyNotText($whyNot, true)] = true;
             else {
