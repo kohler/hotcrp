@@ -137,20 +137,17 @@
         "selector": "Reviews/Scores (CSV)",
         "position": 3400,
         "allow_if": "view_review",
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetScores_ListAction"
     },
     {
         "name": "get/rank", "get": true,
         "allow_if": ["setting.tag_rank", "reviewer"], "display_if": false,
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetRank_ListAction"
     },
     {
         "name": "get/lead", "get": true,
         "selector": "Reviews/Discussion leads (CSV)", "position": 3600,
         "allow_if": "pc", "display_if": "lead",
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetLead_ListAction",
         "type": "lead"
     },
@@ -158,7 +155,6 @@
         "name": "get/shepherd", "get": true,
         "selector": "Reviews/Shepherds (CSV)", "position": 3650,
         "allow_if": "pc", "display_if": "shepherd",
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetLead_ListAction",
         "type": "shepherd"
     },

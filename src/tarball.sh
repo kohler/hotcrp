@@ -216,8 +216,11 @@ src/listactions/la_getallrevpref.php
 src/listactions/la_getdocument.php
 src/listactions/la_getjson.php
 src/listactions/la_getjsonrqc.php
+src/listactions/la_getlead.php
+src/listactions/la_getrank.php
 src/listactions/la_getreviewcsv.php
 src/listactions/la_getrevpref.php
+src/listactions/la_getscores.php
 src/listactions/la_get_rev.php
 src/listactions/la_get_sub.php
 src/listactions/la_mail.php
