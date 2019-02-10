@@ -1,5 +1,5 @@
 <?php
-// test05.php -- HotCRP review and some setting tests
+// test06.php -- HotCRP review and some setting tests
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 global $ConfSitePATH;
