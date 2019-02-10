@@ -93,11 +93,29 @@
     {
         "name": "get/revt", "get": true,
         "selector": "Reviews/Text with reviews",
-        "position": 3062,
+        "position": 3068,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
         "zip": false, "abstract": true
+    },
+    {
+        "name": "get/revau", "get": true,
+        "selector": "Reviews/Reviews (author view)",
+        "position": 3065,
+        "allow_if": ["view_review", "admin"],
+        "require": "src/listactions/la_get_rev.php",
+        "callback": "+GetReviews_ListAction",
+        "zip": false, "author_view": true
+    },
+    {
+        "name": "get/revauz", "get": true,
+        "selector": "Reviews/Reviews (zip, author view)",
+        "position": 3066,
+        "allow_if": ["view_review", "admin"],
+        "require": "src/listactions/la_get_rev.php",
+        "callback": "+GetReviews_ListAction",
+        "zip": true, "author_view": true
     },
     {
         "name": "get/scores", "get": true,

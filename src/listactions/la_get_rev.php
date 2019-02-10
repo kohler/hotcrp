@@ -15,6 +15,7 @@ class GetPcassignments_ListAction extends ListAction {
 class GetReviewBase_ListAction extends ListAction {
     protected $isform;
     protected $iszip;
+    protected $author_view;
     function __construct($isform, $iszip) {
         $this->isform = $isform;
         $this->iszip = $iszip;
@@ -42,12 +43,9 @@ class GetReviewBase_ListAction extends ListAction {
         if ($nerrors)
             array_unshift($warnings, "Some " . ($this->isform ? "review forms" : "reviews") . " are missing:");
 
-        if ($this->isform && (count($texts) == 1 || $this->iszip))
-            $rfname = "review";
-        else
-            $rfname = "reviews";
-        if (count($texts) == 1 && !$this->iszip)
-            $rfname .= key($texts);
+        $rfname = $this->author_view ? "aureview" : "review";
+        if (!$this->iszip)
+            $rfname .= count($texts) === 1 ? key($texts) : "s";
 
         if ($this->isform)
             $header = $user->conf->review_form()->textFormHeader(count($texts) > 1 && !$this->iszip);
@@ -124,6 +122,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
     function __construct($conf, $fj) {
         parent::__construct(false, !!get($fj, "zip"));
         $this->include_paper = !!get($fj, "abstract");
+        $this->author_view = !!get($fj, "author_view");
         require_once("la_get_sub.php");
     }
     function allow(Contact $user) {
@@ -132,6 +131,10 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        if ($this->author_view && $user->privChair) {
+            $au_seerev = $user->conf->au_seerev;
+            $user->conf->au_seerev = Conf::AUSEEREV_YES;
+        }
         $errors = $texts = [];
         foreach ($user->paper_set($ssel) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
@@ -142,13 +145,19 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             if ($this->include_paper)
                 $rctext = GetAbstract_ListAction::render($prow, $user);
             $last_rc = null;
+            $viewer = $this->author_view ? $prow->author_view_user() : $user;
             foreach ($prow->viewable_submitted_reviews_and_comments($user) as $rc) {
-                $rctext .= PaperInfo::review_or_comment_text_separator($last_rc, $rc);
-                if (isset($rc->reviewId))
-                    $rctext .= $rf->pretty_text($prow, $rc, $user, false, true);
-                else
-                    $rctext .= $rc->unparse_text($user, true);
-                $last_rc = $rc;
+                if ($viewer === $user
+                    || (isset($rc->reviewId)
+                        ? $viewer->can_view_review($prow, $rc)
+                        : $viewer->can_view_comment($prow, $rc))) {
+                    $rctext .= PaperInfo::review_or_comment_text_separator($last_rc, $rc);
+                    if (isset($rc->reviewId))
+                        $rctext .= $rf->pretty_text($prow, $rc, $viewer, false, true);
+                    else
+                        $rctext .= $rc->unparse_text($viewer, true);
+                    $last_rc = $rc;
+                }
             }
             if ($rctext !== "") {
                 if (!$this->include_paper) {
@@ -157,7 +166,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                         . "* Paper #{$prow->paperId} {$prow->title}\n\n" . $rctext;
                 }
                 $texts[$prow->paperId] = $rctext;
-            } else if (($whyNot = $user->perm_review($prow, null, null)))
+            } else if (($whyNot = $user->perm_view_review($prow, null)))
                 $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
         }
         $texts = $ssel->reorder($texts);
@@ -169,6 +178,10 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
         }
         unset($text);
         $user->set_overrides($overrides);
+        if ($this->author_view && $user->privChair) {
+            $user->conf->au_seerev = $au_seerev;
+            Contact::update_rights();
+        }
         $this->finish($user, $texts, $errors);
     }
 }

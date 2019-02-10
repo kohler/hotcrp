@@ -285,6 +285,7 @@ class PaperInfo {
     private $_comment_skeleton_array;
     private $_potential_conflicts;
     private $_refusal_array;
+    private $_author_view_user;
     public $_row_set;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
@@ -395,6 +396,14 @@ class PaperInfo {
     function load_my_contact_info($contact, $object) {
         $ci = PaperContactInfo::make_my($this, $contact, $object);
         $this->_contact_info[$ci->contactId] = $ci;
+    }
+
+    function author_view_user() {
+        if (!$this->_author_view_user) {
+            $this->_author_view_user = new Contact(null, $this->conf);
+            $this->_author_view_user->set_capability($this->paperId, "av");
+        }
+        return $this->_author_view_user;
     }
 
 

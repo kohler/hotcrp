@@ -309,7 +309,7 @@ class LogRowGenerator {
         }
         if (!empty($this->need_users)) {
             foreach ($this->need_users as $cid => $x) {
-                $user = $this->users[$cid] = new Contact(["contactId" => $cid, "disabled" => true]);
+                $user = $this->users[$cid] = new Contact(["contactId" => $cid, "disabled" => true], $this->conf);
                 $user->disabled = "deleted";
             }
             $result = $this->conf->qe("select contactId, firstName, lastName, email, 1 disabled from DeletedContactInfo where contactId?a", array_keys($this->need_users));

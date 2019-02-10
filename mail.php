@@ -396,7 +396,7 @@ class MailSender {
         while (($row = PaperInfo::fetch($result, $Me))) {
             ++$nrows_done;
 
-            $contact = new Contact($row);
+            $contact = new Contact($row, $Me->conf);
             $rest["newrev_since"] = $this->recip->newrev_since;
             $mailer->reset($contact, $row, $rest);
             $prep = $mailer->make_preparation($template, $rest);
