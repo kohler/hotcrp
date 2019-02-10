@@ -354,7 +354,7 @@ class PaperInfo {
         $this->_contact_info[$cid] = PaperContactInfo::make_empty($this, $cid);
     }
 
-    private function update_rights_version() {
+    private function check_rights_version() {
         if ($this->_rights_version !== Contact::$rights_version) {
             if ($this->_rights_version) {
                 $this->_contact_info = $this->_reviews_have = [];
@@ -367,8 +367,8 @@ class PaperInfo {
     }
 
     function contact_info(Contact $user) {
-        $this->update_rights_version();
-        $cid = self::contact_to_cid($user);
+        $this->check_rights_version();
+        $cid = $user->contactId ? : $user->contactXid;
         if (!array_key_exists($cid, $this->_contact_info)) {
             if ($this->_review_array
                 || property_exists($this, "reviewSignatures")) {
@@ -635,7 +635,7 @@ class PaperInfo {
     }
 
     function review_type($contact) {
-        $this->update_rights_version();
+        $this->check_rights_version();
         $cid = self::contact_to_cid($contact);
         if (array_key_exists($cid, $this->_contact_info))
             $rrow = $this->_contact_info[$cid];

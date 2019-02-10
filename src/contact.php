@@ -15,9 +15,11 @@ class Contact {
     static public $rights_version = 1;
     static public $true_user;
     static public $allow_nonexistent_properties = false;
+    static public $next_xid = -1;
 
     public $contactId = 0;
     public $contactDbId = 0;
+    public $contactXid = 0;
     public $conf;
     public $confid;
 
@@ -196,6 +198,7 @@ class Contact {
     private function db_load() {
         $this->contactId = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
+        assert($this->contactId > 0 || ($this->contactId == 0 && $this->contactDbId > 0));
         if ($this->unaccentedName === "")
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
         self::set_sorter($this, $this->conf);
@@ -792,11 +795,11 @@ class Contact {
     }
 
     private function update_capabilities() {
-        ++self::$rights_version;
         if (empty($this->capabilities))
             $this->capabilities = null;
         if ($this->_activated)
             $this->save_session("cap", $this->capabilities);
+        $this->update_my_rights();
     }
 
     function capability($name) {
@@ -1643,6 +1646,15 @@ class Contact {
         ++self::$rights_version;
     }
 
+    function update_my_rights() {
+        if ($this->contactId > 0) {
+            self::update_rights();
+        } else {
+            $this->contactXid = self::$next_xid--;
+            $this->_rights_version = self::$rights_version - 1;
+        }
+    }
+
     private function load_author_reviewer_status() {
         // Load from database
         $result = null;
@@ -1844,10 +1856,10 @@ class Contact {
                 $this->_review_tokens[] = $token;
         }
         $new_ntokens = count($this->_review_tokens);
-        if ($new_ntokens == 0)
+        if ($new_ntokens === 0)
             $this->_review_tokens = null;
-        if ($new_ntokens != $old_ntokens)
-            self::update_rights();
+        if ($new_ntokens !== $old_ntokens)
+            $this->update_my_rights();
         if ($this->_activated && $new_ntokens != $old_ntokens)
             $this->save_session("rev_tokens", $this->_review_tokens);
         return $new_ntokens != $old_ntokens;
@@ -3997,7 +4009,7 @@ class Contact {
         if ($type == REVIEW_META || $oldtype == REVIEW_META)
             $this->conf->update_metareviews_setting($type == REVIEW_META ? 1 : -1);
 
-        Contact::update_rights();
+        self::update_rights();
         return $reviewId;
     }
 
