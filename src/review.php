@@ -470,6 +470,18 @@ class ReviewForm implements JsonSerializable {
         return $this->forder;
     }
 
+    function all_visible_fields(Contact $user, PaperInfo $prow, ReviewInfo $rrow = null) {
+        $forder = [];
+        $bound = $user->view_score_bound($prow, $rrow);
+        foreach ($this->forder as $fid => $f) {
+            if ($f->view_score > $bound
+                && (!$f->round_mask || $f->is_round_visible($rrow))) {
+                $forder[$fid] = $f;
+            }
+        }
+        return $forder;
+    }
+
     function stopwords() {
         // Produce a list of common words in review field names that should be
         // avoided in abbreviations.
@@ -537,17 +549,13 @@ class ReviewForm implements JsonSerializable {
         return $format ? $this->conf->format_info($format) : null;
     }
 
-    private function webFormRows(Contact $contact, $prow, $rrow, ReviewValues $rvalues = null) {
+    private function webFormRows(Contact $contact, PaperInfo $prow, $rrow,
+                                 ReviewValues $rvalues = null) {
         $format_description = "";
         if (($fi = $this->format_info($rrow)))
             $format_description = $fi->description_preview_html();
-        $revViewScore = $contact->view_score_bound($prow, $rrow);
         echo '<div class="rve">';
-        foreach ($this->forder as $fid => $f) {
-            if ($f->view_score <= $revViewScore
-                || ($f->round_mask && !$f->is_round_visible($rrow)))
-                continue;
-
+        foreach ($this->all_visible_fields($contact, $prow, $rrow) as $fid => $f) {
             $rval = "";
             if ($rrow)
                 $rval = $f->unparse_value(get($rrow, $fid), ReviewField::VALUE_STRING);
@@ -667,10 +675,10 @@ class ReviewForm implements JsonSerializable {
         }
     }
 
-    static private function rrow_modified_time($prow, $rrow, $contact, $revViewScore) {
-        if (!$prow || !$rrow || !$contact->can_view_review_time($prow, $rrow))
+    static private function rrow_modified_time($user, $prow, $rrow) {
+        if (!$prow || !$rrow || !$user->can_view_review_time($prow, $rrow)) {
             return 0;
-        else if ($revViewScore >= VIEWSCORE_AUTHORDEC - 1) {
+        } else if ($user->view_score_bound($prow, $rrow) >= VIEWSCORE_AUTHORDEC - 1) {
             if ($rrow->reviewAuthorModified !== null)
                 return $rrow->reviewAuthorModified;
             else if (!$rrow->reviewAuthorNotified
@@ -716,7 +724,7 @@ class ReviewForm implements JsonSerializable {
             else
                 $x .= "==+== Reviewer: " . Text::user_text($contact) . "\n";
         }
-        $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
+        $time = self::rrow_modified_time($contact, $prow, $rrow);
         if ($time > 1)
             $x .= "==-== Updated " . $this->conf->unparse_time($time) . "\n";
 
@@ -813,7 +821,6 @@ $blind\n";
     function pretty_text(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
                          $no_update_review_author_seen = false,
                          $no_title = false) {
-        $revViewScore = $contact->view_score_bound($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
         $n = ($no_title ? "" : $this->conf->short_name . " ") . "Review";
@@ -828,15 +835,11 @@ $blind\n";
             $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2);
         if ($contact->can_view_review_identity($prow, $rrow) && isset($rrow->lastName))
             $x .= "* Reviewer: " . Text::user_text($rrow) . "\n";
-        $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
+        $time = self::rrow_modified_time($contact, $prow, $rrow);
         if ($time > 1)
             $x .= "* Updated: " . $this->conf->unparse_time($time) . "\n";
 
-        foreach ($this->forder as $fid => $f) {
-            if ($f->view_score <= $revViewScore
-                || ($f->round_mask && !$f->is_round_visible($rrow)))
-                continue;
-
+        foreach ($this->all_visible_fields($contact, $prow, $rrow) as $fid => $f) {
             $fval = "";
             if (isset($rrow->$fid)) {
                 if ($f->has_options)
@@ -1111,7 +1114,6 @@ $blind\n";
     function unparse_review_json(PaperInfo $prow, ReviewInfo $rrow,
                                  Contact $contact, $flags = 0) {
         self::check_review_author_seen($prow, $rrow, $contact);
-        $revViewScore = $contact->view_score_bound($prow, $rrow);
         $editable = !($flags & self::RJ_NO_EDITABLE);
 
         $rj = array("pid" => $prow->paperId, "rid" => (int) $rrow->reviewId);
@@ -1145,7 +1147,7 @@ $blind\n";
         }
         if ($showtoken)
             $rj["review_token"] = encode_token((int) $rrow->reviewToken);
-        $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
+        $time = self::rrow_modified_time($contact, $prow, $rrow);
         if ($time > 1) {
             $rj["modified_at"] = (int) $time;
             $rj["modified_at_text"] = $this->conf->unparse_time($time);
@@ -1166,11 +1168,9 @@ $blind\n";
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        foreach ($this->forder as $fid => $f)
-            if ($f->view_score > $revViewScore
-                && (!$f->round_mask || $f->is_round_visible($rrow))
-                && ($f->view_score > VIEWSCORE_REVIEWERONLY
-                    || !($flags & self::RJ_NO_REVIEWERONLY))) {
+        foreach ($this->all_visible_fields($contact, $prow, $rrow) as $fid => $f)
+            if ($f->view_score > VIEWSCORE_REVIEWERONLY
+                || !($flags & self::RJ_NO_REVIEWERONLY)) {
                 $fval = get($rrow, $fid);
                 if ($f->has_options)
                     $fval = $f->unparse_value((int) $fval);
@@ -1208,15 +1208,13 @@ $blind\n";
             $t .= $barsep . '<span class="hint">review by</span> ' . $contact->reviewer_html_for($rrow);
         $t .= "</small><br>";
 
-        $revViewScore = $contact->view_score_bound($prow, $rrow);
         if ($rrow->reviewSubmitted) {
             $t .= "Review #" . unparseReviewOrdinal($rrow) . " submitted";
             $xbarsep = $barsep;
         } else
             $xbarsep = "";
-        foreach ($this->forder as $fid => $f)
+        foreach ($this->all_visible_fields($contact, $prow, $rrow) as $fid => $f)
             if (isset($rrow->$fid)
-                && $f->view_score > $revViewScore
                 && $f->has_options
                 && (int) $rrow->$fid !== 0) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
