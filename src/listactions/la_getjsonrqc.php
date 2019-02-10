@@ -17,15 +17,14 @@ class GetJsonRQC_ListAction extends ListAction {
         $ps = new PaperStatus($user->conf, $user, ["hide_docids" => true]);
         foreach ($user->paper_set($ssel, ["topics" => true, "options" => true]) as $prow) {
             if ($user->allow_administer($prow)) {
-                $pj[$prow->paperId] = $j = $ps->paper_json($prow);
+                $pj[] = $j = $ps->paper_json($prow);
                 $prow->ensure_full_reviews();
                 foreach ($prow->viewable_submitted_reviews_by_display($user) as $rrow)
                     $j->reviews[] = $rf->unparse_review_json($prow, $rrow, $user, ReviewForm::RJ_NO_EDITABLE | ReviewForm::RJ_UNPARSE_RATINGS | ReviewForm::RJ_ALL_RATINGS | ReviewForm::RJ_NO_REVIEWERONLY);
             } else
-                $pj[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
+                $pj[] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
         }
         $user->set_overrides($old_overrides);
-        $pj = array_values($ssel->reorder($pj));
         $results["papers"] = $pj;
         header("Content-Type: application/json; charset=utf-8");
         header("Content-Disposition: attachment; filename=" . mime_quote_string($user->conf->download_prefix . "rqc.json"));

@@ -204,6 +204,10 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function is_empty() {
         return empty($this->prows);
     }
+    function sort_by($compare) {
+        usort($this->prows, $compare);
+        uasort($this->by_pid, $compare);
+    }
     function paper_ids() {
         return array_keys($this->by_pid);
     }

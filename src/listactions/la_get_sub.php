@@ -57,7 +57,7 @@ class GetCheckFormat_ListAction extends ListAction {
         $csvg->download_headers();
         echo $csvg->headerline;
         $cf = new CheckFormat($user->conf, CheckFormat::RUN_PREFER_NO);
-        foreach ($ssel->reorder($papers) as $prow) {
+        foreach ($papers as $prow) {
             $pages = "?";
             if ($prow->mimetype == "application/pdf") {
                 $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
@@ -150,12 +150,12 @@ class GetAbstract_ListAction extends ListAction {
             if (($whyNot = $user->perm_view_paper($prow))) {
                 Conf::msg_error(whyNotText($whyNot));
             } else {
-                $texts[$prow->paperId] = $this->render($prow, $user);
+                $texts[] = $this->render($prow, $user);
                 $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
             }
         }
         if (!empty($texts))
-            downloadText(join("", $ssel->reorder($texts)), "abstract$rfSuffix");
+            downloadText(join("", $texts), "abstract$rfSuffix");
     }
 }
 
@@ -196,16 +196,15 @@ class GetAuthors_ListAction extends ListAction {
                     unset($contact_emails[$lemail]);
                 } else if ($admin)
                     $line[] = "no";
-                $texts[$prow->paperId][] = $line;
+                $texts[] = $line;
             }
             foreach ($contact_emails as $c)
-                $texts[$prow->paperId][] = [$prow->paperId, $prow->title, $c->firstName, $c->lastName, $c->email, $c->affiliation, "contact_only"];
+                $texts[] = [$prow->paperId, $prow->title, $c->firstName, $c->lastName, $c->email, $c->affiliation, "contact_only"];
         }
         $header = ["paper", "title", "first", "last", "email", "affiliation"];
         if ($want_contacttype)
             $header[] = "iscontact";
-        return $user->conf->make_csvg("authors")->select($header)
-            ->add($ssel->reorder($texts));
+        return $user->conf->make_csvg("authors")->select($header)->add($texts);
     }
 }
 
@@ -216,16 +215,17 @@ class GetContacts_ListAction extends ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $contact_map = GetAuthors_ListAction::contact_map($user->conf, $ssel);
+        $texts = [];
         foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow)
             if ($user->allow_administer($prow))
                 foreach ($prow->contacts() as $cid => $c) {
                     $a = $contact_map[$cid];
                     $aa = $prow->author_by_email($a->email) ? : $a;
-                    $texts[$prow->paperId][] = [$prow->paperId, $prow->title, $aa->firstName, $aa->lastName, $aa->email, $aa->affiliation];
+                    $texts[] = [$prow->paperId, $prow->title, $aa->firstName, $aa->lastName, $aa->email, $aa->affiliation];
                 }
         return $user->conf->make_csvg("contacts")
             ->select(["paper", "title", "first", "last", "email", "affiliation"])
-            ->add($ssel->reorder($texts));
+            ->add($texts);
     }
 }
 
@@ -251,14 +251,14 @@ class GetPcconflicts_ListAction extends ListAction {
                     }
                 if ($m) {
                     ksort($m);
-                    $texts[$prow->paperId] = $m;
+                    $texts[] = $m;
                 }
             }
         }
         $user->set_overrides($old_overrides);
         return $user->conf->make_csvg("pcconflicts")
             ->select(["paper", "title", "first", "last", "email", "conflicttype"])
-            ->add($ssel->reorder($texts));
+            ->add($texts);
     }
 }
 
@@ -272,11 +272,11 @@ class GetTopics_ListAction extends ListAction {
                     $out[] = [$row->paperId, $row->title, $t];
                 if (empty($out))
                     $out[] = [$row->paperId, $row->title, "<none>"];
-                $texts[$row->paperId] = $out;
+                $texts[] = $out;
             }
         return $user->conf->make_csvg("topics")
             ->select(["paper", "title", "topic"])
-            ->add($ssel->reorder($texts));
+            ->add($texts);
     }
 }
 

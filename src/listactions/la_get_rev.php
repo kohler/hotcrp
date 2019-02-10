@@ -98,22 +98,23 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
                 && !isset($whyNot["reviewNotAssigned"]))
                 $errors[whyNotText($whyNot, true)] = true;
             else {
-                $texts[$prow->paperId] = "";
+                $t = "";
                 if ($whyNot) {
                     $t = whyNotText($whyNot, true);
                     $errors[$t] = false;
                     if (!isset($whyNot["deadline"]))
-                        $texts[$prow->paperId] .= prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== ");
+                        $t .= prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== ");
                 }
                 $rrows = $prow->full_reviews_of_user($user);
                 if (empty($rrows))
                     $rrows[] = null;
                 foreach ($rrows as $rrow)
-                    $texts[$prow->paperId] .= $rf->textForm($prow, $rrow, $user, null) . "\n";
+                    $t .= $rf->textForm($prow, $rrow, $user, null) . "\n";
+                $texts[] = $t;
             }
         }
 
-        $this->finish($user, $ssel->reorder($texts), $errors);
+        $this->finish($user, $texts, $errors);
     }
 }
 
@@ -165,11 +166,10 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                     $rctext = $header . str_repeat("=", 75) . "\n"
                         . "* Paper #{$prow->paperId} {$prow->title}\n\n" . $rctext;
                 }
-                $texts[$prow->paperId] = $rctext;
+                $texts[] = $rctext;
             } else if (($whyNot = $user->perm_view_review($prow, null)))
                 $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
         }
-        $texts = $ssel->reorder($texts);
         $first = true;
         foreach ($texts as &$text) {
             if (!$first)
@@ -222,7 +222,7 @@ class GetScores_ListAction extends ListAction {
                         $b["email"] = $rrow->email;
                     }
                     if ($this_scores)
-                        $texts[$row->paperId][] = $b;
+                        $texts[] = $b;
                 }
             }
         }
@@ -236,7 +236,7 @@ class GetScores_ListAction extends ListAction {
                 array_push($header, "reviewername", "email");
             return $user->conf->make_csvg("scores")
                 ->select(array_merge($header, array_keys($any_scores)))
-                ->add($ssel->reorder($texts));
+                ->add($texts);
         } else {
             if (empty($errors))
                 $errors[] = "No papers selected.";
@@ -308,6 +308,6 @@ class GetLead_ListAction extends ListAction {
             }
         return $user->conf->make_csvg($this->type . "s")
             ->select(["paper", "title", "first", "last", "{$this->type}email"])
-            ->add($ssel->reorder($texts));
+            ->add($texts);
     }
 }

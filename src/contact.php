@@ -3854,6 +3854,7 @@ class Contact {
     // papers
 
     function paper_set($pids, $options = null) {
+        $ssel = false;
         if (is_int($pids)) {
             $options["paperId"] = $pids;
         } else if (is_array($pids)
@@ -3861,11 +3862,15 @@ class Contact {
                    && (!empty($pids) || $options !== null)) {
             $options["paperId"] = $pids;
         } else if (is_object($pids) && $pids instanceof SearchSelection) {
+            $ssel = true;
             $options["paperId"] = $pids->selection();
         } else {
             $options = $pids;
         }
-        return $this->conf->paper_set($options, $this);
+        $prows = $this->conf->paper_set($options, $this);
+        if ($ssel)
+            $prows->sort_by([$pids, "order_compare"]);
+        return $prows;
     }
 
     function hide_reviewer_identity_pids() {
