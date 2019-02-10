@@ -47,6 +47,11 @@ decide on a name for your database (no spaces allowed).
 stored in `conf/options.php`, which HotCRP marks as world-unreadable. You must
 ensure that your PHP can read this file.
 
+    If you don’t want to run `lib/createdb.sh`, you will have to create your
+own database and user, initialize the database with the contents of
+`src/schema.sql`, and create `conf/options.php` (use `src/distoptions.php`
+as a guide).
+
 2. Edit `conf/options.php`, which is annotated to guide you.
 (`lib/createdb.sh` creates this file based on `src/distoptions.php`.)
 
