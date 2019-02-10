@@ -41,16 +41,14 @@ class PaperContactInfo {
         return $ci;
     }
 
-    static function make_my(PaperInfo $prow, $contact, $object) {
-        $cid = is_object($contact) ? $contact->contactId : $contact;
-        $ci = PaperContactInfo::make_empty($prow, $cid);
+    static function make_my(PaperInfo $prow, $user, $object) {
+        $ci = PaperContactInfo::make_empty($prow, $user->contactId);
         $ci->conflictType = (int) $object->conflictType;
         if (property_exists($object, "myReviewPermissions")) {
             $ci->mark_my_review_permissions($object->myReviewPermissions);
         } else if ($object instanceof PaperInfo
                    && property_exists($object, "reviewSignatures")) {
-            $rev_tokens = is_object($contact) ? $contact->review_tokens() : null;
-            foreach ($object->reviews_of_user($cid, $rev_tokens) as $rrow)
+            foreach ($object->reviews_of_user($user->contactId, $user->review_tokens()) as $rrow)
                 $ci->mark_review($rrow);
         }
         return $ci;
@@ -89,7 +87,7 @@ class PaperContactInfo {
         $conf = $prow->conf;
         $pid = $prow->paperId;
         $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit";
-        if ($cid
+        if ($cid > 0
             && !$rev_tokens
             && ($row_set = $prow->_row_set)
             && $row_set->size() > 1) {
@@ -110,7 +108,7 @@ class PaperContactInfo {
             Dbl::free($result);
             return;
         }
-        if ($cid
+        if ($cid > 0
             && !$rev_tokens
             && (!$Me || ($Me->contactId != $cid
                          && ($Me->privChair || $Me->contactId == $prow->managerContactId)))
@@ -125,7 +123,7 @@ class PaperContactInfo {
                 $pid, $pid);
         } else {
             $cids = [$cid];
-            if ($cid) {
+            if ($cid > 0 || $rev_tokens) {
                 $q = "$q, ? contactId
                 from (select ? paperId) P
                 left join PaperConflict on (PaperConflict.paperId=? and PaperConflict.contactId=?)
@@ -344,12 +342,8 @@ class PaperInfo {
 
 
     static private function contact_to_cid($contact) {
-        global $Me;
         assert($contact !== null);
-        if ($contact && is_object($contact))
-            return $contact->contactId;
-        else
-            return $contact !== null ? $contact : $Me->contactId;
+        return is_object($contact) ? $contact->contactId : $contact;
     }
 
     function _get_contact_info($cid) {
@@ -372,28 +366,21 @@ class PaperInfo {
         }
     }
 
-    function contact_info($contact) {
-        global $Me;
+    function contact_info(Contact $user) {
         $this->update_rights_version();
-        $rev_tokens = null;
-        if (!$contact || !is_object($contact))
-            error_log("PaperInfo::contact_info bad argument: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        if (!$contact || is_object($contact)) {
-            $contact = $contact ? : $Me;
-            $rev_tokens = $contact->review_tokens();
-        }
-        $cid = self::contact_to_cid($contact);
+        $cid = self::contact_to_cid($user);
         if (!array_key_exists($cid, $this->_contact_info)) {
             if ($this->_review_array
                 || property_exists($this, "reviewSignatures")) {
                 $ci = PaperContactInfo::make_empty($this, $cid);
                 if (($c = get($this->conflicts(), $cid)))
                     $ci->conflictType = $c->conflictType;
-                foreach ($this->reviews_of_user($cid, $rev_tokens) as $rrow)
+                foreach ($this->reviews_of_user($cid, $user->review_tokens()) as $rrow)
                     $ci->mark_review($rrow);
                 $this->_contact_info[$cid] = $ci;
-            } else
-                PaperContactInfo::load_into($this, $cid, $rev_tokens);
+            } else {
+                PaperContactInfo::load_into($this, $cid, $user->review_tokens());
+            }
         }
         return $this->_contact_info[$cid];
     }
@@ -1844,7 +1831,7 @@ class PaperInfo {
         $cimap = $this->replace_contact_info_map(null);
 
         foreach ($watchers as $minic) {
-            $this->load_my_contact_info($minic->contactId, $minic);
+            $this->load_my_contact_info($minic, $minic);
             call_user_func($callback, $this, $minic);
         }
 
@@ -1881,7 +1868,7 @@ class PaperInfo {
         $cimap = $this->replace_contact_info_map(null);
 
         foreach ($watchers as $minic) {
-            $this->load_my_contact_info($minic->contactId, $minic);
+            $this->load_my_contact_info($minic, $minic);
             call_user_func($callback, $this, $minic);
         }
 

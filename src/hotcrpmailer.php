@@ -450,7 +450,8 @@ class HotCRPMailer extends Mailer {
         $preps = $contacts = array();
         $rest["combination_type"] = 1;
         while (($contact = Contact::fetch($result, $row->conf))) {
-            $row->load_my_contact_info($contact->contactId, $contact);
+            assert(empty($contact->review_tokens()));
+            $row->load_my_contact_info($contact, $contact);
             if (($p = self::prepare_to($contact, $template, $row, $rest))) {
                 $preps[] = $p;
                 $contacts[] = Text::user_html($contact);
