@@ -73,9 +73,18 @@
         "zip": true
     },
     {
+        "name": "get/revt", "get": true,
+        "selector": "Reviews/Reviews with paper info",
+        "position": 3050,
+        "allow_if": "view_review",
+        "require": "src/listactions/la_get_rev.php",
+        "callback": "+GetReviews_ListAction",
+        "zip": false, "abstract": true
+    },
+    {
         "name": "get/rev", "get": true,
-        "selector": "Reviews/Reviews",
-        "position": 3060,
+        "selector": "Reviews/Reviews (text)",
+        "position": 3100,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
@@ -84,25 +93,16 @@
     {
         "name": "get/revz", "get": true,
         "selector": "Reviews/Reviews (zip)",
-        "position": 3061,
+        "position": 3105,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
         "zip": true
     },
     {
-        "name": "get/revt", "get": true,
-        "selector": "Reviews/Text with reviews",
-        "position": 3068,
-        "allow_if": "view_review",
-        "require": "src/listactions/la_get_rev.php",
-        "callback": "+GetReviews_ListAction",
-        "zip": false, "abstract": true
-    },
-    {
         "name": "get/revau", "get": true,
-        "selector": "Reviews/Reviews (author view)",
-        "position": 3065,
+        "selector": "Reviews/Reviews (text, author view)",
+        "position": 3200,
         "allow_if": ["view_review", "admin"],
         "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
@@ -111,16 +111,31 @@
     {
         "name": "get/revauz", "get": true,
         "selector": "Reviews/Reviews (zip, author view)",
-        "position": 3066,
+        "position": 3205,
         "allow_if": ["view_review", "admin"],
         "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
         "zip": true, "author_view": true
     },
     {
+        "name": "get/revcsv", "get": true,
+        "selector": "Reviews/Reviews (CSV)",
+        "position": 3110,
+        "allow_if": "view_review",
+        "callback": "+GetReviewCSV_ListAction"
+    },
+    {
+        "name": "get/revaucsv", "get": true,
+        "selector": "Reviews/Reviews (CSV, author view)",
+        "position": 3210,
+        "allow_if": ["view_review", "admin"],
+        "callback": "+GetReviewCSV_ListAction",
+        "author_view": true
+    },
+    {
         "name": "get/scores", "get": true,
-        "selector": "Reviews/Scores",
-        "position": 3070,
+        "selector": "Reviews/Scores (CSV)",
+        "position": 3400,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
         "callback": "+GetScores_ListAction"
@@ -133,7 +148,7 @@
     },
     {
         "name": "get/lead", "get": true,
-        "selector": "Reviews/Discussion leads", "position": 3090,
+        "selector": "Reviews/Discussion leads (CSV)", "position": 3600,
         "allow_if": "pc", "display_if": "lead",
         "require": "src/listactions/la_get_rev.php",
         "callback": "+GetLead_ListAction",
@@ -141,7 +156,7 @@
     },
     {
         "name": "get/shepherd", "get": true,
-        "selector": "Reviews/Shepherds", "position": 3091,
+        "selector": "Reviews/Shepherds (CSV)", "position": 3650,
         "allow_if": "pc", "display_if": "shepherd",
         "require": "src/listactions/la_get_rev.php",
         "callback": "+GetLead_ListAction",
