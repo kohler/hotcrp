@@ -5830,6 +5830,7 @@ function tag_mousedown(evt) {
         dragging.attachEvent("onmouseup", tag_mouseup);
         dragging.attachEvent("onmousecapture", tag_mouseup);
     }
+    tag_mousemove(evt);
     evt.stopPropagation();
     evt.preventDefault();
 }
