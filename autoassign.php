@@ -583,7 +583,7 @@ foreach ($Conf->pc_members() as $pc)
     $tagsjson[$pc->contactId] = " " . trim(strtolower($pc->viewable_tags($Me))) . " ";
 Ht::stash_script("var hotcrp_pc_tags=" . json_encode($tagsjson) . ";");
 foreach ($Me->viewable_user_tags() as $pctag)
-    if ($ptctag !== "pc")
+    if ($pctag !== "pc")
         $pctyp_sel[] = [$pctag, "#$pctag"];
 $pctyp_sel[] = array("__flip__", "flip");
 $sep = "";
