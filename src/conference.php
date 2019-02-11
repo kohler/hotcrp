@@ -1747,7 +1747,7 @@ class Conf {
                     $this->_pc_members_cache[$u->contactId] = $u;
                 }
 
-            ksort($this->_pc_tags_cache);
+            TagMap::collator()->asort($this->_pc_tags_cache);
         }
         return $this->_pc_members_cache;
     }

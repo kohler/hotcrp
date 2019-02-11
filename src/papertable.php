@@ -1309,7 +1309,7 @@ class PaperTable {
                 $tagger = new Tagger($this->user);
                 echo '<div class="pscopen">',
                     '<span class="psfn">Tags:</span> ',
-                    $tagger->unparse_and_link($viewable),
+                    $tagger->unparse_link($viewable),
                     '</div>';
             } else
                 echo '<hr class="c" />';
@@ -1582,7 +1582,7 @@ class PaperTable {
         $tagger = new Tagger($this->user);
         $viewable = $this->prow->viewable_tags($this->user);
 
-        $tx = $tagger->unparse_and_link($viewable);
+        $tx = $tagger->unparse_link($viewable);
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", true);

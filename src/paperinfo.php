@@ -290,6 +290,8 @@ class PaperInfo {
     private $_potential_conflicts;
     private $_refusal_array;
     private $_author_view_user;
+    private $_viewable_tags;
+    private $_viewable_tags_cid;
     public $_row_set;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
@@ -363,7 +365,8 @@ class PaperInfo {
         if ($this->_rights_version !== Contact::$rights_version) {
             if ($this->_rights_version) {
                 $this->_contact_info = $this->_reviews_have = [];
-                $this->_review_array = $this->_conflict_array = null;
+                $this->_review_array = $this->_conflict_array =
+                    $this->_viewable_tags = null;
                 ++$this->_review_array_version;
                 unset($this->reviewSignatures, $this->allConflictType);
             }
@@ -728,19 +731,14 @@ class PaperInfo {
         return $this->paperTags;
     }
 
-    function searchable_tags(Contact $user) {
-        if ($user->allow_administer($this))
-            return $this->all_tags_text();
-        else
-            return $this->viewable_tags($user);
-    }
-
     function viewable_tags(Contact $user) {
         // see also Contact::can_view_tag()
-        $tags = "";
-        if ($user->isPC)
-            $tags = (string) $this->all_tags_text();
-        if ($tags !== "") {
+        if (!$user->isPC || (string) $this->all_tags_text() === "")
+            return "";
+        $this->check_rights_version();
+        if ($this->_viewable_tags === null
+            || $this->_viewable_tags_cid !== $user->contactId) {
+            $tags = $this->all_tags_text();
             $dt = $this->conf->tags();
             if ($user->can_view_most_tags($this))
                 $tags = $dt->strip_nonviewable($tags, $user, $this);
@@ -748,8 +746,17 @@ class PaperInfo {
                 $tags = Tagger::strip_nonsitewide($tags, $user);
             else
                 $tags = "";
+            $this->_viewable_tags = $dt->sort($tags);
+            $this->_viewable_tags_cid = $user->contactId;
         }
-        return $tags;
+        return $this->_viewable_tags;
+    }
+
+    function searchable_tags(Contact $user) {
+        if ($user->allow_administer($this))
+            return $this->all_tags_text();
+        else
+            return $this->viewable_tags($user);
     }
 
     function editable_tags(Contact $user) {
@@ -777,7 +784,7 @@ class PaperInfo {
         $viewable = $this->viewable_tags($user);
         $pj->tags = TagInfo::split($viewable);
         $pj->tags_edit_text = $tagger->unparse($editable);
-        $pj->tags_view_html = $tagger->unparse_and_link($viewable);
+        $pj->tags_view_html = $tagger->unparse_link($viewable);
         if (($decor = $tagger->unparse_decoration_html($viewable)))
             $pj->tag_decoration_html = $decor;
         $tagmap = $this->conf->tags();

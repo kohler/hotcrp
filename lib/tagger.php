@@ -212,6 +212,7 @@ class TagMap implements IteratorAggregate {
 
     private static $emoji_code_map = null;
     private static $multicolor_map = [];
+    private static $collator = null;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -318,23 +319,23 @@ class TagMap implements IteratorAggregate {
             $t = $this->update_patterns($tag, $ltag, $t);
         return $t;
     }
-    private function sort() {
+    private function sort_storage() {
         ksort($this->storage);
         $this->sorted = true;
     }
     function getIterator() {
-        $this->sorted || $this->sort();
+        $this->sorted || $this->sort_storage();
         return new ArrayIterator($this->storage);
     }
     function filter($property) {
         $k = "has_{$property}";
         if (!$this->$k)
             return [];
-        $this->sorted || $this->sort();
+        $this->sorted || $this->sort_storage();
         return array_filter($this->storage, function ($t) use ($property) { return $t->$property; });
     }
     function filter_by($f) {
-        $this->sorted || $this->sort();
+        $this->sorted || $this->sort_storage();
         return array_filter($this->storage, $f);
     }
     function check_property($tag, $property) {
@@ -536,6 +537,26 @@ class TagMap implements IteratorAggregate {
                 && !($prow ? $user->can_view_hidden_tags($prow) : $user->privChair))
                 $re = "(?:" . $re . "|(?:" . $this->hidden_regex_part() . ")(?:#\\S+|(?= )))";
             $tags = trim(preg_replace("{ " . $re . "}i", "", " $tags "));
+        }
+        return $tags;
+    }
+
+    static function collator() {
+        if (!self::$collator) {
+            self::$collator = new Collator("en_US.utf8");
+            self::$collator->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
+        }
+        return self::$collator;
+    }
+    function sort($tags) {
+        if ($tags !== "" && $tags !== null && $tags !== []) {
+            if (is_array($tags)) {
+                self::collator()->sort($tags);
+            } else {
+                $tags = explode(" ", $tags);
+                self::collator()->sort($tags);
+                $tags = join(" ", $tags);
+            }
         }
         return $tags;
     }
@@ -938,7 +959,7 @@ class Tagger {
         return hoturl("search", ["q" => $q]);
     }
 
-    function unparse_and_link($viewable) {
+    function unparse_link($viewable) {
         $tags = $this->unparse($viewable);
         if ($tags === "")
             return "";

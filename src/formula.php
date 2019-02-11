@@ -1891,7 +1891,7 @@ class Formula {
             return $this->user->reviewer_html_for($x);
         else if ($this->_format === Fexpr::FTAG) {
             $tagger = new Tagger($this->user);
-            return $tagger->unparse_and_link($this->_tagrefs[$x]);
+            return $tagger->unparse_link($this->_tagrefs[$x]);
         } else {
             $x = round($x * 100) / 100;
             if ($this->_format instanceof ReviewField)

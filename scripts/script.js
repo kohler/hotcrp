@@ -572,6 +572,22 @@ function unparse_duration(d, include_msec) {
     return neg ? "-" + t : t;
 }
 
+var strnatcmp = (function () {
+if (window.Intl && Intl.Collator) {
+    var collator = new Intl.Collator(undefined, {sensitivity: "case", numeric: true});
+    return function (a, b) {
+        var cmp = collator.compare(a.replace(/"/g, ""), b.replace(/"/g, ""));
+        if (cmp === 0 && a !== b)
+            cmp = a < b ? -1 : 1;
+        return cmp;
+    };
+} else {
+    return function (a, b) {
+        return a < b ? -1 : (a === b ? 0 : 1);
+    };
+}
+})();
+
 
 // events
 var event_key = (function () {
@@ -4378,18 +4394,6 @@ function shortcut(top_elt) {
 
 
 // tags
-function strnatcmp(a, b) {
-    var cmp = a.toLowerCase().replace(/"/g, "")
-        .localeCompare(b.toLowerCase().replace(/"/g, ""));
-    if (cmp != 0)
-        return cmp;
-    else if (a == b)
-        return 0;
-    else if (a < b)
-        return -1;
-    else
-        return 1;
-}
 
 function completion_item(c) {
     if (typeof c === "string")

@@ -1185,4 +1185,11 @@ xassert_eqq(CleanHTML::basic_clean('<a href = " javaScript:hello" ><B>Hello</b><
 xassert_eqq(CleanHTML::basic_clean('<a href = "https://hello" onclick="fuck"><B>Hello</b></a>', $err), false);
 xassert_eqq(CleanHTML::basic_clean('<a href =\'https:"""//hello\' butt><B>Hello</b></a>', $err), '<a href="https:&quot;&quot;&quot;//hello" butt><b>Hello</b></a>');
 
+// tag sorting
+$dt = $Conf->tags();
+xassert_eqq($dt->sort(""), "");
+xassert_eqq($dt->sort("a"), "a");
+xassert_eqq($dt->sort(" a"), " a");
+xassert_eqq($dt->sort(" a1 a10 a100 a2"), " a1 a2 a10 a100");
+
 xassert_exit();
