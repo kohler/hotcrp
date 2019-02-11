@@ -780,7 +780,7 @@ class Contact {
     }
 
     function viewable_tags(Contact $viewer) {
-        if ($viewer->can_view_contact_tags() || $viewer->contactId == $this->contactId) {
+        if ($viewer->can_view_user_tags() || $viewer->contactId == $this->contactId) {
             $tags = $this->all_contact_tags();
             return $this->conf->tags()->strip_nonviewable($tags, $viewer, null);
         } else
@@ -2105,9 +2105,23 @@ class Contact {
         }
         return $this->_can_view_pc > 0;
     }
-    function can_view_contact_tags() {
+    function can_view_user_tags() {
         return $this->privChair
             || ($this->can_view_pc() && $this->_can_view_pc > 1);
+    }
+    function can_view_user_tag($tag) {
+        return $this->can_view_user_tags()
+            && $this->conf->tags()->strip_nonviewable($tag, $this, null) !== "";
+    }
+    function viewable_user_tags() {
+        if ($this->privChair)
+            return $this->conf->pc_tags();
+        else if ($this->can_view_pc() && $this->_can_view_pc > 1) {
+            $t = join(" ", $this->conf->pc_tags());
+            $t = $this->conf->tags()->strip_nonviewable($t, $this, null);
+            return explode(" ", $t);
+        } else
+            return [];
     }
 
     function can_view_tracker($tracker_json = null) {

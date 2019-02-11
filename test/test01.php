@@ -1142,10 +1142,10 @@ xassert($u->contactId > 0);
 xassert_eqq($Conf->fetch_value("select password from ContactInfo where email='anonymous10'"), "*");
 
 // contact tags
-xassert($user_chair->can_view_contact_tags());
-xassert($user_estrin->can_view_contact_tags());
-xassert(!$user_kohler->can_view_contact_tags());
-xassert(!$user_van->can_view_contact_tags());
-xassert(!$user_nobody->can_view_contact_tags());
+xassert($user_chair->can_view_user_tags());
+xassert($user_estrin->can_view_user_tags());
+xassert(!$user_kohler->can_view_user_tags());
+xassert(!$user_van->can_view_user_tags());
+xassert(!$user_nobody->can_view_user_tags());
 
 xassert_exit();

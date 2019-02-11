@@ -578,16 +578,13 @@ echo_radio_row("pctyp", "all", "Use entire PC");
 echo_radio_row("pctyp", "sel", "Use selected PC members:", ["open" => true]);
 echo " &nbsp; (select ";
 $pctyp_sel = array(array("all", "all"), array("none", "none"));
-$pctags = $Conf->pc_tags();
-if (!empty($pctags)) {
-    $tagsjson = array();
-    foreach ($Conf->pc_members() as $pc)
-        $tagsjson[$pc->contactId] = " " . trim(strtolower($pc->viewable_tags($Me))) . " ";
-    Ht::stash_script("var hotcrp_pc_tags=" . json_encode($tagsjson) . ";");
-    foreach ($pctags as $tagname => $pctag)
-        if ($tagname !== "pc" && $Conf->tags()->strip_nonviewable($tagname, $Me, null))
-            $pctyp_sel[] = [$pctag, "#$pctag"];
-}
+$tagsjson = array();
+foreach ($Conf->pc_members() as $pc)
+    $tagsjson[$pc->contactId] = " " . trim(strtolower($pc->viewable_tags($Me))) . " ";
+Ht::stash_script("var hotcrp_pc_tags=" . json_encode($tagsjson) . ";");
+foreach ($Me->viewable_user_tags() as $pctag)
+    if ($ptctag !== "pc")
+        $pctyp_sel[] = [$pctag, "#$pctag"];
 $pctyp_sel[] = array("__flip__", "flip");
 $sep = "";
 foreach ($pctyp_sel as $pctyp) {

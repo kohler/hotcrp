@@ -965,6 +965,8 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         assert($state->user === $this->user);
+        // NB the following case also catches attempts to view a non-viewable
+        // user tag (the csearch will return nothing).
         if (!$this->csearch->ids)
             return "null";
         $state->datatype |= self::ASUBREV;
@@ -1583,7 +1585,7 @@ class Formula {
         $e1 = null;
         $rsm = new ReviewSearchMatcher;
         while ($ex !== "") {
-            if (!preg_match('/\A:((?:"[^"]*(?:"|\z)|[-A-Za-z0-9_.#@]+(?!\s*\())+)(.*)/si', $ex, $m)
+            if (!preg_match('/\A:((?:"[^"]*(?:"|\z)|~*[-A-Za-z0-9_.#@]+(?!\s*\())+)(.*)/si', $ex, $m)
                 || preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1]))
                 break;
             $ee = null;

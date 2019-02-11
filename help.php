@@ -183,10 +183,9 @@ function show_help_topics($hth) {
 
 
 function meaningful_pc_tag(Contact $user) {
-    if ($user->isPC)
-        foreach ($user->conf->pc_tags() as $tag)
-            if ($tag !== "pc")
-                return $tag;
+    foreach ($user->viewable_user_tags() as $tag)
+        if ($tag !== "pc")
+            return $tag;
     return false;
 }
 

@@ -16,11 +16,9 @@ else if (isset($Qreq->getgo) && isset($Qreq->getaction))
 $tOpt = array();
 if ($Me->can_view_pc())
     $tOpt["pc"] = "Program committee";
-if ($Me->can_view_contact_tags() && count($pctags = $Conf->pc_tags())) {
-    foreach ($pctags as $t)
-        if ($t != "pc")
-            $tOpt["#$t"] = "#$t program committee";
-}
+foreach ($Me->viewable_user_tags() as $t)
+    if ($t !== "pc")
+        $tOpt["#$t"] = "#$t program committee";
 if ($Me->isPC)
     $tOpt["admin"] = "System administrators";
 if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeallrev"))) {

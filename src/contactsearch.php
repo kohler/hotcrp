@@ -32,7 +32,7 @@ class ContactSearch {
         if ($this->ids === false
             && ($this->type & self::F_TAG)
             && !($this->type & self::F_QUOTED)
-            && $this->user->can_view_contact_tags()) {
+            && $this->user->can_view_user_tags()) {
             $this->ids = $this->check_pc_tag();
         }
         if ($this->ids === false
@@ -87,7 +87,8 @@ class ContactSearch {
             $x = substr($x, 1);
         }
 
-        if ($this->conf->pc_tag_exists($x)) {
+        if ($this->conf->pc_tag_exists($x)
+            && $this->user->can_view_user_tag($x)) {
             $a = array();
             foreach ($this->conf->pc_members() as $cid => $pc) {
                 if ($pc->has_tag($x))
@@ -102,7 +103,7 @@ class ContactSearch {
                 return Dbl::fetch_first_columns($result);
             }
         } else if ($need) {
-            $this->warn_html = "No such PC tag “" . htmlspecialchars($this->text) . "”.";
+            $this->warn_html = "No users are tagged “" . htmlspecialchars($this->text) . "”.";
             return array();
         } else
             return false;

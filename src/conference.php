@@ -1788,7 +1788,7 @@ class Conf {
     function pc_tags() {
         if ($this->_pc_tags_cache === null)
             $this->pc_members();
-        return $this->_pc_tags_cache;
+        return array_values($this->_pc_tags_cache);
     }
 
     function pc_tag_exists($tag) {
@@ -3560,8 +3560,8 @@ class Conf {
         $hpcj["__order__"] = $list;
         if ($this->sort_by_last)
             $hpcj["__sort__"] = "last";
-        if ($user->can_view_contact_tags())
-            $hpcj["__tags__"] = array_values($this->pc_tags());
+        if ($user->can_view_user_tags())
+            $hpcj["__tags__"] = $user->viewable_user_tags();
         if ($this->paper && $user->allow_administer($this->paper)) {
             $list = [];
             foreach ($this->pc_members() as $pcm)

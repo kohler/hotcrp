@@ -625,7 +625,7 @@ class ContactList {
         $queryOptions = array();
         if (str_starts_with($listname, "#")) {
             $queryOptions["where"] = "(u.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 1)) . "#%'") . ")";
-            $listquery = "pc";
+            $listquery = "pcadmin";
         }
 
         // get paper list
