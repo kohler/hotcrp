@@ -65,6 +65,19 @@ if ("classList" in document.createElement("span")
     };
 }
 
+function lower_bound_index(a, v) {
+    var l = 0, r = a.length;
+    while (l < r) {
+        var m = (l + r) >> 1;
+        if (a[m] < v) {
+            l = m + 1;
+        } else {
+            r = m;
+        }
+    }
+    return l;
+}
+
 
 // promises
 function HPromise(executor) {
@@ -1375,6 +1388,9 @@ return function (content, bubopt) {
                 return $(bubch[1]).text();
             else
                 return bubble.html(text ? text_to_html(text) : text);
+        },
+        content_node: function () {
+            return bubch[1].firstChild;
         },
         hover: function (enter, leave) {
             $(bubdiv).hover(enter, leave);
@@ -3672,7 +3688,7 @@ function render_editing(hc, cj) {
     if (fmt.has_preview)
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
-    hc.push_pop('<textarea name="text" class="reviewtext cmttext c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
+    hc.push_pop('<textarea name="text" class="reviewtext cmttext suggest-emoji need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
 
     hc.push('<div class="cmteditinfo fold2o fold3c">', '</div>');
 
@@ -3819,6 +3835,7 @@ function activate_editing($c, cj) {
     $f.on("submit", submit_editor).on("click", "button", buttonclick_editor);
     hiliter_children($f);
     $c.find(".need-tooltip").each(tooltip);
+    $c.find(".need-suggest").each(suggest);
 }
 
 function render_edit_attachment(i, doc) {
@@ -4393,20 +4410,7 @@ function shortcut(top_elt) {
 }
 
 
-// tags
-
-function completion_item(c) {
-    if (typeof c === "string")
-        return {s: c};
-    else if ($.isArray(c))
-        return {s: c[0], description: c[1]};
-    else {
-        if (!("s" in c) && "sm1" in c)
-            c = $.extend({s: c.sm1, filter_length: 1}, c);
-        return c;
-    }
-}
-
+// demand loading promises
 
 var demand_load = {};
 
@@ -4473,6 +4477,63 @@ demand_load.mentions = demand_load.make(function (resolve, reject) {
         resolve([]);
 });
 
+demand_load.emoji_codes = demand_load.make(function (resolve, reject) {
+    $.get(assetsurl + "scripts/emojicodes.json", null, function (v) {
+        if (!v || !v.emoji)
+            v = {emoji: []};
+        if (!v.lists)
+            v.lists = {};
+        v.lists.all = Object.keys(v.emoji);
+        v.lists.all.sort();
+        v.completion = {};
+        resolve(v);
+    });
+});
+
+demand_load.emoji_completion = function (start) {
+    return demand_load.emoji_codes().then(function (v) {
+        var sel, i, next, basic = v.lists.basic;
+        function select_from(list) {
+            var i = lower_bound_index(list, start),
+                j = lower_bound_index(list, next);
+            if (!sel.length)
+                sel = list.slice(i, j);
+            else {
+                while (i < j) {
+                    if (sel.indexOf(list[i]) < 0)
+                        sel.push(list[i]);
+                    ++i;
+                }
+            }
+        }
+        if (start === "") {
+            sel = basic.slice();
+        } else {
+            sel = [];
+            for (i = 0; i !== basic.length; ++i) {
+                if (basic[i].substring(0, start.length) === start)
+                    sel.push(basic[i]);
+            }
+            next = start.substring(0, start.length - 1) +
+                String.fromCharCode(start.charCodeAt(start.length - 1) + 1);
+            select_from(v.lists.common);
+            if (start.length > 1)
+                select_from(v.lists.all);
+        }
+        for (i = 0; i !== sel.length; ++i) {
+            var code = sel[i];
+            if (!v.completion[code]) {
+                v.completion[code] = {
+                    s: ":" + code + ":", r: v.emoji[code], no_space: true,
+                    sh: '<span class="nw">' + v.emoji[code] + " :" + code + ":</span>"
+                };
+            }
+            sel[i] = v.completion[code];
+        }
+        return sel;
+    });
+};
+
 
 tooltip.add_builder("votereport", function (info) {
     var pid = $(this).attr("data-pid") || hotcrp_paperid,
@@ -4486,8 +4547,22 @@ tooltip.add_builder("votereport", function (info) {
 });
 
 
+// suggestions and completion
+
+function completion_item(c) {
+    if (typeof c === "string")
+        return {s: c};
+    else if ($.isArray(c))
+        return {s: c[0], d: c[1]};
+    else {
+        if (!("s" in c) && "sm1" in c)
+            c = $.extend({s: c.sm1, filter_length: 1}, c);
+        return c;
+    }
+}
+
 function completion_split(elt) {
-    if (elt.selectionStart == elt.selectionEnd)
+    if (elt.selectionStart === elt.selectionEnd)
         return [elt.value.substring(0, elt.selectionStart),
                 elt.value.substring(elt.selectionEnd)];
     else
@@ -4506,15 +4581,16 @@ function make_suggestions(precaret, postcaret, options) {
     //
     // Other options:
     // * `options.case_sensitive`: If truthy, match is case sensitive.
-    // * `options.decorate`: If truthy, use completion items’ descriptions.
     // * `options.filter_length`: Integer. Ignore completion items that don’t
     //    match the first `prefix.length + filter_length` characters of
     //    the match region.
     //
     // Completion items:
     // * `item.s`: Completion string -- mandatory.
+    // * `item.sh`: Completion item HTML (requires `item.r`).
     // * `item.d`: Description text.
     // * `item.dh`: Description HTML.
+    // * `item.r`: Replacement text (defaults to `item.s`).
     // * `item.filter_length`: Integer. Ignore this item if it doesn’t match
     //   the first `item.filter_length` characters of the match region.
     // Shorthand:
@@ -4522,64 +4598,52 @@ function make_suggestions(precaret, postcaret, options) {
     // * A two-element array `item` sets `item.s` and `item.d`, respectively.
     // * A `item.sm1` component sets `item.s` and sets `item.filter_length = 1`.
 
-    if (arguments.length > 3) {
-        options = $.extend({}, options);
-        for (var i = 3; i < arguments.length; ++i)
-            $.extend(options, arguments[i]);
-    }
     options = options || {};
 
     var case_sensitive = options.case_sensitive;
-    var decorate = options.decorate;
     var prefix = options.prefix || "";
     var lregion = prefix + precaret + postcaret;
     lregion = case_sensitive ? lregion : lregion.toLowerCase();
+    if (options.case_sensitive_items != null)
+        case_sensitive = options.case_sensitive_items;
     var filter = null;
     if ((prefix.length || options.filter_length) && lregion.length)
         filter = lregion.substr(0, prefix.length + (options.filter_length || 0));
     var lengths = [prefix.length + precaret.length, postcaret.length, (options.suffix || "").length];
 
     return function (tlist) {
-        var res = [];
-        var best_index = null;
-        var can_highlight = lregion.length > prefix.length;
+        var res = [], best = null, can_highlight = lregion.length > prefix.length,
+            titem, text, ltext, fl;
 
         for (var i = 0; i < tlist.length; ++i) {
-            var titem = completion_item(tlist[i]);
-            var text = titem.s;
-            var ltext = case_sensitive ? text : text.toLowerCase();
-
-            if ((filter !== null
-                 && ltext.substr(0, filter.length) !== filter)
-                || (titem.filter_length
-                    && (lregion.length < titem.filter_length
-                        || ltext.substr(0, titem.filter_length) !== lregion.substr(0, titem.filter_length))))
-                continue;
-
-            if (can_highlight && ltext.substr(0, lregion.length) === lregion) {
-                best_index = res.length;
-                can_highlight = false;
+            titem = text = tlist[i];
+            fl = 0;
+            if (typeof text !== "string") {
+                text = titem.s || titem[0] || titem.sm1;
+                if (titem.filter_length != null)
+                    fl = titem.filter_length;
+                else if (titem.sm1)
+                    fl = 1;
             }
+            ltext = case_sensitive ? text : text.toLowerCase();
 
-            var t = '<div class="suggestion">';
-            if (decorate) {
-                t += '<span class="suggestion-text">' + escape_entities(text) + '</span>';
-                if (titem.description_html || titem.dh)
-                    t += ' <span class="suggestion-description">' + (titem.description_html || titem.dh) + '</span>';
-                else if (titem.description || titem.d)
-                    t += ' <span class="suggestion-description">' + escape_entities(titem.description || titem.d) + '</span>';
-            } else
-                t += escape_entities(text);
-            res.push(t + '</div>');
+            if ((filter === null
+                 || ltext.substr(0, filter.length) === filter)
+                && (!fl
+                    || (lregion.length >= fl
+                        && ltext.substr(0, fl) === lregion.substr(0, fl)))) {
+                if (can_highlight
+                    && ltext.substr(0, lregion.length) === lregion) {
+                    best = res.length;
+                    can_highlight = false;
+                }
+                res.push(titem);
+            }
         }
 
         if (res.length) {
-            if (best_index !== null) {
-                res[best_index] = res[best_index].replace(/^<div class="suggestion/, '<div class="suggestion active');
-            }
-            return {list: res, lengths: lengths};
-        } else
-            return null;
+            return $.extend(options, {list: res, lengths: lengths, best: best});
+        }
     };
 }
 
@@ -4587,14 +4651,39 @@ var suggest = (function () {
 var builders = {};
 
 function suggest() {
-    var elt = this, hintdiv, suggdata,
-        blurring = false, hiding = false, lastkey = false, wasnav = 0;
+    var elt = this, hintdiv, suggdata, hintlist,
+        blurring = false, hiding = false, lastkey = false, lastpos = false, wasnav = 0;
 
     function kill() {
         hintdiv && hintdiv.remove();
-        hintdiv = null;
-        blurring = hiding = lastkey = false;
+        hintdiv = hintlist = null;
+        blurring = hiding = lastkey = lastpos = false;
         wasnav = 0;
+    }
+
+    function render_item(titem) {
+        var node = document.createElement("div");
+        titem = completion_item(titem);
+        node.className = titem.no_space ? "suggestion s9nsp" : "suggestion";
+        if (titem.r)
+            node.setAttribute("data-replacement", titem.r);
+        if (titem.sh)
+            node.innerHTML = titem.sh;
+        else if (titem.d || titem.dh) {
+            var s9t = document.createElement("span");
+            s9t.className = "s9t";
+            s9t.appendChild(document.createTextNode(titem.s));
+            node.appendChild(s9t);
+            var s9d = document.createElement("span");
+            s9d.className = "s9d";
+            if (titem.dh)
+                s9d.innerHTML = titem.dh;
+            else
+                s9d.appendChild(document.createTextNode(titem.d))
+            node.appendChild(s9d);
+        } else
+            node.appendChild(document.createTextNode(titem.s));
+        return node;
     }
 
     function finish_display(cinfo) {
@@ -4603,6 +4692,7 @@ function suggest() {
         var caretpos = elt.selectionStart, precaretpos = caretpos - cinfo.lengths[0];
         if (hiding && hiding === elt.value.substring(precaretpos, caretpos))
             return;
+
         hiding = false;
         if (!hintdiv) {
             hintdiv = make_bubble({dir: "nw", color: "suggest"});
@@ -4611,11 +4701,38 @@ function suggest() {
                 .on("mousemove", "div.suggestion", hover);
         }
 
-        var i, ml = [10, 30, 60, 90, 120];
-        for (i = 0; i < ml.length && cinfo.list.length > ml[i]; ++i)
-            /* nada */;
-        var t = '<div class="suggesttable suggesttable' + (i + 1) +
-            '">' + cinfo.list.join('') + '</div>';
+        var i, clist = cinfo.list, same_list = false;
+        if (hintlist && hintlist.length === clist.length) {
+            for (same_list = true, i = 0; i !== hintlist.length; ++i) {
+                if (hintlist[i] !== clist[i]) {
+                    same_list = false;
+                    break;
+                }
+            }
+        }
+        hintlist = clist;
+
+        var div;
+        if (!same_list) {
+            var ml = [10, 30, 60, 90, 120];
+            for (i = 0; i !== ml.length && clist.length > ml[i]; ++i)
+                /* nada */;
+            if (cinfo.min_columns && cinfo.min_columns > i + 1)
+                i = cinfo.min_columns - 1;
+            if (clist.length < i + 1)
+                i = clist.length - 1;
+            div = document.createElement("div");
+            div.className = "suggesttable suggesttable" + (i + 1);
+            for (i = 0; i !== clist.length; ++i)
+                div.appendChild(render_item(clist[i], i === cinfo.highlight));
+            hintdiv.html(div);
+        } else {
+            div = hintdiv.content_node();
+            $(div).find(".s9y").removeClass("s9y");
+        }
+        if (cinfo.best !== null) {
+            addClass(div.childNodes[cinfo.best], "s9y");
+        }
 
         var $elt = jQuery(elt),
             shadow = textarea_shadow($elt, elt.tagName == "INPUT" ? 2000 : 0);
@@ -4624,7 +4741,7 @@ function suggest() {
             .append(document.createTextNode(elt.value.substring(precaretpos)));
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
         $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
-        hintdiv.html(t).near($pos, elt);
+        hintdiv.near($pos, elt);
         hintdiv.self().data("autocompletePos", [precaretpos, cinfo.lengths]);
         shadow.remove();
     }
@@ -4636,11 +4753,11 @@ function suggest() {
             if (cinfo || i == suggdata.promises.length)
                 finish_display(cinfo);
             else {
-                var promise = suggdata.promises[i](elt, suggdata.options);
-                if (promise && $.isFunction(promise.then))
-                    promise.then(next);
+                var result = suggdata.promises[i](elt);
+                if (result && $.isFunction(result.then))
+                    result.then(next);
                 else
-                    next(promise);
+                    next(result);
             }
         }
         next(null);
@@ -4648,7 +4765,9 @@ function suggest() {
 
     function do_complete(complete_elt) {
         var text;
-        if (complete_elt.firstChild.nodeType === Node.TEXT_NODE)
+        if (complete_elt.hasAttribute("data-replacement"))
+            text = complete_elt.getAttribute("data-replacement");
+        else if (complete_elt.firstChild.nodeType === Node.TEXT_NODE)
             text = complete_elt.textContent;
         else
             text = complete_elt.firstChild.textContent;
@@ -4660,15 +4779,17 @@ function suggest() {
         if (poss[1][2])
             text += val.substring(endPos - poss[1][2], endPos);
         var outPos = startPos + text.length + 1;
-        if (endPos == val.length || /\S/.test(val.charAt(endPos)))
+        if ((endPos === val.length || /\S/.test(val.charAt(endPos)))
+            && !hasClass(complete_elt, "s9nsp"))
             text += " ";
         $(elt).val(val.substring(0, startPos) + text + val.substring(endPos));
         elt.selectionStart = elt.selectionEnd = outPos;
+        $(elt).trigger("input");
     }
 
     function move_active(k) {
         var $sug = hintdiv.self().find(".suggestion"),
-            $active = hintdiv.self().find(".suggestion.active"),
+            $active = hintdiv.self().find(".s9y"),
             pos = null;
         if (!$active.length) {
             if (k === "ArrowUp")
@@ -4681,7 +4802,8 @@ function suggest() {
             for (pos = 0; pos !== $sug.length - 1 && $sug[pos] !== $active[0]; ++pos)
                 /* nada */;
             pos += k === "ArrowDown" ? 1 : -1;
-        } else if ((k === "ArrowLeft" || k === "ArrowRight") && wasnav > 0) {
+        } else if ((k === "ArrowLeft" && wasnav > 0)
+                   || (k === "ArrowRight" && (wasnav > 0 || elt.selectionEnd === elt.value.length))) {
             var $activeg = $active.geometry(),
                 nextadx = Infinity, nextady = Infinity,
                 isleft = k === "ArrowLeft",
@@ -4706,8 +4828,8 @@ function suggest() {
         if (pos !== null) {
             pos = (pos + $sug.length) % $sug.length;
             if ($sug[pos] !== $active[0]) {
-                $active.removeClass("active");
-                addClass($sug[pos], "active");
+                $active.removeClass("s9y");
+                addClass($sug[pos], "s9y");
             }
             wasnav = 2;
             return true;
@@ -4726,7 +4848,7 @@ function suggest() {
                 evt.stopImmediatePropagation();
             }
         } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
-            var $active = hintdiv.self().find(".suggestion.active");
+            var $active = hintdiv.self().find(".s9y");
             if ((k !== "Enter" || lastkey !== "Backspace") && $active.length)
                 do_complete($active[0]);
             kill();
@@ -4752,10 +4874,14 @@ function suggest() {
     }
 
     function hover(evt) {
-        hintdiv.self().find(".active").removeClass("active");
-        $(this).addClass("active");
-        lastkey = "Arrow";
-        wasnav = 1;
+        if (lastpos && (Math.abs(lastpos.x - evt.screenX) > 1
+                        || Math.abs(lastpos.y - evt.screenY) > 1)) {
+            hintdiv.self().find(".s9y").removeClass("s9y");
+            $(this).addClass("s9y");
+            lastkey = "Arrow";
+            wasnav = 1;
+        }
+        lastpos = {x: evt.screenX, y: evt.screenY};
     }
 
     function blur() {
@@ -4788,42 +4914,48 @@ return suggest;
 
 $(function () { $(".need-suggest").each(suggest); });
 
-suggest.add_builder("tags", function (elt, options) {
+suggest.add_builder("tags", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
-        return demand_load.tags().then(make_suggestions(m[2], n[1], options, {suffix: n[2]}));
-    } else
-        return null;
+        return demand_load.tags().then(make_suggestions(m[2], n[1], {suffix: n[2]}));
+    }
 });
 
-suggest.add_builder("papersearch", function (elt, options) {
+suggest.add_builder("papersearch", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagval:|tagvalue:))([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
-        return demand_load.tags().then(make_suggestions(m[2], n[1], options));
+        return demand_load.tags().then(make_suggestions(m[2], n[1]));
     } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
-        return demand_load.search_completion().then(make_suggestions(m[2], n[1], options, {prefix: m[1]}));
-    } else
-        return null;
+        return demand_load.search_completion().then(make_suggestions(m[2], n[1], {prefix: m[1]}));
+    }
 });
 
-suggest.add_builder("pc-tags", function (elt, options) {
-    var x = completion_split(elt), m, n, f;
+suggest.add_builder("pc-tags", function (elt) {
+    var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^(\S*)/);
-        f = make_suggestions(m[2], n[1], options);
-        return demand_load.pc().then(function (pc) { return f(pc.__tags__ || []) });
-    } else
-        return null;
+        return demand_load.pc().then(function (pc) {
+            return make_suggestions(m[2], n[1])(pc.__tags__ || []);
+        });
+    }
 });
 
-function comment_completion_q(elt, options) {
+suggest.add_builder("suggest-emoji", function (elt) {
+    var x = completion_split(elt), m;
+    if (x && (m = x[0].match(/(?:^|[\s(\u{1f000}-\u{1ffff}]):((?:|[-+]|[-+]1|[-_0-9a-zA-Z]+):?)$/u))
+        && /^(?:$|[\s)])/.test(x[1])) {
+        return demand_load.emoji_completion(m[1]).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, min_columns: 4}));
+    }
+});
+
+function comment_completion_q(elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[\s,;])@([-\w_.]*)$/))) {
         n = x[1].match(/^([-\w_.]*)/);
-        return demand_load.mentions().then(make_suggestions(m[1], n[1], options));
+        return demand_load.mentions().then(make_suggestions(m[1], n[1]));
     } else
         return null;
 }

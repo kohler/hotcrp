@@ -924,7 +924,7 @@ class Conf {
     // emoji codes
     function _add_emoji_code($val, $key) {
         if (is_string($val) && str_starts_with($key, ":") && str_ends_with($key, ":")) {
-            $this->_emoji_codes[$key] = $val;
+            $this->_emoji_codes->emoji[$key] = $val;
             return true;
         } else
             return false;
@@ -932,11 +932,12 @@ class Conf {
     function emoji_code_map() {
         global $ConfSitePATH;
         if ($this->_emoji_codes === null) {
-            $this->_emoji_codes = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"), true);
+            $this->_emoji_codes = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"));
+            $this->_emoji_codes->emoji = (array) $this->_emoji_codes->emoji;
             if (($olist = $this->opt("emojiCodes")))
                 expand_json_includes_callback($olist, [$this, "_add_emoji_code"]);
         }
-        return $this->_emoji_codes;
+        return $this->_emoji_codes->emoji;
     }
 
 

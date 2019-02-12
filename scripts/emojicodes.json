@@ -1,4 +1,5 @@
 {
+"emoji":{
 "+1":"👍",
 "-1":"👎",
 "100":"💯",
@@ -230,6 +231,7 @@
 "chart":"💹",
 "chart_with_downwards_trend":"📉",
 "chart_with_upwards_trend":"📈",
+"check":"✔️",
 "checkered_flag":"🏁",
 "cheese":"🧀",
 "cherries":"🍒",
@@ -633,6 +635,7 @@
 "honey_pot":"🍯",
 "honeybee":"🐝",
 "hong_kong":"🇭🇰",
+"hooray":"🎉",
 "horse":"🐴",
 "horse_racing":"🏇",
 "hospital":"🏥",
@@ -1489,4 +1492,13 @@
 "zimbabwe":"🇿🇼",
 "zipper_mouth_face":"🤐",
 "zzz":"💤"
+},
+"lists":{
+"basic":["+1","-1","smile","hooray","confused","heart","check","wink","100","cry","fire","warning","clap"],
+"common":["+1","-1","100","1st_place_medal","2nd_place_medal","3rd_place_medal","8ball","airplane","angry","arrow_backward","arrow_forward","arrow_left","arrow_right","arrow_right_hook","balloon","bangbang","blue_heart","blush","boom","broken_heart","camera","check","cherry_blossom","clap","cold_sweat","confounded","confused","crown","cry","cupid","dancer","disappointed","disappointed_relieved","dizzy","expressionless","eyes","facepunch","fearful","fire","fist","fist_oncoming","flushed","four_leaf_clover","gem","ghost","green_heart","grimacing","grin","grinning","gun","hand","headphones","heart","heart_eyes","heart_eyes_cat","heartbeat","heartpulse","hearts","hibiscus","hooray","information_desk_person","innocent","joy","joy_cat","kiss","kissing_closed_eyes","kissing_heart","kissing_smiling_eyes","laughing","leaves","leftwards_arrow_with_hook","mask","microphone","movie_camera","muscle","musical_note","neutral_face","new_moon_with_face","no_good","no_mouth","notes","ok_hand","ok_woman","one","pensive","persevere","pizza","point_down","point_left","point_right","poop","pray","punch","purple_heart","question","rage","raised_hands","raising_hand","recycle","red_circle","relaxed","relieved","revolving_hearts","rose","sassy_woman","scream","see_no_evil","skull","sleeping","sleepy","smile","smiley","smiling_imp","smirk","sob","soccer","sparkles","sparkling_heart","speak_no_evil","star","star2","stuck_out_tongue","stuck_out_tongue_closed_eyes","stuck_out_tongue_winking_eye","sun_with_face","sunglasses","sunny","sweat","sweat_drops","sweat_smile","tada","thought_balloon","thumbsdown","thumbsup","tipping_hand_woman","tired_face","tongue","triumph","two","two_hearts","unamused","underage","v","wave","weary","white_check_mark","wink","worried","x","yellow_heart","yum","zap","zzz"]
+},
+"preferred_codes":["bicyclist","book","boom","car","check","envelope",
+        "exclamation","fist","middle_finger","hand","poop","knife",
+        "laughing","orange","shoe","moon","no_good","phone","rage",
+        "raising_hand","running","surfer","swimmer","walking"]
 }

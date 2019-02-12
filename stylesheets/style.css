@@ -2658,15 +2658,15 @@ ul.x > li:last-child {
 	padding: 1px 4px 1px 16px;
 	text-indent: -12px;
 	cursor: pointer;
+	overflow-wrap: break-word;
+	font-weight: 500;
+	min-width: 8rem;
 }
-.suggestion.active {
+.suggestion.s9y {
 	background-color: #6088d0;
 	color: white;
 }
-.suggestion-text {
-	font-weight: 500;
-}
-.suggestion-description {
+.s9d {
 	padding-left: 0.5em;
 	opacity: 0.5;
 }
