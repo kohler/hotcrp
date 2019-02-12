@@ -114,7 +114,9 @@ class NavigationState {
         $this->base_path_relative = $this->site_path_relative;
 
         $this->php_suffix = ".php";
-        if ((isset($server["SERVER_SOFTWARE"])
+        if ( isset($server["HOTCRP_PHP_SUFFIX"]) )
+            $this->php_suffix = $server["HOTCRP_PHP_SUFFIX"];
+        elseif ((isset($server["SERVER_SOFTWARE"])
              && substr($server["SERVER_SOFTWARE"], 0, 5) === "nginx")
             || (function_exists("apache_get_modules")
                 && array_search("mod_rewrite", apache_get_modules()) !== false))
