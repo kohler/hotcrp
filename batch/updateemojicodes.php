@@ -2,7 +2,7 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 
-$arg = getopt("cd", ["common", "dups"]);
+$arg = getopt("cdt", ["common", "dups", "terminators"]);
 
 function parse_emoji_data_stdin() {
     $x = [];
@@ -122,10 +122,25 @@ function list_common_emoji() {
     fwrite(STDOUT, json_encode($codes) . "\n");
 }
 
+function list_terminators() {
+    global $ConfSitePATH;
+    $emoji = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"));
+    $x = [];
+    foreach ((array) $emoji->emoji as $text) {
+        preg_match('/.\z/u', $text, $m);
+        $x[UnicodeHelper::utf8_ord($m[0])] = true;
+    }
+    $x = array_keys($x);
+    sort($x);
+    fwrite(STDOUT, json_encode(array_map("dechex", $x)) . "\n");
+}
+
 if (isset($arg["c"]) || isset($arg["common"])) {
     list_common_emoji();
 } else if (isset($arg["d"]) || isset($arg["dups"])) {
     list_duplicate_codes();
+} else if (isset($arg["t"]) || isset($arg["terminators"])) {
+    list_terminators();
 } else {
     parse_emoji_data_stdin();
 }

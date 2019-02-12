@@ -4945,7 +4945,7 @@ suggest.add_builder("pc-tags", function (elt) {
 
 suggest.add_builder("suggest-emoji", function (elt) {
     var x = completion_split(elt), m;
-    if (x && (m = x[0].match(/(?:^|[\s(\u{1f000}-\u{1ffff}]):((?:|[-+]|[-+]1|[-_0-9a-zA-Z]+):?)$/u))
+    if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\u{1f000}-\u{1ffff}]):((?:|[-+]|[-+]1|[-_0-9a-zA-Z]+):?)$/u))
         && /^(?:$|[\s)])/.test(x[1])) {
         return demand_load.emoji_completion(m[1]).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, min_columns: 4}));
     }
