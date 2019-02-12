@@ -4483,6 +4483,8 @@ demand_load.emoji_codes = demand_load.make(function (resolve, reject) {
             v = {emoji: []};
         if (!v.lists)
             v.lists = {};
+        if (!v.modifiers)
+            v.modifiers = [];
         v.lists.all = Object.keys(v.emoji);
         v.lists.all.sort();
         v.completion = {};
@@ -4492,11 +4494,19 @@ demand_load.emoji_codes = demand_load.make(function (resolve, reject) {
 
 demand_load.emoji_completion = function (start) {
     return demand_load.emoji_codes().then(function (v) {
-        var sel, i, next, basic = v.lists.basic;
-        function select_from(list) {
-            var i = lower_bound_index(list, start),
+        var sel, i, code, ch, basic = v.lists.basic,
+            period = start.indexOf("."), modifier = null;
+        if (period > 0) {
+            modifier = start.substring(period);
+            start = start.substring(0, period);
+        }
+        function select_from(s, list) {
+            var i = lower_bound_index(list, s),
+                next = s.substring(0, s.length - 1) + String.fromCharCode(s.charCodeAt(s.length - 1) + 1),
                 j = lower_bound_index(list, next);
-            if (!sel.length)
+            if (i === j)
+                return false;
+            else if (!sel.length)
                 sel = list.slice(i, j);
             else {
                 while (i < j) {
@@ -4505,6 +4515,7 @@ demand_load.emoji_completion = function (start) {
                     ++i;
                 }
             }
+            return true;
         }
         if (start === "") {
             sel = basic.slice();
@@ -4514,14 +4525,31 @@ demand_load.emoji_completion = function (start) {
                 if (basic[i].substring(0, start.length) === start)
                     sel.push(basic[i]);
             }
-            next = start.substring(0, start.length - 1) +
-                String.fromCharCode(start.charCodeAt(start.length - 1) + 1);
-            select_from(v.lists.common);
-            if (start.length > 1)
-                select_from(v.lists.all);
+            select_from(start, v.lists.common);
+            if (start.length > 1) {
+                select_from(start, v.lists.all);
+                if (select_from("man_" + start, v.lists.all))
+                    select_from("woman_" + start, v.lists.all);
+            }
+        }
+        if (modifier) {
+            var expansions = false,
+                regex = /(?:[\u261d\u26f9\u270a-\u270d]|\ud83c[\udf85\udfc2-\udfc4\udfc7\udfca-\udfcc]|\ud83d[\udc42-\udc43\udc46-\udc50\udc66-\udc78\udc7c\udc81-\udc83\udc85-\udc87\udc8f\udc91\udcaa\udd74-\udd75\udd7a\udd90\udd95-\udd96\ude45-\ude47\ude4b-\ude4f\udea3\udeb4-\udeb6\udec0\udecc]|\ud83e[\udd0f\udd18-\udd1f\udd26\udd30-\udd39\udd3c-\udd3e\uddb5-\uddb6\uddb8-\uddb9\uddbb\uddcd-\uddcf\uddd1-\udddd])/g;
+            for (i = 0; i !== sel.length && (!expansions || sel.length < 40); ++i) {
+                code = sel[i];
+                if (regex.test(v.emoji[code])) {
+                    for (var j = 0; j !== v.modifiers.length; j += 2, ++i) {
+                        var mcode = code + "." + v.modifiers[j];
+                        if (!v.emoji[mcode])
+                            v.emoji[mcode] = v.emoji[code].replace(regex, "$&" + v.modifiers[j + 1]);
+                        sel.splice(i + 1, 0, mcode);
+                    }
+                    expansions = true;
+                }
+            }
         }
         for (i = 0; i !== sel.length; ++i) {
-            var code = sel[i];
+            code = sel[i];
             if (!v.completion[code]) {
                 v.completion[code] = {
                     s: ":" + code + ":", r: v.emoji[code], no_space: true,
@@ -4945,8 +4973,8 @@ suggest.add_builder("pc-tags", function (elt) {
 
 suggest.add_builder("suggest-emoji", function (elt) {
     var x = completion_split(elt), m;
-    if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\u{1f000}-\u{1ffff}]):((?:|[-+]|[-+]1|[-_0-9a-zA-Z]+):?)$/u))
-        && /^(?:$|[\s)])/.test(x[1])) {
+    if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff]):((?:|[-+]|[-+]1|[-_0-9a-zA-Z]+)(\.[0-9a-z]*|):?)$/))
+        && /^(?:$|[\s)\u20e3-\u23ff\u2600-\u27ff\ufe0f\ud83c-\ud83f])/.test(x[1])) {
         return demand_load.emoji_completion(m[1]).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, min_columns: 4}));
     }
 });

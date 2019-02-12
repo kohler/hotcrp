@@ -165,6 +165,16 @@ class UnicodeHelper {
         return $n;
     }
 
+    static function utf16_ord($str) {
+        $n = self::utf8_ord($str);
+        if ($n <= 0xFFFF)
+            return [$n];
+        else {
+            $n -= 0x10000;
+            return [0xD800 | ($n >> 10), 0xDC00 | ($n & 0x3FF)];
+        }
+    }
+
     static function utf8_chr($n) {
         if ($n < 0x80)
             return chr($n);

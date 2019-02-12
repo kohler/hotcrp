@@ -2,7 +2,7 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 
-$arg = getopt("cdt", ["common", "dups", "terminators"]);
+$arg = getopt("cdmt", ["common", "dups", "terminators", "modifier-bases"]);
 
 function parse_emoji_data_stdin() {
     $x = [];
@@ -135,12 +135,62 @@ function list_terminators() {
     fwrite(STDOUT, json_encode(array_map("dechex", $x)) . "\n");
 }
 
+function modifier_base_regex() {
+    $x = [];
+    foreach (explode("\n", stream_get_contents(STDIN)) as $line) {
+        if (preg_match('/\A([0-9A-F]+)(\.\.[0-9A-F]+|)\s.*Emoji_Modifier_Base/', $line, $m)) {
+            $i = hexdec($m[1]);
+            $j = $m[2] === "" ? $i : hexdec(substr($m[2], 2));
+            for (; $i <= $j; ++$i) {
+                $x[] = UnicodeHelper::utf16_ord(UnicodeHelper::utf8_chr($i));
+            }
+        }
+    }
+    fwrite(STDOUT, "([");
+    $n = count($x);
+    for ($i = 0; $i !== $n && count($x[$i]) === 1; $i = $j) {
+        for ($j = $i + 1;
+             $j !== $n && count($x[$j]) === 1 && $x[$j][0] === $x[$i][0] + ($j - $i);
+             ++$j) {
+        }
+        if ($j - $i === 1) {
+            fwrite(STDOUT, sprintf("\\u%04x", $x[$i][0]));
+        } else {
+            fwrite(STDOUT, sprintf("\\u%04x-\\u%04x", $x[$i][0], $x[$j-1][0]));
+        }
+    }
+    fwrite(STDOUT, "]");
+    for (; $i !== $n; $i = $j) {
+        fwrite(STDOUT, sprintf("|\\u%04x", $x[$i][0]));
+        for ($j = $i + 1; $j !== $n && $x[$j][0] === $x[$i][0]; ++$j) {
+        }
+        if ($j - $i === 1) {
+            fwrite(STDOUT, sprintf("\\u%04x", $x[$i][1]));
+        } else {
+            fwrite(STDOUT, "[");
+            for ($k = $i; $k !== $j; $k = $l) {
+                for ($l = $k + 1; $l !== $j && $x[$l][1] === $x[$k][1] + ($l - $k); ++$l) {
+                }
+                if ($l - $k === 1) {
+                    fwrite(STDOUT, sprintf("\\u%04x", $x[$k][1]));
+                } else {
+                    fwrite(STDOUT, sprintf("\\u%04x-\\u%04x", $x[$k][1], $x[$l-1][1]));
+                }
+            }
+            fwrite(STDOUT, "]");
+        }
+    }
+    fwrite(STDOUT, ")\n");
+}
+
 if (isset($arg["c"]) || isset($arg["common"])) {
     list_common_emoji();
 } else if (isset($arg["d"]) || isset($arg["dups"])) {
     list_duplicate_codes();
 } else if (isset($arg["t"]) || isset($arg["terminators"])) {
     list_terminators();
+} else if (isset($arg["m"]) || isset($arg["modifier-bases"])) {
+    modifier_base_regex();
 } else {
     parse_emoji_data_stdin();
 }

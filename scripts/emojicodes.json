@@ -1500,5 +1500,6 @@
 "preferred_codes":["bicyclist","book","boom","car","check","envelope",
         "exclamation","fist","middle_finger","hand","poop","knife",
         "laughing","orange","shoe","moon","no_good","phone","rage",
-        "raising_hand","running","surfer","swimmer","walking"]
+        "raising_hand","running","surfer","swimmer","walking"],
+"modifiers":["light","\uD83C\uDFFB","mediumlight","\uD83C\uDFFC","medium","\uD83C\uDFFD","mediumdark","\uD83C\uDFFE","dark","\uD83C\uDFFF"]
 }
