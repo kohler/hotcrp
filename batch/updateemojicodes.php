@@ -2,7 +2,8 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 
-$arg = getopt("cdmt", ["common", "dups", "terminators", "modifier-bases"]);
+$optind = null;
+$arg = getopt("acdmn:t", ["absent", "common", "dups", "modifier-bases", "name:", "terminators"], $optind);
 
 function parse_emoji_data_stdin() {
     $x = [];
@@ -183,6 +184,63 @@ function modifier_base_regex() {
     fwrite(STDOUT, ")\n");
 }
 
+function list_absent($args) {
+    global $ConfSitePATH;
+    $emoji = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"));
+    $codes = [];
+    foreach ((array) $emoji->emoji as $text) {
+        $codes[$text] = true;
+        if (str_ends_with($text, "\xEF\xB8\x8F"))
+            $codes[substr($text, 0, -3)] = true;
+    }
+
+    if (count($args) !== 2) {
+        fwrite(STDERR, "Expected arguments `EMOJIDATA.TXT NAMESLIST.TXT`\n");
+        exit(1);
+    }
+
+    $emoji = [];
+    $modbase = [];
+    foreach (explode("\n", file_get_contents($args[0])) as $line) {
+        if (preg_match('/\A([0-9A-F]+)(\.\.[0-9A-F]+|)\s.*(Emoji\S*)/', $line, $m)) {
+            $i = hexdec($m[1]);
+            $j = $m[2] === "" ? $i : hexdec(substr($m[2], 2));
+            for (; $i <= $j; ++$i) {
+                if ($m[3] === "Emoji") {
+                    $emoji[$i] = get($codes, $i, false);
+                } else if ($m[3] === "Emoji_Presentation") {
+                    $emoji[$i] = true;
+                } else if ($m[3] === "Emoji_Modifier_Base") {
+                    $modbase[$i] = true;
+                }
+            }
+        }
+    }
+
+    $l = [];
+    foreach (explode("\n", file_get_contents($args[1])) as $line) {
+        if (preg_match('/\A([0-9A-F]+)\s*(.*)/', $line, $m)) {
+            $i = hexdec($m[1]);
+            if (isset($emoji[$i])) {
+                $ch = UnicodeHelper::utf8_chr($i);
+                if (!isset($codes[$ch])) {
+                    $l[] = "\"" . str_replace(" ", "_", strtolower($m[2])) . "\":\""
+                            . $ch . ($emoji[$i] ? "" : "\xEF\xB8\x8F") . "\"";
+                    if (isset($modbase[$i])) {
+                        $l[] = "\"man_" . str_replace(" ", "_", strtolower($m[2])) . "\":\""
+                            . $ch . ($emoji[$i] ? "" : "\xEF\xB8\x8F") . "\xE2\x80\x8D\xE2\x99\x82\"";
+                        $l[] = "\"woman_" . str_replace(" ", "_", strtolower($m[2])) . "\":\""
+                            . $ch . ($emoji[$i] ? "" : "\xEF\xB8\x8F") . "\xE2\x80\x8D\xE2\x99\x80\"";
+                    }
+                }
+            }
+        }
+    }
+
+    sort($l);
+    fwrite(STDOUT, join(",\n", $l) . "\n");
+}
+
 if (isset($arg["c"]) || isset($arg["common"])) {
     list_common_emoji();
 } else if (isset($arg["d"]) || isset($arg["dups"])) {
@@ -191,6 +249,8 @@ if (isset($arg["c"]) || isset($arg["common"])) {
     list_terminators();
 } else if (isset($arg["m"]) || isset($arg["modifier-bases"])) {
     modifier_base_regex();
+} else if (isset($arg["a"]) || isset($arg["absent"])) {
+    list_absent(array_slice($argv, $optind));
 } else {
     parse_emoji_data_stdin();
 }
