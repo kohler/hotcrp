@@ -1007,6 +1007,7 @@
 "pill":"💊",
 "pineapple":"🍍",
 "ping_pong":"🏓",
+"pirate_flag":"🏴‍☠️",
 "pisces":"♓️",
 "pitcairn_islands":"🇵🇳",
 "pizza":"🍕",
@@ -1042,6 +1043,7 @@
 "prayer_beads":"📿",
 "pregnant_woman":"🤰",
 "previous_track_button":"⏮",
+"pride":"🏳️‍🌈",
 "prince":"🤴",
 "princess":"👸",
 "printer":"🖨",
@@ -1501,5 +1503,6 @@
         "exclamation","fist","middle_finger","hand","poop","knife",
         "laughing","orange","shoe","moon","no_good","phone","rage",
         "raising_hand","running","surfer","swimmer","walking"],
-"modifiers":["light","\uD83C\uDFFB","mediumlight","\uD83C\uDFFC","medium","\uD83C\uDFFD","mediumdark","\uD83C\uDFFE","dark","\uD83C\uDFFF"]
+"modifiers":{"light":"\uD83C\uDFFB","mediumlight":"\uD83C\uDFFC","medium":"\uD83C\uDFFD","mediumdark":"\uD83C\uDFFE","dark":"\uD83C\uDFFF"},
+"modifier_words":["light","mediumlight","medium","mediumdark","dark"]
 }

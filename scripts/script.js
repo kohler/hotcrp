@@ -4483,39 +4483,93 @@ demand_load.emoji_codes = demand_load.make(function (resolve, reject) {
             v = {emoji: []};
         if (!v.lists)
             v.lists = {};
-        if (!v.modifiers)
-            v.modifiers = [];
-        v.lists.all = Object.keys(v.emoji);
-        v.lists.all.sort();
+
+        var all = v.lists.all = Object.keys(v.emoji);
+        all.sort();
+
+        v.wordsets = {};
+        for (var i = 0; i !== all.length; ++i) {
+            var w = all[i], u = w.indexOf("_");
+            if (u === 6 && /^(?:family|couple)/.test(w))
+                continue;
+            while (u > 0) {
+                var u2 = w.indexOf("_", u+1),
+                    wp = w.substring(u+1, u2 < 0 ? w.length : u2);
+                v.wordsets[wp] = v.wordsets[wp] || [];
+                if (v.wordsets[wp].indexOf(w) < 0)
+                    v.wordsets[wp].push(w);
+                u = u2;
+            }
+        }
+        v.words = Object.keys(v.wordsets);
+        v.words.sort();
+
+        v.modifier_words = v.modifier_words || [];
+
         v.completion = {};
         resolve(v);
     });
 });
 
+(function () {
+var people_regex = /(?:[\u261d\u26f9\u270a-\u270d]|\ud83c[\udf85\udfc2-\udfc4\udfc7\udfca-\udfcc]|\ud83d[\udc42-\udc43\udc46-\udc50\udc66-\udc78\udc7c\udc81-\udc83\udc85-\udc87\udc8f\udc91\udcaa\udd74-\udd75\udd7a\udd90\udd95-\udd96\ude45-\ude47\ude4b-\ude4f\udea3\udeb4-\udeb6\udec0\udecc]|\ud83e[\udd0f\udd18-\udd1f\udd26\udd30-\udd39\udd3c-\udd3e\uddb5-\uddb6\uddb8-\uddb9\uddbb\uddcd-\uddcf\uddd1-\udddd])/g;
+
+function combine(sel, list, i, j) {
+    while (i < j) {
+        if (sel.indexOf(list[i]) < 0)
+            sel.push(list[i]);
+        ++i;
+    }
+}
+
+function select_from(sel, s, list) {
+    var i = lower_bound_index(list, s),
+        next = s.substring(0, s.length - 1) + String.fromCharCode(s.charCodeAt(s.length - 1) + 1),
+        j = lower_bound_index(list, next);
+    if (!sel.length)
+        return list.slice(i, j);
+    else {
+        combine(sel, list, i, j);
+        return sel;
+    }
+}
+
+function apply_modifier(sel, mod, v) {
+    var modmatch = v.modifier_words, all = mod === ".";
+    if (!all) {
+        modmatch = [];
+        for (var j = 0; j !== v.modifier_words.length; ++j)
+            if (v.modifier_words[j].substring(0, mod.length - 1) === mod.substring(1))
+                modmatch.push(v.modifier_words[j]);
+    }
+    if (modmatch.length === 0)
+        return;
+    for (var i = 0; i !== sel.length; ) {
+        var code = sel[i];
+        all ? ++i : sel.splice(i, 1);
+        people_regex.lastIndex = 0;
+        if (people_regex.test(v.emoji[code])) {
+            for (var j = 0; j < modmatch.length; ++j) {
+                var mcode = code + "." + modmatch[j];
+                if (!v.emoji[mcode])
+                    v.emoji[mcode] = v.emoji[code].replace(people_regex, "$&" + v.modifiers[modmatch[j]]);
+                sel.splice(i, 0, mcode);
+                ++i;
+            }
+            if (all && sel.length > 40)
+                break;
+        }
+    }
+}
+
 demand_load.emoji_completion = function (start) {
     return demand_load.emoji_codes().then(function (v) {
         var sel, i, code, ch, basic = v.lists.basic,
             period = start.indexOf("."), modifier = null;
+        start = start.replace(/:$/, "").replace(/-/g, "_");
         if (period > 0) {
             modifier = start.substring(period);
             start = start.substring(0, period);
-        }
-        function select_from(s, list) {
-            var i = lower_bound_index(list, s),
-                next = s.substring(0, s.length - 1) + String.fromCharCode(s.charCodeAt(s.length - 1) + 1),
-                j = lower_bound_index(list, next);
-            if (i === j)
-                return false;
-            else if (!sel.length)
-                sel = list.slice(i, j);
-            else {
-                while (i < j) {
-                    if (sel.indexOf(list[i]) < 0)
-                        sel.push(list[i]);
-                    ++i;
-                }
-            }
-            return true;
         }
         if (start === "") {
             sel = basic.slice();
@@ -4525,29 +4579,18 @@ demand_load.emoji_completion = function (start) {
                 if (basic[i].substring(0, start.length) === start)
                     sel.push(basic[i]);
             }
-            select_from(start, v.lists.common);
+            sel = select_from(sel, start, v.lists.common);
             if (start.length > 1) {
-                select_from(start, v.lists.all);
-                if (select_from("man_" + start, v.lists.all))
-                    select_from("woman_" + start, v.lists.all);
+                sel = select_from(sel, start, v.lists.all);
+                var xsel = select_from([], start, v.words), ysel = [];
+                for (i = 0; i !== xsel.length; ++i)
+                    Array.prototype.push.apply(ysel, v.wordsets[xsel[i]]);
+                ysel.sort();
+                combine(sel, ysel, 0, ysel.length);
             }
         }
-        if (modifier) {
-            var expansions = false,
-                regex = /(?:[\u261d\u26f9\u270a-\u270d]|\ud83c[\udf85\udfc2-\udfc4\udfc7\udfca-\udfcc]|\ud83d[\udc42-\udc43\udc46-\udc50\udc66-\udc78\udc7c\udc81-\udc83\udc85-\udc87\udc8f\udc91\udcaa\udd74-\udd75\udd7a\udd90\udd95-\udd96\ude45-\ude47\ude4b-\ude4f\udea3\udeb4-\udeb6\udec0\udecc]|\ud83e[\udd0f\udd18-\udd1f\udd26\udd30-\udd39\udd3c-\udd3e\uddb5-\uddb6\uddb8-\uddb9\uddbb\uddcd-\uddcf\uddd1-\udddd])/g;
-            for (i = 0; i !== sel.length && (!expansions || sel.length < 40); ++i) {
-                code = sel[i];
-                if (regex.test(v.emoji[code])) {
-                    for (var j = 0; j !== v.modifiers.length; j += 2, ++i) {
-                        var mcode = code + "." + v.modifiers[j];
-                        if (!v.emoji[mcode])
-                            v.emoji[mcode] = v.emoji[code].replace(regex, "$&" + v.modifiers[j + 1]);
-                        sel.splice(i + 1, 0, mcode);
-                    }
-                    expansions = true;
-                }
-            }
-        }
+        if (modifier)
+            apply_modifier(sel, modifier, v);
         for (i = 0; i !== sel.length; ++i) {
             code = sel[i];
             if (!v.completion[code]) {
@@ -4561,6 +4604,7 @@ demand_load.emoji_completion = function (start) {
         return sel;
     });
 };
+})();
 
 
 tooltip.add_builder("votereport", function (info) {
@@ -4632,6 +4676,8 @@ function make_suggestions(precaret, postcaret, options) {
     var prefix = options.prefix || "";
     var lregion = prefix + precaret + postcaret;
     lregion = case_sensitive ? lregion : lregion.toLowerCase();
+    if (options.region_trimmer)
+        lregion = lregion.replace(options.region_trimmer, "");
     if (options.case_sensitive_items != null)
         case_sensitive = options.case_sensitive_items;
     var filter = null;
@@ -4973,9 +5019,9 @@ suggest.add_builder("pc-tags", function (elt) {
 
 suggest.add_builder("suggest-emoji", function (elt) {
     var x = completion_split(elt), m;
-    if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff]):((?:|[-+]|[-+]1|[-_0-9a-zA-Z]+)(\.[0-9a-z]*|):?)$/))
+    if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff]):((?:|[-+]|[-+]1|[-_0-9a-zA-Z]+)(\.[0-9a-zA-Z]*|):?)$/))
         && /^(?:$|[\s)\u20e3-\u23ff\u2600-\u27ff\ufe0f\ud83c-\ud83f])/.test(x[1])) {
-        return demand_load.emoji_completion(m[1]).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, min_columns: 4}));
+        return demand_load.emoji_completion(m[1].toLowerCase()).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, min_columns: 4, region_trimmer: /\..*$/}));
     }
 });
 
