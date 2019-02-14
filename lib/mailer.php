@@ -638,7 +638,6 @@ class Mailer {
             $e[] = $this->unexpanded_warning();
         return $e;
     }
-
 }
 
 class MimeText {

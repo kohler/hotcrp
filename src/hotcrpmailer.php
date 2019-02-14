@@ -59,10 +59,8 @@ class HotCRPMailer extends Mailer {
         parent::reset($recipient, $rest);
         assert(!get($rest, "permissionContact"));
         if ($recipient) {
-            if (!($recipient instanceof Contact)) {
-                error_log("HotCRPMailer::recipient is not a Contact: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            } else if ($recipient->overrides() & Contact::OVERRIDE_CONFLICT)
-                error_log("HotCRPMailer::recipient is OVERRIDE_CONFLICT: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            assert($recipient instanceof Contact);
+            assert(!($recipient->overrides() & Contact::OVERRIDE_CONFLICT));
         }
         foreach (array("requester", "reviewer", "other") as $k)
             $this->contacts[$k] = get($rest, $k . "_contact");
