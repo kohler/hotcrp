@@ -3,7 +3,8 @@
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class Multiconference {
-    static private $original_opt = null;
+    static private $original_opt;
+    static private $cache;
 
     static function init() {
         global $Opt, $argv;
@@ -60,6 +61,19 @@ class Multiconference {
         if (!get($opt, "dbName") && !get($opt, "dsn"))
             $opt["dbName"] = $confid;
         $opt["confid"] = $confid;
+    }
+
+    static function get_confid($confid) {
+        if (self::$cache === null) {
+            self::$cache = [];
+            if (Conf::$g && Conf::$g->confid)
+                self::$cache[Conf::$g->confid] = Conf::$g;
+        }
+        if (!isset(self::$cache[$confid])
+            && ($conf = self::load_confid($confid))) {
+            self::$cache[$confid] = $conf;
+        }
+        return isset(self::$cache[$confid]) ? self::$cache[$confid] : null;
     }
 
     static function load_confid($confid) {
