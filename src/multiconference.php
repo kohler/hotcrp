@@ -66,8 +66,8 @@ class Multiconference {
     static function get_confid($confid) {
         if (self::$cache === null) {
             self::$cache = [];
-            if (Conf::$g && Conf::$g->confid)
-                self::$cache[Conf::$g->confid] = Conf::$g;
+            if (Conf::$g && ($confid = Conf::$g->opt("confid")))
+                self::$cache[$confid] = Conf::$g;
         }
         if (!isset(self::$cache[$confid])
             && ($conf = self::load_confid($confid))) {
