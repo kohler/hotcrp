@@ -397,8 +397,9 @@ class MailSender {
             ++$nrows_done;
 
             $contact = new Contact($row, $Me->conf);
+            $prow = $row->paperId > 0 ? $row : null;
             $rest["newrev_since"] = $this->recip->newrev_since;
-            $mailer->reset($contact, $row, $rest);
+            $mailer->reset($contact, $prow, $rest);
             $prep = $mailer->make_preparation($template, $rest);
 
             if ($prep->errors) {
@@ -414,7 +415,7 @@ class MailSender {
                 if ((!$Me->privChair || $Conf->opt("chairHidePasswords"))
                     && !@$last_prep->sensitive) {
                     $srest = array_merge($rest, array("sensitivity" => "display"));
-                    $mailer->reset($contact, $row, $srest);
+                    $mailer->reset($contact, $prow, $srest);
                     $last_prep->sensitive = $mailer->make_preparation($template, $srest);
                 }
             }
@@ -428,8 +429,8 @@ class MailSender {
                 echo Ht::unstash_script("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
             }
 
-            if ($this->sending && $revinform !== null)
-                $revinform[] = "(paperId=$row->paperId and contactId=$row->contactId)";
+            if ($this->sending && $revinform !== null && $prow)
+                $revinform[] = "(paperId=$prow->paperId and contactId=$contact->contactId)";
         }
 
         $this->process_prep($fake_prep, $last_prep, (object) array("paperId" => -1));
