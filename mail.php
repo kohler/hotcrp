@@ -260,7 +260,7 @@ class MailSender {
     private function send_prep($prep) {
         global $Conf, $Me;
 
-        $cbkey = "c" . join("_", $prep->contacts) . "p" . $prep->paperId;
+        $cbkey = "c" . join("_", $prep->contactIds) . "p" . $prep->paperId;
         if ($this->sending && !$this->qreq[$cbkey])
             return;
         set_time_limit(30);
@@ -270,7 +270,7 @@ class MailSender {
         ++$this->mcount;
         if ($this->sending) {
             $prep->send();
-            foreach ($prep->contacts as $cid) {
+            foreach ($prep->contactIds as $cid) {
                 // Log format matters
                 $Conf->log_for($Me, $cid, "Sent mail" . $this->mailid_text, $prep->paperId);
             }
@@ -326,7 +326,6 @@ class MailSender {
         // mails from different papers, unless those mails are to the same
         // person.
         $mail_differs = !$prep->can_merge($last_prep);
-        $prep_to = $prep->to;
 
         if (!$mail_differs)
             $this->groupable = true;
@@ -334,16 +333,17 @@ class MailSender {
             if (!$last_prep->fake)
                 $this->send_prep($last_prep);
             $last_prep = $prep;
-            $last_prep->contacts = array();
-            $last_prep->to = array();
-        }
+            $must_include = true;
+        } else
+            $must_include = false;
 
-        if ($prep->fake || isset($last_prep->contacts[$row->contactId]))
+        if ($prep->fake
+            || (!$must_include && in_array($row->contactId, $last_prep->contactIds)))
             return false;
         else {
-            $last_prep->contacts[$row->contactId] = $row->contactId;
+            if ($last_prep !== $prep)
+                $last_prep->merge($prep);
             $this->mrecipients[$row->contactId] = true;
-            $last_prep->add_recipients($prep_to);
             return true;
         }
     }
@@ -395,6 +395,7 @@ class MailSender {
         $revinform = ($recipients == "newpcrev" ? array() : null);
         while (($row = PaperInfo::fetch($result, $Me))) {
             ++$nrows_done;
+            $row->contactId = (int) $row->contactId;
 
             $contact = new Contact($row, $Me->conf);
             $prow = $row->paperId > 0 ? $row : null;
@@ -420,9 +421,9 @@ class MailSender {
                 }
             }
 
-            if ($nwarnings != $mailer->nwarnings() || $nrows_done % 5 == 0)
+            if ($nwarnings !== $mailer->nwarnings() || $nrows_done % 5 == 0)
                 $this->echo_mailinfo($nrows_done, $nrows_left);
-            if ($nwarnings != $mailer->nwarnings()) {
+            if ($nwarnings !== $mailer->nwarnings()) {
                 $this->echo_prologue();
                 $nwarnings = $mailer->nwarnings();
                 echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"warning\">", join("<br>", $mailer->warnings()), "</div></div>";

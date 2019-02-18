@@ -8,6 +8,7 @@ class MailPreparation {
     public $body = "";
     public $preparation_owner = "";
     public $to = array();
+    public $contactIds = [];
     public $sendable = false;
     public $headers = array();
     public $errors = array();
@@ -25,11 +26,13 @@ class MailPreparation {
             && !$this->unique_preparation
             && !$p->unique_preparation;
     }
-    function add_recipients($to) {
-        if (count($to) != 1
-            || count($this->to) == 0
-            || $this->to[count($this->to) - 1] != $to[0])
-            $this->to = array_merge($this->to, $to);
+    function merge($p) {
+        foreach ($p->to as $email)
+            if (!in_array($email, $this->to))
+                $this->to[] = $email;
+        foreach ($p->contactIds as $cid)
+            if (!in_array($cid, $this->contactIds))
+                $this->contactIds[] = $cid;
     }
     function send() {
         if ($this->conf->call_hooks("send_mail", null, $this) === false)
@@ -568,6 +571,8 @@ class Mailer {
                     $recipient->$k = $this->recipient->$k;
         }
         $prep->to = [Text::user_email_to($recipient)];
+        if ($recipient->contactId > 0)
+            $prep->contactIds[] = $recipient->contactId;
         $mail["to"] = $prep->to[0];
         $prep->sendable = self::allow_send($recipient->email);
 
@@ -607,7 +612,7 @@ class Mailer {
         $last_p = null;
         foreach ($preps as $p) {
             if ($last_p && $last_p->can_merge($p))
-                $last_p->add_recipients($p->to);
+                $last_p->merge($p);
             else {
                 $last_p && $last_p->send();
                 $last_p = $p;
