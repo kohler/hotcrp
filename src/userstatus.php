@@ -9,7 +9,9 @@ class UserStatus extends MessageSet {
     public $self;
     public $send_email = null;
     private $no_deprivilege_self = false;
+    private $no_update_profile = false;
     public $unknown_topics = null;
+    public $diffs;
     private $_gxt;
 
     static private $field_synonym_map = [
@@ -20,18 +22,20 @@ class UserStatus extends MessageSet {
     ];
 
     static public $topic_interest_name_map = [
-        "low" => -2,
-        "mlow" => -1, "mediumlow" => -1, "medium-low" => -1, "medium_low" => -1,
-        "medium" => 0, "none" => 0,
-        "mhigh" => 2, "mediumhigh" => 2, "medium-high" => 2, "medium_high" => 2,
-        "high" => 4
+        "low" => -2, "lo" => -2,
+        "medium-low" => -1, "medium_low" => -1, "mediumlow" => -1, "mlow" => -1,
+        "medium-lo" => -1, "medium_lo" => -1, "mediumlo" => -1, "mlo" => -1,
+        "medium" => 0, "none" => 0, "med" => 0,
+        "medium-high" => 1, "medium_high" => 1, "mediumhigh" => 1, "mhigh" => 1,
+        "medium-hi" => 1, "medium_hi" => 1, "mediumhi" => 1, "mhi" => 1,
+        "high" => 2, "hi" => 2
     ];
 
     function __construct(Contact $viewer, $options = array()) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         parent::__construct();
-        foreach (array("send_email", "no_deprivilege_self") as $k)
+        foreach (array("send_email", "no_deprivilege_self", "no_update_profile") as $k)
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
         foreach (self::$field_synonym_map as $src => $dst)
@@ -333,7 +337,7 @@ class UserStatus extends MessageSet {
         }
 
         // Follow
-        if (isset($cj->follow)) {
+        if (isset($cj->follow) && $cj->follow !== "") {
             $cj->follow = $this->make_keyed_object($cj->follow, "follow");
             $cj->bad_follow = array();
             foreach ((array) $cj->follow as $k => $v)
@@ -342,12 +346,11 @@ class UserStatus extends MessageSet {
         }
 
         // Roles
-        if (isset($cj->roles)) {
+        if (isset($cj->roles) && $cj->roles !== "") {
             $cj->roles = $this->make_keyed_object($cj->roles, "roles");
             $cj->bad_roles = array();
             foreach ((array) $cj->roles as $k => $v)
-                if ($v && $k !== "pc" && $k !== "chair" && $k !== "sysadmin"
-                    && $k !== "no")
+                if ($v && !in_array($k, ["pc", "chair", "sysadmin", "no", "none"]))
                     $cj->bad_roles[] = $k;
             if ($old_user
                 && (($this->no_deprivilege_self
@@ -355,7 +358,7 @@ class UserStatus extends MessageSet {
                      && $this->viewer->conf === $this->conf
                      && $this->viewer->contactId == $old_user->contactId)
                     || $old_user->data("locked"))
-                && Contact::parse_roles_json($cj->roles) < $old_user->roles) {
+                && self::parse_roles_json($cj->roles) < $old_user->roles) {
                 unset($cj->roles);
                 if ($old_user->data("locked"))
                     $this->warning_at("roles", "Ignoring request to drop privileges for locked account.");
@@ -439,9 +442,21 @@ class UserStatus extends MessageSet {
             $this->warning_at("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($cj->bad_topics)) . ").");
     }
 
+    static function parse_roles_json($j) {
+        $roles = 0;
+        if (isset($j->pc) && $j->pc)
+            $roles |= Contact::ROLE_PC;
+        if (isset($j->chair) && $j->chair)
+            $roles |= Contact::ROLE_CHAIR | Contact::ROLE_PC;
+        if (isset($j->sysadmin) && $j->sysadmin)
+            $roles |= Contact::ROLE_ADMIN;
+        return $roles;
+    }
+
 
     function save($cj, $old_user = null) {
         global $Now;
+        // normalize user, check invariants
         assert(is_object($cj));
         self::normalize_name($cj);
         $nerrors = $this->nerrors();
@@ -469,15 +484,194 @@ class UserStatus extends MessageSet {
             return false;
         $this->check_invariants($cj);
 
+        // create user
         if (($send = $this->send_email) === null)
             $send = !$old_cdb_user;
         $actor = $this->viewer->is_site_contact ? null : $this->viewer;
         if (!$old_user)
             $user = Contact::create($this->conf, $actor, $cj, $send ? Contact::SAVE_NOTIFY : 0);
-        if ($user && $user->save_json($cj, $actor, 0))
-            return $user;
-        else
+        if (!$user)
             return false;
+
+
+        // prepare contact update
+        $old_roles = $user->roles;
+        $old_disabled = $user->disabled ? 1 : 0;
+        assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
+        $cu = new Contact_Update(false);
+
+        // check whether this user is changing themselves
+        $changing_other = false;
+        if ($user->conf->contactdb()
+            && (strcasecmp($user->email, $this->viewer->email) !== 0
+                || $this->viewer->is_actas_user()
+                || $this->viewer->is_site_contact)) // XXX want way in script to modify all
+            $changing_other = true;
+        $this->diffs = [];
+
+        // Main fields
+        if (!$this->no_update_profile || ($user->firstName === "" && $user->lastName === "")) {
+            if (isset($cj->firstName)
+                && $user->save_assign_field("firstName", $cj->firstName, $cu))
+                $this->diffs["name"] = true;
+            if (isset($cj->lastName)
+                && $user->save_assign_field("lastName", $cj->lastName, $cu))
+                $this->diffs["name"] = true;
+            $user->save_assign_field("unaccentedName", Text::unaccented_name($user->firstName, $user->lastName), $cu);
+        }
+
+        if (isset($cj->email)
+            && (!$this->no_update_profile || !$old_user)
+            && $user->save_assign_field("email", $cj->email, $cu))
+            $this->diffs["email"] = true;
+
+        foreach (["affiliation", "collaborators", "country", "phone"] as $k)
+            if (isset($cj->$k)
+                && (!$this->no_update_profile || (string) $user->$k === "")
+                && $user->save_assign_field($k, $cj->$k, $cu))
+                $this->diffs[$k] = true;
+
+        if (isset($cj->gender)
+            && (!$this->no_update_profile || (string) $user->gender === "")
+            && $user->save_assign_field("gender", $cj->gender, $cu))
+            $this->diffs["demographics"] = true;
+        if (isset($cj->birthday)
+            && (!$this->no_update_profile || (string) $user->birthday === "")
+            && $user->save_assign_field("birthday", $cj->birthday, $cu))
+            $this->diffs["demographics"] = true;
+
+        if (isset($cj->preferred_email)
+            && (!$this->no_update_profile || (string) $user->preferredEmail === "")
+            && $user->save_assign_field("preferredEmail", $cj->preferred_email, $cu))
+            $this->diffs["preferred_email"] = true;
+
+        // Disabled
+        $disabled = $old_disabled;
+        if (isset($cj->disabled))
+            $disabled = $cj->disabled ? 1 : 0;
+        if ($disabled !== $old_disabled || !$user->contactId) {
+            $cu->qv["disabled"] = $user->disabled = $disabled;
+            $this->diffs["disabled"] = true;
+        }
+
+        // Data
+        $old_datastr = $user->data_str();
+        $data = get($cj, "data", (object) array());
+        foreach (["address", "city", "state", "zip"] as $k) {
+            if (isset($cj->$k)
+                && (!$this->no_update_profile || (string) get($data, $k) === "")
+                && ($x = $cj->$k)) {
+                while (is_array($x) && $x[count($x) - 1] === "")
+                    array_pop($x);
+                $data->$k = $x ? : null;
+            }
+        }
+        $user->merge_data($data);
+        $datastr = $user->data_str();
+        if ($datastr !== $old_datastr) {
+            $cu->qv["data"] = $datastr;
+            $this->diffs["address"] = true;
+        }
+
+        // Changes to the above fields also change the updateTime
+        // (changes to the below fields do not).
+        if (!empty($cu->qv))
+            $user->save_assign_field("updateTime", $Now, $cu);
+
+        // Follow
+        if (isset($cj->follow)
+            && (!$this->no_update_profile || $user->defaultWatch == Contact::WATCH_REVIEW)) {
+            $w = 0;
+            if (get($cj->follow, "reviews"))
+                $w |= Contact::WATCH_REVIEW;
+            if (get($cj->follow, "allreviews"))
+                $w |= Contact::WATCH_REVIEW_ALL;
+            if (get($cj->follow, "managedreviews"))
+                $w |= Contact::WATCH_REVIEW_MANAGED;
+            if (get($cj->follow, "allfinal"))
+                $w |= Contact::WATCH_FINAL_SUBMIT_ALL;
+            if ($user->save_assign_field("defaultWatch", $w, $cu))
+                $this->diffs["follow"] = true;
+        }
+
+        // Tags
+        if (isset($cj->tags) && $this->viewer->privChair) {
+            $tags = array();
+            foreach ($cj->tags as $t) {
+                list($tag, $value) = TagInfo::unpack($t);
+                if (strcasecmp($tag, "pc") !== 0)
+                    $tags[$tag] = $tag . "#" . ($value ? : 0);
+            }
+            ksort($tags);
+            $t = count($tags) ? " " . join(" ", $tags) . " " : "";
+            if ($user->save_assign_field("contactTags", $t, $cu))
+                $this->diffs["tags"] = true;
+        }
+
+        // Initial save
+        if (count($cu->qv)) { // always true if $inserting
+            $q = "update ContactInfo set "
+                . join("=?, ", array_keys($cu->qv)) . "=?"
+                . " where contactId={$user->contactId}";
+            if (!($result = $user->conf->qe_apply($q, array_values($cu->qv))))
+                return false;
+            Dbl::free($result);
+        }
+
+        // Topics
+        if (isset($cj->topics) && $user->conf->has_topics()) {
+            $ti = $old_user ? $user->topic_interest_map() : [];
+            $tv = [];
+            $diff = false;
+            foreach ($cj->topics as $k => $v) {
+                if ($v)
+                    $tv[] = [$user->contactId, $k, $v];
+                if ($v !== get($ti, $k, 0))
+                    $diff = true;
+            }
+            if ($diff || empty($tv)) {
+                if (empty($tv)) {
+                    foreach ($cj->topics as $k => $v) {
+                        $tv[] = [$user->contactId, $k, 0];
+                        break;
+                    }
+                }
+                $user->conf->qe("delete from TopicInterest where contactId=?", $user->contactId);
+                $user->conf->qe("insert into TopicInterest (contactId,topicId,interest) values ?v", $tv);
+            }
+            if ($diff)
+                $this->diffs["topics"] = true;
+        }
+
+        // Roles
+        $roles = $old_roles;
+        if (isset($cj->roles)) {
+            $roles = self::parse_roles_json($cj->roles);
+            if ($roles !== $old_roles) {
+                $user->save_roles($roles, $actor);
+                $this->diffs["roles"] = true;
+            }
+        }
+
+        // Contact DB (must precede password)
+        $cdb = $user->conf->contactdb();
+        if ($cdb
+            && (!empty($cu->cdb_qf) || $roles !== $old_roles))
+            $user->contactdb_update($cu->cdb_qf, $changing_other);
+
+        // Password
+        if (isset($cj->new_password)) {
+            $user->change_password($cj->new_password, 0);
+            $this->diffs["password"] = true;
+        }
+
+        // Clean up
+        $user->save_cleanup($cu, $this);
+        if ($this->viewer->contactId == $user->contactId)
+            $user->mark_activity();
+        if (!empty($this->diffs))
+            $user->conf->log_for($this->viewer, $user, "Updated profile " . join(", ", array_keys($this->diffs)));
+        return $user;
     }
 
 

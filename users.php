@@ -136,6 +136,8 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
             $f[] = "managedreviews";
         if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL)
             $f[] = "allfinal";
+        if (empty($f))
+            $f[] = "none";
         $row->follow = join(",", $f);
         if ($user->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
             $r = array();

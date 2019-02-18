@@ -235,7 +235,9 @@ function parseBulkFile($text, $filename) {
     }
 
     $saved_users = [];
-    $ustatus = new UserStatus($Me, ["send_email" => true, "no_deprivilege_self" => true]);
+    $ustatus = new UserStatus($Me, [
+        "send_email" => true, "no_deprivilege_self" => true, "no_update_profile" => true
+    ]);
 
     while (($line = $csv->next()) !== false) {
         $ustatus->set_user(new Contact(null, $Conf));
@@ -326,9 +328,11 @@ else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
             $Conf->self_redirect($Qreq);
         }
     }
-} else if (isset($Qreq->merge) && !$newProfile
-           && $Acct->contactId == $Me->contactId)
+} else if (isset($Qreq->merge)
+           && !$newProfile
+           && $Acct->contactId == $Me->contactId) {
     go(hoturl("mergeaccounts"));
+}
 
 function databaseTracks($who) {
     global $Conf;
@@ -625,7 +629,7 @@ John Adams,john@earbox.org,UC Berkeley,pc
         '<dl class="ctelt dd"><dt><code>affiliation</code></dt>',
         '<dd>Affiliation</dd></dl>',
         '<dl class="ctelt dd"><dt><code>roles</code></dt>',
-        '<dd>User roles: blank, “<code>pc</code>”, “<code>chair</code>”, or “<code>sysadmin</code>”</dd></dl>',
+        '<dd>User roles: “<code>pc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, or “<code>none</code>”</dd></dl>',
         '<dl class="ctelt dd"><dt><code>tags</code></dt>',
         '<dd>PC tags (space-separated)</dd></dl>',
         '<dl class="ctelt dd"><dt><code>add_tags</code>, <code>remove_tags</code></dt>',

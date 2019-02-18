@@ -5,10 +5,6 @@
 class Contact_Update {
     public $qv = [];
     public $cdb_qf = [];
-    public $changing_email;
-    function __construct($changing_email) {
-        $this->changing_email = $changing_email;
-    }
 }
 
 class Contact {
@@ -872,7 +868,7 @@ class Contact {
             $this->conf->qe("update ContactInfo set data=? where contactId=?", $new, $this->contactId);
     }
 
-    private function data_str() {
+    function data_str() {
         $d = null;
         if (is_string($this->data))
             $d = $this->data;
@@ -920,7 +916,7 @@ class Contact {
         "collaborators" => true, "defaultWatch" => true, "contactTags" => true
     ];
 
-    private function _save_assign_field($k, $v, Contact_Update $cu) {
+    function save_assign_field($k, $v, Contact_Update $cu) {
         if (!isset(self::$no_clean_fields[$k])) {
             $v = simplify_whitespace($v);
             if ($k === "birthday" && !$v)
@@ -928,169 +924,32 @@ class Contact {
         }
         // change contactdb
         if (isset(self::$cdb_fields[$k])
-            && ($this->$k !== $v || $cu->changing_email))
+            && $this->$k !== $v)
             $cu->cdb_qf[] = $k;
         // change local version
-        if ($this->$k !== $v || !$this->contactId)
+        if ($this->$k !== $v || !$this->contactId) {
             $cu->qv[$k] = $v;
-        $this->$k = $v;
+            $this->$k = $v;
+            if ($k === "email")
+                $this->_contactdb_user = false;
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    static function parse_roles_json($j) {
-        $roles = 0;
-        if (isset($j->pc) && $j->pc)
-            $roles |= self::ROLE_PC;
-        if (isset($j->chair) && $j->chair)
-            $roles |= self::ROLE_CHAIR | self::ROLE_PC;
-        if (isset($j->sysadmin) && $j->sysadmin)
-            $roles |= self::ROLE_ADMIN;
-        return $roles;
+    function save_cleanup($us) {
+        self::set_sorter($this, $this->conf);
+        $this->_disabled = null;
+        if (isset($us->diffs["topics"]))
+            $this->_topic_interest_map = null;
+        if (isset($us->diffs["roles"]))
+            $this->conf->invalidate_caches(["pc" => 1]);
     }
 
     const SAVE_NOTIFY = 1;
     const SAVE_ANY_EMAIL = 2;
     const SAVE_IMPORT = 4;
-    const SAVE_NO_EXPORT = 8;
-    function save_json($cj, $actor, $flags) {
-        global $Me, $Now;
-        assert(!!$this->contactId);
-        $old_roles = $this->roles;
-        $old_email = $this->email;
-        $old_disabled = $this->disabled ? 1 : 0;
-        $changing_email = isset($cj->email) && strtolower($cj->email) !== strtolower((string) $old_email);
-        $cu = new Contact_Update($changing_email);
-
-        $aupapers = null;
-        if ($changing_email)
-            $aupapers = self::email_authored_papers($this->conf, $cj->email, $cj);
-
-        // check whether this user is changing themselves
-        $changing_other = false;
-        if ($this->conf->contactdb()
-            && $Me
-            && (strcasecmp($this->email, $Me->email) !== 0 || $Me->is_actas_user()))
-            $changing_other = true;
-
-        // Main fields
-        foreach (["firstName", "lastName", "email", "affiliation", "collaborators",
-                  "preferredEmail", "country", "birthday", "gender", "phone"] as $k) {
-            if (isset($cj->$k))
-                $this->_save_assign_field($k, $cj->$k, $cu);
-        }
-        if (isset($cj->preferred_email) && !isset($cj->preferredEmail))
-            $this->_save_assign_field("preferredEmail", $cj->preferred_email, $cu);
-        $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $cu);
-        self::set_sorter($this, $this->conf);
-
-        // Disabled
-        $disabled = $old_disabled;
-        if (isset($cj->disabled))
-            $disabled = $cj->disabled ? 1 : 0;
-        if ($disabled !== $old_disabled || !$this->contactId)
-            $cu->qv["disabled"] = $this->disabled = $disabled;
-
-        // Data
-        $old_datastr = $this->data_str();
-        $data = get($cj, "data", (object) array());
-        foreach (array("address", "city", "state", "zip") as $k)
-            if (isset($cj->$k) && ($x = $cj->$k)) {
-                while (is_array($x) && $x[count($x) - 1] === "")
-                    array_pop($x);
-                $data->$k = $x ? : null;
-            }
-        $this->merge_data($data);
-        $datastr = $this->data_str();
-        if ($datastr !== $old_datastr)
-            $cu->qv["data"] = $datastr;
-
-        // Changes to the above fields also change the updateTime.
-        if (!empty($cu->qv))
-            $cu->qv["updateTime"] = $this->updateTime = $Now;
-
-        // Follow
-        if (isset($cj->follow)) {
-            $w = 0;
-            if (get($cj->follow, "reviews"))
-                $w |= self::WATCH_REVIEW;
-            if (get($cj->follow, "allreviews"))
-                $w |= self::WATCH_REVIEW_ALL;
-            if (get($cj->follow, "managedreviews"))
-                $w |= self::WATCH_REVIEW_MANAGED;
-            if (get($cj->follow, "allfinal"))
-                $w |= self::WATCH_FINAL_SUBMIT_ALL;
-            $this->_save_assign_field("defaultWatch", $w, $cu);
-        }
-
-        // Tags
-        if (isset($cj->tags)) {
-            $tags = array();
-            foreach ($cj->tags as $t) {
-                list($tag, $value) = TagInfo::unpack($t);
-                if (strcasecmp($tag, "pc") !== 0)
-                    $tags[$tag] = $tag . "#" . ($value ? : 0);
-            }
-            ksort($tags);
-            $t = count($tags) ? " " . join(" ", $tags) . " " : "";
-            $this->_save_assign_field("contactTags", $t, $cu);
-        }
-
-        // Initial save
-        if (count($cu->qv)) { // always true if $inserting
-            $q = "update ContactInfo set "
-                . join("=?, ", array_keys($cu->qv)) . "=?"
-                . " where contactId=$this->contactId";
-            if (!($result = $this->conf->qe_apply($q, array_values($cu->qv))))
-                return $result;
-            Dbl::free($result);
-        }
-
-        // Topics
-        if (isset($cj->topics)) {
-            $tf = array();
-            foreach ($cj->topics as $k => $v)
-                if ($v || empty($tf))
-                    $tf[] = "($this->contactId,$k,$v)";
-            $this->conf->qe_raw("delete from TopicInterest where contactId=$this->contactId");
-            if (!empty($tf))
-                $this->conf->qe_raw("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $tf));
-            $this->_topic_interest_map = null;
-        }
-
-        // Roles
-        $roles = $old_roles;
-        if (isset($cj->roles)) {
-            $roles = self::parse_roles_json($cj->roles);
-            if ($roles !== $old_roles)
-                $this->save_roles($roles, $actor);
-        }
-
-        // Update authorship
-        if ($aupapers)
-            $this->save_authored_papers($aupapers);
-
-        // Contact DB (must precede password)
-        $cdb = $this->conf->contactdb();
-        if ($changing_email)
-            $this->_contactdb_user = false;
-        if ($cdb && !($flags & self::SAVE_NO_EXPORT)
-            && (!empty($cu->cdb_qf) || $roles !== $old_roles))
-            $this->contactdb_update($cu->cdb_qf, $changing_other);
-
-        // Password
-        if (isset($cj->new_password))
-            $this->change_password($cj->new_password, 0);
-
-        // Beware PC cache
-        if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
-            $this->conf->invalidate_caches(["pc" => 1]);
-
-        $actor = $actor ? : $Me;
-        if ($actor && $this->contactId == $actor->contactId)
-            $this->mark_activity();
-
-        $this->_disabled = null;
-        return true;
-    }
 
     function change_email($email) {
         assert($this->has_database_account());
