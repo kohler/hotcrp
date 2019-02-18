@@ -36,7 +36,8 @@ class PaperContactInfo {
         $ci->contactId = $cid;
         if ($cid > 0
             && isset($prow->leadContactId)
-            && $prow->leadContactId == $cid)
+            && $prow->leadContactId == $cid
+            && !$prow->conf->setting("lead_noseerev"))
             $ci->review_status = 1;
         return $ci;
     }
