@@ -645,8 +645,11 @@ span.hastitle {
 
 /* topics */
 .topic-2:before {
-	content: "⬇︎";
+	content: "\2b07\fe0e";
 	color: #bb5555;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+		"Helvetica Neue", Arial, sans-serif;
+	font-variant-emoji: text;
 }
 .topic-1:before {
 	content: "↓";
@@ -657,8 +660,12 @@ span.hastitle {
 	color: #00aa00;
 }
 .topic2:before, .topic3:before, .topic4:before {
-	content: "⬆︎";
+	content: "\2b06\fe0e";
+	font-variant-emoji: text;
 	color: #00aa00;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+		"Helvetica Neue", Arial, sans-serif;
+	font-variant-emoji: text;
 }
 .topict {
 	display: block;
