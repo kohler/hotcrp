@@ -36,16 +36,43 @@ class Si {
     const SI_DATA = 2;
     const SI_SLICE = 4;
     const SI_OPT = 8;
+    const SI_NEGATE = 16;
 
     const X_SIMPLE = 1;
     const X_WORD = 2;
 
     static private $type_storage = [
-        "emailheader" => self::SI_DATA, "emailstring" => self::SI_DATA,
-        "htmlstring" => self::SI_DATA, "simplestring" => self::SI_DATA,
-        "string" => self::SI_DATA, "tag" => self::SI_DATA,
-        "tagbase" => self::SI_DATA, "taglist" => self::SI_DATA,
+        "emailheader" => self::SI_DATA,
+        "emailstring" => self::SI_DATA,
+        "htmlstring" => self::SI_DATA,
+        "simplestring" => self::SI_DATA,
+        "string" => self::SI_DATA,
+        "tag" => self::SI_DATA,
+        "tagbase" => self::SI_DATA,
+        "taglist" => self::SI_DATA,
         "urlstring" => self::SI_DATA
+    ];
+
+    static private $key_storage = [
+        "autogrow" => "is_bool",
+        "date_backup" => "is_string",
+        "disabled" => "is_bool",
+        "ifnonempty" => "is_string",
+        "internal" => "is_bool",
+        "invalid_value" => "is_string",
+        "json_values" => "is_array",
+        "message_context_setting" => "is_string",
+        "message_default" => "is_string",
+        "novalue" => "is_bool",
+        "optional" => "is_bool",
+        "parser_class" => "is_string",
+        "placeholder" => "is_string",
+        "size" => "is_int",
+        "storage" => "is_string",
+        "title" => "is_string",
+        "title" => "is_string",
+        "type" => "is_string",
+        "values" => "is_array"
     ];
 
     private function store($key, $j, $jkey, $typecheck) {
@@ -60,13 +87,10 @@ class Si {
         $this->name = $this->base_name = $this->json_name = $this->title = $j->name;
         if (isset($j->json_name) && ($j->json_name === false || is_string($j->json_name)))
             $this->json_name = $j->json_name;
-        foreach (["title", "type", "storage", "parser_class", "ifnonempty", "message_default", "message_context_setting", "placeholder", "invalid_value", "date_backup"] as $k)
-            $this->store($k, $j, $k, "is_string");
-        foreach (["internal", "optional", "novalue", "disabled", "autogrow"] as $k)
-            $this->store($k, $j, $k, "is_bool");
-        $this->store("size", $j, "size", "is_int");
-        $this->store("values", $j, "values", "is_array");
-        $this->store("json_values", $j, "json_values", "is_array");
+        foreach ((array) $j as $k => $v) {
+            if (isset(self::$key_storage[$k]))
+                $this->store($k, $j, $k, self::$key_storage[$k]);
+        }
         if (isset($j->default_value) && (is_int($j->default_value) || is_string($j->default_value)))
             $this->default_value = $j->default_value;
         if (isset($j->extensible)) {
@@ -94,23 +118,31 @@ class Si {
 
         if (!$this->type && $this->parser_class)
             $this->type = "special";
+        if (in_array($this->type, ["cdate", "checkbox"])
+            && !isset($this->default_value))
+            $this->default_value = 0;
+
         $s = $this->storage ? : $this->name;
-        $pfx = substr($s, 0, 4);
-        if ($pfx === "opt.")
+        $dot = strpos($s, ".");
+        if ($dot === 3 && substr($s, 0, 3) === "opt") {
             $this->storage_type = self::SI_DATA | self::SI_OPT;
-        else if ($pfx === "ova.") {
+        } else if ($dot === 3 && substr($s, 0, 3) === "ova.") {
             $this->storage_type = self::SI_VALUE | self::SI_OPT;
             $this->storage = "opt." . substr($s, 4);
-        } else if ($pfx === "val.") {
+        } else if ($dot === 3 && substr($s, 0, 3) === "val") {
             $this->storage_type = self::SI_VALUE | self::SI_SLICE;
             $this->storage = substr($s, 4);
-        } else if ($pfx === "dat.") {
+        } else if ($dot === 3 && substr($s, 0, 3) === "dat") {
             $this->storage_type = self::SI_DATA | self::SI_SLICE;
             $this->storage = substr($s, 4);
-        } else if (isset(self::$type_storage[$this->type]))
+        } else if ($dot === 6 && substr($s, 0, 6) === "negval") {
+            $this->storage_type = self::SI_VALUE | self::SI_SLICE | self::SI_NEGATE;
+            $this->storage = substr($s, 7);
+        } else if (isset(self::$type_storage[$this->type])) {
             $this->storage_type = self::$type_storage[$this->type];
-        else
+        } else {
             $this->storage_type = self::SI_VALUE;
+        }
         if ($this->storage_type & self::SI_OPT) {
             $is_value = !!($this->storage_type & self::SI_VALUE);
             $oname = substr($this->storage ? : $this->name, 4);
@@ -498,8 +530,8 @@ class SettingValues extends MessageSet {
                 $has_value = $this->req_has($xname, $suffix);
             else
                 $has_value = isset($this->req["$xname$suffix"])
-                    || (($xsi->type === "cdate" || $xsi->type === "checkbox")
-                        && $this->req_has($xname, $suffix));
+                    || ($this->req_has($xname, $suffix)
+                        && in_array($xsi->type, ["cdate", "checkbox"]));
             if ($has_value)
                 $xsis[] = $xsi;
         }
@@ -546,8 +578,9 @@ class SettingValues extends MessageSet {
     }
     function save($name, $value) {
         $si = $this->si($name);
-        if (!$si)
+        if (!$si) {
             return;
+        }
         if ($value !== null
             && !($si->storage_type & Si::SI_DATA ? is_string($value) : is_int($value))) {
             error_log(caller_landmark() . ": setting $name: invalid value " . var_export($value, true));
@@ -555,25 +588,32 @@ class SettingValues extends MessageSet {
         }
         $s = $si->storage();
         if ($value === $si->default_value
-            || ($value === "" && ($si->storage_type & Si::SI_DATA)))
+            || ($value === "" && ($si->storage_type & Si::SI_DATA))) {
             $value = null;
+        }
+        if ($si->storage_type & Si::SI_NEGATE) {
+            $value = $value ? 0 : 1;
+        }
         if ($si->storage_type & Si::SI_SLICE) {
             if (!isset($this->savedv[$s])) {
-                if (!array_key_exists($s, $this->savedv))
+                if (!array_key_exists($s, $this->savedv)) {
                     $this->savedv[$s] = [$this->conf->setting($s, 0), $this->conf->setting_data($s, null)];
-                else
+                } else {
                     $this->savedv[$s] = [0, null];
+                }
             }
             $idx = $si->storage_type & Si::SI_DATA ? 1 : 0;
             $this->savedv[$s][$idx] = $value;
-            if ($this->savedv[$s][0] === 0 && $this->savedv[$s][1] === null)
+            if ($this->savedv[$s][0] === 0 && $this->savedv[$s][1] === null) {
                 $this->savedv[$s] = null;
-        } else if ($value === null)
+            }
+        } else if ($value === null) {
             $this->savedv[$s] = null;
-        else if ($si->storage_type & Si::SI_DATA)
+        } else if ($si->storage_type & Si::SI_DATA) {
             $this->savedv[$s] = [1, $value];
-        else
+        } else {
             $this->savedv[$s] = [$value, null];
+        }
     }
     function update($name, $value) {
         if ($value !== $this->oldv($name)) {
@@ -599,29 +639,39 @@ class SettingValues extends MessageSet {
             return $this->si_oldv($si, $default_value);
     }
     private function si_oldv(Si $si, $default_value) {
-        if ($default_value === null)
+        if ($default_value === null) {
             $default_value = $si->default_value;
-        if (isset($this->explicit_oldv[$si->name]))
+        }
+        if (isset($this->explicit_oldv[$si->name])) {
             $val = $this->explicit_oldv[$si->name];
-        else if ($si->storage_type & Si::SI_OPT) {
+        } else if ($si->storage_type & Si::SI_OPT) {
             $val = $this->conf->opt(substr($si->storage(), 4), $default_value);
-            if (($si->storage_type & Si::SI_VALUE) && is_bool($val))
+            if (($si->storage_type & Si::SI_VALUE) && is_bool($val)) {
                 $val = (int) $val;
-        } else if ($si->storage_type & Si::SI_DATA)
+            }
+        } else if ($si->storage_type & Si::SI_DATA) {
             $val = $this->conf->setting_data($si->storage(), $default_value);
-        else
+        } else {
             $val = $this->conf->setting($si->storage(), $default_value);
-        if ($val === $si->invalid_value)
+        }
+        if ($val === $si->invalid_value) {
             $val = "";
+        }
+        if ($si->storage_type & Si::SI_NEGATE) {
+            $val = $val ? 0 : 1;
+        }
         return $val;
     }
     private function si_savedv($s, Si $si, $default_value) {
-        if (!isset($this->savedv[$s]))
+        if (isset($this->savedv[$s])) {
+            $val = $this->savedv[$s][$si->storage_type & Si::SI_DATA ? 1 : 0];
+            if ($si->storage_type & Si::SI_NEGATE) {
+                $val = $val ? 0 : 1;
+            }
+            return $val;
+        } else {
             return $default_value;
-        else if ($si->storage_type & Si::SI_DATA)
-            return $this->savedv[$s][1];
-        else
-            return $this->savedv[$s][0];
+        }
     }
 
     function render_messages_at($field) {
@@ -657,7 +707,7 @@ class SettingValues extends MessageSet {
         echo '<div class="', self::add_class("checki", get($js, "group_class")),
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, self::strip_group_js($js));
-        echo ' </span>', $this->label($name, $text, ["for" => "cb$name", "class" => get($js, "label_class")]);
+        echo '</span>', $this->label($name, $text, ["for" => "cb$name", "class" => get($js, "label_class")]);
         $this->echo_messages_at($name);
         if ($hint)
             echo '<p class="', self::add_class("settings-ap f-hx", get($js, "hint_class")), '">', $hint, '</p>';
@@ -1035,8 +1085,8 @@ class SettingValues extends MessageSet {
             $xname = str_replace(".", "_", $si->name);
             if (isset($this->req[$xname]))
                 $this->req[$si->name] = $this->req[$xname];
-            else if ($si->type === "checkbox" || $si->type === "cdate")
-                return 0;
+            else if (in_array($si->type, ["cdate", "checkbox"]))
+                return $si->default_value;
             else
                 return null;
         }
@@ -1194,8 +1244,7 @@ class SettingValues extends MessageSet {
     function parse_json_value(Si $si, $v) {
         if ($v === null)
             return;
-        if (($si->type === "checkbox"
-             || $si->type === "cdate")
+        if (in_array($si->type, ["cdate", "checkbox"])
             && is_bool($v)) {
             $sv->set_req("has_{$si->name}", "1");
             if ($v)

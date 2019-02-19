@@ -102,6 +102,11 @@
         "internal": true, "type": "checkbox"
     },
     {
+        "name": "lead_seerev",
+        "title": "Lead gets special access to submitted reviews",
+        "type": "checkbox", "storage": "negval.lead_noseerev"
+    },
+    {
         "name": "mailbody_requestreview",
         "title": "Mail template for external review requests",
         "type": "string"

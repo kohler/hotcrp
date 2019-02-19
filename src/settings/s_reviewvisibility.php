@@ -13,7 +13,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other submissions";
         $opts[Conf::AUSEEREV_TAGS] = "<label for=\"au_seerev_" . Conf::AUSEEREV_TAGS . "\">Yes, for submissions with any of these tags:</label>&nbsp; " . $sv->render_entry("tag_au_seerev") . $sv->render_messages_at("tag_au_seerev");
 
-        $hint = '<p class="settingtext f-h if-response-active';
+        $hint = '<div class="f-hx if-response-active';
         if (!$sv->conf->setting("resp_active"))
             $hint .= ' hidden';
         $hint .= '">';
@@ -21,7 +21,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             $hint .= 'Currently, <strong>some authors can edit responses and therefore see reviews</strong> independent of this setting.';
         else
             $hint .= 'Authors who can edit responses can see reviews independent of this setting.';
-        $hint .= '</p>';
+        $hint .= '</div>';
 
         $sv->echo_radio_table("au_seerev", $opts,
             'Can <strong>authors see reviews and author-visible comments</strong> for their submissions?' . $hint);

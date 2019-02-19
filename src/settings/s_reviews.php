@@ -159,23 +159,26 @@ class Reviews_SettingRenderer {
             $hint .= ' Metareviewers can always see associated reviews and reviewer names.';
         if ($sv->conf->check_track_sensitivity(Track::VIEWREV)
             || $sv->conf->check_track_sensitivity(Track::VIEWALLREV))
-            $hint .= ' ' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict review visibility.';
+            $hint .= ' ' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' restrict review visibility.';
         if ($hint !== "")
             $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
         $sv->echo_radio_table("pc_seeallrev", [Conf::PCSEEREV_YES => "Yes",
                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                  Conf::PCSEEREV_IFCOMPLETE => ["label" => "Only after completing a review for the same submission", "hint" => '<div class="f-hx fx">Discussion leads can also see reviews.</div>']],
+                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same submission"],
             'Can PC members <strong>see all reviews<span class="fx2"> and comments</span></strong> except for conflicts?',
             ["after" => $hint, "fold" => Conf::PCSEEREV_IFCOMPLETE]);
 
+        echo '<div class="settings-nearby settings-g">';
+        $sv->echo_checkbox("lead_seerev", "Discussion leads can always see submitted reviews and reviewer names");
+        echo '</div>';
+
 
         $hint = "";
-        if ($sv->conf->setting("pc_seeblindrev") == 0
-            && $sv->conf->check_track_sensitivity(Track::VIEWREVID))
-            $hint = '<p class="settings-ag f-h">' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' may restrict reviewer name visibility.</p>';
+        if ($sv->conf->check_track_sensitivity(Track::VIEWREVID))
+            $hint = '<p class="settings-ag f-h">' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' restrict reviewer name visibility.</p>';
         $sv->echo_radio_table("pc_seeblindrev", [0 => "Yes",
-                1 => ["label" => "Only after completing a review for the same submission", "hint" => '<div class="f-hx fx">Discussion leads can also see reviewer names.</div>']],
+                1 => "Only after completing a review for the same submission"],
             'Can PC members see <strong><span class="fn2">comments and </span>reviewer names</strong> except for conflicts?',
             ["after" => $hint, "fold" => 1]);
 

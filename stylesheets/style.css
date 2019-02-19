@@ -1179,6 +1179,9 @@ th.settings-simplehead {
 .settings-opt {
 	margin-bottom: 2em;
 }
+.settings-g + .settings-nearby, .settings-radio + .settings-nearby {
+	margin-top: -1em;
+}
 .settings-revfield, .settings-opt {
 	margin-left: 1.2em;
 }
