@@ -6,7 +6,7 @@ class FinalVersions_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
         echo '<div class="has-fold fold2o">';
         $sv->echo_checkbox('final_open', '<strong>Collect final versions of accepted submissions</strong>', ["class" => "uich js-foldup", "group_class" => "settings-g", "group_open" => true]);
-        echo '<div class="fx2"><div class="settings-g">';
+        echo '<div class="fx2"><hr class="g"><div class="settings-g">';
         $sv->echo_entry_group("final_soft", "Deadline", ["horizontal" => true]);
         $sv->echo_entry_group("final_done", "Hard deadline", ["horizontal" => true]);
         $sv->echo_entry_group("final_grace", "Grace period", ["horizontal" => true]);

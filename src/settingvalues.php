@@ -811,6 +811,28 @@ class SettingValues extends MessageSet {
     function echo_message_minor($name, $description, $hint = "") {
         $this->echo_message_base($name, $description, $hint, " n");
     }
+    function echo_message_horizontal($name, $description, $hint = "") {
+        $si = $this->si($name);
+        if ($si->message_default)
+            $si->default_value = $this->si_message_default($si);
+        $current = $this->curv($name);
+        if ($current !== $si->default_value) {
+            echo '<div class="entryi">',
+                $this->label($name, $description), '<div>';
+            $close = "";
+        } else {
+            $description = '<a class="ui qq js-foldup href="">'
+                . expander(null, 0) . $description . '</a>';
+            echo '<div class="entryi has-fold foldc">',
+                $this->label($name, $description), '<div>',
+                '<div class="dim ui js-foldup fn">default</div>',
+                '<div class="fx">';
+            $close = "</div>";
+        }
+        echo '<div class="f-c n">(HTML allowed)</div>',
+            $this->render_textarea($name),
+            $hint, $close, "</div></div>";
+    }
 
     private function si_render_date_value($v, Si $si) {
         if ($v !== null && $this->use_req())

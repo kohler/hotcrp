@@ -29,7 +29,7 @@ class Responses_SettingParser extends SettingParser {
 
     static function render_instructions_property(SettingValues $sv, $i) {
         $isuf = $i ? "_$i" : "";
-        $sv->echo_message_minor("msg.resp_instrux$isuf", "Instructions");
+        $sv->echo_message_horizontal("msg.resp_instrux$isuf", "Instructions");
     }
 
     static function render(SettingValues $sv) {
@@ -39,7 +39,7 @@ class Responses_SettingParser extends SettingParser {
         Ht::stash_script('$(function () { $("#cbresp_active").on("change", function () { var ch = $$("cbresp_active").checked; $(".if-response-active").toggleClass("hidden", !ch); }).trigger("change"); })');
         echo '<div id="auresparea" class="if-response-active',
             $sv->curv("resp_active") ? "" : " hidden",
-            '">', Ht::hidden("has_resp_rounds", 1);
+            '"><hr class="g">', Ht::hidden("has_resp_rounds", 1);
 
         // Response rounds
         if ($sv->use_req()) {

@@ -1177,7 +1177,6 @@ th.settings-simplehead {
 }
 .settings-g, .settings-radio, .settings-revfield, .settings-revfieldremoved,
 .settings-opt {
-	margin-top: 1em;
 	margin-bottom: 2em;
 }
 .settings-revfield, .settings-opt {
@@ -2225,7 +2224,7 @@ hr.c {
 	border: 0 none;
 	height: 0;
 }
-hr.g, hr.ug {
+hr.g, hr.mg, hr.ug {
 	height: 0;
 }
 
