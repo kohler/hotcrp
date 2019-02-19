@@ -118,9 +118,6 @@ class Si {
 
         if (!$this->type && $this->parser_class)
             $this->type = "special";
-        if (in_array($this->type, ["cdate", "checkbox"])
-            && !isset($this->default_value))
-            $this->default_value = 0;
 
         $s = $this->storage ? : $this->name;
         $dot = strpos($s, ".");
@@ -1086,7 +1083,7 @@ class SettingValues extends MessageSet {
             if (isset($this->req[$xname]))
                 $this->req[$si->name] = $this->req[$xname];
             else if (in_array($si->type, ["cdate", "checkbox"]))
-                return $si->default_value;
+                return 0;
             else
                 return null;
         }
