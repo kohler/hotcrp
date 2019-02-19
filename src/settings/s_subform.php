@@ -6,8 +6,6 @@ class BanalSettings {
     static function render($suffix, $sv) {
         $cfs = new FormatSpec($sv->curv("sub_banal_opt$suffix"),
                               $sv->curv("sub_banal_data$suffix"));
-        if (!$sv->oldv("sub_banal$suffix") && !$cfs->is_banal_empty())
-            $sv->set_oldv("sub_banal$suffix", 1);
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref"] as $k) {
             $val = $cfs->unparse_key($k);
             if ($val === "")
