@@ -5088,7 +5088,7 @@ var add_revpref_ajax = (function () {
             method: "POST", data: {pref: self.value, u: cid},
             success: function (rv) {
                 setajaxcheck(self, rv);
-                if (rv.ok && rv.value != null)
+                if (rv && rv.ok && rv.value != null)
                     self.value = rv.value === "0" ? "" : rv.value;
             },
             complete: function (xhr, status) {
@@ -6990,12 +6990,13 @@ function background_format_check() {
         $.ajax(hoturl("api/formatcheck", {doc: m[1], soft: 1}), {
             success: function (data) {
                 var img = needed.firstChild, m;
-                if (data.ok
+                if (data
+                    && data.ok
                     && img
                     && img.tagName === "IMG"
                     && (m = img.src.match(/^(.*\/pdff?)x?((?:24)?\.png(?:\?.*)?)$/)))
                     img.src = m[1] + (data.has_error ? "x" : "") + m[2];
-                if (data.ok || ++failures <= 2)
+                if ((data && data.ok) || ++failures <= 2)
                     setTimeout(background_format_check, 2000 + Math.random() * 1000);
             }
         });
