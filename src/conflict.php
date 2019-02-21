@@ -4,7 +4,7 @@
 
 class Conflict {
     static $type_descriptions = array(0 => "No conflict",
-                                      3 => "Advisor/student",
+                                      3 => "Advisor/advisee",
                                       2 => "Recent collaborator",
                                       4 => "Institutional",
                                       5 => "Personal",
