@@ -225,7 +225,7 @@ function do_tags($qreq) {
         return $Conf->warnMsg("Nothing to do.");
 
     // modify database
-    Dbl::qe("lock tables ContactInfo write");
+    Dbl::qe("lock tables ContactInfo write, ActionLog write");
     Conf::$no_invalidate_caches = true;
     $users = array();
     if ($qreq->tagtype === "s") {
