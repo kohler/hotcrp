@@ -45,7 +45,7 @@ class GetReviewBase_ListAction extends ListAction {
 
         $rfname = $this->author_view ? "aureview" : "review";
         if (!$this->iszip)
-            $rfname .= count($texts) === 1 ? key($texts) : "s";
+            $rfname .= count($texts) === 1 ? $texts[0][0] : "s";
 
         if ($this->isform)
             $header = $user->conf->review_form()->textFormHeader(count($texts) > 1 && !$this->iszip);
@@ -58,15 +58,18 @@ class GetReviewBase_ListAction extends ListAction {
                 foreach ($warnings as $w)
                     $text .= prefix_word_wrap("==-== ", $w, "==-== ");
                 $text .= "\n";
-            } else if (!empty($warnings))
+            } else if (!empty($warnings)) {
                 $text .= join("\n", $warnings) . "\n\n";
-            $text .= join("", $texts);
+            }
+            foreach ($texts as $pt) {
+                $text .= $pt[1];
+            }
             downloadText($text, $rfname);
         } else {
             $zip = new ZipDocument($user->conf->download_prefix . "reviews.zip");
             $zip->warnings = $warnings;
-            foreach ($texts as $pid => $text)
-                $zip->add_as($header . $text, $user->conf->download_prefix . $rfname . $pid . ".txt");
+            foreach ($texts as $pt)
+                $zip->add_as($header . $pt[1], $user->conf->download_prefix . $rfname . $pt[0] . ".txt");
             $result = $zip->download();
             if (!$result->error)
                 exit;
@@ -110,7 +113,7 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
                     $rrows[] = null;
                 foreach ($rrows as $rrow)
                     $t .= $rf->textForm($prow, $rrow, $user, null) . "\n";
-                $texts[] = $t;
+                $texts[] = [$prow->paperId, $t];
             }
         }
 
@@ -166,17 +169,17 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                     $rctext = $header . str_repeat("=", 75) . "\n"
                         . "* Paper #{$prow->paperId} {$prow->title}\n\n" . $rctext;
                 }
-                $texts[] = $rctext;
+                $texts[] = [$prow->paperId, $rctext];
             } else if (($whyNot = $user->perm_view_review($prow, null)))
                 $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
         }
-        $first = true;
-        foreach ($texts as &$text) {
-            if (!$first)
-                $text = "\n\n\n" . str_repeat("* ", 37) . "*\n\n\n\n" . $text;
-            $first = false;
+        if (!$this->iszip) {
+            foreach ($texts as $i => &$pt) {
+                if ($i !== 0)
+                    $pt[1] = "\n\n\n" . str_repeat("* ", 37) . "*\n\n\n\n" . $pt[1];
+            }
+            unset($pt);
         }
-        unset($text);
         $user->set_overrides($overrides);
         if ($this->author_view && $user->privChair) {
             $user->conf->au_seerev = $au_seerev;
