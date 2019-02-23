@@ -28,6 +28,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
     const VALUE_STRING = 4;
+    const VALUE_TRIM = 8;
 
     public $id;
     public $short_id;
@@ -271,8 +272,11 @@ class ReviewField implements Abbreviator, JsonSerializable {
     function unparse_value($value, $flags = 0, $real_format = null) {
         if (is_object($value))
             $value = get($value, $this->id);
-        if (!$this->has_options)
+        if (!$this->has_options) {
+            if ($flags & self::VALUE_TRIM)
+                $value = rtrim($value);
             return $value;
+        }
         if (!$value)
             return null;
         if (!$this->option_letter || is_numeric($value))
