@@ -8,7 +8,18 @@ class ReviewTimes {
     private $r;
     private $dl;
 
-    private function count_unmodified_review($rrow) {
+    private function count_review($prow, $rrow) {
+        // no external reviews
+        if ($rrow->reviewType < REVIEW_PC)
+            return false;
+        // only completed reviews for withdrawn/unsubmitted papers
+        if ($prow->timeSubmitted <= 0)
+            return $rrow->reviewSubmitted > 0;
+        // yes for modified or assigned reviews;
+        // no for unmodified self-assigned reviews
+        if ($rrow->reviewType > REVIEW_PC
+            || $rrow->reviewModified)
+            return true;
         if ($rrow->requestedBy == $rrow->contactId
             || $rrow->requestedBy == 0)
             return false;
@@ -38,10 +49,7 @@ class ReviewTimes {
                 continue;
             }
             foreach ($prow->reviews_by_id() as $rrow) {
-                if ($rrow->reviewType > REVIEW_PC
-                    || ($rrow->reviewType == REVIEW_PC
-                        && ($rrow->reviewModified
-                            || $this->count_unmodified_review($rrow)))) {
+                if ($this->count_review($prow, $rrow)) {
                     $viewable = $user->privChair
                         || ($user->can_view_review_assignment($prow, $rrow)
                             && $user->can_view_review_identity($prow, $rrow));
