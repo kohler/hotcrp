@@ -1293,7 +1293,7 @@ class AssignmentSet {
             $val = 2;
         } else if ($pfield !== "") {
             if (!isset($this->searches[$pfield])) {
-                $search = new PaperSearch($this->user, ["q" => $pfield, "reviewer" => $this->astate->reviewer]);
+                $search = new PaperSearch($this->user, ["q" => $pfield, "t" => $this->search_type, "reviewer" => $this->astate->reviewer]);
                 $this->searches[$pfield] = $search->paper_ids();
                 if ($report_error)
                     foreach ($search->warnings as $w)
@@ -1616,7 +1616,7 @@ class AssignmentSet {
                 $query_order .= " show:$k";
         }
         $query_order .= " show:autoassignment";
-        $search = new PaperSearch($this->user, ["t" => "vis", "q" => $query_order, "reviewer" => $this->astate->reviewer]);
+        $search = new PaperSearch($this->user, ["q" => $query_order, "t" => "vis", "reviewer" => $this->astate->reviewer]);
         $plist = new PaperList($search);
         $plist->add_column("autoassignment", new AutoassignmentPaperColumn($this));
         $plist->set_table_id_class("foldpl", "pltable_full");
