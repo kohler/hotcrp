@@ -2067,6 +2067,24 @@ class Conf {
             trigger_error("$this->dbname invariant error: has_topics setting incorrect");
 
         $this->check_document_inactive_invariants();
+
+        // autosearches are correct
+        if ($this->tags()->has_autosearch) {
+            $autosearch_dts = array_values($this->tags()->filter("autosearch"));
+            $q = join(" THEN ", array_map(function ($dt) {
+                return "((" . $dt->autosearch . ") XOR #" . $dt->tag . ")";
+            }, $autosearch_dts));
+            $search = new PaperSearch($this->site_contact(), ["q" => $q, "t" => "all"]);
+            $p = [];
+            foreach ($search->paper_ids() as $pid) {
+                $then = $search->thenmap ? $search->thenmap[$pid] : 0;
+                if (!isset($p[$then])) {
+                    $dt = $autosearch_dts[$then];
+                    trigger_error("$this->dbname invariant error: autosearch #" . $dt->tag . " disagrees with search " . $dt->autosearch . " on #" . $pid);
+                    $p[$then] = true;
+                }
+            }
+        }
     }
 
     function check_document_inactive_invariants() {
