@@ -426,7 +426,7 @@ class Not_SearchTerm extends Op_SearchTerm {
         else if ($ff === "true")
             return "false";
         else
-            return "not ($ff)";
+            return "not coalesce($ff,0)";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return !$this->child[0]->exec($row, $srch);
@@ -637,7 +637,7 @@ class Xor_SearchTerm extends Op_SearchTerm {
         $sqi->top = false;
         $ff = [];
         foreach ($this->child as $subt)
-            $ff[] = $subt->sqlexpr($sqi);
+            $ff[] = "coalesce(" . $subt->sqlexpr($sqi) . ",0)";
         $sqi->top = $top;
         return empty($ff) ? "false" : "(" . join(" xor ", $ff) . ")";
     }
