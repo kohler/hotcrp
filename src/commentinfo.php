@@ -571,6 +571,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         // log
         $contact->log_activity("Comment $cmtid " . ($text !== false ? "saved" : "deleted"), $this->prow->$LinkColumn);
+        $this->conf->update_autosearch_tags($this->prow);
 
         // ordinal
         if ($text !== false && $this->ordinal_missing($ctype))
