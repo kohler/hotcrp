@@ -29,7 +29,7 @@ class ReviewToken_SearchTerm extends SearchTerm {
         $where = "reviewToken" . ($this->token ? "={$this->token}" : "!=0");
         $sqi->add_table($thistab, ["left join", "(select r.paperId, count(r.reviewId) count from PaperReview r where $where group by paperId)"]);
         if ($this->any !== false)
-            return "{$thistab}.count>0";
+            return "coalesce({$thistab}.count,0)>0";
         else
             return "coalesce({$thistab}.count,0)=0";
     }

@@ -40,9 +40,8 @@ class OptionMatcher {
                 $q .= $this->compar . $this->value;
         }
         $q .= " group by paperId)";
-        if ($this->match_null)
-            $col = "coalesce($col,Paper.paperId)";
-        return [$q, $col];
+        $coalesce = $this->match_null ? "Paper.paperId" : "0";
+        return [$q, "coalesce($col,$coalesce)"];
     }
     function exec(PaperInfo $prow, Contact $user) {
         $ov = null;
