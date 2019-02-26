@@ -3,14 +3,17 @@ $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 require_once("$ConfSitePATH/lib/getopt.php");
 
-$arg = getopt_rest($argv, "hn:q", array("help", "name:", "json-reviews", "fix-json-reviews"));
+$arg = getopt_rest($argv, "hn:q", array("help", "name:", "json-reviews", "fix-json-reviews", "fix-autosearch"));
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 0) {
     fwrite(STDOUT, "Usage: php batch/checkinvariants.php [-n CONFID]\n");
     exit(0);
 }
 
-$Conf->check_invariants();
+$problems = $Conf->check_invariants();
+
+if (isset($problems["autosearch"]) && isset($arg["fix-autosearch"]))
+    $Conf->update_autosearch_tags();
 
 if ($Conf->sversion == 174 && (isset($arg["json-reviews"]) || isset($arg["fix-json-reviews"]))) {
     $result = $Conf->qe("select * from PaperReview");
