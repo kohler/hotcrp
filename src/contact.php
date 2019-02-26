@@ -3888,6 +3888,8 @@ class Contact {
             $this->conf->update_metareviews_setting($type == REVIEW_META ? 1 : -1);
 
         self::update_rights();
+        if (!get($extra, "no_autosearch"))
+            $this->conf->update_autosearch_tags($pid);
         return $reviewId;
     }
 
@@ -3904,7 +3906,7 @@ class Contact {
         }
     }
 
-    function unsubmit_review_row($rrow) {
+    function unsubmit_review_row($rrow, $extra = null) {
         $needsSubmit = 1;
         if ($rrow->reviewType == REVIEW_SECONDARY) {
             $row = Dbl::fetch_first_row($this->conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=? and requestedBy=? and reviewType<" . REVIEW_SECONDARY, $rrow->paperId, $rrow->contactId));
@@ -3913,6 +3915,9 @@ class Contact {
             else if ($row && $row[1])
                 $needsSubmit = -1;
         }
-        return $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=? where paperId=? and reviewId=?", $needsSubmit, $rrow->paperId, $rrow->reviewId);
+        $result = $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=? where paperId=? and reviewId=?", $needsSubmit, $rrow->paperId, $rrow->reviewId);
+        if ($extra && !get($extra, "no_autosearch"))
+            $this->conf->update_autosearch_tags($rrow->paperId);
+        return $result;
     }
 }

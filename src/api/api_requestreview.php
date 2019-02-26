@@ -87,6 +87,7 @@ class RequestReview_API {
                 $msg = "Proposed an external review from " . Text::user_html($xreviewer) . ". An administrator must approve this proposal for it to take effect.";
             }
             $user->log_activity("Proposed review for $email", $prow);
+            $prow->conf->update_autosearch_tags($prow);
             return new JsonResult(["ok" => true, "action" => "propose", "response" => $msg]);
         }
 
@@ -171,6 +172,7 @@ class RequestReview_API {
                 ["reviewer_contact" => $reviewer_contact]);
 
             $user->log_activity_for($requester, "Denied proposed review for $email", $prow);
+            $prow->conf->update_autosearch_tags($prow);
             return new JsonResult(["ok" => true, "action" => "deny"]);
         } else {
             Dbl::qx_raw("unlock tables");
@@ -245,6 +247,10 @@ class RequestReview_API {
 
         $user->conf->qe_raw("unlock tables");
 
+        if ($had_token)
+            $user->conf->update_rev_tokens_setting(-1);
+        $prow->conf->update_autosearch_tags($prow);
+
         // send mail to requesters
         // XXX delay this mail by a couple minutes
         foreach ($rrows as $rrow) {
@@ -259,8 +265,6 @@ class RequestReview_API {
             $user->log_activity_for($rrow->contactId, "Refused review request", $prow);
         }
 
-        if ($had_token)
-            $user->conf->update_rev_tokens_setting(-1);
         if ($qreq->redirect)
             $user->conf->confirmMsg("Thank you for telling us that you are unable to review submission #{$prow->paperId}.");
         return new JsonResult(["ok" => true, "action" => "decline"]);
@@ -314,6 +318,8 @@ class RequestReview_API {
                 $prow->paperId, $req->email);
             $user->log_activity("Retracted review request for $req->email", $prow);
         }
+
+        $prow->conf->update_autosearch_tags($prow);
 
         // send mail to reviewer
         $notified = false;

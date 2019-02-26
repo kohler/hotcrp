@@ -861,7 +861,7 @@ class Review_Assigner extends Assigner {
         $locks["PaperReview"] = $locks["PaperReviewRefused"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        $extra = array();
+        $extra = ["no_autosearch" => true];
         $round = $this->item->get(false, "_round");
         if ($round !== null && $this->rtype)
             $extra["round_number"] = (int) $aset->conf->round_number($round, true);
@@ -874,7 +874,7 @@ class Review_Assigner extends Assigner {
         }
         $reviewId = $aset->user->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId)
-            $aset->user->unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
+            $aset->user->unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId], ["no_autosearch" => true]);
         if (get($extra, "token") && $reviewId)
             $this->token = $aset->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewId=?", $this->pid, $reviewId);
     }
