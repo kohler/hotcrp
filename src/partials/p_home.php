@@ -479,7 +479,7 @@ class Home_Partial {
 
         echo '<div class="homegrp">', $this->render_h2_home("Requested Reviews", $gx);
         if ($user->has_admin_approvable_review()) {
-            echo '<a href="', $conf->hoturl("paper", "m=rea&amp;p=has%3Aapprovable"),
+            echo '<a href="', $conf->hoturl("paper", "m=rea&amp;p=has%3Apending-approval"),
                 ($user->has_approvable_review() ? '" class="attention' : ''),
                 '">Approve external reviews</a> <span class="barsep">·</span> ';
         }

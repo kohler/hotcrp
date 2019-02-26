@@ -282,7 +282,7 @@ class ConstantFexpr extends Fexpr {
     }
     private function _check_revtype() {
         $rsm = new ReviewSearchMatcher;
-        if ($rsm->apply_review_type($this->x, true)) {
+        if ($rsm->apply_review_type($this->x)) {
             $this->x = $rsm->review_type();
             return true;
         } else
@@ -1582,7 +1582,7 @@ class Formula {
     }
 
     private function _reviewer_decoration($e0, &$ex) {
-        $e1 = null;
+        $es = [];
         $rsm = new ReviewSearchMatcher;
         while ($ex !== "") {
             if (!preg_match('/\A:((?:"[^"]*(?:"|\z)|~*[-A-Za-z0-9_.#@]+(?!\s*\())+)(.*)/si', $ex, $m)
@@ -1593,24 +1593,28 @@ class Formula {
                 if ($e0)
                     break;
                 $e0 = $this->_reviewer_base($m[1]);
-            } else if ($rsm->apply_review_type($m[1], true)) {
-                $op = strtolower($m[1][0]) === "p" ? ">=" : "==";
-                $ee = new Fexpr($op, [new Revtype_Fexpr, new ConstantFexpr($rsm->review_type(), Fexpr::FREVTYPE)]);
-            } else if ($rsm->apply_round($m[1], $this->conf))
-                /* OK */;
-            else {
+            } else if ($rsm->apply_review_type($m[1])
+                       || $rsm->apply_round($m[1], $this->conf)) {
+            } else if ($m[1] === "pc") {
+                $es[] = new Fexpr(">=", [new Revtype_Fexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE)]);
+            } else {
                 if (strpos($m[1], "\"") !== false)
                     $m[1] = str_replace(["\"", "*"], ["", "\\*"], $m[1]);
-                $ee = new ReviewerMatch_Fexpr($this->user, $m[1]);
+                $es[] = new ReviewerMatch_Fexpr($this->user, $m[1]);
             }
-            if ($ee)
-                $e1 = $e1 ? new Fexpr("&&", [$e1, $ee]) : $ee;
             $ex = $m[2];
         }
-        if ($rsm->round) {
-            $ee = new InFexpr(new ReviewRound_Fexpr, $rsm->round);
-            $e1 = $e1 ? new Fexpr("&&", [$e1, $ee]) : $ee;
-        }
+
+        $rsm->finish();
+        if ($rsm->review_type())
+            $es[] = new Fexpr("=", [new RevType_Fexpr, new ConstantFexpr($rsm->review_type(), Fexpr::FREVTYPE)]);
+        if ($rsm->round)
+            $es[] = new InFexpr(new ReviewRound_Fexpr, $rsm->round);
+
+        $e1 = empty($es) ? $es[0] : null;
+        for ($i = 1; $i < count($es); ++$i)
+            $e1 = new Fexpr("&&", [$e1, $es[$i]]);
+
         if ($e0 && $e1)
             return new Fexpr("?:", [$e1, $e0, ConstantFexpr::cnull()]);
         else

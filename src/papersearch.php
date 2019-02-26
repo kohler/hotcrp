@@ -2815,7 +2815,7 @@ class PaperSearch {
             && $this->conf->setting("extrev_approve")
             && $this->conf->setting("pcrev_editdelegate")
             && $this->user->is_requester())
-            array_push($res, "has:approvable");
+            array_push($res, "has:pending-approval");
         foreach ($this->conf->resp_rounds() as $rrd) {
             if (!in_array("has:response", $res, true))
                 $res[] = "has:response";

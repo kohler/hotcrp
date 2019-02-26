@@ -67,7 +67,7 @@ function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode) {
         else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
             $id .= " (delegated)";
         else if ($rr->reviewModified > 1 && $rr->timeApprovalRequested > 0)
-            $id .= " (awaiting approval)";
+            $id .= " (pending approval)";
         else if ($rr->reviewModified > 1)
             $id .= " (in progress)";
         else if ($rr->reviewModified > 0)

@@ -1659,7 +1659,7 @@ class Contact {
             if ($this->conf->setting("extrev_approve")
                 && $this->conf->setting("pcrev_editdelegate")) {
                 if ($this->is_manager()) {
-                    $search = new PaperSearch($this, "ext:approvable:myreq THEN ext:approvable");
+                    $search = new PaperSearch($this, "ext:pending-approval:myreq THEN ext:pending-approval");
                     foreach ($search->paper_ids() as $pid)
                         if ($search->thenmap[$pid] === 0) {
                             $this->_has_approvable = 2;
