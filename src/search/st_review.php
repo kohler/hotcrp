@@ -308,11 +308,14 @@ class Review_SearchTerm extends SearchTerm {
         $wordcount = null;
         $tailre = '(?:\z|:|(?=[=!<>]=?|≠|≤|≥))(.*)\z/s';
         while ($qword !== "") {
-            if (preg_match('/\A(.+?)' . $tailre, $qword, $m)
-                && ($rsm->apply_review_type($m[1])
-                    || $rsm->apply_completeness($m[1])
-                    || $rsm->apply_round($m[1], $srch->conf)
-                    || $rsm->apply_countexpr($m[1]))) {
+            if (preg_match('/\A:?((?:[=!<>]=?|≠|≤|≥|)\d+)' . $tailre, $qword, $m)
+                && $rsm->apply_countexpr($m[1])) {
+                $qword = $m[2];
+            } else if (preg_match('/\A(.+?)' . $tailre, $qword, $m)
+                       && ($rsm->apply_review_type($m[1])
+                           || $rsm->apply_completeness($m[1])
+                           || $rsm->apply_round($m[1], $srch->conf)
+                           || $rsm->apply_countexpr($m[1]))) {
                 $qword = $m[2];
             } else if (preg_match('/\A(?:au)?words((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
                 $wordcount = new CountMatcher($m[1]);
@@ -358,7 +361,7 @@ class Review_SearchTerm extends SearchTerm {
         $rsm->view_score = $f->view_score;
 
         $contactword = "";
-        while (preg_match('/\A([^<>].*?|[<>].+?)([:=!<>]|≠|≤|≥)(.*)\z/s', $word, $m)) {
+        while (preg_match('/\A([^<>].*?|[<>].+?)(:|[=!<>]=?|≠|≤|≥)(.*)\z/s', $word, $m)) {
             if ($rsm->apply_review_type($m[1])
                 || $rsm->apply_completeness($m[1])
                 || $rsm->apply_round($m[1], $srch->conf)
