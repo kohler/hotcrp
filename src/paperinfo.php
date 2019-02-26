@@ -289,6 +289,7 @@ class PaperInfo {
     private $_comment_array;
     private $_comment_skeleton_array;
     private $_potential_conflicts;
+    private $_request_array;
     private $_refusal_array;
     private $_author_view_user;
     private $_viewable_tags;
@@ -1626,6 +1627,31 @@ class PaperInfo {
             if ($rrow->reviewAuthorSeen)
                 return true;
         return false;
+    }
+
+
+    function load_review_requests($always = false) {
+        if ($this->_row_set && ($this->_request_array === null || $always))
+            $row_set = $this->_row_set;
+        else
+            $row_set = new PaperInfoSet($this);
+        foreach ($row_set as $prow)
+            $prow->_request_array = [];
+
+        $result = $this->conf->qe("select *, null contactId, null reviewToken, ? reviewType from ReviewRequest where paperId?a", REVIEW_REQUEST, $row_set->paper_ids());
+        while (($ref = $result->fetch_object())) {
+            $ref->reviewRound = (int) $ref->reviewRound;
+            $ref->reviewType = (int) $ref->reviewType;
+            $prow = $row_set->get($ref->paperId);
+            $prow->_request_array[] = $ref;
+        }
+        Dbl::free($result);
+    }
+
+    function review_requests() {
+        if ($this->_request_array === null)
+            $this->load_review_requests();
+        return $this->_request_array;
     }
 
 

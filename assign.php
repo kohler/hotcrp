@@ -214,15 +214,10 @@ foreach ($paperTable->all_reviews() as $rrow) {
         && ($Me->can_administer($prow) || $rrow->requestedBy == $Me->contactId))
         $requests[] = [0, max((int) $rrow->timeRequestNotified, (int) $rrow->timeRequested), count($requests), $rrow];
 }
-$result = $Conf->qe("select *, null contactId, null reviewToken, ? reviewType from ReviewRequest where paperId=?",
-    REVIEW_REQUEST, $prow->paperId);
-while (($rrow = $result->fetch_object())) {
-    $rrow->reviewRound = (int) $rrow->reviewRound;
-    $rrow->reviewType = (int) $rrow->reviewType;
+foreach ($prow->review_requests() as $rrow) {
     if ($Me->can_view_review_identity($prow, $rrow))
         $requests[] = [1, (int) $rrow->timeRequested, count($requests), $rrow];
 }
-Dbl::free($result);
 foreach ($prow->review_refusals() as $rrow) {
     if ($Me->can_view_review_identity($prow, $rrow))
         $requests[] = [2, (int) $rrow->timeRefused, count($requests), $rrow];
