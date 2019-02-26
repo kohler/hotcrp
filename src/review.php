@@ -1996,6 +1996,7 @@ class ReviewValues extends MessageSet {
         if (!$reviewId)
             return false;
         $this->req["reviewId"] = $reviewId;
+        $new_rrow = $prow->fresh_review_of_id($reviewId);
 
         // log updates -- but not if review token is used
         if (!$usedReviewToken
@@ -2007,11 +2008,17 @@ class ReviewValues extends MessageSet {
             $user->log_activity_for($rrow ? $rrow->contactId : $user->contactId, $text, $prow);
         }
 
+        // if external, forgive the requester from finishing their review
+        if ($new_rrow->reviewType < REVIEW_SECONDARY
+            && $new_rrow->requestedBy
+            && $submit) {
+            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId={$new_rrow->requestedBy} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
+        }
+
         // potentially email chair, reviewers, and authors
         $reviewer = $user;
         if ($contactId != $user->contactId)
             $reviewer = $this->conf->cached_user_by_id($contactId);
-        $new_rrow = $prow->fresh_review_of_id($reviewId);
 
         $this->_mailer_info = [
             "rrow" => $new_rrow, "reviewer_contact" => $reviewer,
@@ -2046,13 +2053,7 @@ class ReviewValues extends MessageSet {
             HotCRPMailer::send_combined_preparations($this->_mailer_preps);
         unset($this->_mailer_info, $this->_mailer_preps);
 
-        // if external, forgive the requestor from finishing their review
-        if ($new_rrow->reviewType < REVIEW_SECONDARY
-            && $new_rrow->requestedBy
-            && $submit) {
-            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId={$new_rrow->requestedBy} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
-        }
-
+        // record what happened
         $what = "#$prow->paperId" . ($new_rrow->reviewOrdinal ? unparseReviewOrdinal($new_rrow->reviewOrdinal) : "");
         if ($newsubmit) {
             $this->submitted[] = $what;
