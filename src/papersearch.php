@@ -2817,7 +2817,7 @@ class PaperSearch {
             && $this->user->is_requester())
             array_push($res, "has:pending-approval");
         if ($this->user->is_manager())
-            array_push($res, "has:review-proposal");
+            array_push($res, "has:proposal");
         foreach ($this->conf->resp_rounds() as $rrd) {
             if (!in_array("has:response", $res, true))
                 $res[] = "has:response";

@@ -474,14 +474,19 @@ class Home_Partial {
     function render_review_requests(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->is_requester()
-            && !$user->has_admin_approvable_review())
+            && !$user->has_review_pending_approval()
+            && !$user->has_proposal_pending())
             return;
 
         echo '<div class="homegrp">', $this->render_h2_home("Requested Reviews", $gx);
-        if ($user->has_admin_approvable_review()) {
+        if ($user->has_review_pending_approval()) {
             echo '<a href="', $conf->hoturl("paper", "m=rea&amp;p=has%3Apending-approval"),
-                ($user->has_approvable_review() ? '" class="attention' : ''),
-                '">Approve external reviews</a> <span class="barsep">·</span> ';
+                ($user->has_review_pending_approval(true) ? '" class="attention' : ''),
+                '">Pending review submissions</a> <span class="barsep">·</span> ';
+        }
+        if ($user->has_proposal_pending()) {
+            echo '<a href="', $conf->hoturl("assign", "p=has%3Aproposal"),
+                '" class="attention">Review proposals</a> <span class="barsep">·</span> ';
         }
         echo '<a href="', $conf->hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";
     }

@@ -1652,31 +1652,41 @@ class Contact {
         return $this->privChair || $this->conf->check_any_admin_tracks($this);
     }
 
-    function has_approvable_review() {
+    function has_review_pending_approval($my_request_only = false) {
         $this->check_rights_version();
         if ($this->_has_approvable === null) {
             $this->_has_approvable = 0;
             if ($this->conf->setting("extrev_approve")
                 && $this->conf->setting("pcrev_editdelegate")) {
                 if ($this->is_manager()) {
-                    $search = new PaperSearch($this, "ext:pending-approval:myreq THEN ext:pending-approval");
-                    foreach ($search->paper_ids() as $pid)
-                        if ($search->thenmap[$pid] === 0) {
-                            $this->_has_approvable = 2;
-                            break;
-                        } else
-                            $this->_has_approvable = 1;
+                    $search = new PaperSearch($this, "ext:pending-approval OR (has:proposal admin:me) HIGHLIGHT:pink ext:pending-approval:myreq HIGHLIGHT:green ext:pending-approval HIGHLIGHT:yellow (has:proposal admin:me)");
+                    foreach ($search->paper_ids() as $pid) {
+                        $hl = get($search->highlightmap, $pid, []);
+                        if (in_array("green", $hl)) {
+                            $this->_has_approvable |= 1;
+                            if (in_array("pink", $hl))
+                                $this->_has_approvable |= 2;
+                        }
+                        if (in_array("yellow", $hl))
+                            $this->_has_approvable |= 4;
+                    }
                 } else if ($this->is_requester()
-                           && $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$this->contactId})"))
+                           && $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$this->contactId})")) {
                     $this->_has_approvable = 2;
+                }
+            } else if ($this->is_manager()) {
+                $search = new PaperSearch($this, "has:proposal admin:me");
+                if ($search->paper_ids())
+                    $this->_has_approvable = 4;
             }
         }
-        return $this->_has_approvable === 2;
+        $flag = $my_request_only ? 2 : 3;
+        return ($this->_has_approvable & $flag) !== 0;
     }
 
-    function has_admin_approvable_review() {
-        return $this->has_approvable_review()
-            || $this->_has_approvable === 1;
+    function has_proposal_pending() {
+        $this->has_review_pending_approval();
+        return ($this->_has_approvable & 4) !== 0;
     }
 
 
