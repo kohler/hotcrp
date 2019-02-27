@@ -2510,11 +2510,15 @@ class Contact {
     }
 
     function can_view_review_assignment(PaperInfo $prow, $rrow) {
-        $rights = $this->rights($prow);
-        return $rights->allow_administer
-            || $rights->allow_pc
-            || $rights->review_status != 0
-            || $this->can_view_review($prow, $rrow);
+        if (!$rrow || $rrow->reviewType > 0) {
+            $rights = $this->rights($prow);
+            return $rights->allow_administer
+                || $rights->allow_pc
+                || $rights->review_status != 0
+                || $this->can_view_review($prow, $rrow);
+        } else {
+            return $this->can_view_review_identity($prow, $rrow);
+        }
     }
 
     function relevant_resp_rounds() {

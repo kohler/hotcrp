@@ -270,7 +270,7 @@ foreach ($requests as $req) {
     } else
         $name = Text::name_html($rrowid);
     $fullname = $name;
-    if ($rrowid->affiliation !== "")
+    if ((string) $rrowid->affiliation !== "")
         $fullname .= ' <span class="auaff">(' . htmlspecialchars($rrowid->affiliation) . ')</span>';
     if ((string) $rrowid->firstName !== "" || (string) $rrowid->lastName !== "")
         $fullname .= ' &lt;' . Ht::link(htmlspecialchars($rrowid->email), "mailto:" . $rrowid->email, ["class" => "mailto"]) . '&gt;';
@@ -310,9 +310,9 @@ foreach ($requests as $req) {
         }
         echo '</ul></div>';
     } else if ($req[0] === 1) {
-        echo "Proposed review: ", $namex, '</div><div class="f-h"><ul class="x mb0">';
+        echo "Review proposal: ", $namex, '</div><div class="f-h"><ul class="x mb0">';
         if ($rrow->timeRequested || $Me->can_view_review_requester($prow, $rrow)) {
-            echo '<li>requested';
+            echo '<li>proposed';
             if ($rrow->timeRequested)
                 echo ' ', $Conf->unparse_time_relative((int) $rrow->timeRequested);
             if ($rrow->requestedBy == $Me->contactId)
@@ -329,7 +329,7 @@ foreach ($requests as $req) {
         }
         echo '</ul></div>';
     } else {
-        echo "Review declined: ", $namex,
+        echo "Declined request: ", $namex,
             '</div><div class="f-h fx"><ul class="x mb0">';
         if ($rrow->timeRequested || $Me->can_view_review_requester($prow, $rrow)) {
             echo '<li>requested';
@@ -368,15 +368,17 @@ foreach ($requests as $req) {
             echo Ht::hidden("reason", $reason);
         if ($req[0] === 1 && $Me->can_administer($prow)) {
             echo Ht::hidden("override", 1);
-            $buttons[] = Ht::submit("approvereview", "Approve request", ["class" => "btn-sm btn-success"]);
-            $buttons[] = Ht::submit("denyreview", "Deny request", ["class" => "btn-sm ui js-deny-review-request"]); // XXX reason
+            $buttons[] = Ht::submit("approvereview", "Approve proposal", ["class" => "btn-sm btn-success"]);
+            $buttons[] = Ht::submit("denyreview", "Deny proposal", ["class" => "btn-sm ui js-deny-review-request"]); // XXX reason
         }
         if ($req[0] === 0)
             $buttons[] = Ht::submit("retractreview", "Retract review", ["class" => "btn-sm"]);
         else if ($req[0] === 1 && $Me->contactId > 0 && $rrow->requestedBy == $Me->contactId)
-            $buttons[] = Ht::submit("retractreview", "Retract request", ["class" => "btn-sm"]);
-        if ($req[0] === 2)
-            $buttons[] = Ht::submit("undeclinereview", "Retract refusal", ["class" => "btn-sm"]);
+            $buttons[] = Ht::submit("retractreview", "Retract proposal", ["class" => "btn-sm"]);
+        if ($req[0] === 2) {
+            $buttons[] = Ht::submit("undeclinereview", "Remove declined request", ["class" => "btn-sm"]);
+            $buttons[] = '<span class="hint">(allowing review to be reassigned)</span>';
+        }
         if ($buttons)
             echo '<div class="btnp">', join("", $buttons), '</div>';
         echo '</form>';

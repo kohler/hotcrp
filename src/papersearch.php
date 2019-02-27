@@ -2816,6 +2816,8 @@ class PaperSearch {
             && $this->conf->setting("pcrev_editdelegate")
             && $this->user->is_requester())
             array_push($res, "has:pending-approval");
+        if ($this->user->is_manager())
+            array_push($res, "has:review-proposal");
         foreach ($this->conf->resp_rounds() as $rrd) {
             if (!in_array("has:response", $res, true))
                 $res[] = "has:response";
