@@ -482,7 +482,7 @@ class Home_Partial {
         if ($user->has_review_pending_approval()) {
             echo '<a href="', $conf->hoturl("paper", "m=rea&amp;p=has%3Apending-approval"),
                 ($user->has_review_pending_approval(true) ? '" class="attention' : ''),
-                '">Pending review submissions</a> <span class="barsep">·</span> ';
+                '">Reviews pending approval</a> <span class="barsep">·</span> ';
         }
         if ($user->has_proposal_pending()) {
             echo '<a href="', $conf->hoturl("assign", "p=has%3Aproposal"),
