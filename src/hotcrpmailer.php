@@ -458,8 +458,9 @@ class HotCRPMailer extends Mailer {
         self::send_combined_preparations($preps);
 
         $row->replace_contact_info_map($contact_info_map);
-        if ($Me->allow_administer($row) && !$row->has_author($Me)
-            && count($contacts)) {
+        if ($Me->allow_administer($row)
+            && !$row->has_author($Me)
+            && !empty($contacts)) {
             $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
             if (isset($rest["infoNames"]) && $Me->allow_administer($row))
                 $contactsmsg = pluralx($contacts, "contact") . ", " . commajoin($contacts);
@@ -467,6 +468,16 @@ class HotCRPMailer extends Mailer {
                 $contactsmsg = "contact(s)";
             $row->conf->infoMsg("Sent email to paper #{$row->paperId}’s $contactsmsg$endmsg");
         }
-        return count($contacts) > 0;
+        return !empty($contacts);
+    }
+
+    static function send_administrators($template, $row, $rest = array()) {
+        $preps = array();
+        $rest["combination_type"] = 1;
+        foreach ($row->administrators() as $u) {
+            if (($p = self::prepare_to($u, $template, $row, $rest)))
+                $preps[] = $p;
+        }
+        self::send_combined_preparations($preps);
     }
 }

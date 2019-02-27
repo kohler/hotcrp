@@ -624,6 +624,41 @@ class PaperInfo {
     }
 
 
+    function submitted_at() {
+        if ($this->timeSubmitted > 0)
+            return (int) $this->timeSubmitted;
+        if ($this->timeWithdrawn > 0) {
+            if ($this->timeSubmitted == -100)
+                return self::SUBMITTED_AT_FOR_WITHDRAWN;
+            if ($this->timeSubmitted < -100)
+                return -(int) $this->timeSubmitted;
+        }
+        return 0;
+    }
+
+    function administrators() {
+        $us = [];
+        if ($this->managerContactId) {
+            if (($u = $this->conf->cached_user_by_id($this->managerContactId)))
+                $us[] = $u;
+        } else {
+            $chairs = true;
+            if ($this->conf->check_track_sensitivity(Track::BITS_ADMIN)) {
+                foreach ($this->conf->track_tags() as $ttag)
+                    if ($this->conf->track_permission($ttag, Track::ADMIN)
+                        && $this->has_tag($ttag)) {
+                        $chairs = false;
+                        break;
+                    }
+            }
+            foreach ($chairs ? $this->conf->pc_chairs() : $this->conf->pc_members() as $u)
+                if ($u->can_administer($this))
+                    $us[] = $u;
+        }
+        return $us;
+    }
+
+
     function field_deaccent($field, $want_false = false) {
         $data = $this->$field;
         if ((string) $data !== "") {
@@ -645,21 +680,11 @@ class PaperInfo {
         return Text::match_pregexes($reg, $this->$field, $this->field_deaccent($field, true));
     }
 
-    function submitted_at() {
-        if ($this->timeSubmitted > 0)
-            return (int) $this->timeSubmitted;
-        if ($this->timeWithdrawn > 0) {
-            if ($this->timeSubmitted == -100)
-                return self::SUBMITTED_AT_FOR_WITHDRAWN;
-            if ($this->timeSubmitted < -100)
-                return -(int) $this->timeSubmitted;
-        }
-        return 0;
-    }
 
     function can_author_view_decision() {
         return $this->conf->can_all_author_view_decision();
     }
+
 
     function review_type($contact) {
         $this->check_rights_version();
@@ -696,6 +721,7 @@ class PaperInfo {
             return $pcm;
         }
     }
+
 
     function load_tags() {
         $result = $this->conf->qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=? group by paperId", $this->paperId);
@@ -816,6 +842,7 @@ class PaperInfo {
         if ($can_override)
             $user->set_overrides($overrides);
     }
+
 
     private function load_topics() {
         $row_set = $this->_row_set ? : new PaperInfoSet($this);

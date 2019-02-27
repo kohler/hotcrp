@@ -67,13 +67,20 @@ class RequestReview_API {
             $xreviewer = new Contact($name_args, $user->conf);
         $potconflict = $prow->potential_conflict_html($xreviewer);
 
+        // check requester
+        $requester = null;
+        if ($request
+            && $user->can_administer($prow))
+            $requester = $user->conf->cached_user_by_id($request->requestedBy);
+        $requester = $requester ? : $user;
+
         // check whether to make a proposal
         $extrev_chairreq = $user->conf->setting("extrev_chairreq");
         if ($user->can_administer($prow)
             ? $potconflict && !$qreq->override
             : $extrev_chairreq === 1
               || ($extrev_chairreq === 2 && $potconflict)) {
-            $result = $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
+            $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
                 $prow->paperId, $email, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, $Now, $reason, $round);
             if ($user->can_administer($prow)) {
@@ -88,6 +95,10 @@ class RequestReview_API {
             }
             $user->log_activity("Proposed review for $email", $prow);
             $prow->conf->update_autosearch_tags($prow);
+            HotCRPMailer::send_administrators("@proposereview", $prow,
+                                              ["requester_contact" => $requester,
+                                               "reviewer_contact" => $xreviewer,
+                                               "reason" => $reason]);
             return new JsonResult(["ok" => true, "action" => "propose", "response" => $msg]);
         }
 
@@ -98,13 +109,6 @@ class RequestReview_API {
             $reviewer = Contact::create($user->conf, $user, $xreviewer);
         if (!$reviewer)
             return new JsonResult(400, "Error while creating account.");
-
-        // check requester
-        $requester = null;
-        if ($request
-            && $user->can_administer($prow))
-            $requester = $user->conf->cached_user_by_id($request->requestedBy);
-        $requester = $requester ? : $user;
 
         // assign review
         $user->assign_review($prow->paperId, $reviewer->contactId, REVIEW_EXTERNAL,

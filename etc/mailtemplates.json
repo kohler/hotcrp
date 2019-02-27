@@ -242,11 +242,11 @@
 
 	{
 		"name": "proposereview",
-		"subject": "[%CONFSHORTNAME%] Proposed reviewer for submission #%NUMBER%",
+		"subject": "[%CONFSHORTNAME%] Review proposal for submission #%NUMBER%",
 		"body": [
 			"Greetings,\n\n",
 			"%REQUESTERCONTACT% would like %REVIEWERCONTACT% to review %CONFNAME% submission #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%\n\n",
-			"Visit the assignment page to approve or deny the request.\n\n",
+			"Visit the assignment page to approve or deny the proposal.\n\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(assign, p=%NUMBER%)%\n\n",
@@ -256,7 +256,7 @@
 
 	{
 		"name": "denyreviewrequest",
-		"subject": "[%CONFSHORTNAME%] Proposed reviewer for submission #%NUMBER% denied",
+		"subject": "[%CONFSHORTNAME%] Review proposal for submission #%NUMBER% denied",
 		"body": [
 			"Dear %NAME%,\n\n",
 			"Your proposal that %REVIEWERCONTACT% review %CONFNAME% submission #%NUMBER% has been denied by an administrator. You may want to propose someone else.\n\n",

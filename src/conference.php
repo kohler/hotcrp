@@ -114,7 +114,7 @@ class Conf {
     private $_resp_rounds = null;
     private $tracks = null;
     private $_taginfo = null;
-    private $_track_tags = null;
+    private $_track_tags;
     private $_track_sensitivity = 0;
     private $_decisions;
     private $_decision_matcher;
@@ -124,12 +124,13 @@ class Conf {
     private $_topic_html;
     private $_topic_separator_cache;
     private $_topic_abbrev_matcher;
-    private $_pc_members_cache = null;
-    private $_pc_tags_cache = null;
-    private $_pc_members_and_admins_cache = null;
+    private $_pc_members_cache;
+    private $_pc_tags_cache;
+    private $_pc_members_and_admins_cache;
+    private $_pc_chairs_cache;
     private $_pc_members_fully_loaded = false;
-    private $_user_cache = null;
-    private $_user_cache_missing = null;
+    private $_user_cache;
+    private $_user_cache_missing;
     private $_site_contact;
     private $_review_form_cache = null;
     private $_abbrev_matcher = null;
@@ -1741,12 +1742,15 @@ class Conf {
             uasort($pc, "Contact::compare");
             $this->_pc_members_and_admins_cache = $pc;
 
-            $this->_pc_members_cache = [];
-            foreach ($pc as $u)
+            $this->_pc_members_cache = $this->_pc_chairs_cache = [];
+            foreach ($pc as $u) {
                 if ($u->roles & Contact::ROLE_PC) {
                     $u->sort_position = count($this->_pc_members_cache);
                     $this->_pc_members_cache[$u->contactId] = $u;
                 }
+                if ($u->roles & Contact::ROLE_CHAIR)
+                    $this->_pc_chairs_cache[$u->contactId] = $u;
+            }
 
             TagMap::collator()->asort($this->_pc_tags_cache);
         }
@@ -1757,6 +1761,12 @@ class Conf {
         if ($this->_pc_members_and_admins_cache === null)
             $this->pc_members();
         return $this->_pc_members_and_admins_cache;
+    }
+
+    function pc_chairs() {
+        if ($this->_pc_chairs_cache === null)
+            $this->pc_members();
+        return $this->_pc_chairs_cache;
     }
 
     function full_pc_members() {
@@ -2198,7 +2208,7 @@ class Conf {
             if (is_string($caches))
                 $caches = [$caches => true];
             if (!$caches || isset($caches["pc"]))
-                $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_members_and_admins_cache = $this->_user_cache = null;
+                $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_members_and_admins_cache = $this->_pc_chairs_cache = $this->_user_cache = null;
             if (!$caches || isset($caches["options"])) {
                 $this->paper_opts->invalidate_option_list();
                 $this->_formatspec_cache = [];
