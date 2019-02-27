@@ -50,9 +50,12 @@
     {"name": "tag", "args": "raw", "parse_modifier_callback": "Tag_Fexpr::parse_modifier", "callback": "Tag_Fexpr::make", "is_value": false, "synonym": "#"},
     {"name": "tagval", "args": "raw", "parse_modifier_callback": "Tag_Fexpr::parse_modifier", "callback": "Tag_Fexpr::make", "is_value": true, "synonym": ["tagv", "tagvalue"]},
 
-    {"name": "pref", "callback": "+Pref_Fexpr", "is_expertise": false, "synonym": "revpref"},
-    {"name": "prefexp", "callback": "+Pref_Fexpr", "is_expertise": true,
-                    "synonym": ["prefexpertise", "revprefexp", "revprefexpertise"]},
+    {"name": "pref", "callback": "+Pref_Fexpr",
+        "parse_modifier_callback": "Pref_Fexpr::parse_modifier",
+        "is_expertise": false, "synonym": "revpref"},
+    {"name": "prefexp", "callback": "+Pref_Fexpr",
+        "parse_modifier_callback": "Pref_Fexpr::parse_modifier",
+        "is_expertise": true, "synonym": ["prefexpertise", "revprefexp", "revprefexpertise"]},
 
     {"name": "firsttag", "args": true, "callback": "FirstTag_Fexpr::make"},
 

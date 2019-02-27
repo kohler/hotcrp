@@ -643,9 +643,24 @@ class Score_Fexpr extends Sub_Fexpr {
 
 class Pref_Fexpr extends Sub_Fexpr {
     private $isexpertise;
-    function __construct($isexpertise) {
-        $this->isexpertise = is_object($isexpertise) ? $isexpertise->kwdef->is_expertise : $isexpertise;
+    private $cids;
+    function __construct($ff) {
+        $this->isexpertise = is_object($ff) ? $ff->kwdef->is_expertise : $ff;
         $this->format_ = $this->isexpertise ? self::FPREFEXPERTISE : null;
+        if (is_object($ff) && $ff->modifier)
+            $this->cids = $ff->modifier;
+    }
+    static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
+        if ($ff->modifier === false && !str_starts_with($arg, ".")) {
+            if (str_starts_with($arg, ":"))
+                $arg = substr($arg, 1);
+            $csm = ContactSearch::make_pc($arg, $formula->user);
+            if ($csm->ids !== false) {
+                $ff->modifier = $csm->ids;
+                return true;
+            }
+        }
+        return false;
     }
     function view_score(Contact $user) {
         return VIEWSCORE_PC;
@@ -655,8 +670,11 @@ class Pref_Fexpr extends Sub_Fexpr {
             return "null";
         $state->queryOptions["allReviewerPreference"] = true;
         $state->datatype |= self::APREF;
-        return "get(get(" . $state->_add_review_prefs() . ", " . $state->_rrow_cid()
+        $e = "get(get(" . $state->_add_review_prefs() . ", " . $state->_rrow_cid()
             . "), " . ($this->isexpertise ? 1 : 0) . ")";
+        if ($this->cids)
+            $e = "(in_array(" . $state->_rrow_cid() . ", [" . join(",", $this->cids) . "]) ? $e : null)";
+        return $e;
     }
 }
 
