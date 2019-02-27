@@ -289,6 +289,7 @@ class PaperInfo {
     private $_comment_array;
     private $_comment_skeleton_array;
     private $_potential_conflicts;
+    private $_potential_conflict_flags;
     private $_request_array;
     private $_refusal_array;
     private $_author_view_user;
@@ -576,18 +577,25 @@ class PaperInfo {
     }
 
     function _potential_conflict_html_callback($user, $matcher, $conflict, $aunum, $why) {
+        if ($why === AuthorMatcher::MATCH_AFFILIATION) {
+            $afftext = "affiliation";
+            if (!($this->_potential_conflict_flags & 1)) {
+                $afftext .= " (" . htmlspecialchars($user->affiliation) . ")";
+                $this->_potential_conflict_flags |= 1;
+            }
+        }
         if ($aunum) {
             if ($matcher->nonauthor) {
                 $aumatcher = new AuthorMatcher($conflict);
                 $what = "collaborator " . $aumatcher->highlight($matcher) . "<br>matches author #$aunum " . $matcher->highlight($conflict);
             } else if ($why == AuthorMatcher::MATCH_AFFILIATION)
-                $what = "affiliation matches author #$aunum affiliation " . $matcher->highlight($conflict->affiliation);
+                $what = "$afftext matches author #$aunum affiliation " . $matcher->highlight($conflict->affiliation);
             else
                 $what = "name matches author #$aunum name " . $matcher->highlight($conflict->name());
             $this->_potential_conflicts[] = ["#$aunum", $what];
         } else {
             if ($why == AuthorMatcher::MATCH_AFFILIATION)
-                $what = "affiliation matches paper collaborator ";
+                $what = "$afftext matches paper collaborator ";
             else
                 $what = "name matches paper collaborator ";
             $this->_potential_conflicts[] = ["other conflicts", $what . $matcher->highlight($conflict)];
@@ -596,6 +604,7 @@ class PaperInfo {
 
     function potential_conflict_html(Contact $user, $highlight = false) {
         $this->_potential_conflicts = [];
+        $this->_potential_conflict_flags = 0;
         if (!$this->potential_conflict_callback($user, [$this, "_potential_conflict_html_callback"]))
             return false;
         usort($this->_potential_conflicts, function ($a, $b) { return strnatcmp($a[0], $b[0]); });
