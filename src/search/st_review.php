@@ -499,6 +499,8 @@ class Review_SearchTerm extends SearchTerm {
         $cexpr = $this->rsm->conservative_nonnegative_countexpr();
         if ($cexpr === ">=0" || $sqi->negated)
             return "true";
+        else if ($this->rsm->review_type() == REVIEW_REQUEST)
+            return "exists (select * from ReviewRequest where paperId=Paper.paperId)";
         else {
             $wheres = $this->rsm->useful_sqlexpr($sqi->user, "r") ? : "true";
             if ($cexpr === ">0")
