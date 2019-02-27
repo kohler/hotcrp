@@ -1629,7 +1629,7 @@ class Formula {
         if ($rsm->round)
             $es[] = new InFexpr(new ReviewRound_Fexpr, $rsm->round);
 
-        $e1 = empty($es) ? $es[0] : null;
+        $e1 = empty($es) ? null : $es[0];
         for ($i = 1; $i < count($es); ++$i)
             $e1 = new Fexpr("&&", [$e1, $es[$i]]);
 
