@@ -293,7 +293,7 @@ foreach ($requests as $req) {
         if ($Me->can_view_review($prow, $rrow))
             $rname = Ht::link($rname, hoturl("review", "p={$prow->paperId}&amp;r={$rrow->reviewId}"));
         echo $rname, ': ', $namex,
-            '</div><div class="f-h"><ul class="x mb0">';
+            '</div><div class="f-h"><ul class="x mb-0">';
         echo '<li>requested';
         if ($rrow->timeRequested)
             echo ' ', $Conf->unparse_time_relative((int) $rrow->timeRequested);
@@ -310,7 +310,7 @@ foreach ($requests as $req) {
         }
         echo '</ul></div>';
     } else if ($req[0] === 1) {
-        echo "Review proposal: ", $namex, '</div><div class="f-h"><ul class="x mb0">';
+        echo "Review proposal: ", $namex, '</div><div class="f-h"><ul class="x mb-0">';
         if ($rrow->timeRequested || $Me->can_view_review_requester($prow, $rrow)) {
             echo '<li>proposed';
             if ($rrow->timeRequested)
@@ -330,7 +330,7 @@ foreach ($requests as $req) {
         echo '</ul></div>';
     } else {
         echo "Declined request: ", $namex,
-            '</div><div class="f-h fx"><ul class="x mb0">';
+            '</div><div class="f-h fx"><ul class="x mb-0">';
         if ($rrow->timeRequested || $Me->can_view_review_requester($prow, $rrow)) {
             echo '<li>requested';
             if ($rrow->timeRequested)
@@ -352,7 +352,7 @@ foreach ($requests as $req) {
         }
         echo '</li>';
         if ((string) $rrow->reason !== "" && $rrow->reason !== "request denied by chair")
-            echo '<li>', Ht::format0("reason: " . $rrow->reason), '</li>';
+            echo '<li class="mb-0-last-child">', Ht::format0("reason: " . $rrow->reason), '</li>';
         echo '</ul></div>';
     }
 
@@ -454,7 +454,7 @@ if ($Me->can_administer($prow)) {
             '<a class="qq ui js-assignment-fold" href="">', expander(null, 0),
             $Me->reviewer_html_for($pc), '</a>';
         if ($revtype != 0) {
-            echo review_type_icon($revtype, $rrow && !$rrow->reviewSubmitted, null, "ml2");
+            echo review_type_icon($revtype, $rrow && !$rrow->reviewSubmitted, null, "ml-2");
             if ($rrow && $rrow->reviewRound > 0)
                 echo ' <span class="revround" title="Review round">',
                     htmlspecialchars($Conf->round_name($rrow->reviewRound)),

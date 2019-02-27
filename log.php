@@ -518,7 +518,7 @@ function searchbar(LogRowGenerator $lrg, $page) {
         Ht::render_messages_at("date"),
         '</div></div></div>',
         Ht::submit("Show"),
-        Ht::submit("download", "Download", ["class" => "ml3"]),
+        Ht::submit("download", "Download", ["class" => "ml-3"]),
         '</form>';
 
     if ($page > 1 || $lrg->has_page(2)) {

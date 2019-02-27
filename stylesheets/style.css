@@ -298,20 +298,24 @@ label.checki {
 	font-size: smaller;
 }
 
-.mb0 {
+.mb-0 {
 	margin-bottom: 0 !important;
 }
-.mt2 {
+.mt-2 {
 	margin-top: 0.5em;
 }
-.mt3 {
+.mt-3 {
 	margin-top: 1em;
 }
-.ml2 {
+.ml-2 {
 	margin-left: 0.5em;
 }
-.ml3 {
+.ml-3 {
 	margin-left: 1em;
+}
+
+.mb-0-last-child > *:last-child {
+	margin-bottom: 0 !important;
 }
 
 
