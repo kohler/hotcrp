@@ -296,12 +296,13 @@ class UnicodeHelper {
     static function utf8_replace_invalid($str) {
         $t = "";
         while ($str !== "" && $str !== false) {
-            if (preg_match('/\A[\x00-\x7f]+/', $str, $m)
-                || preg_match('/\A(?:[\x00-\x7f]|[\xc2-\xdf][\x80-\xbf]|\xe0[\xa0-\xbf][\x80-\xbf]|[\xe1-\xec\xee\xef][\x80-\xbf][\x80-\xbf]|\xed[\x80-\x9f][\x80-\xbf]|\xf0[\x90-\xbf][\x80-\xbf][\x80-\xbf]|[\xf1-\xf3][\x80-\xbf][\x80-\xbf][\x80-\xbf]|\xf4[\x80-\x8f][\x80-\xbf][\x80-\xbf])+/', $str, $m)) {
+            if (preg_match('/\A[\x01-\x7f]+/', $str, $m)
+                || preg_match('/\A(?:[\xc2-\xdf][\x80-\xbf]|\xe0[\xa0-\xbf][\x80-\xbf]|[\xe1-\xec\xee\xef][\x80-\xbf][\x80-\xbf]|\xed[\x80-\x9f][\x80-\xbf]|\xf0[\x90-\xbf][\x80-\xbf][\x80-\xbf]|[\xf1-\xf3][\x80-\xbf][\x80-\xbf][\x80-\xbf]|\xf4[\x80-\x8f][\x80-\xbf][\x80-\xbf])+/', $str, $m)) {
                 $t .= $m[0];
                 $str = substr($str, strlen($m[0]));
             } else {
-                $t .= chr(0x7f);
+                if (substr($str, 0, 1) !== "\x00")
+                    $t .= chr(0x7f);
                 $str = substr($str, 1);
             }
         }
