@@ -48,7 +48,7 @@ class Mimetype {
         $this->mimetype = $mimetype;
         $this->extension = $extension;
         $this->description = $description;
-        $this->flags = !!$flags;
+        $this->flags = $flags;
     }
 
     static function lookup($type, $nocreate = false) {
