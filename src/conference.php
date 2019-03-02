@@ -279,7 +279,7 @@ class Conf {
             foreach (array($this->dblink, $this->contactdb()) as $db)
                 if ($db)
                     Dbl::ql($db, "delete from Capability where timeExpires>0 and timeExpires<$Now");
-            $this->q_raw("insert into Settings (name, value) values ('__capability_gc', $Now) on duplicate key update value=values(value)");
+            $this->q_raw("insert into Settings set name='__capability_gc', value=$Now on duplicate key update value=values(value)");
             $this->settings["__capability_gc"] = $Now;
         }
 
@@ -563,6 +563,7 @@ class Conf {
         $this->_site_contact = null;
     }
 
+
     function has_setting($name) {
         return isset($this->settings[$name]);
     }
@@ -579,6 +580,47 @@ class Conf {
         $x = get($this->settingTexts, $name, $defval);
         return is_string($x) ? json_decode($x) : $x;
     }
+
+    private function __save_setting($name, $value, $data = null) {
+        $change = false;
+        if ($value === null && $data === null) {
+            if ($this->qe("delete from Settings where name=?", $name)) {
+                unset($this->settings[$name], $this->settingTexts[$name]);
+                $change = true;
+            }
+        } else {
+            $value = (int) $value;
+            $dval = $data;
+            if (is_array($dval) || is_object($dval))
+                $dval = json_encode_db($dval);
+            if ($this->qe("insert into Settings set name=?, value=?, data=? on duplicate key update value=values(value), data=values(data)", $name, $value, $dval)) {
+                $this->settings[$name] = $value;
+                $this->settingTexts[$name] = $data;
+                $change = true;
+            }
+        }
+        if ($change && str_starts_with($name, "opt.")) {
+            $oname = substr($name, 4);
+            if ($value === null && $data === null)
+                $this->opt[$oname] = get($this->opt_override, $oname);
+            else
+                $this->opt[$oname] = $data === null ? $value : $data;
+        }
+        return $change;
+    }
+
+    function save_setting($name, $value, $data = null) {
+        $change = $this->__save_setting($name, $value, $data);
+        if ($change) {
+            $this->crosscheck_settings();
+            if (str_starts_with($name, "opt."))
+                $this->crosscheck_options();
+            if (str_starts_with($name, "tag_") || $name === "tracks")
+                $this->invalidate_caches(["taginfo" => true, "tracks" => true]);
+        }
+        return $change;
+    }
+
 
     function opt($name, $defval = null) {
         return get($this->opt, $name, $defval);
@@ -2152,46 +2194,6 @@ class Conf {
             trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " link " . self::$invariant_row[1] . " document " . self::$invariant_row[2] . " is inappropriately inactive");
     }
 
-
-    private function __save_setting($name, $value, $data = null) {
-        $change = false;
-        if ($value === null && $data === null) {
-            if ($this->qe("delete from Settings where name=?", $name)) {
-                unset($this->settings[$name]);
-                unset($this->settingTexts[$name]);
-                $change = true;
-            }
-        } else {
-            $dval = $data;
-            if (is_array($dval) || is_object($dval))
-                $dval = json_encode_db($dval);
-            if ($this->qe("insert into Settings (name, value, data) values (?, ?, ?) on duplicate key update value=values(value), data=values(data)", $name, (int) $value, $dval)) {
-                $this->settings[$name] = $value;
-                $this->settingTexts[$name] = $data;
-                $change = true;
-            }
-        }
-        if ($change && str_starts_with($name, "opt.")) {
-            $oname = substr($name, 4);
-            if ($value === null && $data === null)
-                $this->opt[$oname] = get($this->opt_override, $oname);
-            else
-                $this->opt[$oname] = $data === null ? $value : $data;
-        }
-        return $change;
-    }
-
-    function save_setting($name, $value, $data = null) {
-        $change = $this->__save_setting($name, $value, $data);
-        if ($change) {
-            $this->crosscheck_settings();
-            if (str_starts_with($name, "opt."))
-                $this->crosscheck_options();
-            if (str_starts_with($name, "tag_") || $name === "tracks")
-                $this->invalidate_caches(["taginfo" => true, "tracks" => true]);
-        }
-        return $change;
-    }
 
     function update_schema_version($n) {
         if (!$n)
