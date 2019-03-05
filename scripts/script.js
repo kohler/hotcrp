@@ -1035,9 +1035,10 @@ handle_ui.on("js-range-click", function (event) {
             }
         }
 
-        if (state === 2)
+        if (state === 2) {
             cbgs[j].indeterminate = true;
-        else {
+            cbgs[j].checked = true;
+        } else {
             cbgs[j].indeterminate = false;
             cbgs[j].checked = state;
         }
