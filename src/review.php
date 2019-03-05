@@ -713,10 +713,13 @@ class ReviewForm implements JsonSerializable {
         //$x .= "$prow->paperId:$myReview:$revViewScore:$rrow->contactId;;$prow->conflictType;;$prow->reviewType\n";
 
         $x .= "==+== Begin Review";
-        if ($req && isset($req["reviewOrdinal"]))
-            $x .= " #" . $prow->paperId . unparseReviewOrdinal($req["reviewOrdinal"]);
-        else if ($rrow && isset($rrow->reviewOrdinal))
-            $x .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+        if ($prow) {
+            $x .= " #" . $prow->paperId;
+            if ($req && isset($req["reviewOrdinal"]) && $req["reviewOrdinal"])
+                $x .= unparseReviewOrdinal($req["reviewOrdinal"]);
+            else if ($rrow && isset($rrow->reviewOrdinal) && $rrow->reviewOrdinal)
+                $x .= unparseReviewOrdinal($rrow->reviewOrdinal);
+        }
         $x .= "\n";
         if ($rrow && get($rrow, "reviewEditVersion") && $viewable_identity)
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
