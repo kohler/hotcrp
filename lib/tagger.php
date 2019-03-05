@@ -730,14 +730,11 @@ class Tagger {
     private $contact;
     private $_contactId = 0;
 
-    function __construct($contact = null) {
-        global $Conf, $Me;
-        if (!$contact)
-            error_log("Tagger::\$contact argument null: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        $this->contact = ($contact ? : $Me);
+    function __construct($contact) {
+        $this->conf = $contact->conf;
+        $this->contact = $contact;
         if ($this->contact && $this->contact->contactId > 0)
             $this->_contactId = $this->contact->contactId;
-        $this->conf = $this->contact ? $this->contact->conf : $Conf;
     }
 
     private function set_error_html($e) {
@@ -889,7 +886,7 @@ class Tagger {
                 }
                 $b = self::unparse_emoji_html($e, $count);
                 if (!empty($links))
-                    $b = '<a class="qq" href="' . hoturl("search", ["q" => join(" OR ", $links)]) . '">' . $b . '</a>';
+                    $b = '<a class="qq" href="' . $this->conf->hoturl("search", ["q" => join(" OR ", $links)]) . '">' . $b . '</a>';
                 if ($x === "")
                     $x = " ";
                 $x .= $b;
@@ -956,7 +953,7 @@ class Tagger {
             $q = "#$base";
         else
             $q = "order:#$base";
-        return hoturl("search", ["q" => $q]);
+        return $this->conf->hoturl("search", ["q" => $q]);
     }
 
     function unparse_link($viewable) {
