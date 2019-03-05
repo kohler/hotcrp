@@ -229,6 +229,10 @@ span.sep {
 .nw, .nb {
 	white-space: nowrap;
 }
+.pw {
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
 span.nb {
 	display: inline-block; /* why? */
 	text-indent: 0;
