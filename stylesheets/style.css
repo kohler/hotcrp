@@ -1820,7 +1820,7 @@ span.revround {
 	font-size: 69%;
 	font-style: italic;
 	font-weight: normal;
-	/* border-bottom: 1px dotted #777777; */
+	font-variant-numeric: tabular-nums;
 }
 td.revscore {
 	padding-right: 0;
