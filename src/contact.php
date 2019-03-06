@@ -623,6 +623,8 @@ class Contact {
 
         if (!(is_object($x) && isset($x->firstName) && isset($x->lastName) && isset($x->email))) {
             if ($pfx === "u") {
+                if (!is_string($cid) && !is_integer($cid))
+                    error_log("bad cid at " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
                 $x = $this->conf->user_by_id($cid);
                 $this->_contact_sorter_map[$cid] = $x->sorter;
             } else

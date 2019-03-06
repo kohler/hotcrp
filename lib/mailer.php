@@ -571,6 +571,8 @@ class Mailer {
                     $recipient->$k = $this->recipient->$k;
         }
         $prep->to = [Text::user_email_to($recipient)];
+        if (!isset($recipient->contactId))
+            error_log("no contactId in recipient: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         if ($recipient->contactId > 0)
             $prep->contactIds[] = $recipient->contactId;
         $mail["to"] = $prep->to[0];
