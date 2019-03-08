@@ -1724,7 +1724,8 @@ function tracker_show_elapsed() {
         return;
     var now = now_sec(), max_delta_ms = 0;
     $(".tracker-timer").each(function () {
-        var tr = find_tracker(+this.closest(".has-tracker").getAttribute("data-trackerid")),
+        var tre = $(this).closest(".has-tracker")[0],
+            tr = find_tracker(+tre.getAttribute("data-trackerid")),
             t = "";
         if (tr && tr.position_at) {
             var delta = now - (tr.position_at + dl.load - dl.now);
