@@ -546,17 +546,17 @@ class MeetingTracker {
             "start_at" => $tr->start_at,
             "position_at" => $tr->position_at,
             "url" => $tr->url,
-            "calculated_at" => $Now
-        ];
-        if ($user->privChair
-            || ($user->is_track_manager()
-                && self::check_tracker_admin_perm($user, get($tr, "admin_perm")))) {
-            $ti->listinfo = json_encode_browser([
+            "calculated_at" => $Now,
+            "listinfo" => json_encode_browser([
                 "listid" => $tr->listid,
                 "ids" => SessionList::encode_ids($tr->ids),
                 "description" => $tr->description,
                 "url" => $tr->url
-            ]);
+            ])
+        ];
+        if ($user->privChair
+            || ($user->is_track_manager()
+                && self::check_tracker_admin_perm($user, get($tr, "admin_perm")))) {
             $ti->allow_administer = true;
         }
         if ($user->conf->opt("trackerHideConflicts"))
