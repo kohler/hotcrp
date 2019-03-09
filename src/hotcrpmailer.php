@@ -194,9 +194,10 @@ class HotCRPMailer extends Mailer {
             $e1 = get_s($contact, "email");
             $e2 = get_s($contact, "preferredEmail");
             foreach ($this->row->author_list() as $au)
-                if (($au->firstName || $au->lastName) && $au->email
-                    && (strcasecmp($au->email, $e1) == 0
-                        || strcasecmp($au->email, $e2) == 0)) {
+                if (($au->firstName || $au->lastName)
+                    && $au->email
+                    && (strcasecmp($au->email, $e1) === 0
+                        || strcasecmp($au->email, $e2) === 0)) {
                     $r->firstName = $au->firstName;
                     $r->lastName = $au->lastName;
                     $r->name = $au->name();

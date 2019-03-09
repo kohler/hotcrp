@@ -561,22 +561,25 @@ class Mailer {
         $prep->body = $mail["body"];
 
         // look up recipient; use preferredEmail if set
-        $recipient = $this->recipient;
-        if (!$recipient || !$recipient->email)
+        if (!$this->recipient || !$this->recipient->email)
             return Conf::msg_error("no email in Mailer::send");
-        if (get($recipient, "preferredEmail")) {
-            $recipient = (object) ["email" => $recipient->preferredEmail];
-            foreach (["firstName", "lastName", "name", "fullName"] as $k)
-                if (get($this->recipient, $k))
-                    $recipient->$k = $this->recipient->$k;
+        if ($this->recipient->preferredEmail) {
+            $recip = (object) [
+                "firstName" => $this->recipient->firstName,
+                "lastName" => $this->recipient->lastName,
+                "email" => $this->recipient->preferredEmail
+            ];
+        } else {
+            $recip = $this->recipient;
         }
-        $prep->to = [Text::user_email_to($recipient)];
-        if (!isset($recipient->contactId))
-            error_log("no contactId in recipient: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        if ($recipient->contactId > 0)
-            $prep->contactIds[] = $recipient->contactId;
+        $prep->to = [Text::user_email_to($recip)];
         $mail["to"] = $prep->to[0];
-        $prep->sendable = self::allow_send($recipient->email);
+        $prep->sendable = self::allow_send($recip->email);
+
+        if (!isset($this->recipient->contactId))
+            error_log("no contactId in recipient: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        if ($this->recipient->contactId > 0)
+            $prep->contactIds[] = $this->recipient->contactId;
 
         // parse headers
         $fromHeader = $this->conf->opt("emailFromHeader");
