@@ -513,7 +513,7 @@ var strftime = (function () {
         /* XXX z Z */
         D: function (d) { return strftime("%m/%d/%y", d); },
         F: function (d) { return strftime("%Y-%m-%d", d); },
-        s: function (d) { return Math.trunc(d.getTime() / 1000); },
+        s: function (d) { return Math.floor(d.getTime() / 1000); },
         n: function (d) { return "\n"; },
         t: function (d) { return "\t"; },
         "%": function (d) { return "%"; }
@@ -575,13 +575,13 @@ function unparse_duration(d, include_msec) {
     var neg = d < 0, t;
     if (neg)
         d = -d;
-    var p = Math.trunc(d);
+    var p = Math.floor(d);
     if (p >= 3600)
         t = sprintf("%d:%02d:%02d", p/3600, (p/60)%60, p%60)
     else
         t = sprintf("%d:%02d", p/60, p%60);
     if (include_msec)
-        t += sprintf(".%03d", Math.trunc((d - p) * 1000));
+        t += sprintf(".%03d", Math.floor((d - p) * 1000));
     return neg ? "-" + t : t;
 }
 
