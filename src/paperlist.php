@@ -754,7 +754,7 @@ class PaperList {
             return "id title revdelegation revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
-            return "id title revpref topicscore desirability assrev authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";
+            return "id title revpref topicscore desirability assignment authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";
         case "conflictassign":
             $this->_default_linkto("assign");
             return "id title abstract authors potentialconflict revtype editconf tags";
@@ -1444,7 +1444,7 @@ class PaperList {
         return $this->search->create_session_list_object($this->ids, $this->_listDescription(), $this->sortdef());
     }
 
-    function table_render($report_id, $options = array()) {
+    private function _table_render($report_id, $options) {
         if (!$this->_prepare($report_id))
             return PaperListTableRender::make_error("Internal error");
         // need tags for row coloring
@@ -1455,16 +1455,10 @@ class PaperList {
         $field_list = $this->_list_columns();
         if ($field_list === false)
             return PaperListTableRender::make_error("No matching report");
-
-        // turn off forceShow
-        $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
-
-        // expand fields, check sort
         $field_list = $this->_columns($field_list, true, false);
         $rows = $this->_rows($field_list);
 
         if (empty($rows)) {
-            $this->user->set_overrides($overrides);
             if ($rows === null)
                 return null;
             if (($altq = $this->search->alternate_query())) {
@@ -1569,9 +1563,6 @@ class PaperList {
         // analyze folds
         $this->_analyze_folds($rstate, $fieldDef);
 
-        // restore forceShow
-        $this->user->set_overrides($overrides);
-
         // header cells
         $colhead = "";
         if (!defval($options, "noheader")) {
@@ -1662,6 +1653,13 @@ class PaperList {
             $rstate->thead .= '  ' . Ht::script($this->_header_script) . "\n";
 
         $rstate->body_rows = $body;
+        return $rstate;
+    }
+
+    function table_render($report_id, $options = array()) {
+        $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+        $rstate = $this->_table_render($report_id, $options);
+        $this->user->set_overrides($overrides);
         return $rstate;
     }
 

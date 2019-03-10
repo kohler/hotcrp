@@ -588,7 +588,7 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         if ($is_text)
             return $pl->user->name_text_for($this->contact) . " assignment";
         else
-            return $pl->user->name_html_for($this->contact) . "<br />assignment";
+            return $pl->user->name_html_for($this->contact) . "<br>assignment";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->allow_administer($row);
