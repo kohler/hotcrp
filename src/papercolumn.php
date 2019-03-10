@@ -538,7 +538,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         else if ($is_text)
             return $pl->user->name_text_for($this->contact) . " review";
         else
-            return $pl->user->name_html_for($this->contact) . "<br />review";
+            return $pl->user->name_html_for($this->contact) . "<br>review";
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($ranal, $flags) = $this->analysis($pl, $row);
@@ -603,16 +603,11 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
             $rt = min(max($ci->reviewType, 0), REVIEW_META);
         if ($this->contact->can_accept_review_assignment_ignore_conflict($row)
             || $rt > 0)
-            $options = array(0 => "None",
-                             REVIEW_PRIMARY => "Primary",
-                             REVIEW_SECONDARY => "Secondary",
-                             REVIEW_PC => "Optional",
-                             REVIEW_META => "Metareview",
-                             -1 => "Conflict");
+            $class = "need-assignment-selector";
         else
-            $options = array(0 => "None", -1 => "Conflict");
-        return Ht::select("assrev{$row->paperId}u{$this->contact->contactId}",
-                          $options, $rt, ["class" => "uich js-assign-review", "tabindex" => 2]);
+            $class = "need-assignment-selector conflict";
+        $pl->need_render = true;
+        return '<span class="' . $class . '" data-assignment="' . $this->contact->contactId . ' ' . $rt . '"></span>';
     }
 }
 
@@ -839,7 +834,7 @@ class Tag_PaperColumn extends PaperColumn {
                 if ($is_text)
                     return $pl->user->name_text_for($p) . " #" . substr($this->dtag, $twiddle);
                 else
-                    return $pl->user->name_html_for($p) . "<br />#" . substr($this->dtag, $twiddle);
+                    return $pl->user->name_html_for($p) . "<br>#" . substr($this->dtag, $twiddle);
             }
         }
         return "#$this->dtag";
