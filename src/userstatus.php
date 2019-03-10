@@ -190,11 +190,12 @@ class UserStatus extends MessageSet {
             $this->error_at($key, "Format error [$key]");
         $tagger = new Tagger($this->viewer);
         $t1 = array();
-        foreach ($t0 as $t)
+        foreach ($t0 as $t) {
             if ($t !== "" && ($t = $tagger->check($t, Tagger::NOPRIVATE)))
                 $t1[] = $t;
             else if ($t !== "")
                 $this->error_at($key, $tagger->error_html);
+        }
         return $t1;
     }
 
@@ -453,6 +454,10 @@ class UserStatus extends MessageSet {
         return $roles;
     }
 
+    static function check_pc_tag($base) {
+        return !preg_match('{\A(?:any|all|pc|chair|admin)\z}i', $base);
+    }
+
 
     function save($cj, $old_user = null) {
         global $Now;
@@ -599,17 +604,18 @@ class UserStatus extends MessageSet {
             $tags = array();
             foreach ($cj->tags as $t) {
                 list($tag, $value) = TagInfo::unpack($t);
-                if (strcasecmp($tag, "pc") !== 0)
+                if (self::check_pc_tag($tag)) {
                     $tags[$tag] = $tag . "#" . ($value ? : 0);
+                }
             }
             ksort($tags);
-            $t = count($tags) ? " " . join(" ", $tags) . " " : "";
+            $t = empty($tags) ? "" : " " . join(" ", $tags) . " ";
             if ($user->save_assign_field("contactTags", $t, $cu))
                 $this->diffs["tags"] = true;
         }
 
         // Initial save
-        if (count($cu->qv)) { // always true if $inserting
+        if (!empty($cu->qv)) { // always true if $inserting
             $q = "update ContactInfo set "
                 . join("=?, ", array_keys($cu->qv)) . "=?"
                 . " where contactId={$user->contactId}";
