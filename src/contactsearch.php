@@ -57,20 +57,25 @@ class ContactSearch {
         }
         if ($this->user->can_view_pc()) {
             if ($this->text === ""
-                || strcasecmp($this->text, "pc") == 0) {
+                || strcasecmp($this->text, "pc") === 0) {
                 return array_keys($this->conf->pc_members());
             } else if (($this->type & self::F_PC)
-                       && (strcasecmp($this->text, "any") == 0
-                           || strcasecmp($this->text, "all") == 0)
+                       && (strcasecmp($this->text, "any") === 0
+                           || strcasecmp($this->text, "all") === 0)
                            || $this->text === "*") {
                 return array_keys($this->conf->pc_members_and_admins());
-            } else if (strcasecmp($this->text, "chair") == 0) {
-                $chairs = [];
-                foreach ($this->conf->pc_members() as $p) {
-                    if ($p->roles & Contact::ROLE_CHAIR)
-                        $chairs[] = $p->contactId;
+            } else if (strcasecmp($this->text, "chair") === 0
+                       || strcasecmp($this->text, "admin") === 0) {
+                $flags = Contact::ROLE_CHAIR;
+                if (strcasecmp($this->text, "admin") === 0) {
+                    $flags |= Contact::ROLE_ADMIN;
                 }
-                return $chairs;
+                $cids = [];
+                foreach ($this->conf->pc_members() as $p) {
+                    if ($p->roles & $flags)
+                        $cids[] = $p->contactId;
+                }
+                return $cids;
             }
         }
         return false;
@@ -209,7 +214,7 @@ class ContactSearch {
                 } else if ($Me->contactId == $cid && $Me->conf === $this->conf) {
                     $this->contacts[] = $Me;
                 } else {
-                    $this->contacts[] = $this->conf->user_by_id($cid);
+                    $this->contacts[] = $this->conf->cached_user_by_id($cid);
                 }
             }
         }
