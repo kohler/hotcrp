@@ -7,9 +7,9 @@ class PaperTable {
     public $prow;
     private $_prow;
     public $user;
-    private $all_rrows = null;
-    public $viewable_rrows = null;
-    var $crows = null;
+    private $all_rrows;
+    private $viewable_rrows;
+    private $crows;
     private $mycrows;
     private $can_view_reviews = false;
     var $rrow = null;
