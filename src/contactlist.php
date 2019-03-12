@@ -802,8 +802,17 @@ class ContactList {
 
         $x .= "<tbody class=\"pltable" . ($hascolors ? " pltable_colored" : "");
         if ($this->user->privChair) {
-            $l = new SessionList("u/" . $listname, $ids, $listtitle ? : "Users",
-                $this->conf->hoturl_site_relative_raw("users", ["t" => $listname]));
+            $listlink = $listname;
+            if ($listlink === "pcadminx")
+                $listlink = "pcadmin";
+            if ($listtitle === "") {
+                if ($listlink === "pcadmin")
+                    $listtitle = "PC and admins";
+                else
+                    $listtitle = "Users";
+            }
+            $l = new SessionList("u/" . $listlink, $ids, $listtitle,
+                $this->conf->hoturl_site_relative_raw("users", ["t" => $listlink]));
             $x .= " has-hotlist\" data-hotlist=\"" . htmlspecialchars($l->info_string());
         }
         return $x . "\">" . $body . "</tbody></table>";

@@ -13,14 +13,16 @@ else if (isset($Qreq->getgo) && isset($Qreq->getaction))
 
 
 // list type
-$tOpt = array();
+$tOpt = [];
 if ($Me->can_view_pc())
     $tOpt["pc"] = "Program committee";
 foreach ($Me->viewable_user_tags() as $t)
     if ($t !== "pc")
         $tOpt["#$t"] = "#$t program committee";
-if ($Me->isPC)
+if ($Me->can_view_pc() && $Me->isPC)
     $tOpt["admin"] = "System administrators";
+if ($Me->can_view_pc() && $Me->isPC && ($Qreq->t === "pcadmin" || $Qreq->t === "pcadminx"))
+    $tOpt["pcadmin"] = "PC and system administrators";
 if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeallrev"))) {
     $tOpt["re"] = "All reviewers";
     $tOpt["ext"] = "External reviewers";
@@ -48,8 +50,10 @@ if (isset($Qreq->t) && !isset($tOpt[$Qreq->t])) {
         $Qreq->t = "#" . substr($Qreq->t, 3);
     else if (isset($tOpt["#" . $Qreq->t]))
         $Qreq->t = "#" . $Qreq->t;
-    else if ($Qreq->t == "#pc")
+    else if ($Qreq->t === "#pc")
         $Qreq->t = "pc";
+    else if ($Qreq->t === "pcadminx" && isset($tOpt["pcadmin"]))
+        $Qreq->t = "pcadmin";
     else {
         Conf::msg_error("Unknown user collection.");
         unset($Qreq->t);
