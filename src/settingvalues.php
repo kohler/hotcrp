@@ -123,7 +123,7 @@ class Si {
         $dot = strpos($s, ".");
         if ($dot === 3 && substr($s, 0, 3) === "opt") {
             $this->storage_type = self::SI_DATA | self::SI_OPT;
-        } else if ($dot === 3 && substr($s, 0, 3) === "ova.") {
+        } else if ($dot === 3 && substr($s, 0, 3) === "ova") {
             $this->storage_type = self::SI_VALUE | self::SI_OPT;
             $this->storage = "opt." . substr($s, 4);
         } else if ($dot === 3 && substr($s, 0, 3) === "val") {
