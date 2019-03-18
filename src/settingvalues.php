@@ -241,8 +241,8 @@ class Si {
         };
 
         $conf->_setting_info = [];
-        expand_json_includes_callback(["etc/settings.json"], $hook);
-        if (($olist = $conf->opt("settingSpecs")))
+        expand_json_includes_callback(["etc/settinginfo.json"], $hook);
+        if (($olist = $conf->opt("settingInfo")))
             expand_json_includes_callback($olist, $hook);
         usort($conf->_setting_info, function ($a, $b) {
             return strcmp($a->name, $b->name) ? : Conf::xt_priority_compare($a, $b);

@@ -106,7 +106,7 @@ etc/papercolumns.json
 etc/profilegroups.json
 etc/reviewformlibrary.json
 etc/searchkeywords.json
-etc/settings.json
+etc/settinginfo.json
 etc/settinggroups.json
 etc/submissioneditgroups.json
 
