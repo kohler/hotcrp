@@ -10,7 +10,12 @@ class Tags_SettingRenderer {
         return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
     }
     static function render_tag_chair(SettingValues $sv) {
-        $sv->set_oldv("tag_chair", self::render_tags($sv->conf->tags()->filter("chair")));
+        // Remove `~~` tags from the set of defined chair-only tags. (They can
+        // get on the list if they're defined in some other way.)
+        $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
+            return !str_starts_with($t->tag, "~~");
+        });
+        $sv->set_oldv("tag_chair", self::render_tags($ts));
         $sv->echo_entry_group("tag_chair", null, ["class" => "need-suggest tags"], "PC members can see these tags, but only administrators can change them.");
     }
     static function render_tag_sitewide(SettingValues $sv) {
@@ -82,14 +87,17 @@ class Tags_SettingParser extends SettingParser {
     static function parse_list(Tagger $tagger, SettingValues $sv, Si $si,
                                $checkf, $min_idx) {
         $ts = array();
-        foreach (preg_split('/\s+/', $sv->req[$si->name]) as $t)
+        foreach (preg_split('/\s+/', $sv->req[$si->name]) as $t) {
             if ($t !== "" && ($tx = $tagger->check($t, $checkf))) {
                 list($tag, $idx) = TagInfo::unpack($tx);
-                if ($min_idx)
+                if ($min_idx) {
                     $tx = $tag . "#" . max($min_idx, (float) $idx);
+                }
                 $ts[$tag] = $tx;
-            } else if ($t !== "")
+            } else if ($t !== "") {
                 $sv->error_at($si, $tagger->error_html);
+            }
+        }
         return array_values($ts);
     }
     function my_parse_list(Si $si, $checkf, $min_idx) {
