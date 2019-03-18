@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_reviewvisibility.php -- HotCRP settings > decisions page
+// src/settings/s_decisionvisibility.php -- HotCRP settings > decisions page
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class DecisionVisibility_SettingParser extends SettingParser {
@@ -12,10 +12,6 @@ class DecisionVisibility_SettingParser extends SettingParser {
                 Conf::SEEDEC_REV => "$Rtext and <em>all</em> PC members",
                 Conf::SEEDEC_ALL => "<b>Authors</b>, $rtext, and all PC members (and reviewers can see accepted submissions’ author lists)"],
             'Who can see <strong>decisions</strong> (accept/reject)?');
-
-        echo '<div class="settings-g">';
-        $sv->echo_checkbox("shepherd_hide", "Hide shepherd names from authors");
-        echo "</div>\n";
     }
 
     static function crosscheck(SettingValues $sv) {
