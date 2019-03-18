@@ -198,10 +198,11 @@ class Tracks_SettingParser extends SettingParser {
         for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
             $trackname = trim($sv->req["name_track$i"]);
             $ok = true;
-            if ($trackname === "" || $trackname === "(tag)")
+            if ($trackname === "" || $trackname === "(tag)") {
                 continue;
-            else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
-                     || ($trackname === "_" && $i != 1)) {
+            }
+            $trackname = $tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE);
+            if (!$trackname || ($trackname === "_" && $i !== 1)) {
                 if ($trackname !== "_")
                     $sv->error_at("name_track$i", $tagger->error_html);
                 else
@@ -218,25 +219,28 @@ class Tracks_SettingParser extends SettingParser {
                         $sv->error_at("{$type}_track$i", "Tag missing for track setting.");
                         $sv->error_at("{$type}_tag_track$i");
                         $sv->error_at("tracks");
-                    } else if (($ttype == "+" && strcasecmp($ttag, "none") == 0)
-                               || $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
+                    } else if (($ttype === "+" && strcasecmp($ttag, "none") === 0)
+                               || ($ttag = $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))) {
                         $t->$type = $ttype . $ttag;
-                    else {
+                    } else {
                         $sv->error_at("{$type}_track$i", "Track permission tag: " . $tagger->error_html);
                         $sv->error_at("{$type}_tag_track$i");
                         $sv->error_at("tracks");
                     }
                 } else if ($ttype === "none") {
-                    if (!Track::permission_required($perm))
+                    if (!Track::permission_required($perm)) {
                         $t->$type = "+none";
+                    }
                 } else if ($ttype === null) {
                     // track permission not in UI; preserve current permission
-                    if (($perm = $sv->conf->track_permission($trackname, $perm)))
+                    if (($perm = $sv->conf->track_permission($trackname, $perm))) {
                         $t->$type = $perm;
+                    }
                 }
             }
-            if ($ok && (count((array) $t) || get($tracks, "_")))
+            if ($ok && (count((array) $t) || get($tracks, "_"))) {
                 $tracks->$trackname = $t;
+            }
         }
         $sv->save("tracks", count((array) $tracks) ? json_encode_db($tracks) : null);
         return false;
