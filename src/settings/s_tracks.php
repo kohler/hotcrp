@@ -112,13 +112,14 @@ class Tracks_SettingRenderer {
         // Print track entry
         echo "<div id=\"trackgroup$tnum\" class=\"mg has-fold fold3",
             ($tnum ? "c" : "o hidden"),
-            "\"><div class=\"settings-tracks\">";
+            "\"><div class=\"settings-tracks\"><div class=\"entryg\">";
         if ($trackname === "_") {
             echo "For submissions not on other tracks:", Ht::hidden("name_track$tnum", "_");
         } else {
             echo $sv->label("name_track$tnum", "For submissions with tag &nbsp;"),
                 Ht::entry("name_track$tnum", $req_trackname, $sv->sjs("name_track$tnum", ["placeholder" => "(tag)", "data-default-value" => $trackname, "class" => "settings-track-name need-suggest tags"])), ":";
         }
+        echo "</div>";
 
         self::$nperm_rendered_folded = 0;
         foreach ($sv->group_members("tracks/permissions") as $gj) {
@@ -135,7 +136,7 @@ class Tracks_SettingRenderer {
     }
 
     static function do_cross_track(SettingValues $sv) {
-        echo "<div class=\"settings-tracks\">General permissions:";
+        echo "<div class=\"settings-tracks\"><div class=\"entryg\">General permissions:</div>";
 
         $trackinfo = self::get_trackinfo($sv, "_", 1);
         self::do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", 1, $trackinfo);
