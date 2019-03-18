@@ -422,7 +422,7 @@ function whyNotText($whyNot, $text_only = false) {
     if (isset($whyNot["rejected"]))
         $ms[] = $conf->_("Submission #%d was not accepted for publication.", $paperId);
     if (isset($whyNot["reviewsSeen"]))
-        $ms[] = $conf->_("You cannot withdraw a submission after seeing its reviews.", $paperId);
+        $ms[] = $conf->_("You can’t withdraw a submission after seeing its reviews.", $paperId);
     if (isset($whyNot["decided"]))
         $ms[] = $conf->_("The review process for submission #%d has completed.", $paperId);
     if (isset($whyNot["updateSubmitted"]))

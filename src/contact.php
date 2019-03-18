@@ -2133,13 +2133,19 @@ class Contact {
 
     function can_withdraw_paper(PaperInfo $prow, $display_only = false) {
         $rights = $this->rights($prow);
+        $sub_withdraw = $this->conf->setting("sub_withdraw", 0);
+        $override = $this->override_deadlines($rights);
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
-            && ($this->override_deadlines($rights)
-                || (!$prow->has_author_seen_any_review()
-                    && ($prow->outcome == 0
-                        || ($display_only
-                            && !$prow->can_author_view_decision()))));
+            && ($sub_withdraw !== -1
+                || $prow->timeSubmitted == 0
+                || $override)
+            && ($sub_withdraw !== 0
+                || !$prow->has_author_seen_any_review()
+                || $override)
+            && ($prow->outcome == 0
+                || ($display_only && !$prow->can_author_view_decision())
+                || $override);
     }
 
     function perm_withdraw_paper(PaperInfo $prow, $display_only = false) {
@@ -2151,14 +2157,17 @@ class Contact {
             $whyNot["withdrawn"] = 1;
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = "edit_paper";
-        else if (!$rights->allow_author)
+        else if (!$rights->allow_author) {
+            $whyNot["permission"] = "withdraw";
             $whyNot["author"] = 1;
-        else if ($prow->has_author_seen_any_review()
-                 && !$this->override_deadlines($rights))
-            $whyNot["reviewsSeen"] = 1;
-        else if ($prow->outcome != 0
-                 && !$this->override_deadlines($rights))
-            $whyNot["decided"] = 1;
+        } else if (!$this->override_deadlines($rights)) {
+            $whyNot["permission"] = "withdraw";
+            $sub_withdraw = $this->conf->setting("sub_withdraw", 0);
+            if ($sub_withdraw === 0 && $prow->has_author_seen_any_review())
+                $whyNot["reviewsSeen"] = 1;
+            else if ($prow->outcome != 0)
+                $whyNot["decided"] = 1;
+        }
         if ($rights->allow_administer)
             $whyNot["override"] = 1;
         return $whyNot;

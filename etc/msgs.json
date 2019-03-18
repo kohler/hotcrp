@@ -61,6 +61,7 @@
     ["eperm", "Permission error.", "You aren’t allowed to view submission #%2$d.", ["$1=view_paper"]],
     ["eperm", "Permission error.", "You aren’t allowed to view submission #%2$d’s documents.", ["$1=view_doc"]],
     ["eperm", "Permission error.", "You aren’t allowed to view reviews for submission #%2$d.", ["$1=view_review"]],
+    ["eperm", "Permission error.", "You aren’t allowed to withdraw submission #%2$d.", ["$1=withdraw"]],
     ["eperm", "Permission error.", "You aren’t allowed to request reviews for submission #%2$d.", ["$1=request_review"]],
     ["eperm", "Permission error.", "You aren’t allowed to review submission #%2$d.", ["$1=review"]],
     ["eperm", "Permission error.", "You aren’t allowed to comment on submission #%2$d.", ["$1=comment"]],
