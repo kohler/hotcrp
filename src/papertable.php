@@ -776,6 +776,8 @@ class PaperTable {
         $js["class"] = $this->control_class("$pfx$n", "need-autogrow js-autosubmit e$pfx");
         if ($au && !$this->prow && !$this->useRequest)
             $js["class"] .= " ignore-diff";
+        if ($pfx === "auemail" && $this->user->can_lookup_user())
+            $js["class"] .= " uii js-email-populate";
         if ($val !== $auval)
             $js["data-default-value"] = $auval;
         return Ht::entry("$pfx$n", $val, $js);
@@ -785,8 +787,8 @@ class PaperTable {
         if ($max_authors !== 1)
             $t .= '<td class="rxcaption">' . $n . '.</td>';
         return $t . '<td class="lentry">'
-            . $this->editable_author_component_entry($n, "auname", $au) . ' '
             . $this->editable_author_component_entry($n, "auemail", $au) . ' '
+            . $this->editable_author_component_entry($n, "auname", $au) . ' '
             . $this->editable_author_component_entry($n, "auaff", $au)
             . '<span class="nb btnbox aumovebox"><button type="button" class="ui qx need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
             . Icons::ui_triangle(0)
@@ -794,8 +796,8 @@ class PaperTable {
             . Icons::ui_triangle(2)
             . '</button><button type="button" class="ui qx need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>'
             . $this->messages_at("author$n")
-            . $this->messages_at("auname$n")
             . $this->messages_at("auemail$n")
+            . $this->messages_at("auname$n")
             . $this->messages_at("auaff$n")
             . '</td></tr>';
     }

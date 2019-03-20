@@ -1978,6 +1978,14 @@ class Contact {
         }
         return $this->_can_view_pc > 0;
     }
+    function can_lookup_user() {
+        if ($this->privChair) {
+            return true;
+        } else {
+            $x = $this->conf->opt("allowLookupUser");
+            return $x || ($x === null && $this->can_view_pc());
+        }
+    }
     function can_view_user_tags() {
         return $this->privChair
             || ($this->can_view_pc() && $this->_can_view_pc > 1);

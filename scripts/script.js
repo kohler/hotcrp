@@ -2823,26 +2823,88 @@ handle_ui.on("js-assignment-fold", function (event) {
 });
 })($);
 
-handle_ui.on("js-request-review-email", function () {
-    var v = this.value.trim(), f = $(this).closest("form")[0];
-    function success(data) {
-        if (!data || !data.ok)
-            data = {};
-        var cur_email = f.email.value.trim();
-        if (cur_email === v || f.getAttribute("data-showing-email") !== v) {
-            f.firstName.setAttribute("placeholder", data.firstName || "");
-            f.lastName.setAttribute("placeholder", data.lastName || "");
-            f.affiliation.setAttribute("placeholder", data.affiliation || "");
-            f.setAttribute("data-showing-email", v);
-        }
+(function () {
+var email_info = [], email_info_at = 0;
+handle_ui.on("js-email-populate", function () {
+    var self = this,
+        v = self.value.toLowerCase().trim(),
+        f = $(this).closest("form")[0],
+        fn = null, ln = null, nn = null, af = null, placeholder = true;
+    if (this.name === "email" || this.name === "uemail") {
+        fn = f.firstName;
+        ln = f.lastName;
+        af = f.affiliation;
+    } else if (this.name.substring(0, 7) === "auemail") {
+        var idx = this.name.substring(7);
+        nn = f["auname" + idx];
+        af = f["auaff" + idx];
+        placeholder = false;
     }
-    if (/^\S+\@\S+\.\S\S+$/.test(v))
-        $.ajax(hoturl_post("api/user", {email: v}), {
-            method: "GET", success: success
-        });
-    else
+    if (!fn && !ln && !nn && !af)
+        return;
+
+    function success(data) {
+        if (data) {
+            if (data.email)
+                data.lemail = data.email.toLowerCase();
+            else
+                data.lemail = v + "~";
+            if (!email_info.length)
+                email_info_at = now_sec();
+            var i = 0;
+            while (i !== email_info.length && email_info[i] !== v)
+                i += 2;
+            if (i === email_info.length)
+                email_info.push(v, data);
+        }
+        if (!data || !data.email || data.lemail !== v)
+            data = {};
+        if (self.value.trim() !== v
+            && self.getAttribute("data-populated-email") === v)
+            return;
+        if (!data.name) {
+            if (data.firstName && data.lastName)
+                data.name = data.firstName + " " + data.lastName;
+            else if (data.lastName)
+                data.name = data.lastName;
+            else
+                data.name = data.firstName;
+        }
+        function handle(e, v) {
+            if (placeholder)
+                e.setAttribute("placeholder", v);
+            else if (e.value === "" || e.value === e.defaultValue)
+                e.value = e.defaultValue = v;
+        }
+        fn && handle(fn, data.firstName || "");
+        ln && handle(ln, data.lastName || "");
+        nn && handle(nn, data.name || "");
+        af && handle(af, data.affiliation || "");
+        self.setAttribute("data-populated-email", v);
+    }
+
+    if (/^\S+\@\S+\.\S\S+$/.test(v)) {
+        if ((email_info_at && now_sec() - email_info_at >= 3600)
+            || email_info.length > 200)
+            email_info = [];
+        var i = 0;
+        while (i !== email_info.length
+               && (v < email_info[i] || v > email_info[i + 1].lemail))
+            i += 2;
+        if (i === email_info.length) {
+            $.ajax(hoturl_post("api/user", {email: v}), {
+                method: "GET", success: success
+            });
+        } else if (v === email_info[i + 1].lemail) {
+            success(email_info[i + 1]);
+        } else {
+            success(null);
+        }
+    } else {
         success(null);
+    }
 });
+})();
 
 handle_ui.on("js-request-review-preview-email", function (event) {
     var f = $(this).closest("form")[0],

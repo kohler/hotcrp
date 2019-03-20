@@ -512,10 +512,13 @@ if (($rrow = $prow->review_of_user($Me))
     && $rrow->reviewType == REVIEW_SECONDARY
     && ($round_name = $Conf->round_name($rrow->reviewRound)))
     echo Ht::hidden("round", $round_name);
+$email_class = "fullw";
+if ($Me->can_lookup_user())
+    $email_class .= " uii js-email-populate";
 echo '<div class="papertext g">',
     '<div class="', Ht::control_class("email", "f-i"), '">',
     Ht::label("Email", "revreq_email"),
-    Ht::entry("email", (string) $Qreq->email, ["size" => 52, "class" => "fullw uii js-request-review-email", "autocomplete" => "off", "type" => "email"]),
+    Ht::entry("email", (string) $Qreq->email, ["id" => "revreq_email", "size" => 52, "class" => $email_class, "autocomplete" => "off", "type" => "email"]),
     '</div>',
     '<div class="f-2col">',
     '<div class="', Ht::control_class("firstName", "f-i"), '">',

@@ -870,8 +870,11 @@ class UserStatus extends MessageSet {
 
         echo "<div class=\"profile-g\">\n";
         if (!$us->conf->external_login()) {
+            $email_class = "want-focus fullw";
+            if ($us->user->can_lookup_user())
+                $email_class .= " uii js-email-populate";
             $us->render_field("uemail", "Email" . $actas,
-                Ht::entry("uemail", get_s($reqj, "email"), ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => get_s($cj, "email"), "type" => "email"]));
+                Ht::entry("uemail", get_s($reqj, "email"), ["class" => $email_class, "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => get_s($cj, "email"), "type" => "email"]));
         } else if (!$us->user->is_empty()) {
             $us->render_field(false, "Username" . $actas,
                 htmlspecialchars(get_s($cj, "email")));
