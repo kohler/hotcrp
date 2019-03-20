@@ -811,13 +811,8 @@ class PaperTable {
             $title .= " (blind)";
         else if ($sb === Conf::BLIND_UNTILREVIEW)
             $title .= " (blind until review)";
-        echo $this->editable_papt("authors", $title, ["id" => "authors"]);
-        $hint = "List the authors, including email addresses and affiliations.";
-        if ($sb === Conf::BLIND_ALWAYS)
-            $hint .= " Submission is blind, so reviewers will not see author information.";
-        else if ($sb === Conf::BLIND_UNTILREVIEW)
-            $hint .= " Reviewers will not see author information until they submit a review.";
-        echo $this->field_hint("Authors", $hint, $sb),
+        echo $this->editable_papt("authors", $title, ["id" => "authors"]),
+            $this->field_hint("Authors", "List the authors, including email addresses and affiliations.", $sb),
             '<div class="papev"><table class="js-row-order">',
             '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),

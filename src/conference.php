@@ -174,7 +174,7 @@ class Conf {
     static public $next_xt_subposition = 0;
     static private $xt_require_resolved = [];
 
-    const BLIND_NEVER = 0;
+    const BLIND_NEVER = 0;         // these values are used in `msgs.json`
     const BLIND_OPTIONAL = 1;
     const BLIND_ALWAYS = 2;
     const BLIND_UNTILREVIEW = 3;
