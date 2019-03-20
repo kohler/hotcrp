@@ -834,7 +834,7 @@ class Review_Assigner extends Assigner {
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $x = ["pid" => $this->pid, "action" => ReviewInfo::unparse_assigner_action($this->rtype),
-              "email" => $this->contact->email, "name" => $this->contact->name_text()];
+              "email" => $this->contact->email, "name" => $this->contact->name()];
         if (($round = $this->item["_round"]))
             $x["round"] = $this->item["_round"];
         if ($this->token)
@@ -842,7 +842,7 @@ class Review_Assigner extends Assigner {
         $acsv->add($x);
         if ($this->unsubmit)
             $acsv->add(["action" => "unsubmitreview", "pid" => $this->pid,
-                        "email" => $this->contact->email, "name" => $this->contact->name_text()]);
+                        "email" => $this->contact->email, "name" => $this->contact->name()]);
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
         $aset->show_column("reviewers");

@@ -143,7 +143,7 @@ class Preference_Assigner extends Assigner {
         $p = $this->preference_data(false);
         $pref = $p ? unparse_preference($p[0], $p[1]) : "none";
         return ["pid" => $this->pid, "action" => "preference",
-                "email" => $this->contact->email, "name" => $this->contact->name_text(),
+                "email" => $this->contact->email, "name" => $this->contact->name(),
                 "preference" => $pref];
     }
     function add_locks(AssignmentSet $aset, &$locks) {

@@ -199,7 +199,7 @@ class PaperApi {
                     foreach ($pc->completion_items() as $k => $level)
                         if (get($pcmap, $k) === $pc) {
                             $skey = $primary ? "s" : "sm1";
-                            $result[$k] = [$skey => $k, "d" => $pc->name_text()];
+                            $result[$k] = [$skey => $k, "d" => $pc->name()];
                             $primary = false;
                         }
                 }

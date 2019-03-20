@@ -121,7 +121,7 @@ class Conflict_Assigner extends Assigner {
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         return [
             "pid" => $this->pid, "action" => $this->ctype ? "conflict" : "noconflict",
-            "email" => $this->contact->email, "name" => $this->contact->name_text()
+            "email" => $this->contact->email, "name" => $this->contact->name()
         ];
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {

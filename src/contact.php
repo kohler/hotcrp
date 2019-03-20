@@ -570,11 +570,13 @@ class Contact {
         return $this->_disabled;
     }
 
-    function name_text() {
-        if ($this->firstName === "" || $this->lastName === "")
-            return $this->firstName . $this->lastName;
-        else
+    function name() {
+        if ($this->firstName !== "" && $this->lastName !== "")
             return $this->firstName . " " . $this->lastName;
+        else if ($this->lastName !== "")
+            return $this->lastName;
+        else
+            return $this->firstName;
     }
 
     function completion_items() {

@@ -90,7 +90,7 @@ class Lead_Assigner extends Assigner {
             $x["email"] = "none";
         else {
             $x["email"] = $this->contact->email;
-            $x["name"] = $this->contact->name_text();
+            $x["name"] = $this->contact->name();
         }
         return $x;
     }
