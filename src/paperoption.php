@@ -939,7 +939,6 @@ class DocumentPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $pt->echo_editable_document($this, $ov->value ? : 0);
-        echo "</div>\n\n";
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {

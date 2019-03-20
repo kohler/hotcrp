@@ -688,20 +688,18 @@ class PaperTable {
         echo '<div class="document-replacer">',
             Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document"]),
             '</div>',
-            $this->messages_at($field), "</div>";
+            $this->messages_at($field), "</div></div>\n\n";
     }
 
     private function echo_editable_submission() {
         if (!$this->canUploadFinal) {
             $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0);
-            echo "</div>\n\n";
         }
     }
 
     private function echo_editable_final_version() {
         if ($this->canUploadFinal) {
             $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0);
-            echo "</div>\n\n";
         }
     }
 
