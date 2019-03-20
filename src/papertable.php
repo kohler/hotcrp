@@ -686,7 +686,7 @@ class PaperTable {
         }
 
         echo '<div class="document-replacer">',
-            Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document"]),
+            Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => $inputid]),
             '</div>',
             $this->messages_at($field), "</div></div>\n\n";
     }

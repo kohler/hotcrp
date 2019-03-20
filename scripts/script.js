@@ -7082,6 +7082,8 @@ handle_ui.on("js-add-attachment", function () {
         + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="document-uploader"></div>'
         + '<div class="document-actions"><a href="" class="ui js-remove-document document-action">Delete</a></div>'
         + '</div>');
+    if (this.id === name)
+        this.id = "";
     $na.appendTo($ei).find("input[type=file]").on("change", function () {
         $(this).closest(".has-document").removeClass("hidden");
         $ea.removeClass("hidden");
@@ -7101,6 +7103,8 @@ handle_ui.on("js-replace-document", function (event) {
         if ($ei[0].hasAttribute("data-document-accept"))
             t += ' accept="' + $ei[0].getAttribute("data-document-accept") + '"';
         t += ' class="document-uploader' + (docid > 0 ? "" : " js-check-submittable") + '"></div>';
+        if (this.id === name)
+            this.id = "";
         $u = $(t).appendTo($ei).find(".document-uploader");
         $u.on("change", function () {
             $ei.find(".document-file, .document-stamps, .document-actions, .document-format, .js-replace-document").addClass("hidden");
