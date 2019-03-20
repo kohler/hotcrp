@@ -774,14 +774,15 @@ class PaperTable {
         }
 
         $js["class"] = $this->control_class("$pfx$n", "need-autogrow js-autosubmit e$pfx");
-        if ($val !== $auval) {
+        if ($au && !$this->prow && !$this->useRequest)
+            $js["class"] .= " ignore-diff";
+        if ($val !== $auval)
             $js["data-default-value"] = $auval;
-        }
         return Ht::entry("$pfx$n", $val, $js);
     }
     private function editable_authors_tr($n, $au, $max_authors) {
         $t = '<tr>';
-        if ($max_authors != 1)
+        if ($max_authors !== 1)
             $t .= '<td class="rxcaption">' . $n . '.</td>';
         return $t . '<td class="lentry">'
             . $this->editable_author_component_entry($n, "auname", $au) . ' '
@@ -834,14 +835,17 @@ class PaperTable {
             while (count($aulist) < $nonempty_n) {
                 $aulist[] = null;
             }
+        } else if (!$this->prow && !$this->user->privChair) {
+            $aulist[] = $this->user;
         }
 
+        $tr_maxau = $max_authors <= 0 ? 0 : max(count($aulist), $max_authors);
         for ($n = 1; $n <= count($aulist); ++$n) {
-            echo $this->editable_authors_tr($n, get($aulist, $n - 1), $max_authors);
+            echo $this->editable_authors_tr($n, get($aulist, $n - 1), $tr_maxau);
         }
         if ($max_authors <= 0 || $n <= $max_authors) {
             do {
-                echo $this->editable_authors_tr($n, null, $max_authors);
+                echo $this->editable_authors_tr($n, null, $tr_maxau);
                 ++$n;
             } while ($n <= $min_authors);
         }
