@@ -1141,7 +1141,7 @@ return function (content, bubopt) {
             return (0.75 * p1 + 0.25) + ")";
         });
         bubch[0].style[cssbc(dir^2)] = $(bubdiv).css(cssbc(dir));
-        assign_style_property(bubch[2], cssbc(dir^2), yc);
+        bubch[2].style[cssbc(dir^2)] = yc;
     }
 
     function constrainmid(nearpos, wpos, ds, ds2) {
@@ -1585,25 +1585,6 @@ if (Object.prototype.toString.call(window.operamini) === '[object OperaMini]'
 } else {
     window.mktemptext = $.noop;
 }
-
-
-// style properties
-// IE8 can't handle rgba and throws exceptions. Those exceptions
-// clutter my inbox. XXX Revisit in mid-2016.
-window.assign_style_property = (function () {
-var e = document.createElement("div");
-try {
-    e.style.outline = "4px solid rgba(9,9,9,0.3)";
-    return function (elt, property, value) {
-        elt.style[property] = value;
-    };
-} catch (err) {
-    return function (elt, property, value) {
-        value = value.replace(/\brgba\((.*?),\s*[\d.]+\)/, "rgb($1)");
-        elt.style[property] = value;
-    };
-}
-})();
 
 
 // initialization
@@ -3032,7 +3013,7 @@ function make_outline_flasher(elt, rgba, duration) {
                 clearInterval(h.interval);
                 h.interval = null;
             } else
-                assign_style_property(elt, "outline", "4px solid rgba(" + rgba + ", " + opacity + ")");
+                elt.style.outline = "4px solid rgba(" + rgba + ", " + opacity + ")";
         }, 13);
     }
 }
