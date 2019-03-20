@@ -601,13 +601,12 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
             $rt = -1;
         else
             $rt = min(max($ci->reviewType, 0), REVIEW_META);
-        if ($this->contact->can_accept_review_assignment_ignore_conflict($row)
-            || $rt > 0)
-            $class = "need-assignment-selector";
-        else
-            $class = "need-assignment-selector conflict";
         $pl->need_render = true;
-        return '<span class="' . $class . '" data-assignment="' . $this->contact->contactId . ' ' . $rt . '"></span>';
+        $t = '<span class="need-assignment-selector';
+        if (!$this->contact->can_accept_review_assignment_ignore_conflict($row)
+            && $rt <= 0)
+            $t .= " conflict";
+        return $t . '" data-assignment="' . $this->contact->contactId . ' ' . $rt . '"></span>';
     }
 }
 

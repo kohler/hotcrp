@@ -5331,7 +5331,14 @@ function sorter_toggle_reverse(sorter, toggle) {
 }
 
 function search_sort_success(tbl, data_href, data) {
-    reorder(tbl, data.ids, data.groups, true);
+    var ids = data.ids;
+    if (!ids && data.hotlist) {
+        var hotlist = JSON.parse(data.hotlist);
+        ids = decode_session_list_ids(hotlist.ids);
+    }
+    if (!ids)
+        return;
+    reorder(tbl, ids, data.groups, true);
     if (data.groups)
         tbl.setAttribute("data-groups", JSON.stringify(data.groups));
     else
@@ -5371,13 +5378,10 @@ $(document).on("collectState", function (event, state) {
     var tbl = document.getElementById("foldpl");
     if (!tbl || !tbl.hasAttribute("data-sort-url-template"))
         return;
+    var data = state.sortpl = {hotlist: tbl.getAttribute("data-hotlist")};
     var groups = tbl.getAttribute("data-groups");
-    if (groups)
-        groups = JSON.parse(groups);
-    var data = state.sortpl = {
-        ids: table_ids(tbl), groups: groups,
-        hotlist: tbl.getAttribute("data-hotlist")
-    };
+    if (groups && (groups = JSON.parse(groups)) && groups.length)
+        data.groups = groups;
     if (!href_sorter(state.href)) {
         var active_href = $(tbl).children("thead").find("a.pl_sorting_fwd").attr("href");
         if (active_href && (active_href = href_sorter(active_href)))
