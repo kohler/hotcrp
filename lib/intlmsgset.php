@@ -237,7 +237,17 @@ class IntlMsgSet {
     private function expand($s, $args, $id, $im) {
         if ($s === null || $s === false || $s === "")
             return $s;
-        $tmpl = $id ? get($this->template, $id) : null;
+        $tmpl = null;
+        if ($id) {
+            if (isset($this->template[$id])) {
+                $tmpl = $this->template[$id];
+            } else if (($us = strrpos($id, "_")) > 0
+                       && isset($this->template[substr($id, 0, $us)])
+                       && $us < strlen($id) - 1
+                       && ctype_digit(substr($id, $us))) {
+                $tmpl = $this->template[$id];
+            }
+        }
         if (count($args) > 1 || $tmpl !== null) {
             $pos = $argnum = 0;
             while (($pos = strpos($s, "%", $pos)) !== false) {
