@@ -3768,6 +3768,12 @@ function render_editing(hc, cj) {
         hc.push('<p class="f-h">', '</p>');
         hc.push_pop(au_description);
         hc.pop_n(2);
+    } else if (!cj.response && cj.by_author_visibility) {
+        hc.push('<div class="entryi"><label for="' + cid + '-visibility">Visibility</label><div class="entry">', '</div></div>');
+        hc.push('<span class="select"><select id="' + cid + '-visibility" name="visibility">', '</select></span>');
+        hc.push('<option value="au">Visible to reviewers</option>');
+        hc.push_pop('<option value="admin">Administrators only</option>');
+        hc.pop();
     }
 
     // tags
@@ -3849,10 +3855,14 @@ function activate_editing($c, cj) {
         filter_length: 1, decorate: true
     });*/
 
-    var vis = cj.visibility || hotcrp_status.myperm.default_comment_visibility || "rev";
+    var vis = cj.visibility || hotcrp_status.myperm.default_comment_visibility;
+    if (!vis)
+        vis = cj.by_author ? "au" : "rev";
     $c.find("select[name=visibility]")
-        .val(vis).attr("data-default-value", vis)
-        .on("change", visibility_change).change();
+        .val(vis)
+        .attr("data-default-value", vis)
+        .on("change", visibility_change)
+        .change();
 
     for (i in cj.tags || [])
         tags.push(cj.tags[i].replace(detwiddle, "~"));
@@ -3875,6 +3885,9 @@ function activate_editing($c, cj) {
         var $ready = $c.find("input[name=ready]").on("click", ready_change);
         ready_change.call($ready[0]);
     }
+
+    if (cj.is_new)
+        $c.find("select[name=visibility], input[name=blind]").addClass("ignore-diff");
 
     var $f = $c.find("form");
     $f.on("submit", submit_editor).on("click", "button", buttonclick_editor);
