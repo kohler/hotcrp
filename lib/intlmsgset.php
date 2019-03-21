@@ -245,7 +245,7 @@ class IntlMsgSet {
                        && isset($this->template[substr($id, 0, $us)])
                        && $us < strlen($id) - 1
                        && ctype_digit(substr($id, $us))) {
-                $tmpl = $this->template[$id];
+                $tmpl = $this->template[substr($id, 0, $us)];
             }
         }
         if (count($args) > 1 || $tmpl !== null) {
