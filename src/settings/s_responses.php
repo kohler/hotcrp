@@ -28,8 +28,7 @@ class Responses_SettingParser extends SettingParser {
     }
 
     static function render_instructions_property(SettingValues $sv, $i) {
-        $isuf = $i ? "_$i" : "";
-        $sv->echo_message_horizontal("msg.resp_instrux$isuf", "Instructions");
+        $sv->echo_message_horizontal("msg.resp_instrux_$i", "Instructions");
     }
 
     static function render(SettingValues $sv) {
@@ -122,8 +121,8 @@ class Responses_SettingParser extends SettingParser {
                 $sv->save("resp_words$isuf", $v < 0 ? null : $v);
             if (($v = $sv->parse_value($sv->si("resp_search$isuf"))) !== null)
                 $sv->save("resp_search$isuf", $v !== "" ? $v : null);
-            if (($v = $sv->parse_value($sv->si("msg.resp_instrux$isuf"))) !== null)
-                $sv->save("msg.resp_instrux$isuf", $v);
+            if (($v = $sv->parse_value($sv->si("msg.resp_instrux_$i"))) !== null)
+                $sv->save("msg.resp_instrux_$i", $v);
         }
 
         if (count($roundnames) > 1 || $roundnames[0] !== 1)

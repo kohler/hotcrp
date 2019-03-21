@@ -69,9 +69,7 @@ class ResponseRound {
         return $t === null || $t <= 0 || $t >= $Now;
     }
     function instructions(Conf $conf) {
-        $m = false;
-        if ($this->number)
-            $m = $conf->_i("resp_instrux_$this->number", false, $this->words);
+        $m = $conf->_i("resp_instrux_$this->number", false, $this->words);
         if ($m === false)
             $m = $conf->_i("resp_instrux", false, $this->words);
         return $m;
@@ -252,7 +250,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 211) {
+        if ($this->sversion < 212) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);

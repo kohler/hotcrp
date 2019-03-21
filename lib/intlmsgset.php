@@ -244,7 +244,7 @@ class IntlMsgSet {
             } else if (($us = strrpos($id, "_")) > 0
                        && isset($this->template[substr($id, 0, $us)])
                        && $us < strlen($id) - 1
-                       && ctype_digit(substr($id, $us))) {
+                       && ctype_digit(substr($id, $us + 1))) {
                 $tmpl = $this->template[substr($id, 0, $us)];
             }
         }

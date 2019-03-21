@@ -1504,6 +1504,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->ql("update Settings set data=replace(data, '#', '') where name='tracks'");
         $conf->update_schema_version(211);
     }
+    if ($conf->sversion == 211) {
+        $conf->ql("update Settings set name='msg.resp_instrux_0' where name='msg.resp_instrux'");
+        $conf->update_schema_version(212);
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
