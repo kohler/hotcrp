@@ -39,8 +39,8 @@ class Conflict_PaperColumn extends PaperColumn {
             return 0;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $act = $this->conflict_type($pl, $a);
-        $bct = $this->conflict_type($pl, $b);
+        $act = $this->conflict_type($sorter->pl, $a);
+        $bct = $this->conflict_type($sorter->pl, $b);
         if ($this->show_description)
             return $bct - $act;
         else
