@@ -1772,10 +1772,10 @@ class PaperInfo {
         return $this->_comment_array;
     }
 
-    function viewable_comments(Contact $user) {
+    function viewable_comments(Contact $user, $textless = false) {
         $crows = [];
         foreach ($this->all_comments() as $cid => $crow)
-            if ($user->can_view_comment($this, $crow))
+            if ($user->can_view_comment($this, $crow, $textless))
                 $crows[$cid] = $crow;
         return $crows;
     }
@@ -1799,10 +1799,10 @@ class PaperInfo {
         return $this->_comment_skeleton_array;
     }
 
-    function viewable_comment_skeletons(Contact $user) {
+    function viewable_comment_skeletons(Contact $user, $textless = false) {
         $crows = [];
         foreach ($this->all_comment_skeletons() as $cid => $crow)
-            if ($user->can_view_comment($this, $crow))
+            if ($user->can_view_comment($this, $crow, $textless))
                 $crows[$cid] = $crow;
         return $crows;
     }

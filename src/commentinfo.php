@@ -262,7 +262,8 @@ class CommentInfo {
     }
 
     function unparse_json(Contact $contact) {
-        if ($this->commentId && !$contact->can_view_comment($this->prow, $this))
+        if ($this->commentId
+            && !$contact->can_view_comment($this->prow, $this, true))
             return false;
 
         // placeholder for new comment

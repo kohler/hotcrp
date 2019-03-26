@@ -12,7 +12,7 @@ function _review_table_actas($rr) {
 }
 
 // reviewer information
-function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode) {
+function reviewTable(PaperInfo $prow, $rrows, $rrow, $mode) {
     global $Me;
     $conf = $prow->conf;
     $subrev = array();

@@ -103,8 +103,9 @@ class Comment_SearchTerm extends SearchTerm {
         }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
+        $textless = $this->type_mask === (COMMENTTYPE_DRAFT | COMMENTTYPE_RESPONSE);
         $n = 0;
-        foreach ($row->viewable_comment_skeletons($srch->user) as $crow)
+        foreach ($row->viewable_comment_skeletons($srch->user, $textless) as $crow)
             if ($this->csm->test_contact($crow->contactId)
                 && ($crow->commentType & $this->type_mask) == $this->type_value
                 && (!$this->only_author || $crow->commentType >= COMMENTTYPE_AUTHOR)

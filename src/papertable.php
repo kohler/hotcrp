@@ -2289,7 +2289,7 @@ class PaperTable {
 
         $t = "";
         if ($rtable)
-            $t .= reviewTable($this->prow, $this->all_rrows, $this->mycrows,
+            $t .= reviewTable($this->prow, $this->all_rrows,
                               $editrrow, $this->mode);
         $t .= reviewLinks($this->prow, $this->all_rrows, $this->mycrows,
                           $editrrow, $this->mode, $this->allreviewslink);
@@ -2673,7 +2673,7 @@ class PaperTable {
         $this->crows = $this->mycrows = array();
         if ($this->prow) {
             $this->crows = $this->prow->all_comments();
-            $this->mycrows = $this->prow->viewable_comments($this->user);
+            $this->mycrows = $this->prow->viewable_comments($this->user, true);
         }
     }
 

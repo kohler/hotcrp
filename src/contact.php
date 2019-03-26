@@ -3150,7 +3150,7 @@ class Contact {
         return false;
     }
 
-    function can_view_comment(PaperInfo $prow, $crow) {
+    function can_view_comment(PaperInfo $prow, $crow, $textless = false) {
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
         $rights = $this->rights($prow);
         return ($crow && $this->is_my_comment($prow, $crow))
@@ -3164,7 +3164,8 @@ class Contact {
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->can_view_submitted_review_as_author($prow))
             || (!$rights->view_conflict_type
-                && ($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) !== COMMENTTYPE_DRAFT
+                && (!($ctype & COMMENTTYPE_DRAFT)
+                    || ($textless && ($ctype & COMMENTTYPE_RESPONSE)))
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
                     : $ctype >= COMMENTTYPE_REVIEWER)

@@ -200,7 +200,7 @@ $paperTable->paptabBegin();
 
 
 // reviewer information
-$t = reviewTable($prow, $paperTable->all_reviews(), null, null, "assign");
+$t = reviewTable($prow, $paperTable->all_reviews(), null, "assign");
 if ($t !== "")
     echo '<hr class="papcard_sep"><h3>Reviews</h3>', $t;
 
