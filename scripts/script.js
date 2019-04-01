@@ -8230,7 +8230,7 @@ function populate_pcselector(pcs) {
         optids = JSON.parse(optids);
     else
         optids = optids.split(/[\s,]+/);
-    var selected = this.getAttribute("data-pcselector-selected"), selindex = 0;
+    var selected = this.getAttribute("data-pcselector-selected"), selindex = -1;
     var last_first = pcs.__sort__ === "last", used = {};
 
     for (var i = 0; i < optids.length; ++i) {
@@ -8267,6 +8267,26 @@ function populate_pcselector(pcs) {
                 if (email === selected || (email !== "none" && cid == selected))
                     selindex = this.options.length - 1;
             }
+        }
+    }
+
+    if (selindex < 0) {
+        if (selected == 0 || selected == null)
+            selindex = 0;
+        else {
+            var opt = document.createElement("option");
+            opt.setAttribute("disabled", "");
+            this.add(opt);
+            opt = document.createElement("option");
+            if ((p = pcs[selected])) {
+                opt.setAttribute("value", p.email);
+                opt.text = p.name + " (not assignable)";
+            } else {
+                opt.setAttribute("value", selected);
+                opt.text = "User not on PC";
+            }
+            this.add(opt);
+            selindex = this.options.length - 1;
         }
     }
     this.selectedIndex = selindex;
