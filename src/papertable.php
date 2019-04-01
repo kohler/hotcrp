@@ -1538,8 +1538,10 @@ class PaperTable {
         $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector"] : "");
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv">';
-        $p = $this->conf->pc_member_by_id($value);
-        $n = $p ? $this->user->name_html_for($p) : ($value ? "Unknown!" : "");
+        if (($p = $this->conf->pc_member_by_id($value)))
+            $n = $this->user->name_html_for($p);
+        else
+            $n = $value ? "<strong>User no longer on PC</strong>" : "";
         $text = '<p class="fn odname js-psedit-result">' . $n . '</p>';
         echo '<div class="pcopen taghh';
         if ($p && ($classes = $this->user->user_color_classes_for($p)))

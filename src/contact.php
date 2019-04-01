@@ -1629,6 +1629,7 @@ class Contact {
         $this->check_rights_version();
         if (!isset($this->_is_lead))
             $this->_is_lead = $this->contactId > 0
+                && $this->isPC
                 && $this->conf->has_any_lead_or_shepherd()
                 && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactId);
         return $this->_is_lead;
@@ -1836,7 +1837,9 @@ class Contact {
             // check PC tracking
             // (see also can_accept_review_assignment*)
             $tracks = $this->conf->has_tracks();
-            $am_lead = $this->contactId > 0 && isset($prow->leadContactId)
+            $am_lead = $this->contactId > 0
+                && $this->isPC
+                && isset($prow->leadContactId)
                 && $prow->leadContactId == $this->contactId;
             $isPC = $this->isPC
                 && (!$tracks
@@ -2794,6 +2797,7 @@ class Contact {
         return ($rights->allow_administer
                 || (($rights->reviewType >= REVIEW_PC
                      || ($this->contactId > 0
+                         && $this->isPC
                          && isset($prow->leadContactId)
                          && $prow->leadContactId == $this->contactId))
                     && $this->conf->setting("extrev_chairreq", 0) >= 0))
@@ -2810,6 +2814,7 @@ class Contact {
         if (!$rights->allow_administer
             && (($rights->reviewType < REVIEW_PC
                  && ($this->contactId <= 0
+                     || !$this->isPC
                      || !isset($prow->leadContactId)
                      || $prow->leadContactId != $this->contactId))
                 || $this->conf->setting("extrev_chairreq", 0) < 0)) {
