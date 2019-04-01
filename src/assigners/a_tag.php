@@ -96,11 +96,12 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $tag = $tags[0];
 
         // index argument
-        $xindex = get($req, "index");
+        $xindex = get($req, "value");
         if ($xindex === null)
-            $xindex = get($req, "value");
-        if ($xindex !== null && ($xindex = trim($xindex)) !== "") {
-            $tag = preg_replace(',\A(#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+(?:\.\d*)?|-?\.\d+|any|all|none|clear)\z,i', '$1', $tag);
+            $xindex = get($req, "index");
+        if ($xindex !== null
+            && ($xindex = trim($xindex)) !== "") {
+            $tag = preg_replace(',\A([-+]?#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+(?:\.\d*)?|-?\.\d+|any|all|none|clear)\z,i', '$1', $tag);
             if (!preg_match(',\A(?:[=!<>]=?|#|≠|≤|≥),i', $xindex))
                 $xindex = "#" . $xindex;
             $tag .= $xindex;
@@ -113,13 +114,15 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $tag = substr($tag, 1);
         } else if ($tag[0] === "+" && !$remove)
             $tag = substr($tag, 1);
-        if ($tag[0] === "#")
+        if ($tag !== "" && $tag[0] === "#")
             $tag = substr($tag, 1);
         $m = array(null, "", "", "", "");
         $xtag = $tag;
         if (preg_match(',\A(.*?)([=!<>]=?|#|≠|≤|≥)(.*?)\z,', $xtag, $xm))
             list($xtag, $m[3], $m[4]) = array($xm[1], $xm[2], strtolower($xm[3]));
-        if (!preg_match(',\A(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
+        if ($xtag === "")
+            return "Empty tag.";
+        else if (!preg_match(',\A(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
             return "“" . htmlspecialchars($tag) . "”: Invalid tag.";
         else if ($m[3] && $m[4] === "")
             return "“" . htmlspecialchars($tag) . "”: Tag value missing.";
