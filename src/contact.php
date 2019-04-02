@@ -794,14 +794,6 @@ class Contact {
             return "";
     }
 
-    private function update_capabilities() {
-        if (empty($this->capabilities))
-            $this->capabilities = null;
-        if ($this->_activated)
-            $this->save_session("cap", $this->capabilities);
-        $this->update_my_rights();
-    }
-
     function capability($name) {
         return $this->capabilities ? get($this->capabilities, $name) : null;
     }
@@ -811,9 +803,14 @@ class Contact {
         if ($newval !== $oldval) {
             if ($newval !== null)
                 $this->capabilities[$name] = $newval;
-            else
+            else {
                 unset($this->capabilities[$name]);
-            $this->update_capabilities();
+                if (empty($this->capabilities))
+                    $this->capabilities = null;
+            }
+            if ($this->_activated)
+                $this->save_session("cap", $this->capabilities);
+            $this->update_my_rights();
         }
         return $newval !== $oldval;
     }
