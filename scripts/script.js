@@ -8275,15 +8275,12 @@ function populate_pcselector(pcs) {
             selindex = 0;
         else {
             var opt = document.createElement("option");
-            opt.setAttribute("disabled", "");
-            this.add(opt);
-            opt = document.createElement("option");
             if ((p = pcs[selected])) {
                 opt.setAttribute("value", p.email);
                 opt.text = p.name + " (not assignable)";
             } else {
                 opt.setAttribute("value", selected);
-                opt.text = "User not on PC";
+                opt.text = "[removed from PC]";
             }
             this.add(opt);
             selindex = this.options.length - 1;

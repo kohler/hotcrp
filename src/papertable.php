@@ -1541,7 +1541,7 @@ class PaperTable {
         if (($p = $this->conf->pc_member_by_id($value)))
             $n = $this->user->name_html_for($p);
         else
-            $n = $value ? "<strong>User not on PC</strong>" : "";
+            $n = $value ? "<strong>[removed from PC]</strong>" : "";
         $text = '<p class="fn odname js-psedit-result">' . $n . '</p>';
         echo '<div class="pcopen taghh';
         if ($p && ($classes = $this->user->user_color_classes_for($p)))
