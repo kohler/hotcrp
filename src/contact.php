@@ -126,7 +126,7 @@ class Contact {
             $user = (object) $user;
         if (!isset($user->dsn) || $user->dsn == $this->conf->dsn) {
             if (isset($user->contactId))
-                $this->contactId = (int) $user->contactId;
+                $this->contactId = $this->contactXid = (int) $user->contactId;
         }
         if (isset($user->contactDbId))
             $this->contactDbId = (int) $user->contactDbId;
@@ -192,7 +192,7 @@ class Contact {
     }
 
     private function db_load() {
-        $this->contactId = (int) $this->contactId;
+        $this->contactId = $this->contactXid = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
         assert($this->contactId > 0 || ($this->contactId == 0 && $this->contactDbId > 0));
         if ($this->unaccentedName === "")
@@ -1065,8 +1065,11 @@ class Contact {
             if (!$is_cdb)
                 $updater["creationTime"] = $Now;
             $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join("=?, ", array_keys($updater)) . "=? on duplicate key update firstName=firstName", array_values($updater));
-            if ($result)
+            if ($result) {
                 $updater[$idk] = (int) $result->insert_id;
+                if ($idk === "contactId")
+                    $updater["contactXid"] = (int) $result->insert_id;
+            }
         }
         if (($ok = !!$result)) {
             foreach ($updater as $k => $v)

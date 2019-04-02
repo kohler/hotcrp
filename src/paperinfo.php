@@ -30,20 +30,21 @@ class PaperContactInfo {
     public $vsreviews_array;
     public $vsreviews_version;
 
-    static function make_empty(PaperInfo $prow, $cid) {
+    static function make_empty(PaperInfo $prow, $user) {
         $ci = new PaperContactInfo;
         $ci->paperId = $prow->paperId;
-        $ci->contactId = $cid;
-        if ($cid > 0
+        $ci->contactId = $user->contactXid;
+        if ($user->contactId > 0
+            && $user->isPC
             && isset($prow->leadContactId)
-            && $prow->leadContactId == $cid
+            && $prow->leadContactId == $user->contactId
             && !$prow->conf->setting("lead_noseerev"))
             $ci->review_status = 1;
         return $ci;
     }
 
     static function make_my(PaperInfo $prow, $user, $object) {
-        $ci = PaperContactInfo::make_empty($prow, $user->contactId);
+        $ci = PaperContactInfo::make_empty($prow, $user);
         $ci->conflictType = (int) $object->conflictType;
         if (property_exists($object, "myReviewPermissions")) {
             $ci->mark_my_review_permissions($object->myReviewPermissions);
@@ -83,11 +84,13 @@ class PaperContactInfo {
         }
     }
 
-    static function load_into(PaperInfo $prow, $cid, $rev_tokens) {
+    static function load_into(PaperInfo $prow, $user) {
         global $Me;
         $conf = $prow->conf;
         $pid = $prow->paperId;
         $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit";
+        $cid = $user->contactXid;
+        $rev_tokens = $user->review_tokens();
         if ($cid > 0
             && !$rev_tokens
             && ($row_set = $prow->_row_set)
@@ -99,7 +102,7 @@ class PaperContactInfo {
                 where Paper.paperId?a",
                 $cid, $cid, $cid, $row_set->paper_ids());
             foreach ($row_set->all() as $row)
-                $row->_clear_contact_info($cid);
+                $row->_clear_contact_info($user);
             while ($result && ($local = $result->fetch_row())) {
                 $row = $row_set->get($local[4]);
                 $ci = $row->_get_contact_info($local[5]);
@@ -115,7 +118,8 @@ class PaperContactInfo {
                          && ($Me->privChair || $Me->contactId == $prow->managerContactId)))
             && ($pcm = $conf->pc_members())
             && isset($pcm[$cid])) {
-            $cids = array_keys($pcm);
+            foreach ($pcm as $u)
+                $prow->_clear_contact_info($u);
             $result = $conf->qe("$q, ContactInfo.contactId
                 from ContactInfo
                 left join PaperConflict on (PaperConflict.paperId=? and PaperConflict.contactId=ContactInfo.contactId)
@@ -123,7 +127,7 @@ class PaperContactInfo {
                 where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0",
                 $pid, $pid);
         } else {
-            $cids = [$cid];
+            $prow->_clear_contact_info($user);
             if ($cid > 0 || $rev_tokens) {
                 $q = "$q, ? contactId
                 from (select ? paperId) P
@@ -138,8 +142,6 @@ class PaperContactInfo {
             } else
                 $result = null;
         }
-        foreach ($cids as $cid)
-            $prow->_clear_contact_info($cid);
         while ($result && ($local = $result->fetch_row())) {
             $ci = $prow->_get_contact_info($local[4]);
             $ci->mark_conflict((int) $local[0]);
@@ -360,8 +362,8 @@ class PaperInfo {
         return get($this->_contact_info, $cid);
     }
 
-    function _clear_contact_info($cid) {
-        $this->_contact_info[$cid] = PaperContactInfo::make_empty($this, $cid);
+    function _clear_contact_info($user) {
+        $this->_contact_info[$user->contactXid] = PaperContactInfo::make_empty($this, $user);
     }
 
     private function check_rights_version() {
@@ -379,18 +381,18 @@ class PaperInfo {
 
     function contact_info(Contact $user) {
         $this->check_rights_version();
-        $cid = $user->contactId ? : $user->contactXid;
+        $cid = $user->contactXid;
         if (!array_key_exists($cid, $this->_contact_info)) {
             if ($this->_review_array
                 || property_exists($this, "reviewSignatures")) {
-                $ci = PaperContactInfo::make_empty($this, $cid);
+                $ci = PaperContactInfo::make_empty($this, $user);
                 if (($c = get($this->conflicts(), $cid)))
                     $ci->conflictType = $c->conflictType;
                 foreach ($this->reviews_of_user($cid, $user->review_tokens()) as $rrow)
                     $ci->mark_review($rrow);
                 $this->_contact_info[$cid] = $ci;
             } else {
-                PaperContactInfo::load_into($this, $cid, $user->review_tokens());
+                PaperContactInfo::load_into($this, $user);
             }
         }
         return $this->_contact_info[$cid];
