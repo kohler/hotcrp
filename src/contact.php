@@ -3163,11 +3163,10 @@ class Contact {
                 && ($ctype >= COMMENTTYPE_AUTHOR
                     || $rights->potential_reviewer))
             || ($rights->act_author_view
-                && ($ctype & (COMMENTTYPE_BYAUTHOR | COMMENTTYPE_RESPONSE)))
-            || ($rights->act_author_view
-                && $ctype >= COMMENTTYPE_AUTHOR
-                && !($ctype & COMMENTTYPE_DRAFT)
-                && $this->can_view_submitted_review_as_author($prow))
+                && (($ctype & (COMMENTTYPE_BYAUTHOR | COMMENTTYPE_RESPONSE))
+                    || ($ctype >= COMMENTTYPE_AUTHOR
+                        && !($ctype & COMMENTTYPE_DRAFT)
+                        && $this->can_view_submitted_review_as_author($prow))))
             || (!$rights->view_conflict_type
                 && (!($ctype & COMMENTTYPE_DRAFT)
                     || ($textless && ($ctype & COMMENTTYPE_RESPONSE)))
@@ -3175,8 +3174,8 @@ class Contact {
                     ? $ctype >= COMMENTTYPE_PCONLY
                     : $ctype >= COMMENTTYPE_REVIEWER)
                 && $this->can_view_review($prow, null)
-                && ($this->conf->setting("cmt_revid")
-                    || $ctype >= COMMENTTYPE_AUTHOR
+                && ($ctype >= COMMENTTYPE_AUTHOR
+                    || $this->conf->setting("cmt_revid")
                     || $this->can_view_review_identity($prow, null)));
     }
 

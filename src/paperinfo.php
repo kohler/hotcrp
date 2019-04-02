@@ -8,7 +8,7 @@ class PaperContactInfo {
     public $conflictType = 0;
     public $reviewType = 0;
     public $reviewSubmitted = 0;
-    public $review_status = 0;
+    public $review_status = 0;    // 0: no review, 1: complete, -1: needs submit
 
     public $rights_forced = null;
     public $forced_rights_link = null;
