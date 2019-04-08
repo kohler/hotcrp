@@ -3086,10 +3086,10 @@ function setajaxcheck(elt, rv) {
     if (!elt)
         return;
     if (elt.jquery && rv && !rv.ok && rv.errf) {
-        var i, e, $f = elt.closest("form");
+        var i, e, f = elt.closest("form")[0];
         for (i in rv.errf)
-            if ((e = $f.find("[name='" + i + "']")).length) {
-                elt = e[0];
+            if (f && (e = f.elements[i])) {
+                elt = e;
                 break;
             }
     }
