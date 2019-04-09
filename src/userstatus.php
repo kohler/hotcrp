@@ -153,21 +153,24 @@ class UserStatus extends MessageSet {
     }
 
 
-    private function make_keyed_object($x, $field) {
+    private function make_keyed_object($x, $field, $lc = false) {
         if (is_string($x))
             $x = preg_split('/[\s,]+/', $x);
-        $res = (object) array();
+        $res = [];
         if (is_array($x)) {
-            foreach ($x as $v)
+            foreach ($x as $v) {
                 if (!is_string($v))
                     $this->error_at($field, "Format error [$field]");
                 else if ($v !== "")
-                    $res->$v = true;
-        } else if (is_object($x))
-            $res = $x;
-        else
+                    $res[$lc ? strtolower($v) : $v] = true;
+            }
+        } else if (is_object($x)) {
+            foreach ((array) $x as $k => $v)
+                $res[$lc ? strtolower($k) : $k] = $v;
+        } else {
             $this->error_at($field, "Format error [$field]");
-        return $res;
+        }
+        return (object) $res;
     }
 
     static function normalize_name($cj) {
@@ -338,7 +341,7 @@ class UserStatus extends MessageSet {
 
         // Follow
         if (isset($cj->follow) && $cj->follow !== "") {
-            $cj->follow = $this->make_keyed_object($cj->follow, "follow");
+            $cj->follow = $this->make_keyed_object($cj->follow, "follow", true);
             $cj->bad_follow = array();
             foreach ((array) $cj->follow as $k => $v)
                 if ($v && !in_array($k, ["reviews", "allreviews", "managedreviews", "allfinal"]))
@@ -347,7 +350,7 @@ class UserStatus extends MessageSet {
 
         // Roles
         if (isset($cj->roles) && $cj->roles !== "") {
-            $cj->roles = $this->make_keyed_object($cj->roles, "roles");
+            $cj->roles = $this->make_keyed_object($cj->roles, "roles", true);
             $cj->bad_roles = array();
             foreach ((array) $cj->roles as $k => $v)
                 if ($v && !in_array($k, ["pc", "chair", "sysadmin", "no", "none"]))
