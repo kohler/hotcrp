@@ -434,6 +434,9 @@ if ($Me->can_administer($prow)) {
             $revtype = -2;
         else
             $revtype = $rrow ? $rrow->reviewType : 0;
+        $crevtype = $revtype;
+        if ($crevtype == 0 && $conflict_type > 0)
+            $crevtype = -1;
         $pcconfmatch = null;
         if ($show_possible_conflicts && $revtype != -2)
             $pcconfmatch = $prow->potential_conflict_html($pc, $conflict_type <= 0);
@@ -450,11 +453,11 @@ if ($Me->can_administer($prow)) {
             echo '" data-review-round="', htmlspecialchars($rn);
         if ($rrow && $rrow->reviewModified > 1)
             echo '" data-review-in-progress="';
-        echo '"><div class="pctbname pctbname', $revtype, ' ui js-assignment-fold">',
+        echo '"><div class="pctbname pctbname', $crevtype, ' ui js-assignment-fold">',
             '<a class="qq ui js-assignment-fold" href="">', expander(null, 0),
             $Me->reviewer_html_for($pc), '</a>';
-        if ($revtype != 0) {
-            echo review_type_icon($revtype, $rrow && !$rrow->reviewSubmitted, null, "ml-2");
+        if ($crevtype != 0) {
+            echo review_type_icon($crevtype, $rrow && !$rrow->reviewSubmitted, null, "ml-2");
             if ($rrow && $rrow->reviewRound > 0)
                 echo ' <span class="revround" title="Review round">',
                     htmlspecialchars($Conf->round_name($rrow->reviewRound)),
