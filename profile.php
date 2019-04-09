@@ -256,7 +256,7 @@ function parseBulkFile($text, $filename) {
         if (($saved_user = save_user($cj, $ustatus, null, true)))
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";
-        foreach ($ustatus->errors() as $e)
+        foreach ($ustatus->problems() as $e)
             $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> " . $e;
     }
 

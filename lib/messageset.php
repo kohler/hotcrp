@@ -174,6 +174,9 @@ class MessageSet {
             return [];
         return array_keys(array_filter($this->errf, function ($v) { return $v >= self::ERROR; }));
     }
+    function warning_fields() {
+        return array_keys(array_filter($this->errf, function ($v) { return $v == self::WARNING; }));
+    }
     function problem_fields() {
         return array_keys(array_filter($this->errf, function ($v) { return $v >= self::WARNING; }));
     }
@@ -192,8 +195,14 @@ class MessageSet {
         $ms = array_filter($this->msgs, function ($mx) { return $mx[2] == self::WARNING; });
         return self::filter_msgs($ms, $include_fields);
     }
+    function problems($include_fields = false) {
+        if (!$this->has_error && !$this->has_warning)
+            return [];
+        $ms = array_filter($this->msgs, function ($mx) { return $mx[2] >= self::WARNING; });
+        return self::filter_msgs($ms, $include_fields);
+    }
     function messages_at($field, $include_fields = false) {
-        if (empty($this->msgs) || !isset($this->errf[$field]))
+        if (!isset($this->errf[$field]))
             return [];
         $this->canonfield && ($field = $this->canonical_field($field));
         $ms = array_filter($this->msgs, function ($mx) use ($field) { return $mx[0] === $field; });

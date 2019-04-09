@@ -201,7 +201,6 @@ class UserStatus extends MessageSet {
 
     private function normalize($cj, $old_user) {
         // Errors prevent saving
-        global $Now;
 
         // Canonicalize keys
         foreach (array("preferredEmail" => "preferred_email",
@@ -436,14 +435,15 @@ class UserStatus extends MessageSet {
     }
 
     function check_invariants($cj) {
-        global $Now;
         if (isset($cj->bad_follow) && !empty($cj->bad_follow))
             $this->warning_at("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
+        if (isset($cj->bad_roles) && !empty($cj->bad_roles))
+            $this->warning_at("roles", "Unknown roles ignored (" . htmlspecialchars(commajoin($cj->bad_roles)) . ").");
         if (isset($cj->bad_topics) && !empty($cj->bad_topics))
             $this->warning_at("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($cj->bad_topics)) . ").");
     }
 
-    static function parse_roles_json($j) {
+    static private function parse_roles_json($j) {
         $roles = 0;
         if (isset($j->pc) && $j->pc)
             $roles |= Contact::ROLE_PC;
