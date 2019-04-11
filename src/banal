@@ -90,6 +90,7 @@ banal has three modes of operation:
 -zoom=N   passed to pdftohtml.
 
 -json     JSON output
+-pagenum  include page numbers and headings
 
 -max-pages=N  maximum number of pages for JSON
 
@@ -840,8 +841,7 @@ sub report_verbose ($) {
         printf "  margins: %.2fin x %.2fin x %.2fin x %.2fin (l/r/t/b)\n",
                $left_i, $right_i, $top_i, $bot_i;
 
-        printf "  body font: %gpt (id %d)\n", $page->{pagespec}->{bodyfont},
-               $page->{pagedata}->{bodyfont}->{id};
+        printf "  body font: %gpt\n", $page->{pagespec}->{bodyfont};
         printf "  leading: %gpt\n", $page->{pagespec}->{lead};
         printf "  columns: %d\n", $page->{pagespec}->{ncols};
         print   "  type: ", $page->{pagespec}->{type}, "\n";
