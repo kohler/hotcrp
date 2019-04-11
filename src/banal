@@ -354,8 +354,10 @@ sub calc_xmap_mode_columns ($) {
             if (@$z == $ncols2) {
                 my ($l2, $r2) = ($z->[$i], $z->[$i + 1]);
                 if (min($r1, $r2) - max($l1, $l2) >= $overlap) {
-                    $l = min $l, $l2 if $colpos[$i]->{$l2} > 3;
-                    $r = max $r, $r2 if $colpos[$i + 1]->{$r2} > 3;
+                    $l = min $l, $l2 if exists($colpos[$i]->{$l2})
+                                        && $colpos[$i]->{$l2} > 3;
+                    $r = max $r, $r2 if exists($colpos[$i + 1]->{$r2})
+                                        && $colpos[$i + 1]->{$r2} > 3;
                     ++$n;
                 }
             }
