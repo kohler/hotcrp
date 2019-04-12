@@ -1538,11 +1538,12 @@ function ttleave() {
 }
 
 function tooltip() {
-    var $self = $(this).removeClass("need-tooltip");
-    if ($self[0].getAttribute("data-tooltip-type") === "focus")
-        $self.on("focus", ttenter).on("blur", ttleave);
+    removeClass(this, "need-tooltip");
+    var tt = this.getAttribute("data-tooltip-type");
+    if (tt === "focus")
+        $(this).on("focus", ttenter).on("blur", ttleave);
     else
-        $self.hover(ttenter, ttleave);
+        $(this).hover(ttenter, ttleave);
 }
 tooltip.erase = function () {
     var tt = this === tooltip ? window.global_tooltip : $(this).data("tooltipState");
@@ -2006,8 +2007,11 @@ handle_ui.on("js-tracker", function (event) {
         if (document.body
             && hasClass(document.body, "has-hotlist")
             && (hotcrp_status.is_admin || hotcrp_status.is_track_admin)
-            && !hotcrp_status.tracker_here)
+            && !hotcrp_status.tracker_here) {
             hc.push('<div class="lg"><button type="button" name="new">Start new tracker</button></div>');
+        } else {
+            hc.push('<div class="lg"><button type="button" class="need-tooltip btn-disabled" tabindex="-1" aria-label="This browser tab is already running a tracker.">Start new tracker</button></div>');
+        }
         hc.push_actions();
         hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
         if (nshown) {
@@ -2022,6 +2026,7 @@ handle_ui.on("js-tracker", function (event) {
             .on("click", "button[name=stopall]", stop_all)
             .on("submit", "form", submit);
         $d.find(".need-suggest").each(suggest);
+        $d.find(".need-tooltip").each(tooltip);
     }
     if (event.shiftKey
         || event.ctrlKey
