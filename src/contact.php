@@ -1548,7 +1548,7 @@ class Contact {
         // Update contact information from capabilities
         if ($this->capabilities) {
             foreach ($this->capabilities as $pid => $cap)
-                if ($cap === "av" && ctype_digit($pid))
+                if ($cap === "av" && (is_int($pid) || ctype_digit($pid)))
                     $this->_active_roles |= self::ROLE_AUTHOR;
         }
     }
@@ -2047,7 +2047,7 @@ class Contact {
         $m = [];
         if (isset($this->capabilities) && !$this->isPC) {
             foreach ($this->capabilities as $pid => $cap)
-                if ($cap === "av" && ctype_digit($pid))
+                if ($cap === "av" && (is_int($pid) || ctype_digit($pid)))
                     $m[] = "Paper.paperId=$pid";
         }
         if (empty($m) && $this->contactId && $only_if_complex)
