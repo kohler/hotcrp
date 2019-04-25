@@ -3666,7 +3666,7 @@ class Contact {
             for ($i = 2; $i !== count($g); ++$i) {
                 $k = $g[$i];
                 if ($dlx->$k
-                    && $dlx->$k + 60 < $Now
+                    && $dlx->$k - 30 < $Now
                     && $dlx->$k + $g[1] >= $Now) {
                     $kgrace = "{$k}_ingrace";
                     $dlx->$kgrace = true;
