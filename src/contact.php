@@ -3577,18 +3577,21 @@ class Contact {
         $sub_sub = $this->conf->setting("sub_sub");
         $dl->sub->open = +$this->conf->setting("sub_open") > 0;
         $dl->sub->sub = +$sub_sub;
-        $sub_grace = [$dl->sub, $this->conf->setting("sub_grace")];
-        if ($sub_reg && (!$sub_update || $sub_reg < $sub_update)) {
+        $sub_graces = [];
+        if ($sub_reg
+            && (!$sub_update || $sub_reg < $sub_update)) {
             $dl->sub->reg = $sub_reg;
-            $sub_grace[] = "reg";
+            $sub_graces[] = "reg";
         }
-        if ($sub_update && $sub_update != $sub_sub) {
+        if ($sub_update
+            && $sub_update != $sub_sub) {
             $dl->sub->update = $sub_update;
-            $sub_grace[] = "update";
+            $sub_graces[] = "update";
         }
-        if ($dl->sub->open && $sub_grace[1]) {
-            $sub_grace[] = "sub";
-            $graces[] = $sub_grace;
+        if ($dl->sub->open
+            && ($g = $this->conf->setting("sub_grace"))) {
+            $sub_graces[] = "sub";
+            array_push($graces, $dl->sub, $g, $sub_graces);
         }
 
         $sb = $this->conf->submission_blindness();
@@ -3607,7 +3610,7 @@ class Contact {
                 $dlresp = (object) ["open" => $rrd->open, "done" => +$rrd->done];
                 $dlresps[$rrd->name] = $dlresp;
                 if ($rrd->grace)
-                    $graces[] = [$dlresp, $rrd->grace, "done"];
+                    array_push($graces, $dlresp, $rrd->grace, ["done"]);
             }
             if (!empty($dlresps))
                 $dl->resps = $dlresps;
@@ -3623,8 +3626,8 @@ class Contact {
                 $dl->final->done = +$this->conf->setting("final_done");
                 $dl->final->ishard = true;
             }
-            if (($final_grace = $this->conf->setting("final_grace")))
-                $graces[] = [$dl->final, $final_grace, "done"];
+            if (($g = $this->conf->setting("final_grace")))
+                array_push($graces, $dl->final, $g, ["done"]);
         }
 
         // reviewer deadlines
@@ -3661,13 +3664,12 @@ class Contact {
 
         // grace periods: give a minute's notice of an impending grace
         // period
-        foreach ($graces as $g) {
-            $dlx = $g[0];
-            for ($i = 2; $i !== count($g); ++$i) {
-                $k = $g[$i];
+        for ($i = 0; $i !== count($graces); $i += 3) {
+            $dlx = $graces[$i];
+            foreach ($graces[$i + 2] as $k) {
                 if ($dlx->$k
                     && $dlx->$k - 30 < $Now
-                    && $dlx->$k + $g[1] >= $Now) {
+                    && $dlx->$k + $graces[$i + 1] >= $Now) {
                     $kgrace = "{$k}_ingrace";
                     $dlx->$kgrace = true;
                 }
