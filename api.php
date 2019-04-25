@@ -55,7 +55,7 @@ if (!$Me->has_database_account()
     }
 }
 if ($Qreq->p)
-    $Conf->fetch_paper_request($Qreq, $Me);
+    $Conf->set_paper_request($Qreq, $Me);
 
 // requests
 if ($Conf->has_api($Qreq->fn))

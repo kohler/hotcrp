@@ -3062,7 +3062,7 @@ class Conf {
         return $prow;
     }
 
-    function fetch_paper_request(Qrequest $qreq, Contact $user) {
+    function set_paper_request(Qrequest $qreq, Contact $user) {
         $this->paper = $prow = null;
         if ($qreq->p) {
             if (ctype_digit($qreq->p))

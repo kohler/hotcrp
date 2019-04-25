@@ -162,10 +162,8 @@ class PaperApi {
                 return $aset->json_result();
             $prow->load_reviewer_preferences();
         }
-        if ($u->contactId !== $user->contactId && !$user->allow_administer($prow)) {
-            error_log("PaperApi::pref_api: rejecting user {$u->contactId}/{$u->email}, requested by {$user->contactId}/{$user->email}");
+        if ($u->contactId !== $user->contactId && !$user->allow_administer($prow))
             json_exit(403, "Permission error.");
-        }
         $pref = $prow->reviewer_preference($u, true);
         $value = unparse_preference($pref[0], $pref[1]);
         $jr = new JsonResult(["ok" => true, "value" => $value === "0" ? "" : $value, "pref" => $pref[0]]);

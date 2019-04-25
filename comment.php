@@ -9,5 +9,5 @@ $Qreq->tags = $Qreq->commenttags;
 if ($Qreq->deletecomment)
     $Qreq->delete = 1;
 if ($Qreq->p)
-    $Conf->fetch_paper_request($Qreq, $Me);
+    $Conf->set_paper_request($Qreq, $Me);
 $Conf->call_api_exit("comment", $Me, $Qreq, $Conf->paper);
