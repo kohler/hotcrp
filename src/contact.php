@@ -3577,12 +3577,19 @@ class Contact {
         $sub_sub = $this->conf->setting("sub_sub");
         $dl->sub->open = +$this->conf->setting("sub_open") > 0;
         $dl->sub->sub = +$sub_sub;
-        if ($dl->sub->open)
-            $graces[] = [$dl->sub, "sub_grace"];
-        if ($sub_reg && (!$sub_update || $sub_reg < $sub_update))
+        $sub_grace = [$dl->sub, $this->conf->setting("sub_grace")];
+        if ($sub_reg && (!$sub_update || $sub_reg < $sub_update)) {
             $dl->sub->reg = $sub_reg;
-        if ($sub_update && $sub_update != $sub_sub)
+            $sub_grace[] = "reg";
+        }
+        if ($sub_update && $sub_update != $sub_sub) {
             $dl->sub->update = $sub_update;
+            $sub_grace[] = "update";
+        }
+        if ($dl->sub->open && $sub_grace[1]) {
+            $sub_grace[] = "sub";
+            $graces[] = $sub_grace;
+        }
 
         $sb = $this->conf->submission_blindness();
         if ($sb === Conf::BLIND_ALWAYS)
@@ -3599,7 +3606,8 @@ class Contact {
             foreach ($this->relevant_resp_rounds() as $rrd) {
                 $dlresp = (object) ["open" => $rrd->open, "done" => +$rrd->done];
                 $dlresps[$rrd->name] = $dlresp;
-                $graces[] = [$dlresp, $rrd->grace];
+                if ($rrd->grace)
+                    $graces[] = [$dlresp, $rrd->grace, "done"];
             }
             if (!empty($dlresps))
                 $dl->resps = $dlresps;
@@ -3615,7 +3623,8 @@ class Contact {
                 $dl->final->done = +$this->conf->setting("final_done");
                 $dl->final->ishard = true;
             }
-            $graces[] = [$dl->final, "final_grace"];
+            if (($final_grace = $this->conf->setting("final_grace")))
+                $graces[] = [$dl->final, $final_grace, "done"];
         }
 
         // reviewer deadlines
@@ -3653,13 +3662,16 @@ class Contact {
         // grace periods: give a minute's notice of an impending grace
         // period
         foreach ($graces as $g) {
-            if (($grace = $this->conf->setting($g[1])))
-                foreach (array("reg", "update", "sub", "done") as $k)
-                    if (get($g[0], $k) && $g[0]->$k + 60 < $Now
-                        && $g[0]->$k + $grace >= $Now) {
-                        $kgrace = "{$k}_ingrace";
-                        $g[0]->$kgrace = true;
-                    }
+            $dlx = $g[0];
+            for ($i = 2; $i !== count($g); ++$i) {
+                $k = $g[$i];
+                if ($dlx->$k
+                    && $dlx->$k + 60 < $Now
+                    && $dlx->$k + $g[1] >= $Now) {
+                    $kgrace = "{$k}_ingrace";
+                    $dlx->$kgrace = true;
+                }
+            }
         }
 
         // add meeting tracker
