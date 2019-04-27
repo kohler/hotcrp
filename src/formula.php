@@ -1096,7 +1096,7 @@ class FormulaCompiler {
 
     function _add_pc_can_review() {
         if ($this->check_gvar('$pc_can_review'))
-            $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer();";
+            $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer_ignore_conflict();";
         return '$pc_can_review';
     }
     function _add_vsreviews() {

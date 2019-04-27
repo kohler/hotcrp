@@ -712,7 +712,7 @@ class PaperInfo {
         return $ci && $ci->reviewType > 0 && $ci->reviewSubmitted > 0;
     }
 
-    function pc_can_become_reviewer() {
+    function pc_can_become_reviewer_ignore_conflict() {
         if (!$this->conf->check_track_review_sensitivity())
             return $this->conf->pc_members();
         else {
