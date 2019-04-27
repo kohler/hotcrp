@@ -64,6 +64,11 @@ if ("classList" in document.createElement("span")
         return k === "" ? [] : k.split(/\s+/);
     };
 }
+if (!Element.prototype.closest)
+    Element.prototype.closest = function (s) {
+        return $(this).closest(s)[0];
+    };
+
 
 function lower_bound_index(a, v) {
     var l = 0, r = a.length;
@@ -1706,7 +1711,7 @@ function tracker_show_elapsed() {
         return;
     var now = now_sec(), max_delta_ms = 0;
     $(".tracker-timer").each(function () {
-        var tre = $(this).closest(".has-tracker")[0],
+        var tre = this.closest(".has-tracker"),
             tr = find_tracker(+tre.getAttribute("data-trackerid")),
             t = "";
         if (tr && tr.position_at) {
@@ -2771,10 +2776,8 @@ function make_round_selector(name, revtype, $a) {
 }
 function revtype_change(event) {
     close_unnecessary(event);
-    if (this.checked) {
-        var $a = $(this).closest(".has-assignment-ui");
-        fold($a[0], this.value <= 0, 2);
-    }
+    if (this.checked)
+        fold(this.closest(".has-assignment-ui"), this.value <= 0, 2);
 }
 function close_unnecessary(event) {
     var $a = $(event.target).closest(".has-assignment"),
@@ -2833,7 +2836,7 @@ var email_info = [], email_info_at = 0;
 handle_ui.on("js-email-populate", function () {
     var self = this,
         v = self.value.toLowerCase().trim(),
-        f = $(this).closest("form")[0],
+        f = this.closest("form"),
         fn = null, ln = null, nn = null, af = null, placeholder = true;
     if (this.name === "email" || this.name === "uemail") {
         fn = f.firstName;
@@ -2912,7 +2915,7 @@ handle_ui.on("js-email-populate", function () {
 })();
 
 handle_ui.on("js-request-review-preview-email", function (event) {
-    var f = $(this).closest("form")[0],
+    var f = this.closest("form"),
         a = {p: hotcrp_paperid, template: "requestreview"},
         self = this;
     function fv(field, defaultv) {
@@ -3088,18 +3091,18 @@ function make_outline_flasher(elt, rgba, duration) {
 function setajaxcheck(elt, rv) {
     if (typeof elt == "string")
         elt = $$(elt);
+    else if (elt.jquery)
+        elt = elt[0];
     if (!elt)
         return;
-    if (elt.jquery && rv && !rv.ok && rv.errf) {
-        var i, e, f = elt.closest("form")[0];
+    if (rv && !rv.ok && rv.errf) {
+        var i, e, f = elt.closest("form");
         for (i in rv.errf)
             if (f && (e = f.elements[i])) {
                 elt = e;
                 break;
             }
     }
-    if (elt.jquery)
-        elt = elt[0];
     make_outline_flasher(elt);
     if (rv && !rv.ok && !rv.error)
         rv = {error: "Error"};
