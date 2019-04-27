@@ -2719,6 +2719,12 @@ ul.x > li:last-child {
 	border: 2px solid red;
 	font-size: smaller;
 }
+.bubble.warningbubble {
+	max-width: 20em;
+	background-color: rgba(255, 255, 238, 0.88);
+	border: 2px solid #855c04;
+	font-size: smaller;
+}
 .bubble.tooltip {
 	background-color: rgba(44, 44, 66, 0.95);
 	color: #ffffff;

@@ -3106,12 +3106,16 @@ function setajaxcheck(elt, rv) {
     make_outline_flasher(elt);
     if (rv && !rv.ok && !rv.error)
         rv = {error: "Error"};
-    if (!rv || rv.ok)
+    if (!rv || (rv.ok && !rv.warning))
         make_outline_flasher(elt, "0, 200, 0");
+    else if (rv.ok)
+        make_outline_flasher(elt, "133, 92, 4");
     else
         elt.style.outline = "5px solid red";
     if (rv && rv.error)
         make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change click hide");
+    else if (rv && rv.warning)
+        make_bubble(rv.warning, "warningbubble").near(elt).removeOn(elt, "input change click hide focus blur");
 }
 
 function link_urls(t) {

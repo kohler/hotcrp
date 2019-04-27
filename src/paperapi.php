@@ -151,29 +151,6 @@ class PaperApi {
         return $u;
     }
 
-    static function pref_api(Contact $user, $qreq, $prow) {
-        $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $u = self::get_reviewer($user, $qreq, $prow);
-        if ($qreq->method() !== "GET") {
-            $aset = new AssignmentSet($user);
-            $aset->enable_papers($prow);
-            $aset->parse("paper,user,preference\n{$prow->paperId}," . CsvGenerator::quote($u->email) . "," . CsvGenerator::quote($qreq->pref, true));
-            if (!$aset->execute())
-                return $aset->json_result();
-            $prow->load_reviewer_preferences();
-        }
-        if ($u->contactId !== $user->contactId && !$user->allow_administer($prow))
-            json_exit(403, "Permission error.");
-        $pref = $prow->reviewer_preference($u, true);
-        $value = unparse_preference($pref[0], $pref[1]);
-        $jr = new JsonResult(["ok" => true, "value" => $value === "0" ? "" : $value, "pref" => $pref[0]]);
-        if ($pref[1] !== null)
-            $jr->content["prefexp"] = unparse_expertise($pref[1]);
-        if ($user->conf->has_topics())
-            $jr->content["topic_score"] = $pref[2];
-        return $jr;
-    }
-
     static function follow_api(Contact $user, $qreq, $prow) {
         $reviewer = self::get_reviewer($user, $qreq, $prow);
         $following = friendly_boolean($qreq->following);

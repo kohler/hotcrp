@@ -3886,8 +3886,11 @@ class Conf {
     }
     private function call_api($fn, $uf, Contact $user, Qrequest $qreq, $prow) {
         $method = $qreq->method();
-        if ($method !== "GET" && $method !== "HEAD" && $method !== "OPTIONS"
-            && (!$uf || !get($uf, "allow_xss")) && !$qreq->post_ok())
+        if ($method !== "GET"
+            && $method !== "HEAD"
+            && $method !== "OPTIONS"
+            && !$qreq->post_ok()
+            && (!$uf || !get($uf, "allow_xss")))
             return new JsonResult(403, "Missing credentials.");
         if (!$uf) {
             if ($this->has_api($fn, $user, null))

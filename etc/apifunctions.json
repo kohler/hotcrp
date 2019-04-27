@@ -87,8 +87,8 @@
         "callback": "PaperApi::reviewround_api"
     },
     {
-        "name": "revpref", "paper": true, "get": true, "post": true,
-        "callback": "PaperApi::pref_api",
+        "name": "revpref", "get": true, "post": true,
+        "callback": "Preference_API::pref_api",
         "synonym": ["pref"]
     },
     {
