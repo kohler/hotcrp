@@ -100,7 +100,7 @@ class Preference_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $pv = $row->reviewer_preference($this->contact);
         $pv_exists = $pv[0] !== 0 || $pv[1] !== null;
-        $editable = $this->editable && $this->contact->can_become_reviewer_ignore_conflict($row);
+        $editable = $this->editable && $this->contact->can_enter_preference($row);
         $has_conflict = $row->has_conflict($this->contact);
 
         // compute HTML

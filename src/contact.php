@@ -2859,6 +2859,13 @@ class Contact {
                 && $this->conf->check_tracks($prow, $this, Track::ASSREV));
     }
 
+    function can_enter_preference(PaperInfo $prow) {
+        return $this->isPC
+            && $this->can_become_reviewer_ignore_conflict($prow)
+            && ($this->can_view_paper($prow)
+                || ($prow->timeWithdrawn > 0 && $prow->timeSubmitted < 0));
+    }
+
     function can_accept_review_assignment_ignore_conflict(PaperInfo $prow = null) {
         if (!$prow)
             return $this->isPC && $this->conf->check_all_tracks($this, Track::ASSREV);

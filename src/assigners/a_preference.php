@@ -20,7 +20,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
         return array_filter($state->pc_users(),
             function ($u) use ($prow) {
-                return $u->can_become_reviewer_ignore_conflict($prow);
+                return $u->can_enter_preference($prow);
             });
     }
     function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
@@ -32,11 +32,11 @@ class Preference_AssignmentParser extends AssignmentParser {
         else if ($contact->contactId !== $state->user->contactId
                  && !$state->user->can_administer($prow))
             return "Can’t change other users’ preferences for #{$prow->paperId}.";
-        else if (!$contact->can_become_reviewer_ignore_conflict($prow)) {
+        else if (!$contact->can_enter_preference($prow)) {
             if ($contact->contactId !== $state->user->contactId)
-                return Text::user_html_nolink($contact) . " can’t enter preferences for #{$prow->paperId}.";
+                return Text::user_html_nolink($contact) . " can’t enter preference for #{$prow->paperId}.";
             else
-                return "Can’t enter preferences for #{$prow->paperId}.";
+                return "Can’t enter preference for #{$prow->paperId}.";
         } else
             return true;
     }
@@ -95,6 +95,8 @@ class Preference_AssignmentParser extends AssignmentParser {
             $state->user_error($msg);
             return false;
         }
+        if ($prow->timeWithdrawn > 0)
+            $state->warning($prow->make_whynot(["withdrawn" => 1]));
 
         foreach (array("expertise", "revexp") as $k)
             if (($exp = get($req, $k)) !== null)
