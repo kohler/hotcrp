@@ -2314,11 +2314,8 @@ class Contact {
                 $whyNot["withdrawn"] = 1;
             else if ($prow->timeSubmitted <= 0)
                 $whyNot["notSubmitted"] = 1;
-            if ($rights->allow_pc_broad
-                && !$this->conf->timePCViewPaper($prow, false))
-                $whyNot["deadline"] = "sub_sub";
             if ($pdf
-                && count($whyNot) == $base_count
+                && count($whyNot) === $base_count
                 && $this->can_view_paper($prow))
                 $whyNot["permission"] = "view_doc";
         }
