@@ -66,7 +66,10 @@ class AssignmentState {
     private $pid_attempts = array();
     public $finishers = array();
     public $paper_exact_match = true;
-    public $errors = [];
+    private $msgs = [];
+    public $has_user_error = false;
+
+    const ERROR_NONEXACT_MATCH = 4;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -257,14 +260,25 @@ class AssignmentState {
         return $this->cmap->register_user($c);
     }
 
+    function clear_messages() {
+        $this->msgs = [];
+        $this->has_user_error = false;
+    }
     function error($message) {
-        $this->errors[] = [$message, true, false];
+        $this->msgs[] = [$message, 2];
     }
     function paper_error($message) {
-        $this->errors[] = [$message, $this->paper_exact_match, false];
+        $this->msgs[] = [$message, $this->paper_exact_match ? 2 : self::ERROR_NONEXACT_MATCH];
     }
     function user_error($message) {
-        $this->errors[] = [$message, true, true];
+        $this->msgs[] = [$message, 2];
+        $this->has_user_error = true;
+    }
+    function warning($message) {
+        $this->msgs[] = [$message, 1];
+    }
+    function messages() {
+        return $this->msgs;
     }
 }
 
@@ -1383,7 +1397,7 @@ class AssignmentSet {
 
         // fetch papers
         $this->astate->fetch_prows($pids);
-        $this->astate->errors = [];
+        $this->astate->clear_messages();
         $this->astate->paper_exact_match = $pfield_straight;
 
         // check conflicts and perform assignment
@@ -1444,11 +1458,13 @@ class AssignmentSet {
             }
         }
 
-        foreach ($this->astate->errors as $e) {
-            $this->msg($this->astate->lineno, $e[0], $e[1] || !$any_success ? 2 : 1);
-            if ($e[2])
-                $this->has_user_error = true;
+        foreach ($this->astate->messages() as $mx) {
+            $status = $mx[1];
+            if ($status === AssignmentState::ERROR_NONEXACT_MATCH)
+                $status = $any_success ? 1 : 2;
+            $this->msg($this->astate->lineno, $mx[0], $status);
         }
+        $this->has_user_error = $this->has_user_error || $this->astate->has_user_error;
         return $any_success;
     }
 
