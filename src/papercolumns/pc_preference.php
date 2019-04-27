@@ -129,7 +129,10 @@ class Preference_PaperColumn extends PaperColumn {
         }
 
         // account for statistics and maybe wrap HTML in conflict
-        if ($this->not_me && !$pl->user->can_administer($row) && $t !== "") {
+        if ($this->not_me
+            && !$editable
+            && !$pl->user->can_administer($row)
+            && $t !== "") {
             $tag = $this->row ? "div" : "span";
             $t = "<$tag class=\"fx5\">" . $t . "</$tag>";
             if (!$this->override_statistics) {
