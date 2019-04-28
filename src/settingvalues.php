@@ -435,25 +435,45 @@ class SettingValues extends MessageSet {
         return $this->has_error();
     }
     function error_at($field, $html = false) {
-        $fname = $field instanceof Si ? $field->name : $field;
-        parent::error_at($fname, $html);
+        if (is_array($field)) {
+            foreach ($field as $f)
+                $this->error_at($f, $html);
+        } else {
+            $fname = $field instanceof Si ? $field->name : $field;
+            parent::error_at($fname, $html);
+        }
     }
     function warning_at($field, $html = false) {
-        $fname = $field instanceof Si ? $field->name : $field;
-        parent::warning_at($fname, $html);
+        if (is_array($field)) {
+            foreach ($field as $f)
+                $this->warning_at($f, $html);
+        } else {
+            $fname = $field instanceof Si ? $field->name : $field;
+            parent::warning_at($fname, $html);
+        }
+    }
+    private function report_mx(&$msgs, &$lastmsg, $mx) {
+        $t = $mx[1];
+        if ($mx[2] === MessageSet::WARNING)
+            $t = "Warning: " . $t;
+        $loc = null;
+        if ($mx[0] && ($si = Si::get($this->conf, $mx[0])) && $si->title)
+            $loc = htmlspecialchars($si->title);
+        if ($lastmsg && $lastmsg[0] === $t) {
+            if ($lastmsg[1])
+                $loc = $loc ? $lastmsg[1] . ", " . $loc : $lastmsg[1];
+            $msgs[count($msgs) - 1] = $loc ? $loc . ": " . $t : $t;
+        } else
+            $msgs[] = $loc ? $loc . ": " . $t : $t;
+        $lastmsg = [$t, $loc];
     }
     function report($is_update = false) {
-        $msgs = array();
+        $msgs = [];
         if ($is_update && $this->has_error())
             $msgs[] = "Your changes were not saved. Please fix these errors and try again.";
-        foreach ($this->messages(true) as $mx) {
-            $t = $mx[1];
-            if ($mx[2] === MessageSet::WARNING)
-                $t = "Warning: " . $t;
-            if ($mx[0] && ($si = Si::get($this->conf, $mx[0])) && $si->title)
-                $t = htmlspecialchars($si->title) . ": " . $t;
-            $msgs[] = $t;
-        }
+        $lastmsg = null;
+        foreach ($this->messages(true) as $mx)
+            $this->report_mx($msgs, $lastmsg, $mx);
         if (!empty($msgs) && $this->has_error())
             Conf::msg_error($msgs, true);
         else if (!empty($msgs))
@@ -705,9 +725,9 @@ class SettingValues extends MessageSet {
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, self::strip_group_js($js));
         echo '</span>', $this->label($name, $text, ["for" => "cb$name", "class" => get($js, "label_class")]);
-        $this->echo_messages_at($name);
         if ($hint)
             echo '<p class="', self::add_class("settings-ap f-hx", get($js, "hint_class")), '">', $hint, '</p>';
+        $this->echo_messages_at($name);
         if (!get($js, "group_open"))
             echo "</div>\n";
     }
@@ -786,7 +806,6 @@ class SettingValues extends MessageSet {
         if ($horizontal)
             echo '<div class="entry">';
         echo $control, get_s($js, "control_after");
-        $this->echo_messages_at($name);
         $thint = $si ? $this->type_hint($si->type) : null;
         if ($hint || $thint) {
             echo '<div class="f-h">';
@@ -796,6 +815,7 @@ class SettingValues extends MessageSet {
                 echo $hint ? $hint : $thint;
             echo '</div>';
         }
+        $this->echo_messages_at($name);
         if ($horizontal)
             echo "</div>";
         if (!get($js, "group_open"))

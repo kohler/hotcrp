@@ -59,8 +59,16 @@ class Tracks_SettingRenderer {
                       $sv->sjs($tag_ctl, ["class" => "fx need-suggest pc-tags", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
         $sv->echo_messages_at($track_ctl);
         $sv->echo_messages_at($tag_ctl);
-        if ($hint)
-            echo '<div class="f-h">', $hint, '</div>';
+        if ($hint) {
+            $klass = "f-h";
+            if (str_starts_with($hint, '<div class="fx">')
+                && str_ends_with($hint, '</div>')
+                && strpos($hint, '<div', 16) === false) {
+                $hint = substr($hint, 16, -6);
+                $klass .= " fx";
+            }
+            echo '<div class="', $klass, '">', $hint, '</div>';
+        }
         echo "</div></div>";
     }
 
@@ -70,7 +78,7 @@ class Tracks_SettingRenderer {
     }
 
     static function render_viewrev_permission(SettingValues $sv, $tnum, $t, $gj) {
-        $hint = "<span class=\"fx\">This setting constrains all users including co-reviewers.</span>";
+        $hint = "<div class=\"fx\">This setting constrains all users including co-reviewers.</div>";
         self::do_track_permission($sv, "viewrev",
             ["Who can see reviews?", $hint], $tnum, $t, $gj);
     }
