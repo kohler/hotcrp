@@ -181,20 +181,35 @@ class Tracks_SettingRenderer {
     }
 
     static function crosscheck(SettingValues $sv) {
-        if ($sv->has_interest("tracks")
+        if (($sv->has_interest("tracks") || $sv->has_interest("pcrev_any"))
             && $sv->newv("tracks")) {
             $tracks = json_decode($sv->newv("tracks"), true);
             $tracknum = 2;
             foreach ($tracks as $trackname => $t) {
+                $tnum = ($trackname === "_" ? 1 : $tracknum);
+                $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
+                $assrev = get($t, "assrev");
                 $unassrev = get($t, "unassrev");
                 if (get($t, "viewpdf")
                     && $t["viewpdf"] !== $unassrev
                     && $unassrev !== "+none"
                     && $t["viewpdf"] !== get($t, "view")
                     && $sv->newv("pcrev_any")) {
-                    $tnum = ($trackname === "_" ? 1 : $tracknum);
-                    $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
                     $sv->warning_at("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see documents should restrict review self-assignment in the same way.");
+                }
+                if ($assrev
+                    && $unassrev
+                    && $unassrev !== "+none"
+                    && $assrev !== $unassrev
+                    && $sv->newv("pcrev_any")) {
+                    $n = 0;
+                    foreach ($sv->conf->pc_members() as $pc)
+                        if ($pc->has_permission($assrev) && $pc->has_permission($unassrev))
+                            ++$n;
+                    if ($n === 0) {
+                        $sv->warning_at("assrev_track$tnum");
+                        $sv->warning_at("unassrev_track$tnum", "$tdesc: No PC members match both review assignment permissions, so no PC members can self-assign reviews.");
+                    }
                 }
                 $tracknum += ($trackname === "_" ? 0 : 1);
             }

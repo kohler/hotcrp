@@ -1861,13 +1861,13 @@ class Contact {
             // (existing external reviewer or PC)
             if ($ci->reviewType > 0 || $am_lead)
                 $ci->potential_reviewer = true;
-            else if ($ci->allow_administer)
+            else if ($ci->allow_administer || $ci->allow_pc)
                 $ci->potential_reviewer = !$tracks
-                    || !($this->_dangerous_track_mask & (1 << Track::UNASSREV))
-                    || $this->conf->check_tracks($prow, $this, Track::UNASSREV);
-            else if ($ci->allow_pc)
-                $ci->potential_reviewer = !$tracks
-                    || $this->conf->check_tracks($prow, $this, Track::UNASSREV);
+                    || !$this->conf->check_track_review_sensitivity()
+                    || ($ci->allow_administer
+                        && !($this->_dangerous_track_mask & Track::BITS_REVIEW))
+                    || ($this->conf->check_tracks($prow, $this, Track::ASSREV)
+                        && $this->conf->check_tracks($prow, $this, Track::UNASSREV));
             else
                 $ci->potential_reviewer = false;
             $ci->allow_review = $ci->potential_reviewer
@@ -2833,6 +2833,7 @@ class Contact {
         return $this->isPC
             && $this->conf->setting("pcrev_any") > 0
             && $this->conf->time_review(null, true, true)
+            && $this->conf->check_any_tracks($this, Track::ASSREV)
             && $this->conf->check_any_tracks($this, Track::UNASSREV);
     }
 
@@ -2855,8 +2856,7 @@ class Contact {
     function can_become_reviewer_ignore_conflict(PaperInfo $prow = null) {
         if (!$prow)
             return $this->isPC
-                && ($this->conf->check_all_tracks($this, Track::ASSREV)
-                    || $this->conf->check_all_tracks($this, Track::UNASSREV));
+                && $this->conf->check_all_tracks($this, Track::ASSREV);
         $rights = $this->rights($prow);
         return $rights->potential_reviewer
             || ($rights->allow_pc_broad
