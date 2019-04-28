@@ -2609,8 +2609,6 @@ class Contact {
             $rs = $this->conf->round_setting("pc_seeallrev", $round);
             if (!$this->conf->has_tracks())
                 return $rs;
-            if ($this->conf->check_required_tracks($prow, $this, Track::VIEWREVOVERRIDE))
-                return Conf::PCSEEREV_YES;
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREV)) {
                 if (!$this->conf->check_tracks($prow, $this, Track::VIEWALLREV))
                     $rs = 0;
@@ -2626,8 +2624,6 @@ class Contact {
     private function seerevid_setting(PaperInfo $prow, $rbase, $rights) {
         $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
-            if ($this->conf->check_required_tracks($prow, $this, Track::VIEWREVOVERRIDE))
-                return Conf::PCSEEREV_YES;
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
                 $s = $this->conf->round_setting("pc_seeblindrev", $round);
                 if ($s >= 0)
@@ -2750,8 +2746,7 @@ class Contact {
 
     function can_view_some_review_identity() {
         $tags = "";
-        if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVOVERRIDE))
-            || ($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID)))
+        if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID)))
             $tags = " $t#0 ";
         if ($this->isPC)
             $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
