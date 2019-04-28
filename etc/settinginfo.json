@@ -237,7 +237,7 @@
     },
     {
         "name": "pcrev_any",
-        "title": "PC can review any paper",
+        "title": "PC can review any paper", "group": "reviews",
         "type": "checkbox"
     },
     {
