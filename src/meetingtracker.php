@@ -186,7 +186,7 @@ class MeetingTracker {
     static private function check_tracker_admin_perm(Contact $user, $admin_perm) {
         if (!empty($admin_perm)) {
             foreach ($admin_perm as $perm)
-                if (Track::match_perm($user, $perm))
+                if ($user->has_permission($perm))
                     return true;
         }
         return false;
@@ -198,7 +198,7 @@ class MeetingTracker {
                 foreach ([Track::VIEW, Track::VIEWREV, Track::ASSREV] as $p)
                     if (($perm = $user->conf->track_permission($tag, $p))
                         && $perm !== "+none"
-                        && Track::match_perm($user, $perm))
+                        && $user->has_permission($perm))
                         return $perm;
             }
         return "";
@@ -427,7 +427,7 @@ class MeetingTracker {
                 $vis = "";
             if ($vis !== ""
                 && !$user->privChair
-                && !Track::match_perm($user, $vis)) {
+                && !$user->has_permission($vis)) {
                 $errf["tr{$i}-vis"] = true;
                 $error[] = "You aren’t allowed to configure a tracker that you can’t see. Try “Whole PC”.";
             }
@@ -464,7 +464,7 @@ class MeetingTracker {
                     $my_tracks = [];
                     foreach ($user->conf->track_tags() as $tag)
                         if (($perm = $user->conf->track_permission($tag, Track::ADMIN))
-                            && Track::match_perm($user, $perm))
+                            && $user->has_permission($perm))
                             $my_tracks[] = "#{$tag}";
                     $error[] = "You can’t start a tracker on this list because you don’t administer all of its submissions. (You administer " . pluralx($my_tracks, "track") . " " . commajoin($my_tracks) . ".)";
                 } else {

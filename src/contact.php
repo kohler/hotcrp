@@ -756,6 +756,10 @@ class Contact {
         return false;
     }
 
+    function has_permission($perm) {
+        return !$perm || $this->has_tag(substr($perm, 1)) === ($perm[0] === "+");
+    }
+
     function tag_value($t) {
         if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0)
             return 0.0;
@@ -2023,7 +2027,7 @@ class Contact {
         return $this->isPC
             && (!($perm = $this->conf->track_permission("_", Track::VIEWTRACKER))
                 || $perm === "+none"
-                || Track::match_perm($this, $perm))
+                || $this->has_permission($perm))
             && (!$tracker_json
                 || !isset($tracker_json->visibility)
                 || ($this->has_tag(substr($tracker_json->visibility, 1))

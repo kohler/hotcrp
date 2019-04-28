@@ -26,13 +26,6 @@ class Track {
         "viewrevover" => 8, "hiddentag" => 9, "viewallrev" => 10
     ];
     static public $zero = [null, null, null, null, null, null, null, null, null, null, null];
-    static function match_perm(Contact $user, $perm) {
-        if ($perm) {
-            $has_tag = $user->has_tag(substr($perm, 1));
-            return $perm[0] === "-" ? !$has_tag : $has_tag;
-        } else
-            return true;
-    }
     static function permission_required($perm) {
         return $perm === self::ADMIN || $perm === self::VIEWREVOVERRIDE
             || $perm === self::HIDDENTAG;
@@ -1307,69 +1300,69 @@ class Conf {
 
     function permissive_track_tag_for(Contact $user, $perm) {
         foreach ($this->tracks ? : [] as $t => $tr)
-            if (Track::match_perm($user, $tr[$perm]))
+            if ($user->has_permission($tr[$perm]))
                 return $t;
         return null;
     }
 
-    function check_tracks(PaperInfo $prow, Contact $contact, $ttype) {
+    function check_tracks(PaperInfo $prow, Contact $user, $ttype) {
         $unmatched = true;
         if ($this->tracks) {
             foreach ($this->tracks as $t => $tr)
                 if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
                     $unmatched = false;
-                    if (Track::match_perm($contact, $tr[$ttype]))
+                    if ($user->has_permission($tr[$ttype]))
                         return true;
                 }
         }
         return $unmatched;
     }
 
-    function check_required_tracks(PaperInfo $prow, Contact $contact, $ttype) {
+    function check_required_tracks(PaperInfo $prow, Contact $user, $ttype) {
         if ($this->_track_sensitivity & (1 << $ttype)) {
             $unmatched = true;
             foreach ($this->tracks as $t => $tr)
                 if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
                     $unmatched = false;
-                    if ($tr[$ttype] && Track::match_perm($contact, $tr[$ttype]))
+                    if ($tr[$ttype] && $user->has_permission($tr[$ttype]))
                         return true;
                 }
         }
         return false;
     }
 
-    function check_admin_tracks(PaperInfo $prow, Contact $contact) {
-        return $this->check_required_tracks($prow, $contact, Track::ADMIN);
+    function check_admin_tracks(PaperInfo $prow, Contact $user) {
+        return $this->check_required_tracks($prow, $user, Track::ADMIN);
     }
 
-    function check_default_track(Contact $contact, $ttype) {
-        return !$this->tracks || Track::match_perm($contact, $this->tracks["_"][$ttype]);
+    function check_default_track(Contact $user, $ttype) {
+        return !$this->tracks || $user->has_permission($this->tracks["_"][$ttype]);
     }
 
-    function check_any_tracks(Contact $contact, $ttype) {
+    function check_any_tracks(Contact $user, $ttype) {
         if ($this->tracks)
             foreach ($this->tracks as $t => $tr)
                 if (($ttype === Track::VIEW
-                     || Track::match_perm($contact, $tr[Track::VIEW]))
-                    && Track::match_perm($contact, $tr[$ttype]))
+                     || $user->has_permission($tr[Track::VIEW]))
+                    && $user->has_permission($tr[$ttype]))
                     return true;
         return !$this->tracks;
     }
 
-    function check_any_admin_tracks(Contact $contact) {
+    function check_any_admin_tracks(Contact $user) {
         if ($this->_track_sensitivity & Track::BITS_ADMIN)
             foreach ($this->tracks as $t => $tr)
-                if ($tr[Track::ADMIN] && Track::match_perm($contact, $tr[Track::ADMIN]))
+                if ($tr[Track::ADMIN] && $user->has_permission($tr[Track::ADMIN]))
                     return true;
         return false;
     }
 
-    function check_all_tracks(Contact $contact, $ttype) {
+    function check_all_tracks(Contact $user, $ttype) {
         if ($this->tracks)
             foreach ($this->tracks as $t => $tr)
                 if (!(($ttype === Track::VIEW
-                       || Track::match_perm($contact, $tr[Track::VIEW]))
-                      && Track::match_perm($contact, $tr[$ttype])))
+                       || $user->has_permission($tr[Track::VIEW]))
+                      && $user->has_permission($tr[$ttype])))
                     return false;
         return true;
     }
@@ -1401,7 +1394,7 @@ class Conf {
                 foreach ($tr as $i => $perm)
                     if ($perm
                         && $perm[0] === "-"
-                        && !Track::match_perm($user, $perm))
+                        && !$user->has_permission($perm))
                         $m |= 1 << $i;
         }
         return $m;
