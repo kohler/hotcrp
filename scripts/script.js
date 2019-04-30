@@ -1890,7 +1890,7 @@ handle_ui.on("js-tracker", function (event) {
         hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus" value="' + escape_entities(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div>');
         var vis = tr.visibility || "", vistype = vis === "" ? "" : vis.charAt(0);
         hc.push('<div class="entryi has-fold fold' + (vistype === "" ? "c" : "o") + '" data-fold-values="+ -"><label for="htctl-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
-        hc.push('<span class="select"><select id="htctl-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup">', '</select></span>');
+        hc.push('<span class="select"><select id="htctl-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup" data-default-value="' + vistype + '">', '</select></span>');
         var vismap = {"": "Whole PC", "+": "PC members with tag", "-": "PC members without tag"};
         for (var i in vismap)
             hc.push('<option value="' + i + '"' + (i === vistype ? " selected" : "") + '>' + vismap[i] + '</option>');
@@ -1977,6 +1977,8 @@ handle_ui.on("js-tracker", function (event) {
     }
     function submit(event) {
         var f = $d.find("form")[0], hiding = {};
+        $d.find(".tracker-changemark").remove();
+
         $d.find(".tracker-group").each(function () {
             var trno = this.getAttribute("data-index"),
                 id = this.getAttribute("data-trackerid"),
@@ -1984,6 +1986,17 @@ handle_ui.on("js-tracker", function (event) {
             if (e)
                 hiding[id] = e.checked;
         });
+
+        // mark differences
+        var trd = {};
+        $d.find("input, select, textarea").each(function () {
+            var m = this.name.match(/^tr(\d+)/);
+            if (m && input_differs(this))
+                trd[m[1]] = true;
+        });
+        for (var i in trd)
+            f.appendChild($('<input class="tracker-changemark" type="hidden" name="tr' + i + '-changed" value="1">')[0]);
+
         $.post(hoturl_post("api/trackerconfig"),
                $d.find("form").serialize(),
                make_submit_success(hiding));
@@ -2325,24 +2338,25 @@ function input_default_value(elt) {
     }
 }
 
+function input_differs(elt) {
+    var expected = input_default_value(elt);
+    if (input_is_checkboxlike(elt))
+        return elt.checked !== expected;
+    else {
+        var current = elt.tagName === "SELECT" ? $(elt).val() : elt.value;
+        return !text_eq(current, expected);
+    }
+}
+
 function form_differs(form, want_ediff) {
     var ediff = null, $f = $(form).find("input, select, textarea");
     if (!$f.length)
         $f = $(form).filter("input, select, textarea");
     $f.each(function () {
-        var $me = $(this);
-        if ($me.hasClass("ignore-diff"))
-            return true;
-        var expected = input_default_value(this);
-        if (input_is_checkboxlike(this)) {
-            if (this.checked !== expected)
-                ediff = this;
-        } else {
-            var current = this.tagName === "SELECT" ? $me.val() : this.value;
-            if (!text_eq(current, expected))
-                ediff = this;
+        if (!hasClass(this, "ignore-diff") && input_differs(this)) {
+            ediff = this;
+            return false;
         }
-        return !ediff;
     });
     return want_ediff ? ediff : !!ediff;
 }

@@ -501,8 +501,10 @@ class MeetingTracker {
                     /* do nothing */
                 } else if (!$user->privChair
                            && !self::check_tracker_admin_perm($user, get($tr, "admin_perm"))) {
-                    $errf["tr{$i}-name"] = true;
-                    $error[] = "You can’t administer that tracker.";
+                    if ($qreq["tr{$i}-changed"]) {
+                        $errf["tr{$i}-name"] = true;
+                        $error[] = "You can’t administer that tracker.";
+                    }
                 } else {
                     foreach (["name" => $name, "visibility" => $vis, "logo" => $logo] as $k => $v) {
                         if ($v !== "")
@@ -518,8 +520,10 @@ class MeetingTracker {
                     $changed = true;
                 }
             } else {
-                $errf["tr{$i}-name"] = true;
-                $error[] = "This tracker no longer exists.";
+                if (!$stop && $qreq["tr{$i}-changed"]) {
+                    $errf["tr{$i}-name"] = true;
+                    $error[] = "This tracker no longer exists.";
+                }
             }
         }
 
