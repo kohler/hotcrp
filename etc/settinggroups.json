@@ -211,8 +211,7 @@
     },
     {
         "name": "tracks/permissions/viewrev", "position": 30,
-        "render_track_permission_callback": "Tracks_SettingRenderer::render_viewrev_permission",
-        "default_unfolded": true
+        "render_track_permission_callback": "Tracks_SettingRenderer::render_viewrev_permission"
     },
     {
         "name": "users", "position": 100,

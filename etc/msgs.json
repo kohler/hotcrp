@@ -109,5 +109,5 @@
     {"id": "external-review-request-description", "itext": "External reviewers may view their assigned papers, eventually including other reviews and the decision. Before requesting an external review, you should generally check whether they are interested.", "require": ["setting.extrev_view=1"]},
     {"id": "external-review-request-description", "itext": "External reviewers may view their assigned papers, eventually including other reviews and reviewer identities and the decision. Before requesting an external review, you should generally check whether they are interested.", "require": ["setting.extrev_view=2"]},
 
-    ["%d permissions have default values…", "%d has its default value…", ["$1=1"]]
+    ["(%d more permissions with default values)", "(%d more permission with default value)", ["$1=1"]]
 ]
