@@ -142,7 +142,7 @@ class Tracks_SettingRenderer {
                 '<label><a href="" class="ui js-foldup qq" data-fold-target="3">',
                 expander(true, 3), 'More…</a></label>',
                 '<div class="entry"><a href="" class="ui js-foldup qq" data-fold-target="3">',
-                $sv->conf->_("(%d more permissions with default values)", self::$nperm_rendered_folded),
+                $sv->conf->_("(%d more permissions have default values)", self::$nperm_rendered_folded),
                 '</a></div></div>';
         }
         echo "</div></div>\n\n";
