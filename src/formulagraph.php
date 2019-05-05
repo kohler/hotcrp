@@ -709,6 +709,8 @@ class FormulaGraph extends MessageSet {
                 $j["ticks"] = ["named", $this->remapped_rounds];
             } else if ($format === Fexpr::FREVTYPE) {
                 $j["ticks"] = ["named", ReviewForm::$revtype_names];
+            } else if (is_int($format) && $format >= Fexpr::FDATE && $format <= Fexpr::FTIMEDELTA) {
+                $j["ticks"] = ["time"];
             } else if ($isx && $this->_xorder_map) {
                 if (isset($j["label"]))
                     $j["label"] .= " order";

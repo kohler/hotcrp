@@ -442,10 +442,12 @@ function make_axis(ticks) {
         ticks = named_integer_ticks(ticks[1]);
     else if (ticks && ticks[0] === "score")
         ticks = score_ticks(ticks[1], ticks[2], ticks[3]);
+    else if (ticks && ticks[0] === "time")
+        ticks = time_ticks();
     else
         ticks = {type: ticks ? ticks[0] : null};
     return $.extend({
-        ticks: function (extent) {},
+        ticks: function (domain, range) {},
         rewrite: function () {},
         unparse_html: function (value, include_numeric) {
             if (value == Math.floor(value))
@@ -470,10 +472,10 @@ function make_args(selector, args) {
     args = $.extend({top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50}, args);
     args.x = args.x || {};
     args.y = args.y || {};
-    args.x.ticks = make_axis(args.x.ticks);
-    args.y.ticks = make_axis(args.y.ticks);
     args.width = $(selector).width() - args.left - args.right;
     args.height = 520 - args.top - args.bottom;
+    args.x.ticks = make_axis(args.x.ticks);
+    args.y.ticks = make_axis(args.y.ticks);
     return args;
 }
 
@@ -524,7 +526,7 @@ function graph_cdf(selector, args) {
 
     // axes
     var xAxis = d3.axisBottom(x);
-    args.x.ticks.ticks.call(xAxis, x.domain());
+    args.x.ticks.prepare.call(xAxis, x.domain(), x.range());
     args.x.tick_format && xAxis.tickFormat(args.x.tick_format);
     var yAxis = d3.axisLeft(y);
     var line = d3.line().x(function (d) {return x(d[0]);})
@@ -892,9 +894,9 @@ function graph_scatter(selector, args) {
     axis_domain(y, args.y.extent, expand_extent(ye, true));
 
     var xAxis = d3.axisBottom(x);
-    args.x.ticks.ticks.call(xAxis, xe);
+    args.x.ticks.prepare.call(xAxis, xe, x.range());
     var yAxis = d3.axisLeft(y);
-    args.y.ticks.ticks.call(yAxis, ye);
+    args.y.ticks.prepare.call(yAxis, ye, y.range());
 
     $(selector).on("hotgraphhighlight", highlight);
 
@@ -1054,9 +1056,9 @@ function graph_bars(selector, args) {
     var gdelta = -(ge[1] + 1) * barwidth / 2;
 
     var xAxis = d3.axisBottom(x);
-    args.x.ticks.ticks.call(xAxis, xe);
+    args.x.ticks.prepare.call(xAxis, xe, x.range());
     var yAxis = d3.axisLeft(y);
-    args.y.ticks.ticks.call(yAxis, ye);
+    args.y.ticks.prepare.call(yAxis, ye, y.range());
 
     function place(sel, close) {
         return sel.attr("d", function (d) {
@@ -1197,9 +1199,9 @@ function graph_boxplot(selector, args) {
         barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 6);
 
     var xAxis = d3.axisBottom(x);
-    args.x.ticks.ticks.call(xAxis, xe);
+    args.x.ticks.prepare.call(xAxis, xe, x.range());
     var yAxis = d3.axisLeft(y);
-    args.y.ticks.ticks.call(yAxis, ye);
+    args.y.ticks.prepare.call(yAxis, ye, y.range());
 
     function place_whisker(l, sel) {
         sel.attr("x1", function (d) { return x(d[0]); })
@@ -1411,31 +1413,72 @@ function graph_boxplot(selector, args) {
 
 function score_ticks(n, c, sv) {
     var info = make_score_info(n, c, sv), split = 2;
-    function format(extent) {
-        var count = Math.floor(extent[1] * 2) - Math.ceil(extent[0] * 2) + 1;
-        if (count > 11)
-            split = 1, count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
-        if (c)
-            this.ticks(count);
+    return {
+        prepare: function (extent) {
+            var count = Math.floor(extent[1] * 2) - Math.ceil(extent[0] * 2) + 1;
+            if (count > 11) {
+                split = 1;
+                count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
+            }
+            if (c)
+                this.ticks(count);
+        },
+        rewrite: function () {
+            this.selectAll("g.tick text").each(function () {
+                var d = d3.select(this), value = +d.text();
+                d.attr("fill", info.rgb(value));
+                if (c && value)
+                    d.text(info.unparse(value, split));
+            });
+        },
+        unparse_html: function (value, include_numeric) {
+            var t = info.unparse_html(value);
+            if (include_numeric
+                && c
+                && t.charAt(0) === "<"
+                && value !== Math.round(value * 2) / 2)
+                t += " (" + value.toFixed(2).replace(/\.00$/, "") + ")";
+            return t;
+        },
+        type: "score"
+    };
+}
+
+function time_ticks() {
+    function format(value) {
+        if (value < 1000000000) {
+            value = Math.round(value / 8640) / 10;
+            return value + "d";
+        } else {
+            var d = new Date(value * 1000);
+            if (d.getHours() || d.getMinutes())
+                return strftime("%Y-%m-%dT%R", d);
+            else
+                return strftime("%Y-%m-%d", d);
+        }
     }
-    function rewrite() {
-        this.selectAll("g.tick text").each(function () {
-            var d = d3.select(this), value = +d.text();
-            d.attr("fill", info.rgb(value));
-            if (c && value)
-                d.text(info.unparse(value, split));
-        });
-    }
-    function unparse_html(value, include_numeric) {
-        var t = info.unparse_html(value);
-        if (include_numeric && c && t.charAt(0) === "<"
-            && value !== Math.round(value * 2) / 2)
-            t += " (" + value.toFixed(2).replace(/\.00$/, "") + ")";
-        return t;
-    }
-    return { ticks: format, rewrite: rewrite, unparse_html: unparse_html,
-             type: "score" };
-};
+    return {
+        prepare: function (domain, range) {
+            var ddomain, scale;
+            if (domain[0] < 1000000000 || domain[1] < 1000000000) {
+                ddomain = [domain[0] / 86400, domain[1] / 86400];
+                scale = d3.scaleLinear().domain(ddomain).range(range);
+                this.tickValues(scale.ticks().map(function (value) {
+                    return value * 86400;
+                }));
+            } else {
+                ddomain = [new Date(domain[0] * 1000), new Date(domain[1] * 1000)];
+                scale = d3.scaleTime().domain(ddomain).range(range);
+                this.tickValues(scale.ticks().map(function (value) {
+                    return value.getTime() / 1000;
+                }));
+            }
+            this.tickFormat(format);
+        },
+        unparse_html: format,
+        type: "time"
+    };
+}
 
 function get_max_tick_width(axis) {
     return d3.max($(axis.selectAll("g.tick text").nodes()).map(function () {
@@ -1458,6 +1501,10 @@ function get_sample_tick_height(axis) {
 }
 
 function named_integer_ticks(map) {
+    var want_tilt = d3.values(map).length > 30
+        || d3.max(d3.keys(map).map(function (k) { return mtext(k).length; })) > 4;
+    var want_mclasses = d3.keys(map).some(function (k) { return mclasses(k); });
+
     function mtext(value) {
         var m = map[value];
         return m && typeof m === "object" ? m.text : m;
@@ -1466,27 +1513,7 @@ function named_integer_ticks(map) {
         var m = map[value];
         return (m && typeof m === "object" && m.color_classes) || "";
     }
-    function format(extent) {
-        var count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
-        this.ticks(count).tickFormat(mtext);
-    }
-    function unparse_html(value, include_numeric) {
-        var fvalue = Math.round(value);
-        if (Math.abs(value - fvalue) <= 0.05 && map[fvalue]) {
-            var t = text_to_html(mtext(fvalue));
-            // NB `value` might be a bool
-            if (value !== fvalue && include_numeric && typeof value === "number")
-                t += " (" + value.toFixed(2) + ")";
-            return t;
-        } else
-            return value.toFixed(2);
-    }
-    function search(value) {
-        var m = map[value];
-        return (m && typeof m === "object" && m.search) || null;
-    }
 
-    var want_tilt, want_mclasses;
     function rewrite() {
         if (!want_tilt && !want_mclasses)
             return;
@@ -1543,12 +1570,31 @@ function named_integer_ticks(map) {
                 });
         }
     }
-    want_tilt = d3.values(map).length > 30
-        || d3.max(d3.keys(map).map(function (k) { return mtext(k).length; })) > 4;
-    want_mclasses = d3.keys(map).some(function (k) { return mclasses(k); });
 
-    return { ticks: format, rewrite: rewrite, unparse_html: unparse_html,
-             search: search, type: "named_integer", map: map };
+    return {
+        prepare: function (domain) {
+            var count = Math.floor(domain[1]) - Math.ceil(domain[0]) + 1;
+            this.ticks(count).tickFormat(mtext);
+        },
+        rewrite: rewrite,
+        unparse_html: function (value, include_numeric) {
+            var fvalue = Math.round(value);
+            if (Math.abs(value - fvalue) <= 0.05 && map[fvalue]) {
+                var t = text_to_html(mtext(fvalue));
+                // NB `value` might be a bool
+                if (value !== fvalue && include_numeric && typeof value === "number")
+                    t += " (" + value.toFixed(2) + ")";
+                return t;
+            } else
+                return value.toFixed(2);
+        },
+        search: function (value) {
+            var m = map[value];
+            return (m && typeof m === "object" && m.search) || null;
+        },
+        type: "named_integer",
+        map: map
+    };
 };
 
 function make_rotate_ticks(angle) {
