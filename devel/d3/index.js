@@ -7,5 +7,4 @@ export * from "d3-collection";
 export { line, arc } from "d3-shape";
 
 // npm install
-// npm run prepublish
-// OR rollup -c && uglifyjs d3.js -c -m -o d3-hotcrp.min.js
+// OR rollup -c

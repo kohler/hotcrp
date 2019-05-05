@@ -1,9 +1,19 @@
+import ascii from "rollup-plugin-ascii";
 import node from "rollup-plugin-node-resolve";
+import {terser} from "rollup-plugin-terser";
 
-export default {
-  entry: "index.js",
-  format: "umd",
-  moduleName: "d3",
-  plugins: [node()],
-  dest: "d3.js"
-};
+export default [{
+  input: "index.js",
+  plugins: [
+    node(),
+    ascii(),
+    terser()
+  ],
+  output: {
+    extend: true,
+    file: "d3-hotcrp.min.js",
+    format: "umd",
+    indent: false,
+    name: "d3",
+  }
+}];
