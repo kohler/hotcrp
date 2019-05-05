@@ -93,6 +93,9 @@ class Formula_PaperColumn extends PaperColumn {
     private function unparse($x) {
         return $this->formula->unparse_html($x, $this->real_format);
     }
+    private function unparse_diff($x) {
+        return $this->formula->unparse_diff_html($x, $this->real_format);
+    }
     function content(PaperList $pl, PaperInfo $row) {
         $v = $vv = $this->results[$row->paperId];
         $t = $this->unparse($v);
@@ -118,9 +121,11 @@ class Formula_PaperColumn extends PaperColumn {
     }
     private function unparse_statistic($statistics, $stat) {
         $x = $statistics->statistic($stat);
-        if ($stat == ScoreInfo::MEAN || $stat == ScoreInfo::MEDIAN)
+        if ($stat === ScoreInfo::MEAN || $stat === ScoreInfo::MEDIAN)
             return $this->unparse($x);
-        else if ($stat == ScoreInfo::COUNT && is_int($x))
+        else if ($stat === ScoreInfo::STDDEV_P || $stat === ScoreInfo::VARIANCE_P)
+            return $this->unparse_diff($x);
+        else if ($stat === ScoreInfo::COUNT && is_int($x))
             return $x;
         else if ($this->real_format)
             return sprintf($this->real_format, $x);
@@ -128,8 +133,9 @@ class Formula_PaperColumn extends PaperColumn {
             return is_int($x) ? $x : sprintf("%.2f", $x);
     }
     function statistic($pl, $stat) {
-        if ($stat == ScoreInfo::SUM && !$this->formula->result_format_is_real())
-            return "";
+        if ($stat === ScoreInfo::SUM
+            && !$this->formula->result_format_is_real())
+            return "—";
         $t = $this->unparse_statistic($this->statistics, $stat);
         if ($this->override_statistics) {
             $tt = $this->unparse_statistic($this->override_statistics, $stat);

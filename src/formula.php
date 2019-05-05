@@ -50,6 +50,8 @@ class Fexpr implements JsonSerializable {
     const FREVIEWER = 6;
     const FTAG = 7; // used in formulagraph.php
     const FSEARCH = 8; // used in formulagraph.php
+    const FTIME = 9;
+    const FDATE = 10;
 
     function __construct($op = null, $args = []) {
         if (is_string($op)) {
@@ -554,6 +556,15 @@ class PdfSize_Fexpr extends Sub_Fexpr {
     function compile(FormulaCompiler $state) {
         $state->queryOptions["pdfSize"] = true;
         return '($contact->can_view_pdf($prow) ? (int) $prow->size : null)';
+    }
+}
+
+class SubmittedAt_Fexpr extends Sub_Fexpr {
+    function __construct(FormulaCall $ff) {
+        $this->format_ = $ff->kwdef->is_time ? self::FTIME : self::FDATE;
+    }
+    function compile(FormulaCompiler $state) {
+        return '($prow->submitted_at() ? : null)';
     }
 }
 
@@ -1671,6 +1682,16 @@ class Formula {
         return $e;
     }
 
+    private function _find_formula_function(&$m) {
+        while ($m[1] !== "") {
+            if (($kwdef = $this->conf->formula_function($m[1], $this->user)))
+                return $kwdef;
+            $pos = strrpos($m[1], ":");
+            $m[1] = $pos === false ? "" : substr($m[1], 0, $pos);
+        }
+        return false;
+    }
+
     private function _parse_expr(&$t, $level, $in_qc) {
         if (($t = ltrim($t)) === "")
             return null;
@@ -1733,8 +1754,8 @@ class Formula {
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer)\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
-        } else if (preg_match('/\A(#|[A-Za-z][A-Za-z_]*)/is', $t, $m)
-                   && ($kwdef = $this->conf->formula_function($m[1], $this->user))) {
+        } else if (preg_match('/\A(#|[A-Za-z][A-Za-z0-9_.@:]*)/is', $t, $m)
+                   && ($kwdef = $this->_find_formula_function($m))) {
             $e = $this->_parse_function($t, $kwdef, $m[1]);
             if (!$e)
                 return null;
@@ -1914,40 +1935,103 @@ class Formula {
             return "";
         else if ($x === true)
             return "✓";
-        else if ($this->_format === Fexpr::FPREFEXPERTISE)
-            return ReviewField::unparse_letter(91, $x + 2);
-        else if ($this->_format === Fexpr::FREVIEWER)
-            return $this->user->reviewer_html_for($x);
-        else if ($this->_format === Fexpr::FTAG) {
-            $tagger = new Tagger($this->user);
-            return $tagger->unparse_link($this->_tagrefs[$x]);
-        } else {
-            $x = round($x * 100) / 100;
-            if ($this->_format instanceof ReviewField)
-                return $this->_format->unparse_value($x, ReviewField::VALUE_SC, $real_format);
-            else
-                return $real_format ? sprintf($real_format, $x) : $x;
+        if (is_int($this->_format) && $this->_format > 0) {
+            if ($this->_format === Fexpr::FPREFEXPERTISE)
+                return ReviewField::unparse_letter(91, $x + 2);
+            else if ($this->_format === Fexpr::FREVIEWER)
+                return $this->user->reviewer_html_for($x);
+            else if ($this->_format === Fexpr::FTAG) {
+                $tagger = new Tagger($this->user);
+                return $tagger->unparse_link($this->_tagrefs[$x]);
+            } else if ($this->_format === Fexpr::FTIME
+                       || $this->_format === Fexpr::FDATE) {
+                $f = $this->_format === Fexpr::FTIME ? "%Y-%m-%dT%T" : "%Y-%m-%d";
+                return $x > 0 ? strftime($f, $x) : "";
+            }
         }
+        $x = round($x * 100) / 100;
+        if ($this->_format instanceof ReviewField)
+            return $this->_format->unparse_value($x, ReviewField::VALUE_SC, $real_format);
+        else
+            return $real_format ? sprintf($real_format, $x) : $x;
     }
 
     function unparse_text($x, $real_format) {
         if ($x === null)
             return "";
-        else if (is_bool($x))
-            return $x ? "Y" : "N";
-        else if ($this->_format === Fexpr::FPREFEXPERTISE)
-            return ReviewField::unparse_letter(91, $x + 2);
-        else if ($this->_format === Fexpr::FREVIEWER)
-            return $this->user->name_text_for($x);
-        else if ($this->_format === Fexpr::FTAG) {
-            $tagger = new Tagger($this->user);
-            return $tagger->unparse_hashed($this->_tagrefs[$x]);
+        else if ($x === true)
+            return "Y";
+        else if ($x === false)
+            return "N";
+        if (is_int($this->_format) && $this->_format > 0) {
+            if ($this->_format === Fexpr::FPREFEXPERTISE)
+                return ReviewField::unparse_letter(91, $x + 2);
+            else if ($this->_format === Fexpr::FREVIEWER)
+                return $this->user->name_text_for($x);
+            else if ($this->_format === Fexpr::FTAG) {
+                $tagger = new Tagger($this->user);
+                return $tagger->unparse_hashed($this->_tagrefs[$x]);
+            } else if ($this->_format === Fexpr::FTIME
+                       || $this->_format === Fexpr::FDATE) {
+                $f = $this->_format === Fexpr::FTIME ? "%Y-%m-%dT%T" : "%Y-%m-%d";
+                return $x > 0 ? strftime($f, $x) : "";
+            }
+        }
+        $x = round($x * 100) / 100;
+        if ($this->_format instanceof ReviewField)
+            return $this->_format->unparse_value($x, 0, $real_format);
+        else
+            return $real_format ? sprintf($real_format, $x) : $x;
+    }
+
+    function _unparse_iso_duration($x) {
+        $x = round($x);
+        $t = "P";
+        if ($x < 0) {
+            $t .= "-";
+            $x = -$x;
+        }
+        if (($d = floor($x / 86400))) {
+            $t .= $d . "D";
+            $x -= $d * 86400;
+        }
+        $tt = "";
+        if (($h = floor($x / 3600))) {
+            $tt .= $h . "H";
+            $x -= $h * 3600;
+        }
+        if (($m = floor($x / 60))) {
+            $tt .= $m . "M";
+            $x -= $m * 60;
+        }
+        if ($x || ($tt === "" && strlen($t) <= 2))
+            $tt .= $x . "S";
+        if ($tt !== "")
+            $t .= "T" . $tt;
+        return $t;
+    }
+
+    function unparse_diff_html($x, $real_format) {
+        if ($x === null)
+            return "";
+        else if ($this->_format === Fexpr::FTIME
+                 || $this->_format === Fexpr::FDATE) {
+            $t = "";
+            if ($x < 0) {
+                $t .= "-";
+                $x = -$x;
+            }
+            if ($x > 259200)
+                return $t . sprintf("%.1fd", $x / 86400);
+            else if ($x > 7200)
+                return $t . sprintf("%.1fh", $x / 3600);
+            else if ($x > 59)
+                return $t . sprintf("%.1fm", $x / 60);
+            else
+                return $t . sprintf("%.1fs", $x);
         } else {
             $x = round($x * 100) / 100;
-            if ($this->_format instanceof ReviewField)
-                return $this->_format->unparse_value($x, 0, $real_format);
-            else
-                return $real_format ? sprintf($real_format, $x) : $x;
+            return $real_format ? sprintf($real_format, $x) : $x;
         }
     }
 
@@ -1989,7 +2073,9 @@ class Formula {
                  || $this->_format === Fexpr::FBOOL
                  || $this->_format === Fexpr::FPREFEXPERTISE
                  || $this->_format === Fexpr::FTAG
-                 || $this->_format === Fexpr::FSEARCH)
+                 || $this->_format === Fexpr::FSEARCH
+                 || $this->_format === Fexpr::FTIME
+                 || $this->_format === Fexpr::FDATE)
             return false;
         else
             return true;

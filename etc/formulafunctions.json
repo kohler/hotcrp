@@ -42,6 +42,10 @@
 
     {"name": "pid", "callback": "+Pid_Fexpr", "synonym": "paperid"},
     {"name": "pdfsize", "callback": "+PdfSize_Fexpr"},
+    {"name": "time:submitted", "callback": "+SubmittedAt_Fexpr",
+        "is_time": true, "synonym": "time:sub"},
+    {"name": "date:submitted", "callback": "+SubmittedAt_Fexpr",
+        "is_time": false, "synonym": "date:sub"},
 
     {"name": "topicscore", "callback": "+TopicScore_Fexpr"},
     {"name": "conf", "callback": "+Conflict_Fexpr", "is_pc": false, "synonym": "conflict"},
