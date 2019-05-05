@@ -476,10 +476,10 @@ var strftime = (function () {
         return str.length <= n ? str : str.substr(str.length - n);
     }
     function unparse_q(d, alt, is24) {
-        if (is24 && alt && d.getSeconds())
-            return strftime("%H:%M:%S", d);
-        else if (is24)
+        if (is24 && alt && !d.getSeconds())
             return strftime("%H:%M", d);
+        else if (is24)
+            return strftime("%H:%M:%S", d);
         else if (alt && d.getSeconds())
             return strftime("%#l:%M:%S%P", d);
         else if (alt && d.getMinutes())
