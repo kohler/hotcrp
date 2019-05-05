@@ -447,7 +447,7 @@ function make_axis(ticks) {
     else
         ticks = {type: ticks ? ticks[0] : null};
     return $.extend({
-        ticks: function (domain, range) {},
+        prepare: function (domain, range) {},
         rewrite: function () {},
         unparse_html: function (value, include_numeric) {
             if (value == Math.floor(value))
