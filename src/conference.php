@@ -3593,7 +3593,8 @@ class Conf {
             $hpcj["__sort__"] = "last";
         if ($user->can_view_user_tags())
             $hpcj["__tags__"] = $user->viewable_user_tags();
-        if ($this->paper && $user->allow_administer($this->paper)) {
+        if ($this->paper
+            && ($user->privChair || $user->allow_administer($this->paper))) {
             $list = [];
             foreach ($this->pc_members() as $pcm)
                 if ($pcm->can_accept_review_assignment($this->paper))
