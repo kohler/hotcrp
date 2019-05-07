@@ -51,6 +51,7 @@ class S3Document extends S3Result {
 
     static public $retry_timeout_allowance = 10; // in seconds
     static private $instances = [];
+    static public $verbose = false;
 
     function __construct($opt = []) {
         $this->s3_key = $opt["key"];
@@ -79,22 +80,17 @@ class S3Document extends S3Result {
             && $this->s3_bucket === $bucket;
     }
 
-    private function check_scope($time) {
+    private function check_scope($s3_scope_date) {
         return $this->s3_scope
-            && preg_match('{\A\d\d\d\d\d\d\d\d/([^/]*)/s3/aws4_request\z}',
-                          $this->s3_scope, $m)
-            && $m[1] === $this->s3_region
-            && ($t = mktime(0, 0, 0,
-                            (int) substr($this->s3_scope, 4, 2),
-                            (int) substr($this->s3_scope, 6, 2),
-                            (int) substr($this->s3_scope, 0, 4)))
-            && $t <= $time
-            && $t + 432000 >= $time;
+            && substr($this->s3_scope, 0, 8) === $s3_scope_date
+            && preg_match('{\G/([^/]*)/s3/aws4_request\z}',
+                          $this->s3_scope, $m, 0, 8)
+            && $m[1] === $this->s3_region;
     }
 
     function scope_and_signing_key($time) {
-        if (!$this->check_scope($time)) {
-            $s3_scope_date = gmdate("Ymd", $time);
+        $s3_scope_date = gmdate("Ymd", $time);
+        if (!$this->check_scope($s3_scope_date)) {
             $this->s3_scope = $s3_scope_date . "/" . $this->s3_region
                 . "/s3/aws4_request";
             $date_key = hash_hmac("sha256", $s3_scope_date, "AWS4" . $this->s3_secret, true);
@@ -176,6 +172,8 @@ class S3Document extends S3Result {
             . $this->s3_key . "/" . $scope
             . ",SignedHeaders=" . substr($chk, 1)
             . ",Signature=" . $signature;
+        if (self::$verbose)
+            error_log(var_export($hdrarr, true));
         return ["headers" => $hdrarr, "signature" => $signature];
     }
 
@@ -261,8 +259,11 @@ class S3Document extends S3Result {
         $this->run($skey, "GET", []);
         if ($this->status == 404 || $this->status == 500)
             return null;
-        if ($this->status != 200)
+        if ($this->status != 200) {
             trigger_error("S3 warning: GET $skey: status $this->status", E_USER_WARNING);
+            if (self::$verbose)
+                trigger_error("S3 response: " . var_export($this->response_headers, true), E_USER_WARNING);
+        }
         return get($this->response_headers, "content");
     }
 
