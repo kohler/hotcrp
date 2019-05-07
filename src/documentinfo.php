@@ -386,7 +386,7 @@ class DocumentInfo implements JsonSerializable {
             if ($s3->status == 200)
                 return true;
             else {
-                error_log("S3 error: POST $filename: $s3->status $s3->status_text " . json_encode_db($s3->response_headers));
+                error_log("S3 error: POST $s3k: $s3->status $s3->status_text " . json_encode_db($s3->response_headers));
                 return $this->add_error_html("Error while saving document to S3.", true);
             }
         }
