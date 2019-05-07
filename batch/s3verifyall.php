@@ -25,23 +25,13 @@ if (!$Conf->setting_data("s3_bucket")) {
 $match_algos = ["", "sha2-"];
 $match_re = $match_pfx = "";
 if ($match != "") {
-    $match = strtolower($match);
-    if (!preg_match('{\A(?:sha[123]-?)?(?:[0-9a-f*]|\[\^?[-0-9a-f]+\])*\z}', $match)) {
-        fwrite(STDERR, "* bad `--match`, expected `[sha[123]-][0-9a-f*]*`\n");
-        exit(1);
-    }
-    $match_algo = null;
-    if (preg_match('{\Asha([123])-?(.*)\z}', $match, $m)) {
-        if ($m[1] === "1")
-            $match_algos = [""];
-        else
-            $match_algos = ["sha" . $m[1] . "-"];
-        $match = $m[2];
-    }
-    if (preg_match('{\A([0-9a-f]+)}', $match, $m))
-        $match_pfx = substr($m[1], 0, 2);
-    if ($match != "")
-        $match_re = '{/(?:sha[123]-)?' . str_replace("*", "[0-9a-f]*", $match) . '[^/]*\z}';
+    $docmatch = new DocumentHashMatcher($match);
+    if (preg_match('{\A(?:|sha\d-)\z}', $docmatch->algo_pfx_preg))
+        $match_algos = [$docmatch->algo_pfx_preg];
+    if ($docmatch->fixed_hash)
+        $match_pfx = substr($docmatch->fixed_hash, 0, 2);
+    if ($docmatch->has_hash_preg)
+        $match_re = '{/' . $docmatch->algo_pfx_preg . $docmatch->hash_preg . '[^/]*\z}';
 }
 $algo_key_re_map = [
     "" => '{/([0-9a-f]{40})(?:\.[^/]*|)\z}',

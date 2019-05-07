@@ -7,6 +7,7 @@ class DocumentHashMatcher {
     public $algo_pfx_preg = "(?:|sha2-)";
     public $fixed_hash = "";
     public $hash_preg = "(?:[0-9a-f]{40}|[0-9a-f]{64})";
+    public $has_hash_preg = false;
     public $extension = null;
     public $extension_preg = ".*";
 
@@ -37,8 +38,10 @@ class DocumentHashMatcher {
         }
         if (preg_match('{\A([0-9a-f]+)}', $match, $m))
             $this->fixed_hash = $m[1];
-        if ($match != "")
+        if ($match != "") {
             $this->hash_preg = str_replace("*", "[0-9a-f]*", $match) . "[0-9a-f]*";
+            $this->has_hash_preg = true;
+        }
     }
     function make_preg($entrypat) {
         $preg = "";
