@@ -190,6 +190,7 @@ src/contactlist.php
 src/contactsearch.php
 src/distoptions.php
 src/documentinfo.php
+src/documenthashmatcher.php
 src/documentrequest.php
 src/filefilter.php
 src/formatspec.php

@@ -22,43 +22,8 @@ $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 
 class Cleaner {
-    static public $algo_preg = "(?:sha1|sha256)";
-    static public $algo_pfx_preg = "(?:|sha2-)";
-    static public $fixed_hash = "";
-    static public $hash_preg = "(?:[0-9a-f]{40}|[0-9a-f]{64})";
-    static public $extension = null;
-    static public $extension_preg = ".*";
+    static public $docmatch;
     static public $dirinfo = [];
-
-    static function set_match($match) {
-        $dot = strpos($match, ".");
-        if ($dot !== false) {
-            self::$extension = substr($match, $dot);
-            self::$extension_preg = preg_quote(self::$extension);
-            $match = substr($match, 0, $dot);
-        }
-
-        $match = strtolower($match);
-        if (!preg_match('{\A(?:sha[123]-?)?(?:[0-9a-f*]|\[\^?[-0-9a-f]+\])*\z}', $match)) {
-            fwrite(STDERR, "* bad `--match`, expected `[sha[123]-][0-9a-f*]*`\n");
-            exit(1);
-        }
-        $match_algo = "(?:|sha2-)";
-        if (preg_match('{\Asha([12])-?(.*)\z}', $match, $m)) {
-            if ($m[1] === "1") {
-                self::$algo_preg = "sha1";
-                self::$algo_pfx_preg = $match_algo = "";
-            } else {
-                self::$algo_preg = "sha256";
-                self::$algo_pfx_preg = $match_algo = "sha2-";
-            }
-            $match = $m[2];
-        }
-        if (preg_match('{\A([0-9a-f]+)}', $match, $m))
-            self::$fixed_hash = $m[1];
-        if ($match != "")
-            self::$hash_preg = str_replace("*", "[0-9a-f]*", $match) . "[0-9a-f]*";
-    }
 
     static function populate($dir, Fparts $fparts, $pos) {
         if ($pos < $fparts->n && $pos % 1 == 0) {
@@ -100,8 +65,7 @@ $count = isset($arg["count"]) ? intval($arg["count"]) : 10;
 $verbose = isset($arg["verbose"]);
 $dry_run = isset($arg["dry-run"]);
 $usage_threshold = null;
-if (isset($arg["match"]))
-    Cleaner::set_match($arg["match"]);
+Cleaner::$docmatch = new DocumentHashMatcher(get($arg, "match"));
 
 if (isset($arg["max-usage"])) {
     if (!is_numeric($arg["max-usage"])
@@ -146,46 +110,9 @@ class Fparts {
             }
 
         foreach ($this->components as $fp)
-            $this->pregs[] = self::make_preg($fp);
+            $this->pregs[] = Cleaner::$docmatch->make_preg($fp);
 
         $this->n = count($this->components);
-    }
-    static function make_preg($entrypat) {
-        $preg = "";
-        $entrypat = preg_quote($entrypat);
-        while ($entrypat !== ""
-               && preg_match('{\A(.*?)%(\d*)([%hxHjaA])(.*)\z}', $entrypat, $m)) {
-            $preg .= $m[1];
-            list($fwidth, $fn, $entrypat) = [$m[2], $m[3], $m[4]];
-            if ($fn === "%")
-                $preg .= "%";
-            else if ($fn === "x")
-                $preg .= Cleaner::$extension_preg;
-            else if ($fn === "a")
-                $preg .= Cleaner::$algo_preg;
-            else if ($fn === "A")
-                $preg .= Cleaner::$algo_pfx_preg;
-            else if ($fn === "j") {
-                $l = min(strlen(Cleaner::$fixed_hash), 3);
-                $preg .= substr(Cleaner::$fixed_hash, 0, $l);
-                for (; $l < 3; ++$l)
-                    $preg .= "[0-9a-f]";
-                $preg .= "?";
-            } else {
-                if ($fn === "h")
-                    $preg .= Cleaner::$algo_pfx_preg;
-                if ($fwidth === "")
-                    $preg .= Cleaner::$hash_preg;
-                else {
-                    $fwidth = intval($fwidth);
-                    $l = min(strlen(Cleaner::$fixed_hash), $fwidth);
-                    $preg .= substr(Cleaner::$fixed_hash, 0, $l);
-                    if ($l < $fwidth)
-                        $preg .= "[0-9a-f]{" . ($fwidth - $l) . "}";
-                }
-            }
-        }
-        return "{" . $preg . $entrypat . "}";
     }
 
     function clear() {
