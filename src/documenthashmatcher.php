@@ -82,4 +82,7 @@ class DocumentHashMatcher {
         }
         return "{" . $preg . $entrypat . "}";
     }
+    function test_hash($hash) {
+        return $hash !== false && preg_match('{\A' . $this->algo_pfx_preg . $this->hash_preg . '\z}', $hash);
+    }
 }
