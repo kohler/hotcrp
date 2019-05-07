@@ -10,7 +10,7 @@ if (isset($arg["V"]) && !isset($arg["verbose"]))
 if (isset($arg["m"]) && !isset($arg["match"]))
     $arg["match"] = $arg["m"];
 if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/s3check.php [-c COUNT] [-V] [-m MATCH]\n");
+    fwrite(STDOUT, "Usage: php batch/s3verifyall.php [-c COUNT] [-V] [-m MATCH]\n");
     exit(0);
 }
 $count = isset($arg["count"]) ? intval($arg["count"]) : null;
