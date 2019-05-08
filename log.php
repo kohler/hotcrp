@@ -443,7 +443,7 @@ if ($Qreq->download) {
         if ($xdest_users == $xusers)
             $xdest_users = [];
         $csvg->add([
-            strftime("%Y-%m-%d %H:%M:%S %z"),
+            strftime("%Y-%m-%d %H:%M:%S %z", $row->timestamp),
             join(" ", $xusers),
             join(" ", $xdest_users),
             $row->trueContactId ? "yes" : "",
