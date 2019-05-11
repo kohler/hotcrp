@@ -116,6 +116,7 @@ lib/archiveinfo.php
 lib/backupdb.sh
 lib/base.php
 lib/cleanhtml.php
+lib/collatorshim.php
 lib/column.php
 lib/countmatcher.php
 lib/countries.php

@@ -1,5 +1,5 @@
 <?php
-// collatorbackup.php -- PHP Collator polyfill
+// collatorshim.php -- PHP Collator polyfill
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class Collator {
