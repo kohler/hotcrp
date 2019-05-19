@@ -32,6 +32,15 @@ function cvtnum($value, $default = -1) {
 
 // web helpers
 
+function unparse_number_pm($n) {
+    if ($n < 0)
+        return "−" . (-$n); // U+2212 MINUS
+    else if ($n > 0)
+        return "+" . $n;
+    else
+        return 0;
+}
+
 function hoturl_add_raw($url, $component) {
     if (($pos = strpos($url, "#")) !== false) {
         $component .= substr($url, $pos);
@@ -174,15 +183,6 @@ function actas_link($cid, $contact = null) {
     $cid = is_object($contact) ? $contact->email : $cid;
     return '<a href="' . $Conf->selfurl(null, ["actas" => $cid])
         . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($contact))) . '</a>';
-}
-
-function decorateNumber($n) {
-    if ($n < 0)
-        return "&#8722;" . (-$n);
-    else if ($n > 0)
-        return $n;
-    else
-        return 0;
 }
 
 
@@ -643,9 +643,9 @@ function unparse_preference_span($preference, $always = false) {
         $type = -1;
     $t = "";
     if ($pv || $ev !== null || $always)
-        $t .= "P" . decorateNumber($pv) . unparse_expertise($ev);
+        $t .= "P" . unparse_number_pm($pv) . unparse_expertise($ev);
     if ($tv && !$pv)
-        $t .= ($t ? " " : "") . "T" . decorateNumber($tv);
+        $t .= ($t ? " " : "") . "T" . unparse_number_pm($tv);
     if ($t !== "")
         $t = " <span class=\"asspref$type\">$t</span>";
     return $t;

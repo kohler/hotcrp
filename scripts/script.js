@@ -6392,7 +6392,8 @@ function render_allpref() {
             var pref = parseInt(m[3]);
             var x = render_user(pc) +
                 ' <span class="asspref' + (pref < 0 ? "-1" : "1") +
-                '">' + m[2] + (pref < 0 ? m[3].replace(/-/, "−") /* minus */ : m[3]) +
+                '">' + m[2] +
+                (pref < 0 ? "−" /* minus */ + m[3].substring(1) : "+" + m[3]) +
                 '</span>';
             t.push([m[2] === "P" ? pref : 0, pref, t.length, x]);
         }

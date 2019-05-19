@@ -107,7 +107,7 @@ class Preference_PaperColumn extends PaperColumn {
         $t = "";
         if ($this->row) {
             if ($pv_exists) {
-                $t = $this->prefix . " <span class=\"asspref" . ($pv[0] < 0 ? "-1" : "1") . "\">P" . str_replace("-", "−" /* U+2122 */, unparse_preference($pv)) . "</span>";
+                $t = $this->prefix . unparse_preference_span($pv, true);
             }
         } else if ($editable && (!$has_conflict || $pv_exists)) {
             $iname = "revpref" . $row->paperId;
@@ -125,7 +125,7 @@ class Preference_PaperColumn extends PaperColumn {
                 $t = review_type_icon(-1);
             }
         } else {
-            $t = str_replace("-", "−" /* U+2122 */, unparse_preference($pv));
+            $t = str_replace("-", "−" /* U+2212 */, unparse_preference($pv));
         }
 
         // account for statistics and maybe wrap HTML in conflict
