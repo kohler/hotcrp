@@ -47,6 +47,7 @@ if ($Qreq->neg) {
 }
 $args = ["display" => "show:authors show:aufull", "rowset" => $rowset];
 
+PaperList::$include_stash = false;
 $any = false;
 foreach ($Conf->full_pc_members() as $pc) {
     $paperlist = new PaperList($search, $args, $Qreq);
@@ -58,7 +59,10 @@ foreach ($Conf->full_pc_members() as $pc) {
     if ($paperlist->count > 0) {
         if (!$any)
             echo Ht::form(hoturl("conflictassign")),
-                $tr->table_start, ($tr->thead ? : ""), $tr->tbody_start();
+                $tr->table_start,
+                Ht::unstash(),
+                ($tr->thead ? : ""),
+                $tr->tbody_start();
         else
             echo $tr->heading_separator_row();
         $t = $Me->reviewer_html_for($pc);
