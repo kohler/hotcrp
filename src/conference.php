@@ -1198,12 +1198,12 @@ class Conf {
         $out = [];
         foreach ($tlist as $tid) {
             $n = $this->unparse_topic_name_html($tid);
-            $i = 0;
-            if (!empty($interests) && ($i = get($interests, $tid)) && empty($out)) {
+            $i = $interests === null ? null : get($interests, $tid, 0);
+            if (empty($out) && $i !== null) {
                 $n = '<span class="topic' . $i . '">' . $n . '</span>';
-                $i = 0;
+                $i = null;
             }
-            $out[] = '<li class="pl_topicti' . ($i ? " topic$i" : "") . '">' . $n . '</li>';
+            $out[] = '<li class="pl_topicti' . ($i !== null ? " topic$i" : "") . '">' . $n . '</li>';
         }
         return '<ul class="pl_topict">' . join("", $out) . '</ul>';
     }
