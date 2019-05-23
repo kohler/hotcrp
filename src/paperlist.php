@@ -6,7 +6,7 @@ class PaperListTableRender {
     public $table_start;
     public $thead;
     public $tbody_class;
-    public $body_rows;
+    public $rows;
     public $tfoot;
     public $table_end;
     public $error;
@@ -52,6 +52,12 @@ class PaperListTableRender {
     }
     function heading_separator_row() {
         return "  <tr class=\"plheading\"><td class=\"plheading-separator\" colspan=\"{$this->ncol}\"></td></tr>\n";
+    }
+    function body_rows() {
+        return join("", $this->rows);
+    }
+    function tbody_end() {
+        return "  </tbody>\n";
     }
 }
 
@@ -1072,7 +1078,7 @@ class PaperList {
                 if ($ginfo->annoId) {
                     $attr["data-anno-id"] = $ginfo->annoId;
                     $attr["data-tags"] = "{$ginfo->tag}#{$ginfo->tagIndex}";
-                    if (get($this->table_attr, "data-drag-tag"))
+                    if (isset($this->table_attr["data-drag-tag"]))
                         $attr["tdclass"] = "need-draghandle";
                 }
                 $x = "<span class=\"plheading-group";
@@ -1598,7 +1604,7 @@ class PaperList {
             if ($this->search->is_order_anno
                 && isset($this->table_attr["data-drag-tag"])) {
                 $drag_tag = $this->tagger->check($this->table_attr["data-drag-tag"]);
-                if (strcasecmp($drag_tag, $this->search->is_order_anno) == 0
+                if (strcasecmp($drag_tag, $this->search->is_order_anno) === 0
                     && $this->user->can_change_tag_anno($drag_tag)) {
                     $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
                     if ($rstate->titlecol)
@@ -1620,10 +1626,7 @@ class PaperList {
             else
                 $enter .= " $k=\"" . htmlspecialchars($v) . "\"";
         }
-        $enter .= ">\n";
-        if (self::$include_stash)
-            $enter .= Ht::unstash();
-        $rstate->table_start = $enter;
+        $rstate->table_start = $enter . ">\n";
         $rstate->table_end = "</table>";
 
         // maybe make columns, maybe not
@@ -1652,7 +1655,7 @@ class PaperList {
         if ($this->_header_script)
             $rstate->thead .= '  ' . Ht::script($this->_header_script) . "\n";
 
-        $rstate->body_rows = $body;
+        $rstate->rows = $body;
         return $rstate;
     }
 
@@ -1669,10 +1672,11 @@ class PaperList {
             return $render->error;
         else
             return $render->table_start
+                . (self::$include_stash ? Ht::unstash() : "")
                 . ($render->thead ? : "")
                 . $render->tbody_start()
-                . join("", $render->body_rows)
-                . "  </tbody>\n"
+                . $render->body_rows()
+                . $render->tbody_end()
                 . ($render->tfoot ? : "")
                 . "</table>";
     }

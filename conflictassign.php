@@ -47,7 +47,6 @@ if ($Qreq->neg) {
 }
 $args = ["display" => "show:authors show:aufull", "rowset" => $rowset];
 
-PaperList::$include_stash = false;
 $any = false;
 foreach ($Conf->full_pc_members() as $pc) {
     $paperlist = new PaperList($search, $args, $Qreq);
@@ -68,7 +67,7 @@ foreach ($Conf->full_pc_members() as $pc) {
         $t = $Me->reviewer_html_for($pc);
         if ($pc->affiliation)
             $t .= " <span class=\"auaff\">(" . htmlspecialchars($pc->affiliation) . ")</span>";
-        echo $tr->heading_row($t, ["no_titlecol" => true]), join("", $tr->body_rows);
+        echo $tr->heading_row($t, ["no_titlecol" => true]), $tr->body_rows();
         $any = true;
     }
 }
