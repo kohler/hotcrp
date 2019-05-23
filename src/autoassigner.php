@@ -17,7 +17,7 @@ class Autoassigner {
     private $pcm;
     private $badpairs = array();
     private $papersel;
-    private $ass = null;
+    private $ass;
     private $load;
     private $prefs;
     private $eass;
