@@ -445,6 +445,9 @@
     "berkeley": {
         "nameish": false
     },
+    "birmingham": {
+        "sync": "alabama"
+    },
     "cal": {
         "weak": true,
         "alternate": [
