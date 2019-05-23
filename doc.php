@@ -9,14 +9,15 @@ function document_error($status, $msg) {
     if (str_starts_with($status, "403") && $Me->is_empty()) {
         $Me->escape();
         exit;
+    } else if (str_starts_with($status, "5")) {
+        $navpath = Navigation::path();
+        error_log($Conf->dbname . ": bad doc $status $msg " . json_encode($Qreq) . ($navpath ? " @$navpath" : "") . ($Me ? " {$Me->email}" : "") . (empty($_SERVER["HTTP_REFERER"]) ? "" : " R[" . $_SERVER["HTTP_REFERER"] . "]"));
     }
 
-    $navpath = Navigation::path();
-    error_log($Conf->dbname . ": bad doc $status $msg " . json_encode($Qreq) . ($navpath ? " @$navpath" : "") . ($Me ? " {$Me->email}" : "") . (empty($_SERVER["HTTP_REFERER"]) ? "" : " R[" . $_SERVER["HTTP_REFERER"] . "]"));
     header("HTTP/1.1 $status");
-    if (isset($Qreq->fn))
+    if (isset($Qreq->fn)) {
         json_exit(["ok" => false, "error" => $msg ? : "Internal error."]);
-    else {
+    } else {
         $Conf->header("Download", null);
         $msg && Conf::msg_error($msg);
         $Conf->footer();
