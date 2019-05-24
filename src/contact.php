@@ -82,7 +82,7 @@ class Contact {
     public $privChair = false;
     public $contactTags;
     public $tracker_kiosk_state = 0;
-    private $capabilities;
+    private $_capabilities;
     private $_review_tokens;
     private $_activated = false;
     const OVERRIDE_CONFLICT = 1;
@@ -392,13 +392,8 @@ class Contact {
 
         // Add capabilities from session and request
         $cap = $this->session("cap");
-        if (!$cap && ($cap = $this->session("capabilities"))) {
-            $cap = CapabilityManager::upgrade_capabilities_0($cap);
-            $this->save_session("capabilities", null);
-            $this->save_session("cap", $cap);
-        }
         if ($cap) {
-            $this->capabilities = $cap;
+            $this->_capabilities = $cap;
             ++self::$rights_version;
         }
         if ($qreq && isset($qreq->cap)) {
@@ -551,12 +546,16 @@ class Contact {
     }
 
 
+    function is_activated() {
+        return $this->_activated;
+    }
+
     function is_actas_user() {
         return $this->_activated && self::$true_user;
     }
 
     function is_empty() {
-        return $this->contactId <= 0 && !$this->capabilities && !$this->email;
+        return $this->contactId <= 0 && !$this->email && !$this->_capabilities;
     }
 
     function owns_email($email) {
@@ -799,21 +798,26 @@ class Contact {
     }
 
     function capability($name) {
-        return $this->capabilities ? get($this->capabilities, $name) : null;
+        return $this->_capabilities ? get($this->_capabilities, $name) : null;
     }
 
     function set_capability($name, $newval) {
         $oldval = $this->capability($name);
         if ($newval !== $oldval) {
             if ($newval !== null)
-                $this->capabilities[$name] = $newval;
+                $this->_capabilities[$name] = $newval;
             else {
-                unset($this->capabilities[$name]);
-                if (empty($this->capabilities))
-                    $this->capabilities = null;
+                unset($this->_capabilities[$name]);
+                if (empty($this->_capabilities))
+                    $this->_capabilities = null;
             }
-            if ($this->_activated)
-                $this->save_session("cap", $this->capabilities);
+            if ($this->_activated && $name[0] !== "@") {
+                $savecap = [];
+                foreach ($this->_capabilities ? : [] as $k => $v)
+                    if ($k[0] !== "@")
+                        $savecap[$k] = $v;
+                $this->save_session("cap", empty($savecap) ? null : $savecap);
+            }
             $this->update_my_rights();
         }
         return $newval !== $oldval;
@@ -821,13 +825,13 @@ class Contact {
 
     function apply_capability_text($text) {
         // Add capabilities from arguments
-        foreach (preg_split('{\s+}', $text) as $cap) {
-            if ($cap !== "") {
-                $isadd = $cap[0] !== "-";
-                if ($cap[0] === "-" || $cap[0] === "+")
-                    $cap = substr($cap, 1);
-                if ($cap !== "" && ($uf = $this->conf->capability_handler($cap)))
-                    call_user_func($uf->callback, $this, $uf, $isadd, $cap);
+        foreach (preg_split('{\s+}', $text) as $s) {
+            if ($s !== "") {
+                $isadd = $s[0] !== "-";
+                if ($s[0] === "-" || $s[0] === "+")
+                    $s = substr($s, 1);
+                if ($s !== "" && ($uf = $this->conf->capability_handler($s)))
+                    call_user_func($uf->callback, $this, $uf, $isadd, $s);
             }
         }
     }
@@ -1550,9 +1554,9 @@ class Contact {
         Dbl::free($result);
 
         // Update contact information from capabilities
-        if ($this->capabilities) {
-            foreach ($this->capabilities as $pid => $cap)
-                if ($cap === "av" && (is_int($pid) || ctype_digit($pid)))
+        if ($this->_capabilities) {
+            foreach ($this->_capabilities as $k => $v)
+                if (str_starts_with($k, "@av") && $v)
                     $this->_active_roles |= self::ROLE_AUTHOR;
         }
     }
@@ -1881,8 +1885,8 @@ class Contact {
             // If an author-view capability is set, then use it -- unless
             // this user is a PC member or reviewer, which takes priority.
             $ci->view_conflict_type = $ci->conflictType;
-            if (isset($this->capabilities)
-                && get($this->capabilities, $prow->paperId) === "av"
+            if ($this->_capabilities !== null
+                && get($this->_capabilities, "@av{$prow->paperId}")
                 && !$isPC
                 && !$ci->review_status)
                 $ci->view_conflict_type = CONFLICT_AUTHOR;
@@ -2049,9 +2053,12 @@ class Contact {
 
     function act_author_view_sql($table, $only_if_complex = false) {
         $m = [];
-        if (isset($this->capabilities) && !$this->isPC) {
-            foreach ($this->capabilities as $pid => $cap)
-                if ($cap === "av" && (is_int($pid) || ctype_digit($pid)))
+        if ($this->_capabilities !== null && !$this->isPC) {
+            foreach ($this->_capabilities as $k => $v)
+                if (str_starts_with($k, "@av")
+                    && $v
+                    && ($pid = substr($k, 3))
+                    && ctype_digit($pid))
                     $m[] = "Paper.paperId=$pid";
         }
         if (empty($m) && $this->contactId && $only_if_complex)

@@ -1048,14 +1048,14 @@ $Conf->check_invariants();
 
 // author view capabilities and multiple blank users
 $blank1 = new Contact(null, $Conf);
-$blank1->set_capability(19, "av");
+$blank1->set_capability("@av19", true);
 $blank2 = new Contact(null, $Conf);
-$blank2->set_capability(16, "av");
+$blank2->set_capability("@av16", true);
 xassert($blank1->can_view_paper($paper19));
 xassert(!$blank1->can_view_paper($paper16));
 xassert(!$blank2->can_view_paper($paper19));
 xassert($blank2->can_view_paper($paper16));
-$blank2->set_capability(16, null);
+$blank2->set_capability("@av16", null);
 xassert($blank1->can_view_paper($paper19));
 xassert(!$blank1->can_view_paper($paper16));
 xassert(!$blank2->can_view_paper($paper19));

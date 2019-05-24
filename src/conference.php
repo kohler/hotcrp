@@ -3426,8 +3426,9 @@ class Conf {
         $is_home = $id === "home";
         $site_div = '<div id="header-site" class="'
             . ($is_home ? "header-site-home" : "header-site-page")
-            . '"><h1><a class="qq" href="' . $this->hoturl("index") . '">'
-            . '<span class="header-site-name">'
+            . '"><h1><a class="qq" href="'
+            . $this->hoturl("index", ["cap" => null])
+            . '"><span class="header-site-name">'
             . htmlspecialchars($this->short_name) . '</span>';
         if (!$is_home)
             $site_div .= ' Home';
@@ -3462,9 +3463,9 @@ class Conf {
             if (!$Me->is_disabled())
                 $profile_parts[] = '<a href="' . $this->hoturl("help", $x) . '">Help</a>';
             if (!$Me->has_email() && !isset($this->opt["httpAuthLogin"]))
-                $profile_parts[] = '<a href="' . $this->hoturl("index", "signin=1") . '" class="nw">Sign in</a>';
+                $profile_parts[] = '<a href="' . $this->hoturl("index", ["signin" => 1, "cap" => null]) . '" class="nw">Sign in</a>';
             if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"]))
-                $profile_parts[] = '<a href="' . $this->hoturl_post("index", "signout=1") . '" class="nw">Sign out</a>';
+                $profile_parts[] = '<a href="' . $this->hoturl_post("index", ["signout" => 1, "cap" => null]) . '" class="nw">Sign out</a>';
 
             if (!empty($profile_parts))
                 $profile_html .= join(' <span class="barsep">·</span> ', $profile_parts);

@@ -413,7 +413,7 @@ class PaperInfo {
     function author_view_user() {
         if (!$this->_author_view_user) {
             $this->_author_view_user = new Contact(null, $this->conf);
-            $this->_author_view_user->set_capability($this->paperId, "av");
+            $this->_author_view_user->set_capability("@av{$this->paperId}", true);
         }
         return $this->_author_view_user;
     }

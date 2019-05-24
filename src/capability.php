@@ -94,23 +94,26 @@ class CapabilityManager {
         return $start . $suffix;
     }
 
+    static function apply_hoturl_capability($name, $isadd) {
+        if (Conf::$hoturl_defaults === null)
+            Conf::$hoturl_defaults = [];
+        $cap = urldecode(get(Conf::$hoturl_defaults, "cap", ""));
+        $a = array_diff(explode(" ", $cap), [$name, ""]);
+        if ($isadd)
+            $a[] = $name;
+        if (empty($a))
+            unset(Conf::$hoturl_defaults["cap"]);
+        else
+            Conf::$hoturl_defaults["cap"] = urlencode(join(" ", $a));
+    }
+
     static function apply_old_author_view(Contact $user, $uf, $isadd) {
         if (($prow = $user->conf->fetch_paper(["paperId" => $uf->match_data[1]]))
             && ($uf->name === self::capability_text($prow, "a"))
-            && !$user->conf->opt("disableCapabilities"))
-            $user->set_capability($prow->paperId, $isadd ? "av" : null);
-    }
-
-
-    static function upgrade_capabilities_0($caps) {
-        $ncaps = [];
-        foreach ($caps as $pid => $a) {
-            if ($pid === 0) {
-                $ncaps = array_merge($ncaps, $a);
-            } else if ($a === 1 && ctype_digit($pid)) {
-                $ncaps[$pid] = "av";
-            }
+            && !$user->conf->opt("disableCapabilities")) {
+            $user->set_capability("@av{$prow->paperId}", $isadd ? true : null);
+            if ($user->is_activated())
+                self::apply_hoturl_capability($uf->name, $isadd);
         }
-        return empty($ncaps) ? null : $ncaps;
     }
 }
