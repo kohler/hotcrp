@@ -37,7 +37,7 @@ while (<DATA>) {
     my($p, $t, $n) = split;
     print "insert into Paper (paperId, title, authorInformation, abstract, timeSubmitted) values ($p, 'Paper $p', 'Jane\\tAuthor$p\\tauthor$p\@_.com\\t\\n', 'This is Paper $p', $now) on duplicate key update abstract=abstract;\n";
     print "insert into ContactInfo (firstName, lastName, email, password) values ('Jane', 'Author$p', 'author$p\@_.com', 'x') on duplicate key update password=password;\n";
-    print "insert into PaperConflict (paperId, contactId, conflictType) values ($p, (select contactId from ContactInfo where email='author$p\@_.com'), 10) on duplicate key update conflictType=conflictType;\n";
+    print "insert into PaperConflict (paperId, contactId, conflictType) values ($p, (select contactId from ContactInfo where email='author$p\@_.com'), 65) on duplicate key update conflictType=conflictType;\n";
     print "insert into PaperTag (paperId, tag, tagIndex) values ($p, '$t', $n) on duplicate key update tagIndex=$n;\n";
 }
 

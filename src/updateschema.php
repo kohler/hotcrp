@@ -1508,6 +1508,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->ql("update Settings set name='msg.resp_instrux_0' where name='msg.resp_instrux'");
         $conf->update_schema_version(212);
     }
+    if ($conf->sversion == 212
+        && $conf->ql("update PaperConflict set conflictType=(64 + conflictType - 9) where conflictType>=9 and conflictType<64"))
+        $conf->update_schema_version(213);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
