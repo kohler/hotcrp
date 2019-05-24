@@ -3975,7 +3975,7 @@ class Contact {
                 $needsSubmit = -1;
         }
         $result = $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=? where paperId=? and reviewId=?", $needsSubmit, $rrow->paperId, $rrow->reviewId);
-        if ($extra && !get($extra, "no_autosearch"))
+        if (!$extra || !get($extra, "no_autosearch"))
             $this->conf->update_autosearch_tags($rrow->paperId);
         return $result;
     }
