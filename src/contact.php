@@ -1811,13 +1811,13 @@ class Contact {
             if (($this->contactId > 0
                  && $prow->managerContactId == $this->contactId)
                 || ($this->privChair
-                    && (!$prow->managerContactId || !$ci->conflictType)
+                    && (!$prow->managerContactId || $ci->conflictType <= 0)
                     && (!($this->dangerous_track_mask() & Track::BITS_VIEWADMIN)
                         || ($this->conf->check_tracks($prow, $this, Track::VIEW)
                             && $this->conf->check_tracks($prow, $this, Track::ADMIN))))
                 || ($this->isPC
                     && $this->is_track_manager()
-                    && (!$prow->managerContactId || !$ci->conflictType)
+                    && (!$prow->managerContactId || $ci->conflictType <= 0)
                     && $this->conf->check_admin_tracks($prow, $this))
                 || $this->is_site_contact) {
                 $ci->allow_administer = true;
@@ -1836,7 +1836,7 @@ class Contact {
 
             // check current administration status
             $ci->can_administer = $ci->allow_administer
-                && (!$ci->conflictType || $forceShow);
+                && ($ci->conflictType <= 0 || $forceShow);
 
             // check PC tracking
             // (see also can_accept_review_assignment*)
@@ -1855,7 +1855,7 @@ class Contact {
             // check whether PC privileges apply
             $ci->allow_pc_broad = $ci->allow_administer || $isPC;
             $ci->allow_pc = $ci->can_administer
-                || ($isPC && !$ci->conflictType);
+                || ($isPC && $ci->conflictType <= 0);
 
             // check whether this is a potential reviewer
             // (existing external reviewer or PC)
@@ -1871,7 +1871,7 @@ class Contact {
             else
                 $ci->potential_reviewer = false;
             $ci->allow_review = $ci->potential_reviewer
-                && ($ci->can_administer || !$ci->conflictType);
+                && ($ci->can_administer || $ci->conflictType <= 0);
 
             // check author allowance
             $ci->act_author = $ci->conflictType >= CONFLICT_AUTHOR;
@@ -2881,7 +2881,7 @@ class Contact {
     function can_accept_review_assignment(PaperInfo $prow) {
         $rights = $this->rights($prow);
         return ($rights->allow_pc
-                || ($this->isPC && !$rights->conflictType))
+                || ($this->isPC && $rights->conflictType <= 0))
             && ($rights->reviewType > 0
                 || $rights->allow_administer
                 || $this->conf->check_tracks($prow, $this, Track::ASSREV));
@@ -2930,7 +2930,7 @@ class Contact {
         else if ($prow->timeSubmitted <= 0)
             $whyNot["notSubmitted"] = 1;
         else {
-            if ($rights->conflictType && !$rights->can_administer)
+            if ($rights->conflictType > 0 && !$rights->can_administer)
                 $whyNot["conflict"] = 1;
             else if ($rights->allow_review
                      && !$this->rights_owned_review($rights, $rrow)
@@ -2942,7 +2942,7 @@ class Contact {
             else
                 $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
             if ($rights->allow_administer
-                && ($rights->conflictType || $prow->timeSubmitted <= 0))
+                && ($rights->conflictType > 0 || $prow->timeSubmitted <= 0))
                 $whyNot["forceShow"] = 1;
             if ($rights->allow_administer && isset($whyNot["deadline"]))
                 $whyNot["override"] = 1;
@@ -2979,7 +2979,7 @@ class Contact {
             if (!$this->conf->time_review(null, true, true))
                 $whyNot["deadline"] = ($user->isPC ? "pcrev_hard" : "extrev_hard");
             if ($rights->allow_administer
-                && ($rights->conflictType || $prow->timeSubmitted <= 0))
+                && ($rights->conflictType > 0 || $prow->timeSubmitted <= 0))
                 $whyNot["forceShow"] = 1;
             if ($rights->allow_administer && isset($whyNot["deadline"]))
                 $whyNot["override"] = 1;
@@ -3102,7 +3102,7 @@ class Contact {
                 $whyNot["conflict"] = 1;
             else
                 $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
-            if ($rights->allow_administer && $rights->conflictType)
+            if ($rights->allow_administer && $rights->conflictType > 0)
                 $whyNot["forceShow"] = 1;
             if ($rights->allow_administer && isset($whyNot['deadline']))
                 $whyNot["override"] = 1;
@@ -3143,7 +3143,7 @@ class Contact {
             $whyNot["deadline"] = "resp_done";
             if ($crow->commentRound)
                 $whyNot["deadline"] .= "_" . $crow->commentRound;
-            if ($rights->allow_administer && $rights->conflictType)
+            if ($rights->allow_administer && $rights->conflictType > 0)
                 $whyNot["forceShow"] = 1;
             if ($rights->allow_administer)
                 $whyNot["override"] = 1;

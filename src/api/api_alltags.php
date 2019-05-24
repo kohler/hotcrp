@@ -35,7 +35,7 @@ class AllTags_API {
         if (!$user->privChair) {
             if (!$user->conf->tag_seeall) {
                 $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$user->contactId})";
-                $qwhere[] = "conflictType is null";
+                $qwhere[] = "coalesce(conflictType,0)<=0";
             }
             $tagmap = $user->conf->tags();
             $hidden = $tagmap->has_hidden;
