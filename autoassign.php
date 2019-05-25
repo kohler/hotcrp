@@ -128,7 +128,7 @@ if (isset($Qreq->saveassignment)
 }
 
 
-$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Automatic</strong>", "autoassign");
+$Conf->header(["Assignments", "Automatic"], "autoassign");
 echo '<div class="psmode">',
     '<div class="papmodex"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',

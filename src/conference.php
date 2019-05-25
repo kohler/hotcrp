@@ -3309,9 +3309,13 @@ class Conf {
         // title
         echo "<title>";
         if ($title) {
+            if (is_array($title)) {
+                if (count($title) === 3 && $title[2])
+                    $title = $title[1] . " - " . $title[0];
+                else
+                    $title = $title[0];
+            }
             $title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
-            $title = preg_replace(",(?: |&nbsp;|\302\240)+,", " ", $title);
-            $title = str_replace("&#x2215;", "-", $title);
         }
         if ($title && $title !== "Home" && $title !== "Sign in")
             echo $title, " - ";
@@ -3477,6 +3481,8 @@ class Conf {
 
         $title_div = get($extra, "title_div");
         if (!$title_div) {
+            if (is_array($title))
+                $title = $title[0] . " &nbsp;&#x2215;&nbsp; <strong>" . $title[1] . "</strong>";
             if ($title && $title !== "Home")
                 $title_div = '<div id="header-page"><h1>' . $title . '</h1></div>';
             else if ($action_bar)

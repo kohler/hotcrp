@@ -19,7 +19,7 @@ if ($want_topic !== $topic)
     $Conf->self_redirect($Qreq, ["t" => $want_topic]);
 $topicj = $help_topics->get($topic);
 
-$Conf->header_head($topic === "topics" ? "Help" : "Help - {$topicj->title}");
+$Conf->header_head($topic === "topics" ? "Help" : ["Help", $topicj->title, true]);
 $Conf->header_body("Help", "help");
 
 class HtHead extends Ht {

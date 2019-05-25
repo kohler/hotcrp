@@ -54,7 +54,7 @@ if (isset($Qreq->cancel) && $Qreq->post_ok())
 $Sv->crosscheck();
 
 $group_titles = $Sv->group_titles();
-$Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . $group_titles[$Group] . "</strong>", "settings");
+$Conf->header(["Settings", $group_titles[$Group], true], "settings");
 echo Ht::unstash(); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 

@@ -8,7 +8,7 @@ if (!$Me->is_manager())
     $Me->escape();
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 
-$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Conflicts</strong>", "assignpc");
+$Conf->header(["Assignments", "Conflicts"], "assignpc");
 echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',

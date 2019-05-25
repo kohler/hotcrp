@@ -92,7 +92,7 @@ if (isset($Qreq->saveassignment)
 }
 
 
-$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Bulk update</strong>", "bulkassign");
+$Conf->header(["Assignments", "Bulk update"], "bulkassign");
 echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
