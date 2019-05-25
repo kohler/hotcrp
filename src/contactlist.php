@@ -154,11 +154,16 @@ class ContactList {
     }
 
     function _sortPapers($a, $b) {
-        if (!$a->paperIds != !$b->paperIds)
+        if (!$a->paperIds !== !$b->paperIds)
             return $a->paperIds ? -1 : 1;
-        $x = (int) $a->paperIds - (int) $b->paperIds;
-        $x = $x ? $x : strcmp($a->paperIds, $b->paperIds);
-        return $x ? $x : $this->_sortBase($a, $b);
+        $na = substr_count($a->paperIds, ",");
+        $nb = substr_count($b->paperIds, ",");
+        if ($na !== $nb)
+            return $na > $nb ? -1 : 1;
+        else if (($x = strnatcmp($a->paperIds, $b->paperIds)))
+            return $x;
+        else
+            return $this->_sortBase($a, $b);
     }
 
     function _sortScores($a, $b) {
