@@ -179,16 +179,17 @@ function parseUploadedPreferences($text, $filename, $apply) {
         if ($assignset->has_error())
             pref_xmsgc($assignset->errors_div_html(true));
 
-        echo Ht::form(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]));
+        echo Ht::form(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]), ["class" => "alert need-unload-protection"]);
 
-        $actions = '<div class="aab aabr aabig">'
-            . Ht::submit("Save changes", ["class" => "aabut btn-primary"])
-            . Ht::submit("cancel", "Cancel", ["class" => "aabut"])
-            . '</div>';
+        $actions = Ht::actions([
+            Ht::submit("Apply changes", ["class" => "btn-success"]),
+            Ht::submit("cancel", "Cancel")
+        ], ["class" => "aab aabig"]);
         if (count($assignset->assigned_pids()) >= 4)
             echo $actions;
 
         echo '<h3>Proposed preference assignment</h3>';
+        echo '<p>The uploaded file requests the following preference changes.</p>';
         $assignset->echo_unparse_display();
 
         echo '<div class="g"></div>', $actions,
