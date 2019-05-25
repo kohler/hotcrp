@@ -253,9 +253,9 @@ class ContactList {
         case self::FIELD_SELECTOR:
             return "";
         case self::FIELD_PAPERS:
-            return "Papers";
+            return "Submissions";
         case self::FIELD_REVIEW_PAPERS:
-            return "Assigned papers";
+            return "Assigned submissions";
         case self::FIELD_TAGS:
             return "Tags";
         case self::FIELD_COLLABORATORS:
