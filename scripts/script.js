@@ -2383,23 +2383,26 @@ function form_highlight(form, elt) {
     toggleClass(form, "alert", (elt && form_differs(elt)) || form_differs(form));
 }
 
-function hiliter_children(form, on_unload) {
+function hiliter_children(form) {
     form = $(form)[0];
     form_highlight(form);
     $(form).on("change input", "input, select, textarea", function () {
         if (!hasClass(this, "ignore-diff") && !hasClass(form, "ignore-diff"))
             form_highlight(form, this);
     });
-    if (on_unload) {
-        $(form).on("submit", function () {
-            $(this).addClass("submitting");
-        });
+}
+
+$(function () {
+    $("form.need-unload-protection").each(function () {
+        var form = this;
+        removeClass(form, "need-unload-protection");
+        $(form).on("submit", function () { addClass(this, "submitting"); });
         $(window).on("beforeunload", function () {
             if (hasClass(form, "alert") && !hasClass(form, "submitting"))
                 return "If you leave this page now, your edits may be lost.";
         });
-    }
-}
+    });
+});
 
 function focus_at(felt) {
     felt.jquery && (felt = felt[0]);

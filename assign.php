@@ -406,9 +406,9 @@ if ($Me->can_administer($prow)) {
 
     // PC conflicts row
     echo '<hr class="papcard_sep"><h3>PC assignments</h3>',
-        Ht::form(hoturl_post("assign", "p=$prow->paperId"), array("id" => "ass")),
+        Ht::form(hoturl_post("assign", "p=$prow->paperId"), array("id" => "ass", "class" => "need-unload-protection")),
         '<p>';
-    Ht::stash_script('hiliter_children("#ass", true)');
+    Ht::stash_script('hiliter_children("#ass")');
 
     if ($Conf->has_topics())
         echo "<p>Review preferences display as “P#”, topic scores as “T#”.</p>";

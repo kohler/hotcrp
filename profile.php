@@ -503,7 +503,7 @@ if ($newProfile)
     echo '<div id="foldbulk" class="fold9' . ($Qreq->savebulk ? "o" : "c") . ' js-fold-focus"><div class="fn9">';
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
-              array("id" => "profile-form")),
+              array("id" => "profile-form", "class" => "need-unload-protection")),
     Ht::hidden("profile_contactid", $Acct->contactId);
 if (isset($Qreq->redirect))
     echo Ht::hidden("redirect", $Qreq->redirect);
@@ -646,5 +646,5 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 Ht::stash_script('focus_within($("#profile-form"))');
 if (!$newProfile)
-    Ht::stash_script('hiliter_children("#profile-form",true)');
+    Ht::stash_script('hiliter_children("#profile-form")');
 $Conf->footer();

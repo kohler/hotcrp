@@ -970,7 +970,7 @@ $blind\n";
         $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
         $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
 
-        echo Ht::form($reviewPostLink, array("class" => "editrevform")),
+        echo Ht::form($reviewPostLink, ["class" => "editrevform need-unload-protection"]),
             '<div>',
             Ht::hidden_default_submit("default", "");
         if ($rrow)
@@ -1110,7 +1110,7 @@ $blind\n";
         }
 
         echo "</div></div></div></form>\n\n";
-        Ht::stash_script('hiliter_children(".editrevform", true)', "form_revcard");
+        Ht::stash_script('hiliter_children(".editrevform")', "form_revcard");
     }
 
     const RJ_NO_EDITABLE = 2;

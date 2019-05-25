@@ -363,18 +363,18 @@ form {
 
 
 /* body */
-div#body {
+#body {
 	margin: 0 24px;
 	position: relative;
 	z-index: 3;
 }
-div#body > .demargin {
+#body > .demargin {
 	margin: 0 -24px;
 }
-div#body > .demargin .remargin-left {
+#body > .demargin .remargin-left {
 	padding-left: 24px;
 }
-div#body > .demargin .remargin-right {
+#body > .demargin .remargin-right {
 	padding-right: 24px;
 }
 body.paper {
@@ -391,12 +391,12 @@ body.paper {
 
 
 /* footer */
-div#footer {
+#footer {
 	margin-top: 36px;
 	padding: 0 24px 8px 12px;
 	clear: both;
 }
-div#footer-crp {
+#footer-crp {
 	float: right;
 	font-size: 69%;
 	background: #ffc9d6;

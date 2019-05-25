@@ -58,7 +58,8 @@ $Conf->header(["Settings", $group_titles[$Group], true], "settings");
 echo Ht::unstash(); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
-echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform"));
+echo Ht::form(hoturl_post("settings", "group=$Group"),
+              ["id" => "settingsform", "class" => "need-unload-protection"]);
 
 echo '<div class="leftmenu-menu-container"><div class="leftmenu-list">';
 foreach ($group_titles as $name => $title) {
@@ -86,5 +87,5 @@ $Sv->render_group($Group);
 doActionArea(false);
 echo "</div></div></form>\n";
 
-Ht::stash_script('hiliter_children("#settingsform", true)');
+Ht::stash_script('hiliter_children("#settingsform")');
 $Conf->footer();

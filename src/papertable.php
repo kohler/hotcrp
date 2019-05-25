@@ -2142,13 +2142,13 @@ class PaperTable {
     }
 
     private function _echo_editable_form() {
-        $form_js = ["id" => "paperform"];
+        $form_js = ["id" => "paperform", "class" => "need-unload-protection"];
         if ($this->prow && $this->prow->timeSubmitted > 0)
             $form_js["data-submitted"] = $this->prow->timeSubmitted;
         if ($this->prow && !$this->editable)
             $form_js["data-contacts-only"] = 1;
         if ($this->useRequest)
-            $form_js["class"] = "alert";
+            $form_js["class"] .= " alert";
         echo Ht::form(hoturl_post("paper", "p=" . ($this->prow ? $this->prow->paperId : "new") . "&amp;m=edit"), $form_js);
         Ht::stash_script('$("#paperform").on("change", ".js-check-submittable", handle_ui)');
         if ($this->prow
@@ -2278,7 +2278,7 @@ class PaperTable {
 
         Ht::stash_script("shortcut().add()");
         if ($this->editable || $this->mode === "edit")
-            Ht::stash_script('hiliter_children("#paperform", true)');
+            Ht::stash_script('hiliter_children("#paperform")');
     }
 
     private function _paptabSepContaining($t) {
