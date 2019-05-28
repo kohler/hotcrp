@@ -99,9 +99,10 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
             return $this->_order[$a] - $this->_order[$b];
         });
     }
-
-    function order_map() {
-        return $this->_order;
+    function ksort(&$a) {
+        uksort($a, function ($a, $b) {
+            return $this->_order[$a] - $this->_order[$b];
+        });
     }
 
     function abbrev_matcher() {

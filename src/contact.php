@@ -1791,10 +1791,7 @@ class Contact {
     }
 
     private function _sort_topic_interest_map() {
-        $to = $this->conf->topic_set()->order_map();
-        uksort($this->_topic_interest_map, function ($a, $b) use ($to) {
-            return $to[$a] - $to[$b];
-        });
+        $this->conf->topic_set()->ksort($this->_topic_interest_map);
     }
 
 
