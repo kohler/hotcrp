@@ -522,18 +522,18 @@ class PaperStatus extends MessageSet {
             $topics = $new_topics;
         }
         if (is_object($topics)) {
-            $topic_map = $this->conf->topic_set();
+            $topicset = $this->conf->topic_set();
             $pj->topics = (object) array();
             foreach ($topics as $k => $v) {
                 if (!$v)
                     /* skip */;
-                else if (isset($topic_map[$k]))
+                else if (isset($topicset[$k]))
                     $pj->topics->$k = true;
                 else {
-                    $tid = array_search($k, $topic_map->as_array(), true);
+                    $tid = array_search($k, $topicset->as_array(), true);
                     if ($tid === false && $k !== "" && !ctype_digit($k)) {
                         $tmatches = [];
-                        foreach ($topic_map as $tid => $tname)
+                        foreach ($topicset as $tid => $tname)
                             if (strcasecmp($k, $tname) == 0)
                                 $tmatches[] = $tid;
                         if (empty($tmatches) && $this->add_topics) {
@@ -541,11 +541,10 @@ class PaperStatus extends MessageSet {
                             if (!$this->conf->has_topics())
                                 $this->conf->save_setting("has_topics", 1);
                             $this->conf->invalidate_topics();
-                            $topic_map = $this->conf->topic_set();
-                            if (($tid = array_search($k, $topic_map, true)) !== false)
-                                $tmatches[] = $tid;
-                        }
-                        $tid = (count($tmatches) == 1 ? $tmatches[0] : false);
+                            $topicset = $this->conf->topic_set();
+                            $tid = array_search($k, $topicset->as_array(), true);
+                        } else if (count($tmatches) === 1)
+                            $tid = $tmatches[0];
                     }
                     if ($tid !== false)
                         $pj->topics->$tid = true;
