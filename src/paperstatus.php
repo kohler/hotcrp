@@ -234,7 +234,7 @@ class PaperStatus extends MessageSet {
             $pj->abstract = $prow->abstract;
 
         $topics = array();
-        foreach ($prow->named_topic_map() as $tid => $tname)
+        foreach ($prow->topic_map() as $tid => $tname)
             $topics[$this->export_ids ? $tid : $tname] = true;
         if (!empty($topics))
             $pj->topics = (object) $topics;
@@ -522,7 +522,7 @@ class PaperStatus extends MessageSet {
             $topics = $new_topics;
         }
         if (is_object($topics)) {
-            $topic_map = $this->conf->topic_map();
+            $topic_map = $this->conf->topic_set();
             $pj->topics = (object) array();
             foreach ($topics as $k => $v) {
                 if (!$v)
@@ -541,7 +541,7 @@ class PaperStatus extends MessageSet {
                             if (!$this->conf->has_topics())
                                 $this->conf->save_setting("has_topics", 1);
                             $this->conf->invalidate_topics();
-                            $topic_map = $this->conf->topic_map();
+                            $topic_map = $this->conf->topic_set();
                             if (($tid = array_search($k, $topic_map, true)) !== false)
                                 $tmatches[] = $tid;
                         }

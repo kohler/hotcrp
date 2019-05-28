@@ -413,7 +413,7 @@ class UserStatus extends MessageSet {
             $topics = !isset($cj->topics) && $old_user ? $old_user->topic_interest_map() : [];
             $cj->bad_topics = array();
             foreach ((array) $in_topics as $k => $v) {
-                if (get($this->conf->topic_map(), $k))
+                if ($this->conf->topic_set()->get($k))
                     $k = (int) $k;
                 else if (($tid = $this->conf->topic_abbrev_matcher()->find1($k)))
                     $k = $tid;
@@ -760,7 +760,7 @@ class UserStatus extends MessageSet {
 
         if (isset($qreq->has_ti) && $us->viewer->isPC) {
             $topics = array();
-            foreach ($us->conf->topic_map() as $id => $t)
+            foreach ($us->conf->topic_set() as $id => $t)
                 if (isset($qreq["ti$id"]) && is_numeric($qreq["ti$id"]))
                     $topics[$id] = (int) $qreq["ti$id"];
             $cj->topics = (object) $topics;
@@ -1040,14 +1040,15 @@ topics. We use this information to help match papers to reviewers.</p>',
 
         $ibound = [-INF, -1.5, -0.5, 0.5, 1.5, INF];
         $reqj_topics = (array) get($reqj, "topics", []);
-        foreach ($us->conf->topic_group_list() as $tg) {
+        $ts = $us->conf->topic_set();
+        foreach ($ts->group_list() as $tg) {
             for ($i = 1; $i !== count($tg); ++$i) {
                 $tid = $tg[$i];
                 $tic = "ti_topic";
                 if ($i === 1) {
-                    $n = $us->conf->unparse_topic_name_html($tid);
+                    $n = $ts->unparse_name_html($tid);
                 } else {
-                    $n = htmlspecialchars($us->conf->subtopic_name($tid));
+                    $n = htmlspecialchars($ts->subtopic_name($tid));
                     $tic .= " ti_subtopic";
                 }
                 echo "      <tr><td class=\"{$tic}\">{$n}</td>";

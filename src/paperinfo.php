@@ -874,31 +874,24 @@ class PaperInfo {
             if ($this->topicIds !== null && $this->topicIds !== "") {
                 foreach (explode(",", $this->topicIds) as $t)
                     $this->_topics_array[] = (int) $t;
-                $tomap = $this->conf->topic_order_map();
-                usort($this->_topics_array, function ($a, $b) use ($tomap) {
-                    return $tomap[$a] - $tomap[$b];
-                });
+                $this->conf->topic_set()->sort($this->_topics_array);
             }
         }
         return $this->_topics_array;
     }
 
     function topic_map() {
-        return array_fill_keys($this->topic_list(), true);
-    }
-
-    function named_topic_map() {
         $t = [];
         foreach ($this->topic_list() as $tid) {
             if (empty($t))
-                $tmap = $this->conf->topic_map();
-            $t[$tid] = $tmap[$tid];
+                $tset = $this->conf->topic_set();
+            $t[$tid] = $tset[$tid];
         }
         return $t;
     }
 
     function unparse_topics_text() {
-        return join("; ", $this->named_topic_map());
+        return join("; ", $this->topic_map());
     }
 
     private static $topic_interest_values = [-0.7071, -0.5, 0, 0.7071, 1];

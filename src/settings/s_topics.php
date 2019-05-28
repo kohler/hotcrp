@@ -17,12 +17,12 @@ class Topics_SettingRenderer {
 
         echo "<h3 class=\"settings g\">Topics</h3>\n";
         echo "<p class=\"settingtext\">Authors select the topics that apply to their submissions. PC members can indicate topics they’re interested in or search using the “topic:” keyword. Use a colon to create topic groups, as in “Systems: Correctness” and “Systems: Performance”.";
-        if ($sv->conf->topic_map())
+        if ($sv->conf->has_topics())
             echo " To delete an existing topic, remove its name.";
         echo "</p>\n", Ht::hidden("has_topics", 1);
 
 
-        if ($sv->conf->topic_map()) {
+        if ($sv->conf->has_topics()) {
             echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
             if (!empty($interests))
                 echo '<span class="float-right n"># PC interests: </span>';
@@ -30,7 +30,7 @@ class Topics_SettingRenderer {
             if (!empty($interests))
                 echo '<th class="padls">Low</th><th class="padls">High</th>';
             echo '</tr></thead><tbody>';
-            foreach ($sv->conf->topic_map() as $tid => $tname) {
+            foreach ($sv->conf->topic_set() as $tid => $tname) {
                 if ($sv->use_req() && isset($sv->req["top$tid"]))
                     $tname = $sv->req["top$tid"];
                 echo '<tr><td class="lentry">',
@@ -74,7 +74,7 @@ class Topics_SettingParser extends SettingParser {
                 else if ($t !== "")
                     $this->new_topics[] = [$t]; // NB array of arrays
             }
-        $tmap = $sv->conf->topic_map();
+        $tmap = $sv->conf->topic_set();
         foreach ($sv->req as $k => $x)
             if (strlen($k) > 3 && substr($k, 0, 3) === "top"
                 && ctype_digit(substr($k, 3))) {

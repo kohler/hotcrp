@@ -93,7 +93,7 @@ class Home_Partial {
         if ($user->is_pc_member()
             && !$user->has_review()
             && (!$user->collaborators
-                || ($user->conf->topic_map() && !$user->topic_interest_map())))
+                || ($user->conf->has_topics() && !$user->topic_interest_map())))
             return true;
         return false;
     }

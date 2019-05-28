@@ -460,7 +460,7 @@ if (!$newProfile) {
     if ($Acct->is_pc_member()) {
         if (!$Acct->collaborators)
             $UserStatus->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
-        if ($Conf->topic_map() && !$Acct->topic_interest_map())
+        if ($Conf->has_topics() && !$Acct->topic_interest_map())
             $UserStatus->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
     }
 }

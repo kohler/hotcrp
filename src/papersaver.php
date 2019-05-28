@@ -137,7 +137,7 @@ class Default_PaperSaver extends PaperSaver {
         // Topics
         if ($qreq->has_topics) {
             $pj->topics = (object) array();
-            foreach ($user->conf->topic_map() as $tid => $tname)
+            foreach ($user->conf->topic_set() as $tid => $tname)
                 if (+$qreq["top$tid"] > 0)
                     $pj->topics->$tname = true;
         }

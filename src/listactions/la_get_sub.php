@@ -133,7 +133,7 @@ class GetAbstract_ListAction extends ListAction {
 
         $text .= self::render_displayed_options($prow, $user, PaperOption::DISP_PROMINENT);
 
-        if (($tlist = $prow->named_topic_map())) {
+        if (($tlist = $prow->topic_map())) {
             $text .= "Topics\n------\n";
             foreach ($tlist as $t)
                 $text .= prefix_word_wrap("* ", $t, 2, self::WIDTH);
@@ -268,7 +268,7 @@ class GetTopics_ListAction extends ListAction {
         foreach ($user->paper_set($ssel, ["topics" => 1]) as $row)
             if ($user->can_view_paper($row)) {
                 $out = array();
-                foreach ($row->named_topic_map() as $t)
+                foreach ($row->topic_map() as $t)
                     $out[] = [$row->paperId, $row->title, $t];
                 if (empty($out))
                     $out[] = [$row->paperId, $row->title, "<none>"];

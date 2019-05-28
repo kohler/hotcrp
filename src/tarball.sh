@@ -309,6 +309,7 @@ src/settings/s_tracks.php
 src/settings/s_users.php
 src/settingvalues.php
 src/textformat.php
+src/topicset.php
 src/updateschema.php
 src/useractions.php
 src/userstatus.php

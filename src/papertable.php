@@ -1078,20 +1078,21 @@ class PaperTable {
     }
 
     private function paptab_topics() {
-        if (!($tmap = $this->prow->named_topic_map()))
+        if (!($tmap = $this->prow->topic_map()))
             return "";
         $interests = $this->user->topic_interest_map();
         $lenclass = count($tmap) < 4 ? "long" : "short";
+        $tset = $this->conf->topic_set();
         $ts = [];
         foreach ($tmap as $tid => $tname) {
             $t = '<li class="topicti';
             if (($i = get($interests, $tid)))
                 $t .= ' topic' . $i;
-            $x = $this->conf->unparse_topic_name_html($tid);
+            $x = $topics->unparse_name_html($tid);
             if ($this->user->isPC)
                 $x = Ht::link($x, hoturl("search", ["q" => "topic:" . SearchWord::quote($tname)]), ["class" => "qq"]);
             $ts[] = $t . '">' . $x . '</li>';
-            $lenclass = Conf::max_topici_lenclass($lenclass, $tname);
+            $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
         }
         return '<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>';
     }
@@ -1362,12 +1363,12 @@ class PaperTable {
             Ht::hidden("has_topics", 1),
             '<div class="ctable">';
         $ptopics = $this->prow ? $this->prow->topic_map() : [];
-        $atopics = $this->conf->topic_map();
-        foreach ($this->conf->topic_group_list() as $tg) {
+        $topics = $this->conf->topic_set();
+        foreach ($topics->group_list() as $tg) {
             $arg = ["class" => "uix js-range-click topic-entry", "id" => false,
                     "data-range-type" => "topic"];
             $isgroup = count($tg) >= 4;
-            if ($isgroup && strcasecmp($tg[0], $atopics[$tg[1]]) === 0) {
+            if ($isgroup && strcasecmp($tg[0], $topics[$tg[1]]) === 0) {
                 $tid = $tg[1];
                 $arg["data-default-checked"] = $pchecked = isset($ptopics[$tid]);
                 $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
@@ -1385,11 +1386,11 @@ class PaperTable {
             for ($i = 1; $i !== count($tg); ++$i) {
                 $tid = $tg[$i];
                 if ($isgroup) {
-                    $tname = htmlspecialchars($this->conf->subtopic_name($tid));
+                    $tname = htmlspecialchars($topics->subtopic_name($tid));
                     if ($tname === "")
                         continue;
                 } else {
-                    $tname = $this->conf->unparse_topic_name_html($tid);
+                    $tname = $topics->unparse_name_html($tid);
                 }
                 $arg["data-default-checked"] = $pchecked = isset($ptopics[$tid]);
                 $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;

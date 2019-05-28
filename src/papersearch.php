@@ -2849,14 +2849,14 @@ class PaperSearch {
             $res = array_merge($res, self::simple_search_completion("round:", $rlist));
         }
         if ($this->conf->has_topics() && (!$category || $category === "topic")) {
-            $atopics = $this->conf->topic_map();
-            foreach ($this->conf->topic_group_list() as $tg) {
+            $topics = $this->conf->topic_set();
+            foreach ($topics->group_list() as $tg) {
                 if (count($tg) >= 4) {
                     $res[] = "topic:" . SearchWord::quote($tg[0]);
                 }
                 for ($i = 1; $i !== count($tg); ++$i) {
-                    if (count($tg) < 3 || $atopics[$tg[$i]] !== $tg[0]) {
-                        $res[] = "topic:" . SearchWord::quote($atopics[$tg[$i]]);
+                    if (count($tg) < 3 || $topics[$tg[$i]] !== $tg[0]) {
+                        $res[] = "topic:" . SearchWord::quote($topics[$tg[$i]]);
                     }
                 }
             }

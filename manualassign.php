@@ -205,11 +205,11 @@ if ($reviewer) {
         $interest[$ti > 0 ? 1 : 0][$topic] = $ti;
     if (!empty($interest[1]))
         echo '<div class="f-i"><label>High-interest topics</label>',
-            $Conf->unparse_topic_list_html(array_keys($interest[1]), $interest[1]),
+            $Conf->topic_set()->unparse_list_html(array_keys($interest[1]), $interest[1]),
             "</div>";
     if (!empty($interest[0]))
         echo '<div class="f-i"><label>Low-interest topics</label>',
-            $Conf->unparse_topic_list_html(array_keys($interest[0]), $interest[0]),
+            $Conf->topic_set()->unparse_list_html(array_keys($interest[0]), $interest[0]),
             "</div>";
 
     // Conflict information

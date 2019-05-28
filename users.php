@@ -171,7 +171,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     if (isset($has->phone))
         $header[] = "phone";
     $selection = $header;
-    foreach ($Conf->topic_map() as $t => $tn) {
+    foreach ($Conf->topic_set() as $t => $tn) {
         $k = "topic$t";
         if (isset($has->$k)) {
             $header[] = "topic: " . $tn;
