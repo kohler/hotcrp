@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class CsvParser {
+    private $cur;
     private $lines;
     private $lpos = 0;
     private $type;
@@ -75,9 +76,18 @@ class CsvParser {
     }
 
     function next() {
-        while (($line = $this->shift()) === null)
-            /* loop */;
-        return $line;
+        while ($this->try_shift()) {
+        }
+        if ($this->cur !== false && $this->header) {
+            $a = [];
+            foreach ($this->cur as $i => $v) {
+                $x = get_s($this->header, $i);
+                $a[$x === "" ? $i : $x] = $v;
+            }
+            return $a;
+        } else {
+            return $this->cur;
+        }
     }
 
     function unshift($line) {
@@ -90,27 +100,31 @@ class CsvParser {
             array_unshift($this->lines, $line);
     }
 
-    function shift() {
-        if ($this->lpos >= count($this->lines))
+    private function try_shift() {
+        if ($this->lpos >= count($this->lines)) {
+            $this->cur = false;
             return false;
+        }
         $line = $this->lines[$this->lpos];
         ++$this->lpos;
         if (is_array($line))
-            return self::reparse($line, $this->header);
+            return false;
         // blank lines, comments
         if ($line === "" || $line[0] === "\n" || $line[0] === "\r")
-            return null;
+            return true;
         if ($this->comment_chars
             && strpos($this->comment_chars, $line[0]) !== false) {
             $this->comment_function && call_user_func($this->comment_function, $line);
-            return null;
+            return true;
         }
         // split on type
+        $this->cur = [];
         $fn = $this->typefn;
-        return $this->$fn($line, $this->header);
+        $this->$fn($line);
+        return false;
     }
 
-    private function parse_guess($line, $header) {
+    private function parse_guess($line) {
         $pipe = $tab = $comma = $doublepipe = -1;
         if ($this->type & self::TYPE_BAR)
             $pipe = substr_count($line, "|");
@@ -132,24 +146,22 @@ class CsvParser {
             $this->set_type(self::TYPE_COMMA);
         $fn = $this->typefn;
         assert($fn !== "parse_guess");
-        return $this->$fn($line, $header);
+        return $this->$fn($line);
     }
 
-    function parse_comma($line, $header) {
-        $i = 0;
-        $a = array();
+    private function parse_comma($line) {
         $linelen = self::linelen($line);
         $pos = 0;
-        while ($pos != $linelen) {
-            if ($i && $line[$pos] === ",")
+        while ($pos !== $linelen) {
+            if ($line[$pos] === "," && !empty($this->cur))
                 ++$pos;
             $bpos = $pos;
-            if ($pos != $linelen && $line[$pos] === "\"") {
+            if ($pos !== $linelen && $line[$pos] === "\"") {
                 while (1) {
                     $pos = strpos($line, "\"", $pos + 1);
                     if ($pos === false) {
                         $pos = $linelen;
-                        if ($this->lpos == count($this->lines))
+                        if ($this->lpos === count($this->lines))
                             break;
                         $line .= $this->lines[$this->lpos];
                         ++$this->lpos;
@@ -160,7 +172,7 @@ class CsvParser {
                         break;
                 }
                 $field = str_replace("\"\"", "\"", substr($line, $bpos + 1, $pos - $bpos - 1));
-                if ($pos != $linelen)
+                if ($pos !== $linelen)
                     ++$pos;
             } else {
                 $pos = strpos($line, ",", $pos);
@@ -168,92 +180,51 @@ class CsvParser {
                     $pos = $linelen;
                 $field = substr($line, $bpos, $pos - $bpos);
             }
-            if ($header && get_s($header, $i) !== "")
-                $a[$header[$i]] = $field;
-            else
-                $a[$i] = $field;
-            ++$i;
+            $this->cur[] = $field;
         }
-        return $a;
     }
 
-    function parse_bar($line, $header) {
-        $i = 0;
-        $a = array();
+    private function parse_bar($line) {
         $linelen = self::linelen($line);
         $pos = 0;
-        while ($pos != $linelen) {
+        while ($pos !== $linelen) {
             $bpos = $pos;
             $pos = strpos($line, "|", $pos);
             if ($pos === false)
                 $pos = $linelen;
-            $field = substr($line, $bpos, $pos - $bpos);
-            if ($header && get_s($header, $i) !== "")
-                $a[$header[$i]] = $field;
-            else
-                $a[$i] = $field;
-            ++$i;
-            if ($pos != $linelen && $line[$pos] === "|")
+            $this->cur[] = substr($line, $bpos, $pos - $bpos);
+            if ($pos !== $linelen && $line[$pos] === "|")
                 ++$pos;
         }
-        return $a;
     }
 
-    function parse_doublebar($line, $header) {
-        $i = 0;
-        $a = array();
+    private function parse_doublebar($line) {
         $linelen = self::linelen($line);
         $pos = 0;
-        while ($pos != $linelen) {
+        while ($pos !== $linelen) {
             $bpos = $pos;
             $pos = strpos($line, "||", $pos);
             if ($pos === false)
                 $pos = $linelen;
-            $field = substr($line, $bpos, $pos - $bpos);
-            if ($header && get_s($header, $i) !== "")
-                $a[$header[$i]] = $field;
-            else
-                $a[$i] = $field;
-            ++$i;
+            $this->cur[] = substr($line, $bpos, $pos - $bpos);
             if ($pos + 1 <= $linelen && $line[$pos] === "|" && $line[$pos + 1] === "|")
                 $pos += 2;
         }
-        return $a;
     }
 
-    function parse_tab($line, $header) {
-        $i = 0;
-        $a = array();
+    private function parse_tab($line, $header) {
         $linelen = self::linelen($line);
         $pos = 0;
-        while ($pos != $linelen) {
+        while ($pos !== $linelen) {
             $bpos = $pos;
             $pos = strpos($line, "\t", $pos);
             if ($pos === false)
                 $pos = $linelen;
             $field = substr($line, $bpos, $pos - $bpos);
-            if ($header && get_s($header, $i) !== "")
-                $a[$header[$i]] = $field;
-            else
-                $a[$i] = $field;
-            ++$i;
-            if ($pos != $linelen && $line[$pos] === "\t")
+            $this->cur[] = $field;
+            if ($pos !== $linelen && $line[$pos] === "\t")
                 ++$pos;
         }
-        return $a;
-    }
-
-    static function reparse($line, $header) {
-        $i = 0;
-        $a = array();
-        foreach ($line as $field) {
-            if ($header && get_s($header, $i) !== "")
-                $a[$header[$i]] = $field;
-            else
-                $a[$i] = $field;
-            ++$i;
-        }
-        return $a;
     }
 }
 
