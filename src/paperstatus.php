@@ -530,7 +530,7 @@ class PaperStatus extends MessageSet {
                 else if (isset($topic_map[$k]))
                     $pj->topics->$k = true;
                 else {
-                    $tid = array_search($k, $topic_map, true);
+                    $tid = array_search($k, $topic_map->as_array(), true);
                     if ($tid === false && $k !== "" && !ctype_digit($k)) {
                         $tmatches = [];
                         foreach ($topic_map as $tid => $tname)

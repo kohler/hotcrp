@@ -47,6 +47,9 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     function count() {
         return count($this->_topic_map);
     }
+    function as_array() {
+        return $this->_topic_map;
+    }
     function getIterator() {
         return new ArrayIterator($this->_topic_map);
     }
