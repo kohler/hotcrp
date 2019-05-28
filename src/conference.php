@@ -97,6 +97,7 @@ class Conf {
     private $_save_logs = false;
     public $_session_handler;
 
+    private $_collator;
     private $rounds = null;
     private $_defined_rounds = null;
     private $_round_settings = null;
@@ -714,6 +715,15 @@ class Conf {
             error_log("$landmark: database error: $dblink->error in $query");
             self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
+    }
+
+
+    function collator() {
+        if (!$this->_collator) {
+            $this->_collator = new Collator("en_US.utf8");
+            $this->_collator->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
+        }
+        return $this->_collator;
     }
 
 
@@ -1783,7 +1793,7 @@ class Conf {
                     $this->_pc_chairs_cache[$u->contactId] = $u;
             }
 
-            TagMap::collator()->asort($this->_pc_tags_cache);
+            $this->collator()->asort($this->_pc_tags_cache);
         }
         return $this->_pc_members_cache;
     }

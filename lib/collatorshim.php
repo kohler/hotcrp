@@ -12,6 +12,12 @@ class Collator {
         if ($name === self::NUMERIC_COLLATION)
             $this->numeric = $value;
     }
+    function compare($a, $b) {
+        if ($this->numeric)
+            return strnatcasecmp($a, $b);
+        else
+            return strcasecmp($a, $b);
+    }
     function sort(&$v) {
         if ($this->numeric)
             sort($v, SORT_NATURAL | SORT_FLAG_CASE);

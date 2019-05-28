@@ -212,7 +212,6 @@ class TagMap implements IteratorAggregate {
 
     private static $emoji_code_map = null;
     private static $multicolor_map = [];
-    private static $collator = null;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -541,20 +540,13 @@ class TagMap implements IteratorAggregate {
         return $tags;
     }
 
-    static function collator() {
-        if (!self::$collator) {
-            self::$collator = new Collator("en_US.utf8");
-            self::$collator->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
-        }
-        return self::$collator;
-    }
     function sort($tags) {
         if ($tags !== "" && $tags !== null && $tags !== []) {
             if (is_array($tags)) {
-                self::collator()->sort($tags);
+                $this->conf->collator()->sort($tags);
             } else {
                 $tags = explode(" ", $tags);
-                self::collator()->sort($tags);
+                $this->conf->collator()->sort($tags);
                 $tags = join(" ", $tags);
             }
         }
