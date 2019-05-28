@@ -1082,7 +1082,7 @@ class PaperTable {
             return "";
         $interests = $this->user->topic_interest_map();
         $lenclass = count($tmap) < 4 ? "long" : "short";
-        $tset = $this->conf->topic_set();
+        $topics = $this->conf->topic_set();
         $ts = [];
         foreach ($tmap as $tid => $tname) {
             $t = '<li class="topicti';
