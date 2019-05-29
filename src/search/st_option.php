@@ -100,7 +100,7 @@ class Option_SearchTerm extends SearchTerm {
     }
     static function parse_factory($keyword, Conf $conf, $kwfj, $m) {
         $f = $conf->find_all_fields($keyword);
-        if (count($f) == 1 && $f[0] instanceof PaperOption)
+        if (count($f) === 1 && $f[0] instanceof PaperOption)
             return (object) [
                 "name" => $keyword,
                 "parse_callback" => "Option_SearchTerm::parse",
