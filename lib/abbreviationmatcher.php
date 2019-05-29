@@ -255,6 +255,10 @@ class AbbreviationMatcher {
         $this->data[] = [$name, null, $data, $tflags, $prio];
         $this->matches = [];
     }
+    function add_lazy($name, $callback, $args, $tflags = 0, $prio = 0) {
+        $this->data[] = [$name, null, $this, $tflags, $prio, $callback, $args];
+        $this->matches = [];
+    }
 
     function set_abbreviator($tflags, Abbreviator $abbreviator) {
         $this->abbreviators[$tflags] = $abbreviator;
@@ -326,6 +330,8 @@ class AbbreviationMatcher {
             $last_abbreviator = $last_value = null;
             $amt = new AbbreviationMatchTracker($spat, $sisu);
             foreach ($this->data as $i => $d) {
+                if ($d[2] === $this)
+                    $d[2] = call_user_func_array($d[5], $d[6]);
                 if ($d[2] instanceof Abbreviator)
                     $abbreviator = $d[2];
                 else if (isset($this->abbreviators[$d[3]]))
@@ -358,6 +364,8 @@ class AbbreviationMatcher {
                     $results = [];
                     $prio = $d[4];
                 }
+                if ($d[2] === $this)
+                    $d[2] = call_user_func_array($d[5], $d[6]);
                 if (empty($results) || $d[2] !== $last)
                     $results[] = $last = $d[2];
             }

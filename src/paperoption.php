@@ -148,11 +148,11 @@ class PaperOptionList {
         return $this->jlist;
     }
 
-    function option_ids() {
+    function option_name_map() {
         $m = [];
         foreach ($this->option_json_list() as $id => $oj)
             if (!get($oj, "nonpaper"))
-                $m[] = $id;
+                $m[$id] = $oj->name;
         return $m;
     }
 
@@ -306,10 +306,10 @@ class PaperOption implements Abbreviator {
     const MINFIXEDID = 1000000;
 
     public $id;
+    public $name;
+    public $conf;
     public $formid;
     public $readable_formid;
-    public $conf;
-    public $name;
     public $title;
     public $message_title;
     public $type; // checkbox, selector, radio, numeric, text,
@@ -359,17 +359,11 @@ class PaperOption implements Abbreviator {
         if (is_object($args))
             $args = get_object_vars($args);
         $this->id = (int) $args["id"];
-        $this->conf = $conf;
-        if (isset($args["name"]))
-            $this->name = $args["name"];
-        else if (isset($args["title"]))
-            $this->name = $args["title"];
-        else
+        $this->name = $args["name"];
+        if ($this->name === null)
             $this->name = "<Unknown-{$this->id}>";
-        if (isset($args["title"]))
-            $this->title = $args["title"];
-        else
-            $this->title = $this->name;
+        $this->conf = $conf;
+        $this->title = get($args, "title", $this->name);
         $this->message_title = get($args, "message_title", $this->title);
         $this->type = $args["type"];
 
