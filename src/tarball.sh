@@ -127,6 +127,7 @@ lib/dbhelper.sh
 lib/dbl.php
 lib/filer.php
 lib/getopt.php
+lib/gmpshim.php
 lib/ht.php
 lib/icons.php
 lib/intlmsgset.php

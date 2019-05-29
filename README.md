@@ -24,7 +24,7 @@ software:
 * Nginx, http://nginx.org/ \
   (You may be able to use another web server that works with PHP.)
 * PHP version 5.6 or higher, http://php.net/
-  - Including MySQL support, php-intl, and php-fpm
+  - Including MySQL support, php-fpm, php-gmp, and php-intl
 * MySQL version 5 or higher, http://mysql.org/
 * The zip compressor, http://www.info-zip.org/
 * Poppler’s version of pdftohtml, http://poppler.freedesktop.org/ (only

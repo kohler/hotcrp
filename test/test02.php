@@ -1192,4 +1192,32 @@ xassert_eqq($dt->sort("a"), "a");
 xassert_eqq($dt->sort(" a"), " a");
 xassert_eqq($dt->sort(" a1 a10 a100 a2"), " a1 a2 a10 a100");
 
+// GMP shim
+require_once("$ConfSitePATH/lib/gmpshim.php");
+$a = gmpshim_init("0");
+xassert_eqq(gmpshim_testbit($a, 0), false);
+xassert_eqq(gmpshim_testbit($a, 1), false);
+xassert_eqq(gmpshim_testbit($a, 63), false);
+xassert_eqq(gmpshim_testbit($a, 64), false);
+xassert_eqq(gmpshim_scan1($a, 0), -1);
+gmpshim_setbit($a, 10);
+xassert_eqq(gmpshim_testbit($a, 0), false);
+xassert_eqq(gmpshim_testbit($a, 10), true);
+xassert_eqq(gmpshim_testbit($a, 63), false);
+xassert_eqq(gmpshim_testbit($a, 64), false);
+xassert_eqq(gmpshim_scan1($a, 0), 10);
+xassert_eqq(gmpshim_scan1($a, 10), 10);
+xassert_eqq(gmpshim_scan1($a, 11), -1);
+gmpshim_setbit($a, 10, false);
+gmpshim_setbit($a, 63, true);
+gmpshim_setbit($a, 127, true);
+xassert_eqq(gmpshim_testbit($a, 0), false);
+xassert_eqq(gmpshim_testbit($a, 10), false);
+xassert_eqq(gmpshim_testbit($a, 63), true);
+xassert_eqq(gmpshim_testbit($a, 64), false);
+xassert_eqq(gmpshim_testbit($a, 127), true);
+xassert_eqq(gmpshim_scan1($a, 0), 63);
+xassert_eqq(gmpshim_scan1($a, 63), 63);
+xassert_eqq(gmpshim_scan1($a, 64), 127);
+
 xassert_exit();
