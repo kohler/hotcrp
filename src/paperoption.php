@@ -164,9 +164,9 @@ class PaperOptionList {
                 return $this->ofinal;
             else
                 return null;
-        } else if (array_key_exists($id, $this->jmap))
+        } else if (array_key_exists($id, $this->jmap)) {
             $o = $this->jmap[$id];
-        else {
+        } else {
             $o = null;
             if (($oj = get($this->option_json_list(), $id)))
                 $o = PaperOption::make($oj, $this->conf);
@@ -1376,7 +1376,7 @@ class AttachmentsPaperOption extends PaperOption {
 class UnknownPaperOption extends PaperOption {
     function __construct(Conf $conf, $id) {
         parent::__construct($conf, [
-            "id" => $id, "name" => "__unknown{$id}__", "type" => "__unknown{$id}__"
+            "id" => $id, "name" => "<Option $id>", "type" => "__unknown{$id}__"
         ]);
     }
 
