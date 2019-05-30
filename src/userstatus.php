@@ -927,7 +927,7 @@ class UserStatus extends MessageSet {
             || !strcasecmp($us->user->email, $us->viewer->email)) {
             echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
             echo '<div class="', $us->control_class("password", "f-i"), '"><div class="f-c">Current password</div>',
-                Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => $us->autocomplete("current-password")]),
+                Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => $us->autocomplete("current-password"), "class" => "ignore-diff"]),
                 '</div>';
         }
         if ($us->conf->opt("contactdb_dsn") && $us->conf->opt("contactdb_loginFormHeading"))
