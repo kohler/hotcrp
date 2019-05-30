@@ -30,7 +30,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
         else
             return true;
     }
-    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         if ($this->remove) {
             $m = $state->query(["type" => "conflict", "pid" => $prow->paperId]);
             $cids = array_map(function ($x) { return $x["cid"]; }, $m);
@@ -38,10 +38,10 @@ class Conflict_AssignmentParser extends AssignmentParser {
         } else
             return false;
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return $contact->contactId != 0;
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $res = $state->remove(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId]);
         $admin = $state->user->can_administer($prow);
         if ($this->remove)

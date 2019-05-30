@@ -1077,6 +1077,17 @@ xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", "", $
 xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", "tag", $Conf),
             "#foo HIGHLIGHT:pink #bar");
 
+// assignment synonyms
+xassert_eqq($paper16->reviewer_preference($user_varghese), [0, null]);
+xassert_assign($user_varghese, "ID,Title,Preference\n16,Potential Benefits of Delta Encoding and Data Compression for HTTP,1X\n");
+$paper16->load_reviewer_preferences();
+xassert_eqq($paper16->reviewer_preference($user_varghese), [1, 1]);
+
+xassert_eq($paper16->leadContactId, 0);
+xassert_assign($user_chair, "paperID,lead\n16,varghese\n", true);
+$paper16 = fetch_paper(16, $user_chair);
+xassert_eq($paper16->leadContactId, $user_varghese->contactId);
+
 // search types
 assert_search_papers($user_chair, "timers", "1 21");
 assert_search_papers($user_chair, "ti:timers", "1");

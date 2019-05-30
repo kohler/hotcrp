@@ -23,7 +23,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         else
             return true;
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $removepred = null;
         if (isset($req["decision"])) {
             $matchexpr = PaperSearch::decision_matchexpr($state->conf, $req["decision"], false);

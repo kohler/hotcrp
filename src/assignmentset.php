@@ -482,7 +482,7 @@ class AssignmentParser {
     function __construct($type) {
         $this->type = $type;
     }
-    function expand_papers(&$req, AssignmentState $state) {
+    function expand_papers($req, AssignmentState $state) {
         return false;
     }
     function load_state(AssignmentState $state) {
@@ -498,29 +498,29 @@ class AssignmentParser {
         else
             return true;
     }
-    function contact_set(&$req, AssignmentState $state) {
+    function contact_set($req, AssignmentState $state) {
         return "pc";
     }
     static function unconflicted(PaperInfo $prow, Contact $contact, AssignmentState $state) {
         return ($state->overrides & Contact::OVERRIDE_CONFLICT)
             || !$prow->has_conflict($contact);
     }
-    function paper_filter($contact, &$req, AssignmentState $state) {
+    function paper_filter($contact, $req, AssignmentState $state) {
         return false;
     }
-    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         return false;
     }
-    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return false;
     }
-    function expand_anonymous_user(PaperInfo $prow, &$req, $user, AssignmentState $state) {
+    function expand_anonymous_user(PaperInfo $prow, $req, $user, AssignmentState $state) {
         return false;
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return false;
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return true;
     }
 }
@@ -529,16 +529,16 @@ class UserlessAssignmentParser extends AssignmentParser {
     function __construct($type) {
         parent::__construct($type);
     }
-    function contact_set(&$req, AssignmentState $state) {
+    function contact_set($req, AssignmentState $state) {
         return false;
     }
-    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         return [$state->none_user()];
     }
-    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return [$state->none_user()];
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return true;
     }
 }
@@ -584,7 +584,7 @@ class Null_AssignmentParser extends UserlessAssignmentParser {
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         return true;
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return true;
     }
 }
@@ -646,7 +646,7 @@ class ReviewAssigner_Data {
 
         $this->creator = !$tmatch && !$rmatch && $this->newtype != 0;
     }
-    static function make(&$req, AssignmentState $state, $rtype) {
+    static function make($req, AssignmentState $state, $rtype) {
         if (!isset($req["_review_data"]) || !is_object($req["_review_data"]))
             $req["_review_data"] = new ReviewAssigner_Data($req, $state, $rtype);
         return $req["_review_data"];
@@ -669,10 +669,10 @@ class Review_AssignmentParser extends AssignmentParser {
         if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make"))
             self::load_review_state($state);
     }
-    private function make_rdata(&$req, AssignmentState $state) {
+    private function make_rdata($req, AssignmentState $state) {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
-    function contact_set(&$req, AssignmentState $state) {
+    function contact_set($req, AssignmentState $state) {
         if ($this->rtype > REVIEW_EXTERNAL)
             return "pc";
         else if ($this->rtype == 0
@@ -692,7 +692,7 @@ class Review_AssignmentParser extends AssignmentParser {
         }
         Dbl::free($result);
     }
-    private function make_filter($fkey, $key, $value, &$req, AssignmentState $state) {
+    private function make_filter($fkey, $key, $value, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->can_create_review())
             return null;
@@ -701,17 +701,17 @@ class Review_AssignmentParser extends AssignmentParser {
                 "_rtype" => $rdata->oldtype, "_round" => $rdata->oldround
             ]);
     }
-    function paper_filter($contact, &$req, AssignmentState $state) {
+    function paper_filter($contact, $req, AssignmentState $state) {
         return $this->make_filter("pid", "cid", $contact->contactId, $req, $state);
     }
-    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         $cf = $this->make_filter("cid", "pid", $prow->paperId, $req, $state);
         return $cf !== null ? $state->users_by_id(array_keys($cf)) : false;
     }
-    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
     }
-    function expand_anonymous_user(PaperInfo $prow, &$req, $user, AssignmentState $state) {
+    function expand_anonymous_user(PaperInfo $prow, $req, $user, AssignmentState $state) {
         if (preg_match('/\A(?:new-?anonymous|anonymous-?new)\z/', $user)) {
             $suf = "";
             while (($u = $state->user_by_email("anonymous" . $suf))
@@ -726,7 +726,7 @@ class Review_AssignmentParser extends AssignmentParser {
         else
             return false;
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // User “none” is never allowed
         if (!$contact->contactId)
             return false;
@@ -746,7 +746,7 @@ class Review_AssignmentParser extends AssignmentParser {
         // Check conflicts
         return AssignmentParser::unconflicted($prow, $contact, $state);
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->error)
             return $rdata->error;
@@ -910,23 +910,23 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make"))
             Review_AssignmentParser::load_review_state($state);
     }
-    function contact_set(&$req, AssignmentState $state) {
+    function contact_set($req, AssignmentState $state) {
         return "reviewers";
     }
-    function paper_filter($contact, &$req, AssignmentState $state) {
+    function paper_filter($contact, $req, AssignmentState $state) {
         return $state->make_filter("pid", ["type" => "review", "cid" => $contact->contactId, "_rsubmitted" => 1]);
     }
-    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         $cf = $state->make_filter("cid", ["type" => "review", "pid" => $prow->paperId, "_rsubmitted" => 1]);
         return $state->users_by_id(array_keys($cf));
     }
-    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return $contact->contactId != 0;
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // parse round and reviewtype arguments
         $rarg0 = trim((string) $req["round"]);
         $oldround = null;
@@ -1120,13 +1120,13 @@ class AssignmentSet {
         Dbl::free($result);
     }
 
-    private static function apply_user_parts(&$req, $a) {
+    private static function apply_user_parts($req, $a) {
         foreach (array("firstName", "lastName", "email") as $i => $k)
             if (!$req[$k] && get($a, $i))
                 $req[$k] = $a[$i];
     }
 
-    private function lookup_users(&$req, $assigner) {
+    private function lookup_users($req, $assigner) {
         // move all usable identification data to email, firstName, lastName
         if (isset($req["name"]))
             self::apply_user_parts($req, Text::split_name($req["name"]));
@@ -1215,25 +1215,26 @@ class AssignmentSet {
     }
 
     static private function is_csv_header($req) {
-        foreach (["action", "assignment", "paper", "pid", "paperId", "ID"] as $k)
-            if (array_search($k, $req) !== false)
-                return true;
-        return false;
+        return !!preg_grep('{\A(?:action|assignment|paper|pid|paperid|id)\z}i', $req);
     }
 
-    private function install_csv_header($csv, $req) {
-        if (!self::is_csv_header($req)) {
-            $csv->unshift($req);
-            if (count($req) == 3
-                && (!$req[2] || strpos($req[2], "@") !== false))
-                $req = ["paper", "name", "email"];
-            else if (count($req) == 2)
-                $req = ["paper", "user"];
-            else
-                $req = ["paper", "action", "user", "round"];
+    private function install_csv_header($csv) {
+        if (!$csv->header()) {
+            if (!($req = $csv->next_array()))
+                return $this->error_at($csv->lineno(), "empty file");
+            if (!self::is_csv_header($req)) {
+                $csv->unshift($req);
+                if (count($req) === 3
+                    && (!$req[2] || strpos($req[2], "@") !== false))
+                    $req = ["paper", "name", "email"];
+                else if (count($req) == 2)
+                    $req = ["paper", "user"];
+                else
+                    $req = ["paper", "action", "user", "round"];
+            }
+            $csv->set_header($req);
         }
 
-        $csv->set_header($req);
         foreach ([["action", "assignment"], ["action", "type"],
                   ["paper", "pid"], ["paper", "paperid"], ["paper", "id"],
                   ["firstName", "first"], ["firstName", "first_name"],
@@ -1472,9 +1473,7 @@ class AssignmentSet {
             $csv->set_comment_chars("%#");
             $csv->set_comment_function(array($this, "parse_csv_comment"));
         }
-        if (!($req = $csv->header() ? : $csv->next_array()))
-            return $this->error_at($csv->lineno(), "empty file");
-        if (!$this->install_csv_header($csv, $req))
+        if (!$this->install_csv_header($csv))
             return false;
 
         $old_overrides = $this->user->set_overrides($this->astate->overrides);

@@ -57,7 +57,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         if (!$this->remove && $aj->next)
             $this->isnext = $aj->next === "seq" ? self::NEXTSEQ : self::NEXT;
     }
-    function expand_papers(&$req, AssignmentState $state) {
+    function expand_papers($req, AssignmentState $state) {
         return $this->isnext ? "ALL" : false;
     }
     static function load_tag_state(AssignmentState $state) {
@@ -84,7 +84,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $state->paper_error("You can’t view that tag for #{$prow->paperId}.");
         return false;
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // tag argument (can have multiple space-separated tags)
         if (($tag = trim((string) $req["tag"])) === "")
             return "Tag missing.";

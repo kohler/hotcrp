@@ -17,16 +17,16 @@ class Preference_AssignmentParser extends AssignmentParser {
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         return true;
     }
-    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         return array_filter($state->pc_users(),
             function ($u) use ($prow) {
                 return $u->can_enter_preference($prow);
             });
     }
-    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $state->reviewer->isPC ? [$state->reviewer] : false;
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         if (!$contact->contactId)
             return false;
         else if ($contact->contactId !== $state->user->contactId
@@ -79,7 +79,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             return $str === $str2 ? null : self::parse($str2);
         }
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $pref = $req["preference"];
         if ($pref === null)
             return "Missing preference.";

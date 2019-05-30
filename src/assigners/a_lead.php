@@ -22,10 +22,12 @@ class Lead_AssignmentParser extends AssignmentParser {
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($this->key === "manager")
             return $state->user->privChair ? true : "You can’t change paper administrators.";
+        else if (!$state->user->can_administer($prow))
+            return "You can’t administer #{$prow->paperId}.";
         else
-            return parent::allow_paper($prow, $state);
+            return true;
     }
-    function expand_any_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         if ($this->remove) {
             $m = $state->query(["type" => $this->key, "pid" => $prow->paperId]);
             $cids = array_map(function ($x) { return $x["_cid"]; }, $m);
@@ -33,10 +35,10 @@ class Lead_AssignmentParser extends AssignmentParser {
         } else
             return false;
     }
-    function expand_missing_user(PaperInfo $prow, &$req, AssignmentState $state) {
+    function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         if ($this->remove || !$contact->contactId)
             return true;
         else if (!$contact->can_accept_review_assignment_ignore_conflict($prow)) {
@@ -45,7 +47,7 @@ class Lead_AssignmentParser extends AssignmentParser {
         } else
             return AssignmentParser::unconflicted($prow, $contact, $state);
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $remcid = null;
         if ($this->remove && $contact->contactId)
             $remcid = $contact->contactId;

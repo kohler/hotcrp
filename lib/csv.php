@@ -52,7 +52,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         return $this->a;
     }
     function as_map() {
-        return $this->csv->as_map($this->a);
+        return $this->csvp->as_map($this->a);
     }
 }
 
@@ -190,7 +190,7 @@ class CsvParser {
     }
 
     function as_map($a) {
-        if ($this->header) {
+        if ($this->header && is_array($a)) {
             $b = [];
             foreach ($a as $i => $v) {
                 $offset = get_s($this->header, $i);
@@ -216,13 +216,7 @@ class CsvParser {
     }
 
     function next() {
-        while (($a = $this->try_shift()) === null) {
-        }
-        if ($a !== false && $this->header) {
-            return $this->as_map($a);
-        } else {
-            return $a;
-        }
+        return $this->next_map();
     }
 
     function next_array() {
@@ -235,6 +229,12 @@ class CsvParser {
         while (($a = $this->try_shift()) === null) {
         }
         return $a === false ? false : new CsvRow($this, $a);
+    }
+
+    function next_map() {
+        while (($a = $this->try_shift()) === null) {
+        }
+        return $this->as_map($a);
     }
 
     function unshift($line) {

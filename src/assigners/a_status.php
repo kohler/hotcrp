@@ -55,7 +55,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         Decision_AssignmentParser::load_decision_state($state);
         Status_AssignmentParser::load_status_state($state);
     }
-    function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
+    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         global $Now;
         $m = $state->remove(["type" => "status", "pid" => $prow->paperId]);
         $res = $m[0];
