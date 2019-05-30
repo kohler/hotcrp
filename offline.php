@@ -104,7 +104,7 @@ function setTagIndexes($qreq) {
                 $tag = $tagger->check(trim(substr($l, ($l[0] == "#" ? 6 : 4))), Tagger::NOVALUE);
         } else if (trim($l) !== "" && $l[0] !== "#") {
             $csvp->unshift($l);
-            $line = $csvp->next();
+            $line = $csvp->next_array();
             if ($line && check_tag_index_line($line)) {
                 if (isset($settings[$line[1]]))
                     $errors[$lineno] = "Paper #$line[1] already given on line " . $linenos[$line[1]];

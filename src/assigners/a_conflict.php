@@ -50,7 +50,9 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $ct = CONFLICT_CONTACTAUTHOR;
         else {
             $ct = 1000;
-            $cts = get($req, "conflicttype", get($req, "conflict"));
+            $cts = $req["conflicttype"];
+            if (!isset($cts))
+                $cts = $req["conflict"];
             if ($cts !== null && ($ct = Conflict::parse($cts, 1000)) === false)
                 return "Bad conflict type.";
             if ($ct !== 1000)

@@ -80,9 +80,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         }
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
-        foreach (array("preference", "pref", "revpref") as $k)
-            if (($pref = get($req, $k)) !== null)
-                break;
+        $pref = $req["preference"];
         if ($pref === null)
             return "Missing preference.";
         $ppref = self::parse($pref);
@@ -98,9 +96,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         if ($prow->timeWithdrawn > 0)
             $state->warning($prow->make_whynot(["withdrawn" => 1]));
 
-        foreach (array("expertise", "revexp") as $k)
-            if (($exp = get($req, $k)) !== null)
-                break;
+        $exp = $req["expertise"];
         if ($exp && ($exp = trim($exp)) !== "") {
             if (($pexp = self::parse($exp)) === null || $pexp[0])
                 return "Invalid expertise “" . htmlspecialchars($exp) . "”.";

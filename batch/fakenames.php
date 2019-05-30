@@ -19,7 +19,7 @@ class Fakes {
         if (($s = file_get_contents($file)) === false)
             return false;
         $csv = new CsvParser($s);
-        while (($x = $csv->next())) {
+        while (($x = $csv->next_array())) {
             list($name, $type, $count) = $x;
             if ((string) $type === "")
                 continue;

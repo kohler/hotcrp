@@ -351,7 +351,7 @@ class AssignerContacts {
             assert(validate_email($email) || preg_match('/\Aanonymous\d*\z/', $email));
             $cargs = ["contactId" => self::$next_fake_id, "roles" => 0, "email" => $email];
             foreach (["firstName", "lastName", "affiliation"] as $k)
-                if ($req && get($req, $k))
+                if ($req && $req[$k])
                     $cargs[$k] = $req[$k];
             if (preg_match('/\Aanonymous\d*\z/', $email)) {
                 $cargs["firstName"] = "Jane Q.";
@@ -598,7 +598,7 @@ class ReviewAssigner_Data {
     public $creator = true;
     public $error = false;
     static function separate($key, $req, $state, $rtype) {
-        $a0 = $a1 = trim(get_s($req, $key));
+        $a0 = $a1 = trim((string) $req[$key]);
         $require_match = $rtype ? false : $a0 !== "";
         if ($a0 === "" && $rtype != 0)
             $a0 = $a1 = get($state->defaults, $key);
@@ -638,7 +638,7 @@ class ReviewAssigner_Data {
             && ($this->newround = $state->conf->sanitize_round_name($rarg1)) === false)
             $this->error = Conf::round_name_error($rarg1);
         if ($rarg0 !== "" && $rarg1 !== null)
-            $this->explicitround = (string) get($req, "round") !== "";
+            $this->explicitround = (string) $req["round"] !== "";
         if ($rarg0 === "")
             $rmatch = false;
         if ($this->oldtype === null && $rtype > 0 && $rmatch)
@@ -928,12 +928,12 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         // parse round and reviewtype arguments
-        $rarg0 = trim(get_s($req, "round"));
+        $rarg0 = trim((string) $req["round"]);
         $oldround = null;
         if ($rarg0 !== "" && strcasecmp($rarg0, "any") != 0
             && ($oldround = $state->conf->sanitize_round_name($rarg0)) === false)
             return Conf::round_name_error($rarg0);
-        $targ0 = trim(get_s($req, "reviewtype"));
+        $targ0 = trim((string) $req["reviewtype"]);
         $oldtype = null;
         if ($targ0 !== ""
             && ($oldtype = ReviewInfo::parse_type($targ0)) === false)
@@ -1109,7 +1109,7 @@ class AssignmentSet {
     }
 
     private static function req_user_html($req) {
-        return Text::user_html_nolink(get($req, "firstName"), get($req, "lastName"), get($req, "email"));
+        return Text::user_html_nolink($req["firstName"], $req["lastName"], $req["email"]);
     }
 
     private function set_my_conflicts() {
@@ -1122,7 +1122,7 @@ class AssignmentSet {
 
     private static function apply_user_parts(&$req, $a) {
         foreach (array("firstName", "lastName", "email") as $i => $k)
-            if (!get($req, $k) && get($a, $i))
+            if (!$req[$k] && get($a, $i))
                 $req[$k] = $a[$i];
     }
 
@@ -1131,15 +1131,15 @@ class AssignmentSet {
         if (isset($req["name"]))
             self::apply_user_parts($req, Text::split_name($req["name"]));
         if (isset($req["user"]) && strpos($req["user"], " ") === false) {
-            if (!get($req, "email"))
+            if (!$req["email"])
                 $req["email"] = $req["user"];
         } else if (isset($req["user"]))
             self::apply_user_parts($req, Text::split_name($req["user"], true));
 
         // extract email, first, last
-        $first = get($req, "firstName");
-        $last = get($req, "lastName");
-        $email = trim((string) get($req, "email"));
+        $first = $req["firstName"];
+        $last = $req["lastName"];
+        $email = trim((string) $req["email"]);
         $lemail = strtolower($email);
         $special = null;
         if ($lemail)
@@ -1215,7 +1215,7 @@ class AssignmentSet {
     }
 
     static private function is_csv_header($req) {
-        foreach (array("action", "assignment", "paper", "pid", "paperId") as $k)
+        foreach (["action", "assignment", "paper", "pid", "paperId", "ID"] as $k)
             if (array_search($k, $req) !== false)
                 return true;
         return false;
@@ -1231,48 +1231,42 @@ class AssignmentSet {
                 $req = ["paper", "user"];
             else
                 $req = ["paper", "action", "user", "round"];
-        } else {
-            $cleans = array("paper", "pid", "paper", "paperId",
-                            "firstName", "first", "lastName", "last",
-                            "firstName", "firstname", "lastName", "lastname",
-                            "preference", "pref");
-            for ($i = 0; $i < count($cleans); $i += 2)
-                if (array_search($cleans[$i], $req) === false
-                    && ($j = array_search($cleans[$i + 1], $req)) !== false)
-                    $req[$j] = $cleans[$i];
         }
 
-        $has_action = array_search("action", $req) !== false
-            || array_search("assignment", $req) !== false;
+        $csv->set_header($req);
+        foreach ([["action", "assignment"], ["action", "type"],
+                  ["paper", "pid"], ["paper", "paperid"], ["paper", "id"],
+                  ["firstName", "first"], ["firstName", "first_name"],
+                  ["firstName", "firstname"], ["lastName", "last"],
+                  ["lastName", "last_name"], ["lastName", "lastname"],
+                  ["lastName", "surname"],
+                  ["preference", "pref"], ["preference", "revpref"],
+                  ["expertise", "prefexp"]] as $sp)
+            $csv->add_synonym($sp[0], $sp[1]);
+
+        $has_action = $csv->has_column("action");
         if (!$has_action && !isset($this->astate->defaults["action"])) {
-            $defaults = $modifications = [];
-            if (array_search("tag", $req) !== false)
+            $defaults = [];
+            if ($csv->has_column("tag"))
                 $defaults[] = "tag";
-            if (array_search("preference", $req) !== false)
+            if ($csv->has_column("preference"))
                 $defaults[] = "preference";
-            if (($j = array_search("lead", $req)) !== false) {
+            if ($csv->has_column("lead"))
                 $defaults[] = "lead";
-                $modifications = [$j, "user"];
-            }
-            if (($j = array_search("shepherd", $req)) !== false) {
+            if ($csv->has_column("shepherd"))
                 $defaults[] = "shepherd";
-                $modifications = [$j, "user"];
-            }
-            if (($j = array_search("decision", $req)) !== false) {
+            if ($csv->has_column("decision"))
                 $defaults[] = "decision";
-                $modifications = [$j, "decision"];
-            }
             if (count($defaults) == 1) {
                 $this->astate->defaults["action"] = $defaults[0];
-                for ($i = 0; $i < count($modifications); $i += 2)
-                    $req[$modifications[$i]] = $modifications[$i + 1];
+                if (in_array($defaults[0], ["lead", "shepherd", "manager"]))
+                    $csv->add_synonym("user", $defaults[0]);
             }
         }
-        $csv->set_header($req);
 
         if (!$has_action && !get($this->astate->defaults, "action"))
             return $this->error_at($csv->lineno(), "“assignment” column missing");
-        else if (array_search("paper", $req) === false)
+        else if (!$csv->has_column("paper"))
             return $this->error_at($csv->lineno(), "“paper” column missing");
         else {
             if (!isset($this->astate->defaults["action"]))
@@ -1333,9 +1327,7 @@ class AssignmentSet {
     }
 
     private function collect_parser($req) {
-        if (($action = get($req, "action")) === null
-            && ($action = get($req, "assignment")) === null
-            && ($action = get($req, "type")) === null)
+        if (($action = $req["action"]) === null)
             $action = $this->astate->defaults["action"];
         $action = strtolower(trim($action));
         return $this->conf->assignment_parser($action, $this->user);
@@ -1363,7 +1355,7 @@ class AssignmentSet {
     private function apply($aparser, $req) {
         // parse paper
         $pids = [];
-        $x = $this->collect_papers((string) get($req, "paper"), $pids, true);
+        $x = $this->collect_papers((string) $req["paper"], $pids, true);
         if (empty($pids))
             return false;
         $pfield_straight = $x == 2;
@@ -1480,7 +1472,7 @@ class AssignmentSet {
             $csv->set_comment_chars("%#");
             $csv->set_comment_function(array($this, "parse_csv_comment"));
         }
-        if (!($req = $csv->header() ? : $csv->next()))
+        if (!($req = $csv->header() ? : $csv->next_array()))
             return $this->error_at($csv->lineno(), "empty file");
         if (!$this->install_csv_header($csv, $req))
             return false;
@@ -1489,9 +1481,9 @@ class AssignmentSet {
 
         // parse file, load papers all at once
         $lines = $pids = [];
-        while (($req = $csv->next()) !== false) {
+        while (($req = $csv->next_row()) !== false) {
             $aparser = $this->collect_parser($req);
-            $this->collect_papers((string) get($req, "paper"), $pids, false);
+            $this->collect_papers((string) $req["paper"], $pids, false);
             if ($aparser
                 && ($pfield = $aparser->expand_papers($req, $this->astate)))
                 $this->collect_papers($pfield, $pids, false);

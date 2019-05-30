@@ -140,14 +140,10 @@ function parseUploadedPreferences($text, $filename, $apply) {
     $text = preg_replace('/^==-== /m', '#', $text);
     $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
     $csv->set_comment_chars("#");
-    $line = $csv->next();
-    // “CSV” downloads use “ID” and “Preference” columns; adjust header
-    if ($line && array_search("paper", $line) === false)
-        $line = array_map(function ($x) { return $x === "ID" ? "paper" : $x; }, $line);
-    if ($line && array_search("preference", $line) === false)
-        $line = array_map(function ($x) { return $x === "Preference" ? "preference" : $x; }, $line);
+    $line = $csv->next_array();
+
     // Parse header
-    if ($line && array_search("paper", $line) !== false)
+    if ($line && preg_grep('{\A(?:paper|pid|paper[\s_]*id|id)\z}i', $line))
         $csv->set_header($line);
     else {
         if (count($line) >= 2 && ctype_digit($line[0])) {

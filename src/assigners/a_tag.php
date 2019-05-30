@@ -86,7 +86,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, &$req, AssignmentState $state) {
         // tag argument (can have multiple space-separated tags)
-        if (($tag = trim(get($req, "tag", ""))) === "")
+        if (($tag = trim((string) $req["tag"])) === "")
             return "Tag missing.";
         $tags = preg_split('/\s+/', $tag);
         while (count($tags) > 1) {
@@ -96,9 +96,9 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $tag = $tags[0];
 
         // index argument
-        $xindex = get($req, "value");
+        $xindex = $req["value"];
         if ($xindex === null)
-            $xindex = get($req, "index");
+            $xindex = $req["index"];
         if ($xindex !== null
             && ($xindex = trim($xindex)) !== "") {
             $tag = preg_replace(',\A([-+]?#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+(?:\.\d*)?|-?\.\d+|any|all|none|clear)\z,i', '$1', $tag);

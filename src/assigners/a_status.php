@@ -76,8 +76,10 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                     $state->finishers[] = new Withdraw_AssignmentFinisher($prow->paperId);
                 }
             }
-            $r = (string) get($req, "withdraw_reason", get($req, "reason", null));
-            if ($r !== "")
+            $r = $req["withdraw_reason"];
+            if ($r === null)
+                $r = $req["reason"];
+            if ((string) $r !== "")
                 $res["_withdraw_reason"] = $r;
         } else if ($this->xtype === "revive") {
             if ($res["_withdrawn"] !== 0) {
