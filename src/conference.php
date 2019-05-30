@@ -2598,7 +2598,7 @@ class Conf {
         $qreq = $qreq ? : $Qreq;
 
         $x = [];
-        foreach ($qreq->make_array() as $k => $v) {
+        foreach ($qreq as $k => $v) {
             $ak = get(self::$selfurl_safe, $k);
             if ($ak === true)
                 $ak = $k;

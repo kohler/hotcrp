@@ -36,7 +36,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         unset($this->$offset);
     }
     function getIterator() {
-        return new ArrayIterator($this->make_array());
+        return new ArrayIterator($this->as_array());
     }
     function __set($name, $value) {
         $this->$name = $value;
@@ -89,14 +89,17 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return count(get_object_vars($this)) - 6;
     }
     function jsonSerialize() {
-        return $this->make_array();
+        return $this->as_array();
     }
-    function make_array() {
+    function as_array() {
         $d = [];
         foreach (get_object_vars($this) as $k => $v)
             if (substr($k, 0, 4) !== "____")
                 $d[$k] = $v;
         return $d;
+    }
+    function as_object() {
+        return (object) $this->as_array();
     }
     function keys() {
         $d = [];
@@ -104,9 +107,6 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             if (substr($k, 0, 4) !== "____")
                 $d[] = $k;
         return $d;
-    }
-    function make_object() {
-        return (object) $this->make_array();
     }
     function contains($key) {
         return property_exists($this, $key);
