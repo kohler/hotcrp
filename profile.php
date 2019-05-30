@@ -205,41 +205,45 @@ function parseBulkFile($text, $filename) {
 
     $csv = new CsvParser($text);
     $csv->set_comment_chars("#%");
-    if (($line = $csv->next())) {
-        $lcline = array_map(function ($a) { return strtolower(trim($a)); }, $line);
-        if (array_search("email", $lcline) !== false
-            || array_search("user", $lcline) !== false)
-            $csv->set_header($lcline);
-        else if (count($line) == 1) {
+    if (($line = $csv->next_array())) {
+        if (preg_grep('{\A(?:email|user)\z}i', $line)) {
+            $csv->set_header($line);
+        } else if (count($line) == 1) {
             $csv->set_header(["user"]);
             $csv->unshift($line);
         } else {
             // interpolate a likely header
-            $lcline = [];
-            for ($i = 0; $i < count($line); ++$i)
-                if (validate_email($line[$i]) && array_search("email", $lcline) === false)
-                    $lcline[] = "email";
-                else if (strpos($line[$i], " ") !== false && array_search("name", $lcline) === false)
-                    $lcline[] = "name";
-                else if (array_search($line[$i], ["pc", "chair"]) !== false && array_search("roles", $lcline) === false)
-                    $lcline[] = "roles";
-                else if (array_search("name", $lcline) !== false && array_search("affiliation", $lcline) === false)
-                    $lcline[] = "affiliation";
-                else
-                    $lcline[] = "unknown";
-            $csv->set_header($lcline);
             $csv->unshift($line);
-            $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> Header missing, assuming “<code>" . join(",", $lcline) . "</code>”";
+            $hdr = [];
+            for ($i = 0; $i < count($line); ++$i) {
+                if (validate_email($line[$i])
+                    && array_search("email", $hdr) === false) {
+                    $hdr[] = "email";
+                } else if (strpos($line[$i], " ") !== false
+                           && array_search("name", $hdr) === false) {
+                    $hdr[] = "name";
+                } else if (preg_match('{\A(?:pc|chair|sysadmin|admin)\z}i', $line[$i])
+                           && array_search("roles", $hdr) === false) {
+                    $hdr[] = "roles";
+                } else if (array_search("name", $hdr) !== false
+                           && array_search("affiliation", $hdr) === false) {
+                    $hdr[] = "affiliation";
+                } else {
+                    $hdr[] = "unknown" . count($hdr);
+                }
+            }
+            $csv->set_header($hdr);
+            $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> Header missing, assuming “<code>" . join(",", $hdr) . "</code>”";
         }
-
     }
 
     $saved_users = [];
     $ustatus = new UserStatus($Me, [
         "send_email" => true, "no_deprivilege_self" => true, "no_update_profile" => true
     ]);
+    $ustatus->add_csv_synonyms($csv);
 
-    while (($line = $csv->next()) !== false) {
+    while (($line = $csv->next_row()) !== false) {
         $ustatus->set_user(new Contact(null, $Conf));
         $ustatus->clear_messages();
         $cj = (object) ["id" => null];

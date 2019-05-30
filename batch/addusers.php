@@ -20,6 +20,28 @@ else if (isset($arg["expression"]))
 
 require_once("$ConfSitePATH/src/init.php");
 
+function save_contact($ustatus, $key, $cj, $arg) {
+    global $status;
+    if (!isset($cj->id) && !isset($arg["m"])) {
+        $cj->id = "new";
+    }
+    if (!isset($cj->email) && validate_email($key)) {
+        $cj->email = $key;
+    }
+    $acct = $ustatus->save($cj);
+    if ($acct) {
+        fwrite(STDOUT, "Saved account {$acct->email}.\n");
+    } else {
+        foreach ($ustatus->errors() as $msg) {
+            fwrite(STDERR, $msg . "\n");
+            if (!isset($arg["m"]) && $ustatus->has_error_at("email_inuse")) {
+                fwrite(STDERR, "(Use --modify to modify existing users.)\n");
+            }
+        }
+        $status = 1;
+    }
+}
+
 $file = count($arg["_"]) ? $arg["_"][0] : "-";
 if (isset($arg["e"])) {
     $content = $arg["e"];
@@ -27,51 +49,52 @@ if (isset($arg["e"])) {
 } else if ($file === "-") {
     $content = stream_get_contents(STDIN);
     $file = "<stdin>";
-} else
+} else {
     $content = file_get_contents($file);
+}
 if ($content === false) {
     fwrite(STDERR, "$file: Read error\n");
     exit(1);
-} else if (!preg_match(',\A\s*[\[\{],i', $content)) {
+}
+
+$ustatus = new UserStatus($Conf->site_contact(), ["send_email" => !isset($arg["no-email"])]);
+$status = 0;
+if (!preg_match(',\A\s*[\[\{],i', $content)) {
     $csv = new CsvParser(cleannl(convert_to_utf8($content)));
     $csv->set_comment_chars("#%");
-    $line = $csv->next();
-    if ($line && array_search("email", $line) !== false)
+    $line = $csv->next_array();
+    if ($line && preg_grep('{\Aemail\z}i', $line)) {
         $csv->set_header($line);
-    else {
+    } else {
         fwrite(STDERR, "$file: 'email' field missing from CSV header\n");
         exit(1);
     }
-    $content = array();
-    while (($line = $csv->next()))
-        $content[] = (object) $line;
-} else if (($content = json_decode($content)) === null) {
-    fwrite(STDERR, "$file: " . (json_last_error_msg() ? : "JSON parse error") . "\n");
-    exit(1);
-}
-
-if (is_object($content) && count((array) $content)
-    && validate_email(array_keys((array) $content)[0]))
-    $content = (array) $content;
-if (!is_array($content))
-    $content = array($content);
-$status = 0;
-foreach ($content as $email => $cj) {
-    $us = new UserStatus($Conf->site_contact(), ["send_email" => !isset($arg["no-email"])]);
-    if (!isset($cj->id) && !isset($arg["m"]))
-        $cj->id = "new";
-    if (!isset($cj->email) && validate_email($email))
-        $cj->email = $email;
-    $acct = $us->save($cj);
-    if ($acct)
-        fwrite(STDOUT, "Saved account $acct->email.\n");
-    else {
-        foreach ($us->errors() as $msg) {
-            fwrite(STDERR, $msg . "\n");
-            if (!isset($arg["m"]) && $us->has_error_at("email_inuse"))
-                fwrite(STDERR, "(Use --modify to modify existing users.)\n");
+    $ustatus->add_csv_synonyms($csv);
+    while (($line = $csv->next_row())) {
+        $ustatus->set_user(new Contact(null, $Conf));
+        $ustatus->clear_messages();
+        $cj = (object) ["id" => null];
+        $ustatus->parse_csv_group("", $cj, $line);
+        save_contact($ustatus, null, $cj, $arg);
+    }
+} else {
+    $content = json_decode($content);
+    if (is_object($content)) {
+        if (count((array) $content)
+            && validate_email(array_keys((array) $content)[0])) {
+            $content = (array) $content;
+        } else {
+            $content = [$content];
         }
-        $status = 1;
+    }
+    if ($content === null || !is_array($content)) {
+        fwrite(STDERR, "$file: " . (json_last_error_msg() ? : "JSON parse error") . "\n");
+        exit(1);
+    }
+    foreach ($content as $key => $cj) {
+        $ustatus->set_user(new Contact(null, $Conf));
+        $ustatus->clear_messages();
+        save_contact($ustatus, $key, $cj, $arg);
     }
 }
 

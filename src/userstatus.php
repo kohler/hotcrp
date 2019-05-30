@@ -780,17 +780,17 @@ class UserStatus extends MessageSet {
     static private $csv_keys = [
         ["email"],
         ["user"],
-        ["firstName", "firstname", "first", "givenName", "givenname", "given"],
-        ["lastName", "lastname", "last", "familyName", "familyname", "family"],
+        ["firstName", "firstname", "first_name", "first", "givenname", "given_name", "given"],
+        ["lastName", "lastname", "last_name", "last", "surname", "familyname", "family_name", "family"],
         ["name"],
-        ["preferred_email", "preferredEmail", "preferred email"],
+        ["preferred_email", "preferredemail"],
         ["affiliation"],
         ["collaborators"],
-        ["address1", "addressLine1"],
-        ["address2", "addressLine2"],
+        ["address1", "addressline1", "address_1", "address_line_1"],
+        ["address2", "addressline2", "address_2", "address_line_2"],
         ["city"],
         ["state", "province", "region"],
-        ["zip", "zipcode", "zipCode", "zip_code", "postalcode", "postal_code"],
+        ["zip", "zipcode", "zip_code", "postalcode", "postal_code"],
         ["country"],
         ["roles"],
         ["follow"],
@@ -801,14 +801,12 @@ class UserStatus extends MessageSet {
 
     static function parse_csv_main(UserStatus $us, $cj, $line, $uf) {
         foreach (self::$csv_keys as $ks) {
-            foreach ($ks as $k)
-                if (isset($line[$k]) && ($v = trim($line[$k])) !== "") {
-                    $kx = $ks[0];
-                    $cj->$kx = $v;
-                    break;
-                }
+            if (($v = trim((string) $line[$ks[0]])) !== "") {
+                $cj->{$ks[0]} = $v;
+            }
         }
-        if (isset($line["address"]) && ($v = trim($line["address"])) !== "")
+        if (isset($line["address"])
+            && ($v = trim($line["address"])) !== "")
             $cj->address = explode("\n", cleannl($line["address"]));
 
         // topics
@@ -824,6 +822,13 @@ class UserStatus extends MessageSet {
                 }
             if (!empty($topics))
                 $cj->change_topics = (object) $topics;
+        }
+    }
+
+    function add_csv_synonyms($csv) {
+        foreach (self::$csv_keys as $ks) {
+            for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i)
+                $csv->add_synonym($ks[0], $ks[$i]);
         }
     }
 

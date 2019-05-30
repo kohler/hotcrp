@@ -1235,15 +1235,15 @@ class AssignmentSet {
             $csv->set_header($req);
         }
 
-        foreach ([["action", "assignment"], ["action", "type"],
-                  ["paper", "pid"], ["paper", "paperid"], ["paper", "id"],
-                  ["firstName", "first"], ["firstName", "first_name"],
-                  ["firstName", "firstname"], ["lastName", "last"],
-                  ["lastName", "last_name"], ["lastName", "lastname"],
-                  ["lastName", "surname"],
-                  ["preference", "pref"], ["preference", "revpref"],
-                  ["expertise", "prefexp"]] as $sp)
-            $csv->add_synonym($sp[0], $sp[1]);
+        foreach ([["action", "assignment", "type"],
+                  ["paper", "pid", "paperid", "id"],
+                  ["firstName", "firstname", "first_name", "first", "givenname", "given_name"],
+                  ["lastName", "lastname", "last_name", "last", "surname", "familyname", "family_name"],
+                  ["preference", "pref", "revpref"],
+                  ["expertise", "prefexp"]] as $ks) {
+            for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i)
+                $csv->add_synonym($ks[0], $ks[$i]);
+        }
 
         $has_action = $csv->has_column("action");
         if (!$has_action && !isset($this->astate->defaults["action"])) {
