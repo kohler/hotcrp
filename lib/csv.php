@@ -2,6 +2,11 @@
 // csv.php -- HotCRP CSV parsing functions
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
+if (!function_exists("gmp_init")) {
+    global $ConfSitePATH;
+    require_once("$ConfSitePATH/lib/gmpshim.php");
+}
+
 class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
     private $a;
     private $csvp;
@@ -65,6 +70,7 @@ class CsvParser {
     private $hmap = [];
     private $comment_chars = false;
     private $comment_function;
+    private $used;
 
     const TYPE_COMMA = 1;
     const TYPE_PIPE = 2;
@@ -84,6 +90,7 @@ class CsvParser {
     function __construct($str, $type = self::TYPE_COMMA) {
         $this->lines = is_array($str) ? $str : self::split_lines($str);
         $this->set_type($type);
+        $this->used = gmp_init("0");
     }
 
     private function set_type($type) {
@@ -174,19 +181,44 @@ class CsvParser {
         }
     }
 
-    function column($offset) {
+    function column($offset, $mark_use = false) {
         if (isset($this->hmap[$offset])) {
-            return $this->hmap[$offset];
-        } else if (is_int($offset) && $offset >= 0) {
-            return $offset;
-        } else {
-            return -1;
+            $offset = $this->hmap[$offset];
+        } else if (!is_int($offset) && $offset >= 0) {
+            $offset = -1;
         }
+        if ($offset !== -1 && $mark_use) {
+            gmp_setbit($this->used, $offset);
+        }
+        return $offset;
     }
 
     function has_column($offset) {
         $c = $this->column($offset);
         return $c >= 0 && $c < count($this->header);
+    }
+
+    function column_used($offset) {
+        $c = $this->column($offset);
+        return $c >= 0 && gmp_testbit($this->used, $c);
+    }
+
+    function column_name($offset) {
+        $c = $this->column($offset);
+        if ($c >= 0 && $c < count($this->header)) {
+            $h = $this->header[$c];
+            if ((string) $h !== "") {
+                return (string) $h;
+            } else {
+                return (string) $c;
+            }
+        } else {
+            return $offset;
+        }
+    }
+
+    function column_count() {
+        return count((array) $this->header);
     }
 
     function as_map($a) {
