@@ -71,6 +71,7 @@ class CsvParser {
     private $comment_chars = false;
     private $comment_function;
     private $used;
+    private $nused = 0;
 
     const TYPE_COMMA = 1;
     const TYPE_PIPE = 2;
@@ -167,6 +168,7 @@ class CsvParser {
                     }
                 }
             }
+            $this->nused = max($this->nused, count($header));
         } else {
             $this->hmap = [];
         }
@@ -218,7 +220,7 @@ class CsvParser {
     }
 
     function column_count() {
-        return count((array) $this->header);
+        return $this->nused;
     }
 
     function as_map($a) {
@@ -252,21 +254,36 @@ class CsvParser {
     }
 
     function next_array() {
-        while (($a = $this->try_shift()) === null) {
+        while ($this->lpos < count($this->lines)) {
+            $line = $this->lines[$this->lpos];
+            ++$this->lpos;
+            if (is_array($line)) {
+                $a = $line;
+            } else if ($line === "" || $line[0] === "\n" || $line[0] === "\r") {
+                continue;
+            } else if ($this->comment_chars
+                       && strpos($this->comment_chars, $line[0]) !== false) {
+                if ($this->comment_function) {
+                    call_user_func($this->comment_function, $line, $this);
+                }
+                continue;
+            } else {
+                $fn = $this->typefn;
+                $a = $this->$fn($line);
+            }
+            $this->nused = max($this->nused, count($a));
+            return $a;
         }
-        return $a;
+        return false;
     }
 
     function next_row() {
-        while (($a = $this->try_shift()) === null) {
-        }
+        $a = $this->next_array();
         return $a === false ? false : new CsvRow($this, $a);
     }
 
     function next_map() {
-        while (($a = $this->try_shift()) === null) {
-        }
-        return $this->as_map($a);
+        return $this->as_map($this->next_array());
     }
 
     function unshift($line) {
@@ -277,26 +294,6 @@ class CsvParser {
             } else
                 array_unshift($this->lines, $line);
         }
-    }
-
-    private function try_shift() {
-        if ($this->lpos >= count($this->lines))
-            return false;
-        $line = $this->lines[$this->lpos];
-        ++$this->lpos;
-        if (is_array($line))
-            return false;
-        // blank lines, comments
-        if ($line === "" || $line[0] === "\n" || $line[0] === "\r")
-            return null;
-        if ($this->comment_chars
-            && strpos($this->comment_chars, $line[0]) !== false) {
-            $this->comment_function && call_user_func($this->comment_function, $line);
-            return null;
-        }
-        // split on type
-        $fn = $this->typefn;
-        return $this->$fn($line);
     }
 
     private function parse_guess($line) {
