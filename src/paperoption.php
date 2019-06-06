@@ -326,7 +326,6 @@ class PaperOption implements Abbreviator {
     public $display_space;
     public $internal;
     private $form_position;
-    public $allow_if; // public for PaperOptionList
     private $edit_condition;
     private $_ecs;
 
@@ -372,11 +371,6 @@ class PaperOption implements Abbreviator {
         if (($x = get_s($args, "search_keyword")))
             $this->_search_keyword = $x;
         $this->description = get_s($args, "description");
-        $p = get($args, "position");
-        if ((is_int($p) || is_float($p)) && ($this->id <= 0 || $p > 0))
-            $this->position = $p;
-        else
-            $this->position = 999;
         $this->required = !!get($args, "required");
         $this->final = !!get($args, "final");
         $this->nonpaper = !!get($args, "nonpaper");
@@ -410,9 +404,14 @@ class PaperOption implements Abbreviator {
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
         if ($this->display === self::DISP_DEFAULT)
             $this->display = $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
+        $p = get($args, "position");
+        if ((is_int($p) || is_float($p))
+            && ($this->id <= 0 || $p > 0))
+            $this->position = $p;
+        else
+            $this->position = 999;
 
         $this->form_position = get_f($args, "form_position");
-        $this->allow_if = get($args, "allow_if");
 
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;
