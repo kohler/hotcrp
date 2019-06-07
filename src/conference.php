@@ -887,14 +887,14 @@ class Conf {
         else
             return [];
     }
-    function xt_checkf($xt) {
+    function xt_checkf($xt, $user) {
         if ($this->_xt_allow_callback !== null)
-            return call_user_func($this->_xt_allow_callback, $xt);
+            return call_user_func($this->_xt_allow_callback, $xt, $user);
         else
             return !isset($xt->allow_if)
-                || $this->xt_check($xt->allow_if, $xt, $this->xt_user);
+                || $this->xt_check($xt->allow_if, $xt, $user);
     }
-    function xt_search_name($map, $name, $found = null) {
+    function xt_search_name($map, $name, $user, $found = null) {
         if (isset($map[$name])) {
             $list = $map[$name];
             $nlist = count($list);
@@ -913,14 +913,13 @@ class Conf {
                     ++$i;
                 }
                 if (self::xt_priority_compare($xt, $found) <= 0
-                    && $this->xt_checkf($xt))
+                    && $this->xt_checkf($xt, $user))
                     return $xt;
             }
         }
         return $found;
     }
-    function xt_search_factories($factories, $name, $found, $reflags = "") {
-        $user = $this->xt_user;
+    function xt_search_factories($factories, $name, $user, $found = null, $reflags = "") {
         $this->_xt_factory_match = false;
         $this->_xt_factory_error = null;
         $xts = [$found];
@@ -933,7 +932,7 @@ class Conf {
                 $m = [$name];
             else if (!preg_match("\1\\A(?:{$fxt->match})\\z\1{$reflags}", $name, $m))
                 continue;
-            if (!$this->xt_checkf($fxt))
+            if (!$this->xt_checkf($fxt, $user))
                 continue;
             self::xt_resolve_require($fxt);
             if (!$user)
@@ -947,7 +946,7 @@ class Conf {
             foreach ($r ? : [] as $xt) {
                 self::xt_combine($xt, $fxt);
                 $prio = self::xt_priority_compare($xt, $found);
-                if ($prio <= 0 && $this->xt_checkf($xt)) {
+                if ($prio <= 0 && $this->xt_checkf($xt, $user)) {
                     if ($prio < 0)
                         $xts = [];
                     $xts[] = $found = $xt;
@@ -3665,9 +3664,8 @@ class Conf {
     function search_keyword($keyword, Contact $user = null) {
         if ($this->_search_keyword_base === null)
             $this->make_search_keyword_map();
-        $this->xt_user = $user;
-        $uf = $this->xt_search_name($this->_search_keyword_base, $keyword);
-        $ufs = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $uf);
+        $uf = $this->xt_search_name($this->_search_keyword_base, $keyword, $user);
+        $ufs = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $user, $uf);
         return self::xt_resolve_require($ufs[0]);
     }
 
@@ -3687,8 +3685,7 @@ class Conf {
             if (($olist = $this->opt("assignmentParsers")))
                 expand_json_includes_callback($olist, [$this, "_add_assignment_parser_json"]);
         }
-        $this->xt_user = $user;
-        $uf = $this->xt_search_name($this->_assignment_parsers, $keyword);
+        $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $user);
         $uf = self::xt_resolve_require($uf);
         if ($uf && !isset($uf->__parser)) {
             $p = $uf->parser_class;
@@ -3712,8 +3709,7 @@ class Conf {
             if (($olist = $this->opt("formulaFunctions")))
                 expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
         }
-        $this->xt_user = $user;
-        $uf = $this->xt_search_name($this->_formula_functions, $fname);
+        $uf = $this->xt_search_name($this->_formula_functions, $fname, $user);
         return self::xt_resolve_require($uf);
     }
 
@@ -3736,8 +3732,8 @@ class Conf {
         }
         return $this->_api_map;
     }
-    private function check_api_json($fj, $method) {
-        if (isset($fj->allow_if) && !$this->xt_allowed($fj, $this->xt_user))
+    private function check_api_json($fj, $user, $method) {
+        if (isset($fj->allow_if) && !$this->xt_allowed($fj, $user))
             return false;
         else if (!$method)
             return true;
@@ -3751,11 +3747,10 @@ class Conf {
         return !!$this->api($fn, $user, $method);
     }
     function api($fn, Contact $user = null, $method = null) {
-        $this->xt_user = $user;
-        $this->_xt_allow_callback = function ($xt) use ($method) {
-            return $this->check_api_json($xt, $method);
+        $this->_xt_allow_callback = function ($xt, $user) use ($method) {
+            return $this->check_api_json($xt, $user, $method);
         };
-        $uf = $this->xt_search_name($this->api_map(), $fn);
+        $uf = $this->xt_search_name($this->api_map(), $fn, $user);
         $this->_xt_allow_callback = null;
         return self::xt_enabled($uf) ? $uf : null;
     }
@@ -3853,14 +3848,13 @@ class Conf {
         return !!$this->list_action($name, $user, $method);
     }
     function list_action($name, Contact $user = null, $method = null) {
-        $this->xt_user = $user;
-        $this->_xt_allow_callback = function ($xt) use ($method) {
-            return $this->check_api_json($xt, $method);
+        $this->_xt_allow_callback = function ($xt, $user) use ($method) {
+            return $this->check_api_json($xt, $user, $method);
         };
-        $uf = $this->xt_search_name($this->list_action_map(), $name);
+        $uf = $this->xt_search_name($this->list_action_map(), $name, $user);
         if (($s = strpos($name, "/")) !== false)
-            $uf = $this->xt_search_name($this->list_action_map(), substr($name, 0, $s), $uf);
-        $ufs = $this->xt_search_factories($this->_list_action_factories, $name, $uf);
+            $uf = $this->xt_search_name($this->list_action_map(), substr($name, 0, $s), $user, $uf);
+        $ufs = $this->xt_search_factories($this->_list_action_factories, $name, $user, $uf);
         $this->_xt_allow_callback = null;
         return self::xt_resolve_require($ufs[0]);
     }
@@ -3902,16 +3896,14 @@ class Conf {
         return $this->_paper_column_factories;
     }
     function basic_paper_column($name, Contact $user = null) {
-        $this->xt_user = $user;
-        $uf = $this->xt_search_name($this->paper_column_map(), $name);
+        $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
         return self::xt_enabled($uf) ? $uf : null;
     }
     function paper_columns($name, Contact $user) {
         if ($name === "" || $name[0] === "?")
             return [];
-        $this->xt_user = $user;
-        $uf = $this->xt_search_name($this->paper_column_map(), $name);
-        $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $uf, "i");
+        $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
+        $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i");
         return array_filter($ufs, "Conf::xt_resolve_require");
     }
 
@@ -3938,9 +3930,8 @@ class Conf {
             usort($this->_option_type_factories, "Conf::xt_priority_compare");
             // option types are global (cannot be allowed per user)
             $m = [];
-            $this->xt_user = null;
             foreach (array_keys($this->_option_type_map) as $name) {
-                if (($uf = $this->xt_search_name($this->_option_type_map, $name)))
+                if (($uf = $this->xt_search_name($this->_option_type_map, $name, null)))
                     $m[$name] = $uf;
             }
             $this->_option_type_map = $m;
@@ -3948,9 +3939,8 @@ class Conf {
         return $this->_option_type_map;
     }
     function option_type($name) {
-        $this->xt_user = null;
         $uf = get($this->option_type_map(), $name);
-        $ufs = $this->xt_search_factories($this->_option_type_factories, $name, $uf, "i");
+        $ufs = $this->xt_search_factories($this->_option_type_factories, $name, null, $uf, "i");
         return $ufs[0];
     }
 
@@ -3973,7 +3963,6 @@ class Conf {
                 expand_json_includes_callback($olist, [$this, "_add_capability_json"]);
             usort($this->_capability_factories, "Conf::xt_priority_compare");
         }
-        $this->xt_user = null;
         $ufs = $this->xt_search_factories($this->_capability_factories, $cap, null);
         return $ufs[0];
     }
@@ -4002,9 +3991,8 @@ class Conf {
         return $this->_mail_keyword_map;
     }
     function mail_keywords($name) {
-        $this->xt_user = null;
-        $uf = $this->xt_search_name($this->mail_keyword_map(), $name);
-        $ufs = $this->xt_search_factories($this->_mail_keyword_factories, $name, $uf);
+        $uf = $this->xt_search_name($this->mail_keyword_map(), $name, null);
+        $ufs = $this->xt_search_factories($this->_mail_keyword_factories, $name, null, $uf);
         return array_filter($ufs, "Conf::xt_resolve_require");
     }
 
@@ -4038,8 +4026,7 @@ class Conf {
         return $this->_mail_template_map;
     }
     function mail_template($name, $default_only = false) {
-        $this->xt_user = null;
-        $uf = $this->xt_search_name($this->mail_template_map(), $name);
+        $uf = $this->xt_search_name($this->mail_template_map(), $name, null);
         if (!$uf || !Conf::xt_resolve_require($uf))
             return null;
         if (!$default_only) {
