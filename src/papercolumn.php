@@ -1027,9 +1027,6 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
             return $f && $f->has_options && $f->displayed && $f->view_score > $vsbound;
         });
     }
-    static function xt_user_visible_fields($name, Conf $conf = null) {
-        return self::user_visible_fields($name, $conf->xt_user);
-    }
     static function expand($name, $user, $xfj, $m) {
         return array_map(function ($f) use ($xfj) {
             $cj = (array) $xfj;

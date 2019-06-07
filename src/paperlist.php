@@ -155,6 +155,7 @@ class PaperList {
     private $_row_filter;
     private $_columns_by_name;
     private $_column_errors_by_name = [];
+    private $_current_find_column;
 
     private $_header_script = "";
     private $_header_script_map = [];
@@ -409,18 +410,20 @@ class PaperList {
     }
 
 
+    function column_error($text) {
+        if ($this->_current_find_column)
+            $this->_column_errors_by_name[$this->_current_find_column][] = $text;
+    }
+
     private function find_columns($name) {
         if (!array_key_exists($name, $this->_columns_by_name)) {
+            $this->_current_find_column = $name;
             $fs = $this->conf->paper_columns($name, $this->user);
-            if (!$fs) {
-                $errors = $this->conf->xt_factory_errors();
-                if (empty($errors)) {
-                    if ($this->conf->paper_columns($name, $this->conf->site_contact()))
-                        $errors[] = "Permission error.";
-                    else
-                        $errors[] = "No such column.";
-                }
-                $this->_column_errors_by_name[$name] = $errors;
+            if (!$fs && !isset($this->_column_errors_by_name[$name])) {
+                if ($this->conf->paper_columns($name, $this->conf->site_contact()))
+                    $this->_column_errors_by_name[$name][] = "Permission error.";
+                else
+                    $this->_column_errors_by_name[$name][] = "No such column.";
             }
             $nfs = [];
             foreach ($fs as $fdef) {
@@ -1369,10 +1372,12 @@ class PaperList {
     }
 
     private function _columns($field_list, $table_html, $all) {
+        $this->conf->xt_factory_error_handler = [$this, "column_error"];
         $field_list = $this->_canonicalize_columns($field_list);
         if ($table_html)
             $field_list = $this->_view_columns($field_list);
         $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
+        $this->conf->xt_factory_error_handler = null;
         return $this->_prepare_columns($field_list, $all);
     }
 

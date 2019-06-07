@@ -130,8 +130,7 @@ class Conf {
     private $_updating_autosearch_tags = false;
     private $_cdb = false;
 
-    public $xt_user;
-    private $_xt_factory_error;
+    public $xt_factory_error_handler;
     private $_xt_allow_callback;
 
     private $_formula_functions;
@@ -919,8 +918,6 @@ class Conf {
         return $found;
     }
     function xt_search_factories($factories, $name, $user, $found = null, $reflags = "") {
-        $this->_xt_factory_match = false;
-        $this->_xt_factory_error = null;
         $xts = [$found];
         foreach ($factories as $fxt) {
             if (empty($xts)
@@ -955,10 +952,8 @@ class Conf {
         return $xts;
     }
     function xt_factory_error($message) {
-        $this->_xt_factory_error[] = $message;
-    }
-    function xt_factory_errors() {
-        return $this->_xt_factory_error;
+        if ($this->xt_factory_error_handler)
+            call_user_func($this->xt_factory_error_handler, $message);
     }
 
 
