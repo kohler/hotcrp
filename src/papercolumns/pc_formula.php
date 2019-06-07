@@ -153,21 +153,21 @@ class Formula_PaperColumnFactory {
         $cj["formula"] = $f;
         return new Formula_PaperColumn($f->conf, (object) $cj);
     }
-    static function expand($name, Conf $conf, $xfj, $m) {
-        $vsbound = $conf->xt_user->permissive_view_score_bound();
+    static function expand($name, $user, $xfj, $m) {
+        $vsbound = $user->permissive_view_score_bound();
         if ($name === "formulas") {
             return array_map(function ($f) use ($xfj) {
                 return Formula_PaperColumnFactory::make($f, $xfj);
-            }, array_filter($conf->named_formulas(),
-                function ($f) use ($conf, $vsbound) {
-                    return $f->view_score($conf->xt_user) > $vsbound;
+            }, array_filter($user->conf->named_formulas(),
+                function ($f) use ($user, $vsbound) {
+                    return $f->view_score($user) > $vsbound;
                 }));
         }
 
         $ff = null;
         if (str_starts_with($name, "formula")
             && ctype_digit(substr($name, 7)))
-            $ff = get($conf->named_formulas(), substr($name, 7));
+            $ff = get($user->conf->named_formulas(), substr($name, 7));
 
         $want_error = strpos($name, "(") !== false;
         if (!$ff && str_starts_with($name, "f:")) {
@@ -179,17 +179,17 @@ class Formula_PaperColumnFactory {
         }
 
         if (!$ff)
-            $ff = $conf->find_named_formula($name);
+            $ff = $user->conf->find_named_formula($name);
         if (!$ff && str_starts_with($name, "\"") && strpos($name, "\"", 1) === strlen($name) - 1)
-            $ff = $conf->find_named_formula(substr($name, 1, -1));
+            $ff = $user->conf->find_named_formula(substr($name, 1, -1));
         if (!$ff && $name !== "" && ($want_error || !is_numeric($name)))
             $ff = new Formula($name);
 
-        if ($ff && $ff->check($conf->xt_user)) {
-            if ($ff->view_score($conf->xt_user) > $vsbound)
+        if ($ff && $ff->check($user)) {
+            if ($ff->view_score($user) > $vsbound)
                 return [Formula_PaperColumnFactory::make($ff, $xfj)];
         } else if ($ff && $want_error)
-            $conf->xt_factory_error($ff->error_html());
+            $user->conf->xt_factory_error($ff->error_html());
         return null;
     }
     static function completions(Contact $user, $fxt) {

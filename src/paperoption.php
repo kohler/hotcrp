@@ -1109,7 +1109,7 @@ class TextPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
     }
-    static function expand($name, Conf $conf, $fxt, $m) {
+    static function expand($name, $user, $fxt, $m) {
         $xt = clone $fxt;
         unset($xt->match);
         $xt->name = $name;

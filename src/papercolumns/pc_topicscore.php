@@ -40,18 +40,18 @@ class TopicScore_PaperColumn extends PaperColumn {
         return $row->topic_interest_score($this->contact);
     }
 
-    static function expand($name, Conf $conf, $xfj, $m) {
-        if (!($fj = (array) $conf->basic_paper_column("topicscore", $conf->xt_user)))
+    static function expand($name, $user, $xfj, $m) {
+        if (!($fj = (array) $user->conf->basic_paper_column("topicscore", $user)))
             return null;
         $rs = [];
-        foreach (ContactSearch::make_pc($m[1], $conf->xt_user)->ids as $cid) {
-            $u = $conf->cached_user_by_id($cid);
+        foreach (ContactSearch::make_pc($m[1], $user)->ids as $cid) {
+            $u = $user->conf->cached_user_by_id($cid);
             $fj["name"] = "topicscore:" . $u->email;
             $fj["user"] = $u->email;
             $rs[] = (object) $fj;
         }
         if (empty($rs))
-            $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[1]) . "”.");
+            $user->conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[1]) . "”.");
         return $rs;
     }
 }

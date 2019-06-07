@@ -103,20 +103,20 @@ class Conflict_PaperColumn extends PaperColumn {
             return get(Conflict::$type_descriptions, $ct, "Other");
     }
 
-    static function expand($name, Conf $conf, $xfj, $m) {
-        if (!($fj = (array) $conf->basic_paper_column($m[1], $conf->xt_user)))
+    static function expand($name, $user, $xfj, $m) {
+        if (!($fj = (array) $user->conf->basic_paper_column($m[1], $user)))
             return null;
         $rs = [];
-        $cs = new ContactSearch(ContactSearch::F_PC | ContactSearch::F_TAG | ContactSearch::F_USER, $m[2], $conf->xt_user);
+        $cs = new ContactSearch(ContactSearch::F_PC | ContactSearch::F_TAG | ContactSearch::F_USER, $m[2], $user);
         foreach ($cs->ids as $cid) {
-            if (($u = $conf->pc_member_by_id($cid))) {
+            if (($u = $user->conf->pc_member_by_id($cid))) {
                 $fj["name"] = $m[1] . ":" . $u->email;
                 $fj["user"] = $u->email;
                 $rs[] = (object) $fj;
             }
         }
         if (empty($rs))
-            $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[2]) . "”.");
+            $user->conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[2]) . "”.");
         return $rs;
     }
 }

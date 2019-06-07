@@ -27,7 +27,7 @@ class Comment_SearchTerm extends SearchTerm {
         $this->only_author = get($kwdef, "only_author");
         $this->commentRound = get($kwdef, "round");
     }
-    static function comment_factory($keyword, Conf $conf, $kwfj, $m) {
+    static function comment_factory($keyword, $user, $kwfj, $m) {
         $tword = str_replace("-", "", $m[1]);
         return (object) [
             "name" => $keyword, "parse_callback" => "Comment_SearchTerm::parse",
@@ -37,14 +37,14 @@ class Comment_SearchTerm extends SearchTerm {
             "has" => ">0"
         ];
     }
-    static function response_factory($keyword, Conf $conf, $kwfj, $m) {
-        $round = $conf->resp_round_number($m[2]);
+    static function response_factory($keyword, $user, $kwfj, $m) {
+        $round = $user->conf->resp_round_number($m[2]);
         if ($round === false
             && $m[1] === ""
             && preg_match('/\A(draft-?)(.*)\z/i', $m[2], $mm)) {
             $m[1] = $mm[1];
             $m[2] = $mm[2];
-            $round = $conf->resp_round_number($m[2]);
+            $round = $user->conf->resp_round_number($m[2]);
         }
         if ($round === false || ($m[1] && $m[3]))
             return null;

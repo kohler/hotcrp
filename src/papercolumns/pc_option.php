@@ -50,29 +50,29 @@ class Option_PaperColumnFactory {
         $cj["option_id"] = $opt->id;
         return (object) $cj;
     }
-    static function expand($name, Conf $conf, $xfj, $m) {
+    static function expand($name, $user, $xfj, $m) {
         list($ocolon, $oname, $isrow) = [$m[1], $m[2], !!$m[3]];
         if (!$ocolon && $oname === "options") {
-            $conf->xt_factory_mark_matched();
+            $user->conf->xt_factory_mark_matched();
             $x = [];
-            foreach ($conf->xt_user->user_option_list() as $opt)
+            foreach ($user->user_option_list() as $opt)
                 if ($opt->display() >= 0 && $opt->list_display($isrow))
                     $x[] = self::option_json($xfj, $opt, $isrow);
             return $x;
         }
-        $opts = $conf->paper_opts->find_all($oname);
+        $opts = $user->conf->paper_opts->find_all($oname);
         if (!$opts && $isrow) {
             $oname .= $m[3];
-            $opts = $conf->paper_opts->find_all($oname);
+            $opts = $user->conf->paper_opts->find_all($oname);
         }
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
             if ($opt->display() >= 0 && $opt->list_display($isrow))
                 return self::option_json($xfj, $opt, $isrow);
-            $conf->xt_factory_error("Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
+            $user->conf->xt_factory_error("Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
         } else if ($ocolon)
-            $conf->xt_factory_error("No such option “" . htmlspecialchars($oname) . "”.");
+            $user->conf->xt_factory_error("No such option “" . htmlspecialchars($oname) . "”.");
         return null;
     }
     static function completions(Contact $user, $fxt) {

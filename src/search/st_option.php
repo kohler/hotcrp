@@ -98,8 +98,8 @@ class Option_SearchTerm extends SearchTerm {
         parent::__construct("option");
         $this->om = $om;
     }
-    static function parse_factory($keyword, Conf $conf, $kwfj, $m) {
-        $f = $conf->find_all_fields($keyword);
+    static function parse_factory($keyword, $user, $kwfj, $m) {
+        $f = $user->conf->find_all_fields($keyword);
         if (count($f) === 1 && $f[0] instanceof PaperOption)
             return (object) [
                 "name" => $keyword,

@@ -46,13 +46,13 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
             return htmlspecialchars($x);
     }
 
-    static function expand($name, Conf $conf, $xfj, $m) {
+    static function expand($name, $user, $xfj, $m) {
         $formula = new Formula($m[1], true);
-        if (!$formula->check($conf->xt_user)) {
-            $conf->xt_factory_error($formula->error_html());
+        if (!$formula->check($user)) {
+            $user->conf->xt_factory_error($formula->error_html());
             return null;
         } else if (!($formula->result_format() instanceof ReviewField)) {
-            $conf->xt_factory_error("Graphed formulas must return review fields.");
+            $user->conf->xt_factory_error("Graphed formulas must return review fields.");
             return null;
         } else {
             $cj = (array) $xfj;

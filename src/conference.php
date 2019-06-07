@@ -920,6 +920,7 @@ class Conf {
         return $found;
     }
     function xt_search_factories($factories, $name, $found, $reflags = "") {
+        $user = $this->xt_user;
         $this->_xt_factory_match = false;
         $this->_xt_factory_error = null;
         $xts = [$found];
@@ -935,8 +936,10 @@ class Conf {
             if (!$this->xt_checkf($fxt))
                 continue;
             self::xt_resolve_require($fxt);
+            if (!$user)
+                $user = $this->site_contact();
             if (isset($fxt->expand_callback))
-                $r = call_user_func($fxt->expand_callback, $name, $this, $fxt, $m);
+                $r = call_user_func($fxt->expand_callback, $name, $user, $fxt, $m);
             else
                 $r = (object) ["name" => $name, "match_data" => $m];
             if (is_object($r))

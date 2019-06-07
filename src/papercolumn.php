@@ -881,22 +881,22 @@ class Tag_PaperColumn extends PaperColumn {
 }
 
 class Tag_PaperColumnFactory {
-    static function expand($name, Conf $conf, $xfj, $m) {
-        $tagger = new Tagger($conf->xt_user);
+    static function expand($name, $user, $xfj, $m) {
+        $tagger = new Tagger($user);
         $ts = [];
         if (($twiddle = strpos($m[2], "~")) > 0
             && !ctype_digit(substr($m[2], 0, $twiddle))) {
             $utext = substr($m[2], 0, $twiddle);
-            foreach (ContactSearch::make_pc($utext, $conf->xt_user)->ids as $cid) {
+            foreach (ContactSearch::make_pc($utext, $user)->ids as $cid) {
                 $ts[] = $cid . substr($m[2], $twiddle);
             }
             if (!$ts) {
-                $conf->xt_factory_error("No PC member matches “" . htmlspecialchars($utext) . "”.");
+                $user->conf->xt_factory_error("No PC member matches “" . htmlspecialchars($utext) . "”.");
             }
         } else {
             $ts[] = $m[2];
         }
-        $flags = Tagger::NOVALUE | ($conf->xt_user->is_manager() ? Tagger::ALLOWCONTACTID : 0);
+        $flags = Tagger::NOVALUE | ($user->is_manager() ? Tagger::ALLOWCONTACTID : 0);
         $rs = [];
         foreach ($ts as $t) {
             if ($tagger->check($t, $flags)) {
@@ -905,7 +905,7 @@ class Tag_PaperColumnFactory {
                 $fj["tag"] = $t;
                 $rs[] = (object) $fj;
             } else {
-                $conf->xt_factory_error($tagger->error_html);
+                $user->conf->xt_factory_error($tagger->error_html);
             }
         }
         return $rs;
@@ -1017,24 +1017,27 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         return !$row->may_have_viewable_scores($this->format_field, $pl->user);
     }
 
-    static function xt_user_visible_fields($name, Conf $conf = null) {
+    static function user_visible_fields($name, Contact $user) {
         if ($name === "scores") {
-            $fs = $conf->all_review_fields();
-            $conf->xt_factory_mark_matched();
+            $fs = $user->conf->all_review_fields();
+            $user->conf->xt_factory_mark_matched();
         } else
-            $fs = [$conf->find_review_field($name)];
-        $vsbound = $conf->xt_user->permissive_view_score_bound();
+            $fs = [$user->conf->find_review_field($name)];
+        $vsbound = $user->permissive_view_score_bound();
         return array_filter($fs, function ($f) use ($vsbound) {
             return $f && $f->has_options && $f->displayed && $f->view_score > $vsbound;
         });
     }
-    static function expand($name, Conf $conf, $xfj, $m) {
+    static function xt_user_visible_fields($name, Conf $conf = null) {
+        return self::user_visible_fields($name, $conf->xt_user);
+    }
+    static function expand($name, $user, $xfj, $m) {
         return array_map(function ($f) use ($xfj) {
             $cj = (array) $xfj;
             $cj["name"] = $f->search_keyword();
             $cj["review_field_id"] = $f->id;
             return (object) $cj;
-        }, self::xt_user_visible_fields($name, $conf));
+        }, self::user_visible_fields($name, $user));
     }
     static function completions(Contact $user, $fxt) {
         if (!$user->can_view_some_review())
