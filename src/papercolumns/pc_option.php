@@ -53,7 +53,6 @@ class Option_PaperColumnFactory {
     static function expand($name, $user, $xfj, $m) {
         list($ocolon, $oname, $isrow) = [$m[1], $m[2], !!$m[3]];
         if (!$ocolon && $oname === "options") {
-            $user->conf->xt_factory_mark_matched();
             $x = [];
             foreach ($user->user_option_list() as $opt)
                 if ($opt->display() >= 0 && $opt->list_display($isrow))

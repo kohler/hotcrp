@@ -131,7 +131,6 @@ class Conf {
     private $_cdb = false;
 
     public $xt_user;
-    private $_xt_factory_match;
     private $_xt_factory_error;
     private $_xt_allow_callback;
 
@@ -955,14 +954,8 @@ class Conf {
         }
         return $xts;
     }
-    function xt_factory_mark_matched() {
-        $this->_xt_factory_match = true;
-    }
     function xt_factory_error($message) {
         $this->_xt_factory_error[] = $message;
-    }
-    function xt_factory_matched() {
-        return $this->_xt_factory_match;
     }
     function xt_factory_errors() {
         return $this->_xt_factory_error;

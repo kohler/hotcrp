@@ -1018,10 +1018,9 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     }
 
     static function user_visible_fields($name, Contact $user) {
-        if ($name === "scores") {
+        if ($name === "scores")
             $fs = $user->conf->all_review_fields();
-            $user->conf->xt_factory_mark_matched();
-        } else
+        else
             $fs = [$user->conf->find_review_field($name)];
         $vsbound = $user->permissive_view_score_bound();
         return array_filter($fs, function ($f) use ($vsbound) {

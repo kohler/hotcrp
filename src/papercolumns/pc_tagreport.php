@@ -58,7 +58,6 @@ class TagReport_PaperColumnFactory {
             return null;
         $tagset = $user->conf->tags();
         if ($name === "tagreports") {
-            $user->conf->xt_factory_mark_matched();
             return array_map(function ($t) use ($xfj) {
                 return self::column_json($xfj, $t->tag);
             }, $tagset->filter_by(function ($t) {
