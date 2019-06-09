@@ -771,19 +771,35 @@ xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@i
 // test conflict types
 $user_rguerin = $Conf->user_by_email("rguerin@ibm.com");
 xassert_eqq($paper3->conflict_type($user_rguerin), CONFLICT_AUTHORMARK);
-xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,confirmed\n");
+xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,confirmed\n");
 $paper3 = $Conf->fetch_paper(3, $user_chair);
 xassert_eqq($paper3->conflict_type($user_rguerin), CONFLICT_MAXAUTHORMARK);
-xassert_assign($user_chair, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,confirmed\n");
-$paper3 = $Conf->fetch_paper(3, $user_chair);
+xassert_assign($user_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,confirmed\n");
+$paper3->load_conflicts(false);
 xassert_eqq($paper3->conflict_type($user_rguerin), CONFLICT_CHAIRMARK);
-xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,confirmed\n");
-$paper3 = $Conf->fetch_paper(3, $user_chair);
+xassert_assign($user_sclin, "paper,action,user,conflict type\n3,conflict,rguerin@ibm.com,confirmed\n");
+$paper3->load_conflicts(false);
 xassert_eqq($paper3->conflict_type($user_rguerin), CONFLICT_CHAIRMARK);
 xassert_assign($user_chair, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,none\n");
 xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,conflict\n");
-$paper3 = $Conf->fetch_paper(3, $user_chair);
+$paper3->load_conflicts(false);
 xassert_eqq($paper3->conflict_type($user_rguerin), CONFLICT_AUTHORMARK);
+
+xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,collaborator\n");
+$paper3->load_conflicts(false);
+xassert_eqq($paper3->conflict_type($user_rguerin), 2);
+xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisor\n");
+$paper3->load_conflicts(false);
+xassert_eqq($paper3->conflict_type($user_rguerin), 3);
+xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisee\n");
+$paper3->load_conflicts(false);
+xassert_eqq($paper3->conflict_type($user_rguerin), 3);
+xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin,collaborator:none\n");
+$paper3->load_conflicts(false);
+xassert_eqq($paper3->conflict_type($user_rguerin), 3);
+xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,any,advisee:collaborator\n");
+$paper3->load_conflicts(false);
+xassert_eqq($paper3->conflict_type($user_rguerin), 2);
 
 $Conf->save_setting("sub_update", $Now - 5);
 $Conf->save_setting("sub_sub", $Now - 5);

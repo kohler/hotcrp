@@ -45,7 +45,7 @@ class Conflict {
             return $default_yes;
         else if ($text === "collab" || $text === "collaborator" || $text === "recent collaborator")
             return CONFLICT_AUTHORMARK /* 2 */;
-        else if ($text === "advisor" || $text === "student" || $text === "advisor/student")
+        else if ($text === "advisor" || $text === "student" || $text === "advisor/student" || $text === "advisee")
             return 3;
         else if ($text === "institution" || $text === "institutional")
             return 4;

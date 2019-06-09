@@ -1277,7 +1277,8 @@ class AssignmentSet {
                   ["firstName", "firstname", "first_name", "first", "givenname", "given_name"],
                   ["lastName", "lastname", "last_name", "last", "surname", "familyname", "family_name"],
                   ["preference", "pref", "revpref"],
-                  ["expertise", "prefexp"]] as $ks) {
+                  ["expertise", "prefexp"],
+                  ["conflict", "conflict_type", "conflicttype"]] as $ks) {
             for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i)
                 $csv->add_synonym($ks[0], $ks[$i]);
         }

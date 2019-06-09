@@ -13,7 +13,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("conflict", ["pid", "cid"], "Conflict_Assigner::make"))
             return;
-        $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0 and paperId?a", $state->paper_ids());
+        $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType!=0 and paperId?a", $state->paper_ids());
         while (($row = edb_row($result)))
             $state->load(["type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]]);
         Dbl::free($result);
@@ -30,8 +30,45 @@ class Conflict_AssignmentParser extends AssignmentParser {
         else
             return true;
     }
-    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
+    function make_conflict_type($req, AssignmentState $state) {
         if ($this->remove) {
+            $s = $this->iscontact ? "=" . CONFLICT_CONTACTAUTHOR : "!=0";
+            return [new CountMatcher($s), 0, false];
+        } else if ($this->iscontact) {
+            return [null, CONFLICT_CONTACTAUTHOR, false];
+        } else {
+            $cts = strtolower(trim((string) $req["conflict"]));
+            $cm = null;
+            $error = false;
+            if (($colon = strpos($cts, ":")) !== false) {
+                $octs = trim(substr($cts, 0, $colon));
+                if ($octs === "" || $octs === "any" || $octs === "all")
+                    $cm = new CountMatcher("!=0");
+                else if (($ct = Conflict::parse($octs, 1000)) !== false)
+                    $cm = new CountMatcher("=" . $ct);
+                else
+                    $error = true;
+                $cts = trim(substr($cts, $colon + 1));
+                if ($cts === "")
+                    $cts = "none";
+            }
+            if ($cts === "")
+                $ct = 1000;
+            else if (($ct = Conflict::parse($cts, 1000)) === false) {
+                $ct = 1000;
+                $error = true;
+            }
+            return [$cm, $ct, $error];
+        }
+    }
+    function conflict_type($req, AssignmentState $state) {
+        if (!isset($req["_conflict_type"]) || !is_array($req["_conflict_type"]))
+            $req["_conflict_type"] = $this->make_conflict_type($req, $state);
+        return $req["_conflict_type"];
+    }
+    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
+        list($matcher, $ct, $error) = $this->conflict_type($req, $state);
+        if ($matcher && !$matcher->test(0)) {
             $m = $state->query(["type" => "conflict", "pid" => $prow->paperId]);
             $cids = array_map(function ($x) { return $x["cid"]; }, $m);
             return $state->users_by_id($cids);
@@ -44,23 +81,15 @@ class Conflict_AssignmentParser extends AssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $res = $state->remove(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId]);
         $admin = $state->user->can_administer($prow);
-        if ($this->remove)
-            $ct = 0;
-        else if ($this->iscontact)
-            $ct = CONFLICT_CONTACTAUTHOR;
-        else {
-            $ct = 1000;
-            $cts = $req["conflicttype"];
-            if (!isset($cts))
-                $cts = $req["conflict"];
-            if ($cts !== null && ($ct = Conflict::parse($cts, 1000)) === false)
-                return "Bad conflict type.";
-            if ($ct !== 1000)
-                $ct = Conflict::constrain_editable($ct, $admin);
-        }
+        list($matcher, $ct, $error) = $this->conflict_type($req, $state);
+        if ($error)
+            return "Bad conflict type.";
+        if (!$this->remove && !$this->iscontact && $ct !== 1000)
+            $ct = Conflict::constrain_editable($ct, $admin);
         if (!empty($res)) {
             $old_ct = $res[0]["_ctype"];
-            if ((!$this->iscontact && $old_ct >= CONFLICT_AUTHOR)
+            if ((!$this->iscontact
+                 && $old_ct >= CONFLICT_AUTHOR)
                 || (!$this->iscontact
                     && $ct < CONFLICT_CHAIRMARK
                     && $old_ct == CONFLICT_CHAIRMARK
@@ -69,12 +98,17 @@ class Conflict_AssignmentParser extends AssignmentParser {
                     && $ct == 0
                     && $old_ct > 0
                     && $old_ct < CONFLICT_AUTHOR)
-                || ($ct === 1000 && $old_ct > 0))
+                || ($ct === 1000
+                    && $old_ct > 0)
+                || ($matcher
+                    && !$matcher->test($old_ct)))
                 $ct = $old_ct;
+        } else if ($matcher && !$matcher->test(0)) {
+            $ct = 0;
         }
         if ($ct === 1000)
             $ct = $admin ? CONFLICT_CHAIRMARK : CONFLICT_AUTHORMARK;
-        if ($ct > 0)
+        if ($ct !== 0)
             $state->add(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId, "_ctype" => $ct]);
         return true;
     }
