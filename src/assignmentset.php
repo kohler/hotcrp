@@ -620,11 +620,11 @@ class Null_AssignmentParser extends UserlessAssignmentParser {
 }
 
 class ReviewAssigner_Data {
-    public $oldround = null;
-    public $newround = null;
+    public $oldround;
+    public $newround;
     public $explicitround = false;
-    public $oldtype = null;
-    public $newtype = null;
+    public $oldtype;
+    public $newtype;
     public $creator = true;
     public $error = false;
     static function separate($key, $req, $state, $rtype) {
@@ -639,11 +639,11 @@ class ReviewAssigner_Data {
         }
         $a0 = is_string($a0) ? trim($a0) : $a0;
         $a1 = is_string($a1) ? trim($a1) : $a1;
-        if (strcasecmp($a0, "any") == 0) {
+        if (strcasecmp($a0, "any") === 0) {
             $a0 = null;
             $require_match = true;
         }
-        if (strcasecmp($a1, "any") == 0) {
+        if (strcasecmp($a1, "any") === 0) {
             $a1 = null;
             $require_match = true;
         }
@@ -651,29 +651,33 @@ class ReviewAssigner_Data {
     }
     function __construct($req, AssignmentState $state, $rtype) {
         list($targ0, $targ1, $tmatch) = self::separate("reviewtype", $req, $state, $rtype);
-        if ($targ0 !== null && $targ0 !== "" && $tmatch
+        if ((string) $targ0 !== ""
+            && $tmatch
             && ($this->oldtype = ReviewInfo::parse_type($targ0)) === false)
             $this->error = "Invalid reviewtype.";
-        if ($targ1 !== null && $targ1 !== "" && $rtype != 0
+        if ((string) $targ1 !== ""
+            && $rtype != 0
             && ($this->newtype = ReviewInfo::parse_type($targ1)) === false)
             $this->error = "Invalid reviewtype.";
         if ($this->newtype === null)
             $this->newtype = $rtype;
 
         list($rarg0, $rarg1, $rmatch) = self::separate("round", $req, $state, $this->newtype);
-        if ($rarg0 !== null && $rarg0 !== "" && $rmatch
+        if ((string) $rarg0 !== ""
+            && $rmatch
             && ($this->oldround = $state->conf->sanitize_round_name($rarg0)) === false)
             $this->error = Conf::round_name_error($rarg0);
-        if ($rarg1 !== null && $rarg1 !== "" && $this->newtype != 0
+        if ((string) $rarg1 !== ""
+            && $this->newtype != 0
             && ($this->newround = $state->conf->sanitize_round_name($rarg1)) === false)
             $this->error = Conf::round_name_error($rarg1);
         if ($rarg0 !== "" && $rarg1 !== null)
             $this->explicitround = (string) $req["round"] !== "";
         if ($rarg0 === "")
             $rmatch = false;
+
         if ($this->oldtype === null && $rtype > 0 && $rmatch)
             $this->oldtype = $rtype;
-
         $this->creator = !$tmatch && !$rmatch && $this->newtype != 0;
     }
     static function make($req, AssignmentState $state, $rtype) {
@@ -1276,6 +1280,7 @@ class AssignmentSet {
                   ["paper", "pid", "paperid", "id"],
                   ["firstName", "firstname", "first_name", "first", "givenname", "given_name"],
                   ["lastName", "lastname", "last_name", "last", "surname", "familyname", "family_name"],
+                  ["reviewtype", "review_type"],
                   ["preference", "pref", "revpref"],
                   ["expertise", "prefexp"],
                   ["conflict", "conflict_type", "conflicttype"]] as $ks) {

@@ -265,7 +265,7 @@ changes before they are committed.</p>
 
 <p>A simple example:</p>
 
-<pre class=\"entryexample\">paper,assignment,email
+<pre class=\"entryexample\">paper,action,email
 1,primary,man@alice.org
 2,secondary,slugger@manny.com
 1,primary,slugger@manny.com</pre>
@@ -277,7 +277,7 @@ members, or if they have conflicts with their assigned papers.</p>
 
 <p>A more complex example:</p>
 
-<pre class=\"entryexample\">paper,assignment,email,round
+<pre class=\"entryexample\">paper,action,email,round
 all,clearreview,all,R2
 1,primary,man@alice.org,R2
 10,primary,slugger@manny.com,R2
@@ -289,7 +289,7 @@ lines assign man@alice.org as a primary reviewer for paper #1, and slugger@manny
 as a primary reviewer for paper #10. The last line assigns slugger@manny.com
 as a primary reviewer for all papers tagged #manny or #ramirez.</p>
 
-<p>Assignment types are:</p>
+<p>Action types are:</p>
 
 <dl>
 <dt><code>review</code></dt>
@@ -312,23 +312,23 @@ entered.</p>
 <code>reviewtype</code> columns to restrict assignments to existing reviews.
 For example, to create a new assignment or modify an existing review:</p>
 
-<pre class=\"entryexample\">paper,assignment,email,reviewtype,round
+<pre class=\"entryexample\">paper,action,email,reviewtype,round
 1,review,drew@harvard.edu,primary,R2</pre>
 
 <p>To modify an existing review’s round (“<code>any</code>” restricts the
 assignment to existing reviews):</p>
 
-<pre class=\"entryexample\">paper,assignment,email,reviewtype,round
+<pre class=\"entryexample\">paper,action,email,reviewtype,round
 1,review,drew@harvard.edu,any,R2</pre>
 
 <p>To change an existing review from round R1 to round R2:</p>
 
-<pre class=\"entryexample\">paper,assignment,email,reviewtype,round
+<pre class=\"entryexample\">paper,action,email,reviewtype,round
 1,review,drew@harvard.edu,any,R1:R2</pre>
 
 <p>To change all round-R1 primary reviews to round R2:</p>
 
-<pre class=\"entryexample\">paper,assignment,email,reviewtype,round
+<pre class=\"entryexample\">paper,action,email,reviewtype,round
 all,review,all,primary,R1:R2</pre>
 
 </dd>
@@ -345,27 +345,27 @@ external review, or clear existing reviews.</dd>
 <dt><code>lead</code></dt>
 <dd>Set the discussion lead. The <code>email</code>, <code>name</code>,
 and/or <code>user</code> columns locate the PC user. To clear the discussion lead,
-use email <code>none</code> or assignment type <code>clearlead</code>.</dd>
+use email <code>none</code> or action <code>clearlead</code>.</dd>
 
 <dt><code>shepherd</code></dt>
 <dd>Set the shepherd. The <code>email</code>, <code>name</code>,
 and/or <code>user</code> columns locate the PC user. To clear the shepherd,
-use email <code>none</code> or assignment type <code>clearshepherd</code>.</dd>
+use email <code>none</code> or action <code>clearshepherd</code>.</dd>
 
 <dt><code>conflict</code></dt>
 <dd>Mark a PC conflict. The <code>email</code>, <code>name</code>,
 and/or <code>user</code> columns locate the PC user. To clear a conflict,
-use assignment type <code>clearconflict</code>.</dd>
+use action <code>clearconflict</code>.</dd>
 
 <dt><code>contact</code></dt>
 <dd>Mark a submission contact. The <code>email</code>, <code>name</code>,
 and/or <code>user</code> columns locate the user. To clear a contact,
-use assignment type <code>clearcontact</code>.</dd>
+use action <code>clearcontact</code>.</dd>
 
 <dt><code>tag</code></dt>
 <dd>Add a tag. The <code>tag</code> column names the tag and the optional
 <code>value</code> column sets the tag value.
-To clear a tag, use assignment type <code>cleartag</code> or value <code>none</code>.</dd>
+To clear a tag, use action <code>cleartag</code> or value <code>none</code>.</dd>
 
 <dt><code>decision</code></dt>
 <dd>Set the decision. The <code>decision</code> column gives the decision.</dd>
