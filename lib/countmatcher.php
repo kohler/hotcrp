@@ -72,7 +72,7 @@ class CountMatcher {
         }
     }
     function test_explicit_zero() {
-        return $this->value == 0 && ($this->allowed & 2);
+        return $this->value === 0.0 && ($this->allowed & 2);
     }
     function compar() {
         assert(!!$this->allowed);
@@ -86,10 +86,10 @@ class CountMatcher {
         return self::$oparray[$this->allowed] . $this->value;
     }
     function simplified_nonnegative_countexpr() {
-        if ($this->value == 1 && $this->allowed === 6)
+        if ($this->value === 1.0 && $this->allowed === 6)
             return ">0";
-        else if (($this->value == 1 && $this->allowed === 1)
-                 || ($this->value == 0 && $this->allowed === 3))
+        else if (($this->value === 1.0 && $this->allowed === 1)
+                 || ($this->value === 0.0 && $this->allowed === 3))
             return "=0";
         else
             return $this->countexpr();
