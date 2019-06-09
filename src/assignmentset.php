@@ -482,44 +482,80 @@ class AssignmentParser {
     function __construct($type) {
         $this->type = $type;
     }
+    // Optionally expand the set of interesting papers. Returns a search
+    // expression, such as "ALL", or false.
+    //
+    // `expand_papers` is called for *all* actions before any actions are
+    // processed further.
     function expand_papers($req, AssignmentState $state) {
         return false;
     }
+    // Load relevant state from the database into `$state`.
     function load_state(AssignmentState $state) {
     }
+    // Return `true` iff this user may perform this action class on this paper.
+    // To indicate an error, call `$state->paper_error($html)`, or,
+    // equivalently, return `$html`. This is called before the action is fully
+    // parsed, so it may be appropriate to return `true` here and perform the
+    // actual permission check later.
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->user->can_administer($prow)
             && !$state->user->privChair)
             return "You can’t administer #{$prow->paperId}.";
         else if ($prow->timeWithdrawn > 0)
-            return "#$prow->paperId has been withdrawn.";
+            return "#{$prow->paperId} has been withdrawn.";
         else if ($prow->timeSubmitted <= 0)
-            return "#$prow->paperId is not submitted.";
+            return "#{$prow->paperId} is not submitted.";
         else
             return true;
     }
-    function contact_set($req, AssignmentState $state) {
+    // Return a descriptor of the set of users relevant for this action.
+    // Returns `"none"`, `"pc"`, `"reviewers"`, or `"any"`.
+    function user_universe($req, AssignmentState $state) {
         return "pc";
     }
     static function unconflicted(PaperInfo $prow, Contact $contact, AssignmentState $state) {
         return ($state->overrides & Contact::OVERRIDE_CONFLICT)
             || !$prow->has_conflict($contact);
     }
+    // Return a conservative approximation of the papers relevant for this
+    // action, or `false` if such an approximation is difficult to compute.
+    // The approximation is an array whose keys are paper IDs; a truthy value
+    // for pid X means the action applies to paper X.
+    //
+    // The assignment logic calls `paper_filter` when an action is applied to
+    // an unusually large number of papers, such as removing all reviews by a
+    // specific user.
     function paper_filter($contact, $req, AssignmentState $state) {
         return false;
     }
+    // Return the list of users corresponding to user `"any"` for this request,
+    // or false if `"any"` is an invalid user.
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         return false;
     }
+    // Return the list of users relevant for this request, whose user is not
+    // specified, or false if an explicit user is required.
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return false;
     }
+    // Return the list of users corresponding to `$user`, which is an anonymous
+    // user (either `anonymous\d*` or `anonymous-new`), or false if a
+    // non-anonymous user is required.
     function expand_anonymous_user(PaperInfo $prow, $req, $user, AssignmentState $state) {
         return false;
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
+    // Return true iff this action may be applied to paper `$prow` and user
+    // `$contact`. Note that `$contact` might not be a true database user;
+    // for instance, it might have `contactId == 0` (for user `"none"`)
+    // or it might have a negative `contactId` (for a user that doesn’t yet
+    // exist in the database).
+    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return false;
     }
+    // Apply this action to `$state`. Return `true` iff the action succeeds.
+    // To indicate an error, call `$state->error($html)`, or, equivalently,
+    // return `$html`.
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return true;
     }
@@ -529,16 +565,10 @@ class UserlessAssignmentParser extends AssignmentParser {
     function __construct($type) {
         parent::__construct($type);
     }
-    function contact_set($req, AssignmentState $state) {
-        return false;
+    function user_universe($req, AssignmentState $state) {
+        return "none";
     }
-    function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
-        return [$state->none_user()];
-    }
-    function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
-        return [$state->none_user()];
-    }
-    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
+    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return true;
     }
 }
@@ -547,8 +577,8 @@ class Assigner {
     public $item;
     public $type;
     public $pid;
-    public $contact;
     public $cid;
+    public $contact;
     public $next_index;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         $this->item = $item;
@@ -672,7 +702,7 @@ class Review_AssignmentParser extends AssignmentParser {
     private function make_rdata($req, AssignmentState $state) {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
-    function contact_set($req, AssignmentState $state) {
+    function user_universe($req, AssignmentState $state) {
         if ($this->rtype > REVIEW_EXTERNAL)
             return "pc";
         else if ($this->rtype == 0
@@ -680,7 +710,7 @@ class Review_AssignmentParser extends AssignmentParser {
                      && !$rdata->can_create_review()))
             return "reviewers";
         else
-            return false;
+            return "any";
     }
     static function load_review_state(AssignmentState $state) {
         $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview where paperId?a", $state->paper_ids());
@@ -712,7 +742,7 @@ class Review_AssignmentParser extends AssignmentParser {
         return $this->expand_any_user($prow, $req, $state);
     }
     function expand_anonymous_user(PaperInfo $prow, $req, $user, AssignmentState $state) {
-        if (preg_match('/\A(?:new-?anonymous|anonymous-?new)\z/', $user)) {
+        if ($user === "anonymous-new") {
             $suf = "";
             while (($u = $state->user_by_email("anonymous" . $suf))
                    && $state->query(["type" => "review", "pid" => $prow->paperId,
@@ -720,13 +750,13 @@ class Review_AssignmentParser extends AssignmentParser {
                 $suf = $suf === "" ? 2 : $suf + 1;
             $user = "anonymous" . $suf;
         }
-        if (preg_match('/\Aanonymous\d*\z/', $user)
-            && $c = $state->user_by_email($user, true, []))
-            return [$c];
+        if (preg_match('/\Aanonymous\d*\z/i', $user)
+            && ($u = $state->user_by_email($user, true, [])))
+            return [$u];
         else
             return false;
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
+    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // User “none” is never allowed
         if (!$contact->contactId)
             return false;
@@ -910,7 +940,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make"))
             Review_AssignmentParser::load_review_state($state);
     }
-    function contact_set($req, AssignmentState $state) {
+    function user_universe($req, AssignmentState $state) {
         return "reviewers";
     }
     function paper_filter($contact, $req, AssignmentState $state) {
@@ -923,14 +953,15 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
+    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return $contact->contactId != 0;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // parse round and reviewtype arguments
         $rarg0 = trim((string) $req["round"]);
         $oldround = null;
-        if ($rarg0 !== "" && strcasecmp($rarg0, "any") != 0
+        if ($rarg0 !== ""
+            && strcasecmp($rarg0, "any") != 0
             && ($oldround = $state->conf->sanitize_round_name($rarg0)) === false)
             return Conf::round_name_error($rarg0);
         $targ0 = trim((string) $req["reviewtype"]);
@@ -1127,6 +1158,11 @@ class AssignmentSet {
     }
 
     private function lookup_users($req, $assigner) {
+        // check user universe
+        $users = $assigner->user_universe($req, $this->astate);
+        if ($users === "none")
+            return [$this->astate->none_user()];
+
         // move all usable identification data to email, firstName, lastName
         if (isset($req["name"]))
             self::apply_user_parts($req, Text::split_name($req["name"]));
@@ -1149,21 +1185,21 @@ class AssignmentSet {
         $xspecial = $special;
 
         // check special: missing, "none", "any", "pc", "me", PC tag, "external"
-        if ($special === "all" || $special === "any")
+        if ($special === "any" || $special === "all")
             return "any";
         else if ($special === "missing" || (!$first && !$last && !$lemail))
             return "missing";
         else if ($special === "none")
             return [$this->astate->none_user()];
-        else if (preg_match('/\A(?:new-?)?anonymous(?:\d*|-?new)\z/', $special))
-            return $special;
+        else if (preg_match('{\A(?:(anonymous\d*)|new-?anonymous|anonymous-?new)\z}', $special, $m))
+            return isset($m[1]) && $m[1] ? $m[1] : "anonymous-new";
         if ($special && !$first && (!$lemail || !$last)) {
             $ret = ContactSearch::make_special($special, $this->astate->user);
             if ($ret->ids !== false)
                 return $ret->contacts();
         }
         if (($special === "ext" || $special === "external")
-            && $assigner->contact_set($req, $this->astate) === "reviewers") {
+            && $users === "reviewers") {
             $ret = array();
             foreach ($this->astate->reviewer_users() as $u)
                 if (!$u->is_pc_member())
@@ -1176,14 +1212,15 @@ class AssignmentSet {
             return array($contact);
 
         // check PC list
-        $cset = $assigner->contact_set($req, $this->astate);
-        $cset_text = "user";
-        if ($cset === "pc") {
+        if ($users === "pc") {
             $cset = $this->astate->pc_users();
             $cset_text = "PC member";
-        } else if ($cset === "reviewers") {
+        } else if ($users === "reviewers") {
             $cset = $this->astate->reviewer_users();
             $cset_text = "reviewer";
+        } else {
+            $cset = null;
+            $cset_text = "user";
         }
         if ($cset) {
             $text = "";
@@ -1194,7 +1231,7 @@ class AssignmentSet {
             if ($email)
                 $text .= " <$email>";
             $ret = ContactSearch::make_cset($text, $this->astate->user, $cset);
-            if (count($ret->ids) == 1)
+            if (count($ret->ids) === 1)
                 return $ret->contacts();
             else if (empty($ret->ids))
                 $this->error_here("No $cset_text matches “" . self::req_user_html($req) . "”.");
@@ -1344,7 +1381,7 @@ class AssignmentSet {
                 $this->astate->error("User required.");
                 return false;
             }
-        } else if (preg_match('/\A(?:new-?)?anonymous/', $user))
+        } else if (substr($user, 0, 9) === "anonymous")
             $u = $aparser->expand_anonymous_user($prow, $req, $user, $this->astate);
         else
             $u = false;
@@ -1368,6 +1405,8 @@ class AssignmentSet {
         if ($this->enabled_actions !== null
             && !isset($this->enabled_actions[$aparser->type]))
             return $this->error_here("Action " . htmlspecialchars($aparser->type) . " disabled.");
+
+        // load state
         $aparser->load_state($this->astate);
 
         // clean user parts
@@ -1421,7 +1460,7 @@ class AssignmentSet {
             }
 
             foreach ($pusers as $contact) {
-                $err = $aparser->allow_contact($prow, $contact, $req, $this->astate);
+                $err = $aparser->allow_user($prow, $contact, $req, $this->astate);
                 if ($err === false) {
                     if (!$contact->contactId) {
                         $this->astate->error("User “none” is not allowed here. [{$contact->email}]");
@@ -1764,7 +1803,7 @@ class AssignmentSet {
         $word = $pl ? plural($count, $word) : $count . "&nbsp;" . $word;
         if ($count == 0)
             return $word;
-        return '<a class="qq" href="' . hoturl("search", "q=" . urlencode("$prefix:$pc->email"))
+        return '<a class="qq" href="' . $pc->conf->hoturl("search", "q=" . urlencode("$prefix:$pc->email"))
             . '">' . $word . "</a>";
     }
 

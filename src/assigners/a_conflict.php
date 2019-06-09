@@ -38,7 +38,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
         } else
             return false;
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
+    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return $contact->contactId != 0;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {

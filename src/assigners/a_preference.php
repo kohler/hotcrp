@@ -26,7 +26,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $state->reviewer->isPC ? [$state->reviewer] : false;
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
+    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         if (!$contact->contactId)
             return false;
         else if ($contact->contactId !== $state->user->contactId

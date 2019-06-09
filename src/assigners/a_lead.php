@@ -38,7 +38,7 @@ class Lead_AssignmentParser extends AssignmentParser {
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
     }
-    function allow_contact(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
+    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         if ($this->remove || !$contact->contactId)
             return true;
         else if (!$contact->can_accept_review_assignment_ignore_conflict($prow)) {
