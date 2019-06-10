@@ -18,8 +18,8 @@ class GetDocument_ListAction extends ListAction {
         ];
         return $fj;
     }
-    static function expand($name, Conf $conf, $fj) {
-        if (($o = $conf->paper_opts->find(substr($name, 4)))
+    static function expand($name, $user, $fj) {
+        if (($o = $user->conf->paper_opts->find(substr($name, 4)))
             && $o->is_document())
             return [self::make_list_action($o)];
         else
