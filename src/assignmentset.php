@@ -1379,20 +1379,22 @@ class AssignmentSet {
 
     private function expand_special_user($user, AssignmentParser $aparser, PaperInfo $prow, $req) {
         global $Now;
-        if ($user === "any")
+        if ($user === "any") {
             $u = $aparser->expand_any_user($prow, $req, $this->astate);
-        else if ($user === "missing") {
+        } else if ($user === "missing") {
             $u = $aparser->expand_missing_user($prow, $req, $this->astate);
             if ($u === false || $u === null) {
                 $this->astate->error("User required.");
                 return false;
             }
-        } else if (substr($user, 0, 9) === "anonymous")
+        } else if (substr($user, 0, 9) === "anonymous") {
             $u = $aparser->expand_anonymous_user($prow, $req, $user, $this->astate);
-        else
+        } else {
             $u = false;
-        if ($u === false || $u === null)
+        }
+        if ($u === false || $u === null) {
             $this->astate->error("User “" . htmlspecialchars($user) . "” is not allowed here.");
+        }
         return $u;
     }
 
