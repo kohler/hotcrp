@@ -7,9 +7,9 @@ class Decisions_SettingParser extends SettingParser {
         $vx = $v;
         if ($ndec && $sv->use_req())
             $vx = get($sv->req, "dec_name_$ndec", $v);
-        echo '<tr><td class="lmentry nw">',
+        echo '<tr><td class="lentry nw">',
             Ht::entry("dec_name_$ndec", $vx, ["size" => 35, "placeholder" => "Decision name", "data-default-value" => $v]),
-            '</td><td class="lmentry nw">',
+            '</td><td class="lentry nw">',
             '<a href="" class="ui js-settings-remove-decision-type btn qx need-tooltip" aria-label="Delete decision" tabindex="-1">✖</a>',
             '</td><td>';
         if ($isnew) {

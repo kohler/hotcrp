@@ -1120,9 +1120,6 @@ td.lentry {
 td.lentry:last-child {
 	padding-right: 0;
 }
-td.lmentry {
-	padding: 2px 1em 2px 0;
-}
 td.rentry {
 	padding: 2px 0;
 	text-align: right;
@@ -2298,7 +2295,7 @@ hr.g, hr.mg, hr.ug {
 .pltable_colored > tr:first-child {
 	border-top: 0 none;
 }
-.k1, .topicinterest > tbody > tr:nth-child(even) {
+.k1, .table-striped > tbody > tr:nth-child(even) {
 	background-color: #f1f8fc;
 }
 .pltable_colored > .k1 {
