@@ -16,6 +16,7 @@ class PaperContactInfo {
     // set by Contact::rights()
     public $allow_administer;
     public $can_administer;
+    public $primary_administrator;
     public $allow_pc_broad;
     public $allow_pc;
     public $potential_reviewer;

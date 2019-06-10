@@ -1967,6 +1967,21 @@ class Contact {
             return $this->privChair;
     }
 
+    function is_primary_administrator(PaperInfo $prow) {
+        // - Assigned administrator is primary
+        // - Otherwise, track administrators are primary
+        // - Otherwise, chairs are primary
+        $rights = $this->rights($prow);
+        if ($rights->primary_administrator === null) {
+            $rights->primary_administrator = $rights->allow_administer
+                && ($prow->managerContactId
+                    ? $prow->managerContactId == $this->contactId
+                    : !$this->privChair
+                      || !$this->conf->check_paper_track_sensitivity($prow, Track::ADMIN));
+        }
+        return $rights->primary_administrator;
+    }
+
     function act_pc(PaperInfo $prow = null) {
         if ($prow)
             return $this->rights($prow)->allow_pc;

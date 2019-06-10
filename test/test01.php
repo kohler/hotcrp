@@ -944,6 +944,40 @@ for ($pid = 1; $pid <= 8; ++$pid) {
     }
 }
 
+// primary administrators
+$Conf->save_setting("tracks", null);
+for ($pid = 1; $pid <= 3; ++$pid) {
+    $p = $Conf->fetch_paper($pid, $user_chair);
+    xassert($user_chair->allow_administer($p));
+    xassert(!$user_marina->allow_administer($p));
+    xassert($user_chair->can_administer($p));
+    xassert($user_chair->is_primary_administrator($p));
+}
+xassert_assign($user_chair, "paper,action,user\n2,administrator,marina@poema.ru");
+for ($pid = 1; $pid <= 3; ++$pid) {
+    $p = $Conf->fetch_paper($pid, $user_chair);
+    xassert($user_chair->allow_administer($p));
+    xassert_eqq($user_marina->allow_administer($p), $pid === 2);
+    xassert($user_chair->can_administer($p));
+    xassert_eqq($user_marina->can_administer($p), $pid === 2);
+    xassert_eqq($user_chair->is_primary_administrator($p), $pid !== 2);
+    xassert_eqq($user_marina->is_primary_administrator($p), $pid === 2);
+}
+$Conf->save_setting("tracks", 1, "{\"green\":{\"admin\":\"+red\"}}");
+for ($pid = 1; $pid <= 3; ++$pid) {
+    $p = $Conf->fetch_paper($pid, $user_chair);
+    xassert($user_chair->allow_administer($p));
+    xassert_eqq($user_marina->allow_administer($p), $pid === 2);
+    xassert_eqq($user_estrin->allow_administer($p), $pid === 3);
+    xassert($user_chair->can_administer($p));
+    xassert_eqq($user_marina->can_administer($p), $pid === 2);
+    xassert_eqq($user_estrin->can_administer($p), $pid === 3);
+    xassert_eqq($user_chair->is_primary_administrator($p), $pid === 1);
+    xassert_eqq($user_marina->is_primary_administrator($p), $pid === 2);
+    xassert_eqq($user_estrin->is_primary_administrator($p), $pid === 3);
+}
+$Conf->save_setting("tracks", null);
+
 // check content upload
 $paper30 = $Conf->fetch_paper(30, $user_chair);
 $old_hash = $paper30->document(DTYPE_SUBMISSION)->text_hash();

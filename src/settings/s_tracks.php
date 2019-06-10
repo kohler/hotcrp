@@ -240,15 +240,17 @@ class Tracks_SettingParser extends SettingParser {
             }
             $t = (object) array();
             foreach (Track::$map as $type => $perm) {
-                $ttype = get($sv->req, "{$type}_track{$i}");
+                $ttype = get($sv->req, "{$type}_track$i");
+                $ttag = trim(get($sv->req, "{$type}_tag_track$i", ""));
+                if ($ttype === "+" && strcasecmp($ttag, "none") === 0) {
+                    $ttype = "none";
+                }
                 if ($ttype === "+" || $ttype === "-") {
-                    $ttag = trim(get($sv->req, "${type}_tag_track$i", ""));
                     if ($ttag === "" || $ttag === "(tag)") {
                         $sv->error_at("{$type}_track$i", "Tag missing for track setting.");
                         $sv->error_at("{$type}_tag_track$i");
                         $sv->error_at("tracks");
-                    } else if (($ttype === "+" && strcasecmp($ttag, "none") === 0)
-                               || ($ttag = $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))) {
+                    } else if (($ttag = $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))) {
                         $t->$type = $ttype . $ttag;
                     } else {
                         $sv->error_at("{$type}_track$i", "Track permission tag: " . $tagger->error_html);

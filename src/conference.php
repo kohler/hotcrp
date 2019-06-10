@@ -1249,6 +1249,19 @@ class Conf {
         return ($this->_track_sensitivity & Track::BITS_ADMIN) !== 0;
     }
 
+    function check_paper_track_sensitivity(PaperInfo $prow, $ttype) {
+        if ($this->_track_sensitivity & (1 << $ttype)) {
+            $unmatched = true;
+            foreach ($this->_tracks as $t => $tr)
+                if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
+                    $unmatched = false;
+                    if ($tr[$ttype])
+                        return true;
+                }
+        }
+        return false;
+    }
+
     function track_permission($tag, $ttype) {
         if ($this->_tracks)
             foreach ($this->_tracks as $t => $tr)
