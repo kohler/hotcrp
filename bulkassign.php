@@ -201,9 +201,9 @@ echo '<div class="lg"><div class="f-i" style="margin-top:1em">',
 echo '<div class="g"><strong>OR</strong> &nbsp;',
     '<input type="file" name="bulk" accept="text/plain,text/csv" size="30"></div></div>';
 
-echo '<div id="foldoptions" class="lg foldc fold2c fold3c">',
-    'By default,&nbsp; ',
-    Ht::select("default_action", array("guess" => "guess action from input",
+echo '<div id="foldoptions" class="lg foldc fold2c fold3c"><label>',
+    'Default action:&nbsp; ',
+    Ht::select("default_action", array("guess" => "guess from input",
                                        "primary" => "assign primary reviews",
                                        "secondary" => "assign secondary reviews",
                                        "pcreview" => "assign optional PC reviews",
@@ -212,11 +212,11 @@ echo '<div id="foldoptions" class="lg foldc fold2c fold3c">',
                                        "conflict" => "assign PC conflicts",
                                        "lead" => "assign discussion leads",
                                        "shepherd" => "assign shepherds",
-                                       "tag" => "add tags",
-                                       "settag" => "replace tags",
+                                       "settag" => "set tags",
                                        "preference" => "set reviewer preferences"),
                $Qreq->get("default_action", "guess"),
-               ["id" => "tsel"]);
+               ["id" => "tsel"]),
+    '</label>';
 Ht::stash_script('$(function(){
 $("#tsel").on("change",function(){
 foldup.call(this,null,{f:this.value!=="review"});
@@ -247,134 +247,39 @@ if (($requestreview_template = $null_mailer->expand_template("requestreview"))) 
 }
 
 echo '<div class="lg"></div>', Ht::submit("Prepare assignments", ["class" => "btn-primary"]),
-    " &nbsp; <span class=\"hint\">You’ll be able to check the assignment before it is saved.</span></div>\n";
+    " &nbsp; <span class=\"hint\">You’ll be able to check the assignments before they are saved.</span></div>\n";
 
-echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC assignments</a></div>';
+echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC review assignments</a></div>';
 
 echo "</form>
 
 <hr style=\"margin-top:1em\" />
 
 <div class=\"settingstext\">
-<h3>Instructions</h3>
+<h3><a href=\"", $Conf->hoturl("help", ["t" => "bulkassign"]), "\">Instructions</a></h3>
 
-<p>Upload a comma-separated value file to prepare an assignment of reviews,
-conflicts, leads, shepherds, and tags. HotCRP calculates the minimal changes
-between the current state and the requested assignment; you’ll confirm those
-changes before they are committed.</p>
+<p>Upload a CSV (comma-separated value file) to prepare an assignment; HotCRP
+will display the consequences of the requested assignment for confirmation and
+approval. The <code>action</code> column determines what kind of assignment is
+performed. Supported actions include:</p>
 
-<p>A simple example:</p>
+</div>";
 
-<pre class=\"entryexample\">paper,action,email
+BulkAssign_HelpTopic::echo_actions($Me);
+
+echo "<div class=\"settingstext\">
+
+<p>For example, this file clears existing R1 review assignments for papers
+tagged #redo, then assigns two primary reviews for submission #1 and one
+secondary review for submission #2:</p>
+
+<pre class=\"entryexample\">paper,action,email,round
+#redo,clearreview,all,R1
 1,primary,man@alice.org
 2,secondary,slugger@manny.com
 1,primary,slugger@manny.com</pre>
 
-<p>This assigns PC members man@alice.org and slugger@manny.com as primary
-reviewers for paper #1, and slugger@manny.com as a secondary
-reviewer for paper #2. Errors will be reported if those users aren’t PC
-members, or if they have conflicts with their assigned papers.</p>
-
-<p>A more complex example:</p>
-
-<pre class=\"entryexample\">paper,action,email,round
-all,clearreview,all,R2
-1,primary,man@alice.org,R2
-10,primary,slugger@manny.com,R2
-#manny OR #ramirez,primary,slugger@manny.com,R2</pre>
-
-<p>The first assignment line clears all review assignments in
-round R2. (Review assignments in other rounds are left alone.) The next
-lines assign man@alice.org as a primary reviewer for paper #1, and slugger@manny.com
-as a primary reviewer for paper #10. The last line assigns slugger@manny.com
-as a primary reviewer for all papers tagged #manny or #ramirez.</p>
-
-<p>Action types are:</p>
-
-<dl>
-<dt><code>review</code></dt>
-
-<dd>Assign a review. The <code>email</code> and/or <code>name</code> columns
-locate the user. (<code>first</code> and <code>last</code> columns may be used
-in place of <code>name</code>.) The <code>reviewtype</code> column sets the
-review type; it can be <code>primary</code>, <code>secondary</code>,
-<code>pcreview</code> (optional PC review), or <code>external</code>, or
-<code>clear</code> to unassign the review. The optional
-<code>round</code> column sets the review round.
-
-<p>Only PC members can be assigned primary, secondary, and optional PC
-reviews. Accounts will be created for new external reviewers as necessary. The
-<code>clear</code> action doesn’t delete reviews that have already been
-entered.</p>
-
-<p>Assignments can create new reviews or change existing reviews. Use
-“<code>any</code>” or “old:new” syntax in the <code>round</code> and/or
-<code>reviewtype</code> columns to restrict assignments to existing reviews.
-For example, to create a new assignment or modify an existing review:</p>
-
-<pre class=\"entryexample\">paper,action,email,reviewtype,round
-1,review,drew@harvard.edu,primary,R2</pre>
-
-<p>To modify an existing review’s round (“<code>any</code>” restricts the
-assignment to existing reviews):</p>
-
-<pre class=\"entryexample\">paper,action,email,reviewtype,round
-1,review,drew@harvard.edu,any,R2</pre>
-
-<p>To change an existing review from round R1 to round R2:</p>
-
-<pre class=\"entryexample\">paper,action,email,reviewtype,round
-1,review,drew@harvard.edu,any,R1:R2</pre>
-
-<p>To change all round-R1 primary reviews to round R2:</p>
-
-<pre class=\"entryexample\">paper,action,email,reviewtype,round
-all,review,all,primary,R1:R2</pre>
-
-</dd>
-
-<dt><code>primary</code>, <code>secondary</code>, <code>pcreview</code>,
-<code>external</code>, <code>clearreview</code></dt>
-<dd>Like <code>review</code>, assign a primary, secondary, optional PC, or
-external review, or clear existing reviews.</dd>
-
-<dt><code>unsubmitreview</code></dt>
-<dd>Unsubmit a submitted review. The <code>email</code>, <code>name</code>,
-<code>reviewtype</code>, and <code>round</code> columns locate the review.</dd>
-
-<dt><code>lead</code></dt>
-<dd>Set the discussion lead. The <code>email</code>, <code>name</code>,
-and/or <code>user</code> columns locate the PC user. To clear the discussion lead,
-use email <code>none</code> or action <code>clearlead</code>.</dd>
-
-<dt><code>shepherd</code></dt>
-<dd>Set the shepherd. The <code>email</code>, <code>name</code>,
-and/or <code>user</code> columns locate the PC user. To clear the shepherd,
-use email <code>none</code> or action <code>clearshepherd</code>.</dd>
-
-<dt><code>conflict</code></dt>
-<dd>Mark a PC conflict. The <code>email</code>, <code>name</code>,
-and/or <code>user</code> columns locate the PC user. To clear a conflict,
-use action <code>clearconflict</code>.</dd>
-
-<dt><code>contact</code></dt>
-<dd>Mark a submission contact. The <code>email</code>, <code>name</code>,
-and/or <code>user</code> columns locate the user. To clear a contact,
-use action <code>clearcontact</code>.</dd>
-
-<dt><code>tag</code></dt>
-<dd>Add a tag. The <code>tag</code> column names the tag and the optional
-<code>value</code> column sets the tag value.
-To clear a tag, use action <code>cleartag</code> or value <code>none</code>.</dd>
-
-<dt><code>decision</code></dt>
-<dd>Set the decision. The <code>decision</code> column gives the decision.</dd>
-
-<dt><code>preference</code></dt>
-<dd>Set reviewer preference and expertise. The <code>preference</code> column
-gives the preference value.</dd>
-</dl>
-
+<p><a href=\"", $Conf->hoturl("help", ["t" => "bulkassign"]), "\"><strong>Detailed instructions</strong></a></p>
 </div>\n";
 
 Ht::stash_script('$("#tsel").trigger("change")');

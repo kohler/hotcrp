@@ -116,8 +116,13 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $tag = substr($tag, 1);
         $m = array(null, "", "", "", "");
         $xtag = $tag;
-        if (preg_match(',\A(.*?)([=!<>]=?|#|≠|≤|≥)(.*?)\z,', $xtag, $xm))
+        if (preg_match(',\A(.*?)(#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*?)\z,', $xtag, $xm)) {
             list($xtag, $m[3], $m[4]) = array($xm[1], $xm[2], strtolower($xm[3]));
+            if ($m[3] === "#")
+                $m[3] = "=";
+            else if ($m[3][0] === "#")
+                $m[3] = substr($m[3], 1);
+        }
         if ($xtag === "")
             return "Empty tag.";
         else if (!preg_match(',\A(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
@@ -158,7 +163,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $tag = $m[1] . $m[2];
 
         // resolve index portion
-        if ($m[3] && $m[3] != "#" && $m[3] != "=" && $m[3] != "==")
+        if ($m[3] && $m[3] !== "=" && $m[3] !== "==")
             return "“" . htmlspecialchars($m[3]) . "” isn’t allowed when adding tags.";
         if ($this->isnext)
             $index = $this->apply_next_index($prow->paperId, $tag, $state, $m);
@@ -235,11 +240,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // resolve index comparator
         if (preg_match(',\A(?:any|all|none|clear)\z,i', $m[4]))
             $m[3] = $m[4] = "";
-        else {
-            if ($m[3] == "#")
-                $m[3] = "=";
+        else
             $m[4] = cvtint($m[4], 0);
-        }
 
         // if you can't view the tag, you can't clear the tag
         // (information exposure)

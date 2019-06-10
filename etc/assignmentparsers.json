@@ -1,137 +1,188 @@
 [
     {
         "name": "none", "parser_class": "Null_AssignmentParser",
-        "synonym": ["null"]
+        "synonym": ["null"],
+        "position": false
     },
     {
         "name": "review", "parser_class": "Review_AssignmentParser",
-        "review_type": null
+        "review_type": null,
+        "parameters": ["user", "review type", "[review round]"],
+        "description": "Assign review",
+        "position": -1
     },
     {
         "name": "metareview", "parser_class": "Review_AssignmentParser",
         "synonym": ["meta"],
-        "review_type": "meta"
+        "review_type": "meta",
+        "parameters": ["user", "[review round]"],
+        "group": "review", "description": "Assign metareview"
     },
     {
         "name": "primaryreview", "parser_class": "Review_AssignmentParser",
         "synonym": ["pri", "primary"],
-        "review_type": "primary"
+        "review_type": "primary",
+        "parameters": ["user", "[review round]"],
+        "group": "review", "description": "Assign primary review"
     },
     {
         "name": "secondaryreview", "parser_class": "Review_AssignmentParser",
         "synonym": ["sec", "secondary"],
-        "review_type": "secondary"
+        "review_type": "secondary",
+        "parameters": ["user", "[review round]"],
+        "group": "review", "description": "Assign secondary review"
     },
     {
         "name": "pcreview", "parser_class": "Review_AssignmentParser",
         "synonym": ["optionalreview", "optionalpcreview"],
-        "review_type": "optional"
+        "review_type": "optional",
+        "parameters": ["user", "[review round]"],
+        "group": "review", "description": "Assign optional PC review"
     },
     {
         "name": "externalreview", "parser_class": "Review_AssignmentParser",
         "synonym": ["ext", "external", "extreview"],
-        "review_type": "external"
+        "review_type": "external",
+        "parameters": ["user", "[review round]"],
+        "group": "review", "description": "Assign external review"
     },
     {
         "name": "clearreview", "parser_class": "Review_AssignmentParser",
         "synonym": ["noreview", "unassignreview"],
-        "review_type": "none"
+        "review_type": "none",
+        "parameters": ["user", "[review type]", "[review round]"],
+        "group": "review", "description": "Remove review assignment"
     },
     {
-        "name": "unsubmitreview", "parser_class": "UnsubmitReview_AssignmentParser"
+        "name": "unsubmitreview", "parser_class": "UnsubmitReview_AssignmentParser",
+        "parameters": ["user", "[review type]", "[review round]"],
+        "description": "Unsubmit review"
     },
     {
         "name": "lead", "parser_class": "Lead_AssignmentParser",
-        "type": "lead", "remove": false
+        "type": "lead", "remove": false,
+        "parameters": ["user"],
+        "description": "Set discussion lead"
     },
     {
         "name": "clearlead", "parser_class": "Lead_AssignmentParser",
         "synonym": ["nolead"],
-        "type": "lead", "remove": true
+        "type": "lead", "remove": true,
+        "position": false, "parameters": []
     },
     {
         "name": "shepherd", "parser_class": "Lead_AssignmentParser",
-        "type": "shepherd", "remove": false
+        "type": "shepherd", "remove": false,
+        "parameters": ["user"],
+        "description": "Set shepherd"
     },
     {
         "name": "clearshepherd", "parser_class": "Lead_AssignmentParser",
         "synonym": ["noshepherd"],
-        "type": "shepherd", "remove": true
+        "type": "shepherd", "remove": true,
+        "position": false, "parameters": []
     },
     {
         "name": "administrator", "parser_class": "Lead_AssignmentParser",
         "synonym": ["admin", "manager"],
-        "type": "manager", "remove": false
+        "type": "manager", "remove": false,
+        "parameters": ["user"],
+        "description": "Set submission administrator"
     },
     {
         "name": "clearadministrator", "parser_class": "Lead_AssignmentParser",
         "synonym": ["clearmanager", "clearadmin", "noadministrator", "nomanager", "noadmin"],
-        "type": "manager", "remove": true
+        "type": "manager", "remove": true,
+        "position": false, "parameters": []
     },
     {
         "name": "conflict", "parser_class": "Conflict_AssignmentParser",
-        "remove": false, "iscontact": false
+        "remove": false, "iscontact": false,
+        "parameters": ["user", "[conflict type]"],
+        "description": "Set PC conflict status"
     },
     {
         "name": "clearconflict", "parser_class": "Conflict_AssignmentParser",
         "synonym": ["noconflict"],
-        "remove": true, "iscontact": false
+        "remove": true, "iscontact": false,
+        "position": false, "parameters": ["user"]
     },
     {
         "name": "contact", "parser_class": "Conflict_AssignmentParser",
-        "remove": false, "iscontact": true
+        "remove": false, "iscontact": true,
+        "parameters": ["user"],
+        "description": "Add contact author relationship"
     },
     {
         "name": "clearcontact", "parser_class": "Conflict_AssignmentParser",
         "synonym": ["nocontact"],
-        "remove": true, "iscontact": true
+        "remove": true, "iscontact": true,
+        "parameters": ["user"], "group": "contact",
+        "description": "Clear contact author relationship"
     },
     {
         "name": "tag", "parser_class": "Tag_AssignmentParser",
         "synonym": ["settag"],
-        "remove": false, "next": false
+        "remove": false, "next": false,
+        "parameters": ["tag", "[tag value]"],
+        "description": "Set tag"
     },
     {
         "name": "cleartag", "parser_class": "Tag_AssignmentParser",
         "synonym": ["notag"],
-        "remove": true
+        "remove": true,
+        "parameters": ["tag", "[tag value]"], "group": "tag",
+        "description": "Remove tag"
     },
     {
         "name": "nexttag", "parser_class": "Tag_AssignmentParser",
-        "remove": false, "next": true
+        "remove": false, "next": true,
+        "parameters": ["tag"], "group": "tag",
+        "description": "Add to tag order"
     },
     {
         "name": "seqnexttag", "parser_class": "Tag_AssignmentParser",
         "synonym": ["seqtag", "nextseqtag"],
-        "remove": false, "next": "seq"
+        "remove": false, "next": "seq",
+        "parameters": ["tag"], "group": "tag",
+        "description": "Add to gapless tag order"
     },
     {
         "name": "pref", "parser_class": "Preference_AssignmentParser",
-        "synonym": ["preference", "revpref"]
+        "synonym": ["preference", "revpref"],
+        "parameters": ["user", "preference", "[expertise]"],
+        "description": "Set reviewer preference"
     },
     {
         "name": "decision", "parser_class": "Decision_AssignmentParser",
-        "remove": false
+        "remove": false,
+        "parameters": ["decision"],
+        "description": "Set decision"
     },
     {
         "name": "cleardecision", "parser_class": "Decision_AssignmentParser",
-        "remove": true
+        "remove": true,
+        "parameters": [], "group": "decision", "position": false
     },
     {
         "name": "submit", "parser_class": "Status_AssignmentParser",
-        "type": "submit"
+        "type": "submit",
+        "parameters": [], "description": "Mark submission as ready for review"
     },
     {
         "name": "unsubmit", "parser_class": "Status_AssignmentParser",
-        "type": "unsubmit"
+        "type": "unsubmit",
+        "parameters": [], "description": "Mark submission as not ready for review"
     },
     {
         "name": "withdraw", "parser_class": "Status_AssignmentParser",
-        "type": "withdraw"
+        "type": "withdraw",
+        "parameters": [], "description": "Withdraw submission"
     },
     {
         "name": "revive", "parser_class": "Status_AssignmentParser",
         "synonym": ["unwithdraw"],
-        "type": "revive"
+        "type": "revive",
+        "parameters": [], "description": "Revive (unwithdraw) submission"
     }
 ]

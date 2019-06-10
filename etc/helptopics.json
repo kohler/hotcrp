@@ -257,5 +257,21 @@
         "description": "Create and display formulas in search orders.",
         "render_callback": "Formulas_HelpTopic::render",
         "position": 10000
+    },
+    {
+        "name": "bulkassign", "title": "Bulk assignments",
+        "description": "Control the site by uploading CSV assignment files.",
+        "render_callback": "BulkAssign_HelpTopic::render",
+        "position": 11000
+    },
+    {
+        "name": "bulkassignactions/review", "position": -1,
+        "title": "<code>review</code> action",
+        "render_callback": "BulkAssign_HelpTopic::render_action_review"
+    },
+    {
+        "name": "bulkassignactions/tag",
+        "title": "<code>tag</code> action",
+        "render_callback": "BulkAssign_HelpTopic::render_action_tag"
     }
 ]

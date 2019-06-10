@@ -198,6 +198,7 @@ src/formatspec.php
 src/formula.php
 src/formulagraph.php
 src/groupedextensions.php
+src/help/h_bulkassign.php
 src/help/h_chairsguide.php
 src/help/h_formulas.php
 src/help/h_keywords.php

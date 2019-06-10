@@ -652,9 +652,12 @@ class ReviewAssigner_Data {
     function __construct($req, AssignmentState $state, $rtype) {
         list($targ0, $targ1, $tmatch) = self::separate("reviewtype", $req, $state, $rtype);
         if ((string) $targ0 !== ""
-            && $tmatch
-            && ($this->oldtype = ReviewInfo::parse_type($targ0)) === false)
-            $this->error = "Invalid review type.";
+            && $tmatch) {
+            if (strcasecmp($targ0, "none") === 0)
+                $this->oldtype = 0;
+            else if (($this->oldtype = ReviewInfo::parse_type($targ0)) === false)
+                $this->error = "Invalid review type.";
+        }
         if ((string) $targ1 !== ""
             && $rtype != 0
             && ($this->newtype = ReviewInfo::parse_type($targ1)) === false)
@@ -732,7 +735,8 @@ class Review_AssignmentParser extends AssignmentParser {
             return null;
         return $state->make_filter($fkey, [
                 "type" => "review", $key => $value,
-                "_rtype" => $rdata->oldtype, "_round" => $rdata->oldround
+                "_rtype" => $rdata->oldtype ? : null,
+                "_round" => $rdata->oldround
             ]);
     }
     function paper_filter($contact, $req, AssignmentState $state) {
@@ -786,31 +790,38 @@ class Review_AssignmentParser extends AssignmentParser {
             return $rdata->error;
 
         $revmatch = ["type" => "review", "pid" => $prow->paperId,
-                     "cid" => $contact->contactId,
-                     "_rtype" => $rdata->oldtype, "_round" => $rdata->oldround];
+                     "cid" => $contact->contactId];
         $res = $state->remove($revmatch);
         assert(count($res) <= 1);
+        $rev = empty($res) ? null : $res[0];
 
-        if ($rdata->can_create_review() && empty($res)) {
-            $revmatch["_round"] = $rdata->newround;
-            $revmatch["_rsubmitted"] = 0;
-            $res[] = $revmatch;
+        if ($rev !== null
+            && (($rdata->oldtype !== null && $rdata->oldtype !== $rev["_rtype"])
+                || ($rdata->oldround !== null && $rdata->oldround !== $rev["_round"])
+                || (!$rdata->newtype && $rev["_rsubmitted"]))) {
+            $state->add($rev);
+            return true;
+        } else if (!$rdata->newtype
+                   || ($rev === null && !$rdata->can_create_review())) {
+            return true;
         }
-        if ($rdata->newtype && !empty($res)) {
-            $m = $res[0];
-            if (!$m["_rtype"] || $rdata->newtype > 0)
-                $m["_rtype"] = $rdata->newtype;
-            if (!$m["_rtype"] || $m["_rtype"] < 0)
-                $m["_rtype"] = REVIEW_EXTERNAL;
-            if ($m["_rtype"] == REVIEW_EXTERNAL
-                && $state->conf->pc_member_by_id($m["cid"]))
-                $m["_rtype"] = REVIEW_PC;
-            if ($rdata->newround !== null && $rdata->explicitround)
-                $m["_round"] = $rdata->newround;
-            $state->add($m);
-        } else if (!$rdata->newtype && !empty($res) && $res[0]["_rsubmitted"])
-            // do not remove submitted reviews
-            $state->add($res[0]);
+
+        if ($rev === null) {
+            $rev = $revmatch;
+            $rev["_rtype"] = 0;
+            $rev["_round"] = $rdata->newround;
+            $rev["_rsubmitted"] = 0;
+        }
+        if (!$rev["_rtype"] || $rdata->newtype > 0)
+            $rev["_rtype"] = $rdata->newtype;
+        if ($rev["_rtype"] <= 0)
+            $rev["_rtype"] = REVIEW_EXTERNAL;
+        if ($rev["_rtype"] === REVIEW_EXTERNAL
+            && $state->conf->pc_member_by_id($rev["cid"]))
+            $rev["_rtype"] = REVIEW_PC;
+        if ($rdata->newround !== null && $rdata->explicitround)
+            $rev["_round"] = $rdata->newround;
+        $state->add($rev);
         return true;
     }
 }

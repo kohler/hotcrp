@@ -163,6 +163,9 @@ class HtHead extends Ht {
     function groups() {
         return $this->_help_topics->groups();
     }
+    function member($name) {
+        return $this->_help_topics->get($name);
+    }
 }
 
 $hth = new HtHead($help_topics, $Me);
