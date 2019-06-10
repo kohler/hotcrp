@@ -2678,6 +2678,12 @@ class Conf {
             return true;
     }
 
+    function make_csvg($basename, $flags = 0) {
+        $csv = new CsvGenerator($flags);
+        $csv->set_filename($this->download_prefix . $basename . $csv->extension());
+        return $csv;
+    }
+
 
     //
     // Paper search
@@ -3847,12 +3853,6 @@ class Conf {
         $ufs = $this->xt_search_factories($this->_list_action_factories, $name, $user, $uf);
         $this->_xt_allow_callback = null;
         return self::xt_resolve_require($ufs[0]);
-    }
-
-    function make_csvg($basename, $flags = 0) {
-        $csv = new CsvGenerator($flags);
-        $csv->set_filename($this->download_prefix . $basename . $csv->extension());
-        return $csv;
     }
 
 

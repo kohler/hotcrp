@@ -96,9 +96,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $tag = $tags[0];
 
         // index argument
-        $xindex = $req["value"];
-        if ($xindex === null)
-            $xindex = $req["index"];
+        $xindex = $req["tag_value"];
         if ($xindex !== null
             && ($xindex = trim($xindex)) !== "") {
             $tag = preg_replace(',\A([-+]?#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+(?:\.\d*)?|-?\.\d+|any|all|none|clear)\z,i', '$1', $tag);

@@ -654,11 +654,11 @@ class ReviewAssigner_Data {
         if ((string) $targ0 !== ""
             && $tmatch
             && ($this->oldtype = ReviewInfo::parse_type($targ0)) === false)
-            $this->error = "Invalid reviewtype.";
+            $this->error = "Invalid review type.";
         if ((string) $targ1 !== ""
             && $rtype != 0
             && ($this->newtype = ReviewInfo::parse_type($targ1)) === false)
-            $this->error = "Invalid reviewtype.";
+            $this->error = "Invalid review type.";
         if ($this->newtype === null)
             $this->newtype = $rtype;
 
@@ -972,7 +972,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         $oldtype = null;
         if ($targ0 !== ""
             && ($oldtype = ReviewInfo::parse_type($targ0)) === false)
-            return "Invalid reviewtype.";
+            return "Invalid review type.";
 
         // remove existing review
         $revmatch = ["type" => "review", "pid" => $prow->paperId,
@@ -1281,8 +1281,10 @@ class AssignmentSet {
                   ["firstName", "firstname", "first_name", "first", "givenname", "given_name"],
                   ["lastName", "lastname", "last_name", "last", "surname", "familyname", "family_name"],
                   ["reviewtype", "review_type"],
+                  ["round", "review_round"],
                   ["preference", "pref", "revpref"],
                   ["expertise", "prefexp"],
+                  ["tag_value", "tagvalue", "value", "index"],
                   ["conflict", "conflict_type", "conflicttype"]] as $ks) {
             for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i)
                 $csv->add_synonym($ks[0], $ks[$i]);
