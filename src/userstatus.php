@@ -746,11 +746,14 @@ class UserStatus extends MessageSet {
         $follow = [];
         if ($qreq->has_watchreview)
             $follow["reviews"] = !!$qreq->watchreview;
-        if ($qreq->has_watchallreviews && ($us->viewer->privChair || $us->user->isPC))
+        if ($qreq->has_watchallreviews
+            && ($us->viewer->privChair || $us->user->isPC))
             $follow["allreviews"] = !!$qreq->watchallreviews;
-        if ($qreq->has_watchmanagedreviews && ($us->viewer->privChair || $us->user->isPC))
+        if ($qreq->has_watchmanagedreviews
+            && ($us->viewer->privChair || $us->user->isPC))
             $follow["managedreviews"] = !!$qreq->watchmanagedreviews;
-        if ($qreq->has_watchallfinal && ($us->viewer->privChair || $us->user->is_manager()))
+        if ($qreq->has_watchallfinal
+            && ($us->viewer->privChair || $us->user->is_manager()))
             $follow["allfinal"] = !!$qreq->watchallfinal;
         if (!empty($follow))
             $cj->follow = (object) $follow;

@@ -3553,7 +3553,7 @@ class Contact {
 
     function following_reviews(PaperInfo $prow, $watch) {
         if ($watch & self::WATCH_REVIEW_EXPLICIT)
-            return ($watch & self::WATCH_REVIEW) != 0;
+            return ($watch & self::WATCH_REVIEW) !== 0;
         else
             return ($this->defaultWatch & self::WATCH_REVIEW_ALL)
                 || (($this->defaultWatch & self::WATCH_REVIEW_MANAGED)
