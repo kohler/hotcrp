@@ -59,7 +59,12 @@ class GroupedExtensions {
                 if (isset($sgs[$bj->group]))
                     $bj = $sgs[$bj->group];
             }
-            return Conf::xt_position_compare($aj, $bj);
+            $aisg = $aj->group === $aj->name;
+            $bisg = $bj->group === $bj->name;
+            if ($aisg !== $bisg)
+                return $aisg ? -1 : 1;
+            else
+                return Conf::xt_position_compare($aj, $bj);
         });
         $this->_subgroups = $sgs;
     }

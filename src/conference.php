@@ -788,6 +788,11 @@ class Conf {
         $bp = get($xtb, "position", 0);
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
         if ($ap == $bp) {
+            if (isset($xta->name)
+                && isset($xtb->name)
+                && ($namecmp = strcmp($xta->name, $xtb->name)) !== 0) {
+                return $namecmp;
+            }
             $ap = get($xta, "__subposition", 0);
             $bp = get($xtb, "__subposition", 0);
         }
