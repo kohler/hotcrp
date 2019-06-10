@@ -32,10 +32,11 @@ class GroupedExtensions {
             $x = substr($fj->name, $pos + 1);
             $fj->anchorid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9_:.]+/', "-", strtolower($x));
         }
-        $this->_subgroups[] = $fj;
+        $this->_subgroups[$fj->name][] = $fj;
         return true;
     }
     function __construct(Contact $user, $args /* ... */) {
+        $conf = $user->conf;
         $this->user = $user;
         self::$next_placeholder = 1;
         $this->_subgroups = [];
@@ -43,34 +44,24 @@ class GroupedExtensions {
             if ($i > 0 && $arg)
                 expand_json_includes_callback($arg, [$this, "_add_json"]);
         }
-        usort($this->_subgroups, "Conf::xt_priority_compare");
         $sgs = [];
-        foreach ($this->_subgroups as $gj) {
-            if ($user->conf->xt_allowed($gj, $user)) {
-                if (isset($sgs[$gj->name])) {
-                    $pgj = $sgs[$gj->name];
-                    if (isset($pgj->merge) && $pgj->merge) {
-                        unset($pgj->merge);
-                        $sgs[$gj->name] = object_replace_recursive($gj, $pgj);
-                    }
-                } else
-                    $sgs[$gj->name] = $gj;
+        foreach ($this->_subgroups as $name => $xtl) {
+            if (($xt = $conf->xt_search_name($this->_subgroups, $name, $user))
+                && Conf::xt_enabled($xt)
+                && (!isset($xt->position) || $xt->position !== false)) {
+                $sgs[$name] = $xt;
             }
         }
-        $this->_subgroups = [];
-        foreach ($sgs as $name => $gj) {
-            if (Conf::xt_enabled($gj))
-                $this->_subgroups[$name] = $gj;
-        }
-        uasort($this->_subgroups, function ($aj, $bj) {
+        uasort($sgs, function ($aj, $bj) use ($sgs) {
             if ($aj->group !== $bj->group) {
-                if (isset($this->_subgroups[$aj->group]))
-                    $aj = $this->_subgroups[$aj->group];
-                if (isset($this->_subgroups[$bj->group]))
-                    $bj = $this->_subgroups[$bj->group];
+                if (isset($sgs[$aj->group]))
+                    $aj = $sgs[$aj->group];
+                if (isset($sgs[$bj->group]))
+                    $bj = $sgs[$bj->group];
             }
             return Conf::xt_position_compare($aj, $bj);
         });
+        $this->_subgroups = $sgs;
     }
     function get($name) {
         if (isset($this->_subgroups[$name]))

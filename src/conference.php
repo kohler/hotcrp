@@ -784,7 +784,9 @@ class Conf {
     }
     static function xt_position_compare($xta, $xtb) {
         $ap = get($xta, "position", 0);
+        $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = get($xtb, "position", 0);
+        $bp = $bp !== false ? $bp : PHP_INT_MAX;
         if ($ap == $bp) {
             $ap = get($xta, "__subposition", 0);
             $bp = get($xtb, "__subposition", 0);
@@ -904,7 +906,7 @@ class Conf {
                        && isset($xt->merge)
                        && $xt->merge) {
                     $overlay = $xt;
-                    unset($overlay->merge);
+                    unset($overlay->merge, $overlay->__subposition);
                     $xt = $list[$i + 1];
                     object_replace_recursive($xt, $overlay);
                     $overlay->priority = -PHP_INT_MAX;
