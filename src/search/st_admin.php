@@ -47,9 +47,7 @@ class Admin_SearchTerm extends SearchTerm {
             return $this->match === ($row->managerContactId != 0);
         else {
             foreach ($this->match as $u)
-                if ($u->allow_administer($row)
-                    && ($row->managerContactId == 0
-                        || $row->managerContactId == $u->contactId))
+                if ($u->is_primary_administrator($row))
                     return true;
             return false;
         }

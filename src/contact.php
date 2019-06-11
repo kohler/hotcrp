@@ -3572,7 +3572,7 @@ class Contact {
         else
             return ($this->defaultWatch & self::WATCH_REVIEW_ALL)
                 || (($this->defaultWatch & self::WATCH_REVIEW_MANAGED)
-                    && $this->allow_administer($prow))
+                    && $this->is_primary_administrator($prow))
                 || (($this->defaultWatch & self::WATCH_REVIEW)
                     && ($prow->has_author($this)
                         || $prow->has_reviewer($this)

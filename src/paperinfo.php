@@ -656,10 +656,12 @@ class PaperInfo {
         }
         $as = $cas = [];
         foreach ($chairs ? $this->conf->pc_chairs() : $this->conf->pc_members() as $u) {
-            if ($u->can_administer($this))
-                $as[] = $u;
-            else if ($u->allow_administer($this))
-                $cas[] = $u;
+            if ($u->is_primary_administrator($this)) {
+                if ($u->can_administer($this))
+                    $as[] = $u;
+                else
+                    $cas[] = $u;
+            }
         }
         return empty($as) ? $cas : $as;
     }
