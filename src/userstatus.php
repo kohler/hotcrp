@@ -458,7 +458,7 @@ class UserStatus extends MessageSet {
     }
 
     static function check_pc_tag($base) {
-        return !preg_match('{\A(?:any|all|pc|chair|admin)\z}i', $base);
+        return !preg_match('{\A(?:any|all|none|pc|chair|admin)\z}i', $base);
     }
 
 
