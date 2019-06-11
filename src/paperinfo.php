@@ -639,25 +639,28 @@ class PaperInfo {
     }
 
     function administrators() {
-        $us = [];
         if ($this->managerContactId) {
-            if (($u = $this->conf->cached_user_by_id($this->managerContactId)))
-                $us[] = $u;
-        } else {
-            $chairs = true;
-            if ($this->conf->check_track_admin_sensitivity()) {
-                foreach ($this->conf->track_tags() as $ttag)
-                    if ($this->conf->track_permission($ttag, Track::ADMIN)
-                        && $this->has_tag($ttag)) {
-                        $chairs = false;
-                        break;
-                    }
-            }
-            foreach ($chairs ? $this->conf->pc_chairs() : $this->conf->pc_members() as $u)
-                if ($u->can_administer($this))
-                    $us[] = $u;
+            $u = $this->conf->cached_user_by_id($this->managerContactId);
+            return $u ? [$u] : [];
         }
-        return $us;
+
+        $chairs = true;
+        if ($this->conf->check_track_admin_sensitivity()) {
+            foreach ($this->conf->track_tags() as $ttag)
+                if ($this->conf->track_permission($ttag, Track::ADMIN)
+                    && $this->has_tag($ttag)) {
+                    $chairs = false;
+                    break;
+                }
+        }
+        $as = $cas = [];
+        foreach ($chairs ? $this->conf->pc_chairs() : $this->conf->pc_members() as $u) {
+            if ($u->can_administer($this))
+                $as[] = $u;
+            else if ($u->allow_administer($this))
+                $cas[] = $u;
+        }
+        return empty($as) ? $cas : $as;
     }
 
 
