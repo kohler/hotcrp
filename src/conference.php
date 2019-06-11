@@ -1239,13 +1239,14 @@ class Conf {
     function check_track_sensitivity($ttype) {
         return ($this->_track_sensitivity & (1 << $ttype)) !== 0;
     }
-
     function check_track_view_sensitivity() {
         return ($this->_track_sensitivity & Track::BITS_VIEW) !== 0;
     }
-
     function check_track_review_sensitivity() {
         return ($this->_track_sensitivity & Track::BITS_REVIEW) !== 0;
+    }
+    function check_track_admin_sensitivity() {
+        return ($this->_track_sensitivity & Track::BITS_ADMIN) !== 0;
     }
 
     function track_permission($tag, $ttype) {

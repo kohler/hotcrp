@@ -645,7 +645,7 @@ class PaperInfo {
                 $us[] = $u;
         } else {
             $chairs = true;
-            if ($this->conf->check_track_sensitivity(Track::BITS_ADMIN)) {
+            if ($this->conf->check_track_admin_sensitivity()) {
                 foreach ($this->conf->track_tags() as $ttag)
                     if ($this->conf->track_permission($ttag, Track::ADMIN)
                         && $this->has_tag($ttag)) {

@@ -311,7 +311,7 @@ class MeetingTracker {
             json_exit(403, "Permission error: You can’t administer that tracker.");
 
         $admin_perm = null;
-        if ($user->conf->check_track_sensitivity(Track::ADMIN)) {
+        if ($user->conf->check_track_admin_sensitivity()) {
             if ($match !== false && $xlist->ids == $trs[$match]->ids)
                 $admin_perm = get($trs[$match], "admin_perm");
             else {
@@ -436,7 +436,7 @@ class MeetingTracker {
             if ($qreq["tr{$i}-listinfo"]) {
                 $xlist = SessionList::decode_info_string($qreq["tr{$i}-listinfo"]);
                 if ($xlist
-                    && $user->conf->check_track_sensitivity(Track::ADMIN))
+                    && $user->conf->check_track_admin_sensitivity())
                     $admin_perm = self::compute_xlist_admin_perm($user->conf, $xlist->ids);
             }
 
