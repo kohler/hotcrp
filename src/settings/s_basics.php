@@ -10,7 +10,7 @@ class Basics_SettingParser {
             $sv->set_oldv("opt.longName", "");
         $sv->echo_entry_group("opt.longName", null, null, "Example: “14th Workshop on Hot Topics in Operating Systems”");
 
-        $sv->echo_entry_group("opt.conferenceSite", null, null, "Example: “http://yourconference.org/”");
+        $sv->echo_entry_group("opt.conferenceSite", null, null, "Example: “https://yourconference.org/”");
     }
     static function render_site_contact(SettingValues $sv) {
         $sv->echo_entry_group("opt.contactName", null);
