@@ -31,7 +31,7 @@ if ($Me->privChair) {
     $tOpt["all"] = "All papers";
 }
 if ($Me->privChair ? $Conf->has_any_manager() : $Me->is_manager())
-    $tOpt["manager"] = "Papers you administer";
+    $tOpt["admin"] = "Papers you administer";
 $tOpt["req"] = "Your review requests";
 if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t]))
     $Qreq->t = key($tOpt);

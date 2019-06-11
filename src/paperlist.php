@@ -357,7 +357,7 @@ class PaperList {
         if ($key === "paper" || $key === "final") {
             $opt = $this->conf->paper_opts->find($key);
             return $this->user->can_view_some_paper_option($opt)
-                && $this->_rowset->any(function ($row) use ($opt) {
+                && $this->rowset()->any(function ($row) use ($opt) {
                     return ($opt->id == DTYPE_SUBMISSION ? $row->paperStorageId : $row->finalPaperStorageId) > 1
                         && $this->user->can_view_paper_option($row, $opt);
                 });
@@ -365,7 +365,7 @@ class PaperList {
         if (str_starts_with($key, "opt")
             && ($opt = $this->conf->paper_opts->find($key))) {
             return $this->user->can_view_some_paper_option($opt)
-                && $this->_rowset->any(function ($row) use ($opt) {
+                && $this->rowset()->any(function ($row) use ($opt) {
                     return ($ov = $row->option($opt->id))
                         && (!$opt->has_document() || $ov->value > 1)
                         && $this->user->can_view_paper_option($row, $opt);
@@ -373,33 +373,33 @@ class PaperList {
         }
         // other features
         if ($key === "abstract")
-            return $this->_rowset->any(function ($row) {
+            return $this->rowset()->any(function ($row) {
                 return (string) $row->abstract !== "";
             });
         if ($key === "openau")
             return $this->has("authors")
                 && (!$this->user->is_manager()
-                    || $this->_rowset->any(function ($row) {
+                    || $this->rowset()->any(function ($row) {
                            return $this->user->can_view_authors($row);
                        }));
         if ($key === "anonau")
             return $this->has("authors")
                 && $this->user->is_manager()
-                && $this->_rowset->any(function ($row) {
+                && $this->rowset()->any(function ($row) {
                        return $this->user->allow_view_authors($row)
                            && !$this->user->can_view_authors($row);
                    });
         if ($key === "need_submit")
-            return $this->_rowset->any(function ($row) {
+            return $this->rowset()->any(function ($row) {
                 return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
             });
         if ($key === "accepted")
-            return $this->_rowset->any(function ($row) {
+            return $this->rowset()->any(function ($row) {
                 return $row->outcome > 0 && $this->user->can_view_decision($row);
             });
         if ($key === "need_final")
             return $this->has("accepted")
-                && $this->_rowset->any(function ($row) {
+                && $this->rowset()->any(function ($row) {
                        return $row->outcome > 0
                            && $this->user->can_view_decision($row)
                            && $row->timeFinalSubmitted <= 0;
@@ -751,6 +751,7 @@ class PaperList {
         case "acc":
         case "lead":
         case "manager":
+        case "admin":
         case "s":
         case "vis":
             return "sel id title revtype revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";

@@ -779,7 +779,7 @@ class Limit_SearchTerm extends SearchTerm {
             return false;
         else if (in_array($this->limit, ["und", "acc", "vis"], true))
             return $user->privChair;
-        else if (in_array($this->limit, ["rable", "manager", "unm"], true))
+        else if (in_array($this->limit, ["rable", "admin", "unm"], true))
             return false;
         else
             return true;
@@ -792,7 +792,7 @@ class Limit_SearchTerm extends SearchTerm {
         else if ($this->lflag === self::LFLAG_ACTIVE)
             $ff[] = "Paper.timeWithdrawn<=0";
 
-        if (in_array($this->limit, ["a", "ar", "manager"], true))
+        if (in_array($this->limit, ["a", "ar", "admin"], true))
             $sqi->add_conflict_table();
         if (in_array($this->limit, ["ar", "r", "rout"], true)) {
             $sqi->add_reviewer_columns();
@@ -844,7 +844,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "lead":
             $ff[] = "Paper.leadContactId=" . $sqi->srch->cid;
             break;
-        case "manager":
+        case "admin":
             if ($sqi->user->is_track_manager())
                 $ff[] = "(Paper.managerContactId=" . $sqi->srch->cid . " or Paper.managerContactId=0)";
             else
@@ -902,8 +902,8 @@ class Limit_SearchTerm extends SearchTerm {
             return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
         case "lead":
             return $row->leadContactId == $srch->cid;
-        case "manager":
-            return $srch->user->allow_administer($row);
+        case "admin":
+            return $srch->user->is_primary_administrator($row);
         case "req":
             foreach ($row->reviews_by_id() as $rrow)
                 if ($rrow->reviewType == REVIEW_EXTERNAL
@@ -1416,7 +1416,7 @@ class PaperSearch {
         "all" => "All papers",
         "editpref" => "Reviewable papers",
         "lead" => "Your discussion leads",
-        "manager" => "Papers you administer",
+        "admin" => "Papers you administer",
         "r" => "Your reviews",
         "rable" => "Reviewable papers",
         "req" => "Your review requests",
@@ -1477,12 +1477,14 @@ class PaperSearch {
         $limit = (string) get($options, "t");
         if ($limit === "0")
             $limit = "";
-        if ($limit === "undec")
+        else if ($limit === "undec")
             $limit = "und";
+        else if ($limit === "manager")
+            $limit = "admin";
         if (in_array($limit, ["a", "r", "ar", "rout", "vis"], true)
             || ($user->privChair && in_array($limit, ["all", "unsub", "unm"], true))
             || ($user->isPC && in_array($limit, ["acc", "reqrevs", "req", "lead", "rable",
-                                                 "editpref", "manager", "und"], true)))
+                                                 "editpref", "admin", "und"], true)))
             /* ok */;
         else if ($user->privChair && !$limit && $this->conf->timeUpdatePaper())
             $limit = "all";
@@ -2715,8 +2717,8 @@ class PaperSearch {
             if ($user->is_discussion_lead() || $reqtype === "lead")
                 $ts[] = "lead";
             if (($user->privChair ? $user->conf->has_any_manager() : $user->is_manager())
-                || $reqtype === "manager")
-                $ts[] = "manager";
+                || $reqtype === "admin")
+                $ts[] = "admin";
         }
         if ($user->is_author() || $reqtype === "a")
             $ts[] = "a";
@@ -2726,12 +2728,12 @@ class PaperSearch {
     static function manager_search_types(Contact $user) {
         if ($user->privChair) {
             if ($user->conf->has_any_manager())
-                $ts = ["manager", "unm", "s"];
+                $ts = ["admin", "unm", "s"];
             else
                 $ts = ["s"];
             array_push($ts, "acc", "und", "all");
         } else
-            $ts = ["manager"];
+            $ts = ["admin"];
         return self::expand_search_types($user, $ts);
     }
 
