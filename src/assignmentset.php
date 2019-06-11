@@ -1421,8 +1421,12 @@ class AssignmentSet {
         $pids = array_keys($pids);
 
         // check action
-        if (!$aparser)
-            return $this->error_here("Unknown action.");
+        if (!$aparser) {
+            if ($req["action"])
+                return $this->error_here("Unknown action “" . htmlspecialchars($req["action"]) . "”.");
+            else
+                return $this->error_here("Action missing.");
+        }
         if ($this->enabled_actions !== null
             && !isset($this->enabled_actions[$aparser->type]))
             return $this->error_here("Action " . htmlspecialchars($aparser->type) . " disabled.");

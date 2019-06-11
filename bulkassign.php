@@ -171,7 +171,7 @@ if (isset($Qreq->upload)
             $assignset->echo_unparse_display();
 
             echo Ht::actions([
-                Ht::submit("Apply changes", ["class" => "btn-primary"]),
+                Ht::submit("Apply changes", ["class" => "btn-success"]),
                 Ht::submit("cancel", "Cancel")
             ], ["class" => "aab aabig"]),
                 "</form>\n";
