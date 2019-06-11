@@ -184,5 +184,21 @@
         "synonym": ["unwithdraw"],
         "type": "revive",
         "parameters": [], "description": "Revive (unwithdraw) submission"
+    },
+    {
+        "name": "follow", "parser_class": "Follow_AssignmentParser",
+        "parameters": ["user", "following"], "default_follow": "yes",
+        "description": "Follow or block review and comment notifications"
+    },
+    {
+        "name": "unfollow", "parser_class": "Follow_AssignmentParser",
+        "synonym": ["nofollow"],
+        "parameters": ["user"], "default_follow": "no", "position": false,
+        "description": "Block review and comment notifications"
+    },
+    {
+        "name": "clearfollow", "parser_class": "Follow_AssignmentParser",
+        "parameters": ["user"], "default_follow": "clear", "position": false,
+        "description": "Default notifications for reviews and comments"
     }
 ]

@@ -172,6 +172,7 @@ src/api/api_taganno.php
 src/api/api_user.php
 src/assigners/a_conflict.php
 src/assigners/a_decision.php
+src/assigners/a_follow.php
 src/assigners/a_lead.php
 src/assigners/a_preference.php
 src/assigners/a_status.php
