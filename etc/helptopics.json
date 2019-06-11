@@ -273,5 +273,15 @@
         "name": "bulkassignactions/tag",
         "title": "<code>tag</code> action",
         "render_callback": "BulkAssign_HelpTopic::render_action_tag"
+    },
+    {
+        "name": "bulkassignactions/conflict",
+        "title": "<code>conflict</code> action",
+        "render_callback": "BulkAssign_HelpTopic::render_action_conflict"
+    },
+    {
+        "name": "bulkassignactions/follow",
+        "title": "<code>follow</code> action",
+        "render_callback": "BulkAssign_HelpTopic::render_action_follow"
     }
 ]

@@ -126,6 +126,18 @@ all,cleartag,p
 6,nexttag,p</pre>";
     }
 
+    static function render_action_follow($hth, $gj) {
+        echo "<p>The <code>following</code> column can be “yes” (to receive
+email notifications on updates to reviews and comments), “no” (to block
+notifications), or “default” (to revert to the default, which is based
+on the user’s site preferences).</p>";
+    }
+
+    static function render_action_conflict($hth, $gj) {
+        echo "<p>The <code>conflict type</code> column can be “yes”, “no”, or
+a conflict type, such as “advisor” or “institutional”.</p>";
+    }
+
     static function echo_actions(Contact $user, $hth = null) {
         $apge = new GroupedExtensions($user, "etc/assignmentparsers.json", $user->conf->opt("assignmentParsers"));
         $apx = [];
