@@ -779,7 +779,7 @@ class Limit_SearchTerm extends SearchTerm {
             return false;
         else if (in_array($this->limit, ["und", "acc", "vis"], true))
             return $user->privChair;
-        else if (in_array($this->limit, ["rable", "admin", "unm"], true))
+        else if (in_array($this->limit, ["rable", "admin", "alladmin"], true))
             return false;
         else
             return true;
@@ -834,9 +834,6 @@ class Limit_SearchTerm extends SearchTerm {
         case "und":
             $ff[] = "Paper.outcome=0";
             break;
-        case "unm":
-            $ff[] = "Paper.managerContactId=0";
-            break;
         case "unsub":
             $ff[] = "Paper.timeSubmitted<=0";
             $ff[] = "Paper.timeWithdrawn<=0";
@@ -844,6 +841,10 @@ class Limit_SearchTerm extends SearchTerm {
         case "lead":
             $ff[] = "Paper.leadContactId=" . $sqi->srch->cid;
             break;
+        case "alladmin":
+            if ($sqi->user->privChair)
+                break;
+            /* FALLTHRU */
         case "admin":
             if ($sqi->user->is_track_manager())
                 $ff[] = "(Paper.managerContactId=" . $sqi->srch->cid . " or Paper.managerContactId=0)";
@@ -890,9 +891,6 @@ class Limit_SearchTerm extends SearchTerm {
         case "und":
             return $row->outcome == 0
                 || !$srch->user->can_view_decision($row);
-        case "unm":
-            return $srch->user->allow_administer($row)
-                && $row->managerContactId == 0;
         case "rable":
             $user = $srch->reviewer_user();
             return $user->can_accept_review_assignment_ignore_conflict($row)
@@ -904,6 +902,8 @@ class Limit_SearchTerm extends SearchTerm {
             return $row->leadContactId == $srch->cid;
         case "admin":
             return $srch->user->is_primary_administrator($row);
+        case "alladmin":
+            return $srch->user->allow_administer($row);
         case "req":
             foreach ($row->reviews_by_id() as $rrow)
                 if ($rrow->reviewType == REVIEW_EXTERNAL
@@ -1424,7 +1424,7 @@ class PaperSearch {
         "rout" => "Your incomplete reviews",
         "s" => "Submitted papers",
         "und" => "Undecided papers",
-        "unm" => "Unmanaged submissions"
+        "alladmin" => "Papers you’re allowed to administer"
     ];
 
     const LFLAG_SUBMITTED = 1;
@@ -1482,18 +1482,18 @@ class PaperSearch {
         else if ($limit === "manager")
             $limit = "admin";
         if (in_array($limit, ["a", "r", "ar", "rout", "vis"], true)
-            || ($user->privChair && in_array($limit, ["all", "unsub", "unm"], true))
+            || ($user->privChair && in_array($limit, ["all", "unsub", "alladmin"], true))
             || ($user->isPC && in_array($limit, ["acc", "reqrevs", "req", "lead", "rable",
-                                                 "editpref", "admin", "und"], true)))
+                                                 "editpref", "admin", "alladmin", "und"], true)))
             /* ok */;
         else if ($user->privChair && !$limit && $this->conf->timeUpdatePaper())
             $limit = "all";
         else if (($user->privChair && $limit === "act")
                  || ($user->isPC
-                     && in_array($limit, ["", "act", "all", "unm"], true)
+                     && in_array($limit, ["", "act", "all"], true)
                      && $this->conf->can_pc_see_active_submissions()))
             $limit = "act";
-        else if ($user->isPC && in_array($limit, ["", "s", "unm"], true))
+        else if ($user->isPC && in_array($limit, ["", "s", "act", "all"], true))
             $limit = "s";
         else if ($limit === "rable")
             $limit = "r";
@@ -2496,7 +2496,7 @@ class PaperSearch {
     function simple_search_options() {
         $limit = $xlimit = $this->limit();
         if ($this->q === "re:me"
-            && ($xlimit === "s" || $xlimit === "act" || $xlimit === "rout" || $xlimit === "rable"))
+            && in_array($xlimit, ["s", "act", "rout", "rable"]))
             $xlimit = "r";
         if ($this->_matches !== null
             || ($this->q !== ""
@@ -2546,8 +2546,6 @@ class PaperSearch {
             $queryOptions["active"] = 1;
         else if ($limit === "lead")
             $queryOptions["myLead"] = 1;
-        else if ($limit === "unm")
-            $queryOptions["finalized"] = $queryOptions["unmanaged"] = 1;
         else if ($limit !== "all"
                  && ($limit !== "vis" || !$this->user->privChair))
             return false; /* don't understand limit */
@@ -2728,7 +2726,7 @@ class PaperSearch {
     static function manager_search_types(Contact $user) {
         if ($user->privChair) {
             if ($user->conf->has_any_manager())
-                $ts = ["admin", "unm", "s"];
+                $ts = ["admin", "alladmin", "s"];
             else
                 $ts = ["s"];
             array_push($ts, "acc", "und", "all");

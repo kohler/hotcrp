@@ -2889,8 +2889,6 @@ class Conf {
             $where[] = "timeWithdrawn<=0";
         if (get($options, "myLead"))
             $where[] = "leadContactId=$contactId";
-        if (get($options, "unmanaged"))
-            $where[] = "managerContactId=0";
         if (get($options, "myManaged"))
             $where[] = "managerContactId=$contactId";
         if (get($options, "myWatching") && $contactId) {
