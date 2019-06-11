@@ -122,7 +122,7 @@ class UserStatus extends MessageSet {
             if ($user->defaultWatch & Contact::WATCH_REVIEW_ALL)
                 $cj->follow->reviews = $cj->follow->allreviews = true;
             if ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED)
-                $cj->follow->managedreviews = true;
+                $cj->follow->adminreviews = true;
             if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL)
                 $cj->follow->allfinal = true;
         }
@@ -344,7 +344,7 @@ class UserStatus extends MessageSet {
             $cj->follow = $this->make_keyed_object($cj->follow, "follow", true);
             $cj->bad_follow = array();
             foreach ((array) $cj->follow as $k => $v)
-                if ($v && !in_array($k, ["reviews", "allreviews", "managedreviews", "allfinal"]))
+                if ($v && !in_array($k, ["reviews", "allreviews", "managedreviews", "adminreviews", "allfinal"]))
                     $cj->bad_follow[] = $k;
         }
 
@@ -594,7 +594,8 @@ class UserStatus extends MessageSet {
                 $w |= Contact::WATCH_REVIEW;
             if (get($cj->follow, "allreviews"))
                 $w |= Contact::WATCH_REVIEW_ALL;
-            if (get($cj->follow, "managedreviews"))
+            if (get($cj->follow, "adminreviews")
+                || get($cj->follow, "managedreviews"))
                 $w |= Contact::WATCH_REVIEW_MANAGED;
             if (get($cj->follow, "allfinal"))
                 $w |= Contact::WATCH_FINAL_SUBMIT_ALL;
@@ -749,9 +750,9 @@ class UserStatus extends MessageSet {
         if ($qreq->has_watchallreviews
             && ($us->viewer->privChair || $us->user->isPC))
             $follow["allreviews"] = !!$qreq->watchallreviews;
-        if ($qreq->has_watchmanagedreviews
+        if ($qreq->has_watchadminreviews
             && ($us->viewer->privChair || $us->user->isPC))
-            $follow["managedreviews"] = !!$qreq->watchmanagedreviews;
+            $follow["adminreviews"] = !!$qreq->watchadminreviews;
         if ($qreq->has_watchallfinal
             && ($us->viewer->privChair || $us->user->is_manager()))
             $follow["allfinal"] = !!$qreq->watchallfinal;
@@ -978,9 +979,9 @@ class UserStatus extends MessageSet {
                 "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label>\n";
             if (!$us->user->is_empty() && $us->user->is_manager()) {
                 echo "<label class=\"checki\"><span class=\"checkc\">",
-                    Ht::checkbox("watchmanagedreviews", 1, !!get($follow, "managedreviews"), ["data-default-checked" => !!get($cfollow, "managedreviews")]),
+                    Ht::checkbox("watchadminreviews", 1, !!get($follow, "adminreviews"), ["data-default-checked" => !!get($cfollow, "adminreviews")]),
                     "</span>", $us->conf->_("Reviews and comments on submissions you administer"),
-                    Ht::hidden("has_watchmanagedreviews", 1), "</label>\n";
+                    Ht::hidden("has_watchadminreviews", 1), "</label>\n";
             }
             echo "<label class=\"checki\"><span class=\"checkc\">",
                 Ht::checkbox("watchallreviews", 1, !!get($follow, "allreviews"), ["data-default-checked" => !!get($cfollow, "allreviews")]),
