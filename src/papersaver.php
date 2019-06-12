@@ -163,7 +163,7 @@ class Default_PaperSaver extends PaperSaver {
                 $ctype = Conflict::constrain_editable($qreq["pcc$pcid"], $admin);
                 if ($ctype) {
                     $email = $pc->email;
-                    $pj->pc_conflicts->$email = Conflict::$type_names[$ctype];
+                    $pj->pc_conflicts->$email = $user->conf->conflict_types()->unparse_json($ctype);
                 }
             }
         }

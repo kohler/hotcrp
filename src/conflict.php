@@ -3,12 +3,15 @@
 // Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
 
 class Conflict {
-    static $type_descriptions = array(0 => "No conflict",
-                                      3 => "Advisor/advisee",
-                                      2 => "Recent collaborator",
-                                      4 => "Institutional",
-                                      5 => "Personal",
-                                      6 => "Other");
+    private $conf;
+    private $_typemap;
+    private $_typemap_html;
+
+    static $typedesc = [3 => "Advisor/advisee",
+                        2 => "Recent collaborator",
+                        4 => "Institutional",
+                        5 => "Personal",
+                        6 => "Other"];
     static $type_names = array(0 => false,
                                1 => true,
                                2 => "collaborator",
@@ -33,7 +36,14 @@ class Conflict {
         } else
             return 0;
     }
-    static function parse($text, $default_yes) {
+
+    function __construct(Conf $conf) {
+        $this->conf = $conf;
+    }
+    function basic_conflict_types() {
+        return array_keys(self::$typedesc);
+    }
+    function parse_text($text, $default_yes) {
         if (is_bool($text))
             return $text ? $default_yes : 0;
         $text = strtolower(trim($text));
@@ -57,5 +67,43 @@ class Conflict {
             return CONFLICT_CHAIRMARK;
         else
             return false;
+    }
+    function parse_json($j) {
+        if (is_bool($j))
+            return $j ? CONFLICT_AUTHORMARK : 0;
+        else if (is_int($j) && isset(self::$type_names[$j]))
+            return $j;
+        else if (is_string($j))
+            return $this->parse_text($j, CONFLICT_AUTHORMARK);
+        else
+            return false;
+    }
+    private function type_map() {
+        if ($this->_typemap === null) {
+            $this->_typemap = [];
+            foreach ([0 => "No conflict",
+                      1 => "Conflict",
+                      CONFLICT_CHAIRMARK => "Pinned conflict",
+                      CONFLICT_AUTHOR => "Author",
+                      CONFLICT_CONTACTAUTHOR => "Contact"] as $n => $t)
+                $this->_typemap[$n] = $this->conf->_c("conflict_type", $t);
+            foreach (self::$typedesc as $n => $t)
+                $this->_typemap[$n] = $this->conf->_c("conflict_type", $t);
+        }
+        return $this->_typemap;
+    }
+    function unparse_text($ct) {
+        $ct = min($ct, CONFLICT_CONTACTAUTHOR);
+        $tm = $this->type_map();
+        return $tm[isset($tm[$ct]) ? $ct : 1];
+    }
+    function unparse_html($ct) {
+        if ($this->_typemap_html === null)
+            $this->_typemap_html = array_map("htmlspecialchars", $this->type_map());
+        $ct = min($ct, CONFLICT_CONTACTAUTHOR);
+        return $this->_typemap_html[isset($this->_typemap_html[$ct]) ? $ct : 1];
+    }
+    function unparse_json($ct) {
+        return self::$type_names[$ct];
     }
 }

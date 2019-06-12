@@ -268,9 +268,10 @@ class PaperStatus extends MessageSet {
             $pj->options = (object) $options;
 
         if ($can_view_authors) {
+            $confset = $this->conf->conflict_types();
             $pcconflicts = array();
             foreach ($prow->pc_conflicts(true) as $id => $cflt) {
-                if (($ctname = get(Conflict::$type_names, $cflt->conflictType)))
+                if (($ctname = $confset->unparse_json($cflt->conflictType)))
                     $pcconflicts[$cflt->email] = $ctname;
             }
             if (!empty($pcconflicts))
@@ -576,6 +577,7 @@ class PaperStatus extends MessageSet {
     }
 
     private function normalize_pc_conflicts($pj) {
+        $confset = $this->conf->conflict_types();
         $conflicts = get($pj, "pc_conflicts");
         $pj->pc_conflicts = (object) array();
         if (is_object($conflicts))
@@ -588,14 +590,10 @@ class PaperStatus extends MessageSet {
             else if (!is_bool($ct) && !is_int($ct) && !is_string($ct))
                 $this->format_error_at("pc_conflicts", $ct);
             else {
-                if (is_int($ct) && isset(Conflict::$type_names[$ct]))
-                    $ctn = $ct;
-                else if ((is_bool($ct) || is_string($ct))
-                         && ($ctn = Conflict::parse($ct, CONFLICT_AUTHORMARK)) !== false)
-                    /* OK */;
-                else {
+                $ctn = $confset->parse_json($ct);
+                if ($ctn === false) {
                     $pj->bad_pc_conflicts->$email = $ct;
-                    $ctn = Conflict::parse("other", 1);
+                    $ctn = CONFLICT_AUTHORMARK;
                 }
                 $pj->pc_conflicts->$email = $ctn;
             }

@@ -40,11 +40,12 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $cts = strtolower(trim((string) $req["conflict"]));
             $cm = null;
             $error = false;
+            $confset = $state->conf->conflict_types();
             if (($colon = strpos($cts, ":")) !== false) {
                 $octs = trim(substr($cts, 0, $colon));
                 if ($octs === "" || $octs === "any" || $octs === "all")
                     $cm = new CountMatcher("!=0");
-                else if (($ct = Conflict::parse($octs, 1000)) !== false)
+                else if (($ct = $confset->parse_text($octs, 1000)) !== false)
                     $cm = new CountMatcher("=" . $ct);
                 else
                     $error = true;
@@ -54,7 +55,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             }
             if ($cts === "")
                 $ct = 1000;
-            else if (($ct = Conflict::parse($cts, 1000)) === false) {
+            else if (($ct = $confset->parse_text($cts, 1000)) === false) {
                 $ct = 1000;
                 $error = true;
             }

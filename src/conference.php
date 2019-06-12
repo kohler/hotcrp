@@ -109,6 +109,7 @@ class Conf {
     private $_decisions;
     private $_decision_matcher;
     private $_topic_set;
+    private $_conflict_types;
     private $_pc_members_cache;
     private $_pc_tags_cache;
     private $_pc_members_and_admins_cache;
@@ -1085,6 +1086,13 @@ class Conf {
 
     function invalidate_topics() {
         $this->_topic_set = null;
+    }
+
+
+    function conflict_types() {
+        if ($this->_conflict_types === null)
+            $this->_conflict_types = new Conflict($this);
+        return $this->_conflict_types;
     }
 
 

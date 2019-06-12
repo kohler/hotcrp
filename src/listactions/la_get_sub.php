@@ -234,10 +234,7 @@ class GetPcconflicts_ListAction extends ListAction {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
-        $allConflictTypes = Conflict::$type_descriptions;
-        $allConflictTypes[CONFLICT_CHAIRMARK] = "Chair-confirmed";
-        $allConflictTypes[CONFLICT_AUTHOR] = "Author";
-        $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact";
+        $confset = $user->conf->conflict_types();
         $pcm = $user->conf->pc_members();
         $texts = array();
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
@@ -247,7 +244,7 @@ class GetPcconflicts_ListAction extends ListAction {
                 foreach ($prow->conflicts() as $cid => $c)
                     if (isset($pcm[$cid])) {
                         $pc = $pcm[$cid];
-                        $m[$pc->sort_position] = [$prow->paperId, $prow->title, $pc->firstName, $pc->lastName, $pc->email, get($allConflictTypes, $c->conflictType, "Conflict")];
+                        $m[$pc->sort_position] = [$prow->paperId, $prow->title, $pc->firstName, $pc->lastName, $pc->email, $confset->unparse_text($c->conflictType)];
                     }
                 if ($m) {
                     ksort($m);

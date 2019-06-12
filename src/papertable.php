@@ -1430,17 +1430,17 @@ class PaperTable {
         $show_colors = $this->user->can_view_reviewer_tags($this->prow);
 
         if ($selectors) {
-            $ctypes = Conflict::$type_descriptions;
-            $extra = array("class" => "pcconf-selector");
+            $confset = $this->conf->conflict_types();
+            $ctypes = [0 => $confset->unparse_text(0)];
+            foreach ($confset->basic_conflict_types() as $n)
+                $ctypes[$n] = $confset->unparse_text($n);
+            $extra = ["class" => "pcconf-selector"];
             if ($this->admin) {
                 $ctypes["xsep"] = null;
-                $ctypes[CONFLICT_CHAIRMARK] = "Confirmed conflict";
-                $extra["optionstyles"] = array(CONFLICT_CHAIRMARK => "font-weight:bold");
+                $ctypes[CONFLICT_CHAIRMARK] = $confset->unparse_text(CONFLICT_CHAIRMARK);
+                $extra["optionstyles"] = [CONFLICT_CHAIRMARK => "font-weight:bold"];
             }
-            foreach ($ctypes as &$ctype)
-                $ctype = $this->conf->_c("conflict_type", $ctype);
-            unset($ctype);
-            $author_ctype = $this->conf->_c("conflict_type", "Author");
+            $author_ctype = $confset->unparse_html(CONFLICT_AUTHOR);
         }
 
         echo $this->editable_papt("pcconf", $this->field_name("PC conflicts"), ["id" => "pcconf"]),
@@ -1480,7 +1480,9 @@ class PaperTable {
             if ($selectors) {
                 echo '<span class="pcconf-editselector">';
                 if ($disabled) {
-                    echo '<strong>', ($pct >= CONFLICT_AUTHOR ? $author_ctype : "Conflict"), '</strong>',
+                    echo '<strong>',
+                        ($pct >= CONFLICT_AUTHOR ? $author_ctype : "Conflict"),
+                        '</strong>',
                         Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry"]);
                 } else {
                     $js["class"] = "conflict-entry";

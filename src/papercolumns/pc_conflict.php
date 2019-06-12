@@ -72,10 +72,8 @@ class Conflict_PaperColumn extends PaperColumn {
             return "";
         else if (!$this->show_description || $ct == 1)
             return review_type_icon(-1);
-        else if ($ct >= CONFLICT_AUTHOR)
-            return "Author";
         else
-            return get(Conflict::$type_descriptions, $ct, "Other");
+            return $pl->conf->conflict_types()->unparse_html(min($ct, CONFLICT_AUTHOR));
     }
     function edit_content(PaperList $pl, PaperInfo $row) {
         if (!$pl->user->allow_administer($row))
@@ -97,10 +95,8 @@ class Conflict_PaperColumn extends PaperColumn {
             return "N";
         else if (!$this->show_description || $ct == 1)
             return "Y";
-        else if ($ct >= CONFLICT_AUTHOR)
-            return "Author";
         else
-            return get(Conflict::$type_descriptions, $ct, "Other");
+            return $pl->conf->conflict_types()->unparse_text(min($ct, CONFLICT_AUTHOR));
     }
 
     static function expand($name, $user, $xfj, $m) {
