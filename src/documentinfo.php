@@ -33,13 +33,12 @@ class DocumentInfo implements JsonSerializable {
     public $error;
     public $error_html;
 
-    function __construct($p = null, Conf $conf = null, PaperInfo $prow = null) {
+    function __construct($p, Conf $conf, PaperInfo $prow = null) {
         $this->merge($p, $conf, $prow);
     }
 
-    private function merge($p, Conf $conf = null, PaperInfo $prow = null) {
-        global $Conf;
-        $this->conf = $conf ? : $Conf;
+    private function merge($p, Conf $conf, PaperInfo $prow = null) {
+        $this->conf = $conf;
         $this->prow = $prow;
         if ($p) {
             foreach ($p as $k => $v) {
@@ -81,7 +80,7 @@ class DocumentInfo implements JsonSerializable {
             $this->error = true;
     }
 
-    static function fetch($result, Conf $conf = null, PaperInfo $prow = null) {
+    static function fetch($result, Conf $conf, PaperInfo $prow = null) {
         $di = $result ? $result->fetch_object("DocumentInfo", [null, $conf, $prow]) : null;
         if ($di && !is_int($di->paperStorageId))
             $di->merge(null, $conf, $prow);
