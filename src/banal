@@ -474,6 +474,12 @@ sub calc_page_headings ($$$$) {
             next;
         }
 
+        # detect when we've moved beyond the top
+        my ($tt) = $text->{t};
+        my ($th) = $text->{h};
+        my ($was_near_top) = $near_top;
+        $near_top = 0 if $near_top && $tt + $th > $top && !$text->{num};
+
         # skip unless it looks interesting
         my ($content) = $text->{content};
         if ($content !~ /\A[\dABCDEFIRVX]/) {
@@ -484,9 +490,6 @@ sub calc_page_headings ($$$$) {
         # compute length of line
         my ($tl) = $text->{l};
         my ($tr) = $tl + $text->{w};
-        my ($tt) = $text->{t};
-        my ($th) = $text->{h};
-        $near_top = 0 if $near_top && $tt + $th > $top && !$text->{num};
         ++$tpos;
         while ($tpos < @$texts
                && interval_overlap($tt, $th, $texts->[$tpos]->{t}, $texts->[$tpos]->{h})
@@ -552,7 +555,7 @@ sub calc_page_headings ($$$$) {
 
         $page->{pagedata}->{headings} = [] if !exists $page->{pagedata}->{headings};
         push @{$page->{pagedata}->{headings}}, $content;
-        $page->{pagedata}->{heading1} = 1 if $near_top;
+        $page->{pagedata}->{heading1} = 1 if $was_near_top;
 
         # skip rest if saw contents
         if (@{$page->{pagedata}->{headings}} == 1
