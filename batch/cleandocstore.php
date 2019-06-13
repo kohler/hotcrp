@@ -1,4 +1,6 @@
 <?php
+// cleandocstore.php -- HotCRP maintenance script
+// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 $arg = getopt("hn:c:Vm:du:q", ["help", "name:", "count:", "verbose", "match:", "dry-run", "max-usage:", "quiet", "silent"]);
 foreach (["c" => "count", "V" => "verbose", "m" => "match", "d" => "dry-run",
@@ -10,7 +12,7 @@ if (isset($arg["silent"]))
     $arg["quiet"] = false;
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n"
-                 . "           [-n|--dry-run] [-u USAGELIMIT]\n");
+                 . "           [-d|--dry-run] [-u USAGELIMIT]\n");
     exit(0);
 }
 if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
@@ -20,38 +22,6 @@ if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
 
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
-
-class Cleaner {
-    static public $docmatch;
-    static public $dirinfo = [];
-
-    static function populate($dir, Fparts $fparts, $pos) {
-        if ($pos < $fparts->n && $pos % 1 == 0) {
-            $dir .= $fparts->components[$pos];
-            ++$pos;
-        }
-        if ($pos >= $fparts->n)
-            return 1;
-        $di = [];
-        $preg = $fparts->pregs[$pos];
-        $n = 0;
-        $isdir = $pos + 1 < $fparts->n;
-        foreach (scandir($dir, SCANDIR_SORT_NONE) as $x) {
-            $x = "/$x";
-            if ($x !== "/." && $x !== "/.." && preg_match($preg, $x)) {
-                $di[] = $n;
-                $di[] = $x;
-                if ($isdir)
-                    $n += self::populate("$dir$x", $fparts, $pos + 1);
-                else
-                    $n += 1;
-            }
-        }
-        $di[] = $n;
-        self::$dirinfo[$dir] = $di;
-        return $n;
-    }
-}
 
 $dp = $Conf->docstore();
 if (!$dp) {
@@ -65,7 +35,6 @@ $count = isset($arg["count"]) ? intval($arg["count"]) : 10;
 $verbose = isset($arg["verbose"]);
 $dry_run = isset($arg["dry-run"]);
 $usage_threshold = null;
-Cleaner::$docmatch = new DocumentHashMatcher(get($arg, "match"));
 
 if (isset($arg["max-usage"])) {
     if (!is_numeric($arg["max-usage"])
@@ -86,253 +55,8 @@ if (isset($arg["max-usage"])) {
         $count = 5000;
 }
 
-class Fparts {
-    public $components = [];
-    public $pregs = [];
-    public $n;
 
-    public $algo;
-    public $hash;
-    public $extension;
-
-    function __construct($dp) {
-        assert($dp[0] === "/");
-        foreach (preg_split("{/+}", $dp) as $fdir)
-            if ($fdir !== "") {
-                if (preg_match('/%\d*[%hxHjaA]/', $fdir)) {
-                    if (count($this->components) % 2 == 0)
-                        $this->components[] = "";
-                    $this->components[] = "/$fdir";
-                } else if (count($this->components) % 2 == 0)
-                    $this->components[] = "/$fdir";
-                else
-                    $this->components[count($this->components) - 1] .= "/$fdir";
-            }
-
-        foreach ($this->components as $fp)
-            $this->pregs[] = Cleaner::$docmatch->make_preg($fp);
-
-        $this->n = count($this->components);
-    }
-
-    function clear() {
-        $this->algo = null;
-        $this->hash = "";
-        $this->extension = null;
-    }
-    function match_component($text, $i) {
-        $match = $this->components[$i];
-        $xalgo = $this->algo;
-        $xhash = $this->hash;
-        $xext = $this->extension;
-
-        $build = "";
-        while (preg_match('{\A(.*?)%(\d*)([%hxHjaA])(.*)\z}', $match, $m)) {
-            if ($m[1] !== "") {
-                if (substr($text, 0, strlen($m[1])) !== $m[1])
-                    return false;
-                $build .= $m[1];
-                $text = substr($text, strlen($m[1]));
-            }
-
-            list($fwidth, $fn, $match) = [$m[2], $m[3], $m[4]];
-            if ($fn === "%") {
-                if (substr($text, 0, 1) !== "%")
-                    return false;
-                $build .= "%";
-                $text = substr($text, 1);
-            } else if ($fn === "x") {
-                if ($xext !== null) {
-                    if (substr($text, 0, strlen($xext)) != $xext)
-                        return false;
-                    $build .= $xext;
-                    $text = substr($text, strlen($xext));
-                } else if (preg_match('{\A(\.(?:avi|bib|bin|bz2|csv|docx?|gif|gz|html|jpg|json|md|mp4|pdf|png|pptx?|ps|rtf|smil|svgz?|tar|tex|tiff|txt|webm|xlsx?|xz|zip))}', $text, $m)) {
-                    $xext = $m[1];
-                    $build .= $m[1];
-                    $text = substr($text, strlen($m[1]));
-                } else
-                    $xext = "";
-            } else if ($fn === "j") {
-                $l = min(strlen($xhash), 2);
-                if (substr($text, 0, $l) !== (string) substr($xhash, 0, $l))
-                    return false;
-                if (preg_match('{\A([0-9a-f]{2,3})}', $text, $mm)) {
-                    if (strlen($mm[1]) > strlen($xhash))
-                        $xhash = $mm[1];
-                    if (strlen($mm[1]) == 2 && $xalgo === null)
-                        $xalgo = "";
-                    // XXX don't track that algo *cannot* be SHA-1
-                    if (strlen($mm[1]) == 2 ? $xalgo !== "" : $xalgo === "")
-                        return false;
-                    $build .= $mm[1];
-                    $text = substr($text, strlen($mm[1]));
-                } else
-                    return false;
-            } else if ($fn === "a") {
-                if (preg_match('{\A(sha1|sha256)}', $text, $mm)) {
-                    $malgo = $mm[1] === "sha1" ? "" : "sha2-";
-                    if ($xalgo === null)
-                        $xalgo = $malgo;
-                    if ($xalgo !== $malgo)
-                        return false;
-                    $build .= $mm[1];
-                    $text = substr($text, strlen($mm[1]));
-                } else
-                    return false;
-            } else {
-                if ($fn === "A" || $fn === "h") {
-                    if ($xalgo !== null) {
-                        if ($xalgo !== (string) substr($text, 0, strlen($xalgo)))
-                            return false;
-                    } else if (preg_match('{\A((?:sha2-)?)}', $text, $mm))
-                        $xalgo = $mm[1];
-                    else
-                        return false;
-                    $build .= $xalgo;
-                    $text = substr($text, strlen($xalgo));
-                    if ($fn === "A")
-                        continue;
-                }
-                if (substr($text, 0, strlen($xhash)) !== $xhash)
-                    return false;
-                if ($fwidth === "") {
-                    if ($xalgo === "")
-                        $fwidth = "40";
-                    else if ($xalgo === "sha2-")
-                        $fwidth = "64";
-                    else
-                        $fwidth = "40,64";
-                }
-                if (preg_match('{\A([0-9a-f]{' . $fwidth . '})}', $text, $mm)) {
-                    if (strlen($mm[1]) > strlen($xhash))
-                        $xhash = $mm[1];
-                    $build .= $mm[1];
-                    $text = substr($text, strlen($mm[1]));
-                } else
-                    return false;
-            }
-        }
-        if ((string) $text !== $match) {
-            error_log("fail $build, have `$text`, expected `$match`");
-            return false;
-        }
-        $this->algo = $xalgo;
-        $this->hash = $xhash;
-        $this->extension = $xext;
-        return $build . $text;
-    }
-    function match_complete() {
-        return $this->algo !== null
-            && strlen($this->hash) === ($this->algo === "" ? 40 : 64);
-    }
-    function random_match() {
-        global $verbose;
-        $this->clear();
-        $fm = new Fmatch;
-        for ($i = 0; $i < $this->n; ++$i)
-            if ($i % 2 == 0)
-                $fm->fname .= $this->components[$i];
-            else {
-                if (!isset(Cleaner::$dirinfo[$fm->fname]))
-                    return false;
-                $di = &Cleaner::$dirinfo[$fm->fname];
-                $ndi = count($di) - 1;
-                if ($ndi <= 0 || $di[$ndi] <= 0)
-                    break;
-                $idx = random_index($di);
-                for ($tries = $ndi >> 1; $tries > 0; --$tries) {
-                    //$verbose && error_log(json_encode([$i, $idx, $di[$idx + 1], $fparts->pregs[$i]]));
-                    if (($build = $this->match_component($di[$idx + 1], $i)))
-                        break;
-                    $idx += 2;
-                    if ($idx == $ndi)
-                        $idx = 0;
-                }
-                $fm->bdirs[] = $fm->fname;
-                $fm->idxes[] = $idx;
-                unset($di);
-                $fm->fname .= $build;
-            }
-        if ($this->match_complete()) {
-            $fm->algohash = $this->algo . $this->hash;
-            $fm->extension = $this->extension;
-        }
-        return $fm;
-    }
-}
-
-class Fmatch {
-    public $bdirs = [];
-    public $idxes = [];
-    public $fname = "";
-    public $algohash;
-    public $extension;
-    private $_atime;
-
-    function is_complete() {
-        return $this->algohash !== null;
-    }
-    function remove() {
-        // account for removal
-        $delta = null;
-        for ($i = count($this->idxes) - 1; $i >= 0; --$i) {
-            $di = &Cleaner::$dirinfo[$this->bdirs[$i]];
-            $ndi = count($di) - 1;
-            $idx = $this->idxes[$i];
-            if ($delta === null)
-                $delta = $di[$idx + 2] - $di[$idx];
-            if ($delta === $di[$idx + 2] - $di[$idx]) {
-                // remove entry
-                if ($delta === $di[$ndi] - $di[$ndi - 2])
-                    $di[$idx + 1] = $di[$ndi - 1];
-                else {
-                    for ($j = $idx + 2; $j < $ndi; $j += 2) {
-                        $di[$j - 1] = $di[$j + 1];
-                        $di[$j] = $di[$j + 2] - $delta;
-                    }
-                }
-                assert($di[$ndi - 2] == $di[$ndi] - $delta);
-                array_pop($di);
-                array_pop($di);
-            } else {
-                for ($j = $idx + 2; $j <= $ndi; $j += 2)
-                    $di[$j] -= $delta;
-            }
-            unset($di);
-        }
-        $this->idxes = $this->bdirs = [];
-    }
-    function atime() {
-        if ($this->_atime === null)
-            $this->_atime = fileatime($this->fname);
-        return $this->_atime;
-    }
-}
-
-$fparts = new Fparts($dp);
-Cleaner::populate("", $fparts, 0);
-
-
-function random_index($di) {
-    global $verbose;
-    $l = 0;
-    $r = count($di) - 1;
-    $val = mt_rand(0, $di[$r] - 1);
-    if ($di[$r] == ($r >> 1)) {
-        $l = $r = $val << 1;
-        //$verbose && error_log("*$val ?{$l}[" . $di[$l] . "," . $di[$l + 2] . ")");
-    }
-    while ($l + 2 < $r) {
-        $m = $l + (($r - $l) >> 1) & ~1;
-        //$verbose && error_log("*$val ?{$m}[" . $di[$m] . "," . $di[$m + 2] . ") @[$l,$r)");
-        if ($val < $di[$m])
-            $r = $m;
-        else
-            $l = $m;
-    }
-    return $l;
-}
+$fparts = new DocumentFileTree($dp, new DocumentHashMatcher(get($arg, "match")));
 
 
 $ndone = $nsuccess = $bytesremoved = 0;
@@ -344,7 +68,7 @@ while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_thresh
         if ($fm->is_complete())
             $x[] = $fm;
         else
-            $fm->remove();
+            $fparts->hide($fm);
     }
     if (!$x) {
         fwrite(STDERR, "Can't find anything to delete.\n");
@@ -358,7 +82,7 @@ while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_thresh
             return $a->atime() ? -1 : 1;
     });
     $fm = $x[0];
-    $fm->remove();
+    $fparts->hide($fm);
 
     $doc = new DocumentInfo(["sha1" => $fm->algohash,
                              "mimetype" => Mimetype::type($fm->extension)]);
