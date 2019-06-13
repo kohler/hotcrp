@@ -519,7 +519,7 @@ sub calc_page_headings ($$$$) {
         my ($colr) = $colpos->[$colri + 1];
 
         # skip if not left-aligned or centered
-        if (($coll < $tl - $slack
+        if (($coll < $tl - 2 * $slack
              && abs(($tl - $coll) - ($colr - $tr)) > $p2h_per_inch / 4)
             || ($tr >= $colr - $slack && $text->{sz} <= $bodyfontsize)) {
             next;
