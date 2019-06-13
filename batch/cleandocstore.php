@@ -85,7 +85,7 @@ while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_thresh
     $fparts->hide($fm);
 
     $doc = new DocumentInfo(["sha1" => $fm->algohash,
-                             "mimetype" => Mimetype::type($fm->extension)]);
+                             "mimetype" => Mimetype::type($fm->extension)], $Conf);
     $hashalg = $doc->hash_algorithm();
     $ok = false;
     $size = 0;

@@ -43,7 +43,7 @@ $s3doc = $Conf->s3_docstore();
 $algo_pos = -1;
 $algo_pfx = $last_key = $continuation_token = null;
 $args = ["max-keys" => 100];
-$doc = new DocumentInfo;
+$doc = new DocumentInfo([], $Conf);
 $xml = null;
 $xmlpos = 0;
 while (true) {
