@@ -88,7 +88,7 @@ class DocumentInfo implements JsonSerializable {
         return $di;
     }
 
-    static function make_file_upload($paperId, $documentType, $upload) {
+    static function make_file_upload($paperId, $documentType, $upload, $conf) {
         if (!$upload || !is_array($upload))
             return null;
         $args = ["paperId" => $paperId,
@@ -115,7 +115,7 @@ class DocumentInfo implements JsonSerializable {
         } else
             $args["error_html"] = "Uploaded file$fnhtml could not be read.";
         self::fix_mimetype($args);
-        return new DocumentInfo($args);
+        return new DocumentInfo($args, $conf);
     }
 
     static function fix_mimetype(&$args) {

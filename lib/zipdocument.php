@@ -88,7 +88,7 @@ class ZipDocument {
 
     private function _add($doc, $filename, $check_filename) {
         if (is_string($doc))
-            $doc = new DocumentInfo(["content" => $doc]);
+            $doc = new DocumentInfo(["content" => $doc], $this->conf);
         assert($doc instanceof DocumentInfo);
 
         if ($filename == "" && $doc->filename != "")
@@ -161,10 +161,10 @@ class ZipDocument {
 
     private function _make_document($error_html = false) {
         if (!$error_html)
-            return new DocumentInfo(["filename" => $this->filename, "mimetype" => $this->mimetype, "content_file" => $this->filestore]);
+            return new DocumentInfo(["filename" => $this->filename, "mimetype" => $this->mimetype, "content_file" => $this->filestore], $this->conf);
         else {
             $this->filestore = false;
-            return new DocumentInfo(["error" => true, "error_html" => $error_html]);
+            return new DocumentInfo(["error" => true, "error_html" => $error_html], $this->conf);
         }
     }
 

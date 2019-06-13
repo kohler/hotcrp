@@ -125,9 +125,9 @@ class Default_PaperSaver extends PaperSaver {
         // Paper upload
         if ($qreq->has_file("paperUpload")) {
             if ($action === "final")
-                $pj->final = DocumentInfo::make_file_upload($pj->pid, DTYPE_FINAL, $qreq->file("paperUpload"));
+                $pj->final = DocumentInfo::make_file_upload($pj->pid, DTYPE_FINAL, $qreq->file("paperUpload"), $user->conf);
             else if ($action === "update" || $action === "submit")
-                $pj->submission = DocumentInfo::make_file_upload($pj->pid, DTYPE_SUBMISSION, $qreq->file("paperUpload"));
+                $pj->submission = DocumentInfo::make_file_upload($pj->pid, DTYPE_SUBMISSION, $qreq->file("paperUpload"), $user->conf);
         }
 
         // Blindness

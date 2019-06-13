@@ -947,7 +947,7 @@ class DocumentPaperOption extends PaperOption {
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
         if ($qreq->has_file($this->formid)) {
             $pid = $prow ? $prow->paperId : -1;
-            return DocumentInfo::make_file_upload($pid, $this->id, $qreq->file($this->formid));
+            return DocumentInfo::make_file_upload($pid, $this->id, $qreq->file($this->formid), $this->conf);
         } else if ($qreq["remove_{$this->formid}"])
             return null;
         else
@@ -1307,7 +1307,7 @@ class AttachmentsPaperOption extends PaperOption {
             }
         for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i)
             if (($f = $qreq->file("{$this->formid}_new_$i")))
-                $attachments[] = DocumentInfo::make_file_upload($pid, $this->id, $f);
+                $attachments[] = DocumentInfo::make_file_upload($pid, $this->id, $f, $this->conf);
         return empty($attachments) ? null : $attachments;
     }
 

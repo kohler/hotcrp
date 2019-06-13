@@ -830,7 +830,7 @@ xassert_eqq(Filer::docstore_fixed_prefix("%02h%x"), "");
 
 // Document::content_binary_hash
 $Conf->save_setting("opt.contentHashMethod", 1, "sha1");
-$doc = new DocumentInfo(["content" => ""]);
+$doc = new DocumentInfo(["content" => ""], $Conf);
 xassert_eqq($doc->text_hash(), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
 xassert_eqq($doc->content_binary_hash(), hex2bin("da39a3ee5e6b4b0d3255bfef95601890afd80709"));
 $doc->set_content("Hello\n");
