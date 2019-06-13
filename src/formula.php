@@ -689,10 +689,11 @@ class Score_Fexpr extends Sub_Fexpr {
         $fid = $this->field->id;
         $state->_ensure_rrow_score($fid);
         $rrow = $state->_rrow();
+        $rrow_vsb = $state->_rrow_view_score_bound();
         if ($this->field->allow_empty)
-            return "({$rrow} ? (int) {$rrow}->$fid : null)";
+            return "({$rrow} && {$this->field->view_score} > $rrow_vsb ? (int) {$rrow}->$fid : null)";
         else
-            return "({$rrow} && isset({$rrow}->$fid) && {$rrow}->$fid ? (int) {$rrow}->$fid : null)";
+            return "({$rrow} && {$this->field->view_score} > $rrow_vsb && isset({$rrow}->$fid) && {$rrow}->$fid ? (int) {$rrow}->$fid : null)";
     }
 }
 
@@ -941,7 +942,7 @@ class Revtype_Fexpr extends Sub_Fexpr {
                 return "null";
             $state->queryOptions["reviewSignatures"] = true;
             $rrow = $state->_rrow();
-            return "($rrow ? {$rrow}->reviewType : null)";
+            return "({$rrow} ? {$rrow}->reviewType : null)";
         }
         return $rt;
     }
@@ -964,7 +965,8 @@ class ReviewRound_Fexpr extends Sub_Fexpr {
             if (VIEWSCORE_PC <= $view_score)
                 return "null";
             $state->queryOptions["reviewSignatures"] = true;
-            return "($rrow ? {$rrow}->reviewRound : null)";
+            $rrow_vsb = $state->_rrow_view_score_bound();
+            return "($rrow && " . VIEWSCORE_PC . " > $rrow_vsb ? {$rrow}->reviewRound : null)";
         }
         return $rt;
     }
@@ -1088,7 +1090,8 @@ class ReviewWordCount_Fexpr extends Sub_Fexpr {
         $state->datatype |= self::ASUBREV;
         $state->_ensure_review_word_counts();
         $rrow = $state->_rrow();
-        return "($rrow ? {$rrow}->reviewWordCount : null)";
+        $rrow_vsb = $state->_rrow_view_score_bound();
+        return "($rrow && " . VIEWSCORE_AUTHORDEC . " > $rrow_vsb ? {$rrow}->reviewWordCount : null)";
     }
 }
 
@@ -1105,13 +1108,17 @@ class FormulaCompiler {
     public $looptype;
     public $datatype;
     public $all_datatypes = 0;
-    private $lprefix;
-    private $maxlprefix;
+    private $_lprefix;
+    private $_maxlprefix;
+    private $_lflags;
     public $indent = 2;
     public $queryOptions = array();
     public $known_tag_indexes = [];
     public $tagrefs = null;
     private $_stack;
+
+    const LFLAG_RROW = 1;
+    const LFLAG_RROW_VSB = 2;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -1124,9 +1131,10 @@ class FormulaCompiler {
         $this->gvar = $this->g0stmt = $this->gstmt = $this->lstmt = [];
         $this->looptype = Fexpr::LNONE;
         $this->datatype = 0;
-        $this->lprefix = 0;
-        $this->maxlprefix = 0;
-        $this->_stack = array();
+        $this->_lprefix = 0;
+        $this->_maxlprefix = 0;
+        $this->_lflags = 0;
+        $this->_stack = [];
     }
 
     function check_gvar($gvar) {
@@ -1225,13 +1233,25 @@ class FormulaCompiler {
             return '~i~';
     }
     function _rrow() {
-        if ($this->looptype === Fexpr::LNONE)
+        if ($this->looptype === Fexpr::LNONE) {
             return $this->define_gvar("rrow", "\$prow->review_of_user(\$rrow_cid)");
-        else if ($this->looptype === Fexpr::LMY)
+        } else if ($this->looptype === Fexpr::LMY) {
             return $this->define_gvar("myrrow", "\$prow->review_of_user(" . $this->user->contactId . ")");
-        else {
+        } else {
             $this->_add_vsreviews();
-            return 'get($vsreviews, ~i~)';
+            $this->_lflags |= self::LFLAG_RROW;
+            return "\$rrow_{$this->_lprefix}";
+        }
+    }
+    function _rrow_view_score_bound() {
+        $rrow = $this->_rrow();
+        if ($this->looptype === Fexpr::LNONE) {
+            return $this->define_gvar("rrow_vsb", "\$contact->view_score_bound(\$prow, {$rrow})");
+        } else if ($this->looptype === Fexpr::LMY) {
+            return $this->define_gvar("myrrow_vsb", "\$contact->view_score_bound(\$prow, {$rrow}");
+        } else {
+            $this->_lflags |= self::LFLAG_RROW_VSB;
+            return "\$rrow_vsb_{$this->_lprefix}";
         }
     }
     function _ensure_rrow_score($fid) {
@@ -1248,24 +1268,25 @@ class FormulaCompiler {
     }
 
     private function _push() {
-        $this->_stack[] = array($this->lprefix, $this->lstmt, $this->looptype, $this->datatype);
-        $this->lprefix = ++$this->maxlprefix;
+        $this->_stack[] = [$this->_lprefix, $this->lstmt, $this->looptype, $this->datatype, $this->_lflags];
+        $this->_lprefix = ++$this->_maxlprefix;
         $this->lstmt = array();
         $this->looptype = Fexpr::LNONE;
         $this->datatype = 0;
+        $this->_lflags = 0;
         $this->indent += 2;
-        return $this->lprefix;
+        return $this->_lprefix;
     }
     private function _pop($content) {
         $this->all_datatypes |= $this->datatype;
-        list($this->lprefix, $this->lstmt, $this->looptype, $this->datatype) = array_pop($this->_stack);
+        list($this->_lprefix, $this->lstmt, $this->looptype, $this->datatype, $this->_lflags) = array_pop($this->_stack);
         $this->indent -= 2;
         $this->lstmt[] = $content;
     }
     function _addltemp($expr = "null", $always_var = false) {
         if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr))
             return $expr;
-        $tname = "\$t" . $this->lprefix . "_" . count($this->lstmt);
+        $tname = "\$t" . $this->_lprefix . "_" . count($this->lstmt);
         $this->lstmt[] = "$tname = $expr;";
         return $tname;
     }
@@ -1320,14 +1341,27 @@ class FormulaCompiler {
         else
             $this->lstmt[] = "$t_result = $combiner;";
 
+        if ($this->_lflags) {
+            $lstmt_pfx = [];
+            if ($this->_lflags & self::LFLAG_RROW) {
+                if ($this->datatype === Fexpr::ASUBREV)
+                    $v = "\$v$p";
+                else
+                    $v = "get(\$vsreviews, \$i$p)";
+                $lstmt_pfx[] = "\$rrow_{$p} = $v;";
+            }
+            if ($this->_lflags & self::LFLAG_RROW_VSB) {
+                $lstmt_pfx[] = "\$rrow_vsb_{$p} = \$contact->view_score_bound(\$prow, \$rrow_{$p});";
+            }
+            $this->lstmt = array_merge($lstmt_pfx, $this->lstmt);
+        }
+
         if ($this->combining !== null)
             $loop = "foreach (\$groups as \$v$p) " . $this->_join_lstmt(true);
         else {
             $g = $this->loop_variable($this->datatype);
             $loop = "foreach ($g as \$i$p => \$v$p) " . $this->_join_lstmt(true);
-            if ($this->datatype === Fexpr::ASUBREV)
-                $loop = str_replace('get($vsreviews, ~i~)', "\$v$p", $loop);
-            else if ($this->datatype === Fexpr::APREF)
+            if ($this->datatype === Fexpr::APREF)
                 $loop = str_replace('$allrevprefs[~i~]', "\$v$p", $loop);
             $loop = str_replace("~i~", "\$i$p", $loop);
         }
