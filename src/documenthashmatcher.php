@@ -16,8 +16,7 @@ class DocumentHashMatcher {
             return;
         $dot = strpos($match, ".");
         if ($dot !== false) {
-            $this->extension = substr($match, $dot);
-            $this->extension_preg = preg_quote($this->extension);
+            $this->set_extension(substr($match, $dot));
             $match = substr($match, 0, $dot);
         }
 
@@ -41,6 +40,18 @@ class DocumentHashMatcher {
         if ($match != "") {
             $this->hash_preg = str_replace("*", "[0-9a-f]*", $match) . "[0-9a-f]*";
             $this->has_hash_preg = true;
+        }
+    }
+    function set_extension($extension) {
+        if ((string) $extension !== ""
+            && !str_starts_with($extension, "."))
+            $extension = "." . $extension;
+        if ($extension) {
+            $this->extension = $extension;
+            $this->extension_preg = preg_quote($this->extension);
+        } else {
+            $this->extension = null;
+            $this->extension_preg = ".*";
         }
     }
     function make_preg($entrypat) {
