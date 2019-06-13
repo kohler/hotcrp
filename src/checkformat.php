@@ -51,7 +51,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function run_banal($filename) {
         if (($pdftohtml = $this->conf->opt("pdftohtml")))
             putenv("PHP_PDFTOHTML=" . $pdftohtml);
-        $banal_run = "perl src/banal -no_app -json ";
+        $banal_run = "perl src/banal -json ";
         if (self::$banal_args)
             $banal_run .= self::$banal_args . " ";
         $pipes = null;
