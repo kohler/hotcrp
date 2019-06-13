@@ -691,9 +691,9 @@ class Score_Fexpr extends Sub_Fexpr {
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound();
         if ($this->field->allow_empty)
-            return "({$rrow} && {$this->field->view_score} > $rrow_vsb ? (int) {$rrow}->$fid : null)";
+            return "({$this->field->view_score} > $rrow_vsb ? (int) {$rrow}->$fid : null)";
         else
-            return "({$rrow} && {$this->field->view_score} > $rrow_vsb && isset({$rrow}->$fid) && {$rrow}->$fid ? (int) {$rrow}->$fid : null)";
+            return "({$this->field->view_score} > $rrow_vsb && isset({$rrow}->$fid) && {$rrow}->$fid ? (int) {$rrow}->$fid : null)";
     }
 }
 
@@ -796,7 +796,7 @@ class FirstTag_Fexpr extends Sub_Fexpr {
     }
     function view_score(Contact $user) {
         $tagger = new Tagger($user);
-        $vs = VIEWSCORE_MAX;
+        $vs = VIEWSCORE_EMPTYBOUND;
         foreach ($this->tags as $t) {
             $e_tag = $tagger->check($t);
             $vs = min($vs, $tagger->view_score($e_tag, $user));
@@ -966,7 +966,7 @@ class ReviewRound_Fexpr extends Sub_Fexpr {
                 return "null";
             $state->queryOptions["reviewSignatures"] = true;
             $rrow_vsb = $state->_rrow_view_score_bound();
-            return "($rrow && " . VIEWSCORE_PC . " > $rrow_vsb ? {$rrow}->reviewRound : null)";
+            return "(" . VIEWSCORE_PC . " > $rrow_vsb ? {$rrow}->reviewRound : null)";
         }
         return $rt;
     }
@@ -1091,7 +1091,7 @@ class ReviewWordCount_Fexpr extends Sub_Fexpr {
         $state->_ensure_review_word_counts();
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound();
-        return "($rrow && " . VIEWSCORE_AUTHORDEC . " > $rrow_vsb ? {$rrow}->reviewWordCount : null)";
+        return "(" . VIEWSCORE_AUTHORDEC . " > $rrow_vsb ? {$rrow}->reviewWordCount : null)";
     }
 }
 
@@ -1246,9 +1246,9 @@ class FormulaCompiler {
     function _rrow_view_score_bound() {
         $rrow = $this->_rrow();
         if ($this->looptype === Fexpr::LNONE) {
-            return $this->define_gvar("rrow_vsb", "\$contact->view_score_bound(\$prow, {$rrow})");
+            return $this->define_gvar("rrow_vsb", "({$rrow} ? \$contact->view_score_bound(\$prow, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ")");
         } else if ($this->looptype === Fexpr::LMY) {
-            return $this->define_gvar("myrrow_vsb", "\$contact->view_score_bound(\$prow, {$rrow})");
+            return $this->define_gvar("myrrow_vsb", "({$rrow} ? \$contact->view_score_bound(\$prow, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ")");
         } else {
             $this->_lflags |= self::LFLAG_RROW_VSB;
             return "\$rrow_vsb_{$this->_lprefix}";
@@ -1351,7 +1351,7 @@ class FormulaCompiler {
                 $lstmt_pfx[] = "\$rrow_{$p} = $v;";
             }
             if ($this->_lflags & self::LFLAG_RROW_VSB) {
-                $lstmt_pfx[] = "\$rrow_vsb_{$p} = \$contact->view_score_bound(\$prow, \$rrow_{$p});";
+                $lstmt_pfx[] = "\$rrow_vsb_{$p} = \$rrow_{$p} ? \$contact->view_score_bound(\$prow, \$rrow_{$p}) : " . VIEWSCORE_EMPTYBOUND . ";";
             }
             $this->lstmt = array_merge($lstmt_pfx, $this->lstmt);
         }
@@ -2142,7 +2142,7 @@ class Formula {
         if ($this->check($this->user ? : $user))
             return $this->_parse->view_score($user);
         else
-            return VIEWSCORE_FALSE;
+            return VIEWSCORE_EMPTY;
     }
 
     function column_header() {

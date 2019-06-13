@@ -619,7 +619,7 @@ class ReviewForm implements JsonSerializable {
     }
 
     function nonempty_view_score(ReviewInfo $rrow) {
-        $view_score = VIEWSCORE_FALSE;
+        $view_score = VIEWSCORE_EMPTY;
         foreach ($this->forder as $fid => $f)
             if (isset($rrow->$fid)
                 && (!$f->round_mask || $f->is_round_visible($rrow))

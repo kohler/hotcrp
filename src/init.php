@@ -29,13 +29,13 @@ define("DTYPE_SUBMISSION", 0);
 define("DTYPE_FINAL", -1);
 define("DTYPE_COMMENT", -2);
 
-define("VIEWSCORE_FALSE", -3);
+define("VIEWSCORE_EMPTY", -3);         // score no one can see
 define("VIEWSCORE_ADMINONLY", -2);
 define("VIEWSCORE_REVIEWERONLY", -1);
 define("VIEWSCORE_PC", 0);
 define("VIEWSCORE_AUTHORDEC", 1);
 define("VIEWSCORE_AUTHOR", 2);
-define("VIEWSCORE_MAX", 3);
+define("VIEWSCORE_EMPTYBOUND", 3);     // bound that can see nothing
 
 define("COMMENTTYPE_DRAFT", 1);
 define("COMMENTTYPE_BLIND", 2);

@@ -3321,7 +3321,7 @@ class Contact {
         else if ($rrow ? $this->is_owned_review($rrow) : $rights->allow_review)
             return VIEWSCORE_REVIEWERONLY - 1;
         else if (!$this->can_view_review($prow, $rrow))
-            return VIEWSCORE_MAX + 1;
+            return VIEWSCORE_EMPTYBOUND;
         else if ($rights->act_author_view
                  && $prow->outcome
                  && $this->can_view_decision($prow))
@@ -3346,7 +3346,7 @@ class Contact {
                 return VIEWSCORE_AUTHOR - 1;
             }
         } else {
-            return VIEWSCORE_MAX + 1;
+            return VIEWSCORE_EMPTYBOUND;
         }
     }
 

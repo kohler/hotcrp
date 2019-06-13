@@ -8,7 +8,7 @@ class ReviewDiffInfo {
     public $rrow;
     private $fields = [];
     private $newv = [];
-    public $view_score = VIEWSCORE_FALSE;
+    public $view_score = VIEWSCORE_EMPTY;
     public $notify = false;
     public $notify_author = false;
     static private $use_xdiff = null;
@@ -35,7 +35,7 @@ class ReviewDiffInfo {
         }
     }
     function nonempty() {
-        return $this->view_score > VIEWSCORE_FALSE;
+        return $this->view_score > VIEWSCORE_EMPTY;
     }
     function fields() {
         return $this->fields;

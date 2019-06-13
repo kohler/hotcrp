@@ -800,7 +800,7 @@ class Tagger {
 
     function view_score($tag) {
         if ($tag === false)
-            return VIEWSCORE_FALSE;
+            return VIEWSCORE_EMPTY;
         else if (($pos = strpos($tag, "~")) !== false) {
             if (($pos == 0 && $tag[1] === "~")
                 || substr($tag, 0, $pos) != $this->_contactId)

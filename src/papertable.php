@@ -2628,7 +2628,7 @@ class PaperTable {
 
         $this->viewable_rrows = array();
         $round_mask = 0;
-        $min_view_score = VIEWSCORE_MAX;
+        $min_view_score = VIEWSCORE_EMPTYBOUND;
         foreach ($this->all_rrows as $rrow)
             if ($this->user->can_view_review($this->prow, $rrow)) {
                 $this->viewable_rrows[] = $rrow;
