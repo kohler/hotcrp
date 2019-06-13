@@ -1248,7 +1248,7 @@ class FormulaCompiler {
         if ($this->looptype === Fexpr::LNONE) {
             return $this->define_gvar("rrow_vsb", "\$contact->view_score_bound(\$prow, {$rrow})");
         } else if ($this->looptype === Fexpr::LMY) {
-            return $this->define_gvar("myrrow_vsb", "\$contact->view_score_bound(\$prow, {$rrow}");
+            return $this->define_gvar("myrrow_vsb", "\$contact->view_score_bound(\$prow, {$rrow})");
         } else {
             $this->_lflags |= self::LFLAG_RROW_VSB;
             return "\$rrow_vsb_{$this->_lprefix}";
