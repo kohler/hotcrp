@@ -198,6 +198,25 @@ class DocumentFileTree {
         return $l;
     }
 
+    function first_match(DocumentFileTreeMatch $after = null) {
+        $this->clear();
+        $fm = new DocumentFileTreeMatch;
+        for ($i = 0; $i < $this->n; ++$i) {
+            if ($i % 2 == 0) {
+                $fm->fname .= $this->_components[$i];
+            } else {
+                $di = $this->_dirinfo[$fm->fname];
+                if (!$di->append_first_component($this, $i, $fm, $after))
+                    break;
+            }
+        }
+        if ($this->match_complete()) {
+            $fm->algohash = $this->_algo . $this->_hash;
+            $fm->extension = $this->_extension;
+        }
+        return $fm;
+    }
+
     function random_match() {
         $this->clear();
         $fm = new DocumentFileTreeMatch;
@@ -253,6 +272,7 @@ class DocumentFileTreeMatch {
 class DocumentFileTreeDir {
     private $_di;
     private $_used = [];
+    private $_sorted = false;
 
     function __construct($di) {
         $this->_di = $di;
@@ -323,6 +343,43 @@ class DocumentFileTreeDir {
                 return $idx;
         }
         return false;
+    }
+
+    function append_first_component(DocumentFileTree $ftree, $position, $fm,
+                                    DocumentFileTreeMatch $after = null) {
+        if (!$this->_sorted) {
+            if (!empty($this->_used)) {
+                $this->clean();
+            }
+            $dix = [];
+            for ($i = 1; $i < count($this->_di); $i += 2) {
+                $dix[$this->_di[$i]] = $this->_di[$i + 1] - $this->_di[$i - 1];
+            }
+            ksort($dix, SORT_STRING);
+            $this->_di = [];
+            $n = 0;
+            foreach ($dix as $f => $c) {
+                $this->_di[] = $n;
+                $this->_di[] = $f;
+                $n += $c;
+            }
+            $this->_di[] = $n;
+            $this->_sorted = true;
+        }
+
+        $idx = 0;
+        while (true) {
+            if (!$this->index_used($idx)
+                && (!$after || strcmp($after->fname, $fm->fname . $this->_di[$idx + 1]) < 0)
+                && ($build = $ftree->match_component($this->_di[$idx + 1], $position))) {
+                $fm->append_component($idx, $build);
+                return true;
+            }
+            $next = $this->next_index($idx);
+            if ($next === false || $next <= $idx)
+                return false;
+            $idx = $next;
+        }
     }
 
     function append_random_component(DocumentFileTree $ftree, $position, $fm) {
