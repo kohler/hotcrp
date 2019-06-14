@@ -591,7 +591,7 @@ function unparse_duration(d, include_msec) {
 }
 
 var strnatcmp = (function () {
-if (window.Intl && Intl.Collator) {
+try {
     var collator = new Intl.Collator(undefined, {sensitivity: "case", numeric: true});
     return function (a, b) {
         var cmp = collator.compare(a.replace(/"/g, ""), b.replace(/"/g, ""));
@@ -599,7 +599,7 @@ if (window.Intl && Intl.Collator) {
             cmp = a < b ? -1 : 1;
         return cmp;
     };
-} else {
+} catch (e) {
     return function (a, b) {
         return a < b ? -1 : (a === b ? 0 : 1);
     };
