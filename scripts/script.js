@@ -6894,7 +6894,7 @@ $(window).on("hotcrptags", function (evt, rv) {
     // set color classes
     var cc = rv.color_classes;
     if (/ tagbg$/.test(rv.color_classes || ""))
-        $ptr.removeClass("k0 k1").closest("tbody").addClass("pltable_colored");
+        $ptr.removeClass("k0 k1").closest("tbody").addClass("pltable-colored");
     if ($pr.closest("table").hasClass("fold5c")
         && "color_classes_conflicted" in rv)
         cc = rv.color_classes_conflicted;

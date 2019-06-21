@@ -1690,7 +1690,7 @@ class AssignmentSet {
         $search = new PaperSearch($this->user, ["q" => $query_order, "t" => "vis", "reviewer" => $this->astate->reviewer]);
         $plist = new PaperList($search);
         $plist->add_column("autoassignment", new AutoassignmentPaperColumn($this));
-        $plist->set_table_id_class("foldpl", "pltable_full");
+        $plist->set_table_id_class("foldpl", "pltable-fullw");
         echo $plist->table_html("reviewers", ["nofooter" => 1]);
 
         if (count(array_intersect_key($deltarev->bypc, $this->conf->pc_members()))) {

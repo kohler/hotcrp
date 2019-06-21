@@ -1981,10 +1981,10 @@ div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 table.pltable {
 	line-height: 1.25;
 }
-.pltable_full_ctr {
+.pltable-fullw-container {
 	padding: 0.75em 0;
 }
-.pltable_full {
+.pltable-fullw {
 	width: 100%;
 	position: relative;
 }
@@ -2157,7 +2157,7 @@ span.pl_rownum {
 	font-size: smaller;
 	color: #333333;
 }
-table.pltable_full > tbody > tr > td.pl_title {
+table.pltable-fullw > tbody > tr > td.pl_title {
 	width: 100%;
 }
 div.pl_autoassignment > em.plx {
@@ -2180,7 +2180,7 @@ td.plf {
 	border-top: 1px solid #cccccc;
 	padding-top: 3px;
 }
-table.pltable_reviewerhome > thead > tr > th.plh {
+table.pltable-reviewerhome > thead > tr > th.plh {
 	border-bottom: none;
 }
 span.dragtaghandle {
@@ -2289,16 +2289,16 @@ hr.g, hr.mg, hr.ug {
 	font-size: 90%;
 }
 
-.pltable_colored > .pl, .pltable_colored > .plheading {
+.pltable-colored > .pl, .pltable-colored > .plheading {
 	border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
-.pltable_colored > tr:first-child {
+.pltable-colored > tr:first-child {
 	border-top: 0 none;
 }
 .k1, .table-striped > tbody > tr:nth-child(even) {
 	background-color: #f1f8fc;
 }
-.pltable_colored > .k1 {
+.pltable-colored > .k1 {
 	background-color: inherit;
 }
 tr.pl {
@@ -3726,7 +3726,7 @@ table#offlineform table, table#offlineform form {
 .lognavdr, .lognavxr {
 	text-align: right;
 }
-.pltable_log {
+.pltable-log {
 	table-layout: fixed;
 }
 th.pl_logname {

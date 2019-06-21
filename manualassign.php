@@ -249,7 +249,7 @@ if ($reviewer) {
             '</div>';
     else if ($expected_round !== "unnamed")
         echo '<div class="aabut aabutsp">Review round: ', $expected_round, '</div>';
-    $paperList->set_table_id_class("foldpl", "pltable_full");
+    $paperList->set_table_id_class("foldpl", "pltable-fullw");
     $paperList->set_view("allrevtopicpref", false);
     echo '<div class="aabut aabutsp"><label>',
         Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),

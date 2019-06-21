@@ -696,7 +696,7 @@ if (!$Me->privChair || !empty($exclude_pids)) {
 
 searchbar($lrg, $page);
 if (!empty($trs)) {
-    echo "<table class=\"pltable pltable_full pltable_log\">\n",
+    echo "<table class=\"pltable pltable-fullw pltable-log\">\n",
         '  <thead><tr class="pl_headrow">',
         '<th class="pll plh pl_logtime">Time</th>',
         '<th class="pll plh pl_logname">User</th>',

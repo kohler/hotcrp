@@ -490,7 +490,7 @@ class ContactList {
                 . "&nbsp; " . Ht::submit("modifygo", "Go")];
         }
 
-        return "  <tfoot class=\"pltable" . ($hascolors ? " pltable_colored" : "")
+        return "  <tfoot class=\"pltable" . ($hascolors ? " pltable-colored" : "")
             . "\">" . PaperList::render_footer_row(1, $ncol - 1,
                 "<b>Select people</b> (or <a class=\"ui js-select-all\" href=\"\">select all {$this->count}</a>), then&nbsp; ",
                 $lllgroups)
@@ -752,7 +752,7 @@ class ContactList {
                 $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
             }
 
-        $x = "<table id=\"foldul\" class=\"pltable pltable_full plt_" . htmlspecialchars($listquery);
+        $x = "<table id=\"foldul\" class=\"pltable pltable-fullw";
         if ($foldclasses)
             $x .= " " . join(" ", $foldclasses);
         if ($foldclasses && $foldsession) {
@@ -805,7 +805,7 @@ class ContactList {
         if (key($fieldDef) == self::FIELD_SELECTOR)
             $x .= $this->footer($ncol, $hascolors);
 
-        $x .= "<tbody class=\"pltable" . ($hascolors ? " pltable_colored" : "");
+        $x .= "<tbody class=\"pltable" . ($hascolors ? " pltable-colored" : "");
         if ($this->user->privChair) {
             $listlink = $listname;
             if ($listlink === "pcadminx")

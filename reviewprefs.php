@@ -235,7 +235,7 @@ $Conf->infoMsg($Conf->_i("revprefdescription", false, $Conf->has_topics()));
 // search
 $search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q, "reviewer" => $reviewer]);
 $pl = new PaperList($search, ["sort" => true, "report" => "pf"], $Qreq);
-$pl->set_table_id_class("foldpl", "pltable_full", "p#");
+$pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
 $pl_text = $pl->table_html("editpref",
                 array("fold_session_prefix" => "pfdisplay.",
                       "footer_extra" => "<div id=\"plactr\">" . Ht::submit("fn", "Save changes", ["data-default-submit-all" => 1, "value" => "saveprefs"]) . "</div>",
@@ -327,7 +327,7 @@ echo Ht::form(hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" 
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1);
 Ht::stash_script('$("#sel").on("submit", paperlist_ui)');
-echo "<div class=\"pltable_full_ctr\">\n",
+echo "<div class=\"pltable-fullw-container\">\n",
     '<noscript><div style="text-align:center">', Ht::submit("fn", "Save changes", ["value" => "saveprefs"]), '</div></noscript>',
     $pl_text,
     "</div></form>\n";

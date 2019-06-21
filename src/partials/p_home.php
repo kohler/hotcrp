@@ -418,7 +418,7 @@ class Home_Partial {
 
         if ($user->has_review()) {
             $plist = new PaperList(new PaperSearch($user, ["q" => "re:me"]));
-            $plist->set_table_id_class(null, "pltable_reviewerhome");
+            $plist->set_table_id_class(null, "pltable-reviewerhome");
             $ptext = $plist->table_html("reviewerHome", ["list" => true]);
             if ($plist->count > 0)
                 echo "<div class=\"fx\"><hr class=\"g\">", $ptext, "</div>";

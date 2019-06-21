@@ -1216,7 +1216,7 @@ class PaperList {
         $rownum_marker = "<span class=\"pl_rownum fx6\">";
         $rownum_len = strlen($rownum_marker);
         $nbody = array("<tr>");
-        $tbody_class = "pltable" . ($rstate->hascolors ? " pltable_colored" : "");
+        $tbody_class = "pltable" . ($rstate->hascolors ? " pltable-colored" : "");
         for ($i = 1; $i < count($rstate->groupstart); ++$i) {
             $nbody[] = '<td class="plsplit_col top" width="' . (100 / $rstate->split_ncol) . '%"><div class="plsplit_col"><table width="100%">';
             $nbody[] = $colhead . "  <tbody class=\"$tbody_class\">\n";
@@ -1641,10 +1641,10 @@ class PaperList {
             $rstate->table_start = '<div class="plsplit_col_ctr_ctr"><div class="plsplit_col_ctr">' . $rstate->table_start;
             $rstate->table_end .= "</div></div>";
             $ncol = $rstate->split_ncol;
-            $rstate->tbody_class = "pltable_split";
+            $rstate->tbody_class = "pltable-split";
         } else {
             $rstate->thead = $colhead;
-            $rstate->tbody_class = "pltable" . ($rstate->hascolors ? " pltable_colored" : "");
+            $rstate->tbody_class = "pltable" . ($rstate->hascolors ? " pltable-colored" : "");
         }
         if ($this->has_editable_tags)
             $rstate->tbody_class .= " need-editable-tags";
@@ -1655,7 +1655,7 @@ class PaperList {
             && !get($options, "nofooter"))
             $tfoot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($tfoot)
-            $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable_colored" : "") . '">' . $tfoot . "</tfoot>\n";
+            $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable-colored" : "") . '">' . $tfoot . "</tfoot>\n";
 
         // header scripts to set up delegations
         if ($this->_header_script)

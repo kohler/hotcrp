@@ -478,7 +478,7 @@ if (!$Qreq->loadtmpl && !$Qreq->cancel && !$Qreq->psearch && !$recip->error && $
 
 if (isset($Qreq->monreq)) {
     $plist = new PaperList(new PaperSearch($Me, ["t" => "req", "q" => ""]), ["foldable" => true]);
-    $plist->set_table_id_class("foldpl", "pltable_full");
+    $plist->set_table_id_class("foldpl", "pltable-fullw");
     $ptext = $plist->table_html("reqrevs", ["header_links" => true, "list" => true]);
     if ($plist->count == 0)
         $Conf->infoMsg('You have not requested any external reviews.  <a href="' . hoturl("index") . '">Return home</a>');

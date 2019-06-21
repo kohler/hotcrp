@@ -149,7 +149,7 @@ $pl = new PaperList($Search, ["sort" => true, "report" => "pl", "display" => $Qr
 if (isset($Qreq->forceShow))
     $pl->set_view("force", !!$Qreq->forceShow);
 if (isset($Qreq->q)) {
-    $pl->set_table_id_class("foldpl", "pltable_full", "p#");
+    $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
     $pl->set_selection($SSel);
     $pl->qopts["options"] = true; // get efficient access to `has(OPTION)`
     $pl_text = $pl->table_html($Qreq->t, ["fold_session_prefix" => "pldisplay.", "list" => true]);
@@ -489,7 +489,7 @@ if ($pl_text) {
         echo '</div>';
     }
 
-    echo "<div class=\"maintabsep\"></div>\n\n<div class=\"pltable_full_ctr\">";
+    echo "<div class=\"maintabsep\"></div>\n\n<div class=\"pltable-fullw-container\">";
 
     if ($pl->has("sel")) {
         echo Ht::form($Conf->selfurl($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel"]),
