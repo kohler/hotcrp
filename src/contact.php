@@ -2102,7 +2102,7 @@ class Contact {
         return array("deadline" => "sub_reg", "override" => $this->privChair);
     }
 
-    function can_edit_paper(PaperInfo $prow) {
+    function allow_edit_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
         return $rights->allow_administer || $prow->has_author($this);
     }
@@ -2240,7 +2240,7 @@ class Contact {
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
             && $prow->outcome > 0
-            && $this->conf->collectFinalPapers()
+            && $this->conf->allow_final_versions()
             && $this->can_view_decision($prow)
             && ($this->conf->time_submit_final_version()
                 || $this->override_deadlines($rights));
@@ -2263,7 +2263,7 @@ class Contact {
             || (!$rights->allow_administer
                 && !$this->can_view_decision($prow)))
             $whyNot["rejected"] = 1;
-        else if (!$this->conf->collectFinalPapers())
+        else if (!$this->conf->allow_final_versions())
             $whyNot["deadline"] = "final_open";
         else if (!$this->conf->time_submit_final_version()
                  && !$this->override_deadlines($rights))
@@ -2583,28 +2583,8 @@ class Contact {
         return $rrds;
     }
 
-    static function can_some_author_respond(PaperInfo $prow) {
-        if ($prow->conf->any_response_open === 2)
-            return true;
-        if ($prow->conf->any_response_open) {
-            foreach ($prow->conf->resp_rounds() as $rrd)
-                if ($rrd->time_allowed(true) && $rrd->search->filter([$prow]))
-                    return true;
-        }
-        return false;
-    }
-
-    static function can_some_author_view_submitted_review(PaperInfo $prow) {
-        if (self::can_some_author_respond($prow))
-            return true;
-        else if ($prow->conf->au_seerev == Conf::AUSEEREV_TAGS)
-            return $prow->has_any_tag($prow->conf->tag_au_seerev);
-        else
-            return $prow->conf->au_seerev != 0;
-    }
-
     private function can_view_submitted_review_as_author(PaperInfo $prow) {
-        return self::can_some_author_respond($prow)
+        return $prow->can_author_respond()
             || $this->conf->au_seerev == Conf::AUSEEREV_YES
             || ($this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
                 && (!$this->has_review()
@@ -3282,11 +3262,6 @@ class Contact {
         return $this->conf->can_some_author_view_decision();
     }
 
-    static function can_some_author_view_decision(PaperInfo $prow) {
-        return $prow->outcome
-            && $prow->conf->can_some_author_view_decision();
-    }
-
     function can_set_decision(PaperInfo $prow) {
         return $this->can_administer($prow);
     }
@@ -3742,9 +3717,9 @@ class Contact {
                             $perm->can_responds[$rrd->name] = $v;
                     }
                 }
-                if (self::can_some_author_view_submitted_review($prow))
+                if ($prow->can_author_view_submitted_review())
                     $perm->some_author_can_view_review = true;
-                if (self::can_some_author_view_decision($prow))
+                if ($prow->can_author_view_decision())
                     $perm->some_author_can_view_decision = true;
                 if ($this->isPC
                     && !$this->conf->can_some_external_reviewer_view_comment())

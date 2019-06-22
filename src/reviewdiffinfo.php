@@ -27,7 +27,6 @@ class ReviewDiffInfo {
     function add_view_score($view_score) {
         if ($view_score > $this->view_score) {
             if ($view_score === VIEWSCORE_AUTHORDEC
-                && $this->prow->outcome != 0
                 && $this->prow->can_author_view_decision()) {
                 $view_score = VIEWSCORE_AUTHOR;
             }

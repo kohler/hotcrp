@@ -392,9 +392,7 @@ if ($paperTable->mode == "edit") {
                 || ($old_overrides & Contact::OVERRIDE_CONFLICT)))
             $Me->add_overrides(Contact::OVERRIDE_TIME);
         $editable = $Me->can_update_paper($prow);
-        if ($prow->outcome > 0
-            && $Conf->collectFinalPapers()
-            && $Me->can_submit_final_paper($prow))
+        if ($Me->can_submit_final_paper($prow))
             $editable = "f";
         $Me->set_overrides($old_overrides);
     }

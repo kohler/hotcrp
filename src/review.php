@@ -1101,7 +1101,7 @@ $blind\n";
 
         // review actions
         if ($Me->timeReview($prow, $rrow) || $admin) {
-            if (Contact::can_some_author_view_submitted_review($prow)
+            if ($prow->can_author_view_submitted_review()
                 && (!$rrow || $rrow->reviewSubmitted || !$rrow->needs_approval() || !$Me->is_my_review($rrow)))
                 echo '<div class="is-warning">⚠️ Authors can currently see submitted reviews.</div>';
             if ($rrow && $rrow->reviewSubmitted && !$admin)
@@ -1931,7 +1931,7 @@ class ReviewValues extends MessageSet {
                      || !$rrow->reviewAuthorNotified
                      || $rrow->reviewAuthorNotified < $notification_bound)
                     && $diffinfo->view_score >= VIEWSCORE_AUTHOR
-                    && Contact::can_some_author_view_submitted_review($prow)) {
+                    && $prow->can_author_view_submitted_review()) {
                     $qf[] = "reviewAuthorNotified=?";
                     $qv[] = $now;
                     $diffinfo->notify_author = true;

@@ -2308,7 +2308,7 @@ class Conf {
         return $this->deadlinesBetween("sub_open", "sub_sub", "sub_grace")
             && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
     }
-    function collectFinalPapers() {
+    function allow_final_versions() {
         return $this->setting("final_open") > 0;
     }
     function time_submit_final_version() {

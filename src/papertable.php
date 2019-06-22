@@ -1897,7 +1897,7 @@ class PaperTable {
         } else if ($this->user->can_update_paper($prow)) {
             if ($this->mode === "edit")
                 return Ht::msg('The submission is ready and will be considered for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), "confirm");
-        } else if ($this->conf->collectFinalPapers()
+        } else if ($this->conf->allow_final_versions()
                    && $prow->outcome > 0
                    && $can_view_decision) {
             if ($this->user->can_submit_final_paper($prow)) {
@@ -1925,8 +1925,9 @@ class PaperTable {
         $can_view_decision = $prow->outcome != 0 && $this->user->can_view_decision($prow);
         if ($has_author)
             $m .= $this->_edit_message_for_author($prow);
-        else if ($this->conf->collectFinalPapers()
-                 && $prow->outcome > 0 && !$prow->can_author_view_decision())
+        else if ($this->conf->allow_final_versions()
+                 && $prow->outcome > 0
+                 && !$prow->can_author_view_decision())
             $m .= Ht::msg("The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 0);
         else
             $m .= Ht::msg("You aren’t a contact for this submission, but as an administrator you can still make changes.", 0);
@@ -2095,7 +2096,7 @@ class PaperTable {
         $prow = $this->prow;
 
         // what actions are supported?
-        $canEdit = $this->user->can_edit_paper($prow);
+        $canEdit = $this->user->allow_edit_paper($prow);
         $canReview = $this->user->can_review($prow, null);
         $canAssign = $this->admin;
         $canHome = ($canEdit || $canAssign || $this->mode === "contact");

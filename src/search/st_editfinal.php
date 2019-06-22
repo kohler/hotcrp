@@ -22,9 +22,9 @@ class EditFinal_SearchTerm extends SearchTerm {
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $row->outcome > 0
-            && $srch->conf->collectFinalPapers()
+            && $srch->conf->allow_final_versions()
             && $srch->conf->time_submit_final_version()
-            && Contact::can_some_author_view_decision($row);
+            && $row->can_author_view_decision();
     }
     function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
         return $this->exec($row, $srch);

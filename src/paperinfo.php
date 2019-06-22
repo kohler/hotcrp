@@ -689,8 +689,29 @@ class PaperInfo {
     }
 
 
+    function can_author_view_submitted_review() {
+        if ($this->can_author_respond())
+            return true;
+        else if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
+            return $this->has_any_tag($this->conf->tag_au_seerev);
+        else
+            return $this->conf->au_seerev != 0;
+    }
+
+    function can_author_respond() {
+        if ($this->conf->any_response_open === 2)
+            return true;
+        if ($this->conf->any_response_open) {
+            foreach ($this->conf->resp_rounds() as $rrd)
+                if ($rrd->time_allowed(true) && $rrd->search->filter([$this]))
+                    return true;
+        }
+        return false;
+    }
+
     function can_author_view_decision() {
-        return $this->conf->can_all_author_view_decision();
+        return $this->outcome != 0
+            && $this->conf->can_all_author_view_decision();
     }
 
 
