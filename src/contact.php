@@ -1895,7 +1895,7 @@ class Contact {
                 || ($ci->act_author_view
                     && $prow->can_author_view_decision())
                 || ($ci->allow_pc_broad
-                    && $this->conf->timePCViewDecision($ci->view_conflict_type > 0))
+                    && $this->conf->time_pc_view_decision($ci->view_conflict_type > 0))
                 || ($ci->review_status > 0
                     && $this->conf->time_reviewer_view_decision()
                     && ($ci->allow_pc_broad
@@ -3271,7 +3271,7 @@ class Contact {
     function can_view_some_decision() {
         return $this->is_manager()
             || ($this->is_author() && $this->can_view_some_decision_as_author())
-            || ($this->isPC && $this->conf->timePCViewDecision(false))
+            || ($this->isPC && $this->conf->time_pc_view_decision(false))
             || ($this->is_reviewer() && $this->conf->time_reviewer_view_decision());
     }
 

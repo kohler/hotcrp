@@ -2358,7 +2358,7 @@ class Conf {
     function timePCReviewPreferences() {
         return $this->can_pc_see_active_submissions() || $this->has_any_submitted();
     }
-    function timePCViewDecision($conflicted) {
+    function time_pc_view_decision($conflicted) {
         $s = $this->setting("seedec");
         if ($conflicted)
             return $s == self::SEEDEC_ALL || $s == self::SEEDEC_REV;

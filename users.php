@@ -33,10 +33,10 @@ if ($Me->isPC)
 if ($Me->privChair || ($Me->isPC && $Conf->subBlindNever()))
     $tOpt["au"] = "Contact authors of submitted papers";
 if ($Me->privChair
-    || ($Me->isPC && $Conf->timePCViewDecision(true)))
+    || ($Me->isPC && $Conf->time_pc_view_decision(true)))
     $tOpt["auacc"] = "Contact authors of accepted papers";
 if ($Me->privChair
-    || ($Me->isPC && $Conf->subBlindNever() && $Conf->timePCViewDecision(true)))
+    || ($Me->isPC && $Conf->subBlindNever() && $Conf->time_pc_view_decision(true)))
     $tOpt["aurej"] = "Contact authors of rejected papers";
 if ($Me->privChair) {
     $tOpt["auuns"] = "Contact authors of non-submitted papers";
