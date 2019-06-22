@@ -1890,6 +1890,17 @@ class Contact {
             $ci->act_author_view = $ci->view_conflict_type >= CONFLICT_AUTHOR;
             $ci->allow_author_view = $ci->act_author_view || $ci->allow_administer;
 
+            // check decision visibility
+            $ci->can_view_decision = $ci->can_administer
+                || ($ci->act_author_view
+                    && $prow->can_author_view_decision())
+                || ($ci->allow_pc_broad
+                    && $this->conf->timePCViewDecision($ci->view_conflict_type > 0))
+                || ($ci->review_status > 0
+                    && $this->conf->time_reviewer_view_decision()
+                    && ($ci->allow_pc_broad
+                        || $this->conf->setting("extrev_view") > 0));
+
             // check blindness
             $bs = $this->conf->submission_blindness();
             $ci->nonblind = $bs == Conf::BLIND_NEVER
@@ -1899,6 +1910,7 @@ class Contact {
                     && $ci->review_status > 0)
                 || ($prow->outcome > 0
                     && ($isPC || $ci->allow_review)
+                    && $ci->can_view_decision
                     && $this->conf->time_reviewer_view_accepted_authors());
         }
 
@@ -2127,7 +2139,7 @@ class Contact {
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         if ($prow->outcome < 0
-            && $this->can_view_decision($prow))
+            && $rights->can_view_decision)
             $whyNot["rejected"] = 1;
         if ($prow->timeSubmitted > 0
             && $this->conf->setting("sub_freeze") > 0)
@@ -2242,7 +2254,7 @@ class Contact {
             return false;
         $rights = $this->rights($prow);
         return $rights->allow_author
-            && $this->can_view_decision($prow)
+            && $rights->can_view_decision
             && ($rights->allow_administer
                 || $this->conf->time_submit_final_version());
     }
@@ -2254,7 +2266,7 @@ class Contact {
             return false;
         $rights = $this->rights($prow);
         return $rights->allow_author
-            && $this->can_view_decision($prow)
+            && $rights->can_view_decision
             && ($this->conf->time_submit_final_version()
                 || $this->override_deadlines($rights));
     }
@@ -2274,7 +2286,7 @@ class Contact {
         // Don’t report “rejected” error to admins
         if ($prow->outcome <= 0
             || (!$rights->allow_administer
-                && !$this->can_view_decision($prow)))
+                && !$rights->can_view_decision))
             $whyNot["rejected"] = 1;
         else if (!$this->conf->allow_final_versions())
             $whyNot["deadline"] = "final_open";
@@ -2536,7 +2548,7 @@ class Contact {
         } else if ($opt->final
                    && ($prow->outcome <= 0
                        || $prow->timeSubmitted <= 0
-                       || !$this->can_view_decision($prow))) {
+                       || !$rights->can_view_decision)) {
             $whyNot["optionNotAccepted"] = $opt;
         } else {
             $whyNot["permission"] = "view_option";
@@ -2675,7 +2687,7 @@ class Contact {
                 && ($viewscore >= VIEWSCORE_AUTHOR
                     || ($viewscore >= VIEWSCORE_AUTHORDEC
                         && $prow->outcome
-                        && $this->can_view_decision($prow))))
+                        && $rights->can_view_decision)))
             || ($rights->allow_pc
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
@@ -3253,15 +3265,7 @@ class Contact {
 
     function can_view_decision(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        return $rights->can_administer
-            || ($rights->act_author_view
-                && $prow->can_author_view_decision())
-            || ($rights->allow_pc_broad
-                && $this->conf->timePCViewDecision($rights->view_conflict_type > 0))
-            || ($rights->review_status > 0
-                && $this->conf->time_reviewer_view_decision()
-                && ($rights->allow_pc_broad
-                    || $this->conf->setting("extrev_view") > 0));
+        return $rights->can_view_decision;
     }
 
     function can_view_some_decision() {
@@ -3312,7 +3316,7 @@ class Contact {
             return VIEWSCORE_EMPTYBOUND;
         else if ($rights->act_author_view
                  && $prow->outcome
-                 && $this->can_view_decision($prow))
+                 && $rights->can_view_decision)
             return VIEWSCORE_AUTHORDEC - 1;
         else if ($rights->act_author_view)
             return VIEWSCORE_AUTHOR - 1;

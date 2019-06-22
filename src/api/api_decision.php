@@ -14,10 +14,9 @@ class Decision_API {
                 return $aset->json_result();
             $prow->outcome = $prow->conf->fetch_ivalue("select outcome from Paper where paperId=?", $prow->paperId);
         }
-        if (!$user->can_view_decision($prow))
-            json_exit(403, "Permission error.");
-        $dname = $prow->conf->decision_name($prow->outcome);
-        $jr = new JsonResult(["ok" => true, "value" => (int) $prow->outcome, "result" => htmlspecialchars($dname ? : "?")]);
+        $outcome = $user->can_view_decision($prow) ? (int) $prow->outcome : 0;
+        $dname = $prow->conf->decision_name($outcome);
+        $jr = new JsonResult(["ok" => true, "value" => $outcome, "result" => htmlspecialchars($dname ? : "?")]);
         if ($user->can_set_decision($prow))
             $jr->content["editable"] = true;
         return $jr;
