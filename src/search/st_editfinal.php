@@ -21,10 +21,7 @@ class EditFinal_SearchTerm extends SearchTerm {
         return "(Paper.outcome>0)";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        return $row->outcome > 0
-            && $srch->conf->allow_final_versions()
-            && $srch->conf->time_submit_final_version()
-            && $row->can_author_view_decision();
+        return $row->can_author_edit_final_paper();
     }
     function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
         return $this->exec($row, $srch);

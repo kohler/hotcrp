@@ -714,6 +714,13 @@ class PaperInfo {
             && $this->conf->can_all_author_view_decision();
     }
 
+    function can_author_edit_final_paper() {
+        return $this->timeWithdrawn <= 0
+            && $this->outcome > 0
+            && $this->can_author_view_decision()
+            && $this->conf->time_submit_final_version();
+    }
+
 
     function review_type($contact) {
         $this->check_rights_version();

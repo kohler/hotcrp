@@ -56,8 +56,7 @@ class PaperTable {
         $this->qreq = $qreq;
 
         $this->canUploadFinal = $this->prow
-            && $this->prow->outcome > 0
-            && $this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_submit_final_paper", $this->prow);
+            && $this->user->allow_edit_final_paper($this->prow);
 
         if (!$this->prow) {
             $this->mode = "edit";

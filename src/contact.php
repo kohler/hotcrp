@@ -2234,13 +2234,26 @@ class Contact {
         return $whyNot;
     }
 
-    function can_submit_final_paper(PaperInfo $prow) {
-        // see also EditFinal_SearchTerm
+    function allow_edit_final_paper(PaperInfo $prow) {
+        // see also PaperInfo::can_author_edit_final_paper
+        if ($prow->timeWithdrawn > 0
+            || $prow->outcome <= 0
+            || !$this->conf->allow_final_versions())
+            return false;
         $rights = $this->rights($prow);
         return $rights->allow_author
-            && $prow->timeWithdrawn <= 0
-            && $prow->outcome > 0
-            && $this->conf->allow_final_versions()
+            && $this->can_view_decision($prow)
+            && ($rights->allow_administer
+                || $this->conf->time_submit_final_version());
+    }
+
+    function can_submit_final_paper(PaperInfo $prow) {
+        if ($prow->timeWithdrawn > 0
+            || $prow->outcome <= 0
+            || !$this->conf->allow_final_versions())
+            return false;
+        $rights = $this->rights($prow);
+        return $rights->allow_author
             && $this->can_view_decision($prow)
             && ($this->conf->time_submit_final_version()
                 || $this->override_deadlines($rights));
