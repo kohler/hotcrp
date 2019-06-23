@@ -91,19 +91,17 @@ class PaperOptionValue {
 
 class PaperOptionList {
     private $conf;
-    private $jlist;
-    private $jmap = [];
-    private $list;
-    private $nonfinal_list;
-    private $nonpaper_am;
-    private $osubmission;
-    private $ofinal;
+    private $_jlist;
+    private $_omap = [];
+    private $_ijlist;
+    private $_imap = [];
+    private $_olist;
+    private $_olist_nonfinal;
+    private $_nonpaper_am;
     private $_adding_fixed;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->osubmission = new DocumentPaperOption($this->conf, ["id" => DTYPE_SUBMISSION, "name" => "Submission", "title" => "Submission", "message_title" => "submission", "readable_formid" => "submission", "json_key" => "paper", "type" => null, "position" => 0]);
-        $this->ofinal = new DocumentPaperOption($this->conf, ["id" => DTYPE_FINAL, "name" => "Final version", "title" => "Final version", "message_title" => "final version", "readable_formid" => "final", "json_key" => "final", "type" => null, "final" => true, "position" => 0]);
     }
 
     function _add_json($oj, $k, $landmark) {
@@ -123,17 +121,17 @@ class PaperOptionList {
             && $oj->id > 0
             && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed) {
             if ($this->conf->xt_allowed($oj)
-                && (!isset($this->jlist[$oj->id])
-                    || Conf::xt_priority_compare($oj, $this->jlist[$oj->id]) <= 0))
-                $this->jlist[$oj->id] = $oj;
+                && (!isset($this->_jlist[$oj->id])
+                    || Conf::xt_priority_compare($oj, $this->_jlist[$oj->id]) <= 0))
+                $this->_jlist[$oj->id] = $oj;
             return true;
         } else
             return false;
     }
 
     private function option_json_list() {
-        if ($this->jlist === null) {
-            $this->jlist = $this->jmap = [];
+        if ($this->_jlist === null) {
+            $this->_jlist = [];
             if (($olist = $this->conf->setting_json("options"))) {
                 $this->_adding_fixed = false;
                 expand_json_includes_callback($olist, [$this, "_add_json"]);
@@ -142,10 +140,10 @@ class PaperOptionList {
                 $this->_adding_fixed = true;
                 expand_json_includes_callback($olist, [$this, "_add_json"]);
             }
-            $this->jlist = array_filter($this->jlist, "Conf::xt_enabled");
-            uasort($this->jlist, ["PaperOption", "compare"]);
+            $this->_jlist = array_filter($this->_jlist, "Conf::xt_enabled");
+            uasort($this->_jlist, ["PaperOption", "compare"]);
         }
-        return $this->jlist;
+        return $this->_jlist;
     }
 
     function populate_abbrev_matcher(AbbreviationMatcher $am) {
@@ -161,45 +159,62 @@ class PaperOptionList {
         }
     }
 
+    private function populate_intrinsic($id) {
+        if ($id == DTYPE_SUBMISSION) {
+            $this->_imap[$id] = new DocumentPaperOption($this->conf, [
+                "id" => DTYPE_SUBMISSION,
+                "name" => "paper", "json_key" => "paper", "readable_formid" => "submission",
+                "title" => "Submission", "message_title" => "submission",
+                "position" => 11000
+            ]);
+        } else if ($id == DTYPE_FINAL) {
+            $this->_imap[$id] = new DocumentPaperOption($this->conf, [
+                "id" => DTYPE_FINAL,
+                "name" => "final", "json_key" => "final",
+                "title" => "Final version", "message_title" => "final version",
+                "position" => 11001
+            ]);
+        } else {
+            $this->_imap[$id] = null;
+        }
+    }
+
     function get($id, $force = false) {
         if ($id <= 0) {
-            if ($id == DTYPE_SUBMISSION)
-                return $this->osubmission;
-            else if ($id == DTYPE_FINAL)
-                return $this->ofinal;
-            else
-                return null;
-        } else if (array_key_exists($id, $this->jmap)) {
-            $o = $this->jmap[$id];
+            if (!array_key_exists($id, $this->_imap))
+                $this->populate_intrinsic($id);
+            return $this->_imap[$id];
+        } else if (array_key_exists($id, $this->_omap)) {
+            $o = $this->_omap[$id];
         } else {
             $o = null;
             if (($oj = get($this->option_json_list(), $id)))
                 $o = PaperOption::make($oj, $this->conf);
             if (!$this->conf->xt_allowed($o) || Conf::xt_disabled($o))
                 $o = null;
-            $this->jmap[$id] = $o;
+            $this->_omap[$id] = $o;
         }
         if (!$o && $force)
-            $o = $this->jmap[$id] = new UnknownPaperOption($this->conf, $id);
+            $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, $id);
         return $o;
     }
 
     function option_list() {
-        if ($this->list === null) {
-            $this->list = [];
+        if ($this->_olist === null) {
+            $this->_olist = [];
             $readable_formids = [];
             foreach ($this->option_json_list() as $id => $oj)
                 if (!get($oj, "nonpaper")
                     && ($o = $this->get($id))) {
                     assert(!$o->nonpaper);
-                    $this->list[$id] = $o;
+                    $this->_olist[$id] = $o;
                     if (isset($readable_formids[$o->readable_formid]))
                         $o->readable_formid = $o->formid;
                     else
                         $readable_formid[$o->readable_formid] = true;
                 }
         }
-        return $this->list;
+        return $this->_olist;
     }
 
     function nonfixed_option_list() {
@@ -209,18 +224,17 @@ class PaperOptionList {
     }
 
     function nonfinal_option_list() {
-        if ($this->nonfinal_list === null) {
-            $this->nonfinal_list = [];
+        if ($this->_olist_nonfinal === null) {
+            $this->_olist_nonfinal = [];
             foreach ($this->option_json_list() as $id => $oj)
                 if (!get($oj, "nonpaper")
                     && !get($oj, "final")
-                    && ($o = $this->get($id))
-                    && !$o->final) {
-                    assert(!$o->nonpaper);
-                    $this->nonfinal_list[$id] = $o;
+                    && ($o = $this->get($id))) {
+                    assert(!$o->nonpaper && !$o->final);
+                    $this->_olist_nonfinal[$id] = $o;
                 }
         }
-        return $this->nonfinal_list;
+        return $this->_olist_nonfinal;
     }
 
     function option_list_type($nonfinal = false) {
@@ -236,8 +250,8 @@ class PaperOptionList {
     }
 
     function invalidate_option_list() {
-        $this->jlist = $this->list = $this->nonfinal_list = $this->nonpaper_am = null;
-        $this->jmap = [];
+        $this->_jlist = $this->_olist = $this->_olist_nonfinal = $this->_nonpaper_am = null;
+        $this->_omap = [];
     }
 
     function count_option_list() {
@@ -280,17 +294,17 @@ class PaperOptionList {
     function nonpaper_abbrev_matcher() {
         // Nonpaper options aren't stored in the main abbrevmatcher; put them
         // in their own.
-        if (!$this->nonpaper_am) {
-            $this->nonpaper_am = new AbbreviationMatcher;
+        if (!$this->_nonpaper_am) {
+            $this->_nonpaper_am = new AbbreviationMatcher;
             foreach ($this->option_json_list() as $id => $oj)
                 if (get($oj, "nonpaper")
                     && ($o = $this->get($id))) {
                     assert($o->nonpaper);
-                    $this->nonpaper_am->add($o->name, $o);
-                    $this->nonpaper_am->add($o->formid, $o);
+                    $this->_nonpaper_am->add($o->name, $o);
+                    $this->_nonpaper_am->add($o->formid, $o);
                 }
         }
-        return $this->nonpaper_am;
+        return $this->_nonpaper_am;
     }
 
     function find_all_nonpaper($name) {
@@ -310,9 +324,9 @@ class PaperOptionList {
 class PaperOption implements Abbreviator {
     const MINFIXEDID = 1000000;
 
+    public $conf;
     public $id;
     public $name;
-    public $conf;
     public $formid;
     public $readable_formid;
     public $title;
@@ -362,14 +376,14 @@ class PaperOption implements Abbreviator {
     function __construct(Conf $conf, $args) {
         if (is_object($args))
             $args = get_object_vars($args);
+        $this->conf = $conf;
         $this->id = (int) $args["id"];
         $this->name = $args["name"];
         if ($this->name === null)
             $this->name = "<Unknown-{$this->id}>";
-        $this->conf = $conf;
         $this->title = get($args, "title", $this->name);
         $this->message_title = get($args, "message_title", $this->title);
-        $this->type = $args["type"];
+        $this->type = get($args, "type");
 
         if (($x = get_s($args, "json_key")))
             $this->_json_key = $this->_search_keyword = $x;
