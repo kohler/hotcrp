@@ -7295,7 +7295,7 @@ var edit_conditions = {};
 
 function check_still_ready(event) {
     var sub = this.submitpaper;
-    if (sub && sub.type === "checkbox" && !this.submitpaper.checked) {
+    if (sub && sub.type === "checkbox" && !sub.checked) {
         if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
             event.preventDefault();
     }
