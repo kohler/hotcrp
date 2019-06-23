@@ -17,7 +17,7 @@ class PaperApi {
                 $qv[] = $myprefix . $lbase;
                 $myvotes[$lbase] = 0;
             }
-            $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag where tag ?a group by tag", $qv);
+            $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag join Paper using (paperId) where timeSubmitted>0 and tag?a group by tag", $qv);
             while (($row = edb_row($result))) {
                 $lbase = strtolower(substr($row[0], strlen($myprefix)));
                 $myvotes[$lbase] += +$row[1];

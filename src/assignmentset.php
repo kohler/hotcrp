@@ -1296,7 +1296,8 @@ class AssignmentSet {
                   ["preference", "pref", "revpref"],
                   ["expertise", "prefexp"],
                   ["tag_value", "tagvalue", "value", "index"],
-                  ["conflict", "conflict_type", "conflicttype"]] as $ks) {
+                  ["conflict", "conflict_type", "conflicttype"],
+                  ["withdraw_reason", "reason"]] as $ks) {
             for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i)
                 $csv->add_synonym($ks[0], $ks[$i]);
         }

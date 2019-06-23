@@ -77,8 +77,6 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                 }
             }
             $r = $req["withdraw_reason"];
-            if ($r === null)
-                $r = $req["reason"];
             if ((string) $r !== "")
                 $res["_withdraw_reason"] = $r;
         } else if ($this->xtype === "revive") {
@@ -136,7 +134,10 @@ class Status_Assigner extends Assigner {
     function execute(AssignmentSet $aset) {
         global $Now;
         $submitted = $this->item["_submitted"];
-        $aset->stage_qe("update Paper set timeSubmitted=?, timeWithdrawn=?, withdrawReason=? where paperId=?", $submitted, $this->item["_withdrawn"], $this->item["_withdraw_reason"], $this->pid);
+        $withdrawn = $this->item["_withdrawn"];
+        $aset->stage_qe("update Paper set timeSubmitted=?, timeWithdrawn=?, withdrawReason=? where paperId=?", $submitted, $withdrawn, $this->item["_withdraw_reason"], $this->pid);
+        if (($withdrawn > 0) !== ($this->item->get(true, "_withdrawn") > 0))
+            $aset->user->log_activity($withdrawn > 0 ? "Withdrew" : "Revived", $this->pid);
         if (($submitted > 0) !== ($this->item->get(true, "_submitted") > 0)) {
             $aset->cleanup_callback("papersub", function ($aset, $vals) {
                 $aset->conf->update_papersub_setting(min($vals));

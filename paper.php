@@ -89,10 +89,12 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
         $reason = (string) $Qreq->reason;
         if ($reason === "" && $Me->can_administer($prow) && $Qreq->doemail > 0)
             $reason = (string) $Qreq->emailNote;
-        Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-timeSubmitted,0), withdrawReason=? where paperId=$prow->paperId", $reason !== "" ? $reason : null);
-        $Conf->update_papersub_setting(-1);
-        if ($prow->outcome > 0)
-            $Conf->update_paperacc_setting(-1);
+
+        $aset = new AssignmentSet($Me, true);
+        $aset->enable_papers($prow);
+        $aset->parse("paper,action,withdraw reason\n{$prow->paperId},withdraw," . CsvGenerator::quote($reason));
+        if (!$aset->execute())
+            error_log("{$Conf->dbname}: withdraw #{$prow->paperId} failure: " . json_encode($aset->json_result()));
         loadRows();
 
         // email contact authors themselves
@@ -114,33 +116,18 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
             HotCRPMailer::send_combined_preparations($preps);
         }
 
-        // remove voting tags so people don't have phantom votes
-        if ($Conf->tags()->has_vote) {
-            // XXX should do this in a_status.php
-            $acsv = ["paper,action,tag"];
-            foreach ($Conf->tags()->filter("vote") as $vt) {
-                array_push($acsv, "{$prow->paperId},cleartag,{$vt->tag}",
-                           "{$prow->paperId},cleartag,all~{$vt->tag}");
-            }
-            $assignset = new AssignmentSet($Conf->site_contact());
-            $assignset->enable_papers($prow);
-            $assignset->parse(join("\n", $acsv));
-            $assignset->execute();
-        }
-
-        $Me->log_activity("Withdrew", $prow->paperId);
         $Conf->self_redirect($Qreq);
     } else
         Conf::msg_error(whyNotText($whyNot) . " The submission has not been withdrawn.");
 }
 if (isset($Qreq->revive) && $prow && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
-        Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,if(timeSubmitted<-100,-timeSubmitted,0)), withdrawReason=null where paperId=$prow->paperId");
-        $Conf->update_papersub_setting(0);
-        if ($prow->outcome > 0)
-            $Conf->update_paperacc_setting(0);
+        $aset = new AssignmentSet($Me, true);
+        $aset->enable_papers($prow);
+        $aset->parse("paper,action\n{$prow->paperId},revive");
+        if (!$aset->execute())
+            error_log("{$Conf->dbname}: revive #{$prow->paperId} failure: " . json_encode($aset->json_result()));
         loadRows();
-        $Me->log_activity("Revived", $prow->paperId);
         $Conf->self_redirect($Qreq);
     } else
         Conf::msg_error(whyNotText($whyNot));
