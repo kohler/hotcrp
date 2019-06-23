@@ -284,6 +284,8 @@ function expand_json_includes_callback($includelist, $callback) {
             $entry = $x;
         }
         foreach (is_array($entry) ? $entry : [$entry] as $k => $v) {
+            if ($v === null)
+                continue;
             if (is_object($v))
                 $v->__subposition = ++Conf::$next_xt_subposition;
             if (!call_user_func($callback, $v, $k, $landmark))

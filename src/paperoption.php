@@ -100,6 +100,9 @@ class PaperOptionList {
     private $_nonpaper_am;
     private $_adding_fixed;
 
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","title":"Submission","message_title":"submission","position":11000,"type":"document"}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","message_title":"final version","position":11001,"type":"document"}';
+
     function __construct(Conf $conf) {
         $this->conf = $conf;
     }
@@ -161,23 +164,33 @@ class PaperOptionList {
         }
     }
 
+    function _add_intrinsic_json($oj, $k, $landmark) {
+        assert(is_int($oj->id) && $oj->id <= 0);
+        if ($this->conf->xt_allowed($oj)
+            && (!isset($this->_ijlist[$oj->id])
+                || Conf::xt_priority_compare($oj, $this->_ijlist[$oj->id]) <= 0))
+            $this->_ijlist[$oj->id] = $oj;
+        return true;
+    }
+
+    private function intrinsic_json_list() {
+        if ($this->_ijlist === null) {
+            $this->_ijlist = [];
+            expand_json_includes_callback(["etc/intrinsicoptions.json", self::DTYPE_SUBMISSION_JSON, self::DTYPE_FINAL_JSON, $this->conf->opt("intrinsicOptions")], [$this, "_add_intrinsic_json"]);
+        }
+        return $this->_ijlist;
+    }
+
     private function populate_intrinsic($id) {
         if ($id == DTYPE_SUBMISSION) {
-            $this->_imap[$id] = new DocumentPaperOption($this->conf, [
-                "id" => DTYPE_SUBMISSION,
-                "name" => "paper", "json_key" => "paper", "readable_formid" => "submission",
-                "title" => "Submission", "message_title" => "submission",
-                "position" => 11000
-            ]);
+            $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_SUBMISSION_JSON, true));
         } else if ($id == DTYPE_FINAL) {
-            $this->_imap[$id] = new DocumentPaperOption($this->conf, [
-                "id" => DTYPE_FINAL,
-                "name" => "final", "json_key" => "final",
-                "title" => "Final version", "message_title" => "final version",
-                "position" => 11001
-            ]);
+            $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_FINAL_JSON, true));
         } else {
             $this->_imap[$id] = null;
+            if (($oj = get($this->intrinsic_json_list(), $id))
+                && ($o = PaperOption::make($oj, $this->conf)))
+                $this->_imap[$id] = $o;
         }
     }
 
@@ -186,16 +199,16 @@ class PaperOptionList {
             if (!array_key_exists($id, $this->_imap))
                 $this->populate_intrinsic($id);
             return $this->_imap[$id];
-        } else if (array_key_exists($id, $this->_omap)) {
-            $o = $this->_omap[$id];
-        } else {
-            $o = null;
-            if (($oj = get($this->option_json_list(), $id)))
-                $o = PaperOption::make($oj, $this->conf);
-            if (!$this->conf->xt_allowed($o) || Conf::xt_disabled($o))
-                $o = null;
-            $this->_omap[$id] = $o;
         }
+        if (!array_key_exists($id, $this->_omap)) {
+            $this->_omap[$id] = null;
+            if (($oj = get($this->option_json_list(), $id))
+                && ($o = PaperOption::make($oj, $this->conf))
+                && $this->conf->xt_allowed($o)
+                && !Conf::xt_disabled($o))
+                $this->_omap[$id] = $o;
+        }
+        $o = $this->_omap[$id];
         if (!$o && $force)
             $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, $id);
         return $o;
@@ -239,16 +252,24 @@ class PaperOptionList {
         return $this->_olist_nonfinal;
     }
 
-    function option_list_type($nonfinal = false) {
-        return $nonfinal ? $this->nonfinal_option_list() : $this->option_list();
-    }
-
     function full_option_list() {
         $list = [];
         foreach ($this->option_json_list() as $id => $oj)
             if (($o = $this->get($id)))
                 $list[$id] = $o;
         return $list;
+    }
+
+    function feature_list(PaperInfo $prow = null) {
+        $nonfinal = !$prow || $prow->outcome <= 0;
+        $olist = [];
+        foreach ($this->intrinsic_json_list() + $this->option_json_list() as $id => $oj)
+            if (!get($oj, "nonpaper")
+                && (!$nonfinal || !get($oj, "final"))
+                && ($o = $this->get($id)))
+                $olist[$id] = $o;
+        uasort($olist, "Conf::xt_position_compare");
+        return $olist;
     }
 
     function invalidate_option_list() {

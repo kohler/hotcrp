@@ -111,9 +111,10 @@ class PaperTable {
 
         if ($user->can_view_authors($prow))
             $this->view_authors = 2;
-        $olist = $this->conf->paper_opts->option_list_type(!$prow || $prow->outcome <= 0);
+
+        $olist = $this->conf->paper_opts->feature_list($prow);
         foreach ($olist as $o) {
-            if ($user->can_view_paper_option($prow, $o))
+            if ($o->id > 0 && $user->can_view_paper_option($prow, $o))
                 $this->view_options[$o->id] = 2;
         }
 
@@ -2188,8 +2189,9 @@ class PaperTable {
         echo '<div>';
 
         $ofields = [];
-        foreach ($this->conf->paper_opts->option_list_type(!$this->canUploadFinal) as $opt)
-            if ((!$this->prow || get($this->view_options, $opt->id))
+        foreach ($this->conf->paper_opts->feature_list($this->prow) as $opt)
+            if ($opt->id > 0
+                && (!$this->prow || get($this->view_options, $opt->id))
                 && !$opt->internal)
                 $ofields[] = $this->make_echo_editable_option($opt);
         $gxt = new GroupedExtensions($this->user, ["etc/submissioneditgroups.json"], $this->conf->opt("submissionEditGroups"), $ofields);
