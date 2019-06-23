@@ -359,6 +359,23 @@ function update_schema_missing_review_ordinals($conf) {
     return true;
 }
 
+function update_schema_clean_options_json($conf) {
+    $oj = $conf->setting_json("options");
+    if ($oj && is_object($oj)) {
+        $ol = [];
+        foreach (get_object_vars($oj) as $kk => $vv) {
+            if (!isset($vv->id))
+                $vv->id = (int) $kk;
+            $ol[] = $vv;
+        }
+        if (empty($ol))
+            $conf->save_setting("options", null);
+        else
+            $conf->save_setting("options", 1, json_encode($ol));
+    }
+    return true;
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1511,6 +1528,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 212
         && $conf->ql("update PaperConflict set conflictType=(64 + conflictType - 9) where conflictType>=9 and conflictType<64"))
         $conf->update_schema_version(213);
+    if ($conf->sversion == 213
+        && update_schema_clean_options_json($conf))
+        $conf->update_schema_version(214);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

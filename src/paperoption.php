@@ -106,6 +106,8 @@ class PaperOptionList {
 
     function _add_json($oj, $k, $landmark) {
         if (!isset($oj->id) && $k === 0) {
+            error_log("{$this->conf->dbname}: old-style options JSON");
+            // XXX backwards compat
             $ok = true;
             foreach (get_object_vars($oj) as $kk => $vv)
                 if (is_object($vv)) {
@@ -115,7 +117,7 @@ class PaperOptionList {
                 }
             return $ok;
         }
-        if (is_string($oj->id) && is_numeric($oj->id))
+        if (is_string($oj->id) && is_numeric($oj->id)) // XXX backwards compat
             $oj->id = intval($oj->id);
         if (is_int($oj->id)
             && $oj->id > 0
