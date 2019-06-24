@@ -100,8 +100,8 @@ class PaperOptionList {
     private $_nonpaper_am;
     private $_adding_fixed;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","title":"Submission","message_title":"submission","form_position":11000,"type":"document"}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","message_title":"final version","form_position":11001,"type":"document"}';
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","title":"Submission","message_title":"submission","form_position":1001,"type":"document"}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","message_title":"final version","form_position":1002,"type":"document"}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -552,11 +552,11 @@ class PaperOption implements Abbreviator {
         if ($this->form_position)
             return $this->form_position;
         else if ($this->display === self::DISP_SUBMISSION)
-            return 12000 + $this->position;
+            return 1010 + $this->position;
         else if ($this->display === self::DISP_PROMINENT)
-            return 32000 + $this->position;
+            return 3010 + $this->position;
         else
-            return 36000 + $this->position;
+            return 4010 + $this->position;
     }
 
     function edit_condition() {

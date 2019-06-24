@@ -1,42 +1,42 @@
 [
     {
         "name": "title", "json_key": "title", "id": -1000,
-        "title": "Title", "form_position": 1000, "display_space": 1,
+        "title": "Title", "form_position": 1, "display_space": 1,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_title"
     },
     {
+        "name": "abstract", "json_key": "abstract", "id": -1004,
+        "title": "Abstract", "form_position": 2001, "display_space": 5,
+        "type": "intrinsic", "intrinsic_callback": "echo_editable_abstract"
+    },
+    {
         "name": "authors", "json_key": "authors", "id": -1001,
-        "title": "Authors", "form_position": 20500,
+        "title": "Authors", "form_position": 3001,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_authors"
     },
     {
         "name": "blind", "json_key": "blind", "id": -1002,
-        "title": "Anonymous submission", "form_position": 20600,
+        "title": "Anonymous submission", "form_position": 3002,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_anonymity"
     },
     {
         "name": "contacts", "json_key": "contacts", "id": -1003,
-        "title": "Contacts", "form_position": 20700,
+        "title": "Contacts", "form_position": 3003,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_contact_author"
     },
     {
-        "name": "abstract", "json_key": "abstract", "id": -1004,
-        "title": "Abstract", "form_position": 21000, "display_space": 5,
-        "type": "intrinsic", "intrinsic_callback": "echo_editable_abstract"
-    },
-    {
         "name": "topics", "json_key": "topics", "id": -1005,
-        "title": "Topics", "form_position": 35000,
+        "title": "Topics", "form_position": 4001,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_topics"
     },
     {
         "name": "pcconf", "json_key": "pcconf", "id": -1006,
-        "title": "PC conflicts", "form_position": 100000,
+        "title": "PC conflicts", "form_position": 5001,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_pc_conflicts"
     },
     {
         "name": "collaborators", "json_key": "collaborators", "id": -1007,
-        "title": "Collaborators", "form_position": 101000, "display_space": 5,
+        "title": "Collaborators", "form_position": 5002, "display_space": 5,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_collaborators"
     }
 ]
