@@ -100,8 +100,8 @@ class PaperOptionList {
     private $_nonpaper_am;
     private $_adding_fixed;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","title":"Submission","message_title":"submission","position":11000,"type":"document"}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","message_title":"final version","position":11001,"type":"document"}';
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","title":"Submission","message_title":"submission","form_position":11000,"type":"document"}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","message_title":"final version","form_position":11001,"type":"document"}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -393,7 +393,8 @@ class PaperOption implements Abbreviator {
         "slides" => "+DocumentPaperOption",
         "video" => "+DocumentPaperOption",
         "document" => "+DocumentPaperOption",
-        "attachments" => "+AttachmentsPaperOption"
+        "attachments" => "+AttachmentsPaperOption",
+        "intrinsic" => "+IntrinsicPaperOption"
     ];
 
     function __construct(Conf $conf, $args) {
@@ -1411,6 +1412,20 @@ class AttachmentsPaperOption extends PaperOption {
             array_unshift($links, self::PAGE_HTML_DATA);
         }
         return $links;
+    }
+}
+
+class IntrinsicPaperOption extends PaperOption {
+    private $intrinsic_callback;
+
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
+        $this->intrinsic_callback = $args["intrinsic_callback"];
+    }
+
+    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+        $f = $this->intrinsic_callback;
+        $pt->$f();
     }
 }
 

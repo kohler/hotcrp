@@ -97,6 +97,7 @@ etc/capabilityhandlers.json
 etc/formulafunctions.json
 etc/helptopics.json
 etc/homepartials.json
+etc/intrinsicoptions.json
 etc/listactions.json
 etc/mailkeywords.json
 etc/mailtemplates.json
@@ -108,7 +109,6 @@ etc/reviewformlibrary.json
 etc/searchkeywords.json
 etc/settinginfo.json
 etc/settinggroups.json
-etc/submissioneditgroups.json
 
 lib/.htaccess
 lib/abbreviationmatcher.php

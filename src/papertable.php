@@ -481,7 +481,7 @@ class PaperTable {
         return "";
     }
 
-    private function echo_editable_title() {
+    function echo_editable_title() {
         echo $this->editable_papt("title", $this->field_name("Title"), ["for" => "title"]),
             $this->field_hint("Title"),
             '<div class="papev">', $this->editable_textarea("title"),
@@ -619,7 +619,9 @@ class PaperTable {
         $dtype = $docx->id;
         if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
             $noPapers = $this->conf->opt("noPapers");
-            if ($noPapers === 1 || $noPapers === true)
+            if ($noPapers === 1
+                || $noPapers === true
+                || ($dtype == DTYPE_FINAL) !== $this->canUploadFinal)
                 return;
         }
         $inputid = $dtype > 0 ? "opt" . $dtype : "paperUpload";
@@ -691,19 +693,7 @@ class PaperTable {
             $this->messages_at($field), "</div></div>\n\n";
     }
 
-    private function echo_editable_submission() {
-        if (!$this->canUploadFinal) {
-            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0);
-        }
-    }
-
-    private function echo_editable_final_version() {
-        if ($this->canUploadFinal) {
-            $this->echo_editable_document($this->conf->paper_opts->get(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0);
-        }
-    }
-
-    private function echo_editable_abstract() {
+    function echo_editable_abstract() {
         $noAbstract = $this->conf->opt("noAbstract");
         if ($noAbstract !== 1 && $noAbstract !== true) {
             $title = $this->field_name("Abstract");
@@ -802,7 +792,7 @@ class PaperTable {
             . '</td></tr>';
     }
 
-    private function echo_editable_authors() {
+    function echo_editable_authors() {
         $max_authors = (int) $this->conf->opt("maxAuthors");
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
 
@@ -1190,7 +1180,7 @@ class PaperTable {
             . '</div>';
     }
 
-    private function echo_editable_contact_author() {
+    function echo_editable_contact_author() {
         if ($this->prow) {
             list($aulist, $contacts) = $this->_analyze_authors();
             $contacts = array_merge($aulist, $contacts);
@@ -1261,7 +1251,7 @@ class PaperTable {
             "</div>", $this->messages_at("contacts"), "</div></div>\n\n";
     }
 
-    private function echo_editable_anonymity() {
+    function echo_editable_anonymity() {
         if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
             || $this->editable !== "f")
             return;
@@ -1274,7 +1264,7 @@ class PaperTable {
             "</div>\n\n";
     }
 
-    private function echo_editable_collaborators() {
+    function echo_editable_collaborators() {
         if (!$this->conf->setting("sub_collab")
             || ($this->editable === "f" && !$this->admin))
             return;
@@ -1354,7 +1344,7 @@ class PaperTable {
             "</div></div></div>\n\n";
     }
 
-    private function echo_editable_topics() {
+    function echo_editable_topics() {
         if (!$this->conf->has_topics())
             return;
         echo $this->editable_papt("topics", $this->field_name("Topics"), ["id" => "topics"]),
@@ -1414,7 +1404,7 @@ class PaperTable {
             Ht::hidden("has_{$o->formid}", 1);
     }
 
-    private function echo_editable_pc_conflicts() {
+    function echo_editable_pc_conflicts() {
         if (!$this->conf->setting("sub_pcconf"))
             return;
         if ($this->editable === "f" && !$this->admin) {
@@ -1938,9 +1928,9 @@ class PaperTable {
             && $this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {
             $fields = [];
-            foreach ($this->edit_fields ? : [] as $uf)
-                if (isset($uf->title) && $this->edit_status->has_problem_at($uf->name))
-                    $fields[] = Ht::link($this->field_name($uf->title), "#" . (isset($uf->readable_formid) ? $uf->readable_formid : $uf->name));
+            foreach ($this->edit_fields ? : [] as $o)
+                if ($this->edit_status->has_problem_at($o->formid))
+                    $fields[] = Ht::link($this->field_name(htmlspecialchars($o->title)), "#" . $o->readable_formid);
             $m .= Ht::msg($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
         }
         return $m;
@@ -2163,39 +2153,26 @@ class PaperTable {
         Ht::stash_script('$(function(){$("#paperform input[name=paperUpload]").trigger("change")})');
     }
 
-    private function make_echo_editable_option($o) {
-        return (object) [
-            "name" => $o->formid,
-            "readable_formid" => $o->readable_formid,
-            "title" => htmlspecialchars($o->title),
-            "position" => $o->form_position(),
-            "option" => $o,
-            "callback" => function () use ($o) {
-                if ($o->edit_condition()
-                    && !$o->compile_edit_condition($this->_prow))
-                    return;
-                $ov = $this->_prow->option($o->id);
-                $ov = $ov ? : new PaperOptionValue($this->prow, $o);
-                $reqv = null;
-                if ($this->useRequest && $this->qreq["has_{$o->formid}"])
-                    $reqv = $o->parse_request_display($this->qreq, $this->user, $this->prow);
-                $o->echo_editable_html($ov, $reqv, $this);
-            }
-        ];
-    }
-
     private function _echo_editable_body() {
         $this->_echo_editable_form();
         echo '<div>';
 
-        $ofields = [];
-        foreach ($this->conf->paper_opts->feature_list($this->prow) as $opt)
-            if ($opt->id > 0
-                && (!$this->prow || get($this->view_options, $opt->id))
-                && !$opt->internal)
-                $ofields[] = $this->make_echo_editable_option($opt);
-        $gxt = new GroupedExtensions($this->user, ["etc/submissioneditgroups.json"], $this->conf->opt("submissionEditGroups"), $ofields);
-        $this->edit_fields = array_values($gxt->groups());
+        $this->edit_fields = [];
+        foreach ($this->conf->paper_opts->feature_list($this->prow) as $o) {
+            if (!$o->internal
+                && ($o->id <= 0
+                    || (!$this->prow || get($this->view_options, $o->id)))
+                && (!$this->canUploadFinal || !$o->final))
+                $this->edit_fields[] = $o;
+        }
+        usort($this->edit_fields, function ($a, $b) {
+            $ap = $a->form_position();
+            $bp = $b->form_position();
+            if ($ap == $bp)
+                return $a->id - $b->id;
+            else
+                return $ap < $bp ? -1 : 1;
+        });
 
         if (($m = $this->_edit_message()))
             echo $m;
@@ -2209,14 +2186,16 @@ class PaperTable {
         for ($this->edit_fields_position = 0;
              $this->edit_fields_position < count($this->edit_fields);
              ++$this->edit_fields_position) {
-            $uf = $this->edit_fields[$this->edit_fields_position];
-            $cb = get($uf, "callback");
-            if ($cb instanceof Closure)
-                call_user_func($cb, $uf);
-            else if (is_string($cb) && str_starts_with($cb, "*"))
-                call_user_func([$this, substr($cb, 1)], $uf);
-            else if ($cb)
-                call_user_func($cb, $this, $uf);
+            $o = $this->edit_fields[$this->edit_fields_position];
+            if ($o->edit_condition()
+                && !$o->compile_edit_condition($this->_prow))
+                return;
+            $ov = $this->_prow->option($o->id);
+            $ov = $ov ? : new PaperOptionValue($this->prow, $o);
+            $reqv = null;
+            if ($this->useRequest && $this->qreq["has_{$o->formid}"])
+                $reqv = $o->parse_request_display($this->qreq, $this->user, $this->prow);
+            $o->echo_editable_html($ov, $reqv, $this);
         }
 
         // Submit button
@@ -2275,7 +2254,8 @@ class PaperTable {
             $this->echo_editable_contact_author();
             $this->echoActions(false);
             echo "</form>";
-        } else if (!$this->editable && $this->user->act_author_view($prow)
+        } else if (!$this->editable
+                   && $this->user->act_author_view($prow)
                    && !$this->user->contactId) {
             echo '<hr class="papcard_sep" />',
                 "To edit this submission, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
