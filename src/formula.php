@@ -1686,7 +1686,7 @@ class Formula {
 
     private function _reviewer_base($t) {
         $t = strtolower($t);
-        if (preg_match('/\A(?:|r|re|rev|review)type\z/i', $t))
+        if (preg_match('/\A(?:(?:re|rev|review)(?:|type)|rtype)\z/i', $t))
             return new Revtype_Fexpr;
         else if (preg_match('/\A(?:|r|re|rev|review)round\z/i', $t))
             return new ReviewRound_Fexpr;
@@ -1834,7 +1834,7 @@ class Formula {
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)?|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
             $t = ":" . $m[2];
             $e = $this->_reviewer_decoration($this->_reviewer_base($m[1]), $t);
-        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer)\b(.*)\z/is', $t, $m)) {
+        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer|re|rev|review)\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
         } else if (preg_match('/\A(#|[A-Za-z][A-Za-z0-9_.@:]*)/is', $t, $m)
