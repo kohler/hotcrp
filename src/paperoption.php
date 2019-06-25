@@ -1016,7 +1016,16 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        $pt->echo_editable_document($this, $ov->value ? : 0);
+        // XXXX this is super gross
+        if ($this->id > 0 && $ov->value)
+            $docid = $ov->value;
+        else if ($this->id == DTYPE_SUBMISSION && $ov->prow->paperStorageId > 1)
+            $docid = $ov->prow->paperStorageId;
+        else if ($this->id == DTYPE_FINAL && $ov->prow->finalPaperStorageId > 0)
+            $docid = $ov->prow->finalPaperStorageId;
+        else
+            $docid = 0;
+        $pt->echo_editable_document($this, $docid);
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
