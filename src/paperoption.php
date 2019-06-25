@@ -1019,9 +1019,13 @@ class DocumentPaperOption extends PaperOption {
         // XXXX this is super gross
         if ($this->id > 0 && $ov->value)
             $docid = $ov->value;
-        else if ($this->id == DTYPE_SUBMISSION && $ov->prow->paperStorageId > 1)
+        else if ($this->id == DTYPE_SUBMISSION
+                 && $ov->prow
+                 && $ov->prow->paperStorageId > 1)
             $docid = $ov->prow->paperStorageId;
-        else if ($this->id == DTYPE_FINAL && $ov->prow->finalPaperStorageId > 0)
+        else if ($this->id == DTYPE_FINAL
+                 && $ov->prow
+                 && $ov->prow->finalPaperStorageId > 0)
             $docid = $ov->prow->finalPaperStorageId;
         else
             $docid = 0;
