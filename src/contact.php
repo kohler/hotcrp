@@ -2493,10 +2493,7 @@ class Contact {
         if ($opt->final
             && ($prow->outcome <= 0
                 || $prow->timeSubmitted <= 0
-                || !$this->can_view_decision($prow))
-            && ($opt->id === DTYPE_FINAL
-                ? $prow->finalPaperStorageId <= 1
-                : !$prow->option($opt->id)))
+                || !$this->can_view_decision($prow)))
             return false;
         if ($opt->edit_condition()
             && !($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS)
