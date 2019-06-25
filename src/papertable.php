@@ -548,8 +548,8 @@ class PaperTable {
                 $o = $ov->option;
                 if ($o->display() === PaperOption::DISP_SUBMISSION
                     && get($this->view_options, $o->id)
-                    && ($oh = $this->unparse_option_html($ov))) {
-                    $out = array_merge($out, $oh);
+                    && ($oh = $this->unparse_option_html($ov)) !== "") {
+                    $out[] = $oh;
                 }
             }
 
@@ -1009,62 +1009,57 @@ class PaperTable {
     }
 
     private function unparse_option_html(PaperOptionValue $ov) {
+        $fr = new FeatureRender(FeatureRender::CPAGE);
         $o = $ov->option;
-        $phtml = $o->unparse_page_html($this->prow, $ov);
-        if (!$phtml || count($phtml) <= 1)
-            return [];
-        $phtype = array_shift($phtml);
-        $aufold = $this->view_options[$o->id] == 1;
+        $o->render($fr, $ov);
+        if ($fr->is_empty()) {
+            return "";
+        }
 
-        $ts = [];
+        $aufold = $this->view_options[$o->id] == 1;
         if ($o->display() === PaperOption::DISP_SUBMISSION) {
-            $div = $aufold ? '<div class="xd fx8">' : '<div class="xd">';
-            if ($phtype === PaperOption::PAGE_HTML_NAME) {
-                foreach ($phtml as $p)
-                    $ts[] = $div . '<span class="pavfn">' . $p . "</span></div>\n";
-            } else if ($phtype === PaperOption::PAGE_HTML_FULL) {
-                foreach ($phtml as $p)
-                    $ts[] = $div . $p . "</div>\n";
-            } else {
-                $x = $div . '<span class="pavfn">' . htmlspecialchars($o->title) . '</span>';
-                foreach ($phtml as $p)
-                    $x .= '<div class="pavb">' . $p . '</div>';
-                $ts[] = $x . "</div>\n";
-            }
+            $t = '<div class="xd'. ($aufold ? " fx8" : "") . '">';
         } else if ($o->display() !== PaperOption::DISP_TOPICS) {
-            $div = $aufold ? '<div class="pgsm fx8">' : '<div class="pgsm">';
-            if ($phtype === PaperOption::PAGE_HTML_NAME) {
-                foreach ($phtml as $p)
-                    $ts[] = $div . '<div class="pavt"><span class="pavfn">' . $p . "</span></div></div>\n";
-            } else if ($phtype === PaperOption::PAGE_HTML_FULL) {
-                foreach ($phtml as $p)
-                    $ts[] = $div . $p . "</div>\n";
-            } else {
-                $x = $div . '<div class="pavt"><span class="pavfn">' . htmlspecialchars($o->title) . '</span></div>';
-                foreach ($phtml as $p)
-                    $x .= '<div class="pavb">' . $p . '</div>';
-                $ts[] = $x . "</div>\n";
-            }
+            $t = '<div class="pgsm' . ($aufold ? " fx8" : "") . '">';
         } else {
-            $div = $aufold ? '<div class="fx8">' : '<div>';
-            if ($phtype === PaperOption::PAGE_HTML_NAME) {
-                foreach ($phtml as $p)
-                    $ts[] = $div . '<span class="papon">' . $p . "</span></div>\n";
-            } else if ($phtype === PaperOption::PAGE_HTML_FULL) {
-                foreach ($phtml as $p)
-                    $ts[] = $div . $p . "</div>\n";
+            $t = '<div' . ($aufold ? ' class="fx8"' : "") . '>';
+        }
+        $et = '</div>';
+
+        $value = $fr->value_html();
+        if ($fr->title === null) {
+            $fr->title = $o->title;
+            $fr->title_format = 0;
+        }
+        if ((string) $fr->title !== "" && $fr->title_format === 5) {
+            $t .= $fr->title;
+        } else if ((string) $fr->title !== "") {
+            $title = $fr->title_html();
+            if ($o->display() === PaperOption::DISP_SUBMISSION) {
+                $t .= '<span class="pavfn">' . $title . '</span>';
+            } else if ($o->display() !== PaperOption::DISP_TOPICS) {
+                $t .= '<div class="pavt"><span class="pavfn">' . $title . '</span></div>';
             } else {
-                foreach ($phtml as $p) {
-                    if (!empty($ts)
-                        || $p === ""
-                        || $p[0] !== "<"
-                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $p, $cm))
-                        $cm = [null, "", $p];
-                    $ts[] = $div . $cm[1] . '<span class="papon">' . htmlspecialchars($o->title) . ':</span> ' . $cm[2] . "</div>\n";
+                if ($value === "") {
+                    $t .= $title;
+                } else if ($value[0] === "<"
+                           && preg_match('{\A((?:<(?:div|p).*?>)*)}', $p, $cm)) {
+                    $t .= $cm[1] . $title . ': ';
+                    $value = substr($value, strlen($cm[1]));
+                } else {
+                    $t .= $title . ': ';
                 }
             }
         }
-        return $ts;
+
+        if ($value !== ""
+            && $fr->title !== false
+            && $o->display() !== PaperOption::DISP_TOPICS) {
+            $t .= '<div class="pavb">';
+            $et = '</div>' . $et;
+        }
+
+        return $t . $value . $et;
     }
 
     private function paptab_topics() {
@@ -1097,18 +1092,18 @@ class PaperTable {
             if ($o->display() !== PaperOption::DISP_SUBMISSION
                 && $o->display() >= 0
                 && get($this->view_options, $o->id)
-                && ($oh = $this->unparse_option_html($ov))) {
+                && ($oh = $this->unparse_option_html($ov)) !== "") {
                 $aufold = $this->view_options[$o->id] == 1;
                 if ($o->display() === PaperOption::DISP_TOPICS) {
-                    $optt = array_merge($optt, $oh);
+                    $optt[] = $oh;
                     if ($aufold)
-                        $optt_nfold += count($oh);
+                        ++$optt_nfold;
                     if ($o->has_document())
-                        $optt_ndoc += count($oh);
+                        ++$optt_ndoc;
                 } else {
-                    $optp = array_merge($optp, $oh);
+                    $optp[] = $oh;
                     if ($aufold)
-                        $optp_nfold += count($oh);
+                        ++$optp_nfold;
                 }
             }
         }

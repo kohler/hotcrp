@@ -29,10 +29,45 @@ class Option_PaperColumn extends PaperColumn {
         return !$pl->user->can_view_paper_option($row, $this->opt);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $this->opt->unparse_list_html($pl, $row, $this->viewable_row());
+        $ov = $row->option($this->opt->id);
+        if (!$ov) {
+            return "";
+        }
+
+        $fr = new FeatureRender($this->viewable_row() ? FeatureRender::CROW : FeatureRender::CCOLUMN);
+        $this->opt->render($fr, $ov);
+        if ((string) $fr->value === "") {
+            return "";
+        }
+
+        $klass = "";
+        if ($fr->value_long) {
+            $klass = strlen($fr->value) > 190 ? "pl_longtext" : "pl_shorttext";
+        }
+        if ($fr->value_format !== 0 && $fr->value_format !== 5) {
+            $pl->need_render = true;
+            $klass .= ($klass === "" ? "" : " ") . "need-format";
+            return '<div class="' . $klass . ($klass === "" ? "" : " ")
+                . 'need-format" data-format="' . $fr->value_format . '">'
+                . htmlspecialchars($fr->value) . '</div>';
+        } else if (!$fr->value_long) {
+            return $fr->value_html();
+        } else if ($fr->value_format === 0) {
+            return '<div class="' . $klass . ' format0">'
+                . Ht::format0($fr->value) . '</div>';
+        } else {
+            return '<div class="' . $klass . '">' . $fr->value . '</div>';
+        }
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $this->opt->unparse_list_text($pl, $row);
+        $ov = $row->option($this->opt->id);
+        if (!$ov) {
+            return "";
+        }
+
+        $fr = new FeatureRender(FeatureRender::CCSV);
+        $this->opt->render($fr, $ov);
+        return (string) $fr->value;
     }
 }
 

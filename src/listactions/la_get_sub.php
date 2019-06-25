@@ -81,30 +81,19 @@ class GetCheckFormat_ListAction extends ListAction {
 
 class GetAbstract_ListAction extends ListAction {
     const WIDTH = 96;
-    static private function render_option(PaperOption $o, $otxt) {
-        $dtype = array_shift($otxt);
-        if ($dtype === PaperOption::PAGE_HTML_NAME)
-            $n = join(" ", $otxt);
-        else
-            $n = $o->title;
-        $text = prefix_word_wrap("", $n, 0, self::WIDTH);
-        $text .= str_repeat("-", min(self::WIDTH, strlen($text) - 1)) . "\n";
-        if ($dtype === PaperOption::PAGE_HTML_DATA && !empty($otxt)) {
-            if (count($otxt) === 1)
-                $text .= rtrim($otxt[0]);
-            else
-                $text .= join("", array_map(function ($t) { return "* " . rtrim($t) . "\n"; }, $otxt));
-            $text .= "\n";
-        }
-        return $text . "\n";
-    }
     static function render_displayed_options(PaperInfo $prow, Contact $user, $display) {
         $text = "";
         foreach ($prow->options() as $ov) {
             if ($ov->option->display() === $display
-                && $user->can_view_paper_option($prow, $ov->option)
-                && ($otxt = $ov->option->unparse_page_text($prow, $ov)))
-                $text .= self::render_option($ov->option, $otxt);
+                && $user->can_view_paper_option($prow, $ov->option)) {
+                $fr = new FeatureRender(FeatureRender::CTEXT);
+                $ov->option->render($fr, $ov);
+                if ((string) $fr->value !== "") {
+                    $text = prefix_word_wrap("", $ov->option->title, 0, self::WIDTH);
+                    $text .= str_repeat("-", min(self::WIDTH, strlen($text) - 1)) . "\n"
+                        . rtrim($fr->value) . "\n\n";
+                }
+            }
         }
         return $text;
     }

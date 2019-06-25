@@ -89,6 +89,86 @@ class PaperOptionValue {
     }
 }
 
+class FeatureRender {
+    public $context;
+    public $title;
+    public $title_format;
+    public $value;
+    public $value_format;
+    public $value_long;
+
+    const CPAGE = 3;
+    const CROW = 5;
+    const CCOLUMN = 7;
+    const CCSV = 0;
+    const CTEXT = 2;
+
+    const CFHTML = 1;
+    const CFLIST = 4;
+
+    function __construct($context) {
+        $this->context = $context;
+    }
+    function is_empty() {
+        return (string) $this->title === "" && (string) $this->value === "";
+    }
+    function want_text() {
+        return !($this->context & self::CFHTML);
+    }
+    function want_html() {
+        return $this->context & self::CFHTML;
+    }
+    function want_list() {
+        return $this->context & self::CFLIST;
+    }
+    function set_text($t) {
+        $this->value = $t;
+        $this->value_format = 0;
+    }
+    function set_html($t) {
+        $this->value = $t;
+        $this->value_format = 5;
+    }
+    function set_bool($b) {
+        if ($this->context & self::CFHTML) {
+            $this->set_text($b ? "✓" : "");
+        } else if ($this->context === self::CCSV) {
+            $this->set_text($b ? "Y" : "N");
+        } else {
+            $this->set_text($b ? "Yes" : "");
+        }
+    }
+    function title_html() {
+        if ($this->title === false || $this->title === null) {
+            return "";
+        } else if ($this->title_format === 0) {
+            return htmlspecialchars($this->title);
+        } else if ($this->title_format === 5) {
+            return $this->title;
+        } else {
+            assert(false);
+            return htmlspecialchars($this->title);
+        }
+    }
+    function value_html() {
+        if ((string) $this->value === "") {
+            return "";
+        } else if ($this->value_format === 5) {
+            return $this->value;
+        } else if ($this->value_format === 0) {
+            if ($this->value_long) {
+                return '<div class="format0">' . Ht::format0($this->value) . '</div>';
+            } else {
+                return htmlspecialchars($this->value);
+            }
+        } else {
+            Ht::stash_script('$(render_text.on_page)', 'render_on_page');
+            return '<div class="need-format" data-format="' . $this->value_format
+                . '">' . htmlspecialchars($this->value) . '</div>';
+        }
+    }
+}
+
 class PaperOptionList {
     private $conf;
     private $_jlist;
@@ -703,29 +783,12 @@ class PaperOption implements Abbreviator {
     function list_display($isrow) {
         return false;
     }
-    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
-        return "";
-    }
-    function unparse_list_text(PaperList $pl, PaperInfo $row) {
-        return "";
-    }
 
     const PAGE_HTML_DATA = 0;
     const PAGE_HTML_NAME = 1;
     const PAGE_HTML_FULL = 2;
-    function unparse_page_html(PaperInfo $row, PaperOptionValue $ov) {
-        $x = $this->unparse_page_html_data($row, $ov);
-        return (string) $x !== "" ? [self::PAGE_HTML_DATA, $x] : false;
-    }
-    function unparse_page_html_data(PaperInfo $row, PaperOptionValue $ov) {
-        return "";
-    }
-    function unparse_page_text(PaperInfo $row, PaperOptionValue $ov) {
-        $x = $this->unparse_page_text_data($row, $ov);
-        return (string) $x !== "" ? [self::PAGE_HTML_DATA, $x] : false;
-    }
-    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
-        return "";
+
+    function render(FeatureRender $fr, PaperOptionValue $ov) {
     }
 
     function format_spec() {
@@ -768,23 +831,14 @@ class CheckboxPaperOption extends PaperOption {
     function list_display($isrow) {
         return $isrow ? true : ["column" => true, "className" => "pl_option plc"];
     }
-    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
-        $v = $row->option($this->id);
-        return $v && $v->value ? "✓" : "";
-    }
-    function unparse_list_text(PaperList $pl, PaperInfo $row) {
-        $v = $row->option($this->id);
-        return $v && $v->value ? "Y" : "N";
-    }
 
-    function unparse_page_html(PaperInfo $row, PaperOptionValue $ov) {
-        if ($ov->value)
-            return [self::PAGE_HTML_NAME, "✓&nbsp;" . htmlspecialchars($this->title)];
-        else
-            return false;
-    }
-    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
-        return $ov->value ? "Yes" : "";
+    function render(FeatureRender $fr, PaperOptionValue $ov) {
+        if ($fr->context === FeatureRender::CPAGE && $ov->value) {
+            $fr->title = "✓ {$this->title}";
+            $fr->title_format = 0;
+        } else {
+            $fr->set_bool(!!$ov->value);
+        }
     }
 }
 
@@ -923,21 +977,9 @@ class SelectorPaperOption extends PaperOption {
     function list_display($isrow) {
         return true;
     }
-    private function unparse_value(PaperOptionValue $ov = null) {
-        return $ov ? get($this->selector, $ov->value - 1, "") : "";
-    }
-    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
-        return htmlspecialchars($this->unparse_value($row->option($this->id)));
-    }
-    function unparse_list_text(PaperList $pl, PaperInfo $row) {
-        return $this->unparse_value($row->option($this->id));
-    }
 
-    function unparse_page_html_data(PaperInfo $row, PaperOptionValue $ov) {
-        return htmlspecialchars($this->unparse_value($ov));
-    }
-    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
-        return $this->unparse_value($ov);
+    function render(FeatureRender $fr, PaperOptionValue $ov) {
+        $fr->set_text(get($this->selector, $ov->value - 1, ""));
     }
 }
 
@@ -1025,28 +1067,27 @@ class DocumentPaperOption extends PaperOption {
     function list_display($isrow) {
         return true;
     }
+
     private function first_document(PaperOptionValue $ov = null) {
         $d = null;
         foreach ($ov ? $ov->documents() : [] as $d)
             break;
         return $d;
     }
-    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
-        $d = $this->first_document($row->option($this->id));
-        return $d ? $d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) : "";
-    }
-    function unparse_list_text(PaperList $pl, PaperInfo $row) {
-        $d = $this->first_document($row->option($this->id));
-        return $d ? $d->filename : "";
-    }
-    function unparse_page_html(PaperInfo $row, PaperOptionValue $ov) {
-        if (($d = $this->first_document($row->option($this->id)))) {
-            $diflags = DocumentInfo::L_SMALL;
-            if ($this->display() === self::DISP_SUBMISSION)
-                $diflags = 0;
-            return [self::PAGE_HTML_FULL, $d->link_html('<span class="pavfn">' . htmlspecialchars($this->title) . '</span>', $diflags)];
-        } else
-            return false;
+    function render(FeatureRender $fr, PaperOptionValue $ov) {
+        if (($d = $this->first_document($ov))) {
+            if ($fr->want_text()) {
+                $fr->set_text($d->filename);
+            } else if ($fr->context === FeatureRender::CPAGE) {
+                $dif = 0;
+                if ($this->display() !== self::DISP_SUBMISSION)
+                    $dif = DocumentInfo::L_SMALL;
+                $fr->title = $d->link_html('<span class="pavfn">' . htmlspecialchars($this->title) . '</span>', $dif);
+                $fr->title_format = 5;
+            } else {
+                $fr->set_html($d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
+            }
+        }
     }
 
     function format_spec() {
@@ -1131,20 +1172,11 @@ class NumericPaperOption extends PaperOption {
     function list_display($isrow) {
         return $isrow ? true : ["column" => true, "className" => "pl_option plrd"];
     }
-    private function unparse_value(PaperOptionValue $ov = null) {
-        return $ov && $ov->value !== null ? $ov->value : "";
-    }
-    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
-        return $this->unparse_value($row->option($this->id));
-    }
-    function unparse_list_text(PaperList $pl, PaperInfo $row) {
-        return $this->unparse_value($row->option($this->id));
-    }
-    function unparse_page_html_data(PaperInfo $row, PaperOptionValue $ov) {
-        return $this->unparse_value($ov);
-    }
-    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
-        return $this->unparse_value($ov);
+
+    function render(FeatureRender $fr, PaperOptionValue $ov) {
+        if ($ov->value !== null) {
+            $fr->set_text($ov->value);
+        }
     }
 }
 
@@ -1234,19 +1266,14 @@ class TextPaperOption extends PaperOption {
     function list_display($isrow) {
         return ["row" => true, "className" => "pl_textoption"];
     }
-    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
-        $ov = $row->option($this->id);
-        return $ov ? $this->unparse_html($row, $ov, $pl) : "";
-    }
-    function unparse_list_text(PaperList $pl, PaperInfo $row) {
-        $ov = $row->option($this->id);
-        return (string) ($ov ? $ov->data() : "");
-    }
-    function unparse_page_html_data(PaperInfo $row, PaperOptionValue $ov) {
-        return $this->unparse_html($row, $ov, null);
-    }
-    function unparse_page_text_data(PaperInfo $row, PaperOptionValue $ov) {
-        return (string) $ov->data();
+
+    function render(FeatureRender $fr, PaperOptionValue $ov) {
+        $d = $ov->data();
+        if ($d !== null && $d !== "") {
+            $fr->value = $d;
+            $fr->value_format = $ov->prow->format_of($d);
+            $fr->value_long = true;
+        }
     }
 }
 
@@ -1377,41 +1404,43 @@ class AttachmentsPaperOption extends PaperOption {
     function list_display($isrow) {
         return true;
     }
-    private function unparse_links(PaperOptionValue $ov = null, $diflags) {
-        $links = [];
-        foreach ($ov ? $ov->documents() : [] as $d) {
-            $linkname = htmlspecialchars($d->unique_filename);
-            if ($diflags === 0)
-                $linkname = '<span class="pavfn">' . htmlspecialchars($this->title) . '</span>/' . $linkname;
-            $link = $d->link_html($linkname, $diflags);
-            if ($d->is_archive())
-                $link = '<span class="archive foldc"><a href="" class="ui js-expand-archive qq">' . expander(null, 0) . "</a>&nbsp;" . $link . "</span>";
-            $links[] = $link;
+
+    function render(FeatureRender $fr, PaperOptionValue $ov) {
+        $ts = [];
+        foreach ($ov->documents() as $d) {
+            if ($fr->want_text()) {
+                $ts[] = $d->unique_filename;
+            } else {
+                $linkname = htmlspecialchars($d->unique_filename);
+                if ($fr->want_list()) {
+                    $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
+                } else if ($this->display() !== self::DISP_SUBMISSION) {
+                    $dif = DocumentInfo::L_SMALL;
+                } else {
+                    $dif = 0;
+                    $linkname = '<span class="pavfn">' . htmlspecialchars($this->title) . '</span>/' . $linkname;
+                }
+                $t = $d->link_html($linkname, $dif);
+                if ($d->is_archive()) {
+                    $t = '<span class="archive foldc"><a href="" class="ui js-expand-archive qq">' . expander(null, 0) . '</a> ' . $t . '</span>';
+                }
+                $ts[] = $t;
+            }
         }
-        return $links;
-    }
-    function unparse_list_html(PaperList $pl, PaperInfo $row, $isrow) {
-        $diflags = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
-        $links = $this->unparse_links($row->option($this->id), $diflags);
-        if ($isrow)
-            return join(';&nbsp; ', $links);
-        else
-            return join('', array_map(function ($x) { return "<div>$x</div>"; }, $links));
-    }
-    function unparse_list_text(PaperList $pl, PaperInfo $row) {
-        $ov = $row->option($this->id);
-        $docs = $ov ? $ov->documents() : [];
-        return join('; ', array_map(function ($d) { return $d->unique_filename; }, $docs));
-    }
-    function unparse_page_html(PaperInfo $row, PaperOptionValue $ov) {
-        if ($this->display() === self::DISP_SUBMISSION) {
-            $links = $this->unparse_links($row->option($this->id), 0);
-            array_unshift($links, self::PAGE_HTML_FULL);
-        } else {
-            $links = $this->unparse_links($row->option($this->id), DocumentInfo::L_SMALL);
-            array_unshift($links, self::PAGE_HTML_DATA);
+        if (!empty($ts)) {
+            if ($fr->context === FeatureRender::CPAGE
+                && $this->display() === self::DISP_SUBMISSION) {
+                $fr->title = false;
+            }
+            if ($fr->want_text()) {
+                $fr->set_text(join("; ", $ts));
+            } else if ($fr->context === FeatureRender::CROW
+                       || count($ts) === 1) {
+                $fr->set_html(join("; ", $ts));
+            } else {
+                $fr->set_html("<div>" . join("</div><div>", $ts) . "</div>");
+            }
         }
-        return $links;
     }
 }
 
