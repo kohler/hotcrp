@@ -1082,7 +1082,10 @@ class DocumentPaperOption extends PaperOption {
                 $dif = 0;
                 if ($this->display() !== self::DISP_SUBMISSION)
                     $dif = DocumentInfo::L_SMALL;
-                $fr->title = $d->link_html('<span class="pavfn">' . htmlspecialchars($this->title) . '</span>', $dif);
+                $title = htmlspecialchars($this->title);
+                if ($this->display() !== self::DISP_TOPICS)
+                    $title = '<span class="pavfn">' . $title . '</span>';
+                $fr->title = $d->link_html($title, $dif);
                 $fr->title_format = 5;
             } else {
                 $fr->set_html($d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
