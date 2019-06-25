@@ -784,10 +784,6 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
-    const PAGE_HTML_DATA = 0;
-    const PAGE_HTML_NAME = 1;
-    const PAGE_HTML_FULL = 2;
-
     function render(FeatureRender $fr, PaperOptionValue $ov) {
     }
 
