@@ -2156,8 +2156,8 @@ class PaperTable {
         foreach ($this->conf->paper_opts->feature_list($this->prow) as $o) {
             if (!$o->internal
                 && ($o->id <= 0
-                    || (!$this->prow || get($this->view_options, $o->id)))
-                && (!$this->canUploadFinal || !$o->final))
+                    || get($this->view_options, $o->id))
+                && ($this->canUploadFinal || !$o->final))
                 $this->edit_fields[] = $o;
         }
         usort($this->edit_fields, function ($a, $b) {
