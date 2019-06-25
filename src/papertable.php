@@ -1043,7 +1043,7 @@ class PaperTable {
                 if ($value === "") {
                     $t .= $title;
                 } else if ($value[0] === "<"
-                           && preg_match('{\A((?:<(?:div|p).*?>)*)}', $p, $cm)) {
+                           && preg_match('{\A((?:<(?:div|p).*?>)*)}', $value, $cm)) {
                     $t .= $cm[1] . $title . ': ';
                     $value = substr($value, strlen($cm[1]));
                 } else {
