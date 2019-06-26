@@ -728,7 +728,7 @@ class PaperTable {
         if ($this->prow
             && !$this->entryMatches
             && ($format = $this->prow->format_of($text))) {
-            echo ' need-format" data-format="', $format, '.abs">', $text;
+            echo ' need-format" data-format="', $format, '">', $text;
             Ht::stash_script('$(render_text.on_page)', 'render_on_page');
         } else
             echo ' format0">', Ht::format0($text);

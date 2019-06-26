@@ -462,7 +462,7 @@ class Abstract_PaperColumn extends PaperColumn {
         if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
             $pl->need_render = true;
             $t = '<div class="' . $klass . ' need-format" data-format="'
-                . $format . '.abs.plx">' . $t . '</div>';
+                . $format . '.plx">' . $t . '</div>';
         } else
             $t = '<div class="' . $klass . ' format0">' . Ht::format0($t) . '</div>';
         return $t;
