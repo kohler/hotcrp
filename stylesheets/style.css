@@ -2801,28 +2801,38 @@ ul.x > li:last-child {
 
 /* paper */
 .paperinfo {
-	display: table;
-	table-layout: fixed;
-	width: 100%;
-}
-.paperinfo-row {
-	display: table-row;
-}
-.paperinfo-cl, .paperinfo-cr {
-	width: 50%;
-}
-.paperinfo-cl, .paperinfo-cr, .paperinfo-cb {
-	display: table-cell;
-	vertical-align: top;
-	position: relative;
-}
-.paperinfo-abstract {
+	display: flex;
+	align-items: stretch;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
-	position: relative;
 }
-.fold6c .paperinfo-cl {
-	height: 6.5em;
+.paperinfo-c {
+	flex-basis: 0;
+	flex-grow: 1;
+	padding-right: 1.5rem;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+.paperinfo-i {
+	flex-basis: 0;
+	flex-grow: 0;
+	margin-top: 1em;
+}
+.paperinfo-i:first-child {
+	margin-top: 0;
+}
+.paperinfo-i-abstract {
+	position: relative;
+	flex-basis: 0;
+	flex-grow: 1;
+}
+.paperinfo-c:last-child {
+	padding-right: 0;
+}
+.fold6c .paperinfo-i-abstract {
+	height: 7em;
+	flex-basis: 7em;
 }
 .fold6c .paperinfo-abstract {
 	position: absolute;
@@ -2830,9 +2840,7 @@ ul.x > li:last-child {
 	height: 100%;
 	overflow: hidden;
 }
-.abstract {
-	padding-right: 1.5em;
-}
+
 .pavt {
 	margin: 0 -5px;
 	padding: 0.25em 5px 0.15em;

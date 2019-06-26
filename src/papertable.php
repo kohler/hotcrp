@@ -112,7 +112,8 @@ class PaperTable {
         }
 
         $this->matchPreg = [];
-        if (($list = $this->conf->active_list()) && $list->highlight
+        if (($list = $this->conf->active_list())
+            && $list->highlight
             && preg_match('_\Ap/([^/]*)/([^/]*)(?:/|\z)_', $list->listid, $m)) {
             $hlquery = is_string($list->highlight) ? $list->highlight : urldecode($m[2]);
             $ps = new PaperSearch($user, ["t" => $m[1], "q" => $hlquery]);
@@ -727,7 +728,9 @@ class PaperTable {
         if ($this->allFolded && $this->abstract_foldable($text))
             $extra = ["fold" => "paper", "foldnum" => 6,
                       "foldtitle" => "Toggle full abstract"];
-        echo '<div class="paperinfo-cl"><div class="paperinfo-abstract"><div class="pg">',
+        echo '<div class="paperinfo-c">',
+            '<div class="paperinfo-i paperinfo-i-abstract">',
+            '<div class="paperinfo-abstract"><div class="pg">',
             $this->papt("abstract", $this->conf->_c("paper_field", "Abstract"), $extra),
             '<div class="pavb abstract';
         if ($this->prow
@@ -741,7 +744,7 @@ class PaperTable {
         if ($extra)
             echo '<div class="fn6 fx7 longtext-fader"></div>',
                 '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" data-fold-target="6">[more]</a></div>';
-        echo "</div>\n";
+        echo "</div></div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
         return true;
@@ -2239,9 +2242,9 @@ class PaperTable {
             echo '<p class="xd"><span class="pstat ', $status_info[0], '">',
                 htmlspecialchars($status_info[1]), "</span></p>";
             $this->paptabDownload();
-            echo '<div class="paperinfo"><div class="paperinfo-row">';
+            echo '<div class="paperinfo">';
             $has_abstract = $this->echo_abstract();
-            echo '<div class="paperinfo-c', ($has_abstract ? "r" : "b"), '">';
+            echo '<div class="paperinfo-c"><div class="paperinfo-i">';
             $this->echo_authors(!$this->editable && $this->mode === "edit"
                                 && $prow->timeSubmitted > 0);
             $this->paptabTopicsOptions();

@@ -3,12 +3,16 @@
 /* Copyright (c) 2006-2019 Eddie Kohler; see LICENSE. */
 
 @media screen and (max-width: 1024px) {
-.paperinfo, .paperinfo-row, .paperinfo-cl, .paperinfo-cr, .paperinfo-cb {
+.paperinfo {
 	display: block;
-	width: auto;
 }
-.paperinfo-cr {
-	padding-top: 1em;
+.paperinfo-c {
+	display: block;
+	padding-right: 0;
+	margin-top: 1em;
+}
+.paperinfo-c:first-child {
+	margin-top: 0;
 }
 }
 @media screen and (max-width: 768px) {
