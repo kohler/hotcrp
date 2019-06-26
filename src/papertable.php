@@ -60,6 +60,7 @@ class PaperTable {
 
         if (!$this->prow) {
             $this->mode = "edit";
+            $this->set_view_options();
             return;
         }
 
@@ -100,35 +101,7 @@ class PaperTable {
         if (isset($ms["re"]) && isset($this->qreq->reviewId))
             $this->mode = "re";
 
-        // calculate visibility of authors and options
-        // 0: not visible; 1: fold (admin only); 2: visible
-        $new_overrides = 0;
-        if ($this->allow_admin)
-            $new_overrides |= Contact::OVERRIDE_CONFLICT;
-        if ($this->mode === "edit")
-            $new_overrides |= Contact::OVERRIDE_EDIT_CONDITIONS;
-        $overrides = $user->add_overrides($new_overrides);
-
-        if ($user->can_view_authors($prow))
-            $this->view_authors = 2;
-
-        $olist = $this->conf->paper_opts->feature_list($prow);
-        foreach ($olist as $o) {
-            if ($o->id > 0 && $user->can_view_paper_option($prow, $o))
-                $this->view_options[$o->id] = 2;
-        }
-
-        if ($this->allow_admin) {
-            $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
-            if ($this->view_authors && !$user->can_view_authors($prow))
-                $this->view_authors = 1;
-            foreach ($olist as $o)
-                if (isset($this->view_options[$o->id])
-                    && !$user->can_view_paper_option($prow, $o))
-                    $this->view_options[$o->id] = 1;
-        }
-
-        $user->set_overrides($overrides);
+        $this->set_view_options();
 
         // choose list
         if (!$this->conf->has_active_list())
@@ -148,6 +121,38 @@ class PaperTable {
         }
         if (empty($this->matchPreg))
             $this->matchPreg = null;
+    }
+    private function set_view_options() {
+        // calculate visibility of authors and options
+        // 0: not visible; 1: fold (admin only); 2: visible
+        $new_overrides = 0;
+        if ($this->allow_admin)
+            $new_overrides |= Contact::OVERRIDE_CONFLICT;
+        if ($this->mode === "edit")
+            $new_overrides |= Contact::OVERRIDE_EDIT_CONDITIONS;
+        $overrides = $this->user->add_overrides($new_overrides);
+
+        if ($this->user->can_view_authors($this->_prow))
+            $this->view_authors = 2;
+
+        $olist = $this->conf->paper_opts->feature_list($this->prow);
+        foreach ($olist as $o) {
+            if ($o->id > 0 && $this->user->can_view_paper_option($this->_prow, $o))
+                $this->view_options[$o->id] = 2;
+        }
+
+        if ($this->allow_admin) {
+            $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+            if ($this->view_authors
+                && !$this->user->can_view_authors($this->_prow))
+                $this->view_authors = 1;
+            foreach ($olist as $o)
+                if (isset($this->view_options[$o->id])
+                    && !$this->user->can_view_paper_option($this->_prow, $o))
+                    $this->view_options[$o->id] = 1;
+        }
+
+        $this->user->set_overrides($overrides);
     }
     private function find_session_list($pid) {
         if (($list = SessionList::load_cookie("p"))
