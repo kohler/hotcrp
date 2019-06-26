@@ -125,14 +125,13 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
         if ($xtag === "")
             return "Empty tag.";
-        else if (!preg_match(',\A(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
+        if (!preg_match(',\A(|[^#]*~)([a-zA-Z@*_:.]+[-+a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
             return "“" . htmlspecialchars($tag) . "”: Invalid tag.";
-        else if ($m[3] && $m[4] === "")
+        if ($m[3] && $m[4] === "")
             return "“" . htmlspecialchars($tag) . "”: Tag value missing.";
-        else if ($m[3] && !preg_match(',\A([-+]?(?:\d+(?:\.\d*)?|\.\d+)|any|all|none|clear)\z,', $m[4]))
+        if ($m[3] && !preg_match(',\A([-+]?(?:\d+(?:\.\d*)?|\.\d+)|any|all|none|clear)\z,', $m[4]))
             return "“" . htmlspecialchars($tag) . "”: Tag value should be a number.";
-        else
-            list($m[1], $m[2]) = array($xm[1], $xm[2]);
+        list($m[1], $m[2]) = array($xm[1], $xm[2]);
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
             $m[1] = ($contact->contactId ? : $state->user->contactId) . "~";
         // ignore attempts to change vote tags
