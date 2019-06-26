@@ -1255,26 +1255,6 @@ class TextPaperOption extends PaperOption {
             $ps->error_at_option($this, "Option should be a string.");
     }
 
-    private function unparse_html(PaperInfo $row, PaperOptionValue $ov, PaperList $pl = null) {
-        $d = $ov->data();
-        if ($d === null || $d === "")
-            return "";
-        $klass = "";
-        if ($pl)
-            $klass = strlen($d) > 190 ? "pl_longtext" : "pl_shorttext";
-        if (($format = $row->format_of($d))) {
-            if ($pl)
-                $pl->need_render = true;
-            Ht::stash_script('$(render_text.on_page)', 'render_on_page');
-            return '<div class="' . $klass . ' need-format" data-format="'
-                . $format . ($pl ? '.plx' : '.abs') . '">'
-                . htmlspecialchars($d) . '</div>';
-        } else if ($pl)
-            return '<div class="' . $klass . ' format0">' . Ht::format0($d) . '</div>';
-        else
-            return '<div class="format0">' . Ht::format0($d) . '</div>';
-    }
-
     function list_display($isrow) {
         return ["row" => true, "className" => "pl_textoption"];
     }
