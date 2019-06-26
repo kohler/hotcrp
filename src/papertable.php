@@ -710,7 +710,7 @@ class PaperTable {
         }
     }
 
-    private function paptabAbstract() {
+    private function echo_abstract() {
         $text = $this->entryData("abstract");
         if (trim($text) === "") {
             if ($this->conf->opt("noAbstract"))
@@ -935,7 +935,7 @@ class PaperTable {
         return array($aulist, $contacts);
     }
 
-    private function paptabAuthors($skip_contacts) {
+    private function echo_authors($skip_contacts) {
         if ($this->view_authors == 0) {
             echo '<div class="pg">',
                 $this->papt("authorInformation", $this->conf->_c("paper_field", "Authors", 0)),
@@ -2235,10 +2235,10 @@ class PaperTable {
                 htmlspecialchars($status_info[1]), "</span></p>";
             $this->paptabDownload();
             echo '<div class="paperinfo"><div class="paperinfo-row">';
-            $has_abstract = $this->paptabAbstract();
+            $has_abstract = $this->echo_abstract();
             echo '<div class="paperinfo-c', ($has_abstract ? "r" : "b"), '">';
-            $this->paptabAuthors(!$this->editable && $this->mode === "edit"
-                                 && $prow->timeSubmitted > 0);
+            $this->echo_authors(!$this->editable && $this->mode === "edit"
+                                && $prow->timeSubmitted > 0);
             $this->paptabTopicsOptions();
             echo '</div></div></div>';
         }
