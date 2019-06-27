@@ -529,7 +529,7 @@ class PaperTable {
             return "";
     }
 
-    private function paptabDownload() {
+    private function echo_submission() {
         assert(!$this->editable);
         $prow = $this->prow;
         $out = array();
@@ -564,7 +564,8 @@ class PaperTable {
         }
 
         // conflicts
-        if ($this->user->isPC && !$prow->has_conflict($this->user)
+        if ($this->user->isPC
+            && !$prow->has_conflict($this->user)
             && $this->conf->timeUpdatePaper($prow)
             && $this->mode !== "assign"
             && $this->mode !== "contact"
@@ -720,9 +721,8 @@ class PaperTable {
         $text = $this->entryData("abstract");
         if (trim($text) === "") {
             if ($this->conf->opt("noAbstract"))
-                return false;
-            else
-                $text = "[No abstract]";
+                return;
+            $text = "[No abstract]";
         }
         $extra = [];
         if ($this->allFolded && $this->abstract_foldable($text))
@@ -744,10 +744,9 @@ class PaperTable {
         if ($extra)
             echo '<div class="fn6 fx7 longtext-fader"></div>',
                 '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" data-fold-target="6">[more]</a></div>';
-        echo "</div></div>\n";
+        echo "</div></div>";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
-        return true;
     }
 
     private function editable_author_component_entry($n, $pfx, $au) {
@@ -943,7 +942,7 @@ class PaperTable {
         return array($aulist, $contacts);
     }
 
-    private function echo_authors($skip_contacts) {
+    private function echo_authors() {
         if ($this->view_authors == 0) {
             echo '<div class="pg">',
                 $this->papt("authorInformation", $this->conf->_c("paper_field", "Authors", 0)),
@@ -1006,7 +1005,10 @@ class PaperTable {
         echo "</div></div>\n\n";
 
         // contacts
-        if (count($contacts) > 0 && !$skip_contacts) {
+        if (!empty($contacts)
+            && ($this->editable
+                || $this->mode !== "edit"
+                || $prow->timeSubmitted <= 0)) {
             echo '<div class="pg fx9', ($this->view_authors > 1 ? "" : " fx8"), '">',
                 $this->papt("authorInformation",
                             $this->conf->_c("paper_field", "Contacts", count($contacts))),
@@ -1090,7 +1092,7 @@ class PaperTable {
         return '<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>';
     }
 
-    private function paptabTopicsOptions() {
+    private function echo_topics_options() {
         $topicdata = $this->paptab_topics();
         $optt = $optp = [];
         $optp_nfold = $optt_ndoc = $optt_nfold = 0;
@@ -2241,13 +2243,17 @@ class PaperTable {
             $status_info = $this->user->paper_status_info($this->prow);
             echo '<p class="xd"><span class="pstat ', $status_info[0], '">',
                 htmlspecialchars($status_info[1]), "</span></p>";
-            $this->paptabDownload();
+            $this->echo_submission();
             echo '<div class="paperinfo">';
-            $has_abstract = $this->echo_abstract();
+
+            ob_start();
+            $this->echo_abstract();
+            if (($t = ob_get_clean()) !== "")
+                echo '<div class="paperinfo-c">', $t, '</div>';
+
             echo '<div class="paperinfo-c"><div class="paperinfo-i">';
-            $this->echo_authors(!$this->editable && $this->mode === "edit"
-                                && $prow->timeSubmitted > 0);
-            $this->paptabTopicsOptions();
+            $this->echo_authors();
+            $this->echo_topics_options();
             echo '</div></div></div>';
         }
         $this->echoDivExit();
