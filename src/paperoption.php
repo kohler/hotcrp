@@ -448,6 +448,7 @@ class PaperOption implements Abbreviator {
     public $display_space;
     public $internal;
     private $form_position;
+    private $display_position;
     private $edit_condition;
     private $_ecs;
 
@@ -527,14 +528,26 @@ class PaperOption implements Abbreviator {
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
         if ($this->display === self::DISP_DEFAULT)
             $this->display = $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
+
         $p = get($args, "position");
         if ((is_int($p) || is_float($p))
             && ($this->id <= 0 || $p > 0))
             $this->position = $p;
         else
-            $this->position = 999;
+            $this->position = 499;
 
-        $this->form_position = get_f($args, "form_position");
+        $p = get($args, "form_position");
+        if ($p === null) {
+            if ($this->display === self::DISP_SUBMISSION)
+                $p = 1500 + $this->position;
+            else if ($this->display === self::DISP_PROMINENT)
+                $p = 3500 + $this->position;
+            else
+                $p = 4500 + $this->position;
+        }
+        $this->form_position = $p;
+
+        $this->display_position = get($args, "display_position", $p);
 
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;
@@ -627,16 +640,11 @@ class PaperOption implements Abbreviator {
     function display() {
         return $this->display;
     }
-
     function form_position() {
-        if ($this->form_position)
-            return $this->form_position;
-        else if ($this->display === self::DISP_SUBMISSION)
-            return 1010 + $this->position;
-        else if ($this->display === self::DISP_PROMINENT)
-            return 3010 + $this->position;
-        else
-            return 4010 + $this->position;
+        return $this->form_position;
+    }
+    function display_position() {
+        return $this->display_position;
     }
 
     function edit_condition() {
