@@ -2842,8 +2842,8 @@ ul.x > li:last-child {
 }
 
 .pavt {
-	margin: 0 -5px;
-	padding: 0.25em 5px 0.15em;
+	margin: 0 -5px 0.15em;
+	padding: 0 5px;
 }
 .papfn, .pavfn, .psfn, .revfn {
 	font-weight: bold;
@@ -2889,14 +2889,14 @@ ul.x > li:last-child {
 }
 
 
-.pg {
-	margin-top: 1em;
+.pg, .pgsm {
+	margin-bottom: 1em;
 }
-.pg:first-child {
-	margin-top: 0;
+.pgsm + .pgsm {
+	margin-top: -0.5em;
 }
-.pgsm {
-	margin-top: 0.5em;
+.pg:last-child, .pgsm:last-child {
+	margin-bottom: 0;
 }
 
 /* papers */

@@ -1026,14 +1026,16 @@ class PaperTable {
             return "";
         }
 
-        $aufold = $this->view_options[$o->id] == 1;
         if ($o->display() === PaperOption::DISP_SUBMISSION) {
-            $t = '<div class="xd'. ($aufold ? " fx8" : "") . '">';
+            $class = "xd";
         } else if ($o->display() !== PaperOption::DISP_TOPICS) {
-            $t = '<div class="pgsm' . ($aufold ? " fx8" : "") . '">';
+            $class = $fr->value_long ? "pg" : "pgsm";
         } else {
-            $t = '<div' . ($aufold ? ' class="fx8"' : "") . '>';
+            $class = "";
         }
+        if (($aufold = $this->view_options[$o->id] == 1))
+            $class .= " fx8";
+        $t = $class === "" ? '<div>' : '<div class="' . ltrim($class) . '">';
         $et = '</div>';
 
         $value = $fr->value_html();
@@ -1119,8 +1121,7 @@ class PaperTable {
         }
 
         if (!empty($optp)) {
-            $div = count($optp) === $optp_nfold ? '<div class="pg fx8">' : '<div class="pg">';
-            echo $div, join("", $optp), "</div>\n";
+            echo join("", $optp);
         }
 
         if ($topicdata !== "" || !empty($optt)) {
