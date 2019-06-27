@@ -321,7 +321,10 @@ class PaperTable {
     }
 
     private function editable_papt($what, $heading, $extra = [], PaperOption $opt = null) {
-        $for = get($extra, "for", false);
+        if ($opt && !isset($extra["for"]))
+            $for = $opt->readable_formid;
+        else
+            $for = get($extra, "for", false);
         $t = '<div class="papeg';
         if ($opt && $opt->edit_condition()) {
             $t .= ' has-edit-condition';

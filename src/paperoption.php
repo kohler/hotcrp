@@ -940,7 +940,7 @@ class SelectorPaperOption extends PaperOption {
         $pt->echo_editable_option_papt($this, null,
             $this->type === "selector"
             ? ["for" => $this->readable_formid]
-            : ["id" => $this->readable_formid]);
+            : ["id" => $this->readable_formid, "for" => false]);
         echo '<div class="papev">';
         if ($this->type === "selector") {
             $sel = [];
@@ -1169,7 +1169,7 @@ class NumericPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = (string) ($reqv === null ? $ov->value : $reqv);
-        $pt->echo_editable_option_papt($this, null, ["for" => $this->readable_formid]);
+        $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
             Ht::entry($this->formid, $reqv, ["id" => $this->readable_formid, "size" => 8, "class" => "js-autosubmit" . $pt->has_error_class($this->formid), "data-default-value" => $ov->value]),
             $pt->messages_at($this->formid),
@@ -1248,7 +1248,7 @@ class TextPaperOption extends PaperOption {
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $reqv = (string) ($reqv === null ? $ov->data() : $reqv);
-        $pt->echo_editable_option_papt($this, null, ["for" => $this->readable_formid]);
+        $pt->echo_editable_option_papt($this);
         $fi = $pt->prow ? $pt->prow->edit_format() : $pt->conf->format_info(null);
         echo '<div class="papev">',
             ($fi ? $fi->description_preview_html() : ""),
@@ -1350,7 +1350,7 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid]);
+        $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid, "for" => false]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" id="', $this->formid, '_attachments">';
         foreach ($ov->documents() as $i => $doc) {
             $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
