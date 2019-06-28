@@ -2844,7 +2844,7 @@ ul.x > li:last-child {
 .papfn, .pavfn, .psfn, .revfn {
 	font-weight: bold;
 }
-.papt .papfn, .papet .papfn, .pavt .pavfn {
+.papet .papfn, .pavt .pavfn {
 	float: left;
 }
 .papet {
@@ -2856,9 +2856,6 @@ ul.x > li:last-child {
 	font-weight: normal;
 	text-transform: none;
 	color: #555555;
-}
-.papt span.hint {
-	float: right;
 }
 .longtext-fader {
 	z-index: 1;
