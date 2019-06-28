@@ -5,8 +5,14 @@
         "type": "intrinsic", "intrinsic_callback": "echo_editable_title"
     },
     {
+        "name": "submission_version", "id": -1008,
+        "title": "Submission version", "form_position": false, "display_position": 1999,
+        "type": "intrinsic", "intrinsic_callback": null
+    },
+    {
         "name": "abstract", "json_key": "abstract", "id": -1004,
-        "title": "Abstract", "form_position": 2001, "display_space": 5,
+        "title": "Abstract",
+        "form_position": 2001, "display_space": 5, "display_expand": true,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_abstract"
     },
     {
@@ -16,17 +22,20 @@
     },
     {
         "name": "blind", "json_key": "blind", "id": -1002,
-        "title": "Anonymous submission", "form_position": 3002,
+        "title": "Anonymous submission",
+        "form_position": 3002, "display_position": false,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_anonymity"
     },
     {
         "name": "contacts", "json_key": "contacts", "id": -1003,
-        "title": "Contacts", "form_position": 3003,
+        "title": "Contacts",
+        "form_position": 3003, "display_position": false,
         "type": "intrinsic", "intrinsic_callback": "echo_editable_contact_author"
     },
     {
         "name": "topics", "json_key": "topics", "id": -1005,
-        "title": "Topics", "form_position": 4001,
+        "title": "Topics",
+        "form_position": 4001, "display_group": "topics",
         "type": "intrinsic", "intrinsic_callback": "echo_editable_topics"
     },
     {

@@ -494,38 +494,12 @@ class PaperTable {
             return "";
     }
 
-    private function echo_submission() {
+    function render_submission(FeatureRender $fr, $o) {
         assert(!$this->editable);
         $prow = $this->prow;
-        $out = array();
-
-        // download
-        if ($this->user->can_view_pdf($prow)) {
-            $dprefix = "";
-            $dtype = $prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
-            if (($doc = $prow->document($dtype)) && $doc->paperStorageId > 1) {
-                if (($stamps = self::pdf_stamps_html($doc)))
-                    $stamps = '<span class="sep"></span>' . $stamps;
-                if ($dtype == DTYPE_FINAL)
-                    $dname = $this->conf->_c("paper_field", "Final version");
-                else if ($prow->timeSubmitted != 0)
-                    $dname = $this->conf->_c("paper_field", "Submission");
-                else
-                    $dname = $this->conf->_c("paper_field", "Draft submission");
-                $out[] = '<p class="pgsm">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
-            }
-
-            foreach ($prow ? $prow->options() : [] as $ov) {
-                $o = $ov->option;
-                if ($o->display() === PaperOption::DISP_SUBMISSION
-                    && ($oh = $this->unparse_option_html($ov)) !== false) {
-                    $out[] = $oh[1];
-                }
-            }
-
-            if ($prow->finalPaperStorageId > 1 && $prow->paperStorageId > 1)
-                $out[] = '<p class="pgsm"><small>' . $prow->document(DTYPE_SUBMISSION)->link_html("Submission version", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>";
-        }
+        $fr->title = false;
+        $fr->value = "";
+        $fr->value_format = 5;
 
         // conflicts
         if ($this->user->isPC
@@ -534,9 +508,33 @@ class PaperTable {
             && $this->mode !== "assign"
             && $this->mode !== "contact"
             && $prow->outcome >= 0)
-            $out[] = Ht::msg('The authors still have <a href="' . hoturl("deadlines") . '">time</a> to make changes.', 1);
+            $fr->value .= Ht::msg('The authors still have <a href="' . $this->conf->hoturl("deadlines") . '">time</a> to make changes.', 1);
 
-        echo join("", $out);
+        // download
+        if ($this->user->can_view_pdf($prow)) {
+            $dprefix = "";
+            $dtype = $prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
+            if (($doc = $prow->document($dtype))
+                && $doc->paperStorageId > 1) {
+                if (($stamps = self::pdf_stamps_html($doc)))
+                    $stamps = '<span class="sep"></span>' . $stamps;
+                if ($dtype == DTYPE_FINAL)
+                    $dname = $this->conf->_c("paper_field", "Final version");
+                else
+                    $dname = $this->conf->_c("paper_field", "Submission", $prow->timeSubmitted != 0);
+                $fr->value .= '<p class="pgsm">' . $dprefix . $doc->link_html('<span class="pavfn">' . htmlspecialchars($dname) . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
+            }
+        }
+    }
+
+    function render_submission_version(FeatureRender $fr, $o) {
+        if ($this->user->can_view_pdf($this->prow)
+            && $this->prow->finalPaperStorageId > 1
+            && $this->prow->paperStorageId > 1) {
+            $fr->title = false;
+            $dname = $this->conf->_c("paper_field", "Submission version");
+            $fr->set_html('<p class="pgsm"><small>' . $this->prow->document(DTYPE_SUBMISSION)->link_html(htmlspecialchars($dname), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>");
+        }
     }
 
     private function is_ready($checkbox) {
@@ -681,7 +679,10 @@ class PaperTable {
         }
     }
 
-    private function echo_abstract() {
+    function render_abstract(FeatureRender $fr, PaperOption $o) {
+        $fr->title = false;
+        $fr->value_format = 5;
+
         $text = $this->entryData("abstract");
         if (trim($text) === "") {
             if ($this->conf->opt("noAbstract"))
@@ -692,25 +693,21 @@ class PaperTable {
         if ($this->allFolded && $this->abstract_foldable($text))
             $extra = ["fold" => "paper", "foldnum" => 6,
                       "foldtitle" => "Toggle full abstract"];
-        echo '<div class="paperinfo-c">',
-            '<div class="paperinfo-i paperinfo-i-abstract">',
-            '<div class="paperinfo-abstract"><div class="pg">',
-            $this->papt("abstract", $this->conf->_c("paper_field", "Abstract"), $extra),
-            '<div class="pavb abstract';
+        $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
+            . $this->papt("abstract", $this->conf->_c("paper_field", $o->title), $extra)
+            . '<div class="pavb abstract';
         if ($this->prow
             && !$this->entryMatches
             && ($format = $this->prow->format_of($text))) {
-            echo ' need-format" data-format="', $format, '">', $text;
+            $fr->value .= ' need-format" data-format="' . $format . '">' . $text;
             Ht::stash_script('$(render_text.on_page)', 'render_on_page');
         } else
-            echo ' format0">', Ht::format0($text);
-        echo "</div></div></div>";
+            $fr->value .= ' format0">' . Ht::format0($text);
+        $fr->value .= "</div></div></div>";
         if ($extra)
-            echo '<div class="fn6 fx7 longtext-fader"></div>',
-                '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" data-fold-target="6">[more]</a></div>';
-        echo "</div></div>";
-        if ($extra)
-            echo Ht::unstash_script("render_text.on_page()");
+            $fr->value .= '<div class="fn6 fx7 longtext-fader"></div>'
+                . '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" data-fold-target="6">[more]</a></div>'
+                . Ht::unstash_script("render_text.on_page()");
     }
 
     private function editable_author_component_entry($n, $pfx, $au) {
@@ -906,13 +903,16 @@ class PaperTable {
         return array($aulist, $contacts);
     }
 
-    private function echo_authors() {
+    function render_authors(FeatureRender $fr, PaperOption $o) {
+        $fr->title = false;
+        $fr->value_format = 5;
+
         $vas = $this->user->view_authors_state($this->_prow);
         if ($vas === 0) {
-            echo '<div class="pg">',
-                $this->papt("authorInformation", $this->conf->_c("paper_field", "Authors", 0)),
-                '<div class="pavb"><i>Hidden for blind review</i></div>',
-                "</div>\n\n";
+            $fr->value = '<div class="pg">'
+                . $this->papt("authorInformation", $this->conf->_c("paper_field", $o->title, 0))
+                . '<div class="pavb"><i>Hidden for blind review</i></div>'
+                . "</div>\n\n";
             return;
         }
 
@@ -920,7 +920,7 @@ class PaperTable {
         list($aulist, $contacts) = $this->_analyze_authors();
 
         // "author" or "authors"?
-        $auname = $this->conf->_c("paper_field", "Authors", count($aulist));
+        $auname = $this->conf->_c("paper_field", $o->title, count($aulist));
         if ($vas === 1) {
             $auname .= " (deblinded)";
         } else if ($this->user->act_author_view($this->prow)) {
@@ -933,128 +933,59 @@ class PaperTable {
         }
 
         // header with folding
-        echo '<div class="pg">',
-            '<div class="', $this->control_class("authors", "pavt ui js-aufoldup"),
-            '"><span class="pavfn">';
+        $fr->value = '<div class="pg">'
+            . '<div class="'
+            . $this->control_class("authors", "pavt ui js-aufoldup")
+            . '"><span class="pavfn">';
         if ($vas === 1 || $this->allFolded)
-            echo '<a class="q ui js-aufoldup" href="" title="Toggle author display" role="button" aria-expanded="', $this->foldmap[8] ? "false" : "true", '">';
+            $fr->value .= '<a class="q ui js-aufoldup" href="" title="Toggle author display" role="button" aria-expanded="' . ($this->foldmap[8] ? "false" : "true") . '">';
         if ($vas === 1)
-            echo '<span class="fn8">', $this->conf->_c("paper_field", "Authors", 0), '</span><span class="fx8">';
+            $fr->value .= '<span class="fn8">' . $this->conf->_c("paper_field", $o->title, 0) . '</span><span class="fx8">';
         if ($this->allFolded)
-            echo expander(null, 9);
+            $fr->value .= expander(null, 9);
         else if ($vas === 1)
-            echo expander(false);
-        echo $auname;
+            $fr->value .= expander(false);
+        $fr->value .= $auname;
         if ($vas === 1)
-            echo '</span>';
+            $fr->value .= '</span>';
         if ($vas === 1 || $this->allFolded)
-            echo '</a>';
-        echo '</span></div>';
+            $fr->value .= '</a>';
+        $fr->value .= '</span></div>';
 
         // contents
-        echo '<div class="pavb">';
+        $fr->value .= '<div class="pavb">';
         if ($vas === 1)
-            echo '<a class="q fn8 ui js-aufoldup" href="" title="Toggle author display">',
-                '+&nbsp;<i>Hidden for blind review</i>',
-                '</a><div class="fx8">';
+            $fr->value .= '<a class="q fn8 ui js-aufoldup" href="" title="Toggle author display">'
+                . '+&nbsp;<i>Hidden for blind review</i>'
+                . '</a><div class="fx8">';
         if ($this->allFolded)
-            echo '<div class="fn9">',
-                $this->authorData($aulist, "last", null),
-                ' <a class="ui js-aufoldup" href="">[details]</a>',
-                '</div><div class="fx9">';
-        echo $this->authorData($aulist, "col", $this->user);
+            $fr->value .= '<div class="fn9">'
+                . $this->authorData($aulist, "last", null)
+                . ' <a class="ui js-aufoldup" href="">[details]</a>'
+                . '</div><div class="fx9">';
+        $fr->value .= $this->authorData($aulist, "col", $this->user);
         if ($this->allFolded)
-            echo '</div>';
+            $fr->value .= '</div>';
         if ($vas === 1)
-            echo '</div>';
-        echo "</div></div>\n\n";
+            $fr->value .= '</div>';
+        $fr->value .= "</div></div>\n\n";
 
         // contacts
         if (!empty($contacts)
             && ($this->editable
                 || $this->mode !== "edit"
                 || $prow->timeSubmitted <= 0)) {
-            echo '<div class="pg fx9', ($vas > 1 ? "" : " fx8"), '">',
-                $this->papt("authorInformation",
-                            $this->conf->_c("paper_field", "Contacts", count($contacts))),
-                '<div class="pavb">',
-                $this->authorData($contacts, "col", $this->user),
-                "</div></div>\n\n";
+            $fr->value .= '<div class="pg fx9' . ($vas > 1 ? "" : " fx8") . '">'
+                . $this->papt("authorInformation", $this->conf->_c("paper_field", "Contacts", count($contacts)))
+                . '<div class="pavb">'
+                . $this->authorData($contacts, "col", $this->user)
+                . "</div></div>\n\n";
         }
     }
 
-    private function unparse_option_html(PaperOptionValue $ov) {
-        $o = $ov->option;
-        $vos = $this->user->view_option_state($this->_prow, $o);
-        if ($vos === 0) {
-            return false;
-        }
-
-        $fr = new FeatureRender($this->user, FeatureRender::CPAGE);
-        $o->render($fr, $ov);
-        if ($fr->is_empty()) {
-            return false;
-        }
-
-        $value = $fr->value_html();
-        if ($fr->title === false) {
-            return [$vos, $value];
-        }
-
-        if ($fr->title === null) {
-            $fr->title = $this->conf->_c("paper_field", $o->title);
-        }
-        $title = htmlspecialchars($fr->title);
-        $value = $fr->value_html();
-
-        if ($title !== "") {
-            if ($o->display() === PaperOption::DISP_SUBMISSION) {
-                $t = '<span class="pavfn">' . $title . '</span>';
-            } else if ($o->display() !== PaperOption::DISP_TOPICS) {
-                $t = '<div class="pavt"><span class="pavfn">' . $title . '</span></div>';
-            } else {
-                if ($value === "") {
-                    $t = $title;
-                } else if ($value[0] === "<"
-                           && preg_match('{\A((?:<(?:div|p).*?>)*)}', $value, $cm)) {
-                    $t = $cm[1] . $title . ': ';
-                    $value = substr($value, strlen($cm[1]));
-                } else {
-                    $t = $title . ': ';
-                }
-            }
-        } else {
-            $t = "";
-        }
-
-        if ($o->display() !== PaperOption::DISP_TOPICS) {
-            $class = $fr->value_long ? "pg" : "pgsm";
-        } else {
-            $class = $fr->value_long ? "" : "od";
-        }
-        if ($vos === 1) {
-            $class = ltrim($class . " fx8");
-        }
-        $classx = $class === "" ? "" : " class=\"{$class}\"";
-
-        if ($value !== "") {
-            if ($o->display() !== PaperOption::DISP_TOPICS) {
-                $t = "<div{$classx}>{$t}<div class=\"pavb\">{$value}</div></div>";
-            } else if ($classx !== "" || !str_starts_with($t, '<div')) {
-                $t = "<div{$classx}>{$t}{$value}</div>";
-            } else {
-                $t .= $value;
-            }
-        } else {
-            $t = "<p{$classx}>{$t}</p>";
-        }
-
-        return [$vos, $t];
-    }
-
-    private function paptab_topics() {
+    function render_topics(FeatureRender $fr, $o) {
         if (!($tmap = $this->prow->topic_map()))
-            return "";
+            return;
         $interests = $this->user->topic_interest_map();
         $lenclass = count($tmap) < 4 ? "long" : "short";
         $topics = $this->conf->topic_set();
@@ -1069,77 +1000,225 @@ class PaperTable {
             $ts[] = $t . '">' . $x . '</li>';
             $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
         }
-        return '<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>';
+        $fr->title = $this->conf->_c("paper_field", $o->title, count($ts));
+        $fr->set_html('<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>');
+        $fr->value_long = true;
     }
 
-    private function echo_topics_options() {
-        $topicdata = $this->paptab_topics();
-        $optt = $optp = [];
-        $optp_nfold = $optt_ndoc = $optt_nfold = 0;
+    private function clean_render($fr, $o, $vos) {
+        if ($fr->title === false) {
+            assert($fr->value_format === 5);
+            return;
+        }
 
-        foreach ($this->prow->options() as $ov) {
-            $o = $ov->option;
-            if ($o->display() !== PaperOption::DISP_SUBMISSION
-                && $o->display() >= 0
-                && ($oh = $this->unparse_option_html($ov)) !== false) {
-                if ($o->display() === PaperOption::DISP_TOPICS) {
-                    $optt[] = $oh[1];
-                    if ($oh[0] === 1)
-                        ++$optt_nfold;
-                    if ($o->has_document())
-                        ++$optt_ndoc;
-                } else {
-                    $optp[] = $oh[1];
-                    if ($oh[0] === 1)
-                        ++$optp_nfold;
+        if ($fr->title === null) {
+            $fr->title = $this->conf->_c("paper_field", $o->title);
+            $fr->title_format = 0;
+        }
+
+        $fr->value = $fr->value_html();
+        $fr->value_format = 5;
+
+        if ($fr->title !== "" && $o->display_group && !$fr->value_long) {
+            $title = htmlspecialchars($fr->title);
+            if ($fr->value === "") {
+                $fr->value = '<span class="pavfn">' . $title . '</span>';
+            } else if ($fr->value[0] === "<"
+                       && preg_match('{\A((?:<(?:div|p).*?>)*)}', $fr->value, $cm)) {
+                $fr->value = $cm[1] . '<span class="pavfn">' . $title
+                    . ':</span> ' . substr($fr->value, strlen($cm[1]));
+            } else {
+                $fr->value = '<span class="pavfn">' . $title . ':</span> ' . $fr->value;
+            }
+            $fr->title = "";
+        }
+    }
+
+    private function _group_name_html($renders, $first, $last, $vos) {
+        $group_names = [];
+        $group_flags = 0;
+        for ($i = $first; $i !== $last; ++$i) {
+            if ($renders[$i][1] >= $vos) {
+                $o = $renders[$i][0];
+                $group_names[] = $this->conf->_c("paper_field", $o->title);
+                if ($o->id === -1005)
+                    $group_flags |= 1;
+                else if ($o->has_document())
+                    $group_flags |= 2;
+                else
+                    $group_flags |= 4;
+            }
+        }
+        $group_types = [];
+        if ($group_flags & 1)
+            $group_types[] = "Topics";
+        if ($group_flags & 2)
+            $group_types[] = "Attachments";
+        if ($group_flags & 4)
+            $group_types[] = "Options";
+        return htmlspecialchars($this->conf->_c("paper_field_group", $renders[$first][0]->display_group, commajoin($group_names), commajoin($group_types)));
+    }
+
+    private function _echo_normal_body() {
+        $status_info = $this->user->paper_status_info($this->prow);
+        echo '<p class="pgsm"><span class="pstat ', $status_info[0], '">',
+            htmlspecialchars($status_info[1]), "</span></p>";
+
+        $features = [];
+        foreach ($this->conf->paper_opts->feature_list($this->prow) as $o) {
+            if (!$o->internal
+                && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
+                && $o->display_position() !== false
+                && $o->display_position() >= 1000
+                && $o->display_position() < 5000)
+                $features[] = $o;
+        }
+        usort($features, function ($a, $b) {
+            $ap = $a->display_position();
+            $bp = $b->display_position();
+            if ($ap != $bp)
+                return $ap < $bp ? -1 : 1;
+            else
+                return Conf::xt_position_compare($a, $b);
+        });
+
+        $fr = new FeatureRender($this->user, FeatureRender::CPAGE);
+        $fr->table = $this;
+
+        $renders = [];
+        foreach ($features as $o) {
+            $vos = $this->user->view_option_state($this->_prow, $o);
+            if ($vos === 0)
+                continue;
+
+            $fr->clear();
+            $ov = $this->_prow->option($o->id);
+            $ov = $ov ? : new PaperOptionValue($this->prow, $o);
+            $o->render($fr, $ov);
+            if ($fr->is_empty())
+                continue;
+
+            $this->clean_render($fr, $o, $vos);
+            $renders[] = [$o, $vos, $fr->title, $fr->value, $fr->value_long];
+        }
+
+        $lasto1 = null;
+        $in_paperinfo_i = false;
+        for ($first = 0; $first !== count($renders); $first = $last) {
+            // compute size of group
+            $o1 = $renders[$first][0];
+            $last = $first + 1;
+            if ($o1->display_group !== null && $this->allFolded) {
+                while ($last !== count($renders)
+                       && $renders[$last][0]->display_group === $o1->display_group) {
+                    ++$last;
                 }
             }
+
+            $nvos1 = 0;
+            for ($i = $first; $i !== $last; ++$i) {
+                if ($renders[$i][1] === 1) {
+                    ++$nvos1;
+                }
+            }
+
+            // change column
+            if ($o1->display_position() >= 2000) {
+                if (!$lasto1 || $lasto1->display_position() < 2000) {
+                    echo '<div class="paperinfo"><div class="paperinfo-c">';
+                } else if ($o1->display_position() >= 3000
+                           && $lasto1->display_position() < 3000) {
+                    if ($in_paperinfo_i) {
+                        echo '</div>'; // paperinfo-i
+                        $in_paperinfo_i = false;
+                    }
+                    echo '</div><div class="paperinfo-c">';
+                }
+                if ($o1->display_expand) {
+                    if ($in_paperinfo_i) {
+                        echo '</div>';
+                        $in_paperinfo_i = false;
+                    }
+                    echo '<div class="paperinfo-i paperinfo-i-expand">';
+                } else if (!$in_paperinfo_i) {
+                    echo '<div class="paperinfo-i">';
+                    $in_paperinfo_i = true;
+                }
+            }
+
+            // echo start of group
+            if ($o1->display_group !== null && $this->allFolded) {
+                if ($nvos1 === 0 || $nvos1 === $last - $first) {
+                    $group_html = $this->_group_name_html($renders, $first, $last, $nvos1 === 0 ? 2 : 1);
+                } else {
+                    $group_html = $this->_group_name_html($renders, $first, $last, 2);
+                    $gn1 = $this->_group_name_html($renders, $first, $last, 1);
+                    if ($group_html !== $gn1)
+                        $group_html = '<span class="fn8">' . $group_html . '</span><span class="fx8">' . $gn1 . '</span>';
+                }
+
+                $class = "pg";
+                if ($nvos1 === $last - $first)
+                    $class .= " fx8";
+                $foldnum = $o1->display_group === "topics" ? 5 : 10 + $o1->id;
+                if ($renders[$first][2] !== "") {
+                    $group_html = '<span class="fn' . $foldnum . '">'
+                        . $group_html . '</span><span class="fx' . $foldnum
+                        . '">' . $renders[$first][2] . '</span>';
+                    $renders[$first][2] = false;
+                    $renders[$first][3] = '<div class="'
+                        . ($renders[$first][4] ? "pg" : "pgsm")
+                        . ' pavb">' . $renders[$first][3] . '</div>';
+                }
+                echo '<div class="', $class, '">',
+                    '<div class="pavt ui js-foldup" data-fold-target="', $foldnum, '">',
+                    '<span class="pavfn">',
+                    '<a class="q ui js-foldup" href="" data-fold-target="', $foldnum, '" title="Toggle visibility" role="button" aria-expanded="',
+                    $this->foldmap[$foldnum] ? "false" : "true",
+                    '">', expander(null, $foldnum),
+                    $group_html,
+                    '</a></span></div><div class="pg fx', $foldnum, '">';
+            }
+
+            // echo contents
+            for ($i = $first; $i !== $last; ++$i) {
+                $x = $renders[$i];
+                $class = $x[4] ? "pg" : "pgsm";
+                if ($x[3] === "" || ($x[2] === "" && preg_match('{\A(?:[^<]|<a|<span)}', $x[3])))
+                    $class .= " outdent";
+                if ($x[1] === 1)
+                    $class .= " fx8";
+                if ($x[2] === false) {
+                    echo $x[3];
+                } else if ($x[2] === "") {
+                    echo '<div class="', $class, '">', $x[3], '</div>';
+                } else if ($x[3] === "") {
+                    echo '<div class="', $class, '"><span class="pavfn">', $x[2], '</span></div>';
+                } else {
+                    echo '<div class="', $class, '"><div class="pavt"><span class="pavfn">', $x[2], '</span></div><div class="pavb">', $x[3], '</div></div>';
+                }
+            }
+
+            // echo end of group
+            if ($o1->display_group !== null && $this->allFolded) {
+                echo '</div></div>';
+            }
+            if ($o1->display_position() >= 2000
+                && $o1->display_expand) {
+                echo '</div>';
+            }
+            $lasto1 = $o1;
         }
 
-        if (!empty($optp)) {
-            echo join("", $optp);
+        // close out display
+        if ($in_paperinfo_i) {
+            echo '</div>';
         }
-
-        if ($topicdata !== "" || !empty($optt)) {
-            $infotypes = array();
-            if ($optt_ndoc > 0)
-                $infotypes[] = "Attachments";
-            if (count($optt) !== $optt_ndoc)
-                $infotypes[] = "Options";
-            $options_name = commajoin($infotypes);
-            if ($topicdata !== "")
-                array_unshift($infotypes, "Topics");
-            $tanda = commajoin($infotypes);
-
-            if ($this->allFolded) {
-                $extra = array("fold" => "paper", "foldnum" => 5,
-                               "foldtitle" => "Toggle " . strtolower($tanda));
-                $eclass = " fx5";
-            } else {
-                $extra = null;
-                $eclass = "";
-            }
-
-            if ($topicdata !== "") {
-                echo '<div class="pg">',
-                    $this->papt("topics", array("Topics", $tanda), $extra),
-                    '<div class="pg pavb', $eclass, '">', $topicdata, "</div>";
-                $extra = null;
-                $tanda = $options_name;
-            }
-
-            if (!empty($optt)) {
-                echo '<div class="pg', ($extra ? "" : $eclass),
-                    (count($optt) === $optt_nfold ? " fx8" : ""), '">',
-                    $this->papt("options", array($options_name, $tanda), $extra),
-                    "<div class=\"pavb$eclass\">", join("", $optt), "</div></div>\n";
-            }
-
-            if ($topicdata !== "") {
-                echo "</div>\n\n";
-            }
+        if ($lasto1 && $lasto1->display_position() >= 2000) {
+            echo '</div></div>';
         }
     }
+
 
     private function editable_newcontact_row($num) {
         if ($num === '$') {
@@ -2148,16 +2227,17 @@ class PaperTable {
         foreach ($this->conf->paper_opts->feature_list($this->prow) as $o) {
             if (!$o->internal
                 && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
-                && ($this->canUploadFinal || !$o->final))
+                && ($this->canUploadFinal || !$o->final)
+                && $o->form_position() !== false)
                 $this->edit_fields[] = $o;
         }
         usort($this->edit_fields, function ($a, $b) {
             $ap = $a->form_position();
             $bp = $b->form_position();
-            if ($ap == $bp)
-                return $a->id - $b->id;
-            else
+            if ($ap != $bp)
                 return $ap < $bp ? -1 : 1;
+            else
+                return Conf::xt_position_compare($a, $b);
         });
 
         if (($m = $this->_edit_message()))
@@ -2215,26 +2295,14 @@ class PaperTable {
                 echo '</div><div class="js-clickthrough-body hidden">';
                 $this->_echo_editable_body();
                 echo '</div></div>';
-            } else
+            } else {
                 $this->_echo_editable_body();
+            }
         } else {
-            if ($this->mode === "edit" && ($m = $this->_edit_message()))
+            if ($this->mode === "edit" && ($m = $this->_edit_message())) {
                 echo $m, "<hr class=\"g\">\n";
-            $status_info = $this->user->paper_status_info($this->prow);
-            echo '<p class="pgsm"><span class="pstat ', $status_info[0], '">',
-                htmlspecialchars($status_info[1]), "</span></p>";
-            $this->echo_submission();
-            echo '<div class="paperinfo">';
-
-            ob_start();
-            $this->echo_abstract();
-            if (($t = ob_get_clean()) !== "")
-                echo '<div class="paperinfo-c">', $t, '</div>';
-
-            echo '<div class="paperinfo-c"><div class="paperinfo-i">';
-            $this->echo_authors();
-            $this->echo_topics_options();
-            echo '</div></div></div>';
+            }
+            $this->_echo_normal_body();
         }
         $this->echoDivExit();
 

@@ -91,6 +91,7 @@ class PaperOptionValue {
 
 class FeatureRender {
     public $user;
+    public $table;
     public $context;
     public $title;
     public $value;
@@ -177,7 +178,7 @@ class PaperOptionList {
     private $_adding_fixed;
 
     const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","title":"Submission","message_title":"submission","form_position":1001,"type":"document"}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","message_title":"final version","form_position":1002,"type":"document"}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","message_title":"final version","form_position":1002,"display_position":false,"type":"document"}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -441,6 +442,8 @@ class PaperOption implements Abbreviator {
     public $nonpaper;
     public $visibility; // "rev", "nonblind", "admin"
     private $display;
+    public $display_expand;
+    public $display_group;
     public $display_space;
     public $internal;
     private $form_position;
@@ -544,6 +547,13 @@ class PaperOption implements Abbreviator {
         $this->form_position = $p;
 
         $this->display_position = get($args, "display_position", $p);
+        $this->display_expand = !!get($args, "display_expand");
+        $this->display_group = get($args, "display_group");
+        if ($this->display_group === null
+            && $this->display_position >= 4000
+            && $this->display_position < 5000) {
+            $this->display_group = "topics";
+        }
 
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;
@@ -1091,7 +1101,9 @@ class DocumentPaperOption extends PaperOption {
         return $d;
     }
     function render(FeatureRender $fr, PaperOptionValue $ov) {
-        if (($d = $this->first_document($ov))) {
+        if ($this->id <= 0 && $fr->context === FeatureRender::CPAGE) {
+            $fr->table->render_submission($fr, $this);
+        } else if (($d = $this->first_document($ov))) {
             if ($fr->want_text()) {
                 $fr->set_text($d->filename);
             } else if ($fr->context === FeatureRender::CPAGE) {
@@ -1456,6 +1468,17 @@ class IntrinsicPaperOption extends PaperOption {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
         $f = $this->intrinsic_callback;
         $pt->$f();
+    }
+    function render(FeatureRender $fr, PaperOptionValue $ov) {
+        assert($fr->context === FeatureRender::CPAGE && $fr->table !== null);
+        if ($this->id === -1004)
+            $fr->table->render_abstract($fr, $this);
+        else if ($this->id === -1001)
+            $fr->table->render_authors($fr, $this);
+        else if ($this->id === -1005)
+            $fr->table->render_topics($fr, $this);
+        else if ($this->id === -1008)
+            $fr->table->render_submission_version($fr, $this);
     }
 }
 

@@ -2813,12 +2813,12 @@ ul.x > li:last-child {
 .paperinfo-i {
 	flex-basis: 0;
 	flex-grow: 0;
-	margin-top: 1em;
+	margin-bottom: 1em;
 }
-.paperinfo-i:first-child {
-	margin-top: 0;
+.paperinfo-i:last-child {
+	margin-bottom: 0;
 }
-.paperinfo-i-abstract {
+.paperinfo-i-expand {
 	position: relative;
 	flex-basis: 0;
 	flex-grow: 1;
@@ -2826,7 +2826,7 @@ ul.x > li:last-child {
 .paperinfo-c:last-child {
 	padding-right: 0;
 }
-.fold6c .paperinfo-i-abstract {
+.fold6c .paperinfo-i-expand {
 	height: 7em;
 	flex-basis: 7em;
 }
@@ -2844,7 +2844,7 @@ ul.x > li:last-child {
 .papfn, .pavfn, .psfn, .revfn {
 	font-weight: bold;
 }
-.papet .papfn, .pavt .pavfn {
+.papet .papfn {
 	float: left;
 }
 .papet {
@@ -2885,7 +2885,7 @@ ul.x > li:last-child {
 .pg, .pgsm {
 	margin-bottom: 1em;
 }
-p.pg, p.pgsm {
+.outdent {
 	margin-left: 1.5em;
 	text-indent: -1.5em;
 }
