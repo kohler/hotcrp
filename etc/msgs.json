@@ -31,6 +31,7 @@
     ["paper_field", "Contacts", "Contact", ["$1=1"]],
     ["paper_field", "Collaborators", "Other conflicts", ["setting.sub_pcconf"]],
     ["paper_field", "Submission", "Draft submission", ["!$1"]],
+    ["paper_field/edit", "Submission", "Submission"],
     ["paper_field", "Topics", "Topic", ["$1=1"]],
     ["paper_field_group", "topics", "%2$s"],
     ["paper_edit_description", "Contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts.", ["!$1"]],
