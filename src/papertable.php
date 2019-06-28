@@ -438,8 +438,8 @@ class PaperTable {
         return $table_type === "col" ? nl2br($text) : $text;
     }
 
-    function field_name($name) {
-        return $this->conf->_c("paper_field/edit", $name);
+    function field_title_html($name) {
+        return htmlspecialchars($this->conf->_c("paper_field/edit", $name));
     }
 
     private function field_hint($name, $itext = "") {
@@ -453,7 +453,7 @@ class PaperTable {
     }
 
     function echo_editable_title() {
-        echo $this->editable_papt("title", $this->field_name("Title"), ["for" => "title"]),
+        echo $this->editable_papt("title", $this->field_title_html("Title"), ["for" => "title"]),
             $this->field_hint("Title"),
             '<div class="papev">', $this->editable_textarea("title"),
             $this->messages_at("title"),
@@ -607,7 +607,7 @@ class PaperTable {
         if ($accepts)
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
-        $heading = $this->field_name(htmlspecialchars($docx->title)) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
+        $heading = $this->field_title_html($docx->title) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
         echo $this->editable_papt($field, $heading, ["for" => $doc ? false : $inputid, "id" => $docx->readable_formid], $docx),
             $this->field_hint(htmlspecialchars($docx->title), $docx->description);
 
@@ -667,7 +667,7 @@ class PaperTable {
     function echo_editable_abstract() {
         $noAbstract = $this->conf->opt("noAbstract");
         if ($noAbstract !== 1 && $noAbstract !== true) {
-            $title = $this->field_name("Abstract");
+            $title = $this->field_title_html("Abstract");
             if ($noAbstract === 2)
                 $title .= ' <span class="n">(optional)</span>';
             echo $this->editable_papt("abstract", $title, ["for" => "abstract"]),
@@ -768,7 +768,7 @@ class PaperTable {
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
 
         $sb = $this->conf->submission_blindness();
-        $title = $this->field_name("Authors");
+        $title = $this->field_title_html("Authors");
         if ($sb === Conf::BLIND_ALWAYS)
             $title .= " (blind)";
         else if ($sb === Conf::BLIND_UNTILREVIEW)
@@ -1002,16 +1002,13 @@ class PaperTable {
         }
 
         if ($fr->title === null) {
-            $fr->title = $o->title;
-            $fr->title_format = 0;
+            $fr->title = $this->conf->_c("paper_field", $o->title);
         }
-        $title = $fr->title_html();
+        $title = htmlspecialchars($fr->title);
         $value = $fr->value_html();
 
         if ($title !== "") {
-            if ($fr->title_format === 5) {
-                $t = $title;
-            } else if ($o->display() === PaperOption::DISP_SUBMISSION) {
+            if ($o->display() === PaperOption::DISP_SUBMISSION) {
                 $t = '<span class="pavfn">' . $title . '</span>';
             } else if ($o->display() !== PaperOption::DISP_TOPICS) {
                 $t = '<div class="pavt"><span class="pavfn">' . $title . '</span></div>';
@@ -1184,7 +1181,7 @@ class PaperTable {
         echo '<div class="papeg">',
             '<div class="', $this->control_class("contacts", "papet"),
             '" id="contacts"><span class="', $this->control_class("contacts", "papfn", "is-"), '">',
-            $this->field_name("Contacts"),
+            $this->field_title_html("Contacts"),
             '</span></div>';
 
         // Editable version
@@ -1246,7 +1243,7 @@ class PaperTable {
             return;
         $pblind = !$this->prow || $this->prow->blind;
         $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
-        $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . " </span>" . $this->field_name("Anonymous submission");
+        $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . " </span>" . $this->field_title_html("Anonymous submission");
         echo $this->editable_papt("blind", $heading, ["for" => "checkbox"]),
             $this->field_hint("Anonymous submission", "Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"),
             $this->messages_at("blind"),
@@ -1259,7 +1256,7 @@ class PaperTable {
             return;
         $sub_pcconf = $this->conf->setting("sub_pcconf");
 
-        echo $this->editable_papt("collaborators", $this->field_name("Collaborators"), ["for" => "collaborators"]),
+        echo $this->editable_papt("collaborators", $this->field_title_html("Collaborators"), ["for" => "collaborators"]),
             '<div class="paphint"><div class="mmm">';
         if ($this->conf->setting("sub_pcconf"))
             echo "List <em>other</em> people and institutions with which
@@ -1336,7 +1333,7 @@ class PaperTable {
     function echo_editable_topics() {
         if (!$this->conf->has_topics())
             return;
-        echo $this->editable_papt("topics", $this->field_name("Topics"), ["id" => "topics"]),
+        echo $this->editable_papt("topics", $this->field_title_html("Topics"), ["id" => "topics"]),
             $this->field_hint("Topics", "Select any topics that apply to your submission."),
             '<div class="papev">',
             Ht::hidden("has_topics", 1),
@@ -1387,7 +1384,7 @@ class PaperTable {
 
     function echo_editable_option_papt(PaperOption $o, $heading = null, $rest = []) {
         if (!$heading)
-            $heading = $this->field_name(htmlspecialchars($o->title));
+            $heading = $this->field_title_html($o->title);
         echo $this->editable_papt($o->formid, $heading, $rest, $o),
             $this->field_hint(htmlspecialchars($o->title), $o->description),
             Ht::hidden("has_{$o->formid}", 1);
@@ -1422,7 +1419,7 @@ class PaperTable {
             $author_ctype = $confset->unparse_html(CONFLICT_AUTHOR);
         }
 
-        echo $this->editable_papt("pcconf", $this->field_name("PC conflicts"), ["id" => "pcconf"]),
+        echo $this->editable_papt("pcconf", $this->field_title_html("PC conflicts"), ["id" => "pcconf"]),
             '<div class="paphint">Select the PC members who have conflicts of interest with this submission. ', $this->conf->_i("conflictdef", false), "</div>\n",
             '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
@@ -1919,7 +1916,7 @@ class PaperTable {
             $fields = [];
             foreach ($this->edit_fields ? : [] as $o)
                 if ($this->edit_status->has_problem_at($o->formid))
-                    $fields[] = Ht::link($this->field_name(htmlspecialchars($o->title)), "#" . $o->readable_formid);
+                    $fields[] = Ht::link($this->field_title_html($o->title), "#" . $o->readable_formid);
             $m .= Ht::msg($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
         }
         return $m;

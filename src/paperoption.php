@@ -93,7 +93,6 @@ class FeatureRender {
     public $user;
     public $context;
     public $title;
-    public $title_format;
     public $value;
     public $value_format;
     public $value_long;
@@ -115,7 +114,7 @@ class FeatureRender {
         if ($context !== null) {
             $this->context = $context;
         }
-        $this->title = $this->title_format = null;
+        $this->title = null;
         $this->value = $this->value_format = $this->value_long = null;
     }
     function is_empty() {
@@ -145,18 +144,6 @@ class FeatureRender {
             $this->set_text($b ? "Y" : "N");
         } else {
             $this->set_text($b ? "Yes" : "");
-        }
-    }
-    function title_html() {
-        if ($this->title === false || $this->title === null) {
-            return "";
-        } else if ($this->title_format === 0) {
-            return htmlspecialchars($this->title);
-        } else if ($this->title_format === 5) {
-            return $this->title;
-        } else {
-            assert(false);
-            return htmlspecialchars($this->title);
         }
     }
     function value_html() {
@@ -822,7 +809,7 @@ class CheckboxPaperOption extends PaperOption {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
         $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->readable_formid, "data-default-checked" => !!$ov->value]);
         $pt->echo_editable_option_papt($this,
-            '<span class="checkc">' . $cb . " </span>" . $pt->field_name(htmlspecialchars($this->title)),
+            '<span class="checkc">' . $cb . "</span>" . $pt->field_title_html($this->title),
             ["for" => "checkbox", "tclass" => "ui js-click-child"]);
         echo $pt->messages_at($this->formid), "</div>\n\n";
     }
@@ -847,8 +834,11 @@ class CheckboxPaperOption extends PaperOption {
 
     function render(FeatureRender $fr, PaperOptionValue $ov) {
         if ($fr->context === FeatureRender::CPAGE && $ov->value) {
-            $fr->title = "✓ {$this->title}";
-            $fr->title_format = 0;
+            $fr->title = "";
+            $t = htmlspecialchars($this->conf->_c("paper_field", $this->title));
+            if ($this->display() !== self::DISP_TOPICS)
+                $t = '<span class="pavfn">' . $t . '</span>';
+            $fr->set_html("✓ " . $t);
         } else {
             $fr->set_bool(!!$ov->value);
         }
@@ -1105,14 +1095,14 @@ class DocumentPaperOption extends PaperOption {
             if ($fr->want_text()) {
                 $fr->set_text($d->filename);
             } else if ($fr->context === FeatureRender::CPAGE) {
+                $fr->title = "";
                 $dif = 0;
                 if ($this->display() !== self::DISP_SUBMISSION)
                     $dif = DocumentInfo::L_SMALL;
-                $title = htmlspecialchars($this->title);
+                $t = htmlspecialchars($this->conf->_c("paper_field", $this->title));
                 if ($this->display() !== self::DISP_TOPICS)
-                    $title = '<span class="pavfn">' . $title . '</span>';
-                $fr->title = $d->link_html($title, $dif);
-                $fr->title_format = 5;
+                    $t = '<span class="pavfn">' . $t . '</span>';
+                $fr->set_html($d->link_html($t, $dif));
             } else {
                 $fr->set_html($d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
             }
