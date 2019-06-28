@@ -2494,33 +2494,49 @@ class Contact {
         return $this->perm_view_option($prow, $opt);
     }
 
-    function can_view_option(PaperInfo $prow, $opt) {
+    function view_option_state(PaperInfo $prow, $opt) {
         if (!is_object($opt)
-            && !($opt = $this->conf->paper_opts->get($opt)))
-            return false;
-        if (!$this->can_view_paper($prow, $opt->has_document()))
-            return false;
-        if ($opt->final
-            && ($prow->outcome <= 0
-                || $prow->timeSubmitted <= 0
-                || !$this->can_view_decision($prow)))
-            return false;
-        if ($opt->edit_condition()
-            && !($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS)
-            && !$opt->test_edit_condition($prow))
-            return false;
+            && !($opt = $this->conf->paper_opts->get($opt))) {
+            return 0;
+        }
+        if (!$this->can_view_paper($prow, $opt->has_document())
+            || ($opt->final
+                && ($prow->outcome <= 0
+                    || $prow->timeSubmitted <= 0
+                    || !$this->can_view_decision($prow)))
+            || ($opt->edit_condition()
+                && !($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS)
+                && !$opt->test_edit_condition($prow))) {
+            return 0;
+        }
         $rights = $this->rights($prow);
         $oview = $opt->visibility;
-        if ($rights->allow_administer)
-            return $oview !== "nonblind" || $this->can_view_authors($prow);
-        else
-            return $rights->act_author_view
-                || (($rights->review_status != 0
-                     || $rights->allow_pc_broad)
-                    && (!$oview
-                        || $oview == "rev"
-                        || ($oview == "nonblind"
-                            && $this->can_view_authors($prow))));
+        if ($rights->allow_administer) {
+            if ($oview === "nonblind") {
+                return $rights->view_authors_state;
+            } else {
+                return 2;
+            }
+        } else if ($rights->act_author_view) {
+            return 2;
+        } else if ($rights->allow_pc_broad || $rights->review_state != 0) {
+            if ($oview === "nonblind") {
+                return $rights->view_authors_state;
+            } else {
+                return !$oview || $oview === "rev" ? 2 : 0;
+            }
+        } else {
+            return 0;
+        }
+    }
+
+    function can_view_option(PaperInfo $prow, $opt) {
+        $vos = $this->view_option_state($prow, $opt);
+        return $vos === 2 || ($vos === 1 && $this->is_admin_force());
+    }
+
+    function allow_view_option(PaperInfo $prow, $opt) {
+        return $this->view_option_state($prow, $opt) !== 0;
     }
 
     function user_option_list() {
