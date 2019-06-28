@@ -1901,17 +1901,34 @@ class Contact {
                     && ($ci->allow_pc_broad
                         || $this->conf->setting("extrev_view") > 0));
 
-            // check blindness
-            $bs = $this->conf->submission_blindness();
-            $ci->nonblind = $bs == Conf::BLIND_NEVER
-                || ($bs == Conf::BLIND_OPTIONAL
-                    && !$prow->blind)
-                || ($bs == Conf::BLIND_UNTILREVIEW
-                    && $ci->review_status > 0)
-                || ($prow->outcome > 0
-                    && ($isPC || $ci->allow_review)
-                    && $ci->can_view_decision
-                    && $this->conf->time_reviewer_view_accepted_authors());
+            // check view-authors state
+            if ($ci->act_author_view && !$ci->allow_administer) {
+                $ci->view_authors_state = 2;
+            } else if ($ci->allow_pc_broad || $ci->review_status != 0) {
+                $bs = $this->conf->submission_blindness();
+                $nb = $bs == Conf::BLIND_NEVER
+                    || ($bs == Conf::BLIND_OPTIONAL
+                        && !$prow->blind)
+                    || ($bs == Conf::BLIND_UNTILREVIEW
+                        && $ci->review_status != 0)
+                    || ($prow->outcome > 0
+                        && ($isPC || $ci->allow_review)
+                        && $ci->can_view_decision
+                        && $this->conf->time_reviewer_view_accepted_authors());
+                if ($ci->allow_administer) {
+                    $ci->view_authors_state = $nb ? 2 : 1;
+                } else if ($nb
+                           && ($prow->timeSubmitted != 0
+                               || ($ci->allow_pc_broad
+                                   && $prow->timeWithdrawn <= 0
+                                   && $this->conf->can_pc_see_active_submissions()))) {
+                    $ci->view_authors_state = 2;
+                } else {
+                    $ci->view_authors_state = 0;
+                }
+            } else {
+                $ci->view_authors_state = 0;
+            }
         }
 
         return $ci;
@@ -2433,33 +2450,18 @@ class Contact {
     }
 
     /* NB caller must check can_view_paper() */
-    function can_view_authors(PaperInfo $prow) {
+    function view_authors_state(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        return ($rights->nonblind
-                && $prow->timeSubmitted != 0
-                && ($rights->allow_pc_broad
-                    || $rights->review_status != 0))
-            || ($rights->nonblind
-                && $prow->timeWithdrawn <= 0
-                && $rights->allow_pc_broad
-                && $this->conf->can_pc_see_active_submissions())
-            || ($rights->allow_administer
-                ? $rights->nonblind || $rights->rights_forced /* chair can't see blind authors unless forceShow */
-                : $rights->act_author_view);
+        return $rights->view_authors_state;
+    }
+
+    function can_view_authors(PaperInfo $prow) {
+        $vas = $this->view_authors_state($prow);
+        return $vas === 2 || ($vas === 1 && $this->is_admin_force());
     }
 
     function allow_view_authors(PaperInfo $prow) {
-        $rights = $this->rights($prow);
-        return $rights->allow_administer
-            || $rights->act_author_view
-            || ($rights->nonblind
-                && $prow->timeSubmitted != 0
-                && ($rights->allow_pc_broad
-                    || $rights->review_status != 0))
-            || ($rights->nonblind
-                && $prow->timeWithdrawn <= 0
-                && $rights->allow_pc_broad
-                && $this->conf->can_pc_see_active_submissions());
+        return $this->view_authors_state($prow) !== 0;
     }
 
     function can_view_some_authors() {

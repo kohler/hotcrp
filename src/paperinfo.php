@@ -27,7 +27,7 @@ class PaperContactInfo {
     public $act_author_view;
     public $allow_author_view;
     public $can_view_decision;
-    public $nonblind;
+    public $view_authors_state;
 
     public $vsreviews_array;
     public $vsreviews_version;
