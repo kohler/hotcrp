@@ -58,7 +58,7 @@ class Options_SettingRenderer {
             . "</div></div>\n";
     }
     static function render_description_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold3" . ((string) $o->description === "" ? "c" : "o"));
+        $self->add_option_class("fold3" . ((string) $o->description !== "" || !$o->id ? "o" : "c"));
         return '<div class="' . $sv->control_class("optd_$xpos", "entryi fx3")
             . '">' . $sv->label("optd_$xpos", "Description")
             . '<div class="entry">'
@@ -67,7 +67,7 @@ class Options_SettingRenderer {
             . '</div></div>';
     }
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold5" . ($o->final ? "o" : "c"));
+        $self->add_option_class("fold5" . ($o->final || !$o->id ? "o" : "c"));
         return '<div class="' . $sv->control_class("optec_$xpos", "entryi fx5")
             . '">' . $sv->label("optec_$xpos", "Condition")
             . '<div class="entry">'
@@ -77,7 +77,7 @@ class Options_SettingRenderer {
             . "</span></div></div>";
     }
     static function render_required_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold9" . ($o->required ? "o" : "c"));
+        $self->add_option_class("fold9" . ($o->required || !$o->id ? "o" : "c"));
         return '<div class="' . $sv->control_class("optreq_$xpos", "entryi fx9")
             . '">' . $sv->label("optreq_$xpos", "Required")
             . '<div class="entry">'
@@ -86,7 +86,7 @@ class Options_SettingRenderer {
             . "</div></div>";
     }
     static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold6" . ($o->visibility === "rev" ? "c" : "o"));
+        $self->add_option_class("fold6" . ($o->visibility !== "rev" || !$o->id ? "o" : "c"));
         return '<div class="' . $sv->control_class("optp_$xpos", "entryi short fx6")
             . '">' . $sv->label("optp_$xpos", "Visible to")
             . '<div class="entry">'
@@ -95,7 +95,7 @@ class Options_SettingRenderer {
             . '</div></div>';
     }
     static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold7" . ($o->display() === PaperOption::DISP_PROMINENT ? "c" : "o"));
+        $self->add_option_class("fold7" . ($o->display() !== PaperOption::DISP_PROMINENT || !$o->id ? "o" : "c"));
         return '<div class="' . $sv->control_class("optdt_$xpos", "entryi short fx7")
             . '">' . $sv->label("optdt_$xpos", "Display")
             . '<div class="entry">'
