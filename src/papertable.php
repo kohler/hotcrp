@@ -350,17 +350,18 @@ class PaperTable {
     }
 
     private function papt($what, $name, $extra = array()) {
-        $fold = defval($extra, "fold", false);
-        $editfolder = defval($extra, "editfolder", false);
+        $fold = get($extra, "fold", false);
+        $editfolder = get($extra, "editfolder", false);
         if ($fold || $editfolder) {
-            $foldnum = defval($extra, "foldnum", 0);
+            $foldnum = get($extra, "foldnum", 0);
             $foldnumclass = $foldnum ? " data-fold-target=\"$foldnum\"" : "";
         }
 
-        if (get($extra, "type") === "ps")
-            list($divclass, $hdrclass) = array("pst", "psfn");
-        else
-            list($divclass, $hdrclass) = array("pavt", "pavfn");
+        if (get($extra, "type") === "ps") {
+            list($divclass, $hdrclass) = ["pst", "psfn"];
+        } else {
+            list($divclass, $hdrclass) = ["pavt", "pavfn"];
+        }
 
         $c = "<div class=\"" . $this->control_class($what, $divclass);
         if (($fold || $editfolder) && !get($extra, "float"))
@@ -379,7 +380,7 @@ class PaperTable {
                 $c .= $n;
         } else {
             $c .= '<a class="q ui js-foldup" href=""' . $foldnumclass;
-            if (($title = defval($extra, "foldtitle")))
+            if (($title = get($extra, "foldtitle")))
                 $c .= ' title="' . $title . '"';
             if (isset($this->foldmap[$foldnum]))
                 $c .= ' role="button" aria-expanded="' . ($this->foldmap[$foldnum] ? "false" : "true") . '"';
@@ -1125,7 +1126,7 @@ class PaperTable {
             if ($topicdata !== "") {
                 echo '<div class="pg">',
                     $this->papt("topics", array("Topics", $tanda), $extra),
-                    '<div class="pavb', $eclass, '">', $topicdata, "</div></div>\n\n";
+                    '<div class="pg pavb', $eclass, '">', $topicdata, "</div>";
                 $extra = null;
                 $tanda = $options_name;
             }
@@ -1134,7 +1135,11 @@ class PaperTable {
                 echo '<div class="pg', ($extra ? "" : $eclass),
                     (count($optt) === $optt_nfold ? " fx8" : ""), '">',
                     $this->papt("options", array($options_name, $tanda), $extra),
-                    "<div class=\"pavb$eclass\">", join("", $optt), "</div></div>\n\n";
+                    "<div class=\"pavb$eclass\">", join("", $optt), "</div></div>\n";
+            }
+
+            if ($topicdata !== "") {
+                echo "</div>\n\n";
             }
         }
     }
