@@ -1030,6 +1030,7 @@ class PaperTable {
             } else {
                 $fr->value = '<span class="pavfn">' . $title . ':</span> ' . $fr->value;
             }
+            $fr->value_long = false;
             $fr->title = "";
         }
     }
@@ -1183,7 +1184,9 @@ class PaperTable {
             // echo contents
             for ($i = $first; $i !== $last; ++$i) {
                 $x = $renders[$i];
-                $class = $x[4] ? "pg" : "pgsm";
+                $class = "pg";
+                if ($x[4] === false || (!$x[4] && $x[2] === ""))
+                    $class = "pgsm";
                 if ($x[3] === "" || ($x[2] === "" && preg_match('{\A(?:[^<]|<a|<span)}', $x[3])))
                     $class .= " outdent";
                 if ($x[1] === 1)
