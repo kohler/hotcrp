@@ -45,7 +45,7 @@ class OptionMatcher {
     }
     function exec(PaperInfo $prow, Contact $user) {
         $ov = null;
-        if ($user->can_view_paper_option($prow, $this->option)) {
+        if ($user->can_view_option($prow, $this->option)) {
             $ov = $prow->option($this->option->id);
         }
 
@@ -190,7 +190,7 @@ class Option_SearchTerm extends SearchTerm {
     function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
         if ($this->om->kind)
             return null;
-        else if (!$srch->user->can_view_paper_option($row, $this->om->option))
+        else if (!$srch->user->can_view_option($row, $this->om->option))
             return false;
         else
             return (object) ["type" => "option", "id" => $this->om->option->id, "compar" => $this->om->compar, "value" => $this->om->value];

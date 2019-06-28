@@ -159,7 +159,7 @@ class DocumentRequest {
             return $whynot;
 
         if ($this->opt
-            && ($whynot = $user->perm_view_paper_option($this->prow, $this->opt)))
+            && ($whynot = $user->perm_view_option($this->prow, $this->opt)))
             return $whynot;
 
         if ($this->dtype == DTYPE_COMMENT)

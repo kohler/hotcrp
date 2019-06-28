@@ -85,7 +85,7 @@ class GetAbstract_ListAction extends ListAction {
         $text = "";
         foreach ($prow->options() as $ov) {
             if ($ov->option->display() === $display
-                && $user->can_view_paper_option($prow, $ov->option)) {
+                && $user->can_view_option($prow, $ov->option)) {
                 $fr = new FeatureRender(FeatureRender::CTEXT);
                 $ov->option->render($fr, $ov);
                 if ((string) $fr->value !== "") {

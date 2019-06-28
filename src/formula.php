@@ -826,7 +826,7 @@ class Option_Fexpr extends Sub_Fexpr {
         $ovar = "\$opt" . ($id < 0 ? "m" . -$id : $id);
         if ($state->check_gvar($ovar)) {
             $state->queryOptions["options"] = true;
-            $state->gstmt[] = "if (\$contact->can_view_paper_option(\$prow, $id)) {";
+            $state->gstmt[] = "if (\$contact->can_view_option(\$prow, $id)) {";
             $state->gstmt[] = "  $ovar = \$prow->option($id);";
             if ($this->option->type === "checkbox")
                 $state->gstmt[] = "  $ovar = !!($ovar && {$ovar}->value);";

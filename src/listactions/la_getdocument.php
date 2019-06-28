@@ -38,7 +38,7 @@ class GetDocument_ListAction extends ListAction {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $opt = $user->conf->paper_opts->get($this->dt);
         foreach ($user->paper_set($ssel) as $row) {
-            if (($whyNot = $user->perm_view_paper_option($row, $opt)))
+            if (($whyNot = $user->perm_view_option($row, $opt)))
                 $errors[] = self::error_document($opt, $row, whyNotText($whyNot));
             else if (($doc = $row->document($opt->id)))
                 $downloads[] = $doc;

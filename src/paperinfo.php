@@ -440,7 +440,7 @@ class PaperInfo {
             $f["submission"] = true;
         foreach ($this->conf->paper_opts->option_list() as $o) {
             if ($o->required
-                && (!$user || $user->can_view_paper_option($this, $o))) {
+                && (!$user || $user->can_view_option($this, $o))) {
                 $ov = $this->option($o->id) ? : new PaperOptionValue($this, $o);
                 if (!$o->value_present($ov))
                     $f[$o->json_key()] = true;

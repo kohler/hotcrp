@@ -255,7 +255,7 @@ class PaperStatus extends MessageSet {
 
         $options = array();
         foreach ($this->conf->paper_opts->option_list() as $o) {
-            if ($user && !$user->can_view_paper_option($prow, $o))
+            if ($user && !$user->can_view_option($prow, $o))
                 continue;
             $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
             if ($o->required && !$o->value_present($ov))

@@ -138,7 +138,7 @@ class PaperTable {
 
         $olist = $this->conf->paper_opts->feature_list($this->prow);
         foreach ($olist as $o) {
-            if ($o->id > 0 && $this->user->can_view_paper_option($this->_prow, $o))
+            if ($o->id > 0 && $this->user->can_view_option($this->_prow, $o))
                 $this->view_options[$o->id] = 2;
         }
 
@@ -149,7 +149,7 @@ class PaperTable {
                 $this->view_authors = 1;
             foreach ($olist as $o)
                 if (isset($this->view_options[$o->id])
-                    && !$this->user->can_view_paper_option($this->_prow, $o))
+                    && !$this->user->can_view_option($this->_prow, $o))
                     $this->view_options[$o->id] = 1;
         }
 

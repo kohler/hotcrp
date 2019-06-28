@@ -26,7 +26,7 @@ class Option_PaperColumn extends PaperColumn {
         return $this->opt->search_keyword();
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_paper_option($row, $this->opt);
+        return !$pl->user->can_view_option($row, $this->opt);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $ov = $row->option($this->opt->id);

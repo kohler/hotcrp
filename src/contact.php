@@ -2486,7 +2486,15 @@ class Contact {
                         && MeetingTracker::can_view_tracker_at($this, $prow))));
     }
 
+    // XXX backwards compat
     function can_view_paper_option(PaperInfo $prow, $opt) {
+        return $this->can_view_option($prow, $opt);
+    }
+    function perm_view_paper_option(PaperInfo $prow, $opt) {
+        return $this->perm_view_option($prow, $opt);
+    }
+
+    function can_view_option(PaperInfo $prow, $opt) {
         if (!is_object($opt)
             && !($opt = $this->conf->paper_opts->get($opt)))
             return false;
@@ -2522,8 +2530,8 @@ class Contact {
             return $this->conf->paper_opts->nonfinal_option_list();
     }
 
-    function perm_view_paper_option(PaperInfo $prow, $opt) {
-        if ($this->can_view_paper_option($prow, $opt))
+    function perm_view_option(PaperInfo $prow, $opt) {
+        if ($this->can_view_option($prow, $opt))
             return null;
         if (!is_object($opt) && !($opt = $this->conf->paper_opts->get($opt)))
             return $prow->make_whynot();
