@@ -90,6 +90,7 @@ class PaperOptionValue {
 }
 
 class FeatureRender {
+    public $user;
     public $context;
     public $title;
     public $title_format;
@@ -106,8 +107,16 @@ class FeatureRender {
     const CFHTML = 1;
     const CFLIST = 4;
 
-    function __construct($context) {
+    function __construct(Contact $user, $context) {
+        $this->user = $user;
         $this->context = $context;
+    }
+    function clear($context = null) {
+        if ($context !== null) {
+            $this->context = $context;
+        }
+        $this->title = $this->title_format = null;
+        $this->value = $this->value_format = $this->value_long = null;
     }
     function is_empty() {
         return (string) $this->title === "" && (string) $this->value === "";
@@ -1428,17 +1437,19 @@ class AttachmentsPaperOption extends PaperOption {
             }
         }
         if (!empty($ts)) {
+            if ($fr->want_text()) {
+                $fr->set_text(join("; ", $ts));
+            } else if ($fr->context === FeatureRender::CROW) {
+                $fr->set_html(join("; ", $ts));
+            } else {
+                $fr->set_html('<p class="od">' . join('</p><p class="od">', $ts) . '</p>');
+            }
             if ($fr->context === FeatureRender::CPAGE
                 && $this->display() === self::DISP_SUBMISSION) {
                 $fr->title = false;
-            }
-            if ($fr->want_text()) {
-                $fr->set_text(join("; ", $ts));
-            } else if ($fr->context === FeatureRender::CROW
-                       || count($ts) === 1) {
-                $fr->set_html(join("; ", $ts));
-            } else {
-                $fr->set_html("<div>" . join("</div><div>", $ts) . "</div>");
+                $fr->value = '<div class="pgsm'
+                    . ($fr->user->view_option_state($ov->prow, $this) === 1 ? ' fx8' : '')
+                    . '">' . $fr->value . '</div>';
             }
         }
     }

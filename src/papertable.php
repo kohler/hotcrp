@@ -511,7 +511,7 @@ class PaperTable {
                     $dname = $this->conf->_c("paper_field", "Submission");
                 else
                     $dname = $this->conf->_c("paper_field", "Draft submission");
-                $out[] = '<p class="xd">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
+                $out[] = '<p class="pgsm">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
             }
 
             foreach ($prow ? $prow->options() : [] as $ov) {
@@ -523,7 +523,7 @@ class PaperTable {
             }
 
             if ($prow->finalPaperStorageId > 1 && $prow->paperStorageId > 1)
-                $out[] = '<p class="xd"><small>' . $prow->document(DTYPE_SUBMISSION)->link_html("Submission version", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>";
+                $out[] = '<p class="pgsm"><small>' . $prow->document(DTYPE_SUBMISSION)->link_html("Submission version", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>";
         }
 
         // conflicts
@@ -989,58 +989,69 @@ class PaperTable {
             return false;
         }
 
-        $fr = new FeatureRender(FeatureRender::CPAGE);
+        $fr = new FeatureRender($this->user, FeatureRender::CPAGE);
         $o->render($fr, $ov);
         if ($fr->is_empty()) {
             return false;
         }
 
-        if ($o->display() === PaperOption::DISP_SUBMISSION) {
-            $class = "xd";
-        } else if ($o->display() !== PaperOption::DISP_TOPICS) {
-            $class = $fr->value_long ? "pg" : "pgsm";
-        } else {
-            $class = "";
-        }
-        if ($vos === 1)
-            $class .= " fx8";
-        $t = $class === "" ? '<div>' : '<div class="' . ltrim($class) . '">';
-        $et = '</div>';
-
         $value = $fr->value_html();
+        if ($fr->title === false) {
+            return [$vos, $value];
+        }
+
         if ($fr->title === null) {
             $fr->title = $o->title;
             $fr->title_format = 0;
         }
-        if ((string) $fr->title !== "" && $fr->title_format === 5) {
-            $t .= $fr->title;
-        } else if ((string) $fr->title !== "") {
-            $title = $fr->title_html();
-            if ($o->display() === PaperOption::DISP_SUBMISSION) {
-                $t .= '<span class="pavfn">' . $title . '</span>';
+        $title = $fr->title_html();
+        $value = $fr->value_html();
+
+        if ($title !== "") {
+            if ($fr->title_format === 5) {
+                $t = $title;
+            } else if ($o->display() === PaperOption::DISP_SUBMISSION) {
+                $t = '<span class="pavfn">' . $title . '</span>';
             } else if ($o->display() !== PaperOption::DISP_TOPICS) {
-                $t .= '<div class="pavt"><span class="pavfn">' . $title . '</span></div>';
+                $t = '<div class="pavt"><span class="pavfn">' . $title . '</span></div>';
             } else {
                 if ($value === "") {
-                    $t .= $title;
+                    $t = $title;
                 } else if ($value[0] === "<"
                            && preg_match('{\A((?:<(?:div|p).*?>)*)}', $value, $cm)) {
-                    $t .= $cm[1] . $title . ': ';
+                    $t = $cm[1] . $title . ': ';
                     $value = substr($value, strlen($cm[1]));
                 } else {
-                    $t .= $title . ': ';
+                    $t = $title . ': ';
                 }
             }
+        } else {
+            $t = "";
         }
 
-        if ($value !== ""
-            && $fr->title !== false
-            && $o->display() !== PaperOption::DISP_TOPICS) {
-            $t .= '<div class="pavb">';
-            $et = '</div>' . $et;
+        if ($o->display() !== PaperOption::DISP_TOPICS) {
+            $class = $fr->value_long ? "pg" : "pgsm";
+        } else {
+            $class = $fr->value_long ? "" : "od";
+        }
+        if ($vos === 1) {
+            $class = ltrim($class . " fx8");
+        }
+        $classx = $class === "" ? "" : " class=\"{$class}\"";
+
+        if ($value !== "") {
+            if ($o->display() !== PaperOption::DISP_TOPICS) {
+                $t = "<div{$classx}>{$t}<div class=\"pavb\">{$value}</div></div>";
+            } else if ($classx !== "" || !str_starts_with($t, '<div')) {
+                $t = "<div{$classx}>{$t}{$value}</div>";
+            } else {
+                $t .= $value;
+            }
+        } else {
+            $t = "<p{$classx}>{$t}</p>";
         }
 
-        return [$vos, $t . $value . $et];
+        return [$vos, $t];
     }
 
     private function paptab_topics() {
@@ -2208,7 +2219,7 @@ class PaperTable {
             if ($this->mode === "edit" && ($m = $this->_edit_message()))
                 echo $m, "<hr class=\"g\">\n";
             $status_info = $this->user->paper_status_info($this->prow);
-            echo '<p class="xd"><span class="pstat ', $status_info[0], '">',
+            echo '<p class="pgsm"><span class="pstat ', $status_info[0], '">',
                 htmlspecialchars($status_info[1]), "</span></p>";
             $this->echo_submission();
             echo '<div class="paperinfo">';

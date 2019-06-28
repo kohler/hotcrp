@@ -83,10 +83,11 @@ class GetAbstract_ListAction extends ListAction {
     const WIDTH = 96;
     static function render_displayed_options(PaperInfo $prow, Contact $user, $display) {
         $text = "";
+        $fr = new FeatureRender($user, FeatureRender::CTEXT);
         foreach ($prow->options() as $ov) {
             if ($ov->option->display() === $display
                 && $user->can_view_option($prow, $ov->option)) {
-                $fr = new FeatureRender(FeatureRender::CTEXT);
+                $fr->clear();
                 $ov->option->render($fr, $ov);
                 if ((string) $fr->value !== "") {
                     $text = prefix_word_wrap("", $ov->option->title, 0, self::WIDTH);

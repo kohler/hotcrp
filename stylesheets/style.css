@@ -2616,14 +2616,10 @@ div.pst span.hint {
 .sd {
 	margin: 0.5em 0;
 }
-.xd {
-	margin: 0.5em 0 0.5em 1.5em;
-	text-indent: -1.5em;
-}
-.xd:first-child, .sd:first-child {
+.sd:first-child {
 	margin-top: 0;
 }
-.xd:last-child, .sd:last-child {
+.sd:last-child {
 	margin-bottom: 0;
 }
 .archiveexpansion {
@@ -2891,6 +2887,10 @@ ul.x > li:last-child {
 
 .pg, .pgsm {
 	margin-bottom: 1em;
+}
+p.pg, p.pgsm {
+	margin-left: 1.5em;
+	text-indent: -1.5em;
 }
 .pgsm + .pgsm {
 	margin-top: -0.5em;

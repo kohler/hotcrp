@@ -4,6 +4,7 @@
 
 class Option_PaperColumn extends PaperColumn {
     private $opt;
+    private $fr;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
@@ -13,6 +14,7 @@ class Option_PaperColumn extends PaperColumn {
         if (!$pl->user->can_view_some_paper_option($this->opt))
             return false;
         $pl->qopts["options"] = true;
+        $this->fr = new FeatureRender($pl->user, 0);
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -34,7 +36,8 @@ class Option_PaperColumn extends PaperColumn {
             return "";
         }
 
-        $fr = new FeatureRender($this->viewable_row() ? FeatureRender::CROW : FeatureRender::CCOLUMN);
+        $fr = $this->fr;
+        $fr->clear($this->viewable_row() ? FeatureRender::CROW : FeatureRender::CCOLUMN);
         $this->opt->render($fr, $ov);
         if ((string) $fr->value === "") {
             return "";
@@ -65,9 +68,9 @@ class Option_PaperColumn extends PaperColumn {
             return "";
         }
 
-        $fr = new FeatureRender(FeatureRender::CCSV);
-        $this->opt->render($fr, $ov);
-        return (string) $fr->value;
+        $this->fr->clear(FeatureRender::CCSV);
+        $this->opt->render($this->fr, $ov);
+        return (string) $this->fr->value;
     }
 }
 
