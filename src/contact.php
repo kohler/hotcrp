@@ -3798,25 +3798,6 @@ class Contact {
     }
 
 
-    function setsession_api($v) {
-        $ok = true;
-        preg_match_all('/(?:\A|\s)(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
-        foreach ($ms as $m) {
-            if ($m[2]) {
-                $on = intval(substr($m[3], 1) ? : "0") == 0;
-                if ($m[1] === "pldisplay" || $m[1] === "pfdisplay")
-                    PaperList::change_display($this, substr($m[1], 0, 2), substr($m[2], 1), $on);
-                else if (preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2]))
-                    displayOptionsSet($m[1], substr($m[2], 1), $on);
-                else
-                    $ok = false;
-            } else
-                $this->save_session($m[1], $m[3] ? intval(substr($m[3], 1)) : null);
-        }
-        return $ok;
-    }
-
-
     // papers
 
     function paper_set($pids, $options = null) {

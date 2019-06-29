@@ -53,7 +53,7 @@ class Search_API {
         else {
             $response["ok"] = true;
             if ($qreq->session && $qreq->post_ok())
-                $user->setsession_api($qreq->session);
+                Session_API::setsession($user, $qreq->session);
             return $response;
         }
     }

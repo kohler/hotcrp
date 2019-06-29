@@ -686,39 +686,6 @@ function review_shepherd_icon() {
     return '<span class="rto rtshep" title="Shepherd"><span class="rti">S</span></span>';
 }
 
-function displayOptionsSet($sessionvar, $var = null, $val = null) {
-    global $Conf, $Me;
-    if (($x = $Me->session($sessionvar)) !== null)
-        /* use session value */;
-    else if ($sessionvar === "pldisplay")
-        $x = $Conf->setting_data("pldisplay_default", "");
-    else
-        $x = "";
-    if ($x == null || strpos($x, " ") === false) {
-        if ($sessionvar == "pldisplay")
-            $x = $Conf->review_form()->default_display();
-        else if ($sessionvar == "uldisplay")
-            $x = " tags overAllMerit ";
-        else
-            $x = " ";
-    }
-
-    // set $var to $val in list
-    if ($var) {
-        $x = str_replace(" $var ", " ", $x);
-        if ($val)
-            $x .= "$var ";
-        if (($sessionvar === "pldisplay" || $sessionvar === "pfdisplay")
-            && ($f = $Conf->find_review_field($var))
-            && $var !== $f->id)
-            $x = str_replace(" {$f->id} ", " ", $x);
-    }
-
-    // store list in $_SESSION
-    $Me->save_session($sessionvar, $x);
-    return $x;
-}
-
 
 if (!function_exists("random_bytes")) {
     // PHP 5.6

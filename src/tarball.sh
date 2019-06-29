@@ -168,6 +168,7 @@ src/api/api_preference.php
 src/api/api_requestreview.php
 src/api/api_search.php
 src/api/api_searchconfig.php
+src/api/api_session.php
 src/api/api_taganno.php
 src/api/api_user.php
 src/assigners/a_conflict.php

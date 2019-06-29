@@ -58,15 +58,8 @@ if ($Qreq->p)
     $Conf->set_paper_request($Qreq, $Me);
 
 // requests
-if ($Conf->has_api($Qreq->fn))
+if ($Conf->has_api($Qreq->fn)) {
     $Conf->call_api_exit($Qreq->fn, $Me, $Qreq, $Conf->paper);
-
-if ($Qreq->fn === "setsession") {
-    if (!$Qreq->post_ok())
-        json_exit(403, ["ok" => false, "error" => "Missing credentials."]);
-    if (!isset($Qreq->v))
-        $Qreq->v = $Qreq->var . "=" . $Qreq->val;
-    json_exit(["ok" => $Me->setsession_api($Qreq->v)]);
 }
 
 if ($Qreq->fn === "events") {

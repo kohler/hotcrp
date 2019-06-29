@@ -46,13 +46,12 @@
         "callback": "GraphData_Api::graphdata"
     },
     {
-        "name": "lead", "paper": true, "get": true, "post": true,
-        "callback": "PaperPC_API::lead_api"
+        "name": "jserror", "get": true, "post": true,
+        "callback": "Error_API::jserror"
     },
     {
-        "name": "viewoptions", "get": true, "post": true,
-        "callback": "SearchConfig_API::viewoptions",
-        "synonym": ["listreport"]
+        "name": "lead", "paper": true, "get": true, "post": true,
+        "callback": "PaperPC_API::lead_api"
     },
     {
         "name": "mailtext", "get": true, "post": true,
@@ -100,6 +99,10 @@
         "callback": "PaperApi::settags_api"
     },
     {
+        "name": "setsession", "post": true,
+        "callback": "Session_API::setsession"
+    },
+    {
         "name": "shepherd", "paper": true, "get": true, "post": true,
         "callback": "PaperPC_API::shepherd_api"
     },
@@ -129,15 +132,16 @@
         "callback": "User_API::user"
     },
     {
+        "name": "viewoptions", "get": true, "post": true,
+        "callback": "SearchConfig_API::viewoptions",
+        "synonym": ["listreport"]
+    },
+    {
         "name": "votereport", "paper": true, "get": true, "post": true,
         "callback": "PaperApi::votereport_api"
     },
     {
         "name": "whoami", "get": true,
         "callback": "User_API::whoami"
-    },
-    {
-        "name": "jserror", "get": true, "post": true,
-        "callback": "Error_API::jserror"
     }
 ]

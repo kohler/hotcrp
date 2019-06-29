@@ -424,9 +424,9 @@ class ContactList {
 
     function addScores($a) {
         if ($this->user->isPC) {
+            $uldisplay = $this->user->session("uldisplay", " tags overAllMerit ");
             foreach ($this->conf->all_review_fields() as $f)
-                if ($f->has_options
-                    && strpos(displayOptionsSet("uldisplay"), " {$f->id} ") !== false)
+                if ($f->has_options && strpos($uldisplay, " {$f->id} ") !== false)
                     array_push($a, $f->id);
             $this->scoreMax = array();
         }
@@ -745,10 +745,11 @@ class ContactList {
             $body .= $t . $tt;
         }
 
+        $uldisplay = $this->user->session("uldisplay", " tags overAllMerit ");
         $foldclasses = array();
         foreach (self::$folds as $k => $fold)
             if (get($this->have_folds, $fold) !== null) {
-                $this->have_folds[$fold] = strpos(displayOptionsSet("uldisplay"), " $fold ") !== false;
+                $this->have_folds[$fold] = strpos($uldisplay, " $fold ") !== false;
                 $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
             }
 

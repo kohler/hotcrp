@@ -275,18 +275,17 @@ if ($Me->privChair && $Qreq->tagact && $Qreq->post_ok() && isset($papersel)
 
 // set scores to view
 if (isset($Qreq->redisplay)) {
-    $Me->save_session("uldisplay", "");
+    $sv = [];
     foreach (ContactList::$folds as $key)
-        displayOptionsSet("uldisplay", $key, $Qreq->get("show$key", 0));
+        $sv[] = "uldisplay.$key=" . ($Qreq->get("show$key") ? 0 : 1);
     foreach ($Conf->all_review_fields() as $f)
-        if ($f->has_options)
-            displayOptionsSet("uldisplay", $f->id, $Qreq->get("show{$f->id}", 0));
+        if ($Qreq["has_show{$f->id}"])
+            $sv[] = "uldisplay.{$f->id}=" . ($Qreq->get("show{$f->id}") ? 0 : 1);
+    if (isset($Qreq->scoresort))
+        $sv[] = "scoresort=" . ListSorter::canonical_short_score_sort($Qreq->scoresort);
+    Session_API::setsession($Me, join(" ", $sv));
+    $Conf->self_redirect($Qreq);
 }
-if (isset($Qreq->scoresort))
-    $Qreq->scoresort = ListSorter::canonical_short_score_sort($Qreq->scoresort);
-if (isset($Qreq->scoresort))
-    $Me->save_session("scoresort", $Qreq->scoresort);
-
 
 if ($Qreq->t === "pc")
     $title = "Program committee";
@@ -337,13 +336,15 @@ if (count($tOpt) > 1) {
     if (isset($pl->scoreMax)) {
         echo '<td class="pad">';
         $revViewScore = $Me->permissive_view_score_bound();
+        $uldisplay = $Me->session("uldisplay", " tags overAllMerit ");
         foreach ($Conf->all_review_fields() as $f)
             if ($f->view_score > $revViewScore
                 && $f->has_options
                 && $f->main_storage) {
-                $checked = strpos(displayOptionsSet("uldisplay"), $f->id) !== false;
+                $checked = strpos($uldisplay, $f->id) !== false;
                 echo Ht::checkbox("show{$f->id}", 1, $checked),
-                    "&nbsp;", Ht::label($f->name_html), "<br />";
+                    "&nbsp;", Ht::label($f->name_html),
+                    Ht::hidden("has_show{$f->id}", 1), "<br />";
             }
         echo "</td>";
     }
