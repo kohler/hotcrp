@@ -1002,7 +1002,7 @@ class PaperTable {
         if (!empty($contacts)
             && ($this->editable
                 || $this->mode !== "edit"
-                || $prow->timeSubmitted <= 0)) {
+                || $this->prow->timeSubmitted <= 0)) {
             $fr->value .= '<div class="pg fx9' . ($vas > 1 ? "" : " fx8") . '">'
                 . $this->papt("authorInformation", $this->conf->_c("paper_field", "Contacts", count($contacts)))
                 . '<div class="pavb">'
