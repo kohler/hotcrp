@@ -1041,7 +1041,6 @@ class PaperTable {
 
         if ($fr->title === null) {
             $fr->title = $this->conf->_c("paper_field", $o->title);
-            $fr->title_format = 0;
         }
 
         $fr->value = $fr->value_html();
