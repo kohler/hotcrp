@@ -1527,8 +1527,12 @@ class PaperList {
         if (!empty($options["attributes"]))
             foreach ($options["attributes"] as $n => $v)
                 $this->table_attr[$n] = $v;
-        if (get($options, "fold_session_prefix"))
+        if (get($options, "fold_session_prefix")) {
             $this->table_attr["data-fold-session-prefix"] = $options["fold_session_prefix"];
+            $this->table_attr["data-fold-session"] = json_encode_browser([
+                "2" => "anonau", "5" => "force", "6" => "rownum", "7" => "statistics"
+            ]);
+        }
         if ($this->search->is_order_anno)
             $this->table_attr["data-order-tag"] = $this->search->is_order_anno;
         if ($this->groups)

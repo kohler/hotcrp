@@ -2478,6 +2478,8 @@ function fold(elt, dofold, foldnum) {
         if (ses) {
             if (ses.charAt(0) === "{" || ses.charAt(0) === "[")
                 ses = (JSON.parse(ses) || {})[foldnum];
+            if (elt.hasAttribute("data-fold-session-prefix"))
+                ses = elt.getAttribute("data-fold-session-prefix") + ses;
             if (ses)
                 $.post(hoturl_post("api/setsession", {v: ses + (isopen ? "=1" : "=0")}));
         }
@@ -6842,11 +6844,6 @@ function initialize() {
         return false;
     field_order = JSON.parse(self.getAttribute("data-columns"));
     fields = {};
-    var fold_prefix = self.getAttribute("data-fold-session-prefix");
-    if (fold_prefix) {
-        var fs = {"2": fold_prefix + "anonau", "5": fold_prefix + "force", "6": fold_prefix + "rownum", "7": fold_prefix + "statistics"};
-        self.setAttribute("data-fold-session", JSON.stringify(fs));
-    }
     for (var i = 0; i < field_order.length; ++i) {
         fields[field_order[i].name] = field_order[i];
         if (/^(?:#|tag:|tagval:)\S+$/.test(field_order[i].name))
