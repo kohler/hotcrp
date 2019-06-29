@@ -259,7 +259,8 @@ class PaperTable {
         if (is_string($unfolds))
             $unfolds = explode(" ", $unfolds);
 
-        // 5: topics, 6: abstract, 8: blind authors, 9: full authors
+        // 5: topics, 6: abstract, 7: [JavaScript abstract expansion],
+        // 8: blind authors, 9: full authors
         $foldsession = [5 => "t", 6 => "b", 8 => "a", 9 => "p"];
         $this->foldnumber = ["topics" => 5];
 
@@ -734,7 +735,7 @@ class PaperTable {
         $fr->value .= "</div></div></div>";
         if ($extra)
             $fr->value .= '<div class="fn6 fx7 longtext-fader"></div>'
-                . '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" data-fold-target="6">[more]</a></div>'
+                . '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" aria-role="button" aria-expanded="false" data-fold-target="6">[more]</a></div>'
                 . Ht::unstash_script("render_text.on_page()");
     }
 

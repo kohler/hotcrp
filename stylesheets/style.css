@@ -2880,7 +2880,7 @@ ul.x > li:last-child {
 .longtext-expander > a {
 	display: inline-block;
 	background: white;
-	padding: 0 1.5em 0 8px;
+	padding-left: 8px;
 	border-radius: 4px;
 }
 
