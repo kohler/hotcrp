@@ -2519,7 +2519,7 @@ class Contact {
             }
         } else if ($rights->act_author_view) {
             return 2;
-        } else if ($rights->allow_pc_broad || $rights->review_state != 0) {
+        } else if ($rights->allow_pc_broad || $rights->review_status != 0) {
             if ($oview === "nonblind") {
                 return $rights->view_authors_state;
             } else {
