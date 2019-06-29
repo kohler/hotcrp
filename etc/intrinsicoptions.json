@@ -35,7 +35,7 @@
     {
         "name": "topics", "json_key": "topics", "id": -1005,
         "title": "Topics",
-        "form_position": 4001, "display_group": "topics",
+        "form_position": 3501, "display_group": "topics",
         "type": "intrinsic", "intrinsic_callback": "echo_editable_topics"
     },
     {

@@ -538,11 +538,11 @@ class PaperOption implements Abbreviator {
         $p = get($args, "form_position");
         if ($p === null) {
             if ($this->display === self::DISP_SUBMISSION)
-                $p = 1500 + $this->position;
+                $p = 1100 + $this->position;
             else if ($this->display === self::DISP_PROMINENT)
-                $p = 3500 + $this->position;
+                $p = 3100 + $this->position;
             else
-                $p = 4500 + $this->position;
+                $p = 3600 + $this->position;
         }
         $this->form_position = $p;
 
@@ -550,8 +550,8 @@ class PaperOption implements Abbreviator {
         $this->display_expand = !!get($args, "display_expand");
         $this->display_group = get($args, "display_group");
         if ($this->display_group === null
-            && $this->display_position >= 4000
-            && $this->display_position < 5000) {
+            && $this->display_position >= 3500
+            && $this->display_position < 4000) {
             $this->display_group = "topics";
         }
 
@@ -846,9 +846,7 @@ class CheckboxPaperOption extends PaperOption {
         if ($fr->context === FeatureRender::CPAGE && $ov->value) {
             $fr->title = "";
             $t = htmlspecialchars($this->conf->_c("paper_field", $this->title));
-            if ($this->display() !== self::DISP_TOPICS)
-                $t = '<span class="pavfn">' . $t . '</span>';
-            $fr->set_html("✓ " . $t);
+            $fr->set_html('✓ <span class="pavfn">' . $t . '</span>');
         } else {
             $fr->set_bool(!!$ov->value);
         }
@@ -1112,9 +1110,7 @@ class DocumentPaperOption extends PaperOption {
                 if ($this->display() !== self::DISP_SUBMISSION)
                     $dif = DocumentInfo::L_SMALL;
                 $t = htmlspecialchars($this->conf->_c("paper_field", $this->title));
-                if ($this->display() !== self::DISP_TOPICS)
-                    $t = '<span class="pavfn">' . $t . '</span>';
-                $fr->set_html($d->link_html($t, $dif));
+                $fr->set_html($d->link_html('<span class="pavfn">' . $t . '</span>', $dif));
             } else {
                 $fr->set_html($d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
             }
