@@ -2956,13 +2956,13 @@ ul.x > li:last-child {
 }
 .revcard_body {
 	background: #ffffff;
-	padding: 10px 16px;
+	padding: 12px 16px;
 	border-radius: 2px;
 }
 .revcard_bodyinsert {
 	background: #ffebeb;
-	padding: 10px 16px;
-	margin: -10px -16px 10px;
+	padding: 12px 16px;
+	margin: -12px -16px 12px;
 	border-top-left-radius: 2px;
 	border-top-right-radius: 2px;
 }
@@ -3052,15 +3052,10 @@ ul.x > li:last-child {
 		linear-gradient(to top, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%);
 }
 .rvg {
-	border-top: 1px solid #ffecef;
-	padding: 8px 0;
-}
-.rvg:first-child {
-	border-top: 0 none;
-	padding-top: 0;
+	margin-bottom: 1.25rem;
 }
 .rvg:last-child {
-	padding-bottom: 0;
+	margin-bottom: 0;
 }
 .eauname, .eauaff, .eauemail {
 	margin: 2px 0.5em 2px 0;
