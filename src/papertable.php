@@ -33,6 +33,7 @@ class PaperTable {
     private $entryMatches;
     private $canUploadFinal;
     private $foldmap;
+    private $foldnumber;
 
     private $allow_admin;
     private $admin;
@@ -252,45 +253,69 @@ class PaperTable {
     }
 
     private function echoDivEnter() {
-        // 5: topics, 6: abstract, 8: blind authors, 9: full authors
-        $folds = [
-            5 => $this->allFolded && $this->user->session("foldpapert", 1),
-            6 => $this->allFolded && $this->user->session("foldpaperb", 1),
-            8 => !!$this->user->session("foldpapera", 1),
-            9 => $this->allFolded && $this->user->session("foldpaperp", 1)
-        ];
+        assert($this->prow);
+        // translate session
+        $unfolds = $this->user->session("foldpaper", []);
+        if (is_string($unfolds))
+            $unfolds = explode(" ", $unfolds);
 
+        // 5: topics, 6: abstract, 8: blind authors, 9: full authors
+        $foldsession = [5 => "t", 6 => "b", 8 => "a", 9 => "p"];
+        $this->foldnumber = ["topics" => 5];
+
+        // other expansions
+        $next_foldnum = 10;
+        foreach ($this->conf->paper_opts->feature_list($this->prow) as $o) {
+            if (!$o->internal
+                && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
+                && $o->display_position() !== false
+                && $o->display_position() >= 1000
+                && $o->display_position() < 5000) {
+                if ($o->display_group !== null) {
+                    if (strlen($o->display_group) > 1
+                        && !isset($this->foldnumber[$o->display_group])) {
+                        $this->foldnumber[$o->display_group] = $next_foldnum;
+                        $foldsession[$next_foldnum] = str_replace(" ", "_", $o->display_group);
+                        ++$next_foldnum;
+                    }
+                    if ($o->display_expand) {
+                        $this->foldnumber[$o->formid] = $next_foldnum;
+                        $foldsession[$next_foldnum] = $o->formid;
+                        ++$next_foldnum;
+                    }
+                }
+            }
+        }
+
+        // what is folded?
         // if highlighting, automatically unfold abstract/authors
-        if ($this->prow && $folds[6]) {
+        $this->foldmap = [];
+        foreach ($foldsession as $num => $k) {
+            $this->foldmap[$num] = !in_array($k, $unfolds)
+                && ($this->allFolded || $k === "a");
+        }
+        if ($this->foldmap[6]) {
             $abstract = $this->entryData("abstract");
             if ($this->entryMatches || !$this->abstract_foldable($abstract))
-                $folds[6] = false;
+                $this->foldmap[6] = false;
         }
-        if ($this->matchPreg && $this->prow && $folds[8]) {
+        if ($this->matchPreg && ($this->foldmap[8] || $this->foldmap[9])) {
             $this->entryData("authorInformation");
             if ($this->entryMatches)
-                $folds[8] = $folds[9] = false;
+                $this->foldmap[8] = $this->foldmap[9] = false;
         }
-        $this->foldmap = $folds;
 
         // collect folders
         $folders = array("clearfix");
-        if ($this->prow) {
-            $vas = $this->user->view_authors_state($this->prow);
-            if ($vas === 1)
-                $folders[] = $folds[8] ? "fold8c" : "fold8o";
-            if ($vas !== 0 && $this->allFolded)
-                $folders[] = $folds[9] ? "fold9c" : "fold9o";
+        foreach ($this->foldmap as $num => $f) {
+            if ($num !== 8 || $this->user->view_authors_state($this->prow) === 1)
+                $folders[] = "fold" . $num . ($f ? "c" : "o");
         }
-        $folders[] = $folds[5] ? "fold5c" : "fold5o";
-        $folders[] = $folds[6] ? "fold6c" : "fold6o";
 
         // echo div
-        echo '<div id="foldpaper" class="', join(" ", $folders), '" data-fold-session="'
-            . htmlspecialchars(json_encode_browser([
-                "5" => "foldpapert", "6" => "foldpaperb",
-                "8" => "foldpapera", "9" => "foldpaperp"
-            ])) . '">';
+        echo '<div id="foldpaper" class="', join(" ", $folders),
+            '" data-fold-session-prefix="foldpaper." data-fold-session="',
+            htmlspecialchars(json_encode_browser($foldsession)), '">';
     }
 
     private function echoDivExit() {
@@ -1028,10 +1053,10 @@ class PaperTable {
                 $fr->value = '<span class="pavfn">' . $title . '</span>';
             } else if ($fr->value[0] === "<"
                        && preg_match('{\A((?:<(?:div|p).*?>)*)}', $fr->value, $cm)) {
-                $fr->value = $cm[1] . '<span class="pavfn">' . $title
+                $fr->value = $cm[1] . '<span class="pavfn pavfnsp">' . $title
                     . ':</span> ' . substr($fr->value, strlen($cm[1]));
             } else {
-                $fr->value = '<span class="pavfn">' . $title . ':</span> ' . $fr->value;
+                $fr->value = '<span class="pavfn pavfnsp">' . $title . ':</span> ' . $fr->value;
             }
             $fr->value_long = false;
             $fr->title = "";
@@ -1164,8 +1189,8 @@ class PaperTable {
                 $class = "pg";
                 if ($nvos1 === $last - $first)
                     $class .= " fx8";
-                $foldnum = $o1->display_group === "topics" ? 5 : 10 + $o1->id;
-                if ($renders[$first][2] !== "") {
+                $foldnum = get($this->foldnumber, $o1->display_group, 0);
+                if ($foldnum && $renders[$first][2] !== "") {
                     $group_html = '<span class="fn' . $foldnum . '">'
                         . $group_html . '</span><span class="fx' . $foldnum
                         . '">' . $renders[$first][2] . '</span>';
@@ -1174,14 +1199,20 @@ class PaperTable {
                         . ($renders[$first][4] ? "pg" : "pgsm")
                         . ' pavb">' . $renders[$first][3] . '</div>';
                 }
-                echo '<div class="', $class, '">',
-                    '<div class="pavt ui js-foldup" data-fold-target="', $foldnum, '">',
-                    '<span class="pavfn">',
-                    '<a class="q ui js-foldup" href="" data-fold-target="', $foldnum, '" title="Toggle visibility" role="button" aria-expanded="',
-                    $this->foldmap[$foldnum] ? "false" : "true",
-                    '">', expander(null, $foldnum),
-                    $group_html,
-                    '</a></span></div><div class="pg fx', $foldnum, '">';
+                echo '<div class="', $class, '">';
+                if ($foldnum) {
+                    echo '<div class="pavt ui js-foldup" data-fold-target="', $foldnum, '">',
+                        '<span class="pavfn">',
+                        '<a class="q ui js-foldup" href="" data-fold-target="', $foldnum, '" title="Toggle visibility" role="button" aria-expanded="',
+                        $this->foldmap[$foldnum] ? "false" : "true",
+                        '">', expander(null, $foldnum),
+                        $group_html,
+                        '</a></span></div><div class="pg fx', $foldnum, '">';
+                } else {
+                    echo '<div class="pavt"><span class="pavfn">',
+                        $group_html,
+                        '</span></div><div class="pg">';
+                }
             }
 
             // echo contents
@@ -2290,8 +2321,8 @@ class PaperTable {
         else
             echo '<div class="papcard_body">';
 
-        $this->echoDivEnter();
         if ($this->editable) {
+            echo '<div id="foldpaper">';
             if (!$this->user->can_clickthrough("submit")) {
                 echo '<div class="js-clickthrough-container">',
                     '<div class="js-clickthrough-terms">',
@@ -2305,6 +2336,7 @@ class PaperTable {
                 $this->_echo_editable_body();
             }
         } else {
+            $this->echoDivEnter();
             if ($this->mode === "edit" && ($m = $this->_edit_message())) {
                 echo $m, "<hr class=\"g\">\n";
             }

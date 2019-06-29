@@ -2844,6 +2844,9 @@ ul.x > li:last-child {
 .papfn, .pavfn, .psfn, .revfn {
 	font-weight: bold;
 }
+.pavfn:after {
+	content: " ";
+}
 .papet .papfn {
 	float: left;
 }

@@ -11,10 +11,29 @@ class Session_API {
         }
 
         $error = false;
-        preg_match_all('/(?:\A|\s)(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
+        preg_match_all('/(?:\A|\s)(foldpaper|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
             $unfold = intval(substr($m[3], 1) ? : "0") === 0;
-            if ($m[1] === "scoresort" && $m[2] === "" && $m[3] !== "") {
+            if ($m[1] === "foldpaper" && $m[2] !== "") {
+                $x = $user->session($m[1], []);
+                if (is_string($x))
+                    $x = explode(" ", $x);
+                $x = array_diff($x, [substr($m[2], 1)]);
+                if ($unfold)
+                    $x[] = substr($m[2], 1);
+                $v = join(" ", $x);
+                if ($v === "")
+                    $user->save_session($m[1], null);
+                else if (substr_count($v, " ") === count($x) - 1)
+                    $user->save_session($m[1], $v);
+                else
+                    $user->save_session($m[1], $x);
+                // XXX backwards compat
+                $user->save_session("foldpapera", null);
+                $user->save_session("foldpaperb", null);
+                $user->save_session("foldpaperp", null);
+                $user->save_session("foldpapert", null);
+            } else if ($m[1] === "scoresort" && $m[2] === "" && $m[3] !== "") {
                 $user->save_session($m[1], substr($m[3], 1));
             } else if (($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                        && $m[2] !== "") {
