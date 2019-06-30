@@ -81,56 +81,60 @@ class GetCheckFormat_ListAction extends ListAction {
 
 class GetAbstract_ListAction extends ListAction {
     const WIDTH = 96;
-    static function render_displayed_options(PaperInfo $prow, Contact $user, $display) {
-        $text = "";
-        $fr = new FeatureRender($user, FeatureRender::CTEXT);
-        foreach ($prow->options() as $ov) {
-            if ($ov->option->display() === $display
-                && $user->can_view_option($prow, $ov->option)) {
-                $fr->clear();
-                $ov->option->render($fr, $ov);
-                if ((string) $fr->value !== "") {
-                    $text = prefix_word_wrap("", $ov->option->title, 0, self::WIDTH);
-                    $text .= str_repeat("-", min(self::WIDTH, strlen($text) - 1)) . "\n"
-                        . rtrim($fr->value) . "\n\n";
-                }
+    private static function render_abstract($fr, $prow, $user, $o) {
+        $fr->value = $prow->abstract;
+        $fr->value_format = $prow->format_of($prow->abstract);
+    }
+    private static function render_authors($fr, $prow, $user, $o) {
+        if ($user->can_view_authors($prow)
+            && ($alist = $prow->author_list())) {
+            $fr->title = $prow->conf->_c("paper_field", $o->title, count($alist));
+            $fr->set_text("");
+            foreach ($alist as $i => $au) {
+                $marker = ($i || count($alist) > 1 ? ($i + 1) . ". " : "");
+                $fr->value .= prefix_word_wrap($marker, $au->name_email_aff_text(), strlen($marker), self::WIDTH);
             }
         }
-        return $text;
+    }
+    private static function render_topics($fr, $prow, $user, $o) {
+        if (($tlist = $prow->topic_map())) {
+            $fr->title = $prow->conf->_c("paper_field", $o->title, count($tlist));
+            $fr->set_text("");
+            foreach ($tlist as $t)
+                $fr->value .= prefix_word_wrap("* ", $t, 2, self::WIDTH);
+        }
     }
     static function render(PaperInfo $prow, Contact $user) {
         $n = prefix_word_wrap("", "Submission #{$prow->paperId}: {$prow->title}", 0, self::WIDTH);
         $text = $n . str_repeat("=", min(self::WIDTH, strlen($n) - 1)) . "\n\n";
 
-        $text .= self::render_displayed_options($prow, $user, PaperOption::DISP_SUBMISSION);
-
-        if ($user->can_view_authors($prow) && ($alist = $prow->author_list())) {
-            if (count($alist) == 1)
-                $text .= "Author\n------\n"
-                    . prefix_word_wrap("", $alist[0]->name_email_aff_text(), 0, self::WIDTH);
-            else {
-                $text .= "Authors\n-------\n";
-                foreach ($alist as $i => $au) {
-                    $marker = ($i + 1) . ". ";
-                    $text .= prefix_word_wrap($marker, $au->name_email_aff_text(), strlen($marker), self::WIDTH);
+        $fr = new FeatureRender($user, FeatureRender::CTEXT);
+        foreach ($user->conf->paper_opts->feature_list($prow) as $o) {
+            if (!$o->internal
+                && ($o->id <= 0 || $user->allow_view_option($prow, $o))
+                && $o->display_position() !== false) {
+                $fr->clear();
+                if ($o->id === -1004) {
+                    self::render_abstract($fr, $prow, $user, $o);
+                } else if ($o->id === -1001) {
+                    self::render_authors($fr, $prow, $user, $o);
+                } else if ($o->id === -1005) {
+                    self::render_topics($fr, $prow, $user, $o);
+                } else if ($o->id > 0
+                           && ($ov = $prow->option($o->id))) {
+                    $o->render($fr, $ov);
+                }
+                if (!$fr->is_empty()) {
+                    if ($fr->title === null) {
+                        $fr->title = $prow->conf->_c("paper_field", $o->title);
+                    }
+                    $title = prefix_word_wrap("", $fr->title, 0, self::WIDTH);
+                    $text .= $title
+                        . str_repeat("-", min(self::WIDTH, strlen($title) - 1))
+                        . "\n" . rtrim($fr->value) . "\n\n";
                 }
             }
-            $text .= "\n";
         }
-
-        if ($prow->abstract)
-            $text .= "Abstract\n--------\n" . rtrim($prow->abstract) . "\n\n";
-
-        $text .= self::render_displayed_options($prow, $user, PaperOption::DISP_PROMINENT);
-
-        if (($tlist = $prow->topic_map())) {
-            $text .= "Topics\n------\n";
-            foreach ($tlist as $t)
-                $text .= prefix_word_wrap("* ", $t, 2, self::WIDTH);
-            $text .= "\n";
-        }
-
-        $text .= self::render_displayed_options($prow, $user, PaperOption::DISP_TOPICS);
 
         return $text . "\n";
     }

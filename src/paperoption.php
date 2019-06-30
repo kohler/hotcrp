@@ -223,7 +223,6 @@ class PaperOptionList {
                 expand_json_includes_callback($olist, [$this, "_add_json"]);
             }
             $this->_jlist = array_filter($this->_jlist, "Conf::xt_enabled");
-            uasort($this->_jlist, ["PaperOption", "compare"]);
         }
         return $this->_jlist;
     }
@@ -305,6 +304,7 @@ class PaperOptionList {
                     else
                         $readable_formid[$o->readable_formid] = true;
                 }
+            uasort($this->_olist, "PaperOption::compare");
         }
         return $this->_olist;
     }
@@ -325,6 +325,7 @@ class PaperOptionList {
                     assert(!$o->nonpaper && !$o->final);
                     $this->_olist_nonfinal[$id] = $o;
                 }
+            uasort($this->_olist_nonfinal, "PaperOption::compare");
         }
         return $this->_olist_nonfinal;
     }
@@ -334,6 +335,7 @@ class PaperOptionList {
         foreach ($this->option_json_list() as $id => $oj)
             if (($o = $this->get($id)))
                 $list[$id] = $o;
+        uasort($list, "PaperOption::compare");
         return $list;
     }
 
@@ -345,7 +347,7 @@ class PaperOptionList {
                 && (!$nonfinal || !get($oj, "final"))
                 && ($o = $this->get($id)))
                 $olist[$id] = $o;
-        uasort($olist, "Conf::xt_position_compare");
+        uasort($olist, "PaperOption::compare");
         return $olist;
     }
 
@@ -580,12 +582,12 @@ class PaperOption implements Abbreviator {
     }
 
     static function compare($a, $b) {
-        $ap = isset($a->position) ? (float) $a->position : 99999;
-        $bp = isset($b->position) ? (float) $b->position : 99999;
+        $ap = $a->display_position();
+        $bp = $b->display_position();
         if ($ap != $bp)
             return $ap < $bp ? -1 : 1;
         else
-            return $a->id - $b->id;
+            return Conf::xt_position_compare($a, $b);
     }
 
     static function make_readable_formid($s) {

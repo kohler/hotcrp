@@ -1102,14 +1102,6 @@ class PaperTable {
                 && $o->display_position() < 5000)
                 $features[] = $o;
         }
-        usort($features, function ($a, $b) {
-            $ap = $a->display_position();
-            $bp = $b->display_position();
-            if ($ap != $bp)
-                return $ap < $bp ? -1 : 1;
-            else
-                return Conf::xt_position_compare($a, $b);
-        });
 
         $fr = new FeatureRender($this->user, FeatureRender::CPAGE);
         $fr->table = $this;
