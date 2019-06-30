@@ -1109,7 +1109,7 @@ class DocumentPaperOption extends PaperOption {
             } else if ($fr->context === FeatureRender::CPAGE) {
                 $fr->title = "";
                 $dif = 0;
-                if ($this->display() !== self::DISP_SUBMISSION)
+                if ($this->display_position() >= 2000)
                     $dif = DocumentInfo::L_SMALL;
                 $t = htmlspecialchars($this->conf->_c("paper_field", $this->title));
                 $fr->set_html($d->link_html('<span class="pavfn">' . $t . '</span>', $dif));
@@ -1423,7 +1423,7 @@ class AttachmentsPaperOption extends PaperOption {
                 $linkname = htmlspecialchars($d->unique_filename);
                 if ($fr->want_list()) {
                     $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
-                } else if ($this->display() !== self::DISP_SUBMISSION) {
+                } else if ($this->display_position() >= 2000) {
                     $dif = DocumentInfo::L_SMALL;
                 } else {
                     $dif = 0;
@@ -1445,7 +1445,7 @@ class AttachmentsPaperOption extends PaperOption {
                 $fr->set_html('<p class="od">' . join('</p><p class="od">', $ts) . '</p>');
             }
             if ($fr->context === FeatureRender::CPAGE
-                && $this->display() === self::DISP_SUBMISSION) {
+                && $this->display_position() < 2000) {
                 $fr->title = false;
                 $fr->value = '<div class="pgsm'
                     . ($fr->user->view_option_state($ov->prow, $this) === 1 ? ' fx8' : '')
