@@ -3146,17 +3146,17 @@ function setajaxcheck(elt, rv) {
             }
     }
     make_outline_flasher(elt);
-    if (rv && !rv.ok && !rv.error)
+    if (!rv || (!rv.ok && !rv.error))
         rv = {error: "Error"};
-    if (!rv || (rv.ok && !rv.warning))
+    if (rv.ok && !rv.warning)
         make_outline_flasher(elt, "0, 200, 0");
     else if (rv.ok)
         make_outline_flasher(elt, "133, 92, 4");
     else
         elt.style.outline = "5px solid red";
-    if (rv && rv.error)
+    if (rv.error)
         make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change click hide");
-    else if (rv && rv.warning)
+    else if (rv.warning)
         make_bubble(rv.warning, "warningbubble").near(elt).removeOn(elt, "input change click hide focus blur");
 }
 
@@ -5792,7 +5792,7 @@ function make_tag_save_callback(elt) {
 function set_tags_callback(evt, data) {
     var si = analyze_rows(data.pid);
     if (highlight_entries && rowanal[si].entry)
-        setajaxcheck(rowanal[si].entry);
+        setajaxcheck(rowanal[si].entry, {ok: true});
     row_move(si);
 }
 
