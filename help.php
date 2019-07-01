@@ -77,7 +77,9 @@ class HtHead extends Ht {
     function end_table() {
         return $this->_tabletype ? "" : "</tbody></table>\n";
     }
-    function hotlink($html, $page, $options = null, $js = null) {
+    function hotlink($html, $page, $options = null, $js = []) {
+        if (!isset($js["rel"]))
+            $js["rel"] = "nofollow";
         return $this->conf->hotlink($html, $page, $options, $js);
     }
     function search_link($html, $q = null) {
@@ -116,7 +118,7 @@ class HtHead extends Ht {
             $t = $pre . '<a href="' . $this->conf->hoturl("settings", $group);
             if (!$this->user->privChair)
                 $t .= '" class="u need-tooltip" aria-label="This link to a settings page only works for administrators.';
-            return $t . '">' . $html . '</a>' . $post;
+            return $t . '" rel="nofollow">' . $html . '</a>' . $post;
         } else {
             return '';
         }
