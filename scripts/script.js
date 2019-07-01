@@ -689,7 +689,8 @@ event_key.modifier = function (evt) {
     return nonprintable_map[event_key(evt)] > 1;
 };
 event_key.is_default_a = function (evt, a) {
-    return !evt.metaKey && !evt.ctrlKey && evt.which != 2
+    return !evt.shiftKey && !evt.metaKey && !evt.ctrlKey
+        && evt.button == 0
         && (!a || !hasClass("ui", a));
 };
 return event_key;
