@@ -197,6 +197,9 @@ function jqxhr_error_message(jqxhr, status, errormsg) {
         return "Failed.";
 }
 
+var after_outstanding = (function () {
+var outstanding = 0, after = [];
+
 $(document).ajaxError(function (event, jqxhr, settings, httperror) {
     if (jqxhr.readyState != 4)
         return;
@@ -217,6 +220,13 @@ $(document).ajaxError(function (event, jqxhr, settings, httperror) {
         if (jqxhr.responseText)
             msg += ", " + jqxhr.responseText.substr(0, 100);
         log_jserror(msg);
+    }
+});
+
+$(document).ajaxComplete(function (event, jqxhr, settings) {
+    if (settings.trackOutstanding && --outstanding === 0) {
+        while (after.length)
+            after.shift()();
     }
 });
 
@@ -253,7 +263,19 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
         options.timeout = 10000;
     if (options.dataType == null)
         options.dataType = "json";
+    if (options.trackOutstanding)
+        ++outstanding;
 });
+
+return function (f) {
+    if (f === undefined)
+        return outstanding > 0;
+    else if (outstanding > 0)
+        after.push(f);
+    else
+        f();
+};
+})();
 
 
 // geometry
@@ -4318,11 +4340,11 @@ handle_ui.on("js-togglepreview", switch_preview);
 // quicklink shortcuts
 function quicklink_shortcut(evt, key) {
     // find the quicklink, reject if not found
-    var a = $$("quicklink-" + (key == "j" ? "prev" : "next")), f;
+    var a = $$("quicklink-" + (key === "j" ? "prev" : "next"));
     if (a && a.focus) {
         // focus (for visual feedback), call callback
         a.focus();
-        add_revpref_ajax.then(function () { a.click(); });
+        after_outstanding(make_link_callback(a));
         return true;
     } else if ($$("quicklink-list")) {
         // at end of list
@@ -5138,7 +5160,7 @@ function setfollow() {
 }
 
 var add_revpref_ajax = (function () {
-    var outstanding = 0, then = null, blurred_at = 0;
+    var blurred_at = 0;
 
     function rp(selector, on_unload) {
         var $e = $(selector);
@@ -5158,10 +5180,6 @@ var add_revpref_ajax = (function () {
         }
     }
 
-    rp.then = function (f) {
-        outstanding ? then = f : f();
-    };
-
     function rp_blur() {
         blurred_at = now_msec();
     }
@@ -5172,27 +5190,21 @@ var add_revpref_ajax = (function () {
             cid = pid.substr(pos + 1);
             pid = pid.substr(0, pos);
         }
-        ++outstanding;
         $.ajax(hoturl_post("api/revpref", {p: pid}), {
             method: "POST", data: {pref: self.value, u: cid},
             success: function (rv) {
                 setajaxcheck(self, rv);
                 if (rv && rv.ok && rv.value != null)
                     self.value = rv.value === "0" ? "" : rv.value;
-            },
-            complete: function (xhr, status) {
-                --outstanding;
-                then && then();
-            }
+            }, trackOutstanding: true
         });
     }
 
     function rp_a_click(e) {
-        if (outstanding && event_key.is_default_a(e, this)) {
-            then = make_link_callback(this);
+        if (event_key.is_default_a(e, this) && after_outstanding()) {
+            after_outstanding(make_link_callback(this));
             return false;
-        } else
-            return true;
+        }
     }
 
     function rp_unload() {
@@ -5504,8 +5516,7 @@ function search_sort_click(evt) {
         && /search(?:\.php)?\?/.test(href)) {
         search_sort_url(this, href);
         return false;
-    } else
-        return true;
+    }
 }
 
 function search_scoresort_change(evt) {
@@ -8157,9 +8168,9 @@ function row_click(evt) {
         var $a = $(pl).find("a.pnum").first(),
             href = $a[0].getAttribute("href");
         handle_list($a[0], href);
-        if (event_key.is_default_a(evt))
+        if (event_key.is_default_a(evt)) {
             window.location = href;
-        else {
+        } else {
             var w = window.open(href, "_blank");
             w && w.blur();
             window.focus();
