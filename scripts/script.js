@@ -668,7 +668,7 @@ event_key.modifier = function (evt) {
 };
 event_key.is_default_a = function (evt, a) {
     return !evt.metaKey && !evt.ctrlKey && evt.which != 2
-        && (!a || !/(?:^|\s)(?:ui|btn)(?=\s|$)/i.test(a.className || ""));
+        && (!a || !hasClass("ui", a));
 };
 return event_key;
 })();
