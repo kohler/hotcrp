@@ -8150,11 +8150,11 @@ function unload_list() {
         set_cookie(hl);
 }
 function row_click(evt) {
-    var $tgt = $(evt.target);
     if (evt.target.tagName === "A"
         || evt.target.tagName === "INPUT"
         || evt.target.tagName === "TEXTAREA"
         || evt.target.tagName === "SELECT"
+        || evt.target.tagName === "BUTTON"
         || !hasClass(this.parentElement, "pltable"))
         return;
     var pl = this;
