@@ -4,7 +4,7 @@
 		"subject": "[%CONFSHORTNAME%] Account information",
 		"body": [
 			"Greetings,\n\n",
-			"An account has been created for you at the %CONFNAME% submissions site.\n\n",
+			"An account has been created for you at the %CONFNAME% submission site.\n\n",
 			"        Site: %URL%/\n",
 			"       Email: %EMAIL%\n",
 			"    Password: %OPT(PASSWORD)%\n\n",
@@ -21,7 +21,7 @@
 		"subject": "[%CONFSHORTNAME%] Account information",
 		"body": [
 			"Greetings,\n\n",
-			"Your %CONTACTDBDESCRIPTION% account has been activated for the %CONFNAME% submissions site.\n\n",
+			"Your %CONTACTDBDESCRIPTION% account has been activated for the %CONFNAME% submission site.\n\n",
 			"        Site: %URL%/\n",
 			"       Email: %EMAIL%\n\n",
 			"Use the link above to sign in with your %CONTACTDBDESCRIPTION% password or to reset your password.\n\n",
@@ -35,7 +35,7 @@
 		"subject": "[%CONFSHORTNAME%] Account information",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"Here is your account information for the %CONFNAME% submissions site.\n\n",
+			"Here is your account information for the %CONFNAME% submission site.\n\n",
 			"        Site: %URL%/\n",
 			"       Email: %EMAIL%\n",
 			"    Password: %OPT(PASSWORD)%\n\n",
@@ -51,7 +51,7 @@
 		"subject": "[%CONFSHORTNAME%] Password reset request",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"We received a request to reset the password for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to create a new password. The link will work for 3 days.\n\n",
+			"We received a request to reset the password for your account on the %CONFNAME% submission site. If you made this request, please use the following link to create a new password. The link will work for 3 days.\n\n",
 			"%URL%/resetpassword%PHP%/%CAPABILITY%\n\n",
 			"If you did not make this request, it's safe to ignore this email.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
@@ -64,7 +64,7 @@
 		"subject": "[%CONFSHORTNAME%] Email change request",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"We received a request to change the email address for your account on the %CONFNAME% submissions site. If you made this request, please use the following link to update your account to use %EMAIL%. The link will work for 3 days.\n\n",
+			"We received a request to change the email address for your account on the %CONFNAME% submission site. If you made this request, please use the following link to update your account to use %EMAIL%. The link will work for 3 days.\n\n",
 			"%URL%/profile%PHP%?changeemail=%CAPABILITY%\n\n",
 			"If you did not make this request, it's safe to ignore this email.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
@@ -77,7 +77,7 @@
 		"subject": "[%CONFSHORTNAME%] Merged account",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"Your account at the %CONFSHORTNAME% submissions site has been merged with the account of %OTHERCONTACT%. From now on, you should log in using the %OTHEREMAIL% account.\n\n",
+			"Your account at the %CONFSHORTNAME% submission site has been merged with the account of %OTHERCONTACT%. From now on, you should log in using the %OTHEREMAIL% account.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -133,7 +133,7 @@
 		"name": "submitfinalpaper",
 		"subject": "[%CONFSHORTNAME%] Updated accepted #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Accepted submission #%PAPER% has been updated at the %CONFNAME% submissions site.\n\n",
+			"Accepted submission #%PAPER% has been updated at the %CONFNAME% submission site.\n\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%&%AUTHORVIEWCAPABILITY%)%\n\n",
@@ -502,7 +502,7 @@
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
 			"%NUMACCEPTED% of %NUMSUBMITTED% submissions were accepted. Congratulations!\n\n",
-			"Reviews and comments are appended to this email. The submissions site also has reviews and comments, as well as more information about review scores.%LOGINNOTICE%\n\n",
+			"Visit the submission site for reviews, comments, and related information. Reviews and comments are also included below.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%REVIEWS%\n",
@@ -523,7 +523,7 @@
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
 			"%NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.\n\n",
-			"Reviews and comments on your paper are appended to this email. The submissions site also has the paper's reviews and comments, as well as more information about review scores.%LOGINNOTICE%\n\n",
+			"Visit the submission site for reviews, comments, and related information. Reviews and comments are also included below.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%REVIEWS%\n",
