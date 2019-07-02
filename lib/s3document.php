@@ -230,6 +230,12 @@ class S3Document extends S3Result {
     private function run($skey, $method, $args) {
         if (!$this->check_skey($skey))
             return;
+        if (isset($args["content"])
+            && strlen($args["content"]) > 10000000
+            && strlen($args["content"]) * 2.5 > ini_get_bytes("memory_limit")
+            && strlen($args["content"]) < 800000000) {
+            @ini_set("memory_limit", (int) (strlen($args["content"]) * 2.5));
+        }
         for ($i = 1; true; ++$i) {
             $this->clear_result();
             $this->run_stream_once($skey, $method, $args);
