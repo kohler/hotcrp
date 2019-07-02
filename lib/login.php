@@ -178,7 +178,6 @@ class LoginHelper {
         }
         if ($uindex === 0) {
             $_SESSION["u"] = $xuser->email;
-            $_SESSION["trueuser"] = (object) array("email" => $xuser->email);
         }
         $_SESSION["testsession"] = true;
 
