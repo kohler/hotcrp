@@ -5,15 +5,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: huitema@bellcore.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=huitema%40bellcore.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -30,15 +26,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: christophe.diot@sophia.inria.fr
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=christophe.diot%40sophia.inria.fr&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -55,15 +47,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: estrin@usc.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=estrin%40usc.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -80,15 +68,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: kohler@seas.harvard.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=kohler%40seas.harvard.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -105,15 +89,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: varghese@ccrc.wustl.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=varghese%40ccrc.wustl.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -130,15 +110,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: jj@cse.ucsc.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=jj%40cse.ucsc.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -155,15 +131,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: jon@cs.ucl.ac.uk
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=jon%40cs.ucl.ac.uk&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -180,15 +152,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: lixia@cs.ucla.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=lixia%40cs.ucla.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -205,15 +173,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: marina@poema.ru
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=marina%40poema.ru&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -230,15 +194,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: mjh@isi.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=mjh%40isi.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -255,15 +215,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: mgbaker@cs.stanford.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=mgbaker%40cs.stanford.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -280,15 +236,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: pfrancis@ntt.jp
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=pfrancis%40ntt.jp&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -305,15 +257,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: peter.danzig@usc.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=peter.danzig%40usc.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -330,15 +278,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: pdruschel@cs.rice.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=pdruschel%40cs.rice.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -355,15 +299,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: rguerin@ibm.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=rguerin%40ibm.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -380,15 +320,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: floyd@ee.lbl.gov
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=floyd%40ee.lbl.gov&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -405,15 +341,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: shenker@parc.xerox.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=shenker%40parc.xerox.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -430,15 +362,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: van@ee.lbl.gov
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=van%40ee.lbl.gov&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -455,15 +383,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: ojuelegba@gmail.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=ojuelegba%40gmail.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -480,15 +404,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: micke@cdt.luth.se
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=micke%40cdt.luth.se&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -505,15 +425,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: sclin@leland.stanford.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=sclin%40leland.stanford.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -530,15 +446,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: waldvogel@tik.ee.ethz.ch
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=waldvogel%40tik.ee.ethz.ch&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -555,15 +467,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: chane@ecse.ucsc.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=chane%40ecse.ucsc.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -580,15 +488,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: bnoble@cs.cmu.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=bnoble%40cs.cmu.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -605,15 +509,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: slu@crhc.uiuc.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=slu%40crhc.uiuc.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -630,15 +530,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: sjhan@eecs.umich.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=sjhan%40eecs.umich.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -655,15 +551,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: kienhua@cs.ucf.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=kienhua%40cs.ucf.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -680,15 +572,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: salex@dsl.cis.upenn.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=salex%40dsl.cis.upenn.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -705,15 +593,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: labovit@eecs.umich.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=labovit%40eecs.umich.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -730,15 +614,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: rmalan@eecs.umich.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=rmalan%40eecs.umich.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -755,15 +635,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: farnam@eecs.umich.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=farnam%40eecs.umich.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -780,15 +656,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: rtm@eecs.harvard.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=rtm%40eecs.harvard.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -805,15 +677,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: vern@ee.lbl.gov
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=vern%40ee.lbl.gov&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -830,15 +698,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: frystyk@w3.org
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=frystyk%40w3.org&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -855,15 +719,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: mogul@wrl.dec.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=mogul%40wrl.dec.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -880,15 +740,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: bala@research.att.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=bala%40research.att.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -905,15 +761,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: cheshire@cs.stanford.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=cheshire%40cs.stanford.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -930,15 +782,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: suvo@cs.stanford.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=suvo%40cs.stanford.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -955,15 +803,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: breslau@parc.xerox.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=breslau%40parc.xerox.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -980,15 +824,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: tripathi@cs.ucr.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=tripathi%40cs.ucr.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1005,15 +845,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: guerin@watson.ibm.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=guerin%40watson.ibm.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1030,15 +866,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: sanjay@watson.ibm.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=sanjay%40watson.ibm.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1055,15 +887,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: anja@research.att.com
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=anja%40research.att.com&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1080,15 +908,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: byers@icsi.berkeley.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=byers%40icsi.berkeley.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1105,15 +929,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: luby@icsi.berkeley.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=luby%40icsi.berkeley.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1130,15 +950,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: ckwong@cs.utexas.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=ckwong%40cs.utexas.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1155,15 +971,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: whycu@ctr.columbia.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=whycu%40ctr.columbia.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1180,15 +992,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: kkumar@isi.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=kkumar%40isi.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1205,15 +1013,11 @@ Subject: [Testconf I] Account information
 Greetings,
 
 An account has been created for you at the Test Conference I (Testconf I)
-submissions site.
+submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: istoica@cs.cmu.edu
     Password: {{}}
-
-Use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=istoica%40cs.cmu.edu&password={{}}
 
 If you already have an account under a different email address, you may
 merge this new account into that one. Go to your profile page and select
@@ -1391,7 +1195,7 @@ Subject: [Testconf I] Account information
 Greetings,
 
 Your HotCRP account has been activated for the Test Conference I (Testconf
-I) submissions site.
+I) submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: akhmatova@poema.ru
@@ -1516,10 +1320,6 @@ Your account information is as follows.
         Site: http://hotcrp.lcdf.org/test/
        Email: external2@_.com
     Password: {{}}
-
-Or use the link below to sign in.
-
-http://hotcrp.lcdf.org/test/?email=external2%40_.com&password={{}}
 
 Once you've decided, please take a moment to accept or decline this review
 request by using one of these links. You may also contact Lixia Zhang
