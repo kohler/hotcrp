@@ -1914,6 +1914,12 @@ class Conf {
     function check_invariants() {
         $ie = [];
 
+        // local invariants
+        $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 and timeWithdrawn>0 limit 1");
+        if ($any)
+            $this->invariant_error($ie, "submitted_withdrawn", "paper #" . self::$invariant_row[0] . " is both submitted and withdrawn");
+
+        // settings correctly materialize database facts
         $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 limit 1");
         if ($any !== !get($this->settings, "no_papersub"))
             $this->invariant_error($ie, "no_papersub");
