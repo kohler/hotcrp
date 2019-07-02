@@ -1134,14 +1134,7 @@ class PaperInfo {
         foreach ($this->_option_values as $oid => $ovalues)
             if (($o = $paper_opts->get($oid, $all)))
                 $option_array[$oid] = new PaperOptionValue($this, $o, $ovalues, get($this->_option_data, $oid));
-        uasort($option_array, function ($a, $b) {
-            if ($a->option && $b->option)
-                return PaperOption::compare($a->option, $b->option);
-            else if ($a->option || $b->option)
-                return $a->option ? -1 : 1;
-            else
-                return $a->id - $b->id;
-        });
+        uasort($option_array, "PaperOption::compare");
         return $option_array;
     }
 
