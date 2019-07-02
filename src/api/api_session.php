@@ -11,7 +11,7 @@ class Session_API {
         }
 
         $error = false;
-        preg_match_all('/(?:\A|\s)(foldpaper|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
+        preg_match_all('/(?:\A|\s)(foldpaper|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|(?:|ul)scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
             $unfold = intval(substr($m[3], 1) ? : "0") === 0;
             if ($m[1] === "foldpaper" && $m[2] !== "") {
@@ -34,7 +34,14 @@ class Session_API {
                 $user->save_session("foldpaperp", null);
                 $user->save_session("foldpapert", null);
             } else if ($m[1] === "scoresort" && $m[2] === "" && $m[3] !== "") {
-                $user->save_session($m[1], substr($m[3], 1));
+                $want = substr($m[3], 1);
+                $default = ListSorter::default_score_sort($user, true);
+                $user->save_session($m[1], $want === $default ? null : $want);
+            } else if ($m[1] === "ulscoresort" && $m[2] === "" && $m[3] !== "") {
+                $want = substr($m[3], 1);
+                if (in_array($want, ["A", "V", "D"], true)) {
+                    $user->save_session($m[1], $want === "A" ? null : $want);
+                }
             } else if (($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                        && $m[2] !== "") {
                 PaperList::change_display($user, substr($m[1], 0, 2), substr($m[2], 1), $unfold);

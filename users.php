@@ -282,7 +282,7 @@ if (isset($Qreq->redisplay)) {
         if ($Qreq["has_show{$f->id}"])
             $sv[] = "uldisplay.{$f->id}=" . ($Qreq->get("show{$f->id}") ? 0 : 1);
     if (isset($Qreq->scoresort))
-        $sv[] = "scoresort=" . ListSorter::canonical_short_score_sort($Qreq->scoresort);
+        $sv[] = "ulscoresort=" . ListSorter::canonical_short_score_sort($Qreq->scoresort);
     Session_API::setsession($Me, join(" ", $sv));
     $Conf->self_redirect($Qreq);
 }
@@ -356,7 +356,7 @@ if (count($tOpt) > 1) {
                 $ss[$k] = $v;
         echo '<tr><td colspan="3"><hr class="g"><b>Sort scores by:</b> &nbsp;',
             Ht::select("scoresort", $ss,
-                       ListSorter::canonical_long_score_sort($Me->session("scoresort", "A"))),
+                       ListSorter::canonical_long_score_sort($Me->session("ulscoresort", "A"))),
             "</td></tr>";
     }
     echo "</table></form>";

@@ -67,9 +67,7 @@ else if ($Qreq->sort
          && $s->score)
     $Qreq->scoresort = ListSorter::canonical_short_score_sort($s->score);
 if ($Qreq->scoresort)
-    $Me->save_session("scoresort", $Qreq->scoresort);
-if (!$Me->session("scoresort"))
-    $Me->save_session("scoresort", ListSorter::default_score_sort($Me));
+    Session_API::setsession($Me, "scoresort=" . $Qreq->scoresort);
 if ($Qreq->redisplay) {
     if (isset($Qreq->forceShow) && !$Qreq->forceShow && $Qreq->showforce)
         $forceShow = 0;
@@ -281,7 +279,7 @@ if ($pl_text) {
         $display_options->set_header(30, "<strong>Scores:</strong>");
         $sortitem = '<div class="mt-2">Sort by: &nbsp;'
             . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
-                         ListSorter::canonical_long_score_sort($Me->session("scoresort")),
+                         ListSorter::canonical_long_score_sort(ListSorter::default_score_sort($Me)),
                          ["id" => "scoresort"])
             . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
         $display_options->item(30, $sortitem);

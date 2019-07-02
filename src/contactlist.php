@@ -207,8 +207,8 @@ class ContactList {
             if (($f = $this->conf->review_field($this->sortField))) {
                 $fieldId = $this->sortField;
                 $scoreMax = $this->scoreMax[$fieldId];
-                $scoresort = $this->user->session("scoresort", "A");
-                if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
+                $scoresort = $this->user->session("ulscoresort", "A");
+                if (!in_array($scoresort, ["A", "V", "D"], true))
                     $scoresort = "A";
                 Contact::$allow_nonexistent_properties = true;
                 foreach ($rows as $row) {
