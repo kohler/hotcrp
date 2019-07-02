@@ -13,7 +13,6 @@
     {"name": "ADMINEMAIL", "callback": "*kw_siteuser", "global": true, "userx": "EMAIL", "synonym": "SITEEMAIL"},
     {"name": "SIGNATURE", "callback": "Mailer::kw_signature", "global": true},
     {"name": "URL", "callback": "Mailer::kw_url", "global": true},
-    {"name": "LOGINNOTICE", "callback": "Mailer::kw_loginnotice", "global": true},
     {"name": "ADMINUPDATE", "callback": "Mailer::kw_adminupdate", "global": true},
     {"name": "REASON", "callback": "Mailer::kw_notes", "global": true},
     {"name": "NOTES", "callback": "Mailer::kw_notes", "global": true},

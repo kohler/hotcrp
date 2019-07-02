@@ -639,8 +639,6 @@ echo '<div class="aa c">',
 <dl class="ctelt" style="margin-bottom:1.5em">
 <dt><code>%URL%</code></dt>
     <dd>Site URL.</dd>
-<dt><code>%LOGINURL%</code></dt>
-    <dd>URL for recipient to log in to the site.</dd>
 <dt><code>%NUMSUBMITTED%</code></dt>
     <dd>Number of papers submitted.</dd>
 <dt><code>%NUMACCEPTED%</code></dt>
