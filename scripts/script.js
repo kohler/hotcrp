@@ -8160,8 +8160,10 @@ function row_click(evt) {
     var pl = this;
     while (pl.nodeType !== 1 || /^plx/.test(pl.className))
         pl = pl.previousSibling;
-    if (hasClass(this.parentElement.parentElement, "pltable-focus-checkbox")) {
-        $(pl).find("input[type=checkbox]").focus().scrollIntoView();
+    var $inputs = $(pl).find("input, textarea, select, button")
+        .not("input[type=hidden], .pl_sel > input");
+    if ($inputs.length) {
+        $inputs.first().focus().scrollIntoView();
         evt.preventDefault();
     } else if (hasClass(evt.target, "pl_id")
                || hasClass(evt.target, "pl_title")
