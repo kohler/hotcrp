@@ -116,4 +116,38 @@ class CapabilityManager {
                 self::apply_hoturl_capability($uf->name, $isadd);
         }
     }
+
+    private static function make_review_acceptor($user, $pid, $cid, $uf) {
+        $user->set_capability("@ra$pid", $cid);
+        if ($user->is_activated())
+            self::apply_hoturl_capability($uf->name, $cid);
+    }
+
+    static function apply_review_acceptor(Contact $user, $uf, $isadd) {
+        global $Now;
+
+        $result = $user->conf->qe("select * from PaperReview where reviewId=?", $uf->match_data[1]);
+        $rrow = ReviewInfo::fetch($result, $user->conf);
+        if ($rrow && $rrow->acceptor_is($uf->match_data[2])) {
+            if ($rrow->acceptor()->at < $Now - 2592000) {
+                $user->conf->warnMsg("The review link you followed has expired. You’ll need to sign in to the site to view or edit your reviews.");
+            } else {
+                self::make_review_acceptor($user, $rrow->paperId, $isadd ? (int) $rrow->contactId : null, $uf);
+            }
+            return;
+        }
+
+        $result = $user->conf->qe("select * from PaperReviewRefused where `data` is not null and timeRefused>=?", $Now - 604800);
+        while (($refusal = $result->fetch_object())) {
+            $data = json_decode($refusal->data);
+            if ($data && isset($data->acceptor) && isset($data->acceptor->text)
+                && $data->acceptor->text === $uf->match_data[2]) {
+                self::make_review_acceptor($user, $refusal->paperId, $isadd ? (int) $refusal->contactId : null, $uf);
+                return;
+            }
+        }
+        Dbl::free($result);
+
+        $user->conf->warnMsg("The review link you followed is no longer active. Sign in to the site to view or edit your reviews.");
+    }
 }

@@ -28,6 +28,8 @@ class ReviewInfo {
     // ... scores ...
     //public $reviewWordCount;
     //public $reviewFormat;
+    //public $data;
+    private $_data;
 
     static public $text_field_map = [
         "paperSummary" => "t01", "commentsToAuthor" => "t02",
@@ -349,5 +351,43 @@ class ReviewInfo {
             && $this->requestedBy
             && $this->conf->setting("extrev_approve")
             && $this->conf->setting("pcrev_editdelegate");
+    }
+
+    private function _load_data() {
+        if (!property_exists($this, "data"))
+            $this->data = $this->conf->fetch_value("select `data` from PaperReview where paperId=? and reviewId=?", $this->paperId, $this->reviewId);
+        $this->_data = $this->data ? json_decode($this->data) : (object) [];
+    }
+
+    private function _save_data() {
+        $this->data = json_encode_db($this->_data);
+        if ($this->data === "{}")
+            $this->data = null;
+        $this->conf->qe("update PaperReview set `data`=? where paperId=? and reviewId=?", $this->data, $this->paperId, $this->reviewId);
+    }
+
+    function acceptor() {
+        global $Now;
+        if ($this->_data === null)
+            $this->_load_data();
+        if (!isset($this->_data->acceptor)) {
+            $this->_data->acceptor = (object) ["text" => hotcrp_random_password(), "at" => $Now];
+            $this->_save_data();
+        }
+        return $this->_data->acceptor;
+    }
+    function acceptor_is($text) {
+        if ($this->_data === null)
+            $this->_load_data();
+        return isset($this->_data->acceptor)
+            && $this->_data->acceptor->text === $text;
+    }
+    function delete_acceptor() {
+        if ($this->_data === null)
+            $this->_load_data();
+        if (isset($this->_data->acceptor)) {
+            unset($this->_data->acceptor);
+            $this->_save_data();
+        }
     }
 }

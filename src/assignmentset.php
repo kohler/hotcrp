@@ -821,6 +821,8 @@ class Review_AssignmentParser extends AssignmentParser {
             $rev["_rtype"] = REVIEW_PC;
         if ($rdata->newround !== null && $rdata->explicitround)
             $rev["_round"] = $rdata->newround;
+        if ($rev["_rtype"] && isset($req->reason))
+            $rev["_reason"] = $req->reason;
         $state->add($rev);
         return true;
     }
@@ -941,7 +943,11 @@ class Review_Assigner extends Assigner {
         if ($this->notify) {
             $reviewer = $aset->conf->user_by_id($this->cid);
             $prow = $aset->conf->fetch_paper($this->pid, $reviewer);
-            HotCRPMailer::send_to($reviewer, $this->notify, $prow);
+            HotCRPMailer::send_to($reviewer, $this->notify, $prow, [
+                "requester_contact" => $aset->user,
+                "reason" => $this->item["_reason"],
+                "rrow" => $prow->fresh_review_of_user($this->cid)
+            ]);
         }
     }
 }

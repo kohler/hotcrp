@@ -797,6 +797,10 @@ class Contact {
             return "";
     }
 
+    function has_capabilities() {
+        return $this->_capabilities !== null;
+    }
+
     function capability($name) {
         return $this->_capabilities ? get($this->_capabilities, $name) : null;
     }
@@ -804,9 +808,9 @@ class Contact {
     function set_capability($name, $newval) {
         $oldval = $this->capability($name);
         if ($newval !== $oldval) {
-            if ($newval !== null)
+            if ($newval !== null) {
                 $this->_capabilities[$name] = $newval;
-            else {
+            } else {
                 unset($this->_capabilities[$name]);
                 if (empty($this->_capabilities))
                     $this->_capabilities = null;
@@ -1555,9 +1559,12 @@ class Contact {
 
         // Update contact information from capabilities
         if ($this->_capabilities) {
-            foreach ($this->_capabilities as $k => $v)
+            foreach ($this->_capabilities as $k => $v) {
                 if (str_starts_with($k, "@av") && $v)
                     $this->_active_roles |= self::ROLE_AUTHOR;
+                else if (str_starts_with($k, "@ra") && $v)
+                    $this->_active_roles |= self::ROLE_REVIEWER;
+            }
         }
     }
 
@@ -1858,6 +1865,16 @@ class Contact {
             $ci->allow_pc = $ci->can_administer
                 || ($isPC && $ci->conflictType <= 0);
 
+            // check review accept capability
+            if ($ci->reviewType == 0
+                && $this->_capabilities !== null
+                && ($rcid = get($this->_capabilities, "@ra{$prow->paperId}"))
+                && ($ru = $this->conf->cached_user_by_id($rcid))
+                && ($rci = $prow->contact_info($ru))) {
+                $ci->reviewType = $rci->reviewType;
+                $ci->review_status = $rci->review_status;
+            }
+
             // check whether this is a potential reviewer
             // (existing external reviewer or PC)
             if ($ci->reviewType > 0 || $am_lead)
@@ -2098,9 +2115,8 @@ class Contact {
             foreach ($this->_capabilities as $k => $v)
                 if (str_starts_with($k, "@av")
                     && $v
-                    && ($pid = substr($k, 3))
-                    && ctype_digit($pid))
-                    $m[] = "Paper.paperId=$pid";
+                    && ctype_digit(substr($k, 3)))
+                    $m[] = "Paper.paperId=" . substr($k, 3);
         }
         if (empty($m) && $this->contactId && $only_if_complex)
             return false;
@@ -2113,10 +2129,22 @@ class Contact {
     }
 
     function act_reviewer_sql($table) {
-        $sql = $this->contactId ? "$table.contactId={$this->contactId}" : "false";
+        $m = [];
+        if ($this->contactId > 0)
+            $m[] = "{$table}.contactId={$this->contactId}";
         if (($rev_tokens = $this->review_tokens()))
-            $sql = "($sql or $table.reviewToken in (" . join(",", $rev_tokens) . "))";
-        return $sql;
+            $m[] = "{$table}.reviewToken in (" . join(",", $rev_tokens) . ")";
+        if ($this->_capabilities !== null) {
+            foreach ($this->_capabilities as $k => $v)
+                if (str_starts_with($k, "@ra")
+                    && $v
+                    && ctype_digit(substr($k, 3)))
+                    $m[] = "({$table}.paperId=" . substr($k, 3) . " and {$table}.contactId=" . $v . ")";
+        }
+        if (count($m) > 1)
+            return "(" . join(" or ", $m) . ")";
+        else
+            return empty($m) ? "false" : $m[0];
     }
 
     function can_start_paper() {
@@ -2596,7 +2624,9 @@ class Contact {
             && ($rrow->contactId == $this->contactId
                 || ($this->_review_tokens
                     && $rrow->reviewToken
-                    && in_array($rrow->reviewToken, $this->_review_tokens)));
+                    && in_array($rrow->reviewToken, $this->_review_tokens))
+                || ($this->_capabilities !== null
+                    && get($this->_capabilities, "@ra" . $rrow->paperId) == $rrow->contactId));
     }
 
     function is_owned_review($rbase = null) { // review/request/refusal
@@ -2608,7 +2638,9 @@ class Contact {
                     && in_array($rbase->reviewToken, $this->_review_tokens))
                 || ($rbase->requestedBy == $this->contactId
                     && $rbase->reviewType == REVIEW_EXTERNAL
-                    && $this->conf->setting("pcrev_editdelegate")));
+                    && $this->conf->setting("pcrev_editdelegate"))
+                || ($this->_capabilities !== null
+                    && get($this->_capabilities, "@ra" . $rbase->paperId) == $rbase->contactId));
     }
 
     function can_view_review_assignment(PaperInfo $prow, $rrow) {

@@ -5,26 +5,6 @@
 require_once("src/initweb.php");
 require_once("src/papertable.php");
 
-// special case: if "accept" or "refuse" is set, and "email" and "password"
-// are both set, vector through the signin page
-if (isset($Qreq->email)
-    && isset($Qreq->password)
-    && (isset($Qreq->accept) || isset($Qreq->refuse) || isset($Qreq->decline))) {
-    PaperTable::clean_request($Qreq);
-    $after = "";
-    foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v) {
-        if (isset($Qreq[$k]) && !isset($Qreq[$v]))
-            $Qreq[$v] = $Qreq[$k];
-    }
-    foreach (array("p", "r", "c", "accept", "refuse", "decline") as $opt)
-        if (isset($Qreq[$opt]))
-            $after .= ($after === "" ? "" : "&") . $opt . "=" . urlencode($Qreq[$opt]);
-    $url = $Conf->hoturl_site_relative_raw("review", $after);
-    go(hoturl("index", "email=" . urlencode($Qreq->email) . "&password=" . urlencode($Qreq->password) . "&go=" . urlencode($url)));
-}
-
-if ($Me->is_empty())
-    $Me->escape();
 $rf = $Conf->review_form();
 
 
@@ -57,16 +37,16 @@ loadRows();
 
 
 // general error messages
-if ($Qreq->post && $Qreq->post_empty())
+if ($Qreq->post && $Qreq->post_empty()) {
     $Conf->post_missing_msg();
-else if ($Qreq->post && $Qreq->default) {
+} else if ($Qreq->post && $Qreq->default) {
     if ($Qreq->has_file("uploadedFile"))
         $Qreq->uploadForm = 1;
     else
         $Qreq->update = 1;
-} else if (isset($Qreq->submitreview))
+} else if (isset($Qreq->submitreview)) {
     $Qreq->update = $Qreq->ready = 1;
-else if (isset($Qreq->savedraft)) {
+} else if (isset($Qreq->savedraft)) {
     $Qreq->update = 1;
     unset($Qreq->ready);
 }
@@ -239,7 +219,8 @@ if (isset($Qreq->text)) {
 
 
 // retract review request
-if (isset($Qreq->refuse) || isset($Qreq->decline)) {
+if ((isset($Qreq->refuse) || isset($Qreq->decline))
+    && ($Qreq->post_ok() || $Me->capability("@ra" . $prow->paperId))) {
     if ($paperTable->editrrow)
         $Qreq->email = $paperTable->editrrow->email;
     $result = RequestReview_API::declinereview($Me, $Qreq, $prow);
@@ -265,17 +246,19 @@ if (isset($Qreq->refuse) || isset($Qreq->decline)) {
     }
 }
 
-if (isset($Qreq->accept)) {
-    // XXX post_ok()
+if (isset($Qreq->accept)
+    && ($Qreq->post_ok() || $Me->capability("@ra" . $prow->paperId))) {
     if (!$paperTable->editrrow
         || (!$Me->is_my_review($paperTable->editrrow) && !$Me->can_administer($prow)))
         Conf::msg_error("This review was not assigned to you, so you cannot confirm your intention to write it.");
     else {
-        if ($paperTable->editrrow->reviewModified <= 0)
+        if ($paperTable->editrrow->reviewModified <= 0) {
             Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
                 where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0",
                 $Now, $prow->paperId, $paperTable->editrrow->reviewId);
-        $Conf->confirmMsg("Thank you for confirming your intention to finish this review.  You can download the paper and review form below.");
+        }
+        $Conf->confirmMsg("Thank you for confirming your intention to finish this review. You can download the paper and review form below.");
+        $Conf->self_redirect($Qreq);
         loadRows();
     }
 }

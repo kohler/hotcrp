@@ -300,6 +300,7 @@ CREATE TABLE `PaperReview` (
 
   `tfields` longblob,
   `sfields` varbinary(2048) DEFAULT NULL,
+  `data` varbinary(8192) DEFAULT NULL,
 
   PRIMARY KEY (`paperId`,`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
@@ -342,7 +343,9 @@ CREATE TABLE `PaperReviewRefused` (
   `timeRequested` bigint(11) DEFAULT NULL,
   `refusedBy` int(11) DEFAULT NULL,
   `timeRefused` bigint(11) DEFAULT NULL,
+  `reviewType` tinyint(1) NOT NULL DEFAULT '0',
   `reviewRound` int(1) DEFAULT NULL,
+  `data` varbinary(8192) DEFAULT NULL,
   `reason` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`paperId`,`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -510,7 +513,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 214);
+insert into Settings (name, value) values ('allowPaperOption', 217);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

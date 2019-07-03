@@ -2027,7 +2027,8 @@ class ReviewValues extends MessageSet {
             $reviewer = $this->conf->cached_user_by_id($contactId);
 
         $this->_mailer_info = [
-            "rrow" => $new_rrow, "reviewer_contact" => $reviewer,
+            "rrow" => $new_rrow,
+            "reviewer_contact" => $reviewer,
             "check_function" => "HotCRPMailer::check_can_view_review"
         ];
         $this->_mailer_preps = [];

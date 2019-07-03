@@ -226,8 +226,8 @@
 			"       Email: %EMAIL%\n",
 			"    Password: %OPT(PASSWORD)%\n\n",
 			"Once you've decided, please take a moment to accept or decline this review request by using one of these links. You may also contact %REQUESTERNAME% directly or decline the review using the conference site.\n\n",
-			"      Accept: %URL(review, p=%NUMBER%&accept=1&%LOGINURLPARTS%)%\n",
-			"     Decline: %URL(review, p=%NUMBER%&decline=1&%LOGINURLPARTS%)%\n\n",
+			"      Accept: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&accept=1)%\n",
+			"     Decline: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&decline=1)%\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"

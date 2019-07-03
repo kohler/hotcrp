@@ -29,10 +29,10 @@ class HotCRPMailPreparation extends MailPreparation {
 class HotCRPMailer extends Mailer {
     protected $contacts = array();
 
-    protected $row = null;
-    protected $rrow = null;
+    protected $row;
+    protected $rrow;
     protected $rrow_unsubmitted = false;
-    protected $comment_row = null;
+    protected $comment_row;
     protected $newrev_since = false;
     protected $no_send = false;
     public $combination_type = false;
@@ -259,6 +259,9 @@ class HotCRPMailer extends Mailer {
         } else
             return false;
     }
+    function kw_hasreview() {
+        return !!$this->rrow;
+    }
 
     function kw_title() {
         return $this->row->title;
@@ -342,6 +345,9 @@ class HotCRPMailer extends Mailer {
             return false;
         else
             return $this->rrow ? $this->rrow->reviewId : "";
+    }
+    function kw_reviewacceptor() {
+        return $this->rrow->reviewId . "ra" . $this->rrow->acceptor()->text;
     }
     function kw_reviews() {
         return $this->get_reviews();

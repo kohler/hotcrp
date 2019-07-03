@@ -44,6 +44,7 @@
     {"name": "REVIEWNAME", "callback": "*kw_reviewname", "expand_if": "*kw_haspaper"},
     {"name": "REVIEWID", "callback": "*kw_reviewid", "expand_if": "*kw_haspaper"},
     {"name": "REVIEWAUTHOR", "callback": "*kw_reviewercontact", "global": true, "match_data": [null, "REVIEWER", "CONTACT"]},
+    {"name": "REVIEWACCEPTOR", "callback": "*kw_reviewacceptor", "expand_if": "*kw_hasreview"},
     {"name": "NEWASSIGNMENTS", "callback": "*kw_newassignments"},
     {"name": "AUTHORS", "callback": "*kw_authors", "expand_if": "*kw_haspaper", "synonym": "AUTHOR"},
     {"name": "AUTHORVIEWCAPABILITY", "callback": "*kw_authorviewcapability", "global": true},

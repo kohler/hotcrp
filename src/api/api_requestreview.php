@@ -118,9 +118,11 @@ class RequestReview_API {
                               "round_number" => $round]);
 
         // send confirmation mail
-        HotCRPMailer::send_to($reviewer, "@requestreview", $prow,
-                              ["requester_contact" => $requester,
-                               "reason" => $reason]);
+        HotCRPMailer::send_to($reviewer, "@requestreview", $prow, [
+            "requester_contact" => $requester,
+            "reason" => $reason,
+            "rrow" => $prow->fresh_review_of_user($reviewer)
+        ]);
 
         return new JsonResult(["ok" => true, "action" => "request", "response" => "Requested an external review from " . Text::user_html($reviewer) . "."]);
     }
@@ -160,11 +162,12 @@ class RequestReview_API {
 
             $user->conf->qe("delete from ReviewRequest where paperId=? and email=?",
                 $prow->paperId, $email);
-            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, reviewRound=?",
+            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, reviewType=?, reviewRound=?",
                 $prow->paperId, $email, $reviewer ? $reviewer->contactId : 0,
                 $request->firstName, $request->lastName, $request->affiliation,
                 $request->requestedBy, $request->timeRequested,
-                $user->contactId, $Now, $reason, $request->reviewRound);
+                $user->contactId, $Now, $reason, REVIEW_EXTERNAL,
+                $request->reviewRound);
             Dbl::qx_raw("unlock tables");
 
             $reviewer_contact = (object) [
@@ -203,12 +206,15 @@ class RequestReview_API {
         }
         if (!$prow)
             return $user->conf->paper_error_json_result($qreq->annex("paper_whynot"));
+        $prow->ensure_full_reviews();
         $prow->ensure_reviewer_names();
 
+        $u = $user->conf->cached_user_by_email($email);
         if (!$user->can_administer($prow)
-            && strcasecmp($email, $user->email) !== 0)
+            && strcasecmp($email, $user->email) !== 0
+            && (!$u || $user->capability("@ra{$prow->paperId}") != $u->contactId))
             return self::error_result(403, "email", "Permission error.");
-        if (($u = $user->conf->cached_user_by_email($email))) {
+        if ($u) {
             $xrrows = $prow->reviews_of_user($u);
             $refusals = $prow->review_refusals_of_user($u);
         } else
@@ -232,11 +238,12 @@ class RequestReview_API {
 
         $had_token = true;
         foreach ($rrows as $rrow) {
-            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, reviewRound=?
+            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, reviewType=?, reviewRound=?, data=?
                 on duplicate key update reason=coalesce(values(reason),reason)",
                 $prow->paperId, $rrow->email, $rrow->contactId,
                 $rrow->requestedBy, $rrow->timeRequested,
-                $user->contactId, $Now, $reason, $rrow->reviewRound);
+                $user->contactId, $Now, $reason, $rrow->reviewType,
+                $rrow->reviewRound, $rrow->data);
             $user->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
                 $prow->paperId, $rrow->reviewId);
             if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0)

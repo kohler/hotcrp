@@ -1531,6 +1531,15 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 213
         && update_schema_clean_options_json($conf))
         $conf->update_schema_version(214);
+    if ($conf->sversion == 214
+        && $conf->ql("alter table PaperReview add `data` varbinary(8192) DEFAULT NULL"))
+        $conf->update_schema_version(215);
+    if ($conf->sversion == 215
+        && $conf->ql("alter table PaperReviewRefused add `data` varbinary(8192) DEFAULT NULL"))
+        $conf->update_schema_version(216);
+    if ($conf->sversion == 216
+        && $conf->ql("alter table PaperReviewRefused add `reviewType` tinyint(1) NOT NULL DEFAULT '0'"))
+        $conf->update_schema_version(217);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

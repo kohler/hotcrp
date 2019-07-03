@@ -1325,8 +1325,8 @@ Once you've decided, please take a moment to accept or decline this review
 request by using one of these links. You may also contact Lixia Zhang
 directly or decline the review using the conference site.
 
-      Accept: http://hotcrp.lcdf.org/test/review/17?accept=1&email=external2%40_.com&password={{}}
-     Decline: http://hotcrp.lcdf.org/test/review/17?decline=1&email=external2%40_.com&password={{}}
+      Accept: http://hotcrp.lcdf.org/test/review/17?cap={{}}&accept=1
+     Decline: http://hotcrp.lcdf.org/test/review/17?cap={{}}&decline=1
 
 Thank you for your help -- we appreciate that reviewing is hard work.
 
