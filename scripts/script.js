@@ -8150,13 +8150,13 @@ function unload_list() {
         set_cookie(hl);
 }
 function row_click(evt) {
-    if (evt.target.tagName === "A"
-        || evt.target.tagName === "INPUT"
-        || evt.target.tagName === "TEXTAREA"
-        || evt.target.tagName === "SELECT"
-        || evt.target.tagName === "BUTTON"
-        || !hasClass(this.parentElement, "pltable"))
+    if (!hasClass(this.parentElement, "pltable"))
         return;
+    var tgt = evt.target;
+    for (var tgt = evt.target; tgt !== this; tgt = tgt.parentElement) {
+        if (["A", "INPUT", "TEXTAREA", "SELECT", "BUTTON"].indexOf(tgt.tagName) >= 0)
+            return;
+    }
     var pl = this;
     while (pl.nodeType !== 1 || /^plx/.test(pl.className))
         pl = pl.previousSibling;
