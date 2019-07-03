@@ -385,8 +385,8 @@ class ReviewInfo {
     function delete_acceptor() {
         if ($this->_data === null)
             $this->_load_data();
-        if (isset($this->_data->acceptor)) {
-            unset($this->_data->acceptor);
+        if (isset($this->_data->acceptor) && $this->_data->acceptor->at) {
+            $this->_data->acceptor->at = 0;
             $this->_save_data();
         }
     }

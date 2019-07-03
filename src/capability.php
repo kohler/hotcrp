@@ -117,10 +117,15 @@ class CapabilityManager {
         }
     }
 
-    private static function make_review_acceptor($user, $pid, $cid, $uf) {
-        $user->set_capability("@ra$pid", $cid);
-        if ($user->is_activated())
-            self::apply_hoturl_capability($uf->name, $cid);
+    private static function make_review_acceptor($user, $at, $pid, $cid, $uf) {
+        global $Now;
+        if ($at && $at >= $Now - 2592000) {
+            $user->set_capability("@ra$pid", $cid);
+            if ($user->is_activated())
+                self::apply_hoturl_capability($uf->name, $cid);
+        } else {
+            $user->conf->warnMsg("The review link you followed has expired. You’ll need to sign in to the site to view or edit your reviews.");
+        }
     }
 
     static function apply_review_acceptor(Contact $user, $uf, $isadd) {
@@ -129,11 +134,7 @@ class CapabilityManager {
         $result = $user->conf->qe("select * from PaperReview where reviewId=?", $uf->match_data[1]);
         $rrow = ReviewInfo::fetch($result, $user->conf);
         if ($rrow && $rrow->acceptor_is($uf->match_data[2])) {
-            if ($rrow->acceptor()->at < $Now - 2592000) {
-                $user->conf->warnMsg("The review link you followed has expired. You’ll need to sign in to the site to view or edit your reviews.");
-            } else {
-                self::make_review_acceptor($user, $rrow->paperId, $isadd ? (int) $rrow->contactId : null, $uf);
-            }
+            self::make_review_acceptor($user, $rrow->acceptor()->at, $rrow->paperId, $isadd ? (int) $rrow->contactId : null, $uf);
             return;
         }
 
@@ -142,7 +143,7 @@ class CapabilityManager {
             $data = json_decode($refusal->data);
             if ($data && isset($data->acceptor) && isset($data->acceptor->text)
                 && $data->acceptor->text === $uf->match_data[2]) {
-                self::make_review_acceptor($user, $refusal->paperId, $isadd ? (int) $refusal->contactId : null, $uf);
+                self::make_review_acceptor($user, $data->acceptor->at, $refusal->paperId, $isadd ? (int) $refusal->contactId : null, $uf);
                 return;
             }
         }

@@ -256,6 +256,8 @@ if (isset($Qreq->accept)
             Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
                 where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0",
                 $Now, $prow->paperId, $paperTable->editrrow->reviewId);
+            if ($Me->has_database_account())
+                $paperTable->editrrow->delete_acceptor();
         }
         $Conf->confirmMsg("Thank you for confirming your intention to finish this review. You can download the paper and review form below.");
         $Conf->self_redirect($Qreq);
