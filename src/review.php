@@ -875,8 +875,8 @@ $blind\n";
             && $rrow->reviewType < REVIEW_SECONDARY
             && ($user->is_my_review($rrow) || $user->can_administer($prow))) {
             $buttons = [];
-            $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn-highlight"]);
-            $buttons[] = Ht::button("Decline", ["class" => "ui js-decline-review"]);
+            $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn-success"]);
+            $buttons[] = Ht::button("Decline", ["class" => "btn-danger ui js-decline-review"]);
             // Also see $qreq->refuse case in review.php.
             if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
