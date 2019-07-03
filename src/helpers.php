@@ -702,19 +702,42 @@ if (!function_exists("random_bytes")) {
     }
 }
 
+// Aims to return a random password string with at least
+// `$length * 5` bits of entropy.
 function hotcrp_random_password($length = 14) {
-    $bytes = random_bytes($length + 10);
-    $l = "a e i o u y a e i o u y a e i o u y a e i o u y a e i o u y b c d g h j k l m n p r s t u v w trcrbrfrthdrchphwrstspswprslcl2 3 4 5 6 7 8 9 - @ _ + = ";
+    // XXX it is possible to correctly account for loss of entropy due
+    // to use of consonant pairs; I have only estimated
+    $bytes = random_bytes($length + 12);
+    $blen = strlen($bytes) * 8;
+    $bneed = $length * 5;
     $pw = "";
-    $nvow = 0;
-    for ($i = 0;
-         $i < strlen($bytes) &&
-             strlen($pw) < $length + max(0, ($nvow - 3) / 3);
-         ++$i) {
-        $x = ord($bytes[$i]) % (strlen($l) / 2);
-        if ($x < 30)
-            ++$nvow;
-        $pw .= rtrim(substr($l, 2 * $x, 2));
+    for ($b = 0; $bneed > 0 && $b + 8 <= $blen; ) {
+        $bidx = $b >> 3;
+        $codeword = (ord($bytes[$bidx]) << ($b & 7)) & 255;
+        if (($b & 7) > 0) {
+            $codeword |= ord($bytes[$bidx + 1]) >> (8 - ($b & 7));
+        }
+        if ($codeword < 0x60) {
+            $t = "aeiouy";
+            $pw .= $t[($codeword >> 4) & 0x7];
+            $bneed -= 4; // log2(3/8 * 1/6)
+            $b += 4;
+        } else if ($codeword < 0xC0) {
+            $t = "bcdghjklmnprstvw";
+            $pw .= $t[($codeword >> 1) & 0xF];
+            $bneed -= 5.415; // log2(3/8 * 1/16)
+            $b += 7;
+        } else if ($codeword < 0xE0) {
+            $t = "trcrbrfrthdrchphwrstspswprslclz";
+            $pw .= substr($t, $codeword & 0x1E, 2);
+            $bneed -= 6.415; // log2(1/8 * 1/16 * [fudge] ~1.5)
+            $b += 7;
+        } else {
+            $t = "23456789";
+            $pw .= $t[($codeword >> 2) & 0x7];
+            $bneed -= 6; // log2(1/8 * 1/8)
+            $b += 6;
+        }
     }
     return $pw;
 }
