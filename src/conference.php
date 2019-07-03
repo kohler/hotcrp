@@ -2239,19 +2239,23 @@ class Conf {
     function unparse_time_relative($when, $now = 0, $format = 0) {
         global $Now;
         $d = abs($when - ($now ? : $Now));
-        $unit = 0;
         if ($d >= 5227200) {
             if (!($format & 1))
                 return ($format & 8 ? "on " : "") . date($this->_dateFormat("obscure"), $when);
             $unit = 5;
-        } else if ($d >= 259200)
+        } else if ($d >= 259200) {
             $unit = 4;
-        else if ($d >= 28800)
+        } else if ($d >= 28800) {
             $unit = 3;
-        else if ($d >= 3630)
+        } else if ($d >= 3630) {
             $unit = 2;
-        else if ($d >= 180.5)
+        } else if ($d >= 180.5) {
             $unit = 1;
+        } else if ($d >= 1) {
+            $unit = 0;
+        } else {
+            return "now";
+        }
         $units = [1, 60, 1800, 3600, 86400, 604800];
         $x = $units[$unit];
         $d = ceil(($d - $x / 2) / $x);
