@@ -576,7 +576,9 @@
         "alternate": ["indian institute technology"]
     },
     "illinois": {
-        "weak": true
+        "weak": true,
+        "alternate": [{"word": "uiuc", "if": "university"}],
+        "sync": "chicago"
     },
     "indian": {
         "weak": true,
@@ -607,11 +609,12 @@
         "alternate": ["indiana university"]
     },
     "jiao": {
-        "alternate": [{"word": "jiaotong", "if": "tong"}]
+        "alternate": [{"word": "jiaotong", "if": "tong"}],
+        "sync": ["beijing", "shanghai"]
     },
     "jiaotong": {
         "alternate": ["jiao tong"],
-        "sync": "beijing"
+        "sync": ["beijing", "shanghai"]
     },
     "kaist": {
         "alternate": ["korea advanced institute science technology"]
@@ -770,10 +773,8 @@
         "alternate": ["university hong kong"]
     },
     "uiuc": {
-        "alternate": [
-            "university illinois urbana champaign",
-            {"word": "university illinois", "if_not": "chicago"}
-        ]
+        "alternate": ["university illinois urbana champaign", "university illinois"],
+        "sync": "chicago"
     },
     "umass": {
         "alternate": ["university massachusetts"]

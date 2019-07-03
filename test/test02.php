@@ -622,6 +622,18 @@ xassert_eqq(!!$aum->test("Bobby (University of Massachusetts)", true), true);
 $aum = AuthorMatcher::make_string_guess("Bobby (UMass)");
 xassert_eqq(!!$aum->test("All (University of Massachusetts)", false), true);
 xassert_eqq(!!$aum->test("All (University of Massachusetts)", true), true);
+$aum = AuthorMatcher::make_string_guess("Bobby (UIUC)");
+xassert_eqq(!!$aum->test("All (University of Illinois Chicago)", false), false);
+xassert_eqq(!!$aum->test("All (University of Illinois Chicago)", true), false);
+xassert_eqq(!!$aum->test("All (University of Illinois)", false), true);
+xassert_eqq(!!$aum->test("All (University of Illinois)", true), true);
+$aum = AuthorMatcher::make_string_guess("Bobby (University of Illinois Chicago)");
+xassert_eqq(!!$aum->test("All (UIUC)", false), false);
+xassert_eqq(!!$aum->test("All (UIUC)", true), false);
+//xassert_eqq(!!$aum->test("All (University of Illinois)", false), true);
+//xassert_eqq(!!$aum->test("All (University of Illinois)", true), true);
+xassert_eqq(!!$aum->test("All (University of Illinois Chicago)", false), true);
+xassert_eqq(!!$aum->test("All (University of Illinois Chicago)", true), true);
 
 // i18n messages
 $ms = new IntlMsgSet;
