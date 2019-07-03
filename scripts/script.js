@@ -2519,7 +2519,7 @@ function foldup(event, opts) {
         opts = {};
     if (this.tagName === "DIV"
         && event
-        && event.target.tagName === "A"
+        && event.target.closest("a")
         && !opts.required)
         return;
     if (!("n" in opts) && (x = this.getAttribute("data-fold-target"))) {
@@ -8150,13 +8150,9 @@ function unload_list() {
         set_cookie(hl);
 }
 function row_click(evt) {
-    if (!hasClass(this.parentElement, "pltable"))
+    if (!hasClass(this.parentElement, "pltable")
+        || evt.target.closest("a, input, textarea, select, button"))
         return;
-    var tgt = evt.target;
-    for (var tgt = evt.target; tgt !== this; tgt = tgt.parentElement) {
-        if (["A", "INPUT", "TEXTAREA", "SELECT", "BUTTON"].indexOf(tgt.tagName) >= 0)
-            return;
-    }
     var pl = this;
     while (pl.nodeType !== 1 || /^plx/.test(pl.className))
         pl = pl.previousSibling;
@@ -8167,7 +8163,7 @@ function row_click(evt) {
         evt.preventDefault();
     } else if (hasClass(evt.target, "pl_id")
                || hasClass(evt.target, "pl_title")
-               || $(evt.target).closest("td").hasClass("pl_rowclick")) {
+               || hasClass(evt.target.closest("td"), "pl_rowclick")) {
         var $a = $(pl).find("a.pnum").first(),
             href = $a[0].getAttribute("href");
         handle_list($a[0], href);
