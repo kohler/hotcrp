@@ -8153,6 +8153,9 @@ function row_click(evt) {
     if (!hasClass(this.parentElement, "pltable")
         || evt.target.closest("a, input, textarea, select, button"))
         return;
+    var td = evt.target.closest("td");
+    if (!td || (!hasClass(td, "pl_id") && !hasClass(td, "pl_title") && !hasClass(td, "pl_rowclick")))
+        return;
     var pl = this;
     while (pl.nodeType !== 1 || /^plx/.test(pl.className))
         pl = pl.previousSibling;
@@ -8160,10 +8163,7 @@ function row_click(evt) {
         .not("input[type=hidden], .pl_sel > input");
     if ($inputs.length) {
         $inputs.first().focus().scrollIntoView();
-        evt.preventDefault();
-    } else if (hasClass(evt.target, "pl_id")
-               || hasClass(evt.target, "pl_title")
-               || hasClass(evt.target.closest("td"), "pl_rowclick")) {
+    } else {
         var $a = $(pl).find("a.pnum").first(),
             href = $a[0].getAttribute("href");
         handle_list($a[0], href);
@@ -8174,8 +8174,8 @@ function row_click(evt) {
             w && w.blur();
             window.focus();
         }
-        evt.preventDefault();
     }
+    evt.preventDefault();
 }
 handle_ui.on("js-edit-comment", function (event) {
     return papercomment.edit_id(this.hash.substring(1));
