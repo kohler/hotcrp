@@ -7250,7 +7250,7 @@ handle_ui.on("js-withdraw", function (event) {
         var idctr = hc.next_htctl_id();
         hc.push('<label class="checki"><span class="checkc"><input type="checkbox" name="override" value="1"> </span>Override deadlines</label>');
     }
-    hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn-primary">Withdraw</button>',
+    hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn-danger">Withdraw</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);
@@ -7706,7 +7706,7 @@ handle_ui.on("js-decline-review", function () {
         hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
     hc.push('<textarea name="reason" rows="3" cols="60" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
-    hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn-primary">Decline review</button>',
+    hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn-danger">Decline review</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });
@@ -7716,7 +7716,7 @@ handle_ui.on("js-deny-review-request", function () {
         hc = popup_skeleton({anchor: this, action: $f[0].action});
     hc.push('<p>Select “Deny request” to deny this review request.</p>');
     hc.push('<textarea name="reason" rows="3" cols="60" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
-    hc.push_actions(['<button type="submit" name="denyreview" value="1" class="btn-primary">Deny request</button>',
+    hc.push_actions(['<button type="submit" name="denyreview" value="1" class="btn-danger">Deny request</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d, $f, ["firstName", "lastName", "affiliation", "reason"]);
