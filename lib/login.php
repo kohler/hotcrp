@@ -95,7 +95,7 @@ class LoginHelper {
         }
 
         // create account if requested
-        if ($qreq->action === "new") {
+        if ($qreq->action === "new" && $qreq->post_ok()) {
             if ($conf->opt("disableNewUsers") || $conf->opt("disableNonPC")) {
                 Ht::error_at("email", "New users can’t self-register for this site.");
                 return false;
@@ -103,6 +103,8 @@ class LoginHelper {
             $user = self::create_account($conf, $qreq, $user, $cdb_user);
             if (!$user)
                 return null;
+            // If we get here, it's the first account and we're going to
+            // log them in automatically. XXX should show the password
             $qreq->password = $user->plaintext_password();
         }
 
@@ -128,7 +130,7 @@ class LoginHelper {
 
         // maybe reset password
         $xuser = $user ? : $cdb_user;
-        if ($qreq->action === "forgot") {
+        if ($qreq->action === "forgot" && $qreq->post_ok()) {
             $worked = $xuser->sendAccountInfo("forgot", true);
             if ($worked === "@resetpassword") {
                 $conf->confirmMsg("A password reset link has been emailed to " . htmlspecialchars($qreq->email) . ". When you receive that email, follow its instructions to create a new password.");
@@ -158,6 +160,11 @@ class LoginHelper {
                     $error = "Incorrect password.";
                 }
                 Ht::error_at("password", $error);
+                return false;
+            }
+
+            if (!$qreq->post_ok()) {
+                Ht::warning_at("password", "Automatic login links have been disabled for security reasons. Enter your password to sign in.");
                 return false;
             }
         }

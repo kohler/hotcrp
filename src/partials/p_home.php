@@ -201,8 +201,11 @@ class Home_Partial {
             && ($x = $conf->opt("contactdb_loginFormHeading")))
             echo $x;
         $password_reset = $user->session("password_reset");
-        $focus_email = !Ht::problem_status_at("password")
+        $password_status = Ht::problem_status_at("password");
+        $focus_email = !$password_status
             && (!$qreq->email || Ht::problem_status_at("email"));
+        $email_value = $qreq->get("email", $password_reset ? $password_reset->email : "");
+        $password_value = (string) $qreq->password === "" || $password_status !== 1 ? "" : $qreq->password;
         if ($password_reset && $password_reset->time < $Now - 900) {
             $password_reset = null;
             $user->save_session("password_reset", null);
@@ -210,15 +213,22 @@ class Home_Partial {
         $is_external_login = $conf->external_login();
         echo '<div class="', Ht::control_class("email", "f-i"), '">',
             Ht::label($is_external_login ? "Username" : "Email", "signin_email"),
-            Ht::entry("email", $qreq->get("email", $password_reset ? $password_reset->email : ""),
-                      ["size" => 36, "id" => "signin_email", "class" => "fullw", "autocomplete" => "username", "tabindex" => 1, "type" => $is_external_login ? "text" : "email", "autofocus" => $focus_email]),
+            Ht::entry("email", $email_value, [
+                "size" => 36, "id" => "signin_email", "class" => "fullw",
+                "autocomplete" => "username", "tabindex" => 1,
+                "type" => $is_external_login || str_ends_with($email_value, "@_.com") ? "text" : "email",
+                "autofocus" => $focus_email
+            ]),
             Ht::render_messages_at("email"),
             '</div><div class="', Ht::control_class("password", "f-i fx"), '">';
         if (!$is_external_login)
             echo '<div class="float-right"><a href="" class="n x small ui js-forgot-password">Forgot your password?</a></div>';
         echo Ht::label("Password", "signin_password"),
-            Ht::password("password", "",
-                         ["size" => 36, "id" => "signin_password", "class" => "fullw", "autocomplete" => "current-password", "tabindex" => 1, "autofocus" => !$focus_email]),
+            Ht::password("password", $password_value, [
+                "size" => 36, "id" => "signin_password", "class" => "fullw",
+                "autocomplete" => "current-password", "tabindex" => 1,
+                "autofocus" => !$focus_email
+            ]),
             Ht::render_messages_at("password"),
             "</div>\n";
         if ($password_reset)
@@ -226,7 +236,7 @@ class Home_Partial {
         if ($is_external_login)
             echo Ht::hidden("action", "login");
         echo '<div class="popup-actions">',
-            Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn-primary", "tabindex" => 1]),
+            Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn-success", "tabindex" => 1]),
             '</div>';
         if (!$is_external_login
             && !$conf->opt("disableNewUsers")
