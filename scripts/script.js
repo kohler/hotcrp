@@ -4007,7 +4007,7 @@ function make_save_callback($c) {
             if (!/^<div/.test(error))
                 error = render_xmsg(2, error);
             $c.find(".cmtmsg").html(error);
-            $c.find("button").prop("disabled", false);
+            $c.find("button, input[type=file]").prop("disabled", false);
             return;
         }
         var cid = cj_cid($c.c),
@@ -4056,6 +4056,11 @@ function save_editor(elt, action, really) {
     if ($ready.length && !$ready[0].checked)
         $f.children("div").append('<input type="hidden" name="draft" value="1">');
     $c.find("button").prop("disabled", true);
+    // work around a Safari bug with FormData
+    $f.find("input[type=file]").each(function () {
+        if (this.files.length === 0)
+            this.disabled = true;
+    });
     var arg = {p: hotcrp_paperid};
     if ($c.c.cid)
         arg.c = $c.c.cid;
