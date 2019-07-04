@@ -7066,7 +7066,7 @@ handle_ui.on("js-forgot-password", function (event) {
     hc.push('<p>Enter your email and we’ll send you instructions for signing in.</p>');
     hc.push('<div class="f-i"><label for="forgotpassword_email">Email</label>', '</div>');
     hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="username" id="forgotpassword_email">');
-    hc.push_actions(['<button type="submit" class="btn-primary">Reset password</button>',
+    hc.push_actions(['<button type="submit" class="btn-success">Reset password</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);

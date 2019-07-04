@@ -205,6 +205,7 @@ class Home_Partial {
         $focus_email = !$password_status
             && (!$qreq->email || Ht::problem_status_at("email"));
         $email_value = $qreq->get("email", $password_reset ? $password_reset->email : "");
+        $password_value = (string) $qreq->password === "" || $password_status !== 1 ? "" : $qreq->password;
         if ($password_reset && $password_reset->time < $Now - 900) {
             $password_reset = null;
             $user->save_session("password_reset", null);
@@ -223,7 +224,7 @@ class Home_Partial {
         if (!$is_external_login)
             echo '<div class="float-right"><a href="" class="n x small ui js-forgot-password">Forgot your password?</a></div>';
         echo Ht::label("Password", "signin_password"),
-            Ht::password("password", "", [
+            Ht::password("password", $password_value, [
                 "size" => 36, "id" => "signin_password", "class" => "fullw",
                 "autocomplete" => "current-password", "tabindex" => 1,
                 "autofocus" => !$focus_email
