@@ -599,6 +599,8 @@ class Mailer {
                     $prep->headers[$lcfield] = $hdr . $eol;
                 else {
                     $prep->errors[$lcfield] = $text;
+                    error_log("mailer error on $lcfield: $text");
+                    $prep->sendable = false;
                     if (!get($rest, "no_error_quit"))
                         Conf::msg_error("$field destination “<samp>" . htmlspecialchars($text) . "</samp>” isn't a valid email list.");
                 }
@@ -606,11 +608,7 @@ class Mailer {
         }
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . $eol;
         $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . $eol;
-
-        if ($prep->errors && !get($rest, "no_error_quit"))
-            return false;
-        else
-            return $prep;
+        return $prep;
     }
 
     static function send_combined_preparations($preps) {
