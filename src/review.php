@@ -792,6 +792,14 @@ $blind\n";
                     $d = Text::html_to_text($d);
                 $x .= prefix_word_wrap("==-==    ", trim($d), "==-==    ");
             }
+            if ($f->view_score < VIEWSCORE_REVIEWERONLY)
+                $x .= "==-== (secret field)\n";
+            else if ($f->view_score < VIEWSCORE_PC)
+                $x .= "==-== (shown only to chairs)\n";
+            else if ($f->view_score < VIEWSCORE_AUTHORDEC)
+                $x .= "==-== (hidden from authors)\n";
+            else if ($f->view_score < VIEWSCORE_AUTHOR)
+                $x .= "==-== (hidden from authors until decision)\n";
             if ($f->has_options) {
                 $x .= "==-== Choices:\n";
                 foreach ($f->options as $num => $value) {
@@ -799,17 +807,7 @@ $blind\n";
                     $x .= prefix_word_wrap($y, $value, str_pad("==-==", strlen($y)));
                 }
                 if ($f->allow_empty)
-                    $x .= "==-==    No entry\n";
-            }
-            if ($f->view_score < VIEWSCORE_REVIEWERONLY)
-                $x .= "==-== Secret field.\n";
-            else if ($f->view_score < VIEWSCORE_PC)
-                $x .= "==-== Shown only to chairs.\n";
-            else if ($f->view_score < VIEWSCORE_AUTHORDEC)
-                $x .= "==-== Hidden from authors.\n";
-            if ($f->has_options) {
-                if ($f->allow_empty)
-                    $x .= "==-== Enter your choice:\n";
+                    $x .= "==-==    No entry\n==-== Enter your choice:\n";
                 else if ($f->option_letter)
                     $x .= "==-== Enter the letter of your choice:\n";
                 else
