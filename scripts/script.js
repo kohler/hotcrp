@@ -4075,7 +4075,7 @@ function save_editor(elt, action, really) {
     if (window.FormData)
         $.ajax(url, {
             method: "POST", data: new FormData($f[0]), success: callback,
-            processData: false, contentType: false
+            processData: false, contentType: false, timeout: 120000
         });
     else
         $.post(url, $f.serialize(), callback);
