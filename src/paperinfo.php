@@ -412,6 +412,14 @@ class PaperInfo {
         $this->_contact_info[$ci->contactId] = $ci;
     }
 
+    function load_new_paper_contact_author($contact) {
+        assert($this->paperId === 0);
+        assert(empty($this->_contact_info));
+        $ci = PaperContactInfo::make_empty($this, $contact);
+        $ci->conflictType = CONFLICT_CONTACTAUTHOR;
+        $this->_contact_info[$ci->contactId] = $ci;
+    }
+
     function author_view_user() {
         if (!$this->_author_view_user) {
             $this->_author_view_user = new Contact(null, $this->conf);

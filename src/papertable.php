@@ -47,9 +47,12 @@ class PaperTable {
         global $Conf, $Me;
 
         $this->conf = $Conf;
-        $this->prow = $prow;
-        $this->_prow = $this->prow ? : new PaperInfo(null, null, $this->conf);
         $this->user = $user = $Me;
+        $this->_prow = $this->prow = $prow;
+        if (!$this->_prow) {
+            $this->_prow = new PaperInfo(null, null, $this->conf);
+            $this->_prow->load_new_paper_contact_author($user);
+        }
         $this->allow_admin = $user->allow_administer($prow);
         $this->admin = $user->can_administer($prow);
         $this->qreq = $qreq;
