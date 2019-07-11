@@ -9,6 +9,7 @@ class IntlMsg {
     public $priority = 0.0;
     public $format;
     public $no_conversions;
+    public $template;
     public $next;
 
     private function resolve_arg(IntlMsgSet $ms, $args, $argname, &$val) {
@@ -69,7 +70,6 @@ class IntlMsg {
 
 class IntlMsgSet {
     private $ims = [];
-    private $template = [];
     private $require_resolvers = [];
     private $_ctx;
     private $_default_priority;
@@ -107,16 +107,6 @@ class IntlMsgSet {
             foreach ($m->members as $mm)
                 $this->addj($mm);
             $this->_ctx = $octx;
-            return true;
-        }
-        if (is_object($m)
-            && isset($m->id)
-            && isset($m->template)
-            && (is_object($m->template) || is_associative_array($m->template))) {
-            if (!isset($this->template[$m->id]))
-                $this->template[$m->id] = [];
-            foreach ((array) $m->template as $k => $v)
-                $this->template[$m->id][strtolower($k)] = $v;
             return true;
         }
         $im = new IntlMsg;
@@ -168,6 +158,8 @@ class IntlMsgSet {
                 $im->format = $m->format;
             if (isset($m->no_conversions) && is_bool($m->no_conversions))
                 $im->no_conversions = $m->no_conversions;
+            if (isset($m->template) && is_bool($m->template))
+                $im->template = $m->template;
         } else
             return false;
         if ($this->_ctx)
@@ -178,7 +170,8 @@ class IntlMsgSet {
     }
 
     function add_override($id, $otext) {
-        return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true]);
+        $im = get($this->ims, $id);
+        return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true, "template" => $im && $im->template]);
     }
 
     function add_requirement_resolver($function) {
@@ -200,6 +193,8 @@ class IntlMsgSet {
     private function find($context, $itext, $args, $priobound) {
         $match = null;
         $matchnreq = $matchctxlen = 0;
+        if ($context === "")
+            $context = null;
         for ($im = get($this->ims, $itext); $im; $im = $im->next) {
             $ctxlen = $nreq = 0;
             if ($context !== null && $im->context !== null) {
@@ -234,28 +229,18 @@ class IntlMsgSet {
         return $match;
     }
 
-    private function expand($s, $args, $id, $im) {
+    private function expand($s, $args, $context, $im) {
         if ($s === null || $s === false || $s === "")
             return $s;
-        $tmpl = null;
-        if ($id) {
-            if (isset($this->template[$id])) {
-                $tmpl = $this->template[$id];
-            } else if (($us = strrpos($id, "_")) > 0
-                       && isset($this->template[substr($id, 0, $us)])
-                       && $us < strlen($id) - 1
-                       && ctype_digit(substr($id, $us + 1))) {
-                $tmpl = $this->template[substr($id, 0, $us)];
-            }
-        }
-        if (count($args) > 1 || $tmpl !== null) {
-            $pos = $argnum = 0;
-            while (($pos = strpos($s, "%", $pos)) !== false) {
+        $pos = strpos($s, "%");
+        if (count($args) > 1 || $pos !== false) {
+            $argnum = 0;
+            while ($pos !== false) {
                 ++$pos;
-                if ($tmpl !== null
-                    && preg_match('{(?!\d+)\w+(?=%)}A', $s, $m, 0, $pos)
-                    && ($t = get($tmpl, strtolower($m[0]))) !== null) {
-                    $t = substr($s, 0, $pos - 1) . $this->expand($t, $args, null, null);
+                if (preg_match('{(?!\d+)\w+(?=%)}A', $s, $m, 0, $pos)
+                    && ($imt = $this->find($context, strtolower($m[0]), [], null))
+                    && $imt->template) {
+                    $t = substr($s, 0, $pos - 1) . $this->expand($imt->otext, $args, null, null);
                     $s = $t . substr($s, $pos + strlen($m[0]) + 1);
                     $pos = strlen($t);
                 } else if ($im && $im->no_conversions) {
@@ -271,6 +256,7 @@ class IntlMsgSet {
                         $pos = $pos - 1 + strlen($x);
                     }
                 }
+                $pos = strpos($s, "%", $pos);
             }
         }
         return $s;
@@ -287,7 +273,7 @@ class IntlMsgSet {
         $args = array_slice(func_get_args(), 1);
         if (($im = $this->find($context, $itext, $args, null)))
             $args[0] = $im->otext;
-        return $this->expand($args[0], $args, null, $im);
+        return $this->expand($args[0], $args, $context, $im);
     }
 
     function xi($id, $itext) {
@@ -301,7 +287,8 @@ class IntlMsgSet {
         $args = array_slice(func_get_args(), 2);
         if (($im = $this->find($context, $id, $args, null)))
             $args[0] = $im->otext;
-        return $this->expand($args[0], $args, $id, $im);
+        $cid = (string) $context === "" ? $id : "$context/$id";
+        return $this->expand($args[0], $args, $cid, $im);
     }
 
     function default_itext($id, $itext) {

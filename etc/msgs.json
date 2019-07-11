@@ -99,13 +99,13 @@
 
     ["mail", "Authors", "Author", ["$1=1"]],
 
-    {"id": "resp_instrux", "template": {"wordlimit": "%1$d"}},
+    {"itext": "wordlimit", "otext": "%1$d", "format": "expand", "context": "resp_instrux", "template": true},
     {"id": "resp_instrux", "itext": "The authors’ response should address reviewer concerns and correct misunderstandings. Make it short and to the point; the conference deadline has passed."},
     {"id": "resp_instrux", "itext": "The authors’ response should address reviewer concerns and correct misunderstandings. Make it short and to the point; the conference deadline has passed. Try to stay within %WORDLIMIT% words.", "require": ["$1>0"]},
 
-    {"id": "conflictdef", "itext": "This includes past advisors and students, people with the same affiliation, and any recent (~2 years) coauthors and collaborators."},
+    {"id": "conflictdef", "itext": "This includes past advisors and students, people with the same affiliation, and any recent (~2 years) coauthors and collaborators.", "template": true},
 
-    {"id": "finalsubmit", "template": {"deadline": "%1$s"}},
+    {"itext": "deadline", "otext": "%1$s", "format": "expand", "context": "finalsubmit", "template": true},
     {"id": "finalsubmit", "itext": "Congratulations! The paper has been accepted. Update the paper’s final version here. %DEADLINE% You may also edit paper contacts, allowing others to view reviews and make changes."},
 
     {"id": "revprefdescription", "itext": "<p>A review preference is a small integer that indicates how much you want to review a submission. Positive numbers mean you want to review, negative numbers mean you don’t, and −100 means you think you have a conflict. −20 to 20 is a typical range for real preferences; multiple submissions can have the same preference. The automatic assignment algorithm attempts to assign reviews in descending preference order. Different users’ preference values are not compared and need not use the same scale.</p>\n\n<p>Select a column heading to sort by that column. Enter preferences in the text boxes or on the paper pages. You may also upload preferences from a text file; see the “Download” and “Upload” links below the paper list.</p>", "format": "html"},
