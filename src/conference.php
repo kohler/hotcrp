@@ -3652,11 +3652,11 @@ class Conf {
         return call_user_func_array([$this->ims(), "xc"], func_get_args());
     }
 
-    function _i($id, $itext) {
+    function _i($id) {
         return call_user_func_array([$this->ims(), "xi"], func_get_args());
     }
 
-    function _ci($context, $id, $itext) {
+    function _ci($context, $id) {
         return call_user_func_array([$this->ims(), "xci"], func_get_args());
     }
 

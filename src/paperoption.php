@@ -539,7 +539,7 @@ class PaperOption implements Abbreviator {
             $this->_json_key = $this->_search_keyword = $x;
         if (($x = get_s($args, "search_keyword")))
             $this->_search_keyword = $x;
-        $this->description = get_s($args, "description");
+        $this->description = get($args, "description");
         $this->description_format = get($args, "description_format");
         $this->required = !!get($args, "required");
         $this->final = !!get($args, "final");
@@ -760,8 +760,10 @@ class PaperOption implements Abbreviator {
                             "name" => $this->name,
                             "type" => $this->type,
                             "position" => (int) $this->position);
-        if ($this->description)
+        if ($this->description !== null)
             $j->description = $this->description;
+        if ($this->description_format !== null)
+            $j->description_format = $this->description_format;
         if ($this->final)
             $j->final = true;
         $j->display = $this->display_name();
@@ -1531,15 +1533,15 @@ class IntrinsicPaperOption extends PaperOption {
                 $this->echo_editable_text_html($ov, $reqv, $pt);
             }
         } else if ($this->id === -1001) {
-            $pt->echo_editable_authors();
+            $pt->echo_editable_authors($this);
         } else if ($this->id === -1002) {
-            $pt->echo_editable_anonymity();
+            $pt->echo_editable_anonymity($this);
         } else if ($this->id === -1003) {
-            $pt->echo_editable_contact_author();
+            $pt->echo_editable_contact_author($this);
         } else if ($this->id === -1005) {
-            $pt->echo_editable_topics();
+            $pt->echo_editable_topics($this);
         } else if ($this->id === -1006) {
-            $pt->echo_editable_pc_conflicts();
+            $pt->echo_editable_pc_conflicts($this);
         } else if ($this->id === -1007) {
             if ($this->conf->setting("sub_collab")
                 && ($pt->editable !== "f" || $pt->user->can_administer($pt->prow))) {

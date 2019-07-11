@@ -3068,7 +3068,7 @@ class Contact {
 
     function can_clickthrough($ctype) {
         if (!$this->privChair && $this->conf->opt("clickthrough_$ctype")) {
-            $csha1 = sha1($this->conf->_i("clickthrough_$ctype", false));
+            $csha1 = sha1($this->conf->_i("clickthrough_$ctype"));
             $data = $this->data("clickthrough");
             return $data && get($data, $csha1);
         } else

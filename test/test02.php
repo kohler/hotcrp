@@ -663,7 +663,7 @@ xassert_eqq($ms->x("%xOOB%x%% friend", 10, 11), "aOOBb% friend");
 xassert_eqq($ms->x("fart"), "fart example C");
 xassert_eqq($ms->x("fart", "bobby"), "fart example B");
 xassert_eqq($ms->x("fart", "bob"), "fart example A");
-xassert_eqq($ms->xi("fox-saying", false), "What the fox said");
+xassert_eqq($ms->xi("fox-saying"), "What the fox said");
 xassert_eqq($ms->xi("fox-saying", false, "Animal"), "What the Animal said");
 xassert_eqq($ms->xi("test103", false, "Ass"), "Ass %% %s %BU%%MAN%Ass");
 

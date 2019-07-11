@@ -276,24 +276,39 @@ class IntlMsgSet {
         return $this->expand($args[0], $args, $context, $im);
     }
 
-    function xi($id, $itext) {
+    function xi($id, $override = null) {
         $args = array_slice(func_get_args(), 1);
-        if (($im = $this->find(null, $id, $args, null)))
+        if (empty($args))
+            $args[] = "";
+        $im = null;
+        if ($override === null || $override === false)
+            $im = $this->find(null, $id, $args, null);
+        if ($im)
             $args[0] = $im->otext;
         return $this->expand($args[0], $args, $id, $im);
     }
 
-    function xci($context, $id, $itext) {
+    function xci($context, $id, $override = null) {
         $args = array_slice(func_get_args(), 2);
-        if (($im = $this->find($context, $id, $args, null)))
+        if (empty($args))
+            $args[] = "";
+        $im = null;
+        if ($override === null || $override === false)
+            $im = $this->find($context, $id, $args, null);
+        if ($im)
             $args[0] = $im->otext;
         $cid = (string) $context === "" ? $id : "$context/$id";
         return $this->expand($args[0], $args, $cid, $im);
     }
 
-    function render_xci($fr, $context, $id, $itext) {
+    function render_xci($fr, $context, $id, $override = null) {
         $args = array_slice(func_get_args(), 3);
-        if (($im = $this->find($context, $id, $args, null))) {
+        if (empty($args))
+            $args[] = "";
+        $im = null;
+        if ($override === null || $override === false)
+            $im = $this->find($context, $id, $args, null);
+        if ($im) {
             $args[0] = $im->otext;
             if ($im->format !== null)
                 $fr->value_format = $im->format;
