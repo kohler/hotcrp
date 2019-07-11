@@ -280,12 +280,10 @@ function expand_json_includes_callback($includelist, $callback) {
                 if ($x === null)
                     error_log("$landmark: Invalid JSON: " . Json::last_error_msg());
             }
-            if ($x === null)
-                continue;
             $entry = $x;
         }
         foreach (is_array($entry) ? $entry : [$entry] as $k => $v) {
-            if ($v === null)
+            if ($v === null || $v === false)
                 continue;
             if (is_object($v))
                 $v->__subposition = ++Conf::$next_xt_subposition;

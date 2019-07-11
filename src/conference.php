@@ -565,7 +565,7 @@ class Conf {
         return get($this->settingTexts, $name, $defval);
     }
 
-    function setting_json($name, $defval = false) {
+    function setting_json($name, $defval = null) {
         $x = get($this->settingTexts, $name, $defval);
         return is_string($x) ? json_decode($x) : $x;
     }

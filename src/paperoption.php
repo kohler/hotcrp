@@ -242,17 +242,19 @@ class PaperOptionList {
 
     function _add_intrinsic_json($oj, $k, $landmark) {
         assert(is_int($oj->id) && $oj->id <= 0);
-        if ($this->conf->xt_allowed($oj)
-            && (!isset($this->_ijlist[$oj->id])
-                || Conf::xt_priority_compare($oj, $this->_ijlist[$oj->id]) <= 0))
-            $this->_ijlist[$oj->id] = $oj;
+        $this->_ijlist[(string) $oj->id][] = $oj;
         return true;
     }
 
     private function intrinsic_json_list() {
         if ($this->_ijlist === null) {
             $this->_ijlist = [];
-            expand_json_includes_callback(["etc/intrinsicoptions.json", self::DTYPE_SUBMISSION_JSON, self::DTYPE_FINAL_JSON, $this->conf->opt("intrinsicOptions")], [$this, "_add_intrinsic_json"]);
+            expand_json_includes_callback(["etc/intrinsicoptions.json", self::DTYPE_SUBMISSION_JSON, self::DTYPE_FINAL_JSON, $this->conf->opt("intrinsicOptions"), $this->conf->setting_json("ioptions")], [$this, "_add_intrinsic_json"]);
+            $nijlist = [];
+            foreach ($this->_ijlist as $id => $x)
+                if (($ij = $this->conf->xt_search_name($this->_ijlist, $id, null)))
+                    $nijlist[$ij->id] = $ij;
+            $this->_ijlist = $nijlist;
         }
         return $this->_ijlist;
     }
