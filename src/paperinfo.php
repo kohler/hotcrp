@@ -1109,16 +1109,16 @@ class PaperInfo {
 
     private function load_options($only_me, $need_data) {
         if ($this->_option_values === null
-            && isset($this->optionIds)
-            && (!$need_data || $this->optionIds === "")) {
-            if ($this->optionIds === "")
-                $this->_option_values = $this->_option_data = [];
-            else {
-                $this->_option_values = [];
-                preg_match_all('/(\d+)#(-?\d+)/', $this->optionIds, $m);
-                for ($i = 0; $i < count($m[1]); ++$i)
-                    $this->_option_values[(int) $m[1][$i]][] = (int) $m[2][$i];
-            }
+            && ($this->paperId === 0
+                || (isset($this->optionIds) && $this->optionIds === ""))) {
+            $this->_option_values = $this->_option_data = [];
+        } else if ($this->_option_values === null
+                   && isset($this->optionIds)
+                   && !$need_data) {
+            $this->_option_values = [];
+            preg_match_all('/(\d+)#(-?\d+)/', $this->optionIds, $m);
+            for ($i = 0; $i < count($m[1]); ++$i)
+                $this->_option_values[(int) $m[1][$i]][] = (int) $m[2][$i];
         } else if ($this->_option_values === null
                    || ($need_data && $this->_option_data === null)) {
             $old_row_set = $this->_row_set;

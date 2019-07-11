@@ -269,7 +269,7 @@ class PaperTable {
 
         // other expansions
         $next_foldnum = 10;
-        foreach ($this->conf->paper_opts->feature_list($this->prow) as $o) {
+        foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
             if (!$o->internal
                 && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
                 && $o->display_position() !== false
@@ -471,25 +471,22 @@ class PaperTable {
     }
 
     function field_title_html($name) {
-        return htmlspecialchars($this->conf->_c("paper_field/edit", $name));
+        $t = $this->conf->_c("field/edit", $name);
+        if (str_ends_with($t, ")")
+            && preg_match('{\A([^()]* +)(\([^()]+\))\z}', $t, $m))
+            return htmlspecialchars($m[1]) . '<span class="n">' . htmlspecialchars($m[2]) . '</span>';
+        else
+            return htmlspecialchars($t);
     }
 
     private function field_hint($name, $itext = "") {
-        $args = array_merge(["paper_edit_description"], func_get_args());
+        $args = array_merge(["field_description/edit"], func_get_args());
         if (count($args) === 2)
             $args[] = "";
         $t = call_user_func_array([$this->conf->ims(), "xci"], $args);
         if ($t !== "")
             return '<div class="paphint">' . $t . '</div>';
         return "";
-    }
-
-    function echo_editable_title() {
-        echo $this->editable_papt("title", $this->field_title_html("Title"), ["for" => "title"]),
-            $this->field_hint("Title"),
-            '<div class="papev">', $this->editable_textarea("title"),
-            $this->messages_at("title"),
-            "</div></div>\n\n";
     }
 
     static function pdf_stamps_html($data, $options = null) {
@@ -526,7 +523,7 @@ class PaperTable {
             return "";
     }
 
-    function render_submission(FeatureRender $fr, $o) {
+    function render_submission(FieldRender $fr, $o) {
         assert(!$this->editable);
         $prow = $this->prow;
         $fr->title = false;
@@ -551,20 +548,20 @@ class PaperTable {
                 if (($stamps = self::pdf_stamps_html($doc)))
                     $stamps = '<span class="sep"></span>' . $stamps;
                 if ($dtype == DTYPE_FINAL)
-                    $dname = $this->conf->_c("paper_field", "Final version");
+                    $dname = $this->conf->_c("field", "Final version");
                 else
-                    $dname = $this->conf->_c("paper_field", "Submission", $prow->timeSubmitted != 0);
+                    $dname = $this->conf->_c("field", "Submission", $prow->timeSubmitted != 0);
                 $fr->value .= '<p class="pgsm">' . $dprefix . $doc->link_html('<span class="pavfn">' . htmlspecialchars($dname) . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
             }
         }
     }
 
-    function render_submission_version(FeatureRender $fr, $o) {
+    function render_submission_version(FieldRender $fr, $o) {
         if ($this->user->can_view_pdf($this->prow)
             && $this->prow->finalPaperStorageId > 1
             && $this->prow->paperStorageId > 1) {
             $fr->title = false;
-            $dname = $this->conf->_c("paper_field", "Submission version");
+            $dname = $this->conf->_c("field", "Submission version");
             $fr->set_html('<p class="pgsm"><small>' . $this->prow->document(DTYPE_SUBMISSION)->link_html(htmlspecialchars($dname), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>");
         }
     }
@@ -694,24 +691,7 @@ class PaperTable {
             $this->messages_at($field), "</div></div>\n\n";
     }
 
-    function echo_editable_abstract() {
-        $noAbstract = $this->conf->opt("noAbstract");
-        if ($noAbstract !== 1 && $noAbstract !== true) {
-            $title = $this->field_title_html("Abstract");
-            if ($noAbstract === 2)
-                $title .= ' <span class="n">(optional)</span>';
-            echo $this->editable_papt("abstract", $title, ["for" => "abstract"]),
-                $this->field_hint("Abstract"),
-                '<div class="papev abstract">';
-            if (($fi = $this->conf->format_info($this->prow ? $this->prow->paperFormat : null)))
-                echo $fi->description_preview_html();
-            echo $this->editable_textarea("abstract"),
-                $this->messages_at("abstract"),
-                "</div></div>\n\n";
-        }
-    }
-
-    function render_abstract(FeatureRender $fr, PaperOption $o) {
+    function render_abstract(FieldRender $fr, PaperOption $o) {
         $fr->title = false;
         $fr->value_format = 5;
 
@@ -726,7 +706,7 @@ class PaperTable {
             $extra = ["fold" => "paper", "foldnum" => 6,
                       "foldtitle" => "Toggle full abstract"];
         $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
-            . $this->papt("abstract", $this->conf->_c("paper_field", $o->title), $extra)
+            . $this->papt("abstract", $this->conf->_c("field", $o->title), $extra)
             . '<div class="pavb abstract';
         if ($this->prow
             && !$this->entryMatches
@@ -799,9 +779,9 @@ class PaperTable {
         $sb = $this->conf->submission_blindness();
         $title = $this->field_title_html("Authors");
         if ($sb === Conf::BLIND_ALWAYS)
-            $title .= " (blind)";
+            $title .= ' <span class="n">(blind)</span>';
         else if ($sb === Conf::BLIND_UNTILREVIEW)
-            $title .= " (blind until review)";
+            $title .= ' <span class="n">(blind until review)</span>';
         echo $this->editable_papt("authors", $title, ["id" => "authors"]),
             $this->field_hint("Authors", "List the authors, including email addresses and affiliations.", $sb),
             '<div class="papev"><table class="js-row-order">',
@@ -935,14 +915,14 @@ class PaperTable {
         return array($aulist, $contacts);
     }
 
-    function render_authors(FeatureRender $fr, PaperOption $o) {
+    function render_authors(FieldRender $fr, PaperOption $o) {
         $fr->title = false;
         $fr->value_format = 5;
 
         $vas = $this->user->view_authors_state($this->_prow);
         if ($vas === 0) {
             $fr->value = '<div class="pg">'
-                . $this->papt("authorInformation", $this->conf->_c("paper_field", $o->title, 0))
+                . $this->papt("authorInformation", $this->conf->_c("field", $o->title, 0))
                 . '<div class="pavb"><i>Hidden for blind review</i></div>'
                 . "</div>\n\n";
             return;
@@ -952,7 +932,7 @@ class PaperTable {
         list($aulist, $contacts) = $this->_analyze_authors();
 
         // "author" or "authors"?
-        $auname = $this->conf->_c("paper_field", $o->title, count($aulist));
+        $auname = $this->conf->_c("field", $o->title, count($aulist));
         if ($vas === 1) {
             $auname .= " (deblinded)";
         } else if ($this->user->act_author_view($this->prow)) {
@@ -972,7 +952,7 @@ class PaperTable {
         if ($vas === 1 || $this->allFolded)
             $fr->value .= '<a class="q ui js-aufoldup" href="" title="Toggle author display" role="button" aria-expanded="' . ($this->foldmap[8] ? "false" : "true") . '">';
         if ($vas === 1)
-            $fr->value .= '<span class="fn8">' . $this->conf->_c("paper_field", $o->title, 0) . '</span><span class="fx8">';
+            $fr->value .= '<span class="fn8">' . $this->conf->_c("field", $o->title, 0) . '</span><span class="fx8">';
         if ($this->allFolded)
             $fr->value .= expander(null, 9);
         else if ($vas === 1)
@@ -1008,14 +988,14 @@ class PaperTable {
                 || $this->mode !== "edit"
                 || $this->prow->timeSubmitted <= 0)) {
             $fr->value .= '<div class="pg fx9' . ($vas > 1 ? "" : " fx8") . '">'
-                . $this->papt("authorInformation", $this->conf->_c("paper_field", "Contacts", count($contacts)))
+                . $this->papt("authorInformation", $this->conf->_c("field", "Contacts", count($contacts)))
                 . '<div class="pavb">'
                 . $this->authorData($contacts, "col", $this->user)
                 . "</div></div>\n\n";
         }
     }
 
-    function render_topics(FeatureRender $fr, $o) {
+    function render_topics(FieldRender $fr, $o) {
         if (!($tmap = $this->prow->topic_map()))
             return;
         $interests = $this->user->topic_interest_map();
@@ -1032,7 +1012,7 @@ class PaperTable {
             $ts[] = $t . '">' . $x . '</li>';
             $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
         }
-        $fr->title = $this->conf->_c("paper_field", $o->title, count($ts));
+        $fr->title = $this->conf->_c("field", $o->title, count($ts));
         $fr->set_html('<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>');
         $fr->value_long = true;
     }
@@ -1044,7 +1024,7 @@ class PaperTable {
         }
 
         if ($fr->title === null) {
-            $fr->title = $this->conf->_c("paper_field", $o->title);
+            $fr->title = $this->conf->_c("field", $o->title);
         }
 
         $fr->value = $fr->value_html();
@@ -1072,7 +1052,7 @@ class PaperTable {
         for ($i = $first; $i !== $last; ++$i) {
             if ($renders[$i][1] >= $vos) {
                 $o = $renders[$i][0];
-                $group_names[] = $this->conf->_c("paper_field", $o->title);
+                $group_names[] = $this->conf->_c("field", $o->title);
                 if ($o->id === -1005)
                     $group_flags |= 1;
                 else if ($o->has_document())
@@ -1088,7 +1068,7 @@ class PaperTable {
             $group_types[] = "Attachments";
         if ($group_flags & 4)
             $group_types[] = "Options";
-        return htmlspecialchars($this->conf->_c("paper_field_group", $renders[$first][0]->display_group, commajoin($group_names), commajoin($group_types)));
+        return htmlspecialchars($this->conf->_c("field_group", $renders[$first][0]->display_group, commajoin($group_names), commajoin($group_types)));
     }
 
     private function _echo_normal_body() {
@@ -1096,29 +1076,27 @@ class PaperTable {
         echo '<p class="pgsm"><span class="pstat ', $status_info[0], '">',
             htmlspecialchars($status_info[1]), "</span></p>";
 
-        $features = [];
-        foreach ($this->conf->paper_opts->feature_list($this->prow) as $o) {
+        $fields = [];
+        foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
             if (!$o->internal
                 && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
                 && $o->display_position() !== false
                 && $o->display_position() >= 1000
                 && $o->display_position() < 5000)
-                $features[] = $o;
+                $fields[] = $o;
         }
 
-        $fr = new FeatureRender($this->user, FeatureRender::CPAGE);
+        $fr = new FieldRender($this->user, FieldRender::CPAGE);
         $fr->table = $this;
 
         $renders = [];
-        foreach ($features as $o) {
+        foreach ($fields as $o) {
             $vos = $this->user->view_option_state($this->_prow, $o);
             if ($vos === 0)
                 continue;
 
             $fr->clear();
-            $ov = $this->_prow->option($o->id);
-            $ov = $ov ? : new PaperOptionValue($this->prow, $o);
-            $o->render($fr, $ov);
+            $o->render($fr, $this->_prow->force_option($o->id));
             if ($fr->is_empty())
                 continue;
 
@@ -1354,7 +1332,7 @@ class PaperTable {
             return;
         $pblind = !$this->prow || $this->prow->blind;
         $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
-        $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . " </span>" . $this->field_title_html("Anonymous submission");
+        $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "</span>" . $this->field_title_html("Anonymous submission");
         echo $this->editable_papt("blind", $heading, ["for" => "checkbox"]),
             $this->field_hint("Anonymous submission", "Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"),
             $this->messages_at("blind"),
@@ -1368,7 +1346,7 @@ class PaperTable {
         $sub_pcconf = $this->conf->setting("sub_pcconf");
 
         echo $this->editable_papt("collaborators", $this->field_title_html("Collaborators"), ["for" => "collaborators"]),
-            '<div class="paphint"><div class="mmm">';
+            '<div class="paphint"><p>';
         if ($this->conf->setting("sub_pcconf"))
             echo "List <em>other</em> people and institutions with which
         the authors have conflicts of interest.  This will help us avoid
@@ -1379,7 +1357,7 @@ class PaperTable {
         conflicts of interest. ", $this->conf->_i("conflictdef", false), '
         Be sure to include conflicted <a href="', hoturl("users", "t=pc"), '">PC members</a>.
         We use this information when assigning PC and external reviews.';
-        echo "</div><div class=\"mmm\"><strong>List one conflict per line</strong>, using parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</div></div>",
+        echo "</p><p><strong>List one conflict per line</strong>, using parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p></div>",
             '<div class="papev">',
             $this->editable_textarea("collaborators"),
             $this->messages_at("collaborators"),
@@ -1435,7 +1413,7 @@ class PaperTable {
             $fold = 0;
 
         $this->_papstripBegin("pscollab", $fold, ["data-fold-session" => "foldpscollab"]);
-        echo $this->papt("collaborators", $this->conf->_c("paper_field", "Collaborators", $this->conf->setting("sub_pcconf")),
+        echo $this->papt("collaborators", $this->conf->_c("field", "Collaborators", $this->conf->setting("sub_pcconf")),
                          ["type" => "ps", "fold" => "pscollab", "folded" => $fold]),
             '<div class="psv"><div class="fx">', $data,
             "</div></div></div>\n\n";
@@ -2256,7 +2234,7 @@ class PaperTable {
         echo '<div>';
 
         $this->edit_fields = [];
-        foreach ($this->conf->paper_opts->feature_list($this->prow) as $o) {
+        foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
             if (!$o->internal
                 && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
                 && ($this->canUploadFinal || !$o->final)
@@ -2285,12 +2263,10 @@ class PaperTable {
                 if ($o->edit_condition()
                     && !$o->compile_edit_condition($this->_prow))
                     return;
-                $ov = $this->_prow->option($o->id);
-                $ov = $ov ? : new PaperOptionValue($this->prow, $o);
                 $reqv = null;
                 if ($this->useRequest && $this->qreq["has_{$o->formid}"])
                     $reqv = $o->parse_request_display($this->qreq, $this->user, $this->prow);
-                $o->echo_editable_html($ov, $reqv, $this);
+                $o->echo_editable_html($this->_prow->force_option($o->id), $reqv, $this);
             }
 
             // Submit button

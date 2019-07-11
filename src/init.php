@@ -89,7 +89,8 @@ class SiteLoader {
         "ContactCountMatcher" => "src/papersearch.php",
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
-        "FeatureRender" => "src/paperoption.php",
+        "FeatureRender" => "src/paperoption.php", // XXX
+        "FieldRender" => "src/paperoption.php",
         "FormatChecker" => "src/formatspec.php",
         "HashAnalysis" => "lib/filer.php",
         "JsonSerializable" => "lib/json.php",

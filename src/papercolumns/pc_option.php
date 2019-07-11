@@ -14,7 +14,7 @@ class Option_PaperColumn extends PaperColumn {
         if (!$pl->user->can_view_some_paper_option($this->opt))
             return false;
         $pl->qopts["options"] = true;
-        $this->fr = new FeatureRender($pl->user, 0);
+        $this->fr = new FieldRender($pl->user, 0);
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -37,7 +37,7 @@ class Option_PaperColumn extends PaperColumn {
         }
 
         $fr = $this->fr;
-        $fr->clear($this->viewable_row() ? FeatureRender::CROW : FeatureRender::CCOLUMN);
+        $fr->clear($this->viewable_row() ? FieldRender::CROW : FieldRender::CCOLUMN);
         $this->opt->render($fr, $ov);
         if ((string) $fr->value === "") {
             return "";
@@ -68,7 +68,7 @@ class Option_PaperColumn extends PaperColumn {
             return "";
         }
 
-        $this->fr->clear(FeatureRender::CCSV);
+        $this->fr->clear(FieldRender::CCSV);
         $this->opt->render($this->fr, $ov);
         return (string) $this->fr->value;
     }

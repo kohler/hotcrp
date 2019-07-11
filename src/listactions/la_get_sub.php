@@ -88,7 +88,7 @@ class GetAbstract_ListAction extends ListAction {
     private static function render_authors($fr, $prow, $user, $o) {
         if ($user->can_view_authors($prow)
             && ($alist = $prow->author_list())) {
-            $fr->title = $prow->conf->_c("paper_field", $o->title, count($alist));
+            $fr->title = $prow->conf->_c("field", $o->title, count($alist));
             $fr->set_text("");
             foreach ($alist as $i => $au) {
                 $marker = ($i || count($alist) > 1 ? ($i + 1) . ". " : "");
@@ -98,7 +98,7 @@ class GetAbstract_ListAction extends ListAction {
     }
     private static function render_topics($fr, $prow, $user, $o) {
         if (($tlist = $prow->topic_map())) {
-            $fr->title = $prow->conf->_c("paper_field", $o->title, count($tlist));
+            $fr->title = $prow->conf->_c("field", $o->title, count($tlist));
             $fr->set_text("");
             foreach ($tlist as $t)
                 $fr->value .= prefix_word_wrap("* ", $t, 2, self::WIDTH);
@@ -108,8 +108,8 @@ class GetAbstract_ListAction extends ListAction {
         $n = prefix_word_wrap("", "Submission #{$prow->paperId}: {$prow->title}", 0, self::WIDTH);
         $text = $n . str_repeat("=", min(self::WIDTH, strlen($n) - 1)) . "\n\n";
 
-        $fr = new FeatureRender($user, FeatureRender::CTEXT);
-        foreach ($user->conf->paper_opts->feature_list($prow) as $o) {
+        $fr = new FieldRender($user, FieldRender::CTEXT);
+        foreach ($user->conf->paper_opts->field_list($prow) as $o) {
             if (!$o->internal
                 && ($o->id <= 0 || $user->allow_view_option($prow, $o))
                 && $o->display_position() !== false) {
@@ -126,7 +126,7 @@ class GetAbstract_ListAction extends ListAction {
                 }
                 if (!$fr->is_empty()) {
                     if ($fr->title === null) {
-                        $fr->title = $prow->conf->_c("paper_field", $o->title);
+                        $fr->title = $prow->conf->_c("field", $o->title);
                     }
                     $title = prefix_word_wrap("", $fr->title, 0, self::WIDTH);
                     $text .= $title

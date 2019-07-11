@@ -89,7 +89,7 @@ class PaperOptionValue {
     }
 }
 
-class FeatureRender {
+class FieldRender {
     public $user;
     public $table;
     public $context;
@@ -164,6 +164,9 @@ class FeatureRender {
                 . '">' . htmlspecialchars($this->value) . '</div>';
         }
     }
+}
+
+class FeatureRender extends FieldRender { // XXX
 }
 
 class PaperOptionList {
@@ -341,13 +344,21 @@ class PaperOptionList {
         return $list;
     }
 
-    function feature_list(PaperInfo $prow = null) {
+    private function _get_field($id, $oj, $nonfinal) {
+        if (get($oj, "nonpaper")
+            || ($nonfinal && get($oj, "final")))
+            return null;
+        return $this->get($id);
+    }
+
+    function field_list(PaperInfo $prow = null) {
         $nonfinal = !$prow || $prow->outcome <= 0;
         $olist = [];
-        foreach ($this->intrinsic_json_list() + $this->option_json_list() as $id => $oj)
-            if (!get($oj, "nonpaper")
-                && (!$nonfinal || !get($oj, "final"))
-                && ($o = $this->get($id)))
+        foreach ($this->intrinsic_json_list() as $id => $oj)
+            if (($o = $this->_get_field($id, $oj, $nonfinal)))
+                $olist[$id] = $o;
+        foreach ($this->option_json_list() as $id => $oj)
+            if (($o = $this->_get_field($id, $oj, $nonfinal)))
                 $olist[$id] = $o;
         uasort($olist, "PaperOption::compare");
         return $olist;
@@ -779,6 +790,32 @@ class PaperOption implements Abbreviator {
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
     }
 
+    function echo_editable_text_html(PaperOptionValue $ov, $reqv, PaperTable $pt,
+                                     $extra = []) {
+        $default_value = null;
+        if ($reqv === null) {
+            $reqv = (string) $ov->data();
+        } else if ($reqv !== $ov->data()
+                   && trim(cleannl($reqv)) !== trim($ov->data())) {
+            $default_value = $ov->data();
+        }
+        $pt->echo_editable_option_papt($this);
+        echo '<div class="papev">';
+        if (($fi = $ov->prow->edit_format())
+            && !get($extra, "no_format_description"))
+            echo $fi->description_preview_html();
+        echo Ht::textarea($this->formid, $reqv, [
+                "id" => $this->readable_formid,
+                "class" => $pt->control_class($this->formid, "papertext need-autogrow"),
+                "rows" => max($this->display_space, 1),
+                "cols" => 60,
+                "spellcheck" => get($extra, "no_spellcheck") ? null : "true",
+                "data-default-value" => $default_value
+            ]),
+            $pt->messages_at($this->formid),
+            "</div></div>\n\n";
+    }
+
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
         return null;
     }
@@ -802,7 +839,7 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
-    function render(FeatureRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperOptionValue $ov) {
     }
 
     function format_spec() {
@@ -846,10 +883,10 @@ class CheckboxPaperOption extends PaperOption {
         return $isrow ? true : ["column" => true, "className" => "pl_option plc"];
     }
 
-    function render(FeatureRender $fr, PaperOptionValue $ov) {
-        if ($fr->context === FeatureRender::CPAGE && $ov->value) {
+    function render(FieldRender $fr, PaperOptionValue $ov) {
+        if ($fr->context === FieldRender::CPAGE && $ov->value) {
             $fr->title = "";
-            $t = htmlspecialchars($this->conf->_c("paper_field", $this->title));
+            $t = htmlspecialchars($this->conf->_c("field", $this->title));
             $fr->set_html('✓ <span class="pavfn">' . $t . '</span>');
         } else {
             $fr->set_bool(!!$ov->value);
@@ -993,7 +1030,7 @@ class SelectorPaperOption extends PaperOption {
         return true;
     }
 
-    function render(FeatureRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperOptionValue $ov) {
         $fr->set_text(get($this->selector, $ov->value - 1, ""));
     }
 }
@@ -1035,11 +1072,9 @@ class DocumentPaperOption extends PaperOption {
         if ($this->id > 0 && $ov->value)
             $docid = $ov->value;
         else if ($this->id == DTYPE_SUBMISSION
-                 && $ov->prow
                  && $ov->prow->paperStorageId > 1)
             $docid = $ov->prow->paperStorageId;
         else if ($this->id == DTYPE_FINAL
-                 && $ov->prow
                  && $ov->prow->finalPaperStorageId > 0)
             $docid = $ov->prow->finalPaperStorageId;
         else
@@ -1102,18 +1137,18 @@ class DocumentPaperOption extends PaperOption {
             break;
         return $d;
     }
-    function render(FeatureRender $fr, PaperOptionValue $ov) {
-        if ($this->id <= 0 && $fr->context === FeatureRender::CPAGE) {
+    function render(FieldRender $fr, PaperOptionValue $ov) {
+        if ($this->id <= 0 && $fr->context === FieldRender::CPAGE) {
             $fr->table->render_submission($fr, $this);
         } else if (($d = $this->first_document($ov))) {
             if ($fr->want_text()) {
                 $fr->set_text($d->filename);
-            } else if ($fr->context === FeatureRender::CPAGE) {
+            } else if ($fr->context === FieldRender::CPAGE) {
                 $fr->title = "";
                 $dif = 0;
                 if ($this->display_position() >= 2000)
                     $dif = DocumentInfo::L_SMALL;
-                $t = htmlspecialchars($this->conf->_c("paper_field", $this->title));
+                $t = htmlspecialchars($this->conf->_c("field", $this->title));
                 $fr->set_html($d->link_html('<span class="pavfn">' . $t . '</span>', $dif));
             } else {
                 $fr->set_html($d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
@@ -1204,7 +1239,7 @@ class NumericPaperOption extends PaperOption {
         return $isrow ? true : ["column" => true, "className" => "pl_option plrd"];
     }
 
-    function render(FeatureRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperOptionValue $ov) {
         if ($ov->value !== null) {
             $fr->set_text($ov->value);
         }
@@ -1246,15 +1281,9 @@ class TextPaperOption extends PaperOption {
             return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
     }
 
+
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        $reqv = (string) ($reqv === null ? $ov->data() : $reqv);
-        $pt->echo_editable_option_papt($this);
-        $fi = $pt->prow ? $pt->prow->edit_format() : $pt->conf->format_info(null);
-        echo '<div class="papev">',
-            ($fi ? $fi->description_preview_html() : ""),
-            Ht::textarea($this->formid, $reqv, ["id" => $this->readable_formid, "class" => "papertext need-autogrow" . $pt->has_error_class($this->formid), "rows" => max($this->display_space, 1), "cols" => 60, "spellcheck" => "true", "data-default-value" => $ov->data()]),
-            $pt->messages_at($this->formid),
-            "</div></div>\n\n";
+        $this->echo_editable_text_html($ov, $reqv, $pt);
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
@@ -1278,7 +1307,7 @@ class TextPaperOption extends PaperOption {
         return ["row" => true, "className" => "pl_textoption"];
     }
 
-    function render(FeatureRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperOptionValue $ov) {
         $d = $ov->data();
         if ($d !== null && $d !== "") {
             $fr->value = $d;
@@ -1416,7 +1445,7 @@ class AttachmentsPaperOption extends PaperOption {
         return true;
     }
 
-    function render(FeatureRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperOptionValue $ov) {
         $ts = [];
         foreach ($ov->documents() as $d) {
             if ($fr->want_text()) {
@@ -1441,12 +1470,12 @@ class AttachmentsPaperOption extends PaperOption {
         if (!empty($ts)) {
             if ($fr->want_text()) {
                 $fr->set_text(join("; ", $ts));
-            } else if ($fr->context === FeatureRender::CROW) {
+            } else if ($fr->context === FieldRender::CROW) {
                 $fr->set_html(join("; ", $ts));
             } else {
                 $fr->set_html('<p class="od">' . join('</p><p class="od">', $ts) . '</p>');
             }
-            if ($fr->context === FeatureRender::CPAGE
+            if ($fr->context === FieldRender::CPAGE
                 && $this->display_position() < 2000) {
                 $fr->title = false;
                 $fr->value = '<div class="pgsm'
@@ -1458,19 +1487,33 @@ class AttachmentsPaperOption extends PaperOption {
 }
 
 class IntrinsicPaperOption extends PaperOption {
-    private $intrinsic_callback;
-
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->intrinsic_callback = $args["intrinsic_callback"];
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        $f = $this->intrinsic_callback;
-        $pt->$f();
+        if ($this->id === -1000) {
+            $this->echo_editable_text_html($ov, $reqv, $pt, ["no_format_description" => true]);
+        } else if ($this->id === -1004) {
+            if ((int) $this->conf->opt("noAbstract") !== 1) {
+                $this->echo_editable_text_html($ov, $reqv, $pt);
+            }
+        } else if ($this->id === -1001) {
+            $pt->echo_editable_authors();
+        } else if ($this->id === -1002) {
+            $pt->echo_editable_anonymity();
+        } else if ($this->id === -1003) {
+            $pt->echo_editable_contact_author();
+        } else if ($this->id === -1005) {
+            $pt->echo_editable_topics();
+        } else if ($this->id === -1006) {
+            $pt->echo_editable_pc_conflicts();
+        } else if ($this->id === -1007) {
+            $pt->echo_editable_collaborators();
+        }
     }
-    function render(FeatureRender $fr, PaperOptionValue $ov) {
-        assert($fr->context === FeatureRender::CPAGE && $fr->table !== null);
+    function render(FieldRender $fr, PaperOptionValue $ov) {
+        assert($fr->context === FieldRender::CPAGE && $fr->table !== null);
         if ($this->id === -1004)
             $fr->table->render_abstract($fr, $this);
         else if ($this->id === -1001)
