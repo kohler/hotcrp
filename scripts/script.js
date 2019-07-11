@@ -4211,7 +4211,8 @@ function render_cmt_text(format, value, response, textj, chead) {
         && resp_rounds[response]
         && (wlimit = resp_rounds[response].words) > 0) {
         wc = count_words(value);
-        chead && chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
+        if (wc > 0 && chead)
+            chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
         if (wc > wlimit) {
             chead && chead.find(".words").addClass("wordsover");
             wc = count_words_split(value, wlimit);
