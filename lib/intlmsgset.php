@@ -201,10 +201,10 @@ class IntlMsgSet {
                 if ($context === $im->context)
                     $ctxlen = 10000;
                 else {
-                    $ctxlen = (int) min(strlen($context), strlen($im->context));
-                    if (strncmp($context, $im->context, $ctxlen) !== 0
-                        || ($ctxlen < strlen($context) && $context[$ctxlen] !== "/")
-                        || ($ctxlen < strlen($im->context) && $im->context[$ctxlen] !== "/"))
+                    $ctxlen = strlen($im->context);
+                    if ($ctxlen > strlen($context)
+                        || strncmp($context, $im->context, $ctxlen) !== 0
+                        || $context[$ctxlen] !== "/")
                         continue;
                 }
             } else if ($context === null && $im->context !== null)
