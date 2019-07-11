@@ -1032,7 +1032,7 @@ button:disabled, button:disabled:hover,
 }
 .licon {
 	fill: currentColor;
-	vertical-align: -2px;
+	vertical-align: -0.0625em;
 }
 button > .licon, .btn > .licon {
 	vertical-align: -0.15em;
