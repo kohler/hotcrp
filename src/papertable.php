@@ -479,14 +479,12 @@ class PaperTable {
             return htmlspecialchars($t);
     }
 
-    private function field_hint($name, $itext = "") {
-        $args = array_merge(["field_description/edit"], func_get_args());
-        if (count($args) === 2)
-            $args[] = "";
-        $t = call_user_func_array([$this->conf->ims(), "xci"], $args);
-        if ($t !== "")
-            return '<div class="paphint">' . $t . '</div>';
-        return "";
+    private function echo_field_hint($name, $itext, $arg = null) {
+        $fr = new FieldRender($this->user, FieldRender::CDESC);
+        $fr->value_format = 5;
+        $this->conf->ims()->render_xci($fr, "field_description/edit", $name, $itext, $arg);
+        if (!$fr->is_empty())
+            echo $fr->value_html("paphint");
     }
 
     static function pdf_stamps_html($data, $options = null) {
@@ -636,7 +634,7 @@ class PaperTable {
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
         $heading = $this->field_title_html($docx->title) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
         $this->echo_editable_papt($field, $heading, ["for" => $doc ? false : $inputid, "id" => $docx->readable_formid], $docx);
-        echo $this->field_hint(htmlspecialchars($docx->title), $docx->description);
+        $this->echo_field_hint($docx->title, $docx->description);
 
         echo '<div class="papev has-document" data-dtype="', $dtype,
             '" data-document-name="', $docx->field_key(), '"';
@@ -783,8 +781,8 @@ class PaperTable {
         else if ($sb === Conf::BLIND_UNTILREVIEW)
             $title .= ' <span class="n">(blind until review)</span>';
         $this->echo_editable_papt("authors", $title, ["id" => "authors"]);
-        echo $this->field_hint("Authors", "List the authors, including email addresses and affiliations.", $sb),
-            '<div class="papev"><table class="js-row-order">',
+        $this->echo_field_hint("Authors", "List the authors, including email addresses and affiliations.");
+        echo '<div class="papev"><table class="js-row-order">',
             '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
             'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', null, $max_authors)), '">';
@@ -1274,8 +1272,8 @@ class PaperTable {
             '</span></div>';
 
         // Editable version
-        echo $this->field_hint("Contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.", !!$this->prow),
-            Ht::hidden("has_contacts", 1),
+        $this->echo_field_hint("Contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.", !!$this->prow);
+        echo Ht::hidden("has_contacts", 1),
             '<div class="papev js-row-order"><div>';
 
         $req_cemail = [];
@@ -1334,34 +1332,9 @@ class PaperTable {
         $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
         $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "</span>" . $this->field_title_html("Anonymous submission");
         $this->echo_editable_papt("blind", $heading, ["for" => "checkbox"]);
-        echo $this->field_hint("Anonymous submission", "Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"),
-            $this->messages_at("blind"),
+        $this->echo_field_hint("Anonymous submission", "Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!");
+        echo $this->messages_at("blind"),
             "</div>\n\n";
-    }
-
-    function echo_editable_collaborators() {
-        if (!$this->conf->setting("sub_collab")
-            || ($this->editable === "f" && !$this->admin))
-            return;
-        $sub_pcconf = $this->conf->setting("sub_pcconf");
-
-        $this->echo_editable_papt("collaborators", $this->field_title_html("Collaborators"), ["for" => "collaborators"]);
-        echo '<div class="paphint"><p>';
-        if ($this->conf->setting("sub_pcconf"))
-            echo "List <em>other</em> people and institutions with which
-        the authors have conflicts of interest.  This will help us avoid
-        conflicts when assigning external reviews.  No need to list people
-        at the authors’ own institutions.";
-        else
-            echo "List people and institutions with which the authors have
-        conflicts of interest. ", $this->conf->_i("conflictdef", false), '
-        Be sure to include conflicted <a href="', hoturl("users", "t=pc"), '">PC members</a>.
-        We use this information when assigning PC and external reviews.';
-        echo "</p><p><strong>List one conflict per line</strong>, using parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p></div>",
-            '<div class="papev">',
-            $this->editable_textarea("collaborators"),
-            $this->messages_at("collaborators"),
-            "</div></div>\n\n";
     }
 
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
@@ -1423,8 +1396,8 @@ class PaperTable {
         if (!$this->conf->has_topics())
             return;
         $this->echo_editable_papt("topics", $this->field_title_html("Topics"), ["id" => "topics"]);
-        echo $this->field_hint("Topics", "Select any topics that apply to your submission."),
-            '<div class="papev">',
+        $this->echo_field_hint("Topics", "Select any topics that apply to your submission.");
+        echo '<div class="papev">',
             Ht::hidden("has_topics", 1),
             '<div class="ctable">';
         $ptopics = $this->prow ? $this->prow->topic_map() : [];
@@ -1475,8 +1448,12 @@ class PaperTable {
         if (!$heading)
             $heading = $this->field_title_html($o->title);
         $this->echo_editable_papt($o->formid, $heading, $rest, $o);
-        echo $this->field_hint($o->title, $o->description),
-            Ht::hidden("has_{$o->formid}", 1);
+        $fr = new FieldRender($this->user, FieldRender::CDESC);
+        $fr->value_format = $o->description_format === null ? 5 : $o->description_format;
+        $this->conf->ims()->render_xci($fr, "field_description/edit", $o->title, $o->description);
+        if (!$fr->is_empty())
+            echo $fr->value_html("paphint");
+        echo Ht::hidden("has_{$o->formid}", 1);
     }
 
     function echo_editable_pc_conflicts() {

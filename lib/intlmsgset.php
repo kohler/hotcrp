@@ -291,6 +291,17 @@ class IntlMsgSet {
         return $this->expand($args[0], $args, $cid, $im);
     }
 
+    function render_xci($fr, $context, $id, $itext) {
+        $args = array_slice(func_get_args(), 3);
+        if (($im = $this->find($context, $id, $args, null))) {
+            $args[0] = $im->otext;
+            if ($im->format !== null)
+                $fr->value_format = $im->format;
+        }
+        $cid = (string) $context === "" ? $id : "$context/$id";
+        $fr->value = $this->expand($args[0], $args, $cid, $im);
+    }
+
     function default_itext($id, $itext) {
         $args = array_slice(func_get_args(), 1);
         if (($im = $this->find(null, $id, $args, self::PRIO_OVERRIDE)))

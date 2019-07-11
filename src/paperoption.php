@@ -17,10 +17,10 @@ class PaperOptionValue {
         $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
-        $this->assign_value_data([$values, $data_array]);
-    }
-    function assign($values, $data_array) { // XXX backwards compat
-        $this->assign_value_data([$values, $data_array]);
+        if (empty($values) && $prow && $o->id <= -1000)
+            $this->assign_intrinsic();
+        else
+            $this->assign_value_data([$values, $data_array]);
     }
     function assign_value_data($value_data) {
         $old_values = $this->_values;
@@ -36,6 +36,24 @@ class PaperOptionValue {
         $this->anno = null;
         if ($this->_documents !== null && $this->_values != $old_values)
             $this->_documents = null;
+    }
+    private function assign_intrinsic() {
+        $s = null;
+        if ($this->id === -1000) {
+            $s = $this->prow->title;
+        } else if ($this->id === -1004) {
+            $s = $this->prow->abstract;
+        } else if ($this->id === -1002) {
+            $this->assign_value_data([$this->prow->blind ? [1] : [], null]);
+            return;
+        } else if ($this->id === -1007) {
+            $s = $this->prow->collaborators;
+        }
+        if ($s !== null && $s !== "") {
+            $this->assign_value_data([[1], [$s]]);
+        } else {
+            $this->assign_value_data([[], []]);
+        }
     }
     function documents() {
         assert($this->prow || empty($this->_values));
@@ -103,6 +121,7 @@ class FieldRender {
     const CCOLUMN = 7;
     const CCSV = 0;
     const CTEXT = 2;
+    const CDESC = 9;
 
     const CFHTML = 1;
     const CFLIST = 4;
@@ -147,22 +166,33 @@ class FieldRender {
             $this->set_text($b ? "Yes" : "");
         }
     }
-    function value_html() {
+    function value_html($divclass = null) {
+        $rest = "";
         if ((string) $this->value === "") {
             return "";
         } else if ($this->value_format === 5) {
-            return $this->value;
+            if ($divclass === null) {
+                return $this->value;
+            }
+            $html = $this->value;
         } else if ($this->value_format === 0) {
             if ($this->value_long) {
-                return '<div class="format0">' . Ht::format0($this->value) . '</div>';
+                $html = Ht::format0($this->value);
+                $divclass = $divclass ? "format0 " . $divclass : "format0";
             } else {
-                return htmlspecialchars($this->value);
+                $html = htmlspecialchars($this->value);
             }
         } else {
             Ht::stash_script('$(render_text.on_page)', 'render_on_page');
-            return '<div class="need-format" data-format="' . $this->value_format
-                . '">' . htmlspecialchars($this->value) . '</div>';
+            $html = htmlspecialchars($this->value);
+            $divclass = $divclass ? "need-format " . $divclass : "need-format";
+            $rest = ' data-format="' . $this->value_format . '"';
         }
+        if ($divclass || $rest) {
+            $html = '<div' . ($divclass ? ' class="' . $divclass . '"' : "")
+                . $rest . '>' . $html . '</div>';
+        }
+        return $html;
     }
 }
 
@@ -451,6 +481,7 @@ class PaperOption implements Abbreviator {
     private $_json_key;
     private $_search_keyword;
     public $description;
+    public $description_format;
     public $position;
     public $required;
     public $final;
@@ -509,6 +540,7 @@ class PaperOption implements Abbreviator {
         if (($x = get_s($args, "search_keyword")))
             $this->_search_keyword = $x;
         $this->description = get_s($args, "description");
+        $this->description_format = get($args, "description_format");
         $this->required = !!get($args, "required");
         $this->final = !!get($args, "final");
         $this->nonpaper = !!get($args, "nonpaper");
@@ -1509,7 +1541,10 @@ class IntrinsicPaperOption extends PaperOption {
         } else if ($this->id === -1006) {
             $pt->echo_editable_pc_conflicts();
         } else if ($this->id === -1007) {
-            $pt->echo_editable_collaborators();
+            if ($this->conf->setting("sub_collab")
+                && ($pt->editable !== "f" || $pt->user->can_administer($pt->prow))) {
+                $this->echo_editable_text_html($ov, $reqv, $pt, ["no_format_description" => true, "no_spellcheck" => true]);
+            }
         }
     }
     function render(FieldRender $fr, PaperOptionValue $ov) {
