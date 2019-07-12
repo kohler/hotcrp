@@ -2293,7 +2293,8 @@ class PaperTable {
 
         if (!$this->editable && $this->mode === "edit") {
             $this->_echo_editable_form();
-            $this->echo_editable_contact_author();
+            $option = $this->conf->paper_opts->get(-1003);
+            $this->echo_editable_contact_author($option);
             $this->echoActions(false);
             echo "</form>";
         } else if (!$this->editable
