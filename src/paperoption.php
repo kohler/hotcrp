@@ -43,9 +43,6 @@ class PaperOptionValue {
             $s = $this->prow->title;
         } else if ($this->id === -1004) {
             $s = $this->prow->abstract;
-        } else if ($this->id === -1002) {
-            $this->assign_value_data([$this->prow->blind ? [1] : [], null]);
-            return;
         } else if ($this->id === -1007) {
             $s = $this->prow->collaborators;
         }
