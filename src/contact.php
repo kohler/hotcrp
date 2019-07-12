@@ -1927,7 +1927,7 @@ class Contact {
                     || ($bs == Conf::BLIND_OPTIONAL
                         && !$prow->blind)
                     || ($bs == Conf::BLIND_UNTILREVIEW
-                        && $ci->review_status != 0)
+                        && $ci->review_status > 0)
                     || ($prow->outcome > 0
                         && ($isPC || $ci->allow_review)
                         && $ci->can_view_decision
