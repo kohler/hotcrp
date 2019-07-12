@@ -292,17 +292,21 @@ class Home_Partial {
             $where[] = "PaperReview.contactId=" . $user->contactId;
         if (($tokens = $user->review_tokens()))
             $where[] = "reviewToken in (" . join(",", $tokens) . ")";
-        $q = "count(reviewSubmitted) num_submitted,
-            count(if(reviewNeedsSubmit=0,reviewSubmitted,1)) num_needs_submit,
-            group_concat(distinct if(reviewNeedsSubmit!=0 and reviewSubmitted is null,reviewRound,null)) unsubmitted_rounds";
-        if ($this->_merit_field)
-            $q .= ", group_concat(if(reviewSubmitted is not null,{$this->_merit_field->main_storage},null)) scores";
-        else
-            $q .= ", '' scores";
-        $result = $user->conf->qe("select $q from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0) group by PaperReview.reviewId>0");
-        if (($this->_my_rinfo = $result->fetch_object()))
+        $this->_my_rinfo = null;
+        if (!empty($where)) {
+            $q = "count(reviewSubmitted) num_submitted,
+                count(if(reviewNeedsSubmit=0,reviewSubmitted,1)) num_needs_submit,
+                group_concat(distinct if(reviewNeedsSubmit!=0 and reviewSubmitted is null,reviewRound,null)) unsubmitted_rounds";
+            if ($this->_merit_field)
+                $q .= ", group_concat(if(reviewSubmitted is not null,{$this->_merit_field->main_storage},null)) scores";
+            else
+                $q .= ", '' scores";
+            $result = $user->conf->qe("select $q from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0) group by PaperReview.reviewId>0");
+            $this->_my_rinfo = $result->fetch_object();
+            Dbl::free($result);
+        }
+        if ($this->_my_rinfo)
             $this->_my_rinfo->mean_score = ScoreInfo::mean_of($this->_my_rinfo->scores, true);
-        Dbl::free($result);
 
         // Information about PC reviews
         $npc = $sumpcSubmit = $npcScore = $sumpcScore = 0;
