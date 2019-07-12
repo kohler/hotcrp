@@ -2801,6 +2801,7 @@ ul.x > li:last-child {
 	align-items: stretch;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+	margin-bottom: 1em;
 }
 .paperinfo-c {
 	flex-basis: 0;
