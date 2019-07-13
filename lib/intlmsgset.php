@@ -243,7 +243,7 @@ class IntlMsgSet {
                     $t = substr($s, 0, $pos - 1) . $this->expand($imt->otext, $args, null, null);
                     $s = $t . substr($s, $pos + strlen($m[0]) + 1);
                     $pos = strlen($t);
-                } else if ($im && $im->no_conversions) {
+                } else if (($im && $im->no_conversions) || count($args) === 1) {
                     /* do nothing */
                 } else if ($pos < strlen($s) && $s[$pos] === "%") {
                     $s = substr($s, 0, $pos) . substr($s, $pos + 1);
