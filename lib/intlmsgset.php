@@ -233,31 +233,29 @@ class IntlMsgSet {
         if ($s === null || $s === false || $s === "")
             return $s;
         $pos = strpos($s, "%");
-        if (count($args) > 1 || $pos !== false) {
-            $argnum = 0;
-            while ($pos !== false) {
-                ++$pos;
-                if (preg_match('{(?!\d+)\w+(?=%)}A', $s, $m, 0, $pos)
-                    && ($imt = $this->find($context, strtolower($m[0]), [], null))
-                    && $imt->template) {
-                    $t = substr($s, 0, $pos - 1) . $this->expand($imt->otext, $args, null, null);
-                    $s = $t . substr($s, $pos + strlen($m[0]) + 1);
-                    $pos = strlen($t);
-                } else if (($im && $im->no_conversions) || count($args) === 1) {
-                    /* do nothing */
-                } else if ($pos < strlen($s) && $s[$pos] === "%") {
-                    $s = substr($s, 0, $pos) . substr($s, $pos + 1);
-                } else if (preg_match('/(?:(\d+)\$)?(\d*(?:\.\d+)?)([deEifgosxX])/A', $s, $m, 0, $pos)) {
-                    $argi = $m[1] ? +$m[1] : ++$argnum;
-                    if (isset($args[$argi])) {
-                        $args[0] = "%{$argi}\${$m[2]}{$m[3]}";
-                        $x = call_user_func_array("sprintf", $args);
-                        $s = substr($s, 0, $pos - 1) . $x . substr($s, $pos + strlen($m[0]));
-                        $pos = $pos - 1 + strlen($x);
-                    }
+        $argnum = 0;
+        while ($pos !== false) {
+            ++$pos;
+            if (preg_match('{(?!\d+)\w+(?=%)}A', $s, $m, 0, $pos)
+                && ($imt = $this->find($context, strtolower($m[0]), [], null))
+                && $imt->template) {
+                $t = substr($s, 0, $pos - 1) . $this->expand($imt->otext, $args, null, null);
+                $s = $t . substr($s, $pos + strlen($m[0]) + 1);
+                $pos = strlen($t);
+            } else if (($im && $im->no_conversions) || count($args) === 1) {
+                /* do nothing */
+            } else if ($pos < strlen($s) && $s[$pos] === "%") {
+                $s = substr($s, 0, $pos) . substr($s, $pos + 1);
+            } else if (preg_match('/(?:(\d+)\$)?(\d*(?:\.\d+)?)([deEifgosxX])/A', $s, $m, 0, $pos)) {
+                $argi = $m[1] ? +$m[1] : ++$argnum;
+                if (isset($args[$argi])) {
+                    $args[0] = "%{$argi}\${$m[2]}{$m[3]}";
+                    $x = call_user_func_array("sprintf", $args);
+                    $s = substr($s, 0, $pos - 1) . $x . substr($s, $pos + strlen($m[0]));
+                    $pos = $pos - 1 + strlen($x);
                 }
-                $pos = strpos($s, "%", $pos);
             }
+            $pos = strpos($s, "%", $pos);
         }
         return $s;
     }
