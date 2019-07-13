@@ -14,7 +14,7 @@ class Option_PaperColumn extends PaperColumn {
         if (!$pl->user->can_view_some_paper_option($this->opt))
             return false;
         $pl->qopts["options"] = true;
-        $this->fr = new FieldRender($pl->user, 0);
+        $this->fr = new FieldRender(0);
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {

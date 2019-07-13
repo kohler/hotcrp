@@ -105,7 +105,6 @@ class PaperOptionValue {
 }
 
 class FieldRender {
-    public $user;
     public $table;
     public $context;
     public $title;
@@ -123,8 +122,7 @@ class FieldRender {
     const CFHTML = 1;
     const CFLIST = 4;
 
-    function __construct(Contact $user, $context) {
-        $this->user = $user;
+    function __construct($context) {
         $this->context = $context;
     }
     function clear($context = null) {
@@ -191,9 +189,6 @@ class FieldRender {
         }
         return $html;
     }
-}
-
-class FeatureRender extends FieldRender { // XXX
 }
 
 class PaperOptionList {
@@ -1520,9 +1515,10 @@ class AttachmentsPaperOption extends PaperOption {
             if ($fr->context === FieldRender::CPAGE
                 && $this->display_position() < 2000) {
                 $fr->title = false;
-                $fr->value = '<div class="pgsm'
-                    . ($fr->user->view_option_state($ov->prow, $this) === 1 ? ' fx8' : '')
-                    . '">' . $fr->value . '</div>';
+                $v = '<div class="pgsm';
+                if ($fr->table && $fr->table->user->view_option_state($ov->prow, $this) === 1)
+                    $v .= ' fx8';
+                $fr->value = $v . '">' . $fr->value . '</div>';
             }
         }
     }

@@ -480,7 +480,7 @@ class PaperTable {
     }
 
     private function echo_field_hint($opt) {
-        $fr = new FieldRender($this->user, FieldRender::CDESC);
+        $fr = new FieldRender(FieldRender::CDESC);
         $fr->value_format = 5;
         if ($opt->description_format !== null)
             $fr->value_format = $opt->description_format;
@@ -1087,7 +1087,7 @@ class PaperTable {
                 $fields[] = $o;
         }
 
-        $fr = new FieldRender($this->user, FieldRender::CPAGE);
+        $fr = new FieldRender(FieldRender::CPAGE);
         $fr->table = $this;
 
         $renders = [];

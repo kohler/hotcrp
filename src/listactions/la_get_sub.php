@@ -108,7 +108,7 @@ class GetAbstract_ListAction extends ListAction {
         $n = prefix_word_wrap("", "Submission #{$prow->paperId}: {$prow->title}", 0, self::WIDTH);
         $text = $n . str_repeat("=", min(self::WIDTH, strlen($n) - 1)) . "\n\n";
 
-        $fr = new FieldRender($user, FieldRender::CTEXT);
+        $fr = new FieldRender(FieldRender::CTEXT);
         foreach ($user->conf->paper_opts->field_list($prow) as $o) {
             if (!$o->internal
                 && ($o->id <= 0 || $user->allow_view_option($prow, $o))
