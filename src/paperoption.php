@@ -207,8 +207,8 @@ class PaperOptionList {
     private $_nonpaper_am;
     private $_adding_fixed;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","title":"Submission","message_title":"submission","form_position":1001,"type":"document"}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","message_title":"final version","form_position":1002,"display_position":false,"type":"document"}';
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","title":"Submission","form_position":1001,"type":"document"}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","form_position":1002,"display_position":false,"type":"document"}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -472,7 +472,6 @@ class PaperOption implements Abbreviator {
     public $formid;
     public $readable_formid;
     public $title;
-    public $message_title;
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
     private $_json_key;
@@ -529,7 +528,6 @@ class PaperOption implements Abbreviator {
         if ($this->name === null)
             $this->name = "<Unknown-{$this->id}>";
         $this->title = get($args, "title", $this->name);
-        $this->message_title = get($args, "message_title", $this->title);
         $this->type = get($args, "type");
 
         if (($x = get_s($args, "json_key")))

@@ -27,7 +27,7 @@ class GetDocument_ListAction extends ListAction {
     }
     static function error_document(PaperOption $opt, PaperInfo $row, $error_html = "") {
         if (!$error_html)
-            $error_html = $row->conf->_("Submission #%d has no %s.", $row->paperId, $opt->message_title);
+            $error_html = $row->conf->_("Submission #%d has no %s field.", $row->paperId, $opt->title);
         $x = new DocumentInfo(["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $error_html], $row->conf);
         if (($mimetypes = $opt->mimetypes()) && count($mimetypes) == 1)
             $x->mimetype = $mimetypes[0]->mimetype;
