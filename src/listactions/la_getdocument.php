@@ -11,7 +11,7 @@ class GetDocument_ListAction extends ListAction {
         $fj = (object) [
             "name" => "get/" . $opt->dtype_name(),
             "dtype" => $opt->id,
-            "selector" => "Documents/" . ($opt->id <= 0 ? pluralize($opt->title) : $opt->title),
+            "selector" => "Documents/" . $opt->plural_title(),
             "position" => $opt->position + ($opt->final ? 0 : 100),
             "display_if_list_has" => $opt->field_key(),
             "callback" => "+GetDocument_ListAction"
@@ -27,7 +27,7 @@ class GetDocument_ListAction extends ListAction {
     }
     static function error_document(PaperOption $opt, PaperInfo $row, $error_html = "") {
         if (!$error_html)
-            $error_html = $row->conf->_("Submission #%d has no %s field.", $row->paperId, $opt->title);
+            $error_html = htmlspecialchars($row->conf->_("Submission #%d has no %s field.", $row->paperId, $opt->title()));
         $x = new DocumentInfo(["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $error_html], $row->conf);
         if (($mimetypes = $opt->mimetypes()) && count($mimetypes) == 1)
             $x->mimetype = $mimetypes[0]->mimetype;

@@ -403,12 +403,12 @@ function whyNotText($whyNot, $text_only = false) {
         $ms[] = $conf->_("You can’t administer submission #%d.", $paperId);
     if (isset($whyNot["permission"])) {
         if ($whyNot["permission"] === "view_option")
-            $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId, $quote($whyNot["optionPermission"]->title));
+            $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId, $quote($whyNot["optionPermission"]->title()));
         else
             $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId);
     }
     if (isset($whyNot["optionNotAccepted"]))
-        $ms[] = $conf->_("The %2\$s field is reserved for accepted submissions.", $paperId, $quote($whyNot["optionNotAccepted"]->title));
+        $ms[] = $conf->_("The %2\$s field is reserved for accepted submissions.", $paperId, $quote($whyNot["optionNotAccepted"]->title()));
     if (isset($whyNot["documentNotFound"]))
         $ms[] = $conf->_("No such document “%s”.", $quote($whyNot["documentNotFound"]));
     if (isset($whyNot["signin"]))

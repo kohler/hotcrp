@@ -485,7 +485,7 @@ class PaperTable {
         if ($opt->description_format !== null)
             $fr->value_format = $opt->description_format;
         $this->conf->ims()->render_xci($fr, "field_description/edit",
-                                       $opt->title, $opt->description);
+                                       $opt->formid, $opt->description);
         if (!$fr->is_empty())
             echo $fr->value_html("paphint");
     }
@@ -549,10 +549,10 @@ class PaperTable {
                 if (($stamps = self::pdf_stamps_html($doc)))
                     $stamps = '<span class="sep"></span>' . $stamps;
                 if ($dtype == DTYPE_FINAL)
-                    $dname = $this->conf->_c("field", "Final version");
+                    $dhtml = $o->title_html();
                 else
-                    $dname = $this->conf->_c("field", "Submission", $prow->timeSubmitted != 0);
-                $fr->value .= '<p class="pgsm">' . $dprefix . $doc->link_html('<span class="pavfn">' . htmlspecialchars($dname) . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
+                    $dhtml = $o->title_html($prow->timeSubmitted != 0);
+                $fr->value .= '<p class="pgsm">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dhtml . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
             }
         }
     }
@@ -707,7 +707,7 @@ class PaperTable {
             $extra = ["fold" => "paper", "foldnum" => 6,
                       "foldtitle" => "Toggle full abstract"];
         $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
-            . $this->papt("abstract", $this->conf->_c("field", $o->title), $extra)
+            . $this->papt("abstract", $o->title_html(), $extra)
             . '<div class="pavb abstract';
         if ($this->prow
             && !$this->entryMatches
@@ -923,7 +923,7 @@ class PaperTable {
         $vas = $this->user->view_authors_state($this->_prow);
         if ($vas === 0) {
             $fr->value = '<div class="pg">'
-                . $this->papt("authorInformation", $this->conf->_c("field", $o->title, 0))
+                . $this->papt("authorInformation", $o->title_html(0))
                 . '<div class="pavb"><i>Hidden for blind review</i></div>'
                 . "</div>\n\n";
             return;
@@ -933,7 +933,7 @@ class PaperTable {
         list($aulist, $contacts) = $this->_analyze_authors();
 
         // "author" or "authors"?
-        $auname = $this->conf->_c("field", $o->title, count($aulist));
+        $auname = $o->title_html(count($aulist));
         if ($vas === 1) {
             $auname .= " (deblinded)";
         } else if ($this->user->act_author_view($this->prow)) {
@@ -953,7 +953,7 @@ class PaperTable {
         if ($vas === 1 || $this->allFolded)
             $fr->value .= '<a class="q ui js-aufoldup" href="" title="Toggle author display" role="button" aria-expanded="' . ($this->foldmap[8] ? "false" : "true") . '">';
         if ($vas === 1)
-            $fr->value .= '<span class="fn8">' . $this->conf->_c("field", $o->title, 0) . '</span><span class="fx8">';
+            $fr->value .= '<span class="fn8">' . $o->title_html(0) . '</span><span class="fx8">';
         if ($this->allFolded)
             $fr->value .= expander(null, 9);
         else if ($vas === 1)
@@ -988,8 +988,9 @@ class PaperTable {
             && ($this->editable
                 || $this->mode !== "edit"
                 || $this->prow->timeSubmitted <= 0)) {
+            $contacts_option = $this->conf->paper_opts->get(PaperOption::CONTACTSID);
             $fr->value .= '<div class="pg fx9' . ($vas > 1 ? "" : " fx8") . '">'
-                . $this->papt("authorInformation", $this->conf->_c("field", "Contacts", count($contacts)))
+                . $this->papt("authorInformation", $contacts_option->title_html(count($contacts)))
                 . '<div class="pavb">'
                 . $this->authorData($contacts, "col", $this->user)
                 . "</div></div>\n\n";
@@ -1013,7 +1014,7 @@ class PaperTable {
             $ts[] = $t . '">' . $x . '</li>';
             $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
         }
-        $fr->title = $this->conf->_c("field", $o->title, count($ts));
+        $fr->title = $o->title(count($ts));
         $fr->set_html('<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>');
         $fr->value_long = true;
     }
@@ -1025,7 +1026,7 @@ class PaperTable {
         }
 
         if ($fr->title === null) {
-            $fr->title = $this->conf->_c("field", $o->title);
+            $fr->title = $o->title();
         }
 
         $fr->value = $fr->value_html();
@@ -1053,7 +1054,7 @@ class PaperTable {
         for ($i = $first; $i !== $last; ++$i) {
             if ($renders[$i][1] >= $vos) {
                 $o = $renders[$i][0];
-                $group_names[] = $this->conf->_c("field", $o->title);
+                $group_names[] = $o->title();
                 if ($o->id === -1005)
                     $group_flags |= 1;
                 else if ($o->has_document())
@@ -1388,8 +1389,9 @@ class PaperTable {
         if ($this->entryMatches || !$this->allFolded)
             $fold = 0;
 
+        $option = $this->conf->paper_opts->get(PaperOption::COLLABORATORSID);
         $this->_papstripBegin("pscollab", $fold, ["data-fold-session" => "foldpscollab"]);
-        echo $this->papt("collaborators", $this->conf->_c("field", "Collaborators", $this->conf->setting("sub_pcconf")),
+        echo $this->papt("collaborators", $option->title_html(),
                          ["type" => "ps", "fold" => "pscollab", "folded" => $fold]),
             '<div class="psv"><div class="fx">', $data,
             "</div></div></div>\n\n";
@@ -1567,7 +1569,8 @@ class PaperTable {
         if (!count($pcconf))
             $pcconf[] = "<p class=\"odname\">None</p>";
         $this->_papstripBegin();
-        echo $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
+        $option = $this->conf->paper_opts->get(PaperOption::PCCONFID);
+        echo $this->papt("pcconf", $option->title_html(), ["type" => "ps"]),
             '<div class="psv psconf">', join("", $pcconf), "</div></div>\n";
     }
 

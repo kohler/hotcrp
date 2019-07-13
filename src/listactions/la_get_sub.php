@@ -88,7 +88,7 @@ class GetAbstract_ListAction extends ListAction {
     private static function render_authors($fr, $prow, $user, $o) {
         if ($user->can_view_authors($prow)
             && ($alist = $prow->author_list())) {
-            $fr->title = $prow->conf->_c("field", $o->title, count($alist));
+            $fr->title = $o->title(count($alist));
             $fr->set_text("");
             foreach ($alist as $i => $au) {
                 $marker = ($i || count($alist) > 1 ? ($i + 1) . ". " : "");
@@ -98,7 +98,7 @@ class GetAbstract_ListAction extends ListAction {
     }
     private static function render_topics($fr, $prow, $user, $o) {
         if (($tlist = $prow->topic_map())) {
-            $fr->title = $prow->conf->_c("field", $o->title, count($tlist));
+            $fr->title = $o->title(count($tlist));
             $fr->set_text("");
             foreach ($tlist as $t)
                 $fr->value .= prefix_word_wrap("* ", $t, 2, self::WIDTH);
@@ -126,7 +126,7 @@ class GetAbstract_ListAction extends ListAction {
                 }
                 if (!$fr->is_empty()) {
                     if ($fr->title === null) {
-                        $fr->title = $prow->conf->_c("field", $o->title);
+                        $fr->title = $o->title();
                     }
                     $title = prefix_word_wrap("", $fr->title, 0, self::WIDTH);
                     $text .= $title

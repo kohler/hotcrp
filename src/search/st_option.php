@@ -164,7 +164,7 @@ class Option_SearchTerm extends SearchTerm {
             if ($isany) {
                 $oms->os[] = new OptionMatcher($o, "!=", null);
             } else if (!$o->parse_search($oms)) {
-                $oms->warnings[] = "Bad search “" . htmlspecialchars($oms->vword) . "” for submission field “" . htmlspecialchars($o->title) . "”.";
+                $oms->warnings[] = "Bad search “" . htmlspecialchars($oms->vword) . "” for submission field “" . $o->title_html() . "”.";
             }
         }
 

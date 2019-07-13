@@ -1,8 +1,7 @@
 [
     {
         "name": "title", "json_key": "title", "id": -1000,
-        "title": "Title", "form_position": 1, "display_space": 1,
-        "type": "intrinsic"
+        "form_position": 1, "display_space": 1, "type": "intrinsic"
     },
     {
         "name": "submission_version", "id": -1008,
@@ -11,41 +10,34 @@
     },
     {
         "name": "abstract", "json_key": "abstract", "id": -1004,
-        "title": "Abstract",
         "form_position": 2001, "display_space": 5, "display_expand": true,
         "type": "intrinsic"
     },
     {
         "name": "authors", "json_key": "authors", "id": -1001,
-        "title": "Authors", "form_position": 3001,
-        "type": "intrinsic"
+        "form_position": 3001, "type": "intrinsic"
     },
     {
         "name": "blind", "json_key": "blind", "id": -1002,
-        "title": "Anonymous submission",
         "form_position": 3002, "display_position": false,
         "type": "intrinsic"
     },
     {
         "name": "contacts", "json_key": "contacts", "id": -1003,
-        "title": "Contacts",
         "form_position": 3003, "display_position": false,
         "type": "intrinsic"
     },
     {
         "name": "topics", "json_key": "topics", "id": -1005,
-        "title": "Topics",
         "form_position": 3501, "display_group": "topics",
         "type": "intrinsic"
     },
     {
         "name": "pcconf", "json_key": "pcconf", "id": -1006,
-        "title": "PC conflicts", "form_position": 5001,
-        "type": "intrinsic"
+        "form_position": 5001, "type": "intrinsic"
     },
     {
         "name": "collaborators", "json_key": "collaborators", "id": -1007,
-        "title": "Collaborators", "form_position": 5002, "display_space": 5,
-        "type": "intrinsic"
+        "form_position": 5002, "display_space": 5, "type": "intrinsic"
     }
 ]

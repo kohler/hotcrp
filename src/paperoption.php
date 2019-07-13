@@ -202,8 +202,8 @@ class PaperOptionList {
     private $_nonpaper_am;
     private $_adding_fixed;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","title":"Submission","form_position":1001,"type":"document"}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","title":"Final version","form_position":1002,"display_position":false,"type":"document"}';
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","form_position":1001,"type":"document"}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_position":1002,"display_position":false,"type":"document"}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -463,6 +463,8 @@ class PaperOption implements Abbreviator {
     const TITLEID = -1000;
     const ABSTRACTID = -1004;
     const AUTHORSID = -1001;
+    const CONTACTSID = -1003;
+    const PCCONFID = -1006;
     const COLLABORATORSID = -1007;
 
     public $conf;
@@ -470,8 +472,7 @@ class PaperOption implements Abbreviator {
     public $name;
     public $formid;
     public $readable_formid;
-    public $title;
-    private $_edit_title;
+    private $title;
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
     private $_json_key;
@@ -527,7 +528,9 @@ class PaperOption implements Abbreviator {
         $this->name = $args["name"];
         if ($this->name === null)
             $this->name = "<Unknown-{$this->id}>";
-        $this->title = get($args, "title", $this->name);
+        $this->title = get($args, "title");
+        if (!$this->title && $this->id > 0)
+            $this->title = $this->name;
         $this->type = get($args, "type");
 
         if (($x = get_s($args, "json_key")))
@@ -541,16 +544,17 @@ class PaperOption implements Abbreviator {
         $this->nonpaper = !!get($args, "nonpaper");
         $this->internal = !!get($args, "internal");
 
-        if ($this->id <= 0)
-            $this->formid = $this->_json_key;
-        else
+        if ($this->id > 0)
             $this->formid = "opt" . $this->id;
-        if (($x = get_s($args, "readable_formid")))
-            $this->readable_formid = $x;
-        else if (($x = self::make_readable_formid($this->title)))
-            $this->readable_formid = $x;
         else
-            $this->readable_formid = $this->formid;
+            $this->formid = $this->_json_key;
+
+        $this->readable_formid = $this->formid;
+        if (isset($args["readable_formid"]))
+            $this->readable_formid = $args["readable_formid"];
+        else if ($this->id > 0
+                 && ($x = self::make_readable_formid($this->title)))
+            $this->readable_formid = $x;
 
         $vis = get($args, "visibility") ? : get($args, "view_type");
         if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin")
@@ -644,12 +648,22 @@ class PaperOption implements Abbreviator {
         return $this->id >= self::MINFIXEDID;
     }
 
+    function title($context = null) {
+        if ($this->title)
+            return $this->title;
+        else if ($context === null)
+            return $this->conf->_ci("field", $this->formid);
+        else
+            return $this->conf->_ci("field", $this->formid, null, $context);
+    }
+    function title_html($context = null) {
+        return htmlspecialchars($this->title($context));
+    }
+    function plural_title() {
+        return $this->title ? : $this->conf->_ci("field/plural", $this->formid);
+    }
     function edit_title() {
-        if ($this->_edit_title === null) {
-            $t = $this->id <= 0 ? null : $this->title;
-            $this->_edit_title = $this->conf->_ci("field/edit", $this->formid, $t);
-        }
-        return $this->_edit_title;
+        return $this->title ? : $this->conf->_ci("field/edit", $this->formid);
     }
 
     private function abbrev_matcher() {
@@ -923,8 +937,7 @@ class CheckboxPaperOption extends PaperOption {
     function render(FieldRender $fr, PaperOptionValue $ov) {
         if ($fr->context === FieldRender::CPAGE && $ov->value) {
             $fr->title = "";
-            $t = htmlspecialchars($this->conf->_c("field", $this->title));
-            $fr->set_html('✓ <span class="pavfn">' . $t . '</span>');
+            $fr->set_html('✓ <span class="pavfn">' . $this->title_html() . '</span>');
         } else {
             $fr->set_bool(!!$ov->value);
         }
@@ -982,7 +995,7 @@ class SelectorPaperOption extends PaperOption {
     function parse_search($oms) {
         $vs = $this->selector_abbrev_matcher()->find_all($oms->vword);
         if (empty($vs)) {
-            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->vword) . "” matches no options.";
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” matches no options.";
             return false;
         } else if (count($vs) === 1) {
             $oms->os[] = new OptionMatcher($this, $oms->compar, $vs[0]);
@@ -991,7 +1004,7 @@ class SelectorPaperOption extends PaperOption {
             $oms->os[] = new OptionMatcher($this, $oms->compar, $vs);
             return true;
         } else {
-            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->vword) . "” matches more than one option.";
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” matches more than one option.";
             return false;
         }
     }
@@ -1185,8 +1198,7 @@ class DocumentPaperOption extends PaperOption {
                 $dif = 0;
                 if ($this->display_position() >= 2000)
                     $dif = DocumentInfo::L_SMALL;
-                $t = htmlspecialchars($this->conf->_c("field", $this->title));
-                $fr->set_html($d->link_html('<span class="pavfn">' . $t . '</span>', $dif));
+                $fr->set_html($d->link_html('<span class="pavfn">' . $this->title_html() . '</span>', $dif));
             } else {
                 $fr->set_html($d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
             }
@@ -1222,7 +1234,7 @@ class NumericPaperOption extends PaperOption {
         } else if (parent::parse_search($oms)) {
             return true;
         } else {
-            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->vword) . "” is not an integer.";
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” is not an integer.";
             return false;
         }
     }
@@ -1301,7 +1313,7 @@ class TextPaperOption extends PaperOption {
             $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "text");
             return true;
         } else {
-            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
             return false;
         }
     }
@@ -1400,7 +1412,7 @@ class AttachmentsPaperOption extends PaperOption {
             $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "attachment-name");
             return true;
         } else {
-            $oms->warnings[] = "“" . htmlspecialchars($this->title) . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
             return false;
         }
     }
@@ -1416,7 +1428,7 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        $pt->echo_editable_option_papt($this, htmlspecialchars($this->title) . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid, "for" => false]);
+        $pt->echo_editable_option_papt($this, $this->title_html() . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid, "for" => false]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" id="', $this->formid, '_attachments">';
         foreach ($ov->documents() as $i => $doc) {
             $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
@@ -1495,7 +1507,7 @@ class AttachmentsPaperOption extends PaperOption {
                     $dif = DocumentInfo::L_SMALL;
                 } else {
                     $dif = 0;
-                    $linkname = '<span class="pavfn">' . htmlspecialchars($this->title) . '</span>/' . $linkname;
+                    $linkname = '<span class="pavfn">' . $this->title_html() . '</span>/' . $linkname;
                 }
                 $t = $d->link_html($linkname, $dif);
                 if ($d->is_archive()) {
@@ -1540,11 +1552,11 @@ class IntrinsicPaperOption extends PaperOption {
             $pt->echo_editable_authors($this);
         } else if ($this->id === -1002) {
             $pt->echo_editable_anonymity($this);
-        } else if ($this->id === -1003) {
+        } else if ($this->id === PaperOption::CONTACTSID) {
             $pt->echo_editable_contact_author($this);
         } else if ($this->id === -1005) {
             $pt->echo_editable_topics($this);
-        } else if ($this->id === -1006) {
+        } else if ($this->id === PaperOption::PCCONFID) {
             $pt->echo_editable_pc_conflicts($this);
         } else if ($this->id === PaperOption::COLLABORATORSID) {
             if ($this->conf->setting("sub_collab")

@@ -61,7 +61,7 @@ class Keywords_HelpTopic {
             echo $hth->tgroup("Submission fields");
             foreach ($oex as $extype => $oex) {
                 if ($extype === "has") {
-                    $desc = "submission has “" . htmlspecialchars($oex[1]->title) . "” set";
+                    $desc = "submission has “" . $oex[1]->title_html() . "” set";
                     $oabbr = array();
                     foreach ($opts as $ox)
                         if ($ox !== $oex[1] && get($ox->example_searches(), "has"))
@@ -69,15 +69,15 @@ class Keywords_HelpTopic {
                     if (!empty($oabbr))
                         $desc .= '<div class="hint">Other field ' . pluralx(count($oabbr), "search") . ': ' . join(", ", $oabbr) . '</div>';
                 } else if ($extype === "yes")
-                    $desc = "submission has “" . htmlspecialchars($oex[1]->title) . "” set";
+                    $desc = "submission has “" . $oex[1]->title_html() . "” set";
                 else if ($extype === "numeric")
-                    $desc = "submission’s “" . htmlspecialchars($oex[1]->title) . "” field has value &gt; 100";
+                    $desc = "submission’s “" . $oex[1]->title_html() . "” field has value &gt; 100";
                 else if ($extype === "selector")
-                    $desc = "submission’s “" . htmlspecialchars($oex[1]->title) . "” field has value “" . htmlspecialchars($oex[2]) . "”";
+                    $desc = "submission’s “" . $oex[1]->title_html() . "” field has value “" . htmlspecialchars($oex[2]) . "”";
                 else if ($extype === "attachment-count")
-                    $desc = "submission has more than 2 “" . htmlspecialchars($oex[1]->title) . "” attachments";
+                    $desc = "submission has more than 2 “" . $oex[1]->title_html() . "” attachments";
                 else if ($extype === "attachment-filename")
-                    $desc = "submission has an “" . htmlspecialchars($oex[1]->title) . "” attachment with a .gif extension";
+                    $desc = "submission has an “" . $oex[1]->title_html() . "” attachment with a .gif extension";
                 else
                     continue;
                 echo $hth->search_trow($oex[0], $desc);
