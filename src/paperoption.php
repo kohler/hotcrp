@@ -39,11 +39,11 @@ class PaperOptionValue {
     }
     private function assign_intrinsic() {
         $s = null;
-        if ($this->id === -1000) {
+        if ($this->id === PaperOption::TITLEID) {
             $s = $this->prow->title;
-        } else if ($this->id === -1004) {
+        } else if ($this->id === PaperOption::ABSTRACTID) {
             $s = $this->prow->abstract;
-        } else if ($this->id === -1007) {
+        } else if ($this->id === PaperOption::COLLABORATORSID) {
             $s = $this->prow->collaborators;
         }
         if ($s !== null && $s !== "") {
@@ -465,6 +465,10 @@ class PaperOptionList {
 
 class PaperOption implements Abbreviator {
     const MINFIXEDID = 1000000;
+    const TITLEID = -1000;
+    const ABSTRACTID = -1004;
+    const AUTHORSID = -1001;
+    const COLLABORATORSID = -1007;
 
     public $conf;
     public $id;
@@ -472,6 +476,7 @@ class PaperOption implements Abbreviator {
     public $formid;
     public $readable_formid;
     public $title;
+    private $_edit_title;
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
     private $_json_key;
@@ -642,6 +647,14 @@ class PaperOption implements Abbreviator {
 
     function fixed() {
         return $this->id >= self::MINFIXEDID;
+    }
+
+    function edit_title() {
+        if ($this->_edit_title === null) {
+            $t = $this->id <= 0 ? null : $this->title;
+            $this->_edit_title = $this->conf->_ci("field/edit", $this->formid, $t);
+        }
+        return $this->_edit_title;
     }
 
     private function abbrev_matcher() {
@@ -889,7 +902,7 @@ class CheckboxPaperOption extends PaperOption {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
         $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->readable_formid, "data-default-checked" => !!$ov->value]);
         $pt->echo_editable_option_papt($this,
-            '<span class="checkc">' . $cb . "</span>" . $pt->field_title_html($this->title),
+            '<span class="checkc">' . $cb . "</span>" . $pt->edit_title_html($this),
             ["for" => "checkbox", "tclass" => "ui js-click-child"]);
         echo $pt->messages_at($this->formid), "</div>\n\n";
     }
@@ -1521,13 +1534,13 @@ class IntrinsicPaperOption extends PaperOption {
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        if ($this->id === -1000) {
+        if ($this->id === PaperOption::TITLEID) {
             $this->echo_editable_text_html($ov, $reqv, $pt, ["no_format_description" => true]);
-        } else if ($this->id === -1004) {
+        } else if ($this->id === PaperOption::ABSTRACTID) {
             if ((int) $this->conf->opt("noAbstract") !== 1) {
                 $this->echo_editable_text_html($ov, $reqv, $pt);
             }
-        } else if ($this->id === -1001) {
+        } else if ($this->id === PaperOption::AUTHORSID) {
             $pt->echo_editable_authors($this);
         } else if ($this->id === -1002) {
             $pt->echo_editable_anonymity($this);
@@ -1537,7 +1550,7 @@ class IntrinsicPaperOption extends PaperOption {
             $pt->echo_editable_topics($this);
         } else if ($this->id === -1006) {
             $pt->echo_editable_pc_conflicts($this);
-        } else if ($this->id === -1007) {
+        } else if ($this->id === PaperOption::COLLABORATORSID) {
             if ($this->conf->setting("sub_collab")
                 && ($pt->editable !== "f" || $pt->user->can_administer($pt->prow))) {
                 $this->echo_editable_text_html($ov, $reqv, $pt, ["no_format_description" => true, "no_spellcheck" => true]);
@@ -1546,9 +1559,9 @@ class IntrinsicPaperOption extends PaperOption {
     }
     function render(FieldRender $fr, PaperOptionValue $ov) {
         assert($fr->context === FieldRender::CPAGE && $fr->table !== null);
-        if ($this->id === -1004)
+        if ($this->id === PaperOption::ABSTRACTID)
             $fr->table->render_abstract($fr, $this);
-        else if ($this->id === -1001)
+        else if ($this->id === PaperOption::AUTHORSID)
             $fr->table->render_authors($fr, $this);
         else if ($this->id === -1005)
             $fr->table->render_topics($fr, $this);

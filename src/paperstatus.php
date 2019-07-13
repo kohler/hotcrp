@@ -348,18 +348,18 @@ class PaperStatus extends MessageSet {
 
 
     static function field_title(Conf $conf, $f) {
-        if (($o = $conf->paper_opts->find($f)))
-            return $conf->_c("field/edit", htmlspecialchars($o->title));
-        else if ($f === "title")
-            return $conf->_c("field/edit", "Title");
-        else if ($f === "abstract")
-            return $conf->_c("field/edit", "Abstract");
-        else if ($f === "collaborators")
-            return $conf->_c("field/edit", "Collaborators");
-        else if (str_starts_with($f, "au"))
-            return $conf->_c("field/edit", "Authors");
-        else
-            return false;
+        $o = $conf->paper_opts->find($f);
+        if (!$o) {
+            if ($f === "title")
+                $o = $conf->paper_opts->get(PaperOption::TITLEID);
+            else if ($f === "abstract")
+                $o = $conf->paper_opts->get(PaperOption::ABSTRACTID);
+            else if ($f === "collaborators")
+                $o = $conf->paper_opts->get(PaperOption::COLLABORATORSID);
+            else if (str_starts_with($f, "au"))
+                $o = $conf->paper_opts->get(PaperOption::AUTHORSID);
+        }
+        return $o ? htmlspecialchars($o->edit_title()) : false;
     }
 
     function error_at_option(PaperOption $o, $html) {

@@ -470,8 +470,8 @@ class PaperTable {
         return $table_type === "col" ? nl2br($text) : $text;
     }
 
-    function field_title_html($name) {
-        $t = $this->conf->_c("field/edit", $name);
+    function edit_title_html($option) {
+        $t = $option->edit_title();
         if (str_ends_with($t, ")")
             && preg_match('{\A([^()]* +)(\([^()]+\))\z}', $t, $m))
             return htmlspecialchars($m[1]) . '<span class="n">' . htmlspecialchars($m[2]) . '</span>';
@@ -635,7 +635,7 @@ class PaperTable {
         if ($accepts)
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
-        $heading = $this->field_title_html($docx->title) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
+        $heading = $this->edit_title_html($docx) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
         $this->echo_editable_papt($field, $heading, ["for" => $doc ? false : $inputid, "id" => $docx->readable_formid], $docx);
         $this->echo_field_hint($docx);
 
@@ -778,7 +778,7 @@ class PaperTable {
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
 
         $sb = $this->conf->submission_blindness();
-        $title = $this->field_title_html("Authors");
+        $title = $this->edit_title_html($option);
         if ($sb === Conf::BLIND_ALWAYS)
             $title .= ' <span class="n">(blind)</span>';
         else if ($sb === Conf::BLIND_UNTILREVIEW)
@@ -1271,7 +1271,7 @@ class PaperTable {
         echo '<div class="papeg">',
             '<div class="', $this->control_class("contacts", "papet"),
             '" id="contacts"><span class="', $this->control_class("contacts", "papfn", "is-"), '">',
-            $this->field_title_html("Contacts"),
+            $this->edit_title_html($option),
             '</span></div>';
 
         // Editable version
@@ -1333,7 +1333,7 @@ class PaperTable {
             return;
         $pblind = !$this->prow || $this->prow->blind;
         $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
-        $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "</span>" . $this->field_title_html("Anonymous submission");
+        $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "</span>" . $this->edit_title_html($option);
         $this->echo_editable_papt("blind", $heading, ["for" => "checkbox"]);
         $this->echo_field_hint($option);
         echo $this->messages_at("blind"),
@@ -1398,7 +1398,7 @@ class PaperTable {
     function echo_editable_topics($option) {
         if (!$this->conf->has_topics())
             return;
-        $this->echo_editable_papt("topics", $this->field_title_html("Topics"), ["id" => "topics"]);
+        $this->echo_editable_papt("topics", $this->edit_title_html($option), ["id" => "topics"]);
         $this->echo_field_hint($option);
         echo '<div class="papev">',
             Ht::hidden("has_topics", 1),
@@ -1449,7 +1449,7 @@ class PaperTable {
 
     function echo_editable_option_papt(PaperOption $o, $heading = null, $rest = []) {
         if (!$heading)
-            $heading = $this->field_title_html($o->title);
+            $heading = $this->edit_title_html($o);
         $this->echo_editable_papt($o->formid, $heading, $rest, $o);
         $this->echo_field_hint($o);
         echo Ht::hidden("has_{$o->formid}", 1);
@@ -1484,7 +1484,7 @@ class PaperTable {
             $author_ctype = $confset->unparse_html(CONFLICT_AUTHOR);
         }
 
-        $this->echo_editable_papt("pcconf", $this->field_title_html("PC conflicts"), ["id" => "pcconf"]);
+        $this->echo_editable_papt("pcconf", $this->edit_title_html($option), ["id" => "pcconf"]);
         $this->echo_field_hint($option);
         echo '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
@@ -1981,7 +1981,7 @@ class PaperTable {
             $fields = [];
             foreach ($this->edit_fields ? : [] as $o)
                 if ($this->edit_status->has_problem_at($o->formid))
-                    $fields[] = Ht::link($this->field_title_html($o->title), "#" . $o->readable_formid);
+                    $fields[] = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid);
             $m .= Ht::msg($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
         }
         return $m;
