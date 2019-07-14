@@ -1081,6 +1081,26 @@ xassert_eqq($paper16b->withdrawReason, "Paper is bad");
 xassert_eqq($paper16b->all_tags_text(), "");
 xassert_assign($user_chair, "paper,action,reason\n16,revive\n");
 
+// author can also withdraw
+$user_mogul = $Conf->user_by_email("mogul@wrl.dec.com");
+$paper16 = fetch_paper(16, $user_mogul);
+xassert($paper16->timeSubmitted > 0);
+xassert($paper16->timeWithdrawn <= 0);
+xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+$paper16 = fetch_paper(16, $user_mogul);
+xassert($paper16->timeSubmitted < 0);
+xassert($paper16->timeWithdrawn > 0);
+xassert_eqq($paper16->withdrawReason, "Sucky");
+xassert_assign_fail($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
+$Conf->save_setting("sub_sub", $Now + 5);
+xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
+$paper16 = fetch_paper(16, $user_mogul);
+xassert($paper16->timeSubmitted > 0);
+xassert($paper16->timeWithdrawn <= 0);
+
+// non-author cannot withdraw
+xassert_assign_fail($user_estrin, "paper,action,reason\n16,withdraw,Fucker\n");
+
 $Conf->save_setting("tag_vote", 1, "vote#10 crap#3");
 $Conf->save_setting("tag_approval", 1, "app#0");
 xassert_assign($user_chair,
