@@ -1999,6 +1999,7 @@ class ReviewValues extends MessageSet {
         if (!$reviewId)
             return false;
         $this->req["reviewId"] = $reviewId;
+        $prow->invalidate_reviews();
         $new_rrow = $prow->fresh_review_of_id($reviewId);
 
         // log updates -- but not if review token is used

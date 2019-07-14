@@ -1363,6 +1363,11 @@ class PaperInfo {
             $this->ensure_reviewer_last_login_set($row_set);
     }
 
+    function invalidate_reviews() {
+        $this->_review_array = null;
+        $this->_reviews_have = [];
+    }
+
     private function parse_textual_id($textid) {
         if (ctype_digit($textid))
             return intval($textid);
