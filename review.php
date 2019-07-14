@@ -6,6 +6,7 @@ require_once("src/initweb.php");
 require_once("src/papertable.php");
 
 $rf = $Conf->review_form();
+$Me->add_overrides(Contact::OVERRIDE_CHECK_TIME);
 
 
 // header

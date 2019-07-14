@@ -1975,7 +1975,7 @@ class PaperTable {
             $m .= Ht::msg("The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 0);
         else
             $m .= Ht::msg("You aren’t a contact for this submission, but as an administrator you can still make changes.", 0);
-        if ($this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_update_paper", $prow)
+        if ($this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_update_paper", $prow)
             && ($v = $this->conf->_i("submit")))
             $m .= Ht::msg($v, 0);
         if ($this->edit_status
@@ -2047,7 +2047,7 @@ class PaperTable {
 
         // withdraw button
         if (!$this->prow
-            || !$this->user->call_with_overrides(Contact::OVERRIDE_TIME, "can_withdraw_paper", $this->prow, true))
+            || !$this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_withdraw_paper", $this->prow, true))
             $b = null;
         else if ($this->prow->timeSubmitted <= 0)
             $b = Ht::submit("withdraw", "Withdraw");

@@ -87,8 +87,9 @@ class Contact {
     private $_activated = false;
     const OVERRIDE_CONFLICT = 1;
     const OVERRIDE_TIME = 2;
-    const OVERRIDE_TAG_CHECKS = 4;
-    const OVERRIDE_EDIT_CONDITIONS = 8;
+    const OVERRIDE_CHECK_TIME = 4;
+    const OVERRIDE_TAG_CHECKS = 8;
+    const OVERRIDE_EDIT_CONDITIONS = 16;
     private $_overrides = 0;
     public $hidden_papers;
     private $_aucollab_matchers;
@@ -1957,11 +1958,12 @@ class Contact {
     }
 
     function override_deadlines($rights) {
-        if (!($this->_overrides & self::OVERRIDE_TIME))
+        if (($this->_overrides & (self::OVERRIDE_CHECK_TIME | self::OVERRIDE_TIME))
+            === self::OVERRIDE_CHECK_TIME)
             return false;
         if ($rights && $rights instanceof PaperInfo)
             $rights = $this->rights($rights);
-        return $rights ? $rights->allow_administer : $this->privChair;
+        return $rights ? $rights->can_administer : $this->privChair;
     }
 
     function allow_administer(PaperInfo $prow = null) {

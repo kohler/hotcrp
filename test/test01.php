@@ -134,7 +134,8 @@ xassert_eq($Conf->setting("paperacc", 0), 0);
 // change submission date
 $Conf->save_setting("sub_update", $Now - 5);
 $Conf->save_setting("sub_sub", $Now - 5);
-xassert(!$user_chair->can_update_paper($paper1));
+xassert($user_chair->can_update_paper($paper1));
+xassert(!$user_chair->call_with_overrides(Contact::OVERRIDE_CHECK_TIME, "can_update_paper", $paper1));
 xassert(!$user_estrin->can_update_paper($paper1));
 xassert(!$user_marina->can_update_paper($paper1));
 xassert(!$user_van->can_update_paper($paper1));

@@ -14,6 +14,7 @@ if ($Qreq->post_ok() && !$Me->has_database_account()) {
     else
         $Me->escape();
 }
+$Me->add_overrides(Contact::OVERRIDE_CHECK_TIME);
 $useRequest = isset($Qreq->title) && $Qreq->has_annex("after_login");
 foreach (["emailNote", "reason"] as $x)
     if ($Qreq[$x] === "Optional explanation")
@@ -373,11 +374,7 @@ if ($paperTable->mode == "edit") {
     if (!$prow)
         $editable = true;
     else {
-        $old_overrides = $Me->overrides();
-        if ($Me->allow_administer($prow)
-            && (!$prow->has_author($Me)
-                || ($old_overrides & Contact::OVERRIDE_CONFLICT)))
-            $Me->add_overrides(Contact::OVERRIDE_TIME);
+        $old_overrides = $Me->remove_overrides(Contact::OVERRIDE_CHECK_TIME);
         $editable = $Me->can_update_paper($prow);
         if ($Me->can_submit_final_paper($prow))
             $editable = "f";
