@@ -1101,6 +1101,28 @@ xassert($paper16->timeWithdrawn <= 0);
 // non-author cannot withdraw
 xassert_assign_fail($user_estrin, "paper,action,reason\n16,withdraw,Fucker\n");
 
+// check other withdraw possibilities: give a review
+$user_chair->assign_review(16, $user_mgbaker->contactId, REVIEW_PC, []);
+xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
+save_review(16, $user_mgbaker, ["ovemer" => 2, "revexp" => 1, "ready" => false]);
+xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
+save_review(16, $user_mgbaker, ["ovemer" => 2, "revexp" => 1, "ready" => true]);
+xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
+$Conf->qe("update PaperReview set reviewAuthorSeen=1 where paperId=? and contactId=?", 16, $user_mgbaker->contactId);
+xassert_assign_fail($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+$Conf->save_setting("sub_withdraw", 1);
+xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
+$Conf->qe("update Paper set outcome=1 where paperId=?", 16);
+xassert_assign_fail($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+$Conf->qe("update Paper set outcome=0 where paperId=?", 16);
+xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
+
+// more tags
 $Conf->save_setting("tag_vote", 1, "vote#10 crap#3");
 $Conf->save_setting("tag_approval", 1, "app#0");
 xassert_assign($user_chair,
