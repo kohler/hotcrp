@@ -38,9 +38,11 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         $this->xtype = $aj->type;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        // XXX allow contact to do stuff
-        // XXX check permissions
-        return $state->user->can_administer($prow);
+        if (!$state->user->can_administer($prow)
+            && !$state->user->act_author($prow))
+            return "You can’t administer #{$prow->paperId}.";
+        else
+            return true;
     }
     static function load_status_state(AssignmentState $state) {
         if ($state->mark_type("status", ["pid"], "Status_Assigner::make")) {
@@ -61,14 +63,22 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         $res = $m[0];
         $ch = false;
         if ($this->xtype === "submit") {
-            if ($res["_submitted"] === 0)
+            if ($res["_submitted"] === 0) {
+                if (($whynot = $state->user->perm_finalize_paper($prow)))
+                    return whyNotText($whynot);
                 $res["_submitted"] = ($res["_withdrawn"] > 0 ? -$Now : $Now);
+            }
         } else if ($this->xtype === "unsubmit") {
-            if ($res["_submitted"] !== 0)
+            if ($res["_submitted"] !== 0) {
+                if (($whynot = $state->user->perm_update_paper($prow)))
+                    return whyNotText($whynot);
                 $res["_submitted"] = 0;
+            }
         } else if ($this->xtype === "withdraw") {
             if ($res["_withdrawn"] === 0) {
                 assert($res["_submitted"] >= 0);
+                if (($whynot = $state->user->perm_withdraw_paper($prow)))
+                    return whyNotText($whynot);
                 $res["_withdrawn"] = $Now;
                 $res["_submitted"] = -$res["_submitted"];
                 if ($state->conf->tags()->has_votish) {
@@ -77,11 +87,14 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                 }
             }
             $r = $req["withdraw_reason"];
-            if ((string) $r !== "")
+            if ((string) $r !== ""
+                && $state->user->can_withdraw_paper($prow))
                 $res["_withdraw_reason"] = $r;
         } else if ($this->xtype === "revive") {
             if ($res["_withdrawn"] !== 0) {
                 assert($res["_submitted"] <= 0);
+                if (($whynot = $state->user->perm_revive_paper($prow)))
+                    return whyNotText($whynot);
                 $res["_withdrawn"] = 0;
                 if ($res["_submitted"] === -100)
                     $res["_submitted"] = $Now;

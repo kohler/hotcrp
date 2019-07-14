@@ -2236,7 +2236,6 @@ class Contact {
         $sub_withdraw = $this->conf->setting("sub_withdraw", 0);
         $override = $this->override_deadlines($rights);
         return $rights->allow_author
-            && $prow->timeWithdrawn <= 0
             && ($sub_withdraw !== -1
                 || $prow->timeSubmitted == 0
                 || $override)
