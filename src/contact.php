@@ -2276,7 +2276,7 @@ class Contact {
         $rights = $this->rights($prow);
         return $rights->allow_author
             && $prow->timeWithdrawn > 0
-            && ($this->conf->timeUpdatePaper($prow) || $this->override_deadlines($rights));
+            && ($this->conf->timeFinalizePaper($prow) || $this->override_deadlines($rights));
     }
 
     function perm_revive_paper(PaperInfo $prow) {
