@@ -12,7 +12,7 @@
     {
         "name": "id",
         "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+Id_PaperColumn",
-        "position": 50
+        "position": 50, "synonym": ["pid"]
     },
     {
         "name": "title",

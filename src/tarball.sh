@@ -85,6 +85,7 @@ batch/s3test.php
 batch/s3transfer.php
 batch/s3verifyall.php
 batch/savepapers.php
+batch/search.php
 batch/updatecontactdb.php
 
 conf/.htaccess

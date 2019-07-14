@@ -3,10 +3,10 @@ $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 require_once("$ConfSitePATH/lib/getopt.php");
 
-$arg = getopt_rest($argv, "hn:q", array("help", "name:", "json-reviews", "fix-json-reviews", "fix-autosearch"));
+$arg = getopt_rest($argv, "hn:", array("help", "name:", "json-reviews", "fix-json-reviews", "fix-autosearch"));
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 0) {
-    fwrite(STDOUT, "Usage: php batch/checkinvariants.php [-n CONFID]\n");
+    fwrite(STDOUT, "Usage: php batch/checkinvariants.php [-n CONFID] [--fix-autosearch]\n");
     exit(0);
 }
 
