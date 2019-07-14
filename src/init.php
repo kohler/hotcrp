@@ -174,7 +174,7 @@ if (function_exists("libxml_disable_entity_loader"))
     libxml_disable_entity_loader(true);
 
 
-// Set up conference options (also used in mailer.php)
+// Set up conference options
 function expand_includes_once($file, $includepath, $globby) {
     foreach ($file[0] === "/" ? [""] : $includepath as $idir) {
         $try = $idir . $file;
