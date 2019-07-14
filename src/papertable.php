@@ -1997,13 +1997,11 @@ class PaperTable {
         if ($this->_prow->timeWithdrawn > 0) {
             $revivable = $this->conf->timeFinalizePaper($this->_prow);
             if ($revivable)
-                $b = Ht::submit("revive", "Revive submission", ["class" => "btn-primary"]);
-            else {
-                $b = 'The <a href="' . hoturl("deadlines") . '">deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?';
-                if ($this->admin)
-                    $b = array(Ht::button("Revive submission", ["class" => "ui js-override-deadlines", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
-            }
-            return array($b);
+                return [Ht::submit("revive", "Revive submission", ["class" => "btn-primary"])];
+            else if ($this->admin)
+                return [[Ht::button("Revive submission", ["class" => "ui js-override-deadlines", "data-override-text" => 'The <a href="' . hoturl("deadlines") . '">deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?', "data-override-submit" => "revive"]), "(admin only)"]];
+            else
+                return [];
         }
 
         $buttons = array();
