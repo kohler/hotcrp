@@ -396,7 +396,7 @@ function whyNotText($whyNot, $text_only = false) {
             $ms[] = $conf->_("Invalid " . $whyNot["invalidId"] . " number.");
     }
     if (isset($whyNot["noPaper"]))
-        $ms[] = $conf->_("No such submission #%d.", $paperId);
+        $ms[] = $conf->_("Submission #%d does not exist.", $paperId);
     if (isset($whyNot["dbError"]))
         $ms[] = $whyNot["dbError"];
     if (isset($whyNot["administer"]))
