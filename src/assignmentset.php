@@ -1470,14 +1470,18 @@ class AssignmentSet {
             assert(is_int($p));
             $prow = $this->astate->prow($p);
             if (!$prow) {
-                $this->error_here("Submission #$p does not exist.");
+                $this->error_here(whyNotText($this->user->no_paper_whynot($p)));
                 continue;
             }
 
             $err = $aparser->allow_paper($prow, $this->astate);
             if ($err !== true) {
-                if (is_string($err))
+                if ($err === false) {
+                    $err = whyNotText($prow->make_whynot(["administer" => true]));
+                }
+                if (is_string($err)) {
                     $this->astate->paper_error($err);
+                }
                 continue;
             }
 
