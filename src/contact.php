@@ -2106,6 +2106,11 @@ class Contact {
             return 0;
     }
 
+    function act_author(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        return $rights->act_author;
+    }
+
     function act_author_view(PaperInfo $prow) {
         $rights = $this->rights($prow);
         return $rights->act_author_view;
