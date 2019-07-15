@@ -2897,6 +2897,7 @@ class Conf {
             $where[] = "outcome=0";
         if (get($options, "active")
             || get($options, "myReviews")
+            || get($options, "myOutstandingReviews")
             || get($options, "myReviewRequests"))
             $where[] = "timeWithdrawn<=0";
         if (get($options, "myLead"))
