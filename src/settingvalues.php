@@ -709,7 +709,8 @@ class SettingValues extends MessageSet {
                 || (!str_starts_with($k, "group_")
                     && !str_starts_with($k, "hint_")
                     && !str_starts_with($k, "control_")
-                    && !str_starts_with($k, "label_")))
+                    && !str_starts_with($k, "label_")
+                    && $k !== "horizontal"))
                 $njs[$k] = $v;
         }
         return $njs;

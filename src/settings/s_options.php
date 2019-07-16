@@ -171,7 +171,7 @@ class Options_SettingRenderer {
                 $this->have_options[$row[0]] = $row[1];
         }
 
-        echo '<div class="f-i btnp">',
+        echo '<div class="f-i entryi"><label></label><div class="btnp entry">',
             '<span class="btnbox">',
             Ht::button(Icons::ui_description(), ["class" => "btn-licon ui js-settings-option-description need-tooltip", "aria-label" => "Description"]),
             Ht::button(Icons::ui_edit_hide(), ["class" => "btn-licon ui js-settings-option-presence need-tooltip", "aria-label" => "Form properties"]),
@@ -183,7 +183,7 @@ class Options_SettingRenderer {
             Ht::button(Icons::ui_movearrow(2), ["class" => "btn-licon ui js-settings-option-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
             Ht::button(Icons::ui_trash(), ["class" => "btn-licon ui js-settings-option-move delete need-tooltip", "aria-label" => "Delete", "data-option-exists" => get($this->have_options, $o->id)]),
-            "</div>\n";
+            "</div></div>\n";
 
         echo '</div>';
     }
