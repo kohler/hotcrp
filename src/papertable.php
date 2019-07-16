@@ -1979,10 +1979,13 @@ class PaperTable {
             && $this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {
             $fields = [];
-            foreach ($this->edit_fields ? : [] as $o)
+            foreach ($this->edit_fields ? : [] as $o) {
                 if ($this->edit_status->has_problem_at($o->formid))
                     $fields[] = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid);
-            $m .= Ht::msg($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
+            }
+            if (!empty($fields)) {
+                $m .= Ht::msg($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
+            }
         }
         return $m;
     }
