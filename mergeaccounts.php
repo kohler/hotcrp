@@ -54,13 +54,15 @@ if (isset($Qreq->merge) && $Qreq->post_ok()) {
         Ht::error_at("password");
     } else {
         $MiniMe = $Conf->user_by_email($Qreq->email);
+        if (!$MiniMe)
+            $MiniMe = $Conf->contactdb_user_by_email($Qreq->email);
         if (!$MiniMe) {
             $MergeError = "No account for " . htmlspecialchars($Qreq->email) . " exists.  Did you enter the correct email address?";
             Ht::error_at("email");
         } else if (!$MiniMe->check_password($Qreq->password)) {
             $MergeError = "That password is incorrect.";
             Ht::error_at("password");
-        } else if ($MiniMe->contactId == $Me->contactId) {
+        } else if ($MiniMe->contactId && $MiniMe->contactId == $Me->contactId) {
             $Conf->confirmMsg("Accounts successfully merged.");
             go(hoturl("index"));
         } else
