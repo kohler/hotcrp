@@ -45,7 +45,7 @@ class Keywords_HelpTopic {
         echo $hth->tgroup("Topics");
         echo $hth->search_trow("topic:link", "selected topics match “link”");
 
-        $opts = array_filter($hth->conf->paper_opts->option_list(), function ($o) { return !$o->internal; });
+        $opts = array_filter($hth->conf->paper_opts->option_list(), function ($o) { return $o->form_position() !== false; });
         usort($opts, function ($a, $b) {
             if ($a->final !== $b->final)
                 return $a->final ? 1 : -1;

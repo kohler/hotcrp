@@ -2573,6 +2573,24 @@ class Contact {
         return $this->view_option_state($prow, $opt) !== 0;
     }
 
+    function edit_option_state(PaperInfo $prow, $opt) {
+        if ($opt->form_position() === false
+            || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
+            || ($opt->final && !$this->allow_edit_final_paper($prow))
+            || ($opt->id === 0 && $this->allow_edit_final_paper($prow))) {
+            return 0;
+        }
+        if (!$opt->test_edit_condition($prow)) {
+            return $opt->compile_edit_condition($prow) ? 1 : 0;
+        } else {
+            return 2;
+        }
+    }
+
+    function can_edit_option(PaperInfo $prow, $opt) {
+        return $this->edit_option_state($prow, $opt) === 2;
+    }
+
     function user_option_list() {
         if ($this->conf->has_any_accepted() && $this->can_view_some_decision())
             return $this->conf->paper_opts->option_list();

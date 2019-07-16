@@ -270,23 +270,21 @@ class PaperTable {
         // other expansions
         $next_foldnum = 10;
         foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
-            if (!$o->internal
-                && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
-                && $o->display_position() !== false
+            if ($o->display_position() !== false
                 && $o->display_position() >= 1000
-                && $o->display_position() < 5000) {
-                if ($o->display_group !== null) {
-                    if (strlen($o->display_group) > 1
-                        && !isset($this->foldnumber[$o->display_group])) {
-                        $this->foldnumber[$o->display_group] = $next_foldnum;
-                        $foldsession[$next_foldnum] = str_replace(" ", "_", $o->display_group);
-                        ++$next_foldnum;
-                    }
-                    if ($o->display_expand) {
-                        $this->foldnumber[$o->formid] = $next_foldnum;
-                        $foldsession[$next_foldnum] = $o->formid;
-                        ++$next_foldnum;
-                    }
+                && $o->display_position() < 5000
+                && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
+                && $o->display_group !== null) {
+                if (strlen($o->display_group) > 1
+                    && !isset($this->foldnumber[$o->display_group])) {
+                    $this->foldnumber[$o->display_group] = $next_foldnum;
+                    $foldsession[$next_foldnum] = str_replace(" ", "_", $o->display_group);
+                    ++$next_foldnum;
+                }
+                if ($o->display_expand) {
+                    $this->foldnumber[$o->formid] = $next_foldnum;
+                    $foldsession[$next_foldnum] = $o->formid;
+                    ++$next_foldnum;
                 }
             }
         }
@@ -1080,11 +1078,10 @@ class PaperTable {
 
         $fields = [];
         foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
-            if (!$o->internal
-                && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
-                && $o->display_position() !== false
+            if ($o->display_position() !== false
                 && $o->display_position() >= 1000
-                && $o->display_position() < 5000)
+                && $o->display_position() < 5000
+                && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o)))
                 $fields[] = $o;
         }
 
@@ -2212,10 +2209,7 @@ class PaperTable {
 
         $this->edit_fields = [];
         foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
-            if (!$o->internal
-                && ($o->id <= 0 || $this->user->allow_view_option($this->_prow, $o))
-                && ($this->canUploadFinal || !$o->final)
-                && $o->form_position() !== false)
+            if ($this->user->can_edit_option($this->prow, $o))
                 $this->edit_fields[] = $o;
         }
         usort($this->edit_fields, function ($a, $b) {
@@ -2237,9 +2231,6 @@ class PaperTable {
                  $this->edit_fields_position < count($this->edit_fields);
                  ++$this->edit_fields_position) {
                 $o = $this->edit_fields[$this->edit_fields_position];
-                if ($o->edit_condition()
-                    && !$o->compile_edit_condition($this->_prow))
-                    return;
                 $reqv = null;
                 if ($this->useRequest && $this->qreq["has_{$o->formid}"])
                     $reqv = $o->parse_request_display($this->qreq, $this->user, $this->prow);

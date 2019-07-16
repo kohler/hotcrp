@@ -583,7 +583,9 @@ class PaperOption implements Abbreviator {
 
         $p = get($args, "form_position");
         if ($p === null) {
-            if ($this->display === self::DISP_SUBMISSION)
+            if ($this->internal)
+                $p = false;
+            else if ($this->display === self::DISP_SUBMISSION)
                 $p = 1100 + $this->position;
             else if ($this->display === self::DISP_PROMINENT)
                 $p = 3100 + $this->position;
