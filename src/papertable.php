@@ -50,15 +50,13 @@ class PaperTable {
         $this->user = $user = $Me;
         $this->_prow = $this->prow = $prow;
         if (!$this->_prow) {
-            $this->_prow = new PaperInfo(null, null, $this->conf);
-            $this->_prow->load_new_paper_contact_author($user);
+            $this->_prow = PaperInfo::make_new($user);
         }
         $this->allow_admin = $user->allow_administer($prow);
         $this->admin = $user->can_administer($prow);
         $this->qreq = $qreq;
 
-        $this->canUploadFinal = $this->prow
-            && $this->user->allow_edit_final_paper($this->prow);
+        $this->canUploadFinal = $this->user->allow_edit_final_paper($this->_prow);
 
         if (!$this->prow) {
             $this->mode = "edit";

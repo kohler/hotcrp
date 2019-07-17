@@ -334,6 +334,16 @@ class PaperInfo {
         return $prow;
     }
 
+    static function make_new(Contact $user) {
+        $prow = new PaperInfo(null, null, $user->conf);
+        $prow->paperTags = $prow->optionIds = "";
+        $prow->leadContactId = $prow->shepherdContactId = "0";
+        $ci = PaperContactInfo::make_empty($prow, $user);
+        $ci->conflictType = CONFLICT_CONTACTAUTHOR;
+        $prow->_contact_info[$ci->contactId] = $ci;
+        return $prow;
+    }
+
     static function table_name() {
         return "Paper";
     }
@@ -409,14 +419,6 @@ class PaperInfo {
 
     function load_my_contact_info($contact, $object) {
         $ci = PaperContactInfo::make_my($this, $contact, $object);
-        $this->_contact_info[$ci->contactId] = $ci;
-    }
-
-    function load_new_paper_contact_author($contact) {
-        assert($this->paperId === 0);
-        assert(empty($this->_contact_info));
-        $ci = PaperContactInfo::make_empty($this, $contact);
-        $ci->conflictType = CONFLICT_CONTACTAUTHOR;
         $this->_contact_info[$ci->contactId] = $ci;
     }
 
