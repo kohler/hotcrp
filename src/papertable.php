@@ -2212,7 +2212,7 @@ class PaperTable {
 
         $this->edit_fields = [];
         foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
-            if ($this->user->can_edit_option($this->prow, $o))
+            if ($this->user->can_edit_option($this->_prow, $o))
                 $this->edit_fields[] = $o;
         }
         usort($this->edit_fields, function ($a, $b) {
