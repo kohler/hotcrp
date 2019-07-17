@@ -439,23 +439,6 @@ class PaperTable {
         return $c;
     }
 
-    private function editable_textarea($fieldName) {
-        $js = ["id" => $fieldName,
-               "class" => $this->control_class($fieldName, "papertext need-autogrow"),
-               "rows" => self::$textAreaRows[$fieldName], "cols" => 60];
-        if ($fieldName === "abstract")
-            $js["spellcheck"] = true;
-        $value = $pvalue = $this->prow ? $this->prow->$fieldName : "";
-        if ($this->useRequest && isset($this->qreq[$fieldName])) {
-            $value = cleannl($this->qreq[$fieldName]);
-            if (self::$textAreaRows[$fieldName] === 1)
-                $value = trim($value);
-            if ($value !== $pvalue)
-                $js["data-default-value"] = $pvalue;
-        }
-        return Ht::textarea($fieldName, $value, $js);
-    }
-
     private function entryData($fieldName, $table_type = false) {
         $this->entryMatches = 0;
         $text = $this->prow ? $this->prow->$fieldName : "";
