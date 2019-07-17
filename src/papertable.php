@@ -541,18 +541,18 @@ class PaperTable {
     }
 
     private function is_ready($checkbox) {
-        if ($this->useRequest)
+        if ($this->useRequest) {
             return !!$this->qreq->submitpaper
                 && ($checkbox
                     || $this->conf->opt("noPapers")
-                    || ($this->prow && $this->prow->paperStorageId > 1));
-        else if ($this->prow && $this->prow->timeSubmitted > 0)
-            return true;
-        else
-            return $checkbox
-                && !$this->conf->setting("sub_freeze")
-                && (!$this->prow
-                    || (!$this->conf->opt("noPapers") && $this->prow->paperStorageId <= 1));
+                    || $this->prow->paperStorageId > 1);
+        } else {
+            return $this->prow->timeSubmitted > 0
+                || ($checkbox
+                    && !$this->conf->setting("sub_freeze")
+                    && (!$this->prow->paperId
+                        || (!$this->conf->opt("noPapers") && $this->prow->paperStorageId <= 1)));
+        }
     }
 
     private function echo_editable_complete() {
@@ -563,7 +563,7 @@ class PaperTable {
 
         $checked = $this->is_ready(true);
         echo '<div class="ready-container ',
-            (($this->prow && $this->prow->paperStorageId > 1)
+            ($this->prow->paperStorageId > 1
              || $this->conf->opt("noPapers") ? "foldo" : "foldc"),
             '"><div class="checki fx"><span class="checkc">',
             Ht::checkbox("submitpaper", 1, $checked, ["class" => "js-check-submittable"]),
@@ -601,7 +601,7 @@ class PaperTable {
         $accepts = $docx->mimetypes();
         $field = $docx->field_key();
         $doc = null;
-        if ($this->prow && $this->user->can_view_pdf($this->prow) && $storageId > 1)
+        if ($storageId > 1 && $this->user->can_view_pdf($this->prow))
             $doc = $this->prow->document($dtype, $storageId, true);
 
         $msgs = [];
@@ -682,8 +682,7 @@ class PaperTable {
         $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
             . $this->papt("abstract", $o->title_html(), $extra)
             . '<div class="pavb abstract';
-        if ($this->prow
-            && !$this->entryMatches
+        if (!$this->entryMatches
             && ($format = $this->prow->format_of($text))) {
             $fr->value .= ' need-format" data-format="' . $format . '">' . $text;
             Ht::stash_script('$(render_text.on_page)', 'render_on_page');
@@ -718,7 +717,7 @@ class PaperTable {
         }
 
         $js["class"] = $this->control_class("$pfx$n", "need-autogrow js-autosubmit e$pfx");
-        if ($au && !$this->prow && !$this->useRequest)
+        if ($au && !$this->prow->paperId && !$this->useRequest)
             $js["class"] .= " ignore-diff";
         if ($pfx === "auemail" && $this->user->can_lookup_user())
             $js["class"] .= " uii js-email-populate";
@@ -1306,7 +1305,7 @@ class PaperTable {
         if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
             || $this->editable !== "f")
             return;
-        $pblind = !$this->prow || $this->prow->blind;
+        $pblind = !!$this->prow->blind;
         $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
         $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "</span>" . $this->edit_title_html($option);
         $this->echo_editable_papt("blind", $heading, ["for" => "checkbox"]);
@@ -1321,7 +1320,7 @@ class PaperTable {
                 '<div class="pspcard_body"><div class="pspcard_fold">',
                 '<div style="float:right;margin-left:1em"><span class="psfn">More ', expander(true), '</span></div>';
 
-            if ($this->prow && ($viewable = $this->prow->viewable_tags($this->user))) {
+            if (($viewable = $this->prow->viewable_tags($this->user))) {
                 $tagger = new Tagger($this->user);
                 echo '<div class="pscopen">',
                     '<span class="psfn">Tags:</span> ',
@@ -1466,13 +1465,13 @@ class PaperTable {
             Ht::hidden("has_pcconf", 1),
             '<div class="pc-ctable">';
         foreach ($pcm as $id => $p) {
-            $pct = $this->prow ? $this->prow->conflict_type($p) : 0;
+            $pct = $this->prow->conflict_type($p);
             if ($this->useRequest)
                 $ct = Conflict::constrain_editable($this->qreq["pcc$id"], $this->admin);
             else
                 $ct = $pct;
             $pcconfmatch = null;
-            if ($this->prow && $pct < CONFLICT_AUTHOR)
+            if ($this->prow->paperId && $pct < CONFLICT_AUTHOR)
                 $pcconfmatch = $this->prow->potential_conflict_html($p, $pct <= 0);
 
             $label = '<span class="taghl">' . $this->user->name_html_for($p) . '</span>';
@@ -2019,11 +2018,11 @@ class PaperTable {
 
         // withdraw button
         if (!$this->prow->paperId
-            || !$this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_withdraw_paper", $this->prow, true))
+            || !$this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_withdraw_paper", $this->prow, true)) {
             $b = null;
-        else if ($this->prow->timeSubmitted <= 0)
+        } else if ($this->prow->timeSubmitted <= 0) {
             $b = Ht::submit("withdraw", "Withdraw");
-        else {
+        } else {
             $args = ["class" => "ui js-withdraw"];
             if ($this->user->can_withdraw_paper($this->prow, !$this->admin))
                 $args["data-withdrawable"] = "true";

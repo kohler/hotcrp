@@ -342,6 +342,7 @@ class PaperInfo {
             $prow->authorInformation = $prow->paperTags = $prow->optionIds =
             $prow->topicIds = "";
         $prow->leadContactId = $prow->shepherdContactId = "0";
+        $prow->blind = "1";
         $prow->allConflictType = $user->contactId . " " . CONFLICT_CONTACTAUTHOR;
         $prow->check_rights_version();
         $ci = PaperContactInfo::make_empty($prow, $user);
