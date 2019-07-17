@@ -3172,7 +3172,9 @@ class Conf {
 <head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
 <meta name=\"google\" content=\"notranslate\">\n";
-        if (!$this->opt("allowIndexPapers") && $this->paper)
+        if (!$this->opt("allowIndexPapers")
+            && $Me
+            && $Me->has_author_view_capability())
             echo "<meta name=\"robots\" content=\"noindex,noarchive\">\n";
 
         if (($font_script = $this->opt("fontScript"))) {

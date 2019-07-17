@@ -802,6 +802,15 @@ class Contact {
         return $this->_capabilities !== null;
     }
 
+    function has_author_view_capability() {
+        if ($this->_capabilities !== null) {
+            foreach ($this->_capabilities as $k => $v)
+                if (str_starts_with($k, "@av"))
+                    return true;
+        }
+        return false;
+    }
+
     function capability($name) {
         return $this->_capabilities ? get($this->_capabilities, $name) : null;
     }
