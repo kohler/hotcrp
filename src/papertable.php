@@ -40,8 +40,6 @@ class PaperTable {
     private $cf = null;
     private $quit = false;
 
-    static private $textAreaRows = array("title" => 1, "abstract" => 5, "authorInformation" => 5, "collaborators" => 5);
-
     function __construct($prow, $qreq, $mode = null) {
         global $Conf, $Me;
 
@@ -295,7 +293,7 @@ class PaperTable {
                 $this->foldmap[6] = false;
         }
         if ($this->matchPreg && ($this->foldmap[8] || $this->foldmap[9])) {
-            $this->entryData("authorInformation");
+            $this->entryData("authorInformation"); // check entryMatches
             if ($this->entryMatches)
                 $this->foldmap[8] = $this->foldmap[9] = false;
         }
@@ -436,7 +434,6 @@ class PaperTable {
         $this->entryMatches = 0;
         $text = $this->prow->$fieldName;
         if ($this->matchPreg
-            && isset(self::$textAreaRows[$fieldName])
             && isset($this->matchPreg[$fieldName]))
             $text = Text::highlight($text, $this->matchPreg[$fieldName], $this->entryMatches);
         else
