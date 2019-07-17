@@ -231,7 +231,7 @@ if ((isset($Qreq->refuse) || isset($Qreq->decline))
             && $paperTable->editrrow
             && !isset($Qreq->reason)) {
             $Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review. If you’d like, you may enter a brief explanation here.</p>"
-                . Ht::form(hoturl_post("api/declinereview", ["p" => $paperTable->prow->paperId, "email" => $Me->email, "redirect" => $Conf->hoturl("index")]))
+                . Ht::form(hoturl_post("api/declinereview", ["p" => $prow->paperId, "email" => $Me->email, "redirect" => $Conf->hoturl("index")]))
                 . Ht::textarea("reason", "", ["rows" => 3, "cols" => 40, "spellcheck" => true])
                 . '<hr class="c">'
                 . Ht::submit("Update explanation", ["class" => "btn-primary"])

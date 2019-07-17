@@ -265,6 +265,7 @@ class PaperInfo {
     public $outcome;
     // $paperTags: DO NOT LIST (property_exists() is meaningful)
     // $optionIds: DO NOT LIST (property_exists() is meaningful)
+    // $topicIds: DO NOT LIST (property_exists() is meaningful)
     // $allConflictType: DO NOT LIST (property_exists() is meaningful)
     // $reviewSignatures: DO NOT LIST (property_exists() is meaningful)
 
@@ -335,12 +336,18 @@ class PaperInfo {
     }
 
     static function make_new(Contact $user) {
+        assert($user->contactId === $user->contactXid);
         $prow = new PaperInfo(null, null, $user->conf);
-        $prow->paperTags = $prow->optionIds = "";
+        $prow->abstract = $prow->title = $prow->collaborators =
+            $prow->authorInformation = $prow->paperTags = $prow->optionIds =
+            $prow->topicIds = "";
         $prow->leadContactId = $prow->shepherdContactId = "0";
+        $prow->allConflictType = $user->contactId . " " . CONFLICT_CONTACTAUTHOR;
+        $prow->check_rights_version();
         $ci = PaperContactInfo::make_empty($prow, $user);
         $ci->conflictType = CONFLICT_CONTACTAUTHOR;
         $prow->_contact_info[$ci->contactId] = $ci;
+        $prow->_comment_skeleton_array = $prow->_comment_array = [];
         return $prow;
     }
 
@@ -370,14 +377,6 @@ class PaperInfo {
         return is_object($contact) ? $contact->contactId : $contact;
     }
 
-    function _get_contact_info($cid) {
-        return get($this->_contact_info, $cid);
-    }
-
-    function _clear_contact_info($user) {
-        $this->_contact_info[$user->contactXid] = PaperContactInfo::make_empty($this, $user);
-    }
-
     private function check_rights_version() {
         if ($this->_rights_version !== Contact::$rights_version) {
             if ($this->_rights_version) {
@@ -389,6 +388,14 @@ class PaperInfo {
             }
             $this->_rights_version = Contact::$rights_version;
         }
+    }
+
+    function _get_contact_info($cid) {
+        return get($this->_contact_info, $cid);
+    }
+
+    function _clear_contact_info($user) {
+        $this->_contact_info[$user->contactXid] = PaperContactInfo::make_empty($this, $user);
     }
 
     function contact_info(Contact $user) {
