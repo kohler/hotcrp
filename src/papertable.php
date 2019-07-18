@@ -977,8 +977,8 @@ class PaperTable {
         $ts = [];
         foreach ($tmap as $tid => $tname) {
             $t = '<li class="topicti';
-            if (($i = get($interests, $tid)))
-                $t .= ' topic' . $i;
+            if ($interests)
+                $t .= ' topic' . get($interests, $tid, 0);
             $x = $topics->unparse_name_html($tid);
             if ($this->user->isPC)
                 $x = Ht::link($x, hoturl("search", ["q" => "topic:" . SearchWord::quote($tname)]), ["class" => "qq"]);
