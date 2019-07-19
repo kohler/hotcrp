@@ -59,9 +59,7 @@ class Conflict_PaperColumn extends PaperColumn {
         return $pl->is_selected($row->paperId, $row->conflict_type($this->contact) > 0);
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $this->not_me
-            && !$pl->user->can_administer($row)
-            && !$pl->user->can_view_conflicts($row);
+        return $this->not_me && !$pl->user->can_view_conflicts($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         if ($this->editable

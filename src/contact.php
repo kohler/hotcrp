@@ -2529,6 +2529,15 @@ class Contact {
                         && MeetingTracker::can_view_tracker_at($this, $prow))));
     }
 
+    function can_view_some_conflicts() {
+        return $this->is_manager()
+            || $this->is_author()
+            || ($this->is_reviewer()
+                && (($pccv = $this->conf->setting("sub_pcconfvis")) == 2
+                    || (!$pccv
+                        && ($this->can_view_some_authors() || $this->conf->setting("tracker")))));
+    }
+
     function view_option_state(PaperInfo $prow, $opt) {
         if (!is_object($opt)
             && !($opt = $this->conf->paper_opts->get($opt))) {
