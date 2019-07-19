@@ -42,7 +42,9 @@ function ldapLoginAction(Qrequest $qreq) {
 
     $qemail = addcslashes((string) $qreq->email, ',=+<>#;\"');
     $dn = $m[3] . $qemail . $m[4];
-
+    $result = @ldap_search($ldapc,'dc=cse,dc=iitb,dc=ac,dc=in',$m[3].$qemail);
+    $e = @ldap_get_entries($ldapc, $result);
+    $dn=$e[0]["dn"];
     $success = @ldap_bind($ldapc, $dn, (string) $qreq->password);
     if (!$success && @ldap_errno($ldapc) == 2) {
         @ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 2);
