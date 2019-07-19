@@ -128,10 +128,10 @@ You can set up everything else through the web site itself.
 
   - Uploaded papers and reviews are limited in size by several PHP
     configuration variables, set by default to 15 megabytes in the HotCRP
-    directory’s `.htaccess` (or `.user.ini` if you are using php-fpm).
+    directory’s `.user.ini` (or `.htaccess` if using Apache).
 
   - HotCRP PHP scripts can take a lot of memory, particularly if they're
-    doing things like generating MIME-encoded mail messages.  By default
+    doing things like generating MIME-encoded mail messages. By default
     HotCRP sets the PHP memory limit to 128MB.
 
   - Most HotCRP settings are assigned in the conference database’s

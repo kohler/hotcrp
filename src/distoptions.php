@@ -174,6 +174,8 @@ $Opt["safePasswords"] = 2;
 //                   it defaults to the conference installation.
 //   jqueryUrl       URL for jQuery. Defaults to the local minified jquery.
 //   jqueryCdn       If true, use the jQuery CDN.
+//   phpSuffix       The suffix for generated HotCRP URLs. Usually empty; for
+//                   some configurations, you may want to set it to ".php".
 
 
 // BEHAVIOR OPTIONS

@@ -458,14 +458,9 @@ xassert_eqq($ns->make_absolute("?confusion=20"), "http://butt.com/fart/barf/?con
 // Test PHP_SUFFIX override
 $ns = new NavigationState(["SERVER_PORT" => 80, "SCRIPT_FILENAME" => __FILE__,
                            "SCRIPT_NAME" => __FILE__, "REQUEST_URI" => "/fart/barf/?butt",
-                           "HTTP_HOST" => "butt.com", "SERVER_SOFTWARE" => "Apache 2.4"]);
-xassert_eqq($ns->php_suffix, ".php");
-
-$ns = new NavigationState(["SERVER_PORT" => 80, "SCRIPT_FILENAME" => __FILE__,
-                           "SCRIPT_NAME" => __FILE__, "REQUEST_URI" => "/fart/barf/?butt",
                            "HTTP_HOST" => "butt.com", "SERVER_SOFTWARE" => "Apache 2.4",
-                           "HOTCRP_PHP_SUFFIX" => ""]);
-xassert_eqq($ns->php_suffix, "");
+                           "HOTCRP_PHP_SUFFIX" => ".xxx"]);
+xassert_eqq($ns->php_suffix, ".xxx");
 
 // other helpers
 xassert_eqq(ini_get_bytes(null, "1"), 1);

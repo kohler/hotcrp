@@ -15,6 +15,10 @@ if ($_SERVER["REQUEST_METHOD"] !== "GET"
     exit;
 }
 
+// Check for PHP suffix
+if ($Conf->opt("phpSuffix") !== null)
+    Navigation::get()->php_suffix = $Conf->opt("phpSuffix");
+
 // Collect $Qreq
 $Qreq = make_qreq();
 
