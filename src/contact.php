@@ -2529,14 +2529,6 @@ class Contact {
                         && MeetingTracker::can_view_tracker_at($this, $prow))));
     }
 
-    // XXX backwards compat
-    function can_view_paper_option(PaperInfo $prow, $opt) {
-        return $this->can_view_option($prow, $opt);
-    }
-    function perm_view_paper_option(PaperInfo $prow, $opt) {
-        return $this->perm_view_option($prow, $opt);
-    }
-
     function view_option_state(PaperInfo $prow, $opt) {
         if (!is_object($opt)
             && !($opt = $this->conf->paper_opts->get($opt))) {
