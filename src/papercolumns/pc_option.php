@@ -11,7 +11,7 @@ class Option_PaperColumn extends PaperColumn {
         $this->opt = $conf->paper_opts->get($cj->option_id);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->can_view_some_paper_option($this->opt))
+        if (!$pl->user->can_view_some_option($this->opt))
             return false;
         $pl->qopts["options"] = true;
         $this->fr = new FieldRender(0);

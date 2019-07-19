@@ -356,7 +356,7 @@ class PaperList {
         // paper options
         if ($key === "paper" || $key === "final") {
             $opt = $this->conf->paper_opts->find($key);
-            return $this->user->can_view_some_paper_option($opt)
+            return $this->user->can_view_some_option($opt)
                 && $this->rowset()->any(function ($row) use ($opt) {
                     return ($opt->id == DTYPE_SUBMISSION ? $row->paperStorageId : $row->finalPaperStorageId) > 1
                         && $this->user->can_view_option($row, $opt);
@@ -364,7 +364,7 @@ class PaperList {
         }
         if (str_starts_with($key, "opt")
             && ($opt = $this->conf->paper_opts->find($key))) {
-            return $this->user->can_view_some_paper_option($opt)
+            return $this->user->can_view_some_option($opt)
                 && $this->rowset()->any(function ($row) use ($opt) {
                     return ($ov = $row->option($opt->id))
                         && (!$opt->has_document() || $ov->value > 1)

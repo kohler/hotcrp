@@ -2633,7 +2633,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_some_paper_option(PaperOption $opt) {
+    function can_view_some_option(PaperOption $opt) {
         if (($opt->has_document() && !$this->can_view_some_pdf())
             || ($opt->final && !$this->can_view_some_decision()))
             return false;

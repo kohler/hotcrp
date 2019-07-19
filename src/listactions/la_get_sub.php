@@ -6,7 +6,7 @@ class Get_ListAction extends ListAction {
     static function render(PaperList $pl) {
         $actions = array_values($pl->displayable_list_actions("get/"));
         foreach ($pl->user->user_option_list() as $o)
-            if ($pl->user->can_view_some_paper_option($o)
+            if ($pl->user->can_view_some_option($o)
                 && $o->is_document()
                 && $pl->has($o->field_key()))
                 $actions[] = GetDocument_ListAction::make_list_action($o);
@@ -39,7 +39,7 @@ class Get_ListAction extends ListAction {
         if (($opts = $user->conf->paper_opts->find_all($qreq->getfn))
             && count($opts) == 1
             && ($o = current($opts))
-            && $user->can_view_some_paper_option($o)) {
+            && $user->can_view_some_option($o)) {
             $ga = new GetDocument_ListAction($o->id);
             return $ga->run($user, $qreq, $ssel);
         } else
