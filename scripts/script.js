@@ -3707,19 +3707,21 @@ function comment_identity_time(cj) {
         t.push('<div class="cmtnumhead"><a class="qq" href="#' + cj_cid(cj)
                + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
                + cj.ordinal + '</span></a></div>');
-    if (cj.author && cj.author_hidden)
+    if (cj.author && cj.author_hidden) {
         t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
                + '<a class="ui q js-foldup" href="#" data-fold-target="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
                + cj.author + '</span></div>');
-    else if (cj.author) {
+    } else if (cj.author) {
         x = cj.author;
         if (cj.blind && cj.visibility === "au")
             x = "[" + x + "]";
         if (cj.author_pseudonym)
             x = cj.author_pseudonym + '  ' + x;
         t.push('<div class="cmtname">' + x + '</div>');
-    } else if (cj.author_pseudonym)
+    } else if (cj.author_pseudonym
+               && (!cj.response || cj.author_pseudonym !== "Author")) {
         t.push('<div class="cmtname">' + cj.author_pseudonym + '</div>');
+    }
     if (cj.modified_at)
         t.push('<div class="cmttime">' + cj.modified_at_text + '</div>');
     if (!cj.response && cj.tags) {
