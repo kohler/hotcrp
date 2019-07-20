@@ -2314,50 +2314,26 @@ tr.plx {
 .redtag {
 	background-color: #ffd8d8;
 }
-.redtag .pst {
-	background-color: #f8d0d0;
-}
 .orangetag {
 	background-color: #fdebcc;
-}
-.orangetag .pst {
-	background-color: #f2debb;
 }
 .yellowtag {
 	background-color: #fdffcb;
 }
-.yellowtag .pst {
-	background-color: #f0eeb4;
-}
 .greentag {
 	background-color: #d8ffd8;
-}
-.greentag .pst {
-	background-color: #c4f2c4;
 }
 .bluetag {
 	background-color: #d8d8ff;
 }
-.bluetag .pst {
-	background-color: #ccccf2;
-}
 .purpletag {
 	background-color: #f2d8f8;
-}
-.purpletag .pst {
-	background-color: #eac7f2;
 }
 .graytag {
 	background-color: #e2e2e2;
 }
-.graytag .pst {
-	background-color: #d9d9d9;
-}
 .whitetag {
 	background-color: #ffffff;
-}
-.whitetag .pst {
-	background-color: #f8f8f8;
 }
 .boldtag.taghh, .boldtag .taghl {
 	font-weight: bold;
@@ -2575,17 +2551,18 @@ a.badge:active {
 	background: #fff4c0;
 }
 .pscopen {
-	margin: 0 -2px;
-	padding: 0 2px;
-}
-.pscopen .pst {
-	margin: 0 -2px;
-	padding: 0 2px;
+	margin-left: -2px;
+	margin-right: -2px;
+	padding-left: 2px;
+	padding-right: 2px;
 }
 .pavfn, .pavfn a.q, .psfn, .psfn a.q, .revfn {
 	color: #555555;
 }
-div.pst span.hint {
+.pst {
+	margin-bottom: 2px;
+}
+.pst span.hint {
 	padding-left: 1em;
 }
 .pstedit {
@@ -2609,9 +2586,6 @@ div.pst span.hint {
 .pshint {
 	font-size: smaller;
 	color: #555555;
-}
-.psv {
-	padding-top: 2px;
 }
 .od, .odname {
 	margin: 0 0 0 1.5em;

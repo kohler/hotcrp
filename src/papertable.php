@@ -1314,14 +1314,12 @@ class PaperTable {
         if (!$this->npapstrip) {
             echo '<div class="pspcard">',
                 '<div class="pspcard_body"><div class="pspcard_fold">',
-                '<div style="float:right;margin-left:1em"><span class="psfn">More ', expander(true), '</span></div>';
+                '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
 
             if (($viewable = $this->prow->viewable_tags($this->user))) {
                 $tagger = new Tagger($this->user);
-                echo '<div class="pscopen">',
-                    '<span class="psfn">Tags:</span> ',
-                    $tagger->unparse_link($viewable),
-                    '</div>';
+                echo '<span class="psfn">Tags:</span> ',
+                    $tagger->unparse_link($viewable);
             } else
                 echo '<hr class="c" />';
 
@@ -1535,7 +1533,7 @@ class PaperTable {
         $this->_papstripBegin();
         $option = $this->conf->paper_opts->get(PaperOption::PCCONFID);
         echo $this->papt("pcconf", $option->title_html(), ["type" => "ps"]),
-            '<div class="psv psconf">', join("", $pcconf), "</div></div>\n";
+            '<div class="psv">', join("", $pcconf), "</div></div>\n";
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit) {
@@ -1554,7 +1552,7 @@ class PaperTable {
         else
             $n = $value ? "<strong>[removed from PC]</strong>" : "";
         $text = '<p class="fn odname js-psedit-result">' . $n . '</p>';
-        echo '<div class="pcopen taghh';
+        echo '<div class="pscopen taghh';
         if ($p && ($classes = $this->user->user_color_classes_for($p)))
             echo ' ', $classes;
         echo '">', $text, '</div>';
@@ -1598,7 +1596,6 @@ class PaperTable {
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", true);
-        echo '<div class="pscopen">';
 
         if ($is_editable) {
             echo Ht::form(hoturl("paper", "p=" . $this->prow->paperId), ["data-pid" => $this->prow->paperId, "data-no-tag-report" => $unfolded ? 1 : null]);
@@ -1652,7 +1649,7 @@ class PaperTable {
             echo "</form>";
         if ($unfolded)
             echo Ht::unstash_script('fold("tags",0)');
-        echo "</div></div>\n";
+        echo "</div>\n";
     }
 
     function papstripOutcomeSelector() {
