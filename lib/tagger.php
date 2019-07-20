@@ -439,7 +439,7 @@ class TagMap implements IteratorAggregate {
         return $this->color_re;
     }
 
-    function styles($tags, $match = self::STYLE_FG_BG) {
+    function styles($tags, $match = 0, $no_pattern_fill = false) {
         if (is_array($tags))
             $tags = join(" ", $tags);
         if (!$tags || $tags === " " || !preg_match_all($this->color_regex(), $tags, $m))
@@ -451,7 +451,7 @@ class TagMap implements IteratorAggregate {
             $t = $this->check($ltag);
             $ks = $t ? $t->colors : [$ltag];
             foreach ($ks as $k) {
-                if ($this->style_info_lmap[$k] & $match) {
+                if ($match === 0 || ($this->style_info_lmap[$k] & $match)) {
                     $classes[] = $this->canonical_style_lmap[$k] . "tag";
                     $info |= $this->style_info_lmap[$k];
                 }
@@ -465,6 +465,11 @@ class TagMap implements IteratorAggregate {
         }
         if ($info & self::STYLE_BG)
             $classes[] = "tagbg";
+        // This seems out of place---it's redundant if we're going to
+        // generate JSON, for example---but it is convenient.
+        if (!$no_pattern_fill
+            && count($classes) > ($info & self::STYLE_BG ? 2 : 1))
+            self::mark_pattern_fill($classes);
         return $classes;
     }
 
@@ -477,15 +482,7 @@ class TagMap implements IteratorAggregate {
     }
 
     function color_classes($tags, $no_pattern_fill = false) {
-        $classes = $this->styles($tags);
-        if (!$classes)
-            return "";
-        $key = join(" ", $classes);
-        // This seems out of place---it's redundant if we're going to
-        // generate JSON, for example---but it is convenient.
-        if (!$no_pattern_fill && count($classes) > 1)
-            self::mark_pattern_fill($classes);
-        return $key;
+        return join(" ", $this->styles($tags, 0, $no_pattern_fill));
     }
 
     function canonical_colors() {

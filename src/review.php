@@ -599,15 +599,15 @@ class ReviewForm implements JsonSerializable {
                 $fval = $f->normalize_fvalue($fval);
                 $rval = $f->normalize_fvalue($rval);
                 foreach ($f->options as $num => $what) {
-                    echo '<div class="checki"><label><span class="checkc">',
+                    echo '<label class="checki"><span class="checkc">',
                         $f->unparse_web_control($num, $fval, $rval),
-                        ' </span>', $f->unparse_value($num, ReviewField::VALUE_REV_NUM),
-                        ' ', htmlspecialchars($what), '</label></div>';
+                        '</span>', $f->unparse_value($num, ReviewField::VALUE_REV_NUM),
+                        ' ', htmlspecialchars($what), '</label>';
                 }
                 if ($f->allow_empty) {
-                    echo '<div class="checki g"><label><span class="checkc">',
+                    echo '<label class="checki g"><span class="checkc">',
                         $f->unparse_web_control(0, $fval, $rval),
-                        ' </span>No entry</label></div>';
+                        '</span>No entry</label>';
                 }
             } else {
                 echo $format_description, $f->unparse_web_control(null, $fval, $rval);

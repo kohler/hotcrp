@@ -348,7 +348,7 @@ td.g {
 }
 .clearfix:after, .pst:after, .pavt:after, .papet:after, .submission_modes:after,
 .revvt:after, .revet:after, .rvg:after, .cmteditinfo:after, .aa:after, .aab:after,
-.entryi:after, .checki:after, .popup-actions:after, .f-horizontal:after {
+.entryi:after, .popup-actions:after, .f-horizontal:after {
 	clear: both;
 	content: "";
 	display: block;

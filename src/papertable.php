@@ -388,7 +388,10 @@ class PaperTable {
             $c .= " ui js-foldup\"" . $foldnumclass . ">";
         else
             $c .= "\">";
-        $c .= "<span class=\"$hdrclass\">";
+        $c .= "<span class=\"$hdrclass";
+        if (get($extra, "fnclass"))
+            $c .= " " . $extra["fnclass"];
+        $c .= '">';
         if (!$fold) {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
@@ -1700,11 +1703,18 @@ class PaperTable {
             . '<span class="is-tag-index" data-tag-base="' . $tag . '">' . $totval . '</span> ' . $kind . '</a></div>';
     }
 
-    private function papstrip_tag_entry_title($start, $tag, $value) {
-        $title = $start . '<span class="fn is-nonempty-tags';
-        if ($value === "")
-            $title .= ' hidden';
-        return $title . '">: <span class="is-tag-index" data-tag-base="' . $tag . '">' . $value . '</span></span>';
+    private function papstrip_tag_entry_title($s, $tag, $value) {
+        $ts = "#$tag";
+        if (($color = $this->conf->tags()->color_classes($tag)))
+            $ts = '<span class="' . $color . ' taghh">' . $ts . '</span>';
+        $s = str_replace("{{}}", $ts, $s);
+        if ($value !== false) {
+            $s .= '<span class="fn is-nonempty-tags'
+                . ($value === "" ? " hidden" : "")
+                . '">: <span class="is-tag-index" data-tag-base="~'
+                . $tag . '">' . $value . '</span></span>';
+        }
+        return $s;
     }
 
     private function papstripRank($tag) {
@@ -1717,7 +1727,7 @@ class PaperTable {
         echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
-        echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag rank", "~$tag", $myval),
+        echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} rank", $tag, $myval),
                          array("type" => "ps", "fold" => $id, "float" => $totmark)),
             '<div class="psv"><div class="fx">',
             Ht::entry("tagindex", $myval,
@@ -1740,12 +1750,10 @@ class PaperTable {
         echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
-        echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag votes", "~$tag", $myval),
+        echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} votes", $tag, $myval),
                          array("type" => "ps", "fold" => $id, "float" => $totmark)),
             '<div class="psv"><div class="fx">',
-            Ht::entry("tagindex", $myval,
-                      array("size" => 4, "class" => "is-tag-index want-focus",
-                            "data-tag-base" => "~$tag")),
+            Ht::entry("tagindex", $myval, ["size" => 4, "class" => "is-tag-index want-focus", "data-tag-base" => "~$tag"]),
             " &nbsp;of $allotment",
             ' <span class="barsep">·</span> ',
             '<a href="', hoturl("search", "q=" . urlencode("editsort:-#~$tag")), '">Edit all</a>',
@@ -1764,12 +1772,10 @@ class PaperTable {
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id,
-                         Ht::checkbox("tagindex", "0", $myval !== "",
-                                      array("class" => "is-tag-index want-focus",
-                                            "data-tag-base" => "~$tag",
-                                            "style" => "padding-left:0;margin-left:0;margin-top:0"))
-                         . "&nbsp;" . Ht::label("#$tag vote"),
-                         array("type" => "ps", "float" => $totmark)),
+            $this->papstrip_tag_entry_title('<label><span class="checkc">'
+                . Ht::checkbox("tagindex", "0", $myval !== "", ["class" => "is-tag-index want-focus", "data-tag-base" => "~$tag"])
+                . '</span>{{}} vote</label>', $tag, false),
+            ["type" => "ps", "fnclass" => "checki", "float" => $totmark]),
             "</form></div>\n";
         Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
@@ -1789,15 +1795,12 @@ class PaperTable {
 
         echo '<form class="submit-ui"><div>',
             $this->papt("watch",
-                        Ht::checkbox("follow", 1,
-                                     $this->user->following_reviews($this->prow, $watch),
-                                     ["class" => "js-follow-change",
-                                      "style" => "padding-left:0;margin-left:0"])
-                        . "&nbsp;" . Ht::label("Email notification"),
-                        array("type" => "ps")),
+                '<label><span class="checkc">'
+                . Ht::checkbox("follow", 1, $this->user->following_reviews($this->prow, $watch), ["class" => "uich js-follow-change"])
+                . '</span>Email notification</label>',
+                ["type" => "ps", "fnclass" => "checki"]),
             '<div class="pshint">Select to receive email on updates to reviews and comments.</div>',
-            "</div></form></div>\n\n";
-        Ht::stash_script('$(".js-follow-change").on("change", handle_ui)');
+            "</div></form></div>\n";
     }
 
 
@@ -2030,8 +2033,8 @@ class PaperTable {
     function echoActions($top) {
         if ($this->admin && !$top) {
             $v = (string) $this->qreq->emailNote;
-            echo '<div class="checki"><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), " </span>",
-                Ht::label("Email authors, including:"), "&nbsp; ",
+            echo '<div class="checki"><label><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), "</span>",
+                "Email authors, including:</label> ",
                 Ht::entry("emailNote", $v, ["size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
                 "</div>\n";
         }
