@@ -35,7 +35,7 @@ visible only to PC chairs.</p>";
         echo "<p>A paper’s tags are shown like this on the paper page:</p>
 
 <div class=\"pspcard p\" style=\"position:static\"><div class=\"pspcard_body\">
-<div class=\"psc psc1\">
+<div class=\"psc\">
  <div class=\"pst\">
   <span class=\"psfn\">Tags</span>
   <span class=\"pstedit\"><a class=\"xx\"><span style=\"display:inline-block;position:relative;width:16px\">",

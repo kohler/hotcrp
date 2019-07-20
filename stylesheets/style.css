@@ -2532,7 +2532,7 @@ a.badge:active {
 	border-radius: 4px;
 }
 .pspcard_body {
-	padding: 0 8px;
+	padding: 7px 8px;
 	background: white;
 	border-radius: 2px;
 }
@@ -2547,17 +2547,24 @@ a.badge:active {
 	font-size: inherit;
 }
 .psc {
-	padding: 7px 0;
+	padding-top: 7px;
 	border-top: 1px solid #eeeeee;
+	margin-bottom: 7px;
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
 }
-.psc.psc_te {
-	padding: 3px 0;
+.psc:first-child {
+	padding-top: 0;
+	border-top: 0 none;
 }
-.pste {
-	margin: 4px 0;
+.psc:last-child {
+	margin-bottom: 0;
+}
+.psc.pste + .psc.pste {
+	padding-top: 0;
+	border-top: 0 none;
+	margin-top: -2px;
 }
 .psfocus.psc, .psfocus .psc {
 	padding: 7px 8px;
@@ -2566,9 +2573,6 @@ a.badge:active {
 	-moz-box-shadow: 0 0 10px #9999cc;
 	-webkit-box-shadow: 0 0 10px #9999cc;
 	background: #fff4c0;
-}
-.psc.psc1 {
-	border-top: 0 none;
 }
 .pscopen {
 	margin: 0 -2px;

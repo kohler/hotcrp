@@ -26,7 +26,6 @@ class PaperTable {
     private $useRequest;
     private $review_values;
     private $npapstrip = 0;
-    private $npapstrip_tag_entry;
     private $allFolded;
     private $matchPreg;
     private $entryMatches;
@@ -1333,8 +1332,6 @@ class PaperTable {
         if ($foldid)
             echo " id=\"fold$foldid\"";
         echo ' class="psc';
-        if (!$this->npapstrip)
-            echo " psc1";
         if ($foldid)
             echo " fold", ($folded ? "c" : "o");
         if ($extra) {
@@ -1685,12 +1682,8 @@ class PaperTable {
         Ht::stash_script("add_revpref_ajax(\"#revprefform_d\",true);shortcut(\"revprefform_d\").add()");
     }
 
-    private function papstrip_tag_entry($id, $folds) {
-        if (!$this->npapstrip_tag_entry)
-            $this->_papstripBegin(null, null, ["class" => "psc_te"]);
-        ++$this->npapstrip_tag_entry;
-        echo '<div', ($id ? " id=\"fold{$id}\"" : ""),
-            ' class="pste', ($folds ? " $folds" : ""), '">';
+    private function papstrip_tag_entry($id) {
+        $this->_papstripBegin($id, !!$id, ["class" => "pste"]);
     }
 
     private function papstrip_tag_float($tag, $kind, $type) {
@@ -1723,7 +1716,7 @@ class PaperTable {
             $myval = "";
         $totmark = $this->papstrip_tag_float($tag, "overall", "rank");
 
-        $this->papstrip_tag_entry($id, "foldc fold2c");
+        $this->papstrip_tag_entry($id);
         echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
@@ -1746,7 +1739,7 @@ class PaperTable {
             $myval = "";
         $totmark = $this->papstrip_tag_float($tag, "total", "vote");
 
-        $this->papstrip_tag_entry($id, "foldc fold2c");
+        $this->papstrip_tag_entry($id);
         echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
@@ -1769,7 +1762,7 @@ class PaperTable {
             $myval = "";
         $totmark = $this->papstrip_tag_float($tag, "total", "approval");
 
-        $this->papstrip_tag_entry(null, null);
+        $this->papstrip_tag_entry(null);
         echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
         if (isset($this->qreq->forceShow))
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
@@ -1780,7 +1773,7 @@ class PaperTable {
                                             "style" => "padding-left:0;margin-left:0;margin-top:0"))
                          . "&nbsp;" . Ht::label("#$tag vote"),
                          array("type" => "ps", "float" => $totmark)),
-            "</form></div>\n\n";
+            "</form></div>\n";
         Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
 
@@ -2063,7 +2056,6 @@ class PaperTable {
             && $this->user->can_view_manager($this->prow))
             $this->papstripManager($this->user->privChair);
         $this->papstripTags();
-        $this->npapstrip_tag_entry = 0;
         foreach ($this->conf->tags() as $ltag => $t)
             if ($this->user->can_change_tag($this->prow, "~$ltag", null, 0)) {
                 if ($t->approval)
@@ -2073,8 +2065,6 @@ class PaperTable {
                 else if ($t->rank)
                     $this->papstripRank($t->tag);
             }
-        if ($this->npapstrip_tag_entry)
-            echo "</div>";
         $this->papstripWatch();
         if ($this->user->can_view_conflicts($this->prow) && !$this->editable)
             $this->papstripPCConflicts();
