@@ -482,7 +482,8 @@ class TagMap implements IteratorAggregate {
     }
 
     function color_classes($tags, $no_pattern_fill = false) {
-        return join(" ", $this->styles($tags, 0, $no_pattern_fill));
+        $s = $this->styles($tags, 0, $no_pattern_fill);
+        return $s ? join(" ", $s) : "";
     }
 
     function canonical_colors() {
