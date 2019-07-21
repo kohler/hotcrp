@@ -482,9 +482,9 @@ class Contact {
     }
 
     function contactdb_user($refresh = false) {
-        if ($this->contactDbId && !$this->contactId)
+        if ($this->contactDbId && !$this->contactId) {
             return $this;
-        else if ($refresh || $this->_contactdb_user === false) {
+        } else if ($refresh || $this->_contactdb_user === false) {
             $cdbu = null;
             if ($this->has_email())
                 $cdbu = $this->conf->contactdb_user_by_email($this->email);
@@ -1327,7 +1327,7 @@ class Contact {
                 || password_needs_rehash(substr($hash, 2), $method);
     }
 
-    function hash_password($input) {
+    private function hash_password($input) {
         if (($method = $this->password_hash_method()) !== false)
             return " \$" . password_hash($input, $method);
         else

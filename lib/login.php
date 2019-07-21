@@ -143,6 +143,11 @@ class LoginHelper {
 
         // check password
         if (!$external_login) {
+            if (!$qreq->post_ok()) {
+                Ht::warning_at("password", "Automatic login links have been disabled to improve site security. Enter your password to sign in.");
+                return false;
+            }
+
             $password = trim((string) $qreq->password);
             if ($password === "") {
                 Ht::error_at("password", "Password missing.");
@@ -160,11 +165,6 @@ class LoginHelper {
                     $error = "Incorrect password.";
                 }
                 Ht::error_at("password", $error);
-                return false;
-            }
-
-            if (!$qreq->post_ok()) {
-                Ht::warning_at("password", "Automatic login links have been disabled for security reasons. Enter your password to sign in.");
                 return false;
             }
         }

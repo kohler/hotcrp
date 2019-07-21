@@ -10,13 +10,14 @@ class Home_Partial {
     private $_tokens_done;
 
     static function signin_requests(Contact $user, Qrequest $qreq) {
-        // auto-signin when email & password set
+        // prepare auto-signin when email & password set
         if (isset($qreq->email) && isset($qreq->password)) {
             $qreq->action = $qreq->get("action", "login");
             $qreq->signin = $qreq->get("signin", "go");
         }
         // clean up request: no signin without email/action
         $signin = $qreq->signin && isset($qreq->email) && isset($qreq->action);
+        $signout = $qreq->signout;
         // clean up request: ignore signin to same email
         if ($signin
             && !$user->is_empty()
@@ -24,28 +25,31 @@ class Home_Partial {
             unset($qreq->signin);
             $signin = false;
         }
-        // CSRF protection: ignore unvalidated signin/signout for known users
-        if (($signin || $qreq->signout)
-            && !$qreq->post_ok()) {
-            $type = $signin ? "signin" : "signout";
-            if (!$user->is_empty()) {
-                error_log("ignoring unvalidated $type, sid=" . session_id() . ", email={$user->email}");
-                unset($qreq->signin, $qreq->signout);
-                $signin = false;
-            } else if ($signin) {
+        // CSRF protection for signin/signout
+        if (($signin || $signout) && !$qreq->post_ok()) {
+            if ($qreq->method() === "POST") {
                 $sid = session_id();
-                $msg = "warning: unvalidated signin, sid="
-                    . ($sid === "" ? ".empty" : $sid)
-                    . ", action={$qreq->action}, email={$qreq->email}";
+                $msg = "ignoring unvalidated "
+                    . ($signin ? "signin" : "signout")
+                    . ", sid=" . ($sid === "" ? ".empty" : $sid)
+                    . ", action=" . ($signin ? $qreq->action : "signout");
+                if ($qreq->email)
+                    $msg .= ", email=" . $qreq->email;
                 if ($qreq->password)
                     $msg .= ", password";
                 if (isset($_GET["post"]))
                     $msg .= ", post=" . $_GET["post"];
                 error_log($msg);
             }
+            if ($qreq->method() === "POST" || $qreq->post) {
+                $user->conf->warnMsg("Your session has changed since you last used this tab. Please try again.");
+                unset($qreq->signin, $qreq->signout);
+                $user->conf->self_redirect($qreq);
+                $signin = $signout = false;
+            }
         }
         // signout
-        if ($qreq->signout) {
+        if ($signout && $qreq->post_ok()) {
             if (!$user->is_empty() && !$user->conf->opt("httpAuthLogin")) {
                 $user->conf->confirmMsg("You have been signed out.");
             }
@@ -56,7 +60,8 @@ class Home_Partial {
             LoginHelper::check_http_auth($user, $qreq);
         } else if ($signin) {
             LoginHelper::login_redirect($user->conf, $qreq);
-        } else if (($signin || $qreq->signout) && $qreq->post) {
+        } else if (($signin || $signout) && $qreq->post) {
+            unset($qreq->signin, $qreq->signout);
             $user->conf->self_redirect($qreq);
         } else if (isset($qreq->postlogin)) {
             LoginHelper::check_postlogin($user, $qreq);
