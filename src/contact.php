@@ -1359,22 +1359,24 @@ class Contact {
 
         if ($cdbok
             || ($localok && $cdbu && !$cdbu->password)) {
-            $cdbok = true;
             $updater = ["passwordUseTime" => $Now];
-            if ($this->check_password_encryption($cdbu->password, true)
-                || ($this->password
-                    && $cdbu->passwordTime < $this->passwordUseTime)) {
+            if ($cdbok) {
+                if ($this->check_password_encryption($cdbu->password, true))
+                    $updater["password"] = $this->hash_password($input);
+                if (!$cdbu->passwordTime)
+                    $updater["passwordTime"] = $Now;
+            } else {
                 $updater["password"] = $this->hash_password($input);
-                $updater["passwordTime"] = $Now;
+                $updater["passwordTime"] = $this->passwordTime ? : $Now;
             }
             $cdbu->apply_updater($updater, true);
             // clear local password, if any
-            if ($localok) {
+            if ($localok)
                 $this->apply_updater(["passwordUseTime" => $Now, "password" => "", "passwordTime" => $Now], false);
-                $localok = false;
-            }
             if ($info)
                 $info->cdb = true;
+            $cdbok = true;
+            $localok = false;
         }
 
         if ($localok
@@ -1406,7 +1408,8 @@ class Contact {
             $updater = ["passwordUseTime" => $Now];
             if ($this->check_password_encryption($this->password, false)) {
                 $updater["password"] = $this->hash_password($input);
-                $updater["passwordTime"] = $Now;
+                if (!$this->passwordTime)
+                    $updater["passwordTime"] = $Now;
             }
             $this->apply_updater($updater, false);
             if ($info)
