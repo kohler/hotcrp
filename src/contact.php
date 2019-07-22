@@ -1315,7 +1315,10 @@ class Contact {
     }
 
     private function check_password_encryption($hash, $iscdb) {
-        $safe = $this->conf->opt($iscdb ? "contactdb_safePasswords" : "safePasswords");
+        if ($iscdb)
+            $safe = $this->conf->opt("contactdb_safePasswords", 2);
+        else
+            $safe = $this->conf->opt("safePasswords");
         if ($safe < 1
             || ($method = $this->password_hash_method()) === false
             || ($hash !== "" && $hash[0] !== " " && $safe == 1))

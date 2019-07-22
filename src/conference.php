@@ -533,8 +533,6 @@ class Conf {
             $this->opt["safePasswords"] = 0;
         else if ($this->opt["safePasswords"] === true)
             $this->opt["safePasswords"] = 1;
-        if (!isset($this->opt["contactdb_safePasswords"]))
-            $this->opt["contactdb_safePasswords"] = $this->opt["safePasswords"];
 
         // set defaultFormat
         $this->default_format = (int) get($this->opt, "defaultFormat");
