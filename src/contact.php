@@ -1381,6 +1381,11 @@ class Contact {
             && $cdbu
             && $cdbu->password) {
             $localusetime = max($this->passwordTime, $this->passwordUseTime);
+            if (!$cdbok) {
+                $t0 = $this->passwordTime ? ceil(($Now - $this->passwordTime) / 86400) : -1;
+                $t1 = $cdbu->passwordTime ? ceil(($Now - $cdbu->passwordTime) / 86400) : -1;
+                error_log("{$this->conf->dbname}: user {$this->email}: signing in with local password, which is " . ($this->passwordTime < $cdbu->passwordTime ? "older" : "newer") . " than cdb [{$t0}d/{$t1}d]");
+            }
             if ($localusetime
                 && $cdbu->passwordUseTime > $localusetime) {
                 $x = $this->conf->opt("obsoletePasswordInterval");
