@@ -1419,8 +1419,7 @@ class Contact {
         return $cdbok || $localok;
     }
 
-    const CHANGE_PASSWORD_PLAINTEXT = 1;
-    const CHANGE_PASSWORD_ENABLE = 2;
+    const CHANGE_PASSWORD_ENABLE = 1;
     function change_password($new, $flags) {
         global $Now;
         assert(!$this->conf->external_login());
@@ -1432,28 +1431,22 @@ class Contact {
                 || ($cdbu && (string) $cdbu->password !== "")))
             return false;
 
-        if ($new === null) {
+        $plaintext = $new === null;
+        if ($plaintext) {
             $new = self::random_password();
-            $flags |= self::CHANGE_PASSWORD_PLAINTEXT;
             $use_time = 0;
         }
         assert(self::valid_password($new));
 
+        $hash = $new;
+        if ($hash && !$plaintext && $this->check_password_encryption("", !!$cdbu))
+            $hash = $this->hash_password($hash);
+
         if ($cdbu) {
-            $hash = $new;
-            if ($hash
-                && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
-                && $this->check_password_encryption("", true))
-                $hash = $this->hash_password($hash);
             $cdbu->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], true);
             if ($this->contactId && $this->password)
                 $this->apply_updater(["passwordUseTime" => $use_time, "password" => "", "passwordTime" => $Now], false);
         } else if ($this->contactId) {
-            $hash = $new;
-            if ($hash
-                && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
-                && $this->check_password_encryption("", false))
-                $hash = $this->hash_password($hash);
             $this->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], false);
         }
         return true;

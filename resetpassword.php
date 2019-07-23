@@ -32,17 +32,14 @@ $Me = new Contact;
 if (isset($Qreq->go) && $Qreq->post_ok()) {
     $Qreq->password = trim((string) $Qreq->password);
     $Qreq->password2 = trim((string) $Qreq->password2);
-    if ($Qreq->password == "") {
+    if ($Qreq->password === "") {
         Conf::msg_error("You must enter a password.");
     } else if (!Contact::valid_password($Qreq->password)) {
         Conf::msg_error("Invalid password.");
     } else if ($Qreq->password !== $Qreq->password2) {
         Conf::msg_error("The two passwords you entered did not match.");
     } else {
-        $flags = 0;
-        if ($Qreq->password === $Qreq->autopassword)
-            $flags |= Contact::CHANGE_PASSWORD_PLAINTEXT;
-        $Acct->change_password($Qreq->password, $flags);
+        $Acct->change_password($Qreq->password, 0);
         if (!$iscdb || !($log_acct = $Conf->user_by_email($Acct->email)))
             $log_acct = $Acct;
         $log_acct->log_activity("Password reset via " . substr($resetcap, 0, 8) . "...");
