@@ -1423,7 +1423,6 @@ class Contact {
     function change_password($new, $flags) {
         global $Now;
         assert(!$this->conf->external_login());
-        $use_time = $Now;
 
         $cdbu = $this->contactdb_user();
         if (($flags & self::CHANGE_PASSWORD_ENABLE)
@@ -1432,16 +1431,15 @@ class Contact {
             return false;
 
         $plaintext = $new === null;
-        if ($plaintext) {
+        if ($plaintext)
             $new = self::random_password();
-            $use_time = 0;
-        }
         assert(self::valid_password($new));
 
         $hash = $new;
         if ($hash && !$plaintext && $this->check_password_encryption("", !!$cdbu))
             $hash = $this->hash_password($hash);
 
+        $use_time = $plaintext ? 0 : $Now;
         if ($cdbu) {
             $cdbu->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], true);
             if ($this->contactId && $this->password)
