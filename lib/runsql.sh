@@ -11,8 +11,6 @@ export PROG=$0
 usage () {
     if [ -z "$1" ]; then status=1; else status=$1; fi
     echo "Usage: $PROG [-n CONFNAME | -c CONFIGFILE] [MYSQL-OPTIONS]
-       $PROG --show-password EMAIL
-       $PROG --set-password EMAIL [PASSWORD]
        $PROG --create-user EMAIL [COLUMN=VALUE...]" |
        if [ $status = 0 ]; then cat; else cat 1>&2; fi
     exit $status
@@ -24,22 +22,11 @@ makeuser=
 makeusercols=
 makeuservals=
 makeuserpassword=true
-pwuser=
-pwvalue=
 cmdlinequery=
 options_file=
 while [ $# -gt 0 ]; do
     shift=1
     case "$1" in
-    --show-password=*|--show-p=*|--show-pa=*|--show-pas=*|--show-pas=*|--show-pass=*|--show-passw=*|--show-passwo=*|--show-passwor=*)
-        test -z "$mode" || usage
-        pwuser="`echo "+$1" | sed 's/^[^=]*=//'`"; mode=showpw;;
-    --show-password|--show-p|--show-pa|--show-pas|--show-pass|--show-passw|--show-passwo|--show-passwor)
-        test "$#" -gt 1 -a -z "$mode" || usage
-        pwuser="$2"; shift; mode=showpw;;
-    --set-password|--set-p|--set-pa|--set-pas|--set-pass|--set-passw|--set-passwo|--set-passwor)
-        test "$#" -gt 1 -a -z "$mode" || usage
-        pwuser="$2"; pwvalue="$3"; shift; shift; mode=setpw;;
     --create-user)
         test "$#" -gt 1 -a -z "$mode" || usage
         makeuser="$2"; mode=makeuser; shift;;
@@ -105,29 +92,7 @@ check_mysqlish MYSQL mysql
 set_myargs "$dbuser" "$dbpass"
 exitval=0
 
-if test -n "$pwuser"; then
-    pwuser="`echo "+$pwuser" | sed -e 's,^.,,' | sql_quote`"
-    if test "$mode" = showpw; then
-        echo "select concat(email, ',', if(substr(password,1,1)=' ','<HASH>',coalesce(password,'<NULL>'))) from ContactInfo where email like '$pwuser' and disabled=0" | eval "$MYSQL $myargs -N $FLAGS $dbname"
-    else
-        showpwvalue=n
-        if [ -z "$pwvalue" ]; then
-            pwvalue=`generate_random_ints | generate_password 12`
-            showpwvalue=y
-        fi
-        pwvalue="`echo "+$pwvalue" | sed -e 's,^.,,' | sql_quote`"
-        query="update ContactInfo set password='$pwvalue', passwordTime=UNIX_TIMESTAMP(CURRENT_TIMESTAMP()) where email='$pwuser'; select row_count()"
-        nupdates="`echo "$query" | eval "$MYSQL $myargs -N $FLAGS $dbname"`"
-        if [ $nupdates = 0 ]; then
-            echo "no such user" 1>&2; exitval=1
-        elif [ $nupdates != 1 ]; then
-            echo "$nupdates users updated" 1>&2
-        fi
-        if [ "$showpwvalue" = y -a $nupdates != 0 ]; then
-            echo "Password: $pwvalue" 1>&2
-        fi
-    fi
-elif test "$mode" = showopt; then
+if test "$mode" = showopt; then
     if test -n "`echo "$optname" | tr -d A-Za-z0-9._:-`"; then
         echo "bad option name" 1>&2; exitval=1
     else
