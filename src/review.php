@@ -1247,14 +1247,13 @@ class ReviewValues extends MessageSet {
 
     private $finished = 0;
     private $submitted;
-    public $updated;
+    public $updated; // used in tests
     private $approval_requested;
     private $saved_draft;
-    private $saved_draft_approval;
     private $author_notified;
     public $unchanged;
     private $unchanged_draft;
-    private $unchanged_draft_approval;
+    private $single_approval;
     private $blank;
 
     private $no_notify = false;
@@ -2062,21 +2061,21 @@ class ReviewValues extends MessageSet {
         $what = "#$prow->paperId" . ($new_rrow->reviewOrdinal ? unparseReviewOrdinal($new_rrow->reviewOrdinal) : "");
         if ($newsubmit) {
             $this->submitted[] = $what;
-        } else if ($diffinfo->nonempty() && $submit) {
-            $this->updated[] = $what;
-        } else if ($new_rrow->timeApprovalRequested
+        } else if ($new_rrow->timeApprovalRequested > 0
                    && $new_rrow->contactId == $user->contactId) {
             $this->approval_requested[] = $what;
         } else if ($diffinfo->nonempty()) {
-            $this->saved_draft[] = $what;
-            if ($new_rrow->timeApprovalRequested)
-                $this->saved_draft_approval[] = $what;
+            if ($submit || $new_rrow->timeApprovalRequested < 0) {
+                $this->updated[] = $what;
+            } else {
+                $this->saved_draft[] = $what;
+                $this->single_approval = +$new_rrow->timeApprovalRequested;
+            }
         } else {
             $this->unchanged[] = $what;
-            if (!$submit) {
+            if (!$submit && $new_rrow->timeApprovalRequested >= 0) {
                 $this->unchanged_draft[] = $what;
-                if ($new_rrow->timeApprovalRequested)
-                    $this->unchanged_draft_approval[] = $what;
+                $this->single_approval = +$new_rrow->timeApprovalRequested;
             }
         }
         if ($diffinfo->notify_author)
@@ -2101,6 +2100,13 @@ class ReviewValues extends MessageSet {
         return true;
     }
 
+    private function _single_approval_state() {
+        if ($this->text !== null || $this->single_approval < 0)
+            return null;
+        else
+            return $this->single_approval == 0 ? 2 : 3;
+    }
+
     function finish() {
         $confirm = false;
         if ($this->submitted)
@@ -2109,12 +2115,8 @@ class ReviewValues extends MessageSet {
             $confirm = $this->_confirm_message("Reviews %2\$s updated.", $this->updated);
         if ($this->approval_requested)
             $confirm = $this->_confirm_message("Reviews %2\$s submitted for approval.", $this->approval_requested);
-        if ($this->saved_draft) {
-            $single = null;
-            if ($this->saved_draft == $this->saved_draft_approval && $this->text === null)
-                $single = 3;
-            $this->_confirm_message("Draft reviews for papers %2\$s saved.", $this->saved_draft, $single);
-        }
+        if ($this->saved_draft)
+            $this->_confirm_message("Draft reviews for papers %2\$s saved.", $this->saved_draft, $this->_single_approval_state());
         if ($this->author_notified)
             $this->_confirm_message("Authors were notified about updated reviews %2\$s.", $this->author_notified);
         $nunchanged = $this->unchanged ? count($this->unchanged) : 0;
@@ -2124,12 +2126,8 @@ class ReviewValues extends MessageSet {
             || !$this->has_messages()) {
             if ($this->unchanged) {
                 $single = null;
-                if ($this->unchanged == $this->unchanged_draft && $this->text === null) {
-                    if ($this->unchanged == $this->unchanged_draft_approval)
-                        $single = 3;
-                    else
-                        $single = 2;
-                }
+                if ($this->unchanged == $this->unchanged_draft)
+                    $single = $this->_single_approval_state();
                 $this->_confirm_message("Reviews %2\$s unchanged.", $this->unchanged, $single);
             }
             if ($this->blank)
