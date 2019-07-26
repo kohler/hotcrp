@@ -1730,7 +1730,11 @@ class ReviewValues extends MessageSet {
     function review_watch_callback($prow, $minic) {
         $rrow = $this->_mailer_info["rrow"];
         if ($minic->can_view_review($prow, $rrow, $this->_mailer_diff_view_score)
-            && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $prow, $this->_mailer_info))) {
+            && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $prow, $this->_mailer_info))
+            && ($rrow->reviewSubmitted > 0
+                || $rrow->contactId == $minic->contactId
+                || $rrow->requestedBy == $minic->contactId
+                || ($minic->watch & Contact::WATCH_REVIEW) != 0)) {
             // Don't combine preparations unless you can see all submitted
             // reviewer identities
             if (!$this->_mailer_always_combine
