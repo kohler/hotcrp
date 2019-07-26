@@ -553,7 +553,7 @@ class ReviewForm implements JsonSerializable {
         return $format ? $this->conf->format_info($format) : null;
     }
 
-    private function webFormRows(Contact $contact, PaperInfo $prow, $rrow,
+    private function webFormRows(PaperInfo $prow, $rrow, Contact $contact,
                                  ReviewValues $rvalues = null) {
         $format_description = "";
         if (($fi = $this->format_info($rrow)))
@@ -867,8 +867,8 @@ $blind\n";
         return $x;
     }
 
-    private function _echo_accept_decline(PaperInfo $prow, $rrow, $reviewPostLink,
-                                          Contact $user) {
+    private function _echo_accept_decline(PaperInfo $prow, $rrow, Contact $user,
+                                          $reviewPostLink) {
         if ($rrow && !$rrow->reviewModified
             && $rrow->reviewType < REVIEW_SECONDARY
             && ($user->is_my_review($rrow) || $user->can_administer($prow))) {
@@ -887,14 +887,13 @@ $blind\n";
         }
     }
 
-    private function _echo_review_actions($prow, $rrow, $reviewPostLink) {
-        global $Me;
+    private function _echo_review_actions($prow, $rrow, $user, $reviewPostLink) {
         $buttons = array();
 
         $submitted = $rrow && $rrow->reviewSubmitted;
-        $disabled = !$Me->can_clickthrough("review");
-        $my_review = !$rrow || $Me->is_my_review($rrow);
-        $pc_deadline = $Me->act_pc($prow) || $Me->allow_administer($prow);
+        $disabled = !$user->can_clickthrough("review");
+        $my_review = !$rrow || $user->is_my_review($rrow);
+        $pc_deadline = $user->act_pc($prow) || $user->allow_administer($prow);
         if (!$this->conf->time_review($rrow, $pc_deadline, true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot) . " Are you sure you want to override the deadline?";
@@ -905,18 +904,22 @@ $blind\n";
                 $buttons[] = array(Ht::button("Save changes", ["class" => "btn-primary ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
             }
         } else if (!$submitted && $rrow && $rrow->needs_approval()) {
-            if ($my_review && !$rrow->timeApprovalRequested) {
-                $buttons[] = Ht::submit("submitreview", "Submit for approval", ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
-            } else if ($my_review) {
-                $buttons[] = Ht::submit("submitreview", "Resubmit for approval", ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
+            if ($my_review) {
+                if ($rrow->timeApprovalRequested == 0)
+                    $subtext = "Submit for approval";
+                else if ($rrow->timeApprovalRequested > 0)
+                    $subtext = "Resubmit for approval";
+                else
+                    $subtext = "Update approved review";
+                $buttons[] = Ht::submit("submitreview", $subtext, ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
             } else {
                 $buttons[] = Ht::submit("submitreview", "Approve review", ["class" => "btn-highlight need-clickthrough-enable", "disabled" => $disabled]);
             }
             if (!$my_review || !$rrow->timeApprovalRequested) {
                 $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
             }
-            if (!$my_review && $rrow->requestedBy == $Me->contactId) {
-                $my_rrow = $prow->review_of_user($Me);
+            if (!$my_review && $rrow->requestedBy == $user->contactId) {
+                $my_rrow = $prow->review_of_user($user);
                 if (!$my_rrow || $my_rrow->reviewModified <= 1) {
                     $buttons[] = Ht::submit("adoptreview", "Adopt as your review", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
                 } else if (!$my_rrow->reviewSubmitted) {
@@ -933,7 +936,7 @@ $blind\n";
         }
         $buttons[] = Ht::submit("cancel", "Cancel");
 
-        if ($rrow && $Me->allow_administer($prow)) {
+        if ($rrow && $user->allow_administer($prow)) {
             $buttons[] = "";
             if ($submitted) {
                 $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
@@ -944,18 +947,15 @@ $blind\n";
         echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
     }
 
-    function show(PaperInfo $prow, ReviewInfo $rrow = null, &$options, ReviewValues $rvalues = null) {
-        global $Me;
-
-        if (!$options)
-            $options = array();
+    function show(PaperInfo $prow, ReviewInfo $rrow = null, Contact $user,
+                  $options, ReviewValues $rvalues = null) {
         $editmode = get($options, "edit", false);
 
         $reviewOrdinal = unparseReviewOrdinal($rrow);
-        self::check_review_author_seen($prow, $rrow, $Me);
+        self::check_review_author_seen($prow, $rrow, $user);
 
         if (!$editmode) {
-            $rj = $this->unparse_review_json($prow, $rrow, $Me);
+            $rj = $this->unparse_review_json($prow, $rrow, $user);
             if (get($options, "editmessage"))
                 $rj->message_html = $options["editmessage"];
             echo Ht::unstash_script("review_form.add_review(" . json_encode_browser($rj) . ");\n");
@@ -963,7 +963,7 @@ $blind\n";
         }
 
         // From here on, edit mode.
-        $forceShow = $Me->is_admin_force() ? "&amp;forceShow=1" : "";
+        $forceShow = $user->is_admin_force() ? "&amp;forceShow=1" : "";
         $reviewLinkArgs = "p=$prow->paperId" . ($rrow ? "&amp;r=$reviewOrdinal" : "") . "&amp;m=re" . $forceShow;
         $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
         $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
@@ -995,16 +995,16 @@ $blind\n";
 
         $open = $sep = ' <span class="revinfo">';
         $xsep = ' <span class="barsep">·</span> ';
-        $showtoken = $rrow && $Me->active_review_token_for($prow, $rrow);
+        $showtoken = $rrow && $user->active_review_token_for($prow, $rrow);
         $type = "";
-        if ($rrow && $Me->can_view_review_round($prow, $rrow)) {
+        if ($rrow && $user->can_view_review_round($prow, $rrow)) {
             $type = review_type_icon($rrow->reviewType);
-            if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow))
+            if ($rrow->reviewRound > 0 && $user->can_view_review_round($prow, $rrow))
                 $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
                     . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
                     . "</span>";
         }
-        if ($rrow && $Me->can_view_review_identity($prow, $rrow)
+        if ($rrow && $user->can_view_review_identity($prow, $rrow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             echo $sep, ($rrow->reviewBlind ? "[" : ""), Text::user_html($rrow),
                 ($rrow->reviewBlind ? "]" : ""), " &nbsp;", $type;
@@ -1017,7 +1017,7 @@ $blind\n";
             echo $sep, "Review token ", encode_token((int) $rrow->reviewToken);
             $sep = $xsep;
         }
-        if ($rrow && $rrow->reviewModified > 1 && $Me->can_view_review_time($prow, $rrow)) {
+        if ($rrow && $rrow->reviewModified > 1 && $user->can_view_review_time($prow, $rrow)) {
             echo $sep, "Updated ", $this->conf->unparse_time($rrow->reviewModified);
             $sep = $xsep;
         }
@@ -1044,9 +1044,9 @@ $blind\n";
         echo '<div class="revcard_body">';
 
         // administrator?
-        $admin = $Me->allow_administer($prow);
-        if ($rrow && !$Me->is_my_review($rrow)) {
-            if ($Me->is_owned_review($rrow))
+        $admin = $user->allow_administer($prow);
+        if ($rrow && !$user->is_my_review($rrow)) {
+            if ($user->is_owned_review($rrow))
                 echo Ht::msg("This isn’t your review, but you can make changes since you requested it.", 0);
             else if ($admin)
                 echo Ht::msg("This isn’t your review, but as an administrator you can still make changes.", 0);
@@ -1055,7 +1055,7 @@ $blind\n";
         // delegate?
         if ($rrow
             && !$rrow->reviewSubmitted
-            && $rrow->contactId == $Me->contactId
+            && $rrow->contactId == $user->contactId
             && $rrow->reviewType == REVIEW_SECONDARY) {
             $ndelegated = 0;
             $napproval = 0;
@@ -1079,8 +1079,8 @@ $blind\n";
         }
 
         // top save changes
-        if ($Me->timeReview($prow, $rrow) || $admin) {
-            $this->_echo_accept_decline($prow, $rrow, $reviewPostLink, $Me);
+        if ($user->timeReview($prow, $rrow) || $admin) {
+            $this->_echo_accept_decline($prow, $rrow, $user, $reviewPostLink);
         }
 
         // blind?
@@ -1095,16 +1095,16 @@ $blind\n";
         }
 
         // form body
-        $this->webFormRows($Me, $prow, $rrow, $rvalues);
+        $this->webFormRows($prow, $rrow, $user, $rvalues);
 
         // review actions
-        if ($Me->timeReview($prow, $rrow) || $admin) {
+        if ($user->timeReview($prow, $rrow) || $admin) {
             if ($prow->can_author_view_submitted_review()
-                && (!$rrow || $rrow->reviewSubmitted || !$rrow->needs_approval() || !$Me->is_my_review($rrow)))
+                && (!$rrow || $rrow->reviewSubmitted || !$rrow->needs_approval() || !$user->is_my_review($rrow)))
                 echo '<div class="is-warning">⚠️ Authors can currently see submitted reviews.</div>';
             if ($rrow && $rrow->reviewSubmitted && !$admin)
                 echo '<div class="is-warning">⚠️ Only administrators can remove or unsubmit the review at this point.</div>';
-            $this->_echo_review_actions($prow, $rrow, $reviewPostLink);
+            $this->_echo_review_actions($prow, $rrow, $user, $reviewPostLink);
         }
 
         echo "</div></div></div></form>\n\n";

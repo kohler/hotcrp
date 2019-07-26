@@ -2432,11 +2432,12 @@ class PaperTable {
                    && ($this->user->isPC || $this->conf->setting("extrev_view"))) {
             $nother = 0;
             $myrrow = null;
-            foreach ($this->all_rrows as $rrow)
+            foreach ($this->all_rrows as $rrow) {
                 if ($this->user->is_my_review($rrow))
                     $myrrow = $rrow;
                 else if ($rrow->reviewSubmitted)
                     ++$nother;
+            }
             if ($nother > 0) {
                 if ($myrrow && $myrrow->timeApprovalRequested > 0)
                     $msgs[] = $this->conf->_("You’ll be able to see %d other reviews once yours is approved.", $nother);
@@ -2478,7 +2479,7 @@ class PaperTable {
             self::echo_review_clickthrough();
             echo '<div class="js-clickthrough-body">';
         }
-        $rf->show($this->prow, $this->editrrow, $opt, $this->review_values);
+        $rf->show($this->prow, $this->editrrow, $this->user, $opt, $this->review_values);
         if ($need_clickthrough)
             echo '</div></div>';
     }
