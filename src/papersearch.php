@@ -2248,32 +2248,29 @@ class PaperSearch {
     }
 
     function term() {
-        if ($this->_qe !== null)
-            return $this->_qe;
+        if ($this->_qe === null) {
+            if ($this->q === "re:me") {
+                $this->_qe = new Limit_SearchTerm($this->conf, "r");
+            } else {
+                // parse and clean the query
+                $this->_qe = $this->_search_expression($this->q) ? : new True_SearchTerm;
+            }
+            //Conf::msg_debugt(json_encode($this->_qe->debug_json()));
 
-        // parse and clean the query
-        $qe = $this->_search_expression($this->q);
-        //Conf::msg_debugt(json_encode($qe->debug_json()));
-        if (!$qe)
-            $qe = new True_SearchTerm;
+            // apply review rounds (top down, needs separate step)
+            if ($this->_has_review_adjustment)
+                $this->_qe = $this->_qe->adjust_reviews(null, $this);
 
-        // apply review rounds (top down, needs separate step)
-        if ($this->_has_review_adjustment)
-            $qe = $qe->adjust_reviews(null, $this);
-
-        // extract regular expressions and set _reviewer if the query is
-        // about exactly one reviewer, and warn about contradictions
-        $qe->extract_metadata(true, $this);
-        foreach ($this->contradictions as $contradiction => $garbage)
-            $this->warn($contradiction);
-
-        return ($this->_qe = $qe);
+            // extract regular expressions and set _reviewer if the query is
+            // about exactly one reviewer, and warn about contradictions
+            $this->_qe->extract_metadata(true, $this);
+            foreach ($this->contradictions as $contradiction => $garbage)
+                $this->warn($contradiction);
+        }
+        return $this->_qe;
     }
 
     private function _prepare_result($qe) {
-        if ($this->q === "re:me")
-            $qe = new Limit_SearchTerm($this->conf, "r");
-
         $sqi = new SearchQueryInfo($this);
         $sqi->add_table("Paper");
         $sqi->add_column("paperId", "Paper.paperId");
