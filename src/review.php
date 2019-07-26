@@ -938,7 +938,7 @@ $blind\n";
 
         if ($rrow && $user->allow_administer($prow)) {
             $buttons[] = "";
-            if ($submitted) {
+            if ($submitted || $rrow->timeApprovalRequested != 0) {
                 $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
             }
             $buttons[] = array(Ht::button("Delete review", ["class" => "ui js-delete-review"]), "(admin only)");

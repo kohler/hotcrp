@@ -73,7 +73,7 @@ if (isset($Qreq->uploadForm)
 // check review submit requirements
 if (isset($Qreq->unsubmitreview)
     && $paperTable->editrrow
-    && $paperTable->editrrow->reviewSubmitted
+    && ($paperTable->editrrow->reviewSubmitted || $paperTable->editrrow->timeApprovalRequested != 0)
     && $Me->can_administer($prow)
     && $Qreq->post_ok()) {
     $result = $Me->unsubmit_review_row($paperTable->editrrow);

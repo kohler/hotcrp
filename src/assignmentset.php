@@ -720,12 +720,13 @@ class Review_AssignmentParser extends AssignmentParser {
             return "any";
     }
     static function load_review_state(AssignmentState $state) {
-        $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview where paperId?a", $state->paper_ids());
+        $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted, timeApprovalRequested from PaperReview where paperId?a", $state->paper_ids());
         while (($row = edb_row($result))) {
             $round = $state->conf->round_name($row[3]);
             $state->load(["type" => "review", "pid" => +$row[0], "cid" => +$row[1],
                           "_rtype" => +$row[2], "_round" => $round,
-                          "_rsubmitted" => $row[4] > 0 ? 1 : 0]);
+                          "_rsubmitted" => $row[4] > 0 ? 1 : 0,
+                          "_rnondraft" => $row[4] > 0 || $row[5] != 0 ? 1 : 0]);
         }
         Dbl::free($result);
     }
@@ -811,6 +812,7 @@ class Review_AssignmentParser extends AssignmentParser {
             $rev["_rtype"] = 0;
             $rev["_round"] = $rdata->newround;
             $rev["_rsubmitted"] = 0;
+            $rev["_rnondraft"] = 0;
         }
         if (!$rev["_rtype"] || $rdata->newtype > 0)
             $rev["_rtype"] = $rdata->newtype;
@@ -837,7 +839,7 @@ class Review_Assigner extends Assigner {
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
         $this->rtype = $item->get(false, "_rtype");
-        $this->unsubmit = $item->get(true, "_rsubmitted") && !$item->get(false, "_rsubmitted");
+        $this->unsubmit = $item->get(true, "_rnondraft") && !$item->get(false, "_rnondraft");
         if (!$item->existed()
             && $this->rtype == REVIEW_EXTERNAL
             && !$this->contact->is_anonymous_user()
@@ -965,10 +967,10 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         return "reviewers";
     }
     function paper_filter($contact, $req, AssignmentState $state) {
-        return $state->make_filter("pid", ["type" => "review", "cid" => $contact->contactId, "_rsubmitted" => 1]);
+        return $state->make_filter("pid", ["type" => "review", "cid" => $contact->contactId, "_rnondraft" => 1]);
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
-        $cf = $state->make_filter("cid", ["type" => "review", "pid" => $prow->paperId, "_rsubmitted" => 1]);
+        $cf = $state->make_filter("cid", ["type" => "review", "pid" => $prow->paperId, "_rnondraft" => 1]);
         return $state->users_by_id(array_keys($cf));
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
@@ -994,10 +996,10 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         // remove existing review
         $revmatch = ["type" => "review", "pid" => $prow->paperId,
                      "cid" => $contact->contactId,
-                     "_rtype" => $oldtype, "_round" => $oldround, "_rsubmitted" => 1];
+                     "_rtype" => $oldtype, "_round" => $oldround, "_rnondraft" => 1];
         $matches = $state->remove($revmatch);
         foreach ($matches as $r) {
-            $r["_rsubmitted"] = 0;
+            $r["_rsubmitted"] = $r["_rnondraft"] = 0;
             $state->add($r);
         }
         return true;
