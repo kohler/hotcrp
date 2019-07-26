@@ -62,18 +62,18 @@ function reviewTable(PaperInfo $prow, $rrows, $rrow, $mode) {
         $id = "Review";
         if ($rr->reviewOrdinal)
             $id .= " #" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
-        else if ($rr->reviewSubmitted)
-            /* OK */;
-        else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
-            $id .= " (delegated)";
-        else if ($rr->reviewModified > 1 && $rr->timeApprovalRequested > 0)
-            $id .= " (pending approval)";
-        else if ($rr->reviewModified > 1)
-            $id .= " (in progress)";
-        else if ($rr->reviewModified > 0)
-            $id .= " (accepted)";
-        else
-            $id .= " (not started)";
+        if (!$rr->reviewSubmitted) {
+            if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
+                $id .= " (delegated)";
+            else if ($rr->reviewModified > 1 && $rr->timeApprovalRequested > 0)
+                $id .= " (pending approval)";
+            else if ($rr->reviewModified > 1)
+                $id .= " (in progress)";
+            else if ($rr->reviewModified > 0)
+                $id .= " (accepted)";
+            else
+                $id .= " (not started)";
+        }
         $rlink = unparseReviewOrdinal($rr);
         $t .= '<td class="rl nw">';
         if ($rrow && $rrow->reviewId == $rr->reviewId) {
