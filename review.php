@@ -76,9 +76,7 @@ if (isset($Qreq->unsubmitreview)
     && $paperTable->editrrow->reviewSubmitted
     && $Me->can_administer($prow)
     && $Qreq->post_ok()) {
-    Dbl::qe_raw("lock tables PaperReview write");
     $result = $Me->unsubmit_review_row($paperTable->editrrow);
-    Dbl::qe_raw("unlock tables");
     if ($result) {
         $Me->log_activity_for($paperTable->editrrow->contactId, "Unsubmitted review {$paperTable->editrrow->reviewId}", $prow);
         $Conf->confirmMsg("Unsubmitted review.");

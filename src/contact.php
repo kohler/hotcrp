@@ -4054,6 +4054,8 @@ class Contact {
                 $needsSubmit = -1;
         }
         $result = $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=? where paperId=? and reviewId=?", $needsSubmit, $rrow->paperId, $rrow->reviewId);
+        if ($result && $result->affected_rows && $rrow->reviewType < REVIEW_SECONDARY)
+            $this->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
         if (!$extra || !get($extra, "no_autosearch"))
             $this->conf->update_autosearch_tags($rrow->paperId);
         return $result;
