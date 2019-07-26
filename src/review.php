@@ -1274,14 +1274,10 @@ class ReviewValues extends MessageSet {
 
     static function make_text(ReviewForm $rf, $text, $filename = null) {
         $rv = new ReviewValues($rf);
-        $rv->set_text($text, $filename);
+        $rv->text = $text;
+        $rv->lineno = 0;
+        $rv->filename = $filename;
         return $rv;
-    }
-
-    function set_text($text, $filename = null) {
-        $this->text = $text;
-        $this->lineno = 0;
-        $this->filename = $filename;
     }
 
     function rmsg($field, $msg, $status) {
