@@ -1751,11 +1751,12 @@ class ReviewValues extends MessageSet {
         assert($this->paperId == $prow->paperId);
         assert(!$rrow || $rrow->paperId == $prow->paperId);
 
-        $newsubmit = $approval_requested = false;
+        $newsubmit = false;
+        $approval_requested = 0;
         if (get($this->req, "ready")
             && (!$rrow || !$rrow->reviewSubmitted)) {
             if (!$user->isPC && $rrow && $rrow->needs_approval())
-                $approval_requested = true;
+                $approval_requested = $rrow->timeApprovalRequested ? 1 : 2;
             else
                 $newsubmit = true;
         }
@@ -2041,7 +2042,7 @@ class ReviewValues extends MessageSet {
             $this->_mailer_diff_view_score = $diffinfo->view_score;
             $prow->notify_reviews([$this, "review_watch_callback"], $user);
         } else if (!$new_rrow->reviewSubmitted
-                   && $diffinfo->fields()
+                   && ($diffinfo->fields() || $approval_requested > 1)
                    && $new_rrow->timeApprovalRequested
                    && $new_rrow->requestedBy
                    && !$this->no_notify) {
