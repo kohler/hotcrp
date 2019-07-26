@@ -2564,7 +2564,7 @@ class PaperTable {
             $q = "q=" . urlencode(isset($qreq->paperId) ? $qreq->paperId : $qreq->q);
             if ($qreq->t)
                 $q .= "&t=" . urlencode($qreq->t);
-            if (in_array(Navigation::page(), ["review", "assign"]))
+            if (Navigation::page() === "assign")
                 $q .= "&linkto=" . Navigation::page();
             go($user->conf->hoturl("search", $q));
         }

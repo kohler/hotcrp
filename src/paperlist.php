@@ -204,9 +204,9 @@ class PaperList {
             || $this->user->is_manager() /* “Override conflicts” fold */;
 
         $this->_paper_link_page = "";
-        if ($qreq->linkto === "paper" || $qreq->linkto === "review" || $qreq->linkto === "assign")
+        if ($qreq->linkto === "paper" || $qreq->linkto === "assign") {
             $this->_paper_link_page = $qreq->linkto;
-        else if ($qreq->linkto === "paperedit") {
+        } else if ($qreq->linkto === "paperedit") {
             $this->_paper_link_page = "paper";
             $this->_paper_link_mode = "edit";
         }
@@ -521,22 +521,13 @@ class PaperList {
 
     function _paperLink(PaperInfo $row) {
         $pt = $this->_paper_link_page ? : "paper";
-        $rrow = null;
-        if ($pt === "review" || $pt === "finishreview") {
-            $rrow = $row->review_of_user($this->user);
-            if (!$rrow || ($pt === "finishreview" && !$rrow->reviewNeedsSubmit))
-                $pt = "paper";
-            else
-                $pt = "review";
+        if ($pt === "finishreview") {
+            $ci = $row->contact_info($this->user);
+            $pt = $ci->review_status <= 0 ? "review" : "paper";
         }
         $pl = "p=" . $row->paperId;
         if ($pt === "paper" && $this->_paper_link_mode)
             $pl .= "&amp;m=" . $this->_paper_link_mode;
-        else if ($pt === "review") {
-            $pl .= "&amp;r=" . unparseReviewOrdinal($rrow);
-            if ($rrow->reviewSubmitted > 0)
-                $pl .= "&amp;m=r";
-        }
         return $row->conf->hoturl($pt, $pl);
     }
 
@@ -746,6 +737,7 @@ class PaperList {
         case "ar":
         case "r":
         case "rable":
+        case "rout":
             $this->_default_linkto("finishreview");
             /* fallthrough */
         case "acc":
@@ -754,13 +746,9 @@ class PaperList {
         case "admin":
         case "s":
         case "vis":
-            return "sel id title revtype revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
         case "req":
-        case "rout":
-            $this->_default_linkto("review");
             return "sel id title revtype revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reqrevs":
-            $this->_default_linkto("review");
             return "id title revdelegation revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
