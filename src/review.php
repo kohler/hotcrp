@@ -1833,7 +1833,7 @@ class ReviewValues extends MessageSet {
 
         // get the current time
         $now = time();
-        if ($rrow && $rrow->reviewModified > 1 && $rrow->reviewModified > $now)
+        if ($rrow && $rrow->reviewModified >= $now)
             $now = $rrow->reviewModified + 1;
 
         if ($newsubmit) {
