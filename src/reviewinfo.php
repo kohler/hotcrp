@@ -349,8 +349,7 @@ class ReviewInfo {
         return !$this->reviewSubmitted
             && $this->reviewType == REVIEW_EXTERNAL
             && $this->requestedBy
-            && $this->conf->setting("extrev_approve")
-            && $this->conf->setting("pcrev_editdelegate");
+            && $this->conf->setting("pcrev_editdelegate") > 1;
     }
 
     private function _load_data() {

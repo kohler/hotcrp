@@ -789,8 +789,7 @@ assert_search_papers($user_chair, "ovemer:3..1", "1 17 18");
 // new external reviewer does not get combined email
 $Conf->save_setting("round_settings", null);
 $Conf->save_setting("extrev_view", 1);
-$Conf->save_setting("extrev_approve", 1);
-$Conf->save_setting("pcrev_editdelegate", 1);
+$Conf->save_setting("pcrev_editdelegate", 2);
 Contact::update_rights();
 MailChecker::clear();
 

@@ -36,7 +36,8 @@ function update_schema_create_review_form($conf) {
             $rfj->$fname->options[$row->level - 1] = $row->description;
     }
 
-    return $conf->save_setting("review_form", 1, $rfj);
+    $conf->save_setting("review_form", 1, $rfj);
+    return true;
 }
 
 function update_schema_create_options($conf) {
@@ -124,7 +125,8 @@ function update_schema_create_options($conf) {
         $opsj->$oid = $opj;
     }
 
-    return $conf->save_setting("options", 1, $opsj);
+    $conf->save_setting("options", 1, $opsj);
+    return true;
 }
 
 function update_schema_transfer_address($conf) {
@@ -1540,6 +1542,14 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 216
         && $conf->ql("alter table PaperReviewRefused add `reviewType` tinyint(1) NOT NULL DEFAULT '0'"))
         $conf->update_schema_version(217);
+    if ($conf->sversion == 217) {
+        if ($conf->setting("extrev_approve")
+            && $conf->setting("pcrev_editdelegate")) {
+            $conf->ql("delete from Settings where name='extrev_approve'");
+            $conf->save_setting("pcrev_editdelegate", 2);
+        }
+        $conf->update_schema_version(218);
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

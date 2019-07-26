@@ -1688,8 +1688,7 @@ class Contact {
         $this->check_rights_version();
         if ($this->_has_approvable === null) {
             $this->_has_approvable = 0;
-            if ($this->conf->setting("extrev_approve")
-                && $this->conf->setting("pcrev_editdelegate")) {
+            if ($this->conf->setting("pcrev_editdelegate") > 1) {
                 if ($this->is_manager()) {
                     $search = new PaperSearch($this, "ext:pending-approval OR (has:proposal admin:me) HIGHLIGHT:pink ext:pending-approval:myreq HIGHLIGHT:green ext:pending-approval HIGHLIGHT:yellow (has:proposal admin:me)");
                     $search->paper_ids(); // actually perform search

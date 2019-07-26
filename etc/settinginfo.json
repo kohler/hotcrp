@@ -41,11 +41,6 @@
         "parser_class": "Decisions_SettingParser"
     },
     {
-        "name": "extrev_approve", "group": "reviews",
-        "title": "External reviews must be approved by their requesters",
-        "type": "checkbox"
-    },
-    {
         "name": "extrev_chairreq", "group": "reviews",
         "json_name": "review_external_request",
         "title": "PC chair must approve proposed external reviewers",
@@ -242,8 +237,9 @@
     },
     {
         "name": "pcrev_editdelegate",
-        "title": "PC members can edit external reviews they requested",
-        "type": "checkbox"
+        "title": "PC can edit external reviews they requested",
+        "type": "radio", "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["no", "yes", "approval-required"]
     },
     {
         "name": "pcrev_hard",
