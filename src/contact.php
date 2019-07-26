@@ -1692,15 +1692,12 @@ class Contact {
                 && $this->conf->setting("pcrev_editdelegate")) {
                 if ($this->is_manager()) {
                     $search = new PaperSearch($this, "ext:pending-approval OR (has:proposal admin:me) HIGHLIGHT:pink ext:pending-approval:myreq HIGHLIGHT:green ext:pending-approval HIGHLIGHT:yellow (has:proposal admin:me)");
-                    foreach ($search->paper_ids() as $pid) {
-                        $hl = get($search->highlightmap, $pid, []);
-                        if (in_array("green", $hl)) {
-                            $this->_has_approvable |= 1;
-                            if (in_array("pink", $hl))
-                                $this->_has_approvable |= 2;
-                        }
-                        if (in_array("yellow", $hl))
-                            $this->_has_approvable |= 4;
+                    $search->paper_ids(); // actually perform search
+                    if (!empty($search->highlightmap)) {
+                        $colors = array_unique(call_user_func_array("array_merge", array_values($search->highlightmap)));
+                        foreach (["green", "pink", "yellow"] as $i => $k)
+                            if (in_array($k, $colors))
+                                $this->_has_approvable |= 1 << $i;
                     }
                 } else if ($this->is_requester()
                            && $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$this->contactId})")) {
