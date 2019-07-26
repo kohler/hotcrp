@@ -2628,7 +2628,7 @@ class PaperTable {
                 $myrrow = $rrow;
             if (($rrow->requestedBy == $this->user->contactId || $this->admin)
                 && !$rrow->reviewSubmitted
-                && $rrow->timeApprovalRequested
+                && $rrow->timeApprovalRequested > 0
                 && !$approvable_rrow)
                 $approvable_rrow = $rrow;
         }

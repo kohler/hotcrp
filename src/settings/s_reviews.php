@@ -202,11 +202,13 @@ class Reviews_SettingRenderer {
                 0 => "Yes"],
                 "Can PC reviewers request external reviews?",
                 ["fold" => true]);
-        echo '<div class="fx"><p class="settingtext">Secondary PC reviews can be delegated to external reviewers. When the external review is complete, the secondary PC reviewer need not complete a review of their own.</p>', "\n";
+        echo '<div class="fx">';
+        // echo '<p class="settingtext">Secondary PC reviews can be delegated to external reviewers. When the external review is complete, the secondary PC reviewer need not complete a review of their own.</p>', "\n";
         $sv->echo_radio_table("pcrev_editdelegate", [
                 0 => "No",
                 1 => "Yes",
-                2 => "Yes, and PC members must approve external reviews once they are submitted"
+                2 => "Yes, and external reviews are hidden until requesters approve them",
+                3 => "Yes, and external reviews are visible only to their requesters"
             ], "Can PC members edit the external reviews they requested?");
         echo "</div></div>\n";
 

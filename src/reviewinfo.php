@@ -281,14 +281,17 @@ class ReviewInfo {
 
     static function submission_class($rr) {
         if ($rr->reviewSubmitted > 0)
-            return 5;
+            return 6;
         else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
-            return 4;
-        else if ($rr->reviewModified > 1 && $rr->timeApprovalRequested > 0)
-            return 3;
-        else if ($rr->reviewModified > 1)
-            return 2;
-        else if ($rr->reviewModified > 0)
+            return 5;
+        else if ($rr->reviewModified > 1) {
+            if ($rr->timeApprovalRequested < 0)
+                return 4;
+            else if ($rr->timeApprovalRequested > 0)
+                return 3;
+            else
+                return 2;
+        } else if ($rr->reviewModified > 0)
             return 1;
         else
             return 0;

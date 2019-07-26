@@ -118,14 +118,20 @@ if (isset($Qreq->adoptreview) && $Qreq->post_ok()) {
     $my_rrow = $prow->review_of_user($Me);
     if (($whyNot = $Me->perm_submit_review($prow, $my_rrow)))
         $tf->msg(null, whyNotText($whyNot), MessageSet::ERROR);
-    else if ($tf->parse_web($Qreq, $Qreq->override)
-             && $tf->unset_ready()
-             && $tf->check_and_save($Me, $prow, $my_rrow)
-             && !$tf->has_problem_at("ready"))
-        $tf->report();
-    if (($my_rrow = $prow->fresh_review_of_user($Me))) {
-        $Qreq->r = $my_rrow->reviewId;
+    else if ($tf->parse_web($Qreq, $Qreq->override)) {
+        $tf->unset_ready();
+        if ($tf->check_and_save($Me, $prow, $my_rrow)
+            && !$tf->has_problem_at("ready")) {
+            $tf->report();
+
+            // mark the review as approved
+            $tfx = new ReviewValues($rf);
+            $tfx->set_adopt();
+            $tfx->check_and_save($Me, $prow, $paperTable->editrrow);
+        }
     }
+    if (($my_rrow = $prow->fresh_review_of_user($Me)))
+        $Qreq->r = $my_rrow->reviewId;
     $Conf->self_redirect($Qreq); // normally does not return
 }
 

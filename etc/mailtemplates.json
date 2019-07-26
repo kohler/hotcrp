@@ -322,6 +322,22 @@
 	},
 
 	{
+		"name": "reviewapprove",
+		"subject": "[%CONFSHORTNAME%] Review approved for submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Greetings,\n\n",
+			"%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been approved.\n\n",
+			" Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%REVIEWS%\n"
+		]
+	},
+
+	{
 		"name": "reviewpreapprovaledit",
 		"subject": "[%CONFSHORTNAME%] Review edited for submission #%NUMBER% %TITLEHINT%",
 		"body": [

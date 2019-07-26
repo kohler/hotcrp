@@ -105,8 +105,11 @@ class PaperListReviewAnalysis {
                  && $this->rrow->reviewNeedsSubmit <= 0)
             return "delegated";
         else if ($this->rrow->reviewType == REVIEW_EXTERNAL
-                 && $this->rrow->timeApprovalRequested)
+                 && $this->rrow->timeApprovalRequested > 0)
             return "pending approval";
+        else if ($this->rrow->reviewType == REVIEW_EXTERNAL
+                 && $this->rrow->timeApprovalRequested < 0)
+            return "approved";
         else if ($this->rrow->reviewModified > 1)
             return "in progress";
         else if ($this->rrow->reviewModified > 0)

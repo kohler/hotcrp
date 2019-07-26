@@ -238,8 +238,8 @@
     {
         "name": "pcrev_editdelegate",
         "title": "PC can edit external reviews they requested",
-        "type": "radio", "values": [0, 1, 2], "default_value": 0,
-        "json_values": ["no", "yes", "approval-required"]
+        "type": "radio", "values": [0, 1, 2, 3], "default_value": 0,
+        "json_values": ["no", "yes", "approval-required", "approval-private"]
     },
     {
         "name": "pcrev_hard",

@@ -51,6 +51,7 @@ function reviewTable(PaperInfo $prow, $rrows, $rrow, $mode) {
         }
         // assign page lists actionable reviews separately
         if ($rr->reviewModified <= 1
+            && $rr->reviewType < REVIEW_PC
             && $mode === "assign"
             && ($admin || $rr->requestedBy == $Me->contactId))
             continue;
@@ -63,16 +64,22 @@ function reviewTable(PaperInfo $prow, $rrows, $rrow, $mode) {
         if ($rr->reviewOrdinal)
             $id .= " #" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
         if (!$rr->reviewSubmitted) {
-            if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
+            if ($rr->reviewType == REVIEW_SECONDARY
+                && $rr->reviewNeedsSubmit <= 0
+                && $conf->setting("pcrev_editdelegate") < 3) {
                 $id .= " (delegated)";
-            else if ($rr->reviewModified > 1 && $rr->timeApprovalRequested > 0)
-                $id .= " (pending approval)";
-            else if ($rr->reviewModified > 1)
-                $id .= " (in progress)";
-            else if ($rr->reviewModified > 0)
+            } else if ($rr->reviewModified > 1) {
+                if ($rr->timeApprovalRequested < 0)
+                    $id .= " (approved)";
+                else if ($rr->timeApprovalRequested > 0)
+                    $id .= " (pending approval)";
+                else
+                    $id .= " (in progress)";
+            } else if ($rr->reviewModified > 0) {
                 $id .= " (accepted)";
-            else
+            } else {
                 $id .= " (not started)";
+            }
         }
         $rlink = unparseReviewOrdinal($rr);
         $t .= '<td class="rl nw">';

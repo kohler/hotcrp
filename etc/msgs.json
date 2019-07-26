@@ -72,6 +72,8 @@
     ["Reviews %2$s submitted.", "Review submitted.", ["$3"]],
     ["Reviews %2$s updated.", "Review %2$s updated.", ["$1=1"]],
     ["Reviews %2$s updated.", "Review updated.", ["$3"]],
+    ["Reviews %2$s approved.", "Review %2$s approved.", ["$1=1"]],
+    ["Reviews %2$s approved.", "Review approved.", ["$3"]],
     ["Reviews %2$s submitted for approval.", "Review %2$s submitted for approval.", ["$1=1"]],
     ["Reviews %2$s submitted for approval.", "Review submitted for approval.", ["$3"]],
     ["Draft reviews for papers %2$s saved.", "Draft review for paper %2$s saved.", ["$1=1"]],
