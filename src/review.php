@@ -2078,7 +2078,10 @@ class ReviewValues extends MessageSet {
         unset($this->_mailer_info, $this->_mailer_preps);
 
         // record what happened
-        $what = "#$prow->paperId" . ($new_rrow->reviewOrdinal ? unparseReviewOrdinal($new_rrow->reviewOrdinal) : "");
+        $what = "#$prow->paperId";
+        if ($new_rrow->reviewOrdinal) {
+            $what .= unparseReviewOrdinal($new_rrow->reviewOrdinal);
+        }
         if ($newsubmit) {
             $this->submitted[] = $what;
         } else if ($new_rrow->timeApprovalRequested > 0
