@@ -216,12 +216,14 @@ class Reviews_SettingRenderer {
         echo '<div id="foldmailbody_requestreview" class="settings-g ',
             ($t == $sv->expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
             '">';
-        echo '<div class="f-i"><div class="f-c n">',
-            '<a class="ui q js-foldup" href="">', expander(null, 0),
+        echo '<div class="', $sv->control_class("mailbody_requestreview", "f-i"), '">',
+            '<div class="f-c n">',
+            '<a class="ui qq js-foldup" href="">', expander(null, 0),
             'Mail template for external review requests</a>',
             '<span class="fx"> (<a href="', hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
-            '<textarea class="text-monospace fx need-autogrow" name="mailbody_requestreview" cols="80" rows="20">', htmlspecialchars($t["body"]), "</textarea>",
-            "</div></div>\n";
+            '<textarea class="text-monospace fx need-autogrow" name="mailbody_requestreview" cols="80" rows="20">', htmlspecialchars($t["body"]), "</textarea>";
+        $sv->echo_messages_at("mailbody_requestreview");
+        echo "</div></div>\n";
     }
 
     static function render_ratings(SettingValues $sv) {
@@ -257,6 +259,12 @@ class Reviews_SettingRenderer {
             && $sv->newv("rev_blind") == Conf::BLIND_NEVER
             && $sv->newv("extrev_view") == 1)
             $sv->warning_at("extrev_view", "Reviews aren’t blind, so external reviewers can see reviewer names and comments despite your settings.");
+
+        if ($sv->has_interest("mailbody_requestreview")
+            && $sv->newv("mailbody_requestreview")
+            && (strpos($sv->newv("mailbody_requestreview"), "%LOGINURL%") !== false
+                || strpos($sv->newv("mailbody_requestreview"), "%LOGINURLPARTS%") !== false))
+            $sv->warning_at("mailbody_requestreview", "The <code>%LOGINURL%</code> and <code>%LOGINURLPARTS%</code> keywords should no longer be used in email templates.");
     }
 }
 

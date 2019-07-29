@@ -1550,6 +1550,16 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         }
         $conf->update_schema_version(218);
     }
+    if ($conf->sversion == 218) {
+        if (($mb = $conf->setting_data("mailbody_requestreview"))) {
+            $mb1 = str_replace("/review/%NUMBER%?accept=1&%LOGINURLPARTS%", "/review/%NUMBER%?cap=%REVIEWACCEPTOR%&accept=1", $mb);
+            $mb1 = str_replace("/review/%NUMBER%?decline=1&%LOGINURLPARTS%", "/review/%NUMBER%?cap=%REVIEWACCEPTOR%&decline=1", $mb1);
+            if ($mb1 !== $mb) {
+                $conf->save_setting("mailbody_requestreview", 1, $mb1);
+            }
+        }
+        $conf->update_schema_version(219);
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

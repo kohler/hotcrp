@@ -102,7 +102,7 @@
         "type": "checkbox", "storage": "negval.lead_noseerev"
     },
     {
-        "name": "mailbody_requestreview",
+        "name": "mailbody_requestreview", "group": "reviews",
         "title": "Mail template for external review requests",
         "type": "string"
     },
