@@ -42,9 +42,11 @@ function set_session_name(Conf $conf) {
         && ($upgrade_sn = make_session_name($conf, $upgrade_sn))
         && isset($_COOKIE[$upgrade_sn])) {
         $_COOKIE[$sn] = $_COOKIE[$upgrade_sn];
-        setcookie($upgrade_sn, "", time() - 3600, "/",
-                  $conf->opt("sessionUpgradeDomain", $domain ? : ""),
-                  $secure ? : false);
+        hotcrp_setcookie($upgrade_sn, "", [
+            "expires" => time() - 3600, "path" => "/",
+            "domain" => $conf->opt("sessionUpgradeDomain", $domain ? : ""),
+            "secure" => !!$secure
+        ]);
     }
 
     session_name($sn);
@@ -156,7 +158,8 @@ function kill_session() {
             session_commit();
         }
         $params = session_get_cookie_params();
-        setcookie($sn, "", $Now - 86400, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
+        $params["expires"] = $Now - 86400;
+        hotcrp_setcookie($sn, "", $params);
         $_COOKIE[$sn] = "";
     }
 }

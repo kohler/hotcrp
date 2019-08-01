@@ -408,3 +408,18 @@ if (function_exists("pcntl_wifexited") && pcntl_wifexited(0) !== null) {
         return ($status & 0xff7f) == ($exitstatus << 8);
     }
 }
+
+
+// setcookie helper
+
+if (PHP_MAJOR_VERSION >= 8 || PHP_MINOR_VERSION >= 3) {
+    function hotcrp_setcookie($name, $value = "", $options = []) {
+        return setcookie($name, $value, $options);
+    }
+} else {
+    function hotcrp_setcookie($name, $value = "", $options = []) {
+        return setcookie($name, $value, get($options, "expires", 0),
+                         get($options, "path", ""), get($options, "domain", ""),
+                         get($options, "secure", false), get($options, "httponly", false));
+    }
+}

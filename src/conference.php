@@ -3154,8 +3154,11 @@ class Conf {
     }
 
     function set_cookie($name, $value, $expires_at) {
-        setcookie($name, $value, $expires_at, Navigation::site_path(),
-                  $this->opt("sessionDomain", ""), $this->opt("sessionSecure", false));
+        hotcrp_setcookie($name, $value, [
+            "expires" => $expires_at, "path" => Navigation::site_path(),
+            "domain" => $this->opt("sessionDomain", ""),
+            "secure" => $this->opt("sessionSecure", false)
+        ]);
     }
 
     function header_head($title, $extra = null) {
