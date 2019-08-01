@@ -733,16 +733,16 @@ class MimeText {
 
             // try three types of match in turn:
             // 1. name <email> [RFC 822]
-            $match = preg_match("/\\A[,\\s]*((?:(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\\s\\000-\\037()[\\]<>@,;:\\\\\".]+)\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m);
+            $match = preg_match("/\\A[,;\\s]*((?:(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\\s\\000-\\037()[\\]<>@,;:\\\\\".]+)\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m);
             // 2. name including periods but no quotes <email> (canonicalize)
             if (!$match) {
-                $match = preg_match("/\\A[,\\s]*((?:[^\\s\\000-\\037()[\\]<>@,;:\\\\\"]+\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m);
+                $match = preg_match("/\\A[,;\\s]*((?:[^\\s\\000-\\037()[\\]<>@,;:\\\\\"]+\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m);
                 if ($match)
                     $m[1] = "\"$m[1]\"";
             }
             // 3. bare email
             if (!$match)
-                $match = preg_match("/\\A[,\\s]*()<?\\s*([^\\s\\000-\\037()[\\]<>,;:\\\\\"]+)\\s*>?\\s*(.*)\\z/s", $str, $m);
+                $match = preg_match("/\\A[,;\\s]*()<?\\s*([^\\s\\000-\\037()[\\]<>,;:\\\\\"]+)\\s*>?\\s*(.*)\\z/s", $str, $m);
             // otherwise, fail
             if (!$match)
                 break;
@@ -750,9 +750,9 @@ class MimeText {
             list($name, $email, $str) = array($m[1], $m[2], $m[3]);
             if (strpos($email, "@") !== false && !validate_email($email))
                 return false;
-            if ($str != "" && $str[0] != ",")
+            if ($str !== "" && $str[0] !== "," && $str[0] !== ";")
                 return false;
-            if ($email == "none" || $email == "hidden")
+            if ($email === "none" || $email === "hidden")
                 continue;
 
             if ($text !== $header) {
@@ -761,29 +761,32 @@ class MimeText {
             }
 
             // unquote any existing UTF-8 encoding
-            if ($name != "" && $name[0] == "="
+            if ($name !== ""
+                && $name[0] === "="
                 && strcasecmp(substr($name, 0, 10), "=?utf-8?q?") == 0)
                 $name = self::decode_header($name);
 
             $utf8 = preg_match('/[\x80-\xFF]/', $name) ? 2 : 0;
-            if ($name != "" && $name[0] == "\""
+            if ($name !== ""
+                && $name[0] === "\""
                 && preg_match("/\\A\"([^\\\\\"]|\\\\.)*\"\\z/s", $name)) {
                 if ($utf8)
                     self::append($text, $linelen, substr($name, 1, -1), $utf8);
                 else
                     self::append($text, $linelen, $name, false);
-            } else if ($utf8)
+            } else if ($utf8) {
                 self::append($text, $linelen, $name, $utf8);
-            else
+            } else {
                 self::append($text, $linelen, rfc2822_words_quote($name), false);
+            }
 
-            if ($name == "")
+            if ($name === "")
                 self::append($text, $linelen, $email, false);
             else
                 self::append($text, $linelen, " <$email>", false);
         }
 
-        if (!preg_match('/\A[\s,]*\z/', $str))
+        if (!preg_match('/\A[\s,;]*\z/', $str))
             return false;
         return $text;
     }
