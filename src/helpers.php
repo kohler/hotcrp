@@ -146,17 +146,25 @@ class JsonResultException extends Exception {
 function json_exit($json, $arg2 = null) {
     global $Me, $Qreq;
     $json = JsonResult::make($json, $Me ? : null, $arg2);
-    if (JsonResultException::$capturing)
+    if (JsonResultException::$capturing) {
         throw new JsonResultException($json);
-    else {
-        if ($json->status)
-            http_response_code($json->status);
-        if (isset($_GET["text"]) && $_GET["text"])
-            header("Content-Type: text/plain; charset=utf-8");
-        else
-            header("Content-Type: application/json; charset=utf-8");
-        if ($Qreq && $Qreq->post_ok())
+    } else {
+        if ($Qreq && $Qreq->post_ok()) {
+            if ($json->status) {
+                http_response_code($json->status);
+            }
             header("Access-Control-Allow-Origin: *");
+        } else if ($json->status) {
+            // Don’t set status on unvalidated requests, since that can leak
+            // information (e.g. via <link prefetch onerror>).
+            if (!isset($json->content["ok"])) {
+                $json->content["ok"] = $json->status <= 299;
+            }
+            if (!isset($json->content["status"])) {
+                $json->content["status"] = $json->status;
+            }
+        }
+        header("Content-Type: application/json; charset=utf-8");
         echo json_encode_browser($json->content);
         exit;
     }
