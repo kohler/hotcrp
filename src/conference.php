@@ -3832,14 +3832,16 @@ class Conf {
             } catch (JsonResultException $ex) {
                 $j = $ex->result;
             }
-            if (is_object($j) && $j instanceof JsonResult)
+            if (is_object($j) && $j instanceof JsonResult) {
                 $j = $j->content;
-            if (!get($j, "ok") && !get($j, "error"))
+            }
+            if (!get($j, "ok") && !get($j, "error")) {
                 Conf::msg_error("Internal error.");
-            else if (($x = get($j, "error")))
+            } else if (($x = get($j, "error"))) {
                 Conf::msg_error(htmlspecialchars($x));
-            else if (($x = get($j, "error_html")))
+            } else if (($x = get($j, "error_html"))) {
                 Conf::msg_error($x);
+            }
             Navigation::redirect_site($qreq->redirect);
         } else {
             $j = $this->call_api($fn, $uf, $user, $qreq, $prow);

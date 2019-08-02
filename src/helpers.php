@@ -68,33 +68,38 @@ class JsonResult {
     function __construct($values = null) {
         if (is_int($values)) {
             $this->status = $values;
-            if (func_num_args() === 2)
+            if (func_num_args() === 2) {
                 $values = func_get_arg(1);
-            else
+            } else {
                 $values = null;
+            }
         }
-        if ($values === true || $values === false)
+        if ($values === true || $values === false) {
             $this->content = ["ok" => $values];
-        else if ($values === null)
+        } else if ($values === null) {
             $this->content = [];
-        else if (is_object($values)) {
+        } else if (is_object($values)) {
             assert(!($values instanceof JsonResult));
             $this->content = (array) $values;
         } else if (is_string($values)) {
-            if ($this->status && $this->status > 299)
+            if ($this->status && $this->status > 299) {
                 $this->content = ["ok" => false, "error" => $values];
-            else
+            } else {
                 $this->content = ["ok" => true, "response" => $values];
-        } else
+            }
+        } else {
             $this->content = $values;
+        }
     }
     static function make($json, Contact $user = null, $arg2 = null) {
-        if (is_int($json))
+        if (is_int($json)) {
             $json = new JsonResult($json, $arg2);
-        else if (!is_object($json) || !($json instanceof JsonResult))
+        } else if (!is_object($json) || !($json instanceof JsonResult)) {
             $json = new JsonResult($json);
-        if (!$json->has_messages && $user)
+        }
+        if (!$json->has_messages && $user) {
             $json->take_messages($user);
+        }
         return $json;
     }
     function take_messages(Contact $user, $div = false) {
@@ -104,21 +109,25 @@ class JsonResult {
             $t = "";
             foreach ($msgs as $msg) {
                 if (($msg[0] === "merror" || $msg[0] === "xmerror")
-                    && !isset($this->content["error"]))
+                    && !isset($this->content["error"])) {
                     $this->content["error"] = $msg[1];
-                if ($div)
+                }
+                if ($div) {
                     $t .= Ht::msg($msg[1], $msg[0]);
-                else
+                } else {
                     $t .= "<span class=\"$msg[0]\">$msg[1]</span>";
+                }
             }
-            if ($t !== "")
+            if ($t !== "") {
                 $this->content["response"] = $t . get_s($this->content, "response");
+            }
             $this->has_messages = true;
         }
     }
     function export_errors() {
-        if (isset($this->content["error"]))
+        if (isset($this->content["error"])) {
             Conf::msg_error($this->content["error"]);
+        }
         if (isset($this->content["errf"])) {
             foreach ($this->content["errf"] as $f => $x)
                 Ht::error_at($f);
