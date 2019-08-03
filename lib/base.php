@@ -412,7 +412,7 @@ if (function_exists("pcntl_wifexited") && pcntl_wifexited(0) !== null) {
 
 // setcookie helper
 
-if (PHP_MAJOR_VERSION >= 8 || PHP_MINOR_VERSION >= 3) {
+if (PHP_VERSION_ID >= 70300) {
     function hotcrp_setcookie($name, $value = "", $options = []) {
         return setcookie($name, $value, $options);
     }
