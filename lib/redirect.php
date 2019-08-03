@@ -67,9 +67,16 @@ function set_session_name(Conf $conf) {
         $params["domain"] = $domain;
     }
     $params["httponly"] = true;
-    session_set_cookie_params($params["lifetime"], $params["path"],
-                              $params["domain"], $params["secure"],
-                              $params["httponly"]);
+    if (($samesite = $conf->opt("sessionSameSite", "Lax"))) {
+        $params["samesite"] = $samesite;
+    }
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params($params);
+    } else {
+        session_set_cookie_params($params["lifetime"], $params["path"],
+                                  $params["domain"], $params["secure"],
+                                  $params["httponly"]);
+    }
 }
 
 define("ENSURE_SESSION_ALLOW_EMPTY", 1);
@@ -159,6 +166,7 @@ function kill_session() {
         }
         $params = session_get_cookie_params();
         $params["expires"] = $Now - 86400;
+        unset($params["lifetime"]);
         hotcrp_setcookie($sn, "", $params);
         $_COOKIE[$sn] = "";
     }
