@@ -454,26 +454,7 @@ if ($UserStatus->has_error()) {
     $Me->save_session("freshlogin", null);
 }
 
-// Set warnings
-if (!$newProfile) {
-    if (!$Acct->firstName && !$Acct->lastName) {
-        $UserStatus->warning_at("firstName", "Please enter your name.");
-        $UserStatus->warning_at("lastName", false);
-    }
-    if (!$Acct->affiliation) {
-        $UserStatus->warning_at("affiliation", "Please enter your affiliation (use “None” or “Unaffiliated” if you have none).");
-    }
-    if ($Acct->is_pc_member()) {
-        if (!$Acct->collaborators) {
-            $UserStatus->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
-        }
-        if ($Conf->has_topics() && !$Acct->topic_interest_map()) {
-            $UserStatus->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
-        }
-    }
-}
-
-
+// obtain user json
 $UserStatus->set_user($Acct);
 $userj = $UserStatus->user_json(["include_password" => true]);
 if (!$useRequest
@@ -483,6 +464,26 @@ if (!$useRequest
     $userj->roles = (object) [$Qreq->role => true];
 }
 
+// set warnings about user json
+if (!$newProfile) {
+    if (!isset($userj->firstName) && !isset($userj->lastName)) {
+        $UserStatus->warning_at("firstName", "Please enter your name.");
+        $UserStatus->warning_at("lastName", false);
+    }
+    if (!isset($userj->affiliation)) {
+        $UserStatus->warning_at("affiliation", "Please enter your affiliation (use “None” or “Unaffiliated” if you have none).");
+    }
+    if ($Acct->is_pc_member()) {
+        if (!isset($userj->collaborators)) {
+            $UserStatus->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
+        }
+        if ($Conf->has_topics() && !isset($userj->topics)) {
+            $UserStatus->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
+        }
+    }
+}
+
+// compute current form json
 if ($useRequest) {
     $UserStatus->ignore_msgs = true;
     $formcj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
