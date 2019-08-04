@@ -915,7 +915,7 @@ $blind\n";
             } else {
                 $buttons[] = Ht::submit("submitreview", "Approve review", ["class" => "btn-highlight need-clickthrough-enable", "disabled" => $disabled]);
             }
-            if (!$my_review && $rrow->timeApprovalRequested == 0) {
+            if ($rrow->timeApprovalRequested == 0) {
                 $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
             }
             if (!$my_review && $rrow->requestedBy == $user->contactId) {
