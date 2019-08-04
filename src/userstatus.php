@@ -139,13 +139,15 @@ class UserStatus extends MessageSet {
     function user_json($args = []) {
         if ($this->user) {
             $cj = (object) [];
-            if ($this->user->contactId > 0)
+            if ($this->user->contactId > 0) {
                 $cj->id = $this->user->contactId;
-            foreach ($this->gxt()->groups() as $gj)
+            }
+            foreach ($this->gxt()->groups() as $gj) {
                 if (isset($gj->unparse_json_callback)) {
                     Conf::xt_resolve_require($gj);
                     call_user_func($gj->unparse_json_callback, $this, $cj, $args);
                 }
+            }
             return $cj;
         } else {
             return null;
@@ -488,19 +490,23 @@ class UserStatus extends MessageSet {
 
         $user = $old_user ? : $old_cdb_user;
         $this->normalize($cj, $user);
-        if ($this->nerrors() > $nerrors)
+        if ($this->nerrors() > $nerrors) {
             return false;
-        $this->check_invariants($cj);
+        }
+        // At this point, we will save a user.
 
         // create user
-        if (($send = $this->send_email) === null)
+        $this->check_invariants($cj);
+        if (($send = $this->send_email) === null) {
             $send = !$old_cdb_user;
+        }
         $actor = $this->viewer->is_site_contact ? null : $this->viewer;
-        if (!$old_user)
+        if (!$old_user) {
             $user = Contact::create($this->conf, $actor, $cj, $send ? Contact::SAVE_NOTIFY : 0);
-        if (!$user)
+        }
+        if (!$user) {
             return false;
-
+        }
 
         // prepare contact update
         $old_roles = $user->roles;

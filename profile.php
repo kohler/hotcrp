@@ -139,12 +139,12 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
 
     // check email
     if ($newProfile || strcasecmp($cj->email, $Acct->email)) {
-        if ($Acct && $Acct->data("locked"))
+        if ($Acct && $Acct->data("locked")) {
             return $user_status->error_at("email", "This account is locked, so you can’t change its email address.");
-        else if (($new_acct = $Conf->user_by_email($cj->email))) {
-            if ($allow_modification)
+        } else if (($new_acct = $Conf->user_by_email($cj->email))) {
+            if ($allow_modification) {
                 $cj->id = $new_acct->contactId;
-            else {
+            } else {
                 $msg = "Email address “" . htmlspecialchars($cj->email) . "” is already in use.";
                 if ($Me->privChair)
                     $msg = str_replace("an account", "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
@@ -283,9 +283,9 @@ function parseBulkFile($text, $filename) {
     return empty($errors);
 }
 
-if (!$Qreq->post_ok())
-    /* do nothing */;
-else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
+if (!$Qreq->post_ok()) {
+    // do nothing
+} else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
     if (($text = $Qreq->file_contents("bulk")) === false)
         Conf::msg_error("Internal error: cannot read file.");
     else
@@ -448,31 +448,37 @@ if ($newProfile) {
 $Conf->header($title, "account", ["action_bar" => actionBar("account")]);
 
 $useRequest = !$Acct->has_database_account() && isset($Qreq->watchreview);
-if ($UserStatus->has_error())
+if ($UserStatus->has_error()) {
     $need_highlight = $useRequest = true;
-
-if (!$UserStatus->has_error() && $Me->session("freshlogin"))
+} else if ($Me->session("freshlogin")) {
     $Me->save_session("freshlogin", null);
+}
+
 // Set warnings
 if (!$newProfile) {
     if (!$Acct->firstName && !$Acct->lastName) {
         $UserStatus->warning_at("firstName", "Please enter your name.");
         $UserStatus->warning_at("lastName", false);
     }
-    if (!$Acct->affiliation)
+    if (!$Acct->affiliation) {
         $UserStatus->warning_at("affiliation", "Please enter your affiliation (use “None” or “Unaffiliated” if you have none).");
+    }
     if ($Acct->is_pc_member()) {
-        if (!$Acct->collaborators)
+        if (!$Acct->collaborators) {
             $UserStatus->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
-        if ($Conf->has_topics() && !$Acct->topic_interest_map())
+        }
+        if ($Conf->has_topics() && !$Acct->topic_interest_map()) {
             $UserStatus->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
+        }
     }
 }
 
 
 $UserStatus->set_user($Acct);
 $userj = $UserStatus->user_json(["include_password" => true]);
-if (!$useRequest && $Me->privChair && $Acct->is_empty()
+if (!$useRequest
+    && $Me->privChair
+    && $Acct->is_empty()
     && ($Qreq->role === "chair" || $Qreq->role === "pc")) {
     $userj->roles = (object) [$Qreq->role => true];
 }
@@ -497,27 +503,33 @@ if (($prdj = $Me->session("profile_redirect"))) {
 }
 
 $form_params = array();
-if ($newProfile)
+if ($newProfile) {
     $form_params[] = "u=new";
-else if ($Me->contactId != $Acct->contactId)
+} else if ($Me->contactId != $Acct->contactId) {
     $form_params[] = "u=" . urlencode($Acct->email);
-if (isset($Qreq->ls))
+}
+if (isset($Qreq->ls)) {
     $form_params[] = "ls=" . urlencode($Qreq->ls);
-if ($newProfile)
+}
+if ($newProfile) {
     echo '<div id="foldbulk" class="fold9' . ($Qreq->savebulk ? "o" : "c") . ' js-fold-focus"><div class="fn9">';
+}
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "profile-form", "class" => "need-unload-protection")),
     Ht::hidden("profile_contactid", $Acct->contactId);
-if (isset($Qreq->redirect))
+if (isset($Qreq->redirect)) {
     echo Ht::hidden("redirect", $Qreq->redirect);
-if ($Me->privChair)
+}
+if ($Me->privChair) {
     echo Ht::hidden("whichpassword", "");
+}
 
-if ($newProfile)
+if ($newProfile) {
     echo_modes(1);
-else if ($Me->privChair)
+} else if ($Me->privChair) {
     echo_modes(0);
+}
 
 if ($UserStatus->has_messages()) {
     $status = 0;
