@@ -466,29 +466,55 @@ class UserStatus extends MessageSet {
 
     function save($cj, $old_user = null) {
         global $Now;
-        // normalize user, check invariants
         assert(is_object($cj));
-        self::normalize_name($cj);
         $nerrors = $this->nerrors();
 
-        if (!$old_user && is_int(get($cj, "id")) && $cj->id)
+        // normalize name, including email
+        self::normalize_name($cj);
+
+        // obtain old users in this conference and contactdb
+        // - load by id if only id is set
+        if (!$old_user && is_int(get($cj, "id")) && $cj->id) {
             $old_user = $this->conf->user_by_id($cj->id);
-        else if (!$old_user && is_string(get($cj, "email")) && $cj->email)
-            $old_user = $this->conf->user_by_email($cj->email);
-        if (!get($cj, "id"))
+        }
+
+        // - obtain email
+        if ($old_user && $old_user->has_email()) {
+            $old_email = $old_user->email;
+        } else if (is_string(get($cj, "email")) && $cj->email !== "") {
+            $old_email = $cj->email;
+        } else {
+            $old_email = null;
+        }
+
+        // - load old_cdb_user
+        if ($old_user && $old_user->contactDbId > 0) {
+            $old_cdb_user = $old_user;
+        } else if ($old_email) {
+            $old_cdb_user = $this->conf->contactdb_user_by_email($old_email);
+        } else {
+            $old_cdb_user = null;
+        }
+
+        // - load old_user; reset if old_user was in contactdb
+        if (!$old_user || !$old_user->has_database_account()) {
+            if ($old_email) {
+                $old_user = $this->conf->user_by_email($old_email);
+            } else {
+                $old_user = null;
+            }
+        }
+
+        $user = $old_user ? : $old_cdb_user;
+
+        // normalize and check for errors
+        if (!get($cj, "id")) {
             $cj->id = $old_user ? $old_user->contactId : "new";
+        }
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
             $this->error_at("id", "Saving user with different ID");
             return false;
         }
-
-        $old_cdb_user = null;
-        if ($old_user && $old_user->has_email())
-            $old_cdb_user = $this->conf->contactdb_user_by_email($old_user->email);
-        else if (is_string(get($cj, "email")) && $cj->email)
-            $old_cdb_user = $this->conf->contactdb_user_by_email($cj->email);
-
-        $user = $old_user ? : $old_cdb_user;
         $this->normalize($cj, $user);
         if ($this->nerrors() > $nerrors) {
             return false;
