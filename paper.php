@@ -2,23 +2,15 @@
 // paper.php -- HotCRP paper view and edit page
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
-global $Qreq;
-$ps = null;
 require_once("src/initweb.php");
 require_once("src/papertable.php");
-if ($Me->is_empty())
-    $Me->escape();
-if ($Qreq->post_ok() && !$Me->has_account_here()) {
-    if (isset($Qreq->update) && $Me->can_start_paper())
-        $Me->activate_database_account();
-    else
-        $Me->escape();
-}
-$Me->add_overrides(Contact::OVERRIDE_CHECK_TIME);
+
+// prepare request
 $useRequest = isset($Qreq->title) && $Qreq->has_annex("after_login");
-foreach (["emailNote", "reason"] as $x)
+foreach (["emailNote", "reason"] as $x) {
     if ($Qreq[$x] === "Optional explanation")
         unset($Qreq[$x]);
+}
 if (isset($Qreq->p)
     && ctype_digit($Qreq->p)
     && !Navigation::path()
@@ -39,6 +31,16 @@ if (!isset($Qreq->p)
     }
 }
 
+// prepare user
+if ($Me->is_empty())
+    $Me->escape();
+if ($Qreq->post_ok() && !$Me->has_account_here()) {
+    if (isset($Qreq->update) && $Me->can_start_paper())
+        $Me->activate_database_account();
+    else
+        $Me->escape();
+}
+$Me->add_overrides(Contact::OVERRIDE_CHECK_TIME);
 
 // header
 function confHeader() {
@@ -73,7 +75,7 @@ function loadRows() {
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me)))
         errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
 }
-$prow = null;
+$prow = $ps = null;
 if (strcasecmp((string) $Qreq->p, "new") && strcasecmp((string) $Qreq->paperId, "new"))
     loadRows();
 
