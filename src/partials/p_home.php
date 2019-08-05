@@ -78,7 +78,7 @@ class Home_Partial {
 
 
     static function profile_redirect_request(Contact $user, Qrequest $qreq) {
-        if ($user->has_database_account()
+        if ($user->has_account_here()
             && $user->session("freshlogin") === true) {
             if (self::need_profile_redirect($user)) {
                 $user->save_session("freshlogin", "redirect");

@@ -254,9 +254,9 @@ if ((isset($Qreq->refuse) || isset($Qreq->decline))
 if (isset($Qreq->accept)
     && ($Qreq->post_ok() || $Me->capability("@ra" . $prow->paperId))) {
     if (!$paperTable->editrrow
-        || (!$Me->is_my_review($paperTable->editrrow) && !$Me->can_administer($prow)))
+        || (!$Me->is_my_review($paperTable->editrrow) && !$Me->can_administer($prow))) {
         Conf::msg_error("This review was not assigned to you, so you cannot confirm your intention to write it.");
-    else {
+    } else {
         if ($paperTable->editrrow->reviewModified <= 0) {
             Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
                 where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0",

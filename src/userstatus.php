@@ -497,7 +497,7 @@ class UserStatus extends MessageSet {
         }
 
         // - load old_user; reset if old_user was in contactdb
-        if (!$old_user || !$old_user->has_database_account()) {
+        if (!$old_user || !$old_user->has_account_here()) {
             if ($old_email) {
                 $old_user = $this->conf->user_by_email($old_email);
             } else {

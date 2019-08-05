@@ -36,7 +36,7 @@ class LoginHelper {
         }
 
         // if user is still valid, OK
-        if ($Me->has_database_account())
+        if ($Me->has_account_here())
             return;
 
         // check HTTP auth
@@ -256,7 +256,7 @@ class LoginHelper {
 
     static private function create_account($conf, $qreq, $user, $cdb_user) {
         // check for errors
-        if ($user && $user->has_database_account() && $user->activity_at > 0) {
+        if ($user && $user->has_account_here() && $user->activity_at > 0) {
             Ht::error_at("email", "An account already exists for " . htmlspecialchars($qreq->email) . ". Enter your password or select “Forgot your password?” to reset it.");
             return false;
         } else if ($cdb_user
@@ -271,7 +271,7 @@ class LoginHelper {
         }
 
         // create database account
-        if (!$user || !$user->has_database_account()) {
+        if (!$user || !$user->has_account_here()) {
             if (!($user = Contact::create($conf, null, $qreq->as_array())))
                 return Conf::msg_error($conf->db_error_html(true, "while adding your account"));
         }

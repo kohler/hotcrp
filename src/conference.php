@@ -3271,7 +3271,7 @@ class Conf {
             $huser->email = $Me->email;
         if ($Me && $Me->is_pclike())
             $huser->is_pclike = true;
-        if ($Me && $Me->has_database_account())
+        if ($Me && $Me->has_account_here())
             $huser->cid = $Me->contactId;
         Ht::stash_script("hotcrp_user=" . json_encode_browser($huser) . ";");
 

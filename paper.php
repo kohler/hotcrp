@@ -8,7 +8,7 @@ require_once("src/initweb.php");
 require_once("src/papertable.php");
 if ($Me->is_empty())
     $Me->escape();
-if ($Qreq->post_ok() && !$Me->has_database_account()) {
+if ($Qreq->post_ok() && !$Me->has_account_here()) {
     if (isset($Qreq->update) && $Me->can_start_paper())
         $Me->activate_database_account();
     else

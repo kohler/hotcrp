@@ -92,7 +92,7 @@ echo '<td><button id="tracker-table-mute" type="button" class="foldc" style="pad
 </svg></button></td>';
 
 // show-papers
-if ($Me->has_database_account()) {
+if ($Me->has_account_here()) {
     echo '<td style="padding-left:2em">',
         Ht::checkbox("buzzer_showpapers", 1, $show_papers, ["id" => "tracker-table-showpapers"]),
         "&nbsp;", Ht::label("Show papers"), '</td>';

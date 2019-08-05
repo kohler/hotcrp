@@ -267,7 +267,7 @@ xassert(!$u);
 $u = $Conf->contactdb_user_by_email("betty5@_.com");
 $u->activate_database_account();
 $u = $Conf->user_by_email("betty5@_.com");
-xassert($u->has_database_account());
+xassert($u->has_account_here());
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Davis");
 

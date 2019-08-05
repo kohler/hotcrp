@@ -34,7 +34,7 @@ function change_email_by_capability($Qreq) {
     $capmgr->delete($capdata);
 
     $Conf->confirmMsg("Your email address has been changed.");
-    if (!$Me->has_database_account() || $Me->contactId == $Acct->contactId)
+    if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId)
         $Me = $Acct->activate($Qreq);
 }
 if ($Qreq->changeemail
@@ -100,7 +100,7 @@ if (!$Acct
 }
 
 $need_highlight = false;
-if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
+if (($Acct->contactId != $Me->contactId || !$Me->has_account_here())
     && $Acct->has_email()
     && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation
     && !$Qreq->post) {
@@ -159,7 +159,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             return $user_status->error_at("email", "You must supply an email address.");
         } else if (!validate_email($cj->email)) {
             return $user_status->error_at("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
-        } else if ($Acct && !$Acct->has_database_account()) {
+        } else if ($Acct && !$Acct->has_account_here()) {
             return $user_status->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
         }
         if (!$newProfile && !$Me->privChair) {
@@ -301,7 +301,7 @@ if (!$Qreq->post_ok()) {
     $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
 } else if (isset($Qreq->save)) {
     assert($Acct->is_empty() === $newProfile);
-    $cj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
+    $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->set_user($Acct);
     $UserStatus->parse_request_group("", $cj, $Qreq);
     if ($newProfile)
@@ -383,7 +383,7 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
         Conf::msg_error("Only administrators can delete accounts.");
     else if ($Acct->contactId == $Me->contactId)
         Conf::msg_error("You aren’t allowed to delete your own account.");
-    else if ($Acct->has_database_account()) {
+    else if ($Acct->has_account_here()) {
         $tracks = databaseTracks($Acct->contactId);
         if (!empty($tracks->soleAuthor))
             Conf::msg_error("This account can’t be deleted since it is sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ". You will be able to delete the account after deleting those papers or adding additional paper contacts.");
@@ -447,7 +447,7 @@ if ($newProfile) {
 }
 $Conf->header($title, "account", ["action_bar" => actionBar("account")]);
 
-$useRequest = !$Acct->has_database_account() && isset($Qreq->watchreview);
+$useRequest = !$Acct->has_account_here() && isset($Qreq->watchreview);
 if ($UserStatus->has_error()) {
     $need_highlight = $useRequest = true;
 } else if ($Me->session("freshlogin")) {
@@ -486,7 +486,7 @@ if (!$newProfile) {
 // compute current form json
 if ($useRequest) {
     $UserStatus->ignore_msgs = true;
-    $formcj = (object) ["id" => $Acct->has_database_account() ? $Acct->contactId : "new"];
+    $formcj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->parse_request_group("", $formcj, $Qreq);
 } else {
     $formcj = $userj;

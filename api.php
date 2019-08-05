@@ -43,7 +43,7 @@ require_once("src/initweb.php");
 
 if ($Qreq->base !== null)
     $Conf->set_siteurl($Qreq->base);
-if (!$Me->has_database_account()
+if (!$Me->has_account_here()
     && ($key = $Me->capability("tracker_kiosk"))) {
     $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
     if (isset($kiosks->$key) && $kiosks->$key->update_at >= $Now - 172800) {

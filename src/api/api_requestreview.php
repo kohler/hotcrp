@@ -212,13 +212,15 @@ class RequestReview_API {
         $u = $user->conf->cached_user_by_email($email);
         if (!$user->can_administer($prow)
             && strcasecmp($email, $user->email) !== 0
-            && (!$u || $user->capability("@ra{$prow->paperId}") != $u->contactId))
+            && (!$u || $user->capability("@ra{$prow->paperId}") != $u->contactId)) {
             return self::error_result(403, "email", "Permission error.");
+        }
         if ($u) {
             $xrrows = $prow->reviews_of_user($u);
             $refusals = $prow->review_refusals_of_user($u);
-        } else
+        } else {
             $refusals = $prow->review_refusals_of_email($email);
+        }
 
         if (empty($xrrows) && empty($refusals))
             return self::error_result(404, null, "No reviews to decline.");

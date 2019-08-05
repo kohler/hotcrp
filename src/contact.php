@@ -411,14 +411,14 @@ class Contact {
         // Maybe auto-create a user
         if (!self::$true_user && $this->email) {
             $trueuser_aucheck = $this->session("trueuser_author_check", 0);
-            if (!$this->has_database_account()
+            if (!$this->has_account_here()
                 && $trueuser_aucheck + 600 < $Now) {
                 $this->save_session("trueuser_author_check", $Now);
                 $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
                 if (!empty($aupapers))
                     $this->activate_database_account();
             }
-            if ($this->has_database_account()
+            if ($this->has_account_here()
                 && $trueuser_aucheck) {
                 foreach ($_SESSION as $k => $v) {
                     if (is_array($v)
@@ -431,7 +431,7 @@ class Contact {
 
         // Maybe set up the shared contacts database
         if ($this->conf->opt("contactdb_dsn")
-            && $this->has_database_account()
+            && $this->has_account_here()
             && $this->session("contactdb_roles", 0) != $this->contactdb_roles()) {
             if ($this->contactdb_update())
                 $this->save_session("contactdb_roles", $this->contactdb_roles());
@@ -472,7 +472,7 @@ class Contact {
 
     function activate_database_account() {
         assert($this->has_email());
-        if (!$this->has_database_account()
+        if (!$this->has_account_here()
             && ($u = Contact::create($this->conf, null, $this))) {
             $this->merge($u);
             $this->contactDbId = 0;
@@ -503,7 +503,7 @@ class Contact {
     function contactdb_update($update_keys = null, $only_update_empty = false) {
         global $Now;
         if (!($cdb = $this->conf->contactdb())
-            || !$this->has_database_account()
+            || !$this->has_account_here()
             || !validate_email($this->email))
             return false;
 
@@ -699,7 +699,11 @@ class Contact {
         return $this->email && self::is_anonymous_email($this->email);
     }
 
-    function has_database_account() {
+    function has_database_account() { // XXX obsolete
+        return $this->contactId > 0;
+    }
+
+    function has_account_here() {
         return $this->contactId > 0;
     }
 
@@ -975,7 +979,7 @@ class Contact {
     const SAVE_IMPORT = 4;
 
     function change_email($email) {
-        assert($this->has_database_account());
+        assert($this->has_account_here());
         $aupapers = self::email_authored_papers($this->conf, $email, $this);
         $this->conf->ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
         $this->save_authored_papers($aupapers);
