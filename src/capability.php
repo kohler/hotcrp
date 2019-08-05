@@ -124,7 +124,7 @@ class CapabilityManager {
             if ($user->is_activated())
                 self::apply_hoturl_capability($uf->name, $cid);
         } else {
-            $user->conf->warnMsg("The review link you followed has expired. You’ll need to sign in to the site to view or edit your reviews.");
+            $user->conf->warnMsg("The review link you followed has expired. Sign in to the site to view or edit reviews.");
         }
     }
 
@@ -149,6 +149,6 @@ class CapabilityManager {
         }
         Dbl::free($result);
 
-        $user->conf->warnMsg("The review link you followed is no longer active. Sign in to the site to view or edit your reviews.");
+        $user->conf->warnMsg("The review link you followed is no longer active. Sign in to the site to view or edit reviews.");
     }
 }

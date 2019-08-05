@@ -3355,9 +3355,12 @@ class Conf {
             // profile link
             $profile_parts = [];
             if ($Me->has_email() && !$Me->is_disabled()) {
-                $profile_parts[] = '<a class="q" href="' . $this->hoturl("profile") . '"><strong>'
-                    . htmlspecialchars($Me->email)
-                    . '</strong></a> &nbsp; <a href="' . $this->hoturl("profile") . '">Profile</a>';
+                if ($Me->is_signed_in()) {
+                    $purl = $this->hoturl("profile");
+                    $profile_parts[] = "<a class=\"q\" href=\"{$purl}\"><strong>" . htmlspecialchars($Me->email) . "</strong></a> &nbsp; <a href=\"{$purl}\">Profile</a>";
+                } else {
+                    $profile_parts[] = "<strong>" . htmlspecialchars($Me->email) . "</strong> via link";
+                }
             }
 
             // "act as" link
@@ -3373,14 +3376,19 @@ class Conf {
                     . "</a>";
             }
 
-            // help, sign out
-            $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
-            if (!$Me->is_disabled())
-                $profile_parts[] = '<a href="' . $this->hoturl("help", $x) . '">Help</a>';
-            if (!$Me->has_email() && !isset($this->opt["httpAuthLogin"]))
+            // help
+            if (!$Me->is_disabled()) {
+                $helpargs = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
+                $profile_parts[] = '<a href="' . $this->hoturl("help", $helpargs) . '">Help</a>';
+            }
+
+            // sign in and out
+            if (!$Me->is_signed_in() && !isset($this->opt["httpAuthLogin"])) {
                 $profile_parts[] = '<a href="' . $this->hoturl("index", ["signin" => 1, "cap" => null]) . '" class="nw">Sign in</a>';
-            if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"]))
+            }
+            if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"])) {
                 $profile_parts[] = '<a href="' . $this->hoturl_post("index", ["signout" => 1, "cap" => null]) . '" class="nw">Sign out</a>';
+            }
 
             if (!empty($profile_parts))
                 $profile_html .= join(' <span class="barsep">·</span> ', $profile_parts);

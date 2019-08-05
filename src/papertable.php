@@ -2420,10 +2420,12 @@ class PaperTable {
 
         // review messages
         $msgs = array();
-        if ($this->rrow && !$this->user->has_database_account())
+        if ($this->rrow && !$this->user->is_signed_in()) {
             $msgs[] = $this->conf->_("You’re editing this review using a special review link. You can also <a href=\"%s\">sign in to the site</a>.", $this->conf->hoturl("index", ["signin" => 1, "email" => $this->editrrow->email, "cap" => null]));
-        if (!$this->rrow && !$this->prow->review_type($this->user))
+        }
+        if (!$this->rrow && !$this->prow->review_type($this->user)) {
             $msgs[] = "You haven’t been assigned to review this submission, but you can review it anyway.";
+        }
         if ($this->user->is_admin_force()) {
             if (!$this->user->call_with_overrides(0, "can_view_review", $this->prow, null))
                 $msgs[] = $this->_privilegeMessage();

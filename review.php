@@ -262,7 +262,7 @@ if (isset($Qreq->accept)
             Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
                 where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0",
                 $Now, $prow->paperId, $rrow->reviewId);
-            if ($Me->has_database_account())
+            if ($Me->is_signed_in())
                 $rrow->delete_acceptor();
             $Me->log_activity_for($rrow->contactId, "Accepted review {$rrow->reviewId}", $prow);
         }

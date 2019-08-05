@@ -2000,7 +2000,7 @@ class ReviewValues extends MessageSet {
                 $result = true;
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
-            if ($user->has_database_account())
+            if ($user->is_signed_in())
                 $rrow->delete_acceptor();
         } else {
             array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");

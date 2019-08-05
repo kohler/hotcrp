@@ -41,8 +41,10 @@ if ($Qreq->changeemail
     && !$Me->is_actas_user())
     change_email_by_capability($Qreq);
 
-if (!$Me->has_email())
+if (!$Me->is_signed_in()) {
     $Me->escape();
+}
+
 $newProfile = false;
 $UserStatus = new UserStatus($Me);
 

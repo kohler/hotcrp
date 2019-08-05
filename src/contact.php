@@ -699,6 +699,11 @@ class Contact {
         return $this->email && self::is_anonymous_email($this->email);
     }
 
+    function is_signed_in() {
+        return ($this->contactId > 0 || $this->contactDbId > 0)
+            && $this->_activated;
+    }
+
     function has_database_account() { // XXX obsolete
         return $this->contactId > 0;
     }
@@ -911,11 +916,13 @@ class Contact {
         if ($qreq->ajax) {
             if ($this->is_empty())
                 json_exit(["ok" => false, "error" => "You have been signed out.", "loggedout" => true]);
+            else if (!$this->is_signed_in())
+                json_exit(["ok" => false, "error" => "You must sign in to access that function.", "loggedout" => true]);
             else
                 json_exit(["ok" => false, "error" => "You don’t have permission to access that page."]);
         }
 
-        if ($this->is_empty()) {
+        if (!$this->is_signed_in()) {
             // Preserve post values across session expiration.
             ensure_session();
             $x = array();
@@ -926,11 +933,12 @@ class Contact {
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITE_RELATIVE);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, $Now + 120];
             if ($qreq->post_ok())
-                error_go(false, "You’ve been signed out, so your changes were not saved. After signing in, you may submit them again.");
+                error_go(false, "You must sign in to access that page. Your changes were not saved; after signing in, you may submit them again.");
             else
                 error_go(false, "You must sign in to access that page.");
-        } else
+        } else {
             error_go(false, "You don’t have permission to access that page.");
+        }
     }
 
 
