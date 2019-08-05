@@ -191,7 +191,7 @@ class Search_DisplayOptions {
         $options["class"] = "uich js-plinfo";
         $x = '<label class="checki"><span class="checkc">'
             . Ht::checkbox("show$type", 1, !$pl->is_folded($type), $options)
-            . ' </span>' . $title . '</label>';
+            . '</span>' . $title . '</label>';
         $this->item($column, $x);
     }
 }
@@ -408,7 +408,7 @@ if ($Me->isPC || $Me->privChair) {
             echo "search “", htmlspecialchars($Qreq->q), "”";
         else
             echo "empty search";
-        echo ' as:<br />ss:<input type="text" name="ssname" value="" size="20"> &nbsp;',
+        echo ' as:<br>ss:<input type="text" name="ssname" value="" size="20"> &nbsp;',
             Ht::submit("Save"),
             "</div></td></tr></table>",
             "</form>";

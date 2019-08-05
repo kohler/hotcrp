@@ -386,7 +386,7 @@ class AbbreviationMatcher {
 
     function unique_abbreviation($name, $data, AbbreviationClass $aclass) {
         $last = $aclass_clone = null;
-        while (true) {
+        do {
             $x = self::make_abbreviation($name, $aclass);
             if ($last !== $x) {
                 $last = $x;
@@ -396,9 +396,8 @@ class AbbreviationMatcher {
             }
             if (!$aclass_clone)
                 $aclass = $aclass_clone = clone $aclass;
-            if (!$aclass->step())
-                return null;
-        }
+        } while ($aclass->step());
+        return null;
     }
 
     static function make_abbreviation($name, AbbreviationClass $aclass) {
