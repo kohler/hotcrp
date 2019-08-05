@@ -4,6 +4,7 @@
 
 class ReviewForm_SettingParser extends SettingParser {
     private $nrfj;
+    private $byname;
     private $option_error;
 
     public static $setting_prefixes = ["shortName_", "description_", "order_", "authorView_", "options_", "option_class_prefix_"];
@@ -73,9 +74,14 @@ class ReviewForm_SettingParser extends SettingParser {
                     : empty($fj->options))))
             $pos = -1;
 
-        if ($sn !== "")
+        if ($sn !== "") {
+            if (isset($this->byname[strtolower($sn)])) {
+                $sv->error_at("shortName_$fid", "Cannot reuse review field name “" . htmlspecialchars($sn) . "”.");
+            } else {
+                $this->byname[strtolower($sn)] = $fid;
+            }
             $fj->name = $sn;
-        else if ($pos > 0)
+        } else if ($pos > 0)
             $sv->error_at("shortName_$fid", "Missing review field name.");
 
         if (isset($sv->req["authorView_$fid"]))
@@ -150,6 +156,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     function parse(SettingValues $sv, Si $si) {
         $this->nrfj = (object) array();
+        $this->byname = [];
         $this->option_error = "Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>";
