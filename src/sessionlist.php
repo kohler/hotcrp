@@ -200,10 +200,11 @@ class SessionList {
                         $args[substr($kv, 0, $eq)] = substr($kv, $eq + 1);
                     }
             }
-        } else
+        } else {
             return null;
+        }
         foreach ($args as $k => $v) {
-            if (!preg_match('{\A[&?]' . preg_quote($k) . '=}', $url))
+            if (!preg_match('{[&?]' . preg_quote($k) . '=}', $url))
                 $url .= (strpos($url, "?") ? "&" : "?") . $k . "=" . $v;
         }
         return $url;
