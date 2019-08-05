@@ -253,16 +253,18 @@ if ((isset($Qreq->refuse) || isset($Qreq->decline))
 
 if (isset($Qreq->accept)
     && ($Qreq->post_ok() || $Me->capability("@ra" . $prow->paperId))) {
-    if (!$paperTable->editrrow
-        || (!$Me->is_my_review($paperTable->editrrow) && !$Me->can_administer($prow))) {
+    $rrow = $paperTable->editrrow;
+    if (!$rrow
+        || (!$Me->is_my_review($rrow) && !$Me->can_administer($prow))) {
         Conf::msg_error("This review was not assigned to you, so you cannot confirm your intention to write it.");
     } else {
-        if ($paperTable->editrrow->reviewModified <= 0) {
+        if ($rrow->reviewModified <= 0) {
             Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
                 where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0",
-                $Now, $prow->paperId, $paperTable->editrrow->reviewId);
+                $Now, $prow->paperId, $rrow->reviewId);
             if ($Me->has_database_account())
-                $paperTable->editrrow->delete_acceptor();
+                $rrow->delete_acceptor();
+            $Me->log_activity_for($rrow->contactId, "Accepted review {$rrow->reviewId}", $prow);
         }
         $Conf->confirmMsg("Thank you for confirming your intention to finish this review. You can download the paper and review form below.");
         $Conf->self_redirect($Qreq);
