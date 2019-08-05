@@ -75,14 +75,17 @@ class ReviewForm_SettingParser extends SettingParser {
             $pos = -1;
 
         if ($sn !== "") {
-            if (isset($this->byname[strtolower($sn)])) {
+            $fj->name = $sn;
+        }
+        if ($pos > 0) {
+            if ($sn === "") {
+                $sv->error_at("shortName_$fid", "Missing review field name.");
+            } else if (isset($this->byname[strtolower($sn)])) {
                 $sv->error_at("shortName_$fid", "Cannot reuse review field name “" . htmlspecialchars($sn) . "”.");
             } else {
                 $this->byname[strtolower($sn)] = $fid;
             }
-            $fj->name = $sn;
-        } else if ($pos > 0)
-            $sv->error_at("shortName_$fid", "Missing review field name.");
+        }
 
         if (isset($sv->req["authorView_$fid"]))
             $fj->visibility = $sv->req["authorView_$fid"];
