@@ -240,10 +240,8 @@ class ReviewField implements Abbreviator, JsonSerializable {
                 foreach ($this->conf->review_form()->all_fields() as $field1) {
                     if ($field1 === $this) {
                         $this->_search_keyword = $pfx . $sfx;
-                        $am->add($this->_search_keyword, $this, Conf::FSRCH_REVIEW);
                         break;
-                    }
-                    if ($field1->search_keyword() === $pfx . $sfx)
+                    } else if ($field1->search_keyword() === $pfx . $sfx)
                         ++$sfx;
                 }
             }
