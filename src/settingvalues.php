@@ -716,7 +716,7 @@ class SettingValues extends MessageSet {
         return $njs;
     }
     function echo_checkbox_only($name, $js = null) {
-        $js["id"] = "cb$name";
+        $js["id"] = $name;
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
             Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js));
@@ -725,7 +725,7 @@ class SettingValues extends MessageSet {
         echo '<div class="', self::add_class("checki", get($js, "group_class")),
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, self::strip_group_js($js));
-        echo '</span>', $this->label($name, $text, ["for" => "cb$name", "class" => get($js, "label_class")]);
+        echo '</span>', $this->label($name, $text, ["for" => $name, "class" => get($js, "label_class")]);
         if ($hint)
             echo '<p class="', self::add_class("settings-ap f-hx", get($js, "hint_class")), '">', $hint, '</p>';
         $this->echo_messages_at($name);

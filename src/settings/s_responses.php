@@ -35,7 +35,7 @@ class Responses_SettingParser extends SettingParser {
         // Authors' response
         echo '<div class="settings-g">';
         $sv->echo_checkbox("resp_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true]);
-        Ht::stash_script('$(function () { $("#cbresp_active").on("change", function () { var ch = $$("cbresp_active").checked; $(".if-response-active").toggleClass("hidden", !ch); }).trigger("change"); })');
+        Ht::stash_script('$(function () { $("#resp_active").on("change", function () { var ch = $$("resp_active").checked; $(".if-response-active").toggleClass("hidden", !ch); }).trigger("change"); })');
         echo '<div id="auresparea" class="if-response-active',
             $sv->curv("resp_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_resp_rounds", 1);
