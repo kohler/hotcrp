@@ -7279,14 +7279,14 @@ handle_ui.on("js-delete-paper", function (event) {
 handle_ui.on("js-clickthrough", function (event) {
     var self = this,
         $container = $(this).closest(".js-clickthrough-container");
+    if (!$container.length)
+        $container = $(this).closest(".pcontainer");
     $.post(hoturl_post("api/clickthrough", {accept: 1}),
         $(this).closest("form").serialize(),
         function (data) {
             if (data && data.ok) {
-                $container.find(".js-clickthrough-body")
-                    .removeClass("hidden")
-                    .find(".need-clickthrough-enable")
-                    .prop("disabled", false).removeClass("need-clickthrough-enable");
+                $container.find(".need-clickthrough-show").removeClass("need-clickthrough-show hidden");
+                $container.find(".need-clickthrough-enable").prop("disabled", false).removeClass("need-clickthrough-enable");
                 $container.find(".js-clickthrough-terms").slideUp();
             } else {
                 make_bubble((data && data.error) || "You can’t continue to review until you accept these terms.", "errorbubble")

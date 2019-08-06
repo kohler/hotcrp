@@ -2139,7 +2139,7 @@ class PaperTable {
     }
 
     static function echo_review_clickthrough() {
-        echo '<div class="revcard js-clickthrough-terms"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
+        echo '<div class="pcard revcard js-clickthrough-terms"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
         self::_echo_clickthrough("review");
         echo "</form></div></div>";
     }
@@ -2226,7 +2226,7 @@ class PaperTable {
                     '<h3>Submission terms</h3>',
                     Ht::msg("You must agree to these terms to register a submission.", 2);
                 self::_echo_clickthrough("submit");
-                echo '</div><div class="js-clickthrough-body hidden">';
+                echo '</div><div class="need-clickthrough-show hidden">';
                 $this->_echo_editable_body();
                 echo '</div></div>';
             } else {
@@ -2477,14 +2477,9 @@ class PaperTable {
         // maybe clickthrough
         $need_clickthrough = $opt["edit"] && !$this->user->can_clickthrough("review");
         $rf = $this->conf->review_form();
-        if ($need_clickthrough) {
-            echo '<div class="js-clickthrough-container">';
-            self::echo_review_clickthrough();
-            echo '<div class="js-clickthrough-body">';
-        }
-        $rf->show($this->prow, $this->editrrow, $this->user, $opt, $this->review_values);
         if ($need_clickthrough)
-            echo '</div></div>';
+            self::echo_review_clickthrough();
+        $rf->show($this->prow, $this->editrrow, $this->user, $opt, $this->review_values);
     }
 
 
