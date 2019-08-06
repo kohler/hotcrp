@@ -340,6 +340,11 @@
         "require": "src/settings/s_decisions.php"
     },
     {
+        "name": "seedec_hideau",
+        "title": "Hide accepted submissions’ author lists from reviewers", "group": "decisions",
+        "type": "checkbox"
+    },
+    {
         "name": "shepherd_hide",
         "title": "Shepherd visibility",
         "type": "checkbox"

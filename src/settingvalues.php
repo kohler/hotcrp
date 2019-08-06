@@ -741,6 +741,8 @@ class SettingValues extends MessageSet {
         $fold = $rest ? get($rest, "fold", false) : false;
 
         echo '<div id="', $name, '" class="', $this->control_class($name, "settings-radio");
+        if ($rest && isset($rest["group_class"]))
+            echo ' ', $rest["group_class"];
         if ($fold !== false && $fold !== true)
             echo ' has-fold fold', in_array($x, explode(" ", $fold)) ? "o" : "c", '" data-fold-values="', $fold;
         echo '">';
@@ -753,8 +755,12 @@ class SettingValues extends MessageSet {
             $hint = get($item, "hint", "");
             unset($item["label"], $item["hint"]);
             $item["id"] = "{$name}_{$k}";
-            if ($fold !== false && !isset($item["class"]))
-                $item["class"] = "uich js-foldup";
+            if (!isset($item["class"])) {
+                if (isset($rest["item_class"]))
+                    $item["class"] = $rest["item_class"];
+                else if ($fold !== false)
+                    $item["class"] = "uich js-foldup";
+            }
 
             $label1 = "<label>";
             $label2 = "</label>";

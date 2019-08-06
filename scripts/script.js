@@ -2522,11 +2522,12 @@ function foldup(event, opts) {
         && event.target.closest("a")
         && !opts.required)
         return;
-    if (!("n" in opts) && (x = this.getAttribute("data-fold-target"))) {
-        var sp = x.indexOf("#");
-        if (sp > 0) {
-            e = $$(x.substring(0, sp));
-            x = x.substring(sp + 1);
+    if (!("n" in opts) && (x = e.getAttribute("data-fold-target"))) {
+        if (isNaN(x)) {
+            var sp = x.indexOf("#");
+            sp = sp < 0 ? x.length : sp;
+            e = document.getElementById(x.substring(0, sp));
+            x = x.substring(Math.max(sp + 1, x.length));
         }
         opts.n = parseInt(x) || 0;
         if (!("f" in opts)) {
@@ -2576,7 +2577,8 @@ function foldup(event, opts) {
     }
     if (this.hasAttribute("aria-expanded"))
         this.setAttribute("aria-expanded", dofold ? "false" : "true");
-    if (event && typeof event === "object" && event.type === "click") {
+    if (event && typeof event === "object" && event.type === "click"
+        && !hasClass(event.target, "uix")) {
         event.stopPropagation();
         event.preventDefault(); // needed for expanders despite handle_ui!
     }
@@ -3709,7 +3711,7 @@ function comment_identity_time(cj) {
                + cj.ordinal + '</span></a></div>');
     if (cj.author && cj.author_hidden) {
         t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
-               + '<a class="ui q js-foldup" href="#" data-fold-target="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
+               + '<a class="ui q js-foldup" href="" data-fold-target="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
                + cj.author + '</span></div>');
     } else if (cj.author) {
         x = cj.author;

@@ -2377,7 +2377,8 @@ class Conf {
         return $this->setting("seedec") >= self::SEEDEC_REV;
     }
     function time_reviewer_view_accepted_authors() {
-        return $this->setting("seedec") == self::SEEDEC_ALL;
+        return $this->setting("seedec") == self::SEEDEC_ALL
+            && !$this->setting("seedec_hideau");
     }
     function timePCViewPaper($prow, $pdf) {
         if ($prow->timeWithdrawn > 0)
