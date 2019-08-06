@@ -448,4 +448,5 @@ else {
     }
 }
 
+echo "</div>\n";
 $Conf->footer();

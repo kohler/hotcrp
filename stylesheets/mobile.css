@@ -72,10 +72,8 @@ h2.paptitle {
 .pspcard_open {
 	display: none;
 }
-.papcard, .pedcard, .notecard, .revcard, .cmtcard {
+.pcard, .pcontainer-nostrip > .pcard {
 	margin-left: 0;
-}
-.pedcard {
 	margin-right: 0;
 }
 .leftmenu-content-container {

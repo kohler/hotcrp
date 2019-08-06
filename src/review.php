@@ -978,12 +978,12 @@ $blind\n";
         $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
         $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
 
-        echo Ht::form($reviewPostLink, ["class" => "editrevform need-unload-protection"]),
-            '<div>',
+        echo '<div class="pcard revcard" id="r', $reviewOrdinal, '">',
+            Ht::form($reviewPostLink, ["class" => "editrevform need-unload-protection"]),
             Ht::hidden_default_submit("default", "");
         if ($rrow)
             echo Ht::hidden("version", get($rrow, "reviewEditVersion", 0) + 1);
-        echo '<div class="revcard" id="r', $reviewOrdinal, '"><div class="revcard_head">';
+        echo '<div class="revcard_head">';
 
         // Links
         if ($rrow) {
@@ -1118,7 +1118,7 @@ $blind\n";
             $this->_echo_review_actions($prow, $rrow, $user, $reviewPostLink);
         }
 
-        echo "</div></div></div></form>\n\n";
+        echo "</div></form></div>\n\n";
         Ht::stash_script('hiliter_children(".editrevform")', "form_revcard");
     }
 

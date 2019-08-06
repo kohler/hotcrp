@@ -2878,18 +2878,20 @@ ul.x > li:last-child {
 }
 
 /* papers */
-.papcard, .pedcard {
+.pcard {
 	margin-left: 224px;
 	margin-left: 14rem;
+}
+.pcontainer-nostrip > .pcard {
+	margin-left: 8em;
+	margin-right: 8em;
+}
+.papcard {
 	padding: 6px 0 6px;
 	background: #cec1ff;
 	position: relative;
 	border: 1px solid #9999bf;
 	border-radius: 4px;
-}
-.pedcard {
-	margin-left: 8em;
-	margin-right: 8em;
 }
 .papcard_body, .pedcard_body {
 	background: #ffffff;
@@ -2909,7 +2911,8 @@ ul.x > li:last-child {
 
 /* paper notes */
 .notecard {
-	margin: 16px 0 -8px 14em;
+	margin-top: 16px;
+	margin-bottom: -8px;
 	padding: 3px 0 5px;
 	position: relative;
 }
@@ -2919,7 +2922,7 @@ ul.x > li:last-child {
 
 /* reviews */
 .revcard {
-	margin: 24px 0 0 14em;
+	margin-top: 24px;
 	padding: 3px 0 5px;
 	background: #fad5d5;
 	position: relative;
@@ -3113,7 +3116,7 @@ ul.x > li:last-child {
 
 /* comments */
 .cmtcard {
-	margin: 24px 0 0 14em;
+	margin-top: 24px;
 	padding: 5px 0 5px;
 	background: #e6e1cf;
 	position: relative;
@@ -3298,9 +3301,9 @@ body {
 	-webkit-column-count: 200px 2;
 	columns: 200px 2;
 }
-.papcard, .pedcard, .notecard, .revcard, .cmtcard {
-	margin-left: -24px;
-	margin-right: -24px;
+#body, .pcard {
+	margin-left: 0;
+	margin-right: 0;
 }
 }
 

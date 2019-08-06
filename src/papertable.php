@@ -1315,7 +1315,7 @@ class PaperTable {
 
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
         if (!$this->npapstrip) {
-            echo '<div class="pspcard">',
+            echo '<div class="pcontainer"><div class="pspcard">',
                 '<div class="pspcard_body"><div class="pspcard_fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
 
@@ -2209,9 +2209,10 @@ class PaperTable {
         if ($this->prow->paperId)
             $this->_papstrip();
         if ($this->npapstrip)
-            echo "</div></div></div>\n<div class=\"papcard\">";
+            echo "</div></div></div>\n";
         else
-            echo '<div class="pedcard">';
+            echo '<div class="pcontainer pcontainer-nostrip">';
+        echo '<div class="pcard papcard">';
         if ($this->editable)
             echo '<div class="pedcard_body">';
         else
@@ -2319,7 +2320,7 @@ class PaperTable {
                 break;
             }
         if (count($viewable))
-            echo '<div class="notecard"><div class="notecard_body">',
+            echo '<div class="pcard notecard"><div class="notecard_body">',
                 '<a href="', hoturl("review", "p={$this->prow->paperId}&amp;m=r&amp;text=1"), '" class="xx">',
                 Ht::img("txt24.png", "[Text]", "dlimg"),
                 "&nbsp;<u>", ucfirst(join(" and ", $viewable)),

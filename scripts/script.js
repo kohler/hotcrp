@@ -3592,7 +3592,7 @@ function add_review(rrow) {
         has_user_rating = false, i, ratekey, selected;
 
     i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
-    hc.push('<div class="revcard" id="r' + rid + '" data-pid="' + rrow.pid + '" data-rid="' + rrow.rid + i + '">', '</div>');
+    hc.push('<div class="pcard revcard" id="r' + rid + '" data-pid="' + rrow.pid + '" data-rid="' + rrow.rid + i + '">', '</div>');
 
     // HEADER
     hc.push('<div class="revcard_head">', '</div>');
@@ -3647,7 +3647,7 @@ function add_review(rrow) {
     }
 
     // complete render
-    var $j = $(hc.render()).appendTo($("#body"));
+    var $j = $(hc.render()).appendTo($(".pcontainer"));
     if (has_user_rating)
         $j.find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
     score_header_tooltips($j);
@@ -4243,23 +4243,24 @@ function render_preview(evt, format, value, dest) {
 function add(cj, editing) {
     var cid = cj_cid(cj), j = $("#" + cid), $pc = null;
     if (!j.length) {
-        var $c = $("#body").children().last(),
+        var $c = $(".pcontainer").children().last(),
             iddiv = '<div id="' + cid + '" class="cmtid' + (cj.editable ? " editable" : "");
-        if (!$c.hasClass("cmtcard") && ($pc = $("#body > .cmtcard").last()).length) {
+        if (!$c.hasClass("cmtcard") && ($pc = $(".pcontainer > .cmtcard").last()).length) {
             if (!cj.is_new)
                 $pc.append('<div class="cmtcard_link"><a class="qq" href="#' + cid + '">Later comments &#x25BC;</a></div>');
         }
         if (!$c.hasClass("cmtcard") || cj.response || $c.hasClass("response")) {
             var t;
             if (cj.response) {
-                t = iddiv + ' response cmtcard">';
+                t = iddiv + ' response pcard cmtcard">';
                 if (cj.text !== false)
                     t += '<div class="cmtcard_head"><h3>' +
                         (cj.response == "1" ? "Response" : cj.response + " Response") +
                         '</h3></div>';
-            } else
-                t = '<div class="cmtcard">';
-            $c = $(t + '<div class="cmtcard_body"></div></div>').appendTo("#body");
+            } else {
+                t = '<div class="pcard cmtcard">';
+            }
+            $c = $(t + '<div class="cmtcard_body"></div></div>').appendTo(".pcontainer");
             if (!cj.response && $pc && $pc.length)
                 $c.prepend('<div class="cmtcard_link"><a class="qq" href="#' + ($pc.find("[id]").last().attr("id")) + '">Earlier comments &#x25B2;</a></div>');
         }

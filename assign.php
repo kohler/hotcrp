@@ -502,8 +502,9 @@ echo "</div></div>\n";
 $req = "Request an external review";
 if (!$Me->allow_administer($prow) && $Conf->setting("extrev_chairreq"))
     $req = "Propose an external review";
-echo Ht::form(hoturl_post("assign", "p=$prow->paperId"), ["novalidate" => true]),
-    '<div class="revcard"><div class="revcard_head">',
+echo '<div class="pcard revcard">',
+    Ht::form(hoturl_post("assign", "p=$prow->paperId"), ["novalidate" => true]),
+    '<div class="revcard_head">',
     "<h3>", $req, "</h3></div><div class=\"revcard_body\">";
 
 echo '<p class="papertext">', $Conf->_i("external-review-request-description", null);
@@ -557,6 +558,6 @@ echo '<div class="aab aabr">',
     '<div class="aabut"><a class="ui x js-request-review-preview-email" href="">Preview request email</a></div>',
     "</div>\n\n";
 
-echo "</div></div></div></form>\n";
+echo "</div></div></form></div></div>\n";
 
 $Conf->footer();

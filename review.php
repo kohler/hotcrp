@@ -316,4 +316,5 @@ else {
         $paperTable->paptabEndWithReviewsAndComments();
 }
 
+echo "</div>\n";
 $Conf->footer();
