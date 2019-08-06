@@ -321,6 +321,7 @@
     },
     {
         "name": "review_form",
+        "group": "reviewform",
         "parser_class": "ReviewForm_SettingParser",
         "type": "string"
     },
