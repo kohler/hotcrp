@@ -524,7 +524,7 @@ class SettingValues extends MessageSet {
         foreach ($js ? : [] as $k => $v)
             $x[$k] = $v;
         if ($this->has_problem_at($name))
-            $x["class"] = $this->control_class($name, get($x, "class"));
+            $x["class"] = $this->control_class($name, get($x, "class", ""));
         return $x;
     }
 
@@ -740,12 +740,12 @@ class SettingValues extends MessageSet {
             $rest = ["after" => $rest];
         $fold = $rest ? get($rest, "fold", false) : false;
 
-        echo '<div class="settings-radio';
+        echo '<div id="', $name, '" class="', $this->control_class($name, "settings-radio");
         if ($fold !== false && $fold !== true)
             echo ' has-fold fold', in_array($x, explode(" ", $fold)) ? "o" : "c", '" data-fold-values="', $fold;
         echo '">';
         if ($heading)
-            echo '<div class="settings-radioheading">', $heading, '</div>';
+            echo '<div class="settings-itemheading">', $heading, '</div>';
         foreach ($varr as $k => $item) {
             if (is_string($item))
                 $item = ["label" => $item];
@@ -960,7 +960,7 @@ class SettingValues extends MessageSet {
         if (!($si instanceof Si))
             $si = $this->si($si);
         assert(!!$si->group);
-        return Ht::link($html, $this->conf->hoturl("settings", ["group" => $si->group]), $js);
+        return Ht::link($html, $this->conf->hoturl("settings", ["group" => $si->group, "anchor" => $si->parser_class ? null : $si->name]), $js);
     }
 
 

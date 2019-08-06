@@ -147,7 +147,7 @@ class MessageSet {
 
     static function status_class($status, $rest = "", $prefix = "has-") {
         if ($status >= self::WARNING) {
-            if ($rest !== "")
+            if ((string) $rest !== "")
                 $rest .= " ";
             $rest .= $prefix . ($status >= self::ERROR ? "error" : "warning");
         }
