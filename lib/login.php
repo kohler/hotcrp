@@ -174,9 +174,9 @@ class LoginHelper {
 
         // store authentication
         ensure_session(ENSURE_SESSION_REGENERATE_ID);
+        $us = Contact::session_users();
         $uindex = Contact::session_user_index($xuser->email);
         if ($uindex === false) {
-            $us = Contact::session_users();
             $uindex = count($us);
             $us[] = $xuser->email;
             if ($uindex > 0) {
