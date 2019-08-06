@@ -739,12 +739,16 @@ class SettingValues extends MessageSet {
         if (is_string($rest))
             $rest = ["after" => $rest];
         $fold = $rest ? get($rest, "fold", false) : false;
+        if (is_string($fold) || is_int($fold))
+            $fold = explode(" ", $fold);
 
         echo '<div id="', $name, '" class="', $this->control_class($name, "settings-radio");
+        if ($fold !== false && $fold !== true)
+            echo ' has-fold fold', in_array($x, $fold) ? "o" : "c";
         if ($rest && isset($rest["group_class"]))
             echo ' ', $rest["group_class"];
         if ($fold !== false && $fold !== true)
-            echo ' has-fold fold', in_array($x, explode(" ", $fold)) ? "o" : "c", '" data-fold-values="', $fold;
+            echo '" data-fold-values="', join(" ", $fold);
         echo '">';
         if ($heading)
             echo '<div class="settings-itemheading">', $heading, '</div>';

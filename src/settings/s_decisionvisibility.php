@@ -12,10 +12,11 @@ class DecisionVisibility_SettingParser extends SettingParser {
         $sv->echo_radio_table("seedec", [Conf::SEEDEC_ADMIN => "Only administrators",
                 Conf::SEEDEC_NCREV => "$Rtext and non-conflicted PC members",
                 Conf::SEEDEC_REV => "$Rtext and <em>all</em> PC members",
-                Conf::SEEDEC_ALL => "<b>Authors</b>, $rtext, and all PC members<span class=\"fn\"> (and reviewers can see accepted submissions’ author lists)</span>"],
+                Conf::SEEDEC_ALL => "<b>Authors</b>, $rtext, and all PC members<span class=\"fx fn2\"> (and reviewers can see accepted submissions’ author lists)</span>"],
             'Who can see <strong>decisions</strong> (accept/reject)?',
-            ["group_class" => $accept_auview ? "foldc" : "foldo",
-             "item_class" => "uich js-settings-seedec"]);
+            ["group_class" => $accept_auview ? "fold2c" : "fold2o",
+             "fold" => Conf::SEEDEC_ALL,
+             "item_class" => "uich js-foldup js-settings-seedec"]);
     }
 
     static function crosscheck(SettingValues $sv) {

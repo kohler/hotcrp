@@ -2527,7 +2527,7 @@ function foldup(event, opts) {
             var sp = x.indexOf("#");
             sp = sp < 0 ? x.length : sp;
             e = document.getElementById(x.substring(0, sp));
-            x = x.substring(Math.max(sp + 1, x.length));
+            x = x.substring(Math.min(sp + 1, x.length));
         }
         opts.n = parseInt(x) || 0;
         if (!("f" in opts)) {
