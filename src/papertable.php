@@ -690,7 +690,7 @@ class PaperTable {
         $fr->value .= "</div></div></div>";
         if ($extra)
             $fr->value .= '<div class="fn6 fx7 longtext-fader"></div>'
-                . '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" aria-role="button" aria-expanded="false" data-fold-target="6">[more]</a></div>'
+                . '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" role="button" aria-expanded="false" data-fold-target="6">[more]</a></div>'
                 . Ht::unstash_script("render_text.on_page()");
     }
 
