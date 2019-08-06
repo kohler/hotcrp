@@ -49,7 +49,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
                 $ct[$ti[0]] = true;
             foreach (explode(" ", $sv->newv("tag_au_seerev")) as $t)
                 if ($t !== "" && !isset($ct[$t])) {
-                    $sv->warning_at("tag_au_seerev", "PC members can change the tag “" . htmlspecialchars($t) . "”, which affects whether authors can see reviews. Such tags should usually be <a href=\"" . hoturl("settings", "group=tags") . "\">read-only</a>.");
+                    $sv->warning_at("tag_au_seerev", "PC members can change the tag “" . htmlspecialchars($t) . "”, which affects whether authors can see reviews. Such tags should usually be " . $sv->setting_link("read-only", "tag_chair") . ".");
                     $sv->warning_at("tag_chair");
                 }
         }

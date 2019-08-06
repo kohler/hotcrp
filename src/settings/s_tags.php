@@ -25,18 +25,18 @@ class Tags_SettingRenderer {
     }
     static function render_tag_approval(SettingValues $sv) {
         $sv->set_oldv("tag_approval", self::render_tags($sv->conf->tags()->filter("approval")));
-        $sv->echo_entry_group("tag_approval", null, ["class" => "need-suggest tags"], "<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>");
+        $sv->echo_entry_group("tag_approval", null, ["class" => "need-suggest tags"], "<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>");
     }
     static function render_tag_vote(SettingValues $sv) {
         $x = [];
         foreach ($sv->conf->tags()->filter("vote") as $t)
             $x[] = "{$t->tag}#{$t->vote}";
         $sv->set_oldv("tag_vote", join(" ", $x));
-        $sv->echo_entry_group("tag_vote", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . hoturl("help", "t=votetags") . "\">Help</a>)");
+        $sv->echo_entry_group("tag_vote", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)");
     }
     static function render_tag_rank(SettingValues $sv) {
         $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
-        $sv->echo_entry_group("tag_rank", null, null, 'The <a href="' . hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . hoturl("help", "t=ranking") . '">Help</a>)');
+        $sv->echo_entry_group("tag_rank", null, null, 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)');
     }
     static function render(SettingValues $sv) {
         // Tags

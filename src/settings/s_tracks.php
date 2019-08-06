@@ -152,12 +152,12 @@ class Tracks_SettingRenderer {
         echo "<div class=\"settings-tracks\"><div class=\"entryg\">General permissions:</div>";
 
         $trackinfo = self::get_trackinfo($sv, "_", 1);
-        self::do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", 1, $trackinfo);
+        self::do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . $sv->conf->hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", 1, $trackinfo);
         echo "</div>\n\n";
     }
 
     static function render(SettingValues $sv) {
-        echo "<p class=\"settingtext\">Tracks control the PC members allowed to view or review different sets of submissions. <span class=\"nw\">(<a href=\"" . hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
+        echo "<p class=\"settingtext\">Tracks control the PC members allowed to view or review different sets of submissions. <span class=\"nw\">(<a href=\"" . $sv->conf->hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
             Ht::hidden("has_tracks", 1),
             "<div class=\"smg\"></div>\n";
         self::do_track($sv, "", 0);

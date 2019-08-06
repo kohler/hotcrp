@@ -15,7 +15,7 @@ class FinalVersions_SettingParser extends SettingParser {
         echo '</div>';
         BanalSettings::render("_m1", $sv);
         echo "</div>\n\n",
-            "<p class=\"settingtext\">You can also configure submission fields specifically for final versions. Use “Editability—Final versions” on <a href=\"", hoturl("settings", "group=opt"), "\">Settings &gt; Submission fields</a>.</p>",
+            "<p class=\"settingtext\">You can also configure submission fields specifically for final versions. Use “Editability—Final versions” on " . $sv->setting_link("Settings &gt; Submission fields", "options") . ".</p>",
             "</div></div>\n\n";
     }
 

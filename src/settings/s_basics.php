@@ -18,6 +18,6 @@ class Basics_SettingParser {
     }
     static function render_email(SettingValues $sv) {
         $sv->echo_entry_group("opt.emailReplyTo", null);
-        $sv->echo_entry_group("opt.emailCc", null, null, 'This applies to email sent to reviewers and email sent using the <a href="' . hoturl("mail") . '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.');
+        $sv->echo_entry_group("opt.emailCc", null, null, 'This applies to email sent to reviewers and email sent using the <a href="' . $sv->conf->hoturl("mail") . '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.');
     }
 }

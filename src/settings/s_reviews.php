@@ -17,7 +17,7 @@ class Reviews_SettingRenderer {
             $sv->render_entry($rname);
         echo '<div class="d-inline-block" style="min-width:7em;margin-left:2em">';
         if ($rnum !== '$' && $review_count)
-            echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $sv->conf->round_name($rnum) : "none"))), '">(', plural($review_count, "review"), ')</a>';
+            echo '<a href="', $sv->conf->hoturl("search", "q=" . urlencode("round:" . ($rnum ? $sv->conf->round_name($rnum) : "none"))), '">(', plural($review_count, "review"), ')</a>';
         echo '</div>';
         if ($deletable) {
             echo '<div class="d-inline-block" style="padding-left:2em">',
@@ -125,7 +125,7 @@ class Reviews_SettingRenderer {
         self::echo_round($sv, '$', "", "", true);
         echo '</div><div class="g"></div>';
         echo Ht::button("Add round", ["id" => "settings_review_round_add"]),
-            ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
+            ' &nbsp; <span class="hint"><a href="', $sv->conf->hoturl("help", "t=revround"), '">What is this?</a></span>',
             Ht::hidden("oldroundcount", count($sv->conf->round_list())),
             Ht::hidden("has_rev_roundtag", 1), Ht::hidden("has_extrev_roundtag", 1);
         foreach ($roundorder as $i => $rname)
@@ -151,7 +151,7 @@ class Reviews_SettingRenderer {
         $sv->echo_checkbox('pcrev_any', "PC members can review any submission", ["class" => "uich js-foldup"]);
         if ($sv->conf->setting("pcrev_any")
             && $sv->conf->check_track_sensitivity(Track::UNASSREV))
-            echo '<p class="f-h fx">', Ht::link("Current track settings", hoturl("settings", "group=tracks")), ' may restrict self-assigned reviews.</p>';
+            echo '<p class="f-h fx">', $sv->setting_link("Current track settings", "tracks"), ' may restrict self-assigned reviews.</p>';
         echo "</div>\n";
 
         $hint = "";
@@ -159,7 +159,7 @@ class Reviews_SettingRenderer {
             $hint .= ' Metareviewers can always see associated reviews and reviewer names.';
         if ($sv->conf->check_track_sensitivity(Track::VIEWREV)
             || $sv->conf->check_track_sensitivity(Track::VIEWALLREV))
-            $hint .= ' ' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' restrict review visibility.';
+            $hint .= ' ' . $sv->setting_link("Current track settings", "tracks") . ' restrict review visibility.';
         if ($hint !== "")
             $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
         $sv->echo_radio_table("pc_seeallrev", [Conf::PCSEEREV_YES => "Yes",
@@ -176,7 +176,7 @@ class Reviews_SettingRenderer {
 
         $hint = "";
         if ($sv->conf->check_track_sensitivity(Track::VIEWREVID))
-            $hint = '<p class="settings-ag f-h">' . Ht::link("Current track settings", hoturl("settings", "group=tracks")) . ' restrict reviewer name visibility.</p>';
+            $hint = '<p class="settings-ag f-h">' . $sv->setting_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
         $sv->echo_radio_table("pc_seeblindrev", [0 => "Yes",
                 1 => "Only after completing a review for the same submission"],
             'Can PC members see <strong><span class="fn2">comments and </span>reviewer names</strong> except for conflicts?',
@@ -220,7 +220,7 @@ class Reviews_SettingRenderer {
             '<div class="f-c n">',
             '<a class="ui qq js-foldup" href="">', expander(null, 0),
             'Mail template for external review requests</a>',
-            '<span class="fx"> (<a href="', hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
+            '<span class="fx"> (<a href="', $sv->conf->hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
             '<textarea class="text-monospace fx need-autogrow" name="mailbody_requestreview" cols="80" rows="20">', htmlspecialchars($t["body"]), "</textarea>";
         $sv->echo_messages_at("mailbody_requestreview");
         echo "</div></div>\n";
@@ -228,7 +228,7 @@ class Reviews_SettingRenderer {
 
     static function render_ratings(SettingValues $sv) {
         $sv->echo_radio_table("rev_ratings", [REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"],
-            'Should HotCRP collect ratings of reviews?   <a class="hint" href="' . hoturl("help", "t=revrate") . '">Learn more</a>');
+            'Should HotCRP collect ratings of reviews?   <a class="hint" href="' . $sv->conf->hoturl("help", "t=revrate") . '">Learn more</a>');
     }
 
     static function crosscheck(SettingValues $sv) {

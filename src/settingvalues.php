@@ -956,6 +956,13 @@ class SettingValues extends MessageSet {
         return $this->conf->ims()->default_itext($msgname, false, $ctxarg);
     }
 
+    function setting_link($html, $si, $js = null) {
+        if (!($si instanceof Si))
+            $si = $this->si($si);
+        assert(!!$si->group);
+        return Ht::link($html, $this->conf->hoturl("settings", ["group" => $si->group]), $js);
+    }
+
 
     function execute() {
         global $Now;
