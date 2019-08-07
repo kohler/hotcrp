@@ -5,17 +5,19 @@
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
 require_once("src/mailclasses.php");
-if (!$Me->is_manager() && !$Me->isPC)
+if (!$Me->is_manager() && !$Me->isPC) {
     $Me->escape();
+}
 
 // load mail from log
 if (isset($Qreq->fromlog) && ctype_digit($Qreq->fromlog)
     && $Me->privChair) {
     $result = $Conf->qe_raw("select * from MailLog where mailId=" . $Qreq->fromlog);
     if (($row = edb_orow($result))) {
-        foreach (["recipients", "q", "t", "cc", "replyto", "subject", "emailBody"] as $field)
+        foreach (["recipients", "q", "t", "cc", "replyto", "subject", "emailBody"] as $field) {
             if (isset($row->$field) && !isset($Qreq[$field]))
                 $Qreq[$field] = $row->$field;
+        }
         if ($row->q)
             $Qreq["plimit"] = 1;
     }
@@ -37,38 +39,45 @@ if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t]))
     $Qreq->t = key($tOpt);
 
 // mailer options
-if (isset($Qreq->cc) && $Me->is_manager())
+if (isset($Qreq->cc) && $Me->is_manager()) {
     // XXX should only apply to papers you administer
     $Qreq->cc = simplify_whitespace($Qreq->cc);
-else if ($Conf->opt("emailCc"))
+} else if ($Conf->opt("emailCc")) {
     $Qreq->cc = $Conf->opt("emailCc");
-else
+} else {
     $Qreq->cc = Text::user_email_to($Conf->site_contact());
+}
 
-if (isset($Qreq->replyto) && $Me->is_manager())
+if (isset($Qreq->replyto) && $Me->is_manager()) {
     // XXX should only apply to papers you administer
     $Qreq->replyto = simplify_whitespace($Qreq->replyto);
-else
+} else {
     $Qreq->replyto = $Conf->opt("emailReplyTo", "");
+}
 
 global $mailer_options;
 $mailer_options = ["requester_contact" => $Me, "cc" => $Qreq->cc, "reply-to" => $Qreq->replyto];
 $null_mailer = new HotCRPMailer($Conf, null, null, array_merge(["width" => false], $mailer_options));
 
 // template options
-if (isset($Qreq->monreq))
+if (isset($Qreq->monreq)) {
     $Qreq->template = "myreviewremind";
-if (isset($Qreq->template) && !isset($Qreq->check))
+}
+if (isset($Qreq->template) && !isset($Qreq->check)) {
     $Qreq->loadtmpl = -1;
+}
 
 // paper selection
-if (!isset($Qreq->q) || trim($Qreq->q) == "(All)")
+if (!isset($Qreq->q) || trim($Qreq->q) == "(All)") {
     $Qreq->q = "";
+}
 $Qreq->allow_a("p", "pap");
-if (!isset($Qreq->p) && isset($Qreq->pap)) // support p= and pap=
+if (!isset($Qreq->p) && isset($Qreq->pap)) { // support p= and pap=
     $Qreq->p = $Qreq->pap;
-if (isset($Qreq->p) && is_string($Qreq->p))
+}
+if (isset($Qreq->p) && is_string($Qreq->p)) {
     $Qreq->p = preg_split('/\s+/', $Qreq->p);
+}
 // It's OK to just set $Qreq->p from the input without
 // validation because MailRecipients filters internally
 if (isset($Qreq->prevt) && isset($Qreq->prevq)) {
@@ -94,8 +103,9 @@ if (isset($Qreq->p) && is_array($Qreq->p)
     $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q));
     $papersel = $search->paper_ids();
     sort($papersel);
-} else
+} else {
     $Qreq->q = "";
+}
 
 // Load template if requested
 if (isset($Qreq->loadtmpl)) {
@@ -113,6 +123,21 @@ if (isset($Qreq->loadtmpl)) {
     $Qreq->emailBody = $null_mailer->expand($template["body"]);
 }
 
+// Clean subject and body
+if (!isset($Qreq->subject)) {
+    $t = $Conf->mail_template("generic");
+    $Qreq->subject = $null_mailer->expand($t->subject, "subject");
+}
+$Qreq->subject = trim($Qreq->subject);
+if (str_starts_with($Qreq->subject, "[{$Conf->short_name}] ")) {
+    $Qreq->subject = substr($Qreq->subject, strlen($Conf->short_name) + 3);
+}
+if (!isset($Qreq->emailBody)) {
+    $t = $Conf->mail_template("generic");
+    $Qreq->emailBody = $null_mailer->expand($t->body, "body");
+}
+
+
 // Set recipients list, now that template is loaded
 $recip = new MailRecipients($Me, $Qreq->recipients, $papersel,
                             $Qreq->newrev_since);
@@ -127,11 +152,6 @@ if (isset($papersel)
     unset($papersel);
     unset($Qreq->check, $Qreq->send);
 }
-
-if (isset($Qreq->monreq))
-    $Conf->header("Monitor external reviews", "mail");
-else
-    $Conf->header("Mail", "mail");
 
 
 class MailSender {
@@ -496,18 +516,11 @@ class MailSender {
 }
 
 
-// Set subject and body if necessary
-if (!isset($Qreq->subject)) {
-    $t = $Conf->mail_template("generic");
-    $Qreq->subject = $null_mailer->expand($t->subject, "subject");
-}
-$Qreq->subject = trim($Qreq->subject);
-if (str_starts_with($Qreq->subject, "[{$Conf->short_name}] ")) {
-    $Qreq->subject = substr($Qreq->subject, strlen($Conf->short_name) + 3);
-}
-if (!isset($Qreq->emailBody)) {
-    $t = $Conf->mail_template("generic");
-    $Qreq->emailBody = $null_mailer->expand($t->body, "body");
+// Header
+if (isset($Qreq->monreq)) {
+    $Conf->header("Monitor external reviews", "mail");
+} else {
+    $Conf->header("Mail", "mail");
 }
 
 
