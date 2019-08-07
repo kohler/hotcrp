@@ -150,6 +150,7 @@ CREATE TABLE `MailLog` (
   `subject` blob,
   `emailBody` blob,
   `fromNonChair` tinyint(1) NOT NULL DEFAULT '0',
+  `status` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`mailId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -513,7 +514,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 219);
+insert into Settings (name, value) values ('allowPaperOption', 220);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

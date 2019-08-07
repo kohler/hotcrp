@@ -4,10 +4,11 @@
 
 class HotCRPMailPreparation extends MailPreparation {
     public $paperId = -1;
-    public $conflictType = null;
+    public $conflictType;
     public $paper_expansions = 0;
     public $combination_type = 0;
     public $fake = false;
+    public $sensitive; // used in mail tool
 
     function __construct($conf) {
         parent::__construct($conf);

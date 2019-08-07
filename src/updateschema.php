@@ -1560,6 +1560,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         }
         $conf->update_schema_version(219);
     }
+    if ($conf->sversion == 219
+        && $conf->ql("alter table MailLog add `status` tinyint(1) NOT NULL DEFAULT '0'"))
+        $conf->update_schema_version(220);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
