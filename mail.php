@@ -239,7 +239,7 @@ class MailSender {
             echo Ht::hidden("ungroup", 1);
         if ($include_cb) {
             foreach ($this->qreq as $k => $v)
-                if ($k[0] === "c" && preg_match('{\Ac[\d_]+p\d+\z}', $k))
+                if ($k[0] === "c" && preg_match('{\Ac[\d_]+p-?\d+\z}', $k))
                     echo Ht::hidden($k, $v);
         }
     }
