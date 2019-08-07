@@ -2522,20 +2522,15 @@ function foldup(event, opts) {
         && event.target.closest("a")
         && !opts.required)
         return;
-    if (!("n" in opts) && (x = e.getAttribute("data-fold-target"))) {
-        if (isNaN(x)) {
-            var sp = x.indexOf("#");
-            sp = sp < 0 ? x.length : sp;
-            e = document.getElementById(x.substring(0, sp));
-            x = x.substring(Math.min(sp + 1, x.length));
+    if (!("n" in opts)
+        && e.hasAttribute("data-fold-target")
+        && (m = e.getAttribute("data-fold-target").match(/^(\D[^#]*$|.*(?=#)|)#?(\d*)([co]?)$/))) {
+        if (m[1] !== "") {
+            e = document.getElementById(m[1]);
         }
-        opts.n = parseInt(x) || 0;
-        if (!("f" in opts)) {
-            var last = x.length ? x.charAt(x.length - 1) : "";
-            if (last === "c")
-                opts.f = true;
-            else if (last === "o")
-                opts.f = false;
+        opts.n = parseInt(m[2]) || 0;
+        if (!("f" in opts) && m[3] !== "") {
+            opts.f = m[3] === "c";
         }
     }
     var foldname = "fold" + (opts.n || "");
