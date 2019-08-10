@@ -53,7 +53,7 @@ class Options_SettingRenderer {
         return $t . '<div class="' . $sv->control_class("optv_$xpos", "entryi fx4")
             . '">' . $sv->label("optv_$xpos", "Choices")
             . '<div class="entry">'
-            . Ht::textarea("optv_$xpos", $value, $sv->sjs("optv$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "reviewtext need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"]))
+            . Ht::textarea("optv_$xpos", $value, $sv->sjs("optv_$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "reviewtext need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"]))
             . $sv->render_messages_at("optv_$xpos")
             . "</div></div>\n";
     }
@@ -218,7 +218,7 @@ class Options_SettingRenderer {
             usort($options, function ($a, $b) { return $a->position - $b->position; });
             foreach ($options as $pos => $o)
                 if (get($o, "visibility") === "nonblind")
-                    $sv->warning_at("optp_" . ($pos + 1), "The “" . htmlspecialchars($o->name) . "” field is “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”");
+                    $sv->warning_at("optp_" . ($pos + 1), "The “" . htmlspecialchars($o->name) . "” field is “visible if authors are visible,” but authors are not visible. You may want to change " . $sv->setting_link("Settings &gt; Submissions &gt; Blind submission", "sub_blind") . " to “Blind until review.”");
         }
     }
 }
