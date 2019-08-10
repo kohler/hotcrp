@@ -1476,32 +1476,59 @@ function prepare_info(elt, info) {
 }
 
 function show_tooltip(info) {
-    if (window.disable_tooltip)
+    if (window.disable_tooltip) {
         return null;
+    }
 
     var $self = $(this);
     info = prepare_info($self[0], $.extend({}, info || {}));
     info.element = this;
 
-    var tt, bub = null, to = null, refcount = 0, content = info.content;
+    var tt, bub = null, to = null, near = null,
+        refcount = 0, content = info.content;
+
     function erase() {
         to = clearTimeout(to);
         bub && bub.remove();
         $self.removeData("tooltipState");
-        if (window.global_tooltip === tt)
+        if (window.global_tooltip === tt) {
             window.global_tooltip = null;
+        }
     }
+
     function show_bub() {
         if (content && !bub) {
             bub = make_bubble(content, {color: "tooltip " + info.className, dir: info.dir});
-            bub.near(info.near || info.element).hover(tt.enter, tt.exit);
-        } else if (content)
+            near = info.near || info.element;
+            bub.near(near).hover(tt.enter, tt.exit);
+        } else if (content) {
             bub.html(content);
-        else if (bub) {
+        } else if (bub) {
             bub && bub.remove();
-            bub = null;
+            bub = near = null;
         }
     }
+
+    function complete(new_content) {
+        if (new_content instanceof HPromise) {
+            new_content.then(complete);
+        } else {
+            var tx = window.global_tooltip;
+            content = new_content;
+            if (tx
+                && tx._element === info.element
+                && tx.html() === content
+                && !info.done) {
+                tt = tx;
+            } else {
+                tx && tx.erase();
+                $self.data("tooltipState", tt);
+                show_bub();
+                window.global_tooltip = tt;
+            }
+        }
+    }
+
     tt = {
         enter: function () {
             to = clearTimeout(to);
@@ -1518,37 +1545,21 @@ function show_tooltip(info) {
         erase: erase,
         _element: $self[0],
         html: function (new_content) {
-            if (new_content === undefined)
+            if (new_content === undefined) {
                 return content;
-            else {
+            } else {
                 content = new_content;
                 show_bub();
+                return tt;
             }
-            return tt;
         },
         text: function (new_text) {
             return tt.html(escape_entities(new_text));
+        },
+        near: function () {
+            return near;
         }
     };
-
-    function complete(new_content) {
-        if (new_content instanceof HPromise)
-            new_content.then(complete);
-        else {
-            var tx = window.global_tooltip;
-            content = new_content;
-            if (tx && tx._element === info.element
-                && tx.html() === content
-                && !info.done)
-                tt = tx;
-            else {
-                tx && tx.erase();
-                $self.data("tooltipState", tt);
-                show_bub();
-                window.global_tooltip = tt;
-            }
-        }
-    }
 
     complete(content);
     info.done = true;
@@ -1839,6 +1850,10 @@ function display_tracker() {
     if (!dl.tracker
         || (dl.tracker.ts && dl.tracker.ts.length === 0)
         || hasClass(document.body, "hide-tracker")) {
+        if (window.global_tooltip
+            && mne.contains(global_tooltip.near())) {
+            global_tooltip.erase();
+        }
         if (mne)
             mne.parentNode.removeChild(mne);
         if (mnspace)
@@ -1871,6 +1886,10 @@ function display_tracker() {
     } else
         t = tracker_html(dl.tracker);
     if (t !== last_tracker_html) {
+        if (window.global_tooltip
+            && mne.contains(global_tooltip.near())) {
+            global_tooltip.erase();
+        }
         last_tracker_html = mne.innerHTML = t;
         $(mne).find(".need-tooltip").each(tooltip);
         if (tracker_has_format)
