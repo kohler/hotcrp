@@ -348,7 +348,7 @@ td.g {
 }
 .clearfix:after, .pst:after, .pavt:after, .papet:after, .submission_modes:after,
 .revvt:after, .revet:after, .rvg:after, .cmteditinfo:after, .aa:after, .aab:after,
-.entryi:after, .popup-actions:after, .f-horizontal:after {
+.entryi:after, .popup-actions:after, .modal-content:after, .f-horizontal:after {
 	clear: both;
 	content: "";
 	display: block;
@@ -3575,7 +3575,10 @@ a.help {
 }
 
 /* popup dialogs */
-.popupbg {
+.modal-open {
+	overflow: hidden;
+}
+.modal {
 	background-color: rgba(0, 0, 0, 0.4);
 	position: fixed;
 	top: 0;
@@ -3584,30 +3587,36 @@ a.help {
 	right: 0;
 	z-index: 59;
 	display: none;
+	pointer-events: none;
 }
-.popup-center {
-	justify-content: center;
-	align-items: center;
-	padding-top: 5vh;
-	padding-bottom: 15vh;
+.modal.show {
+	display: block;
 }
-.popup {
-	border: 1px solid rgba(0, 0, 0, 0.6);
-	border-radius: 4px;
-	padding: 0.75em 1em;
-	background: #fbfbfa;
-	position: absolute;
+.modal-open .modal {
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+.modal-dialog {
+	position: relative;
 	min-width: 15em;
 	max-width: 32em;
 	z-index: 60;
-	box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+	pointer-events: none;
 }
-.popup-center > .popup {
-	max-width: 64em;
-	max-height: 80vh;
-	overflow-y: auto;
+.modal-dialog-centered {
+	margin: 5vh auto;
 	position: relative;
+	display: flex;
 }
+.modal-content {
+	border: 1px solid rgba(0, 0, 0, 0.6);
+	border-radius: 4px;
+	box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+	padding: 0.75em 1em;
+	background: #fbfbfa;
+	pointer-events: auto;
+}
+
 .popup-actions {
 	margin-top: 1em;
 }
@@ -3619,11 +3628,6 @@ a.help {
 	float: left;
 	margin-left: 0;
 	margin-right: 1em;
-}
-.popup-bottom {
-	clear: both;
-	padding-top: 12px;
-	margin-bottom: -12px;
 }
 
 /* scores */

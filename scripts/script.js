@@ -305,15 +305,18 @@ jQuery.fn.extend({
         }
         return g;
     },
-    scrollIntoView: function () {
-        var p = this.geometry(), x = this[0].parentNode;
-        while (x && x.tagName && $(x).css("overflow-y") === "visible")
-            x = x.parentNode;
-        var w = jQuery(x && x.tagName ? x : window).geometry();
-        if (p.top < w.top)
-            this[0].scrollIntoView();
-        else if (p.bottom > w.bottom)
-            this[0].scrollIntoView(false);
+    scrollIntoView: function (bottom) {
+        if (this.length > 0) {
+            var p = this.geometry(), x = this[0].parentNode;
+            while (x && x.tagName && $(x).css("overflow-y") === "visible")
+                x = x.parentNode;
+            var w = jQuery(x && x.tagName ? x : window).geometry();
+            if (p.top < w.top && bottom !== false) {
+                this[0].scrollIntoView();
+            } else if (p.bottom > w.bottom) {
+                this[0].scrollIntoView(false);
+            }
+        }
         return this;
     }
 });
@@ -5707,7 +5710,7 @@ handle_ui.on("js-annotate-order", function () {
             add_anno(hc, {});
             var $row = $(hc.render());
             $row.appendTo($d.find(".tagannos"));
-            $d.find(".popup-bottom").scrollIntoView();
+            $d.find(".modal-dialog").scrollIntoView(false);
             popup_near($d, window);
             $row.find("input[name='heading_n" + last_newannoid + "']").focus();
         } else {
@@ -6233,11 +6236,10 @@ handle_ui.on("js-expand-archive", function (evt) {
 function popup_skeleton(options) {
     var hc = new HtmlCollector, $d = null;
     options = options || {};
-    hc.push('<div class="popupbg'
-        + (!options.anchor || options.anchor === window ? " popup-center" : "")
-        + '"><div class="popup"'
-        + (options.style ? ' style="' + escape_entities(options.style) + '"' : '')
-        + '><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form><div class="popup-bottom"></div></div></div>');
+    hc.push('<div class="modal" role="dialog"><div class="modal-dialog'
+        + (!options.anchor || options.anchor === window ? " modal-dialog-centered" : "")
+        + (options.style ? '" style="' + escape_entities(options.style) : '')
+        + '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form></div></div></div>');
     hc.push_actions = function (actions) {
         hc.push('<div class="popup-actions">', '</div>');
         if (actions)
@@ -6264,10 +6266,12 @@ function popup_skeleton(options) {
         $d.find("textarea, input").unautogrow();
         $d.trigger("closedialog");
         $d.remove();
+        removeClass(document.body, "modal-open");
     }
     hc.show = function (visible) {
         if (!$d) {
-            $d = $(hc.render()).appendTo(document.body);
+            $d = $(hc.render()).addClass("show").appendTo(document.body);
+            addClass(document.body, "modal-open");
             $d.find(".need-tooltip").each(tooltip);
             $d.on("click", function (event) {
                 event.target === $d[0] && close();
@@ -6296,13 +6300,10 @@ function popup_near(elt, anchor) {
     tooltip.erase();
     if (elt.jquery)
         elt = elt[0];
-    while (!hasClass(elt, "popup"))
+    while (!hasClass(elt, "modal-dialog"))
         elt = elt.childNodes[0];
     var bgelt = elt.parentNode;
-    if (hasClass(bgelt, "popup-center")) {
-        bgelt.style.display = "flex";
-    } else {
-        bgelt.style.display = "block";
+    if (!hasClass(elt, "modal-dialog-centered")) {
         var anchorPos = $(anchor).geometry(),
             wg = $(window).geometry(),
             po = $(bgelt).offset(),
@@ -7784,7 +7785,7 @@ handle_ui.on("js-edit-formulas", function () {
             $f[0].setAttribute("data-formula-new", "");
             $f.find("textarea").autogrow();
             focus_at($f.find(".editformulas-name"));
-            $d.find(".popup-bottom").scrollIntoView();
+            $d.find(".modal-dialog").scrollIntoView(false);
         }
     }
     function ondelete() {
