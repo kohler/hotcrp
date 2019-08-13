@@ -299,19 +299,29 @@ class Home_Partial {
             $where[] = "reviewToken in (" . join(",", $tokens) . ")";
         $this->_my_rinfo = null;
         if (!empty($where)) {
-            $q = "count(reviewSubmitted) num_submitted,
-                count(if(reviewNeedsSubmit=0,reviewSubmitted,1)) num_needs_submit,
-                group_concat(distinct if(reviewNeedsSubmit!=0 and reviewSubmitted is null,reviewRound,null)) unsubmitted_rounds";
-            if ($this->_merit_field)
-                $q .= ", group_concat(if(reviewSubmitted is not null,{$this->_merit_field->main_storage},null)) scores";
-            else
-                $q .= ", '' scores";
-            $result = $user->conf->qe("select $q from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0) group by PaperReview.reviewId>0");
-            $this->_my_rinfo = $result->fetch_object();
+            $rinfo = (object) ["num_submitted" => 0, "num_needs_submit" => 0, "unsubmitted_rounds" => [], "scores" => []];
+            $mfs = $this->_merit_field ? $this->_merit_field->main_storage : "null";
+            $result = $user->conf->qe("select reviewType, reviewSubmitted, reviewNeedsSubmit, timeApprovalRequested, reviewRound, $mfs from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0)");
+            while (($row = $result->fetch_row())) {
+                if ($row[1] || $row[3] < 0) {
+                    $rinfo->num_submitted += 1;
+                    $rinfo->num_needs_submit += 1;
+                    if ($row[5] !== null) {
+                        $rinfo->scores[] = $row[5];
+                    }
+                } else if ($row[2]) {
+                    $rinfo->num_needs_submit += 1;
+                    $rinfo->unsubmitted_rounds[$row[4]] = true;
+                }
+            }
             Dbl::free($result);
+            $rinfo->unsubmitted_rounds = join(",", array_keys($rinfo->unsubmitted_rounds));
+            $rinfo->scores = join(",", $rinfo->scores);
+            $rinfo->mean_score = ScoreInfo::mean_of($rinfo->scores, true);
+            if ($rinfo->num_submitted > 0 || $rinfo->num_needs_submit > 0) {
+                $this->_my_rinfo = $rinfo;
+            }
         }
-        if ($this->_my_rinfo)
-            $this->_my_rinfo->mean_score = ScoreInfo::mean_of($this->_my_rinfo->scores, true);
 
         // Information about PC reviews
         $npc = $sumpcSubmit = $npcScore = $sumpcScore = 0;
@@ -352,14 +362,14 @@ class Home_Partial {
                 $this->_merit_field && $npcScore ? $this->_merit_field->unparse_average($sumpcScore / $npcScore) : false);
             if ($user->isPC || $user->privChair)
                 echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class=\"barsep\">·</span><a href=\"", $conf->hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
-            echo "<br />\n";
+            echo "<br>\n";
         }
         if ($this->_my_rinfo
             && $this->_my_rinfo->num_submitted < $this->_my_rinfo->num_needs_submit
-            && !$conf->time_review_open())
-            echo ' <span class="deadline">The site is not open for reviewing.</span><br />', "\n";
-        else if ($this->_my_rinfo
-                 && $this->_my_rinfo->num_submitted < $this->_my_rinfo->num_needs_submit) {
+            && !$conf->time_review_open()) {
+            echo ' <span class="deadline">The site is not open for reviewing.</span><br>', "\n";
+        } else if ($this->_my_rinfo
+                   && $this->_my_rinfo->num_submitted < $this->_my_rinfo->num_needs_submit) {
             $missing_rounds = explode(",", $this->_my_rinfo->unsubmitted_rounds);
             sort($missing_rounds, SORT_NUMERIC);
             foreach ($missing_rounds as $round) {
@@ -374,24 +384,27 @@ class Home_Partial {
                     if ($d == "N/A")
                         $d = $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, true), "span");
                     if ($d != "N/A")
-                        echo ' <span class="deadline">Please submit your ', $rname, ($this->_my_rinfo->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</span><br />\n";
-                } else if ($conf->time_review($round, $user->isPC, true))
-                    echo ' <span class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, false), "span"), ".</span><br />\n";
-                else
-                    echo ' <span class="deadline"><strong class="overdue">The <a href="', $conf->hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></span><br />\n";
+                        echo ' <span class="deadline">Please submit your ', $rname, ($this->_my_rinfo->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</span><br>\n";
+                } else if ($conf->time_review($round, $user->isPC, true)) {
+                    echo ' <span class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, false), "span"), ".</span><br>\n";
+                } else {
+                    echo ' <span class="deadline"><strong class="overdue">The <a href="', $conf->hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></span><br>\n";
+                }
             }
         } else if ($user->isPC && $user->can_review_any()) {
             $d = $conf->printableTimeSetting($conf->review_deadline(null, $user->isPC, false), "span");
             if ($d != "N/A")
-                echo " <span class=\"deadline\">The review deadline is $d.</span><br />\n";
+                echo " <span class=\"deadline\">The review deadline is $d.</span><br>\n";
         }
-        if ($user->isPC && $user->can_review_any())
+        if ($user->isPC && $user->can_review_any()) {
             echo '  <span class="hint">As a PC member, you may review <a href="', $conf->hoturl("search", "q=&amp;t=s"), "\">any submitted paper</a>.</span><br>\n";
-        else if ($user->privChair)
+        } else if ($user->privChair) {
             echo '  <span class="hint">As an administrator, you may review <a href="', $conf->hoturl("search", "q=&amp;t=s"), "\">any submitted paper</a>.</span><br>\n";
+        }
 
-        if ($this->_my_rinfo)
+        if ($this->_my_rinfo) {
             echo '<div id="foldre" class="homesubgrp foldo">';
+        }
 
         // Actions
         $sep = "";
