@@ -498,7 +498,9 @@ class ReviewerType_PaperColumn extends PaperColumn {
             $ranal = $pl->make_review_analysis($rrow, $row);
         else
             $ranal = null;
-        if ($ranal && !$ranal->rrow->reviewSubmitted)
+        if ($ranal
+            && !$ranal->rrow->reviewSubmitted
+            && !$ranal->rrow->timeApprovalRequested)
             $pl->mark_has("need_review");
         $flags = 0;
         if ($row->conflict_type($this->contact)
