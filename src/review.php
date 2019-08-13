@@ -1869,6 +1869,10 @@ class ReviewValues extends MessageSet {
         if ($approvalstate > 0 && $rrow->timeApprovalRequested >= 0) {
             $qf[] = "timeApprovalRequested=?";
             $qv[] = $approvalstate === 3 ? -$now : $now;
+            if ($approvalstate === 3 && !$newsubmit) {
+                $qf[] = "reviewNeedsSubmit=?";
+                $qv[] = 0;
+            }
         }
 
         // check whether used a review token
