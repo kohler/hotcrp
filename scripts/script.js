@@ -6270,8 +6270,7 @@ function popup_skeleton(options) {
     }
     hc.show = function (visible) {
         if (!$d) {
-            $d = $(hc.render()).addClass("show").appendTo(document.body);
-            addClass(document.body, "modal-open");
+            $d = $(hc.render()).appendTo(document.body);
             $d.find(".need-tooltip").each(tooltip);
             $d.on("click", function (event) {
                 event.target === $d[0] && close();
@@ -6303,6 +6302,8 @@ function popup_near(elt, anchor) {
     while (!hasClass(elt, "modal-dialog"))
         elt = elt.childNodes[0];
     var bgelt = elt.parentNode;
+    addClass(bgelt, "show");
+    addClass(document.body, "modal-open");
     if (!hasClass(elt, "modal-dialog-centered")) {
         var anchorPos = $(anchor).geometry(),
             wg = $(window).geometry(),
@@ -6330,15 +6331,18 @@ function popup_near(elt, anchor) {
 
 function override_deadlines(callback) {
     var ejq = $(this);
-    var djq = $('<div class="popupbg"><div class="popup"><p>'
+    var djq = $('<div class="modal" role="dialog"><div class="modal-dialog" role="document"><div class="modal-content"><p>'
                 + (ejq.attr("data-override-text") || "Are you sure you want to override the deadline?")
                 + '</p><form><div class="popup-actions">'
                 + '<button type="button" name="bsubmit" class="btn-primary"></button>'
                 + '<button type="button" name="cancel">Cancel</button>'
-                + '</div></form></div></div>');
-    djq.find("button[name=cancel]").on("click", function () {
+                + '</div></form></div></div></div>');
+    function close() {
+        tooltip.erase();
         djq.remove();
-    });
+        removeClass(document.body, "modal-open");
+    }
+    djq.find("button[name=cancel]").on("click", close);
     djq.find("button[name=bsubmit]")
         .html(ejq.attr("aria-label")
               || ejq.html()
@@ -6353,7 +6357,7 @@ function override_deadlines(callback) {
             fjq.addClass("submitting");
             fjq[0].submit();
         }
-        djq.remove();
+        close();
     });
     djq.appendTo(document.body);
     popup_near(djq, this);
