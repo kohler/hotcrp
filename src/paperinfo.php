@@ -1539,14 +1539,14 @@ class PaperInfo {
         return $this->fresh_review_of("contactId", self::contact_to_cid($contact));
     }
 
-    function viewable_submitted_reviews_by_display(Contact $contact) {
-        $cinfo = $contact->__rights($this);
+    function viewable_submitted_reviews_by_display(Contact $user) {
+        $cinfo = $user->__rights($this);
         if ($cinfo->vsreviews_array === null
             || $cinfo->vsreviews_version !== $this->_review_array_version) {
             $cinfo->vsreviews_array = [];
             foreach ($this->reviews_by_display() as $id => $rrow) {
                 if ($rrow->reviewSubmitted > 0
-                    && $contact->can_view_review($this, $rrow))
+                    && $user->can_view_review($this, $rrow))
                     $cinfo->vsreviews_array[$id] = $rrow;
             }
             $cinfo->vsreviews_version = $this->_review_array_version;
@@ -1554,27 +1554,27 @@ class PaperInfo {
         return $cinfo->vsreviews_array;
     }
 
-    function viewable_submitted_reviews_by_user(Contact $contact) {
+    function viewable_submitted_reviews_by_user(Contact $user) {
         $rrows = [];
-        foreach ($this->viewable_submitted_reviews_by_display($contact) as $rrow)
+        foreach ($this->viewable_submitted_reviews_by_display($user) as $rrow)
             $rrows[$rrow->contactId] = $rrow;
         return $rrows;
     }
 
-    function can_view_review_identity_of($cid, Contact $contact) {
-        if ($contact->can_administer_for_track($this, Track::VIEWREVID)
-            || $cid == $contact->contactId)
+    function can_view_review_identity_of($cid, Contact $user) {
+        if ($user->can_administer_for_track($this, Track::VIEWREVID)
+            || $cid == $user->contactId)
             return true;
         foreach ($this->reviews_of_user($cid) as $rrow)
-            if ($contact->can_view_review_identity($this, $rrow))
+            if ($user->can_view_review_identity($this, $rrow))
                 return true;
         return false;
     }
 
-    function may_have_viewable_scores($field, Contact $contact) {
+    function may_have_viewable_scores($field, Contact $user) {
         $field = is_object($field) ? $field : $this->conf->review_field($field);
-        return $contact->can_view_review($this, null, $field->view_score)
-            || $this->review_type($contact);
+        return $user->can_view_review($this, null, $field->view_score)
+            || $this->review_type($user);
     }
 
     function ensure_reviews() {
