@@ -1544,10 +1544,10 @@ class PaperInfo {
         if ($cinfo->vsreviews_array === null
             || $cinfo->vsreviews_version !== $this->_review_array_version) {
             $cinfo->vsreviews_array = [];
-            foreach ($this->reviews_by_display($user) as $id => $rrow) {
+            foreach ($this->reviews_by_display($user) as $rrow) {
                 if ($rrow->reviewSubmitted > 0
                     && $user->can_view_review($this, $rrow))
-                    $cinfo->vsreviews_array[$id] = $rrow;
+                    $cinfo->vsreviews_array[] = $rrow;
             }
             $cinfo->vsreviews_version = $this->_review_array_version;
         }

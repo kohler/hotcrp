@@ -206,10 +206,12 @@ class PaperApi {
         }
         $vrrows = [];
         $rf = $user->conf->review_form();
-        foreach ($rrows as $rrow)
+        foreach ($rrows as $rrow) {
             if ($user->can_view_review($prow, $rrow)
-                && (!$need_id || $user->can_view_review_identity($prow, $rrow)))
+                && (!$need_id || $user->can_view_review_identity($prow, $rrow))) {
                 $vrrows[] = $rf->unparse_review_json($prow, $rrow, $user);
+            }
+        }
         if (!$vrrows && $rrows)
             return new JsonResult(403, "Permission error.");
         else

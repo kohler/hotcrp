@@ -19,10 +19,12 @@ class GetJsonRQC_ListAction extends ListAction {
             if ($user->allow_administer($prow)) {
                 $pj[] = $j = $ps->paper_json($prow);
                 $prow->ensure_full_reviews();
-                foreach ($prow->viewable_submitted_reviews_by_display($user) as $rrow)
+                foreach ($prow->viewable_submitted_reviews_by_display($user) as $rrow) {
                     $j->reviews[] = $rf->unparse_review_json($prow, $rrow, $user, ReviewForm::RJ_NO_EDITABLE | ReviewForm::RJ_UNPARSE_RATINGS | ReviewForm::RJ_ALL_RATINGS | ReviewForm::RJ_NO_REVIEWERONLY);
-            } else
+                }
+            } else {
                 $pj[] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
+            }
         }
         $user->set_overrides($old_overrides);
         $results["papers"] = $pj;
