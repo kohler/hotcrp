@@ -1872,7 +1872,7 @@ class PaperInfo {
             return [!!($x->commentType & COMMENTTYPE_DRAFT),
                     (int) $x->timeDisplayed, true];
         else
-            return [$x->reviewSubmitted && !$x->reviewOrdinal,
+            return [!$x->reviewSubmitted || !$x->reviewOrdinal,
                     (int) $x->timeDisplayed, false];
     }
     static function review_or_comment_compare($a, $b) {
