@@ -70,7 +70,7 @@ class ListAction {
                 $texts[] = array("paper" => $prow->paperId,
                                  "action" => "none",
                                  "title" => "You cannot override your conflict with this paper");
-            } else if (($rrows = $prow->reviews_by_display())) {
+            } else if (($rrows = $prow->reviews_by_display($user))) {
                 $texts[] = array();
                 $texts[] = array("paper" => $prow->paperId,
                                  "action" => "clearreview",
@@ -82,12 +82,14 @@ class ListAction {
                         if (!array_key_exists($rrow->contactId, $token_users))
                             $token_users[$rrow->contactId] = $user->conf->user_by_id($rrow->contactId);
                         $u = $token_users[$rrow->contactId];
-                    } else if ($rrow->reviewType >= REVIEW_PC)
+                    } else if ($rrow->reviewType >= REVIEW_PC) {
                         $u = get($pcm, $rrow->contactId);
-                    else
+                    } else {
                         $u = null;
-                    if (!$u)
+                    }
+                    if (!$u) {
                         continue;
+                    }
 
                     $round = $rrow->reviewRound;
                     $d = ["paper" => $prow->paperId,

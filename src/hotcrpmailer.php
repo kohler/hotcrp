@@ -116,7 +116,7 @@ class HotCRPMailer extends Mailer {
             $rrows = array($this->rrow);
         else {
             $this->row->ensure_full_reviews();
-            $rrows = $this->row->reviews_by_display();
+            $rrows = $this->row->reviews_by_display($this->recipient);
         }
 
         // save old au_seerev setting, and reset it so authors can see them.
