@@ -2269,16 +2269,171 @@ class PaperTable {
 
         $t = "";
         if ($rtable)
-            $t .= reviewTable($this->prow, $this->all_rrows,
-                              $editrrow, $this->mode);
-        $t .= reviewLinks($this->prow, $this->all_rrows, $this->mycrows,
-                          $editrrow, $this->mode, $this->allreviewslink);
+            $t .= review_table($this->user, $this->prow, $this->all_rrows,
+                               $editrrow, $this->mode);
+        $t .= $this->review_links($editrrow);
         if (($empty = ($t === "")))
             $t = $ifempty;
         if ($t)
             echo '<hr class="papcard_sep" />';
         echo $t, "</div></div>\n";
         return $empty;
+    }
+
+    private function review_links($editrrow) {
+        // $user, PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviewslink
+        $prow = $this->prow;
+        $cflttype = $this->user->view_conflict_type($prow);
+        $allow_admin = $this->user->allow_administer($prow);
+        $any_comments = false;
+        $admin = $this->user->can_administer($prow);
+        $xsep = ' <span class="barsep">·</span> ';
+
+        $nvisible = 0;
+        $myrr = null;
+        if ($this->all_rrows) {
+            foreach ($this->all_rrows as $rr) {
+                if ($this->user->can_view_review($prow, $rr))
+                    $nvisible++;
+                if ($rr->contactId == $this->user->contactId
+                    || (!$myrr && $this->user->is_my_review($rr)))
+                    $myrr = $rr;
+            }
+        }
+
+        // comments
+        $pret = "";
+        if ($this->mycrows
+            && !$editrrow
+            && $this->mode !== "edit") {
+            $tagger = new Tagger($this->user);
+            $viewable_crows = array_filter($this->mycrows, function ($cr) { return $this->user->can_view_comment($cr->prow, $cr); });
+            $cxs = CommentInfo::group_by_identity($viewable_crows, $this->user, true);
+            if (!empty($cxs)) {
+                $count = array_reduce($cxs, function ($n, $cx) { return $n + $cx[1]; }, 0);
+                $cnames = array_map(function ($cx) {
+                    $cid = $cx[0]->unparse_html_id();
+                    $tclass = "cmtlink";
+                    if (($tags = $cx[0]->viewable_tags($this->user))
+                        && ($color = $cx[0]->conf->tags()->color_classes($tags)))
+                        $tclass .= " $color taghh";
+                    return "<span class=\"nb\"><a class=\"{$tclass} track\" href=\"#{$cid}\">"
+                        . $cx[0]->unparse_user_html($this->user, null)
+                        . "</a>"
+                        . ($cx[1] > 1 ? " ({$cx[1]})" : "")
+                        . $cx[2] . "</span>";
+                }, $cxs);
+                $first_cid = $cxs[0][0]->unparse_html_id();
+                $pret = '<div class="revnotes"><a class="track" href="#' . $first_cid . '"><strong>'
+                    . plural($count, "Comment") . '</strong></a>: '
+                    . join(" ", $cnames) . '</div>';
+                $any_comments = true;
+            }
+        }
+
+        $t = [];
+        $dlimgjs = ["class" => "dlimg", "width" => 24, "height" => 24];
+
+        // see all reviews
+        $this->allreviewslink = false;
+        if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
+            && ($this->mode !== "p" || $editrrow)) {
+            $this->allreviewslink = true;
+            $t[] = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="xx revlink">'
+                . Ht::img("view48.png", "[All reviews]", $dlimgjs) . "&nbsp;<u>All reviews</u></a>";
+        }
+
+        // edit paper
+        if ($this->mode !== "edit"
+            && $prow->has_author($this->user)
+            && !$this->user->can_administer($prow)) {
+            $t[] = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=edit") . '" class="xx revlink">'
+                . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>Edit submission</strong></u></a>";
+        }
+
+        // edit review
+        if ($this->mode === "re"
+            || ($this->mode === "assign" && $t !== "")
+            || !$prow) {
+            /* no link */;
+        } else if ($myrr && $editrrow != $myrr) {
+            $myrlink = unparseReviewOrdinal($myrr);
+            $a = '<a href="' . hoturl("review", "p=$prow->paperId&r=$myrlink") . '" class="xx revlink">';
+            if ($this->user->can_review($prow, $myrr)) {
+                $x = $a . Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u></a>";
+            } else {
+                $x = $a . Ht::img("review48.png", "[Your review]", $dlimgjs) . "&nbsp;<u><b>Your review</b></u></a>";
+            }
+            $t[] = $x;
+        } else if (!$myrr && !$editrrow && $this->user->can_review($prow, null)) {
+            $t[] = '<a href="' . hoturl("review", "p=$prow->paperId&amp;m=re") . '" class="xx revlink">'
+                . Ht::img("review48.png", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u></a>";
+        }
+
+        // review assignments
+        if ($this->mode !== "assign"
+            && $this->mode !== "edit"
+            && $this->user->can_request_review($prow, null, true)) {
+            $t[] = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx revlink">'
+                . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
+        }
+
+        // new comment
+        $nocmt = preg_match('/\A(?:assign|contact|edit|re)\z/', $this->mode);
+        if (!$this->allreviewslink
+            && !$nocmt
+            && $this->user->can_comment($prow, null)) {
+            $t[] = '<a class="ui js-edit-comment xx revlink" href="#cnew">'
+                . Ht::img("comment48.png", "[Add comment]", $dlimgjs) . "&nbsp;<u>Add comment</u></a>";
+            $any_comments = true;
+        }
+
+        // new response
+        if (!$nocmt
+            && ($prow->has_author($this->user) || $allow_admin)
+            && $this->conf->any_response_open) {
+            foreach ($this->conf->resp_rounds() as $rrd) {
+                $cr = null;
+                foreach ($this->mycrows ? : [] as $crow) {
+                    if (($crow->commentType & COMMENTTYPE_RESPONSE)
+                        && $crow->commentRound == $rrd->number) {
+                        $cr = $crow;
+                    }
+                }
+                $cr = $cr ? : CommentInfo::make_response_template($rrd->number, $prow);
+                if ($this->user->can_respond($prow, $cr)) {
+                    $cid = $this->conf->resp_round_text($rrd->number) . "response";
+                    $what = "Add";
+                    if ($cr->commentId) {
+                        $what = $cr->commentType & COMMENTTYPE_DRAFT ? "Edit draft" : "Edit";
+                    }
+                    $t[] = '<a class="ui js-edit-comment xx revlink" href="#' . $cid . '">'
+                        . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
+                        . ($cflttype >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
+                        . $what . ($rrd->name == "1" ? "" : " $rrd->name") . ' response</u></a>';
+                    $any_comments = true;
+                }
+            }
+        }
+
+        // override conflict
+        if ($allow_admin && !$admin) {
+            $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl(null, ["forceShow" => 1]) . '" class="xx">'
+                . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing</span>";
+        } else if ($this->user->privChair && !$allow_admin) {
+            $x = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
+        }
+
+        if ($any_comments)
+            CommentInfo::echo_script($prow);
+
+        $t = empty($t) ? "" : '<p class="sd">' . join("", $t) . '</p>';
+        if ($prow->has_author($this->user)) {
+            $t = '<p class="sd">' . $this->conf->_('You are an <span class="author">author</span> of this submission.') . '</p>' . $t;
+        } else if ($prow->has_conflict($this->user)) {
+            $t = '<p class="sd">' . $this->conf->_('You have a <span class="conflict">conflict</span> with this submission.') . '</p>' . $t;
+        }
+        return $pret . $t;
     }
 
     function _privilegeMessage() {
