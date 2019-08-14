@@ -263,7 +263,7 @@ class ReviewInfo {
         // 5. reviewer
         if (isset($a->sorter)
             && isset($b->sorter)
-            && ($x = strcmp($a->sorter, $b->sorter)) != 0)
+            && ($x = strcasecmp($a->sorter, $b->sorter)) != 0)
             return $x;
         // 6. review id
         if ($a->reviewId != $b->reviewId)
