@@ -1853,12 +1853,13 @@ function display_tracker() {
     if (!dl.tracker
         || (dl.tracker.ts && dl.tracker.ts.length === 0)
         || hasClass(document.body, "hide-tracker")) {
-        if (window.global_tooltip
-            && mne.contains(global_tooltip.near())) {
-            global_tooltip.erase();
-        }
-        if (mne)
+        if (mne) {
+            if (window.global_tooltip
+                && mne.contains(global_tooltip.near())) {
+                global_tooltip.erase();
+            }
             mne.parentNode.removeChild(mne);
+        }
         if (mnspace)
             mnspace.parentNode.removeChild(mnspace);
         return;
