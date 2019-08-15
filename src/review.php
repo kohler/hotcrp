@@ -965,7 +965,7 @@ $blind\n";
         self::check_review_author_seen($prow, $rrow, $user);
 
         if (!$editmode) {
-            $rj = $this->unparse_review_json($prow, $rrow, $user);
+            $rj = $this->unparse_review_json($user, $prow, $rrow);
             if (get($options, "editmessage"))
                 $rj->message_html = $options["editmessage"];
             echo Ht::unstash_script("review_form.add_review(" . json_encode_browser($rj) . ");\n");
@@ -1009,10 +1009,12 @@ $blind\n";
         $type = "";
         if ($rrow && $user->can_view_review_round($prow, $rrow)) {
             $type = review_type_icon($rrow->reviewType);
-            if ($rrow->reviewRound > 0 && $user->can_view_review_round($prow, $rrow))
+            if ($rrow->reviewRound > 0
+                && $user->can_view_review_round($prow, $rrow)) {
                 $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
                     . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
                     . "</span>";
+            }
         }
         if ($rrow && $user->can_view_review_identity($prow, $rrow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
@@ -1127,43 +1129,62 @@ $blind\n";
     const RJ_ALL_RATINGS = 8;
     const RJ_NO_REVIEWERONLY = 16;
 
-    function unparse_review_json(PaperInfo $prow, ReviewInfo $rrow,
-                                 Contact $contact, $flags = 0) {
-        self::check_review_author_seen($prow, $rrow, $contact);
+    function unparse_review_json(Contact $user, PaperInfo $prow,
+                                 ReviewInfo $rrow, $flags = 0) {
+        self::check_review_author_seen($prow, $rrow, $user);
         $editable = !($flags & self::RJ_NO_EDITABLE);
 
-        $rj = array("pid" => $prow->paperId, "rid" => (int) $rrow->reviewId);
-        if ($rrow->reviewOrdinal)
+        $rj = ["pid" => $prow->paperId, "rid" => (int) $rrow->reviewId];
+        if ($rrow->reviewOrdinal) {
             $rj["ordinal"] = unparseReviewOrdinal($rrow->reviewOrdinal);
-        if ($contact->can_view_review_round($prow, $rrow)) {
-            $rj["rtype"] = (int) $rrow->reviewType;
-            if (($round = $this->conf->round_name($rrow->reviewRound)))
-                $rj["round"] = $round;
         }
-        if ($rrow->reviewBlind)
+        if ($user->can_view_review_round($prow, $rrow)) {
+            $rj["rtype"] = (int) $rrow->reviewType;
+            if (($round = $this->conf->round_name($rrow->reviewRound))) {
+                $rj["round"] = $round;
+            }
+        }
+        if ($rrow->reviewBlind) {
             $rj["blind"] = true;
-        if ($rrow->reviewSubmitted)
+        }
+        if ($rrow->reviewSubmitted) {
             $rj["submitted"] = true;
-        else if (!$rrow->reviewOrdinal)
-            $rj["draft"] = true;
-        else
-            $rj["ready"] = false;
-        if (!$rrow->reviewSubmitted && $rrow->timeApprovalRequested > 0)
-            $rj["needs_approval"] = true;
-        if ($editable && $contact->can_review($prow, $rrow))
+        } else {
+            if (!$rrow->reviewOrdinal) {
+                $rj["draft"] = true;
+            } else {
+                $rj["ready"] = false;
+            }
+            if ($rrow->timeApprovalRequested < 0) {
+                $rj["approved"] = true;
+            } else if ($rrow->timeApprovalRequested > 0) {
+                $rj["needs_approval"] = true;
+            }
+        }
+        if ($editable && $user->can_review($prow, $rrow)) {
             $rj["editable"] = true;
+        }
 
-        // identity and time
-        $showtoken = $editable && $contact->active_review_token_for($prow, $rrow);
-        if ($contact->can_view_review_identity($prow, $rrow)
+        // identity
+        $showtoken = $editable && $user->active_review_token_for($prow, $rrow);
+        if ($user->can_view_review_identity($prow, $rrow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             $rj["reviewer"] = Text::user_html($rrow);
             $rj["reviewer_name"] = Text::name_text($rrow);
             $rj["reviewer_email"] = $rrow->email;
         }
-        if ($showtoken)
+        if ($showtoken) {
             $rj["review_token"] = encode_token((int) $rrow->reviewToken);
-        $time = self::rrow_modified_time($contact, $prow, $rrow);
+        }
+        if ($user->is_my_review($rrow)) {
+            $rj["my_review"] = true;
+        }
+        if ($user->contactId == $rrow->requestedBy) {
+            $rj["my_request"] = true;
+        }
+
+        // time
+        $time = self::rrow_modified_time($user, $prow, $rrow);
         if ($time > 1) {
             $rj["modified_at"] = (int) $time;
             $rj["modified_at_text"] = $this->conf->unparse_time($time);
@@ -1171,20 +1192,20 @@ $blind\n";
 
         // ratings
         if ((string) $rrow->allRatings !== ""
-            && $contact->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
+            && $user->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
             $rj["ratings"] = array_values($rrow->ratings());
             if ($flags & self::RJ_UNPARSE_RATINGS)
                 $rj["ratings"] = array_map("ReviewInfo::unparse_rating", $rj["ratings"]);
         }
-        if ($editable && $contact->can_rate_review($prow, $rrow)) {
-            $rj["user_rating"] = $rrow->rating_of_user($contact);
+        if ($editable && $user->can_rate_review($prow, $rrow)) {
+            $rj["user_rating"] = $rrow->rating_of_user($user);
             if ($flags & self::RJ_UNPARSE_RATINGS)
                 $rj["user_rating"] = ReviewInfo::unparse_rating($rj["user_rating"]);
         }
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        foreach ($this->all_visible_fields($contact, $prow, $rrow) as $fid => $f)
+        foreach ($this->all_visible_fields($user, $prow, $rrow) as $fid => $f)
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
                 $fval = get($rrow, $fid);

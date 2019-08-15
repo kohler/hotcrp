@@ -1008,12 +1008,12 @@ xassert(!$review2b->reviewAuthorSeen);
 $Conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
 xassert($user_author2->can_view_review($paper2, $review2b));
 
-$rjson = $Conf->review_form()->unparse_review_json($paper2, $review2b, $user_chair);
+$rjson = $Conf->review_form()->unparse_review_json($user_chair, $paper2, $review2b);
 ReviewForm::update_review_author_seen();
 $review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!$review2b->reviewAuthorSeen);
 
-$rjson = $Conf->review_form()->unparse_review_json($paper2, $review2b, $user_author2);
+$rjson = $Conf->review_form()->unparse_review_json($user_author2, $paper2, $review2b);
 ReviewForm::update_review_author_seen();
 $review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!!$review2b->reviewAuthorSeen);

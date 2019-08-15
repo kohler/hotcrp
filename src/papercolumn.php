@@ -687,11 +687,12 @@ class ReviewerList_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         // see also search.php > getaction == "reviewers"
         $x = [];
-        foreach ($row->reviews_by_display($pl->user) as $xrow)
+        foreach ($row->reviews_by_display($pl->user) as $xrow) {
             if ($pl->user->can_view_review_identity($row, $xrow)) {
                 $ranal = $pl->make_review_analysis($xrow, $row);
                 $x[] = $pl->user->reviewer_html_for($xrow) . " " . $ranal->icon_html(false);
             }
+        }
         if ($x)
             return '<span class="nb">' . join(',</span> <span class="nb">', $x) . '</span>';
         else

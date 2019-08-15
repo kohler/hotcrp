@@ -2508,7 +2508,7 @@ class PaperTable {
         $rf = $this->conf->review_form();
         foreach ($rcs as $rc) {
             if (isset($rc->reviewId)) {
-                $rcj = $rf->unparse_review_json($this->prow, $rc, $this->user);
+                $rcj = $rf->unparse_review_json($this->user, $this->prow, $rc);
                 $s .= "review_form.add_review(" . json_encode_browser($rcj) . ");\n";
             } else {
                 ++$ncmt;

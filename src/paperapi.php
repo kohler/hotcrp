@@ -209,7 +209,7 @@ class PaperApi {
         foreach ($rrows as $rrow) {
             if ($user->can_view_review($prow, $rrow)
                 && (!$need_id || $user->can_view_review_identity($prow, $rrow))) {
-                $vrrows[] = $rf->unparse_review_json($prow, $rrow, $user);
+                $vrrows[] = $rf->unparse_review_json($user, $prow, $rrow);
             }
         }
         if (!$vrrows && $rrows)
