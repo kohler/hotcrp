@@ -329,8 +329,8 @@ class CommentInfo {
             || ($user->can_meaningfully_override($this->prow)
                 && $user->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
         if ($idable || $idable_override) {
-            $user = $this->user();
-            $cj->author = Text::user_html($user);
+            $thisuser = $this->user();
+            $cj->author = Text::user_html($thisuser);
             $cj->author_email = $user->email;
             if (!$idable) {
                 $cj->author_hidden = true;
