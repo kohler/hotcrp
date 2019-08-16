@@ -2555,19 +2555,22 @@ class PaperTable {
             return;
         }
 
-        $m = array();
+        $m = [];
         if ($this->all_rrows
-            && ($whyNot = $this->user->perm_view_review($this->prow, null)))
+            && ($whyNot = $this->user->perm_view_review($this->prow, null))) {
             $m[] = "You can’t see the reviews for this submission. " . whyNotText($whyNot);
+        }
         if (!$this->conf->time_review_open()
             && $this->prow->review_type($this->user)) {
-            if ($this->rrow)
+            if ($this->rrow) {
                 $m[] = "You can’t edit your review because the site is not open for reviewing.";
-            else
+            } else {
                 $m[] = "You can’t begin your assigned review because the site is not open for reviewing.";
+            }
         }
-        if (!empty($m))
+        if (!empty($m)) {
             $this->_paptabSepContaining(join("<br>", $m));
+        }
 
         $this->_paptabReviewLinks(false, null, "");
     }
@@ -2577,8 +2580,8 @@ class PaperTable {
 
         // review messages
         $msgs = array();
-        if ($this->rrow && !$this->user->is_signed_in()) {
-            $msgs[] = $this->conf->_("You’re editing this review using a special review link. You can also <a href=\"%s\">sign in to the site</a>.", $this->conf->hoturl("index", ["signin" => 1, "email" => $this->editrrow->email, "cap" => null]));
+        if ($this->editrrow && !$this->user->is_signed_in()) {
+            $msgs[] = $this->conf->_("You followed a review link to edit this review. You can also <a href=\"%s\">sign in to the site</a>.", $this->conf->hoturl("index", ["signin" => 1, "email" => $this->editrrow->email, "cap" => null]));
         }
         if (!$this->rrow && !$this->prow->review_type($this->user)) {
             $msgs[] = "You haven’t been assigned to review this submission, but you can review it anyway.";
@@ -2604,8 +2607,9 @@ class PaperTable {
                     $msgs[] = $this->conf->_("You’ll be able to see %d other reviews once you complete your own.", $nother);
             }
         }
-        if (count($msgs) > 0)
+        if (!empty($msgs)) {
             $this->_paptabSepContaining(join("<br />\n", $msgs));
+        }
 
         // links
         $this->_paptabReviewLinks(true, $this->editrrow, "");
@@ -2616,25 +2620,27 @@ class PaperTable {
         if ($this->editrrow
             && ($this->user->is_owned_review($this->editrrow) || $this->admin)
             && !$this->conf->time_review($this->editrrow, $act_pc, true)) {
-            if ($this->admin)
+            if ($this->admin) {
                 $override = " As an administrator, you can override this deadline.";
-            else {
+            } else {
                 $override = "";
                 if ($this->editrrow->reviewSubmitted)
                     $opt["edit"] = false;
             }
-            if ($this->conf->time_review_open())
+            if ($this->conf->time_review_open()) {
                 $opt["editmessage"] = 'The <a href="' . hoturl("deadlines") . '">review deadline</a> has passed, so the review can no longer be changed.' . $override;
-            else
-                $opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed.$override";
-        } else if (!$this->user->can_review($this->prow, $this->editrrow))
+            } else {
+                $opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed." . $override;
+            }
+        } else if (!$this->user->can_review($this->prow, $this->editrrow)) {
             $opt["edit"] = false;
+        }
 
         // maybe clickthrough
         $need_clickthrough = $opt["edit"] && !$this->user->can_clickthrough("review");
-        $rf = $this->conf->review_form();
         if ($need_clickthrough)
             self::echo_review_clickthrough();
+        $rf = $this->conf->review_form();
         $rf->show($this->prow, $this->editrrow, $this->user, $opt, $this->review_values);
     }
 

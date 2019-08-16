@@ -914,12 +914,13 @@ class Contact {
         $qreq = $qreq ? : $Qreq;
 
         if ($qreq->ajax) {
-            if ($this->is_empty())
+            if ($this->is_empty()) {
                 json_exit(["ok" => false, "error" => "You have been signed out.", "loggedout" => true]);
-            else if (!$this->is_signed_in())
+            } else if (!$this->is_signed_in()) {
                 json_exit(["ok" => false, "error" => "You must sign in to access that function.", "loggedout" => true]);
-            else
+            } else {
                 json_exit(["ok" => false, "error" => "You don’t have permission to access that page."]);
+            }
         }
 
         if (!$this->is_signed_in()) {
@@ -932,10 +933,11 @@ class Contact {
                 $x["anchor"] = $qreq->anchor;
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITE_RELATIVE);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, $Now + 120];
-            if ($qreq->post_ok())
+            if ($qreq->post_ok()) {
                 error_go(false, "You must sign in to access that page. Your changes were not saved; after signing in, you may submit them again.");
-            else
+            } else {
                 error_go(false, "You must sign in to access that page.");
+            }
         } else {
             error_go(false, "You don’t have permission to access that page.");
         }

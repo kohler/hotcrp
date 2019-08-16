@@ -879,17 +879,20 @@ $blind\n";
 
     private function _echo_accept_decline(PaperInfo $prow, $rrow, Contact $user,
                                           $reviewPostLink) {
-        if ($rrow && !$rrow->reviewModified
+        if ($rrow
+            && !$rrow->reviewModified
             && $rrow->reviewType < REVIEW_SECONDARY
             && ($user->is_my_review($rrow) || $user->can_administer($prow))) {
             $buttons = [];
             $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn-success"]);
             $buttons[] = Ht::button("Decline", ["class" => "btn-danger ui js-decline-review"]);
             // Also see $qreq->refuse case in review.php.
-            if ($rrow->requestedBy && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy)))
+            if ($rrow->requestedBy
+                && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))) {
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
-            else
+            } else {
                 $req = 'Please take a moment to accept or decline our review request.';
+            }
             echo '<div class="revcard_bodyinsert">',
                 Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-top:0"],
                             '<div style="padding-top:5px">' . $req . '</div>'),
@@ -2025,8 +2028,9 @@ class ReviewValues extends MessageSet {
                 $result = true;
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
-            if ($user->is_signed_in())
+            if ($user->is_signed_in()) {
                 $rrow->delete_acceptor();
+            }
         } else {
             array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");
             array_unshift($qv, $prow->paperId, $user->contactId, REVIEW_PC, $user->contactId, $this->conf->assignment_round(false));
