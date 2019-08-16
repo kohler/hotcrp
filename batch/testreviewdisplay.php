@@ -31,24 +31,30 @@ function review_id_displayed($r) {
 }
 
 function review_compare_by_ordinal($a, $b) {
-    assert($a->reviewSubmitted && $b->reviewSubmitted);
     if ($a->reviewOrdinal && $b->reviewOrdinal) {
         return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
     } else if ($a->reviewSubmitted != $b->reviewSubmitted) {
-        return $a->reviewSubmitted < $b->reviewSubmitted ? -1 : 1;
+        if ($a->reviewSubmitted != 0 && $b->reviewSubmitted != 0) {
+            return $a->reviewSubmitted < $b->reviewSubmitted ? -1 : 1;
+        } else {
+            return $a->reviewSubmitted != 0 ? -1 : 1;
+        }
     } else {
         return $a->reviewId < $b->reviewId ? -1 : 1;
     }
 }
 
 function review_compare_by_time_displayed($a, $b) {
-    assert($a->reviewSubmitted && $b->reviewSubmitted && $a->timeDisplayed && $b->timeDisplayed);
     if ($a->timeDisplayed != $b->timeDisplayed) {
         return $a->timeDisplayed < $b->timeDisplayed ? -1 : 1;
     } else if ($a->reviewOrdinal && $b->reviewOrdinal) {
         return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
     } else if ($a->reviewSubmitted != $b->reviewSubmitted) {
-        return $a->reviewSubmitted < $b->reviewSubmitted ? -1 : 1;
+        if ($a->reviewSubmitted != 0 && $b->reviewSubmitted != 0) {
+            return $a->reviewSubmitted < $b->reviewSubmitted ? -1 : 1;
+        } else {
+            return $a->reviewSubmitted != 0 ? -1 : 1;
+        }
     } else {
         return $a->reviewId < $b->reviewId ? -1 : 1;
     }
@@ -75,7 +81,7 @@ function set_review_time_displayed($prow, &$rrows) {
 
 $user = $Conf->site_contact();
 foreach ($Conf->paper_set(["paperId" => $pids], $user) as $prow) {
-    $rrows = array_filter(array_values($prow->reviews_by_display($user)), function ($rrow) { return $rrow->reviewSubmitted || $rrow->reviewOrdinal; });
+    $rrows = array_values(array_filter($prow->reviews_by_display($user), function ($rrow) { return $rrow->reviewSubmitted || $rrow->reviewOrdinal; }));
     $ids0 = join(",", array_map("review_id", $rrows));
     for ($i = 0; $i < count($rrows) - 1; ++$i) {
         for ($j = $i + 1; $j < count($rrows); ++$j) {
