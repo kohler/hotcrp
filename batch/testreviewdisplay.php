@@ -14,10 +14,17 @@ if (empty($pids)) {
     exit;
 }
 
+function review_id($rrow) {
+    $rid = $rrow->reviewId;
+    if ($rrow->reviewOrdinal)
+        $rid .= unparseReviewOrdina($rrow->reviewOrdinal);
+    return $rid;
+}
+
 $user = $Conf->site_contact();
 foreach ($Conf->paper_set(["paperId" => $pids], $user) as $prow) {
     $rrows = array_values($prow->reviews_by_display($user));
-    $ids0 = join(",", array_map(function ($rrow) { return $rrow->reviewId; }, $rrows));
+    $ids0 = join(",", array_map("review_id", $rrows));
 
     foreach ($rrows as $rrow) {
         if ($rrow->reviewSubmitted && $rrow->timeDisplayed == 0) {
@@ -25,7 +32,7 @@ foreach ($Conf->paper_set(["paperId" => $pids], $user) as $prow) {
         }
     }
     usort($rrows, "PaperInfo::review_or_comment_compare");
-    $ids1 = join(",", array_map(function ($rrow) { return $rrow->reviewId; }, $rrows));
+    $ids1 = join(",", array_map("review_id", $rrows));
     if ($ids0 !== $ids1) {
         fwrite(STDERR, "#{$prow->paperId}: $ids0 != $ids1\n");
     }
