@@ -704,7 +704,8 @@ class Contact {
             && $this->_activated;
     }
 
-    function has_database_account() { // XXX obsolete
+    function has_database_account() { // XXX obsolete 16-08-2019
+        error_log("call to obsolete Contact::has_database_account");
         return $this->contactId > 0;
     }
 
