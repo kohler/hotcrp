@@ -33,9 +33,8 @@ class Comment_API {
             $round = $prow->conf->resp_round_number($qreq->response);
             if ($round === false)
                 return new JsonResult(404, "No such response round.");
-            // XXX backwards compat
-            if ($qreq->c === $qreq->response . "response")
-                $qreq->c = "new";
+            // XXX backwards compat; assertion 16-08-2019
+            assert(!str_ends_with((string) $qreq->c, "response"));
         }
 
         // find comment
@@ -128,8 +127,9 @@ class Comment_API {
             if (($token = $qreq->review_token)
                 && ($token = decode_token($token, "V"))
                 && in_array($token, $user->review_tokens())
-                && ($rrow = $prow->review_of_token($token)))
+                && ($rrow = $prow->review_of_token($token))) {
                 $suser = $prow->conf->user_by_id($rrow->contactId);
+            }
 
             // check for delete
             if ($qreq->delete) {
@@ -148,20 +148,24 @@ class Comment_API {
                     && $ocrow->attachment_ids() == $xcrow->attachment_ids()) {
                     $xcrow = $ocrow;
                     $ok = true;
-                } else
+                } else {
                     $msg = Ht::msg("A response was entered concurrently by another user. Reload to see it.", 2);
+                }
             }
 
             // generate save response
-            if ($ok)
+            if ($ok) {
                 $msg = self::save_success_message($xcrow);
+            }
         }
 
-        $j = array("ok" => $ok);
-        if ($xcrow->commentId)
+        $j = ["ok" => $ok];
+        if ($xcrow->commentId) {
             $j["cmt"] = $xcrow->unparse_json($user);
-        if ($msg)
+        }
+        if ($msg) {
             $j["msg"] = $msg;
+        }
         return $j;
     }
 }
