@@ -241,7 +241,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 223) {
+        if ($this->sversion < 224) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2037,6 +2037,11 @@ class Conf {
         $any = $this->invariantq("select paperId, commentId from PaperComment where timeDisplayed=0 and (commentType&" . COMMENTTYPE_DRAFT . ")=0 limit 1");
         if ($any)
             $this->invariant_error($ie, "submitted comment #" . self::$invariant_row[0] . "/" . self::$invariant_row[1] . " has no timeDisplayed");
+
+        // submitted and ordinaled reviews are displayed
+        $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (reviewSubmitted is not null or reviewOrdinal>0) limit 1");
+        if ($any)
+            $this->invariant_error($ie, "submitted/ordinal review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1] . " has no timeDisplayed");
 
         return $ie;
     }

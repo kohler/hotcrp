@@ -378,6 +378,54 @@ function update_schema_clean_options_json($conf) {
     return true;
 }
 
+function update_schema_set_review_time_displayed($conf) {
+    $pids = Dbl::fetch_first_columns($conf->dblink, "select distinct paperId from PaperReview where (reviewSubmitted is not null or reviewOrdinal!=0) and timeDisplayed=0");
+    if (empty($pids)) {
+        return true;
+    }
+
+    $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
+    foreach ($conf->paper_set(["paperId" => $pids]) as $prow) {
+        $rrows = array_values(array_filter($prow->reviews_by_id(), function ($r) {
+            return $r->reviewSubmitted || $r->reviewOrdinal;
+        }));
+        usort($rrows, function ($a, $b) {
+            if ($a->timeDisplayed && $b->timeDisplayed
+                && $a->timeDisplayed != $b->timeDisplayed) {
+                return $a->timeDisplayed < $b->timeDisplayed ? -1 : 1;
+            } else if ($a->reviewOrdinal && $b->reviewOrdinal) {
+                return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
+            } else if ($a->reviewSubmitted != $b->reviewSubmitted) {
+                if ($a->reviewSubmitted != 0 && $b->reviewSubmitted != 0) {
+                    return $a->reviewSubmitted < $b->reviewSubmitted ? -1 : 1;
+                } else {
+                    return $a->reviewSubmitted != 0 ? -1 : 1;
+                }
+            } else {
+                return $a->reviewId < $b->reviewId ? -1 : 1;
+            }
+        });
+
+        $rt = array_map(function ($r) {
+            return +$r->timeDisplayed ? : +$r->reviewSubmitted ? : +$r->reviewModified;
+        }, $rrows);
+        $last = 0;
+        foreach ($rrows as $i => $rrow) {
+            if (!$rrow->timeDisplayed) {
+                $t = max($rt[$i], $last);
+                for ($j = $i + 1; $j < count($rrows); ++$j) {
+                    $t = min($t, $rt[$j]);
+                }
+                $cleanf("update PaperReview set timeDisplayed=? where paperId=? and reviewId=?", [$t, $prow->paperId, $rrow->reviewId]);
+                $rrow->timeDisplayed = $t;
+            }
+            $last = +$rrow->timeDisplayed;
+        }
+    }
+    $cleanf(true);
+    return true;
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1572,6 +1620,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 222
         && $conf->ql("update PaperComment set timeDisplayed=if(timeNotified=0,timeModified,timeNotified) where timeDisplayed=0 and (commentType&" . COMMENTTYPE_DRAFT . ")=0"))
         $conf->update_schema_version(223);
+    if ($conf->sversion == 223
+        && update_schema_set_review_time_displayed($conf))
+        $conf->update_schema_version(224);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
