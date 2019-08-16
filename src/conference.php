@@ -241,7 +241,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 222) {
+        if ($this->sversion < 223) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2027,6 +2027,16 @@ class Conf {
                 }
             }
         }
+
+        // comments are nonempty
+        $any = $this->invariantq("select paperId, commentId from PaperComment where comment is null and commentOverflow is null and not exists (select * from DocumentLink where paperId=PaperComment.paperId and linkId=PaperComment.commentId and linkType>=0 and linkType<1024) limit 1");
+        if ($any)
+            $this->invariant_error($ie, "empty comment #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
+
+        // non-draft comments are displayed
+        $any = $this->invariantq("select paperId, commentId from PaperComment where timeDisplayed=0 and (commentType&" . COMMENTTYPE_DRAFT . ")=0 limit 1");
+        if ($any)
+            $this->invariant_error($ie, "submitted comment #" . self::$invariant_row[0] . "/" . self::$invariant_row[1] . " has no timeDisplayed");
 
         return $ie;
     }

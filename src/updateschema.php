@@ -1569,6 +1569,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 221
         && $conf->ql("alter table PaperComment drop column `paperStorageId`"))
         $conf->update_schema_version(222);
+    if ($conf->sversion == 222
+        && $conf->ql("update PaperComment set timeDisplayed=if(timeNotified=0,timeModified,timeNotified) where timeDisplayed=0 and (commentType&" . COMMENTTYPE_DRAFT . ")=0"))
+        $conf->update_schema_version(223);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
