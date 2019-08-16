@@ -263,70 +263,87 @@ class CommentInfo {
                          $this->attachments());
     }
 
-    function unparse_json(Contact $contact) {
+    function unparse_json(Contact $user) {
         if ($this->commentId
-            && !$contact->can_view_comment($this->prow, $this, true))
+            ? !$user->can_view_comment($this->prow, $this, true)
+            : !$user->can_comment($this->prow, $this)) {
             return false;
+        }
 
-        // placeholder for new comment
+        if ($this->commentId) {
+            $cj = (object) [
+                "pid" => $this->prow->paperId,
+                "cid" => $this->commentId,
+                "ordinal" => $this->unparse_ordinal(),
+                "visibility" => self::$visibility_map[$this->commentType & COMMENTTYPE_VISIBILITY]
+            ];
+        } else {
+            // placeholder for new comment
+            $cj = (object) [
+                "pid" => $this->prow->paperId,
+                "is_new" => true,
+                "editable" => true
+            ];
+        }
+
+        if ($this->commentType & COMMENTTYPE_BLIND) {
+            $cj->blind = true;
+        }
+        if ($this->commentType & COMMENTTYPE_DRAFT) {
+            $cj->draft = true;
+        }
+        if ($this->commentType & COMMENTTYPE_RESPONSE) {
+            $cj->response = $this->conf->resp_round_name($this->commentRound);
+        } else if ($this->commentType & COMMENTTYPE_BYAUTHOR) {
+            $cj->by_author = true;
+        } else if ($this->commentType & COMMENTTYPE_BYSHEPHERD) {
+            $cj->by_shepherd = true;
+        }
+
+        // exit now if new-comment skeleton
         if (!$this->commentId) {
-            if (!$contact->can_comment($this->prow, $this))
-                return false;
-            $cj = (object) ["pid" => $this->prow->paperId, "is_new" => true, "editable" => true];
-            if ($this->commentType & COMMENTTYPE_RESPONSE)
-                $cj->response = $this->conf->resp_round_name($this->commentRound);
-            else if ($this->commentType & COMMENTTYPE_BYAUTHOR)
-                $cj->by_author = true;
-            else if (($token = $contact->active_review_token_for($this->prow)))
+            if (($token = $user->active_review_token_for($this->prow))) {
                 $cj->review_token = encode_token($token);
+            }
             return $cj;
         }
 
         // otherwise, viewable comment
-        $cj = (object) array("pid" => $this->prow->paperId, "cid" => $this->commentId);
-        $cj->ordinal = $this->unparse_ordinal();
-        $cj->visibility = self::$visibility_map[$this->commentType & COMMENTTYPE_VISIBILITY];
-        if ($this->commentType & COMMENTTYPE_BLIND)
-            $cj->blind = true;
-        if ($this->commentType & COMMENTTYPE_DRAFT)
-            $cj->draft = true;
-        if ($this->commentType & COMMENTTYPE_RESPONSE)
-            $cj->response = $this->conf->resp_round_name($this->commentRound);
-        else if ($this->commentType & COMMENTTYPE_BYAUTHOR)
-            $cj->by_author = true;
-        else if ($this->commentType & COMMENTTYPE_BYSHEPHERD)
-            $cj->by_shepherd = true;
-        if ($contact->can_comment($this->prow, $this))
+        if ($user->can_comment($this->prow, $this)) {
             $cj->editable = true;
-        else if ($contact->can_finalize_comment($this->prow, $this))
+        } else if ($user->can_finalize_comment($this->prow, $this)) {
             $cj->submittable = true;
+        }
 
         // tags
-        if (($tags = $this->viewable_tags($contact))) {
+        if (($tags = $this->viewable_tags($user))) {
             $cj->tags = TagInfo::split($tags);
-            if ($tags && ($cc = $this->conf->tags()->color_classes($tags)))
+            if (($cc = $this->conf->tags()->color_classes($tags))) {
                 $cj->color_classes = $cc;
+            }
         }
 
         // identity and time
-        $idable = $contact->can_view_comment_identity($this->prow, $this);
+        $idable = $user->can_view_comment_identity($this->prow, $this);
         $idable_override = $idable
-            || ($contact->can_meaningfully_override($this->prow)
-                && $contact->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
+            || ($user->can_meaningfully_override($this->prow)
+                && $user->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
         if ($idable || $idable_override) {
             $user = $this->user();
             $cj->author = Text::user_html($user);
             $cj->author_email = $user->email;
-            if (!$idable)
+            if (!$idable) {
                 $cj->author_hidden = true;
+            }
             if (Contact::is_anonymous_email($cj->author_email)
-                && $contact->review_tokens()
-                && ($rrows = $this->prow->reviews_of_user(-1, $contact->review_tokens())))
+                && $user->review_tokens()
+                && ($rrows = $this->prow->reviews_of_user(-1, $user->review_tokens()))) {
                 $cj->review_token = encode_token((int) $rrows[0]->reviewToken);
+            }
         }
         if ((!$idable
              || ($this->commentType & (COMMENTTYPE_VISIBILITY | COMMENTTYPE_BLIND)) == (COMMENTTYPE_AUTHOR | COMMENTTYPE_BLIND))
-            && ($p = $this->unparse_user_pseudonym($contact))) {
+            && ($p = $this->unparse_user_pseudonym($user))) {
             $cj->author_pseudonym = $p;
         }
         if ($this->timeModified > 0 && $idable_override) {
@@ -339,18 +356,21 @@ class CommentInfo {
         }
 
         // text
-        if ($contact->can_view_comment_text($this->prow, $this))
+        if ($user->can_view_comment_text($this->prow, $this)) {
             $cj->text = $this->commentOverflow ? : $this->comment;
-        else {
+        } else {
             $cj->text = false;
             $cj->word_count = count_words($this->commentOverflow ? : $this->comment);
         }
 
         // format
-        if (($fmt = $this->commentFormat) === null)
+        $fmt = $this->commentFormat;
+        if ($fmt === null) {
             $fmt = $this->conf->default_format;
-        if ($fmt)
+        }
+        if ($fmt) {
             $cj->format = (int) $fmt;
+        }
 
         // attachments
         foreach ($this->attachments() as $doc) {
@@ -503,24 +523,26 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $displayed = !($ctype & COMMENTTYPE_DRAFT);
 
         // query
-        if (($text = get($req, "text")) !== false)
+        if (($text = get($req, "text")) !== false) {
             $text = (string) $text;
+        }
         $q = "";
         $qv = array();
-        if ($text === false && $this->commentId) {
-            $change = true;
-            $q = "delete from $Table where commentId=$this->commentId";
-            $docids = [];
-        } else if ($text === false)
-            /* do nothing */;
-        else if (!$this->commentId) {
+        if ($text === false) {
+            if ($this->commentId) {
+                $change = true;
+                $q = "delete from $Table where commentId=$this->commentId";
+                $docids = [];
+            }
+        } else if (!$this->commentId) {
             $change = true;
             $qa = ["contactId, $LinkColumn, commentType, comment, commentOverflow, timeModified, replyTo"];
             $qb = [$contact->contactId, $this->prow->$LinkColumn, $ctype, "?", "?", $Now, 0];
-            if (strlen($text) <= 32000)
+            if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
-            else
+            } else {
                 array_push($qv, UnicodeHelper::utf8_prefix($text, 200), $text);
+            }
             if ($ctags !== null) {
                 $qa[] = "commentTags";
                 $qb[] = "?";
@@ -545,25 +567,29 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             }
         } else {
             $change = ($this->commentType >= COMMENTTYPE_AUTHOR) != ($ctype >= COMMENTTYPE_AUTHOR);
-            if ($this->timeModified >= $Now)
+            if ($this->timeModified >= $Now) {
                 $Now = $this->timeModified + 1;
+            }
             // do not notify on updates within 3 hours
             $qa = "";
             if ($this->timeNotified + 10800 < $Now
                 || (($ctype & COMMENTTYPE_RESPONSE)
                     && !($ctype & COMMENTTYPE_DRAFT)
-                    && ($this->commentType & COMMENTTYPE_DRAFT)))
+                    && ($this->commentType & COMMENTTYPE_DRAFT))) {
                 $qa .= ", timeNotified=$Now";
+            }
             // reset timeDisplayed if you change the comment type
             if ((!$this->timeDisplayed || $this->ordinal_missing($ctype))
                 && ($text !== "" || $docids)
-                && $displayed)
+                && $displayed) {
                 $qa .= ", timeDisplayed=$Now";
+            }
             $q = "update $Table set timeModified=$Now$qa, commentType=$ctype, comment=?, commentOverflow=?, commentTags=? where commentId=$this->commentId";
-            if (strlen($text) <= 32000)
+            if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
-            else
+            } else {
                 array_push($qv, UnicodeHelper::utf8_prefix($text, 200), $text);
+            }
             $qv[] = $ctags;
         }
 
@@ -580,8 +606,9 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $this->conf->update_autosearch_tags($this->prow);
 
         // ordinal
-        if ($text !== false && $this->ordinal_missing($ctype))
+        if ($text !== false && $this->ordinal_missing($ctype)) {
             $this->save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn);
+        }
 
         // reload
         if ($text !== false) {
