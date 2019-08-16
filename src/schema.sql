@@ -211,7 +211,6 @@ CREATE TABLE `PaperComment` (
   `comment` varbinary(32767) DEFAULT NULL,
   `commentType` int(11) NOT NULL DEFAULT '0',
   `replyTo` int(11) NOT NULL,
-  `paperStorageId` int(11) NOT NULL DEFAULT '0',
   `ordinal` int(11) NOT NULL DEFAULT '0',
   `authorOrdinal` int(11) NOT NULL DEFAULT '0',
   `commentTags` varbinary(1024) DEFAULT NULL,
@@ -514,7 +513,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 221);
+insert into Settings (name, value) values ('allowPaperOption', 222);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

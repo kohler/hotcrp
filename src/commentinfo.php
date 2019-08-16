@@ -14,7 +14,6 @@ class CommentInfo {
     public $comment;
     public $commentType = COMMENTTYPE_REVIEWER;
     public $replyTo;
-    public $paperStorageId;
     public $ordinal;
     public $authorOrdinal;
     public $commentTags;
@@ -49,7 +48,7 @@ class CommentInfo {
         $this->paperId = (int) $this->paperId;
         $this->commentType = (int) $this->commentType;
         $this->commentRound = (int) $this->commentRound;
-        if ($this->conf->sversion < 107 && $this->commentType >= COMMENTTYPE_AUTHOR)
+        if ($this->commentType >= COMMENTTYPE_AUTHOR)
             $this->authorOrdinal = $this->ordinal;
     }
 
@@ -423,9 +422,7 @@ class CommentInfo {
 
 
     private function save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn) {
-        $okey = "ordinal";
-        if ($ctype >= COMMENTTYPE_AUTHOR && $this->conf->sversion >= 107)
-            $okey = "authorOrdinal";
+        $okey = $ctype >= COMMENTTYPE_AUTHOR ? "authorOrdinal" : "ordinal";
         $q = "update $Table, (select coalesce(max($Table.$okey),0) maxOrdinal
     from $LinkTable
     left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn)

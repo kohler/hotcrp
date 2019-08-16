@@ -241,14 +241,15 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 221) {
+        if ($this->sversion < 222) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
             Dbl::$nerrors = $old_nerrors;
         }
-        if ($this->sversion < 95)
+        if ($this->sversion < 200) {
             self::msg_error("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
+        }
 
         // invalidate all caches after loading from backup
         if (isset($this->settings["frombackup"])
