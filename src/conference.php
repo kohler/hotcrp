@@ -3367,11 +3367,11 @@ class Conf {
             // profile link
             $profile_parts = [];
             if ($Me->has_email() && !$Me->is_disabled()) {
-                if ($Me->is_signed_in()) {
+                if (!$Me->is_anonymous_user()) {
                     $purl = $this->hoturl("profile");
                     $profile_parts[] = "<a class=\"q\" href=\"{$purl}\"><strong>" . htmlspecialchars($Me->email) . "</strong></a> &nbsp; <a href=\"{$purl}\">Profile</a>";
                 } else {
-                    $profile_parts[] = "<strong>" . htmlspecialchars($Me->email) . "</strong> via link";
+                    $profile_parts[] = "<strong>" . htmlspecialchars($Me->email) . "</strong>";
                 }
             }
 

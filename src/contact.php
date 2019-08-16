@@ -700,8 +700,7 @@ class Contact {
     }
 
     function is_signed_in() {
-        return ($this->contactId > 0 || $this->contactDbId > 0)
-            && $this->_activated;
+        return $this->email && $this->_activated;
     }
 
     function has_database_account() { // XXX obsolete 16-08-2019
