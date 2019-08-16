@@ -491,6 +491,9 @@
     "colorado": {
         "weak": true
     },
+    "columbia": {
+        "sync": "british"
+    },
     "csu": {
         "alternate": ["california state university", "cal state"]
     },
