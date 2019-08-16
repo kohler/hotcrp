@@ -1369,8 +1369,9 @@ class PaperInfo {
         Dbl::free($result);
 
         $this->ensure_reviewer_names_set($row_set);
-        if (get($had, "lastLogin"))
+        if (isset($had["lastLogin"])) {
             $this->ensure_reviewer_last_login_set($row_set);
+        }
     }
 
     function invalidate_reviews() {

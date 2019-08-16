@@ -14,7 +14,6 @@ function _review_table_actas($user, $rr) {
 function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
     $conf = $prow->conf;
     $subrev = array();
-    $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
     $cflttype = $user->view_conflict_type($prow);
     $allow_actas = $user->privChair && $user->allow_administer($prow);
@@ -112,34 +111,37 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         $t .= '</td>';
 
         // primary/secondary glyph
-        if ($cflttype > 0 && !$admin)
-            $rtype = "";
-        else if ($rr->reviewType > 0) {
+        $rtype = "";
+        if (($cflttype <= 0 || $admin) && $rr->reviewType > 0) {
             $rtype = review_type_icon($rr->reviewType, $rr->reviewNeedsSubmit != 0);
-            if ($rr->reviewRound > 0 && $user->can_view_review_round($prow, $rr))
+            if ($rr->reviewRound > 0
+                && $user->can_view_review_round($prow, $rr)) {
                 $rtype .= '&nbsp;<span class="revround" title="Review round">'
                     . htmlspecialchars($conf->round_name($rr->reviewRound))
                     . "</span>";
-        } else
-            $rtype = "";
+            }
+        }
 
         // reviewer identity
         $showtoken = $rr->reviewToken && $user->can_review($prow, $rr);
         if (!$user->can_view_review_identity($prow, $rr)) {
             $t .= ($rtype ? '<td class="rl">' . $rtype . '</td>' : '<td></td>');
         } else {
-            if (!$showtoken || !Contact::is_anonymous_email($rr->email))
+            if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
                 $n = $user->name_html_for($rr);
-            else
+            } else {
                 $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
-            if ($allow_actas)
+            }
+            if ($allow_actas) {
                 $n .= _review_table_actas($user, $rr);
+            }
             $t .= '<td class="rl"><span class="taghl">' . $n . '</span>'
                 . ($rtype ? " $rtype" : "") . "</td>";
             if ($show_colors
                 && ($p = $conf->pc_member_by_id($rr->contactId))
-                && ($color = $p->viewable_color_classes($user)))
+                && ($color = $p->viewable_color_classes($user))) {
                 $tclass .= ($tclass ? " " : "") . $color;
+            }
         }
 
         // requester
@@ -156,8 +158,9 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
                     $t .= $user->reviewer_html_for($rr->requestedBy);
                 $t .= '</td>';
                 $want_requested_by = true;
-            } else
+            } else {
                 $t .= '<td></td>';
+            }
         }
 
         // scores
@@ -177,10 +180,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         }
 
         // affix
-        if (!$rr->reviewSubmitted)
-            $nonsubrev[] = array($tclass, $t, $scores);
-        else
-            $subrev[] = array($tclass, $t, $scores);
+        $subrev[] = array($tclass, $t, $scores);
     }
 
     // unfinished review notification
@@ -198,7 +198,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
     }
 
     // completion
-    if (count($nonsubrev) + count($subrev)) {
+    if (!empty($subrev)) {
         if ($want_requested_by)
             array_unshift($score_header, '<th class="rl"></th>');
         $score_header_text = join("", $score_header);
@@ -208,14 +208,16 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         $t .= "\">\n";
         $nscores = 0;
         if ($score_header_text) {
-            foreach ($score_header as $x)
+            foreach ($score_header as $x) {
                 $nscores += $x !== "" ? 1 : 0;
+            }
             $t .= '<tr><td colspan="2"></td>';
-            if ($mode === "assign" && !$want_requested_by)
+            if ($mode === "assign" && !$want_requested_by) {
                 $t .= '<td></td>';
+            }
             $t .= $score_header_text . "</tr>\n";
         }
-        foreach (array_merge($subrev, $nonsubrev) as $r) {
+        foreach ($subrev as $r) {
             $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
             if (get($r, 2)) {
                 foreach ($score_header as $fid => $header_needed)
@@ -223,8 +225,9 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
                         $x = get($r[2], $fid);
                         $t .= $x ? : "<td class=\"revscore rs_$fid\"></td>";
                     }
-            } else if ($nscores > 0)
+            } else if ($nscores > 0) {
                 $t .= '<td colspan="' . $nscores . '"></td>';
+            }
             $t .= "</tr>\n";
         }
         return $t . "</table></div>\n" . $notetxt;

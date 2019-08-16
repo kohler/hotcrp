@@ -3618,19 +3618,30 @@ function add_review(rrow) {
     hc.push('<div class="revcard_head">', '</div>');
 
     // edit/text links
-    if (rrow.editable)
+    if (rrow.editable) {
         hc.push('<div class="float-right"><a class="xx" href="' + hoturl_html("review", rlink) + '">'
                 + '<img class="b" src="' + assetsurl + 'images/edit48.png" alt="[Edit]" width="16" height="16">'
                 + '&nbsp;<u>Edit</u></a></div>');
+    }
 
-    hc.push('<h3><a class="u" href="' + hoturl_html("review", rlink) + '">'
-            + 'Review' + (rrow.ordinal ? '&nbsp;#' + rid : '') + '</a></h3>');
+    hc.push('<h3><a class="u" href="' + hoturl_html("review", rlink) + '">', '</a></h3>');
+    if (rrow.ordinal) {
+        hc.push('Review #' + rid);
+    } else if (rrow.approved) {
+        hc.push('Approved Review');
+    } else if (rrow.draft) {
+        hc.push('Draft Review');
+    } else {
+        hc.push('Review');
+    }
+    hc.pop();
 
     // author info
     var revinfo = [], rtype_text = "";
     if (rrow.rtype) {
         rtype_text = ' &nbsp;<span class="rto rt' + rrow.rtype +
-            (rrow.submitted ? "" : "n") + '" title="' + rtype_info[rrow.rtype][1] +
+            (rrow.submitted || rrow.approved ? "" : "n") +
+            '" title="' + rtype_info[rrow.rtype][1] +
             '"><span class="rti">' + rtype_info[rrow.rtype][0] + '</span></span>';
         if (rrow.round)
             rtype_text += '&nbsp;<span class="revround">' + escape_entities(rrow.round) + '</span>';
