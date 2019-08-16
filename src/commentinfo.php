@@ -252,8 +252,11 @@ class CommentInfo {
     }
 
     function attachments() {
-        return $this->commentType & COMMENTTYPE_HASDOC
-            ? $this->prow->linked_documents($this->commentId, 0, 1024) : [];
+        if ($this->commentType & COMMENTTYPE_HASDOC) {
+            return $this->prow->linked_documents($this->commentId, 0, 1024);
+        } else {
+            return [];
+        }
     }
 
     function attachment_ids() {
@@ -353,8 +356,9 @@ class CommentInfo {
         // attachments
         foreach ($this->attachments() as $doc) {
             $docj = $doc->unparse_json(["_comment" => $this]);
-            if (isset($cj->editable))
+            if (isset($cj->editable)) {
                 $docj->docid = $doc->paperStorageId;
+            }
             $cj->docs[] = $docj;
         }
 
@@ -459,12 +463,14 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
         if ($is_response
             ? $this->prow->blind
-            : $this->conf->is_review_blind(!!get($req, "blind")))
+            : $this->conf->is_review_blind(!!get($req, "blind"))) {
             $ctype |= COMMENTTYPE_BLIND;
+        }
         if ($this->commentId
             ? $this->commentType & COMMENTTYPE_BYSHEPHERD
-            : $contact->contactId == $this->prow->shepherdContactId)
+            : $contact->contactId == $this->prow->shepherdContactId) {
             $ctype |= COMMENTTYPE_BYSHEPHERD;
+        }
 
         // tags
         if ($is_response) {
@@ -475,15 +481,16 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                    && preg_match_all(',\S+,', $req->tags, $m)
                    && !$contact->act_author_view($this->prow)) {
             $tagger = new Tagger($contact);
-            $ctags = array();
+            $ctags = [];
             foreach ($m[0] as $tt)
                 if (($tt = $tagger->check($tt, Tagger::NOVALUE))
                     && !stri_ends_with($tt, "response"))
                     $ctags[strtolower($tt)] = $tt;
             $tagger->sort($ctags);
             $ctags = count($ctags) ? " " . join(" ", $ctags) . " " : null;
-        } else
+        } else {
             $ctags = null;
+        }
 
         // attachments
         $docids = $old_docids = [];
@@ -491,8 +498,9 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $ctype |= COMMENTTYPE_HASDOC;
             $docids = array_map(function ($doc) { return $doc->paperStorageId; }, $docs);
         }
-        if ($this->commentType & COMMENTTYPE_HASDOC)
+        if ($this->commentType & COMMENTTYPE_HASDOC) {
             $old_docids = array_map(function ($doc) { return $doc->paperStorageId; }, $this->attachments());
+        }
 
         // notifications
         $displayed = !($ctype & COMMENTTYPE_DRAFT);
