@@ -13,8 +13,7 @@ function _review_table_actas($user, $rr) {
 // reviewer information
 function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
     $conf = $prow->conf;
-    $subrev = array();
-    $foundRrow = $foundMyReview = $notShown = 0;
+    $subrev = [];
     $cflttype = $user->view_conflict_type($prow);
     $allow_actas = $user->privChair && $user->allow_administer($prow);
     $admin = $user->can_administer($prow);
@@ -26,24 +25,21 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
     $xsep = ' <span class="barsep">·</span> ';
     $want_scores = $mode !== "assign" && $mode !== "edit" && $mode !== "re";
     $want_requested_by = false;
-    $want_retract = false;
-    $score_header = array_map(function ($x) { return ""; }, $conf->review_form()->forder);
+    $score_header = array_map(function ($x) { return ""; },
+                              $conf->review_form()->forder);
 
     // actual rows
     foreach ($rrows as $rr) {
-        $highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
-        $foundRrow += $highlight;
+        $highlight = $rrow && $rr->reviewId == $rrow->reviewId;
         $want_my_scores = $want_scores;
         if ($user->is_owned_review($rr) && $mode === "re") {
             $want_my_scores = true;
-            $foundMyReview++;
         }
         $canView = $user->can_view_review($prow, $rr);
 
-        // skip unsubmitted reviews
+        // skip unsubmitted reviews;
+        // assign page lists actionable reviews separately
         if (!$canView && $hideUnviewable) {
-            if ($rr->reviewNeedsSubmit == 1 && $rr->reviewModified > 0)
-                $notShown++;
             continue;
         }
         // assign page lists actionable reviews separately
@@ -58,20 +54,22 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
 
         // review ID
         $id = "Review";
-        if ($rr->reviewOrdinal)
+        if ($rr->reviewOrdinal) {
             $id .= " #" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
+        }
         if (!$rr->reviewSubmitted) {
             if ($rr->reviewType == REVIEW_SECONDARY
                 && $rr->reviewNeedsSubmit <= 0
                 && $conf->setting("pcrev_editdelegate") < 3) {
                 $id .= " (delegated)";
             } else if ($rr->reviewModified > 1) {
-                if ($rr->timeApprovalRequested < 0)
+                if ($rr->timeApprovalRequested < 0) {
                     $id .= " (approved)";
-                else if ($rr->timeApprovalRequested > 0)
+                } else if ($rr->timeApprovalRequested > 0) {
                     $id .= " (pending approval)";
-                else
+                } else {
                     $id .= " (in progress)";
+                }
             } else if ($rr->reviewModified > 0) {
                 $id .= " (accepted)";
             } else {
@@ -164,7 +162,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         }
 
         // scores
-        $scores = array();
+        $scores = [];
         if ($want_my_scores && $canView) {
             $view_score = $user->view_score_bound($prow, $rr);
             foreach ($conf->review_form()->forder as $fid => $f)
@@ -180,21 +178,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         }
 
         // affix
-        $subrev[] = array($tclass, $t, $scores);
-    }
-
-    // unfinished review notification
-    $notetxt = "";
-    if ($cflttype >= CONFLICT_AUTHOR
-        && !$admin
-        && $notShown
-        && $user->can_view_review($prow, null)) {
-        if ($notShown == 1)
-            $t = "1 review remains outstanding.";
-        else
-            $t = "$notShown reviews remain outstanding.";
-        $t .= '<div class="f-h">You will be emailed if new reviews are submitted or existing reviews are changed.</div>';
-        $notetxt = '<div class="revnotes">' . $t . "</div>";
+        $subrev[] = [$tclass, $t, $scores];
     }
 
     // completion
@@ -205,7 +189,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         $t = "<div class=\"reviewersdiv\"><table class=\"reviewers";
         if ($score_header_text)
             $t .= " has-scores";
-        $t .= "\">\n";
+        $t .= "\"><tbody>\n";
         $nscores = 0;
         if ($score_header_text) {
             foreach ($score_header as $x) {
@@ -230,7 +214,8 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
             }
             $t .= "</tr>\n";
         }
-        return $t . "</table></div>\n" . $notetxt;
-    } else
-        return $notetxt;
+        return $t . "</tbody></table></div>\n";
+    } else {
+        return "";
+    }
 }
