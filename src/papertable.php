@@ -2318,7 +2318,7 @@ class PaperTable {
                         && ($color = $cx[0]->conf->tags()->color_classes($tags)))
                         $tclass .= " $color taghh";
                     return "<span class=\"nb\"><a class=\"{$tclass} track\" href=\"#{$cid}\">"
-                        . $cx[0]->unparse_user_html($this->user, null)
+                        . $cx[0]->unparse_commenter_html($this->user, null)
                         . "</a>"
                         . ($cx[1] > 1 ? " ({$cx[1]})" : "")
                         . $cx[2] . "</span>";
