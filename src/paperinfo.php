@@ -1433,7 +1433,10 @@ class PaperInfo {
             foreach ($srs as $i => $srow) {
                 if ($urow->requestedBy == $srow->contactId
                     || ($srow->reviewType < REVIEW_PC
-                        && $urow->requestedBy == $srow->requestedBy)) {
+                        && $urow->requestedBy == $srow->requestedBy
+                        && ($urow->timeApprovalRequested >= 0
+                            || ($srow->timeApprovalRequested < 0
+                                && $urow->timeApprovalRequested < $srow->timeApprovalRequested)))) {
                     $p0 = $i + 1;
                 }
             }
