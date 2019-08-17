@@ -1702,7 +1702,7 @@ class Contact {
         $this->check_rights_version();
         if ($this->_has_approvable === null) {
             $this->_has_approvable = 0;
-            if ($this->conf->setting("pcrev_editdelegate") > 1) {
+            if ($this->conf->ext_subreviews > 1) {
                 if ($this->is_manager()) {
                     $search = new PaperSearch($this, "ext:pending-approval OR (has:proposal admin:me) HIGHLIGHT:pink ext:pending-approval:myreq HIGHLIGHT:green ext:pending-approval HIGHLIGHT:yellow (has:proposal admin:me)");
                     $search->paper_ids(); // actually perform search
@@ -2684,7 +2684,7 @@ class Contact {
                     && in_array($rbase->reviewToken, $this->_review_tokens))
                 || ($rbase->requestedBy == $this->contactId
                     && $rbase->reviewType == REVIEW_EXTERNAL
-                    && $this->conf->setting("pcrev_editdelegate"))
+                    && $this->conf->ext_subreviews)
                 || ($this->_capabilities !== null
                     && get($this->_capabilities, "@ra" . $rbase->paperId) == $rbase->contactId));
     }

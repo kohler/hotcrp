@@ -28,11 +28,9 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
     $score_header = array_map(function ($x) { return ""; },
                               $conf->review_form()->forder);
     $last_pc_reviewer = -1;
-    $editdelegate = $conf->setting("pcrev_editdelegate");
 
     // actual rows
     foreach ($rrows as $rr) {
-        $highlight = $rrow && $rr->reviewId == $rrow->reviewId;
         $want_my_scores = $want_scores;
         if ($user->is_owned_review($rr) && $mode === "re") {
             $want_my_scores = true;
@@ -46,10 +44,8 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
             continue;
         }
 
-        $tclass = $rrow && $highlight ? "reviewers-highlight" : "";
-        $isdelegate = $rr->reviewType < REVIEW_PC
-            && $rr->requestedBy == $last_pc_reviewer
-            && $editdelegate;
+        $tclass = $rrow && $rr->reviewId == $rrow->reviewId ? "reviewers-highlight" : "";
+        $isdelegate = $rr->is_subreview() && $rr->requestedBy == $last_pc_reviewer;
         if (!$rr->reviewSubmitted
             && !$rr->reviewOrdinal
             && $isdelegate) {
@@ -60,31 +56,13 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         }
 
         // review ID
-        $id = "Review";
-        if ($isdelegate && !$rr->reviewSubmitted) {
-            $id = "Subreview";
-        }
+        $id = $rr->is_subreview() ? "Subreview" : "Review";
         if ($rr->reviewOrdinal) {
             $id .= " #" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
         }
-        if (!$rr->reviewSubmitted) {
-            if ($rr->reviewType == REVIEW_SECONDARY
-                && $rr->reviewNeedsSubmit <= 0
-                && $conf->setting("pcrev_editdelegate") < 3) {
-                $id .= " (delegated)";
-            } else if ($rr->reviewModified > 1) {
-                if ($rr->timeApprovalRequested < 0) {
-                    $id .= " (approved)";
-                } else if ($rr->timeApprovalRequested > 0) {
-                    $id .= " (pending approval)";
-                } else {
-                    $id .= " (draft)";
-                }
-            } else if ($rr->reviewModified > 0) {
-                $id .= " (started)";
-            } else {
-                $id .= " (not started)";
-            }
+        if (!$rr->reviewSubmitted
+            && ($rr->timeApprovalRequested >= 0 || !$rr->is_subreview())) {
+            $id .= " (" . $rr->status_description() . ")";
         }
         $rlink = unparseReviewOrdinal($rr);
 
@@ -122,7 +100,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         // primary/secondary glyph
         $rtype = "";
         if (($cflttype <= 0 || $admin) && $rr->reviewType > 0) {
-            $rtype = review_type_icon($rr->reviewType, $rr->reviewNeedsSubmit != 0);
+            $rtype = $rr->type_icon();
             if ($rr->reviewRound > 0
                 && $user->can_view_review_round($prow, $rr)) {
                 $rtype .= '&nbsp;<span class="revround" title="Review round">'

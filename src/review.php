@@ -435,6 +435,14 @@ class ReviewForm implements JsonSerializable {
     static public $revtype_names_lc = [
         "none", "external", "PC", "secondary", "primary", "meta"
     ];
+    static public $revtype_names_full = [
+        "No review", "External review", "PC review", "Secondary review",
+        "Primary review", "Metareview"
+    ];
+    static public $revtype_icon_text = [
+        -3 => "−" /* &minus; */, -2 => "A", -1 => "C",
+        1 => "E", 2 => "P", 3 => "2", 4 => "1", 5 => "M"
+    ];
 
     static private $review_author_seen = null;
 
@@ -1009,9 +1017,8 @@ $blind\n";
         $showtoken = $rrow && $user->active_review_token_for($prow, $rrow);
         $type = "";
         if ($rrow && $user->can_view_review_round($prow, $rrow)) {
-            $type = review_type_icon($rrow->reviewType);
-            if ($rrow->reviewRound > 0
-                && $user->can_view_review_round($prow, $rrow)) {
+            $type = $rrow->type_icon();
+            if ($rrow->reviewRound > 0) {
                 $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
                     . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
                     . "</span>";
@@ -1070,7 +1077,7 @@ $blind\n";
             && !$rrow->reviewSubmitted
             && $rrow->contactId == $user->contactId
             && $rrow->reviewType == REVIEW_SECONDARY
-            && $this->conf->setting("pcrev_editdelegate") < 3) {
+            && $this->conf->ext_subreviews < 3) {
             $ndelegated = 0;
             $napproval = 0;
             foreach ($prow->reviews_by_id() as $rr)
@@ -1161,9 +1168,7 @@ $blind\n";
             } else if ($rrow->timeApprovalRequested > 0) {
                 $rj["needs_approval"] = true;
             }
-            if (!$rrow->reviewOrdinal
-                && $rrow->reviewType < REVIEW_PC
-                && $this->conf->setting("pcrev_editdelegate")) {
+            if ($rrow->is_subreview()) {
                 $rj["subreview"] = true;
             }
         }
@@ -1800,7 +1805,7 @@ class ReviewValues extends MessageSet {
             if ($rrow && $rrow->needs_approval()) {
                 if ($user->isPC) {
                     $approvalstate = 3;
-                    if ($this->conf->setting("pcrev_editdelegate") < 3
+                    if ($this->conf->ext_subreviews < 3
                         && !get($this->req, "adoptreview"))
                         $newsubmit = true;
                 } else {

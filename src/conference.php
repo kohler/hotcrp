@@ -87,6 +87,7 @@ class Conf {
     public $tag_au_seerev;
     public $any_response_open;
     public $tag_seeall;
+    public $ext_subreviews;
     public $sort_by_last;
     public $opt;
     public $opt_override = null;
@@ -351,6 +352,7 @@ class Conf {
         if ($this->au_seerev == self::AUSEEREV_TAGS)
             $this->tag_au_seerev = explode(" ", get_s($this->settingTexts, "tag_au_seerev"));
         $this->tag_seeall = get($this->settings, "tag_seeall", 0) > 0;
+        $this->ext_subreviews = get($this->settings, "pcrev_editdelegate", 0);
 
         $this->any_response_open = 0;
         if (get($this->settings, "resp_active", 0) > 0) {

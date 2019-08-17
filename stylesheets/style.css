@@ -1735,7 +1735,8 @@ input.assignment-ui-radio {
 	display: inline-block;
 	width: 0.78em;
 	height: 0.78em;
-	border-width: 1px;
+	color: black;
+	border: 1px solid black;
 	position: relative;
 	bottom: -0.0625em;
 	font-weight: normal;
@@ -1744,25 +1745,24 @@ del .rto {
 	background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M0,5l10,0'%20fill='none'%20stroke='black'%20/%3E%3C/svg%3E");
 	background-size: 100% 100%;
 }
-.rt5, .rt5n, .rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n {
+.rt5, .rt4, .rt3, .rt2 {
 	background-color: #ffffbb;
+}
+.rt5, .rt4, .rt3, .rt-1, .rt-2, .rtlead, .rtshep {
+	font-weight: bold;
 }
 .rtlead, .rtshep {
 	background-color: #a83e5a;
 	font-weight: bold;
 	color: white;
-	border: 1px solid black;
 }
-.rt5n, .rt4n, .rt3n, .rt2n, .rt1n {
+.rtinc {
 	color: red;
-	border: 1px solid red;
+	border-color: red;
 }
-.rt5, .rt4, .rt3, .rt2, .rt1 {
-	color: black;
-	border: 1px solid black;
-}
-.rt5, .rt5n, .rt4, .rt4n, .rt3, .rt3n, .rt-1, .rt-2 {
-	font-weight: bold;
+.rtsubrev {
+	color: #555555;
+	border-color: #555555;
 }
 .rt-1, .rt-2, .rt-3 {
 	color: gray;
@@ -1831,8 +1831,9 @@ span.revround {
 td.revscore {
 	padding-right: 0;
 	text-align: center;
-	font-weight: bold;
-	color: red;
+}
+.rldraft > td.revscore {
+	opacity: 0.5;
 }
 .revlink {
 	display: inline-block;

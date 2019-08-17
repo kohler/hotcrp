@@ -668,31 +668,15 @@ function unparse_preference_span($preference, $always = false) {
     return $t;
 }
 
-function review_type_icon($revtype, $unfinished = null, $title = null,
-                          $classes = null) {
+function review_type_icon($revtype, $unfinished = null, $classes = null) {
     // see also script.js:review_form
-    static $revtypemap = [
-        -3 => ["&minus;", "Refused"],
-        -2 => ["A", "Author"],
-        -1 => ["C", "Conflict"],
-        1 => ["E", "External review"],
-        2 => ["P", "PC review"],
-        3 => ["2", "Secondary review"],
-        4 => ["1", "Primary review"],
-        5 => ["M", "Metareview"]
-    ];
-    if (!$revtype) {
-        if ($classes)
-            return '<span class="rt0"></span>';
-        else
-            return '<span class="rt0 ' . $classes . '"></span>';
-    }
+    assert(!!$revtype);
     $x = $revtypemap[$revtype];
     return '<span class="rto rt' . $revtype
-        . ($revtype > 0 && $unfinished ? "n" : "")
+        . ($revtype > 0 && $unfinished ? " rtinc" : "")
         . ($classes ? " " . $classes : "")
-        . '" title="' . ($title ? : $x[1])
-        . '"><span class="rti">' . $x[0] . '</span></span>';
+        . '" title="' . ReviewForm::$revtype_name_full[$revtype]
+        . '"><span class="rti">' . ReviewForm::$revtype_icon_text[$revtype] . '</span></span>';
 }
 
 function review_lead_icon() {

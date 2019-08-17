@@ -1406,11 +1406,10 @@ class PaperInfo {
         foreach ($this->reviews_by_id() as $rrow) {
             if ($rrow->reviewSubmitted || $rrow->reviewOrdinal) {
                 $srs[] = $rrow;
-            } else if ($rrow->reviewType >= REVIEW_PC
-                       || !$this->conf->setting("pcrev_editdelegate")) {
-                $urs[] = $rrow;
-            } else {
+            } else if ($rrow->is_subreview()) {
                 $ers[] = $rrow;
+            } else {
+                $urs[] = $rrow;
             }
         }
 

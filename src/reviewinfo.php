@@ -153,9 +153,69 @@ class ReviewInfo {
         return $rrow;
     }
 
+
+    function is_subreview() {
+        return $this->reviewType == REVIEW_EXTERNAL
+            && !$this->reviewSubmitted
+            && !$this->reviewOrdinal
+            && ($this->timeApprovalRequested < 0 || $this->conf->ext_subreviews);
+    }
+
+    function needs_approval() {
+        return $this->reviewType == REVIEW_EXTERNAL
+            && !$this->reviewSubmitted
+            && $this->requestedBy
+            && $this->conf->ext_subreviews > 1;
+    }
+
     function round_name() {
         return $this->reviewRound ? $this->conf->round_name($this->reviewRound) : "";
     }
+
+    function type_icon() {
+        if ($this->is_subreview()) {
+            $title = "Subreview";
+        } else {
+            $title = ReviewForm::$revtype_names_full[$this->reviewType];
+        }
+        $t = '<span class="rto rt' . $this->reviewType;
+        if (!$this->reviewSubmitted) {
+            if ($this->timeApprovalRequested < 0) {
+                $t .= " rtsubrev";
+            } else {
+                $t .= " rtinc";
+            }
+            if ($title !== "Subreview" || $this->timeApprovalRequested >= 0) {
+                $title .= " (" . $this->status_description() . ")";
+            }
+        }
+        return $t . '" title="' . $title . '"><span class="rti">'
+            . ReviewForm::$revtype_icon_text[$this->reviewType]
+            . '</span></span>';
+    }
+
+    function status_description() {
+        if ($this->reviewSubmitted) {
+            return "complete";
+        } else if ($this->reviewType == REVIEW_EXTERNAL
+                   && $this->timeApprovalRequested < 0) {
+            return "approved";
+        } else if ($this->reviewType == REVIEW_EXTERNAL
+                   && $this->timeApprovalRequested > 0) {
+            return "pending approval";
+        } else if ($this->reviewModified > 1) {
+            return "draft";
+        } else if ($this->reviewType == REVIEW_SECONDARY
+                   && $this->reviewNeedsSubmit <= 0
+                   && $this->conf->ext_subreviews < 3) {
+            return "delegated";
+        } else if ($this->reviewModified > 0) {
+            return "started";
+        } else {
+            return "not started";
+        }
+    }
+
 
     function assign_name($c) {
         $this->firstName = $c->firstName;
@@ -247,6 +307,7 @@ class ReviewInfo {
         return 0;
     }
 
+
     function ratings() {
         $ratings = [];
         if ((string) $this->allRatings !== "") {
@@ -297,13 +358,6 @@ class ReviewInfo {
         return $n;
     }
 
-
-    function needs_approval() {
-        return !$this->reviewSubmitted
-            && $this->reviewType == REVIEW_EXTERNAL
-            && $this->requestedBy
-            && $this->conf->setting("pcrev_editdelegate") > 1;
-    }
 
     private function _load_data() {
         if (!property_exists($this, "data"))

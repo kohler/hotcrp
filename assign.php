@@ -457,7 +457,7 @@ if ($Me->can_administer($prow)) {
             '<a class="qq ui js-assignment-fold" href="">', expander(null, 0),
             $Me->reviewer_html_for($pc), '</a>';
         if ($crevtype != 0) {
-            echo review_type_icon($crevtype, $rrow && !$rrow->reviewSubmitted, null, "ml-2");
+            echo review_type_icon($crevtype, $rrow && !$rrow->reviewSubmitted, "ml-2");
             if ($rrow && $rrow->reviewRound > 0)
                 echo ' <span class="revround" title="Review round">',
                     htmlspecialchars($Conf->round_name($rrow->reviewRound)),

@@ -2812,7 +2812,7 @@ class PaperSearch {
         else if ($this->user->can_view_some_review())
             array_push($res, "has:review", "has:comment");
         if ($this->user->isPC
-            && $this->conf->setting("pcrev_editdelegate") > 1
+            && $this->conf->ext_subreviews > 1
             && $this->user->is_requester())
             array_push($res, "has:pending-approval");
         if ($this->user->is_manager())

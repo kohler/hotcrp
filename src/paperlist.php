@@ -74,14 +74,7 @@ class PaperListReviewAnalysis {
         }
     }
     function icon_html($includeLink) {
-        $rrow = $this->rrow;
-        if (($title = get(ReviewForm::$revtype_names, $rrow->reviewType)))
-            $title .= " review";
-        else
-            $title = "Review";
-        if (!$rrow->reviewSubmitted)
-            $title .= " (" . $this->description_text() . ")";
-        $t = review_type_icon($rrow->reviewType, $rrow->reviewNeedsSubmit != 0, $title);
+        $t = $this->rrow->type_icon();
         if ($includeLink)
             $t = $this->wrap_link($t);
         if ($this->round)
@@ -95,27 +88,6 @@ class PaperListReviewAnalysis {
         if ($x !== "" && $this->round)
             $x .= ":" . $this->round;
         return $x;
-    }
-    function description_text() {
-        if (!$this->rrow)
-            return "";
-        else if ($this->rrow->reviewSubmitted)
-            return "complete";
-        else if ($this->rrow->reviewType == REVIEW_SECONDARY
-                 && $this->rrow->reviewNeedsSubmit <= 0)
-            return "delegated";
-        else if ($this->rrow->reviewType == REVIEW_EXTERNAL
-                 && $this->rrow->timeApprovalRequested > 0)
-            return "pending approval";
-        else if ($this->rrow->reviewType == REVIEW_EXTERNAL
-                 && $this->rrow->timeApprovalRequested < 0)
-            return "approved";
-        else if ($this->rrow->reviewModified > 1)
-            return "draft";
-        else if ($this->rrow->reviewModified > 0)
-            return "started";
-        else
-            return "not started";
     }
     function wrap_link($html, $klass = null) {
         if (!$this->rrow)

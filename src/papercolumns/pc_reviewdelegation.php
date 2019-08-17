@@ -32,7 +32,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
                 else
                     $t = "review";
                 $ranal = $pl->make_review_analysis($rrow, $row);
-                $d = $ranal->description_text();
+                $d = $rrow->status_description();
                 if ($rrow->reviewOrdinal) {
                     $d = rtrim("#" . unparseReviewOrdinal($rrow) . " " . $d);
                 }
