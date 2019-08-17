@@ -873,26 +873,30 @@ class Review_Assigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $t = $aset->user->reviewer_html_for($this->contact);
-        if ($this->item->deleted())
+        if ($this->item->deleted()) {
             $t = '<del>' . $t . '</del>';
+        }
         if ($this->item->differs("_rtype") || $this->item->differs("_rsubmitted")) {
             if ($this->item->get(true, "_rtype"))
                 $t .= ' <del>' . $this->icon(true) . '</del>';
             if ($this->item->get(false, "_rtype"))
                 $t .= ' <ins>' . $this->icon(false) . '</ins>';
-        } else if ($this->item["_rtype"])
+        } else if ($this->item["_rtype"]) {
             $t .= ' ' . $this->icon(false);
+        }
         if ($this->item->differs("_round")) {
             if (($round = $this->item->get(true, "_round")))
                 $t .= ' <del><span class="revround" title="Review round">' . htmlspecialchars($round) . '</span></del>';
             if (($round = $this->item->get(false, "_round")))
                 $t .= ' <ins><span class="revround" title="Review round">' . htmlspecialchars($round) . '</span></ins>';
-        } else if (($round = $this->item["_round"]))
+        } else if (($round = $this->item["_round"])) {
             $t .= ' <span class="revround" title="Review round">' . htmlspecialchars($round) . '</span>';
+        }
         if (!$this->item->existed() && self::$prefinfo
             && ($cpref = get(self::$prefinfo, $this->cid))
-            && ($pref = get($cpref, $this->pid)))
+            && ($pref = get($cpref, $this->pid))) {
             $t .= unparse_preference_span($pref);
+        }
         return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
