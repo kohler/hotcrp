@@ -27,6 +27,8 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
     $want_requested_by = false;
     $score_header = array_map(function ($x) { return ""; },
                               $conf->review_form()->forder);
+    $last_pc_reviewer = -1;
+    $editdelegate = $conf->setting("pcrev_editdelegate");
 
     // actual rows
     foreach ($rrows as $rr) {
@@ -40,19 +42,28 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         // skip unsubmitted reviews;
         // assign page lists actionable reviews separately
         if (!$canView && $hideUnviewable) {
+            $last_pc_reviewer = -1;
             continue;
         }
-        // assign page lists actionable reviews separately
-        if ($rr->reviewModified <= 1
-            && $rr->reviewType < REVIEW_PC
-            && $mode === "assign"
-            && ($admin || $rr->requestedBy == $user->contactId))
-            continue;
 
-        $tclass = ($rrow && $highlight ? "reviewers-highlight" : "");
+        $tclass = $rrow && $highlight ? "reviewers-highlight" : "";
+        $isdelegate = $rr->reviewType < REVIEW_PC
+            && $rr->requestedBy == $last_pc_reviewer
+            && $editdelegate;
+        if (!$rr->reviewSubmitted
+            && !$rr->reviewOrdinal
+            && $isdelegate) {
+            $tclass .= ($tclass ? " " : "") . "rldraft";
+        }
+        if ($rr->reviewType >= REVIEW_PC) {
+            $last_pc_reviewer = +$rr->contactId;
+        }
 
         // review ID
         $id = "Review";
+        if ($isdelegate && !$rr->reviewSubmitted) {
+            $id = "Subreview";
+        }
         if ($rr->reviewOrdinal) {
             $id .= " #" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
         }

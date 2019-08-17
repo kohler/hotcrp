@@ -1401,9 +1401,47 @@ class PaperInfo {
     }
 
     function reviews_by_display(Contact $user) {
-        $rrows = $this->reviews_by_id();
-        uasort($rrows, "ReviewInfo::compare");
-        return $rrows;
+        $srs = $urs = $ers = [];
+
+        foreach ($this->reviews_by_id() as $rrow) {
+            if ($rrow->reviewSubmitted || $rrow->reviewOrdinal) {
+                $srs[] = $rrow;
+            } else if ($rrow->reviewType >= REVIEW_PC
+                       || !$this->conf->setting("pcrev_editdelegate")) {
+                $urs[] = $rrow;
+            } else {
+                $ers[] = $rrow;
+            }
+        }
+
+        usort($srs, function ($a, $b) {
+            // NB: all submitted reviews have timeDisplayed
+            if ($a->timeDisplayed != $b->timeDisplayed) {
+                return $a->timeDisplayed < $b->timeDisplayed ? -1 : 1;
+            } else if ($a->reviewOrdinal && $b->reviewOrdinal) {
+                return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
+            } else {
+                return $a->reviewId < $b->reviewId ? -1 : 1;
+            }
+        });
+
+        foreach ($urs as $urow) {
+            $srs[] = $urow;
+        }
+
+        foreach ($ers as $urow) {
+            $p0 = count($srs);
+            foreach ($srs as $i => $srow) {
+                if ($urow->requestedBy == $srow->contactId
+                    || ($srow->reviewType < REVIEW_PC
+                        && $urow->requestedBy == $srow->requestedBy)) {
+                    $p0 = $i + 1;
+                }
+            }
+            array_splice($srs, $p0, 0, [$urow]);
+        }
+
+        return $srs;
     }
 
     function review_of_id($id) {
@@ -1870,45 +1908,55 @@ class PaperInfo {
         return false;
     }
 
-    static function analyze_review_or_comment($x) {
-        if (isset($x->commentId))
-            return [!!($x->commentType & COMMENTTYPE_DRAFT),
-                    (int) $x->timeDisplayed, true];
-        else
-            return [!$x->reviewSubmitted || !$x->reviewOrdinal,
-                    (int) $x->timeDisplayed, false];
-    }
-    static function review_or_comment_compare($a, $b) {
-        list($a_draft, $a_displayed_at, $a_iscomment) = self::analyze_review_or_comment($a);
-        list($b_draft, $b_displayed_at, $b_iscomment) = self::analyze_review_or_comment($b);
-        // drafts come last
-        if ($a_draft !== $b_draft
-            && ($a_draft ? !$a_displayed_at : !$b_displayed_at))
-            return $a_draft ? 1 : -1;
-        // order by displayed_at
-        if ($a_displayed_at !== $b_displayed_at)
-            return $a_displayed_at < $b_displayed_at ? -1 : 1;
-        // reviews before comments
-        if ($a_iscomment !== $b_iscomment)
-            return !$a_iscomment ? -1 : 1;
-        if ($a_iscomment)
-            // order by commentId (which generally agrees with ordinal)
-            return $a->commentId < $b->commentId ? -1 : 1;
-        else {
-            // order by ordinal or reviewId
-            if ($a->reviewOrdinal && $b->reviewOrdinal)
-                return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
-            else
-                return $a->reviewId < $b->reviewId ? -1 : 1;
+    function merge_reviews_and_comments($rrows, $crows) {
+        if (empty($crows)) {
+            return $rrows;
         }
+
+        usort($crows, function ($a, $b) {
+            if ($a->timeDisplayed != $b->timeDisplayed) {
+                if ($a->timeDisplayed == 0 || $b->timeDisplayed == 0) {
+                    return $a->timeDisplayed == 0 ? 1 : -1;
+                } else {
+                    return $a->timeDisplayed < $b->timeDisplayed ? -1 : 1;
+                }
+            } else {
+                return $a->commentId < $b->commentId ? -1 : 1;
+            }
+        });
+
+        $xrows = [];
+        $i = $j = 0;
+        while ($i < count($rrows) && $j < count($crows)) {
+            $rr = $rrows[$i];
+            $cr = $crows[$j];
+            if ($rr->timeDisplayed == 0 || $cr->timeDisplayed == 0) {
+                break;
+            } else if ($rr->timeDisplayed <= $cr->timeDisplayed) {
+                $xrows[] = $rr;
+                ++$i;
+                while ($i < count($rrows) && $rrows[$i]->timeDisplayed == 0) {
+                    $xrows[] = $rrows[$i];
+                    ++$i;
+                }
+            } else {
+                $xrows[] = $cr;
+                ++$j;
+            }
+        }
+        while ($i < count($rrows)) {
+            $xrows[] = $rrows[$i];
+            ++$i;
+        }
+        while ($j < count($crows)) {
+            $xrows[] = $crows[$j];
+            ++$j;
+        }
+        return $xrows;
     }
     function viewable_submitted_reviews_and_comments(Contact $user) {
         $this->ensure_full_reviews();
-        $rrows = $this->viewable_submitted_reviews_by_display($user);
-        $crows = $this->viewable_comments($user);
-        $rcs = array_merge(array_values($rrows), array_values($crows));
-        usort($rcs, "PaperInfo::review_or_comment_compare");
-        return $rcs;
+        return $this->merge_reviews_and_comments($this->viewable_submitted_reviews_by_display($user), $this->viewable_comments($user));
     }
     static function review_or_comment_text_separator($a, $b) {
         if (!$a || !$b)

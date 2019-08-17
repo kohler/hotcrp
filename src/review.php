@@ -1151,7 +1151,7 @@ $blind\n";
         if ($rrow->reviewSubmitted) {
             $rj["submitted"] = true;
         } else {
-            if (!$rrow->reviewOrdinal) {
+            if (!$rrow->reviewOrdinal && !$rrow->timeApprovalRequested) {
                 $rj["draft"] = true;
             } else {
                 $rj["ready"] = false;
@@ -1160,6 +1160,11 @@ $blind\n";
                 $rj["approved"] = true;
             } else if ($rrow->timeApprovalRequested > 0) {
                 $rj["needs_approval"] = true;
+            }
+            if (!$rrow->reviewOrdinal
+                && $rrow->reviewType < REVIEW_PC
+                && $this->conf->setting("pcrev_editdelegate")) {
+                $rj["subreview"] = true;
             }
         }
         if ($editable && $user->can_review($prow, $rrow)) {

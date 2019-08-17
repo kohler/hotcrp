@@ -2498,14 +2498,20 @@ class PaperTable {
 
     private function render_rc($reviews, $comments) {
         $rcs = [];
+        $any_submitted = false;
         if ($reviews) {
-            foreach ($this->viewable_rrows as $rrow)
-                if ($rrow->reviewSubmitted || $rrow->reviewModified > 1)
+            foreach ($this->viewable_rrows as $rrow) {
+                if ($rrow->reviewSubmitted || $rrow->reviewModified > 1) {
                     $rcs[] = $rrow;
+                }
+                if ($rrow->reviewSubmitted || $rrow->reviewOrdinal) {
+                    $any_submitted = true;
+                }
+            }
         }
-        if ($comments && $this->mycrows)
-            $rcs = array_merge($rcs, $this->mycrows);
-        usort($rcs, "PaperInfo::review_or_comment_compare");
+        if ($comments && $this->mycrows) {
+            $rcs = $this->prow->merge_reviews_and_comments($rcs, $this->mycrows);
+        }
 
         $s = "";
         $ncmt = 0;
@@ -2513,6 +2519,12 @@ class PaperTable {
         foreach ($rcs as $rc) {
             if (isset($rc->reviewId)) {
                 $rcj = $rf->unparse_review_json($this->user, $this->prow, $rc);
+                if ($any_submitted
+                    && !$rc->reviewSubmitted
+                    && !$rc->reviewOrdinal
+                    && !$this->user->is_my_review($rc)) {
+                    $rcj->folded = true;
+                }
                 $s .= "review_form.add_review(" . json_encode_browser($rcj) . ");\n";
             } else {
                 ++$ncmt;

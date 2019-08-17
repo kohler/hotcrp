@@ -1801,6 +1801,12 @@ table.reviewers {
 td.rl:first-child {
 	padding-left: 6px;
 }
+tr.rldraft {
+	font-size: 88.5%;
+}
+tr.rldraft > td.rl:first-child {
+	padding-left: 30px;
+}
 td.rl {
 	padding-right: 1em;
 }

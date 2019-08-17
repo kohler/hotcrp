@@ -21,7 +21,7 @@ class ReviewInfo {
     //public $reviewAuthorNotified;
     public $reviewAuthorSeen;
     public $reviewOrdinal;
-    //public $timeDisplayed;
+    public $timeDisplayed;
     public $timeApprovalRequested;
     //public $reviewEditVersion;
     public $reviewNeedsSubmit;
@@ -126,7 +126,7 @@ class ReviewInfo {
         return $rrow;
     }
     static function review_signature_sql(Conf $conf, $scores = null) {
-        $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit";
+        $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit";
         foreach ($scores ? : [] as $fid)
             if (($f = $conf->review_field($fid)) && $f->main_storage)
                 $t .= ", ' " . $f->short_id . "=', " . $f->id;
@@ -140,8 +140,9 @@ class ReviewInfo {
              $rrow->reviewType, $rrow->reviewRound, $rrow->requestedBy,
              $rrow->reviewBlind, $rrow->reviewModified, $rrow->reviewSubmitted,
              $rrow->reviewAuthorSeen, $rrow->reviewOrdinal,
-             $rrow->timeApprovalRequested, $rrow->reviewNeedsSubmit) = $vals;
-        for ($i = 13; isset($vals[$i]); ++$i) {
+             $rrow->timeDisplayed, $rrow->timeApprovalRequested,
+             $rrow->reviewNeedsSubmit) = $vals;
+        for ($i = 14; isset($vals[$i]); ++$i) {
             $eq = strpos($vals[$i], "=");
             $f = self::field_info(substr($vals[$i], 0, $eq), $prow->conf);
             $fid = $f->id;
@@ -238,63 +239,12 @@ class ReviewInfo {
         return $json;
     }
 
-    static function compare($a, $b) {
-        // 1. different papers
-        if ($a->paperId != $b->paperId)
-            return (int) $a->paperId < (int) $b->paperId ? -1 : 1;
-        // 2. different ordinals (both have ordinals)
-        if ($a->reviewOrdinal
-            && $b->reviewOrdinal
-            && $a->reviewOrdinal != $b->reviewOrdinal)
-            return (int) $a->reviewOrdinal < (int) $b->reviewOrdinal ? -1 : 1;
-        // 3. some submitted reviews have no ordinal (ordinal is reserved for
-        //    user-visible reviews)
-        $asub = (int) $a->reviewSubmitted;
-        $bsub = (int) $b->reviewSubmitted;
-        if (($asub > 0) != ($bsub > 0))
-            return $asub > 0 ? -1 : 1;
-        if ($asub !== $bsub)
-            return $asub < $bsub ? -1 : 1;
-        // 4. submission class
-        $asclass = self::submission_class($a);
-        $bsclass = self::submission_class($b);
-        if ($asclass !== $bsclass)
-            return $asclass < $bsclass ? 1 : -1;
-        // 5. reviewer
-        if (isset($a->sorter)
-            && isset($b->sorter)
-            && ($x = strcasecmp($a->sorter, $b->sorter)) != 0)
-            return $x;
-        // 6. review id
-        if ($a->reviewId != $b->reviewId)
-            return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
-        return 0;
-    }
-
     static function compare_id($a, $b) {
         if ($a->paperId != $b->paperId)
             return (int) $a->paperId < (int) $b->paperId ? -1 : 1;
         if ($a->reviewId != $b->reviewId)
             return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
         return 0;
-    }
-
-    static function submission_class($rr) {
-        if ($rr->reviewSubmitted > 0)
-            return 6;
-        else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
-            return 5;
-        else if ($rr->reviewModified > 1) {
-            if ($rr->timeApprovalRequested < 0)
-                return 4;
-            else if ($rr->timeApprovalRequested > 0)
-                return 3;
-            else
-                return 2;
-        } else if ($rr->reviewModified > 0)
-            return 1;
-        else
-            return 0;
     }
 
     function ratings() {

@@ -3618,7 +3618,10 @@ function add_review(rrow) {
         has_user_rating = false, i, ratekey, selected;
 
     i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
-    hc.push('<div class="pcard revcard" id="r' + rid + '" data-pid="' + rrow.pid + '" data-rid="' + rrow.rid + i + '">', '</div>');
+    hc.push('<div class="pcard revcard has-fold '
+            + (rrow.folded ? "fold20c" : "fold20o")
+            + '" id="r' + rid + '" data-pid="' + rrow.pid
+            + '" data-rid="' + rrow.rid + i + '">', '</div>');
 
     // HEADER
     hc.push('<div class="revcard_head">', '</div>');
@@ -3630,15 +3633,17 @@ function add_review(rrow) {
                 + '&nbsp;<u>Edit</u></a></div>');
     }
 
-    hc.push('<h3><a class="u" href="' + hoturl_html("review", rlink) + '">', '</a></h3>');
-    if (rrow.ordinal) {
-        hc.push('Review #' + rid);
-    } else if (rrow.approved) {
-        hc.push('Approved Review');
-    } else if (rrow.draft) {
-        hc.push('Draft Review');
+    if (rrow.folded) {
+        hc.push('<h3><a class="u ui js-foldup" href="" data-fold-target="20"><span class="expander"><span class="in0 fx20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L8 15L15 1z" /></svg></span><span class="in1 fn20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span></span>', '</a></h3>');
     } else {
-        hc.push('Review');
+        hc.push('<h3><a class="u" href="' + hoturl_html("review", rlink) + '">', '</a></h3>');
+    }
+    if (rrow.draft) {
+        hc.push('Draft ');
+    }
+    hc.push(rrow.subreview ? 'Subreview' : 'Review');
+    if (rrow.ordinal) {
+        hc.push(' #' + rid);
     }
     hc.pop();
 
@@ -3673,7 +3678,7 @@ function add_review(rrow) {
     hc.push_pop('<hr class="c">');
 
     // body
-    hc.push('<div class="revcard_body">', '</div>');
+    hc.push('<div class="revcard_body fx20">', '</div>');
     hc.push_pop(render_review_body(rrow));
 
     // ratings
