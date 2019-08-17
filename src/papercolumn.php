@@ -245,15 +245,21 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     private function data(PaperInfo $row, Contact $user) {
         $want_assigned = !$row->conflict_type($user) || $user->can_administer($row);
         $done = $started = 0;
-        foreach ($row->reviews_by_id() as $rrow)
+        foreach ($row->reviews_by_id() as $rrow) {
             if ($user->can_view_review_assignment($row, $rrow)
                 && ($this->round === null || $this->round === $rrow->reviewRound)) {
                 if ($rrow->reviewSubmitted > 0) {
                     ++$done;
                     ++$started;
-                } else if ($want_assigned ? $rrow->reviewNeedsSubmit > 0 : $rrow->reviewModified > 0)
+                } else if (($want_assigned
+                            ? $rrow->reviewNeedsSubmit > 0
+                            : $rrow->reviewModified > 0)
+                           && ($rrow->reviewType != REVIEW_EXTERNAL
+                               || $row->conf->ext_subreviews < 2)) {
                     ++$started;
+                }
             }
+        }
         return [$done, $started];
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
