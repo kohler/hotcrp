@@ -10,6 +10,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     const PENDINGAPPROVAL = 16;
     const PROPOSED = 32;
     const MYREQUEST = 64;
+    const APPROVED = 128;
 
     private $review_type = 0;
     private $completeness = 0;
@@ -30,6 +31,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
 
     static private $completeness_map = [
         "approvable" => self::PENDINGAPPROVAL,
+        "approved" => self::APPROVED,
         "complete" => self::COMPLETE,
         "completed" => self::COMPLETE,
         "done" => self::COMPLETE,
@@ -145,10 +147,13 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         $this->rfield_scoret = $valuet;
     }
     function finish() {
-        if (!$this->completeness && ($this->rfield || $this->wordcountexpr))
+        if (!$this->completeness
+            && ($this->rfield || $this->wordcountexpr)) {
             $this->completeness = self::COMPLETE;
-        if ($this->completeness & self::PENDINGAPPROVAL)
+        }
+        if ($this->completeness & self::PENDINGAPPROVAL) {
             $this->apply_review_type("ext");
+        }
         if ($this->completeness & self::PROPOSED) {
             if (($this->completeness & ~(self::PROPOSED | self::MYREQUEST))
                 || ($this->review_type !== 0 && $this->review_type !== REVIEW_EXTERNAL)
@@ -173,7 +178,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if ($this->completeness & self::PENDINGAPPROVAL)
             $where[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
         if ($this->completeness & self::NOTSTARTED)
-            $where[] = "reviewModified=0";
+            $where[] = "reviewModified<2";
         if (!empty($where))
             $where = ["(" . join(" or ", $where) . ")"];
         if ($this->has_contacts()) {
@@ -235,26 +240,31 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 || (($this->completeness & self::INCOMPLETE)
                     && !$rrow->reviewNeedsSubmit)
                 || (($this->completeness & self::INPROGRESS)
-                    && ($rrow->reviewSubmitted || !$rrow->reviewModified))
+                    && ($rrow->reviewSubmitted || $rrow->reviewModified < 2))
                 || (($this->completeness & self::NOTSTARTED)
-                    && $rrow->reviewModified !== 0)
+                    && $rrow->reviewModified > 1)
                 || (($this->completeness & self::PENDINGAPPROVAL)
                     && ($rrow->reviewSubmitted
                         || $rrow->timeApprovalRequested <= 0
                         || ($rrow->requestedBy != $user->contactId
                             && !$user->allow_administer($prow))))
+                || (($this->completeness & self::APPROVED)
+                    && $rrow->timeApprovalRequested >= 0)
                 || (($this->completeness & self::MYREQUEST)
-                    && $rrow->requestedBy != $user->contactId))
+                    && $rrow->requestedBy != $user->contactId)) {
                 return false;
+            }
         }
         if ($this->round !== null
-            && !in_array($rrow->reviewRound, $this->round))
+            && !in_array($rrow->reviewRound, $this->round)) {
             // XXX can_view_review_round?
             return false;
+        }
         if ($this->rfield || $this->wordcountexpr || $this->ratings
             ? !$user->can_view_review($prow, $rrow)
-            : !$user->can_view_review_assignment($prow, $rrow))
+            : !$user->can_view_review_assignment($prow, $rrow)) {
             return false;
+        }
         if ($this->has_contacts()) {
             if (!$this->test_contact($rrow->contactId)
                 && (!$this->tokens || !in_array($rrow->reviewToken, $this->tokens)))
@@ -263,22 +273,27 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return false;
         } else if ($rrow->reviewType > 0
                    && $rrow->reviewSubmitted <= 0
-                   && $rrow->reviewNeedsSubmit <= 0)
+                   && $rrow->reviewNeedsSubmit <= 0) {
             // don't count delegated reviews unless contacts given
             return false;
+        }
         if ($this->wordcountexpr
-            && !$this->wordcountexpr->test($rrow->reviewWordCount))
+            && !$this->wordcountexpr->test($rrow->reviewWordCount)) {
             return false;
+        }
         if ($this->requester !== null
             && ($rrow->requestedBy != $this->requester
-                || !$user->can_view_review_requester($prow, $rrow)))
+                || !$user->can_view_review_requester($prow, $rrow))) {
             return false;
+        }
         if ($this->ratings !== null
-            && !$this->ratings->test($user, $prow, $rrow))
+            && !$this->ratings->test($user, $prow, $rrow)) {
             return false;
+        }
         if ($this->view_score !== null
-            && $this->view_score <= $user->view_score_bound($prow, $rrow))
+            && $this->view_score <= $user->view_score_bound($prow, $rrow)) {
             return false;
+        }
         if ($this->rfield) {
             $fid = $this->rfield->id;
             $val = isset($rrow->$fid) ? $rrow->$fid : null;

@@ -111,9 +111,9 @@ class PaperListReviewAnalysis {
                  && $this->rrow->timeApprovalRequested < 0)
             return "approved";
         else if ($this->rrow->reviewModified > 1)
-            return "in progress";
+            return "draft";
         else if ($this->rrow->reviewModified > 0)
-            return "accepted";
+            return "started";
         else
             return "not started";
     }

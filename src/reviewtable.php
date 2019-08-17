@@ -68,10 +68,10 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
                 } else if ($rr->timeApprovalRequested > 0) {
                     $id .= " (pending approval)";
                 } else {
-                    $id .= " (in progress)";
+                    $id .= " (draft)";
                 }
             } else if ($rr->reviewModified > 0) {
-                $id .= " (accepted)";
+                $id .= " (started)";
             } else {
                 $id .= " (not started)";
             }
