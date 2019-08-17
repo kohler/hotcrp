@@ -116,10 +116,10 @@ if (isset($Qreq->adoptreview) && $Qreq->post_ok()) {
     $tf = new ReviewValues($rf);
     $tf->paperId = $prow->paperId;
     $my_rrow = $prow->review_of_user($Me);
-    if (($whyNot = $Me->perm_submit_review($prow, $my_rrow)))
+    if (($whyNot = $Me->perm_submit_review($prow, $my_rrow))) {
         $tf->msg(null, whyNotText($whyNot), MessageSet::ERROR);
-    else if ($tf->parse_web($Qreq, $Qreq->override)) {
-        $tf->unset_ready();
+    } else if ($tf->parse_web($Qreq, $Qreq->override)) {
+        $tf->set_ready($Qreq->adoptsubmit);
         if ($tf->check_and_save($Me, $prow, $my_rrow)
             && !$tf->has_problem_at("ready")) {
             $tf->report();

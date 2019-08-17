@@ -7765,6 +7765,28 @@ handle_ui.on("js-delete-review", function () {
     hc.show();
 });
 
+handle_ui.on("js-adopt-review", function (event) {
+    var self = this, hc = popup_skeleton({anchor: this});
+    hc.push('<p>Replace your review with the contents of this review?</p>');
+    hc.push_actions([
+        '<button type="button" name="bsubmit" class="btn-primary">Adopt and submit</button>',
+        '<button type="button" name="bdraft">Adopt as draft</button>',
+        '<button type="button" name="cancel">Cancel</button>'
+    ]);
+    var $d = hc.show();
+    $d.on("click", "button", function (event) {
+        if (event.target.name !== "cancel") {
+            var form = self.closest("form");
+            $(form).append('<input type="hidden" name="adoptreview" value="1">');
+            if (event.target.name === "bsubmit")
+                $(form).append('<input type="hidden" name="adoptsubmit" value="1">');
+            addClass(form, "submitting");
+            form.submit();
+            $d.close();
+        }
+    });
+});
+
 
 // search/paperlist UI
 handle_ui.on("js-edit-formulas", function () {

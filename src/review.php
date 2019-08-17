@@ -933,10 +933,8 @@ $blind\n";
             }
             if (!$my_review && $rrow->requestedBy == $user->contactId) {
                 $my_rrow = $prow->review_of_user($user);
-                if (!$my_rrow || $my_rrow->reviewModified <= 1) {
-                    $buttons[] = Ht::submit("adoptreview", "Adopt as your review", ["class" => "need-clickthrough-enable", "disabled" => $disabled]);
-                } else if (!$my_rrow->reviewSubmitted) {
-                    $buttons[] = Ht::button("Adopt as your review", ["class" => "ui js-override-deadlines need-clickthrough-enable", "data-override-text" => "Are you sure you want to replace your current draft review?", "data-override-submit" => "adoptreview", "disabled" => $disabled]);
+                if (!$my_rrow || !$my_rrow->reviewSubmitted) {
+                    $buttons[] = Ht::submit("adoptreview", "Adopt as your review", ["class" => "ui js-adopt-review need-clickthrough-enable", "disabled" => $disabled]);
                 }
             }
         } else if (!$submitted) {
@@ -1576,8 +1574,8 @@ class ReviewValues extends MessageSet {
             return false;
     }
 
-    function unset_ready() {
-        $this->req["ready"] = 0;
+    function set_ready($ready) {
+        $this->req["ready"] = $ready ? 1 : 0;
     }
 
     function set_adopt() {
