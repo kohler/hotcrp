@@ -671,7 +671,6 @@ function unparse_preference_span($preference, $always = false) {
 function review_type_icon($revtype, $unfinished = null, $classes = null) {
     // see also script.js:review_form
     assert(!!$revtype);
-    $x = $revtypemap[$revtype];
     return '<span class="rto rt' . $revtype
         . ($revtype > 0 && $unfinished ? " rtinc" : "")
         . ($classes ? " " . $classes : "")
