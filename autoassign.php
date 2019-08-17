@@ -26,19 +26,22 @@ if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {
 
 // PC selection
 $Qreq->allow_a("pcs", "pap", "p");
-if (isset($Qreq->pcs) && is_string($Qreq->pcs))
+if (isset($Qreq->pcs) && is_string($Qreq->pcs)) {
     $Qreq->pcs = preg_split('/\s+/', $Qreq->pcs);
+}
 if (isset($Qreq->pcs) && is_array($Qreq->pcs)) {
     $pcsel = array();
     foreach ($Qreq->pcs as $p)
         if (($p = cvtint($p)) > 0)
             $pcsel[$p] = 1;
-} else
+} else {
     $pcsel = $Conf->pc_members();
+}
 
 if (!isset($Qreq->pctyp)
-    || ($Qreq->pctyp !== "all" && $Qreq->pctyp !== "sel"))
+    || ($Qreq->pctyp !== "all" && $Qreq->pctyp !== "sel")) {
     $Qreq->pctyp = "all";
+}
 
 // bad pairs
 // load defaults from last autoassignment or save entry to default
@@ -69,29 +72,33 @@ if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POS
 }
 // set $badpairs array
 $badpairs = array();
-if (isset($Qreq->badpairs))
-    for ($i = 1; isset($Qreq["bpa$i"]); ++$i)
+if (isset($Qreq->badpairs)) {
+    for ($i = 1; isset($Qreq["bpa$i"]); ++$i) {
         if ($Qreq["bpa$i"] && $Qreq["bpb$i"]) {
             if (!isset($badpairs[$Qreq["bpa$i"]]))
                 $badpairs[$Qreq["bpa$i"]] = array();
             $badpairs[$Qreq["bpa$i"]][$Qreq["bpb$i"]] = 1;
         }
+    }
+}
 
 // paper selection
 if ((isset($Qreq->prevt) && isset($Qreq->t) && $Qreq->prevt !== $Qreq->t)
     || (isset($Qreq->prevq) && isset($Qreq->q) && $Qreq->prevq !== $Qreq->q)) {
-    if (isset($Qreq->assign))
+    if (isset($Qreq->assign)) {
         $Conf->warnMsg("You changed the paper search. Please review the paper list.");
+    }
     unset($Qreq->assign);
     $Qreq->requery = 1;
 }
 
-if (isset($Qreq->saveassignment))
+if (isset($Qreq->saveassignment)) {
     $SSel = SearchSelection::make($Qreq, $Me, $Qreq->submit ? "pap" : "p");
-else {
+} else {
     $SSel = new SearchSelection;
-    if (!$Qreq->requery)
+    if (!$Qreq->requery) {
         $SSel = SearchSelection::make($Qreq, $Me);
+    }
     if ($SSel->is_empty()) {
         $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q));
         $SSel = new SearchSelection($search->paper_ids());
@@ -127,14 +134,29 @@ if (isset($Qreq->saveassignment)
              ->add($x->data)->sort(SORT_NATURAL));
 }
 
+// execute assignment
+function sanitize_qreq_redirect($qreq) {
+    $x = [];
+    foreach ($qreq as $k => $v) {
+        if (!in_array($k, ["saveassignment", "submit", "assignment", "post",
+                           "download", "assign", "p", "assigntypes",
+                           "assignpids", "xbadpairs", "haspap"])) {
+            $x[$k] = $v;
+        }
+    }
+    return $x;
+}
 
-$Conf->header(["Assignments", "Automatic"], "autoassign");
-echo '<div class="psmode">',
-    '<div class="papmodex"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
-    '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
-    '<div class="papmode"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
-    '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
-    '</div><hr class="c">';
+if ($Qreq->saveassignment
+    && $Qreq->submit
+    && isset($Qreq->assignment)
+    && $Qreq->post_ok()) {
+    $assignset = new AssignmentSet($Me, true);
+    $assignset->enable_papers($SSel->selection());
+    $assignset->parse($Qreq->assignment);
+    $assignset->execute(true);
+    $Conf->self_redirect($Qreq, sanitize_qreq_redirect($Qreq));
+}
 
 
 class AutoassignerInterface {
@@ -399,20 +421,21 @@ class AutoassignerInterface {
     }
 }
 
+$Conf->header(["Assignments", "Automatic"], "autoassign");
+echo '<div class="psmode">',
+    '<div class="papmodex"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
+    '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
+    '<div class="papmode"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
+    '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
+    '</div><hr class="c">';
+
 if (isset($Qreq->assign) && isset($Qreq->a)
     && isset($Qreq->pctyp) && $Qreq->post_ok()) {
     $ai = new AutoassignerInterface($Me, $Qreq);
     if ($ai->check())
         $ai->run();
     ensure_session();
-} else if ($Qreq->saveassignment && $Qreq->submit
-           && isset($Qreq->assignment) && $Qreq->post_ok()) {
-    $assignset = new AssignmentSet($Me, true);
-    $assignset->enable_papers($SSel->selection());
-    $assignset->parse($Qreq->assignment);
-    $assignset->execute(true);
 }
-
 
 function echo_radio_row($name, $value, $text, $extra = null) {
     global $Qreq;
