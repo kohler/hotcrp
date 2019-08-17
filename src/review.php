@@ -224,27 +224,14 @@ class ReviewField implements Abbreviator, JsonSerializable {
     }
 
     function abbreviations_for($name, $data) {
-        assert($this === $data);
         return $this->search_keyword();
     }
     function search_keyword() {
         if ($this->_search_keyword === null) {
-            $am = $this->conf->abbrev_matcher();
             $aclass = new AbbreviationClass;
             $aclass->stopwords = $this->conf->review_form()->stopwords();
-            $this->_search_keyword = $am->unique_abbreviation($this->name, $this, $aclass);
-            if (!$this->_search_keyword) {
-                // ensure all earlier fields have search keywords
-                $pfx = AbbreviationMatcher::make_abbreviation($this->name, $aclass) . ".";
-                $sfx = 1;
-                foreach ($this->conf->review_form()->all_fields() as $field1) {
-                    if ($field1 === $this) {
-                        $this->_search_keyword = $pfx . $sfx;
-                        break;
-                    } else if ($field1->search_keyword() === $pfx . $sfx)
-                        ++$sfx;
-                }
-            }
+            $aclass->force = true;
+            $this->_search_keyword = $this->conf->abbrev_matcher()->unique_abbreviation($this->name, $this, $aclass);
         }
         return $this->_search_keyword;
     }

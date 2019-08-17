@@ -219,6 +219,7 @@ class AbbreviationClass {
     public $stopwords = "";
     public $tflags = 0;
     public $index = 0;
+    public $force = false;
 
     function __construct($type = self::TYPE_CAMELCASE, $nwords = 3) {
         $this->type = $type;
@@ -403,12 +404,47 @@ class AbbreviationMatcher {
             if ($last !== $x) {
                 $last = $x;
                 $a = $this->find_all($x, $aclass->tflags);
-                if (count($a) === 1 && $a[0] === $data)
+                if (count($a) === 1 && $a[0] === $data) {
                     return $x;
+                }
             }
-            if ($aclass === $aclass1)
+            if ($aclass === $aclass1) {
                 $aclass = clone $aclass1;
+            }
         } while ($aclass->step());
+
+        if ($aclass1->force) {
+            $pfx = self::make_abbreviation($name, $aclass1) . ".";
+            $sfx = 1;
+            foreach ($this->data as $i => $d) {
+                if (!$aclass1->tflags || ($d[3] & $aclass1->tflags) !== 0) {
+                    if ($d[2] === $this) {
+                        $d[2] = $this->_resolve($i);
+                    }
+                    if ($d[2] === $data) {
+                        return $pfx . $sfx;
+                    }
+                    if ($d[2] instanceof Abbreviator) {
+                        $abbreviator = $d[2];
+                    } else if (isset($this->abbreviators[$d[3]])) {
+                        $abbreviator = $this->abbreviators[$d[3]];
+                    } else {
+                        $abbreviator = null;
+                    }
+                    if ($abbreviator) {
+                        $tries = $d[2]->abbreviations_for($d[0], $d[2]);
+                    } else {
+                        $tries = self::make_abbreviation($d[0], $aclass1);
+                    }
+                    foreach (is_string($tries) ? [$tries] : $tries as $s) {
+                        if ($s === $pfx . $sfx) {
+                            ++$sfx;
+                        }
+                    }
+                }
+            }
+        }
+
         return null;
     }
 
