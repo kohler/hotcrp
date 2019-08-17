@@ -436,8 +436,9 @@ class ReviewForm implements JsonSerializable {
         "none", "external", "PC", "secondary", "primary", "meta"
     ];
     static public $revtype_names_full = [
-        "No review", "External review", "PC review", "Secondary review",
-        "Primary review", "Metareview"
+        -3 => "Refused", -2 => "Author", -1 => "Conflict",
+        0 => "No review", 1 => "External review", 2 => "PC review",
+        3 => "Secondary review", 4 => "Primary review", 5 => "Metareview"
     ];
     static public $revtype_icon_text = [
         -3 => "−" /* &minus; */, -2 => "A", -1 => "C",
