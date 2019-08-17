@@ -284,6 +284,14 @@ class AbbreviationMatcher {
         }
     }
 
+    private function _resolve($i) {
+        $d =& $this->data[$i];
+        if ($d[2] === $this) {
+            $d[2] = call_user_func_array($d[5], $d[6]);
+        }
+        return $d[2];
+    }
+
     private function _find_all($pattern) {
         if (empty($this->matches))
             $this->_analyze();
@@ -313,8 +321,9 @@ class AbbreviationMatcher {
                     $matches = [];
                 $mclass = 1;
                 $matches[] = $i;
-            } else if ($mclass === 0 && preg_match($re, $d[1]))
+            } else if ($mclass === 0 && preg_match($re, $d[1])) {
                 $matches[] = $i;
+            }
         }
 
         if (count($matches) > 1) {
@@ -331,7 +340,7 @@ class AbbreviationMatcher {
             $amt = new AbbreviationMatchTracker($spat, $sisu);
             foreach ($this->data as $i => $d) {
                 if ($d[2] === $this)
-                    $d[2] = call_user_func_array($d[5], $d[6]);
+                    $d[2] = $this->_resolve($i);
                 if ($d[2] instanceof Abbreviator)
                     $abbreviator = $d[2];
                 else if (isset($this->abbreviators[$d[3]]))
@@ -364,10 +373,12 @@ class AbbreviationMatcher {
                     $results = [];
                     $prio = $d[4];
                 }
-                if ($d[2] === $this)
-                    $d[2] = call_user_func_array($d[5], $d[6]);
-                if (empty($results) || $d[2] !== $last)
+                if ($d[2] === $this) {
+                    $d[2] = $this->_resolve($i);
+                }
+                if (empty($results) || $d[2] !== $last) {
                     $results[] = $last = $d[2];
+                }
             }
         }
         return $results;
