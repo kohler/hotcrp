@@ -2765,18 +2765,18 @@ class Contact {
         if (is_int($rrow)) {
             $viewscore = $rrow;
             $rrow = null;
-        } else if ($viewscore === null)
+        } else if ($viewscore === null) {
             $viewscore = VIEWSCORE_AUTHOR;
-        if ($rrow && !($rrow instanceof ReviewInfo))
-            error_log("not ReviewInfo " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        }
         assert(!$rrow || $prow->paperId == $rrow->paperId);
         $rights = $this->rights($prow);
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREV)
             || $rights->reviewType == REVIEW_META
             || ($rrow
                 && $this->is_owned_review($rrow)
-                && $viewscore >= VIEWSCORE_REVIEWERONLY))
+                && $viewscore >= VIEWSCORE_REVIEWERONLY)) {
             return true;
+        }
         $rrowSubmitted = !$rrow || $rrow->reviewSubmitted > 0;
         $seerev = $this->seerev_setting($prow, $rrow, $rights);
         // See also PaperInfo::can_view_review_identity_of.

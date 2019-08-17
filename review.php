@@ -306,14 +306,15 @@ $paperTable->resolveComments();
 if (!$viewAny
     && !$editAny
     && (!$paperTable->rrow
-        || !$Me->can_view_review($prow, $paperTable->rrow)))
+        || !$Me->can_view_review($prow, $paperTable->rrow))) {
     $paperTable->paptabEndWithReviewMessage();
-else {
+} else {
     if ($paperTable->mode === "re") {
         $paperTable->paptabEndWithEditableReview();
         $paperTable->paptabComments();
-    } else
+    } else {
         $paperTable->paptabEndWithReviewsAndComments();
+    }
 }
 
 echo "</div>\n";

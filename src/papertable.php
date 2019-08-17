@@ -1237,8 +1237,9 @@ class PaperTable {
             $contacts = [new Author($this->user)];
             $contacts[0]->contactId = $this->user->contactId;
             Contact::set_sorter($contacts[0], $this->conf);
-        } else
+        } else {
             $contacts = [];
+        }
         usort($contacts, "Contact::compare");
 
         echo '<div class="papeg">',
@@ -2464,22 +2465,25 @@ class PaperTable {
 
         // text format link
         $viewable = array();
-        foreach ($this->viewable_rrows as $rr)
+        foreach ($this->viewable_rrows as $rr) {
             if ($rr->reviewModified > 1) {
                 $viewable[] = "reviews";
                 break;
             }
-        foreach ($this->crows as $cr)
+        }
+        foreach ($this->crows as $cr) {
             if ($this->user->can_view_comment($this->prow, $cr)) {
                 $viewable[] = "comments";
                 break;
             }
-        if (count($viewable))
+        }
+        if (!empty($viewable)) {
             echo '<div class="pcard notecard"><div class="notecard_body">',
                 '<a href="', hoturl("review", "p={$this->prow->paperId}&amp;m=r&amp;text=1"), '" class="xx">',
                 Ht::img("txt24.png", "[Text]", "dlimg"),
                 "&nbsp;<u>", ucfirst(join(" and ", $viewable)),
                 " in plain text</u></a></div></div>\n";
+        }
 
         $this->render_rc(true, $this->include_comments());
     }

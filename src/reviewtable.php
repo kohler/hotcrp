@@ -49,7 +49,6 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
             && ($admin || $rr->requestedBy == $user->contactId))
             continue;
 
-        $t = "";
         $tclass = ($rrow && $highlight ? "reviewers-highlight" : "");
 
         // review ID
@@ -77,11 +76,12 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
             }
         }
         $rlink = unparseReviewOrdinal($rr);
-        $t .= '<td class="rl nw">';
+
+        $t = '<td class="rl nw">';
         if ($rrow && $rrow->reviewId == $rr->reviewId) {
             if ($user->contactId == $rr->contactId && !$rr->reviewSubmitted)
                 $id = "Your $id";
-            $t .= '<a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '" class="q"><b>' . $id . '</b></a>';
+            $t .= '<a href="' . $conf->hoturl("review", "p=$prow->paperId&r=$rlink") . '" class="q"><b>' . $id . '</b></a>';
         } else if (!$canView
                    || ($rr->reviewModified <= 1 && !$user->can_review($prow, $rr))) {
             $t .= $id;
@@ -89,9 +89,9 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
                    || $rr->reviewModified <= 1
                    || (($mode === "re" || $mode === "assign")
                        && $user->can_review($prow, $rr))) {
-            $t .= '<a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '">' . $id . '</a>';
+            $t .= '<a href="' . $conf->hoturl("review", "p=$prow->paperId&r=$rlink") . '">' . $id . '</a>';
         } else if (Navigation::page() !== "paper") {
-            $t .= '<a href="' . hoturl("paper", "p=$prow->paperId#r$rlink") . '">' . $id . '</a>';
+            $t .= '<a href="' . $conf->hoturl("paper", "p=$prow->paperId#r$rlink") . '">' . $id . '</a>';
         } else {
             $t .= '<a href="#r' . $rlink . '">' . $id . '</a>';
             if ($show_ratings
@@ -189,18 +189,19 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         $t = "<div class=\"reviewersdiv\"><table class=\"reviewers";
         if ($score_header_text)
             $t .= " has-scores";
-        $t .= "\"><tbody>\n";
+        $t .= "\">";
         $nscores = 0;
         if ($score_header_text) {
             foreach ($score_header as $x) {
                 $nscores += $x !== "" ? 1 : 0;
             }
-            $t .= '<tr><td colspan="2"></td>';
+            $t .= '<thead><tr><th colspan="2"></th>';
             if ($mode === "assign" && !$want_requested_by) {
-                $t .= '<td></td>';
+                $t .= '<th></th>';
             }
-            $t .= $score_header_text . "</tr>\n";
+            $t .= $score_header_text . "</tr></thead>";
         }
+        $t .= '<tbody>';
         foreach ($subrev as $r) {
             $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
             if (get($r, 2)) {
@@ -212,7 +213,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
             } else if ($nscores > 0) {
                 $t .= '<td colspan="' . $nscores . '"></td>';
             }
-            $t .= "</tr>\n";
+            $t .= "</tr>";
         }
         return $t . "</tbody></table></div>\n";
     } else {

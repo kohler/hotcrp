@@ -113,21 +113,23 @@ class CommentInfo {
     function unparse_ordinal() {
         $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
         $o = $is_author ? $this->authorOrdinal : $this->ordinal;
-        if (self::commenttype_needs_ordinal($this->commentType) && $o)
+        if (self::commenttype_needs_ordinal($this->commentType) && $o) {
             return ($is_author ? "A" : "") . $o;
-        else
+        } else {
             return null;
+        }
     }
 
     function unparse_html_id() {
         $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
         $o = $is_author ? $this->authorOrdinal : $this->ordinal;
-        if (self::commenttype_needs_ordinal($this->commentType) && $o)
+        if (self::commenttype_needs_ordinal($this->commentType) && $o) {
             return ($is_author ? "cA" : "c") . $o;
-        else if ($this->commentType & COMMENTTYPE_RESPONSE)
+        } else if ($this->commentType & COMMENTTYPE_RESPONSE) {
             return $this->conf->resp_round_text($this->commentRound) . "response";
-        else
+        } else {
             return "cx" . $this->commentId;
+        }
     }
 
     private function commenter() {

@@ -407,9 +407,9 @@ else {
     if ($paperTable->mode === "re") {
         $paperTable->paptabEndWithEditableReview();
         $paperTable->paptabComments();
-    } else if ($paperTable->can_view_reviews())
+    } else if ($paperTable->can_view_reviews()) {
         $paperTable->paptabEndWithReviewsAndComments();
-    else {
+    } else {
         $paperTable->paptabEndWithReviewMessage();
         $paperTable->paptabComments();
     }

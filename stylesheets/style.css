@@ -1793,7 +1793,7 @@ del .rto {
 	padding-left: 1.75em;
 }
 table.reviewers, div.revnotes {
-	margin-bottom: 0.5em;
+	margin-bottom: 8px;
 }
 table.reviewers {
 	margin-left: -6px;

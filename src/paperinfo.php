@@ -1834,20 +1834,22 @@ class PaperInfo {
     }
 
     function all_comment_skeletons() {
-        if ($this->_comment_skeleton_array !== null)
-            return $this->_comment_skeleton_array;
-        if ($this->_comment_array !== null
-            || !property_exists($this, "commentSkeletonInfo"))
-            return $this->all_comments();
-        $this->_comment_skeleton_array = [];
-        preg_match_all('/(\d+);(\d+);(\d+);(\d+);([^|]*)/', $this->commentSkeletonInfo, $ms, PREG_SET_ORDER);
-        foreach ($ms as $m) {
-            $c = new CommentInfo((object) [
-                    "commentId" => $m[1], "contactId" => $m[2],
-                    "commentType" => $m[3], "commentRound" => $m[4],
-                    "commentTags" => $m[5]
-                ], $this, $this->conf);
-            $this->_comment_skeleton_array[$c->commentId] = $c;
+        if ($this->_comment_skeleton_array === null) {
+            if ($this->_comment_array !== null
+                || !property_exists($this, "commentSkeletonInfo")) {
+                return $this->all_comments();
+            }
+            $this->_comment_skeleton_array = [];
+            preg_match_all('/(\d+);(\d+);(\d+);(\d+);([^|]*)/',
+                           $this->commentSkeletonInfo, $ms, PREG_SET_ORDER);
+            foreach ($ms as $m) {
+                $c = new CommentInfo((object) [
+                        "commentId" => $m[1], "contactId" => $m[2],
+                        "commentType" => $m[3], "commentRound" => $m[4],
+                        "commentTags" => $m[5]
+                    ], $this, $this->conf);
+                $this->_comment_skeleton_array[$c->commentId] = $c;
+            }
         }
         return $this->_comment_skeleton_array;
     }
