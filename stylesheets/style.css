@@ -776,12 +776,10 @@ span.deadline {
 strong.overdue {
 	color: red;
 }
-span.impending {
+.impending {
 	color: red;
 	font-weight: bold;
-}
-span.impending a {
-	color: red;
+	font-variant-numeric: tabular-nums;
 }
 
 /* buttons */

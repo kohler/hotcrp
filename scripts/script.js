@@ -1644,7 +1644,7 @@ function checkdl(now, endtime, ingrace) {
 
 function display_main(is_initial) {
     // this logic is repeated in the back end
-    var s = "", i, x, subtype, browser_now = now_sec(),
+    var i, x, subtype, browser_now = now_sec(),
         now = +dl.now + (browser_now - +dl.load),
         elt = $$("header-deadline");
 
@@ -1679,17 +1679,23 @@ function display_main(is_initial) {
         }
 
     if (dlname) {
-        s = "<a href=\"" + hoturl_html("deadlines") + "\">" + dlname + " deadline</a> ";
+        var impending = !dltime || dltime - now < 180.5,
+            s = '<a href="' + hoturl_html("deadlines");
+        if (impending)
+            s += '" class="impending';
+        s += '">' + dlname + ' deadline</a> ';
         if (!dltime || dltime - now < 0.5)
             s += "is NOW";
         else
             s += unparse_time_relative(dltime, now, 8);
-        if (!dltime || dltime - now < 180.5)
+        if (impending)
             s = '<span class="impending">' + s + '</span>';
+        elt.innerHTML = s;
+        removeClass(elt, "hidden");
+    } else {
+        elt.innerHTML = "";
+        addClass(elt, "hidden");
     }
-
-    elt.innerHTML = s;
-    s ? removeClass(elt, "hidden") : addClass(elt, "hidden");
 
     if (!redisplay_timeout && dlname) {
         if (!dltime || dltime - now < 180.5)
