@@ -149,7 +149,7 @@ class Formula_PaperColumn extends PaperColumn {
 class Formula_PaperColumnFactory {
     static function make(Formula $f, $xfj) {
         $cj = (array) $xfj;
-        $cj["name"] = "formula:" . ($f->formulaId ? $f->name : $f->expression);
+        $cj["name"] = "formula:" . ($f->formulaId ? $f->abbreviation() : $f->expression);
         $cj["formula"] = $f;
         return new Formula_PaperColumn($f->conf, (object) $cj);
     }

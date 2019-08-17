@@ -1387,14 +1387,14 @@ class FormulaCompiler {
     }
 }
 
-class Formula {
+class Formula implements Abbreviator {
     public $conf;
     public $user;
-    public $formulaId = null;
-    public $name = null;
+    public $formulaId;
+    public $name;
     public $heading = "";
     public $headingTitle = "";
-    public $expression = null;
+    public $expression;
     public $allowReview = false;
     private $needsReview = false;
     private $datatypes = 0;
@@ -1407,6 +1407,7 @@ class Formula {
     private $_error_html = [];
     private $_recursion = 0;
     private $_macro;
+    private $_abbreviation;
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
@@ -1453,12 +1454,28 @@ class Formula {
 
     static function fetch(Conf $conf, $result) {
         $formula = $result ? $result->fetch_object("Formula") : null;
-        if ($formula && !is_int($formula->formulaId)) {
+        if ($formula) {
             $formula->conf = $conf;
-            $formula->merge();
+            if (!is_int($formula->formulaId)) {
+                $formula->merge();
+            }
         }
         assert(!$formula || $formula->datatypes === 0);
         return $formula;
+    }
+
+
+    function abbreviations_for($name, $data) {
+        return $this->abbreviation();
+    }
+
+    function abbreviation() {
+        if ($this->_abbreviation === null) {
+            $aclass = new AbbreviationClass;
+            $aclass->force = true;
+            $this->_abbreviation = $this->conf->abbrev_matcher()->unique_abbreviation($this->name, $this, $aclass);
+        }
+        return $this->_abbreviation;
     }
 
 
