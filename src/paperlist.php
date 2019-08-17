@@ -81,7 +81,7 @@ class PaperListReviewAnalysis {
             $title = "Review";
         if (!$rrow->reviewSubmitted)
             $title .= " (" . $this->description_text() . ")";
-        $t = review_type_icon($rrow->reviewType, !$rrow->reviewSubmitted, $title);
+        $t = review_type_icon($rrow->reviewType, $rrow->reviewNeedsSubmit != 0, $title);
         if ($includeLink)
             $t = $this->wrap_link($t);
         if ($this->round)
