@@ -6342,37 +6342,30 @@ function popup_near(elt, anchor) {
 }
 
 function override_deadlines(callback) {
-    var ejq = $(this);
-    var djq = $('<div class="modal" role="dialog"><div class="modal-dialog" role="document"><div class="modal-content"><p>'
-                + (ejq.attr("data-override-text") || "Are you sure you want to override the deadline?")
-                + '</p><form><div class="popup-actions">'
-                + '<button type="button" name="bsubmit" class="btn-primary"></button>'
-                + '<button type="button" name="cancel">Cancel</button>'
-                + '</div></form></div></div></div>');
-    function close() {
-        tooltip.erase();
-        djq.remove();
-        removeClass(document.body, "modal-open");
-    }
-    djq.find("button[name=cancel]").on("click", close);
-    djq.find("button[name=bsubmit]")
-        .html(ejq.attr("aria-label")
-              || ejq.html()
-              || ejq.attr("value")
+    var self = this, hc = popup_skeleton({anchor: this});
+    hc.push('<p>' + (this.getAttribute("data-override-text") || "Are you sure you want to override the deadline?") + '</p>');
+    hc.push_actions([
+        '<button type="button" name="bsubmit" class="btn-primary"></button>',
+        '<button type="button" name="cancel">Cancel</button>'
+    ]);
+    var $d = hc.show(false);
+    $d.find("button[name=bsubmit]")
+        .html(this.getAttribute("aria-label")
+              || $(this).html()
+              || this.getAttribute("value")
               || "Save changes")
-        .on("click", function () {
-        if (callback && $.isFunction(callback))
-            callback();
-        else {
-            var fjq = ejq.closest("form");
-            fjq.children("div").first().append('<input type="hidden" name="' + ejq.attr("data-override-submit") + '" value="1"><input type="hidden" name="override" value="1">');
-            fjq.addClass("submitting");
-            fjq[0].submit();
-        }
-        close();
-    });
-    djq.appendTo(document.body);
-    popup_near(djq, this);
+        .on("click", function (event) {
+            if (callback && $.isFunction(callback)) {
+                callback();
+            } else {
+                var form = self.closest("form");
+                $(form).append('<input type="hidden" name="' + (self.getAttribute("data-override-submit") || "") + '" value="1"><input type="hidden" name="override" value="1">');
+                addClass(form, "submitting");
+                form.submit();
+            }
+            $d.close();
+        });
+    hc.show();
 }
 handle_ui.on("js-override-deadlines", override_deadlines);
 

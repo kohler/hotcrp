@@ -3587,7 +3587,6 @@ a.help {
 	right: 0;
 	z-index: 59;
 	display: none;
-	pointer-events: none;
 }
 .modal.show {
 	display: block;
