@@ -168,6 +168,7 @@ if (isset($Qreq->upload)
                 Ht::hidden("requestreview_body", $Qreq->requestreview_body),
                 Ht::hidden("bulkentry", $Qreq->bulkentry),
 
+            $assignset->report_errors();
             $assignset->echo_unparse_display();
 
             echo Ht::actions([
