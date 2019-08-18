@@ -558,10 +558,6 @@ class AssignmentParser {
     function user_universe($req, AssignmentState $state) {
         return "pc";
     }
-    static function unconflicted(PaperInfo $prow, Contact $contact, AssignmentState $state) {
-        return ($state->overrides & Contact::OVERRIDE_CONFLICT)
-            || !$prow->has_conflict($contact);
-    }
     // Return a conservative approximation of the papers relevant for this
     // action, or `false` if such an approximation is difficult to compute.
     // The approximation is an array whose keys are paper IDs; a truthy value

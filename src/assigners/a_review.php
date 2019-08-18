@@ -95,8 +95,8 @@ class Review_AssignmentParser extends AssignmentParser {
         if ($contact->is_pc_member()
             && !$contact->can_accept_review_assignment_ignore_conflict($prow))
             return Text::user_html_nolink($contact) . " cannot be assigned to review #{$prow->paperId}.";
-        // Check conflicts
-        return AssignmentParser::unconflicted($prow, $contact, $state);
+        // Conflicts are checked later
+        return true;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
@@ -127,17 +127,25 @@ class Review_AssignmentParser extends AssignmentParser {
             $rev["_rsubmitted"] = 0;
             $rev["_rnondraft"] = 0;
         }
-        if (!$rev["_rtype"] || $rdata->newtype > 0)
+        if (!$rev["_rtype"] || $rdata->newtype > 0) {
             $rev["_rtype"] = $rdata->newtype;
-        if ($rev["_rtype"] <= 0)
+        }
+        if ($rev["_rtype"] <= 0) {
             $rev["_rtype"] = REVIEW_EXTERNAL;
+        }
         if ($rev["_rtype"] === REVIEW_EXTERNAL
-            && $state->conf->pc_member_by_id($rev["cid"]))
+            && $state->conf->pc_member_by_id($rev["cid"])) {
             $rev["_rtype"] = REVIEW_PC;
-        if ($rdata->newround !== null && $rdata->explicitround)
+        }
+        if ($rdata->newround !== null && $rdata->explicitround) {
             $rev["_round"] = $rdata->newround;
-        if ($rev["_rtype"] && isset($req->reason))
-            $rev["_reason"] = $req->reason;
+        }
+        if ($rev["_rtype"] && isset($req["reason"])) {
+            $rev["_reason"] = $req["reason"];
+        }
+        if (isset($req["override"]) && friendly_boolean($req["override"])) {
+            $rev["_override"] = 1;
+        }
         $state->add($rev);
         return true;
     }
@@ -160,6 +168,9 @@ class Review_Assigner extends Assigner {
             $this->notify = $notify;
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
+        if (!$item->get(true, "_rtype") && $item->get(false, "_rtype")) {
+            Conflict_Assigner::check_unconflicted($item, $state);
+        }
         return new Review_Assigner($item, $state);
     }
     function unparse_description() {

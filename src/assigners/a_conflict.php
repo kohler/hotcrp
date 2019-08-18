@@ -137,6 +137,24 @@ class Conflict_Assigner extends Assigner {
         }
         return new Conflict_Assigner($item, $state);
     }
+    static function check_unconflicted($item, AssignmentState $state) {
+        $pid = $item["pid"];
+        $cid = isset($item["cid"]) ? $item["cid"] : $item["_cid"];
+        $cflt = $state->query(["type" => "conflict", "pid" => $pid, "cid" => $cid]);
+        if ($cflt && $cflt[0]["_ctype"] > 0) {
+            $uname = Text::user_html_nolink($state->user_by_id($cid));
+            if (isset($item["_override"])
+                && $state->user->can_administer($state->prow($pid))) {
+                $state->warning("Overriding {$uname} conflict with #{$pid}.");
+            } else if ($state->filename !== null
+                       && $state->user->allow_administer($state->prow($pid))) {
+                throw new Exception("{$uname} has a conflict with #{$pid}. Add an “override” column to assign the " . $item["type"] . " anyway.");
+            } else {
+                throw new Exception("{$uname} has a conflict with #{$pid}.");
+            }
+        }
+    }
+
     function unparse_description() {
         return "conflict";
     }
