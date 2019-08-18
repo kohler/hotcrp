@@ -126,8 +126,9 @@ if (isset($Qreq->upload)
     && $Qreq->post_ok()
     && ($Qreq->bulkentry || $Qreq->has_file("bulk"))) {
     flush();
-    while (@ob_end_flush())
-        /* do nothing */;
+    while (@ob_end_flush()) {
+        /* do nothing */
+    }
     if ($Qreq->has_file("bulk")) {
         $text = $Qreq->file_contents("bulk");
         $filename = $Qreq->file_filename("bulk");
@@ -135,19 +136,19 @@ if (isset($Qreq->upload)
         $text = $Qreq->bulkentry;
         $filename = "";
     }
-    if ($text === false)
+    if ($text === false) {
         Conf::msg_error("Internal error: cannot read file.");
-    else {
+    } else {
         $assignset = new AssignmentSet($Me, true);
         $defaults = assignment_defaults($Qreq);
         $text = convert_to_utf8($text);
         $assignset->parse($text, $filename, $defaults, "keep_browser_alive");
         finish_browser_alive();
-        if ($assignset->has_error())
+        if ($assignset->has_error()) {
             $assignset->report_errors();
-        else if ($assignset->is_empty())
+        } else if ($assignset->is_empty()) {
             $Conf->warnMsg("That assignment file makes no changes.");
-        else {
+        } else {
             $atype = $assignset->type_description();
             echo '<h3>Proposed ', $atype ? $atype . " " : "", 'assignment</h3>';
             $Conf->infoMsg("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.)");
