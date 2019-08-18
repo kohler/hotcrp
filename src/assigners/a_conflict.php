@@ -148,7 +148,7 @@ class Conflict_Assigner extends Assigner {
                 $state->warning("Overriding {$uname} conflict with #{$pid}.");
             } else if ($state->filename !== null
                        && $state->user->allow_administer($state->prow($pid))) {
-                throw new Exception("{$uname} has a conflict with #{$pid}. Add an “override” column to assign the " . $item["type"] . " anyway.");
+                throw new Exception("{$uname} has a conflict with #{$pid}. Set an “override” column to “yes” to assign the " . $item["type"] . " anyway.");
             } else {
                 throw new Exception("{$uname} has a conflict with #{$pid}.");
             }
