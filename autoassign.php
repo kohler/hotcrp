@@ -140,7 +140,8 @@ function sanitize_qreq_redirect($qreq) {
     foreach ($qreq as $k => $v) {
         if (!in_array($k, ["saveassignment", "submit", "assignment", "post",
                            "download", "assign", "p", "assigntypes",
-                           "assignpids", "xbadpairs", "haspap"])) {
+                           "assignpids", "xbadpairs", "haspap"])
+            && !is_array($v)) {
             $x[$k] = $v;
         }
     }
