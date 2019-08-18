@@ -176,8 +176,10 @@ src/assigners/a_decision.php
 src/assigners/a_follow.php
 src/assigners/a_lead.php
 src/assigners/a_preference.php
+src/assigners/a_review.php
 src/assigners/a_status.php
 src/assigners/a_tag.php
+src/assigners/a_unsubmitreview.php
 src/assignmentset.php
 src/author.php
 src/authormatcher.php
