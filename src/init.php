@@ -82,6 +82,7 @@ class SiteLoader {
     static $map = [
         "AbbreviationClass" => "lib/abbreviationmatcher.php",
         "AssignmentCountSet" => "src/assignmentset.php",
+        "AssignmentParser" => "src/assignmentset.php",
         "AutoassignerCosts" => "src/autoassigner.php",
         "BanalSettings" => "src/settings/s_subform.php",
         "CapabilityManager" => "src/capability.php",
@@ -119,6 +120,7 @@ class SiteLoader {
 
     static $suffix_map = [
         "_api.php" => ["api_", "api"],
+        "_assigner.php" => ["a_", "assigners"],
         "_assignmentparser.php" => ["a_", "assigners"],
         "_helptopic.php" => ["h_", "help"],
         "_listaction.php" => ["la_", "listactions"],
