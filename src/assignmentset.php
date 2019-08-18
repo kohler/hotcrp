@@ -901,13 +901,18 @@ class AssignmentSet {
             return [$this->astate->none_user()];
 
         // move all usable identification data to email, firstName, lastName
-        if (isset($req["name"]))
+        if (isset($req["name"])) {
             self::apply_user_parts($req, Text::split_name($req["name"]));
-        if (isset($req["user"]) && strpos($req["user"], " ") === false) {
-            if (!$req["email"])
+        }
+        if (isset($req["user"])) {
+            if (strpos($req["user"], " ") === false
+                && strpos($req["user"], "@") !== false
+                && !$req["email"]) {
                 $req["email"] = $req["user"];
-        } else if (isset($req["user"]))
-            self::apply_user_parts($req, Text::split_name($req["user"], true));
+            } else {
+                self::apply_user_parts($req, Text::split_name($req["user"], true));
+            }
+        }
 
         // extract email, first, last
         $first = $req["firstName"];
