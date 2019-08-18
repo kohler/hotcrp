@@ -525,6 +525,9 @@
     "data61": {
         "nameish": false
     },
+    "delhi": {
+        "weak": true
+    },
     "diego": {
         "nameish": true,
         "alternate": [{"word": "ucsd", "if": "university california san"}]
