@@ -60,13 +60,16 @@ class AssignmentState {
     public $overrides = 0;
     private $cmap;
     private $reviewer_users = null;
-    public $lineno = null;
+    public $filename;
+    public $lineno;
     public $defaults = array();
     private $prows = array();
     private $pid_attempts = array();
     public $finishers = array();
     public $paper_exact_match = true;
     private $msgs = [];
+    private $first_nonexact_error;
+    public $has_error = false;
     public $has_user_error = false;
 
     const ERROR_NONEXACT_MATCH = 4;
@@ -97,13 +100,14 @@ class AssignmentState {
         $tkeys = $this->types[$x["type"]];
         assert($tkeys);
         $t = $x["type"];
-        foreach ($tkeys as $k)
+        foreach ($tkeys as $k) {
             if (isset($x[$k]))
                 $t .= "`" . $x[$k];
             else if ($pid !== null && $k === "pid")
                 $t .= "`" . $pid;
             else
                 return false;
+        }
         return $t;
     }
     function load($x) {
@@ -260,25 +264,65 @@ class AssignmentState {
         return $this->cmap->register_user($c);
     }
 
-    function clear_messages() {
-        $this->msgs = [];
-        $this->has_user_error = false;
+    function msg($lineno, $msg, $status) {
+        $l = $this->filename ? : "";
+        if ($lineno) {
+            $l .= ($l === "" ? "line " : ":") . $lineno;
+        }
+        $n = count($this->msgs) - 1;
+        if ($n >= 0
+            && $this->msgs[$n][0] === $l
+            && $this->msgs[$n][1] === $msg) {
+            $this->msgs[$n][2] = max($this->msgs[$n][2], $status);
+        } else {
+            $this->msgs[] = [$l, $msg, $status];
+        }
+        if ($status == 2) {
+            $this->has_error = true;
+        }
     }
-    function error($message) {
-        $this->msgs[] = [$message, 2];
+    function warning($msg) {
+        $this->msg($this->lineno, $msg, 1);
     }
-    function paper_error($message) {
-        $this->msgs[] = [$message, $this->paper_exact_match ? 2 : self::ERROR_NONEXACT_MATCH];
+    function error($msg) {
+        $this->msg($this->lineno, $msg, 2);
     }
-    function user_error($message) {
-        $this->msgs[] = [$message, 2];
+    function user_error($msg) {
+        $this->error($msg);
         $this->has_user_error = true;
     }
-    function warning($message) {
-        $this->msgs[] = [$message, 1];
+    function paper_error($msg) {
+        $s = $this->paper_exact_match ? 2 : self::ERROR_NONEXACT_MATCH;
+        $this->msg($this->lineno, $msg, $s);
+        if ($s === self::ERROR_NONEXACT_MATCH
+            && $this->first_nonexact_error === null) {
+            $this->first_nonexact_error = count($this->msgs) - 1;
+        }
+    }
+
+    function has_messages() {
+        return !empty($this->msgs);
     }
     function messages() {
         return $this->msgs;
+    }
+    function resolve_nonexact_errors($status) {
+        if ($this->first_nonexact_error !== null) {
+            for ($i = $this->first_nonexact_error; $i < count($this->msgs); ++$i) {
+                if ($this->msgs[$i][2] === self::ERROR_NONEXACT_MATCH) {
+                    $this->msgs[$i][2] = $status;
+                }
+            }
+            if ($status === 2) {
+                $this->has_error = true;
+            }
+            $this->first_nonexact_error = null;
+        }
+    }
+    function clear_messages() {
+        $this->msgs = [];
+        $this->has_error = $this->has_user_error = false;
+        $this->first_nonexact_error = null;
     }
 }
 
@@ -702,9 +746,6 @@ class AssignmentSet {
     private $assigners_pidhead = [];
     private $enabled_pids = null;
     private $enabled_actions = null;
-    private $msgs = array();
-    private $has_error = false;
-    private $has_user_error = false;
     private $my_conflicts = null;
     private $astate;
     private $searches = array();
@@ -750,14 +791,17 @@ class AssignmentSet {
 
     function enable_papers($paper) {
         assert(empty($this->assigners));
-        if ($this->enabled_pids === null)
+        if ($this->enabled_pids === null) {
             $this->enabled_pids = [];
-        foreach (is_array($paper) ? $paper : [$paper] as $p)
+        }
+        foreach (is_array($paper) ? $paper : [$paper] as $p) {
             if ($p instanceof PaperInfo) {
                 $this->astate->add_prow($p);
                 $this->enabled_pids[] = $p->paperId;
-            } else
+            } else {
                 $this->enabled_pids[] = (int) $p;
+            }
+        }
     }
 
     function is_empty() {
@@ -765,37 +809,21 @@ class AssignmentSet {
     }
 
     function has_error() {
-        return $this->has_error;
-    }
-
-    function clear_errors() {
-        $this->msgs = [];
-        $this->has_error = false;
-        $this->has_user_error = false;
-    }
-
-    function msg($lineno, $msg, $status) {
-        $l = ($this->filename ? $this->filename . ":" : "line ") . $lineno;
-        $n = count($this->msgs) - 1;
-        if ($n >= 0
-            && $this->msgs[$n][0] === $l
-            && $this->msgs[$n][1] === $msg)
-            $this->msgs[$n][2] = max($this->msgs[$n][2], $status);
-        else
-            $this->msgs[] = [$l, $msg, $status];
-        if ($status == 2)
-            $this->has_error = true;
+        return $this->astate->has_error;
     }
     function error_at($lineno, $message) {
-        $this->msg($lineno, $message, 2);
+        $this->astate->msg($lineno, $message, 2);
     }
     function error_here($message) {
-        $this->msg($this->astate->lineno, $message, 2);
+        $this->astate->msg($this->astate->lineno, $message, 2);
+    }
+    function clear_errors() {
+        $this->astate->clear_messages();
     }
 
     function errors_html($linenos = false) {
         $es = array();
-        foreach ($this->msgs as $e) {
+        foreach ($this->astate->messages() as $e) {
             $t = $e[1];
             if ($linenos && $e[0])
                 $t = '<span class="lineno">' . htmlspecialchars($e[0]) . ':</span> ' . $t;
@@ -817,7 +845,7 @@ class AssignmentSet {
     }
     function errors_text($linenos = false) {
         $es = array();
-        foreach ($this->msgs as $e) {
+        foreach ($this->astate->messages() as $e) {
             $t = htmlspecialchars_decode(preg_replace(',<(?:[^\'">]|\'[^\']*\'|"[^"]*")*>,', "", $e[1]));
             if ($linenos && $e[0])
                 $t = $e[0] . ': ' . $t;
@@ -826,23 +854,22 @@ class AssignmentSet {
         }
         return $es;
     }
-
     function report_errors() {
-        if (!empty($this->msgs) && $this->has_error)
+        if ($this->astate->has_messages() && $this->has_error())
             Conf::msg_error('Assignment errors: ' . $this->errors_div_html(true) . ' Please correct these errors and try again.');
-        else if (!empty($this->msgs))
+        else if ($this->astate->has_messages())
             Conf::msg_warning('Assignment warnings: ' . $this->errors_div_html(true));
     }
 
     function json_result($linenos = false) {
-        if ($this->has_error) {
+        if ($this->has_error()) {
             $jr = new JsonResult(403, ["ok" => false, "error" => $this->errors_div_html($linenos)]);
-            if ($this->has_user_error) {
+            if ($this->astate->has_user_error) {
                 $jr->status = 422;
                 $jr->content["user_error"] = true;
             }
             return $jr;
-        } else if (!empty($this->msgs)) {
+        } else if ($this->astate->has_messages()) {
             return new JsonResult(["ok" => true, "response" => $this->errors_div_html($linenos)]);
         } else {
             return new JsonResult(["ok" => true]);
@@ -967,8 +994,9 @@ class AssignmentSet {
 
     private function install_csv_header($csv) {
         if (!$csv->header()) {
-            if (!($req = $csv->next_array()))
+            if (!($req = $csv->next_array())) {
                 return $this->error_at($csv->lineno(), "empty file");
+            }
             if (!self::is_csv_header($req)) {
                 $csv->unshift($req);
                 if (count($req) === 3
@@ -1017,11 +1045,11 @@ class AssignmentSet {
             }
         }
 
-        if (!$has_action && !get($this->astate->defaults, "action"))
-            return $this->error_at($csv->lineno(), "“assignment” column missing");
-        else if (!$csv->has_column("paper"))
+        if (!$has_action && !get($this->astate->defaults, "action")) {
+            return $this->error_at($csv->lineno(), "“action” column missing");
+        } else if (!$csv->has_column("paper")) {
             return $this->error_at($csv->lineno(), "“paper” column missing");
-        else {
+        } else {
             if (!isset($this->astate->defaults["action"]))
                 $this->astate->defaults["action"] = "<missing>";
             return true;
@@ -1068,7 +1096,7 @@ class AssignmentSet {
             return 0;
         }
         if (empty($npids) && $report_error)
-            $this->msg($this->astate->lineno, "No papers match “" . htmlspecialchars($pfield) . "”", 1);
+            $this->astate->warning("No papers match “" . htmlspecialchars($pfield) . "”");
 
         // Implement paper restriction
         if ($this->enabled_pids !== null)
@@ -1150,7 +1178,6 @@ class AssignmentSet {
 
         // fetch papers
         $this->astate->fetch_prows($pids);
-        $this->astate->clear_messages();
         $this->astate->paper_exact_match = $pfield_straight;
 
         // check conflicts and perform assignment
@@ -1215,20 +1242,14 @@ class AssignmentSet {
             }
         }
 
-        foreach ($this->astate->messages() as $mx) {
-            $status = $mx[1];
-            if ($status === AssignmentState::ERROR_NONEXACT_MATCH)
-                $status = $any_success ? 1 : 2;
-            $this->msg($this->astate->lineno, $mx[0], $status);
-        }
-        $this->has_user_error = $this->has_user_error || $this->astate->has_user_error;
+        $this->astate->resolve_nonexact_errors($any_success ? 1 : 2);
         return $any_success;
     }
 
     function parse($text, $filename = null, $defaults = null, $alertf = null) {
         assert(empty($this->assigners));
-        $this->filename = $filename;
-        $this->astate->defaults = $defaults ? : array();
+        $this->astate->filename = $this->filename = $filename;
+        $this->astate->defaults = $defaults ? : [];
 
         if ($text instanceof CsvParser)
             $csv = $text;
@@ -1276,9 +1297,10 @@ class AssignmentSet {
 
         // create assigners for difference
         $this->assigners_pidhead = $pidtail = [];
-        foreach ($this->astate->diff() as $pid => $difflist)
+        foreach ($this->astate->diff() as $pid => $difflist) {
             foreach ($difflist as $item) {
                 try {
+                    $this->astate->lineno = $item->lineno;
                     if (($a = $item->realize($this->astate))) {
                         if ($a->pid > 0) {
                             $index = count($this->assigners);
@@ -1291,9 +1313,10 @@ class AssignmentSet {
                         $this->assigners[] = $a;
                     }
                 } catch (Exception $e) {
-                    $this->error_at($item->lineno, $e->getMessage());
+                    $this->astate->error($e->getMessage());
                 }
             }
+        }
 
         $this->user->set_overrides($old_overrides);
     }
@@ -1439,12 +1462,12 @@ class AssignmentSet {
 
     function execute($verbose = false) {
         global $Now;
-        if ($this->has_error || empty($this->assigners)) {
-            if ($verbose && !empty($this->msgs))
+        if ($this->has_error() || empty($this->assigners)) {
+            if ($verbose && $this->astate->has_messages())
                 $this->report_errors();
             else if ($verbose)
                 $this->conf->warnMsg("Nothing to assign.");
-            return !$this->has_error; // true means no errors
+            return !$this->has_error(); // true means no errors
         }
 
         // mark activity now to avoid DB errors later
