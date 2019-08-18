@@ -640,7 +640,7 @@ xassert_eqq($rrow18d2->t01, $gettysburg);
 // check some review visibility policies
 $user_external = Contact::create($Conf, null, ["email" => "external@_.com", "name" => "External Reviewer"]);
 $user_mgbaker->assign_review(17, $user_external->contactId, REVIEW_EXTERNAL,
-    ["round_number" => 3]);
+    ["round_number" => $Conf->round_number("R2", false)]);
 xassert(!$user_external->can_view_review($paper17, $rrow17m));
 xassert(!$user_external->can_view_review_identity($paper17, $rrow17m));
 $Conf->save_setting("extrev_view", 0);
@@ -665,9 +665,9 @@ xassert($tf->check_and_save($user_lixia, $paper17));
 MailChecker::check_db("test06-17lixia");
 $rrow17h = fetch_review($paper17, $user_lixia);
 $rrow17x = fetch_review($paper17, $user_external);
-xassert_eqq($rrow17m->reviewRound, 3);
-xassert_eqq($rrow17h->reviewRound, 1);
-xassert_eqq($rrow17x->reviewRound, 3);
+xassert_eqq($rrow17m->reviewRound, $Conf->round_number("R2", false));
+xassert_eqq($rrow17h->reviewRound, $Conf->round_number("R1", false));
+xassert_eqq($rrow17x->reviewRound, $Conf->round_number("R2", false));
 Contact::update_rights();
 
 xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
@@ -689,7 +689,15 @@ xassert($user_external->can_view_review_identity($paper17, $rrow17m));
 xassert($user_external->can_view_review_identity($paper17, $rrow17h));
 xassert($user_external->can_view_review_identity($paper17, $rrow17x));
 
-$Conf->save_setting("round_settings", 1, '[null,{"extrev_view":0}]');
+function save_round_settings($map) {
+    global $Conf;
+    $settings = [];
+    foreach ($Conf->round_list() as $rname) {
+        $settings[] = isset($map[$rname]) ? $map[$rname] : null;
+    }
+    $Conf->save_setting("round_settings", 1, json_encode_db($settings));
+}
+save_round_settings(["R1" => ["extrev_view" => 0]]);
 Contact::update_rights();
 
 xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
@@ -714,7 +722,7 @@ assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
 assert_search_papers($user_lixia, "re:mgbaker", "1 13 17");
 
 // Extrev cannot view R1; PC cannot view R2
-$Conf->save_setting("round_settings", 1, '[null,{"extrev_view":0},null,{"pc_seeallrev":-1}]');
+save_round_settings(["R1" => ["extrev_view" => 0], "R2" => ["pc_seeallrev" => -1]]);
 Contact::update_rights();
 
 xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
@@ -739,7 +747,7 @@ assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
 assert_search_papers($user_lixia, "re:mgbaker", "1 13 17");
 
 // Extrev cannot view R1; PC cannot view R2 identity
-$Conf->save_setting("round_settings", 1, '[null,{"extrev_view":0},null,{"pc_seeblindrev":-1}]');
+save_round_settings(["R1" => ["extrev_view" => 0], "R2" => ["pc_seeblindrev" => -1]]);
 Contact::update_rights();
 
 xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
