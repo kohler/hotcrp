@@ -55,7 +55,7 @@ class Lead_AssignmentParser extends AssignmentParser {
         $state->remove(["type" => $this->key, "pid" => $prow->paperId, "_cid" => $remcid]);
         if (!$this->remove && $contact->contactId) {
             $it = ["type" => $this->key, "pid" => $prow->paperId, "_cid" => $contact->contactId];
-            if (isset($req->override) && friendly_boolean($req->override))
+            if (isset($req["override"]) && friendly_boolean($req["override"]))
                 $it["_override"] = 1;
             $state->add($it);
         }
