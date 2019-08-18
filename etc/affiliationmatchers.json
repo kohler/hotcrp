@@ -8,6 +8,12 @@
     "&": {
         "stop": true
     },
+    "at": {
+        "stop": true
+    },
+    "for": {
+        "stop": true
+    },
     "of": {
         "stop": true
     },
@@ -294,6 +300,9 @@
     "management": {
         "weak": true
     },
+    "mathematics": {
+        "weak": true
+    },
     "mobile": {
         "weak": true
     },
@@ -445,6 +454,12 @@
     "berkeley": {
         "nameish": false
     },
+    "berlin": {
+        "weak": true
+    },
+    "boston": {
+        "sync": "college"
+    },
     "birmingham": {
         "sync": "alabama"
     },
@@ -477,6 +492,10 @@
         "nameish": true,
         "alternate": [{"word": "ncsu", "if": "north state university"}],
         "sync": "state"
+    },
+    "chicago": {
+        "weak": true,
+        "sync": "illinois"
     },
     "china": {
         "weak": true, "nameish": true,
@@ -583,6 +602,9 @@
         "alternate": [{"word": "uiuc", "if": "university"}],
         "sync": "chicago"
     },
+    "india": {
+        "weak": true
+    },
     "indian": {
         "weak": true,
         "alternate": [
@@ -604,6 +626,9 @@
     },
     "irvine": {
         "alternate": [{"word": "uci", "if": "university california"}]
+    },
+    "israel": {
+        "weak": true
     },
     "italy": {
         "weak": true
@@ -693,6 +718,9 @@
     "rensselaer": {
         "alternate": [{"word": "rpi", "if": "polytechnic institute"}]
     },
+    "rio": {
+        "weak": true
+    },
     "rpi": {
         "alternate": ["rensselaer polytechnic institute"]
     },
@@ -774,6 +802,9 @@
     },
     "uhk": {
         "alternate": ["university hong kong"]
+    },
+    "uic": {
+        "alternate": ["university illinois chicago"]
     },
     "uiuc": {
         "alternate": ["university illinois urbana champaign", "university illinois"],
