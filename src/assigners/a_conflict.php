@@ -10,13 +10,17 @@ class Conflict_AssignmentParser extends AssignmentParser {
         $this->remove = $aj->remove;
         $this->iscontact = $aj->iscontact;
     }
+    static function load_conflict_state(AssignmentState $state) {
+        if ($state->mark_type("conflict", ["pid", "cid"], "Conflict_Assigner::make")) {
+            $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType!=0 and paperId?a", $state->paper_ids());
+            while (($row = $result->fetch_row())) {
+                $state->load(["type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]]);
+            }
+            Dbl::free($result);
+        }
+    }
     function load_state(AssignmentState $state) {
-        if (!$state->mark_type("conflict", ["pid", "cid"], "Conflict_Assigner::make"))
-            return;
-        $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType!=0 and paperId?a", $state->paper_ids());
-        while (($row = edb_row($result)))
-            $state->load(["type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]]);
-        Dbl::free($result);
+        self::load_conflict_state($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->user->can_administer($prow)
@@ -128,7 +132,7 @@ class Conflict_Assigner extends Assigner {
             foreach ($state->query(["type" => "conflict", "pid" => $item["pid"]]) as $m)
                 if ($m["_ctype"] >= CONFLICT_CONTACTAUTHOR)
                     ++$ncontacts;
-            if ($ncontacts == 0)
+            if ($ncontacts === 0)
                 throw new Exception("Each submission must have at least one contact.");
         }
         return new Conflict_Assigner($item, $state);

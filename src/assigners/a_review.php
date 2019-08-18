@@ -28,6 +28,7 @@ class Review_AssignmentParser extends AssignmentParser {
     }
     function load_state(AssignmentState $state) {
         self::load_review_state($state);
+        Conflict_AssignmentParser::load_conflict_state($state);
     }
     private function make_rdata($req, AssignmentState $state) {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
