@@ -112,15 +112,15 @@ class FieldRender {
     public $value_format;
     public $value_long;
 
-    const CPAGE = 3;
-    const CROW = 5;
-    const CCOLUMN = 7;
-    const CCSV = 0;
-    const CTEXT = 2;
-    const CDESC = 9;
-
     const CFHTML = 1;
+    const CFPAGE = 2;
     const CFLIST = 4;
+    const CFCOLUMN = 8;
+    const CFCSV = 16;
+    const CFVERBOSE = 32;
+
+    const CTEXT = 0;
+    const CPAGE = 3;
 
     function __construct($context) {
         $this->context = $context;
@@ -135,14 +135,27 @@ class FieldRender {
     function is_empty() {
         return (string) $this->title === "" && (string) $this->value === "";
     }
+    function for_page() {
+        return ($this->context & self::CFPAGE) !== 0;
+    }
     function want_text() {
-        return !($this->context & self::CFHTML);
+        return ($this->context & self::CFHTML) === 0;
     }
     function want_html() {
-        return $this->context & self::CFHTML;
+        return ($this->context & self::CFHTML) !== 0;
     }
     function want_list() {
-        return $this->context & self::CFLIST;
+        return ($this->context & self::CFLIST) !== 0;
+    }
+    function want_list_row() {
+        return ($this->context & (self::CFLIST | self::CFCOLUMN)) === self::CFLIST;
+        }
+    function want_list_column() {
+        return ($this->context & (self::CFLIST | self::CFCOLUMN)) ===
+            (self::CFLIST | self::CFCOLUMN);
+    }
+    function verbose() {
+        return ($this->context & self::CFVERBOSE) !== 0;
     }
     function set_text($t) {
         $this->value = $t;
@@ -153,12 +166,13 @@ class FieldRender {
         $this->value_format = 5;
     }
     function set_bool($b) {
+        $v = $this->verbose();
         if ($this->context & self::CFHTML) {
-            $this->set_text($b ? "✓" : "");
-        } else if ($this->context === self::CCSV) {
-            $this->set_text($b ? "Y" : "N");
+            $this->set_text($b ? "✓" : ($v ? "✗" : ""));
+        } else if ($this->context & self::CFCSV) {
+            $this->set_text($b ? "Y" : ($v ? "N" : ""));
         } else {
-            $this->set_text($b ? "Yes" : "");
+            $this->set_text($b ? "Yes" : ($v ? "No" : ""));
         }
     }
     function value_html($divclass = null) {
@@ -937,7 +951,7 @@ class CheckboxPaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperOptionValue $ov) {
-        if ($fr->context === FieldRender::CPAGE && $ov->value) {
+        if ($fr->for_page() && $ov->value) {
             $fr->title = "";
             $fr->set_html('✓ <span class="pavfn">' . $this->title_html() . '</span>');
         } else {
@@ -1190,12 +1204,12 @@ class DocumentPaperOption extends PaperOption {
         return $d;
     }
     function render(FieldRender $fr, PaperOptionValue $ov) {
-        if ($this->id <= 0 && $fr->context === FieldRender::CPAGE) {
+        if ($this->id <= 0 && $fr->for_page()) {
             $fr->table->render_submission($fr, $this);
         } else if (($d = $this->first_document($ov))) {
             if ($fr->want_text()) {
                 $fr->set_text($d->filename);
-            } else if ($fr->context === FieldRender::CPAGE) {
+            } else if ($fr->for_page()) {
                 $fr->title = "";
                 $dif = 0;
                 if ($this->display_position() >= 2000)
@@ -1521,19 +1535,20 @@ class AttachmentsPaperOption extends PaperOption {
         if (!empty($ts)) {
             if ($fr->want_text()) {
                 $fr->set_text(join("; ", $ts));
-            } else if ($fr->context === FieldRender::CROW) {
+            } else if ($fr->want_list_row()) {
                 $fr->set_html(join("; ", $ts));
             } else {
                 $fr->set_html('<p class="od">' . join('</p><p class="od">', $ts) . '</p>');
             }
-            if ($fr->context === FieldRender::CPAGE
-                && $this->display_position() < 2000) {
+            if ($fr->for_page() && $this->display_position() < 2000) {
                 $fr->title = false;
                 $v = '<div class="pgsm';
                 if ($fr->table && $fr->table->user->view_option_state($ov->prow, $this) === 1)
                     $v .= ' fx8';
                 $fr->value = $v . '">' . $fr->value . '</div>';
             }
+        } else if ($fr->verbose()) {
+            $fr->set_text("None");
         }
     }
 }
@@ -1568,15 +1583,29 @@ class IntrinsicPaperOption extends PaperOption {
         }
     }
     function render(FieldRender $fr, PaperOptionValue $ov) {
-        assert($fr->context === FieldRender::CPAGE && $fr->table !== null);
-        if ($this->id === PaperOption::ABSTRACTID)
-            $fr->table->render_abstract($fr, $this);
-        else if ($this->id === PaperOption::AUTHORSID)
+        if ($this->id === PaperOption::TITLEID) {
+            $fr->value = $ov->prow->title ? : "[No title]";
+            $fr->value_format = $ov->prow->title_format();
+        } if ($this->id === PaperOption::ABSTRACTID) {
+            if ($fr->for_page()) {
+                $fr->table->render_abstract($fr, $this);
+            } else {
+                $text = $ov->prow->abstract;
+                if (trim($text) !== "") {
+                    $fr->value = $text;
+                    $fr->value_format = $ov->abstract_format();
+                } else if (!$this->conf->opt("noAbstract")
+                           && $fr->verbose()) {
+                    $fr->set_text("[No abstract]");
+                }
+            }
+        } else if ($this->id === PaperOption::AUTHORSID) {
             $fr->table->render_authors($fr, $this);
-        else if ($this->id === -1005)
+        } else if ($this->id === -1005) {
             $fr->table->render_topics($fr, $this);
-        else if ($this->id === -1008)
+        } else if ($this->id === -1008) {
             $fr->table->render_submission_version($fr, $this);
+        }
     }
 }
 

@@ -37,7 +37,7 @@ class Option_PaperColumn extends PaperColumn {
         }
 
         $fr = $this->fr;
-        $fr->clear($this->viewable_row() ? FieldRender::CROW : FieldRender::CCOLUMN);
+        $fr->clear(FieldRender::CFLIST | ($this->viewable_row() ? 0 : FieldRender::CFCOLUMN));
         $this->opt->render($fr, $ov);
         if ((string) $fr->value === "") {
             return "";
@@ -68,7 +68,7 @@ class Option_PaperColumn extends PaperColumn {
             return "";
         }
 
-        $this->fr->clear(FieldRender::CCSV);
+        $this->fr->clear(FieldRender::CFCSV | FieldRender::CFVERBOSE);
         $this->opt->render($this->fr, $ov);
         return (string) $this->fr->value;
     }

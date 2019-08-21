@@ -453,7 +453,7 @@ class PaperTable {
     }
 
     private function echo_field_hint($opt) {
-        $fr = new FieldRender(FieldRender::CDESC);
+        $fr = new FieldRender(FieldRender::CFHTML);
         $fr->value_format = 5;
         if ($opt->description_format !== null)
             $fr->value_format = $opt->description_format;
@@ -1051,28 +1051,22 @@ class PaperTable {
         echo '<p class="pgsm"><span class="pstat ', $status_info[0], '">',
             htmlspecialchars($status_info[1]), "</span></p>";
 
-        $fields = [];
-        foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
-            if ($o->display_position() !== false
-                && $o->display_position() >= 1000
-                && $o->display_position() < 5000
-                && ($o->id <= 0 || $this->user->allow_view_option($this->prow, $o)))
-                $fields[] = $o;
-        }
-
         $fr = new FieldRender(FieldRender::CPAGE);
         $fr->table = $this;
-
         $renders = [];
-        foreach ($fields as $o) {
-            $vos = $this->user->view_option_state($this->prow, $o);
-            if ($vos === 0)
+        foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
+            if ($o->display_position() === false
+                || $o->display_position() < 1000
+                || $o->display_position() >= 5000
+                || ($vos = $this->user->view_option_state($this->prow, $o)) === 0) {
                 continue;
+            }
 
             $fr->clear();
             $o->render($fr, $this->prow->force_option($o->id));
-            if ($fr->is_empty())
+            if ($fr->is_empty()) {
                 continue;
+            }
 
             $this->clean_render($fr, $o, $vos);
             $renders[] = [$o, $vos, $fr->title, $fr->value, $fr->value_long];

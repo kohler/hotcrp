@@ -143,16 +143,19 @@ class Default_PaperSaver extends PaperSaver {
         }
 
         // Options
-        if (!isset($pj->options))
+        if (!isset($pj->options)) {
             $pj->options = (object) [];
-        foreach ($user->conf->paper_opts->option_list() as $o)
+        }
+        foreach ($user->conf->paper_opts->option_list() as $o) {
             if ($qreq["has_{$o->formid}"]
                 && (!$o->final || $action === "final")) {
                 $okey = $o->json_key();
                 $pj->options->$okey = $o->parse_request(get($pj->options, $okey), $qreq, $user, $prow);
             }
-        if (!count(get_object_vars($pj->options)))
+        }
+        if (!count(get_object_vars($pj->options))) {
             unset($pj->options);
+        }
 
         // PC conflicts
         if ($user->conf->setting("sub_pcconf")
