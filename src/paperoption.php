@@ -917,6 +917,26 @@ class PaperOption implements Abbreviator {
     function store_json($pj, PaperStatus $ps) {
         return null;
     }
+    function save_document_links($docids, PaperInfo $prow) {
+        $qv = [];
+        foreach ($docids as $doc) {
+            $doc = is_object($doc) ? $doc->paperStorageId : $doc;
+            assert($doc > 0);
+            if ($doc > 0) {
+                $qv[] = [$prow->paperId, $this->id, $doc, null];
+            }
+        }
+        $this->conf->qe("delete from PaperOption where paperId=? and optionId=?", $prow->paperId, $this->id);
+        if (!empty($qv)) {
+            for ($i = 0; count($qv) > 1 && $i < count($qv); ++$i) {
+                $qv[$i][3] = $i + 1;
+            }
+            $this->conf->qe("insert into PaperOption (paperId, optionId, value, `data`) values ?v", $qv);
+            $this->conf->qe("update PaperStorage set inactive=0 where paperId=? and paperStorageId?a", $prow->paperId, array_map(function ($qvx) { return $qvx[2]; }, $qv));
+        }
+        $prow->invalidate_options();
+        $prow->mark_inactive_documents();
+    }
 
     function list_display($isrow) {
         return false;
