@@ -112,20 +112,20 @@ class HotCRPMailer extends Mailer {
     }
 
     private function get_reviews() {
-        if ($this->rrow)
-            $rrows = array($this->rrow);
-        else {
+        // save old au_seerev setting, and reset it so authors can see them.
+        if (!($au_seerev = $this->conf->au_seerev))
+            $this->conf->au_seerev = Conf::AUSEEREV_YES;
+        assert(!($this->recipient->overrides() & contact::OVERRIDE_CONFLICT));
+
+        if ($this->rrow) {
+            $rrows = [$this->rrow];
+        } else {
             $this->row->ensure_full_reviews();
             $rrows = $this->row->reviews_by_display($this->recipient);
         }
 
-        // save old au_seerev setting, and reset it so authors can see them.
-        if (!($au_seerev = $this->conf->au_seerev))
-            $this->conf->au_seerev = Conf::AUSEEREV_YES;
-
         $text = "";
         $rf = $this->conf->review_form();
-        assert(!($this->recipient->overrides() & Contact::OVERRIDE_CONFLICT));
         foreach ($rrows as $rrow)
             if (($rrow->reviewSubmitted
                  || ($rrow == $this->rrow && $this->rrow_unsubmitted))
@@ -142,15 +142,16 @@ class HotCRPMailer extends Mailer {
     }
 
     private function get_comments($tag) {
-        if ($this->comment_row)
-            $crows = [$this->comment_row];
-        else
-            $crows = $this->row->all_comments();
-
         // save old au_seerev setting, and reset it so authors can see them.
         if (!($au_seerev = $this->conf->au_seerev))
             $this->conf->au_seerev = Conf::AUSEEREV_YES;
         assert(!($this->recipient->overrides() & Contact::OVERRIDE_CONFLICT));
+
+        if ($this->comment_row) {
+            $crows = [$this->comment_row];
+        } else {
+            $crows = $this->row->all_comments();
+        }
 
         $crows = array_filter($crows, function ($crow) use ($tag) {
             return (!$tag || $crow->has_tag($tag))
