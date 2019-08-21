@@ -180,14 +180,14 @@ class Tag_SearchTerm extends SearchTerm {
             $this->tag1nz = $row->tag_value($this->tag1) != 0;
         return $ok;
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
         $child = [];
         $tags = $row->searchable_tags($srch->user);
         // autosearch tags are special, splice in their search defs
         foreach ($srch->conf->tags()->filter("autosearch") as $dt)
             if ($this->tsm->evaluate($srch->user, " {$dt->tag}#0")) {
                 $newsrch = new PaperSearch($srch->user, $dt->autosearch);
-                $newec = $newsrch->term()->compile_edit_condition($row, $newsrch);
+                $newec = $newsrch->term()->compile_condition($row, $newsrch);
                 if ($newec === null)
                     return null;
                 else if ($newec === true)

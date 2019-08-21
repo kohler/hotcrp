@@ -187,7 +187,7 @@ class Option_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $this->om->exec($row, $srch->user);
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
         if ($this->om->kind)
             return null;
         else if (!$srch->user->can_view_option($row, $this->om->option))

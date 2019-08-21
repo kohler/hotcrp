@@ -491,8 +491,8 @@ class PaperOption implements Abbreviator {
     public $internal;
     private $form_position;
     private $display_position;
-    private $edit_condition;
-    private $_ecs;
+    private $exists_if;
+    private $_exists_search;
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -606,9 +606,13 @@ class PaperOption implements Abbreviator {
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;
 
-        if (($x = get($args, "edit_condition"))) {
-            $this->edit_condition = $x;
-            $this->_ecs = new PaperSearch($this->conf->site_contact(), $x);
+        if (array_key_exists("exists_if", $args))
+            $x = $args["exists_if"];
+        else
+            $x = get($args, "edit_condition"); // XXX
+        if ($x !== null && $x !== true) {
+            $this->exists_if = $x;
+            $this->_exists_search = new PaperSearch($this->conf->site_contact(), $x === false ? "NONE" : $x);
         }
     }
 
@@ -719,15 +723,15 @@ class PaperOption implements Abbreviator {
         return $this->display_position;
     }
 
-    function edit_condition() {
-        return $this->edit_condition;
+    function exists_condition() {
+        return $this->exists_if;
     }
-    function test_edit_condition(PaperInfo $prow) {
-        return !$this->_ecs || $this->_ecs->test($prow);
+    function test_exists(PaperInfo $prow) {
+        return !$this->_exists_search || $this->_exists_search->test($prow);
     }
-    function compile_edit_condition(PaperInfo $prow) {
-        assert($this->_ecs !== null);
-        return $this->_ecs->term()->compile_edit_condition($prow, $this->_ecs);
+    function compile_exists_condition(PaperInfo $prow) {
+        assert($this->_exists_search !== null);
+        return $this->_exists_search->term()->compile_condition($prow, $this->_exists_search);
     }
 
     function has_selector() {
@@ -737,19 +741,15 @@ class PaperOption implements Abbreviator {
     function is_document() {
         return false;
     }
-
     function has_document() {
         return false;
     }
-
     function allow_empty_document() {
         return false;
     }
-
     function mimetypes() {
         return null;
     }
-
     function has_attachments() {
         return false;
     }
@@ -790,8 +790,8 @@ class PaperOption implements Abbreviator {
             $j->visibility = $this->visibility;
         if ($this->display_space)
             $j->display_space = $this->display_space;
-        if ($this->edit_condition)
-            $j->edit_condition = $this->edit_condition;
+        if ($this->exists_if !== null)
+            $j->exists_if = $this->exists_if;
         if ($this->required)
             $j->required = true;
         return $j;

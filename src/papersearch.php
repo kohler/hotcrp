@@ -252,7 +252,7 @@ class SearchTerm {
         return false;
     }
 
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
         return null;
     }
 
@@ -282,7 +282,7 @@ class False_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return false;
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
         return false;
     }
 }
@@ -306,7 +306,7 @@ class True_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return true;
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
         return true;
     }
 }
@@ -431,8 +431,8 @@ class Not_SearchTerm extends Op_SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return !$this->child[0]->exec($row, $srch);
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
-        $x = $this->child[0]->compile_edit_condition($row, $srch);
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
+        $x = $this->child[0]->compile_condition($row, $srch);
         if ($x === null)
             return null;
         else if ($x === false || $x === true)
@@ -500,11 +500,11 @@ class And_SearchTerm extends Op_SearchTerm {
                 return false;
         return true;
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
         $ch = [];
         $ok = true;
         foreach ($this->child as $subt) {
-            $x = $subt->compile_edit_condition($row, $srch);
+            $x = $subt->compile_condition($row, $srch);
             if ($x === null)
                 return null;
             else if ($x === false)
@@ -578,11 +578,11 @@ class Or_SearchTerm extends Op_SearchTerm {
                 return true;
         return false;
     }
-    static function compile_or_edit_condition($child, PaperInfo $row, PaperSearch $srch) {
+    static function compile_or_condition($child, PaperInfo $row, PaperSearch $srch) {
         $ch = [];
         $ok = false;
         foreach ($child as $subt) {
-            $x = $subt->compile_edit_condition($row, $srch);
+            $x = $subt->compile_condition($row, $srch);
             if ($x === null)
                 return null;
             else if ($x === true)
@@ -597,8 +597,8 @@ class Or_SearchTerm extends Op_SearchTerm {
         else
             return (object) ["type" => "or", "child" => $ch];
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
-        return self::compile_or_edit_condition($this->child, $row, $srch);
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
+        return self::compile_or_condition($this->child, $row, $srch);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
@@ -723,8 +723,8 @@ class Then_SearchTerm extends Op_SearchTerm {
                 return true;
         return false;
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
-        return Or_SearchTerm::compile_or_edit_condition(array_slice($this->child, 0, $this->nthen), $row, $srch);
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
+        return Or_SearchTerm::compile_or_condition(array_slice($this->child, 0, $this->nthen), $row, $srch);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
@@ -966,7 +966,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         else
             return $row->field_match_pregexes($this->regex, $this->field);
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
         if (!$this->trivial || $this->field === "authorInformation")
             return null;
         else
@@ -1221,7 +1221,7 @@ class PaperID_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return in_array($row->paperId, $this->pids);
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
         return $this->exec($row, $srch);
     }
     function in_order() {

@@ -133,7 +133,7 @@ class Options_SettingRenderer {
                 if (get($sv->req, "optec_$oxpos") === "final")
                     $args["final"] = true;
                 else if (get($sv->req, "optec_$oxpos") === "search")
-                    $args["edit_condition"] = get($sv->req, "optecs_$oxpos");
+                    $args["exists_if"] = get($sv->req, "optecs_$oxpos");
                 $o = PaperOption::make($args, $sv->conf);
                 if ($o->has_selector())
                     $o->set_selector_options(explode("\n", rtrim(get($sv->req, "optv_$oxpos", ""))));
@@ -276,10 +276,10 @@ class Options_SettingParser extends SettingParser {
                     $ps = new PaperSearch($sv->conf->site_contact(), $optecs);
                     if (!$this->fake_prow)
                         $this->fake_prow = new PaperInfo(null, null, $sv->conf);
-                    if ($ps->term()->compile_edit_condition($this->fake_prow, $ps) === null)
-                        $sv->error_at("optecs_$xpos", "Search too complex for field presence condition. (Not all search keywords are supported for field conditions.)");
+                    if ($ps->term()->compile_condition($this->fake_prow, $ps) === null)
+                        $sv->error_at("optecs_$xpos", "Search too complex for field condition. (Not all search keywords are supported for field conditions.)");
                     else
-                        $oarg["edit_condition"] = $optecs;
+                        $oarg["exists_if"] = $optecs;
                     if (!empty($ps->warnings))
                         $sv->warning_at("optecs_$xpos", join("<br>", $ps->warnings));
                 }

@@ -68,7 +68,7 @@ class Topic_SearchTerm extends SearchTerm {
         }
         return $this->negated ? !$v : $v;
     }
-    function compile_edit_condition(PaperInfo $row, PaperSearch $srch) {
+    function compile_condition(PaperInfo $row, PaperSearch $srch) {
         $o = (object) ["type" => "topic", "topics" => $this->topics];
         if ($this->negated)
             $o = (object) ["type" => "not", "child" => [$o]];

@@ -1288,7 +1288,7 @@ class PaperStatus extends MessageSet {
             if (!$prow)
                 $prow = $ps->conf->paper_set(["paperId" => $ps->paperId, "options" => true])->get($ps->paperId);
             if (!$o->value_present($prow->force_option($o->id))
-                && $o->test_edit_condition($prow)) {
+                && $o->test_condition($prow)) {
                 $ps->error_at_option($o, "Entry required.");
                 $fail = true;
             }

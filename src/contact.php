@@ -2560,9 +2560,9 @@ class Contact {
                 && ($prow->outcome <= 0
                     || $prow->timeSubmitted <= 0
                     || !$this->can_view_decision($prow)))
-            || ($opt->edit_condition()
+            || ($opt->exists_condition()
                 && !($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS)
-                && !$opt->test_edit_condition($prow))) {
+                && !$opt->test_exists($prow))) {
             return 0;
         }
         $rights = $this->rights($prow);
@@ -2602,8 +2602,8 @@ class Contact {
             || ($opt->id === 0 && $this->allow_edit_final_paper($prow))) {
             return 0;
         }
-        if (!$opt->test_edit_condition($prow)) {
-            return $opt->compile_edit_condition($prow) ? 1 : 0;
+        if (!$opt->test_exists($prow)) {
+            return $opt->compile_exists_condition($prow) ? 1 : 0;
         } else {
             return 2;
         }

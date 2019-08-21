@@ -343,11 +343,11 @@ class PaperTable {
         else
             $for = get($extra, "for", false);
         echo '<div class="papeg';
-        if ($opt && $opt->edit_condition()) {
+        if ($opt && $opt->exists_condition()) {
             echo ' has-edit-condition';
-            if (!$opt->test_edit_condition($this->prow))
+            if (!$opt->test_exists($this->prow))
                 echo ' hidden';
-            echo '" data-edit-condition="', htmlspecialchars(json_encode($opt->compile_edit_condition($this->prow)));
+            echo '" data-edit-condition="', htmlspecialchars(json_encode($opt->compile_exists_condition($this->prow)));
             Ht::stash_script('$(edit_paper_ui.edit_condition)', 'edit_condition');
         }
         echo '"><div class="', $this->control_class($what, "papet");
