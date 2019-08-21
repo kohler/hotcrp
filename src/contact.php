@@ -2597,6 +2597,7 @@ class Contact {
 
     function edit_option_state(PaperInfo $prow, $opt) {
         if ($opt->form_position() === false
+            || !$opt->test_editable($prow)
             || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
             || ($opt->final && !$this->allow_edit_final_paper($prow))
             || ($opt->id === 0 && $this->allow_edit_final_paper($prow))) {
