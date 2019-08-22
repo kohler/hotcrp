@@ -809,14 +809,15 @@ class DocumentInfo implements JsonSerializable {
         assert(!($flags & self::L_REQUIREFORMAT) || !!$this->prow);
         $need_run = false;
         if (($this->documentType == DTYPE_SUBMISSION || $this->documentType == DTYPE_FINAL)
-            && $this->prow)
+            && $this->prow) {
             list($info, $suffix, $need_run) = $this->link_html_format_info($flags, $suffix);
+        }
 
-        if ($this->mimetype == "application/pdf")
+        if ($this->mimetype == "application/pdf") {
             list($img, $alt) = ["pdf", "[PDF]"];
-        else if ($this->mimetype == "application/postscript")
+        } else if ($this->mimetype == "application/postscript") {
             list($img, $alt) = ["postscript", "[PS]"];
-        else {
+        } else {
             $img = "generic";
             $m = Mimetype::lookup($this->mimetype);
             $alt = "[" . ($m && $m->description ? $m->description : $this->mimetype) . "]";
@@ -824,8 +825,9 @@ class DocumentInfo implements JsonSerializable {
 
         $x = '<a href="' . $p . '" class="q' . ($need_run ? " need-format-check" : "") . '">'
             . Ht::img($img . $suffix . ($small ? "" : "24") . ".png", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
-        if ($html)
+        if ($html) {
             $x .= "&nbsp;" . $html;
+        }
         if ($this->size > 0 && !($flags && self::L_NOSIZE)) {
             $x .= " <span class=\"dlsize\">" . ($html ? "(" : "");
             if ($this->size > 921)

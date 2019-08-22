@@ -1153,13 +1153,27 @@ class PaperInfo {
         $this->load_options(false, false);
         $paper_opts = $this->conf->paper_opts;
         $option_array = [];
-        foreach ($this->_option_values as $oid => $ovalues)
+        foreach ($this->_option_values as $oid => $ovalues) {
             if (($o = $paper_opts->get($oid, $all)))
                 $option_array[$oid] = new PaperOptionValue($this, $o, $ovalues, get($this->_option_data, $oid));
-        uasort($option_array, function ($a, $b) {
-            return PaperOption::compare($a->option, $b->option);
-        });
+        }
+        foreach ($paper_opts->include_empty_option_list() as $oid => $o) {
+            if (!isset($option_array[$oid]))
+                $option_array[$oid] = new PaperOptionValue($this, $o);
+        }
         return $option_array;
+    }
+
+    private function options() {
+        if ($this->_option_array === null)
+            $this->_option_array = $this->_make_option_array(false);
+        return $this->_option_array;
+    }
+
+    private function all_options() {
+        if ($this->_all_option_array === null)
+            $this->_all_option_array = $this->_make_option_array(true);
+        return $this->_all_option_array;
     }
 
     function option_value_data($id) {
@@ -1167,12 +1181,6 @@ class PaperInfo {
             $this->load_options(false, true);
         return [get($this->_option_values, $id, []),
                 get($this->_option_data, $id, [])];
-    }
-
-    function options() {
-        if ($this->_option_array === null)
-            $this->_option_array = $this->_make_option_array(false);
-        return $this->_option_array;
     }
 
     function option($o) {
@@ -1188,12 +1196,6 @@ class PaperInfo {
             return new PaperOptionValue($this, $opt);
         else
             return null;
-    }
-
-    function all_options() {
-        if ($this->_all_option_array === null)
-            $this->_all_option_array = $this->_make_option_array(true);
-        return $this->_all_option_array;
     }
 
     function all_option($o) {

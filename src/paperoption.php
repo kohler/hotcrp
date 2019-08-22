@@ -213,6 +213,7 @@ class PaperOptionList {
     private $_imap = [];
     private $_olist;
     private $_olist_nonfinal;
+    private $_olist_include_empty;
     private $_nonpaper_am;
     private $_adding_fixed;
 
@@ -243,16 +244,21 @@ class PaperOptionList {
             && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed) {
             if ($this->conf->xt_allowed($oj)
                 && (!isset($this->_jlist[$oj->id])
-                    || Conf::xt_priority_compare($oj, $this->_jlist[$oj->id]) <= 0))
+                    || Conf::xt_priority_compare($oj, $this->_jlist[$oj->id]) <= 0)) {
                 $this->_jlist[$oj->id] = $oj;
+                if (isset($oj->include_empty) && $oj->include_empty)
+                    $this->_olist_include_empty = true;
+            }
             return true;
-        } else
+        } else {
             return false;
+        }
     }
 
     private function option_json_list() {
         if ($this->_jlist === null) {
             $this->_jlist = [];
+            $this->_olist_include_empty = [];
             if (($olist = $this->conf->setting_json("options"))) {
                 $this->_adding_fixed = false;
                 expand_json_includes_callback($olist, [$this, "_add_json"]);
@@ -335,7 +341,7 @@ class PaperOptionList {
         if ($this->_olist === null) {
             $this->_olist = [];
             $readable_formids = [];
-            foreach ($this->option_json_list() as $id => $oj)
+            foreach ($this->option_json_list() as $id => $oj) {
                 if (!get($oj, "nonpaper")
                     && ($o = $this->get($id))) {
                     assert(!$o->nonpaper);
@@ -345,6 +351,7 @@ class PaperOptionList {
                     else
                         $readable_formid[$o->readable_formid] = true;
                 }
+            }
             uasort($this->_olist, "PaperOption::compare");
         }
         return $this->_olist;
@@ -373,11 +380,29 @@ class PaperOptionList {
 
     function full_option_list() {
         $list = [];
-        foreach ($this->option_json_list() as $id => $oj)
+        foreach ($this->option_json_list() as $id => $oj) {
             if (($o = $this->get($id)))
                 $list[$id] = $o;
+        }
         uasort($list, "PaperOption::compare");
         return $list;
+    }
+
+    function include_empty_option_list() {
+        if ($this->_olist_include_empty === null)
+            $this->option_json_list();
+        if ($this->_olist_include_empty === true) {
+            $this->_olist_include_empty = [];
+            foreach ($this->option_json_list() as $id => $oj) {
+                if (get($oj, "include_empty")
+                    && !get($oj, "nonpaper")
+                    && ($o = $this->get($id))) {
+                    $this->_olist_include_empty[$id] = $o;
+                }
+            }
+            uasort($this->_olist_include_empty, "PaperOption::compare");
+        }
+        return $this->_olist_include_empty;
     }
 
     private function _get_field($id, $oj, $nonfinal) {
@@ -401,7 +426,8 @@ class PaperOptionList {
     }
 
     function invalidate_option_list() {
-        $this->_jlist = $this->_olist = $this->_olist_nonfinal = $this->_nonpaper_am = null;
+        $this->_jlist = $this->_olist = $this->_olist_nonfinal =
+            $this->_nonpaper_am = $this->_olist_include_empty = null;
         $this->_omap = [];
     }
 
