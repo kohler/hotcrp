@@ -502,7 +502,6 @@ class PaperOption implements Abbreviator {
     public $display_expand;
     public $display_group;
     public $display_space;
-    public $internal;
     private $form_position;
     private $display_position;
     private $exists_if;
@@ -558,7 +557,6 @@ class PaperOption implements Abbreviator {
         $this->required = !!get($args, "required");
         $this->final = !!get($args, "final");
         $this->nonpaper = !!get($args, "nonpaper");
-        $this->internal = !!get($args, "internal");
 
         if ($this->id > 0)
             $this->formid = "opt" . $this->id;
@@ -599,9 +597,7 @@ class PaperOption implements Abbreviator {
 
         $p = get($args, "form_position");
         if ($p === null) {
-            if ($this->internal)
-                $p = false;
-            else if ($this->display === self::DISP_SUBMISSION)
+            if ($this->display === self::DISP_SUBMISSION)
                 $p = 1100 + $this->position;
             else if ($this->display === self::DISP_PROMINENT)
                 $p = 3100 + $this->position;

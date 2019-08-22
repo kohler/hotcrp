@@ -94,7 +94,8 @@ class Option_PaperColumnFactory {
             $x = [];
             foreach ($user->user_option_list() as $opt) {
                 if ($opt->display_position() !== false
-                    && $opt->list_display($isrow))
+                    && $opt->list_display($isrow)
+                    && $opt->example_searches())
                     $x[] = self::option_json($xfj, $opt, $isrow);
             }
             return $x;
@@ -119,7 +120,7 @@ class Option_PaperColumnFactory {
         $cs = array_map(function ($opt) {
             return $opt->search_keyword();
         }, array_filter($user->user_option_list(), function ($opt) {
-            return $opt->display_position() !== false;
+            return $opt->display_position() !== false && $opt->example_searches();
         }));
         if (!empty($cs))
             array_unshift($cs, "options");

@@ -110,8 +110,7 @@ class GetAbstract_ListAction extends ListAction {
 
         $fr = new FieldRender(FieldRender::CTEXT);
         foreach ($user->conf->paper_opts->field_list($prow) as $o) {
-            if (!$o->internal
-                && ($o->id <= 0 || $user->allow_view_option($prow, $o))
+            if (($o->id <= 0 || $user->allow_view_option($prow, $o))
                 && $o->display_position() !== false) {
                 $fr->clear();
                 if ($o->id === -1004) {
