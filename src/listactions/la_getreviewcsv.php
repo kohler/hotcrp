@@ -40,7 +40,7 @@ class GetReviewCSV_ListAction extends ListAction {
                         $text["email"] = $rrow->email;
                         $text["reviewername"] = Text::name_text($rrow);
                     }
-                    foreach ($rf->all_visible_fields($viewer, $prow, $rrow) as $f) {
+                    foreach ($rf->paper_visible_fields($viewer, $prow, $rrow) as $f) {
                         $fields[$f->id] = true;
                         $text[$f->name] = $f->unparse_value(get($rrow, $f->id), ReviewField::VALUE_TRIM);
                     }

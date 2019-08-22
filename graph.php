@@ -76,20 +76,12 @@ function formulas_qrow($i, $q, $s, $status) {
 if ($Graph == "formula") {
     // derive a sample graph
     if (!isset($Qreq->x) || !isset($Qreq->y)) {
-        $all_review_fields = $Conf->all_review_fields();
-        $field1 = get($all_review_fields, "overAllMerit");
-        $field2 = null;
-        foreach ($all_review_fields as $f) {
-            if ($f->has_options && !$field1)
-                $field1 = $f;
-            else if ($f->has_options && !$field2 && $field1 != $f)
-                $field2 = $f;
-        }
+        $fields = $Conf->review_form()->example_fields($Me);
         unset($Qreq->x, $Qreq->y);
-        if ($field1)
-            $Qreq->y = "avg(" . $field1->search_keyword() . ")";
-        if ($field1 && $field2)
-            $Qreq->x = "avg(" . $field2->search_keyword() . ")";
+        if (count($fields) > 0)
+            $Qreq->y = "avg(" . $fields[0]->search_keyword() . ")";
+        if (count($fields) > 1)
+            $Qreq->x = "avg(" . $fields[1]->search_keyword() . ")";
         else
             $Qreq->x = "pid";
     }

@@ -1106,12 +1106,13 @@ class Conf {
             $this->_abbrev_matcher = new AbbreviationMatcher;
             // XXX exposes invisible paper options, review fields
             $this->paper_opts->populate_abbrev_matcher($this->_abbrev_matcher);
-            foreach ($this->all_review_fields() as $f)
-                if ($f->displayed)
-                    $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_REVIEW);
-            foreach ($this->named_formulas() as $f)
+            foreach ($this->all_review_fields() as $f) {
+                $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_REVIEW);
+            }
+            foreach ($this->named_formulas() as $f) {
                 if ($f->name)
                     $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_FORMULA);
+            }
         }
         return $this->_abbrev_matcher;
     }
@@ -1137,11 +1138,9 @@ class Conf {
     function all_review_fields() {
         return $this->review_form()->all_fields();
     }
-
     function review_field($fid) {
         return $this->review_form()->field($fid);
     }
-
     function find_review_field($text) {
         return $this->abbrev_matcher()->find1($text, self::FSRCH_REVIEW);
     }

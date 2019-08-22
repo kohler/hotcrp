@@ -177,9 +177,10 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("dec:none", "decision unspecified");
 
         // find names of review fields to demonstrate syntax
-        $farr = array(array(), array());
-        foreach ($hth->conf->all_review_fields() as $f)
+        $farr = [[], []];
+        foreach ($hth->conf->review_form()->user_visible_fields($hth->user) as $f) {
             $farr[$f->has_options ? 0 : 1][] = $f;
+        }
         if (!empty($farr[0]) || !empty($farr[1]))
             echo $hth->tgroup("Review fields");
         if (count($farr[0])) {

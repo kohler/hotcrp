@@ -270,11 +270,10 @@ if ($pl_text) {
         $display_options->checkbox_item(20, "shepherd", "Shepherds");
 
     // Scores group
-    $rf = $Conf->review_form();
-    $revViewScore = $Me->permissive_view_score_bound($Qreq->t == "a");
-    foreach ($rf->forder as $f)
-        if ($f->view_score > $revViewScore && $f->has_options)
+    foreach ($Conf->review_form()->user_visible_fields($Me) as $f) {
+        if ($f->has_options)
             $display_options->checkbox_item(30, $f->search_keyword(), $f->name_html);
+    }
     if (!empty($display_options->items[30])) {
         $display_options->set_header(30, "<strong>Scores:</strong>");
         $sortitem = '<div class="mt-2">Sort by: &nbsp;'

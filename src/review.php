@@ -99,8 +99,9 @@ class ReviewField implements Abbreviator, JsonSerializable {
         if (get($j, "position")) {
             $this->displayed = true;
             $this->display_order = $j->position;
-        } else
+        } else {
             $this->displayed = $this->display_order = false;
+        }
         $this->round_mask = get_i($j, "round_mask");
         if ($this->has_options) {
             $options = get($j, "options") ? : array();
@@ -188,7 +189,8 @@ class ReviewField implements Abbreviator, JsonSerializable {
     }
 
     function include_word_count() {
-        return $this->displayed && !$this->has_options
+        return $this->displayed
+            && !$this->has_options
             && $this->view_score >= VIEWSCORE_AUTHORDEC;
     }
 
@@ -411,8 +413,8 @@ class ReviewForm implements JsonSerializable {
     const NOTIFICATION_DELAY = 10800;
 
     public $conf;
-    public $fmap = array();
-    public $forder;
+    public $fmap;      // all fields, whether or not displayed, key id
+    public $forder;    // displayed fields in display order, key id
     public $fieldName;
     private $_stopwords;
 
@@ -445,6 +447,7 @@ class ReviewForm implements JsonSerializable {
 
     function __construct($rfj, Conf $conf) {
         $this->conf = $conf;
+        $this->fmap = $this->fieldName = $this->forder = [];
 
         // parse JSON
         if (!$rfj)
@@ -457,39 +460,57 @@ class ReviewForm implements JsonSerializable {
 "t02":{"name":"Comments to authors","position":4,"visibility":"au"},
 "t03":{"name":"Comments to PC","position":5,"visibility":"pc"}}');
 
-        foreach ($rfj as $fid => $j)
+        foreach ($rfj as $fid => $j) {
             if (($finfo = ReviewInfo::field_info($fid, $conf))) {
                 $f = new ReviewField($finfo, $conf);
                 $this->fmap[$f->id] = $f;
                 $f->assign($j);
             }
+        }
+        uasort($this->fmap, "ReviewForm::fmap_compare");
 
         // assign field order
-        uasort($this->fmap, "ReviewForm::fmap_compare");
-        $this->fieldName = $this->forder = [];
         $do = 0;
-        foreach ($this->fmap as $f)
+        foreach ($this->fmap as $f) {
             if ($f->displayed) {
                 $this->fieldName[strtolower($f->name)] = $f->id;
                 $f->display_order = ++$do;
                 $this->forder[$f->id] = $f;
             }
+        }
     }
 
+    function field($fid) {
+        return get($this->forder, $fid, null);
+    }
     function all_fields() {
         return $this->forder;
     }
-
-    function all_visible_fields(Contact $user, PaperInfo $prow, ReviewInfo $rrow = null) {
-        $forder = [];
+    function user_visible_fields(Contact $user) {
+        $bound = $user->permissive_view_score_bound();
+        return array_filter($this->forder, function ($f) use ($bound) {
+            return $f->view_score > $bound;
+        });
+    }
+    function paper_visible_fields(Contact $user, PaperInfo $prow, ReviewInfo $rrow = null) {
         $bound = $user->view_score_bound($prow, $rrow);
-        foreach ($this->forder as $fid => $f) {
-            if ($f->view_score > $bound
-                && (!$f->round_mask || $f->is_round_visible($rrow))) {
-                $forder[$fid] = $f;
+        return array_filter($this->forder, function ($f) use ($bound, $rrow) {
+            return $f->view_score > $bound
+                && (!$f->round_mask || $f->is_round_visible($rrow));
+        });
+    }
+    function example_fields(Contact $user) {
+        $fs = [];
+        foreach ($this->user_visible_fields($user) as $f) {
+            if ($f->has_options && $f->search_keyword()) {
+                if ($f->id === "overAllMerit") {
+                    array_unshift($fs, $f);
+                } else {
+                    $fs[] = $f;
+                }
             }
         }
-        return $forder;
+        return $fs;
     }
 
     function stopwords() {
@@ -500,9 +521,7 @@ class ReviewForm implements JsonSerializable {
         if ($this->_stopwords === null) {
             $bits = [];
             $bit = 1;
-            foreach ($this->fmap as $f) {
-                if (!$f->displayed)
-                    continue;
+            foreach ($this->forder as $f) {
                 $words = preg_split('/[^A-Za-z0-9_.\']+/', strtolower(UnicodeHelper::deaccent($f->name)));
                 if (count($words) <= 4) // Few words --> all of them meaningful
                     continue;
@@ -519,35 +538,36 @@ class ReviewForm implements JsonSerializable {
         return $this->_stopwords;
     }
 
-    function field($fid) {
-        $f = get($this->fmap, $fid);
-        return $f && $f->displayed ? $f : null;
-    }
-
     function default_display() {
         $f = $this->fmap["overAllMerit"];
-        if (!$f->displayed) {
-            foreach ($this->forder as $f)
-                break;
+        if (!$f->displayed || !$f->search_keyword()) {
+            $f = null;
+            foreach ($this->forder as $fx) {
+                if ($fx->has_options && $fx->search_keyword()) {
+                    $f = $fx;
+                    break;
+                }
+            }
         }
-        return $f && $f->displayed ? " " . $f->search_keyword() . " " : " ";
+        return $f ? " " . $f->search_keyword() . " " : " ";
     }
 
     function jsonSerialize() {
         $fmap = [];
-        foreach ($this->fmap as $f)
+        foreach ($this->fmap as $f) {
             $fmap[$f->id] = $f->unparse_json(true);
+        }
         return $fmap;
     }
     function unparse_json($round_mask, $view_score_bound) {
         $fmap = array();
-        foreach ($this->fmap as $f)
-            if ($f->displayed
+        foreach ($this->forder as $f) {
+            if ($f->view_score > $view_score_bound
                 && (!$round_mask || !$f->round_mask
-                    || ($f->round_mask & $round_mask))
-                && $f->view_score > $view_score_bound) {
+                    || ($f->round_mask & $round_mask))) {
                 $fmap[$f->uid()] = $f->unparse_json();
             }
+        }
         return $fmap;
     }
 
@@ -565,7 +585,7 @@ class ReviewForm implements JsonSerializable {
         if (($fi = $this->format_info($rrow)))
             $format_description = $fi->description_preview_html();
         echo '<div class="rve">';
-        foreach ($this->all_visible_fields($contact, $prow, $rrow) as $fid => $f) {
+        foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f) {
             $rval = "";
             if ($rrow)
                 $rval = $f->unparse_value(get($rrow, $fid), ReviewField::VALUE_STRING);
@@ -850,7 +870,7 @@ $blind\n";
         if ($time > 1)
             $x .= "* Updated: " . $this->conf->unparse_time($time) . "\n";
 
-        foreach ($this->all_visible_fields($contact, $prow, $rrow) as $fid => $f) {
+        foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f) {
             $fval = "";
             if (isset($rrow->$fid)) {
                 if ($f->has_options)
@@ -1204,7 +1224,7 @@ $blind\n";
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        foreach ($this->all_visible_fields($user, $prow, $rrow) as $fid => $f)
+        foreach ($this->paper_visible_fields($user, $prow, $rrow) as $fid => $f)
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
                 $fval = get($rrow, $fid);
@@ -1249,7 +1269,7 @@ $blind\n";
             $xbarsep = $barsep;
         } else
             $xbarsep = "";
-        foreach ($this->all_visible_fields($contact, $prow, $rrow) as $fid => $f)
+        foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f)
             if (isset($rrow->$fid)
                 && $f->has_options
                 && (int) $rrow->$fid !== 0) {
