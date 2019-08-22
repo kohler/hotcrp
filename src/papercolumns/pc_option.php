@@ -18,8 +18,8 @@ class Option_PaperColumn extends PaperColumn {
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        return $this->opt->value_compare($a->option($this->opt->id),
-                                         $b->option($this->opt->id));
+        return $this->opt->value_compare($a->option($this->opt),
+                                         $b->option($this->opt));
     }
     function header(PaperList $pl, $is_text) {
         return $is_text ? $this->opt->title() : $this->opt->title_html();
@@ -31,7 +31,7 @@ class Option_PaperColumn extends PaperColumn {
         return !$pl->user->can_view_option($row, $this->opt);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $ov = $row->option($this->opt->id);
+        $ov = $row->option($this->opt);
         if (!$ov) {
             return "";
         }
@@ -63,7 +63,7 @@ class Option_PaperColumn extends PaperColumn {
         }
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $ov = $row->option($this->opt->id);
+        $ov = $row->option($this->opt);
         if (!$ov) {
             return "";
         }

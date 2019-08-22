@@ -257,7 +257,7 @@ class PaperStatus extends MessageSet {
         foreach ($this->conf->paper_opts->option_list() as $o) {
             if ($user && !$user->can_view_option($prow, $o))
                 continue;
-            $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
+            $ov = $prow->force_option($o);
             if ($o->required && !$o->value_present($ov))
                 $this->error_at_option($o, "Entry required.");
             $oj = $o->unparse_json($ov, $this, $user);

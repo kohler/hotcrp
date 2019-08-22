@@ -459,7 +459,7 @@ class PaperInfo {
         foreach ($this->conf->paper_opts->option_list() as $o) {
             if ($o->required
                 && (!$user || $user->can_view_option($this, $o))) {
-                $ov = $this->option($o->id) ? : new PaperOptionValue($this, $o);
+                $ov = $this->option($o) ? : new PaperOptionValue($this, $o);
                 if (!$o->value_present($ov))
                     $f[$o->json_key()] = true;
             }
@@ -1175,13 +1175,15 @@ class PaperInfo {
         return $this->_option_array;
     }
 
-    function option($id) {
+    function option($o) {
+        $id = is_object($o) ? $o->id : $o;
         return get($this->options(), $id);
     }
 
-    function force_option($id) {
-        if (($oa = get($this->options(), $id)))
-            return $oa;
+    function force_option($o) {
+        $id = is_object($o) ? $o->id : $o;
+        if (($ov = get($this->options(), $id)))
+            return $ov;
         else if (($opt = $this->conf->paper_opts->get($id)))
             return new PaperOptionValue($this, $opt);
         else
@@ -1194,7 +1196,8 @@ class PaperInfo {
         return $this->_all_option_array;
     }
 
-    function all_option($id) {
+    function all_option($o) {
+        $id = is_object($o) ? $o->id : $o;
         return get($this->all_options(), $id);
     }
 
@@ -1267,10 +1270,11 @@ class PaperInfo {
         if ($dtype <= 0) {
             $doc = $this->document($dtype, 0, true);
             return $doc ? [$doc] : [];
-        } else if (($oa = $this->option($dtype)) && $oa->has_document())
-            return $oa->documents();
-        else
+        } else if (($ov = $this->option($dtype)) && $ov->has_document()) {
+            return $ov->documents();
+        } else {
             return [];
+        }
     }
     function mark_inactive_documents() {
         $dids = [];
@@ -1288,8 +1292,8 @@ class PaperInfo {
     }
 
     function attachment($dtype, $name) {
-        $oa = $this->option($dtype);
-        return $oa ? $oa->attachment($name) : null;
+        $ov = $this->option($dtype);
+        return $ov ? $ov->attachment($name) : null;
     }
 
     function npages() {

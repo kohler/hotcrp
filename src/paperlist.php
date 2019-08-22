@@ -341,7 +341,7 @@ class PaperList {
             && ($opt = $this->conf->paper_opts->find($key))) {
             return $this->user->can_view_some_option($opt)
                 && $this->rowset()->any(function ($row) use ($opt) {
-                    return ($ov = $row->option($opt->id))
+                    return ($ov = $row->option($opt))
                         && (!$opt->has_document() || $ov->value > 1)
                         && $this->user->can_view_option($row, $opt);
                 });

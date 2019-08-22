@@ -120,7 +120,7 @@ class GetAbstract_ListAction extends ListAction {
                 } else if ($o->id === -1005) {
                     self::render_topics($fr, $prow, $user, $o);
                 } else if ($o->id > 0
-                           && ($ov = $prow->option($o->id))) {
+                           && ($ov = $prow->option($o))) {
                     $o->render($fr, $ov);
                 }
                 if (!$fr->is_empty()) {
