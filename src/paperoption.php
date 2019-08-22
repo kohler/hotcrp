@@ -1259,16 +1259,10 @@ class DocumentPaperOption extends PaperOption {
         return true;
     }
 
-    private function first_document(PaperOptionValue $ov = null) {
-        $d = null;
-        foreach ($ov ? $ov->documents() : [] as $d)
-            break;
-        return $d;
-    }
     function render(FieldRender $fr, PaperOptionValue $ov) {
         if ($this->id <= 0 && $fr->for_page()) {
             $fr->table->render_submission($fr, $this);
-        } else if (($d = $this->first_document($ov))) {
+        } else if (($d = $ov->document(0))) {
             if ($fr->want_text()) {
                 $fr->set_text($d->filename);
             } else if ($fr->for_page()) {
