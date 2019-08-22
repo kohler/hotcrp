@@ -37,7 +37,7 @@ class Option_PaperColumn extends PaperColumn {
         }
 
         $fr = $this->fr;
-        $fr->clear(FieldRender::CFLIST | ($this->viewable_row() ? 0 : FieldRender::CFCOLUMN));
+        $fr->clear(FieldRender::CFLIST | FieldRender::CFHTML | ($this->viewable_row() ? 0 : FieldRender::CFCOLUMN));
         $this->opt->render($fr, $ov);
         if ((string) $fr->value === "") {
             return "";
