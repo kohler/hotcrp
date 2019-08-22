@@ -188,11 +188,12 @@ class Option_SearchTerm extends SearchTerm {
         return $this->om->exec($row, $srch->user);
     }
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
-        if ($this->om->kind)
+        if ($this->om->kind) {
             return null;
-        else if (!$srch->user->can_view_option($row, $this->om->option))
+        } else if (!$srch->user->can_view_option($row, $this->om->option)) {
             return false;
-        else
+        } else {
             return (object) ["type" => "option", "id" => $this->om->option->id, "compar" => $this->om->compar, "value" => $this->om->value];
+        }
     }
 }

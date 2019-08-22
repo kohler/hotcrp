@@ -92,9 +92,11 @@ class Option_PaperColumnFactory {
         list($ocolon, $oname, $isrow) = [$m[1], $m[2], !!$m[3]];
         if (!$ocolon && $oname === "options") {
             $x = [];
-            foreach ($user->user_option_list() as $opt)
-                if ($opt->display() >= 0 && $opt->list_display($isrow))
+            foreach ($user->user_option_list() as $opt) {
+                if ($opt->display_position() !== false
+                    && $opt->list_display($isrow))
                     $x[] = self::option_json($xfj, $opt, $isrow);
+            }
             return $x;
         }
         $opts = $user->conf->paper_opts->find_all($oname);
@@ -105,7 +107,8 @@ class Option_PaperColumnFactory {
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
-            if ($opt->display() >= 0 && $opt->list_display($isrow))
+            if ($opt->display_position() !== false
+                && $opt->list_display($isrow))
                 return self::option_json($xfj, $opt, $isrow);
             $user->conf->xt_factory_error("Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
         } else if ($ocolon)
@@ -116,7 +119,7 @@ class Option_PaperColumnFactory {
         $cs = array_map(function ($opt) {
             return $opt->search_keyword();
         }, array_filter($user->user_option_list(), function ($opt) {
-            return $opt->display() >= 0;
+            return $opt->display_position() !== false;
         }));
         if (!empty($cs))
             array_unshift($cs, "options");

@@ -610,6 +610,8 @@ class PaperOption implements Abbreviator {
         }
         $this->form_position = $p;
 
+        if ($this->display < 0)
+            $p = false;
         $this->display_position = get($args, "display_position", $p);
         $this->display_expand = !!get($args, "display_expand");
         $this->display_group = get($args, "display_group");
@@ -654,8 +656,10 @@ class PaperOption implements Abbreviator {
 
     static function compare($a, $b) {
         $ap = $a->display_position();
+        $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->display_position();
-        if ($ap != $bp)
+        $bp = $bp !== false ? $bp : PHP_INT_MAX;
+        if ($ap !== $bp)
             return $ap < $bp ? -1 : 1;
         else
             return Conf::xt_position_compare($a, $b);
