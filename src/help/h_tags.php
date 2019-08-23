@@ -58,7 +58,7 @@ as a column.</p>
                 echo "Currently PC members can see tags for any paper, including conflicts.";
             else
                 echo "They are hidden from conflicted PC members; for instance, if a PC member searches for a tag, the result will never include their conflicts.";
-            echo $this->hth->settings_link("tags");
+            echo $this->hth->setting_link("tag_seeall");
         }
         echo "Additionally, twiddle tags, which have names like “#~tag”, are
 visible only to their creators; each PC member has an independent set.
@@ -98,7 +98,7 @@ assignments using ", $hth->hotlink("bulk assignment", "bulkassign"), ".</p></li>
 
 <p>Although any PC member can view or search
 most tags, certain tags may be changed only by administrators",
-    $this->hth->current_tag_list("chair"), ".", $this->hth->settings_link("tags"), "</p>";
+    $this->hth->current_tag_list("chair"), ".", $this->hth->setting_link("tag_chair"), "</p>";
     }
 
     function render_values() {
@@ -147,7 +147,7 @@ with similar PC conflicts, which can make the meeting run smoother.</p>";
 appear <span class=\"redtag tagbg\">red</span> in paper lists (for people
 who can see that tag).  Tag a paper “#~red” to make it red only on your display.
 Other styles are available; try “#bold”, “#italic”, “#big”, “#small”, and
-“#dim”. The ", $hth->settings_link("settings page", "tags"), " can associate other tags
+“#dim”. The ", $hth->setting_link("settings page", "tag_color"), " can associate other tags
 with colors so that, for example, “" . $hth->search_link("#reject") . "” papers appear
 gray.</p>\n";
     }
@@ -186,7 +186,7 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
         $vt = $this->hth->example_tag("vote");
         echo "<p><strong>Vote for papers.</strong>
  The chair can define tags used for allotment voting", $this->hth->current_tag_list("vote"), ".",
-    $this->hth->settings_link("tags"),
+    $this->hth->setting_link("tag_vote"),
     " Each PC member is assigned an allotment of votes to distribute among papers.
  For instance, if “#{$vt}” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “#~{$vt}#5”.
  The system automatically sums PC members’ votes into the public “#{$vt}” tag.
@@ -208,7 +208,7 @@ Publishing the order lets PC members prepare to discuss upcoming papers.
 Define an ordered tag such as “#discuss”, then ask the PC to ", $this->hth->search_link("search for “order:discuss”", "order:discuss"), ".
 The PC can now see the order and use quick links to go from paper to paper.";
         if ($this->user->isPC && !$this->conf->tag_seeall)
-            echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->hth->settings_link("tags");
+            echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->hth->setting_link("tag_seeall");
         echo "</p>\n";
     }
 

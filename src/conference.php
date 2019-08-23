@@ -152,6 +152,7 @@ class Conf {
     private $_hook_factories;
     public $_file_filters; // maintained externally
     public $_setting_info; // maintained externally
+    public $_setting_groups; // maintained externally
     private $_mail_keyword_map;
     private $_mail_keyword_factories;
     private $_mail_template_map;
@@ -2502,7 +2503,7 @@ class Conf {
     const HOTURL_SITE_RELATIVE = 8;
     const HOTURL_NO_DEFAULTS = 16;
 
-    function hoturl($page, $options = null, $flags = 0) {
+    function hoturl($page, $param = null, $flags = 0) {
         global $Me;
         $nav = Navigation::get();
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
@@ -2511,9 +2512,9 @@ class Conf {
         $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
         // parse options, separate anchor
         $anchor = "";
-        if (is_array($options)) {
+        if (is_array($param)) {
             $x = "";
-            foreach ($options as $k => $v) {
+            foreach ($param as $k => $v) {
                 if ($v === null || $v === false)
                     /* skip */;
                 else if ($k === "anchor")
@@ -2523,22 +2524,22 @@ class Conf {
             }
             if (Conf::$hoturl_defaults && !($flags & self::HOTURL_NO_DEFAULTS))
                 foreach (Conf::$hoturl_defaults as $k => $v)
-                    if (!array_key_exists($k, $options))
+                    if (!array_key_exists($k, $param))
                         $x .= ($x === "" ? "" : $amp) . $k . "=" . $v;
-            $options = $x;
+            $param = $x;
         } else {
-            $options = (string) $options;
-            if (($pos = strpos($options, "#"))) {
-                $anchor = substr($options, $pos);
-                $options = substr($options, 0, $pos);
+            $param = (string) $param;
+            if (($pos = strpos($param, "#"))) {
+                $anchor = substr($param, $pos);
+                $param = substr($param, 0, $pos);
             }
             if (Conf::$hoturl_defaults && !($flags & self::HOTURL_NO_DEFAULTS))
                 foreach (Conf::$hoturl_defaults as $k => $v)
-                    if (!preg_match($are . preg_quote($k) . '=/', $options))
-                        $options .= ($options === "" ? "" : $amp) . $k . "=" . $v;
+                    if (!preg_match($are . preg_quote($k) . '=/', $param))
+                        $param .= ($param === "" ? "" : $amp) . $k . "=" . $v;
         }
         if ($flags & self::HOTURL_POST)
-            $options .= ($options === "" ? "" : $amp) . "post=" . post_value();
+            $param .= ($param === "" ? "" : $amp) . "post=" . post_value();
         // append forceShow to links to same paper if appropriate
         $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
         if ($is_paper_page
@@ -2546,49 +2547,49 @@ class Conf {
             && $Me->can_administer($this->paper)
             && $this->paper->has_conflict($Me)
             && $Me->conf === $this
-            && preg_match($are . 'p=' . $this->paper->paperId . $zre, $options)
-            && !preg_match($are . 'forceShow=/', $options))
-            $options .= $amp . "forceShow=1";
+            && preg_match($are . 'p=' . $this->paper->paperId . $zre, $param)
+            && !preg_match($are . 'forceShow=/', $param))
+            $param .= $amp . "forceShow=1";
         // create slash-based URLs if appropriate
-        if ($options) {
+        if ($param) {
             if ($page === "review"
-                && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $options, $m)) {
+                && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $param, $m)) {
                 $t .= "/" . $m[2];
-                $options = $m[1] . $m[3];
-                if (preg_match($are . 'p=\d+' . $zre, $options, $m))
-                    $options = $m[1] . $m[2];
+                $param = $m[1] . $m[3];
+                if (preg_match($are . 'p=\d+' . $zre, $param, $m))
+                    $param = $m[1] . $m[2];
             } else if (($is_paper_page
-                        && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m))
+                        && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $param, $m))
                        || ($page === "help"
-                           && preg_match($are . 't=(\w+)' . $zre, $options, $m))
+                           && preg_match($are . 't=(\w+)' . $zre, $param, $m))
                        || ($page === "settings"
-                           && preg_match($are . 'group=(\w+)' . $zre, $options, $m))) {
+                           && preg_match($are . 'group=(\w+)' . $zre, $param, $m))) {
                 $t .= "/" . $m[2];
-                $options = $m[1] . $m[3];
-                if ($options !== ""
+                $param = $m[1] . $m[3];
+                if ($param !== ""
                     && $page === "paper"
-                    && preg_match($are . 'm=(\w+)' . $zre, $options, $m)) {
+                    && preg_match($are . 'm=(\w+)' . $zre, $param, $m)) {
                     $t .= "/" . $m[2];
-                    $options = $m[1] . $m[3];
+                    $param = $m[1] . $m[3];
                 }
             } else if (($page === "profile"
-                        && preg_match($are . 'u=([^&?]+)' . $zre, $options, $m))
+                        && preg_match($are . 'u=([^&?]+)' . $zre, $param, $m))
                        || ($page === "graph"
-                           && preg_match($are . 'g=([^&?]+)' . $zre, $options, $m))
+                           && preg_match($are . 'g=([^&?]+)' . $zre, $param, $m))
                        || ($page === "doc"
-                           && preg_match($are . 'file=([^&]+)' . $zre, $options, $m))) {
+                           && preg_match($are . 'file=([^&]+)' . $zre, $param, $m))) {
                 $t .= "/" . str_replace("%2F", "/", $m[2]);
-                $options = $m[1] . $m[3];
-            } else if (preg_match($are . '__PATH__=([^&]+)' . $zre, $options, $m)) {
+                $param = $m[1] . $m[3];
+            } else if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)) {
                 $t .= "/" . urldecode($m[2]);
-                $options = $m[1] . $m[3];
+                $param = $m[1] . $m[3];
             }
-            $options = preg_replace('/&(?:amp;)?\z/', "", $options);
+            $param = preg_replace('/&(?:amp;)?\z/', "", $param);
         }
-        if ($options !== "" && preg_match('/\A&(?:amp;)?(.*)\z/', $options, $m))
-            $options = $m[1];
-        if ($options !== "")
-            $t .= "?" . $options;
+        if ($param !== "" && preg_match('/\A&(?:amp;)?(.*)\z/', $param, $m))
+            $param = $m[1];
+        if ($param !== "")
+            $t .= "?" . $param;
         if ($anchor !== "")
             $t .= $anchor;
         if ($flags & self::HOTURL_SITE_RELATIVE)
@@ -2613,20 +2614,20 @@ class Conf {
         }
     }
 
-    function hoturl_absolute($page, $options = null, $flags = 0) {
-        return $this->hoturl($page, $options, self::HOTURL_ABSOLUTE | $flags);
+    function hoturl_absolute($page, $param = null, $flags = 0) {
+        return $this->hoturl($page, $param, self::HOTURL_ABSOLUTE | $flags);
     }
 
-    function hoturl_site_relative_raw($page, $options = null) {
-        return $this->hoturl($page, $options, self::HOTURL_SITE_RELATIVE | self::HOTURL_RAW);
+    function hoturl_site_relative_raw($page, $param = null) {
+        return $this->hoturl($page, $param, self::HOTURL_SITE_RELATIVE | self::HOTURL_RAW);
     }
 
-    function hoturl_post($page, $options = null) {
-        return $this->hoturl($page, $options, self::HOTURL_POST);
+    function hoturl_post($page, $param = null) {
+        return $this->hoturl($page, $param, self::HOTURL_POST);
     }
 
-    function hotlink($html, $page, $options = null, $js = null) {
-        return Ht::link($html, $this->hoturl($page, $options), $js);
+    function hotlink($html, $page, $param = null, $js = null) {
+        return Ht::link($html, $this->hoturl($page, $param), $js);
     }
 
 

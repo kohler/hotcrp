@@ -8,6 +8,7 @@ class GroupedExtensions {
     private $_render_state;
     private $_render_stack;
     private $_render_classes;
+    private $_synonym_subgroups = [];
     private $_annexes = [];
     static private $next_placeholder;
 
@@ -67,11 +68,15 @@ class GroupedExtensions {
                 return Conf::xt_position_compare($aj, $bj);
         });
         $this->_subgroups = $sgs;
+        foreach ($sgs as $gj) {
+            if (!empty($gj->synonym))
+                $this->_synonym_subgroups[] = $gj;
+        }
     }
     function get($name) {
         if (isset($this->_subgroups[$name]))
             return $this->_subgroups[$name];
-        foreach ($this->_subgroups as $gj) {
+        foreach ($this->_synonym_subgroups as $gj) {
             if (in_array($name, $gj->synonym))
                 return $gj;
         }

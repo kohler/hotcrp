@@ -49,14 +49,14 @@ function hoturl_add_raw($url, $component) {
     return $url . (strpos($url, "?") === false ? "?" : "&") . $component;
 }
 
-function hoturl($page, $options = null) {
+function hoturl($page, $param = null) {
     global $Conf;
-    return $Conf->hoturl($page, $options);
+    return $Conf->hoturl($page, $param);
 }
 
-function hoturl_post($page, $options = null) {
+function hoturl_post($page, $param = null) {
     global $Conf;
-    return $Conf->hoturl($page, $options, Conf::HOTURL_POST);
+    return $Conf->hoturl($page, $param, Conf::HOTURL_POST);
 }
 
 

@@ -13,7 +13,7 @@ The PC’s aggregated vote totals might help determine
 which papers to discuss.</p>
 
 <p>HotCRP supports voting through ", $hth->help_link("tags", "tags"), ".
-The chair can ", $hth->settings_link("define a set of voting tags", "tags"),
+The chair can ", $hth->setting_link("define a set of voting tags", "tag_vote"),
 " and allotments" . $hth->current_tag_list("vote") . ".
 PC members vote by assigning the corresponding twiddle tags;
 the aggregated PC vote is visible in the public tag.</p>

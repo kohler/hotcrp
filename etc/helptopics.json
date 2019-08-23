@@ -5,71 +5,88 @@
     },
     {
         "name": "chair/presubmission", "position": 0,
-        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission",
+        "itemid": -1
     },
     {
-        "name": "chair/presubmission/accounts", "position": 10, "index": 1,
-        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "name": "chair/presubmission/accounts", "position": 10,
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission",
+        "itemid": 1
     },
     {
-        "name": "chair/presubmission/policies", "position": 20, "index": 2,
-        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "name": "chair/presubmission/policies", "position": 20,
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission",
+        "itemid": 2
     },
     {
-        "name": "chair/presubmission/deadlines", "position": 30, "index": 3,
-        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "name": "chair/presubmission/deadlines", "position": 30,
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission",
+        "itemid": 3
     },
     {
-        "name": "chair/presubmission/subform", "position": 40, "index": 4,
-        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "name": "chair/presubmission/subform", "position": 40,
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission",
+        "itemid": 4
     },
     {
-        "name": "chair/presubmission/verify", "position": 50, "index": 5,
-        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "name": "chair/presubmission/verify", "position": 50,
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission",
+        "itemid": 5
     },
     {
-        "name": "chair/presubmission/open", "position": 60, "index": 6,
-        "render_callback": "ChairsGuide_HelpTopic::render_presubmission"
+        "name": "chair/presubmission/open", "position": 60,
+        "render_callback": "ChairsGuide_HelpTopic::render_presubmission",
+        "itemid": 6
     },
     {
         "name": "chair/assignments", "position": 100,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": -1
     },
     {
-        "name": "chair/assignments/anomalies", "position": 10, "index": 1,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "name": "chair/assignments/anomalies", "position": 10,
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": 1
     },
     {
-        "name": "chair/assignments/format", "position": 20, "index": 2,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "name": "chair/assignments/format", "position": 20,
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": 2
     },
     {
-        "name": "chair/assignments/reviewform", "position": 30, "index": 3,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "name": "chair/assignments/reviewform", "position": 30,
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": 3
     },
     {
-        "name": "chair/assignments/review", "position": 40, "index": 4,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "name": "chair/assignments/review", "position": 40,
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": 4
     },
     {
-        "name": "chair/assignments/tracks", "position": 50, "index": 5,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "name": "chair/assignments/tracks", "position": 50,
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": 5
     },
     {
-        "name": "chair/assignments/revpref", "position": 60, "index": 6,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "name": "chair/assignments/revpref", "position": 60,
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": 6
     },
     {
-        "name": "chair/assignments/conflicts", "position": 70, "index": 7,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "name": "chair/assignments/conflicts", "position": 70,
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": 7
     },
     {
-        "name": "chair/assignments/assign", "position": 80, "index": 8,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "name": "chair/assignments/assign", "position": 80,
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": 8
     },
     {
-        "name": "chair/assignments/openreview", "position": 90, "index": 9,
-        "render_callback": "ChairsGuide_HelpTopic::render_assignments"
+        "name": "chair/assignments/openreview", "position": 90,
+        "render_callback": "ChairsGuide_HelpTopic::render_assignments",
+        "itemid": 9
     },
     {
         "name": "chair/chair_conflicts", "position": 200,
@@ -77,79 +94,98 @@
     },
     {
         "name": "chair/premeeting", "position": 300,
-        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting",
+        "itemid": -1
     },
     {
-        "name": "chair/premeeting/responses", "position": 10, "index": 1,
-        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "name": "chair/premeeting/responses", "position": 10,
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting",
+        "itemid": 1
     },
     {
-        "name": "chair/premeeting/pcseeallrev", "position": 20, "index": 2,
-        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "name": "chair/premeeting/pcseeallrev", "position": 20,
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting",
+        "itemid": 2
     },
     {
-        "name": "chair/premeeting/scores", "position": 30, "index": 3,
-        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "name": "chair/premeeting/scores", "position": 30,
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting",
+        "itemid": 3
     },
     {
-        "name": "chair/premeeting/tags", "position": 40, "index": 4,
-        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "name": "chair/premeeting/tags", "position": 40,
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting",
+        "itemid": 4
     },
     {
-        "name": "chair/premeeting/leads", "position": 50, "index": 5,
-        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "name": "chair/premeeting/leads", "position": 50,
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting",
+        "itemid": 5
     },
     {
-        "name": "chair/premeeting/decisions", "position": 60, "index": 6,
-        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "name": "chair/premeeting/decisions", "position": 60,
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting",
+        "itemid": 6
     },
     {
-        "name": "chair/premeeting/download", "position": 70, "index": 7,
-        "render_callback": "ChairsGuide_HelpTopic::render_premeeting"
+        "name": "chair/premeeting/download", "position": 70,
+        "render_callback": "ChairsGuide_HelpTopic::render_premeeting",
+        "itemid": 7
     },
     {
         "name": "chair/atmeeting", "position": 400,
-        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting",
+        "itemid": -1
     },
     {
-        "name": "chair/atmeeting/tracker", "position": 10, "index": 1,
-        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "name": "chair/atmeeting/tracker", "position": 10,
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting",
+        "itemid": 1
     },
     {
-        "name": "chair/atmeeting/scribes", "position": 20, "index": 2,
-        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "name": "chair/atmeeting/scribes", "position": 20,
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting",
+        "itemid": 2
     },
     {
-        "name": "chair/atmeeting/decisions", "position": 30, "index": 3,
-        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "name": "chair/atmeeting/decisions", "position": 30,
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting",
+        "itemid": 3
     },
     {
-        "name": "chair/atmeeting/shepherds", "position": 40, "index": 4,
-        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting"
+        "name": "chair/atmeeting/shepherds", "position": 40,
+        "render_callback": "ChairsGuide_HelpTopic::render_atmeeting",
+        "itemid": 4
     },
     {
         "name": "chair/postmeeting", "position": 500,
-        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting",
+        "itemid": -1
     },
     {
-        "name": "chair/postmeeting/decisions", "position": 10, "index": 1,
-        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "name": "chair/postmeeting/decisions", "position": 10,
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting",
+        "itemid": 1
     },
     {
-        "name": "chair/postmeeting/updatereviews", "position": 20, "index": 2,
-        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "name": "chair/postmeeting/updatereviews", "position": 20,
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting",
+        "itemid": 2
     },
     {
-        "name": "chair/postmeeting/auseedec", "position": 30, "index": 3,
-        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "name": "chair/postmeeting/auseedec", "position": 30,
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting",
+        "itemid": 3
     },
     {
-        "name": "chair/postmeeting/mail", "position": 40, "index": 4,
-        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "name": "chair/postmeeting/mail", "position": 40,
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting",
+        "itemid": 4
     },
     {
-        "name": "chair/postmeeting/final", "position": 50, "index": 5,
-        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting"
+        "name": "chair/postmeeting/final", "position": 50,
+        "render_callback": "ChairsGuide_HelpTopic::render_postmeeting",
+        "itemid": 5
     },
     {
         "name": "search", "title": "Search",

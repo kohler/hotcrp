@@ -29,6 +29,7 @@ class HtHead extends Ht {
     private $_rowidx;
     private $_help_topics;
     private $_renderers = [];
+    private $_sv;
     function __construct($help_topics, Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
@@ -102,22 +103,33 @@ class HtHead extends Ht {
             $topic["t"] = $group;
         return $this->hotlink($html, "help", $topic);
     }
-    function settings_link($html, $group = null) {
-        if ($this->user->privChair || $group !== null) {
+    function settings_link($html, $group) {
+        return $this->setting_link($html, $group);
+    }
+    function setting_link($html, $siname = null) {
+        if ($this->user->privChair || $siname !== null) {
             $pre = $post = "";
-            if ($group === null) {
-                $group = $html;
+            if ($this->_sv === null) {
+                $this->_sv = new SettingValues($this->user);
+            }
+            if ($siname === null) {
+                $siname = $html;
                 $html = "Change this setting";
                 $pre = " (";
                 $post = ")";
             }
-            if (is_string($group) && ($hash = strpos($group, "#")) !== false)
-                $group = ["group" => substr($group, 0, $hash), "anchor" => substr($group, $hash + 1)];
-            else if (is_string($group))
-                $group = ["group" => $group];
-            $t = $pre . '<a href="' . $this->conf->hoturl("settings", $group);
-            if (!$this->user->privChair)
+            if (($si = Si::get($this->conf, $siname))) {
+                $param = $si->hoturl_param($this->conf);
+            } else if (($g = $this->_sv->canonical_group($siname))) {
+                $param = ["group" => $g];
+            } else {
+                error_log("missing setting information for $siname");
+                $param = [];
+            }
+            $t = $pre . '<a href="' . $this->conf->hoturl("settings", $param);
+            if (!$this->user->privChair) {
                 $t .= '" class="u need-tooltip" aria-label="This link to a settings page only works for administrators.';
+            }
             return $t . '" rel="nofollow">' . $html . '</a>' . $post;
         } else {
             return '';

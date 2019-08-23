@@ -11,7 +11,7 @@ method</a> by default, combines these rankings into a global preference order.</
 
 <p>HotCRP supports ranking through ", $hth->help_link("tags", "tags"), ". The chair chooses
 a tag for ranking—“rank” is a good default—and enters it on ",
-$hth->settings_link("the settings page", "tags"), ".
+$hth->setting_link("the settings page", "tag_rank"), ".
 PC members then rank papers using their private versions of this tag,
 tagging their first preference with “~rank#1”,
 their second preference with “~rank#2”,

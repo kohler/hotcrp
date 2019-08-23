@@ -4,27 +4,27 @@
 
 class ChairsGuide_HelpTopic {
     static function render_presubmission($hth, $gj) {
-        if (!isset($gj->index)) {
+        if ($gj->itemid === -1) {
             echo $hth->subhead("Submission time");
             echo "<p>Follow these steps to prepare to accept submissions.</p>\n\n<ol>\n";
             $hth->render_group("chair/presubmission/*");
             echo "</ol>\n\n";
 
-        } else if ($gj->index === 1) {
-            echo "<li><p><strong>", $hth->settings_link("Set up PC member accounts", "users"),
+        } else if ($gj->itemid === 1) {
+            echo "<li><p><strong>", $hth->setting_link("Set up PC member accounts", "users"),
 "</strong>. Many PCs are divided into classes, such as
   “heavy” and “light”, or “PC” and “ERC”. Mark these classes with user tags.
-  It’s also useful to configure ", $hth->settings_link("tag colors", "tags"),
+  It’s also useful to configure ", $hth->setting_link("tag colors", "tag_color"),
   " so that PC member names are displayed
   differently based on class (for instance, heavy PC member names might appear
   in <b>bold</b>).</p></li>\n";
 
-        } else if ($gj->index === 2) {
-            echo "<li><p><strong>", $hth->settings_link("Set submission policies", "sub"),
+        } else if ($gj->itemid === 2) {
+            echo "<li><p><strong>", $hth->setting_link("Set submission policies", "sub"),
   "</strong>, including whether submission is blind.</p></li>\n";
 
-        } else if ($gj->index === 3) {
-            echo "<li><p><strong>", $hth->settings_link("Set submission deadlines.", "sub"),
+        } else if ($gj->itemid === 3) {
+            echo "<li><p><strong>", $hth->setting_link("Set submission deadlines.", "sub"),
   "</strong> Authors first <em>register</em>, then <em>submit</em>
   their work, possibly multiple times; they choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
@@ -37,8 +37,8 @@ class ChairsGuide_HelpTopic {
   HotCRP reports the set deadlines, but allows updates post-deadline
   for the specified time.</p></li>\n";
 
-        } else if ($gj->index === 4) {
-            echo "<li><p><strong>", $hth->settings_link("Set up the submission form", "subform"),
+        } else if ($gj->itemid === 4) {
+            echo "<li><p><strong>", $hth->setting_link("Set up the submission form", "subform"),
 "</strong>, including whether abstracts are required,
 whether authors check off conflicted PC members (“Collect authors’ PC
 conflicts with checkboxes”), and whether authors must enter additional
@@ -70,24 +70,24 @@ form also can include:</p>
 
   </ul></li>\n";
 
-        } else if ($gj->index === 5) {
+        } else if ($gj->itemid === 5) {
             echo '<li><p>Take a look at a ', $hth->hotlink("submission page", "paper", "p=new"),
               ' to make sure it looks right.</p></li>', "\n";
 
-        } else if ($gj->index === 6) {
-            echo "<li><p><strong>", $hth->settings_link("Open the site for submissions.", "sub"),
+        } else if ($gj->itemid === 6) {
+            echo "<li><p><strong>", $hth->setting_link("Open the site for submissions.", "sub"),
   "</strong> Submissions will be accepted only until the listed deadline.</p></li>\n";
         }
     }
 
     static function render_assignments($hth, $gj) {
-        if (!isset($gj->index)) {
+        if ($gj->itemid === -1) {
             echo $hth->subhead("Assignments");
             echo "<p>After the submission deadline has passed:</p>\n<ol>\n";
             $hth->render_group("chair/assignments/*");
             echo "</ol>\n\n";
 
-        } else if ($gj->index === 1) {
+        } else if ($gj->itemid === 1) {
             echo "<li><p>Consider checking ", $hth->search_link("the papers", ["q" => "", "t" => "all"]),
   " for anomalies.  Withdraw and/or delete duplicates or update details on the ",
   $hth->hotlink("paper pages", "paper"), " (via “Edit paper”).
@@ -96,31 +96,31 @@ form also can include:</p>
   ", especially if a PDF document was uploaded; sometimes a
   user will uncheck “The submission is ready for review” by mistake.</p></li>\n";
 
-        } else if ($gj->index === 2) {
+        } else if ($gj->itemid === 2) {
             echo "<li><p><strong>Check for formatting violations (optional).</strong> ",
             $hth->hotlink("Search", "search", "q="), "
   &gt; Download &gt; Format check will download a summary report. Serious errors
   are also shown on paper pages (problematic PDFs are distinguished by an
   “X”).</p></li>\n";
 
-        } else if ($gj->index === 3) {
-            echo "<li><p><strong>", $hth->settings_link("Prepare the review form.", "reviewform"),
+        } else if ($gj->itemid === 3) {
+            echo "<li><p><strong>", $hth->setting_link("Prepare the review form.", "reviewform"),
   "</strong> Take a look at the templates to get ideas.</p></li>\n";
 
-        } else if ($gj->index === 4) {
-            echo "<li><p><strong>", $hth->settings_link("Set review policies and deadlines", "reviews"),
+        } else if ($gj->itemid === 4) {
+            echo "<li><p><strong>", $hth->setting_link("Set review policies and deadlines", "reviews"),
   "</strong>, including reviewing deadlines, whether
   review is blind, and whether PC members may review any paper
   (usually “yes” is the right answer).</p></li>\n";
 
-        } else if ($gj->index === 5) {
-            echo "<li><p><strong>", $hth->settings_link("Prepare tracks (optional).", "tracks"),
+        } else if ($gj->itemid === 5) {
+            echo "<li><p><strong>", $hth->setting_link("Prepare tracks (optional).", "tracks"),
   "</strong> Tracks give chairs fine-grained control over PC
   members’ access rights for individual papers. Example situations calling for
   tracks include external review committees, PC-paper review committees, and
   multi-track conferences.</li>\n";
 
-        } else if ($gj->index === 6) {
+        } else if ($gj->itemid === 6) {
             echo "<li><p><strong>", $hth->hotlink("Collect review preferences from the PC.", "reviewprefs"), "</strong> PC members can rank-order papers they
   want or don’t want to review.  They can either set their preferences ",
   $hth->hotlink("all at once", "reviewprefs"), ", or (often more
@@ -128,17 +128,17 @@ form also can include:</p>
   " and set their preferences on the ", $hth->hotlink("paper pages", "paper"), ".</p>
 
   <p>If desired, review preferences can be collected before the submission
-  deadline.  Select ", $hth->settings_link("“PC can see <em>all registered papers</em> until submission deadline”", "sub"),
+  deadline.  Select ", $hth->setting_link("“PC can see <em>all registered papers</em> until submission deadline”", "pc_seeall"),
   ", which allows PC members to see abstracts for registered papers that haven’t yet
   been submitted.</p></li>\n";
 
-        } else if ($gj->index === 7) {
+        } else if ($gj->itemid === 7) {
             echo "<li><p><strong>", $hth->hotlink("Check for missing conflicts.", "conflictassign"), "</strong> HotCRP does not automatically confirm all conflicts, such
   as conflicts indicated by PC members’ “Collaborators and other affiliations.”
   Use ", $hth->hotlink("the conflict assignment tool", "conflictassign"), " to find and confirm
   such conflicts.</p></li>\n";
 
-        } else if ($gj->index === 8) {
+        } else if ($gj->itemid === 8) {
             echo "<li><p><strong>", $hth->hotlink("Assign reviews.", "manualassign"), "</strong> You can make assignments ", $hth->hotlink("by paper", "assign"), ", ",
   $hth->hotlink("by PC member", "manualassign"), ", ",
   $hth->hotlink("by uploading an assignment file", "bulkassign"), ", or, even easier, ",
@@ -154,8 +154,8 @@ form also can include:</p>
   $hth->search_link("papers with fewer than three completed reviews", "cre:<3"),
   ".</p></li>\n";
 
-        } else if ($gj->index === 9) {
-            echo "<li><p><strong>", $hth->settings_link("Open the site for reviewing.", "reviews"), "</strong></p></li>\n";
+        } else if ($gj->itemid === 9) {
+            echo "<li><p><strong>", $hth->setting_link("Open the site for reviewing.", "rev_open"), "</strong></p></li>\n";
         }
     }
 
@@ -196,30 +196,30 @@ administrator’s identity.</p>\n\n";
     }
 
     static function render_premeeting($hth, $gj) {
-        if (!isset($gj->index)) {
+        if ($gj->itemid === -1) {
             echo $hth->subhead("Before the meeting");
             echo "<ol>\n";
             $hth->render_group("chair/premeeting/*");
             echo "</ol>\n\n";
 
-        } else if ($gj->index === 1) {
-            echo "<li><p><strong>", $hth->settings_link("Collect authors’ responses to the reviews (optional).", "dec"),
+        } else if ($gj->itemid === 1) {
+            echo "<li><p><strong>", $hth->setting_link("Collect authors’ responses to the reviews (optional).", "resp_open"),
   "</strong>  Authors’ responses (also called rebuttals) let authors correct reviewer misconceptions
   before decisions are made.  Responses are entered
-  into the system as comments.  On the ", $hth->settings_link("decision settings page", "dec"),
+  into the system as comments.  On the ", $hth->setting_link("decision settings page", "dec"),
   ", update “Collect responses to the reviews,” then ", $hth->hotlink("send mail to authors", "mail"), " informing them of the response deadline.  PC members can still
-  update their reviews up to the ", $hth->settings_link("review deadline", "reviews"),
+  update their reviews up to the ", $hth->setting_link("review deadline", "reviews"),
   "; authors are informed via email of any review changes.</p></li>\n";
 
-        } else if ($gj->index === 2) {
-            echo "<li><p>Set <strong>", $hth->settings_link("PC can see all reviews", "reviews"),
+        } else if ($gj->itemid === 2) {
+            echo "<li><p>Set <strong>", $hth->setting_link("PC can see all reviews", "pc_seeallrev"),
   "</strong> if you haven’t already, allowing the program
   committee to see reviews and scores for
   non-conflicted papers.  (During most conferences’ review periods, a PC member
   can see a paper’s reviews only after completing their own
   review for that paper.  This supposedly reduces bias.)</p></li>\n";
 
-        } else if ($gj->index === 3) {
+        } else if ($gj->itemid === 3) {
             echo "<li><p><strong>", $hth->search_link("Examine paper scores", "show:scores"),
   "</strong>, either one at a time or en masse, and decide
   which papers will be discussed.  The ", $hth->help_link("tags", "tags"),
@@ -227,7 +227,7 @@ administrator’s identity.</p>\n\n";
   Use ", $hth->help_link("search keywords", "keywords"), " to, for example,
   find all papers with at least two overall merit ratings of 2 or better.</p></li>\n";
 
-        } else if ($gj->index === 4) {
+        } else if ($gj->itemid === 4) {
             echo "<li><p><strong>Assign discussion orders using ", $hth->help_link("tags", "tags#values"),
   "</strong> (optional).  Common
   discussion orders include sorted by overall ranking (high-to-low,
@@ -235,19 +235,19 @@ administrator’s identity.</p>\n\n";
   $hth->hotlink("grouped by PC conflicts", "autoassign", "a=discorder"), ".
   Explicit tag-based orders make it easier for the PC to follow along.</p></li>\n";
 
-        } else if ($gj->index === 5) {
+        } else if ($gj->itemid === 5) {
             echo "<li><p><strong>", $hth->hotlink("Assign discussion leads (optional).", "autoassign"), "</strong> Discussion leads are expected to be able to
   summarize the paper and the reviews.  You can assign leads either ",
   $hth->hotlink("paper by paper", "assign"), " or ",
   $hth->hotlink("automatically", "autoassign"), ".</p></li>\n";
 
-        } else if ($gj->index === 6) {
-            echo "<li><p><strong>", $hth->settings_link("Define decision types (optional).", "dec"),
+        } else if ($gj->itemid === 6) {
+            echo "<li><p><strong>", $hth->setting_link("Define decision types (optional).", "decisions"),
   "</strong> By default, HotCRP has two decision types,
   “accept” and “reject,” but you can add other types of acceptance and
   rejection, such as “accept as short paper.”</p></li>\n";
 
-        } else if ($gj->index === 7) {
+        } else if ($gj->itemid === 7) {
             echo "<li><p>The night before the meeting, <strong>", $hth->search_link("download all reviews onto a laptop", ""),
   "</strong> (Download &gt; All reviews) in case the
   Internet explodes and you can’t reach HotCRP from the meeting
@@ -257,13 +257,13 @@ administrator’s identity.</p>\n\n";
 
 
     static function render_atmeeting($hth, $gj) {
-        if (!isset($gj->index)) {
+        if ($gj->itemid === -1) {
             echo $hth->subhead("At the meeting");
             echo "<ol>\n";
             $hth->render_group("chair/atmeeting/*");
             echo "</ol>\n\n";
 
-        } else if ($gj->index === 1) {
+        } else if ($gj->itemid === 1) {
             echo "<li><p>The <b>meeting tracker</b> can keep the PC coordinated
   by sharing your browser’s status.
   Search for papers in whatever order you like (you may want an explicit ",
@@ -277,17 +277,17 @@ administrator’s identity.</p>\n\n";
   by shift-clicking “&#9759;” or clicking it again. You can also view the discussion
   status on the ", $hth->hotlink("discussion status page", "buzzer"), ".</p></li>\n";
 
-        } else if ($gj->index === 2) {
+        } else if ($gj->itemid === 2) {
             echo "<li><p>Scribes can capture discussions as comments for the authors’
   reference.</p></li>\n";
 
-        } else if ($gj->index === 3) {
+        } else if ($gj->itemid === 3) {
             echo "<li><p><strong>Paper decisions</strong> can be recorded on the ",
   $hth->hotlink("paper pages", "review"), " or en masse via ",
-  $hth->search_link("search", ""), ".  Use ", $hth->settings_link("decision settings", "dec"),
+  $hth->search_link("search", ""), ".  Use ", $hth->setting_link("decision settings", "seedec"),
   " to expose decisions to PC members if desired.</p></li>\n";
 
-        } else if ($gj->index === 4) {
+        } else if ($gj->itemid === 4) {
             echo "<li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either ",
   $hth->hotlink("paper by paper", "paper"), " or ", $hth->hotlink("automatically", "autoassign", "t=acc"), ".</p></li>\n";
@@ -295,35 +295,35 @@ administrator’s identity.</p>\n\n";
     }
 
     static function render_postmeeting($hth, $gj) {
-        if (!isset($gj->index)) {
+        if ($gj->itemid === -1) {
             echo $hth->subhead("After the meeting");
             echo "<ol>\n";
             $hth->render_group("chair/postmeeting/*");
             echo "</ol>\n\n";
 
-        } else if ($gj->index === 1) {
+        } else if ($gj->itemid === 1) {
             echo "<li><p><strong>", $hth->search_link("Enter decisions", ""), " and ",
   $hth->search_link("shepherds", "dec:yes"), "</strong>
   if you didn’t do this at the meeting.</p></li>\n";
 
-        } else if ($gj->index === 2) {
+        } else if ($gj->itemid === 2) {
             echo "<li><p>Give reviewers some time to <strong>update their reviews</strong> in
   response to PC discussion (optional).</p></li>\n";
 
-        } else if ($gj->index === 3) {
-            echo "<li><p>Set ", $hth->settings_link("“Who can <strong>see decisions?</strong>”", "dec"),
+        } else if ($gj->itemid === 3) {
+            echo "<li><p>Set ", $hth->setting_link("“Who can <strong>see decisions?</strong>”", "seedec"),
   " to “Authors, PC members, and reviewers.”";
             if (!$hth->conf->setting("shepherd_hide"))
                 echo " This will also make shepherd names visible to authors.";
             echo "</p></li>\n";
 
-        } else if ($gj->index === 4) {
+        } else if ($gj->itemid === 4) {
             echo "<li><p><strong>", $hth->hotlink("Send mail to authors", "mail"), "</strong> informing them that reviews and decisions are
 available.  The mail can also contain the reviews and comments
 themselves.</p></li>\n";
 
-        } else if ($gj->index === 5) {
-            echo "<li><p><strong>", $hth->settings_link("Collect final papers (optional).", "dec"),
+        } else if ($gj->itemid === 5) {
+            echo "<li><p><strong>", $hth->setting_link("Collect final papers (optional).", "final_open"),
 "</strong> If you’re putting together the program
 yourself, it can be convenient to collect final versions using HotCRP.
 Authors upload final versions just as they did submissions.  You can then ",

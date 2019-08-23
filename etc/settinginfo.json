@@ -37,7 +37,7 @@
         "type": "checkbox"
     },
     {
-        "name": "decisions",
+        "name": "decisions", "group": "decisions", "anchorid": "decision-types",
         "parser_class": "Decisions_SettingParser"
     },
     {
@@ -194,7 +194,7 @@
         "internal": true
     },
     {
-        "name": "options",
+        "name": "options", "anchorid": false,
         "parser_class": "Options_SettingParser", "group": "subform",
         "type": "string", "extensible": false
     },
@@ -207,17 +207,17 @@
         "internal": true, "type": "string"
     },
     {
-        "name": "pc_seeall",
-        "title": "PC can see all papers",
+        "name": "pc_seeall", "group": "sub",
+        "title": "PC can see incomplete submissions",
         "type": "checkbox"
     },
     {
-        "name": "pc_seeallpdf",
+        "name": "pc_seeallpdf", "group": "sub",
         "title": "PC can see all submitted PDFs",
         "type": "checkbox"
     },
     {
-        "name": "pc_seeallrev",
+        "name": "pc_seeallrev", "group": "rev",
         "title": "PC can see all reviews",
         "type": "radio",
         "values": [0, 1, 3, 4], "default_value": 0,
@@ -231,8 +231,8 @@
         "json_values": [true, false]
     },
     {
-        "name": "pcrev_any",
-        "title": "PC can review any paper", "group": "reviews",
+        "name": "pcrev_any", "group": "reviews",
+        "title": "PC can review any paper",
         "type": "checkbox"
     },
     {
@@ -269,17 +269,17 @@
         "type": "grace", "extensible": true
     },
     {
-        "name": "resp_open",
+        "name": "resp_open", "group": "decisions",
         "title": "Response start time",
         "type": "date", "extensible": true
     },
     {
-        "name": "resp_rounds",
+        "name": "resp_rounds", "anchorid": false,
         "parser_class": "Responses_SettingParser",
         "type": "string"
     },
     {
-        "name": "resp_roundname",
+        "name": "resp_roundname", "group": "decisions",
         "title": "Response name",
         "type": "tag", "size": 20, "novalue": true, "extensible": true
     },
@@ -302,38 +302,37 @@
         "json_values": ["open", "optional", "blind"]
     },
     {
-        "name": "rev_open",
+        "name": "rev_open", "group": "reviews",
         "title": "Open site for reviewing",
         "type": "cdate",
         "require": "src/settings/s_reviews.php"
     },
     {
-        "name": "rev_ratings",
+        "name": "rev_ratings", "group": "reviews",
         "title": "Collect ratings of reviews",
         "type": "radio",
         "values": [0, 1, 2], "default_value": 0,
         "json_values": ["pc", "all", "no"]
     },
     {
-        "name": "rev_roundtag",
+        "name": "rev_roundtag", "group": "reviews",
         "title": "Assignment review round",
         "type": "tag", "parser_class": "Round_SettingParser"
     },
     {
-        "name": "review_form",
-        "group": "reviewform",
+        "name": "review_form", "group": "reviewform", "anchorid": false,
         "parser_class": "ReviewForm_SettingParser",
         "type": "string"
     },
     {
-        "name": "roundname",
+        "name": "roundname", "group": "reviews",
         "title": "Review round name",
         "type": "string", "size": 12, "novalue": true, "placeholder": "unnamed",
         "extensible": true
     },
     {
-        "name": "seedec",
-        "title": "Decision visibility", "group": "decisions",
+        "name": "seedec", "group": "decisions",
+        "title": "Decision visibility",
         "type": "radio",
         "values": [0, 1, 2, 3],
         "json_values": ["no", "pc", "yes", "unconflicted-pc"],
@@ -485,28 +484,28 @@
         "internal": true
     },
     {
-        "name": "tag_approval",
+        "name": "tag_approval", "group": "tags",
         "title": "Approval voting tags",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     {
-        "name": "tag_au_seerev",
-        "title": "Review visibility tags", "group": "decisions",
+        "name": "tag_au_seerev", "group": "decisions",
+        "title": "Review visibility tags",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 24
     },
     {
-        "name": "tag_chair",
-        "title": "Read-only tags", "group": "tags",
+        "name": "tag_chair", "group": "tags",
+        "title": "Read-only tags",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     {
-        "name": "tag_color",
+        "name": "tag_color", "group": "tags", "anchorid": "colors-and-styles",
         "title": "Tag colors",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 40, "autogrow": true,
         "extensible": "word"
     },
     {
-        "name": "tag_rank",
+        "name": "tag_rank", "group": "tags",
         "title": "Ranking tags",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
@@ -515,17 +514,17 @@
         "internal": true, "type": "taglist"
     },
     {
-        "name": "tag_seeall",
+        "name": "tag_seeall", "group": "tags",
         "title": "PC can see tags for conflicted papers",
         "type": "checkbox"
     },
     {
-        "name": "tag_sitewide",
-        "title": "Site-wide tags", "group": "tags",
+        "name": "tag_sitewide", "group": "tags",
+        "title": "Site-wide tags",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     {
-        "name": "tag_vote",
+        "name": "tag_vote", "group": "tags",
         "title": "Allotment voting tags",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },

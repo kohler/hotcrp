@@ -9,6 +9,7 @@ class Si {
     public $json_name;
     public $title;
     public $group;
+    public $anchorid;
     public $type;
     public $internal;
     public $extensible;
@@ -91,6 +92,8 @@ class Si {
             if (isset(self::$key_storage[$k]))
                 $this->store($k, $j, $k, self::$key_storage[$k]);
         }
+        if (isset($j->anchorid) && (is_string($j->anchorid) || $j->anchorid === false))
+            $this->anchorid = $j->anchorid;
         if (isset($j->default_value) && (is_int($j->default_value) || is_string($j->default_value)))
             $this->default_value = $j->default_value;
         if (isset($j->extensible)) {
@@ -189,13 +192,28 @@ class Si {
             && $this->type && $this->type !== "none";
     }
 
+    function hoturl_param($conf) {
+        if (!$this->group) {
+            error_log("warning: {$this->name} lacks group");
+        }
+        if (!$conf->_setting_groups) {
+            $conf->_setting_groups = new GroupedExtensions($conf->site_contact(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
+        }
+        $group = $conf->_setting_groups->canonical_group($this->group);
+        if ($this->anchorid !== false) {
+            return ["group" => $group, "anchor" => $this->anchorid ? : $this->name];
+        } else {
+            return ["group" => $group];
+        }
+    }
+
     static function get($conf, $name, $k = null) {
-        if (isset($conf->_setting_info[$name]))
+        if (isset($conf->_setting_info[$name])) {
             $si = $conf->_setting_info[$name];
-        else if (!preg_match('{\A(.*)(_(?:[^_\s]+))\z}', $name, $m)
-                 || !isset($conf->_setting_info[$m[1]]))
+        } else if (!preg_match('{\A(.*)(_(?:[^_\s]+))\z}', $name, $m)
+                   || !isset($conf->_setting_info[$m[1]])) {
             return null;
-        else {
+        } else {
             $base_si = $conf->_setting_info[$m[1]];
             if (!$base_si->extensible
                 || ($base_si->extensible === self::X_SIMPLE
@@ -242,8 +260,9 @@ class Si {
 
         $conf->_setting_info = [];
         expand_json_includes_callback(["etc/settinginfo.json"], $hook);
-        if (($olist = $conf->opt("settingInfo")))
+        if (($olist = $conf->opt("settingInfo"))) {
             expand_json_includes_callback($olist, $hook);
+        }
         usort($conf->_setting_info, function ($a, $b) {
             return strcmp($a->name, $b->name) ? : Conf::xt_priority_compare($a, $b);
         });
@@ -357,13 +376,15 @@ class SettingValues extends MessageSet {
         // maybe set $Opt["contactName"] and $Opt["contactEmail"]
         $this->conf->site_contact();
         // maybe initialize _setting_info
-        if ($this->conf->_setting_info === null)
+        if ($this->conf->_setting_info === null) {
             Si::initialize($this->conf);
+        }
     }
     static function make_request(Contact $user, $qreq) {
         $sv = new SettingValues($user);
-        foreach ($qreq as $k => $v)
+        foreach ($qreq as $k => $v) {
             $sv->set_req($k, $v);
+        }
         if ($qreq instanceof Qrequest) {
             foreach ($qreq->files() as $f => $finfo)
                 $sv->req_files[$f] = $finfo;
@@ -387,8 +408,9 @@ class SettingValues extends MessageSet {
 
 
     private function gxt() {
-        if ($this->_gxt === null)
+        if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->user, ["etc/settinggroups.json"], $this->conf->opt("settingGroups"));
+        }
         return $this->_gxt;
     }
     function canonical_group($g) {
@@ -969,8 +991,7 @@ class SettingValues extends MessageSet {
     function setting_link($html, $si, $js = null) {
         if (!($si instanceof Si))
             $si = $this->si($si);
-        assert(!!$si->group);
-        return Ht::link($html, $this->conf->hoturl("settings", ["group" => $si->group, "anchor" => $si->parser_class ? null : $si->name]), $js);
+        return Ht::link($html, $this->conf->hoturl("settings", $si->hoturl_param($this->conf)), $js);
     }
 
 

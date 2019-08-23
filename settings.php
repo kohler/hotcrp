@@ -6,7 +6,6 @@ require_once("src/initweb.php");
 if (!$Me->privChair)
     $Me->escape();
 
-require_once("src/settingvalues.php");
 $Sv = SettingValues::make_request($Me, $Qreq);
 $Sv->session_highlight();
 
