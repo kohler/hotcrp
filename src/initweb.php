@@ -51,13 +51,14 @@ if ($Me === false)
 // Initialize user
 function initialize_user() {
     global $Conf, $Me, $Now, $Qreq;
+    $nav = Navigation::get();
 
     // set up session
     if (isset($Conf->opt["sessionHandler"])) {
         $sh = $Conf->opt["sessionHandler"];
         $Conf->_session_handler = new $sh($Conf);
         if (session_id() !== "") {
-            error_log("session_set_save_handler with active session at " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            error_log("session_set_save_handler with active session at " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) . " / " . $nav->self());
         }
         session_set_save_handler($Conf->_session_handler, true);
     }
@@ -84,7 +85,6 @@ function initialize_user() {
     }
 
     // determine user
-    $nav = Navigation::get();
     $trueemail = isset($_SESSION["u"]) ? $_SESSION["u"] : null;
     if (isset($_SESSION["us"])) {
         $uindex = false;
