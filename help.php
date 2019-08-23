@@ -103,9 +103,6 @@ class HtHead extends Ht {
             $topic["t"] = $group;
         return $this->hotlink($html, "help", $topic);
     }
-    function settings_link($html, $group) {
-        return $this->setting_link($html, $group);
-    }
     function setting_link($html, $siname = null) {
         if ($this->user->privChair || $siname !== null) {
             $pre = $post = "";
