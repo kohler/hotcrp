@@ -206,6 +206,9 @@ class Si {
             return ["group" => $group];
         }
     }
+    function hoturl($conf) {
+        return $conf->hoturl("settings", $this->hoturl_param($conf));
+    }
 
     static function get($conf, $name, $k = null) {
         if (isset($conf->_setting_info[$name])) {
@@ -479,8 +482,12 @@ class SettingValues extends MessageSet {
         if ($mx[2] === MessageSet::WARNING)
             $t = "Warning: " . $t;
         $loc = null;
-        if ($mx[0] && ($si = Si::get($this->conf, $mx[0])) && $si->title)
+        if ($mx[0] && ($si = Si::get($this->conf, $mx[0])) && $si->title) {
             $loc = htmlspecialchars($si->title);
+            if ($si->anchorid !== false) {
+                $loc = Ht::link($loc, $si->hoturl($this->conf));
+            }
+        }
         if ($lastmsg && $lastmsg[0] === $t) {
             if ($lastmsg[1])
                 $loc = $loc ? $lastmsg[1] . ", " . $loc : $lastmsg[1];
@@ -991,7 +998,7 @@ class SettingValues extends MessageSet {
     function setting_link($html, $si, $js = null) {
         if (!($si instanceof Si))
             $si = $this->si($si);
-        return Ht::link($html, $this->conf->hoturl("settings", $si->hoturl_param($this->conf)), $js);
+        return Ht::link($html, $si->hoturl($this->conf), $js);
     }
 
 
