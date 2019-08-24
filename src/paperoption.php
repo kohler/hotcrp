@@ -562,22 +562,27 @@ class PaperOption implements Abbreviator {
     ];
 
     function __construct(Conf $conf, $args) {
-        if (is_object($args))
+        if (is_object($args)) {
             $args = get_object_vars($args);
+        }
         $this->conf = $conf;
         $this->id = (int) $args["id"];
         $this->name = $args["name"];
-        if ($this->name === null)
+        if ($this->name === null) {
             $this->name = "<Unknown-{$this->id}>";
+        }
         $this->title = get($args, "title");
-        if (!$this->title && $this->id > 0)
+        if (!$this->title && $this->id > 0) {
             $this->title = $this->name;
+        }
         $this->type = get($args, "type");
 
-        if (($x = get_s($args, "json_key")))
+        if (($x = get_s($args, "json_key"))) {
             $this->_json_key = $this->_search_keyword = $x;
-        if (($x = get_s($args, "search_keyword")))
+        }
+        if (($x = get_s($args, "search_keyword"))) {
             $this->_search_keyword = $x;
+        }
         $this->description = get($args, "description");
         $this->description_format = get($args, "description_format");
         $this->required = !!get($args, "required");
@@ -662,18 +667,22 @@ class PaperOption implements Abbreviator {
     }
 
     static function make($args, $conf) {
-        if (is_object($args))
+        if (is_object($args)) {
             $args = get_object_vars($args);
+        }
         $callback = get($args, "callback");
-        if (!$callback)
+        if (!$callback) {
             $callback = get(self::$callback_map, get($args, "type"));
-        if (!$callback)
+        }
+        if (!$callback) {
             $callback = "+PaperOption";
+        }
         if ($callback[0] === "+") {
             $class = substr($callback, 1);
             return new $class($conf, $args);
-        } else
+        } else {
             return call_user_func($callback, $conf, $args);
+        }
     }
 
     static function compare($a, $b) {
