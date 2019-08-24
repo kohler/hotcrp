@@ -333,9 +333,7 @@ class PaperOptionList {
         }
         $o = $this->_omap[$id];
         if (!$o && $force) {
-            $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, [
-                "id" => $id, "type" => "__unknown{$id}__"
-            ]);
+            $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, ["id" => $id]);
         }
         return $o;
     }
@@ -1679,6 +1677,8 @@ class IntrinsicPaperOption extends PaperOption {
 
 class UnknownPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
+        $args["type"] = "__unknown" . $args["id"] . "__";
+        $args["form_position"] = $args["display_position"] = false;
         parent::__construct($conf, $args);
     }
 

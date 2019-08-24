@@ -281,7 +281,6 @@ class PaperInfo {
     private $_option_values;
     private $_option_data;
     private $_option_array;
-    private $_all_option_array;
     private $_document_array;
     private $_doclink_array;
     private $_conflict_array;
@@ -1149,12 +1148,12 @@ class PaperInfo {
         }
     }
 
-    private function _make_option_array($all) {
+    private function _make_option_array() {
         $this->load_options(false, false);
         $paper_opts = $this->conf->paper_opts;
         $option_array = [];
         foreach ($this->_option_values as $oid => $ovalues) {
-            if (($o = $paper_opts->get($oid, $all)))
+            if (($o = $paper_opts->get($oid)))
                 $option_array[$oid] = new PaperOptionValue($this, $o, $ovalues, get($this->_option_data, $oid));
         }
         foreach ($paper_opts->include_empty_option_list() as $oid => $o) {
@@ -1166,14 +1165,8 @@ class PaperInfo {
 
     private function options() {
         if ($this->_option_array === null)
-            $this->_option_array = $this->_make_option_array(false);
+            $this->_option_array = $this->_make_option_array();
         return $this->_option_array;
-    }
-
-    private function all_options() {
-        if ($this->_all_option_array === null)
-            $this->_all_option_array = $this->_make_option_array(true);
-        return $this->_all_option_array;
     }
 
     function option_value_data($id) {
@@ -1198,15 +1191,9 @@ class PaperInfo {
             return null;
     }
 
-    function all_option($o) {
-        $id = is_object($o) ? $o->id : $o;
-        return get($this->all_options(), $id);
-    }
-
     function invalidate_options($reload = false) {
         unset($this->optionIds);
-        $this->_option_array = $this->_all_option_array =
-            $this->_option_values = $this->_option_data = null;
+        $this->_option_array = $this->_option_values = $this->_option_data = null;
         if ($reload)
             $this->load_options(true, true);
     }
