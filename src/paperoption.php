@@ -332,8 +332,11 @@ class PaperOptionList {
                 $this->_omap[$id] = $o;
         }
         $o = $this->_omap[$id];
-        if (!$o && $force)
-            $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, $id);
+        if (!$o && $force) {
+            $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, [
+                "id" => $id, "type" => "__unknown{$id}__"
+            ]);
+        }
         return $o;
     }
 
@@ -675,7 +678,7 @@ class PaperOption implements Abbreviator {
             $callback = get(self::$callback_map, get($args, "type"));
         }
         if (!$callback) {
-            $callback = "+PaperOption";
+            $callback = "+UnknownPaperOption";
         }
         if ($callback[0] === "+") {
             $class = substr($callback, 1);
@@ -1675,13 +1678,20 @@ class IntrinsicPaperOption extends PaperOption {
 }
 
 class UnknownPaperOption extends PaperOption {
-    function __construct(Conf $conf, $id) {
-        parent::__construct($conf, [
-            "id" => $id, "name" => "<Option $id>", "type" => "__unknown{$id}__"
-        ]);
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
     }
 
     function takes_multiple() {
         return true;
+    }
+
+    function parse_search($oms) {
+        return false;
+    }
+    function example_searches() {
+        return [];
+    }
+    function add_search_completion(&$res) {
     }
 }
