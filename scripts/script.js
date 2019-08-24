@@ -2713,7 +2713,7 @@ function focus_fold(event) {
 }
 
 function jump(hash) {
-    var e, m, $g;
+    var e, m, p;
     if (hash !== "" && hash.charAt(0) !== "#") {
         m = hash.match(/#.*/);
         hash = m ? m[0] : "";
@@ -2732,13 +2732,18 @@ function jump(hash) {
             return false;
         }
     });
-    if (e && ($g = $(e).closest(".papeg")).length) {
-        var hashg = $(e).geometry(), gg = $g.geometry();
-        if ((hashg.width <= 0 && hashg.height <= 0)
-            || (hashg.top >= gg.top && hashg.top - gg.top <= 100))
-            $g.scrollIntoView();
-    } else if (e && hasClass(e, "response") && hasClass(e, "editable"))
-        papercomment.edit_id(hash.substring(1));
+    if (e) {
+        if ((p = e.closest(".papeg, .f-i, .settings-radio, .settings-g"))
+            && p !== e) {
+            var hashg = $(e).geometry(), pg = $(p).geometry();
+            if ((hashg.width <= 0 && hashg.height <= 0)
+                || (hashg.top >= pg.top && hashg.top - pg.top <= 100)) {
+                $(p).scrollIntoView();
+            }
+        } else if (hasClass(e, "response") && hasClass(e, "editable")) {
+            papercomment.edit_id(hash.substring(1));
+        }
+    }
 }
 
 $(window).on("popstate", function (event) {
