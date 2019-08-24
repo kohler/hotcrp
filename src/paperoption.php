@@ -341,16 +341,11 @@ class PaperOptionList {
     function option_list() {
         if ($this->_olist === null) {
             $this->_olist = [];
-            $readable_formids = [];
             foreach ($this->option_json_list() as $id => $oj) {
                 if (!get($oj, "nonpaper")
                     && ($o = $this->get($id))) {
                     assert(!$o->nonpaper);
                     $this->_olist[$id] = $o;
-                    if (isset($readable_formids[$o->readable_formid]))
-                        $o->readable_formid = $o->formid;
-                    else
-                        $readable_formid[$o->readable_formid] = true;
                 }
             }
             uasort($this->_olist, "PaperOption::compare");
@@ -590,17 +585,12 @@ class PaperOption implements Abbreviator {
         $this->final = !!get($args, "final");
         $this->nonpaper = !!get($args, "nonpaper");
 
-        if ($this->id > 0)
+        if ($this->id > 0) {
             $this->formid = "opt" . $this->id;
-        else
+        } else {
             $this->formid = $this->_json_key;
-
-        $this->readable_formid = $this->formid;
-        if (isset($args["readable_formid"]))
-            $this->readable_formid = $args["readable_formid"];
-        else if ($this->id > 0
-                 && ($x = self::make_readable_formid($this->title)))
-            $this->readable_formid = $x;
+        }
+        $this->readable_formid = get($args, "readable_formid");
 
         $vis = get($args, "visibility") ? : get($args, "view_type");
         if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin")
@@ -757,6 +747,20 @@ class PaperOption implements Abbreviator {
         return $this->formid;
     }
     function readable_formid() {
+        if ($this->readable_formid === null) {
+            $used = [];
+            foreach ($this->conf->paper_opts->option_list() as $o) {
+                if ($o->readable_formid !== null)
+                    $used[$o->readable_formid] = true;
+            }
+            foreach ($this->conf->paper_opts->option_list() as $o) {
+                if ($o->readable_formid === null && $o->id > 0) {
+                    $s = self::make_readable_formid($o->title);
+                    $o->readable_formid = isset($used[$s]) ? $o->formid : $s;
+                    $used[$o->readable_formid] = true;
+                }
+            }
+        }
         return $this->readable_formid;
     }
     function json_key() {
