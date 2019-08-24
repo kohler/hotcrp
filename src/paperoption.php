@@ -507,7 +507,7 @@ class PaperOption implements Abbreviator {
     public $id;
     public $name;
     public $formid;
-    public $readable_formid;
+    private $_readable_formid;
     private $title;
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
@@ -590,7 +590,7 @@ class PaperOption implements Abbreviator {
         } else {
             $this->formid = $this->_json_key;
         }
-        $this->readable_formid = get($args, "readable_formid");
+        $this->_readable_formid = get($args, "readable_formid");
 
         $vis = get($args, "visibility") ? : get($args, "view_type");
         if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin")
@@ -747,21 +747,21 @@ class PaperOption implements Abbreviator {
         return $this->formid;
     }
     function readable_formid() {
-        if ($this->readable_formid === null) {
+        if ($this->_readable_formid === null) {
             $used = [];
             foreach ($this->conf->paper_opts->option_list() as $o) {
-                if ($o->readable_formid !== null)
-                    $used[$o->readable_formid] = true;
+                if ($o->_readable_formid !== null)
+                    $used[$o->_readable_formid] = true;
             }
             foreach ($this->conf->paper_opts->option_list() as $o) {
-                if ($o->readable_formid === null && $o->id > 0) {
+                if ($o->_readable_formid === null && $o->id > 0) {
                     $s = self::make_readable_formid($o->title);
-                    $o->readable_formid = isset($used[$s]) ? $o->formid : $s;
-                    $used[$o->readable_formid] = true;
+                    $o->_readable_formid = isset($used[$s]) ? $o->formid : $s;
+                    $used[$o->_readable_formid] = true;
                 }
             }
         }
-        return $this->readable_formid;
+        return $this->_readable_formid;
     }
     function json_key() {
         if ($this->_json_key === null) {
