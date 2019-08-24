@@ -339,7 +339,7 @@ class PaperTable {
 
     private function echo_editable_papt($what, $heading, $extra = [], PaperOption $opt = null) {
         if ($opt && !isset($extra["for"]))
-            $for = $opt->readable_formid;
+            $for = $opt->readable_formid();
         else
             $for = get($extra, "for", false);
         echo '<div class="papeg';
@@ -608,7 +608,7 @@ class PaperTable {
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
         $heading = $this->edit_title_html($docx) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
-        $this->echo_editable_papt($field, $heading, ["for" => $doc ? false : $inputid, "id" => $docx->readable_formid], $docx);
+        $this->echo_editable_papt($field, $heading, ["for" => $doc ? false : $inputid, "id" => $docx->readable_formid()], $docx);
         $this->echo_field_hint($docx);
 
         echo '<div class="papev has-document" data-dtype="', $dtype,
@@ -1937,7 +1937,7 @@ class PaperTable {
             $fields = [];
             foreach ($this->edit_fields ? : [] as $o) {
                 if ($this->edit_status->has_problem_at($o->formid))
-                    $fields[] = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid);
+                    $fields[] = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
             }
             if (!empty($fields)) {
                 $m .= Ht::msg($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
