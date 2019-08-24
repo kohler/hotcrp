@@ -4,6 +4,7 @@
 
 class Icons {
     static function ui_triangle($direction) {
+        // see also script.js
         $t = '<svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="';
         if ($direction == 0)
             $t .= 'M1 15L8 1L15 15z';
