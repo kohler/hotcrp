@@ -57,9 +57,6 @@ function initialize_user() {
     if (isset($Conf->opt["sessionHandler"])) {
         $sh = $Conf->opt["sessionHandler"];
         $Conf->_session_handler = new $sh($Conf);
-        if (session_id() !== "") {
-            error_log("session_set_save_handler with active session at " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) . " / " . $nav->self());
-        }
         session_set_save_handler($Conf->_session_handler, true);
     }
     set_session_name($Conf);

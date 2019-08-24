@@ -49,6 +49,10 @@ function set_session_name(Conf $conf) {
         ]);
     }
 
+    if (session_id() !== "") {
+        error_log("set_session_name with active session at " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) . " / " . Navigation::self() . " / " . session_id() . " / cookie[{$sn}]=" . get($_COOKIE, $sn));
+    }
+
     session_name($sn);
     session_cache_limiter("");
     if (isset($_COOKIE[$sn])
