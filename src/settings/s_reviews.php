@@ -216,12 +216,13 @@ class Reviews_SettingRenderer {
         echo '<div id="foldmailbody_requestreview" class="settings-g ',
             ($t == $sv->expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
             '">';
+        $sv->set_oldv("mailbody_requestreview", $t["body"]);
         echo '<div class="', $sv->control_class("mailbody_requestreview", "f-i"), '">',
             '<div class="f-c n">',
             '<a class="ui qq js-foldup" href="">', expander(null, 0),
             'Mail template for external review requests</a>',
             '<span class="fx"> (<a href="', $sv->conf->hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
-            '<textarea class="text-monospace fx need-autogrow" name="mailbody_requestreview" cols="80" rows="20">', htmlspecialchars($t["body"]), "</textarea>";
+            $sv->render_textarea("mailbody_requestreview", ["class" => "text-monospace fx", "cols" => 80, "rows" => 20]);
         $sv->echo_messages_at("mailbody_requestreview");
         echo "</div></div>\n";
     }
