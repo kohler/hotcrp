@@ -220,7 +220,7 @@ class Reviews_SettingRenderer {
         echo '<div class="', $sv->control_class("mailbody_requestreview", "f-i"), '">',
             '<div class="f-c n">',
             '<a class="ui qq js-foldup" href="">', expander(null, 0),
-            'Mail template for external review requests</a>',
+            '<label for="mailbody_requestreview">Mail template for external review requests</label></a>',
             '<span class="fx"> (<a href="', $sv->conf->hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
             $sv->render_textarea("mailbody_requestreview", ["class" => "text-monospace fx", "cols" => 80, "rows" => 20]);
         $sv->echo_messages_at("mailbody_requestreview");

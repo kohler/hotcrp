@@ -2482,9 +2482,9 @@ function focus_at(felt) {
     felt.jquery && (felt = felt[0]);
     felt.focus();
     if (!felt.hotcrp_ever_focused) {
-        if (felt.select && hasClass(felt, "want-select"))
+        if (felt.select && hasClass(felt, "want-select")) {
             felt.select();
-        else if (felt.setSelectionRange) {
+        } else if (felt.setSelectionRange) {
             try {
                 felt.setSelectionRange(felt.value.length, felt.value.length);
             } catch (e) { // ignore errors
@@ -2749,13 +2749,27 @@ function jump_hash(hash, focus) {
         return true;
     }
     // find destination element
+    if (hash
+        && (e = document.getElementById(hash))
+        && (p = e.closest(".papeg, .f-i, .settings-g"))) {
+        var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
+        if ((eg.width <= 0 && eg.height <= 0)
+            || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {
+            $(".tla-highlight").removeClass("tla-highlight");
+            window.scroll(0, pg.top - Math.max(wh > 300 ? 20 : 0, (wh - pg.height) * 0.25));
+            $(p).find("label").first().addClass("tla-highlight");
+            focus_at(e);
+            return true;
+        }
+    }
     return false;
 }
 
 $(window).on("popstate", function (event) {
     var state = (event.originalEvent || event).state;
-    if (state)
+    if (state) {
         jump_hash(state.href);
+    }
 }).on("hashchange", function (event) {
     jump_hash(location.hash);
 });
@@ -8245,6 +8259,10 @@ function default_click(evt) {
         base = base.substring(0, base.length - location.hash.length);
     }
     if (this.href.substring(0, base.length + 1) === base + "#") {
+        if (jump_hash(this.href)) {
+            push_history_state(this.href);
+            evt.preventDefault();
+        }
         return true;
     } else if (after_outstanding()) {
         after_outstanding(make_link_callback(this));

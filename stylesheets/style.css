@@ -608,6 +608,15 @@ span.hastitle {
 .tllx {
 	padding: 0 7px;
 }
+
+.tla-highlight {
+	animation: 10s ease-in-out tla-highlight-change;
+}
+@keyframes tla-highlight-change {
+	from, 2%, 6%, 10%, 14%, 50% { background-color: #ffff00; }
+	4%, 8%, 12%, to { background-color: inherit; }
+}
+
 #searchform, #contactsform, #offlineform {
 	margin: 0 auto;
 	position: relative;
@@ -1332,7 +1341,7 @@ h3 + .profile-g {
 	margin-bottom: 0;
 }
 label.f-c, .f-i > label {
-	display: block;
+	display: table;
 }
 .f-c, .f-i > label {
 	margin-bottom: 0.3rem;
