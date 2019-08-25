@@ -64,10 +64,11 @@ if ("classList" in document.createElement("span")
         return k === "" ? [] : k.split(/\s+/);
     };
 }
-if (!Element.prototype.closest)
+if (!Element.prototype.closest) {
     Element.prototype.closest = function (s) {
         return $(this).closest(s)[0];
     };
+}
 
 
 function lower_bound_index(a, v) {
@@ -2662,10 +2663,10 @@ if ("pushState" in window.history) {
             $(document).trigger("collectState", [state]);
             history.pushState(state, document.title, state.href);
         }
-        return false;
+        return true;
     };
 } else {
-    push_history_state = function () { return true; };
+    push_history_state = function () { return false; };
 }
 
 
@@ -5233,7 +5234,6 @@ var add_revpref_ajax = (function () {
             .on("change.revpref_ajax", "input.revpref", rp_change)
             .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
         if (on_unload) {
-            $(document).on("click", "a", rp_a_click);
             $(window).on("beforeunload", rp_unload);
         }
     }
@@ -5256,13 +5256,6 @@ var add_revpref_ajax = (function () {
                     self.value = rv.value === "0" ? "" : rv.value;
             }, trackOutstanding: true
         });
-    }
-
-    function rp_a_click(e) {
-        if (event_key.is_default_a(e, this) && after_outstanding()) {
-            after_outstanding(make_link_callback(this));
-            return false;
-        }
     }
 
     function rp_unload() {
@@ -8254,12 +8247,33 @@ function row_click(evt) {
 handle_ui.on("js-edit-comment", function (event) {
     return papercomment.edit_id(this.hash.substring(1));
 });
+
+function default_click(evt) {
+    var base = location.href;
+    if (location.hash) {
+        base = base.substring(0, base.length - location.hash.length);
+    }
+    if (this.href.substring(0, base.length + 1) === base + "#") {
+        return true;
+    } else if (after_outstanding()) {
+        after_outstanding(make_link_callback(this));
+        return true;
+    } else {
+        return false;
+    }
+}
+
 $(document).on("click", "a", function (evt) {
-    if (hasClass(this, "fn5"))
+    if (hasClass(this, "fn5")) {
         foldup.call(this, evt, {n: 5, f: false});
-    else if (!hasClass(this, "ui"))
-        handle_list(this, this.getAttribute("href"));
+    } else if (!hasClass(this, "ui")) {
+        if (!event_key.is_default_a(evt)
+            || this.target
+            || !default_click.call(this, evt))
+            handle_list(this, this.getAttribute("href"));
+    }
 });
+
 $(document).on("submit", "form", function (evt) {
     if (hasClass(this, "submit-ui")) {
         handle_ui.call(this, evt);
