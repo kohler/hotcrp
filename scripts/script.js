@@ -70,6 +70,21 @@ if (!Element.prototype.closest) {
     };
 }
 
+if (!String.prototype.startsWith) {
+    String.prototype.startsWith = function (search, pos) {
+        pos = !pos || pos < 0 ? 0 : +pos;
+        return this.substring(pos, pos + search.length) === search;
+    };
+}
+if (!String.prototype.endsWith) {
+    String.prototype.endsWith = function (search, this_len) {
+        if (this_len === undefined || this_len > this.length) {
+            this_len = this.length;
+        }
+        return this.substring(this_len - search.length, this_len) === search;
+    };
+}
+
 
 function lower_bound_index(a, v) {
     var l = 0, r = a.length;
@@ -219,7 +234,7 @@ $(document).ajaxError(function (event, jqxhr, settings, httperror) {
         if (httperror)
             msg += ", " + httperror;
         if (jqxhr.responseText)
-            msg += ", " + jqxhr.responseText.substr(0, 100);
+            msg += ", " + jqxhr.responseText.substring(0, 100);
         log_jserror(msg);
     }
 });
@@ -387,8 +402,8 @@ function plural_noun(n, what) {
     if (what == "this")
         return "these";
     if (/^.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz][oy])$/.test(what)) {
-        if (what.substr(-1) == "y")
-            return what.substr(0, what.length - 1) + "ies";
+        if (what.charAt(what.length - 1) === "y")
+            return what.substring(0, what.length - 1) + "ies";
         else
             return what + "es";
     } else
@@ -499,7 +514,7 @@ function now_sec() {
 var strftime = (function () {
     function pad(num, str, n) {
         str += num.toString();
-        return str.length <= n ? str : str.substr(str.length - n);
+        return str.length <= n ? str : str.substring(str.length - n);
     }
     function unparse_q(d, alt, is24) {
         if (is24 && alt && !d.getSeconds())
@@ -718,6 +733,12 @@ function make_onkey(key, f) {
     };
 }
 
+function make_link_callback(elt) {
+    return function () {
+        window.location = elt.href;
+    };
+}
+
 
 // localStorage
 var wstorage = function () { return false; };
@@ -798,7 +819,7 @@ function hoturl(page, options) {
     var x = {t: page + siteurl_suffix};
     if (typeof options === "string") {
         if (options.charAt(0) === "?")
-            options = options.substr(1);
+            options = options.substring(1);
         if ((m = options.match(/^(.*?)(#.*)$/))) {
             options = m[1];
             anchor = m[2];
@@ -816,7 +837,7 @@ function hoturl(page, options) {
                 x.v.push(encodeURIComponent(i) + "=" + encodeURIComponent(v));
         }
     }
-    if (page.substr(0, 3) === "api" && !hoturl_find(x, /^base=/))
+    if (page.substring(0, 3) === "api" && !hoturl_find(x, /^base=/))
         x.v.push("base=" + encodeURIComponent(siteurl));
 
     if (page === "paper") {
@@ -830,10 +851,10 @@ function hoturl(page, options) {
         hoturl_clean(x, /^r=(\d+[A-Z]+)$/);
     else if (page === "help")
         hoturl_clean(x, /^t=(\w+)$/);
-    else if (page.substr(0, 3) === "api") {
+    else if (page.substring(0, 3) === "api") {
         if (page.length > 3) {
             x.t = "api" + siteurl_suffix;
-            x.v.push("fn=" + page.substr(4));
+            x.v.push("fn=" + page.substring(4));
         }
         hoturl_clean(x, /^p=(\d+)$/, true);
         hoturl_clean(x, /^fn=(\w+)$/);
@@ -2649,7 +2670,7 @@ handle_ui.on("js-click-child", function (event) {
 
 // history
 
-var push_history_state;
+var push_history_state, ever_push_history_state = false;
 if ("pushState" in window.history) {
     push_history_state = function (href) {
         var state;
@@ -2663,6 +2684,7 @@ if ("pushState" in window.history) {
             $(document).trigger("collectState", [state]);
             history.pushState(state, document.title, state.href);
         }
+        ever_push_history_state = true;
         return true;
     };
 } else {
@@ -2686,111 +2708,65 @@ $(function () {
 });
 
 
-// focus_fold
+// tla, focus history
 
-window.focus_fold = (function ($) {
-var has_focused;
+handle_ui.on("tla", function (event) {
+    var hash = this.href.replace(/^[^#]*#*/, "");
+    var e = document.getElementById("tla-" + (hash || "default"));
+    $(".is-tla, .tll, .papmode").removeClass("active");
+    addClass(e, "active");
+    addClass(this.closest(".tll, .papmode"), "active");
+    push_history_state(this.href);
+    focus_within(e);
+});
 
-function focus_fold(event) {
-    var e = this, m, f;
-    if (e.hasAttribute("data-fold-target")) {
-        foldup.call(e, event);
-        return (has_focused = true);
-    }
-    while (e) {
-        if (hasClass(e, "linelink")) {
-            f = e.parentElement;
-            while (f && !hasClass(f, "linelinks"))
-                f = f.parentElement;
-            if (!f)
-                break;
-            $(f).find(".linelink").removeClass("active");
-            addClass(e, "active");
-            $(e).trigger("unfold", {f: false});
-            if (event || has_focused === false) {
-                focus_within(e, ".lld *");
-                event && event.preventDefault();
-            }
-            return (has_focused = true);
-        } else if ((m = e.className.match(/\b(?:tll|tld)(\d+)/))) {
-            while (e && !/\b(?:tab|line)links\d/.test(e.className))
-                e = e.parentElement;
-            if (!e)
-                break;
-            e.className = e.className.replace(/links\d+/, 'links' + m[1]);
-            if (event || has_focused === false) {
-                focus_within(e, ".tld" + m[1] + " *");
-                event && event.preventDefault();
-            }
-            return (has_focused = true);
-        } else
-            e = e.parentElement;
-    }
-    return false;
-}
-
-function jump(hash) {
+function jump_hash(hash, focus) {
     var e, m, p;
-    if (hash !== "" && hash.charAt(0) !== "#") {
-        m = hash.match(/#.*/);
-        hash = m ? m[0] : "";
+    // clean up hash, including trailers like “%E3%80%82” (ideographic full stop)
+    hash = hash.replace(/^[^#]*#?/, "");
+    if (hash !== ""
+        && !document.getElementById(hash)
+        && (m = hash.match(/^[-_a-zA-Z0-9]+(?=[^-_a-zA-Z0-9])/))
+        && document.getElementById(m[0])) {
+        hash = location.hash = m[0];
     }
-    // clean up unwanted trailers, such as “%E3%80%82” (ideographic full stop)
-    if (hash !== "") {
-        e = document.getElementById(hash.substring(1));
-        if (!e
-            && (m = hash.match(/^#([-_a-zA-Z0-9]+)(?=[^-_a-zA-Z0-9])/))
-            && (e = document.getElementById(m[1])))
-            hash = location.hash = m[0];
-    }
-    $("a.has-focus-history").each(function () {
-        if (this.getAttribute("href") === hash) {
-            focus_fold.call(this);
-            return false;
-        }
-    });
+    // check for destination tla element
+    e = document.getElementById("tla-" + (hash || "default"));
     if (e) {
-        if ((p = e.closest(".papeg, .f-i, .settings-g"))
-            && p !== e) {
-            var hashg = $(e).geometry(), pg = $(p).geometry();
-            if ((hashg.width <= 0 && hashg.height <= 0)
-                || (hashg.top >= pg.top && hashg.top - pg.top <= 100)) {
-                $(p).scrollIntoView();
-            }
-        } else if (hasClass(e, "response") && hasClass(e, "editable")) {
-            papercomment.edit_id(hash.substring(1));
+        if (!hasClass(e, "active")) {
+            $(".is-tla, .tll, .papmode").removeClass("active");
+            addClass(e, "active");
+            $(".tla").each(function () {
+                if ((hash === "" && this.href.indexOf("#") === -1)
+                    || this.href.endsWith("#" + hash)) {
+                    addClass(this.closest(".tll, .papmode"), "active");
+                }
+            });
         }
+        if (focus) {
+            focus_within(e);
+        }
+        return true;
     }
+    // find destination element
+    return false;
 }
 
 $(window).on("popstate", function (event) {
     var state = (event.originalEvent || event).state;
-    state && jump(state.href);
+    if (state)
+        jump_hash(state.href);
 }).on("hashchange", function (event) {
-    jump(location.hash);
+    jump_hash(location.hash);
 });
 $(function () {
-    has_focused || jump(location.hash);
+    if (!ever_push_history_state) {
+        jump_hash(location.hash, hasClass(document.body, "want-hash-focus"));
+    }
 });
 
-function handler(event) {
-    if (focus_fold.call(this, event)
-        && this instanceof HTMLAnchorElement
-        && hasClass(this, "has-focus-history"))
-        push_history_state(this.href);
-}
-handler.autofocus = function () { has_focused || (has_focused = false); };
-return handler;
-})($);
 
-handle_ui.on("tla", focus_fold);
-
-function make_link_callback(elt) {
-    return function () {
-        window.location = elt.href;
-    };
-}
-
+// autosubmit
 
 $(document).on("focus", "input.js-autosubmit", function (event) {
     var $self = $(event.target);

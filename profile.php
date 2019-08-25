@@ -417,16 +417,16 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
 function echo_modes($hlbulk) {
     global $Me, $Acct, $newProfile;
     echo '<div class="psmode">',
-        '<div class="', ($hlbulk == 0 ? "papmodex" : "papmode"), '">',
+        '<div class="papmode', ($hlbulk == 0 ? " active" : ""), '">',
         Ht::link($newProfile || $Me->email == $Acct->email ? "Your profile" : "Profile", $Me->conf->selfurl(null, ["u" => null])),
-        '</div><div class="', ($hlbulk == 1 ? "papmodex" : "papmode"), '">';
+        '</div><div class="papmode', ($hlbulk == 1 ? " active" : ""), '">';
     if ($newProfile)
-        echo Ht::link("New account", "", ["class" => "ui tla has-focus-history", "data-fold-target" => "9c"]);
+        echo Ht::link("New account", "", ["class" => "ui tla"]);
     else
         echo Ht::link("New account", hoturl("profile", "u=new"));
-    echo '</div><div class="', ($hlbulk == 2 ? "papmodex" : "papmode"), '">';
+    echo '</div><div class="papmode', ($hlbulk == 2 ? " active" : ""), '">';
     if ($newProfile)
-        echo Ht::link("Bulk update", "#bulk", ["class" => "ui tla has-focus-history", "data-fold-target" => "9o"]);
+        echo Ht::link("Bulk update", "#bulk", ["class" => "ui tla"]);
     else
         echo Ht::link("Bulk update", hoturl("profile", "u=new#bulk"));
     echo '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
@@ -514,24 +514,22 @@ if ($newProfile) {
 if (isset($Qreq->ls)) {
     $form_params[] = "ls=" . urlencode($Qreq->ls);
 }
+
 if ($newProfile) {
-    echo '<div id="foldbulk" class="fold9' . ($Qreq->savebulk ? "o" : "c") . ' js-fold-focus"><div class="fn9">';
+    echo_modes(1);
+} else if ($Me->privChair) {
+    echo_modes(0);
 }
 
-echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
-              array("id" => "profile-form", "class" => "need-unload-protection")),
+echo '<div class="is-tla active" id="tla-default">',
+    Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
+             ["id" => "profile-form", "class" => "need-unload-protection"]),
     Ht::hidden("profile_contactid", $Acct->contactId);
 if (isset($Qreq->redirect)) {
     echo Ht::hidden("redirect", $Qreq->redirect);
 }
 if ($Me->privChair) {
     echo Ht::hidden("whichpassword", "");
-}
-
-if ($newProfile) {
-    echo_modes(1);
-} else if ($Me->privChair) {
-    echo_modes(0);
 }
 
 if ($UserStatus->has_messages()) {
@@ -601,17 +599,16 @@ if (!$newProfile && $Acct->contactId == $Me->contactId)
 echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
 
 echo "</div>\n", // foldaccount
-    "</form>\n";
+    "</form></div>";
 
 if ($newProfile) {
-    echo '</div><div class="fx9">';
-    echo Ht::form(hoturl_post("profile", join("&amp;", $form_params))),
+    echo '<div class="is-tla" id="tla-bulk">';
+    echo Ht::form(hoturl_post("profile", join("&amp;", $form_params) . "#bulk")),
         '<div class="profiletext', ($UserStatus->has_error() ? " alert" : ""), "\">\n",
         // Don't want chrome to autofill the password changer.
         // But chrome defaults to autofilling the password changer
         // unless we supply an earlier password input.
         Ht::password("chromefooler", "", ["class" => "ignore-diff hidden"]);
-    echo_modes(2);
 
     $bulkentry = $Qreq->bulkentry;
     if ($bulkentry === null
@@ -659,11 +656,11 @@ John Adams,john@earbox.org,UC Berkeley,pc
         '<dd>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”</dd></dl>',
         "</div>\n";
 
-    echo '</div></form></div></div>';
+    echo '</div></form></div>';
 }
 
 
-Ht::stash_script('focus_within($("#profile-form"))');
+Ht::stash_script("addClass(document.body,\"want-hash-focus\")");
 if (!$newProfile)
     Ht::stash_script('hiliter_children("#profile-form")');
 $Conf->footer();

@@ -97,7 +97,7 @@ echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
     '<div class="papmode"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
-    '<div class="papmodex"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
+    '<div class="papmode active"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c" />';
 
 

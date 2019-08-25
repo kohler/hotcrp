@@ -118,7 +118,6 @@ function savesearch() {
 
 if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && $Qreq->post_ok()) {
     savesearch();
-    $Qreq->tab = "savedsearches";
 }
 
 
@@ -157,15 +156,6 @@ if (isset($Qreq->q)) {
 
 
 // set up the search form
-if ($Qreq->redisplay)
-    $activetab = 3;
-else if (isset($Qreq->qa) || get($Qreq, "qt", "n") !== "n")
-    $activetab = 2;
-else
-    $activetab = 1;
-if ($activetab == 3 && $pl->count == 0)
-    $activetab = 1;
-
 $tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["tabindex" => 1]);
 
 
@@ -298,8 +288,8 @@ if ($pl_text) {
 }
 
 
-echo '<div id="searchform" class="linelinks tablinks', $activetab, ' clearfix">',
-    '<div class="tlx"><div class="tld1">';
+echo '<div id="searchform" class="clearfix">',
+    '<div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
 // Basic search
 echo Ht::form(hoturl("search"), ["method" => "get"]),
@@ -312,7 +302,7 @@ echo Ht::form(hoturl("search"), ["method" => "get"]),
     " &nbsp;\n", Ht::submit("Search", ["tabindex" => 1]),
     "</form>";
 
-echo '</div><div class="tld2">';
+echo '</div><div class="tld is-tla" id="tla-advanced">';
 
 // Advanced search
 $qtOpt = array("ti" => "Title",
@@ -377,7 +367,7 @@ $ss = array();
 if ($Me->isPC || $Me->privChair) {
     $ss = $Conf->saved_searches();
     if (count($ss) > 0 || $pl_text) {
-        echo '<div class="tld4" style="padding-bottom:1ex">';
+        echo '<div class="tld is-tla" id="tla-saved-searches" style="padding-bottom:1ex">';
         ksort($ss);
         if (count($ss)) {
             $n = 0;
@@ -422,7 +412,7 @@ if ($Me->isPC || $Me->privChair) {
 
 // Display options
 if ($pl->count > 0) {
-    echo '<div class="tld3" style="padding-bottom:1ex">';
+    echo '<div class="tld is-tla" id="tla-view" style="padding-bottom:1ex">';
 
     echo Ht::form(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
     echo_request_as_hidden_inputs();
@@ -467,15 +457,15 @@ echo "</div>";
 
 // Tab selectors
 echo '<div class="tllx"><table><tr>',
-  '<td><div class="tll1"><a class="ui tla has-focus-history" href="">Search</a></div></td>
-  <td><div class="tll2"><a class="ui tla nw has-focus-history" href="#advanced">Advanced search</a></div></td>', "\n";
+  '<td><div class="tll active"><a class="ui tla" href="">Search</a></div></td>
+  <td><div class="tll"><a class="ui tla nw" href="#advanced">Advanced search</a></div></td>', "\n";
 if ($ss)
-    echo '  <td><div class="tll4"><a class="ui tla nw has-focus-history" href="#savedsearches">Saved searches</a></div></td>', "\n";
+    echo '  <td><div class="tll"><a class="ui tla nw" href="#saved-searches">Saved searches</a></div></td>', "\n";
 if ($pl->count > 0)
-    echo '  <td><div class="tll3"><a class="ui tla nw has-focus-history" href="#view">View options</a></div></td>', "\n";
+    echo '  <td><div class="tll"><a class="ui tla nw" href="#view">View options</a></div></td>', "\n";
 echo "</tr></table></div></div>\n\n";
 if ($pl->count == 0)
-    Ht::stash_script("focus_fold.autofocus()");
+    Ht::stash_script("addClass(document.body,\"want-hash-focus\")");
 echo Ht::unstash();
 
 

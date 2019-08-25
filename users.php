@@ -304,8 +304,8 @@ $pl_text = $pl->table_html($Qreq->t, hoturl("users", ["t" => $Qreq->t]),
 // form
 echo '<hr class="g">';
 if (count($tOpt) > 1) {
-    echo '<table id="contactsform" class="tablinks1">
-<tr><td><div class="tlx"><div class="tld1">';
+    echo '<table id="contactsform">
+<tr><td><div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
     echo Ht::form(hoturl("users"), ["method" => "get"]);
     if (isset($Qreq->sort))
@@ -313,7 +313,7 @@ if (count($tOpt) > 1) {
     echo Ht::select("t", $tOpt, $Qreq->t, ["class" => "want-focus"]),
         " &nbsp;", Ht::submit("Go"), "</form>";
 
-    echo '</div><div class="tld2">';
+    echo '</div><div class="tld is-tla" id="tla-view">';
 
     // Display options
     echo Ht::form(hoturl("users"), ["method" => "get"]);
@@ -365,8 +365,8 @@ if (count($tOpt) > 1) {
 
     // Tab selectors
     echo '<tr><td class="tllx"><table><tr>
-  <td><div class="tll1"><a class="ui tla" href="">User selection</a></div></td>
-  <td><div class="tll2"><a class="ui tla" href="">Display options</a></div></td>
+  <td><div class="tll active"><a class="ui tla" href="">User selection</a></div></td>
+  <td><div class="tll"><a class="ui tla" href="#view">View options</a></div></td>
 </tr></table></td></tr>
 </table>', "\n\n";
 }

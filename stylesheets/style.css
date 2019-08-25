@@ -197,13 +197,13 @@ a.attention {
 	color: red;
 }
 a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,
-div.papmodex > a, div.papmodex:hover > a.noul, div.leftmenu-item > a,
+div.papmode.active > a, div.papmode.active:hover > a.noul, div.leftmenu-item > a,
 a.pnum, a.ptitle, a.mailto, u.x, .noul {
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 }
 a.q:hover, a.qq:hover, a.x:hover,
-div.papmodex:hover > a, div.leftmenu-item:hover > a,
+div.papmode.active:hover > a, div.leftmenu-item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
@@ -565,8 +565,13 @@ span.hastitle {
 
 
 /* Tab links, as in search form */
-.tablinks1 .tll1, .tablinks2 .tll2,
-.tablinks3 .tll3, .tablinks4 .tll4 {
+.is-tla {
+	display: none;
+}
+.is-tla.active {
+	display: block;
+}
+.tll.active {
 	background: #fff4d5;
 	border-left: 2px solid #f3d06e;
 	border-bottom: 2px solid #f3d06e;
@@ -575,29 +580,23 @@ span.hastitle {
 	border-bottom-right-radius: 5px;
 	font-weight: bold;
 }
-.tablinks1 .tll1 a.tla, .tablinks2 .tll2 a.tla,
-.tablinks3 .tll3 a.tla, .tablinks4 .tll4 a.tla {
+.tll.active a.tla {
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	color: inherit;
 }
-.tablinks1 .tll1 a.tla:hover, .tablinks2 .tll2 a.tla:hover,
-.tablinks3 .tll3 a.tla:hover, .tablinks4 .tll4 a.tla:hover {
+.tll.active a.tla:hover {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
-.tll1, .tll2, .tll3, .tll4 {
+.tll {
 	position: relative;
 	top: -3px;
 	z-index: 4;
 	padding: 3px 0.75em 2px 0.75em;
 	font-size: smaller;
 }
-.tablinks1 .tld1, .tablinks2 .tld2, .tablinks3 .tld3, .tablinks4 .tld4 {
-	display: block;
-}
-.tld1, .tld2, .tld3, .tld4 {
-	display: none;
+.tld {
 	position: relative;
 	z-index: 5;
 	padding: 4px 0;
@@ -2462,35 +2461,34 @@ a.badge:active {
 }
 
 /* paper mode tabs */
-.papmode, .papmodex {
+.papmode {
 	float: left;
 	text-align: center;
 	font-size: smaller;
-	padding: 3.5px 5px 4px 5px;
+	padding: 4.5px 5px 4px 5px;
 	margin: 0 5px;
 }
-.papmode {
-	padding-top: 4.5px;
-}
-.papmodex {
+.papmode.active {
+	padding-top: 3.5px;
 	background: white;
 	border-radius: 5px;
 	border: 1px solid #f33360;
 }
-.papmodex > a {
+.papmode.active > a {
 	font-weight: bold;
 	color: #f33360;
 }
-.papmode img, .papmodex img {
+.papmode img {
 	position: relative;
 	margin: -10px 0;
 	bottom: 10px;
 }
 .papmode:first-child {
 	padding-left: 0;
-}
-.papmode:first-child, .papmodex:first-child {
 	margin-left: 0;
+}
+.papmode.active:first-child {
+	padding-left: 5px;
 }
 
 /* paper banner */
