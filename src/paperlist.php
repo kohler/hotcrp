@@ -622,7 +622,7 @@ class PaperList {
             foreach ($attr as $k => $v)
                 $foot .= " $k=\"" . htmlspecialchars($v) . "\"";
             $foot .= "><tbody><tr>\n"
-                . "    <td class=\"pl-footer-desc lll\"><a class=\"ui tla\" href=\""
+                . "    <td class=\"pl-footer-desc lll\"><a class=\"ui lla\" href=\""
                 . $lllg[0] . "\">" . $lllg[1] . "</a></td>\n";
             for ($j = 2; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];

@@ -2670,6 +2670,22 @@ if ("pushState" in window.history) {
 }
 
 
+// line links
+
+handle_ui.on("lla", function (event) {
+    var e = this.closest(".linelink");
+    var f = e.closest(".linelinks");
+    $(f).find(".linelink").removeClass("active");
+    addClass(e, "active");
+    $(e).trigger("unfold", {f: false});
+    focus_within(e, ".lld *");
+});
+
+$(function () {
+    $(".linelink.active").trigger("unfold", {f: false, linelink: true});
+});
+
+
 // focus_fold
 
 window.focus_fold = (function ($) {
@@ -2755,7 +2771,6 @@ $(window).on("popstate", function (event) {
 });
 $(function () {
     has_focused || jump(location.hash);
-    $(".linelink.active").trigger("unfold", {f: false, linelink: true});
 });
 
 function handler(event) {

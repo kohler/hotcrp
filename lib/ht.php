@@ -382,7 +382,7 @@ class Ht {
         if (isset($js["onclick"]) && !preg_match('/(?:^return|;)/', $js["onclick"]))
             $js["onclick"] = "return " . $js["onclick"];
         if (isset($js["onclick"])
-            && (!isset($js["class"]) || !preg_match('/(?:\A|\s)(?:ui|btn|tla)(?=\s|\z)/', $js["class"])))
+            && (!isset($js["class"]) || !preg_match('/(?:\A|\s)(?:ui|btn|lla|tla)(?=\s|\z)/', $js["class"])))
             error_log(caller_landmark(2) . ": JS Ht::link lacks class");
         return "<a" . self::extra($js) . ">" . $html . "</a>";
     }

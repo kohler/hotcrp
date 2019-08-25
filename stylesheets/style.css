@@ -628,12 +628,12 @@ span.hastitle {
 .linelink.active .lll {
 	font-weight: bold;
 }
-.linelink.active a.tla {
+.linelink.active a.lla {
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 	color: inherit;
 }
-.linelink.active a.tla:hover {
+.linelink.active a.lla:hover {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
