@@ -94,7 +94,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             return false;
         }
         if ($prow->timeWithdrawn > 0)
-            $state->warning($prow->make_whynot(["withdrawn" => 1]));
+            $state->warning(whyNotText($prow->make_whynot(["withdrawn" => 1])));
 
         $exp = $req["expertise"];
         if ($exp && ($exp = trim($exp)) !== "") {

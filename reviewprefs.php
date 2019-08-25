@@ -97,8 +97,9 @@ function savePreferences($Qreq, $reset_p) {
         if ($reset_p)
             unset($Qreq->p, $Qreq->pap);
         $Conf->self_redirect($Qreq);
-    } else
+    } else {
         Conf::msg_error(join("<br />", $aset->errors_html()));
+    }
 }
 if ($Qreq->fn === "saveprefs" && $Qreq->post_ok())
     savePreferences($Qreq, true);
