@@ -573,24 +573,16 @@ class PaperOption implements Abbreviator {
         }
         $this->type = get($args, "type");
 
-        if (($x = get_s($args, "json_key"))) {
-            $this->_json_key = $this->_search_keyword = $x;
-        }
-        if (($x = get_s($args, "search_keyword"))) {
-            $this->_search_keyword = $x;
-        }
+        $this->_json_key = get($args, "json_key");
+        $this->_search_keyword = get($args, "search_keyword", $this->_json_key);
+        $this->formid = $this->id > 0 ? "opt{$this->id}" : $this->_json_key;
+        $this->_readable_formid = get($args, "readable_formid", $this->_json_key);
+
         $this->description = get($args, "description");
         $this->description_format = get($args, "description_format");
         $this->required = !!get($args, "required");
         $this->final = !!get($args, "final");
         $this->nonpaper = !!get($args, "nonpaper");
-
-        if ($this->id > 0) {
-            $this->formid = "opt" . $this->id;
-        } else {
-            $this->formid = $this->_json_key;
-        }
-        $this->_readable_formid = get($args, "readable_formid");
 
         $vis = get($args, "visibility") ? : get($args, "view_type");
         if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin")

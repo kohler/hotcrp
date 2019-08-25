@@ -5,7 +5,8 @@
     },
     {
         "name": "submission_version", "id": -1008,
-        "title": "Submission version", "form_position": false, "display_position": 1999,
+        "title": "Submission version",
+        "json_key": false, "form_position": false, "display_position": 1999,
         "type": "intrinsic"
     },
     {
