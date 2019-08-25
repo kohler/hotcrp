@@ -1181,11 +1181,11 @@ th.settings-simplehead {
 	margin-top: 0;
 	margin-bottom: 0;
 }
-.settings-g, .settings-radio, .settings-revfield, .settings-revfieldremoved,
+.settings-g, .settings-revfield, .settings-revfieldremoved,
 .settings-opt {
 	margin-bottom: 2em;
 }
-.settings-g + .settings-nearby, .settings-radio + .settings-nearby {
+.settings-g + .settings-nearby {
 	margin-top: -1em;
 }
 .settings-revfield, .settings-opt {

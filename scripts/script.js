@@ -2733,7 +2733,7 @@ function jump(hash) {
         }
     });
     if (e) {
-        if ((p = e.closest(".papeg, .f-i, .settings-radio, .settings-g"))
+        if ((p = e.closest(".papeg, .f-i, .settings-g"))
             && p !== e) {
             var hashg = $(e).geometry(), pg = $(p).geometry();
             if ((hashg.width <= 0 && hashg.height <= 0)
@@ -5322,10 +5322,11 @@ function row_tagvalue(row, tag) {
 
 function tagannorow_fill(row, anno) {
     if (!anno.empty) {
-        if (anno.tag && anno.annoid)
+        if (anno.tag && anno.annoid) {
             row.setAttribute("data-tags", anno.tag + "#" + anno.tagval);
-        else
+        } else {
             row.removeAttribute("data-tags");
+        }
         var heading = anno.heading === null ? "" : anno.heading;
         var $g = $(row).find(".plheading-group").attr({"data-format": anno.format || 0, "data-title": heading});
         $g.text(heading === "" ? heading : heading + " ");
@@ -8260,10 +8261,11 @@ $(document).on("click", "a", function (evt) {
         handle_list(this, this.getAttribute("href"));
 });
 $(document).on("submit", "form", function (evt) {
-    if (hasClass(this, "submit-ui"))
+    if (hasClass(this, "submit-ui")) {
         handle_ui.call(this, evt);
-    else
+    } else {
         handle_list(this, this.getAttribute("action"));
+    }
 });
 $(document).on("click", "tr.pl", row_click);
 $(window).on("beforeunload", unload_list);
