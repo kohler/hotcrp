@@ -8811,27 +8811,41 @@ function make_textarea_autogrower($self) {
 function make_input_autogrower($self) {
     var shadow;
     return function (event) {
-        if (event === false)
+        if (event === false) {
             return remover($self, shadow);
-        var width = $self.outerWidth(), ws;
-        if (width <= 0)
+        }
+        var width = 0, ws;
+        try {
+            width = $self.outerWidth();
+        } catch (e) { // IE11 is annoying here
+        }
+        if (width <= 0) {
             return;
+        }
         if (!shadow) {
             shadow = textarea_shadow($self, width);
             var p = $self.css(["paddingRight", "paddingLeft", "borderLeftWidth", "borderRightWidth"]);
-            shadow.css({width: "auto", display: "table-cell", paddingLeft: p.paddingLeft, paddingLeft: (parseFloat(p.paddingRight) + parseFloat(p.paddingLeft) + parseFloat(p.borderLeftWidth) + parseFloat(p.borderRightWidth)) + "px"});
+            shadow.css({
+                width: "auto",
+                display: "table-cell",
+                paddingLeft: p.paddingLeft,
+                paddingLeft: (parseFloat(p.paddingRight) + parseFloat(p.paddingLeft) + parseFloat(p.borderLeftWidth) + parseFloat(p.borderRightWidth)) + "px"
+            });
             ws = $self.css(["minWidth", "maxWidth"]);
-            if (ws.minWidth == "0px")
+            if (ws.minWidth == "0px") {
                 $self.css("minWidth", width + "px");
-            if (ws.maxWidth == "none" && !$self.hasClass("wide"))
+            }
+            if (ws.maxWidth == "none" && !$self.hasClass("wide")) {
                 $self.css("maxWidth", "640px");
+            }
         }
         shadow.text($self[0].value + "  ");
         ws = $self.css(["minWidth", "maxWidth"]);
         var outerWidth = Math.min(shadow.outerWidth(), $(window).width()),
             maxWidth = parseFloat(ws.maxWidth);
-        if (maxWidth === maxWidth)
+        if (maxWidth === maxWidth) { // i.e., isn't NaN
             outerWidth = Math.min(outerWidth, maxWidth);
+        }
         $self.outerWidth(Math.max(outerWidth, parseFloat(ws.minWidth)));
     };
 }
@@ -8839,10 +8853,11 @@ $.fn.autogrow = function () {
     this.each(function () {
         var $self = $(this), f = $self.data("autogrower");
         if (!f) {
-            if (this.tagName === "TEXTAREA")
+            if (this.tagName === "TEXTAREA") {
                 f = make_textarea_autogrower($self);
-            else if (this.tagName === "INPUT" && this.type === "text")
+            } else if (this.tagName === "INPUT" && this.type === "text") {
                 f = make_input_autogrower($self);
+            }
             if (f) {
                 $self.data("autogrower", f).on("change input", f);
                 if (!autogrowers) {
@@ -8852,8 +8867,9 @@ $.fn.autogrow = function () {
                 autogrowers.push(f);
             }
         }
-        if (f && $self.val() !== "")
+        if (f && $self.val() !== "") {
             f();
+        }
     });
 	return this;
 };
