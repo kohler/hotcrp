@@ -32,13 +32,15 @@ if (!isset($Qreq->p)
 }
 
 // prepare user
-if ($Me->is_empty())
+if ($Me->is_empty()) {
     $Me->escape();
+}
 if ($Qreq->post_ok() && !$Me->has_account_here()) {
-    if (isset($Qreq->update) && $Me->can_start_paper())
+    if (isset($Qreq->update) && $Me->can_start_paper()) {
         $Me->activate_database_account();
-    else
+    } else {
         $Me->escape();
+    }
 }
 $Me->add_overrides(Contact::OVERRIDE_CHECK_TIME);
 
@@ -76,8 +78,10 @@ function loadRows() {
         errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
 }
 $prow = $ps = null;
-if (strcasecmp((string) $Qreq->p, "new") && strcasecmp((string) $Qreq->paperId, "new"))
+if (strcasecmp((string) $Qreq->p, "new")
+    && strcasecmp((string) $Qreq->paperId, "new")) {
     loadRows();
+}
 
 
 // paper actions
@@ -120,8 +124,9 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
         }
 
         $Conf->self_redirect($Qreq);
-    } else
+    } else {
         Conf::msg_error(whyNotText($whyNot) . " The submission has not been withdrawn.");
+    }
 }
 if (isset($Qreq->revive) && $prow && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
@@ -132,8 +137,9 @@ if (isset($Qreq->revive) && $prow && $Qreq->post_ok()) {
             error_log("{$Conf->dbname}: revive #{$prow->paperId} failure: " . json_encode($aset->json_result()));
         loadRows();
         $Conf->self_redirect($Qreq);
-    } else
+    } else {
         Conf::msg_error(whyNotText($whyNot));
+    }
 }
 
 
@@ -163,12 +169,12 @@ function update_paper(Qrequest $qreq, $action) {
     }
 
     // check deadlines
-    if (!$prow)
+    if (!$prow) {
         // we know that can_start_paper implies can_finalize_paper
         $whyNot = $Me->perm_start_paper();
-    else if ($action == "final")
+    } else if ($action == "final") {
         $whyNot = $Me->perm_submit_final_paper($prow);
-    else {
+    } else {
         $whyNot = $Me->perm_update_paper($prow);
         if ($whyNot
             && $action == "submit"
@@ -373,17 +379,18 @@ if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
 
 // prepare paper table
 if ($paperTable->mode == "edit") {
-    if (!$prow)
+    if (!$prow) {
         $editable = true;
-    else {
+    } else {
         $old_overrides = $Me->remove_overrides(Contact::OVERRIDE_CHECK_TIME);
         $editable = $Me->can_update_paper($prow);
         if ($Me->can_submit_final_paper($prow))
             $editable = "f";
         $Me->set_overrides($old_overrides);
     }
-} else
+} else {
     $editable = false;
+}
 
 $paperTable->initialize($editable, $editable && $useRequest);
 if (($ps || $prow) && $paperTable->mode === "edit") {
