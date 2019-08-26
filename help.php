@@ -217,7 +217,7 @@ function meaningful_round_name(Contact $user) {
 echo '<div class="leftmenu-menu-container"><div class="leftmenu-list">';
 foreach ($help_topics->groups() as $gj) {
     if ($gj->name === $topic)
-        echo '<div class="leftmenu-item-on">', $gj->title, '</div>';
+        echo '<div class="leftmenu-item active">', $gj->title, '</div>';
     else if (isset($gj->title))
         echo '<div class="leftmenu-item ui js-click-child">',
             '<a href="', hoturl("help", "t=$gj->name"), '">', $gj->title, '</a></div>';

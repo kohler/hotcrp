@@ -63,7 +63,7 @@ echo Ht::form(hoturl_post("settings", "group=$Group"),
 echo '<div class="leftmenu-menu-container"><div class="leftmenu-list">';
 foreach ($group_titles as $name => $title) {
     if ($name === $Group)
-        echo '<div class="leftmenu-item-on">', $title, '</div>';
+        echo '<div class="leftmenu-item active">', $title, '</div>';
     else
         echo '<div class="leftmenu-item ui js-click-child">',
             '<a href="', hoturl("settings", "group={$name}"), '">', $title, '</a></div>';

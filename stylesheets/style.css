@@ -1249,19 +1249,18 @@ th.settings-simplehead {
 	float: left;
 	position: absolute;
 }
-.leftmenu-item, .leftmenu-item-on {
+.leftmenu-item {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
-}
-.leftmenu-item {
 	padding: 0.25ex 5px 0.6ex 5px;
 	margin-left: -5px;
 	cursor: pointer;
 	clear: left;
 }
-.leftmenu-item-on {
-	padding: 0.5ex 5px;
+.leftmenu-item.active {
+	padding-top: 0.5ex;
+	padding-bottom: 0.5ex;
 	margin-left: -6px;
 	background: white;
 	border-radius: 5px;
