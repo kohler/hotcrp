@@ -170,6 +170,9 @@
     "capital": {
         "weak": true
     },
+    "catholic": {
+        "weak": true
+    },
     "center": {
         "weak": true
     },
@@ -331,6 +334,9 @@
         "weak": true
     },
     "polytechnic": {
+        "weak": true
+    },
+    "polytechnique": {
         "weak": true
     },
     "project": {
@@ -666,6 +672,9 @@
     "london": {
         "weak": true,
         "alternate": [{"word": "ucl", "if": "university college"}]
+    },
+    "maryland": {
+        "sync": ["loyola"]
     },
     "massachusetts": {
         "weak": true,
