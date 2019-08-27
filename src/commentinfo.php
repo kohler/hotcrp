@@ -48,8 +48,6 @@ class CommentInfo {
         $this->paperId = (int) $this->paperId;
         $this->commentType = (int) $this->commentType;
         $this->commentRound = (int) $this->commentRound;
-        if ($this->commentType >= COMMENTTYPE_AUTHOR)
-            $this->authorOrdinal = $this->ordinal;
     }
 
     static function fetch($result, PaperInfo $prow = null, Conf $conf = null) {
