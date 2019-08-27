@@ -343,22 +343,24 @@ class AuthorMatcher extends Author {
             $aw = get($wordinfo, strtolower($w));
             if ($aw) {
                 if (isset($aw->nameish)) {
-                    if ($aw->nameish === false)
+                    if ($aw->nameish === false) {
                         return true;
-                    else if ($aw->nameish === 1) {
+                    } else if ($aw->nameish === 1) {
                         ++$ninit;
                         continue;
                     } else if ($aw->nameish === true
                                || ($aw->nameish === 2 && $i > 0)) {
                         $has_nameish = true;
                         continue;
-                    } else if ($aw->nameish === 0)
+                    } else if ($aw->nameish === 0) {
                         continue;
+                    }
                 }
-                if (isset($aw->weak) && $aw->weak)
+                if (isset($aw->weak) && $aw->weak) {
                     $has_weak = true;
-                else
+                } else {
                     return true;
+                }
             } else if (strlen($w) > 2 && ctype_upper($w)) {
                 if ($fc === null)
                     $fc = $i;

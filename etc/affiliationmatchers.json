@@ -628,7 +628,8 @@
         "nameish": false
     },
     "irvine": {
-        "alternate": [{"word": "uci", "if": "university california"}]
+        "alternate": [{"word": "uci", "if": "university california"}],
+        "nameish": true
     },
     "israel": {
         "weak": true
