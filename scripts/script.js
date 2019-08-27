@@ -3696,7 +3696,7 @@ function add_review(rrow) {
     // ratings
     has_user_rating = "user_rating" in rrow;
     if ((rrow.ratings && rrow.ratings.length) || has_user_rating) {
-        hc.push('<div class="revcard_rating">', '</div>');
+        hc.push('<div class="revcard_rating fx20">', '</div>');
         hc.push(unparse_ratings(rrow.ratings || [], rrow.user_rating || 0, has_user_rating));
     }
 
