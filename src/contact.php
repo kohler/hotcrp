@@ -1991,16 +1991,18 @@ class Contact {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_administer;
-        } else
+        } else {
             return $this->privChair;
+        }
     }
 
-    function can_meaningfully_override(PaperInfo $prow) {
+    function has_overridable_conflict(PaperInfo $prow) {
         if ($this->is_manager()) {
             $rights = $this->rights($prow);
             return $rights->allow_administer && $rights->conflictType > 0;
-        } else
+        } else {
             return false;
+        }
     }
 
     function can_change_password($acct) {

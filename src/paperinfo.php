@@ -873,7 +873,7 @@ class PaperInfo {
 
     function add_tag_info_json($pj, Contact $user) {
         $tagger = new Tagger($user);
-        if (($can_override = $user->can_meaningfully_override($this)))
+        if (($can_override = $user->has_overridable_conflict($this)))
             $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $editable = $this->editable_tags($user);
         $viewable = $this->viewable_tags($user);

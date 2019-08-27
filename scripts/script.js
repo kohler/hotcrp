@@ -3768,9 +3768,10 @@ function comment_identity_time(cj) {
                + cj.ordinal + '</span></a></div>');
     }
     if (cj.author && cj.author_hidden) {
-        t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
-               + '<a class="ui q js-foldup" href="" data-fold-target="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
-               + cj.author + '</span></div>');
+        t.push('<div class="cmtname fold9c"><span class="fx9' +
+               (cj.author_email ? '" title="' + cj.author_email : '') +
+               '">' + cj.author + ' </span><a class="ui qq js-foldup" href="" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
+               (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deblinded)</span></a></div>');
     } else if (cj.author) {
         x = cj.author;
         if (cj.blind && cj.visibility === "au") {

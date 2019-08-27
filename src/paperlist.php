@@ -898,7 +898,7 @@ class PaperList {
     private function _row_setup(PaperInfo $row) {
         ++$this->count;
         $this->row_attr = [];
-        $this->row_overridable = $this->user->can_meaningfully_override($row);
+        $this->row_overridable = $this->user->has_overridable_conflict($row);
 
         $this->row_tags = $this->row_tags_overridable = null;
         if (isset($row->paperTags) && $row->paperTags !== "") {
