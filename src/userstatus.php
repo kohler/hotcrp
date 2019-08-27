@@ -323,12 +323,10 @@ class UserStatus extends MessageSet {
             $this->error_at("collaborators", "Format error [collaborators]");
         if (get($cj, "collaborators")
             && !$this->has_problem_at("collaborators")) {
-            $collab = rtrim(cleannl($cj->collaborators));
-            if (!$old_user || $collab !== rtrim(cleannl($old_user->collaborators))) {
-                $old_collab = $collab;
-                $collab = AuthorMatcher::fix_collaborators($old_collab);
-                if ($collab !== $old_collab)
-                    $this->warning_at("collaborators", "Collaborators changed to follow our required format. You may want to look them over.");
+            $old_collab = rtrim(cleannl($cj->collaborators));
+            $collab = AuthorMatcher::fix_collaborators($old_collab);
+            if ($collab !== $old_collab) {
+                $this->warning_at("collaborators", "Collaborators changed to follow our required format. You may want to look them over.");
             }
             $cj->collaborators = $collab;
         }

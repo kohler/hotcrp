@@ -621,14 +621,11 @@ class PaperStatus extends MessageSet {
         $this->normalize_string($pj, "abstract", false);
         $this->normalize_string($pj, "collaborators", false);
         if (isset($pj->collaborators)) {
-            $collab = rtrim(cleannl($pj->collaborators));
-            if (!$this->prow || $collab !== rtrim(cleannl($this->prow->collaborators))) {
-                $old_collab = $collab;
-                $collab = (string) AuthorMatcher::fix_collaborators($old_collab);
-                if ($collab !== $old_collab) {
-                    $name = self::field_title($this->conf, "collaborators");
-                    $this->warning_at("collaborators", "$name changed to follow our required format. You may want to look them over.");
-                }
+            $old_collab = rtrim(cleannl($pj->collaborators));
+            $collab = (string) AuthorMatcher::fix_collaborators($old_collab);
+            if ($collab !== $old_collab) {
+                $name = self::field_title($this->conf, "collaborators");
+                $this->warning_at("collaborators", "$name changed to follow our required format. You may want to look them over.");
             }
             $pj->collaborators = $collab;
         }
