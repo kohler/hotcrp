@@ -1020,7 +1020,7 @@ $blind\n";
             echo "Write Review";
         echo "</h3>\n";
 
-        $revname = $rrevtime = "";
+        $revname = $revtime = "";
         if ($rrow && $viewer->active_review_token_for($prow, $rrow)) {
             $revname = "Review token " . encode_token((int) $rrow->reviewToken);
         } else if ($rrow && $viewer->can_view_review_identity($prow, $rrow)) {
