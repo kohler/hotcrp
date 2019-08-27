@@ -593,6 +593,19 @@ class AuthorMatcher extends Author {
             ++$len;
             --$depth;
         }
+        // check for unknown affiliation
+        if ($pos - $paren <= 4
+            && preg_match('{\G\(\s*\)}i', $line, $m, 0, $paren)) {
+            $au = AuthorMatcher::make_string_guess($name);
+            if ($au->affiliation) {
+                $line = $name . " (unknown)" . substr($line, $pos);
+                $paren = strlen($name) + 1;
+                $pos = $paren + 9;
+                $len = strlen($line);
+            } else {
+                return self::fix_collaborators_line_no_parens(rtrim($name . " " . substr($line, $pos)));
+            }
+        }
         // check for abbreviation, e.g., "Massachusetts Institute of Tech (MIT)"
         if ($pos === $len) {
             $aff = substr($line, $paren + 1, $pos - $paren - 2);
@@ -603,8 +616,9 @@ class AuthorMatcher extends Author {
             return $line;
         }
         // check for suffix
-        if (preg_match('{\G[-,:;.#()\s"]*\z}', $line, $m, 0, $pos))
+        if (preg_match('{\G[-,:;.#()\s"]*\z}', $line, $m, 0, $pos)) {
             return substr($line, 0, $pos);
+        }
         if (preg_match('{\G(\s*-+\s*|\s*[,:;.#%(\[\{]\s*|\s*(?=[a-z/\s]+\z))}', $line, $m, 0, $pos)) {
             $suffix = substr($line, $pos + strlen($m[1]));
             $line = substr($line, 0, $pos);
