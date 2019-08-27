@@ -2249,6 +2249,9 @@ class Conf {
     function unparse_time_obscure($value) {
         return $this->_unparse_time($value, "obscure", false, null);
     }
+    function unparse_time_point($value) {
+        return date("j M Y", $value);
+    }
     function unparse_time_log($value) {
         return date("d/M/Y:H:i:s O", $value);
     }

@@ -1047,7 +1047,7 @@ $blind\n";
             }
         }
         if ($rrow && $rrow->reviewModified > 1 && $viewer->can_view_review_time($prow, $rrow)) {
-            $revtime = "Updated " . $this->conf->unparse_time($rrow->reviewModified);
+            $revtime = $this->conf->unparse_time($rrow->reviewModified);
         }
         if ($revname || $revtime) {
             echo '<div class="revthead">';
@@ -1219,7 +1219,7 @@ $blind\n";
         $time = self::rrow_modified_time($viewer, $prow, $rrow);
         if ($time > 1) {
             $rj["modified_at"] = (int) $time;
-            $rj["modified_at_text"] = $this->conf->unparse_time($time);
+            $rj["modified_at_text"] = $this->conf->unparse_time_point($time);
         }
 
         // ratings

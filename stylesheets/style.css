@@ -2962,7 +2962,7 @@ ul.x > li:last-child {
 }
 .revcard_head h3 {
 	display: inline;
-	padding: 0 1em 0 0;
+	padding: 0 1.5em 0 0;
 }
 .revthead {
 	display: inline;
@@ -2971,6 +2971,10 @@ ul.x > li:last-child {
 .revname, .revtime {
 	display: inline-block;
 	padding-right: 1.5em;
+}
+.revname + .revtime:before {
+	content: "· ";
+	margin-left: -1em;
 }
 .rve {
 	margin-top: 16px;
@@ -3154,7 +3158,7 @@ ul.x > li:last-child {
 }
 .cmtcard h3 {
 	display: inline;
-	padding: 0 1em 0 0;
+	padding: 0 1.5em 0 0;
 }
 .cmtcard_head .cmtfn {
 	font-size: smaller;
@@ -3271,6 +3275,10 @@ ul.x > li:last-child {
 .cmtname, .cmttime, .cmttags, .cmtvis {
 	display: inline-block;
 	padding-right: 1.5em;
+}
+.cmtname + .cmttime:before {
+	content: "· ";
+	margin-left: -1.25em;
 }
 .cmttime, .cmtvis {
 	color: #999999;

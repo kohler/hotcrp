@@ -355,13 +355,14 @@ class CommentInfo {
             && ($p = $this->unparse_commenter_pseudonym($viewer))) {
             $cj->author_pseudonym = $p;
         }
-        if ($this->timeModified > 0 && $idable_override) {
-            $cj->modified_at = (int) $this->timeModified;
-            $cj->modified_at_text = $this->conf->unparse_time($cj->modified_at);
-        } else if ($this->timeModified > 0) {
-            $cj->modified_at = $this->conf->obscure_time($this->timeModified);
-            $cj->modified_at_text = $this->conf->unparse_time_obscure($cj->modified_at);
-            $cj->modified_at_obscured = true;
+        if ($this->timeModified > 0) {
+            if ($idable_override) {
+                $cj->modified_at = (int) $this->timeModified;
+            } else {
+                $cj->modified_at = $this->conf->obscure_time($this->timeModified);
+                $cj->modified_at_obscured = true;
+            }
+            $cj->modified_at_text = $this->conf->unparse_time_point($cj->modified_at);
         }
 
         // text

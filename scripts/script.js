@@ -3679,7 +3679,7 @@ function add_review(rrow) {
             revname += ' <span class="revround" title="Review round">' + escape_entities(rrow.round) + '</span>';
     }
     if (rrow.modified_at) {
-        revtime = 'Updated ' + rrow.modified_at_text;
+        revtime = rrow.modified_at_text;
     }
     if (revname || revtime) {
         hc.push('<div class="revthead">');
