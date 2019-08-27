@@ -974,15 +974,15 @@ $blind\n";
         echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
     }
 
-    function show(PaperInfo $prow, ReviewInfo $rrow = null, Contact $user,
+    function show(PaperInfo $prow, ReviewInfo $rrow = null, Contact $viewer,
                   $options, ReviewValues $rvalues = null) {
         $editmode = get($options, "edit", false);
 
         $reviewOrdinal = unparseReviewOrdinal($rrow);
-        self::check_review_author_seen($prow, $rrow, $user);
+        self::check_review_author_seen($prow, $rrow, $viewer);
 
         if (!$editmode) {
-            $rj = $this->unparse_review_json($user, $prow, $rrow);
+            $rj = $this->unparse_review_json($viewer, $prow, $rrow);
             if (get($options, "editmessage"))
                 $rj->message_html = $options["editmessage"];
             echo Ht::unstash_script("review_form.add_review(" . json_encode_browser($rj) . ");\n");
@@ -990,7 +990,7 @@ $blind\n";
         }
 
         // From here on, edit mode.
-        $forceShow = $user->is_admin_force() ? "&amp;forceShow=1" : "";
+        $forceShow = $viewer->is_admin_force() ? "&amp;forceShow=1" : "";
         $reviewLinkArgs = "p=$prow->paperId" . ($rrow ? "&amp;r=$reviewOrdinal" : "") . "&amp;m=re" . $forceShow;
         $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
         $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
@@ -1020,37 +1020,43 @@ $blind\n";
             echo "Write Review";
         echo "</h3>\n";
 
-        $open = $sep = ' <span class="revinfo">';
-        $xsep = ' <span class="barsep">·</span> ';
-        $showtoken = $rrow && $user->active_review_token_for($prow, $rrow);
-        $type = "";
-        if ($rrow && $user->can_view_review_round($prow, $rrow)) {
-            $type = $rrow->type_icon();
-            if ($rrow->reviewRound > 0) {
-                $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
-                    . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
-                    . "</span>";
+        $revname = $rrevtime = "";
+        if ($rrow && $viewer->active_review_token_for($prow, $rrow)) {
+            $revname = "Review token " . encode_token((int) $rrow->reviewToken);
+        } else if ($rrow && $viewer->can_view_review_identity($prow, $rrow)) {
+            if ($rrow->reviewType > 1
+                && $viewer->can_view_user_tags()
+                && ($cuser = $prow->conf->pc_member_by_id($rrow->contactId))) {
+                $revname = $viewer->reviewer_html_for($cuser);
+            } else {
+                $revname = Text::name_html($rrow);
+            }
+            if ($rrow->reviewBlind) {
+                $revname = "[{$revname}]";
+            }
+            if (!Contact::is_anonymous_email($rrow->email)) {
+                $revname = '<span title="' . $rrow->email . '">' . $revname . '</span>';
             }
         }
-        if ($rrow && $user->can_view_review_identity($prow, $rrow)
-            && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
-            echo $sep, ($rrow->reviewBlind ? "[" : ""), Text::user_html($rrow),
-                ($rrow->reviewBlind ? "]" : ""), " &nbsp;", $type;
-            $sep = $xsep;
-        } else if ($type) {
-            echo $sep, $type;
-            $sep = $xsep;
+        if ($rrow && $viewer->can_view_review_round($prow, $rrow)) {
+            $revname .= ($revname ? " " : "") . $rrow->type_icon();
+            if ($rrow->reviewRound > 0) {
+                $revname .= ' <span class="revround" title="Review round">'
+                    . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
+                    . '</span>';
+            }
         }
-        if ($showtoken) {
-            echo $sep, "Review token ", encode_token((int) $rrow->reviewToken);
-            $sep = $xsep;
+        if ($rrow && $rrow->reviewModified > 1 && $viewer->can_view_review_time($prow, $rrow)) {
+            $revtime = "Updated " . $this->conf->unparse_time($rrow->reviewModified);
         }
-        if ($rrow && $rrow->reviewModified > 1 && $user->can_view_review_time($prow, $rrow)) {
-            echo $sep, "Updated ", $this->conf->unparse_time($rrow->reviewModified);
-            $sep = $xsep;
+        if ($revname || $revtime) {
+            echo '<div class="revthead">';
+            if ($revname)
+                echo '<div class="revname">', $revname, '</div>';
+            if ($revtime)
+                echo '<div class="revtime">', $revtime, '</div>';
+            echo '</div>';
         }
-        if ($sep != $open)
-            echo "</span>\n";
 
         if (get($options, "editmessage"))
             echo '<div class="hint">', $options["editmessage"], "</div>\n";
@@ -1072,9 +1078,9 @@ $blind\n";
         echo '<div class="revcard_body">';
 
         // administrator?
-        $admin = $user->allow_administer($prow);
-        if ($rrow && !$user->is_my_review($rrow)) {
-            if ($user->is_owned_review($rrow))
+        $admin = $viewer->allow_administer($prow);
+        if ($rrow && !$viewer->is_my_review($rrow)) {
+            if ($viewer->is_owned_review($rrow))
                 echo Ht::msg("This isn’t your review, but you can make changes since you requested it.", 0);
             else if ($admin)
                 echo Ht::msg("This isn’t your review, but as an administrator you can still make changes.", 0);
@@ -1083,7 +1089,7 @@ $blind\n";
         // delegate?
         if ($rrow
             && !$rrow->reviewSubmitted
-            && $rrow->contactId == $user->contactId
+            && $rrow->contactId == $viewer->contactId
             && $rrow->reviewType == REVIEW_SECONDARY
             && $this->conf->ext_subreviews < 3) {
             $ndelegated = 0;
@@ -1108,8 +1114,8 @@ $blind\n";
         }
 
         // top save changes
-        if ($user->timeReview($prow, $rrow) || $admin) {
-            $this->_echo_accept_decline($prow, $rrow, $user, $reviewPostLink);
+        if ($viewer->timeReview($prow, $rrow) || $admin) {
+            $this->_echo_accept_decline($prow, $rrow, $viewer, $reviewPostLink);
         }
 
         // blind?
@@ -1124,16 +1130,16 @@ $blind\n";
         }
 
         // form body
-        $this->webFormRows($prow, $rrow, $user, $rvalues);
+        $this->webFormRows($prow, $rrow, $viewer, $rvalues);
 
         // review actions
-        if ($user->timeReview($prow, $rrow) || $admin) {
+        if ($viewer->timeReview($prow, $rrow) || $admin) {
             if ($prow->can_author_view_submitted_review()
-                && (!$rrow || $rrow->reviewSubmitted || !$rrow->needs_approval() || !$user->is_my_review($rrow)))
+                && (!$rrow || $rrow->reviewSubmitted || !$rrow->needs_approval() || !$viewer->is_my_review($rrow)))
                 echo '<div class="is-warning">⚠️ Authors can currently see submitted reviews.</div>';
             if ($rrow && $rrow->reviewSubmitted && !$admin)
                 echo '<div class="is-warning">⚠️ Only administrators can remove or unsubmit the review at this point.</div>';
-            $this->_echo_review_actions($prow, $rrow, $user, $reviewPostLink);
+            $this->_echo_review_actions($prow, $rrow, $viewer, $reviewPostLink);
         }
 
         echo "</div></form></div>\n\n";
@@ -1145,16 +1151,16 @@ $blind\n";
     const RJ_ALL_RATINGS = 8;
     const RJ_NO_REVIEWERONLY = 16;
 
-    function unparse_review_json(Contact $user, PaperInfo $prow,
+    function unparse_review_json(Contact $viewer, PaperInfo $prow,
                                  ReviewInfo $rrow, $flags = 0) {
-        self::check_review_author_seen($prow, $rrow, $user);
+        self::check_review_author_seen($prow, $rrow, $viewer);
         $editable = !($flags & self::RJ_NO_EDITABLE);
 
         $rj = ["pid" => $prow->paperId, "rid" => (int) $rrow->reviewId];
         if ($rrow->reviewOrdinal) {
             $rj["ordinal"] = unparseReviewOrdinal($rrow->reviewOrdinal);
         }
-        if ($user->can_view_review_round($prow, $rrow)) {
+        if ($viewer->can_view_review_round($prow, $rrow)) {
             $rj["rtype"] = (int) $rrow->reviewType;
             if (($round = $this->conf->round_name($rrow->reviewRound))) {
                 $rj["round"] = $round;
@@ -1180,30 +1186,37 @@ $blind\n";
                 $rj["subreview"] = true;
             }
         }
-        if ($editable && $user->can_review($prow, $rrow)) {
+        if ($editable && $viewer->can_review($prow, $rrow)) {
             $rj["editable"] = true;
         }
 
         // identity
-        $showtoken = $editable && $user->active_review_token_for($prow, $rrow);
-        if ($user->can_view_review_identity($prow, $rrow)
+        $showtoken = $editable && $viewer->active_review_token_for($prow, $rrow);
+        if ($viewer->can_view_review_identity($prow, $rrow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
-            $rj["reviewer"] = Text::user_html($rrow);
-            $rj["reviewer_name"] = Text::name_text($rrow);
-            $rj["reviewer_email"] = $rrow->email;
+            if ($rrow->reviewType > 1
+                && $viewer->can_view_user_tags()
+                && ($cuser = $prow->conf->pc_member_by_id($rrow->contactId))) {
+                $rj["reviewer"] = $viewer->reviewer_html_for($cuser);
+            } else {
+                $rj["reviewer"] = Text::name_html($rrow);
+            }
+            if (!Contact::is_anonymous_email($rrow->email)) {
+                $rj["reviewer_email"] = $rrow->email;
+            }
         }
         if ($showtoken) {
             $rj["review_token"] = encode_token((int) $rrow->reviewToken);
         }
-        if ($user->is_my_review($rrow)) {
+        if ($viewer->is_my_review($rrow)) {
             $rj["my_review"] = true;
         }
-        if ($user->contactId == $rrow->requestedBy) {
+        if ($viewer->contactId == $rrow->requestedBy) {
             $rj["my_request"] = true;
         }
 
         // time
-        $time = self::rrow_modified_time($user, $prow, $rrow);
+        $time = self::rrow_modified_time($viewer, $prow, $rrow);
         if ($time > 1) {
             $rj["modified_at"] = (int) $time;
             $rj["modified_at_text"] = $this->conf->unparse_time($time);
@@ -1211,20 +1224,20 @@ $blind\n";
 
         // ratings
         if ((string) $rrow->allRatings !== ""
-            && $user->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
+            && $viewer->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
             $rj["ratings"] = array_values($rrow->ratings());
             if ($flags & self::RJ_UNPARSE_RATINGS)
                 $rj["ratings"] = array_map("ReviewInfo::unparse_rating", $rj["ratings"]);
         }
-        if ($editable && $user->can_rate_review($prow, $rrow)) {
-            $rj["user_rating"] = $rrow->rating_of_user($user);
+        if ($editable && $viewer->can_rate_review($prow, $rrow)) {
+            $rj["user_rating"] = $rrow->rating_of_user($viewer);
             if ($flags & self::RJ_UNPARSE_RATINGS)
                 $rj["user_rating"] = ReviewInfo::unparse_rating($rj["user_rating"]);
         }
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        foreach ($this->paper_visible_fields($user, $prow, $rrow) as $fid => $f)
+        foreach ($this->paper_visible_fields($viewer, $prow, $rrow) as $fid => $f)
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
                 $fval = get($rrow, $fid);
@@ -1254,10 +1267,11 @@ $blind\n";
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($prow->title, 80))
             . "</a>";
         if ($rrow->reviewModified > 1) {
-            if ($contact->can_view_review_time($prow, $rrow))
+            if ($contact->can_view_review_time($prow, $rrow)) {
                 $time = $this->conf->parseableTime($rrow->reviewModified, false);
-            else
+            } else {
                 $time = $this->conf->unparse_time_obscure($this->conf->obscure_time($rrow->reviewModified));
+            }
             $t .= $barsep . $time;
         }
         if ($contact->can_view_review_identity($prow, $rrow))

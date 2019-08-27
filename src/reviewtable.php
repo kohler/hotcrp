@@ -122,7 +122,8 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
             if ($allow_actas) {
                 $n .= _review_table_actas($user, $rr);
             }
-            $t .= '<td class="rl"><span class="taghl">' . $n . '</span>'
+            $t .= '<td class="rl"><span class="taghl" title="'
+                . $rr->email . '">' . $n . '</span>'
                 . ($rtype ? " $rtype" : "") . "</td>";
             if ($show_colors
                 && ($p = $conf->pc_member_by_id($rr->contactId))

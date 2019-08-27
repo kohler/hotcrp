@@ -2962,10 +2962,15 @@ ul.x > li:last-child {
 }
 .revcard_head h3 {
 	display: inline;
-	padding: 0 0.5em 0 0;
+	padding: 0 1em 0 0;
 }
-.revinfo {
+.revthead {
+	display: inline;
 	font-size: smaller;
+}
+.revname, .revtime {
+	display: inline-block;
+	padding-right: 1.5em;
 }
 .rve {
 	margin-top: 16px;
@@ -3191,7 +3196,7 @@ ul.x > li:last-child {
 	background: #f3f3f3;
 }
 .cmtthead {
-	display: inline-block;
+	display: inline;
 	font-size: smaller;
 }
 .cmtt {
@@ -3261,7 +3266,7 @@ ul.x > li:last-child {
 }
 .cmtnumhead {
 	display: inline-block;
-	margin-right: 0.75em;
+	margin-right: 1em;
 }
 .cmtname, .cmttime, .cmttags, .cmtvis {
 	display: inline-block;
@@ -3269,6 +3274,9 @@ ul.x > li:last-child {
 }
 .cmttime, .cmtvis {
 	color: #999999;
+}
+.cmtcard_head .cmttime, .cmtcard_head .cmtvis {
+	color: #555555;
 }
 .cmtnumhead span.cmtnumat {
 	color: #aaaaaa;

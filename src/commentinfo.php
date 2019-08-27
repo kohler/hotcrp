@@ -149,12 +149,12 @@ class CommentInfo {
             return null;
     }
 
-    static function group_by_identity($crows, Contact $user, $separateColors) {
+    static function group_by_identity($crows, Contact $viewer, $separateColors) {
         $known_cids = $result = [];
         foreach ($crows as $cr) {
             $cid = 0;
-            if ($user->can_view_comment_identity($cr->prow, $cr)
-                || $cr->unparse_commenter_pseudonym($user)) {
+            if ($viewer->can_view_comment_identity($cr->prow, $cr)
+                || $cr->unparse_commenter_pseudonym($viewer)) {
                 $cid = $cr->contactId;
             }
             if ($cr->commentType & COMMENTTYPE_RESPONSE) {
@@ -170,7 +170,7 @@ class CommentInfo {
                 $record = true;
             }
             if ($separateColors
-                && ($tags = $cr->viewable_tags($user))
+                && ($tags = $cr->viewable_tags($viewer))
                 && ($color = $cr->conf->tags()->color_classes($tags))) {
                 $include = true;
                 $record = false;
@@ -187,25 +187,25 @@ class CommentInfo {
         return $result;
     }
 
-    private function unparse_commenter_pseudonym(Contact $user) {
+    private function unparse_commenter_pseudonym(Contact $viewer) {
         if ($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)) {
             return "Author";
         } else if ($this->commentType & COMMENTTYPE_BYSHEPHERD) {
             return "Shepherd";
         } else if (($rrow = $this->prow->review_of_user($this->contactId))
                    && $rrow->reviewOrdinal
-                   && $user->can_view_review($this->prow, $rrow)) {
+                   && $viewer->can_view_review($this->prow, $rrow)) {
             return "Reviewer " . unparseReviewOrdinal($rrow->reviewOrdinal);
         } else {
             return false;
         }
     }
 
-    function unparse_commenter_html(Contact $user) {
-        if ($user->can_view_comment_identity($this->prow, $this)) {
+    function unparse_commenter_html(Contact $viewer) {
+        if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::abbrevname_html($this->commenter());
         } else {
-            $n = $this->unparse_commenter_pseudonym($user) ? : "anonymous";
+            $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
         }
         if ($this->commentType & COMMENTTYPE_RESPONSE) {
             $n = "<i>" . $this->unparse_response_text() . "</i>"
@@ -214,11 +214,11 @@ class CommentInfo {
         return $n;
     }
 
-    function unparse_commenter_text(Contact $user) {
-        if ($user->can_view_comment_identity($this->prow, $this)) {
+    function unparse_commenter_text(Contact $viewer) {
+        if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::abbrevname_text($this->commenter());
         } else {
-            $n = $this->unparse_commenter_pseudonym($user) ? : "anonymous";
+            $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
         }
         if ($this->commentType & COMMENTTYPE_RESPONSE) {
             $n = $this->unparse_response_text()
@@ -227,18 +227,18 @@ class CommentInfo {
         return $n;
     }
 
-    function viewable_tags(Contact $user) {
+    function viewable_tags(Contact $viewer) {
         if ($this->commentTags
-            && $user->can_view_comment_tags($this->prow, $this))
-            return $this->conf->tags()->strip_nonviewable($this->commentTags, $user, $this->prow);
+            && $viewer->can_view_comment_tags($this->prow, $this))
+            return $this->conf->tags()->strip_nonviewable($this->commentTags, $viewer, $this->prow);
         else
             return null;
     }
 
-    function viewable_nonresponse_tags(Contact $user) {
+    function viewable_nonresponse_tags(Contact $viewer) {
         if ($this->commentTags
-            && $user->can_view_comment_tags($this->prow, $this)) {
-            $tags = $this->conf->tags()->strip_nonviewable($this->commentTags, $user, $this->prow);
+            && $viewer->can_view_comment_tags($this->prow, $this)) {
+            $tags = $this->conf->tags()->strip_nonviewable($this->commentTags, $viewer, $this->prow);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
                 $tags = trim(preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", " $tags "));
             return $tags;
@@ -264,10 +264,10 @@ class CommentInfo {
                          $this->attachments());
     }
 
-    function unparse_json(Contact $user) {
+    function unparse_json(Contact $viewer) {
         if ($this->commentId
-            ? !$user->can_view_comment($this->prow, $this, true)
-            : !$user->can_comment($this->prow, $this)) {
+            ? !$viewer->can_view_comment($this->prow, $this, true)
+            : !$viewer->can_comment($this->prow, $this)) {
             return false;
         }
 
@@ -303,21 +303,21 @@ class CommentInfo {
 
         // exit now if new-comment skeleton
         if (!$this->commentId) {
-            if (($token = $user->active_review_token_for($this->prow))) {
+            if (($token = $viewer->active_review_token_for($this->prow))) {
                 $cj->review_token = encode_token($token);
             }
             return $cj;
         }
 
         // otherwise, viewable comment
-        if ($user->can_comment($this->prow, $this)) {
+        if ($viewer->can_comment($this->prow, $this)) {
             $cj->editable = true;
-        } else if ($user->can_finalize_comment($this->prow, $this)) {
+        } else if ($viewer->can_finalize_comment($this->prow, $this)) {
             $cj->submittable = true;
         }
 
         // tags
-        if (($tags = $this->viewable_tags($user))) {
+        if (($tags = $this->viewable_tags($viewer))) {
             $cj->tags = TagInfo::split($tags);
             if (($cc = $this->conf->tags()->color_classes($tags))) {
                 $cj->color_classes = $cc;
@@ -325,31 +325,39 @@ class CommentInfo {
         }
 
         // identity and time
-        $idable = $user->can_view_comment_identity($this->prow, $this);
+        $idable = $viewer->can_view_comment_identity($this->prow, $this);
         $idable_override = $idable
-            || ($user->can_meaningfully_override($this->prow)
-                && $user->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
+            || ($viewer->can_meaningfully_override($this->prow)
+                && $viewer->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
         if ($idable || $idable_override) {
-            $commenter = $this->commenter();
-            $cj->author = Text::user_html($commenter);
-            $cj->author_email = $commenter->email;
+            if (!($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR))
+                && $viewer->can_view_user_tags()
+                && ($cuser = $this->conf->pc_member_by_id($this->contactId))) {
+                $cj->author = $viewer->reviewer_html_for($cuser);
+                $email = $cuser->email;
+            } else {
+                $commenter = $this->commenter();
+                $cj->author = Text::name_html($commenter);
+                $email = $commenter->email;
+            }
             if (!$idable) {
                 $cj->author_hidden = true;
             }
-            if (Contact::is_anonymous_email($cj->author_email)
-                && $user->review_tokens()
-                && ($rrows = $this->prow->reviews_of_user(-1, $user->review_tokens()))) {
+            if (!Contact::is_anonymous_email($email)) {
+                $cj->author_email = $email;
+            } else if ($viewer->review_tokens()
+                       && ($rrows = $this->prow->reviews_of_user(-1, $viewer->review_tokens()))) {
                 $cj->review_token = encode_token((int) $rrows[0]->reviewToken);
             }
         }
         if ((!$idable
              || ($this->commentType & (COMMENTTYPE_VISIBILITY | COMMENTTYPE_BLIND)) == (COMMENTTYPE_AUTHOR | COMMENTTYPE_BLIND))
-            && ($p = $this->unparse_commenter_pseudonym($user))) {
+            && ($p = $this->unparse_commenter_pseudonym($viewer))) {
             $cj->author_pseudonym = $p;
         }
         if ($this->timeModified > 0 && $idable_override) {
             $cj->modified_at = (int) $this->timeModified;
-            $cj->modified_at_text = $this->conf->unparse_time_long($cj->modified_at);
+            $cj->modified_at_text = $this->conf->unparse_time($cj->modified_at);
         } else if ($this->timeModified > 0) {
             $cj->modified_at = $this->conf->obscure_time($this->timeModified);
             $cj->modified_at_text = $this->conf->unparse_time_obscure($cj->modified_at);
@@ -357,7 +365,7 @@ class CommentInfo {
         }
 
         // text
-        if ($user->can_view_comment_text($this->prow, $this)) {
+        if ($viewer->can_view_comment_text($this->prow, $this)) {
             $cj->text = $this->commentOverflow ? : $this->comment;
         } else {
             $cj->text = false;
@@ -429,13 +437,15 @@ class CommentInfo {
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->prow->title, 80))
             . "</a>";
         $idable = $contact->can_view_comment_identity($this->prow, $this);
-        if ($idable || $contact->can_view_comment_time($this->prow, $this))
-            $time = $this->conf->parseableTime($this->timeModified, false);
-        else
+        if ($idable || $contact->can_view_comment_time($this->prow, $this)) {
+            $time = $this->conf->unparse_time($this->timeModified, false);
+        } else {
             $time = $this->conf->unparse_time_obscure($this->conf->obscure_time($this->timeModified));
+        }
         $t .= ' <span class="barsep">·</span> ' . $time;
-        if ($idable)
+        if ($idable) {
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $contact->reviewer_html_for($this->contactId);
+        }
         return $t . "</small><br />"
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->commentOverflow ? : $this->comment, 300))
             . "</td></tr>";

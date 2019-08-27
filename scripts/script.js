@@ -3659,30 +3659,35 @@ function add_review(rrow) {
     hc.pop();
 
     // author info
-    var revinfo = [], rtype_text = "";
+    var revname, revtime;
+    if (rrow.review_token) {
+        revname = 'Review token ' + rrow.review_token;
+    } else if (rrow.reviewer) {
+        revname = rrow.reviewer;
+        if (rrow.blind)
+            revname = '[' + revname + ']';
+        if (rrow.reviewer_email)
+            revname = '<span title="' + rrow.reviewer_email + '">' + revname + '</span>';
+    }
     if (rrow.rtype) {
-        rtype_text = ' &nbsp;<span class="rto rt' + rrow.rtype +
+        revname += (revname ? " " : "") + '<span class="rto rt' + rrow.rtype +
             (rrow.submitted || rrow.approved ? "" : " rtinc") +
             (rrow.subreview ? " rtsubrev" : "") +
             '" title="' + rtype_info[rrow.rtype][1] +
             '"><span class="rti">' + rtype_info[rrow.rtype][0] + '</span></span>';
         if (rrow.round)
-            rtype_text += '&nbsp;<span class="revround">' + escape_entities(rrow.round) + '</span>';
-    }
-    if (rrow.review_token) {
-        revinfo.push('Review token ' + rrow.review_token + rtype_text);
-    } else if (rrow.reviewer && rrow.blind) {
-        revinfo.push('[' + rrow.reviewer + ']' + rtype_text);
-    } else if (rrow.reviewer) {
-        revinfo.push(rrow.reviewer + rtype_text);
-    } else if (rtype_text) {
-        revinfo.push(rtype_text.substr(7));
+            revname += ' <span class="revround" title="Review round">' + escape_entities(rrow.round) + '</span>';
     }
     if (rrow.modified_at) {
-        revinfo.push('Updated ' + rrow.modified_at_text);
+        revtime = 'Updated ' + rrow.modified_at_text;
     }
-    if (revinfo.length) {
-        hc.push(' <span class="revinfo">' + revinfo.join(' <span class="barsep">·</span> ') + '</span>');
+    if (revname || revtime) {
+        hc.push('<div class="revthead">');
+        if (revname)
+            hc.push('<div class="revname">' + revname + '</div>');
+        if (revtime)
+            hc.push('<div class="revtime">' + revtime + '</div>');
+        hc.push('</div>');
     }
 
     if (rrow.message_html)
@@ -3757,27 +3762,33 @@ function cj_cid(cj) {
 
 function comment_identity_time(cj) {
     var t = [], res = [], x, i, tag;
-    if (cj.ordinal)
+    if (cj.ordinal) {
         t.push('<div class="cmtnumhead"><a class="qq" href="#' + cj_cid(cj)
                + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
                + cj.ordinal + '</span></a></div>');
+    }
     if (cj.author && cj.author_hidden) {
         t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
                + '<a class="ui q js-foldup" href="" data-fold-target="4" title="Toggle author"><span class="fn4">+&nbsp;<i>Hidden for blind review</i></span><span class="fx4">[blind]</span></a><span class="fx4">&nbsp;'
                + cj.author + '</span></div>');
     } else if (cj.author) {
         x = cj.author;
-        if (cj.blind && cj.visibility === "au")
+        if (cj.blind && cj.visibility === "au") {
             x = "[" + x + "]";
-        if (cj.author_pseudonym)
-            x = cj.author_pseudonym + '  ' + x;
-        t.push('<div class="cmtname">' + x + '</div>');
+        }
+        if (cj.author_pseudonym) {
+            x = cj.author_pseudonym + ' ' + x;
+        }
+        t.push('<div class="cmtname' +
+               (cj.author_email ? '" title="' + cj.author_email : "") +
+               '">' + x + '</div>');
     } else if (cj.author_pseudonym
                && (!cj.response || cj.author_pseudonym !== "Author")) {
         t.push('<div class="cmtname">' + cj.author_pseudonym + '</div>');
     }
-    if (cj.modified_at)
+    if (cj.modified_at) {
         t.push('<div class="cmttime">' + cj.modified_at_text + '</div>');
+    }
     if (!cj.response && cj.tags) {
         x = [];
         for (i in cj.tags) {
@@ -3786,8 +3797,9 @@ function comment_identity_time(cj) {
         }
         t.push('<div class="cmttags">' + x.join(" ") + '</div>');
     }
-    if (!cj.response && (i = vismap[cj.visibility]))
+    if (!cj.response && (i = vismap[cj.visibility])) {
         t.push('<div class="cmtvis">(' + i + ')</div>');
+    }
     return t.join("");
 }
 
