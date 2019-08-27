@@ -1658,7 +1658,7 @@ class IntrinsicPaperOption extends PaperOption {
                 $text = $ov->prow->abstract;
                 if (trim($text) !== "") {
                     $fr->value = $text;
-                    $fr->value_format = $ov->abstract_format();
+                    $fr->value_format = $ov->prow->abstract_format();
                 } else if (!$this->conf->opt("noAbstract")
                            && $fr->verbose()) {
                     $fr->set_text("[No abstract]");
