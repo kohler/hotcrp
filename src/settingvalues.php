@@ -1144,7 +1144,7 @@ class SettingValues extends MessageSet {
     function parse_value(Si $si) {
         global $Now;
 
-        if (!isset($sv->req[$si->name])) {
+        if (!isset($this->req[$si->name])) {
             $xname = str_replace(".", "_", $si->name);
             if (isset($this->req[$xname]))
                 $this->req[$si->name] = $this->req[$xname];
