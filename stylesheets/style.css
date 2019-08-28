@@ -2972,10 +2972,6 @@ ul.x > li:last-child {
 	display: inline-block;
 	padding-right: 1.5em;
 }
-.revname + .revtime:before {
-	content: "· ";
-	margin-left: -1em;
-}
 .rve {
 	margin-top: 16px;
 }
@@ -3275,10 +3271,6 @@ ul.x > li:last-child {
 .cmtname, .cmttime, .cmttags, .cmtvis {
 	display: inline-block;
 	padding-right: 1.5em;
-}
-.cmtname + .cmttime:before {
-	content: "· ";
-	margin-left: -1.25em;
 }
 .cmttime, .cmtvis {
 	color: #999999;
