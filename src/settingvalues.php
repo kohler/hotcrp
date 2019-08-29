@@ -1046,8 +1046,6 @@ class SettingValues extends MessageSet {
             && $this->oldv("sub_open") > 0
             && $this->newv("sub_sub") <= 0)
             $this->save("sub_close", $Now);
-        if ($this->has_savedv("msg.clickthrough_submit"))
-            $this->save("clickthrough_submit", null);
 
         // make settings
         $this->changes = [];
