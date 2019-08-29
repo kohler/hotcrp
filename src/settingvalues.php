@@ -680,7 +680,7 @@ class SettingValues extends MessageSet {
             && ($this->all_interesting
                 || !$si->group
                 || $si->is_interesting($this)))
-            return get($this->req, str_replace(".", "_", $si->name), $default_value);
+            return $this->reqv($si->name, $default_value);
         else
             return $this->si_oldv($si, $default_value);
     }
@@ -1144,17 +1144,15 @@ class SettingValues extends MessageSet {
     function parse_value(Si $si) {
         global $Now;
 
-        if (!isset($this->req[$si->name])) {
-            $xname = str_replace(".", "_", $si->name);
-            if (isset($this->req[$xname]))
-                $this->req[$si->name] = $this->req[$xname];
-            else if (in_array($si->type, ["cdate", "checkbox"]))
+        $v = $this->reqv($si->name);
+        if ($v === null) {
+            if (in_array($si->type, ["cdate", "checkbox"]))
                 return 0;
             else
                 return null;
         }
 
-        $v = trim($this->req[$si->name]);
+        $v = trim($v);
         if (($si->placeholder && $si->placeholder === $v)
             || ($si->invalid_value && $si->invalid_value === $v))
             $v = "";
