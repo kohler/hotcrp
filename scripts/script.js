@@ -2751,7 +2751,7 @@ function jump_hash(hash, focus) {
     // find destination element
     if (hash
         && (e = document.getElementById(hash))
-        && (p = e.closest(".papeg, .f-i, .settings-g"))) {
+        && (p = e.closest(".papeg, .f-i, .settings-g, .entryi, .checki"))) {
         var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
         if ((eg.width <= 0 && eg.height <= 0)
             || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {

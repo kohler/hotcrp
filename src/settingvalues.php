@@ -1044,7 +1044,7 @@ class SettingValues extends MessageSet {
                     $this->save($name0, $d1);
             } else if ($d0 > $d1) {
                 $si1 = $this->si($name1);
-                $this->error_at($this->si($name0), "Must come before " . $si1->title . ".");
+                $this->error_at($this->si($name0), "Must come before " . $this->setting_link($si1->title, $si1) . ".");
                 $this->error_at($si1);
                 return false;
             }
