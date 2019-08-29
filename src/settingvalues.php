@@ -84,7 +84,8 @@ class Si {
     }
 
     function __construct($j) {
-        assert(!preg_match('/_(?:\$|n|m?\d+)\z/', $j->name));
+        if (preg_match('{_(?:\$|n|m?\d+)\z}', $j->name))
+            trigger_error("setting {$j->name} name format error");
         $this->name = $this->base_name = $this->json_name = $this->title = $j->name;
         if (isset($j->json_name) && ($j->json_name === false || is_string($j->json_name)))
             $this->json_name = $j->json_name;
@@ -367,7 +368,7 @@ class SettingValues extends MessageSet {
     public $savedv = array();
     public $explicit_oldv = array();
     private $hint_status = array();
-    private $has_req = array();
+    private $req_has_suffixes = array();
     private $null_mailer;
 
     private $_gxt = null;
@@ -397,10 +398,10 @@ class SettingValues extends MessageSet {
     function set_req($k, $v) {
         $this->req[$k] = $v;
         if (preg_match('/\A(?:has_)?(\S+?)(|_n|_m?\d+)\z/', $k, $m)) {
-            if (!isset($this->has_req[$m[1]]))
-                $this->has_req[$m[1]] = [$m[2]];
-            else if (!in_array($m[2], $this->has_req[$m[1]]))
-                $this->has_req[$m[1]][] = $m[2];
+            if (!isset($this->req_has_suffixes[$m[1]]))
+                $this->req_has_suffixes[$m[1]] = [$m[2]];
+            else if (!in_array($m[2], $this->req_has_suffixes[$m[1]]))
+                $this->req_has_suffixes[$m[1]][] = $m[2];
         }
     }
     function session_highlight() {
@@ -563,22 +564,12 @@ class SettingValues extends MessageSet {
             error_log(caller_landmark(2) . ": setting $name: missing information");
         return $si;
     }
-    private function req_has($xname, $suffix) {
-        $x = get($this->req, "has_$xname$suffix");
-        return $x && $x !== "false";
-    }
     function req_si(Si $si) {
-        $xname = str_replace(".", "_", $si->name);
         $xsis = [];
-        foreach (get($this->has_req, $xname, []) as $suffix) {
+        $xname = str_replace(".", "_", $si->name);
+        foreach (get($this->req_has_suffixes, $xname, []) as $suffix) {
             $xsi = $this->si($si->name . $suffix);
-            if ($xsi->parser_class)
-                $has_value = $this->req_has($xname, $suffix);
-            else
-                $has_value = isset($this->req["$xname$suffix"])
-                    || ($this->req_has($xname, $suffix)
-                        && in_array($xsi->type, ["cdate", "checkbox"]));
-            if ($has_value)
+            if ($this->req_has_si($xsi))
                 $xsis[] = $xsi;
         }
         return $xsis;
@@ -593,6 +584,15 @@ class SettingValues extends MessageSet {
     function reqv($name, $default_value = null) {
         $name = str_replace(".", "_", $name);
         return get($this->req, $name, $default_value);
+    }
+    function req_has_si(Si $si) {
+        $xname = str_replace(".", "_", $si->name);
+        if (!$si->parser_class && $si->type !== "cdate" && $si->type !== "checkbox") {
+            return isset($this->req[$xname]);
+        } else {
+            $has = get($this->req, "has_{$xname}");
+            return $has && $has !== false;
+        }
     }
     function has_savedv($name) {
         $si = $this->si($name);
