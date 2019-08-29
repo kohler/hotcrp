@@ -278,8 +278,9 @@ class Round_SettingParser extends SettingParser {
             $sv->save("rev_roundtag", null);
             $sv->save("extrev_roundtag", null);
             return false;
-        } else if ($si->name !== "rev_roundtag")
+        } else if ($si->name !== "rev_roundtag") {
             return false;
+        }
 
         // count number of requested rounds
         $nreqround = 1;
@@ -335,7 +336,7 @@ class Round_SettingParser extends SettingParser {
             foreach (Conf::$review_deadlines as $k)
                 $sv->save($k . $suf, null);
         }
-        foreach ($roundnames as $i => $name)
+        foreach ($roundnames as $i => $name) {
             if ($name !== ";") {
                 $j = get($this->rev_round_changes, $i, $i);
                 $isuf = $i ? "_$i" : "";
@@ -346,20 +347,22 @@ class Round_SettingParser extends SettingParser {
                     $sv->save($k . $osuf, $v <= 0 ? null : $v);
                     $ndeadlines += $v > 0;
                 }
-                if ($ndeadlines == 0 && $j)
+                if ($ndeadlines == 0 && $j) {
                     $sv->save("pcrev_soft" . $osuf, 0);
+                }
                 foreach (["pcrev_", "extrev_"] as $k) {
                     list($softk, $hardk) = ["{$k}soft$osuf", "{$k}hard$osuf"];
                     list($softv, $hardv) = [$sv->savedv($softk), $sv->savedv($hardk)];
-                    if (!$softv && $hardv)
+                    if (!$softv && $hardv) {
                         $sv->save($softk, $hardv);
-                    else if ($hardv && $softv > $hardv) {
+                    } else if ($hardv && $softv > $hardv) {
                         $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
                         $sv->error_at($softk, $sv->si($softk)->title . $desc . ": Must come before " . $sv->si($hardk)->title . ".");
                         $sv->error_at($hardk);
                     }
                 }
             }
+        }
 
         // round list
         $oroundnames = [];
@@ -382,8 +385,9 @@ class Round_SettingParser extends SettingParser {
         $sv->save("rev_roundtag", null);
         if (preg_match('/\A\#(\d+)\z/', trim($sv->reqv("rev_roundtag")), $m)
             && ($rname = get($roundnames, intval($m[1])))
-            && $rname !== ";")
+            && $rname !== ";") {
             $sv->save("rev_roundtag", $rname);
+        }
         if ($sv->has_reqv("extrev_roundtag")) {
             $sv->save("extrev_roundtag", null);
             if (preg_match('/\A\#(\d+)\z/', trim($sv->reqv("extrev_roundtag")), $m)
@@ -399,7 +403,7 @@ class Round_SettingParser extends SettingParser {
             return false;
     }
 
-    public function save(SettingValues $sv, Si $si) {
+    function save(SettingValues $sv, Si $si) {
         if ($this->rev_round_changes) {
             $qx = "case";
             foreach ($this->rev_round_changes as $old => $new)

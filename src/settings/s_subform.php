@@ -14,7 +14,7 @@ class BanalSettings {
         }
 
         $open = $sv->curv("sub_banal$suffix") > 0;
-        $uropen = $open && !in_array($sv->curv("sub_banal_pagelimit$suffix"), ["", "N/A"]);
+        $uropen = !in_array($sv->curv("sub_banal_pagelimit$suffix"), ["", "N/A"]);
         $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "settings-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
         echo Ht::hidden("has_sub_banal$suffix", 1),
             '<div class="settings-2col fx">';

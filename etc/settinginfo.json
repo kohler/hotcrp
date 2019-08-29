@@ -363,49 +363,49 @@
     {
         "name": "sub_banal_opt", "group": "subform",
         "internal": true, "type": "string",
-        "storage": "opt.sub_banal", "novalue": true, "extensible": true
+        "storage": "opt.sub_banal", "extensible": true
     },
     {
         "name": "sub_banal_bodyfontsize", "group": "subform",
         "title": "PDF format checker minimum body font size",
-        "type": "string", "size": 5, "placeholder": "N/A", "novalue": true,
-        "extensible": true
+        "type": "string", "size": 5, "placeholder": "N/A",
+        "storage": false, "extensible": true
     },
     {
         "name": "sub_banal_bodylineheight", "group": "subform",
         "title": "PDF format checker minimum body line height",
-        "type": "string", "size": 5, "placeholder": "N/A", "novalue": true,
-        "extensible": true
+        "type": "string", "size": 5, "placeholder": "N/A",
+        "storage": false, "extensible": true
     },
     {
         "name": "sub_banal_columns", "group": "subform",
         "title": "PDF format checker column count",
-        "type": "string", "size": 5, "placeholder": "N/A", "novalue": true,
-        "extensible": true
+        "type": "string", "size": 5, "placeholder": "N/A",
+        "storage": false, "extensible": true
     },
     {
         "name": "sub_banal_pagelimit", "group": "subform",
         "title": "PDF format checker page limit",
-        "type": "string", "size": 5, "placeholder": "N/A", "novalue": true,
-        "extensible": true
+        "type": "string", "size": 5, "placeholder": "N/A",
+        "storage": false, "extensible": true
     },
     {
         "name": "sub_banal_papersize", "group": "subform",
         "title": "PDF format checker paper size",
-        "type": "string", "size": 18, "placeholder": "N/A", "novalue": true,
-        "extensible": true
+        "type": "string", "size": 18, "placeholder": "N/A",
+        "storage": false, "extensible": true
     },
     {
         "name": "sub_banal_textblock", "group": "subform",
         "title": "PDF format checker text block size",
-        "type": "string", "size": 18, "placeholder": "N/A", "novalue": true,
-        "extensible": true
+        "type": "string", "size": 18, "placeholder": "N/A",
+        "storage": false, "extensible": true
     },
     {
         "name": "sub_banal_unlimitedref", "group": "subform",
         "title": "PDF format checker unlimited references",
-        "type": "checkbox", "novalue": true,
-        "extensible": true
+        "type": "checkbox",
+        "storage": false, "extensible": true
     },
     {
         "name": "sub_blind", "group": "submissions",
