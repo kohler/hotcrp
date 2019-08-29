@@ -7,8 +7,8 @@ class Options_SettingRenderer {
     private $have_options = null;
     static private function find_option_req(SettingValues $sv, PaperOption $o, $xpos) {
         if ($o->id) {
-            for ($i = 1; isset($sv->req["optid_$i"]); ++$i)
-                if ($sv->req["optid_$i"] == $o->id)
+            for ($i = 1; $sv->has_reqv("optid_$i"); ++$i)
+                if ($sv->reqv("optid_$i") == $o->id)
                     return $i;
         }
         return $xpos;
@@ -118,25 +118,25 @@ class Options_SettingRenderer {
 
         if ($sv->use_req()) {
             $oxpos = self::find_option_req($sv, $o, $xpos);
-            if (isset($sv->req["optn_$oxpos"])) {
-                $id = cvtint($sv->req["optid_$oxpos"]);
+            if ($sv->has_reqv("optn_$oxpos")) {
+                $id = cvtint($sv->reqv("optid_$oxpos"));
                 $args = [
                     "id" => $id <= 0 ? 0 : $id,
-                    "name" => $sv->req["optn_$oxpos"],
-                    "description" => get($sv->req, "optd_$oxpos"),
-                    "type" => get($sv->req, "optvt_$oxpos", "checkbox"),
-                    "visibility" => get($sv->req, "optp_$oxpos", ""),
-                    "position" => get($sv->req, "optfp_$oxpos", 1),
-                    "display" => get($sv->req, "optdt_$oxpos"),
-                    "required" => get($sv->req, "optreq_$oxpos")
+                    "name" => $sv->reqv("optn_$oxpos"),
+                    "description" => $sv->reqv("optd_$oxpos"),
+                    "type" => $sv->reqv("optvt_$oxpos", "checkbox"),
+                    "visibility" => $sv->reqv("optp_$oxpos", ""),
+                    "position" => $sv->reqv("optfp_$oxpos", 1),
+                    "display" => $sv->reqv("optdt_$oxpos"),
+                    "required" => $sv->reqv("optreq_$oxpos")
                 ];
-                if (get($sv->req, "optec_$oxpos") === "final")
+                if ($sv->reqv("optec_$oxpos") === "final")
                     $args["final"] = true;
-                else if (get($sv->req, "optec_$oxpos") === "search")
-                    $args["exists_if"] = get($sv->req, "optecs_$oxpos");
+                else if ($sv->reqv("optec_$oxpos") === "search")
+                    $args["exists_if"] = $sv->reqv("optecs_$oxpos");
                 $o = PaperOption::make($args, $sv->conf);
                 if ($o->has_selector())
-                    $o->set_selector_options(explode("\n", rtrim(get($sv->req, "optv_$oxpos", ""))));
+                    $o->set_selector_options(explode("\n", rtrim($sv->reqv("optv_$oxpos", ""))));
             }
         }
 
@@ -230,13 +230,13 @@ class Options_SettingParser extends SettingParser {
     private $fake_prow;
 
     function option_request_to_json(SettingValues $sv, $xpos) {
-        $name = simplify_whitespace(get($sv->req, "optn_$xpos", ""));
+        $name = simplify_whitespace($sv->reqv("optn_$xpos", ""));
         if ($name === "" || $name === "(Enter new option)" || $name === "Field name")
             return null;
         if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name))
             $sv->error_at("optn_$xpos", "Option name “" . htmlspecialchars($name) . "” is reserved. Please pick another name.");
 
-        $id = cvtint(get($sv->req, "optid_$xpos", "new"));
+        $id = cvtint($sv->reqv("optid_$xpos", "new"));
         $is_new = $id < 0;
         if ($is_new) {
             if (!$this->next_optionid) {
@@ -249,15 +249,15 @@ class Options_SettingParser extends SettingParser {
         }
         $oarg = ["name" => $name, "id" => $id, "final" => false];
 
-        if (get($sv->req, "optd_$xpos") && trim($sv->req["optd_$xpos"]) != "") {
-            $t = CleanHTML::basic_clean($sv->req["optd_$xpos"], $err);
+        if ($sv->reqv("optd_$xpos") && trim($sv->reqv("optd_$xpos")) != "") {
+            $t = CleanHTML::basic_clean($sv->reqv("optd_$xpos"), $err);
             if ($t !== false)
                 $oarg["description"] = $t;
             else
                 $sv->error_at("optd_$xpos", $err);
         }
 
-        if (($optvt = get($sv->req, "optvt_$xpos"))) {
+        if (($optvt = $sv->reqv("optvt_$xpos"))) {
             if (($pos = strpos($optvt, ":")) !== false) {
                 $oarg["type"] = substr($optvt, 0, $pos);
                 if (preg_match('/:ds_(\d+)/', $optvt, $m))
@@ -267,11 +267,11 @@ class Options_SettingParser extends SettingParser {
         } else
             $oarg["type"] = "checkbox";
 
-        if (($optec = get($sv->req, "optec_$xpos"))) {
+        if (($optec = $sv->reqv("optec_$xpos"))) {
             if ($optec === "final")
                 $oarg["final"] = true;
             else if ($optec === "search") {
-                $optecs = (string) get($sv->req, "optecs_$xpos");
+                $optecs = (string) $sv->reqv("optecs_$xpos");
                 if ($optecs !== "" && $optecs !== "(All)") {
                     $ps = new PaperSearch($sv->conf->site_contact(), $optecs);
                     if (!$this->fake_prow)
@@ -289,7 +289,7 @@ class Options_SettingParser extends SettingParser {
         $jtype = $sv->conf->option_type($oarg["type"]);
         if ($jtype && get($jtype, "has_selector")) {
             $oarg["selector"] = array();
-            $seltext = trim(cleannl(get($sv->req, "optv_$xpos", "")));
+            $seltext = trim(cleannl($sv->reqv("optv_$xpos", "")));
             if ($seltext != "") {
                 foreach (explode("\n", $seltext) as $t)
                     $oarg["selector"][] = $t;
@@ -297,10 +297,10 @@ class Options_SettingParser extends SettingParser {
                 $sv->error_at("optv_$xpos", "Enter selectors one per line.");
         }
 
-        $oarg["visibility"] = get($sv->req, "optp_$xpos", "rev");
-        $oarg["position"] = (int) get($sv->req, "optfp_$xpos", 1);
-        $oarg["display"] = get($sv->req, "optdt_$xpos");
-        $oarg["required"] = !!get($sv->req, "optreq_$xpos");
+        $oarg["visibility"] = $sv->reqv("optp_$xpos", "rev");
+        $oarg["position"] = (int) $sv->reqv("optfp_$xpos", 1);
+        $oarg["display"] = $sv->reqv("optdt_$xpos");
+        $oarg["required"] = !!$sv->reqv("optreq_$xpos");
 
         $o = PaperOption::make($oarg, $sv->conf);
         $o->req_xpos = $xpos;
@@ -313,15 +313,15 @@ class Options_SettingParser extends SettingParser {
 
         // consider option ids
         $optids = array_map(function ($o) { return $o->id; }, $new_opts);
-        for ($i = 1; isset($sv->req["optid_$i"]); ++$i)
-            $optids[] = intval($sv->req["optid_$i"]);
+        for ($i = 1; $sv->has_reqv("optid_$i"); ++$i)
+            $optids[] = intval($sv->reqv("optid_$i"));
         $optids[] = 0;
         $this->req_optionid = max($optids) + 1;
 
         // convert request to JSON
-        for ($i = 1; isset($sv->req["optid_$i"]); ++$i) {
-            if (get($sv->req, "optfp_$i") === "deleted")
-                unset($new_opts[cvtint(get($sv->req, "optid_$i"))]);
+        for ($i = 1; $sv->has_reqv("optid_$i"); ++$i) {
+            if ($sv->reqv("optfp_$i") === "deleted")
+                unset($new_opts[cvtint($sv->reqv("optid_$i"))]);
             else if (($o = $this->option_request_to_json($sv, $i)))
                 $new_opts[$o->id] = $o;
         }

@@ -31,8 +31,8 @@ class Topics_SettingRenderer {
                 echo '<th class="padls">Low</th><th class="padls">High</th>';
             echo '</tr></thead><tbody>';
             foreach ($sv->conf->topic_set() as $tid => $tname) {
-                if ($sv->use_req() && isset($sv->req["top$tid"]))
-                    $tname = $sv->req["top$tid"];
+                if ($sv->use_req() && $sv->has_reqv("top$tid"))
+                    $tname = $sv->reqv("top$tid");
                 echo '<tr><td class="lentry">',
                     Ht::entry("top$tid", $tname, ["size" => 80, "class" => "need-autogrow wide" . ($sv->has_problem_at("top$tid") ? " has-error" : ""), "aria-label" => "Topic name"]),
                     '</td>';
@@ -48,7 +48,7 @@ class Topics_SettingRenderer {
         }
 
         echo '<div class="mg"><label for="topnew"><strong>New topics</strong></label> (enter one per line)<br>',
-            Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("topnew") ? "has-error " : "") . "need-autogrow", "id" => "topnew")), "</div>";
+            Ht::textarea("topnew", $sv->use_req() ? $sv->reqv("topnew") : "", array("cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("topnew") ? "has-error " : "") . "need-autogrow", "id" => "topnew")), "</div>";
     }
 }
 
@@ -66,27 +66,27 @@ class Topics_SettingParser extends SettingParser {
     }
 
     function parse(SettingValues $sv, Si $si) {
-        if (isset($sv->req["topnew"]))
-            foreach (explode("\n", $sv->req["topnew"]) as $x) {
+        if ($sv->has_reqv("topnew")) {
+            foreach (explode("\n", $sv->reqv("topnew")) as $x) {
                 $t = $this->check_topic($x);
                 if ($t === false)
                     $sv->error_at("topnew", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
                 else if ($t !== "")
                     $this->new_topics[] = [$t]; // NB array of arrays
             }
+        }
         $tmap = $sv->conf->topic_set();
-        foreach ($sv->req as $k => $x)
-            if (strlen($k) > 3 && substr($k, 0, 3) === "top"
-                && ctype_digit(substr($k, 3))) {
-                $tid = (int) substr($k, 3);
+        foreach ($tmap as $tid => $tname) {
+            if (($x = $sv->reqv("top$tid")) !== null) {
                 $t = $this->check_topic($x);
                 if ($t === false)
                     $sv->error_at($k, "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
                 else if ($t === "")
                     $this->deleted_topics[] = $tid;
-                else if (isset($tmap[$tid]) && $tmap[$tid] !== $t)
+                else if ($tname !== $t)
                     $this->changed_topics[$tid] = $t;
             }
+        }
         if (!$sv->has_error()) {
             foreach (["TopicArea", "PaperTopic", "TopicInterest"] as $t)
                 $sv->need_lock[$t] = true;

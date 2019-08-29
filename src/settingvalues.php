@@ -404,6 +404,9 @@ class SettingValues extends MessageSet {
                 $this->req_has_suffixes[$m[1]][] = $m[2];
         }
     }
+    function unset_req($k) {
+        unset($this->req[$k]);
+    }
     function session_highlight() {
         foreach ($this->user->session("settings_highlight", []) as $f => $v)
             $this->msg($f, null, $v);
@@ -584,6 +587,10 @@ class SettingValues extends MessageSet {
     function reqv($name, $default_value = null) {
         $name = str_replace(".", "_", $name);
         return get($this->req, $name, $default_value);
+    }
+    function has_reqv($name) {
+        $name = str_replace(".", "_", $name);
+        return isset($this->req[$name]);
     }
     function req_has_si(Si $si) {
         $xname = str_replace(".", "_", $si->name);

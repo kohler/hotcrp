@@ -43,10 +43,11 @@ class Responses_SettingParser extends SettingParser {
         // Response rounds
         if ($sv->use_req()) {
             $rrounds = array(1);
-            for ($i = 1; isset($sv->req["resp_roundname_$i"]); ++$i)
-                $rrounds[$i] = $sv->req["resp_roundname_$i"];
-        } else
+            for ($i = 1; $sv->has_reqv("resp_roundname_$i"); ++$i)
+                $rrounds[$i] = $sv->reqv("resp_roundname_$i");
+        } else {
             $rrounds = self::resp_round_names($sv->conf);
+        }
         $rrounds["n"] = "";
         foreach ($rrounds as $i => $rname) {
             $isuf = $i ? "_$i" : "";
@@ -81,8 +82,8 @@ class Responses_SettingParser extends SettingParser {
         $roundnames = array(1);
         $roundnames_set = array();
 
-        if (isset($sv->req["resp_roundname"])) {
-            $rname = trim(get_s($sv->req, "resp_roundname"));
+        if ($sv->has_reqv("resp_roundname")) {
+            $rname = trim($sv->reqv("resp_roundname"));
             if ($rname === "" || $rname === "none" || $rname === "1")
                 /* do nothing */;
             else if (($rerror = Conf::resp_round_name_error($rname)))
@@ -93,8 +94,8 @@ class Responses_SettingParser extends SettingParser {
             }
         }
 
-        for ($i = 1; isset($sv->req["resp_roundname_$i"]); ++$i) {
-            $rname = trim(get_s($sv->req, "resp_roundname_$i"));
+        for ($i = 1; $sv->has_reqv("resp_roundname_$i"); ++$i) {
+            $rname = trim($sv->reqv("resp_roundname_$i"));
             if ($rname === "" && get($old_roundnames, $i))
                 $rname = $old_roundnames[$i];
             if ($rname === "")

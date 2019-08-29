@@ -6,7 +6,7 @@ class Reviews_SettingRenderer {
     private static function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
         $rname = "roundname_$rnum";
         if ($sv->use_req() && $rnum !== '$')
-            $nameval = (string) get($sv->req, $rname);
+            $nameval = (string) $sv->reqv($rname);
         $rname_si = $sv->si($rname);
         if ($nameval === "(new round)" || $rnum === '$')
             $rname_si->placeholder = "(new round)";
@@ -69,8 +69,8 @@ class Reviews_SettingRenderer {
 
         $rounds = $sv->conf->round_list();
         if ($sv->use_req()) {
-            for ($i = 1; isset($sv->req["roundname_$i"]); ++$i)
-                $rounds[$i] = get($sv->req, "deleteround_$i") ? ";" : trim(get_s($sv->req, "roundname_$i"));
+            for ($i = 1; $sv->has_reqv("roundname_$i"); ++$i)
+                $rounds[$i] = $sv->reqv("deleteround_$i") ? ";" : trim($sv->reqv("roundname_$i"));
         }
 
         // prepare round selector
@@ -92,7 +92,7 @@ class Reviews_SettingRenderer {
         $print_round0 = true;
         if ($round_value != "#0"
             && $extround_value != "#0"
-            && (!$sv->use_req() || isset($sv->req["roundname_0"]))
+            && (!$sv->use_req() || $sv->has_reqv("roundname_0"))
             && !$sv->conf->round0_defined())
             $print_round0 = false;
 
@@ -274,7 +274,7 @@ class Round_SettingParser extends SettingParser {
     private $rev_round_changes = array();
 
     function parse(SettingValues $sv, Si $si) {
-        if (!isset($sv->req["rev_roundtag"])) {
+        if (!$sv->has_reqv("rev_roundtag")) {
             $sv->save("rev_roundtag", null);
             $sv->save("extrev_roundtag", null);
             return false;
@@ -283,16 +283,18 @@ class Round_SettingParser extends SettingParser {
 
         // count number of requested rounds
         $nreqround = 1;
-        while (isset($sv->req["roundname_$nreqround"]) || isset($sv->req["deleteround_$nreqround"]))
+        while ($sv->has_reqv("roundname_$nreqround")
+               || $sv->has_reqv("deleteround_$nreqround")) {
             ++$nreqround;
+        }
 
         // fix round names
         $lastroundlname = "";
         $roundnames = $roundlnames = [];
         for ($i = 0; $i < $nreqround; ++$i) {
             $roundnames[$i] = ";";
-            $name = get($sv->req, "roundname_$i");
-            if ($name !== null && !get($sv->req, "deleteround_$i")) {
+            $name = $sv->reqv("roundname_$i");
+            if ($name !== null && !$sv->reqv("deleteround_$i")) {
                 $name = trim($name);
                 if (preg_match('/\A(?:\(no name\)|default|unnamed|n\/a)\z/i', $name))
                     $name = "";
@@ -364,7 +366,7 @@ class Round_SettingParser extends SettingParser {
         foreach ($roundnames as $i => $name)
             $oroundnames[] = ";";
         foreach ($roundnames as $i => $name)
-            if (!get($sv->req, "deleteround_$i")) {
+            if (!$sv->reqv("deleteround_$i")) {
                 $j = get($this->rev_round_changes, $i, $i);
                 $oroundnames[$j] = $roundnames[$i];
             }
@@ -378,13 +380,13 @@ class Round_SettingParser extends SettingParser {
 
         // default rounds
         $sv->save("rev_roundtag", null);
-        if (preg_match('/\A\#(\d+)\z/', trim($sv->req["rev_roundtag"]), $m)
+        if (preg_match('/\A\#(\d+)\z/', trim($sv->reqv("rev_roundtag")), $m)
             && ($rname = get($roundnames, intval($m[1])))
             && $rname !== ";")
             $sv->save("rev_roundtag", $rname);
-        if (isset($sv->req["extrev_roundtag"])) {
+        if ($sv->has_reqv("extrev_roundtag")) {
             $sv->save("extrev_roundtag", null);
-            if (preg_match('/\A\#(\d+)\z/', trim($sv->req["extrev_roundtag"]), $m)
+            if (preg_match('/\A\#(\d+)\z/', trim($sv->reqv("extrev_roundtag")), $m)
                 && ($rname = get($roundnames, intval($m[1]))) !== ";")
                 $sv->save("extrev_roundtag", $rname ? : "unnamed");
         }

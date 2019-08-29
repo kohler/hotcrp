@@ -6,7 +6,7 @@ class Decisions_SettingParser extends SettingParser {
     static private function render_row(SettingValues $sv, $ndec, $k, $v, $isnew, $count) {
         $vx = $v;
         if ($ndec && $sv->use_req())
-            $vx = get($sv->req, "dec_name_$ndec", $v);
+            $vx = $sv->reqv("dec_name_$ndec", $v);
         echo '<tr><td class="lentry nw">',
             Ht::entry("dec_name_$ndec", $vx, ["size" => 35, "placeholder" => "Decision name", "data-default-value" => $v]),
             '</td><td class="lentry nw">',
@@ -49,8 +49,8 @@ class Decisions_SettingParser extends SettingParser {
             }
         }
         if ($sv->use_req()) {
-            for (++$ndec; isset($sv->req["dec_name_$ndec"]); ++$ndec) {
-                self::render_row($sv, $ndec, $sv->req["dec_class_$ndec"], "", true, 0);
+            for (++$ndec; $sv->has_reqv("dec_name_$ndec"); ++$ndec) {
+                self::render_row($sv, $ndec, $sv->reqv("dec_class_$ndec"), "", true, 0);
             }
         }
         echo '</tbody><tbody id="settings-decision-type-notes" class="hidden">',
@@ -64,8 +64,8 @@ class Decisions_SettingParser extends SettingParser {
 
     function parse(SettingValues $sv, Si $si) {
         $dec_revmap = array();
-        for ($ndec = 1; isset($sv->req["dec_name_$ndec"]); ++$ndec) {
-            $dname = simplify_whitespace($sv->req["dec_name_$ndec"]);
+        for ($ndec = 1; $sv->has_reqv("dec_name_$ndec"); ++$ndec) {
+            $dname = simplify_whitespace($sv->reqv("dec_name_$ndec"));
             if ($dname === "")
                 /* remove decision */;
             else if (($derror = Conf::decision_name_error($dname)))
@@ -74,13 +74,13 @@ class Decisions_SettingParser extends SettingParser {
                 $sv->error_at("dec_name_$ndec", "Decision name “{$dname}” was already used.");
             else
                 $dec_revmap[strtolower($dname)] = true;
-            if (isset($sv->req["dec_class_$ndec"])
-                && !isset($sv->req["dec_classconfirm_$ndec"])) {
+            if ($sv->has_reqv("dec_class_$ndec")
+                && !$sv->has_reqv("dec_classconfirm_$ndec")) {
                 $match_accept = (stripos($dname, "accept") !== false);
                 $match_reject = (stripos($dname, "reject") !== false);
-                if ($sv->req["dec_class_$ndec"] > 0 && $match_reject)
+                if ($sv->reqv("dec_class_$ndec") > 0 && $match_reject)
                     $sv->error_at("dec_class_$ndec", "You are trying to add an Accept-class decision that has “reject” in its name, which is usually a mistake. To add the decision anyway, check the “Confirm” box and try again.");
-                else if ($sv->req["dec_class_$ndec"] < 0 && $match_accept)
+                else if ($sv->reqv("dec_class_$ndec") < 0 && $match_accept)
                     $sv->error_at("dec_class_$ndec", "You are trying to add a Reject-class decision that has “accept” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.");
             }
         }
@@ -92,10 +92,10 @@ class Decisions_SettingParser extends SettingParser {
         // mark all used decisions
         $decs = $original_decs = $sv->conf->decision_map();
         $update = false;
-        for ($ndec = 1; isset($sv->req["dec_name_$ndec"]); ++$ndec) {
-            $dname = simplify_whitespace($sv->req["dec_name_$ndec"]);
-            if (isset($sv->req["dec_val_$ndec"])
-                && ($dval = intval($sv->req["dec_val_$ndec"]))
+        for ($ndec = 1; $sv->has_reqv("dec_name_$ndec"); ++$ndec) {
+            $dname = simplify_whitespace($sv->reqv("dec_name_$ndec"));
+            if ($sv->has_reqv("dec_val_$ndec")
+                && ($dval = intval($sv->reqv("dec_val_$ndec")))
                 && isset($decs[$dval])) {
                 if ($dname === "") {
                     $sv->conf->qe("update Paper set outcome=0 where outcome=?", $dval);
@@ -103,8 +103,8 @@ class Decisions_SettingParser extends SettingParser {
                 } else if ($dname !== $decs[$dval]) {
                     $decs[$dval] = $dname;
                 }
-            } else if (isset($sv->req["dec_class_$ndec"]) && $dname !== "") {
-                $delta = $sv->req["dec_class_$ndec"] > 0 ? 1 : -1;
+            } else if ($sv->has_reqv("dec_class_$ndec") && $dname !== "") {
+                $delta = $sv->reqv("dec_class_$ndec") > 0 ? 1 : -1;
                 for ($dval = $delta; isset($decs[$dval]); $dval += $delta) {
                 }
                 $decs[$dval] = $dname;

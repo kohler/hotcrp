@@ -66,7 +66,7 @@ class BanalSettings {
     }
     static function parse($suffix, $sv, $check) {
         global $Now;
-        if (!isset($sv->req["sub_banal$suffix"])) {
+        if (!$sv->has_reqv("sub_banal$suffix")) {
             $fs = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
             $sv->save("sub_banal$suffix", $fs->is_banal_empty() ? 0 : -1);
             return false;
@@ -77,8 +77,9 @@ class BanalSettings {
         $cfs = new FormatSpec($sv->oldv("sub_banal_data$suffix"));
         $old_unparse = $cfs->unparse_banal();
         $cfs->papersize = [];
-        if (($s = trim(get($sv->req, "sub_banal_papersize$suffix", ""))) !== ""
-            && strcasecmp($s, "any") !== 0 && strcasecmp($s, "N/A") !== 0) {
+        if (($s = trim($sv->reqv("sub_banal_papersize$suffix", ""))) !== ""
+            && strcasecmp($s, "any") !== 0
+            && strcasecmp($s, "N/A") !== 0) {
             $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
             foreach ($ses as $ss)
                 if ($ss !== "" && ($d = FormatSpec::parse_dimen($ss, 2)))
@@ -92,7 +93,7 @@ class BanalSettings {
         }
 
         $cfs->pagelimit = null;
-        if (($s = trim(get($sv->req, "sub_banal_pagelimit$suffix", ""))) !== ""
+        if (($s = trim($sv->reqv("sub_banal_pagelimit$suffix", ""))) !== ""
             && strcasecmp($s, "N/A") !== 0) {
             if (($sx = cvtint($s, -1)) > 0)
                 $cfs->pagelimit = [0, $sx];
@@ -107,12 +108,13 @@ class BanalSettings {
 
         $cfs->unlimitedref = null;
         if ($cfs->pagelimit
-            && trim(get($sv->req, "sub_banal_unlimitedref$suffix", "")) !== "")
+            && trim($sv->reqv("sub_banal_unlimitedref$suffix", "")) !== "")
             $cfs->unlimitedref = true;
 
         $cfs->columns = 0;
-        if (($s = trim(get($sv->req, "sub_banal_columns$suffix", ""))) !== ""
-            && strcasecmp($s, "any") !== 0 && strcasecmp($s, "N/A") !== 0) {
+        if (($s = trim($sv->reqv("sub_banal_columns$suffix", ""))) !== ""
+            && strcasecmp($s, "any") !== 0
+            && strcasecmp($s, "N/A") !== 0) {
             if (($sx = cvtint($s, -1)) >= 0)
                 $cfs->columns = $sx;
             else {
@@ -122,8 +124,9 @@ class BanalSettings {
         }
 
         $cfs->textblock = null;
-        if (($s = trim(get($sv->req, "sub_banal_textblock$suffix", ""))) !== ""
-            && strcasecmp($s, "any") !== 0 && strcasecmp($s, "N/A") !== 0) {
+        if (($s = trim($sv->reqv("sub_banal_textblock$suffix", ""))) !== ""
+            && strcasecmp($s, "any") !== 0
+            && strcasecmp($s, "N/A") !== 0) {
             // change margin specifications into text block measurements
             if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
                 $s = $m[1];
@@ -163,8 +166,9 @@ class BanalSettings {
         }
 
         $cfs->bodyfontsize = null;
-        if (($s = trim(get($sv->req, "sub_banal_bodyfontsize$suffix", ""))) !== ""
-            && strcasecmp($s, "any") !== 0 && strcasecmp($s, "N/A") !== 0) {
+        if (($s = trim($sv->reqv("sub_banal_bodyfontsize$suffix", ""))) !== ""
+            && strcasecmp($s, "any") !== 0
+            && strcasecmp($s, "N/A") !== 0) {
             $cfs->bodyfontsize = FormatSpec::parse_range($s);
             if (!$cfs->bodyfontsize) {
                 $sv->error_at("sub_banal_bodyfontsize$suffix", "Minimum body font size must be a number bigger than 0.");
@@ -173,8 +177,9 @@ class BanalSettings {
         }
 
         $cfs->bodylineheight = null;
-        if (($s = trim(get($sv->req, "sub_banal_bodylineheight$suffix", ""))) !== ""
-            && strcasecmp($s, "any") !== 0 && strcasecmp($s, "N/A") !== 0) {
+        if (($s = trim($sv->reqv("sub_banal_bodylineheight$suffix", ""))) !== ""
+            && strcasecmp($s, "any") !== 0
+            && strcasecmp($s, "N/A") !== 0) {
             $cfs->bodylineheight = FormatSpec::parse_range($s);
             if (!$cfs->bodylineheight) {
                 $sv->error_at("sub_banal_bodylineheight$suffix", "Minimum body line height must be a number bigger than 0.");
@@ -201,7 +206,7 @@ class BanalSettings {
 
         if ($suffix === ""
             && !$sv->oldv("sub_banal_m1")
-            && !isset($sv->req["has_sub_banal_m1"])) {
+            && !$sv->has_reqv("has_sub_banal_m1")) {
             $m1spec = new FormatSpec($sv->oldv("sub_banal_opt_m1"));
             if ($m1spec->is_banal_empty()) {
                 $sv->save("sub_banal_data_m1", $unparse);
