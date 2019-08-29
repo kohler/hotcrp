@@ -2,6 +2,13 @@
 // base.php -- HotCRP base helper functions
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
+// type helpers
+
+function is_number($x) {
+    return is_int($x) || is_float($x);
+}
+
+
 // string helpers
 
 function str_starts_with($haystack, $needle) {

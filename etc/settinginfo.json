@@ -53,19 +53,22 @@
     {
         "name": "extrev_hard", "group": "reviews",
         "title": "External reviewer hard review deadline",
-        "type": "ndate", "placeholder": "same as PC", "novalue": true,
-        "extensible": true
+        "type": "ndate", "placeholder": "same as PC",
+        "extensible": true, "parser_class": "ReviewDeadline_SettingParser",
+        "require": "src/settings/s_reviews.php", "position": 1.1
     },
     {
         "name": "extrev_roundtag", "group": "reviews",
         "title": "External assignment review round",
-        "type": "tag", "parser_class": "Round_SettingParser"
+        "type": "tag", "parser_class": "RoundSelector_SettingParser",
+        "require": "src/settings/s_reviews.php", "position": 1
     },
     {
         "name": "extrev_soft", "group": "reviews",
         "title": "External reviewer soft review deadline",
-        "type": "date", "placeholder": "same as PC", "novalue": true,
-        "extensible": true
+        "type": "date", "placeholder": "same as PC",
+        "extensible": true, "parser_class": "ReviewDeadline_SettingParser",
+        "require": "src/settings/s_reviews.php", "position": 1
     },
     {
         "name": "extrev_view", "group": "reviews",
@@ -246,14 +249,16 @@
     {
         "name": "pcrev_hard", "group": "reviews",
         "title": "PC review hard deadline",
-        "type": "ndate", "placeholder": "none", "novalue": true,
-        "extensible": true
+        "type": "ndate", "placeholder": "none",
+        "extensible": true, "parser_class": "ReviewDeadline_SettingParser",
+        "require": "src/settings/s_reviews.php", "position": 1.1
     },
     {
         "name": "pcrev_soft", "group": "reviews",
         "title": "PC review deadline",
-        "type": "date", "placeholder": "none", "novalue": true,
-        "extensible": true
+        "type": "date", "placeholder": "none",
+        "extensible": true, "parser_class": "ReviewDeadline_SettingParser",
+        "require": "src/settings/s_reviews.php", "position": 1
     },
     {
         "name": "resp_active", "group": "decisions",
@@ -283,7 +288,7 @@
     {
         "name": "resp_roundname", "group": "decisions",
         "title": "Response name",
-        "type": "tag", "size": 20, "novalue": true, "extensible": true
+        "type": "tag", "size": 20, "internal": true, "extensible": true
     },
     {
         "name": "resp_search", "group": "decisions",
@@ -319,7 +324,8 @@
     {
         "name": "rev_roundtag", "group": "reviews",
         "title": "Assignment review round",
-        "type": "tag", "parser_class": "Round_SettingParser"
+        "type": "tag", "parser_class": "RoundSelector_SettingParser",
+        "require": "src/settings/s_reviews.php", "position": 1
     },
     {
         "name": "review_form", "group": "reviewform", "anchorid": false,
@@ -329,7 +335,7 @@
     {
         "name": "roundname", "group": "reviews",
         "title": "Review round name",
-        "type": "string", "size": 12, "novalue": true, "placeholder": "unnamed",
+        "type": "string", "size": 12, "internal": true, "placeholder": "unnamed",
         "extensible": true
     },
     {
@@ -513,7 +519,8 @@
     },
     {
         "name": "tag_rounds",
-        "internal": true, "type": "taglist"
+        "type": "taglist", "parser_class": "Round_SettingParser",
+        "require": "src/settings/s_reviews.php", "position": 0
     },
     {
         "name": "tag_seeall", "group": "tags",

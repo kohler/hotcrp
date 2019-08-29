@@ -113,14 +113,15 @@ class Reviews_SettingRenderer {
                 $selector["#0"] = "unnamed";
         }
 
-        echo '<div id="roundtable">';
+        echo '<div id="roundtable">', Ht::hidden("has_tag_rounds", 1);
         $round_map = edb_map($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
         $num_printed = 0;
-        foreach ($roundorder as $i => $rname)
+        foreach ($roundorder as $i => $rname) {
             if ($i ? $rname !== ";" : $print_round0) {
                 self::echo_round($sv, $i, $i ? $rname : "", +get($round_map, $i), count($selector) !== 1);
                 ++$num_printed;
             }
+        }
         echo '</div><div id="newround" class="hidden">';
         self::echo_round($sv, '$', "", "", true);
         echo '</div><div class="g"></div>';
@@ -128,10 +129,11 @@ class Reviews_SettingRenderer {
             ' &nbsp; <span class="hint"><a href="', $sv->conf->hoturl("help", "t=revround"), '">What is this?</a></span>',
             Ht::hidden("oldroundcount", count($sv->conf->round_list())),
             Ht::hidden("has_rev_roundtag", 1), Ht::hidden("has_extrev_roundtag", 1);
-        foreach ($roundorder as $i => $rname)
+        foreach ($roundorder as $i => $rname) {
             if ($i && $rname === ";")
                 echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
                     Ht::hidden("deleteround_$i", 1, ["data-default-value" => "1"]);
+        }
         Ht::stash_script('review_round_settings()');
 
         $extselector = array_merge(["#same" => "(same as PC)"], $selector);
@@ -273,14 +275,17 @@ class Reviews_SettingRenderer {
 class Round_SettingParser extends SettingParser {
     private $rev_round_changes = array();
 
-    function parse(SettingValues $sv, Si $si) {
-        if (!$sv->has_reqv("rev_roundtag")) {
-            $sv->save("rev_roundtag", null);
-            $sv->save("extrev_roundtag", null);
-            return false;
-        } else if ($si->name !== "rev_roundtag") {
-            return false;
+    static function clean_round_name($name) {
+        $name = trim($name);
+        if (!preg_match('{\A(?:\(no name\)|default|unnamed|n/a)\z}i', $name)) {
+            return $name;
+        } else {
+            return "";
         }
+    }
+
+    function parse(SettingValues $sv, Si $si) {
+        assert($si->name === "tag_rounds");
 
         // count number of requested rounds
         $nreqround = 1;
@@ -290,117 +295,72 @@ class Round_SettingParser extends SettingParser {
         }
 
         // fix round names
-        $lastroundlname = "";
-        $roundnames = $roundlnames = [];
+        $roundnames = array_fill(0, $nreqround, ";");
+        $roundlnames = [];
         for ($i = 0; $i < $nreqround; ++$i) {
-            $roundnames[$i] = ";";
             $name = $sv->reqv("roundname_$i");
             if ($name !== null && !$sv->reqv("deleteround_$i")) {
-                $name = trim($name);
-                if (preg_match('/\A(?:\(no name\)|default|unnamed|n\/a)\z/i', $name))
-                    $name = "";
+                $name = self::clean_round_name($name);
                 $lname = strtolower($name);
                 if (isset($roundlnames[$lname])) {
-                    $sv->error_at("roundname_$i", "Round names must be distinct. If you intend to combine rounds, use bulk assignment.");
+                    $sv->error_at("roundname_$i", "Round names must be distinct. Use bulk assignment to change existing reviews’ rounds.");
                     $sv->error_at("roundname_" . $roundlnames[$lname]);
-                } else if ($name !== "" && ($rerror = Conf::round_name_error($name))) {
+                } else if ($name !== ""
+                           && ($rerror = Conf::round_name_error($name))) {
                     $sv->error_at("roundname_$i", $rerror);
                 } else {
                     $roundnames[$i] = $name;
                     $roundlnames[$lname] = $i;
-                    $lastroundlname = $lname;
                 }
             }
         }
 
-        // create round transformer
-        $oldrounds = $sv->conf->round_list();
-        $newrounds = [];
-        foreach ($roundnames as $i => $name) {
-            if ($i && $name === ";" && get($oldrounds, $i, ";") !== ";")
-                // round newly deleted
-                $this->rev_round_changes[$i] = get($roundlnames, $lastroundlname, 0);
-            else if ($i && $name === "")
-                $this->rev_round_changes[$i] = 0;
-            else if ($name !== "" && $name !== ";"
-                     && (!$i || get($oldrounds, $i, ";") === ";")) {
-                for ($x = 1; get($oldrounds, $x, ";") !== ";" || isset($newrounds[$x]); ++$x)
-                    /* skip */;
-                $this->rev_round_changes[$i] = $newrounds[$x] = $x;
+        // check for round transformations
+        $this->rev_round_changes = [];
+        if ($roundnames[0] !== ";" && $roundnames[0] !== "") {
+            $j = 1;
+            while ($j < count($roundnames) && $roundnames[$j] !== ";") {
+                ++$j;
             }
+            if ($j === $nreqround) {
+                ++$nreqround;
+                $roundnames[$j] = ";";
+            }
+            $roundnames[$j] = $roundnames[0];
+            $roundnames[0] = ";";
+            $this->rev_round_changes[0] = $j;
+        }
+        if (isset($roundlnames[""]) && $roundlnames[""] !== 0) {
+            $roundnames[$roundlnames[""]] = ";";
+            $roundnames[0] = "";
+            $this->rev_round_changes[$roundlnames[""]] = 0;
         }
 
-        // deadlines
-        foreach ($sv->conf->round_list() as $i => $rname) {
-            $suf = $i ? "_$i" : "";
-            foreach (Conf::$review_deadlines as $k)
-                $sv->save($k . $suf, null);
-        }
-        foreach ($roundnames as $i => $name) {
-            if ($name !== ";") {
-                $j = get($this->rev_round_changes, $i, $i);
-                $isuf = $i ? "_$i" : "";
-                $osuf = $j ? "_$j" : "";
-                $ndeadlines = 0;
-                foreach (Conf::$review_deadlines as $k) {
-                    $v = $sv->parse_value($sv->si($k . $isuf));
-                    $sv->save($k . $osuf, $v <= 0 ? null : $v);
-                    $ndeadlines += $v > 0;
-                }
-                if ($ndeadlines == 0 && $j) {
-                    $sv->save("pcrev_soft" . $osuf, 0);
-                }
-                foreach (["pcrev_", "extrev_"] as $k) {
-                    list($softk, $hardk) = ["{$k}soft$osuf", "{$k}hard$osuf"];
-                    list($softv, $hardv) = [$sv->savedv($softk), $sv->savedv($hardk)];
-                    if (!$softv && $hardv) {
-                        $sv->save($softk, $hardv);
-                    } else if ($hardv && $softv > $hardv) {
-                        $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
-                        $sv->error_at($softk, $sv->si($softk)->title . $desc . ": Must come before " . $sv->si($hardk)->title . ".");
-                        $sv->error_at($hardk);
-                    }
+        // delete deadlines for deleted rounds
+        foreach ($roundnames as $i => $n) {
+            if ($n === ";") {
+                foreach (Conf::$review_deadlines as $dl) {
+                    $sv->save($dl . ($i ? "_$i" : ""), null);
                 }
             }
         }
 
-        // round list
-        $oroundnames = [];
-        foreach ($roundnames as $i => $name)
-            $oroundnames[] = ";";
-        foreach ($roundnames as $i => $name)
-            if (!$sv->reqv("deleteround_$i")) {
-                $j = get($this->rev_round_changes, $i, $i);
-                $oroundnames[$j] = $roundnames[$i];
-            }
-        foreach ($oroundnames as $i => $name)
-            if ($i === 0 || $name === "")
-                $oroundnames[$i] = ";";
-        while (count($oroundnames) && $oroundnames[count($oroundnames) - 1] === ";")
-            array_pop($oroundnames);
-        unset($oroundnames[0]);
-        $sv->save("tag_rounds", join(" ", $oroundnames));
-
-        // default rounds
-        $sv->save("rev_roundtag", null);
-        if (preg_match('/\A\#(\d+)\z/', trim($sv->reqv("rev_roundtag")), $m)
-            && ($rname = get($roundnames, intval($m[1])))
-            && $rname !== ";") {
-            $sv->save("rev_roundtag", $rname);
+        // clean up and save round names
+        while (count($roundnames) > 1
+               && $roundnames[count($roundnames) - 1] === ";") {
+            array_pop($roundnames);
         }
-        if ($sv->has_reqv("extrev_roundtag")) {
-            $sv->save("extrev_roundtag", null);
-            if (preg_match('/\A\#(\d+)\z/', trim($sv->reqv("extrev_roundtag")), $m)
-                && ($rname = get($roundnames, intval($m[1]))) !== ";")
-                $sv->save("extrev_roundtag", $rname ? : "unnamed");
-        }
+        unset($roundnames[0]);
+        $sv->save("tag_rounds", join(" ", $roundnames));
 
-        if (count($this->rev_round_changes)) {
+        // register callback if we need to change reviews' rounds
+        if (!empty($this->rev_round_changes)) {
             $sv->need_lock["PaperReview"] = $sv->need_lock["ReviewRequest"] =
                 $sv->need_lock["PaperReviewRefused"] = true;
             return true;
-        } else
+        } else {
             return false;
+        }
     }
 
     function save(SettingValues $sv, Si $si) {
@@ -413,5 +373,63 @@ class Round_SettingParser extends SettingParser {
             $sv->conf->qe_raw("update ReviewRequest set reviewRound=" . $qx);
             $sv->conf->qe_raw("update PaperReviewRefused set reviewRound=" . $qx);
         }
+    }
+}
+
+class RoundSelector_SettingParser extends SettingParser {
+    function parse(SettingValues $sv, Si $si) {
+        $sv->save($si->name, null);
+        if (preg_match('{\A\#(\d+)\z}', $sv->reqv($si->name), $m)) {
+            $t = Round_SettingParser::clean_round_name($sv->reqv("roundname_$m[1]"));
+            if ($t === "") {
+                // null for extrev_roundtag means “same as PC”
+                if ($si->name === "extrev_roundtag")
+                    $sv->save($si->name, "unnamed");
+            } else if ($t !== ";"
+                       && array_search(strtolower($t), explode(" ", strtolower($sv->newv("tag_rounds")))) !== false) {
+                $sv->save($si->name, $t);
+            }
+        }
+    }
+}
+
+class ReviewDeadline_SettingParser extends SettingParser {
+    function parse(SettingValues $sv, Si $si) {
+        assert($sv->has_savedv("tag_rounds"));
+
+        $rref = (int) $si->suffix();
+        if ($sv->reqv("deleteround_$rref")) {
+            // setting already deleted by tag_rounds parsing
+            return false;
+        }
+
+        $name = Round_SettingParser::clean_round_name($sv->reqv("roundname_$rref"));
+        $rounds = explode(" ", strtolower($sv->newv("tag_rounds")));
+        if ($name === "") {
+            $rnum = 0;
+        } else {
+            $rnum = array_search(strtolower($name), $rounds);
+            assert($rnum !== false);
+            $rnum += 1;
+        }
+
+        $deadline = $si->prefix();
+        $k = $deadline . ($rnum ? "_$rnum" : "");
+        $v = $sv->parse_value($si);
+        $sv->save($k, $v <= 0 ? null : $v);
+
+        if ($v > 0 && str_ends_with($deadline, "hard")) {
+            $softk = substr($deadline, 0, -4) . "soft" . ($rnum ? "_$rnum" : "");
+            $softv = $sv->newv($softk);
+            if (!$softv) {
+                $sv->save($softk, $v);
+            } else if ($softv > $v) {
+                $desc = $rnum ? ", round " . htmlspecialchars($name) : "";
+                $sv->error_at($softk, $sv->si($softk)->title . $desc . ": Must come before " . $sv->si($k)->title . ".");
+                $sv->error_at($k);
+            }
+        }
+
+        return false;
     }
 }

@@ -283,9 +283,10 @@ class Conf {
         global $Now;
 
         // enforce invariants
-        foreach (array("pcrev_any", "extrev_view") as $x)
+        foreach (["pcrev_any", "extrev_view"] as $x) {
             if (!isset($this->settings[$x]))
                 $this->settings[$x] = 0;
+        }
         if (!isset($this->settings["sub_blind"]))
             $this->settings["sub_blind"] = self::BLIND_ALWAYS;
         if (!isset($this->settings["rev_blind"]))
@@ -395,10 +396,14 @@ class Conf {
         // review times
         foreach ($this->rounds as $i => $rname) {
             $suf = $i ? "_$i" : "";
-            if (!isset($this->settings["extrev_soft$suf"]) && isset($this->settings["pcrev_soft$suf"]))
+            if (!isset($this->settings["extrev_soft$suf"])
+                && isset($this->settings["pcrev_soft$suf"])) {
                 $this->settings["extrev_soft$suf"] = $this->settings["pcrev_soft$suf"];
-            if (!isset($this->settings["extrev_hard$suf"]) && isset($this->settings["pcrev_hard$suf"]))
+            }
+            if (!isset($this->settings["extrev_hard$suf"])
+                && isset($this->settings["pcrev_hard$suf"])) {
                 $this->settings["extrev_hard$suf"] = $this->settings["pcrev_hard$suf"];
+            }
         }
     }
 
@@ -1302,15 +1307,17 @@ class Conf {
     function defined_round_list() {
         if ($this->_defined_rounds === null) {
             $dl = [];
-            foreach ($this->rounds as $i => $rname)
+            foreach ($this->rounds as $i => $rname) {
                 if (!$i || $rname !== ";") {
                     foreach (self::$review_deadlines as $rd)
                         if (($dl[$i] = +get($this->settings, $rd . ($i ? "_$i" : ""))))
                             break;
                 }
+            }
             if (!$dl[0]
-                && !$this->fetch_ivalue("select exists (select * from PaperReview where reviewRound=0)"))
+                && !$this->fetch_ivalue("select exists (select * from PaperReview where reviewRound=0)")) {
                 unset($dl[0]);
+            }
             $r = [];
             foreach ($this->rounds as $i => $rname)
                 if (isset($dl[$i]))
@@ -2361,14 +2368,13 @@ class Conf {
         return 0 < $rev_open && $rev_open <= $Now;
     }
     function review_deadline($round, $isPC, $hard) {
-        $dn = ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft");
-        if ($round === null)
+        if ($round === null) {
             $round = $this->assignment_round(!$isPC);
-        else if (is_object($round))
+        } else if (is_object($round)) {
             $round = $round->reviewRound ? : 0;
-        if ($round && isset($this->settings["{$dn}_$round"]))
-            $dn .= "_$round";
-        return $dn;
+        }
+        return ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft")
+            . ($round ? "_$round" : "");
     }
     function missed_review_deadline($round, $isPC, $hard) {
         global $Now;
