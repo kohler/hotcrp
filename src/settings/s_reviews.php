@@ -419,15 +419,7 @@ class ReviewDeadline_SettingParser extends SettingParser {
         $sv->save($k, $v <= 0 ? null : $v);
 
         if ($v > 0 && str_ends_with($deadline, "hard")) {
-            $softk = substr($deadline, 0, -4) . "soft" . ($rnum ? "_$rnum" : "");
-            $softv = $sv->newv($softk);
-            if (!$softv) {
-                $sv->save($softk, $v);
-            } else if ($softv > $v) {
-                $desc = $rnum ? ", round " . htmlspecialchars($name) : "";
-                $sv->error_at($softk, $sv->si($softk)->title . $desc . ": Must come before " . $sv->si($k)->title . ".");
-                $sv->error_at($k);
-            }
+            $sv->check_date_before(substr($deadline, 0, -4) . "soft" . ($rnum ? "_$rnum" : ""), $si->name, true);
         }
 
         return false;

@@ -43,3 +43,23 @@ class Submissions_SettingRenderer {
             $sv->warning_at(null, "Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You may want to either (1) specify a submission deadline, (2) select “Authors must freeze the final version of each submission”, or (3) manually turn off “Open site for submissions” at the proper time.");
     }
 }
+
+class Submissions_SettingParser extends SettingParser {
+    function validate(SettingValues $sv, Si $si) {
+        global $Now;
+        $d1 = $sv->newv($si->name);
+        if ($si->name === "sub_open") {
+            if ($d1 <= 0
+                && $sv->oldv("sub_open") > 0
+                && $sv->newv("sub_sub") <= 0) {
+                $sv->save("sub_close", $Now);
+            }
+        } else if ($si->name === "sub_sub") {
+            $sv->check_date_before("sub_reg", "sub_sub", true);
+            $sv->save("sub_update", $d1);
+        } else if ($si->name === "final_done") {
+            $sv->check_date_before("final_soft", "final_done", true);
+        }
+        return false;
+    }
+}

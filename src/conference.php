@@ -1532,6 +1532,11 @@ class Conf {
         return isset($this->opt["ldapLogin"]) || isset($this->opt["httpAuthLogin"]);
     }
 
+    function default_site_contact() {
+        $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
+        return Dbl::fetch_first_object($result);
+    }
+
     function site_contact() {
         if (!$this->_site_contact) {
             $args = [
@@ -1540,18 +1545,13 @@ class Conf {
                 "isChair" => true, "isPC" => true, "is_site_contact" => true,
                 "contactTags" => null
             ];
-            if (!$args["email"] || $args["email"] === "you@example.com") {
-                $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
-                if ($result && ($row = $result->fetch_object())) {
-                    $this->set_opt("defaultSiteContact", true);
-                    $this->set_opt("contactName", Text::name_text($row));
-                    $this->set_opt("contactEmail", $row->email);
-                    unset($args["fullName"]);
-                    $args["email"] = $row->email;
-                    $args["firstName"] = $row->firstName;
-                    $args["lastName"] = $row->lastName;
-                }
-                Dbl::free($result);
+            if ((!$args["email"] || $args["email"] === "you@example.com")
+                && ($row = $this->default_site_contact())) {
+                $this->set_opt("defaultSiteContact", true);
+                unset($args["fullName"]);
+                $args["email"] = $row->email;
+                $args["firstName"] = $row->firstName;
+                $args["lastName"] = $row->lastName;
             }
             $this->_site_contact = new Contact((object) $args, $this);
         }

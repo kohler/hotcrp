@@ -22,6 +22,7 @@ class Si {
     public $size;
     public $placeholder;
     public $parser_class;
+    public $validator_class;
     public $disabled = false;
     public $invalid_value;
     public $default_value;
@@ -74,6 +75,7 @@ class Si {
         "title" => "is_string",
         "title" => "is_string",
         "type" => "is_string",
+        "validator_class" => "is_string",
         "values" => "is_array"
     ];
 
@@ -88,8 +90,10 @@ class Si {
         if (preg_match('{_(?:\$|n|m?\d+)\z}', $j->name))
             trigger_error("setting {$j->name} name format error");
         $this->name = $this->base_name = $this->json_name = $this->title = $j->name;
-        if (isset($j->json_name) && ($j->json_name === false || is_string($j->json_name)))
+        if (isset($j->json_name)
+            && ($j->json_name === false || is_string($j->json_name))) {
             $this->json_name = $j->json_name;
+        }
         foreach ((array) $j as $k => $v) {
             if (isset(self::$key_storage[$k]))
                 $this->store($k, $j, $k, self::$key_storage[$k]);
@@ -125,8 +129,9 @@ class Si {
                 trigger_error("setting {$j->name}.extensible format error");
         }
 
-        if (!$this->type && $this->parser_class)
+        if (!$this->type && $this->parser_class) {
             $this->type = "special";
+        }
 
         $s = $this->storage ? : $this->name;
         $dot = strpos($s, ".");
@@ -166,7 +171,7 @@ class Si {
                 $this->size = 32;
             if ($this->placeholder === null)
                 $this->placeholder = "N/A";
-        } else if ($this->type == "grace") {
+        } else if ($this->type === "grace") {
             if ($this->size === null)
                 $this->size = 15;
             if ($this->placeholder === null)
@@ -319,6 +324,9 @@ class SettingParser {
     function parse(SettingValues $sv, Si $si) {
         return false;
     }
+    function validate(SettingValues $sv, Si $si) {
+        return false;
+    }
     function unparse_json(SettingValues $sv, Si $si, $j) {
     }
     function save(SettingValues $sv, Si $si) {
@@ -378,17 +386,18 @@ class SettingValues extends MessageSet {
     public $all_interesting;
 
     private $parsers = [];
+    private $validate_si = [];
     private $saved_si = [];
     private $cleanup_callbacks = [];
     public $need_lock = [];
     public $changes = [];
 
-    public $req = array();
-    public $req_files = array();
-    public $savedv = array();
-    private $explicit_oldv = array();
-    private $hint_status = array();
-    private $req_has_suffixes = array();
+    public $req = [];
+    public $req_files = [];
+    public $savedv = [];
+    private $explicit_oldv = [];
+    private $hint_status = [];
+    private $req_has_suffixes = [];
     private $null_mailer;
 
     private $_gxt = null;
@@ -397,8 +406,6 @@ class SettingValues extends MessageSet {
         parent::__construct();
         $this->conf = $user->conf;
         $this->user = $user;
-        // maybe set $Opt["contactName"] and $Opt["contactEmail"]
-        $this->conf->site_contact();
         // maybe initialize _setting_info
         if ($this->conf->_setting_info === null) {
             Si::initialize($this->conf);
@@ -522,23 +529,26 @@ class SettingValues extends MessageSet {
     }
     function report($is_update = false) {
         $msgs = [];
-        if ($is_update && $this->has_error())
+        if ($is_update && $this->has_error()) {
             $msgs[] = "Your changes were not saved. Please fix these errors and try again.";
+        }
         $lastmsg = null;
-        foreach ($this->messages(true) as $mx)
+        foreach ($this->messages(true) as $mx) {
             $this->report_mx($msgs, $lastmsg, $mx);
-        if (!empty($msgs) && $this->has_error())
-            Conf::msg_error($msgs, true);
-        else if (!empty($msgs))
-            Conf::msg_warning($msgs, true);
+        }
+        if (!empty($msgs)) {
+            if ($this->has_error()) {
+                Conf::msg_error($msgs, true);
+            } else {
+                Conf::msg_warning($msgs, true);
+            }
+        }
     }
-    function parser(Si $si) {
-        if (($class = $si->parser_class)) {
-            if (!isset($this->parsers[$class]))
-                $this->parsers[$class] = new $class($this, $si);
-            return $this->parsers[$class];
-        } else
-            return null;
+    private function si_parser(Si $si) {
+        $class = $si->parser_class ? : $si->validator_class;
+        if (!isset($this->parsers[$class]))
+            $this->parsers[$class] = new $class($this, $si);
+        return $this->parsers[$class];
     }
     function group_is_interesting($g) {
         return $g && isset($this->interesting_groups[$g]);
@@ -924,8 +934,9 @@ class SettingValues extends MessageSet {
     function render_select($name, $values, $js = null) {
         $v = $this->curv($name);
         $t = "";
-        if (($si = $this->si($name)) && $si->parser_class)
+        if (($si = $this->si($name)) && $si->parser_class) {
             $t = Ht::hidden("has_$name", 1);
+        }
         return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($name, $js)) . $t;
     }
     function echo_select_group($name, $values, $description, $js = null, $hint = null) {
@@ -1025,6 +1036,21 @@ class SettingValues extends MessageSet {
             return sprintf("%d:%02d", intval($v / 60), $v % 60);
         }
     }
+    function check_date_before($name0, $name1, $force_name0) {
+        if (($d1 = $this->newv($name1))) {
+            $d0 = $this->newv($name0);
+            if (!$d0) {
+                if ($force_name0)
+                    $this->save($name0, $d1);
+            } else if ($d0 > $d1) {
+                $si1 = $this->si($name1);
+                $this->error_at($this->si($name0), "Must come before " . $si1->title . ".");
+                $this->error_at($si1);
+                return false;
+            }
+        }
+        return true;
+    }
 
     function type_hint($type) {
         if (str_ends_with($type, "date") && !isset($this->hint_status["date"])) {
@@ -1064,153 +1090,6 @@ class SettingValues extends MessageSet {
     }
 
 
-    function execute() {
-        global $Now;
-        // parse settings
-        foreach ($this->conf->_setting_info as $si) {
-            $this->account($si);
-        }
-
-        // check date relationships
-        foreach (array("sub_reg" => "sub_sub", "final_soft" => "final_done")
-                 as $dn1 => $dn2) {
-            list($dv1, $dv2) = [$this->savedv($dn1), $this->savedv($dn2)];
-            if (!$dv1 && $dv2) {
-                $this->save($dn1, $dv2);
-            } else if ($dv2 && $dv1 > $dv2) {
-                $si = Si::get($this->conf, $dn1);
-                $this->error_at($si, "Must come before " . Si::get($this->conf, $dn2, "title") . ".");
-                $this->error_at($dn2);
-            }
-        }
-        if ($this->has_savedv("sub_sub")) {
-            $this->save("sub_update", $this->savedv("sub_sub"));
-        }
-        if ($this->conf->opt("defaultSiteContact")) {
-            if ($this->has_savedv("opt.contactName")
-                && $this->conf->opt("contactName") === $this->savedv("opt.contactName"))
-                $this->save("opt.contactName", null);
-            if ($this->has_savedv("opt.contactEmail")
-                && $this->conf->opt("contactEmail") === $this->savedv("opt.contactEmail"))
-                $this->save("opt.contactEmail", null);
-        }
-        if ($this->has_savedv("resp_active") && $this->savedv("resp_active"))
-            foreach (explode(" ", $this->newv("resp_rounds")) as $i => $rname) {
-                $isuf = $i ? "_$i" : "";
-                if ($this->newv("resp_open$isuf") > $this->newv("resp_done$isuf")
-                    && $this->newv("resp_done$isuf")) {
-                    $si = Si::get($this->conf, "resp_open$isuf");
-                    $this->error_at($si, "Must come before " . Si::get($this->conf, "resp_done", "title") . ".");
-                    $this->error_at("resp_done$isuf");
-                }
-            }
-
-        // Setting relationships
-        if ($this->has_savedv("sub_open")
-            && $this->newv("sub_open", 1) <= 0
-            && $this->oldv("sub_open") > 0
-            && $this->newv("sub_sub") <= 0) {
-            $this->save("sub_close", $Now);
-        }
-
-        // make settings
-        $this->changes = [];
-        if (!$this->has_error()
-            && (!empty($this->savedv) || !empty($this->saved_si))) {
-            $tables = "Settings write";
-            foreach ($this->need_lock as $t => $need) {
-                if ($need)
-                    $tables .= ", $t write";
-            }
-            $this->conf->qe_raw("lock tables $tables");
-
-            // load db settings, pre-crosscheck
-            $dbsettings = array();
-            $result = $this->conf->qe("select name, value, data from Settings");
-            while (($row = edb_row($result))) {
-                $dbsettings[$row[0]] = $row;
-            }
-            Dbl::free($result);
-
-            // apply settings
-            foreach ($this->saved_si as $si) {
-                $this->parser($si)->save($this, $si);
-            }
-
-            $dv = $av = array();
-            foreach ($this->savedv as $n => $v) {
-                if (substr($n, 0, 4) === "opt.") {
-                    $okey = substr($n, 4);
-                    if (array_key_exists($okey, $this->conf->opt_override))
-                        $oldv = $this->conf->opt_override[$okey];
-                    else
-                        $oldv = $this->conf->opt($okey);
-                    $vi = Si::$option_is_value[$okey] ? 0 : 1;
-                    $basev = $vi ? "" : 0;
-                    $newv = $v === null ? $basev : $v[$vi];
-                    if ($oldv === $newv)
-                        $v = null; // delete override value in database
-                    else if ($v === null && $oldv !== $basev && $oldv !== null)
-                        $v = $vi ? [0, ""] : [0, null];
-                }
-                if ($v === null
-                    ? !isset($dbsettings[$n])
-                    : isset($dbsettings[$n]) && (int) $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1])
-                    continue;
-                $this->changes[] = $n;
-                if ($v !== null)
-                    $av[] = [$n, $v[0], $v[1]];
-                else
-                    $dv[] = $n;
-            }
-            if (!empty($dv)) {
-                $this->conf->qe("delete from Settings where name?a", $dv);
-                //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query("delete from Settings where name?a", $dv)));
-            }
-            if (!empty($av)) {
-                $this->conf->qe("insert into Settings (name, value, data) values ?v on duplicate key update value=values(value), data=values(data)", $av);
-                //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query("insert into Settings (name, value, data) values ?v on duplicate key update value=values(value), data=values(data)", $av)));
-            }
-
-            $this->conf->qe_raw("unlock tables");
-            if (!empty($this->changes))
-                $this->user->log_activity("Updated settings " . join(", ", $this->changes));
-            $this->conf->load_settings();
-            foreach ($this->cleanup_callbacks as $cb)
-                call_user_func($cb[0], $this, $cb[1]);
-
-            // contactdb may need to hear about changes to shortName
-            if ($this->has_savedv("opt.shortName") && ($cdb = $this->conf->contactdb()))
-                Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $this->conf->short_name, $this->conf->dbname);
-        }
-        return !$this->has_error();
-    }
-    function account(Si $si1) {
-        foreach ($this->req_sis($si1) as $si) {
-            if (!$si->active_value()) {
-                /* ignore changes to disabled/internal settings */;
-            } else if ($si->parser_class) {
-                if ($this->parser($si)->parse($this, $si)) {
-                    $this->saved_si[] = $si;
-                }
-            } else if ($si->storage_type !== Si::SI_NONE) {
-                $v = $this->parse_value($si);
-                if ($v === null || $v === false) {
-                    return;
-                }
-                if (is_int($v)
-                    && $v <= 0
-                    && $si->type !== "radio"
-                    && $si->type !== "zint") {
-                    $v = null;
-                }
-                $this->save($si->name, $v);
-                if ($si->ifnonempty) {
-                    $this->save($si->ifnonempty, $v === null || $v === "" ? null : 1);
-                }
-            }
-        }
-    }
     function parse_value(Si $si) {
         global $Now;
 
@@ -1316,6 +1195,125 @@ class SettingValues extends MessageSet {
         return null;
     }
 
+    private function account(Si $si1) {
+        foreach ($this->req_sis($si1) as $si) {
+            if (!$si->active_value()) {
+                /* ignore changes to disabled/internal settings */;
+            } else if ($si->parser_class) {
+                if ($this->si_parser($si)->parse($this, $si)) {
+                    $this->saved_si[] = $si;
+                }
+            } else if ($si->storage_type !== Si::SI_NONE) {
+                $v = $this->parse_value($si);
+                if ($v === null || $v === false) {
+                    return;
+                }
+                if (is_int($v)
+                    && $v <= 0
+                    && $si->type !== "radio"
+                    && $si->type !== "zint") {
+                    $v = null;
+                }
+                $this->save($si->name, $v);
+                if ($si->validator_class) {
+                    $this->validate_si[] = $si;
+                }
+                if ($si->ifnonempty) {
+                    $this->save($si->ifnonempty, $v === null || $v === "" ? null : 1);
+                }
+            }
+        }
+    }
+
+    function execute() {
+        global $Now;
+
+        // parse and validate settings
+        foreach ($this->conf->_setting_info as $si) {
+            $this->account($si);
+        }
+        foreach ($this->validate_si as $si) {
+            if ($this->si_parser($si)->validate($this, $si)) {
+                $this->saved_si[] = $si;
+            }
+        }
+
+        // make settings
+        $this->changes = [];
+        if (!$this->has_error()
+            && (!empty($this->savedv) || !empty($this->saved_si))) {
+            $tables = "Settings write";
+            foreach ($this->need_lock as $t => $need) {
+                if ($need)
+                    $tables .= ", $t write";
+            }
+            $this->conf->qe_raw("lock tables $tables");
+
+            // load db settings, pre-crosscheck
+            $dbsettings = array();
+            $result = $this->conf->qe("select name, value, data from Settings");
+            while (($row = edb_row($result))) {
+                $dbsettings[$row[0]] = $row;
+            }
+            Dbl::free($result);
+
+            // apply settings
+            foreach ($this->saved_si as $si) {
+                $this->si_parser($si)->save($this, $si);
+            }
+
+            $dv = $av = array();
+            foreach ($this->savedv as $n => $v) {
+                if (substr($n, 0, 4) === "opt.") {
+                    $okey = substr($n, 4);
+                    if (array_key_exists($okey, $this->conf->opt_override))
+                        $oldv = $this->conf->opt_override[$okey];
+                    else
+                        $oldv = $this->conf->opt($okey);
+                    $vi = Si::$option_is_value[$okey] ? 0 : 1;
+                    $basev = $vi ? "" : 0;
+                    $newv = $v === null ? $basev : $v[$vi];
+                    if ($oldv === $newv)
+                        $v = null; // delete override value in database
+                    else if ($v === null && $oldv !== $basev && $oldv !== null)
+                        $v = $vi ? [0, ""] : [0, null];
+                }
+                if ($v === null
+                    ? !isset($dbsettings[$n])
+                    : isset($dbsettings[$n]) && (int) $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1]) {
+                    continue;
+                }
+                $this->changes[] = $n;
+                if ($v !== null) {
+                    $av[] = [$n, $v[0], $v[1]];
+                } else {
+                    $dv[] = $n;
+                }
+            }
+            if (!empty($dv)) {
+                $this->conf->qe("delete from Settings where name?a", $dv);
+                //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query("delete from Settings where name?a", $dv)));
+            }
+            if (!empty($av)) {
+                $this->conf->qe("insert into Settings (name, value, data) values ?v on duplicate key update value=values(value), data=values(data)", $av);
+                //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query("insert into Settings (name, value, data) values ?v on duplicate key update value=values(value), data=values(data)", $av)));
+            }
+
+            $this->conf->qe_raw("unlock tables");
+            if (!empty($this->changes)) {
+                $this->user->log_activity("Updated settings " . join(", ", $this->changes));
+            }
+
+            // clean up
+            $this->conf->load_settings();
+            foreach ($this->cleanup_callbacks as $cb) {
+                call_user_func($cb[0], $this, $cb[1]);
+            }
+        }
+        return !$this->has_error();
+    }
+
+
     function unparse_json_value(Si $si) {
         $v = $this->si_oldv($si, null);
         if ($si->type === "checkbox") {
@@ -1365,7 +1363,7 @@ class SettingValues extends MessageSet {
                 && $si->active_value()
                 && $si->json_name) {
                 if ($si->parser_class) {
-                    $this->parser($si)->unparse_json($this, $si, $j);
+                    $this->si_parser($si)->unparse_json($this, $si, $j);
                 } else {
                     $v = $this->unparse_json_value($si);
                     $j->{$si->json_name} = $v;

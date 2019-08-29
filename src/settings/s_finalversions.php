@@ -25,7 +25,8 @@ class FinalVersions_SettingParser extends SettingParser {
             && $sv->newv("final_open")
             && ($sv->newv("final_soft") || $sv->newv("final_done"))
             && (!$sv->newv("final_done") || $sv->newv("final_done") > $Now)
-            && $sv->newv("seedec") != Conf::SEEDEC_ALL)
-            $sv->warning_at(null, "The system is set to collect final versions, but authors cannot submit final versions until they can see decisions. You may want to update the the “Who can see decisions” setting.");
+            && $sv->newv("seedec") != Conf::SEEDEC_ALL) {
+            $sv->warning_at(null, "The system is set to collect final versions, but authors cannot submit final versions until they can see decisions. You may want to update the " . $sv->setting_link("“Who can see decisions” setting", "seedec") . ".");
+        }
     }
 }

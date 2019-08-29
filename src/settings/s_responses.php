@@ -124,6 +124,7 @@ class Responses_SettingParser extends SettingParser {
                 $sv->save("resp_search$isuf", $v !== "" ? $v : null);
             if (($v = $sv->parse_value($sv->si("msg.resp_instrux_$i"))) !== null)
                 $sv->save("msg.resp_instrux_$i", $v);
+            $sv->check_date_before("resp_open$isuf", "resp_done$isuf", false);
         }
 
         if (count($roundnames) > 1 || $roundnames[0] !== 1)
