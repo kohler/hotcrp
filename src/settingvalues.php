@@ -831,18 +831,23 @@ class SettingValues extends MessageSet {
         $v = $this->curv($name);
         $t = "";
         if (($si = $this->si($name))) {
-            if ($si->size && !isset($js["size"]))
+            if ($si->size && !isset($js["size"])) {
                 $js["size"] = $si->size;
-            if ($si->placeholder && !isset($js["placeholder"]))
+            }
+            if ($si->placeholder && !isset($js["placeholder"])) {
                 $js["placeholder"] = $si->placeholder;
-            if ($si->autogrow)
+            }
+            if ($si->autogrow) {
                 $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
-            if ($si->is_date())
+            }
+            if ($si->is_date()) {
                 $v = $this->si_render_date_value($v, $si);
-            else if ($si->type === "grace")
+            } else if ($si->type === "grace") {
                 $v = $this->si_render_grace_value($v, $si);
-            if ($si->parser_class)
+            }
+            if ($si->parser_class) {
                 $t = Ht::hidden("has_$name", 1);
+            }
         }
         return Ht::entry($name, $v, $this->sjs($name, $js)) . $t;
     }
@@ -959,30 +964,33 @@ class SettingValues extends MessageSet {
     }
 
     private function si_render_date_value($v, Si $si) {
-        if ($v !== null && $this->use_req())
+        if ($v !== null && $this->use_req()) {
             return $v;
-        else if ($si->date_backup
-                 && $this->curv($si->date_backup) == $v)
+        } else if ($si->date_backup
+                   && $this->curv($si->date_backup) == $v) {
             return "";
-        else if ($si->placeholder !== "N/A"
-                 && $si->placeholder !== "none"
-                 && $v === 0)
+        } else if ($si->placeholder !== "N/A"
+                   && $si->placeholder !== "none"
+                   && $v === 0) {
             return "none";
-        else if ($v <= 0)
+        } else if ($v <= 0) {
             return "";
-        else if ($v == 1)
+        } else if ($v == 1) {
             return "now";
-        else
+        } else {
             return $this->conf->parseableTime($v, true);
+        }
     }
     private function si_render_grace_value($v, Si $si) {
-        if ($v === null || $v <= 0 || !is_numeric($v))
+        if ($v === null || $v <= 0 || !is_numeric($v)) {
             return "none";
-        if ($v % 3600 == 0)
+        } else if ($v % 3600 == 0) {
             return ($v / 3600) . " hr";
-        if ($v % 60 == 0)
+        } else if ($v % 60 == 0) {
             return ($v / 60) . " min";
-        return sprintf("%d:%02d", intval($v / 60), $v % 60);
+        } else {
+            return sprintf("%d:%02d", intval($v / 60), $v % 60);
+        }
     }
 
     function type_hint($type) {
@@ -992,13 +1000,15 @@ class SettingValues extends MessageSet {
         } else if ($type === "grace" && !isset($this->hint_status["grace"])) {
             $this->hint_status["grace"] = true;
             return "Example: “15 min”";
-        } else
+        } else {
             return false;
+        }
     }
 
     function expand_mail_template($name, $default) {
-        if (!$this->null_mailer)
+        if (!$this->null_mailer) {
             $this->null_mailer = new HotCRPMailer($this->conf, null, null, array("width" => false));
+        }
         return $this->null_mailer->expand_template($name, $default);
     }
 
@@ -1007,14 +1017,16 @@ class SettingValues extends MessageSet {
         if (str_starts_with($msgname, "msg."))
             $msgname = substr($msgname, 4);
         $ctxarg = null;
-        if (($ctxname = $si->message_context_setting))
+        if (($ctxname = $si->message_context_setting)) {
             $ctxarg = $this->curv($ctxname[0] === "+" ? substr($ctxname, 1) : $ctxname);
+        }
         return $this->conf->ims()->default_itext($msgname, false, $ctxarg);
     }
 
     function setting_link($html, $si, $js = null) {
-        if (!($si instanceof Si))
+        if (!($si instanceof Si)) {
             $si = $this->si($si);
+        }
         return Ht::link($html, $si->hoturl($this->conf), $js);
     }
 
