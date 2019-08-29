@@ -1167,6 +1167,7 @@ class Contact {
             }
             if (($upd = $cdbu->_make_create_updater($reg, true))) {
                 $cdbu->apply_updater($upd, true);
+                $u->_contactdb_user = false;
             }
         }
 
