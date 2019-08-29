@@ -548,45 +548,54 @@ class UserStatus extends MessageSet {
         $this->diffs = [];
 
         // Main fields
-        if (!$this->no_update_profile || ($user->firstName === "" && $user->lastName === "")) {
+        if (!$this->no_update_profile
+            || ($user->firstName === "" && $user->lastName === "")) {
             if (isset($cj->firstName)
-                && $user->save_assign_field("firstName", $cj->firstName, $cu))
+                && $user->save_assign_field("firstName", $cj->firstName, $cu)) {
                 $this->diffs["name"] = true;
+            }
             if (isset($cj->lastName)
-                && $user->save_assign_field("lastName", $cj->lastName, $cu))
+                && $user->save_assign_field("lastName", $cj->lastName, $cu)) {
                 $this->diffs["name"] = true;
+            }
             $user->save_assign_field("unaccentedName", Text::unaccented_name($user->firstName, $user->lastName), $cu);
         }
 
         if (isset($cj->email)
             && (!$this->no_update_profile || !$old_user)
-            && $user->save_assign_field("email", $cj->email, $cu))
+            && $user->save_assign_field("email", $cj->email, $cu)) {
             $this->diffs["email"] = true;
+        }
 
-        foreach (["affiliation", "collaborators", "country", "phone"] as $k)
+        foreach (["affiliation", "collaborators", "country", "phone"] as $k) {
             if (isset($cj->$k)
                 && (!$this->no_update_profile || (string) $user->$k === "")
                 && $user->save_assign_field($k, $cj->$k, $cu))
                 $this->diffs[$k] = true;
+        }
 
         if (isset($cj->gender)
             && (!$this->no_update_profile || (string) $user->gender === "")
-            && $user->save_assign_field("gender", $cj->gender, $cu))
+            && $user->save_assign_field("gender", $cj->gender, $cu)) {
             $this->diffs["demographics"] = true;
+        }
         if (isset($cj->birthday)
             && (!$this->no_update_profile || (string) $user->birthday === "")
-            && $user->save_assign_field("birthday", $cj->birthday, $cu))
+            && $user->save_assign_field("birthday", $cj->birthday, $cu)) {
             $this->diffs["demographics"] = true;
+        }
 
         if (isset($cj->preferred_email)
             && (!$this->no_update_profile || (string) $user->preferredEmail === "")
-            && $user->save_assign_field("preferredEmail", $cj->preferred_email, $cu))
+            && $user->save_assign_field("preferredEmail", $cj->preferred_email, $cu)) {
             $this->diffs["preferred_email"] = true;
+        }
 
         // Disabled
         $disabled = $old_disabled;
-        if (isset($cj->disabled))
+        if (isset($cj->disabled)) {
             $disabled = $cj->disabled ? 1 : 0;
+        }
         if ($disabled !== $old_disabled || !$user->contactId) {
             $cu->qv["disabled"] = $user->disabled = $disabled;
             $this->diffs["disabled"] = true;
@@ -613,8 +622,9 @@ class UserStatus extends MessageSet {
 
         // Changes to the above fields also change the updateTime
         // (changes to the below fields do not).
-        if (!empty($cu->qv))
+        if (!empty($cu->qv)) {
             $user->save_assign_field("updateTime", $Now, $cu);
+        }
 
         // Follow
         if (isset($cj->follow)
@@ -696,8 +706,9 @@ class UserStatus extends MessageSet {
         // Contact DB (must precede password)
         $cdb = $user->conf->contactdb();
         if ($cdb
-            && (!empty($cu->cdb_qf) || $roles !== $old_roles))
+            && (!empty($cu->cdb_qf) || $roles !== $old_roles)) {
             $user->contactdb_update($cu->cdb_qf, $changing_other);
+        }
 
         // Password
         if (isset($cj->new_password)) {
@@ -707,22 +718,25 @@ class UserStatus extends MessageSet {
 
         // Clean up
         $user->save_cleanup($cu, $this);
-        if ($this->viewer->contactId == $user->contactId)
+        if ($this->viewer->contactId == $user->contactId) {
             $user->mark_activity();
-        if (!empty($this->diffs))
+        }
+        if (!empty($this->diffs)) {
             $user->conf->log_for($this->viewer, $user, "Updated profile " . join(", ", array_keys($this->diffs)));
+        }
         return $user;
     }
 
 
     static function parse_request_main(UserStatus $us, $cj, Qrequest $qreq, $uf) {
         // email
-        if (!$us->conf->external_login())
+        if (!$us->conf->external_login()) {
             $cj->email = trim((string) $qreq->uemail);
-        else if ($us->user->is_empty())
+        } else if ($us->user->is_empty()) {
             $cj->email = trim((string) $qreq->newUsername);
-        else
+        } else {
             $cj->email = $us->user->email;
+        }
 
         // normal fields
         foreach (["firstName", "lastName", "preferredEmail", "affiliation",
@@ -738,23 +752,23 @@ class UserStatus extends MessageSet {
             && !$us->user->is_empty()
             && $us->viewer->can_change_password($us->user)
             && (isset($qreq->upassword) || isset($qreq->upasswordt))) {
-            if ($qreq->whichpassword === "t" && $qreq->upasswordt)
+            if ($qreq->whichpassword === "t" && $qreq->upasswordt) {
                 $pw = $pw2 = trim($qreq->upasswordt);
-            else {
+            } else {
                 $pw = trim((string) $qreq->upassword);
                 $pw2 = trim((string) $qreq->upassword2);
             }
             $cj->__passwords = [(string) $qreq->upassword, (string) $qreq->upassword2, (string) $qreq->upasswordt];
-            if ($pw === "" && $pw2 === "")
+            if ($pw === "" && $pw2 === "") {
                 /* do nothing */;
-            else if ($pw !== $pw2)
+            } else if ($pw !== $pw2) {
                 $us->error_at("password", "Those passwords do not match.");
-            else if (!Contact::valid_password($pw))
+            } else if (!Contact::valid_password($pw)) {
                 $us->error_at("password", "Invalid new password.");
-            else if ($us->viewer->can_change_password(null)
-                     && strcasecmp($us->viewer->email, $us->user->email))
+            } else if ($us->viewer->can_change_password(null)
+                       && strcasecmp($us->viewer->email, $us->user->email)) {
                 $cj->new_password = $pw;
-            else {
+            } else {
                 if ($us->user->check_password(trim((string) $qreq->oldpassword)))
                     $cj->new_password = $pw;
                 else
@@ -775,22 +789,28 @@ class UserStatus extends MessageSet {
         }
 
         $follow = [];
-        if ($qreq->has_watchreview)
+        if ($qreq->has_watchreview) {
             $follow["reviews"] = !!$qreq->watchreview;
+        }
         if ($qreq->has_watchallreviews
-            && ($us->viewer->privChair || $us->user->isPC))
+            && ($us->viewer->privChair || $us->user->isPC)) {
             $follow["allreviews"] = !!$qreq->watchallreviews;
+        }
         if ($qreq->has_watchadminreviews
-            && ($us->viewer->privChair || $us->user->isPC))
+            && ($us->viewer->privChair || $us->user->isPC)) {
             $follow["adminreviews"] = !!$qreq->watchadminreviews;
+        }
         if ($qreq->has_watchallfinal
-            && ($us->viewer->privChair || $us->user->is_manager()))
+            && ($us->viewer->privChair || $us->user->is_manager())) {
             $follow["allfinal"] = !!$qreq->watchallfinal;
-        if (!empty($follow))
+        }
+        if (!empty($follow)) {
             $cj->follow = (object) $follow;
+        }
 
-        if (isset($qreq->contactTags) && $us->viewer->privChair)
+        if (isset($qreq->contactTags) && $us->viewer->privChair) {
             $cj->tags = explode(" ", simplify_whitespace($qreq->contactTags));
+        }
 
         if (isset($qreq->has_ti) && $us->viewer->isPC) {
             $topics = array();

@@ -338,23 +338,27 @@ class Contact {
         if (is_numeric($x)) {
             $acct = $this->conf->user_by_id($x);
             $email = $acct ? $acct->email : null;
-        } else if ($x === "admin")
+        } else if ($x === "admin") {
             $email = $this->email;
-        else
+        } else {
             $email = $x;
+        }
         if (!$email
             || strcasecmp($email, $this->email) === 0
-            || !$this->privChair)
+            || !$this->privChair) {
             return $this;
+        }
 
         // new account must exist
         $u = $this->conf->user_by_email($email);
         if (!$u
             && validate_email($email)
-            && get($this->conf->opt, "debugShowSensitiveEmail"))
+            && get($this->conf->opt, "debugShowSensitiveEmail")) {
             $u = Contact::create($this->conf, null, ["email" => $email]);
-        if (!$u)
+        }
+        if (!$u) {
             return $this;
+        }
 
         // cannot turn into a manager of conflicted papers
         if ($this->conf->setting("papermanager")) {
@@ -501,7 +505,6 @@ class Contact {
             Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=? and roles=0", $cdbur->contactDbId, $cdbur->confid);
     }
     function contactdb_update($update_keys = null, $only_update_empty = false) {
-        global $Now;
         if (!($cdb = $this->conf->contactdb())
             || !$this->has_account_here()
             || !validate_email($this->email))
@@ -1098,8 +1101,9 @@ class Contact {
                 $updater["password"] = validate_email($updater["email"]) ? self::random_password() : "*";
                 $updater["passwordTime"] = $Now;
             }
-            if (!$is_cdb)
+            if (!$is_cdb) {
                 $updater["creationTime"] = $Now;
+            }
             $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join("=?, ", array_keys($updater)) . "=? on duplicate key update firstName=firstName", array_values($updater));
             if ($result) {
                 $updater[$idk] = (int) $result->insert_id;
@@ -1116,8 +1120,6 @@ class Contact {
     }
 
     static function create(Conf $conf, $actor, $reg, $flags = 0) {
-        global $Me, $Now;
-
         // clean registration
         if (is_array($reg))
             $reg = (object) $reg;
@@ -1136,64 +1138,71 @@ class Contact {
         // look up existing accounts
         $valid_email = validate_email($reg->email);
         $u = $conf->user_by_email($reg->email) ? : new Contact(null, $conf);
-        if (($cdb = $conf->contactdb()) && $valid_email)
+        if (($cdb = $conf->contactdb()) && $valid_email) {
             $cdbu = $conf->contactdb_user_by_email($reg->email);
-        else
+        } else {
             $cdbu = null;
+        }
         $create = !$u->contactId;
         $aupapers = [];
 
         // if local does not exist, create it
         if (!$u->contactId) {
-            if (($flags & self::SAVE_IMPORT) && !$cdbu)
+            if (($flags & self::SAVE_IMPORT) && !$cdbu) {
                 return null;
-            if (!$valid_email && !($flags & self::SAVE_ANY_EMAIL))
+            }
+            if (!$valid_email && !($flags & self::SAVE_ANY_EMAIL)) {
                 return null;
-            if ($valid_email)
+            }
+            if ($valid_email) {
                 // update registration from authorship information
                 $aupapers = self::email_authored_papers($conf, $reg->email, $reg);
+            }
         }
 
         // create or update contactdb user
         if ($cdb && $valid_email) {
-            $cdbu = $cdbu ? : new Contact(null, $conf);
-            if (($upd = $cdbu->_make_create_updater($reg, true)))
+            if (!$cdbu)  {
+                $cdbu = new Contact(null, $conf);
+            }
+            if (($upd = $cdbu->_make_create_updater($reg, true))) {
                 $cdbu->apply_updater($upd, true);
+            }
         }
 
         // create or update local user
         $upd = $u->_make_create_updater($cdbu ? : $reg, false);
         if (!$u->contactId) {
             if (($cdbu && $cdbu->disabled)
-                || get($reg, "disabled"))
+                || get($reg, "disabled")) {
                 $upd["disabled"] = 1;
+            }
             if ($cdbu) {
                 $upd["password"] = "";
                 $upd["passwordTime"] = $cdbu->passwordTime;
             }
         }
-        if ($upd) {
-            if (!($u->apply_updater($upd, false)))
-                // failed because concurrent create (unlikely)
-                $u = $conf->user_by_email($reg->email);
+        if ($upd && !($u->apply_updater($upd, false))) {
+            // failed because concurrent create (unlikely)
+            $u = $conf->user_by_email($reg->email);
         }
 
         // update paper authorship
         if ($aupapers) {
             $u->save_authored_papers($aupapers);
-            if ($cdbu)
+            if ($cdbu) {
                 // can't use `$cdbu` itself b/c no `confid`
                 $u->_contactdb_save_roles($u->contactdb_user());
+            }
         }
 
         // notify on creation
         if ($create) {
-            if (($flags & self::SAVE_NOTIFY) && !$u->is_disabled())
+            if (($flags & self::SAVE_NOTIFY) && !$u->is_disabled()) {
                 $u->sendAccountInfo("create", false);
+            }
             $type = $u->is_disabled() ? "disabled " : "";
             $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Created {$type}account");
-            // if ($Me && $Me->privChair)
-            //    $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($u->email)) . "\">" . Text::user_html_nolink($u) . "</a>.");
         }
 
         return $u;
@@ -1471,24 +1480,27 @@ class Contact {
         $cdbu = $this->contactdb_user();
         $rest = array();
         if ($sendtype === "create") {
-            if ($cdbu && $cdbu->passwordUseTime)
+            if ($cdbu && $cdbu->passwordUseTime) {
                 $template = "@activateaccount";
-            else
+            } else {
                 $template = "@createaccount";
+            }
         } else if ($sendtype === "forgot") {
-            if ($this->conf->opt("safePasswords") <= 1 && $this->plaintext_password())
+            if ($this->conf->opt("safePasswords") <= 1
+                && $this->plaintext_password()) {
                 $template = "@accountinfo";
-            else {
+            } else {
                 $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
                 $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
                 $this->conf->log_for($this, null, "Created password reset " . substr($rest["capability"], 0, 8) . "...");
                 $template = "@resetpassword";
             }
         } else {
-            if ($this->plaintext_password())
+            if ($this->plaintext_password()) {
                 $template = "@accountinfo";
-            else
+            } else {
                 return false;
+            }
         }
 
         $mailer = new HotCRPMailer($this->conf, $this, null, $rest);

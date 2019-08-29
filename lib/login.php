@@ -88,10 +88,11 @@ class LoginHelper {
         // look up or create user in contact database
         $cdb_user = null;
         if ($conf->opt("contactdb_dsn")) {
-            if ($user)
+            if ($user) {
                 $cdb_user = $user->contactdb_user();
-            else
+            } else {
                 $cdb_user = $conf->contactdb_user_by_email($qreq->email);
+            }
         }
 
         // create account if requested
@@ -101,8 +102,9 @@ class LoginHelper {
                 return false;
             }
             $user = self::create_account($conf, $qreq, $user, $cdb_user);
-            if (!$user)
+            if (!$user) {
                 return null;
+            }
             // If we get here, it's the first account and we're going to
             // log them in automatically. XXX should show the password
             $qreq->password = $user->plaintext_password();
@@ -111,8 +113,9 @@ class LoginHelper {
         // auto-create account if external login
         if (!$user && $external_login) {
             $user = Contact::create($conf, null, $qreq->as_array(), Contact::SAVE_ANY_EMAIL);
-            if (!$user)
+            if (!$user) {
                 return Conf::msg_error($conf->db_error_html(true, "while adding your account"));
+            }
         }
 
         // if no user found, then fail
@@ -219,12 +222,12 @@ class LoginHelper {
         unset($_SESSION["testsession"]);
 
         // Go places
-        if (isset($qreq->go))
+        if (isset($qreq->go)) {
             $where = $qreq->go;
-        else if (isset($_SESSION["login_bounce"])
-                 && $_SESSION["login_bounce"][0] == $user->conf->dsn)
+        } else if (isset($_SESSION["login_bounce"])
+                   && $_SESSION["login_bounce"][0] == $user->conf->dsn) {
             $where = $_SESSION["login_bounce"][1];
-        else {
+        } else {
             $user->save_session("freshlogin", true);
             $where = hoturl("index");
         }
@@ -272,8 +275,9 @@ class LoginHelper {
 
         // create database account
         if (!$user || !$user->has_account_here()) {
-            if (!($user = Contact::create($conf, null, $qreq->as_array())))
+            if (!($user = Contact::create($conf, null, $qreq->as_array()))) {
                 return Conf::msg_error($conf->db_error_html(true, "while adding your account"));
+            }
         }
 
         $user->sendAccountInfo("create", true);
@@ -285,17 +289,18 @@ class LoginHelper {
             return $user;
         }
 
-        if (Mailer::allow_send($user->email))
+        if (Mailer::allow_send($user->email)) {
             $msg .= " Login information has been emailed to you. Return here when you receive it to complete the registration process. If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
-        else {
+        } else {
             if ($conf->opt("sendEmail"))
                 $msg .= " The email address you provided seems invalid.";
             else
                 $msg .= " The system cannot send email at this time.";
             $msg .= " Although an account was created for you, you need help to retrieve your password. Contact " . Text::user_html($conf->site_contact()) . ".";
         }
-        if (isset($qreq->password) && trim($qreq->password) !== "")
+        if (isset($qreq->password) && trim($qreq->password) !== "") {
             $msg .= " The password you supplied on the login screen was ignored.";
+        }
         $conf->confirmMsg($msg);
         return null;
     }
@@ -304,8 +309,9 @@ class LoginHelper {
         $msg .= " As the first user, you have been automatically signed in and assigned system administrator privilege.";
         if (!$user->conf->external_login()
             && $is_create
-            && $user->plaintext_password())
+            && $user->plaintext_password()) {
             $msg .= " Your password is “<samp>" . htmlspecialchars($user->plaintext_password()) . "</samp>”. All later users will have to sign in normally.";
+        }
         $user->save_roles(Contact::ROLE_ADMIN, null);
         $user->conf->save_setting("setupPhase", null);
         $user->conf->confirmMsg(ltrim($msg));

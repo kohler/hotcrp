@@ -49,15 +49,17 @@ $newProfile = false;
 $UserStatus = new UserStatus($Me);
 
 if ($Qreq->u === null) {
-    if ($Qreq->user)
+    if ($Qreq->user) {
         $Qreq->u = $Qreq->user;
-    else if ($Qreq->contact)
+    } else if ($Qreq->contact) {
         $Qreq->u = $Qreq->contact;
-    else if (preg_match(',\A/(?:new|[^\s/]+)\z,i', Navigation::path()))
+    } else if (preg_match(',\A/(?:new|[^\s/]+)\z,i', Navigation::path())) {
         $Qreq->u = substr(Navigation::path(), 1);
+    }
 }
-if ($Me->privChair && $Qreq->new)
+if ($Me->privChair && $Qreq->new) {
     $Qreq->u = "new";
+}
 
 
 // Load user.
@@ -66,11 +68,11 @@ if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
     if ($Qreq->u === "new") {
         $Acct = new Contact(null, $Conf);
         $newProfile = true;
-    } else if (($id = cvtint($Qreq->u)) > 0)
+    } else if (($id = cvtint($Qreq->u)) > 0) {
         $Acct = $Conf->user_by_id($id);
-    else if ($Qreq->u === "" && $Qreq->search)
+    } else if ($Qreq->u === "" && $Qreq->search) {
         Navigation::redirect_site("users");
-    else {
+    } else {
         $Acct = $Conf->user_by_email($Qreq->u);
         if (!$Acct && $Qreq->search) {
             $cs = new ContactSearch(ContactSearch::F_USER, $Qreq->u, $Me);
@@ -93,10 +95,11 @@ if (!$Acct
         && ($Acct->contactId || $Qreq->u !== "new"))
     || (isset($Qreq->profile_contactid)
         && $Qreq->profile_contactid !== (string) $Acct->contactId)) {
-    if (!$Acct)
+    if (!$Acct) {
         Conf::msg_error("Invalid user.");
-    else if (isset($Qreq->save) || isset($Qreq->savebulk))
+    } else if (isset($Qreq->save) || isset($Qreq->savebulk)) {
         Conf::msg_error("You’re logged in as a different user now, so your changes were ignored.");
+    }
     unset($Qreq->u, $Qreq->save, $Qreq->savebulk);
     $Conf->self_redirect($Qreq);
 }
@@ -661,6 +664,7 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 
 Ht::stash_script("addClass(document.body,\"want-hash-focus\")");
-if (!$newProfile)
+if (!$newProfile) {
     Ht::stash_script('hiliter_children("#profile-form")');
+}
 $Conf->footer();
