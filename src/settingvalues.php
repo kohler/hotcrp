@@ -22,7 +22,6 @@ class Si {
     public $size;
     public $placeholder;
     public $parser_class;
-    public $novalue = false;
     public $disabled = false;
     public $invalid_value;
     public $default_value;
@@ -67,7 +66,6 @@ class Si {
         "json_values" => "is_array",
         "message_context_setting" => "is_string",
         "message_default" => "is_string",
-        "novalue" => "is_bool",
         "optional" => "is_bool",
         "parser_class" => "is_string",
         "placeholder" => "is_string",
@@ -204,8 +202,10 @@ class Si {
         return $this->storage ? : $this->name;
     }
     function active_value() {
-        return !$this->internal && !$this->disabled && !$this->novalue
-            && $this->type && $this->type !== "none";
+        return !$this->internal
+            && !$this->disabled
+            && $this->type
+            && $this->type !== "none";
     }
 
     function is_date() {
@@ -806,24 +806,31 @@ class SettingValues extends MessageSet {
     }
     function echo_radio_table($name, $varr, $heading = null, $rest = null) {
         $x = $this->curv($name);
-        if ($x === null || !isset($varr[$x]))
+        if ($x === null || !isset($varr[$x])) {
             $x = 0;
-        if (is_string($rest))
+        }
+        if (is_string($rest)) {
             $rest = ["after" => $rest];
+        }
         $fold = $rest ? get($rest, "fold", false) : false;
-        if (is_string($fold) || is_int($fold))
+        if (is_string($fold) || is_int($fold)) {
             $fold = explode(" ", $fold);
+        }
 
         echo '<div id="', $name, '" class="', $this->control_class($name, "settings-g settings-radio");
-        if ($fold !== false && $fold !== true)
+        if ($fold !== false && $fold !== true) {
             echo ' has-fold fold', in_array($x, $fold) ? "o" : "c";
-        if ($rest && isset($rest["group_class"]))
+        }
+        if ($rest && isset($rest["group_class"])) {
             echo ' ', $rest["group_class"];
-        if ($fold !== false && $fold !== true)
+        }
+        if ($fold !== false && $fold !== true) {
             echo '" data-fold-values="', join(" ", $fold);
+        }
         echo '">';
-        if ($heading)
+        if ($heading) {
             echo '<div class="settings-itemheading">', $heading, '</div>';
+        }
         foreach ($varr as $k => $item) {
             if (is_string($item))
                 $item = ["label" => $item];
@@ -1179,11 +1186,9 @@ class SettingValues extends MessageSet {
         return !$this->has_error();
     }
     function account(Si $si1) {
-        if ($si1->internal)
-            return;
         foreach ($this->req_sis($si1) as $si) {
             if (!$si->active_value()) {
-                /* ignore changes to disabled/novalue settings */;
+                /* ignore changes to disabled/internal settings */;
             } else if ($si->parser_class) {
                 if ($this->parser($si)->parse($this, $si)) {
                     $this->saved_si[] = $si;
