@@ -1491,6 +1491,9 @@ class Contact {
                 && $this->plaintext_password()) {
                 $template = "@accountinfo";
             } else {
+                if (!$cdbu && $this->conf->contactdb()) {
+                    error_log("{$this->conf->dbname}: {$this->email} local capability");
+                }
                 $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
                 $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
                 $this->conf->log_for($this, null, "Created password reset " . substr($rest["capability"], 0, 8) . "...");
