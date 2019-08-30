@@ -29,7 +29,7 @@ class Home_Partial {
         if (($signin || $signout) && !$qreq->post_ok()) {
             if ($qreq->method() === "POST") {
                 $sid = session_id();
-                $msg = "ignoring unvalidated "
+                $msg = "{$user->conf->dbname}: ignoring unvalidated "
                     . ($signin ? "signin" : "signout")
                     . ", sid=" . ($sid === "" ? ".empty" : $sid)
                     . ", action=" . ($signin ? $qreq->action : "signout");
