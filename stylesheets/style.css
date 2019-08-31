@@ -3266,11 +3266,11 @@ ul.x > li:last-child {
 }
 .cmtnumhead {
 	display: inline-block;
-	margin-right: 1em;
+	margin-right: 1.25em;
 }
 .cmtname, .cmttime, .cmttags, .cmtvis {
 	display: inline-block;
-	padding-right: 1.5em;
+	padding-right: 1.25em;
 }
 .cmttime, .cmtvis {
 	color: #999999;
