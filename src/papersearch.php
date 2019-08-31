@@ -30,9 +30,10 @@ class SearchSplitter {
     public $pos;
     public $strspan;
     function __construct($str) {
-        $this->str = ltrim($str);
+        $this->str = $str;
         $this->utf8q = strpos($str, chr(0xE2)) !== false;
-        $this->pos = strlen($str) - strlen($this->str);
+        $this->pos = 0;
+        $this->set_span_and_pos("");
     }
     function is_empty() {
         return $this->str === "";
@@ -41,7 +42,8 @@ class SearchSplitter {
         if ($this->utf8q
             && preg_match('/\A([-_.a-zA-Z0-9]+:|["“”][^"“”]+["“”]:|)\s*((?:["“”][^"“”]*(?:["“”]|\z)|[^"“”\s()]*)*)/su', $this->str, $m)) {
             $result = preg_replace('/[“”]/u', "\"", $m[1] . $m[2]);
-        } else if (preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":|)\s*((?:"[^"]*(?:"|\z)|[^"\s()]*)*)/s', $this->str, $m)) {
+        } else if (!$this->utf8q
+                   && preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":|)\s*((?:"[^"]*(?:"|\z)|[^"\s()]*)*)/s', $this->str, $m)) {
             $result = $m[1] . $m[2];
         } else {
             $this->pos += strlen($this->str);
@@ -69,7 +71,12 @@ class SearchSplitter {
     }
     private function set_span_and_pos($prefix) {
         $this->strspan = [$this->pos, $this->pos + strlen($prefix)];
-        $next = ltrim(substr($this->str, strlen($prefix)));
+        $next = substr($this->str, strlen($prefix));
+        if ($this->utf8q) {
+            $next = preg_replace('{\A\s+}u', "", $next);
+        } else {
+            $next = ltrim($next);
+        }
         $this->pos += strlen($this->str) - strlen($next);
         $this->str = $next;
     }
@@ -80,19 +87,22 @@ class SearchSplitter {
                  && (!ctype_space($str[$pos]) || $pcount || $quote); ++$pos) {
             $ch = $str[$pos];
             // translate “” -> "
-            if (ord($ch) === 0xE2 && $pos + 2 < $len && ord($str[$pos + 1]) === 0x80
-                && (ord($str[$pos + 2]) & 0xFE) === 0x9C)
+            if (ord($ch) === 0xE2
+                && $pos + 2 < $len
+                && ord($str[$pos + 1]) === 0x80
+                && (ord($str[$pos + 2]) & 0xFE) === 0x9C) {
                 $ch = "\"";
+            }
             if ($quote) {
                 if ($ch === "\\" && $pos + 1 < strlen($str))
                     ++$pos;
                 else if ($ch === "\"")
                     $quote = 0;
-            } else if ($ch === "\"")
+            } else if ($ch === "\"") {
                 $quote = 1;
-            else if ($ch === "(" || $ch === "[" || $ch === "{")
+            } else if ($ch === "(" || $ch === "[" || $ch === "{") {
                 ++$pcount;
-            else if ($ch === ")" || $ch === "]" || $ch === "}") {
+            } else if ($ch === ")" || $ch === "]" || $ch === "}") {
                 if (!$pcount)
                     break;
                 --$pcount;
@@ -1946,8 +1956,9 @@ class PaperSearch {
 
         while (!$splitter->is_empty()) {
             $op = self::_shift_keyword($splitter, $curqe);
-            if ($curqe && !$op)
+            if ($curqe && !$op) {
                 $op = SearchOperator::get("SPACE");
+            }
             if (!$curqe && $op && $op->op === "highlight") {
                 $curqe = new True_SearchTerm;
                 $curqe->set_float("strspan", [$splitter->strspan[0], $splitter->strspan[0]]);
@@ -1960,14 +1971,15 @@ class PaperSearch {
                     && (empty($stack) || $stack[count($stack) - 1]->op->precedence <= 2)
                     && ($uword = strtoupper($word))
                     && ($uword === "ALL" || $uword === "ANY" || $uword === "NONE")
-                    && $splitter->match('/\A(?:|(?:THEN|then|HIGHLIGHT(?::\w+)?)(?:\s|\().*)\z/'))
+                    && $splitter->match('/\A(?:|(?:THEN|then|HIGHLIGHT(?::\w+)?)(?:\s|\().*)\z/')) {
                     $word = $uword;
+                }
                 // Search like "ti:(foo OR bar)" adds a default keyword.
                 if ($word[strlen($word) - 1] === ":"
                     && preg_match('/\A(?:[-_.a-zA-Z0-9]+:|"[^"]+":)\z/', $word)
-                    && $splitter->starts_with("("))
+                    && $splitter->starts_with("(")) {
                     $next_defkw = [substr($word, 0, strlen($word) - 1), $splitter->strspan[0]];
-                else {
+                } else {
                     // The heart of the matter.
                     $curqe = $this->_search_word($word, $defkw);
                     if (!$curqe->is_uninteresting())
@@ -1975,8 +1987,9 @@ class PaperSearch {
                 }
             } else if ($op->op === ")") {
                 while (!empty($stack)
-                       && $stack[count($stack) - 1]->op->op !== "(")
+                       && $stack[count($stack) - 1]->op->op !== "(") {
                     $curqe = self::_pop_expression_stack($curqe, $stack);
+                }
                 if (!empty($stack)) {
                     $stack[count($stack) - 1]->strspan[1] = $splitter->strspan[1];
                     $curqe = self::_pop_expression_stack($curqe, $stack);
@@ -1997,15 +2010,17 @@ class PaperSearch {
             } else if ($op->unary || $curqe) {
                 $end_precedence = $op->precedence - ($op->precedence <= 1);
                 while (!empty($stack)
-                       && $stack[count($stack) - 1]->op->precedence > $end_precedence)
+                       && $stack[count($stack) - 1]->op->precedence > $end_precedence) {
                     $curqe = self::_pop_expression_stack($curqe, $stack);
+                }
                 $stack[] = (object) ["op" => $op, "leftqe" => $curqe, "strspan" => $splitter->strspan];
                 $curqe = null;
             }
         }
 
-        while (!empty($stack))
+        while (!empty($stack)) {
             $curqe = self::_pop_expression_stack($curqe, $stack);
+        }
         return $curqe;
     }
 
