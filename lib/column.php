@@ -16,14 +16,20 @@ class Column {
     public $position;
     public $__subposition;
 
-    static private $keys = ["name" => true, "className" => true, "column" => true, "row" => true, "fold" => true, "sort" => true, "completion" => true, "minimal" => true, "position" => true];
+    static private $keys = [
+        "name" => true, "className" => true, "column" => true, "row" => true,
+        "fold" => true, "sort" => true, "completion" => true, "minimal" => true,
+        "position" => true
+    ];
 
     function __construct($arg) {
-        foreach ((array) $arg as $k => $v)
+        foreach ((array) $arg as $k => $v) {
             if (isset(self::$keys[$k]))
                 $this->$k = $v;
-        if ($this->className === null)
+        }
+        if ($this->className === null) {
             $this->className = "pl_" . $this->name;
+        }
         assert(!$this->row || !$this->column);
     }
 

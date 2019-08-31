@@ -21,8 +21,9 @@ class PaperColumn extends Column {
         if ($cj->callback[0] === "+") {
             $class = substr($cj->callback, 1);
             return new $class($conf, $cj);
-        } else
+        } else {
             return call_user_func($cj->callback, $conf, $cj);
+        }
     }
 
 
