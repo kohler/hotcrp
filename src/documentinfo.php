@@ -126,12 +126,14 @@ class DocumentInfo implements JsonSerializable {
 
 
     function add_error_html($error_html, $warning = false) {
-        if (!$warning)
+        if (!$warning) {
             $this->error = true;
-        if ($this->error_html)
+        }
+        if ($this->error_html) {
             $this->error_html .= " " . $error_html;
-        else
+        } else {
             $this->error_html = $error_html;
+        }
         return false;
     }
 

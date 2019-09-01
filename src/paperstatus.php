@@ -417,14 +417,15 @@ class PaperStatus extends MessageSet {
                 return null;
 
         // validate JSON
-        if ($docj instanceof DocumentInfo)
+        if ($docj instanceof DocumentInfo) {
             $doc = $docj;
-        else {
+        } else {
             $doc = $dochash = null;
-            if (!isset($docj->hash) && isset($docj->sha1) && is_string($docj->sha1))
+            if (!isset($docj->hash) && isset($docj->sha1) && is_string($docj->sha1)) {
                 $dochash = Filer::sha1_hash_as_text($docj->sha1);
-            else if (isset($docj->hash) && is_string($docj->hash))
+            } else if (isset($docj->hash) && is_string($docj->hash)) {
                 $dochash = Filer::hash_as_text($docj->hash);
+            }
 
             if ($this->prow
                 && ($docid = get($docj, "docid"))
