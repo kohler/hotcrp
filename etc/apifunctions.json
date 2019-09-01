@@ -95,12 +95,13 @@
         "callback": "Search_API::search"
     },
     {
-        "name": "settags", "post": true,
-        "callback": "PaperApi::settags_api"
+        "name": "session", "post": true,
+        "callback": "Session_API::setsession",
+        "synonym": ["setsession"]
     },
     {
-        "name": "setsession", "post": true,
-        "callback": "Session_API::setsession"
+        "name": "settags", "post": true,
+        "callback": "PaperApi::settags_api"
     },
     {
         "name": "shepherd", "paper": true, "get": true, "post": true,

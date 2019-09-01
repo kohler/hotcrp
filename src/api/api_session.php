@@ -4,6 +4,8 @@
 
 class Session_API {
     static function setsession(Contact $user, $qreq) {
+        ensure_session(0);
+
         if (is_string($qreq)) {
             $v = $qreq;
         } else {
@@ -62,6 +64,6 @@ class Session_API {
             }
         }
 
-        return ["ok" => !$error];
+        return ["ok" => !$error, "post" => post_value()];
     }
 }

@@ -200,7 +200,7 @@ class Home_Partial {
         $conf = $user->conf;
         echo '<div class="homegrp">', $conf->_("Sign in to submit or review papers."), '</div>';
         echo '<div class="homegrp foldo" id="homeacct">',
-            Ht::form($conf->hoturl("index", ["post" => post_value(true)])),
+            Ht::form($conf->hoturl("index", ["post" => post_value(true)]), ["class" => "ui-submit js-signin"]),
             '<div class="f-contain">';
         if ($conf->opt("contactdb_dsn")
             && ($x = $conf->opt("contactdb_loginFormHeading")))

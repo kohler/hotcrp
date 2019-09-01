@@ -948,7 +948,7 @@ var handle_ui = (function ($) {
 var callbacks = {};
 function handle_ui(event) {
     var e = event.target;
-    if ((e && hasClass(e, "ui"))
+    if ((e && (hasClass(e, "ui") || hasClass(e, "ui-submit")))
         || (this.tagName === "A" && hasClass(this, "ui"))) {
         event.preventDefault();
     }
@@ -2423,10 +2423,10 @@ function input_differs(elt) {
 }
 
 function form_differs(form, want_ediff) {
-    var ediff = null, $f = $(form).find("input, select, textarea");
-    if (!$f.length)
-        $f = $(form).filter("input, select, textarea");
-    $f.each(function () {
+    var ediff = null, $is = $(form).find("input, select, textarea");
+    if (!$is.length)
+        $is = $(form).filter("input, select, textarea");
+    $is.each(function () {
         if (!hasClass(this, "ignore-diff") && input_differs(this)) {
             ediff = this;
             return false;
@@ -2555,7 +2555,7 @@ function fold(elt, dofold, foldnum) {
             if (elt.hasAttribute("data-fold-session-prefix"))
                 ses = elt.getAttribute("data-fold-session-prefix") + ses;
             if (ses)
-                $.post(hoturl_post("api/setsession", {v: ses + (isopen ? "=1" : "=0")}));
+                $.post(hoturl_post("api/session", {v: ses + (isopen ? "=1" : "=0")}));
         }
     }
 
@@ -5531,15 +5531,16 @@ function search_sort_success(tbl, data_href, data) {
             }
             this.setAttribute("href", href_sorter(href, sorter));
         });
-    var $form = $(tbl).closest("form");
-    if ($form.length) {
+    var form = tbl.closest("form");
+    if (form) {
         var action;
-        if ($form[0].hasAttribute("data-original-action")) {
-            action = $form[0].getAttribute("data-original-action", action);
-            $form[0].removeAttribute("data-original-action");
-        } else
-            action = $form[0].action;
-        $form[0].action = href_sorter(action, want_sorter);
+        if (form.hasAttribute("data-original-action")) {
+            action = form.getAttribute("data-original-action", action);
+            form.removeAttribute("data-original-action");
+        } else {
+            action = form.action;
+        }
+        form.action = href_sorter(action, want_sorter);
     }
 }
 
@@ -5592,7 +5593,7 @@ function search_sort_click(evt) {
 function search_scoresort_change(evt) {
     var scoresort = $(this).val(),
         re = / (?:counts|average|median|variance|maxmin|my)\b/;
-    $.post(hoturl_post("api/setsession"), {v: "scoresort=" + scoresort});
+    $.post(hoturl_post("api/session"), {v: "scoresort=" + scoresort});
     plinfo.set_scoresort(scoresort);
     $("#foldpl > thead").find("a.pl_sort").each(function () {
         var href = this.getAttribute("href"), sorter = href_sorter(href);
@@ -6905,7 +6906,7 @@ function plinfo(type, dofold) {
 
     // inform back end about folds
     if (ses)
-        $.post(hoturl_post("api/setsession", {v: ses + type + (dofold ? "=1" : "=0")}));
+        $.post(hoturl_post("api/session", {v: ses + type + (dofold ? "=1" : "=0")}));
 
     // show or hide statistics rows
     var statistics = false;
@@ -7130,24 +7131,35 @@ function transfer_form_values($dst, $src, names) {
 
 
 // login UI
+handle_ui.on("js-signin", function (event) {
+    var form = this;
+    $.post(hoturl_post("api/session"), {}, function (data) {
+        if (data && data.post) {
+            siteurl_postvalue = data.post;
+            form.action = form.action.replace(/([?&]post=)[^&#;]*/, "$1" + urlencode(data.post));
+        }
+        form.submit();
+    });
+});
+
 handle_ui.on("js-forgot-password", function (event) {
-    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), maxWidth: "25rem"});
+    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
     hc.push('<p>Enter your email and we’ll send you instructions for signing in.</p>');
     hc.push('<div class="f-i"><label for="forgotpassword_email">Email</label>', '</div>');
     hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="username" id="forgotpassword_email">');
-    hc.push_actions(['<button type="submit" class="btn-success">Reset password</button>',
+    hc.push_actions(['<button type="submit" class="btn-primary">Reset password</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
 });
 
 handle_ui.on("js-create-account", function (event) {
-    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "new"}), maxWidth: "25rem"});
+    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "new"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
     hc.push('<h2>Create account</h2>');
     hc.push('<p>Enter your email and we’ll create an account and send you an initial password.</p>')
     hc.push('<div class="f-i"><label for="createaccount_email">Email</label>', '</div>');
     hc.push_pop('<input type="email" name="email" size="36" class="fullw" autocomplete="email" id="createaccount_email">');
-    hc.push_actions(['<button type="submit" class="btn-success">Create account</button>',
+    hc.push_actions(['<button type="submit" class="btn-primary">Create account</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
@@ -8303,7 +8315,7 @@ $(document).on("click", "a", function (evt) {
 });
 
 $(document).on("submit", "form", function (evt) {
-    if (hasClass(this, "submit-ui")) {
+    if (hasClass(this, "ui-submit")) {
         handle_ui.call(this, evt);
     } else {
         handle_list(this, this.getAttribute("action"));
