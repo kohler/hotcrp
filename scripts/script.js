@@ -6280,7 +6280,9 @@ function popup_skeleton(options) {
     hc.push('<div class="modal" role="dialog"><div class="modal-dialog'
         + (!options.anchor || options.anchor === window ? " modal-dialog-centered" : "")
         + (options.style ? '" style="' + escape_entities(options.style) : '')
-        + '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8">', '</form></div></div></div>');
+        + '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8"'
+        + (options.form_class ? ' class="' + options.form_class + '"' : '')
+        + '>', '</form></div></div></div>');
     hc.push_actions = function (actions) {
         hc.push('<div class="popup-actions">', '</div>');
         if (actions)
@@ -6318,7 +6320,11 @@ function popup_skeleton(options) {
             });
             $d.find("button[name=cancel]").on("click", close);
             if (options.action) {
-                $d.find("form").attr({action: options.action, method: options.method || "post"});
+                if (options.action instanceof HTMLFormElement) {
+                    $d.find("form").attr({action: options.action.action, method: options.action.method});
+                } else {
+                    $d.find("form").attr({action: options.action, method: options.method || "post"});
+                }
             }
             for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
                 if (options[k] != null)
@@ -7302,8 +7308,8 @@ handle_ui.on("js-remove-document", function (event) {
 });
 
 handle_ui.on("js-withdraw", function (event) {
-    var $f = $(this).closest("form"),
-        hc = popup_skeleton({anchor: this, action: $f[0].action});
+    var f = this.closest("form"),
+        hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Are you sure you want to withdraw this submission from consideration and/or publication?');
     if (!this.hasAttribute("data-revivable"))
         hc.push(' Only administrators can undo this step.');
@@ -7316,19 +7322,19 @@ handle_ui.on("js-withdraw", function (event) {
     hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn-danger">Withdraw</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
-    transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);
-    $d.on("submit", "form", function () { $f.addClass("submitting"); });
+    transfer_form_values($d.find("form"), $(f), ["doemail", "emailNote"]);
+    $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
 handle_ui.on("js-delete-paper", function (event) {
-    var $f = $(this).closest("form"),
-        hc = popup_skeleton({anchor: this, action: $f[0].action});
+    var f = this.closest("form"),
+        hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="delete" value="1" class="dangerous">Delete</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
-    transfer_form_values($d.find("form"), $f, ["doemail", "emailNote"]);
-    $d.on("submit", "form", function () { $f.addClass("submitting"); });
+    transfer_form_values($d.find("form"), $(f), ["doemail", "emailNote"]);
+    $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
 handle_ui.on("js-clickthrough", function (event) {
@@ -7731,15 +7737,15 @@ handle_ui.on("js-cannot-delete-user", function (event) {
 });
 
 handle_ui.on("js-delete-user", function (event) {
-    var $f = $(this).closest("form"),
-        hc = popup_skeleton({anchor: this, action: $f[0].action}), x;
+    var f = this.closest("form"),
+        hc = popup_skeleton({anchor: this, action: f}), x;
     hc.push('<p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>');
     if ((x = this.getAttribute("data-delete-info")))
         hc.push(x);
     hc.push_actions(['<button type="submit" name="delete" value="1" class="dangerous">Delete user</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
-    $d.on("submit", "form", function () { $f.addClass("submitting"); });
+    $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
 handle_ui.on("js-plaintext-password", function (event) {
@@ -7765,8 +7771,8 @@ return function (event) {
 
 // review UI
 handle_ui.on("js-decline-review", function () {
-    var $f = $(this).closest("form"),
-        hc = popup_skeleton({anchor: this, action: $f[0].action});
+    var f = this.closest("form"),
+        hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
     hc.push('<textarea name="reason" rows="3" cols="60" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
     hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn-danger">Decline review</button>',
@@ -7775,19 +7781,19 @@ handle_ui.on("js-decline-review", function () {
 });
 
 handle_ui.on("js-deny-review-request", function () {
-    var $f = $(this).closest("form"),
-        hc = popup_skeleton({anchor: this, action: $f[0].action});
+    var f = this.closest("form"),
+        hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Select “Deny request” to deny this review request.</p>');
     hc.push('<textarea name="reason" rows="3" cols="60" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
     hc.push_actions(['<button type="submit" name="denyreview" value="1" class="btn-danger">Deny request</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
-    transfer_form_values($d, $f, ["firstName", "lastName", "affiliation", "reason"]);
+    transfer_form_values($d, $(f), ["firstName", "lastName", "affiliation", "reason"]);
 });
 
 handle_ui.on("js-delete-review", function () {
-    var $f = $(this).closest("form"),
-        hc = popup_skeleton({anchor: this, action: $f[0].action});
+    var $f = this.closest("form"),
+        hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="deletereview" value="1" class="dangerous">Delete review</button>',
         '<button type="button" name="cancel">Cancel</button>']);
