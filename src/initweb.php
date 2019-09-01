@@ -71,7 +71,7 @@ function initialize_user() {
             if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l))
                 $Qreq->approve_post();
             else
-                error_log("{$Conf->dbname}: bad post={$Qreq->post}, cookie={$sid}");
+                error_log("{$Conf->dbname}: bad post={$Qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
         } else if ($Qreq->post === "<empty-session>"
                    || $Qreq->post === ".empty") {
             $Qreq->approve_post();
