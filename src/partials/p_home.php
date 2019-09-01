@@ -26,9 +26,9 @@ class Home_Partial {
             $signin = false;
         }
         // CSRF protection for signin/signout
+        $sid = session_id();
         if (($signin || $signout) && !$qreq->post_ok()) {
             if ($qreq->method() === "POST") {
-                $sid = session_id();
                 $msg = "{$user->conf->dbname}: ignoring unvalidated "
                     . ($signin ? "signin" : "signout")
                     . ", sid=" . ($sid === "" ? ".empty" : $sid)
@@ -42,7 +42,8 @@ class Home_Partial {
                 error_log($msg);
             }
             if ($qreq->method() === "POST" || $qreq->post) {
-                $user->conf->warnMsg("Your session has changed since you last used this tab. Please try again.");
+                ensure_session(0);
+                $user->conf->msg(1, "Your session has changed since you last used this tab. Please try again.");
                 unset($qreq->signin, $qreq->signout);
                 $user->conf->self_redirect($qreq);
                 $signin = $signout = false;
@@ -51,7 +52,7 @@ class Home_Partial {
         // signout
         if ($signout && $qreq->post_ok()) {
             if (!$user->is_empty() && !$user->conf->opt("httpAuthLogin")) {
-                $user->conf->confirmMsg("You have been signed out.");
+                $user->conf->msg("xconfirm", "You have been signed out.");
             }
             $user = LoginHelper::logout($user, true);
         }
@@ -181,7 +182,7 @@ class Home_Partial {
 
     function render_message(Contact $user) {
         if (($t = $user->conf->_i("home", false)))
-            $user->conf->infoMsg($t);
+            $user->conf->msg(0, $t);
     }
 
     function render_welcome(Contact $user) {

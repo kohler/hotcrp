@@ -3027,9 +3027,9 @@ class Conf {
         } else if ($conf && !$conf->headerPrinted) {
             ensure_session();
             $_SESSION[$conf->dsn]["msgs"][] = [$type, $text];
-        } else if ($type[0] === "x" || is_int($type))
+        } else if ($type[0] === "x" || is_int($type)) {
             echo Ht::msg($text, $type);
-        else {
+        } else {
             if (is_array($text))
                 $text = '<div class="multimessage">' . join("", array_map(function ($x) { return '<div class="mmm">' . $x . '</div>'; }, $text)) . '</div>';
             echo "<div class=\"$type\">$text</div>";
