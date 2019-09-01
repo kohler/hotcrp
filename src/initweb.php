@@ -44,8 +44,9 @@ header("Cache-Control: max-age=0,must-revalidate,private");
 $Conf->prepare_content_security_policy();
 
 // Don't set up a session if $Me is false
-if ($Me === false)
+if ($Me === false) {
     return;
+}
 
 
 // Initialize user
@@ -137,8 +138,9 @@ function initialize_user() {
 
     // if bounced through login, add post data
     if (isset($_SESSION["login_bounce"][4])
-        && $_SESSION["login_bounce"][4] <= $Now)
+        && $_SESSION["login_bounce"][4] <= $Now) {
         unset($_SESSION["login_bounce"]);
+    }
 
     if (!$Me->is_empty()
         && isset($_SESSION["login_bounce"])

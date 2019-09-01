@@ -11,23 +11,25 @@ if (!isset($_GET["fn"])) {
             $_GET["p"] = $fn;
         $fn = Navigation::path_component(1, true);
     }
-    if ($fn)
+    if ($fn) {
         $_GET["fn"] = $fn;
-    else if (isset($_GET["track"]))
+    } else if (isset($_GET["track"])) {
         $_GET["fn"] = "track";
-    else {
+    } else {
         http_response_code(404);
         header("Content-Type: text/plain; charset=utf-8");
         echo json_encode(["ok" => false, "error" => "API function missing"]);
         exit;
     }
 }
-if ($_GET["fn"] === "deadlines")
+if ($_GET["fn"] === "deadlines") {
     $_GET["fn"] = "status";
+}
 if (!isset($_GET["p"])
     && ($p = Navigation::path_component(1, true))
-    && ctype_digit($p))
+    && ctype_digit($p)) {
     $_GET["p"] = $p;
+}
 
 // trackerstatus is a special case: prevent session creation
 global $Me;
@@ -41,8 +43,9 @@ if ($_GET["fn"] === "trackerstatus") {
 // initialization
 require_once("src/initweb.php");
 
-if ($Qreq->base !== null)
+if ($Qreq->base !== null) {
     $Conf->set_siteurl($Qreq->base);
+}
 if (!$Me->has_account_here()
     && ($key = $Me->capability("tracker_kiosk"))) {
     $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
@@ -54,8 +57,9 @@ if (!$Me->has_account_here()
         $Me->tracker_kiosk_state = $kiosks->$key->show_papers ? 2 : 1;
     }
 }
-if ($Qreq->p)
+if ($Qreq->p) {
     $Conf->set_paper_request($Qreq, $Me);
+}
 
 // requests
 if ($Conf->has_api($Qreq->fn)) {
@@ -95,10 +99,11 @@ if ($Qreq->fn === "searchcompletion") {
 
 // from here on: `status` and `track` requests
 $is_track = $Qreq->fn === "track";
-if ($is_track)
+if ($is_track) {
     MeetingTracker::track_api($Me, $Qreq); // may fall through to act like `status`
-else if ($Qreq->fn !== "status")
+} else if ($Qreq->fn !== "status") {
     json_exit(404, "Unknown request “" . $Qreq->fn . "”");
+}
 
 $j = $Me->my_deadlines($Conf->paper);
 
@@ -109,7 +114,8 @@ if ($Conf->paper && $Me->can_view_tags($Conf->paper)) {
         $j->p = [$Conf->paper->paperId => $pj];
 }
 
-if ($is_track && ($new_trackerid = $Qreq->annex("new_trackerid")))
+if ($is_track && ($new_trackerid = $Qreq->annex("new_trackerid"))) {
     $j->new_trackerid = $new_trackerid;
+}
 $j->ok = true;
 json_exit($j);

@@ -7,7 +7,7 @@ class Session_API {
         if (is_string($qreq)) {
             $v = $qreq;
         } else {
-            $v = $qreq->v;
+            $v = (string) $qreq->v;
         }
 
         $error = false;
