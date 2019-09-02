@@ -7684,9 +7684,9 @@ edit_conditions.pc_conflict = function (ec, form) {
 
 function run_edit_conditions() {
     $(".has-edit-condition").each(function () {
-        var $f = $(this).closest("form"),
+        var f = this.closest("form"),
             ec = JSON.parse(this.getAttribute("data-edit-condition"));
-        toggleClass(this, "hidden", !evaluate_edit_condition(ec, $f[0]));
+        toggleClass(this, "hidden", !evaluate_edit_condition(ec, f));
     });
 }
 
@@ -7804,7 +7804,7 @@ handle_ui.on("js-deny-review-request", function () {
 });
 
 handle_ui.on("js-delete-review", function () {
-    var $f = this.closest("form"),
+    var f = this.closest("form"),
         hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="deletereview" value="1" class="dangerous">Delete review</button>',
