@@ -27,9 +27,6 @@ class Basics_SettingParser extends SettingParser {
     function validate(SettingValues $sv, Si $si) {
         if ($si->name === "opt.contactEmail") {
             $default_contact = $sv->conf->default_site_contact();
-            error_log(1);
-            error_log($sv->newv("opt.contactName"));
-            error_log($sv->newv("opt.contactEmail"));
             if ($default_contact
                 && $sv->newv("opt.contactName") === Text::name_text($default_contact)
                 && $sv->newv("opt.contactEmail") === $default_contact->email
