@@ -107,10 +107,11 @@ class Contact {
     function __construct($user = null, Conf $conf = null) {
         global $Conf;
         $this->conf = $conf ? : $Conf;
-        if ($user)
+        if ($user) {
             $this->merge($user);
-        else if ($this->contactId || $this->contactDbId)
+        } else if ($this->contactId || $this->contactDbId) {
             $this->db_load();
+        }
     }
 
     static function fetch($result, Conf $conf) {
@@ -131,47 +132,58 @@ class Contact {
         }
         if (isset($user->contactDbId))
             $this->contactDbId = (int) $user->contactDbId;
-        if (isset($user->firstName) && isset($user->lastName))
+        if (isset($user->firstName) && isset($user->lastName)) {
             $name = $user;
-        else
+        } else {
             $name = Text::analyze_name($user);
+        }
         $this->firstName = get_s($name, "firstName");
         $this->lastName = get_s($name, "lastName");
-        if (isset($user->unaccentedName))
+        if (isset($user->unaccentedName)) {
             $this->unaccentedName = $user->unaccentedName;
-        else if (isset($name->unaccentedName))
+        } else if (isset($name->unaccentedName)) {
             $this->unaccentedName = $name->unaccentedName;
-        else
+        } else {
             $this->unaccentedName = Text::unaccented_name($name);
+        }
         foreach (["email", "preferredEmail", "affiliation", "phone",
-                  "country", "birthday", "gender"] as $k)
+                  "country", "gender"] as $k) {
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
-        if (isset($user->collaborators))
+        }
+        if (isset($user->collaborators)) {
             $this->collaborators = $user->collaborators;
+        }
         self::set_sorter($this, $this->conf);
-        if (isset($user->password))
+        if (isset($user->password)) {
             $this->password = (string) $user->password;
-        if (isset($user->disabled))
+        }
+        if (isset($user->disabled)) {
             $this->disabled = !!$user->disabled;
+        }
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
-                  "updateTime", "creationTime"] as $k)
+                  "updateTime", "creationTime"] as $k) {
             if (isset($user->$k))
                 $this->$k = (int) $user->$k;
-        if (property_exists($user, "contactTags"))
+        }
+        if (property_exists($user, "contactTags")) {
             $this->contactTags = $user->contactTags;
-        else
+        } else {
             $this->contactTags = $this->contactId ? false : null;
-        if (isset($user->activity_at))
+        }
+        if (isset($user->activity_at)) {
             $this->activity_at = (int) $user->activity_at;
-        else if (isset($user->lastLogin))
+        } else if (isset($user->lastLogin)) {
             $this->activity_at = (int) $user->lastLogin;
-        if (isset($user->birthday))
+        }
+        if (isset($user->birthday)) {
             $this->birthday = (int) $user->birthday;
-        if (isset($user->data) && $user->data)
+        }
+        if (isset($user->data) && $user->data) {
             // this works even if $user->data is a JSON string
             // (array_to_object_recursive($str) === $str)
             $this->data = array_to_object_recursive($user->data);
+        }
         if (isset($user->roles) || isset($user->isPC) || isset($user->isAssistant)
             || isset($user->isChair)) {
             $roles = (int) get($user, "roles");
@@ -200,24 +212,31 @@ class Contact {
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
         self::set_sorter($this, $this->conf);
         $this->password = (string) $this->password;
-        if (isset($this->disabled))
+        if (isset($this->disabled)) {
             $this->disabled = !!$this->disabled;
+        }
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
-                  "updateTime", "creationTime"] as $k)
+                  "updateTime", "creationTime"] as $k) {
             $this->$k = (int) $this->$k;
-        if (!$this->activity_at && isset($this->lastLogin))
+        }
+        if (!$this->activity_at && isset($this->lastLogin)) {
             $this->activity_at = (int) $this->lastLogin;
-        if (isset($this->birthday))
+        }
+        if (isset($this->birthday)) {
             $this->birthday = (int) $this->birthday;
-        if ($this->data)
+        }
+        if ($this->data) {
             // this works even if $user->data is a JSON string
             // (array_to_object_recursive($str) === $str)
             $this->data = array_to_object_recursive($this->data);
-        if (isset($this->roles))
+        }
+        if (isset($this->roles)) {
             $this->assign_roles((int) $this->roles);
-        if (isset($this->__isAuthor__))
+        }
+        if (isset($this->__isAuthor__)) {
             $this->_db_roles = ((int) $this->__isAuthor__ > 0 ? self::ROLE_AUTHOR : 0)
                 | ((int) $this->__hasReview__ > 0 ? self::ROLE_REVIEWER : 0);
+        }
         $this->_disabled = null;
     }
 
@@ -514,12 +533,13 @@ class Contact {
         $cdbux = $cdbur ? : new Contact(null, $this->conf);
         $upd = [];
         foreach (["firstName", "lastName", "affiliation", "country", "collaborators",
-                  "birthday", "gender"] as $k)
+                  "birthday", "gender"] as $k) {
             if ($this->$k !== null
                 && $this->$k !== ""
                 && (!$only_update_empty || $cdbux->$k === null || $cdbux->$k === "")
                 && (!$cdbur || in_array($k, $update_keys ? : [])))
                 $upd[$k] = $this->$k;
+        }
         if (!$cdbur) {
             $upd["email"] = $this->email;
             if ($this->password
@@ -535,8 +555,9 @@ class Contact {
         }
         $cdbur = $cdbur ? : $this->conf->contactdb_user_by_email($this->email);
         if ($cdbur->confid
-            && (int) $cdbur->roles !== $this->contactdb_roles())
+            && (int) $cdbur->roles !== $this->contactdb_roles()) {
             $this->_contactdb_save_roles($cdbur);
+        }
         return $cdbur ? (int) $cdbur->contactDbId : false;
     }
 
@@ -1272,19 +1293,21 @@ class Contact {
                 return $cdbu->plaintext_password();
             else
                 return false;
-        } else if ($this->password[0] === " " || $this->password === "*")
+        } else if ($this->password[0] === " " || $this->password === "*") {
             return false;
-        else
+        } else {
             return $this->password;
+        }
     }
 
     function password_is_reset() {
-        if (($cdbu = $this->contactdb_user()))
+        if (($cdbu = $this->contactdb_user())) {
             return (string) $cdbu->password === ""
                 && ((string) $this->password === ""
                     || $this->passwordTime < $cdbu->passwordTime);
-        else
+        } else {
             return $this->password === "";
+        }
     }
 
     function password_used() {

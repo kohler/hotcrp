@@ -1567,17 +1567,18 @@ class Conf {
 
     function cached_user_by_id($id, $missing = false) {
         global $Me;
-        if ($id && $Me && $Me->contactId == $id)
+        if ($id && $Me && $Me->contactId == $id) {
             return $Me;
-        else if (isset($this->_pc_members_and_admins_cache[$id]))
+        } else if (isset($this->_pc_members_and_admins_cache[$id])) {
             return $this->_pc_members_and_admins_cache[$id];
-        else if (isset($this->_user_cache[$id]))
+        } else if (isset($this->_user_cache[$id])) {
             return $this->_user_cache[$id];
-        else if ($missing) {
+        } else if ($missing) {
             $this->_user_cache_missing[$id] = true;
             return null;
-        } else
+        } else {
             return $this->user_by_id($id);
+        }
     }
 
     function load_missing_cached_users() {

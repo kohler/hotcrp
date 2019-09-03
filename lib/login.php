@@ -81,8 +81,9 @@ class LoginHelper {
         }
 
         // look up user in our database
-        if (strpos($qreq->email, "@") === false)
+        if (strpos($qreq->email, "@") === false) {
             self::unquote_double_quoted_request($qreq);
+        }
         $user = $conf->user_by_email($qreq->email);
 
         // look up or create user in contact database
