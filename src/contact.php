@@ -202,6 +202,7 @@ class Contact {
         if (isset($user->is_site_contact))
             $this->is_site_contact = $user->is_site_contact;
         $this->_disabled = null;
+        $this->_contactdb_user = false;
     }
 
     private function db_load() {
@@ -238,6 +239,7 @@ class Contact {
                 | ((int) $this->__hasReview__ > 0 ? self::ROLE_REVIEWER : 0);
         }
         $this->_disabled = null;
+        $this->_contactdb_user = false;
     }
 
     function merge_secondary_properties($x) {
