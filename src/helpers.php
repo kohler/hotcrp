@@ -163,6 +163,9 @@ function json_exit($json, $arg2 = null) {
             if (!isset($json->content["status"])) {
                 $json->content["status"] = $json->status;
             }
+            if ($Qreq->post && !$Qreq->post_ok()) {
+                $json->content["postvalue"] = post_value(true);
+            }
         }
         header("Content-Type: application/json; charset=utf-8");
         echo json_encode_browser($json->content);

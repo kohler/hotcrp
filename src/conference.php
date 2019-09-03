@@ -3834,8 +3834,9 @@ class Conf {
             && $method !== "HEAD"
             && $method !== "OPTIONS"
             && !$qreq->post_ok()
-            && (!$uf || !get($uf, "allow_xss")))
+            && (!$uf || !get($uf, "allow_xss"))) {
             return new JsonResult(403, "Missing credentials.");
+        }
         if (!$uf) {
             if ($this->has_api($fn, $user, null))
                 return new JsonResult(405, "Method not supported.");
@@ -3844,8 +3845,9 @@ class Conf {
             else
                 return new JsonResult(404, "Function not found.");
         }
-        if (!$prow && get($uf, "paper"))
+        if (!$prow && get($uf, "paper")) {
             return self::paper_error_json_result($qreq->annex("paper_whynot"));
+        }
         self::xt_resolve_require($uf);
         return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
     }
