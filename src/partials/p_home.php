@@ -201,11 +201,12 @@ class Home_Partial {
         $conf = $user->conf;
         echo '<div class="homegrp">', $conf->_("Sign in to submit or review papers."), '</div>';
         echo '<div class="homegrp foldo" id="homeacct">',
-            Ht::form($conf->hoturl("index", ["post" => post_value(true)]), ["class" => "ui-submit js-signin"]),
+            Ht::form($conf->hoturl("index", ["signin" => 1, "action" => "login", "post" => post_value(true)]), ["class" => "ui-submit js-signin"]),
             '<div class="f-contain">';
         if ($conf->opt("contactdb_dsn")
-            && ($x = $conf->opt("contactdb_loginFormHeading")))
+            && ($x = $conf->opt("contactdb_loginFormHeading"))) {
             echo $x;
+        }
         $password_reset = $user->session("password_reset");
         $password_status = Ht::problem_status_at("password");
         $focus_email = !$password_status
@@ -242,7 +243,7 @@ class Home_Partial {
         if ($is_external_login)
             echo Ht::hidden("action", "login");
         echo '<div class="popup-actions">',
-            Ht::submit("signin", "Sign in", ["id" => "signin_signin", "class" => "btn-success", "tabindex" => 1]),
+            Ht::submit(null, "Sign in", ["id" => "signin_signin", "class" => "btn-success", "tabindex" => 1]),
             '</div>';
         if (!$is_external_login
             && !$conf->opt("disableNewUsers")

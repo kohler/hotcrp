@@ -64,6 +64,6 @@ class Session_API {
             }
         }
 
-        return ["ok" => !$error];
+        return ["ok" => !$error, "postvalue" => post_value()];
     }
 }
