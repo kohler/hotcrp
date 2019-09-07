@@ -1733,6 +1733,9 @@ dl.ctelt {
 	page-break-inside: avoid;
 	break-inside: avoid;
 }
+.assignment-ui-round {
+	padding-top: 3px;
+}
 input.assignment-ui-radio {
 	margin-left: 0;
 }

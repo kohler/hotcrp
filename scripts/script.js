@@ -2813,13 +2813,13 @@ handle_ui.on("js-submit-mark", function (event) {
 (function ($) {
 function make_radio(name, value, html, revtype) {
     var rname = "assrev" + name, id = rname + "_" + value,
-        t = '<div class="assignment-ui-choice">'
+        t = '<div class="assignment-ui-choice checki"><label><span class="checkc">'
         + '<input type="radio" name="' + rname + '" value="' + value + '" id="' + id + '" class="assignment-ui-radio';
     if (value == revtype)
         t += ' want-focus" checked';
     else
         t += '"';
-    t += '>&nbsp;<label for="' + id + '">';
+    t += '></span>';
     if (value != 0)
         t += '<span class="rto rt' + value + '"><span class="rti">' + ["C", "", "E", "P", "2", "1", "M"][value + 1] + '</span></span>&nbsp;';
     if (value == revtype)
