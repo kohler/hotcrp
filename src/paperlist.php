@@ -194,15 +194,18 @@ class PaperList {
             $this->qopts = ["paperId" => $this->search->paper_ids()];
         $this->qopts["scores"] = [];
 
-        if ($this->sortable && is_string($args["sort"]))
-            $this->sorters[] = PaperSearch::parse_sorter($args["sort"]);
-        else if ($this->sortable && $qreq->sort)
-            $this->sorters[] = PaperSearch::parse_sorter($qreq->sort);
+        if ($this->sortable) {
+            if (is_string($args["sort"]))
+                $this->sorters[] = PaperSearch::parse_sorter($args["sort"]);
+            else if ($qreq->sort)
+                $this->sorters[] = PaperSearch::parse_sorter($qreq->sort);
+        }
         ListSorter::append($this->sorters, $this->search->sorter_list());
 
         $viewdisplay = 0;
-        if (is_string(get($args, "display")))
+        if (is_string(get($args, "display"))) {
             $viewdisplay |= $this->set_view_display($args["display"], ~$viewdisplay);
+        }
         if (($report = get($args, "report"))) {
             if (!get($args, "no_session_display")) {
                 $s = $this->user->session("{$report}display", null);
@@ -213,14 +216,17 @@ class PaperList {
                 $s = $this->conf->review_form()->default_display();
             $viewdisplay |= $this->set_view_display($s, ~$viewdisplay);
         }
-        foreach ($this->search->view_list() as $vv)
+        foreach ($this->search->view_list() as $vv) {
             $this->set_view($vv[0], $vv[1]);
+        }
         if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
             && get($this->_view_fields, "au")
-            && get($this->_view_fields, "anonau") === null)
+            && get($this->_view_fields, "anonau") === null) {
             $this->_view_fields["anonau"] = true;
-        if ($qreq->forceShow !== null)
+        }
+        if ($qreq->forceShow !== null) {
             $this->_view_force = !!$qreq->forceShow;
+        }
 
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
 
@@ -257,27 +263,31 @@ class PaperList {
     }
 
     function set_view($k, $v) {
-        if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"")
+        if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
-        if (in_array($v, ["show", "hide"], true))
+        }
+        if (in_array($v, ["show", "hide"], true)) {
             $v = $v === "show";
-        if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"], true))
+        }
+        if (in_array($k, ["compact", "cc", "compactcolumn", "ccol", "compactcolumns"], true)) {
             $this->_view_compact_columns = $this->_view_columns = $v;
-        else if (in_array($k, ["columns", "column", "col"], true))
+        } else if (in_array($k, ["columns", "column", "col"], true)) {
             $this->_view_columns = $v;
-        else if ($k === "force")
+        } else if ($k === "force") {
             $this->_view_force = $v;
-        else if (in_array($k, ["statistics", "stat", "stats", "totals"], true))
+        } else if (in_array($k, ["statistics", "stat", "stats", "totals"], true)) {
             $this->_view_statistics = $v;
-        else if (in_array($k, ["rownum", "rownumbers"], true))
+        } else if (in_array($k, ["rownum", "rownumbers"], true)) {
             $this->_view_row_numbers = $v;
-        else {
-            if ($k === "authors" || $k === "author")
+        } else {
+            if ($k === "authors" || $k === "author") {
                 $k = "au";
+            }
             if ($v
                 && in_array($k, ["aufull", "anonau"], true)
-                && !isset($this->_view_fields["au"]))
+                && !isset($this->_view_fields["au"])) {
                 $this->_view_fields["au"] = $v;
+            }
             $this->_view_fields[$k] = $v;
         }
     }
@@ -291,8 +301,9 @@ class PaperList {
             if (($colon = strpos($w, ":")) !== false) {
                 $action = substr($w, 0, $colon);
                 $w = substr($w, $colon + 1);
-            } else
+            } else {
                 $action = "show";
+            }
             if ($action === "sort") {
                 if (($w !== "sort:id" || $sorters || $this->sorters)
                     && ($viewdisplay & self::VIEWDISPLAY_SORT)) {
@@ -756,8 +767,9 @@ class PaperList {
             foreach ($this->find_columns($fid) as $fdef)
                 $field_list[] = $fdef;
         }
-        if ($this->qreq->selectall > 0 && $field_list[0]->name == "sel")
+        if ($this->qreq->selectall > 0 && $field_list[0]->name == "sel") {
             $field_list[0] = $this->find_column("selon");
+        }
         return $field_list;
     }
 
@@ -831,19 +843,23 @@ class PaperList {
 
     function is_folded($fdef) {
         $fname = $fdef;
-        if (is_object($fdef) || ($fdef = $this->find_column($fname)))
+        if (is_object($fdef) || ($fdef = $this->find_column($fname))) {
             $fname = $fdef->fold ? $fdef->name : null;
-        else if ($fname === "force")
+        } else if ($fname === "force") {
             return !$this->_view_force;
-        else if ($fname === "rownum")
+        } else if ($fname === "rownum") {
             return !$this->_view_row_numbers;
-        else if ($fname === "statistics")
+        } else if ($fname === "statistics") {
             return !$this->_view_statistics;
-        if ($fname === "authors" || $fname === "author")
+        }
+        if ($fname === "authors" || $fname === "author") {
             $fname = "au";
-        if (!$fname || $this->qreq["show$fname"])
+        }
+        if (!$fname || $this->qreq["show$fname"]) {
             return false;
-        return !get($this->_view_fields, $fname);
+        } else {
+            return !get($this->_view_fields, $fname);
+        }
     }
 
     private function _wrap_conflict($main_content, $override_content, PaperColumn $fdef) {
@@ -1145,19 +1161,20 @@ class PaperList {
         $titleextra = "";
         if ($show_links && $this->has("authors")) {
             $titleextra .= '<span class="sep"></span>';
-            if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)
+            if ($this->conf->submission_blindness() == Conf::BLIND_NEVER) {
                 $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="au">'
                     . '<span class="fn1">Show authors</span><span class="fx1">Hide authors</span></a>';
-            else if ($this->user->is_manager() && !$this->has("openau"))
+            } else if ($this->user->is_manager() && !$this->has("openau")) {
                 $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="au anonau">'
                     . '<span class="fn1 fn2">Show authors</span><span class="fx1 fx2">Hide authors</span></a>';
-            else if ($this->user->is_manager() && $this->has("anonau"))
+            } else if ($this->user->is_manager() && $this->has("anonau")) {
                 $titleextra .= '<a class="ui js-plinfo fn1" href="#" data-plinfo-field="au">Show authors</a>'
                     . '<a class="ui js-plinfo fx1 fn2" href="#" data-plinfo-field="anonau">Show all authors</a>'
                     . '<a class="ui js-plinfo fx1 fx2" href="#" data-plinfo-field="au anonau">Hide authors</a>';
-            else
+            } else {
                 $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="au">'
                     . '<span class="fn1">Show authors</span><span class="fx1">Hide authors</span></a>';
+            }
         }
         if ($show_links && $this->has("tags")) {
             $tagfold = $this->find_column("tags")->fold;
@@ -1330,8 +1347,10 @@ class PaperList {
         }
         if ($this->_header_script !== ""
             && ($ch = $this->_header_script[strlen($this->_header_script) - 1]) !== "}"
-            && $ch !== "{" && $ch !== ";")
+            && $ch !== "{"
+            && $ch !== ";") {
             $this->_header_script .= ";";
+        }
         $this->_header_script .= $script;
     }
 
@@ -1805,20 +1824,24 @@ class PaperList {
         $field_list = $this->_columns($field_list, false, false);
         $res = [];
         if ($viewdisplay & self::VIEWDISPLAY_VIEW) {
-            if ($this->_view_force)
+            if ($this->_view_force) {
                 $res["-3 force"] = "show:force";
-            if ($this->_view_compact_columns)
+            }
+            if ($this->_view_compact_columns) {
                 $res["-2 ccol"] = "show:ccol";
-            else if ($this->_view_columns)
+            } else if ($this->_view_columns) {
                 $res["-2 col"] = "show:col";
-            if ($this->_view_row_numbers)
+            }
+            if ($this->_view_row_numbers) {
                 $res["-1 rownum"] = "show:rownum";
-            if ($this->_view_statistics)
+            }
+            if ($this->_view_statistics) {
                 $res["-1 statistics"] = "show:statistics";
+            }
             $x = [];
             foreach ($this->_view_fields as $k => $v) {
                 $f = $this->_expand_view_column($k, false);
-                foreach ($f as $col)
+                foreach ($f as $col) {
                     if ($v === "edit"
                         || ($v && ($col->fold || !$col->is_visible))
                         || (!$v && !$col->fold && $col->is_visible)) {
@@ -1827,15 +1850,20 @@ class PaperList {
                         $key = ($col->position ? : 0) . " " . $col->name;
                         $res[$key] = $v . ":" . PaperSearch::escape_word($col->name);
                     }
+                }
             }
-            $anonau = get($this->_view_fields, "anonau") && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL;
+            $anonau = get($this->_view_fields, "anonau")
+                && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL;
             $aufull = get($this->_view_fields, "aufull");
-            if (($anonau || $aufull) && !get($this->_view_fields, "au"))
+            if (($anonau || $aufull) && !get($this->_view_fields, "au")) {
                 $res["150 authors"] = "hide:authors";
-            if ($anonau)
+            }
+            if ($anonau) {
                 $res["151 anonau"] = "show:anonau";
-            if ($aufull)
+            }
+            if ($aufull) {
                 $res["151 aufull"] = "show:aufull";
+            }
             ksort($res, SORT_NATURAL);
             $res = array_values($res);
         }

@@ -937,23 +937,29 @@ class Conf {
         foreach ($factories as $fxt) {
             if (empty($xts)
                 ? self::xt_priority_compare($fxt, $found) >= 0
-                : self::xt_priority_compare($fxt, $xts[0]) > 0)
+                : self::xt_priority_compare($fxt, $xts[0]) > 0) {
                 break;
-            if ($fxt->match === ".*")
+            }
+            if ($fxt->match === ".*") {
                 $m = [$name];
-            else if (!preg_match("\1\\A(?:{$fxt->match})\\z\1{$reflags}", $name, $m))
+            } else if (!preg_match("\1\\A(?:{$fxt->match})\\z\1{$reflags}", $name, $m)) {
                 continue;
-            if (!$this->xt_checkf($fxt, $user))
+            }
+            if (!$this->xt_checkf($fxt, $user)) {
                 continue;
+            }
             self::xt_resolve_require($fxt);
-            if (!$user)
+            if (!$user) {
                 $user = $this->site_contact();
-            if (isset($fxt->expand_callback))
+            }
+            if (isset($fxt->expand_callback)) {
                 $r = call_user_func($fxt->expand_callback, $name, $user, $fxt, $m);
-            else
+            } else {
                 $r = (object) ["name" => $name, "match_data" => $m];
-            if (is_object($r))
+            }
+            if (is_object($r)) {
                 $r = [$r];
+            }
             foreach ($r ? : [] as $xt) {
                 self::xt_combine($xt, $fxt);
                 $prio = self::xt_priority_compare($xt, $found);
@@ -4181,8 +4187,9 @@ class Conf {
             foreach ($hs as $fj) {
                 if ((!isset($fj->id) || !isset($ids[$fj->id]))
                     && $this->xt_allowed($fj, $user)) {
-                    if (isset($fj->id))
+                    if (isset($fj->id)) {
                         $ids[$fj->id] = true;
+                    }
                     if (!self::xt_disabled($fj)) {
                         $fj->conf = $this;
                         $fj->user = $user;
@@ -4201,11 +4208,12 @@ class Conf {
     // pages
 
     function page_template($page) {
-        if ($page === "index")
+        if ($page === "index") {
             return (object) ["name" => "index"];
-        else if (in_array($page, ["doc", "paper", "search", "review", "assign", "autoassign", "bulkassign", "buzzer", "checkupdates", "profile", "conflictassign", "deadlines", "graph", "help", "log", "mail", "manualassign", "mergeaccounts", "offline", "resetpassword", "reviewprefs", "scorechart", "settings", "users"]))
+        } else if (in_array($page, ["doc", "paper", "search", "review", "assign", "autoassign", "bulkassign", "buzzer", "checkupdates", "profile", "conflictassign", "deadlines", "graph", "help", "log", "mail", "manualassign", "mergeaccounts", "offline", "resetpassword", "reviewprefs", "scorechart", "settings", "users"])) {
             return (object) ["name" => $page, "require" => "$page.php"];
-        else
+        } else {
             return null;
+        }
     }
 }

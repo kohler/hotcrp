@@ -112,8 +112,9 @@ class Option_PaperColumnFactory {
                 && $opt->list_display($isrow))
                 return self::option_json($xfj, $opt, $isrow);
             $user->conf->xt_factory_error("Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
-        } else if ($ocolon)
+        } else if ($ocolon) {
             $user->conf->xt_factory_error("No such option “" . htmlspecialchars($oname) . "”.");
+        }
         return null;
     }
     static function completions(Contact $user, $fxt) {

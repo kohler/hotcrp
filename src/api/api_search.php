@@ -48,9 +48,9 @@ class Search_API {
             $report = "pf";
         $pl = new PaperList($search, ["report" => $report]);
         $response = $pl->column_json($qreq->f);
-        if (!$response)
+        if (!$response) {
             return ["ok" => false];
-        else {
+        } else {
             $response["ok"] = true;
             if ($qreq->session && $qreq->post_ok())
                 Session_API::setsession($user, $qreq->session);
