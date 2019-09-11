@@ -253,7 +253,9 @@ src/papercolumns/pc_option.php
 src/papercolumns/pc_pagecount.php
 src/papercolumns/pc_pcconflicts.php
 src/papercolumns/pc_preference.php
+src/papercolumns/pc_preferencelist.php
 src/papercolumns/pc_reviewdelegation.php
+src/papercolumns/pc_reviewerlist.php
 src/papercolumns/pc_shepherd.php
 src/papercolumns/pc_tagreport.php
 src/papercolumns/pc_timestamp.php
