@@ -1696,7 +1696,7 @@ class PaperList {
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
 
         // output field data
-        $data = $attr = $stat = [];
+        $data = $attr = [];
         foreach ($rows as $row) {
             $this->_row_setup($row);
             $p = ["id" => $row->paperId];
@@ -1718,12 +1718,15 @@ class PaperList {
             $this->mark_has($fdef->name, $fdef->has_content);
 
         // output statistics
-        foreach ($field_list as $fdef)
+        $stats = [];
+        foreach ($field_list as $fdef) {
             if ($fdef->has_statistics()) {
-                $stat[$fdef->name] = [];
+                $stat = [];
                 foreach (self::$stats as $s)
                     $stat[ScoreInfo::$stat_keys[$s]] = $fdef->statistic($this, $s);
+                $stats[$fdef->name] = $stat;
             }
+        }
 
         // restore forceShow
         $this->user->set_overrides($overrides);
@@ -1732,8 +1735,10 @@ class PaperList {
         $result = ["data" => $data];
         if (!empty($attr))
             $result["attr"] = $attr;
-        if (!empty($stat))
-            $result["stat"] = $stat;
+        }
+        if (!empty($stats)) {
+            $result["stat"] = $stats;
+        }
         return $result;
     }
 
