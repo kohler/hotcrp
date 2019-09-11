@@ -180,15 +180,11 @@ class Preference_PaperColumn extends PaperColumn {
     static function expand($name, $user, $xfj, $m) {
         if (!($fj = (array) $user->conf->basic_paper_column("pref", $user)))
             return null;
-        if ($m[2]) {
-            $fj["row"] = true;
-            $fj["column"] = false;
-        }
         $rs = [];
         foreach (ContactSearch::make_pc($m[1], $user)->ids as $cid) {
             $u = $user->conf->cached_user_by_id($cid);
             if ($u->roles & Contact::ROLE_PC) {
-                $fj["name"] = "pref:" . $u->email . $m[2];
+                $fj["name"] = "pref:" . $u->email;
                 $fj["user"] = $u->email;
                 $rs[] = (object) $fj;
             }

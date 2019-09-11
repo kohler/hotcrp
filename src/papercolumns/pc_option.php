@@ -15,6 +15,12 @@ class Option_PaperColumn extends PaperColumn {
             return false;
         $pl->qopts["options"] = true;
         $this->fr = new FieldRender(0);
+        $optcj = $this->opt->list_display($this->row);
+        if (is_array($optcj) && isset($optcj["className"])) {
+            $this->className = $optcj["className"];
+        } else {
+            $this->className = "pl_option";
+        }
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -75,42 +81,37 @@ class Option_PaperColumn extends PaperColumn {
 }
 
 class Option_PaperColumnFactory {
-    static private function option_json($xfj, PaperOption $opt, $isrow) {
+    static private function option_json($xfj, PaperOption $opt) {
         $cj = (array) $xfj;
-        $cj["name"] = $opt->search_keyword() . ($isrow ? ":row" : "");
-        if ($isrow)
-            $cj["row"] = true;
-        $optcj = $opt->list_display($isrow);
-        if ($optcj === true && !$isrow)
-            $optcj = ["column" => true, "className" => "pl_option"];
-        if (is_array($optcj))
-            $cj += $optcj;
+        $cj["name"] = $opt->search_keyword();
         $cj["option_id"] = $opt->id;
+        $optcj = $opt->list_display(null);
+        if ($optcj === true) {
+            $cj["column"] = true;
+        } else if (is_array($optcj)) {
+            $cj += $optcj;
+        }
         return (object) $cj;
     }
     static function expand($name, $user, $xfj, $m) {
-        list($ocolon, $oname, $isrow) = [$m[1], $m[2], !!$m[3]];
+        list($ocolon, $oname) = [$m[1], $m[2]];
         if (!$ocolon && $oname === "options") {
             $x = [];
             foreach ($user->user_option_list() as $opt) {
                 if ($opt->display_position() !== false
-                    && $opt->list_display($isrow)
+                    && $opt->list_display(null)
                     && $opt->example_searches())
-                    $x[] = self::option_json($xfj, $opt, $isrow);
+                    $x[] = self::option_json($xfj, $opt);
             }
             return $x;
         }
         $opts = $user->conf->paper_opts->find_all($oname);
-        if (!$opts && $isrow) {
-            $oname .= $m[3];
-            $opts = $user->conf->paper_opts->find_all($oname);
-        }
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
             if ($opt->display_position() !== false
-                && $opt->list_display($isrow))
-                return self::option_json($xfj, $opt, $isrow);
+                && $opt->list_display(null))
+                return self::option_json($xfj, $opt);
             $user->conf->xt_factory_error("Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
         } else if ($ocolon) {
             $user->conf->xt_factory_error("No such option “" . htmlspecialchars($oname) . "”.");

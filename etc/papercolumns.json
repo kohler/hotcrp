@@ -20,7 +20,7 @@
         "position": 120
     },
     {
-        "match": "((?:opt:)?)(.*?)((?:[-:]row)?)", "priority": -2000,
+        "match": "((?:opt:)?)(.+)", "priority": -2000,
         "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_option",
         "callback": "+Option_PaperColumn",
         "expand_callback": "Option_PaperColumnFactory::expand",
@@ -42,17 +42,17 @@
         "position": 410
     },
     {
-        "name": "pref",
+        "name": "mypref",
         "column": true, "sort": true, "completion": true, "className": "pl_revpref", "callback": "+Preference_PaperColumn",
-        "position": 500, "synonym": ["revpref", "preference"]
+        "position": 500, "synonym": ["myrevpref", "mypreference", "pref", "revpref", "preference"]
     },
     {
-        "name": "editpref",
+        "name": "editmypref",
         "column": true, "edit": true, "sort": true, "className": "pl_editrevpref", "callback": "+Preference_PaperColumn",
         "position": 500, "synonym": ["editrevpref"]
     },
     {
-        "match": "(?:pref:|revpref:|preference:)(.+?)((?::row)?)", "priority": -1, "allow_if": "manager",
+        "match": "(?:pref:|revpref:|preference:)(.+?)", "priority": -1, "allow_if": "manager",
         "expand_callback": "Preference_PaperColumn::expand",
         "completion": "pref:<user>"
     },

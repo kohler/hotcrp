@@ -932,7 +932,7 @@ class Conf {
         }
         return $found;
     }
-    function xt_search_factories($factories, $name, $user, $found = null, $reflags = "") {
+    function xt_search_factories($factories, $name, $user, $found = null, $reflags = "", $options = null) {
         $xts = [$found];
         foreach ($factories as $fxt) {
             if (empty($xts)
@@ -952,10 +952,13 @@ class Conf {
             if (!$user) {
                 $user = $this->site_contact();
             }
+            if ($options || isset($fxt->options)) {
+                $fxt->options = $options;
+            }
             if (isset($fxt->expand_callback)) {
                 $r = call_user_func($fxt->expand_callback, $name, $user, $fxt, $m);
             } else {
-                $r = (object) ["name" => $name, "match_data" => $m];
+                $r = (object) ["name" => $name, "match_data" => $m, "options" => $options];
             }
             if (is_object($r)) {
                 $r = [$r];
@@ -3977,11 +3980,16 @@ class Conf {
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
         return self::xt_enabled($uf) ? $uf : null;
     }
-    function paper_columns($name, Contact $user) {
-        if ($name === "" || $name[0] === "?")
+    function paper_columns($name, Contact $user, $options = null) {
+        if ($name === "" || $name[0] === "?") {
             return [];
+        }
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
-        $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i");
+        $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i", $options);
+        foreach ($ufs as $uf) {
+            if ($options || isset($uf->options))
+                $uf->options = $options;
+        }
         return array_filter($ufs, "Conf::xt_resolve_require");
     }
 

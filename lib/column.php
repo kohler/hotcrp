@@ -30,6 +30,19 @@ class Column {
         if ($this->className === null) {
             $this->className = "pl_" . $this->name;
         }
+        if (isset($arg->options)) {
+            $row = null;
+            foreach ($arg->options as $k) {
+                if ($k === "row")
+                    $row = true;
+                else if ($k === "col" || $k === "column")
+                    $row = false;
+            }
+            if ($row !== null) {
+                $this->row = $row;
+                $this->column = !$row;
+            }
+        }
         assert(!$this->row || !$this->column);
     }
 

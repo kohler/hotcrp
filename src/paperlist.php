@@ -118,6 +118,7 @@ class PaperList {
     private $_view_statistics = false;
     private $_view_force = false;
     private $_view_fields = [];
+    private $_view_field_options = [];
     private $_atab;
 
     private $_table_id;
@@ -266,6 +267,13 @@ class PaperList {
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
         }
+        $opts = null;
+        while (($sep = strrpos($k, ",")) !== false) {
+            if ($opts === null)
+                $opts = [];
+            array_unshift($opts, substr($k, $sep + 1));
+            $k = substr($k, 0, $sep);
+        }
         if (in_array($v, ["show", "hide"], true)) {
             $v = $v === "show";
         }
@@ -289,6 +297,7 @@ class PaperList {
                 $this->_view_fields["au"] = $v;
             }
             $this->_view_fields[$k] = $v;
+            $this->_view_field_options[$k] = $opts;
         }
     }
     private function set_view_display($str, $viewdisplay) {
@@ -401,10 +410,10 @@ class PaperList {
             $this->_column_errors_by_name[$this->_current_find_column][] = $text;
     }
 
-    private function find_columns($name) {
+    private function find_columns($name, $opt = null) {
         if (!array_key_exists($name, $this->_columns_by_name)) {
             $this->_current_find_column = $name;
-            $fs = $this->conf->paper_columns($name, $this->user);
+            $fs = $this->conf->paper_columns($name, $this->user, $opt);
             if (!$fs && !isset($this->_column_errors_by_name[$name])) {
                 if ($this->conf->paper_columns($name, $this->conf->site_contact()))
                     $this->_column_errors_by_name[$name][] = "Permission error.";
@@ -413,11 +422,11 @@ class PaperList {
             }
             $nfs = [];
             foreach ($fs as $fdef) {
-                if ($fdef->name === $name)
-                    $nfs[] = PaperColumn::make($this->conf, $fdef);
-                else {
+                if ($fdef->name === $name) {
+                    $nfs[] = PaperColumn::make($this->conf, $fdef, $opt);
+                } else {
                     if (!array_key_exists($fdef->name, $this->_columns_by_name))
-                        $this->_columns_by_name[$fdef->name][] = PaperColumn::make($this->conf, $fdef);
+                        $this->_columns_by_name[$fdef->name][] = PaperColumn::make($this->conf, $fdef, $opt);
                     $nfs = array_merge($nfs, $this->_columns_by_name[$fdef->name]);
                 }
             }
@@ -738,13 +747,13 @@ class PaperList {
             return "id title revdelegation revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
-            return "id title revpref topicscore desirability assignment authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";
+            return "id title mypref topicscore desirability assignment authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";
         case "conflictassign":
             $this->_default_linkto("assign");
             return "id title abstract authors potentialconflict revtype editconf tags";
         case "editpref":
             $this->_default_linkto("paper");
-            return "sel id title topicscore revtype editpref authors abstract topics";
+            return "sel id title topicscore revtype editmypref authors abstract topics";
         case "reviewers":
             $this->_default_linkto("assign");
             return "selon id title status";
@@ -1231,7 +1240,7 @@ class PaperList {
     private function _expand_view_column($k, $report) {
         if (in_array($k, ["anonau", "aufull"], true))
             return [];
-        $fs = $this->find_columns($k);
+        $fs = $this->find_columns($k, get($this->_view_field_options, $k));
         if (!$fs && $report && isset($this->_column_errors_by_name[$k])) {
             foreach ($this->_column_errors_by_name[$k] as $i => $err)
                 $this->error_html[] = ($i ? "" : "Can’t show “" . htmlspecialchars($k) . "”: ") . $err;
