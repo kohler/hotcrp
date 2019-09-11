@@ -20,11 +20,24 @@ class SearchConfig_API {
                 $user->conf->save_setting("{$report}display_default", 1, $display);
             $user->save_session("{$report}display", null);
         }
-        $s1 = new PaperSearch($user, get($qreq, "q", "NONE"));
-        $l1 = new PaperList($s1, ["sort" => get($qreq, "sort", true), "report" => $report]);
-        $s2 = new PaperSearch($user, "NONE");
-        $l2 = new PaperList($s2, ["sort" => true, "report" => $report, "no_session_display" => true]);
-        return new JsonResult(["ok" => true, "report" => $report, "display_current" => $l1->display("s"), "display_default" => $l2->display("s")]);
+
+        $search = new PaperSearch($user, "NONE");
+        $pl = new PaperList($search, ["sort" => true, "report" => $report, "no_session_display" => true, "display" => ""]);
+        $vb = $pl->viewer_list("s");
+
+        $search = new PaperSearch($user, "NONE");
+        $pl = new PaperList($search, ["sort" => true, "report" => $report, "no_session_display" => true]);
+        $vd = PaperList::viewer_diff($pl->viewer_list("s"), $vb);
+
+        $search = new PaperSearch($user, get($qreq, "q", "NONE"));
+        $pl = new PaperList($search, ["sort" => get($qreq, "sort", true), "report" => $report]);
+        $vr = PaperList::viewer_diff($pl->viewer_list("s"), $vb);
+
+        return new JsonResult([
+            "ok" => true, "report" => $report,
+            "display_current" => join(" ", $vr),
+            "display_default" => join(" ", $vd)
+        ]);
     }
 
     static function namedformula(Contact $user, Qrequest $qreq) {

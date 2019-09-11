@@ -46,7 +46,7 @@ class Session_API {
                 }
             } else if (($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                        && $m[2] !== "") {
-                PaperList::change_display($user, substr($m[1], 0, 2), substr($m[2], 1), $unfold);
+                self::change_display($user, substr($m[1], 0, 2), [substr($m[2], 1) => $unfold]);
             } else if ($m[1] === "uldisplay"
                        && preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2])) {
                 $x = $user->session($m[1]);
@@ -65,5 +65,20 @@ class Session_API {
         }
 
         return ["ok" => !$error, "postvalue" => post_value()];
+    }
+
+    static function change_display(Contact $user, $report, $settings) {
+        $search = new PaperSearch($user, "NONE");
+        $pl = new PaperList($search, ["sort" => true, "report" => $report, "no_session_display" => true]);
+        $vd = $pl->viewer_list("s");
+
+        $pl = new PaperList($search, ["sort" => true, "report" => $report]);
+        foreach ($settings as $k => $v) {
+            $pl->set_view($k, $v);
+        }
+        $vd = PaperList::viewer_diff($pl->viewer_list("s"), $vd);
+        $vd = array_filter($vd, function ($x) { return !str_starts_with($x, "sort:"); });
+
+        $user->save_session("{$report}display", join(" ", $vd));
     }
 }

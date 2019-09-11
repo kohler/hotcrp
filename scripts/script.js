@@ -6858,7 +6858,9 @@ function make_callback(dofold, type) {
         if (values.stat && f.name in values.stat) {
             render_statistics(values.stat[f.name]);
         }
-        fold(self, dofold, f.foldnum);
+        if (type !== "aufull") {
+            fold(self, dofold, f.foldnum);
+        }
         check_statistics();
     }
     return function (rv) {

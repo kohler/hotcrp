@@ -244,8 +244,8 @@ $pl_text = $pl->table_html("editpref",
 
 
 // DISPLAY OPTIONS
-$showing_au = !$Conf->subBlindAlways() && !$pl->is_folded("au");
-$showing_anonau = (!$Conf->subBlindNever() || $Me->privChair) && !$pl->is_folded("anonau");
+$showing_au = !$Conf->subBlindAlways() && $pl->showing("au");
+$showing_anonau = (!$Conf->subBlindNever() || $Me->privChair) && $pl->showing("anonau");
 
 echo Ht::form(hoturl("reviewprefs"), ["method" => "get", "id" => "searchform",
                                       "class" => "has-fold " . ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c")]),
@@ -277,37 +277,37 @@ echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="e
 $show_data = array();
 if ($pl->has("abstract")) {
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showabstract", 1, !$pl->is_folded("abstract"), ["class" => "uich js-plinfo"])
+        . Ht::checkbox("showabstract", 1, $pl->showing("abstract"), ["class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Abstracts") . '</span>';
 }
 if (!$Conf->subBlindAlways()) {
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showau", 1, !$pl->is_folded("au"),
+        . Ht::checkbox("showau", 1, $pl->showing("au"),
                 ["id" => "showau", "class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Authors") . "</span>";
 } else if ($Me->privChair && $Conf->subBlindAlways()) {
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showanonau", 1, !$pl->is_folded("anonau"),
+        . Ht::checkbox("showanonau", 1, $pl->showing("anonau"),
                 ["id" => "showau", "class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Authors (deblinded)") . "</span>"
-        . Ht::checkbox("showau", 1, !$pl->is_folded("anonau") !== false,
+        . Ht::checkbox("showau", 1, $pl->showing("anonau"),
                 ["id" => "showau_hidden", "class" => "uich js-plinfo hidden"]);
 }
 if (!$Conf->subBlindAlways() || $Me->privChair) {
     $show_data[] = '<span class="sep fx10">'
-        . Ht::checkbox("showaufull", 1, !$pl->is_folded("aufull"),
+        . Ht::checkbox("showaufull", 1, $pl->showing("aufull"),
                 ["id" => "showaufull", "class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Full author info") . "</span>";
 }
 if ($Me->privChair && !$Conf->subBlindAlways() && !$Conf->subBlindNever()) {
     $show_data[] = '<span class="sep fx10">'
-        . Ht::checkbox("showanonau", 1, !$pl->is_folded("anonau"),
+        . Ht::checkbox("showanonau", 1, $pl->showing("anonau"),
                 ["id" => "showanonau", "class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Deblinded authors") . "</span>";
 }
 if ($Conf->has_topics()) {
     $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showtopics", 1, !$pl->is_folded("topics"), ["class" => "uich js-plinfo"])
+        . Ht::checkbox("showtopics", 1, $pl->showing("topics"), ["class" => "uich js-plinfo"])
         . "&nbsp;" . Ht::label("Topics") . '</span>';
 }
 if (!empty($show_data) && $pl->count) {

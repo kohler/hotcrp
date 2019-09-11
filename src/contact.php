@@ -2527,8 +2527,9 @@ class Contact {
                     && $prow->leadContactId == $this->contactId)
                 || (($rights->allow_pc || $rights->allow_review)
                     && $this->can_view_review_identity($prow, null));
-        } else
+        } else {
             return $this->isPC;
+        }
     }
 
     function can_view_shepherd(PaperInfo $prow = null) {

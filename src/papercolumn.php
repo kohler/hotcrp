@@ -336,8 +336,8 @@ class Authors_PaperColumn extends PaperColumn {
         return "Authors";
     }
     function prepare(PaperList $pl, $visible) {
-        $this->aufull = !$pl->is_folded("aufull");
-        $this->anonau = !$pl->is_folded("anonau");
+        $this->aufull = $pl->showing("aufull");
+        $this->anonau = $pl->showing("anonau");
         $this->highlight = $pl->search->field_highlighter("authorInformation");
         return $pl->user->can_view_some_authors();
     }

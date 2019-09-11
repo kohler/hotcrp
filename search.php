@@ -54,20 +54,26 @@ if ($Qreq->fn) {
 
 // set fields to view
 if ($Qreq->redisplay) {
-    $pld = " ";
-    foreach ($Qreq as $k => $v)
-        if (substr($k, 0, 4) == "show" && $v)
-            $pld .= substr($k, 4) . " ";
-    $Me->save_session("pldisplay", $pld);
+    $settings = [];
+    foreach ($Qreq as $k => $v) {
+        if ($v && substr($k, 0, 4) === "show")
+            $settings[substr($k, 4)] = true;
+    }
+    if (!get($settings, "au") && (get($settings, "anonau") || get($settings, "aufull"))) {
+        $settings["au"] = false;
+    }
+    Session_API::change_display($Me, "pl", $settings);
 }
-if ($Qreq->scoresort)
+if ($Qreq->scoresort) {
     $Qreq->scoresort = ListSorter::canonical_short_score_sort($Qreq->scoresort);
-else if ($Qreq->sort
-         && ($s = PaperSearch::parse_sorter($Qreq->sort))
-         && $s->score)
+} else if ($Qreq->sort
+           && ($s = PaperSearch::parse_sorter($Qreq->sort))
+           && $s->score) {
     $Qreq->scoresort = ListSorter::canonical_short_score_sort($s->score);
-if ($Qreq->scoresort)
+}
+if ($Qreq->scoresort) {
     Session_API::setsession($Me, "scoresort=" . $Qreq->scoresort);
+}
 if ($Qreq->redisplay) {
     if (isset($Qreq->forceShow) && !$Qreq->forceShow && $Qreq->showforce)
         $forceShow = 0;
@@ -182,7 +188,7 @@ class Search_DisplayOptions {
         global $pl;
         $options["class"] = "uich js-plinfo";
         $x = '<label class="checki"><span class="checkc">'
-            . Ht::checkbox("show$type", 1, !$pl->is_folded($type), $options)
+            . Ht::checkbox("show$type", 1, $pl->showing($type), $options)
             . '</span>' . $title . '</label>';
         $this->item($column, $x);
     }
@@ -207,12 +213,12 @@ if ($pl_text) {
         $display_options->checkbox_item(1, "au", "Authors", ["id" => "showau"]);
         if ($Me->privChair && $viewAllAuthors)
             $display_options_extra .=
-                Ht::checkbox("showanonau", 1, !$pl->is_folded("au"),
+                Ht::checkbox("showanonau", 1, $pl->showing("au"),
                              ["id" => "showau_hidden", "class" => "uich js-plinfo hidden"]);
     } else if ($Me->privChair && $Conf->subBlindAlways()) {
         $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl->has("anonau")]);
         $display_options_extra .=
-            Ht::checkbox("showau", 1, !$pl->is_folded("anonau"),
+            Ht::checkbox("showau", 1, $pl->showing("anonau"),
                          ["id" => "showau_hidden", "class" => "uich js-plinfo hidden"]);
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
