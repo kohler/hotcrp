@@ -2184,7 +2184,7 @@ div.pl_autoassignment ins {
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 }
-td.plh, th.plh {
+td.plh, .pl_headrow > th {
 	border-bottom: 1px solid #999999;
 }
 tr.pl_headrow.pl_annorow {
