@@ -250,7 +250,6 @@ if ($reviewer) {
     else if ($expected_round !== "unnamed")
         echo '<div class="aabut aabutsp">Review round: ', $expected_round, '</div>';
     $paperList->set_table_id_class("foldpl", "pltable-fullw");
-    $paperList->set_view("allrevtopicpref", false);
     echo '<div class="aabut aabutsp"><label>',
         Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),
         "&nbsp;Automatically save assignments</label></div></div>\n",

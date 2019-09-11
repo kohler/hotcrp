@@ -6589,8 +6589,26 @@ handle_ui.on("js-plinfo-edittags", function () {
 });
 
 
-var self = false, fields, field_order, aufull = {},
+var self = false, fields = {}, field_order = [], aufull = {},
     tagmap = false, _bypid = {}, _bypidx = {};
+
+function add_field(f) {
+    var j = field_order.length;
+    while (j > 0 && f.position < field_order[j-1].position)
+        --j;
+    field_order.splice(j, 0, f);
+    fields[f.name] = f;
+    if (f.name === "authors")
+        fields.au = fields.anonau = fields.aufull = f;
+    if (/^(?:#|tag:|tagval:)\S+$/.test(f.name))
+        $(window).on("hotcrptags", make_tag_column_callback(f));
+    if (f.foldnum === true) {
+        f.foldnum = 9;
+        while (hasClass(self, "fold" + f.foldnum + "c")
+               || hasClass(self, "fold" + f.foldnum + "o"))
+            ++f.foldnum;
+    }
+}
 
 function foldmap(type) {
     var fn = ({anonau:2, aufull:4, force:5, rownum:6, statistics:7})[type];
@@ -6827,7 +6845,8 @@ function make_callback(dofold, type) {
         for (; tr; tr = tr.nextSibling)
             if (tr.nodeName === "TR" && tr.hasAttribute("data-statistic")) {
                 var stat = tr.getAttribute("data-statistic"),
-                    j = 0, td = tr.childNodes[index];
+                    j = 0,
+                    td = tr.childNodes[index];
                 if (td && stat in statvalues)
                     td.innerHTML = statvalues[stat];
             }
@@ -6836,13 +6855,25 @@ function make_callback(dofold, type) {
         ensure_field(f);
         tr = $(self).find("tr.pl").first()[0];
         render_some();
-        if (values.stat && f.name in values.stat)
+        if (values.stat && f.name in values.stat) {
             render_statistics(values.stat[f.name]);
+        }
+        fold(self, dofold, f.foldnum);
+        check_statistics();
     }
     return function (rv) {
-        if (type === "aufull")
+        if (!f && rv.ok && rv.fields && rv.fields[type]) {
+            f = rv.fields[type];
+            f.foldnum = f.missing = true;
+            add_field(f);
+            addClass(self, "fold" + f.foldnum + "c");
+        }
+        if (f) {
+            f.loadable = false;
+        }
+        if (type === "aufull") {
             aufull[!!dofold] = rv;
-        f.loadable = false;
+        }
         if (rv.ok) {
             values = rv;
             $(render_start);
@@ -6862,37 +6893,42 @@ function show_loading(f) {
     return function () { $(go); };
 }
 
+function check_statistics() {
+    var statistics = false;
+    for (var t in fields) {
+        if (fields[t].has_statistics
+            && hasClass(self, "fold" + fields[t].foldnum + "o")) {
+            statistics = true;
+            break;
+        }
+    }
+    fold(self, !statistics, 8);
+}
+
 function plinfo(type, dofold) {
     self || initialize();
     var elt, f = fields[type];
-    if (!f)
-        log_jserror("plinfo missing type " + type);
 
-    // fold
-    if ((type === "aufull" || type === "anonau") && !dofold
-        && (elt = $$("showau"))
-        && !elt.checked)
+    if ((type === "aufull" || type === "anonau")
+        && !dofold
+        && (elt = document.getElementById("showau"))
+        && !elt.checked) {
         elt.click();
+    }
     if ((type === "au" || type === "anonau")
-        && (elt = $$("showau_hidden"))
-        && elt.checked != $$("showau").checked)
+        && (elt = document.getElementById("showau_hidden"))
+        && elt.checked != document.getElementById("showau").checked) {
         elt.click();
-    if (type !== "aufull")
-        fold(self, dofold, foldmap(type));
+    }
 
-    // may need to load information by ajax
     var ses = self.getAttribute("data-fold-session-prefix");
-    if (type === "aufull" && aufull[!!dofold]) {
-        make_callback(dofold, type)(aufull[!!dofold]);
-    } else if ((!dofold && f.loadable && type !== "anonau") || type === "aufull") {
-        // set up "loading" display
-        setTimeout(show_loading(f), 750);
-
+    if ((type === "aufull" && !aufull[!!dofold])
+        || !f
+        || (!dofold && f.loadable && type !== "anonau")) {
         // initiate load
         var loadargs = $.extend({fn: "fieldhtml", f: type}, hotlist_search_params(self, true));
         if (ses) {
             loadargs.session = ses + type + (dofold ? "=1" : "=0");
-            ses = false;
         }
         if (type === "au" || type === "aufull") {
             loadargs.f = "authors";
@@ -6902,21 +6938,20 @@ function plinfo(type, dofold) {
                 loadargs.aufull = elt.checked ? 1 : 0;
         }
         $.get(hoturl_post("api", loadargs), make_callback(dofold, type));
-    }
-
-    // inform back end about folds
-    if (ses)
-        $.post(hoturl_post("api/session", {v: ses + type + (dofold ? "=1" : "=0")}));
-
-    // show or hide statistics rows
-    var statistics = false;
-    for (var t in fields)
-        if (fields[t].has_statistics
-            && hasClass(self, "fold" + fields[t].foldnum + "o")) {
-            statistics = true;
-            break;
+    } else {
+        // display
+        if (type === "aufull") {
+            make_callback(dofold, type)(aufull[!!dofold]);
+        } else {
+            fold(self, dofold, foldmap(type));
         }
-    fold(self, !statistics, 8);
+        // update session
+        if (ses) {
+            $.post(hoturl_post("api/session", {v: ses + type + (dofold ? "=1" : "=0")}));
+        }
+        // update statistics
+        check_statistics();
+    }
 
     return false;
 }
@@ -6925,15 +6960,9 @@ function initialize() {
     self = $("table.pltable")[0];
     if (!self)
         return false;
-    field_order = JSON.parse(self.getAttribute("data-columns"));
-    fields = {};
-    for (var i = 0; i < field_order.length; ++i) {
-        fields[field_order[i].name] = field_order[i];
-        if (/^(?:#|tag:|tagval:)\S+$/.test(field_order[i].name))
-            $(window).on("hotcrptags", make_tag_column_callback(field_order[i]));
-    }
-    if (fields.authors)
-        fields.au = fields.anonau = fields.aufull = fields.authors;
+    var fs = JSON.parse(self.getAttribute("data-columns"));
+    for (var i = 0; i !== fs.length; ++i)
+        add_field(fs[i]);
 };
 
 plinfo.set_scoresort = function (ss) {

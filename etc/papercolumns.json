@@ -208,7 +208,7 @@
     {
         "name": "alltopicpref",
         "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
-        "topics": true, "synonym": ["alltopicrevpref"],
+        "topics": true, "synonym": ["alltopicrevpref", "allrevtopicpref"],
         "position": 550
     },
     {

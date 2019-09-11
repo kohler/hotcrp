@@ -381,9 +381,27 @@ class PaperList {
             return $this->has("authors")
                 && $this->user->is_manager()
                 && $this->rowset()->any(function ($row) {
-                       return $this->user->allow_view_authors($row)
+                        return $this->user->allow_view_authors($row)
                            && !$this->user->can_view_authors($row);
-                   });
+                    });
+        if ($key === "lead")
+            return $this->conf->has_any_lead_or_shepherd()
+                && $this->rowset()->any(function ($row) {
+                        return $row->leadContactId > 0
+                            && $this->user->can_view_lead($row);
+                    });
+        if ($key === "shepherd")
+            return $this->conf->has_any_lead_or_shepherd()
+                && $this->rowset()->any(function ($row) {
+                        return $row->shepherdContactId > 0
+                            && $this->user->can_view_shepherd($row);
+                    });
+        if ($key === "collab")
+            return $this->rowset()->any(function ($row) {
+                return $row->collaborators != ""
+                    && strcasecmp($row->collaborators, "None") !== 0
+                    && $this->user->can_view_authors($row);
+            });
         if ($key === "need_submit")
             return $this->rowset()->any(function ($row) {
                 return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
@@ -399,7 +417,7 @@ class PaperList {
                            && $this->user->can_view_decision($row)
                            && $row->timeFinalSubmitted <= 0;
                    });
-        if (!in_array($key, ["collab", "lead", "shepherd", "sel", "need_review", "authors", "tags"], true))
+        if (!in_array($key, ["sel", "need_review", "authors", "tags"], true))
             error_log("unexpected PaperList::_compute_has({$key})");
         return false;
     }
@@ -720,12 +738,12 @@ class PaperList {
     private function _list_columns() {
         switch ($this->_report_id) {
         case "a":
-            return "id title revstat statusfull authors collab abstract topics reviewers shepherd scores formulas";
+            return "id title revstat statusfull authors";
         case "authorHome":
             return "id title statusfull";
         case "act":
         case "all":
-            return "sel id title revtype revstat statusfull authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
+            return "sel id title revtype revstat statusfull authors tags";
         case "reviewerHome":
             $this->_default_linkto("finishreview");
             return "id title revtype status";
@@ -742,18 +760,18 @@ class PaperList {
         case "s":
         case "vis":
         case "req":
-            return "sel id title revtype revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors tags";
         case "reqrevs":
-            return "id title revdelegation revstat status authors collab abstract topics pcconflicts allpref reviewers tags tagreports lead shepherd scores formulas";
+            return "id title revdelegation revstat status authors tags";
         case "reviewAssignment":
             $this->_default_linkto("assign");
-            return "id title mypref topicscore desirability assignment authors potentialconflict topics allrevtopicpref reviewers tags scores formulas";
+            return "id title mypref topicscore desirability assignment authors potentialconflict tags";
         case "conflictassign":
             $this->_default_linkto("assign");
-            return "id title abstract authors potentialconflict revtype editconf tags";
+            return "id title authors potentialconflict revtype editconf tags";
         case "editpref":
             $this->_default_linkto("paper");
-            return "sel id title topicscore revtype editmypref authors abstract topics";
+            return "sel id title topicscore revtype editmypref authors tags";
         case "reviewers":
             $this->_default_linkto("assign");
             return "selon id title status";
@@ -1123,30 +1141,13 @@ class PaperList {
         $has_sel = false;
         $has_statistics = $has_loadable_statistics = false;
         foreach ($fieldDef as $fdef) {
-            $j = ["name" => $fdef->name,
-                  "title" => $fdef->header($this, false),
-                  "position" => $fdef->position];
-            if ($fdef->className !== "pl_" . $fdef->name)
-                $j["className"] = $fdef->className;
-            if ($fdef->viewable_column()) {
-                $j["column"] = true;
-                if ($fdef->has_statistics()) {
-                    $j["has_statistics"] = true;
-                    if ($fdef->has_content)
-                        $has_loadable_statistics = true;
-                    if ($fdef->has_content && $fdef->is_visible)
-                        $has_statistics = true;
-                }
-                if ($fdef->sort)
-                    $j["sort_name"] = $fdef->sort_name($this, null);
+            $j = $fdef->field_json($this);
+            if (isset($j["has_statistics"]) && $j["has_statistics"]) {
+                if ($fdef->has_content)
+                    $has_loadable_statistics = true;
+                if ($fdef->has_content && $fdef->is_visible)
+                    $has_statistics = true;
             }
-            if (!$fdef->is_visible)
-                $j["missing"] = true;
-            if ($fdef->has_content && !$fdef->is_visible)
-                $j["loadable"] = true;
-            if ($fdef->fold)
-                $j["foldnum"] = $fdef->fold;
-            $fdef->annotate_field_js($this, $j);
             $jscol[] = $j;
             if ($fdef->fold)
                 $classes[] = "fold" . $fdef->fold . ($fdef->is_visible ? "o" : "c");
@@ -1374,12 +1375,13 @@ class PaperList {
     }
 
     private function _statistics_rows($rstate, $fieldDef) {
-        $any_empty = null;
-        foreach ($fieldDef as $fdef)
-            if ($fdef->viewable_column() && $fdef->has_statistics())
-                $any_empty = $any_empty || $fdef->statistic($this, ScoreInfo::COUNT) != $this->count;
-        if ($any_empty === null)
-            return "";
+        if (!$this->foldable) {
+            $any = false;
+            foreach ($fieldDef as $fdef)
+                $any = $any || ($fdef->viewable_column() && $fdef->has_statistics());
+            if (!$any)
+                return "";
+        }
         $t = '  <tr class="pl_statheadrow fx8">';
         if ($rstate->titlecol)
             $t .= "<td colspan=\"{$rstate->titlecol}\" class=\"plstat\"></td>";
@@ -1717,9 +1719,10 @@ class PaperList {
         foreach ($field_list as $fdef)
             $this->mark_has($fdef->name, $fdef->has_content);
 
-        // output statistics
-        $stats = [];
+        // output fields and statistics
+        $fields = $stats = [];
         foreach ($field_list as $fdef) {
+            $fields[$fdef->name] = $fdef->field_json($this);
             if ($fdef->has_statistics()) {
                 $stat = [];
                 foreach (self::$stats as $s)
@@ -1732,8 +1735,8 @@ class PaperList {
         $this->user->set_overrides($overrides);
 
         // output
-        $result = ["data" => $data];
-        if (!empty($attr))
+        $result = ["fields" => $fields, "data" => $data];
+        if (!empty($attr)) {
             $result["attr"] = $attr;
         }
         if (!empty($stats)) {

@@ -33,7 +33,32 @@ class PaperColumn extends Column {
     function prepare(PaperList $pl, $visible) {
         return true;
     }
-    function annotate_field_js(PaperList $pl, &$fjs) {
+    function field_json(PaperList $pl) {
+        $j = ["name" => $this->name,
+              "title" => $this->header($pl, false),
+              "position" => $this->position];
+        if ($this->className !== "pl_" . $this->name) {
+            $j["className"] = $this->className;
+        }
+        if ($this->viewable_column()) {
+            $j["column"] = true;
+            if ($this->has_statistics()) {
+                $j["has_statistics"] = true;
+            }
+            if ($this->sort) {
+                $j["sort_name"] = $this->sort_name($pl, null);
+            }
+        }
+        if (!$this->is_visible) {
+            $j["missing"] = true;
+        }
+        if ($this->has_content && !$this->is_visible) {
+            $j["loadable"] = true;
+        }
+        if ($this->fold && $this->fold !== true) {
+            $j["foldnum"] = $this->fold;
+        }
+        return $j;
     }
 
     function analyze(PaperList $pl, &$rows, $fields) {
@@ -435,7 +460,7 @@ class Collab_PaperColumn extends PaperColumn {
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return $row->collaborators == ""
-            || strcasecmp($row->collaborators, "None") == 0
+            || strcasecmp($row->collaborators, "None") === 0
             || !$pl->user->allow_view_authors($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
@@ -639,10 +664,13 @@ class TagList_PaperColumn extends PaperColumn {
         $pl->need_tag_attr = true;
         return true;
     }
-    function annotate_field_js(PaperList $pl, &$fjs) {
-        $fjs["highlight_tags"] = $pl->search->highlight_tags();
-        if ($pl->conf->tags()->has_votish)
-            $fjs["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, $pl->conf->tags()->filter("votish")));
+    function field_json(PaperList $pl) {
+        $j = parent::field_json($pl);
+        $j["highlight_tags"] = $pl->search->highlight_tags();
+        if ($pl->conf->tags()->has_votish) {
+            $j["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, $pl->conf->tags()->filter("votish")));
+        }
+        return $j;
     }
     function header(PaperList $pl, $is_text) {
         return "Tags";
