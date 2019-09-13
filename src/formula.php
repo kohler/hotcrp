@@ -749,8 +749,9 @@ class Tag_Fexpr extends Sub_Fexpr {
         } else if (count($ff->args) === 1 && $arg[0] === ":") {
             $ff->args[0] .= $arg;
             return true;
-        } else
+        } else {
             return false;
+        }
     }
     static function make(FormulaCall $ff) {
         if (count($ff->args) !== 1
@@ -1637,14 +1638,15 @@ class Formula implements Abbreviator {
         $has_args = $args !== null && $args !== false;
 
         $pos1 = -strlen($t);
-        if ($name !== "#")
-            $t = substr($t, strlen($name));
+        $t = substr($t, strlen($name));
 
         if (get($kwdef, "parse_modifier_callback")) {
-            while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9!@*_:.\/#~]+))(.*)/s', $t, $m)
+            $xt = $name === "#" ? "#" . $t : $t;
+            while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9!@*_:.\/#~]+))(.*)/s', $xt, $m)
                    && ($has_args || !preg_match('/\A\s*\(/s', $m[2]))
-                   && ($marg = call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this)))
-                $t = $m[2];
+                   && ($marg = call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this))) {
+                $t = $xt = $m[2];
+            }
         }
 
         if ($has_args) {
