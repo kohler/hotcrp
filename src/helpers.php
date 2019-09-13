@@ -41,6 +41,15 @@ function unparse_number_pm_html($n) {
         return 0;
 }
 
+function unparse_number_pm_text($n) {
+    if ($n < 0)
+        return "-" . (-$n);
+    else if ($n > 0)
+        return "+" . $n;
+    else
+        return 0;
+}
+
 function hoturl_add_raw($url, $component) {
     if (($pos = strpos($url, "#")) !== false) {
         $component .= substr($url, $pos);

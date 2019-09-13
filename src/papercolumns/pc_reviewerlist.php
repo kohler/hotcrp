@@ -9,7 +9,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
         if (isset($cj->options) && in_array("pref", $cj->options)) {
             $this->pref = true;
-            $this->topics = in_array("topics", $cj->options);
+            $this->topics = in_array("topics", $cj->options) || in_array("topic", $cj->options);
         }
     }
     function prepare(PaperList $pl, $visible) {
@@ -53,9 +53,19 @@ class ReviewerList_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         $x = [];
-        foreach ($row->reviews_by_display($pl->user) as $xrow)
-            if ($pl->user->can_view_review_identity($row, $xrow))
-                $x[] = $pl->user->name_text_for($xrow);
+        foreach ($row->reviews_by_display($pl->user) as $xrow) {
+            if ($pl->user->can_view_review_identity($row, $xrow)) {
+                $t = $pl->user->name_text_for($xrow);
+                if ($this->pref) {
+                    $pref = $row->reviewer_preference($xrow->contactId, $this->topics);
+                    $t .= " P" . unparse_number_pm_text($pref[0]) . unparse_expertise($pref[1]);
+                    if ($this->topics && $pref[2] && !$pref[0]) {
+                        $t .= " T" . unparse_number_pm_text($pref[2]);
+                    }
+                }
+                $x[] = $t;
+            }
+        }
         return join("; ", $x);
     }
 }
