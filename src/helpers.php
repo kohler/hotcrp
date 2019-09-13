@@ -32,7 +32,7 @@ function cvtnum($value, $default = -1) {
 
 // web helpers
 
-function unparse_number_pm($n) {
+function unparse_number_pm_html($n) {
     if ($n < 0)
         return "−" . (-$n); // U+2212 MINUS
     else if ($n > 0)
@@ -649,25 +649,33 @@ function unparse_preference($preference, $expertise = null) {
 }
 
 function unparse_preference_span($preference, $always = false) {
-    if (is_object($preference))
+    if (is_object($preference)) {
         $preference = array(get($preference, "reviewerPreference"),
                             get($preference, "reviewerExpertise"),
                             get($preference, "topicInterestScore"));
-    else if (!is_array($preference))
+    } else if (!is_array($preference)) {
         $preference = array($preference, null, null);
-    $pv = (int) get($preference, 0);
-    $ev = get($preference, 1);
+    }
+    $pv = (int) $preference[0];
+    $ev = $preference[1];
     $tv = (int) get($preference, 2);
-    $type = 1;
-    if ($pv < 0 || (!$pv && $tv < 0))
+    if ($pv > 0 || (!$pv && $tv > 0)) {
+        $type = 1;
+    } else if ($pv < 0 || $tv < 0) {
         $type = -1;
+    } else {
+        $type = 0;
+    }
     $t = "";
-    if ($pv || $ev !== null || $always)
-        $t .= "P" . unparse_number_pm($pv) . unparse_expertise($ev);
-    if ($tv && !$pv)
-        $t .= ($t ? " " : "") . "T" . unparse_number_pm($tv);
-    if ($t !== "")
+    if ($pv || $ev !== null || $always) {
+        $t .= "P" . unparse_number_pm_html($pv) . unparse_expertise($ev);
+    }
+    if ($tv && !$pv) {
+        $t .= ($t ? " " : "") . "T" . unparse_number_pm_html($tv);
+    }
+    if ($t !== "") {
         $t = " <span class=\"asspref$type\">$t</span>";
+    }
     return $t;
 }
 

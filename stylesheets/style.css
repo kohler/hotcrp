@@ -1629,13 +1629,16 @@ pre.email {
 	color: #ff6600;
 }
 
-.asspref, .asspref1, .asspref-1 {
+.asspref, .asspref0, .asspref1, .asspref-1 {
 	font-size: 69%;
 	font-weight: normal;
 	white-space: nowrap;
 }
 .asspref1 {
 	color: #008000;
+}
+.asspref0 {
+	color: #606060;
 }
 .asspref-1 {
 	color: #800000;
