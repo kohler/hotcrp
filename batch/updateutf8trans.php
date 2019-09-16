@@ -88,6 +88,8 @@ function assign_it($sin, $sout, $override, $description = false) {
     global $trans;
     if (is_int($sin))
         $sin = UnicodeHelper::utf8_chr($sin);
+    if (is_int($sout))
+        $sout = UnicodeHelper::utf8_chr($sout);
     $sxin = sprintf("U+%04X", UnicodeHelper::utf8_ord($sin));
     if ($description)
         $sxin .= ";" . $description;
@@ -103,12 +105,12 @@ function assign_it($sin, $sout, $override, $description = false) {
              || (isset($trans[$l][$sin]) && $trans[$l][$sin] === $soutch))
         /* skip */;
     else if (!$override && isset($trans[$l][$sin])) {
-        fwrite(STDERR, "ignore $sxin->$sout, have $sxin->" . sprintf("U+%04X", UnicodeHelper::utf8_ord($trans[$l][$sin])) . "\n");
+        fwrite(STDERR, "ignore $sin $sxin->$sout, have $sxin->" . sprintf("U+%04X", UnicodeHelper::utf8_ord($trans[$l][$sin])) . "\n");
     } else if ($sout === "") {
-        fwrite(STDERR, "change $sxin->\n");
+        fwrite(STDERR, "change $sin $sxin->\n");
         unset($trans[strlen($sin)][$sin]);
     } else {
-        fwrite(STDERR, "change $sxin->$sout\n");
+        fwrite(STDERR, "change $sin $sxin->$sout\n");
         $trans[strlen($sin)][$sin] = $soutch;
     }
 }
@@ -132,8 +134,8 @@ if (isset($arg["f"]) || isset($arg["file"])) {
         if (count($uc) < 10)
             continue;
         $c = intval($uc[0], 16);
-        if ($unparse) {
             $ch = numeric_to_utf8($c);
+        if ($unparse) {
             if (isset($trans[strlen($ch)][$ch]))
                 fwrite(STDOUT, "U+$uc[0];" . quote_key($ch) . ";$uc[1] -> " . $trans[strlen($ch)][$ch] . "\n");
         } else if ($uc[2][0] === "M") {
@@ -142,26 +144,34 @@ if (isset($arg["f"]) || isset($arg["file"])) {
         } else if ($uc[2][0] === "L" && $uc[5]) {
             $comb = preg_replace('/\A<(?:compat|wide|narrow|circle)>\s*/', "", $uc[5]);
             $latin = $latinmark = $all = [];
-            foreach (explode(" ", $comb) as $comp)
+            foreach (explode(" ", $comb) as $comp) {
                 if ($comp !== "") {
                     $compc = intval($comp, 16);
                     $compch = UnicodeHelper::utf8_chr($compc);
                     if (($compc >= 0x41 && $compc <= 0x5A)
                         || ($compc >= 0x61 && $compc <= 0x7A))
                         $latin[] = $latinmark[] = $all[] = $compch;
-                    else if ($compc >= 0x300 && $compc <= 0x362)
+                    else if ($compc === 0xB7 || ($compc >= 0x300 && $compc <= 0x362))
                         $latinmark[] = $all[] = $compch;
                     else if (isset($trans[strlen($compch)][$compch]))
                         $latin[] = $latinmark[] = $all[] = $trans[strlen($compch)][$compch];
                     else
                         $all[] = $compch;
                 }
+            }
             if (!isset($ignore_latin[$c])
                 && !empty($latin)
-                && count($latinmark) === count($all))
+                && count($latinmark) === count($all)) {
                 assign_it($c, join("", $latin), false, $uc[1]);
-            else if ($verbose)
-                fwrite(STDERR, "ignoring U+{$uc[0]};{$uc[1]};{$uc[5]}\n");
+            } else if ($verbose) {
+                fwrite(STDERR, "ignoring $ch U+{$uc[0]};{$uc[1]};{$uc[2]};{$uc[5]}\n");
+            }
+        } else if (str_starts_with($uc[1], "LATIN ") && $c > 127) {
+            if (preg_match('{\ALATIN (SMALL CAPITAL|CAPITAL|SMALL) LETTER ([A-Z])(?:| WITH HOOK| WITH STROKE)\z}', $uc[1], $m) && $c <= 0x181) {
+                assign_it($c, $m[1] === "SMALL" ? strtolower($m[2]) : $m[2], false, $uc[1]);
+            } else if ($verbose && !isset($trans[strlen($ch)][$ch])) {
+                fwrite(STDERR, "ignoring $ch U+{$uc[0]};{$uc[1]};{$uc[2]};{$uc[5]}\n");
+            }
         }
     }
     if ($unparse)
