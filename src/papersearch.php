@@ -331,7 +331,7 @@ class Op_SearchTerm extends SearchTerm {
         if ($term) {
             foreach ($term->float as $k => $v) {
                 $v1 = get($this->float, $k);
-                if (($k === "sort" || $k === "view") && $v1)
+                if (($k === "sort" || $k === "view" || $k === "tags") && $v1)
                     array_splice($this->float[$k], count($v1), 0, $v);
                 else if ($k === "strspan" && $v1)
                     $this->apply_strspan($v);
@@ -402,23 +402,25 @@ class Not_SearchTerm extends Op_SearchTerm {
         parent::__construct("not");
     }
     protected function finish() {
+        unset($this->float["tags"]);
         $qv = $this->child ? $this->child[0] : null;
         $qr = null;
-        if (!$qv || $qv->is_false())
+        if (!$qv || $qv->is_false()) {
             $qr = new True_SearchTerm;
-        else if ($qv->is_true())
+        } else if ($qv->is_true()) {
             $qr = new False_SearchTerm;
-        else if ($qv->type === "not")
+        } else if ($qv->type === "not") {
             $qr = clone $qv->child[0];
-        else if ($qv->type === "revadj") {
+        } else if ($qv->type === "revadj") {
             $qr = clone $qv;
             $qr->negated = !$qr->negated;
         }
         if ($qr) {
             $qr->float = $this->float;
             return $qr;
-        } else
+        } else {
             return $this;
+        }
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -2756,10 +2758,12 @@ class PaperSearch {
     function highlight_tags() {
         if ($this->_highlight_tags === null) {
             $this->_prepare();
-            $this->_highlight_tags = array();
-            foreach ($this->_sorters as $s)
+            $this->_highlight_tags = get($this->term()->float, "tags", []);
+            foreach ($this->_sorters as $s) {
                 if ($s->type[0] === "#")
                     $this->_highlight_tags[] = substr($s->type, 1);
+            }
+            $this->_highlight_tags = array_values(array_unique($this->_highlight_tags));
         }
         return $this->_highlight_tags;
     }

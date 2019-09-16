@@ -93,26 +93,29 @@ class Tag_SearchTerm extends SearchTerm {
             && !ctype_digit(substr($tagword, 0, $twiddle))) {
             $c = substr($tagword, 0, $twiddle);
             $ret = ContactSearch::make_pc($c, $srch->user)->ids;
-            if (empty($ret))
+            if (empty($ret)) {
                 $srch->warn("“#" . htmlspecialchars($tagword) . "” doesn’t match a PC email.");
-            else if (!$allow_star && count($ret) > 1) {
+            } else if (!$allow_star && count($ret) > 1) {
                 $srch->warn("“#" . htmlspecialchars($tagword) . "” matches more than one PC member.");
                 $ret = [];
             }
             $tagword = substr($tagword, $twiddle);
-        } else if ($twiddle === 0 && ($tagword === "~" || $tagword[1] !== "~"))
+        } else if ($twiddle === 0 && ($tagword === "~" || $tagword[1] !== "~")) {
             $ret[0] = $srch->cid;
+        }
 
         $tagger = new Tagger($srch->user);
         $flags = Tagger::NOVALUE;
-        if ($allow_star)
+        if ($allow_star) {
             $flags |= Tagger::ALLOWRESERVED | Tagger::ALLOWSTAR;
+        }
         if (!$tagger->check("#" . $tagword, $flags)) {
             $srch->warn($tagger->error_html);
             $ret = [];
         }
-        foreach ($ret as &$x)
+        foreach ($ret as &$x) {
             $x .= $tagword;
+        }
         return $ret;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -150,8 +153,9 @@ class Tag_SearchTerm extends SearchTerm {
             && ($m[2] !== "" || $m[3] !== "")) {
             $tagword = $m[1];
             $value->index1 = new CountMatcher(($m[3] ? : "=") . $m[4]);
-        } else
+        } else {
             $tagword = $word;
+        }
 
         $value->tags = self::expand($tagword, !$sword->kwdef->sorting, $srch);
         if (count($value->tags) === 1 && $value->tags[0] === "none") {
@@ -160,8 +164,11 @@ class Tag_SearchTerm extends SearchTerm {
         }
 
         $term = $value->make_term()->negate_if($negated);
-        if (!$negated && $sword->kwdef->sorting && !empty($value->tags))
-            $term->set_float("sort", [($revsort ? "-#" : "#") . $value->tags[0]]);
+        if (!$negated && !empty($value->tags)) {
+            $term->set_float("tags", $value->tags);
+            if ($sword->kwdef->sorting)
+                $term->set_float("sort", [($revsort ? "-#" : "#") . $value->tags[0]]);
+        }
         if (!$negated && $sword->kwdef->is_hash && ($tag = $value->single_tag())) {
             $term->tag1 = $tag;
             $term->tag1nz = false;
@@ -170,21 +177,23 @@ class Tag_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $tm_sql = $this->tsm->tagmatch_sql("PaperTag", $sqi->user);
-        if ($tm_sql !== false)
+        if ($tm_sql !== false) {
             $tm_sql = " and ($tm_sql)";
+        }
         return 'exists (select * from PaperTag where paperId=Paper.paperId' . ($tm_sql ? : "") . ')';
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $ok = $this->tsm->evaluate($srch->user, $row->searchable_tags($srch->user));
-        if ($ok && $this->tag1 && !$this->tag1nz)
+        if ($ok && $this->tag1 && !$this->tag1nz) {
             $this->tag1nz = $row->tag_value($this->tag1) != 0;
+        }
         return $ok;
     }
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
         $child = [];
         $tags = $row->searchable_tags($srch->user);
         // autosearch tags are special, splice in their search defs
-        foreach ($srch->conf->tags()->filter("autosearch") as $dt)
+        foreach ($srch->conf->tags()->filter("autosearch") as $dt) {
             if ($this->tsm->evaluate($srch->user, " {$dt->tag}#0")) {
                 $newsrch = new PaperSearch($srch->user, $dt->autosearch);
                 $newec = $newsrch->term()->compile_condition($row, $newsrch);
@@ -196,6 +205,7 @@ class Tag_SearchTerm extends SearchTerm {
                     $child[] = $newec;
                 $tags = str_replace(" {$dt->tag}#0", "", $tags);
             }
+        }
         // now complete
         if ($this->tsm->evaluate($srch->user, $tags))
             return true;
@@ -247,19 +257,20 @@ class Color_SearchTerm {
         $word = strtolower($word);
         $tm = new TagSearchMatcher;
         if ($srch->user->isPC && $srch->conf->tags()->has_badges) {
-            if ($word === "any" || $word === "none")
+            if ($word === "any" || $word === "none") {
                 $f = function ($t) { return !empty($t->badges); };
-            else if (preg_match(',\A(black|' . join("|", $srch->conf->tags()->canonical_badges()) . ')\z,', $word)
-                     && !$sword->quoted) {
+            } else if (preg_match(',\A(black|' . join("|", $srch->conf->tags()->canonical_badges()) . ')\z,', $word)
+                       && !$sword->quoted) {
                 $word = $word === "black" ? "normal" : $word;
                 $f = function ($t) use ($word) {
                     return !empty($t->badges) && in_array($word, $t->badges);
                 };
             } else if (($tx = $srch->conf->tags()->check_base($word))
-                     && $tx->badges)
+                       && $tx->badges) {
                 $f = function ($t) use ($tx) { return $t === $tx; };
-            else
+            } else {
                 $f = function ($t) { return false; };
+            }
             $tm->tags = array_keys($srch->conf->tags()->filter_by($f));
         }
         $tm->include_twiddles($srch->user);

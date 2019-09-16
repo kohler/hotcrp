@@ -6590,7 +6590,7 @@ handle_ui.on("js-plinfo-edittags", function () {
 
 
 var self = false, fields = {}, field_order = [], aufull = {},
-    tagmap = false, _bypid = {}, _bypidx = {};
+    tagmap = false, taghighlighter = false, _bypid = {}, _bypidx = {};
 
 function add_field(f) {
     var j = field_order.length;
@@ -6661,18 +6661,30 @@ function pidfield(pid, f, index) {
 
 function make_tagmap() {
     if (tagmap === false) {
-        var i, x, t;
-        tagmap = {};
-        x = fields.tags.highlight_tags || [];
-        for (i = 0; i != x.length; ++i) {
-            t = x[i].toLowerCase();
+        var i, tl, x, t, p;
+        tl = fields.tags.highlight_tags || [];
+        x = [];
+        for (i = 0; i !== tl.length; ++i) {
+            t = tl[i].toLowerCase();
             if (t.charAt(0) === "~" && t.charAt(1) !== "~")
                 t = hotcrp_user.cid + t;
-            tagmap[t] = (tagmap[t] || 0) | 1;
+            p = t.indexOf("*");
+            t = t.replace(/([^-A-Za-z_0-9])/g, "\\$1");
+            if (p === 0)
+                x.push('(?!.*~)' . t.replace('\\*', '.*'));
+            else if (p > 0)
+                x.push(t.replace('\\*', '.*'));
+            else if (t === "any")
+                x.push('(?:' + (hotcrp_user.cid || 0) + '~.*|~~.*|(?!.*~).*)');
+            else
+                x.push(t);
         }
-        x = fields.tags.votish_tags || [];
-        for (i = 0; i != x.length; ++i) {
-            t = x[i].toLowerCase();
+        taghighlighter = x.length ? new RegExp('^(' + x.join("|") + ')$', 'i') : null;
+
+        tagmap = {};
+        tl = fields.tags.votish_tags || [];
+        for (i = 0; i !== tl.length; ++i) {
+            t = tl[i].toLowerCase();
             tagmap[t] = (tagmap[t] || 0) | 2;
             t = hotcrp_user.cid + "~" + t;
             tagmap[t] = (tagmap[t] || 0) | 2;
@@ -6684,13 +6696,14 @@ function make_tagmap() {
 }
 
 function compute_row_tagset(tagstr, editable) {
-    var tmap = make_tagmap(), t = [], tags = (tagstr || "").split(/ /);
-    for (var i = 0; i != tags.length; ++i) {
+    make_tagmap();
+    var t = [], tags = (tagstr || "").split(/ /);
+    for (var i = 0; i !== tags.length; ++i) {
         var text = tags[i], twiddle = text.indexOf("~"), hash = text.indexOf("#");
         if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == hotcrp_user.cid)) {
             twiddle = Math.max(twiddle, 0);
             var tbase = text.substring(0, hash), tindex = text.substr(hash + 1),
-                tagx = tmap ? tmap[tbase.toLowerCase()] || 0 : 0, h, q;
+                tagx = tagmap ? tagmap[tbase.toLowerCase()] || 0 : 0, h, q;
             tbase = tbase.substring(twiddle, hash);
             if (tagx & 2)
                 q = "#" + tbase + " showsort:-#" + tbase;
@@ -6702,16 +6715,13 @@ function compute_row_tagset(tagstr, editable) {
                 h = '<a class="nn nw" href="' + hoturl("search", {q: q}) + '"><u class="x">#' + tbase + '</u>#' + tindex + '</a>';
             else
                 h = '<a class="qq nw" href="' + hoturl("search", {q: q}) + '">#' + tbase + '</a>';
-            if (tagx & 1)
+            if (taghighlighter && taghighlighter.test(tbase))
                 h = '<strong>' + h + '</strong>';
             t.push([h, text.substring(twiddle, hash), text.substring(hash + 1), tagx]);
         }
     }
     t.sort(function (a, b) {
-        if ((a[3] ^ b[3]) & 1)
-            return a[3] & 1 ? -1 : 1;
-        else
-            return strnatcmp(a[1], b[1]);
+        return strnatcmp(a[1], b[1]);
     });
     if (!t.length && editable)
         t.push(["none"]);
