@@ -1003,6 +1003,13 @@ class NumericOrderPaperColumn extends PaperColumn {
         $this->order = $order;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        return +get($this->order, $a->paperId) - +get($this->order, $b->paperId);
+        $ap = $this->order->position($a->paperId);
+        $bp = $this->order->position($b->paperId);
+        if ($ap !== false && $bp !== false)
+            return $ap < $bp ? -1 : ($ap > $bp ? 1 : 0);
+        else if ($ap !== false || $bp !== false)
+            return $ap === false ? 1 : -1;
+        else
+            return $a->paperId - $b->paperId;
     }
 }

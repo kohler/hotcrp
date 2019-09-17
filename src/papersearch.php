@@ -465,17 +465,18 @@ class And_SearchTerm extends Op_SearchTerm {
                 $qr = new False_SearchTerm;
                 $qr->float = $this->float;
                 return $qr;
-            } else if ($qv->is_true())
+            } else if ($qv->is_true()) {
                 $any = true;
-            else if ($qv->type === "revadj")
+            } else if ($qv->type === "revadj") {
                 $revadj = $qv->apply($revadj, false);
-            else if ($qv->type === "pn" && $this->type === "space") {
+            } else if ($qv->type === "pn" && $this->type === "space") {
                 if (!$pn)
                     $newchild[] = $pn = $qv;
                 else
-                    $pn->pids = array_merge($pn->pids, $qv->pids);
-            } else
+                    $pn->merge($qv);
+            } else {
                 $newchild[] = $qv;
+            }
         }
         if ($revadj) // must come first
             array_unshift($newchild, $revadj);
@@ -554,19 +555,20 @@ class Or_SearchTerm extends Op_SearchTerm {
         $pn = $revadj = null;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
-            if ($qv->is_true())
+            if ($qv->is_true()) {
                 return self::make_float($this->float);
-            else if ($qv->is_false())
-                /* skip */;
-            else if ($qv->type === "revadj")
+            } else if ($qv->is_false()) {
+                // skip
+            } else if ($qv->type === "revadj") {
                 $revadj = $qv->apply($revadj, true);
-            else if ($qv->type === "pn") {
+            } else if ($qv->type === "pn") {
                 if (!$pn)
                     $newchild[] = $pn = $qv;
                 else
-                    $pn->pids = array_merge($pn->pids, $qv->pids);
-            } else
+                    $pn->merge($qv);
+            } else {
                 $newchild[] = $qv;
+            }
         }
         if ($revadj)
             array_unshift($newchild, $revadj);
@@ -625,17 +627,18 @@ class Xor_SearchTerm extends Op_SearchTerm {
         $pn = $revadj = null;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
-            if ($qv->is_false())
-                /* skip */;
-            else if ($qv->type === "revadj")
+            if ($qv->is_false()) {
+                // skip
+            } else if ($qv->type === "revadj") {
                 $revadj = $qv->apply($revadj, true);
-            else if ($qv->type === "pn") {
+            } else if ($qv->type === "pn") {
                 if (!$pn)
                     $newchild[] = $pn = $qv;
                 else
-                    $pn->pids = array_merge($pn->pids, $qv->pids);
-            } else
+                    $pn->merge($qv);
+            } else {
                 $newchild[] = $qv;
+            }
         }
         if ($revadj)
             array_unshift($newchild, $revadj);
@@ -1213,39 +1216,123 @@ class Show_SearchTerm {
 }
 
 class PaperID_SearchTerm extends SearchTerm {
-    public $pids;
+    private $r = [];
+    private $n = 0;
+    private $in_order = true;
 
-    function __construct($pns) {
+    function __construct() {
         parent::__construct("pn");
-        $this->pids = $pns;
     }
+    private function lower_bound($p) {
+        $l = 0;
+        $r = count($this->r);
+        while ($l < $r) {
+            $m = $l + (($r - $l) >> 1);
+            $x = $this->r[$m];
+            if ($p < $x[0])
+                $r = $m;
+            else if ($p >= $x[1])
+                $l = $m + 1;
+            else
+                $l = $r = $m;
+        }
+        return $l;
+    }
+    function position($p) {
+        $i = $this->lower_bound($p);
+        if ($i < count($this->r) && $p >= $this->r[$i][0]) {
+            $d = $p - $this->r[$i][0];
+            return $this->r[$i][2] + ($this->r[$i][3] ? -$d : $d);
+        } else {
+            return false;
+        }
+    }
+    private function add_drange($p0, $p1, $rev) {
+        while ($p0 < $p1) {
+            $i = $this->lower_bound($p0);
+            if ($i < count($this->r) && $p0 >= $this->r[$i][0]) {
+                $p0 = $this->r[$i][1];
+                ++$i;
+            }
+            $p1x = $p1;
+            if ($i < count($this->r) && $p1 >= $this->r[$i][0]) {
+                $p1x = $this->r[$i][0];
+            }
+            if ($p0 < $p1x) {
+                if ($rev || $i < count($this->r)) {
+                    $this->in_order = false;
+                }
+                if ($i > 0
+                    && $this->in_order
+                    && $p0 === $this->r[$i - 1][1]) {
+                    $this->r[$i - 1][1] = $p1x;
+                } else {
+                    $n = $this->n + ($rev ? $p1x - $p0 - 1 : 0);
+                    array_splice($this->r, $i, 0, [[$p0, $p1x, $n, $rev]]);
+                }
+                $this->n += $p1x - $p0;
+            }
+            $p0 = max($p0, $p1x);
+        }
+    }
+    function add_range($p0, $p1) {
+        if ($p0 <= $p1) {
+            $this->add_drange($p0, $p1 + 1, false);
+        } else {
+            $this->add_drange($p1, $p0 + 1, true);
+        }
+    }
+    function merge(PaperID_SearchTerm $st) {
+        $rs = $st->r;
+        if (!$st->in_order) {
+            usort($rs, function ($a, $b) { return $a[2] - $b[2]; });
+        }
+        foreach ($rs as $r) {
+            $this->add_drange($r[0], $r[1], $r[3]);
+        }
+    }
+    function paper_ids() {
+        if ($this->n <= 1000) {
+            $a = [];
+            foreach ($this->r as $r) {
+                for ($i = $r[0]; $i < $r[1]; ++$i)
+                    $a[] = $i;
+            }
+            return $a;
+        } else {
+            return false;
+        }
+    }
+
     function trivial_rights(Contact $user, PaperSearch $srch) {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if (empty($this->pids))
+        if (empty($this->r)) {
             return "false";
-        else
-            return "Paper.paperId in (" . join(",", $this->pids) . ")";
+        } else if (($pids = $this->paper_ids()) !== false) {
+            return "Paper.paperId in (" . join(",", $pids) . ")";
+        } else {
+            $s = [];
+            foreach ($this->r as $r)
+                $s[] = "(Paper.paperId>={$r[0]} and Paper.paperId<{$r[1]})";
+            return "(" . join(" or ", $s) . ")";
+        }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        return in_array($row->paperId, $this->pids);
+        return $this->position($row->paperId) !== false;
     }
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
         return $this->exec($row, $srch);
     }
-    function in_order() {
-        $pods = $this->pids;
-        sort($pods, SORT_NUMERIC);
-        return $pods == $this->pids;
-    }
     function default_sorter($top, $thenmap, PaperSearch $srch) {
-        if ($top && !$this->in_order()) {
-            $s = ListSorter::make_field(new NumericOrderPaperColumn($srch->conf, array_flip($this->pids)));
+        if ($top && !$this->in_order) {
+            $s = ListSorter::make_field(new NumericOrderPaperColumn($srch->conf, $this));
             $s->thenmap = $thenmap;
             return $s;
-        } else
+        } else {
             return false;
+        }
     }
 }
 
@@ -1834,13 +1921,13 @@ class PaperSearch {
 
         if ($wordbrk[0] === "=") {
             // paper numbers
-            $range = [];
+            $st = new PaperID_SearchTerm;
             while (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\s*,?\s*(.*)\z/', $word, $m)) {
                 $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-                $range = array_merge($range, range(intval($m[1]), intval($m[2])));
+                $st->add_range(intval($m[1]), intval($m[2]));
                 $word = $m[3];
             }
-            return new PaperID_SearchTerm($range);
+            return $st;
         } else if ($wordbrk[0] === "#") {
             // `#TAG`
             ++$this->_quiet_count;
@@ -2172,7 +2259,7 @@ class PaperSearch {
             foreach ($qe->child as $subt)
                 $this->_add_deleted_papers($subt);
         } else if ($qe->type === "pn") {
-            foreach ($qe->pids as $p)
+            foreach ($qe->paper_ids() ? : [] as $p)
                 if (array_search($p, $this->_matches) === false)
                     $this->_matches[] = (int) $p;
         }
