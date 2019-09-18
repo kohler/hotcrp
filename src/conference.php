@@ -3611,30 +3611,40 @@ class Conf {
     }
 
     private static function log_clean_user($user, &$text) {
-        if (!$user)
+        if (!$user) {
             return 0;
-        else if (!is_numeric($user)) {
+        } else if (!is_numeric($user)) {
             if ($user->email && !$user->contactId && !$user->is_site_contact)
                 $text .= " <{$user->email}>";
             return $user->contactId;
-        } else
+        } else {
             return $user;
+        }
     }
 
     function log_for($user, $dest_user, $text, $pids = null) {
+        if (is_object($pids)) {
+            $pids = array($pids->paperId);
+        } else if (!is_array($pids)) {
+            $pids = $pids > 0 ? array($pids) : array();
+        }
+        $ps = [];
+        foreach ($pids as $p) {
+            $ps[] = is_object($p) ? $p->paperId : $p;
+        }
+
         $true_user = 0;
-        if ($user && is_object($user) && $user->is_actas_user())
-            $true_user = Contact::$true_user->contactId;
+        if ($user && is_object($user)) {
+            if ($user->is_actas_user()) {
+                $true_user = Contact::$true_user->contactId;
+            } else if (!$user->contactId
+                       && count($ps) === 1
+                       && $user->has_capability_for($ps[0])) {
+                $true_user = -1;
+            }
+        }
         $user = self::log_clean_user($user, $text);
         $dest_user = self::log_clean_user($dest_user, $text);
-
-        if (is_object($pids))
-            $pids = array($pids->paperId);
-        else if (!is_array($pids))
-            $pids = $pids > 0 ? array($pids) : array();
-        $ps = array();
-        foreach ($pids as $p)
-            $ps[] = is_object($p) ? $p->paperId : $p;
 
         if ($this->_save_logs === false) {
             $this->qe(self::action_log_query,

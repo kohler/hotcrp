@@ -833,8 +833,13 @@ class Contact {
             return "";
     }
 
+
     function has_capabilities() {
         return $this->_capabilities !== null;
+    }
+
+    function capability($name) {
+        return $this->_capabilities ? get($this->_capabilities, $name) : null;
     }
 
     function has_author_view_capability() {
@@ -846,8 +851,18 @@ class Contact {
         return false;
     }
 
-    function capability($name) {
-        return $this->_capabilities ? get($this->_capabilities, $name) : null;
+    function has_capability_for($pid) {
+        return $this->_capabilities !== null
+            && (isset($this->_capabilities["@av{$pid}"])
+                || isset($this->_capabilities["@ra{$pid}"]));
+    }
+
+    function reviewer_capability_user($pid) {
+        if ($this->_capabilities !== null
+            && ($rcid = get($this->_capabilities, "@ra{$pid}")))
+            return $this->conf->cached_user_by_id($rcid);
+        else
+            return null;
     }
 
     function set_capability($name, $newval) {
@@ -884,6 +899,7 @@ class Contact {
             }
         }
     }
+
 
     private function make_data() {
         if (is_string($this->data))
@@ -1931,8 +1947,7 @@ class Contact {
             // check review accept capability
             if ($ci->reviewType == 0
                 && $this->_capabilities !== null
-                && ($rcid = get($this->_capabilities, "@ra{$prow->paperId}"))
-                && ($ru = $this->conf->cached_user_by_id($rcid))
+                && ($ru = $this->reviewer_capability_user($prow->paperId))
                 && ($rci = $prow->contact_info($ru))) {
                 $ci->reviewType = $rci->reviewType;
                 $ci->review_status = $rci->review_status;
@@ -3204,8 +3219,11 @@ class Contact {
 
 
     function is_my_comment(PaperInfo $prow, $crow) {
-        if ($crow->contactId == $this->contactId)
+        if ($this->contactId == $crow->contactId
+            || (!$this->contactId
+                && $this->capability("@ra{$prow->paperId}") == $crow->contactId)) {
             return true;
+        }
         if ($this->_review_tokens) {
             foreach ($prow->reviews_of_user($crow->contactId) as $rrow)
                 if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->_review_tokens))

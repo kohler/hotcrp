@@ -433,7 +433,7 @@ if (!$Me->privChair) {
 
 if ($Qreq->download) {
     $csvg = $Conf->make_csvg("log");
-    $csvg->select(["date", "email", "affected_email", "via_chair", "papers", "action"]);
+    $csvg->select(["date", "email", "affected_email", "via", "papers", "action"]);
     foreach ($lrg->page_rows(1) as $row) {
         $xusers = $xdest_users = [];
         foreach ($lrg->users_for($row, "contactId") as $u)
@@ -446,7 +446,7 @@ if ($Qreq->download) {
             strftime("%Y-%m-%d %H:%M:%S %z", $row->timestamp),
             join(" ", $xusers),
             join(" ", $xdest_users),
-            $row->trueContactId ? "yes" : "",
+            $row->trueContactId ? ($row->trueContactId < 0 ? "link" : "admin") : "",
             join(" ", $lrg->paper_ids($row)),
             $lrg->cleaned_action($row)
         ]);
@@ -555,7 +555,7 @@ function searchbar(LogRowGenerator $lrg, $page) {
 }
 
 // render rows
-function render_users($users, $via_chair) {
+function render_users($users, $via) {
     global $Conf, $Qreq, $Me;
     $all_pc = true;
     $ts = [];
@@ -578,8 +578,8 @@ function render_users($users, $via_chair) {
                     $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';
                 if ($roles !== 0 && ($rolet = Contact::role_html_for($roles)))
                     $t .= " $rolet";
-                if ($via_chair)
-                    $t .= ' <i>via admin</i>';
+                if ($via)
+                    $t .= ($via < 0 ? ' <i>via link</i>' : ' <i>via admin</i>');
             }
             $ts[] = $t;
         }
@@ -607,14 +607,14 @@ foreach ($lrg->page_rows($page) as $row) {
 
     $xusers = $lrg->users_for($row, "contactId");
     $xdest_users = $lrg->users_for($row, "destContactId");
-    $via_chair = $row->trueContactId;
+    $via = $row->trueContactId;
 
     if ($xdest_users && $xusers != $xdest_users) {
-        $t[] = '<td class="pl pl_logname">' . render_users($xusers, $via_chair) . '</td>'
+        $t[] = '<td class="pl pl_logname">' . render_users($xusers, $via) . '</td>'
             . '<td class="pl pl_logname">' . render_users($xdest_users, false) . '</td>';
         $has_dest_user = true;
     } else {
-        $t[] = '<td class="pl pl_logname" colspan="2">' . render_users($xusers, $via_chair) . '</td>';
+        $t[] = '<td class="pl pl_logname" colspan="2">' . render_users($xusers, $via) . '</td>';
     }
 
     // XXX users that aren't in contactId slot

@@ -464,13 +464,22 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $this->conf->qe($q);
     }
 
-    function save($req, Contact $contact) {
+    function save($req, Contact $acting_contact) {
         global $Now;
         if (is_array($req))
             $req = (object) $req;
         $Table = $this->prow->comment_table_name();
         $LinkTable = $this->prow->table_name();
         $LinkColumn = $this->prow->id_column();
+
+        $contact = $acting_contact;
+        if (!$contact->contactId) {
+            $contact = $acting_contact->reviewer_capability_user($this->prow->paperId);
+        }
+        if (!$contact || !$contact->contactId) {
+            error_log("Comment::save({$this->prow->paperId}): no such user");
+            return false;
+        }
 
         $req_visibility = get(self::$visibility_revmap, get($req, "visibility", ""));
         if ($req_visibility === null && $this->commentId)
@@ -614,7 +623,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             return false;
 
         // log
-        $contact->log_activity("Comment $cmtid " . ($text !== false ? "saved" : "deleted"), $this->prow->$LinkColumn);
+        $acting_contact->log_activity_for($this->contactId ? : $contact->contactId, "Comment $cmtid " . ($text !== false ? "saved" : "deleted"), $this->prow->$LinkColumn);
         $this->conf->update_autosearch_tags($this->prow);
 
         // ordinal
