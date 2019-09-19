@@ -274,11 +274,6 @@ class MailRecipients {
         } else {
             $needpaper = $needconflict = true;
             $needreview = false;
-            if ($this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE) {
-                $cols[] = "(coalesce(allr.contactId,0)!=0) has_review";
-                $cols[] = "coalesce(allr.has_outstanding_review,0) has_outstanding_review";
-                $joins[] = "left join (select contactId, max(if(reviewNeedsSubmit!=0 and timeSubmitted>0,1,0)) has_outstanding_review from PaperReview join Paper on (Paper.paperId=PaperReview.paperId) group by PaperReview.contactId) as allr using (contactId)";
-            }
             $joins[] = "join Paper";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
             if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS) {

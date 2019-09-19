@@ -261,7 +261,7 @@ class UserStatus extends MessageSet {
             if (!isset($cj->affiliation))
                 $cj->affiliation = $old_user->affiliation;
             if (!isset($cj->collaborators))
-                $cj->collaborators = $old_user->collaborators;
+                $cj->collaborators = $old_user->collaborators();
         }
 
         // Password changes
@@ -461,6 +461,19 @@ class UserStatus extends MessageSet {
         return !preg_match('{\A(?:any|all|none|pc|chair|admin)\z}i', $base);
     }
 
+    private function maybe_assign($user, $cj, $cu, $fields, $userval = true) {
+        $field = is_array($fields) ? $fields[0] : $fields;
+        if ($userval === true) {
+            $userval = $user->$field;
+        }
+        $cjk = is_array($fields) ? $fields[1] : $fields;
+        if (isset($cj->$cjk)
+            && (!$this->no_update_profile || (string) $userval === "")
+            && $user->save_assign_field($field, $cj->$cjk, $cu)) {
+            $this->diffs[is_array($fields) ? $fields[2] : $fields] = true;
+        }
+    }
+
 
     function save($cj, $old_user = null) {
         global $Now;
@@ -567,29 +580,13 @@ class UserStatus extends MessageSet {
             $this->diffs["email"] = true;
         }
 
-        foreach (["affiliation", "collaborators", "country", "phone"] as $k) {
-            if (isset($cj->$k)
-                && (!$this->no_update_profile || (string) $user->$k === "")
-                && $user->save_assign_field($k, $cj->$k, $cu))
-                $this->diffs[$k] = true;
-        }
-
-        if (isset($cj->gender)
-            && (!$this->no_update_profile || (string) $user->gender === "")
-            && $user->save_assign_field("gender", $cj->gender, $cu)) {
-            $this->diffs["demographics"] = true;
-        }
-        if (isset($cj->birthday)
-            && (!$this->no_update_profile || (string) $user->birthday === "")
-            && $user->save_assign_field("birthday", $cj->birthday, $cu)) {
-            $this->diffs["demographics"] = true;
-        }
-
-        if (isset($cj->preferred_email)
-            && (!$this->no_update_profile || (string) $user->preferredEmail === "")
-            && $user->save_assign_field("preferredEmail", $cj->preferred_email, $cu)) {
-            $this->diffs["preferred_email"] = true;
-        }
+        $this->maybe_assign($user, $cj, $cu, "affiliation");
+        $this->maybe_assign($user, $cj, $cu, "collaborators", $user->collaborators());
+        $this->maybe_assign($user, $cj, $cu, "country", $user->country());
+        $this->maybe_assign($user, $cj, $cu, "phone");
+        $this->maybe_assign($user, $cj, $cu, ["gender", "gender", "demographics"]);
+        $this->maybe_assign($user, $cj, $cu, ["birthday", "birthday", "demographics"]);
+        $this->maybe_assign($user, $cj, $cu, ["preferredEmail", "preferred_email", "preferred_email"]);
 
         // Disabled
         $disabled = $old_disabled;

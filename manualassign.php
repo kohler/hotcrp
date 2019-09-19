@@ -213,10 +213,10 @@ if ($reviewer) {
             "</div>";
 
     // Conflict information
-    if ($reviewer->collaborators) {
+    if ($reviewer->collaborators()) {
         echo '<div class="f-i"><label>Collaborators</label>';
         $cos = [];
-        foreach (explode("\n", $reviewer->collaborators) as $co)
+        foreach (explode("\n", $reviewer->collaborators()) as $co)
             if ($co !== "")
                 $cos[] = htmlspecialchars(trim($co));
         echo join("; ", $cos), '</div>';

@@ -402,7 +402,7 @@ class ContactList {
             if (!$this->user->isPC || !($row->roles & Contact::ROLE_PC))
                 return "";
             $t = array();
-            foreach (explode("\n", $row->collaborators) as $collab) {
+            foreach (explode("\n", $row->collaborators()) as $collab) {
                 if (preg_match(',\A(.*?)\s*(\(.*\))\s*\z,', $collab, $m))
                     $t[] = '<span class="nw">' . htmlspecialchars($m[1])
                         . ' <span class="auaff">' . htmlspecialchars($m[2]) . '</span></span>';

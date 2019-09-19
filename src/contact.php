@@ -22,14 +22,19 @@ class Contact {
     public $firstName = "";
     public $lastName = "";
     public $unaccentedName = "";
-    public $nameAmbiguous;
+    public $affiliation = "";
     public $email = "";
+    public $roles = 0;
+    public $contactTags;
+    public $disabled = false;
+    public $_slice = false;
+
+    public $nameAmbiguous;
     public $preferredEmail = "";
     public $sorter = "";
     public $sort_position;
     public $name_analysis;
 
-    public $affiliation = "";
     public $country;
     public $collaborators;
     public $phone;
@@ -41,7 +46,6 @@ class Contact {
     private $passwordUseTime = 0;
     private $_contactdb_user = false;
 
-    public $disabled = false;
     private $_disabled;
     public $activity_at = false;
     private $lastLogin;
@@ -77,10 +81,8 @@ class Contact {
     private $_can_view_pc;
     public $is_site_contact = false;
     private $_rights_version = 0;
-    public $roles = 0;
     public $isPC = false;
     public $privChair = false;
-    public $contactTags;
     public $tracker_kiosk_state = 0;
     private $_capabilities;
     private $_review_tokens;
@@ -134,6 +136,7 @@ class Contact {
         if (isset($user->contactDbId)) {
             $this->contactDbId = (int) $user->contactDbId;
         }
+
         if (isset($user->firstName) && isset($user->lastName)) {
             $name = $user;
         } else {
@@ -148,30 +151,44 @@ class Contact {
         } else {
             $this->unaccentedName = Text::unaccented_name($name);
         }
-        foreach (["email", "preferredEmail", "affiliation", "phone",
-                  "country", "gender"] as $k) {
+        $this->affiliation = simplify_whitespace(get_s($user, "affiliation"));
+        $this->email = simplify_whitespace(get_s($user, "email"));
+        self::set_sorter($this, $this->conf);
+
+        if (isset($user->roles) || isset($user->isPC)
+            || isset($user->isAssistant) || isset($user->isChair)) {
+            $roles = (int) get($user, "roles");
+            if (get($user, "isPC"))
+                $roles |= self::ROLE_PC;
+            if (get($user, "isAssistant"))
+                $roles |= self::ROLE_ADMIN;
+            if (get($user, "isChair"))
+                $roles |= self::ROLE_CHAIR;
+            $this->assign_roles($roles);
+        }
+        if (property_exists($user, "contactTags")) {
+            $this->contactTags = $user->contactTags;
+        } else {
+            $this->contactTags = $this->contactId ? false : null;
+        }
+        if (isset($user->disabled)) {
+            $this->disabled = !!$user->disabled;
+        }
+
+        foreach (["preferredEmail", "phone", "country", "gender"] as $k) {
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
         }
         if (isset($user->collaborators)) {
             $this->collaborators = $user->collaborators;
         }
-        self::set_sorter($this, $this->conf);
         if (isset($user->password)) {
             $this->password = (string) $user->password;
-        }
-        if (isset($user->disabled)) {
-            $this->disabled = !!$user->disabled;
         }
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
                   "updateTime", "creationTime"] as $k) {
             if (isset($user->$k))
                 $this->$k = (int) $user->$k;
-        }
-        if (property_exists($user, "contactTags")) {
-            $this->contactTags = $user->contactTags;
-        } else {
-            $this->contactTags = $this->contactId ? false : null;
         }
         if (isset($user->activity_at)) {
             $this->activity_at = (int) $user->activity_at;
@@ -186,23 +203,7 @@ class Contact {
             // (array_to_object_recursive($str) === $str)
             $this->data = array_to_object_recursive($user->data);
         }
-        if (isset($user->roles) || isset($user->isPC) || isset($user->isAssistant)
-            || isset($user->isChair)) {
-            $roles = (int) get($user, "roles");
-            if (get($user, "isPC"))
-                $roles |= self::ROLE_PC;
-            if (get($user, "isAssistant"))
-                $roles |= self::ROLE_ADMIN;
-            if (get($user, "isChair"))
-                $roles |= self::ROLE_CHAIR;
-            $this->assign_roles($roles);
-        }
-        if (isset($user->has_review)) {
-            $this->has_review_ = $user->has_review;
-        }
-        if (isset($user->has_outstanding_review)) {
-            $this->_has_outstanding_review = $user->has_outstanding_review;
-        }
+
         if (isset($user->is_site_contact)) {
             $this->is_site_contact = $user->is_site_contact;
         }
@@ -214,13 +215,20 @@ class Contact {
         $this->contactId = $this->contactXid = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
         assert($this->contactId > 0 || ($this->contactId == 0 && $this->contactDbId > 0));
-        if ($this->unaccentedName === "")
+
+        if ($this->unaccentedName === "") {
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
+        }
         self::set_sorter($this, $this->conf);
-        $this->password = (string) $this->password;
+        if (isset($this->roles)) {
+            $this->assign_roles((int) $this->roles);
+        }
         if (isset($this->disabled)) {
             $this->disabled = !!$this->disabled;
         }
+        $this->_slice = isset($this->_slice) && $this->_slice;
+
+        $this->password = (string) $this->password;
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
                   "updateTime", "creationTime"] as $k) {
             $this->$k = (int) $this->$k;
@@ -236,9 +244,6 @@ class Contact {
             // (array_to_object_recursive($str) === $str)
             $this->data = array_to_object_recursive($this->data);
         }
-        if (isset($this->roles)) {
-            $this->assign_roles((int) $this->roles);
-        }
         if (isset($this->__isAuthor__)) {
             $this->_db_roles = ((int) $this->__isAuthor__ > 0 ? self::ROLE_AUTHOR : 0)
                 | ((int) $this->__hasReview__ > 0 ? self::ROLE_REVIEWER : 0);
@@ -247,25 +252,51 @@ class Contact {
         $this->_contactdb_user = false;
     }
 
-    function merge_secondary_properties($x) {
-        foreach (["preferredEmail", "phone", "country", "password",
-                  "collaborators", "birthday", "gender"] as $k)
-            if (isset($x->$k))
-                $this->$k = $x->$k;
+    function unslice_using($x) {
+        $this->password = (string) $x->password;
+        foreach (["preferredEmail", "phone", "country",
+                  "collaborators", "gender"] as $k) {
+            $this->$k = $x->$k;
+        }
+        $this->birthday = isset($x->birthday) ? (int) $x->birthday : null;
         foreach (["passwordTime", "passwordUseTime", "creationTime",
-                  "updateTime", "defaultWatch"] as $k)
-            if (isset($x->$k))
-                $this->$k = (int) $x->$k;
-        if (isset($x->lastLogin))
-            $this->activity_at = $this->lastLogin = (int) $x->lastLogin;
-        if ($x->data)
+                  "updateTime", "defaultWatch"] as $k) {
+            $this->$k = (int) $x->$k;
+        }
+        $this->activity_at = $this->lastLogin = (int) $x->lastLogin;
+        if ($x->data) {
             $this->data = array_to_object_recursive($x->data);
+        }
+        $this->_slice = false;
+    }
+
+    function unslice() {
+        if ($this->_slice) {
+            assert($this->contactId > 0);
+            $need = $this->conf->sliced_users($this);
+            $result = $this->conf->qe("select * from ContactInfo where contactId?a", array_keys($need));
+            while ($result && ($m = $result->fetch_object())) {
+                $need[$m->contactId]->unslice_using($m);
+            }
+            $this->_slice = false;
+        }
     }
 
     function __set($name, $value) {
         if (!self::$allow_nonexistent_properties)
             error_log(caller_landmark(1) . ": writing nonexistent property $name");
         $this->$name = $value;
+    }
+
+
+    function collaborators() {
+        $this->_slice && $this->unslice();
+        return $this->collaborators;
+    }
+
+    function country() {
+        $this->_slice && $this->unslice();
+        return $this->country;
     }
 
 
@@ -839,6 +870,62 @@ class Contact {
     }
 
 
+    private function make_data() {
+        $this->_slice && $this->unslice();
+        if (is_string($this->data)) {
+            $this->data = json_decode($this->data);
+        }
+        if (!$this->data) {
+            $this->data = (object) array();
+        }
+    }
+
+    function data($key = null) {
+        $this->make_data();
+        if ($key)
+            return get($this->data, $key);
+        else
+            return $this->data;
+    }
+
+    private function encode_data() {
+        if ($this->data && ($t = json_encode($this->data)) !== "{}")
+            return $t;
+        else
+            return null;
+    }
+
+    function save_data($key, $value) {
+        $this->merge_and_save_data((object) array($key => array_to_object_recursive($value)));
+    }
+
+    function merge_data($data) {
+        $this->make_data();
+        object_replace_recursive($this->data, array_to_object_recursive($data));
+    }
+
+    function merge_and_save_data($data) {
+        $this->activate_database_account();
+        $this->make_data();
+        $old = $this->encode_data();
+        object_replace_recursive($this->data, array_to_object_recursive($data));
+        $new = $this->encode_data();
+        if ($old !== $new)
+            $this->conf->qe("update ContactInfo set data=? where contactId=?", $new, $this->contactId);
+    }
+
+    function data_str() {
+        $this->_slice && $this->unslice();
+        $d = null;
+        if (is_string($this->data)) {
+            $d = $this->data;
+        } else if (is_object($this->data)) {
+            $d = json_encode($this->data);
+        }
+        return $d === "{}" ? null : $d;
+    }
+
+
     function has_capabilities() {
         return $this->_capabilities !== null;
     }
@@ -905,56 +992,6 @@ class Contact {
         }
     }
 
-
-    private function make_data() {
-        if (is_string($this->data))
-            $this->data = json_decode($this->data);
-        if (!$this->data)
-            $this->data = (object) array();
-    }
-
-    function data($key = null) {
-        $this->make_data();
-        if ($key)
-            return get($this->data, $key);
-        else
-            return $this->data;
-    }
-
-    private function encode_data() {
-        if ($this->data && ($t = json_encode($this->data)) !== "{}")
-            return $t;
-        else
-            return null;
-    }
-
-    function save_data($key, $value) {
-        $this->merge_and_save_data((object) array($key => array_to_object_recursive($value)));
-    }
-
-    function merge_data($data) {
-        $this->make_data();
-        object_replace_recursive($this->data, array_to_object_recursive($data));
-    }
-
-    function merge_and_save_data($data) {
-        $this->activate_database_account();
-        $this->make_data();
-        $old = $this->encode_data();
-        object_replace_recursive($this->data, array_to_object_recursive($data));
-        $new = $this->encode_data();
-        if ($old !== $new)
-            $this->conf->qe("update ContactInfo set data=? where contactId=?", $new, $this->contactId);
-    }
-
-    function data_str() {
-        $d = null;
-        if (is_string($this->data))
-            $d = $this->data;
-        else if (is_object($this->data))
-            $d = json_encode($this->data);
-        return $d === "{}" ? null : $d;
-    }
 
     function escape($qreq = null) {
         global $Qreq, $Now;
@@ -3695,11 +3732,13 @@ class Contact {
     function aucollab_matchers() {
         if ($this->_aucollab_matchers === null) {
             $this->_aucollab_matchers = [new AuthorMatcher($this)];
-            if ((string) $this->collaborators !== "")
-                foreach (explode("\n", $this->collaborators) as $co) {
+            $c = (string) $this->collaborators();
+            if ($c !== "") {
+                foreach (explode("\n", $c) as $co) {
                     if (($m = AuthorMatcher::make_collaborator_line($co)))
                         $this->_aucollab_matchers[] = $m;
                 }
+            }
         }
         return $this->_aucollab_matchers;
     }
