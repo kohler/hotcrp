@@ -1651,12 +1651,13 @@ class Conf {
                     $by_name_text[Text::name_text($u)][] = $u;
                     $expected_by_name_count += 1;
                 }
-                if ($u->contactTags)
+                if ($u->contactTags) {
                     foreach (explode(" ", $u->contactTags) as $t) {
                         list($tag, $value) = TagInfo::unpack($t);
                         if ($tag)
                             $this->_pc_tags_cache[strtolower($tag)] = $tag;
                     }
+                }
             }
             Dbl::free($result);
 

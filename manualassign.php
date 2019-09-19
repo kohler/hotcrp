@@ -107,21 +107,21 @@ else if ($Qreq->update)
 
 $Conf->header(["Assignments", "Manual"], "assignpc");
 echo '<div class="psmode">',
-    '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
-    '<div class="papmode active"><a href="', hoturl("manualassign"), '">Manual</a></div>',
-    '<div class="papmode"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
-    '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
+    '<div class="papmode"><a href="', $Conf->hoturl("autoassign"), '">Automatic</a></div>',
+    '<div class="papmode active"><a href="', $Conf->hoturl("manualassign"), '">Manual</a></div>',
+    '<div class="papmode"><a href="', $Conf->hoturl("conflictassign"), '">Conflicts</a></div>',
+    '<div class="papmode"><a href="', $Conf->hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c">';
 
 
 // Help list
 echo '<div class="helpside"><div class="helpinside">
 Assignment methods:
-<ul><li><a href="', hoturl("autoassign"), '">Automatic</a></li>
- <li><a href="', hoturl("manualassign"), '" class="q"><strong>Manual by PC member</strong></a></li>
- <li><a href="', hoturl("assign"), '">Manual by paper</a></li>
- <li><a href="', hoturl("conflictassign"), '">Potential conflicts</a></li>
- <li><a href="', hoturl("bulkassign"), '">Bulk update</a></li>
+<ul><li><a href="', $Conf->hoturl("autoassign"), '">Automatic</a></li>
+ <li><a href="', $Conf->hoturl("manualassign"), '" class="q"><strong>Manual by PC member</strong></a></li>
+ <li><a href="', $Conf->hoturl("assign"), '">Manual by paper</a></li>
+ <li><a href="', $Conf->hoturl("conflictassign"), '">Potential conflicts</a></li>
+ <li><a href="', $Conf->hoturl("bulkassign"), '">Bulk update</a></li>
 </ul>
 <hr class="hr">
 <p>Types of PC review:</p>
@@ -131,7 +131,7 @@ Assignment methods:
   <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
 <hr class="hr">
 <dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>
-  <dt>Preference</dt><dd><a href="', hoturl("reviewprefs"), '">Review preference</a></dd>
+  <dt>Preference</dt><dd><a href="', $Conf->hoturl("reviewprefs"), '">Review preference</a></dd>
   <dt>Topic score</dt><dd>High value means PC member has interest in many paper topics</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>
 </dl><p>Click a heading to sort.</div></div>';

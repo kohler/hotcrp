@@ -1688,11 +1688,11 @@ class PaperInfo {
         if (!isset($this->_reviews_have[$fid])
             && !isset($this->_reviews_have["full"])) {
             $rfi = is_object($field) ? $field : ReviewInfo::field_info($fid, $this->conf);
-            if (!$rfi)
+            if (!$rfi) {
                 $this->_reviews_have[$fid] = false;
-            else if (!$rfi->main_storage)
+            } else if (!$rfi->main_storage) {
                 $this->ensure_full_reviews();
-            else {
+            } else {
                 $this->_reviews_have[$fid] = true;
                 $k = $rfi->main_storage . "Signature";
                 if (!property_exists($this, $k))

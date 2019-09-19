@@ -108,10 +108,11 @@ function pcAssignments($qreq) {
     }
 }
 
-if (isset($Qreq->update) && $Me->allow_administer($prow) && $Qreq->post_ok())
+if (isset($Qreq->update) && $Me->allow_administer($prow) && $Qreq->post_ok()) {
     pcAssignments($Qreq);
-else if (isset($Qreq->update) && $Qreq->ajax)
+} else if (isset($Qreq->update) && $Qreq->ajax) {
     json_exit(["ok" => false, "error" => "Only administrators can assign papers."]);
+}
 
 
 // add review requests
@@ -235,8 +236,9 @@ usort($requests, function ($a, $b) {
     }
 });
 
-if ($requests)
+if ($requests) {
     echo '<hr class="papcard_sep"><h3>Review requests</h3><div class="ctable-wide">';
+}
 foreach ($requests as $req) {
     echo '<div class="ctelt"><div class="ctelti has-fold';
     $rrow = $req[3];
@@ -248,10 +250,11 @@ foreach ($requests as $req) {
     echo '">';
 
     $rrowid = null;
-    if (isset($rrow->contactId) && $rrow->contactId > 0)
+    if (isset($rrow->contactId) && $rrow->contactId > 0) {
         $rrowid = $Conf->cached_user_by_id($rrow->contactId);
-    else if ($req[0] === 1)
+    } else if ($req[0] === 1) {
         $rrowid = $Conf->cached_user_by_email($rrow->email);
+    }
     if ($rrowid === null) {
         if ($req[0] === 1)
             $rrowid = new Contact($rrow, $Conf);
@@ -473,9 +476,9 @@ if ($Me->can_administer($prow)) {
         echo '<div class="pctbnrev">';
         $numReviews = strlen($p->allReviews);
         $numPrimary = substr_count($p->allReviews, REVIEW_PRIMARY);
-        if (!$numReviews)
+        if (!$numReviews) {
             echo "0 reviews";
-        else {
+        } else {
             echo '<a class="q" href="',
                 hoturl("search", "q=re:" . urlencode($pc->email)), '">',
                 plural($numReviews, "review"), "</a>";

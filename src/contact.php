@@ -124,14 +124,16 @@ class Contact {
     }
 
     private function merge($user) {
-        if (is_array($user))
+        if (is_array($user)) {
             $user = (object) $user;
+        }
         if (!isset($user->dsn) || $user->dsn == $this->conf->dsn) {
             if (isset($user->contactId))
                 $this->contactId = $this->contactXid = (int) $user->contactId;
         }
-        if (isset($user->contactDbId))
+        if (isset($user->contactDbId)) {
             $this->contactDbId = (int) $user->contactDbId;
+        }
         if (isset($user->firstName) && isset($user->lastName)) {
             $name = $user;
         } else {
@@ -195,12 +197,15 @@ class Contact {
                 $roles |= self::ROLE_CHAIR;
             $this->assign_roles($roles);
         }
-        if (isset($user->has_review))
+        if (isset($user->has_review)) {
             $this->has_review_ = $user->has_review;
-        if (isset($user->has_outstanding_review))
+        }
+        if (isset($user->has_outstanding_review)) {
             $this->_has_outstanding_review = $user->has_outstanding_review;
-        if (isset($user->is_site_contact))
+        }
+        if (isset($user->is_site_contact)) {
             $this->is_site_contact = $user->is_site_contact;
+        }
         $this->_disabled = null;
         $this->_contactdb_user = false;
     }
