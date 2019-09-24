@@ -204,8 +204,9 @@ if ($pl_text) {
         $display_options->checkbox_item(1, "abstract", "Abstracts");
 
     // Authors group
-    $viewAcceptedAuthors =
-        $Me->is_reviewer() && $Conf->time_reviewer_view_accepted_authors();
+    $viewAcceptedAuthors = $Me->is_reviewer()
+        && $Conf->time_reviewer_view_accepted_authors()
+        && $pl->has("accepted");
     $viewAllAuthors = ($Qreq->t == "a"
                        || ($Qreq->t == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
