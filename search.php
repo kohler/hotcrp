@@ -240,11 +240,11 @@ if ($pl_text) {
         $display_options->checkbox_item(1, "rownum", "Row numbers");
 
     // Options
-    /*foreach ($Conf->paper_opts->option_list() as $ox)
+    foreach ($Conf->paper_opts->option_list() as $ox)
         if ($pl->has("opt$ox->id")
             && $ox->list_display(null)
             && $ox->example_searches())
-            $display_options->checkbox_item(10, $ox->search_keyword(), $ox->name);*/
+            $display_options->checkbox_item(10, $ox->search_keyword(), $ox->name);
 
     // Reviewers group
     if ($Me->privChair) {
