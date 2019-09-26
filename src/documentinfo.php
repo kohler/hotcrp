@@ -947,18 +947,22 @@ class DocumentInfo implements JsonSerializable {
             return;
         }
         $byn = [];
+        $any_nonauthor = false;
         foreach ($docs as $doc) {
             if ($doc->documentType !== DTYPE_COMMENT
                 && $doc->conf === $user->conf) {
                 // XXX ignores documents from other conferences
                 $byn[$doc->documentType][$doc->paperId] = true;
+                $any_nonauthor = $any_nonauthor || !$doc->prow || !$doc->prow->has_author($user);
             }
         }
-        foreach ($byn as $dtype => $pidm) {
-            $opt = $user->conf->paper_opts->get($dtype);
-            $name = $opt ? $opt->json_key() : "opt" . $dtype;
-            if (!empty($pidm)) {
-                $user->log_activity("Download $name", array_keys($pidm));
+        if ($any_nonauthor) {
+            foreach ($byn as $dtype => $pidm) {
+                $opt = $user->conf->paper_opts->get($dtype);
+                $name = $opt ? $opt->json_key() : "opt" . $dtype;
+                if (!empty($pidm)) {
+                    $user->log_activity("Download $name", array_keys($pidm));
+                }
             }
         }
     }
