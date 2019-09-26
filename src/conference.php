@@ -3658,11 +3658,12 @@ class Conf {
                     && substr($qv[$n-1][4], 0, 5) === "Tag: "
                     && $last_pids === $pids) {
                     $qv[$n-1][4] = $what . substr($qv[$n-1][4], 4);
-                    continue;
+                } else {
+                    foreach (self::format_log_values($what, $user, $dest_user, $true_user, $pids) as $x) {
+                        $qv[] = $x;
+                    }
+                    $last_pids = $pids;
                 }
-
-                $qv[] = self::format_log_values($what, $user, $dest_user, $true_user, $pids);
-                $last_pids = $pids;
             }
             if (!empty($qv))
                 $this->qe(self::action_log_query, $qv);
@@ -3707,30 +3708,56 @@ class Conf {
         $dest_user = self::log_clean_user($dest_user, $text);
 
         if ($this->_save_logs === false) {
-            $this->qe(self::action_log_query,
-                [self::format_log_values($text, $user, $dest_user, $true_user, $ps)]);
+            $this->qe(self::action_log_query, self::format_log_values($text, $user, $dest_user, $true_user, $ps));
         } else {
             $key = "$user,$dest_user,$true_user|$text";
-            if (!isset($this->_save_logs[$key]))
+            if (!isset($this->_save_logs[$key])) {
                 $this->_save_logs[$key] = [];
-            foreach ($ps as $p)
+            }
+            foreach ($ps as $p) {
                 $this->_save_logs[$key][$p] = true;
+            }
         }
     }
 
     private static function format_log_values($text, $user, $dest_user, $true_user, $pids) {
         global $Now;
-        $pid = null;
-        if (count($pids) == 1)
-            $pid = $pids[0];
-        else if (count($pids) > 1)
-            $text .= " (papers " . join(", ", $pids) . ")";
+        if (empty($pids)) {
+            $pids = [null];
+        }
+        $addr = get($_SERVER, "REMOTE_ADDR");
         $user = (int) $user;
         $dest_user = (int) $dest_user;
-        if ($dest_user === 0 || $dest_user === $user)
+        if ($dest_user === 0 || $dest_user === $user) {
             $dest_user = null;
-        return [get($_SERVER, "REMOTE_ADDR"), $user, $dest_user,
-                (int) $true_user ? : null, $pid, $Now, substr($text, 0, 4096)];
+        }
+        $true_user = (int) $true_user;
+        if ($true_user === 0) {
+            $true_user = null;
+        }
+        $l = 0;
+        $n = count($pids);
+        $result = [];
+        while ($l < $n) {
+            $t = $text;
+            $r = $n;
+            while ($l + 1 !== $r) {
+                $t = $text . " (papers ";
+                if ($l === 0 && $r === $n)
+                    $t .= join(", ", $pids);
+                else
+                    $t .= join(", ", array_slice($pids, $l, $r - $l, true));
+                $t .= ")";
+                if (strlen($t) <= 4096) {
+                    break;
+                }
+                $r = $l + max(1, ($r - $l) >> 1);
+            }
+            $pid = $l + 1 === $r ? $pids[$l] : null;
+            $result[] = [$addr, $user, $dest_user, $true_user, $pid, $Now, substr($t, 0, 4096)];
+            $l = $r;
+        }
+        return $result;
     }
 
 
