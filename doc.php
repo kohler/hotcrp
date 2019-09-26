@@ -152,10 +152,12 @@ function document_download($qreq) {
     // Actually download paper.
     session_write_close();      // to allow concurrent clicks
     $opts = ["attachment" => cvtint($qreq->save) > 0];
-    if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x))
+    if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x)) {
         $opts["cacheable"] = true;
-    if ($Conf->download_documents([$doc], $opts))
+    }
+    if ($Conf->download_documents([$doc], $opts)) {
         exit;
+    }
 
     document_error("500 Server Error", null);
 }

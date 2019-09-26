@@ -2788,8 +2788,9 @@ class Conf {
             return false;
         }
 
-        foreach ($docs as $doc)
+        foreach ($docs as $doc) {
             $doc->filename = $doc->export_filename();
+        }
         $downloadname = false;
         if (count($docs) > 1) {
             $o = $this->paper_opts->get($docs[0]->documentType);

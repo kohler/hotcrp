@@ -49,10 +49,12 @@ class GetDocument_ListAction extends ListAction {
         if (!empty($downloads)) {
             session_write_close(); // it can take a while to generate the download
             $downloads = array_merge($downloads, $errors);
-            if ($user->conf->download_documents($downloads, true))
+            if ($user->conf->download_documents($downloads, true)) {
                 exit;
-        } else if (!empty($errors))
+            }
+        } else if (!empty($errors)) {
             Conf::msg_error("Nothing to download.<br />" . join("<br />", array_map(function ($ed) { return $ed->error_html; }, $errors)));
+        }
         // XXX how to return errors?
     }
 }

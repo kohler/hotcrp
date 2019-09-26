@@ -704,11 +704,11 @@ class DocumentInfo implements JsonSerializable {
 
     function export_filename($filters = null, $rest = null) {
         $fn = $this->conf->download_prefix;
-        if ($this->documentType == DTYPE_SUBMISSION)
+        if ($this->documentType == DTYPE_SUBMISSION) {
             $fn .= "paper" . $this->paperId;
-        else if ($this->documentType == DTYPE_FINAL)
+        } else if ($this->documentType == DTYPE_FINAL) {
             $fn .= "final" . $this->paperId;
-        else if ($this->documentType == DTYPE_COMMENT) {
+        } else if ($this->documentType == DTYPE_COMMENT) {
             assert(!$filters);
             $fn .= "paper" . $this->paperId . "/comment";
             if (($cmt = get($rest, "_comment")))
