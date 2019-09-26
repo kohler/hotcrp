@@ -7222,7 +7222,8 @@ handle_ui.on("js-check-format", function () {
         },
         success: function (data) {
             clearTimeout(running);
-            data.ok && $cf.html(data.response);
+            if (data.ok || data.response)
+                $cf.html(data.response);
         }
     });
 });

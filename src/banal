@@ -1762,13 +1762,15 @@ sub main () {
         return 1;
     }
 
+    my $any = 0;
     foreach my $file (@ARGV) {
         # open input file into FILE
         next unless (banal_open_input ($file));
         banal_file ($file, $spec);
         close $FILE;
+        $any = 1;
     }
-    return 0;
+    return 1 - $any;
 }
 
 exit (main ());

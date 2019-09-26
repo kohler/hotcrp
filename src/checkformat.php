@@ -310,8 +310,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
         global $Now, $ConfSitePATH;
         $bj = null;
-        if (($m = $doc->metadata()) && isset($m->banal))
+        if (($m = $doc->metadata()) && isset($m->banal)) {
             $bj = $m->banal;
+        }
         $bj_ok = $bj && $bj->at >= @filemtime("$ConfSitePATH/src/banal")
             && get($bj, "args") == self::$banal_args;
         if (!$bj_ok)
@@ -344,6 +345,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $cf->metadata_updates["npages"] = $npages;
                 $cf->metadata_updates["banal"] = $bj;
                 --$cf->need_run;
+            } else {
+                $cf->msg_fail("Error processing file. The file may not be in PDF format or may be corrupted.");
             }
 
             if ($limit > 0)
@@ -357,8 +360,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
             if (isset($cf->metadata_updates["banal"])
                 && $cf->pages > 30)
                 $cf->metadata_updates["banal"] = $cf->compress_bj($bj);
-        } else
+        } else {
             $cf->msg_fail(null);
+        }
     }
 
     function fetch_document(PaperInfo $prow, $dtype, $docid = 0) {
@@ -388,8 +392,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
             if (!isset($this->errf["error"]))
                 $this->msg_fail("No such document.");
             return;
-        } else if ($doc->mimetype !== "application/pdf")
+        } else if ($doc->mimetype !== "application/pdf") {
             return $this->msg_fail("The format checker only works for PDF files.");
+        }
 
         $done_me = false;
         $spec = $prow->conf->format_spec($doc->documentType);
@@ -434,8 +439,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $start = "This document may violate the submission format requirements.";
             }
             $t .= Ht::msg("<p>$start</p>\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\n<p>Submissions that violate the requirements will not be considered. <strong>However,</strong> the automated format checker can misreport errors (for instance, it can miscalculate margins and text sizes for certain figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.</p>", $status);
-        } else if (!$this->has_problem())
+        } else if ($this->failed) {
+            if ($t === "")
+                $t .= Ht::msg("Error processing file. The file may not be in PDF format or may be corrupted.", 2);
+        } else if (!$this->has_problem()) {
             $t .= Ht::msg("Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", "confirm");
+        }
         return $t;
     }
     function document_report(PaperInfo $prow, $doc) {

@@ -465,9 +465,9 @@ class DocumentInfo implements JsonSerializable {
 
     function content_file() {
         $this->ensure_content();
-        if (($path = $this->available_content_file()))
+        if (($path = $this->available_content_file())) {
             return $path;
-        else if ($this->content !== null) {
+        } else if ($this->content !== null) {
             if ($this->store_docstore())
                 return $this->filestore;
             if (($f = $this->_temp_content_filename())) {
@@ -480,16 +480,18 @@ class DocumentInfo implements JsonSerializable {
                     return ($this->content_file = $f);
             }
             return false;
-        } else
+        } else {
             return false;
+        }
     }
 
     private function _temp_content_filename() {
-        if (!Filer::$tempdir && !(Filer::$tempdir = tempdir()))
+        if (!Filer::$tempdir && !(Filer::$tempdir = tempdir())) {
             return false;
-        if ($this->has_hash())
+        }
+        if ($this->has_hash()) {
             $base = $this->text_hash();
-        else {
+        } else {
             ++Filer::$tempcounter;
             $base = "__temp" . Filer::$tempcounter . "__";
         }
