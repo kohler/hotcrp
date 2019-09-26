@@ -1071,6 +1071,7 @@ class Contact {
     const SAVE_NOTIFY = 1;
     const SAVE_ANY_EMAIL = 2;
     const SAVE_IMPORT = 4;
+    const SAVE_ROLES = 8;
 
     function change_email($email) {
         assert($this->has_account_here());
@@ -1118,18 +1119,19 @@ class Contact {
     function save_roles($new_roles, $actor) {
         $old_roles = $this->roles;
         // ensure there's at least one system administrator
-        if (!($new_roles & self::ROLE_ADMIN) && ($old_roles & self::ROLE_ADMIN)
-            && !(($result = $this->conf->qe("select contactId from ContactInfo where roles!=0 and (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1"))
-                 && edb_nrows($result) > 0))
+        if (!($new_roles & self::ROLE_ADMIN)
+            && ($old_roles & self::ROLE_ADMIN)
+            && !$this->conf->fetch_ivalue("select contactId from ContactInfo where roles!=0 and (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1")) {
             $new_roles |= self::ROLE_ADMIN;
+        }
         // log role change
-        foreach (array(self::ROLE_PC => "pc",
-                       self::ROLE_ADMIN => "sysadmin",
-                       self::ROLE_CHAIR => "chair") as $role => $type)
+        foreach ([self::ROLE_PC => "pc", self::ROLE_ADMIN => "sysadmin", self::ROLE_CHAIR => "chair"]
+                 as $role => $type) {
             if (($new_roles & $role) && !($old_roles & $role))
                 $this->conf->log_for($actor ? : $this, $this, "Added as $type");
             else if (!($new_roles & $role) && ($old_roles & $role))
                 $this->conf->log_for($actor ? : $this, $this, "Removed as $type");
+        }
         // save the roles bits
         if ($old_roles != $new_roles) {
             $this->conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
@@ -1153,8 +1155,13 @@ class Contact {
                 && $reg->$k !== "")
                 $cj[$k] = (string) $reg->$k;
         }
-        if ($is_cdb ? !$this->contactDbId : !$this->contactId)
+        if ($reg instanceof Contact
+            && (string) $this->collaborators === "") {
+            $cj["collaborators"] = (string) $reg->collaborators();
+        }
+        if ($is_cdb ? !$this->contactDbId : !$this->contactId) {
             $cj["email"] = $reg->email;
+        }
         return $cj;
     }
 
@@ -1200,7 +1207,7 @@ class Contact {
         return $ok;
     }
 
-    static function create(Conf $conf, $actor, $reg, $flags = 0) {
+    static function create(Conf $conf, $actor, $reg, $flags = 0, $roles = 0) {
         // clean registration
         if (is_array($reg))
             $reg = (object) $reg;
@@ -1269,7 +1276,10 @@ class Contact {
             $u = $conf->user_by_email($reg->email);
         }
 
-        // update paper authorship
+        // update roles
+        if ($flags & self::SAVE_ROLES) {
+            $u->save_roles($roles, $actor);
+        }
         if ($aupapers) {
             $u->save_authored_papers($aupapers);
             if ($cdbu) {

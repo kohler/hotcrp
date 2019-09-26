@@ -532,6 +532,11 @@ class UserStatus extends MessageSet {
         }
         // At this point, we will save a user.
 
+        $roles = $old_user ? $old_user->roles : 0;
+        if (isset($cj->roles)) {
+            $roles = self::parse_roles_json($cj->roles);
+        }
+
         // create user
         $this->check_invariants($cj);
         if (($send = $this->send_email) === null) {
@@ -539,15 +544,18 @@ class UserStatus extends MessageSet {
         }
         $actor = $this->viewer->is_site_contact ? null : $this->viewer;
         if (!$old_user) {
-            $user = Contact::create($this->conf, $actor, $cj, $send ? Contact::SAVE_NOTIFY : 0);
+            $user = Contact::create($this->conf, $actor, $cj,
+                                    ($send ? Contact::SAVE_NOTIFY : 0) | Contact::SAVE_ROLES,
+                                    $roles);
+            $cj->email = $user->email; // adopt contactdb’s spelling of email
         }
         if (!$user) {
             return false;
         }
-
-        // prepare contact update
         $old_roles = $user->roles;
         $old_disabled = $user->disabled ? 1 : 0;
+
+        // prepare contact update
         assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
         $cu = new Contact_Update(false);
 
@@ -691,13 +699,9 @@ class UserStatus extends MessageSet {
         }
 
         // Roles
-        $roles = $old_roles;
-        if (isset($cj->roles)) {
-            $roles = self::parse_roles_json($cj->roles);
-            if ($roles !== $old_roles) {
-                $user->save_roles($roles, $actor);
-                $this->diffs["roles"] = true;
-            }
+        if ($roles !== $old_roles) {
+            $user->save_roles($roles, $actor);
+            $this->diffs["roles"] = true;
         }
 
         // Contact DB (must precede password)
