@@ -88,8 +88,9 @@ class ReviewForm_SettingParser extends SettingParser {
             }
         }
 
-        if ($sv->has_reqv("authorView_$fid"))
+        if ($sv->has_reqv("authorView_$fid")) {
             $fj->visibility = $sv->reqv("authorView_$fid");
+        }
 
         if ($sv->has_reqv("description_$fid")) {
             $x = CleanHTML::basic_clean($sv->reqv("description_$fid"), $err);
@@ -125,7 +126,7 @@ class ReviewForm_SettingParser extends SettingParser {
             }
         }
 
-        if ($sv->reqv("round_list_$fid")) {
+        if ($sv->has_reqv("round_list_$fid")) {
             $fj->round_mask = 0;
             foreach (explode(" ", trim($sv->reqv("round_list_$fid"))) as $round_name)
                 if ($round_name !== "")
