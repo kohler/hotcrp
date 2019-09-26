@@ -141,8 +141,9 @@ function document_download($qreq) {
             foreach (getallheaders() as $k => $v)
                 if (strcasecmp($k, "If-None-Match") == 0)
                     $ifnonematch = $v;
-        } else
+        } else {
             $ifnonematch = get($_SERVER, "HTTP_IF_NONE_MATCH");
+        }
         if ($ifnonematch && $ifnonematch === "\"" . $doc->text_hash() . "\"") {
             header("HTTP/1.1 304 Not Modified");
             exit;

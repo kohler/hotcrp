@@ -152,13 +152,13 @@ class Filer {
 
         // Print paper
         header("Content-Type: " . Mimetype::type_with_charset($doc->mimetype));
-        $attachment = null;
-        if (is_bool($opts))
+        if (is_bool($opts)) {
             $attachment = $opts;
-        else if (is_array($opts) && isset($opts["attachment"]))
+        } else if (is_array($opts) && isset($opts["attachment"])) {
             $attachment = $opts["attachment"];
-        if ($attachment === null)
+        } else {
             $attachment = !Mimetype::disposition_inline($doc->mimetype);
+        }
         if (!$downloadname) {
             $downloadname = $doc->filename;
             if (($slash = strrpos($downloadname, "/")) !== false)
@@ -171,11 +171,12 @@ class Filer {
         }
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
-        if ($doc->has_hash())
+        if ($doc->has_hash()) {
             header("ETag: \"" . $doc->text_hash() . "\"");
-        if (($path = $doc->available_content_file()))
+        }
+        if (($path = $doc->available_content_file())) {
             self::download_file($path, get($doc, "no_cache") || get($doc, "no_accel"));
-        else {
+        } else {
             if (!$zlib_output_compression)
                 header("Content-Length: " . strlen($doc->content));
             echo $doc->content;
