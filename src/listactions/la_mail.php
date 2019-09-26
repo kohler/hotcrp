@@ -16,6 +16,6 @@ class Mail_ListAction extends ListAction {
             $x = "q=" . urlencode($qreq->q) . "&plimit=1";
         else
             $x = "p=" . join("+", $ssel->selection());
-        go(hoturl("mail", $x . "&t=" . urlencode($qreq->t) . "&recipients=$r"));
+        go($user->conf->hoturl("mail", $x . "&t=" . urlencode($qreq->t) . "&to=$r"));
     }
 }

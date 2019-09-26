@@ -8,9 +8,13 @@ require_once("src/mailclasses.php");
 if (!$Me->is_manager() && !$Me->isPC) {
     $Me->escape();
 }
+if (isset($Qreq->recipients) && !isset($Qreq->to)) {
+    $Qreq->to = $Qreq->recipients;
+}
 
 // load mail from log
-if (isset($Qreq->fromlog) && ctype_digit($Qreq->fromlog)
+if (isset($Qreq->fromlog)
+    && ctype_digit($Qreq->fromlog)
     && $Me->privChair) {
     $result = $Conf->qe_raw("select * from MailLog where mailId=" . $Qreq->fromlog);
     if (($row = edb_orow($result))) {
@@ -18,6 +22,8 @@ if (isset($Qreq->fromlog) && ctype_digit($Qreq->fromlog)
             if (isset($row->$field) && !isset($Qreq[$field]))
                 $Qreq[$field] = $row->$field;
         }
+        if (isset($row->recipients) && !isset($Qreq->to))
+            $Qreq->to = $row->recipients;
         if ($row->q)
             $Qreq["plimit"] = 1;
     }
@@ -115,8 +121,8 @@ if (isset($Qreq->loadtmpl)) {
          && !isset($template["allow_template"]))
         || (isset($template["allow_template"]) && $template["allow_template"] === false))
         $template = (array) $Conf->mail_template("generic");
-    if (!isset($Qreq->recipients) || $Qreq->loadtmpl != -1)
-        $Qreq->recipients = get($template, "default_recipients", "s");
+    if (!isset($Qreq->to) || $Qreq->loadtmpl != -1)
+        $Qreq->to = get($template, "default_recipients", "s");
     if (isset($template["default_search_type"]))
         $Qreq->t = $template["default_search_type"];
     $Qreq->subject = $null_mailer->expand($template["subject"]);
@@ -139,8 +145,7 @@ if (!isset($Qreq->emailBody)) {
 
 
 // Set recipients list, now that template is loaded
-$recip = new MailRecipients($Me, $Qreq->recipients, $papersel,
-                            $Qreq->newrev_since);
+$recip = new MailRecipients($Me, $Qreq->to, $papersel, $Qreq->newrev_since);
 
 // warn if no papers match
 if (isset($papersel)
@@ -181,7 +186,7 @@ class MailSender {
         $this->sending = $phase === 2;
         $this->qreq = $qreq;
         $this->group = $qreq->group || !$qreq->ungroup;
-        $this->recipients = (string) $qreq->recipients;
+        $this->recipients = (string) $qreq->to;
     }
 
     static function check($user, $recip, $qreq) {
@@ -194,7 +199,7 @@ class MailSender {
         $result = $user->conf->qe("insert into MailLog set
             recipients=?, cc=?, replyto=?, subject=?, emailBody=?, q=?, t=?,
             fromNonChair=?, status=-1",
-            (string) $qreq->recipients, $qreq->cc, $qreq->replyto,
+            (string) $qreq->to, $qreq->cc, $qreq->replyto,
             $qreq->subject, $qreq->emailBody, $qreq->q, $qreq->t,
             $user->privChair ? 0 : 1);
         $ms->echo_request_form(true);
@@ -232,7 +237,7 @@ class MailSender {
 
     private function echo_request_form($include_cb) {
         echo Ht::form($this->conf->hoturl_post("mail"), ["id" => "mailform"]);
-        foreach (["recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit", "newrev_since"] as $x)
+        foreach (["to", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit", "newrev_since"] as $x)
             if (isset($this->qreq[$x]))
                 echo Ht::hidden($x, $this->qreq[$x]);
         if (!$this->group)
@@ -255,7 +260,7 @@ class MailSender {
                 '<div class="fx"><div class="confirm">Sent to:&nbsp;', $this->recip->unparse(),
                 '<span id="mailinfo"></span></div>',
                 '<div class="aa">',
-                Ht::submit("go", "Prepare more mail"),
+                Ht::submit("again", "Prepare more mail"),
                 "</div></div>",
                 // This next is only displayed when Javascript is off
                 '<div class="fn2 warning">Sending mail. <strong>Do not leave this page until it finishes rendering!</strong></div>',
@@ -528,6 +533,7 @@ if (isset($Qreq->monreq)) {
 if (!$Qreq->loadtmpl
     && !$Qreq->cancel
     && !$Qreq->psearch
+    && !$Qreq->again
     && !$recip->error
     && $Qreq->post_ok()) {
     if ($Qreq->send && $Qreq->mailid)
@@ -588,7 +594,7 @@ echo Ht::select("template", $tmploptions, $Qreq->template),
 <div class="mail" style="float:left;margin:4px 1em 12px 0"><table id="foldpsel" class="fold8c fold9o fold10c">', "\n";
 
 // ** TO
-echo '<tr><td class="mhnp nw"><label for="recipients">To:</label></td><td class="mhdd">',
+echo '<tr><td class="mhnp nw"><label for="to">To:</label></td><td class="mhdd">',
     $recip->selectors(),
     "<div class=\"g\"></div>\n";
 
@@ -644,8 +650,8 @@ Ht::stash_script('function mail_recipients_fold(event) {
     foldup.call(this, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
     foldup.call(this, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
 }
-$("#recipients, #plimit").on("change", mail_recipients_fold);
-$(function () { $("#recipients").trigger("change"); })');
+$("#to, #plimit").on("change", mail_recipients_fold);
+$(function () { $("#to").trigger("change"); })');
 
 echo "</td></tr>\n";
 

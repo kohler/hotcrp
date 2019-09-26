@@ -181,7 +181,7 @@ class MailRecipients {
                 continue;
             $last = $n;
         }
-        return Ht::select("recipients", $sel, $this->type, ["id" => "recipients"]);
+        return Ht::select("to", $sel, $this->type, ["id" => "to"]);
     }
 
     function unparse() {

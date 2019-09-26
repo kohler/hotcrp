@@ -441,6 +441,19 @@
 			"%SIGNATURE%\n"
 		]
 	},
+	{
+		"name": "pc",
+		"title": "Message to PC",
+		"allow_pc": true,
+		"position": 1,
+		"default_recipients": "pc",
+		"subject": "[%CONFSHORTNAME%] Message",
+		"body": [
+			"Dear program committee,\n\n",
+			"Your message here.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
 
 	{
 		"name": "newpcrev",
