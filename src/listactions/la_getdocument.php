@@ -50,6 +50,7 @@ class GetDocument_ListAction extends ListAction {
             session_write_close(); // it can take a while to generate the download
             $downloads = array_merge($downloads, $errors);
             if ($user->conf->download_documents($downloads, true)) {
+                DocumentInfo::log_download_activity($downloads, $user);
                 exit;
             }
         } else if (!empty($errors)) {

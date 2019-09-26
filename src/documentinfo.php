@@ -941,4 +941,25 @@ class DocumentInfo implements JsonSerializable {
                 $x[$k] = $v;
         return $x;
     }
+
+    static function log_download_activity($docs, Contact $user) {
+        if ($user->is_actas_user() || $user->is_anonymous_user()) {
+            return;
+        }
+        $byn = [];
+        foreach ($docs as $doc) {
+            if ($doc->documentType !== DTYPE_COMMENT
+                && $doc->conf === $user->conf) {
+                // XXX ignores documents from other conferences
+                $byn[$doc->documentType][$doc->paperId] = true;
+            }
+        }
+        foreach ($byn as $dtype => $pidm) {
+            $opt = $user->conf->paper_opts->get($dtype);
+            $name = $opt ? $opt->json_key() : "opt" . $dtype;
+            if (!empty($pidm)) {
+                $user->log_activity("Download $name", array_keys($pidm));
+            }
+        }
+    }
 }

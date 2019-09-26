@@ -156,6 +156,7 @@ function document_download($qreq) {
         $opts["cacheable"] = true;
     }
     if ($Conf->download_documents([$doc], $opts)) {
+        DocumentInfo::log_download_activity([$doc], $Me);
         exit;
     }
 
