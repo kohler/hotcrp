@@ -7297,17 +7297,12 @@ handle_ui.on("js-add-attachment", function () {
         name = $ea[0].getAttribute("data-document-prefix") + "_new_" + n;
     } while ($f[0]["has_" + name]);
     var $na = $('<div class="has-document document-new-instance hidden" data-document-name="' + name + '">'
-        + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="document-uploader"></div>'
+        + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="uich document-uploader"></div>'
         + '<div class="document-actions"><a href="" class="ui js-remove-document document-action">Delete</a></div>'
         + '</div>');
     if (this.id === name)
         this.id = "";
-    $na.appendTo($ei).find("input[type=file]").on("change", function () {
-        $(this).closest(".has-document").removeClass("hidden");
-        $ea.removeClass("hidden");
-        if (!$f[0]["has_" + name])
-            $f.append('<input type="hidden" name="has_' + name + '" value="1">');
-    })[0].click();
+    $na.appendTo($ei).find(".document-uploader")[0].click();
 });
 
 handle_ui.on("js-replace-document", function (event) {
@@ -7329,17 +7324,25 @@ handle_ui.on("js-replace-document", function (event) {
 });
 
 handle_ui.on("document-uploader", function (event) {
-    var $ei = $(this).closest(".has-document");
-    $ei.find(".document-file, .document-stamps, .document-actions, .document-format, .js-replace-document").addClass("hidden");
-    $ei.find(".document-upload").removeClass("hidden");
-    $ei.find(".js-remove-document").removeClass("undelete").html("Delete");
+    var doce = this.closest(".has-document");
+    if (hasClass(doce, "document-new-instance")) {
+        removeClass(doce, "hidden");
+        removeClass(doce.parentElement, "hidden");
+        var f = doce.closest("form"), n = "has_" + doce.getAttribute("data-document-name");
+        if (!f[n])
+            $(f).append('<input type="hidden" name="' + n + '" value="1">');
+    } else {
+        $(doce).find(".document-file, .document-stamps, .document-actions, .document-format, .js-replace-document").addClass("hidden");
+        $(doce).find(".document-upload").removeClass("hidden");
+        $(doce).find(".js-remove-document").removeClass("undelete").html("Delete");
+    }
 });
 
 handle_ui.on("js-remove-document", function (event) {
     var $ei = $(this).closest(".has-document"),
         $r = $ei.find(".document-remover"),
         $en = $ei.find(".document-file"),
-        $f = $(this).closest("form") /* set before $ei is removed */;
+        f = this.closest("form") /* set before $ei is removed */;
     if (hasClass(this, "undelete")) {
         $r.val("");
         $en.find("del > *").unwrap();
@@ -7359,7 +7362,7 @@ handle_ui.on("js-remove-document", function (event) {
         $ei.find(".document-stamps, .document-shortformat").addClass("hidden");
         $(this).addClass("undelete").html("Undelete");
     }
-    form_highlight($f[0]);
+    form_highlight(f);
 });
 
 handle_ui.on("js-withdraw", function (event) {
