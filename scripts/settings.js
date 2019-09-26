@@ -298,7 +298,7 @@ function fill_field(fid, fieldj, order) {
     fill_field1("#options_" + fid, options_to_text(fieldj), order);
     fill_field1("#option_class_prefix_flipped_" + fid, fieldj.option_letter ? "1" : "", order);
     fill_field1("#option_class_prefix_" + fid, option_class_prefix(fieldj), order);
-    fill_field1("#round_list_" + fid, (fieldj.round_list || []).join(" "), order);
+    fill_field1("#round_list_" + fid, (fieldj.round_list || ["all"]).join(" "), order);
     $("#revfield_" + fid + " textarea").trigger("change");
     $("#revfieldview_" + fid).html("").append(create_field_view(fid, fieldj));
     $("#remove_" + fid).html(fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
@@ -488,14 +488,15 @@ function append_field(fid, pos) {
                 if (i & (1 << j))
                     text.push(rnames[j]);
             if (!text.length)
-                $j.append("<option value=\"\">All rounds</option>");
+                $j.append("<option value=\"all\">All rounds</option>");
             else if (text.length == 1)
                 $j.append("<option value=\"" + text[0] + "\">" + text[0] + " only</option>");
             else
                 $j.append("<option value=\"" + text.join(" ") + "\">" + commajoin(text) + "</option>");
         }
-    } else
+    } else {
         $f.find(".reviewrow_rounds").remove();
+    }
 
     $f.find(".revfield_remove").on("click", remove);
     $f.find(".revfield_moveup, .revfield_movedown").on("click", move_field);

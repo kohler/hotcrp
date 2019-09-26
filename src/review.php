@@ -150,9 +150,9 @@ class ReviewField implements Abbreviator, JsonSerializable {
             if ($this->allow_empty)
                 $j->allow_empty = true;
         }
-        if ($this->round_mask && $for_settings)
+        if ($this->round_mask && $for_settings) {
             $j->round_mask = $this->round_mask;
-        else if ($this->round_mask) {
+        } else if ($this->round_mask) {
             $j->round_list = array();
             foreach ($this->conf->round_list() as $i => $round_name)
                 if ($this->round_mask & (1 << $i))

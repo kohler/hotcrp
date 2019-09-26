@@ -7,7 +7,7 @@ class ReviewForm_SettingParser extends SettingParser {
     private $byname;
     private $option_error;
 
-    public static $setting_prefixes = ["shortName_", "description_", "order_", "authorView_", "options_", "option_class_prefix_"];
+    public static $setting_prefixes = ["shortName_", "description_", "order_", "authorView_", "options_", "option_class_prefix_", "round_list_"];
 
     private function check_options(SettingValues $sv, $fid, $fj) {
         $text = cleannl($sv->reqv("options_$fid"));
@@ -58,24 +58,25 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function populate_field($fj, ReviewField $f, SettingValues $sv, $fid) {
         $sn = simplify_whitespace($sv->reqv("shortName_$fid", ""));
-        if ($sn === "<None>" || $sn === "<New field>" || $sn === "Field name")
+        if ($sn === "<None>" || $sn === "<New field>" || $sn === "Field name" || $sn === "") {
             $sn = "";
+        } else {
+            $fj->name = $sn;
+        }
 
-        if ($sv->has_reqv("order_$fid"))
+        if ($sv->has_reqv("order_$fid")) {
             $pos = cvtnum($sv->reqv("order_$fid"));
-        else
+        } else {
             $pos = get($fj, "position", -1);
+        }
         if ($pos > 0 && $sn == ""
             && $sv->has_reqv("description_$fid")
             && trim($sv->reqv("description_$fid")) === ""
             && (!$f->has_options
                 || ($sv->has_reqv("options_$fid")
                     ? trim($sv->reqv("options_$fid")) === ""
-                    : empty($fj->options))))
+                    : empty($fj->options)))) {
             $pos = -1;
-
-        if ($sn !== "") {
-            $fj->name = $sn;
         }
         if ($pos > 0) {
             if ($sn === "") {
@@ -128,9 +129,12 @@ class ReviewForm_SettingParser extends SettingParser {
 
         if ($sv->has_reqv("round_list_$fid")) {
             $fj->round_mask = 0;
-            foreach (explode(" ", trim($sv->reqv("round_list_$fid"))) as $round_name)
-                if ($round_name !== "")
+            foreach (explode(" ", trim($sv->reqv("round_list_$fid"))) as $round_name) {
+                if (strcasecmp($round_name, "all") === 0)
+                    $fj->round_mask = 0;
+                else if ($round_name !== "")
                     $fj->round_mask |= 1 << (int) $sv->conf->round_number($round_name, false);
+            }
         }
     }
 
@@ -174,10 +178,11 @@ class ReviewForm_SettingParser extends SettingParser {
                     $sv->error_at("shortName_$fid", "Too many review fields. You must delete some other fields before adding this one.");
                 continue;
             }
-            if (isset($rf->fmap[$finfo->id]))
+            if (isset($rf->fmap[$finfo->id])) {
                 $f = $rf->fmap[$finfo->id];
-            else
+            } else {
                 $f = new ReviewField($finfo, $sv->conf);
+            }
             $fj = $f->unparse_json(true);
             if ($sv->has_reqv("shortName_$fid")) {
                 $this->populate_field($fj, $f, $sv, $fid);
@@ -281,18 +286,23 @@ class ReviewForm_SettingParser extends SettingParser {
         $reset_wordcount = $assign_ordinal = false;
         foreach ($nform->all_fields() as $nf) {
             $of = get($oform->fmap, $nf->id);
-            if ($nf->displayed && (!$of || !$of->displayed))
+            if ($nf->displayed && (!$of || !$of->displayed)) {
                 $clear_fields[] = $nf;
-            else if ($nf->displayed && $nf->has_options
-                     && count($nf->options) < count($of->options))
+            } else if ($nf->displayed
+                       && $nf->has_options
+                       && count($nf->options) < count($of->options)) {
                 $clear_options[] = $nf;
-            if ($of && $of->include_word_count() != $nf->include_word_count())
+            }
+            if ($of && $of->include_word_count() != $nf->include_word_count()) {
                 $reset_wordcount = true;
+            }
             if ($of && $of->displayed && $of->view_score < VIEWSCORE_AUTHORDEC
-                && $nf->displayed && $nf->view_score >= VIEWSCORE_AUTHORDEC)
+                && $nf->displayed && $nf->view_score >= VIEWSCORE_AUTHORDEC) {
                 $assign_ordinal = true;
-            foreach (self::$setting_prefixes as $fx)
+            }
+            foreach (self::$setting_prefixes as $fx) {
                 $sv->unset_req($fx . $nf->short_id);
+            }
         }
         $sv->conf->invalidate_caches(["rf" => true]);
         // reset existing review values
@@ -317,7 +327,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 $rrows[] = $rrow;
             Dbl::free($result);
             $locked = false;
-            foreach ($rrows as $rrow)
+            foreach ($rrows as $rrow) {
                 if ($nform->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC) {
                     if (!$locked) {
                         $sv->conf->qe("lock tables PaperReview write");
@@ -327,6 +337,7 @@ class ReviewForm_SettingParser extends SettingParser {
                     if ($max_ordinal !== null)
                         $sv->conf->qe("update PaperReview set reviewOrdinal=?, timeDisplayed=? where paperId=? and reviewId=?", $max_ordinal + 1, $Now, $rrow->paperId, $rrow->reviewId);
                 }
+            }
             if ($locked)
                 $sv->conf->qe("unlock tables");
         }
@@ -341,12 +352,13 @@ static function render(SettingValues $sv) {
 
     $rf = $sv->conf->review_form();
     $req = [];
-    if ($sv->use_req())
+    if ($sv->use_req()) {
         foreach (array_keys(ReviewForm_SettingParser::requested_fields($sv)) as $fid) {
             foreach (ReviewForm_SettingParser::$setting_prefixes as $fx)
                 if ($sv->has_reqv("$fx$fid"))
                     $req["$fx$fid"] = $sv->reqv("$fx$fid");
         }
+    }
 
     Ht::stash_html('<div id="review_form_caption_description" class="hidden">'
       . '<p>Enter an HTML description for the review form.
