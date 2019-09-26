@@ -565,7 +565,7 @@ class PaperTable {
             ($this->prow->paperStorageId > 1
              || $this->conf->opt("noPapers") ? "foldo" : "foldc"),
             '"><div class="checki fx"><span class="checkc">',
-            Ht::checkbox("submitpaper", 1, $checked, ["class" => "js-check-submittable"]),
+            Ht::checkbox("submitpaper", 1, $checked, ["class" => "uich js-check-submittable"]),
             " </span>";
         if ($this->conf->setting("sub_freeze"))
             echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>"),
@@ -580,7 +580,7 @@ class PaperTable {
         if ($accepts !== null && count($accepts) == 1)
             $t .= ' accept="' . $accepts[0]->mimetype . '"';
         $t .= ' size="30" class="';
-        $k = ["document-uploader"];
+        $k = ["uich", "document-uploader"];
         if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
             $k[] = "js-check-submittable";
         return $t . join(" ", $k) . '" />';
@@ -2148,7 +2148,6 @@ class PaperTable {
         if ($this->useRequest)
             $form_js["class"] .= " alert";
         echo Ht::form(hoturl_post("paper", "p=" . ($this->prow->paperId ? : "new") . "&amp;m=edit"), $form_js);
-        Ht::stash_script('$("#paperform").on("change", ".js-check-submittable", handle_ui)');
         if ($this->prow->paperStorageId > 1
             && $this->prow->timeSubmitted > 0
             && !$this->conf->setting("sub_freeze"))
