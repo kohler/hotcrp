@@ -5560,11 +5560,15 @@ $(document).on("collectState", function (event, state) {
 });
 
 function search_sort_url(self, href) {
-    var hrefm = /^([^?#]*search(?:\.php)?)(\?[^#]*)/.exec(href),
+    var hrefm = /^([^?#]*(?:search|reviewprefs|manualassign)(?:\.php)?)(\?[^#]*)/.exec(href),
         api = hrefm[2];
-    if (!/&forceShow/.test(hrefm)
-        && document.getElementById("showforce"))
+    if (!/&forceShow/.test(api)
+        && document.getElementById("showforce")) {
         api += "&forceShow=0";
+    }
+    if (!/[&?]q=/.test(api)) {
+        api += "&q=";
+    }
     $.ajax(hoturl("api/search", api), {
         method: "GET", cache: false,
         success: function (data) {
@@ -5584,7 +5588,7 @@ function search_sort_click(evt) {
     var href;
     if (event_key.is_default_a(evt)
         && (href = this.getAttribute("href"))
-        && /search(?:\.php)?\?/.test(href)) {
+        && /(?:search|reviewprefs|manualassign)(?:\.php)?\?/.test(href)) {
         search_sort_url(this, href);
         return false;
     }
