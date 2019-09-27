@@ -228,9 +228,10 @@ if ($reviewer) {
         '">Search for current and potential conflicts</a></div>';
 
     // main assignment form
-    $search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q,
-                                    "urlbase" => $Conf->hoturl_site_relative_raw("manualassign"),
-                                    "reviewer" => $reviewer]);
+    $search = new PaperSearch($Me, [
+        "t" => $Qreq->t, "q" => $Qreq->q, "reviewer" => $reviewer,
+        "pageurl" => $Conf->hoturl_site_relative_raw("manualassign")
+    ]);
     if (!empty($hlsearch))
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     $paperList = new PaperList($search, ["sort" => true, "display" => "show:topics show:reviewers"], $Qreq);

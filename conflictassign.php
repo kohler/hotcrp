@@ -26,8 +26,10 @@ if ($Qreq->neg) {
 echo "</div>\n";
 
 
-$search = new PaperSearch($Me, ["t" => "alladmin", "q" => "",
-        "urlbase" => $Conf->hoturl_site_relative_raw("conflictassign")]);
+$search = new PaperSearch($Me, [
+    "t" => "alladmin", "q" => "",
+    "pageurl" => $Conf->hoturl_site_relative_raw("conflictassign", ["neg" => $Qreq->neg ? 1 : null])
+]);
 $rowset = $Conf->paper_set(["allConflictType" => 1, "allReviewerPreference" => 1, "tags" => 1, "paperId" => $search->paper_ids()], $Me);
 
 if ($Qreq->neg) {

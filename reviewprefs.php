@@ -207,7 +207,6 @@ else if ($Qreq->fn === "uploadpref")
 
 
 // Prepare search
-$Qreq->urlbase = $Conf->hoturl_site_relative_raw("reviewprefs");
 $Qreq->q = get($Qreq, "q", "");
 $Qreq->t = "editpref";
 
@@ -234,7 +233,10 @@ $Conf->infoMsg($Conf->_i("revprefdescription", false, $Conf->has_topics()));
 
 
 // search
-$search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q, "reviewer" => $reviewer]);
+$search = new PaperSearch($Me, [
+    "t" => $Qreq->t, "q" => $Qreq->q, "reviewer" => $reviewer,
+    "pageurl" => $Conf->hoturl_site_relative_raw("reviewprefs")
+]);
 $pl = new PaperList($search, ["sort" => true, "report" => "pf"], $Qreq);
 $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
 $pl_text = $pl->table_html("editpref",

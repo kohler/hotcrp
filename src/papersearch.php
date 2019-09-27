@@ -1604,16 +1604,19 @@ class PaperSearch {
             $limit = "ar";
 
         // URL base
-        if (isset($options["urlbase"]))
-            $this->_urlbase = $options["urlbase"];
-        else
-            $this->_urlbase = $this->conf->hoturl_site_relative_raw("search", "t=" . urlencode($limit));
-        if ($this->_qt !== "n")
+        $this->_urlbase = get($options, "pageurl");
+        if ($this->_urlbase === null) {
+            $this->_urlbase = $this->conf->hoturl_site_relative_raw("search");
+        }
+        $this->_urlbase = hoturl_add_raw($this->_urlbase, "t=" . urlencode($limit));
+        if ($this->_qt !== "n") {
             $this->_urlbase = hoturl_add_raw($this->_urlbase, "qt=" . urlencode($this->_qt));
+        }
         if ($this->_reviewer_user
-            && $this->_reviewer_user->contactId !== $user->contactId
-            && strpos($this->_urlbase, "reviewer=") === false)
+            && $this->_reviewer_user->contactId !== $user->contactId) {
+            assert(strpos($this->_urlbase, "reviewer=") === false);
             $this->_urlbase = hoturl_add_raw($this->_urlbase, "reviewer=" . urlencode($this->_reviewer_user->email));
+        }
         assert(strpos($this->_urlbase, "&amp;") === false);
 
         $this->_named_limit = $limit;

@@ -14,10 +14,11 @@ class Search_API {
             $q = trim($q);
             if ($q === "(All)")
                 $q = "";
-        } else if (isset($qreq->qa) || isset($qreq->qo) || isset($qreq->qx))
+        } else if (isset($qreq->qa) || isset($qreq->qo) || isset($qreq->qx)) {
             $q = PaperSearch::canonical_query((string) $qreq->qa, (string) $qreq->qo, (string) $qreq->qx, $qreq->qt, $user->conf);
-        else
+        } else {
             return new JsonResult(400, "Missing parameter.");
+        }
 
         $search = new PaperSearch($user, ["t" => $t, "q" => $q, "qt" => $qreq->qt, "urlbase" => $qreq->urlbase, "reviewer" => $qreq->reviewer]);
         $pl = new PaperList($search, ["report" => $qreq->report ? : "pl", "sort" => true], $qreq);
