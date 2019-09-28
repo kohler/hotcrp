@@ -2260,7 +2260,7 @@ handle_ui.on("js-tracker", function (event) {
             hc.push('<input type="hidden" name="tr' + trno + '-p" value="' + hotcrp_paperid + '">');
         if (tr.listinfo)
             hc.push('<input type="hidden" name="tr' + trno + '-listinfo" value="' + escape_entities(tr.listinfo) + '">');
-        hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus" value="' + escape_entities(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div>');
+        hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_entities(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div>');
         var vis = tr.visibility || "", vistype = vis === "" ? "" : vis.charAt(0);
         hc.push('<div class="entryi has-fold fold' + (vistype === "" ? "c" : "o") + '" data-fold-values="+ -"><label for="htctl-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
         hc.push('<span class="select"><select id="htctl-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup" data-default-value="' + vistype + '">', '</select></span>');
@@ -2268,7 +2268,7 @@ handle_ui.on("js-tracker", function (event) {
         for (var i in vismap)
             hc.push('<option value="' + i + '"' + (i === vistype ? " selected" : "") + '>' + vismap[i] + '</option>');
         hc.pop();
-        hc.push_pop('  <input type="text" name="tr' + trno + '-vis" value="' + escape_entities(vis.substring(1)) + '" placeholder="(tag)" class="need-suggest pc-tags fx">');
+        hc.push_pop('  <input type="text" name="tr' + trno + '-vis" value="' + escape_entities(vis.substring(1)) + '" placeholder="(tag)" class="need-suggest need-autogrow pc-tags fx">');
         if ((vis = dl.tracker.global_visibility)) {
             hc.push('<div class="entryi"><label><a href="' + hoturl("settings", "group=tracks") + '" target="_blank">Global visibility</a></label><div class="entry">', '</div></div>');
             if (vis === "+none")
@@ -2322,6 +2322,7 @@ handle_ui.on("js-tracker", function (event) {
         push_tracker(hc, tr);
         focus_within($(hc.render()).insertBefore($myg));
         $myg.remove();
+        $d.find(".need-autogrow").autogrow();
         $d.find(".need-suggest").each(suggest);
     }
     function make_submit_success(hiding, why) {
@@ -2416,8 +2417,6 @@ handle_ui.on("js-tracker", function (event) {
             .on("click", "button[name=new]", new_tracker)
             .on("click", "button[name=stopall]", stop_all)
             .on("submit", "form", submit);
-        $d.find(".need-suggest").each(suggest);
-        $d.find(".need-tooltip").each(tooltip);
     }
     if (event.shiftKey
         || event.ctrlKey
@@ -5912,7 +5911,7 @@ handle_ui.on("js-annotate-order", function () {
         if (annoid == null)
             annoid = "n" + (last_newannoid += 1);
         hc.push('<div class="settings-g" data-anno-id="' + annoid + '">', '</div>');
-        hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-d">Heading</label><input id="htctl-taganno-' + annoid + '-d" name="heading_' + annoid + '" type="text" placeholder="none" size="32"></div>');
+        hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-d">Heading</label><input id="htctl-taganno-' + annoid + '-d" name="heading_' + annoid + '" type="text" placeholder="none" size="32" class="need-autogrow"></div>');
         hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-tagval">Tag value</label><div class="entry"><input id="htctl-taganno-' + annoid + '-tagval" name="tagval_' + annoid + '" type="text" size="5">', '</div></div>');
         if (anno.annoid)
             hc.push(' <a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete heading">x</a>');
@@ -7353,7 +7352,7 @@ handle_ui.on("js-withdraw", function (event) {
     if (!this.hasAttribute("data-revivable"))
         hc.push(' Only administrators can undo this step.');
     hc.push('</p>');
-    hc.push('<textarea name="reason" rows="3" cols="40" style="width:99%" placeholder="Optional explanation" spellcheck="true"></textarea>');
+    hc.push('<textarea name="reason" rows="3" cols="40" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
     if (!this.hasAttribute("data-withdrawable")) {
         var idctr = hc.next_htctl_id();
         hc.push('<label class="checki"><span class="checkc"><input type="checkbox" name="override" value="1"> </span>Override deadlines</label>');
@@ -7813,7 +7812,7 @@ handle_ui.on("js-decline-review", function () {
     var f = this.closest("form"),
         hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
-    hc.push('<textarea name="reason" rows="3" cols="60" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
+    hc.push('<textarea name="reason" rows="3" cols="60" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
     hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn-danger">Decline review</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
@@ -7823,7 +7822,7 @@ handle_ui.on("js-deny-review-request", function () {
     var f = this.closest("form"),
         hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Select “Deny request” to deny this review request.</p>');
-    hc.push('<textarea name="reason" rows="3" cols="60" class="w-99" placeholder="Optional explanation" spellcheck="true"></textarea>');
+    hc.push('<textarea name="reason" rows="3" cols="60" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
     hc.push_actions(['<button type="submit" name="denyreview" value="1" class="btn-danger">Deny request</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
@@ -7870,13 +7869,13 @@ handle_ui.on("js-edit-formulas", function () {
         hc.push('<div class="editformulas-formula" data-formula-number="' + nformulas + '">', '</div>');
         hc.push('<div class="entryi"><label for="htctl_formulaname_' + nformulas + '">Name</label><div class="entry">');
         if (f.editable) {
-            hc.push('<input type="text" id="htctl_formulaname_' + nformulas + '" class="editformulas-name" name="formulaname_' + nformulas + '" size="30" value="' + escape_entities(f.name) + '">');
+            hc.push('<input type="text" id="htctl_formulaname_' + nformulas + '" class="editformulas-name need-autogrow" name="formulaname_' + nformulas + '" size="30" value="' + escape_entities(f.name) + '">');
             hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete formula">x</a>');
         } else
             hc.push(escape_entities(f.name));
         hc.push('</div></div><div class="entryi"><label for="htctl_formulaexpression_' + nformulas + '">Expression</label>');
         if (f.editable)
-            hc.push('<textarea class="editformulas-expression" id="htctl_formulaexpression_' + nformulas + '" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(f.expression) + '</textarea>')
+            hc.push('<textarea class="editformulas-expression need-autogrow" id="htctl_formulaexpression_' + nformulas + '" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(f.expression) + '</textarea>')
                 .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '">');
         else
             hc.push('<div class="entry">' + escape_entities(f.expression) + '</div>');
@@ -7955,7 +7954,7 @@ handle_ui.on("js-edit-view-options", function () {
         hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "") + '</div>');
         hc.pop();
         hc.push('<div class="f-i"><div class="f-c">Current view options</div>', '</div>');
-        hc.push('<textarea class="reportdisplay-current" name="display" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(display_current || "") + '</textarea>');
+        hc.push('<textarea class="reportdisplay-current w-99 need-autogrow" name="display" rows="1" cols="60">' + escape_entities(display_current || "") + '</textarea>');
         hc.pop();
         hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save options as default</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
@@ -8928,6 +8927,7 @@ $.fn.autogrow = function () {
         if (f && $self.val() !== "") {
             f();
         }
+        removeClass(this, "need-autogrow");
     });
 	return this;
 };
@@ -8940,4 +8940,4 @@ $.fn.unautogrow = function () {
 };
 })(jQuery);
 
-$(function () { $(".need-autogrow").autogrow().removeClass("need-autogrow"); });
+$(function () { $(".need-autogrow").autogrow(); });
