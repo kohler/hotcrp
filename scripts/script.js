@@ -985,6 +985,129 @@ $(document).on("input", ".uii", handle_ui);
 $(document).on("unfold", ".ui-unfold", handle_ui);
 
 
+// differences and focusing
+function input_is_checkboxlike(elt) {
+    return elt.type === "checkbox" || elt.type === "radio";
+}
+
+function input_default_value(elt) {
+    if (input_is_checkboxlike(elt)) {
+        if (elt.hasAttribute("data-default-checked"))
+            return !!elt.getAttribute("data-default-checked");
+        else
+            return elt.defaultChecked;
+    } else {
+        if (elt.hasAttribute("data-default-value"))
+            return elt.getAttribute("data-default-value");
+        else
+            return elt.defaultValue;
+    }
+}
+
+function input_differs(elt) {
+    var expected = input_default_value(elt);
+    if (input_is_checkboxlike(elt))
+        return elt.checked !== expected;
+    else {
+        var current = elt.tagName === "SELECT" ? $(elt).val() : elt.value;
+        return !text_eq(current, expected);
+    }
+}
+
+function form_differs(form, want_ediff) {
+    var ediff = null, $is = $(form).find("input, select, textarea");
+    if (!$is.length)
+        $is = $(form).filter("input, select, textarea");
+    $is.each(function () {
+        if (!hasClass(this, "ignore-diff") && input_differs(this)) {
+            ediff = this;
+            return false;
+        }
+    });
+    return want_ediff ? ediff : !!ediff;
+}
+
+function form_defaults(form, values) {
+    if (values) {
+        $(form).find("input, select, textarea").each(function () {
+            if (input_is_checkboxlike(this))
+                this.setAttribute("data-default-checked", values[this.name] ? "1" : "");
+            else
+                this.setAttribute("data-default-value", values[this.name] || "");
+        });
+    } else {
+        values = {};
+        $(form).find("input, select, textarea").each(function () {
+            values[this.name] = input_default_value(this);
+        });
+        return values;
+    }
+}
+
+function form_highlight(form, elt) {
+    (form instanceof HTMLElement) || (form = $(form)[0]);
+    toggleClass(form, "alert", (elt && form_differs(elt)) || form_differs(form));
+}
+
+function hiliter_children(form) {
+    form = $(form)[0];
+    form_highlight(form);
+    $(form).on("change input", "input, select, textarea", function () {
+        if (!hasClass(this, "ignore-diff") && !hasClass(form, "ignore-diff"))
+            form_highlight(form, this);
+    });
+}
+
+$(function () {
+    $("form.need-unload-protection").each(function () {
+        var form = this;
+        removeClass(form, "need-unload-protection");
+        $(form).on("submit", function () { addClass(this, "submitting"); });
+        $(window).on("beforeunload", function () {
+            if (hasClass(form, "alert") && !hasClass(form, "submitting"))
+                return "If you leave this page now, your edits may be lost.";
+        });
+    });
+});
+
+function focus_at(felt) {
+    felt.jquery && (felt = felt[0]);
+    felt.focus();
+    if (!felt.hotcrp_ever_focused) {
+        if (felt.select && hasClass(felt, "want-select")) {
+            felt.select();
+        } else if (felt.setSelectionRange) {
+            try {
+                felt.setSelectionRange(felt.value.length, felt.value.length);
+            } catch (e) { // ignore errors
+            }
+        }
+        felt.hotcrp_ever_focused = true;
+    }
+}
+
+function focus_within(elt, subfocus_selector) {
+    var $wf = $(elt).find(".want-focus");
+    if (subfocus_selector)
+        $wf = $wf.filter(subfocus_selector);
+    if ($wf.length == 1)
+        focus_at($wf[0]);
+    return $wf.length == 1;
+}
+
+function refocus_within(elt) {
+    var focused = document.activeElement;
+    if (focused && focused.tagName !== "A" && !$(focused).is(":visible")) {
+        while (focused && focused !== elt)
+            focused = focused.parentElement;
+        if (focused) {
+            var focusable = $(elt).find("input, select, textarea, a, button").filter(":visible").first();
+            focusable.length ? focusable.focus() : $(document.activeElement).blur();
+        }
+    }
+}
+
+
 // rangeclick
 handle_ui.on("js-range-click", function (event) {
     var $f = $(this).closest("form"),
@@ -1620,6 +1743,212 @@ tooltip.add_builder = function (name, f) {
 $(function () { $(".need-tooltip").each(tooltip); });
 return tooltip;
 })($);
+
+
+// HtmlCollector
+function HtmlCollector() {
+    this.clear();
+}
+HtmlCollector.prototype.push = function (open, close) {
+    if (open && close) {
+        this.open.push(this.html + open);
+        this.close.push(close);
+        this.html = "";
+        return this.open.length - 1;
+    } else
+        this.html += open;
+    return this;
+};
+HtmlCollector.prototype.pop = function (pos) {
+    var n = this.open.length;
+    if (pos == null)
+        pos = Math.max(0, n - 1);
+    while (n > pos) {
+        --n;
+        this.html = this.open[n] + this.html + this.close[n];
+        this.open.pop();
+        this.close.pop();
+    }
+    return this;
+};
+HtmlCollector.prototype.pop_n = function (n) {
+    this.pop(Math.max(0, this.open.length - n));
+    return this;
+};
+HtmlCollector.prototype.push_pop = function (text) {
+    this.html += text;
+    return this.pop();
+};
+HtmlCollector.prototype.pop_push = function (open, close) {
+    this.pop();
+    return this.push(open, close);
+};
+HtmlCollector.prototype.pop_collapse = function (pos) {
+    if (pos == null)
+        pos = this.open.length ? this.open.length - 1 : 0;
+    while (this.open.length > pos) {
+        if (this.html !== "")
+            this.html = this.open[this.open.length - 1] + this.html +
+                this.close[this.open.length - 1];
+        this.open.pop();
+        this.close.pop();
+    }
+    return this;
+};
+HtmlCollector.prototype.render = function () {
+    this.pop(0);
+    return this.html;
+};
+HtmlCollector.prototype.clear = function () {
+    this.open = [];
+    this.close = [];
+    this.html = "";
+    return this;
+};
+HtmlCollector.prototype.next_htctl_id = (function () {
+var id = 1;
+return function () {
+    while (document.getElementById("htctl" + id))
+        ++id;
+    ++id;
+    return "htctl" + (id - 1);
+};
+})();
+
+
+// popup dialogs
+function popup_skeleton(options) {
+    var hc = new HtmlCollector, $d = null;
+    options = options || {};
+    hc.push('<div class="modal" role="dialog"><div class="modal-dialog'
+        + (!options.anchor || options.anchor === window ? " modal-dialog-centered" : "")
+        + (options.style ? '" style="' + escape_entities(options.style) : '')
+        + '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8"'
+        + (options.form_class ? ' class="' + options.form_class + '"' : '')
+        + '>', '</form></div></div></div>');
+    hc.push_actions = function (actions) {
+        hc.push('<div class="popup-actions">', '</div>');
+        if (actions)
+            hc.push(actions.join("")).pop();
+        return hc;
+    };
+    function show_errors(data) {
+        var form = $d.find("form")[0],
+            dbody = $d.find(".popup-body"),
+            m = render_xmsg(2, data.error);
+        $d.find(".msg-error").remove();
+        dbody.length ? dbody.prepend(m) : $d.find("h2").after(m);
+        for (var f in data.errf || {}) {
+            var e = form[f];
+            if (e) {
+                var x = $(e).closest(".entryi, .f-i");
+                (x.length ? x : $(e)).addClass("has-error");
+            }
+        }
+        return $d;
+    }
+    function close() {
+        tooltip.erase();
+        $d.find("textarea, input").unautogrow();
+        $d.trigger("closedialog");
+        $d.remove();
+        removeClass(document.body, "modal-open");
+    }
+    hc.show = function (visible) {
+        if (!$d) {
+            $d = $(hc.render()).appendTo(document.body);
+            $d.find(".need-tooltip").each(tooltip);
+            $d.on("click", function (event) {
+                event.target === $d[0] && close();
+            });
+            $d.find("button[name=cancel]").on("click", close);
+            if (options.action) {
+                if (options.action instanceof HTMLFormElement) {
+                    $d.find("form").attr({action: options.action.action, method: options.action.method});
+                } else {
+                    $d.find("form").attr({action: options.action, method: options.method || "post"});
+                }
+            }
+            for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
+                if (options[k] != null)
+                    $d.children().css(k, options[k]);
+            }
+            $d.show_errors = show_errors;
+            $d.close = close;
+        }
+        if (visible !== false) {
+            popup_near($d, options.anchor || window);
+            $d.find(".need-autogrow").autogrow();
+            $d.find(".need-suggest").each(suggest);
+            $d.find(".need-tooltip").each(tooltip);
+        }
+        return $d;
+    };
+    return hc;
+}
+
+function popup_near(elt, anchor) {
+    tooltip.erase();
+    if (elt.jquery)
+        elt = elt[0];
+    while (!hasClass(elt, "modal-dialog"))
+        elt = elt.childNodes[0];
+    var bgelt = elt.parentNode;
+    addClass(bgelt, "show");
+    addClass(document.body, "modal-open");
+    if (!hasClass(elt, "modal-dialog-centered")) {
+        var anchorPos = $(anchor).geometry(),
+            wg = $(window).geometry(),
+            po = $(bgelt).offset(),
+            y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
+        y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - po.top;
+        elt.style.top = y + "px";
+        var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
+        x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) - po.left;
+        elt.style.left = x + "px";
+    }
+    var efocus;
+    $(elt).find("input, button, textarea, select").filter(":visible").each(function () {
+        if (hasClass(this, "want-focus")) {
+            efocus = this;
+            return false;
+        } else if (!efocus
+                   && !hasClass(this, "dangerous")
+                   && !hasClass(this, "no-focus")) {
+            efocus = this;
+        }
+    });
+    efocus && focus_at(efocus);
+}
+
+function override_deadlines(callback) {
+    var self = this, hc = popup_skeleton({anchor: this});
+    hc.push('<p>' + (this.getAttribute("data-override-text") || "Are you sure you want to override the deadline?") + '</p>');
+    hc.push_actions([
+        '<button type="button" name="bsubmit" class="btn-primary"></button>',
+        '<button type="button" name="cancel">Cancel</button>'
+    ]);
+    var $d = hc.show(false);
+    $d.find("button[name=bsubmit]")
+        .html(this.getAttribute("aria-label")
+              || $(this).html()
+              || this.getAttribute("value")
+              || "Save changes")
+        .on("click", function (event) {
+            if (callback && $.isFunction(callback)) {
+                callback();
+            } else {
+                var form = self.closest("form");
+                $(form).append('<input type="hidden" name="' + (self.getAttribute("data-override-submit") || "") + '" value="1"><input type="hidden" name="override" value="1">');
+                addClass(form, "submitting");
+                form.submit();
+            }
+            $d.close();
+        });
+    hc.show();
+}
+handle_ui.on("js-override-deadlines", override_deadlines);
+
 
 
 // initialization
@@ -2364,127 +2693,6 @@ var hotcrp_load = (function ($) {
 })(jQuery);
 
 
-function input_is_checkboxlike(elt) {
-    return elt.type === "checkbox" || elt.type === "radio";
-}
-
-function input_default_value(elt) {
-    if (input_is_checkboxlike(elt)) {
-        if (elt.hasAttribute("data-default-checked"))
-            return !!elt.getAttribute("data-default-checked");
-        else
-            return elt.defaultChecked;
-    } else {
-        if (elt.hasAttribute("data-default-value"))
-            return elt.getAttribute("data-default-value");
-        else
-            return elt.defaultValue;
-    }
-}
-
-function input_differs(elt) {
-    var expected = input_default_value(elt);
-    if (input_is_checkboxlike(elt))
-        return elt.checked !== expected;
-    else {
-        var current = elt.tagName === "SELECT" ? $(elt).val() : elt.value;
-        return !text_eq(current, expected);
-    }
-}
-
-function form_differs(form, want_ediff) {
-    var ediff = null, $is = $(form).find("input, select, textarea");
-    if (!$is.length)
-        $is = $(form).filter("input, select, textarea");
-    $is.each(function () {
-        if (!hasClass(this, "ignore-diff") && input_differs(this)) {
-            ediff = this;
-            return false;
-        }
-    });
-    return want_ediff ? ediff : !!ediff;
-}
-
-function form_defaults(form, values) {
-    if (values) {
-        $(form).find("input, select, textarea").each(function () {
-            if (input_is_checkboxlike(this))
-                this.setAttribute("data-default-checked", values[this.name] ? "1" : "");
-            else
-                this.setAttribute("data-default-value", values[this.name] || "");
-        });
-    } else {
-        values = {};
-        $(form).find("input, select, textarea").each(function () {
-            values[this.name] = input_default_value(this);
-        });
-        return values;
-    }
-}
-
-function form_highlight(form, elt) {
-    (form instanceof HTMLElement) || (form = $(form)[0]);
-    toggleClass(form, "alert", (elt && form_differs(elt)) || form_differs(form));
-}
-
-function hiliter_children(form) {
-    form = $(form)[0];
-    form_highlight(form);
-    $(form).on("change input", "input, select, textarea", function () {
-        if (!hasClass(this, "ignore-diff") && !hasClass(form, "ignore-diff"))
-            form_highlight(form, this);
-    });
-}
-
-$(function () {
-    $("form.need-unload-protection").each(function () {
-        var form = this;
-        removeClass(form, "need-unload-protection");
-        $(form).on("submit", function () { addClass(this, "submitting"); });
-        $(window).on("beforeunload", function () {
-            if (hasClass(form, "alert") && !hasClass(form, "submitting"))
-                return "If you leave this page now, your edits may be lost.";
-        });
-    });
-});
-
-function focus_at(felt) {
-    felt.jquery && (felt = felt[0]);
-    felt.focus();
-    if (!felt.hotcrp_ever_focused) {
-        if (felt.select && hasClass(felt, "want-select")) {
-            felt.select();
-        } else if (felt.setSelectionRange) {
-            try {
-                felt.setSelectionRange(felt.value.length, felt.value.length);
-            } catch (e) { // ignore errors
-            }
-        }
-        felt.hotcrp_ever_focused = true;
-    }
-}
-
-function focus_within(elt, subfocus_selector) {
-    var $wf = $(elt).find(".want-focus");
-    if (subfocus_selector)
-        $wf = $wf.filter(subfocus_selector);
-    if ($wf.length == 1)
-        focus_at($wf[0]);
-    return $wf.length == 1;
-}
-
-function refocus_within(elt) {
-    var focused = document.activeElement;
-    if (focused && focused.tagName !== "A" && !$(focused).is(":visible")) {
-        while (focused && focused !== elt)
-            focused = focused.parentElement;
-        if (focused) {
-            var focusable = $(elt).find("input, select, textarea, a, button").filter(":visible").first();
-            focusable.length ? focusable.focus() : $(document.activeElement).blur();
-        }
-    }
-}
-
 function fold(elt, dofold, foldnum) {
     var i, foldname, opentxt, closetxt, isopen, foldnumid;
 
@@ -3173,73 +3381,6 @@ function link_urls(t) {
     });
 }
 
-function HtmlCollector() {
-    this.clear();
-}
-HtmlCollector.prototype.push = function (open, close) {
-    if (open && close) {
-        this.open.push(this.html + open);
-        this.close.push(close);
-        this.html = "";
-        return this.open.length - 1;
-    } else
-        this.html += open;
-    return this;
-};
-HtmlCollector.prototype.pop = function (pos) {
-    if (pos == null)
-        pos = Math.max(0, this.open.length - 1);
-    while (this.open.length > pos) {
-        this.html = this.open[this.open.length - 1] + this.html +
-            this.close[this.open.length - 1];
-        this.open.pop();
-        this.close.pop();
-    }
-    return this;
-};
-HtmlCollector.prototype.pop_n = function (n) {
-    this.pop(Math.max(0, this.open.length - n));
-    return this;
-};
-HtmlCollector.prototype.push_pop = function (text) {
-    this.html += text;
-    return this.pop();
-};
-HtmlCollector.prototype.pop_push = function (open, close) {
-    this.pop();
-    return this.push(open, close);
-};
-HtmlCollector.prototype.pop_collapse = function (pos) {
-    if (pos == null)
-        pos = this.open.length ? this.open.length - 1 : 0;
-    while (this.open.length > pos) {
-        if (this.html !== "")
-            this.html = this.open[this.open.length - 1] + this.html +
-                this.close[this.open.length - 1];
-        this.open.pop();
-        this.close.pop();
-    }
-    return this;
-};
-HtmlCollector.prototype.render = function () {
-    this.pop(0);
-    return this.html;
-};
-HtmlCollector.prototype.clear = function () {
-    this.open = [];
-    this.close = [];
-    this.html = "";
-    return this;
-};
-HtmlCollector.prototype.next_htctl_id = (function () {
-var id = 1;
-return function () {
-    while (document.getElementById("htctl" + id))
-        ++id;
-    ++id;
-    return "htctl" + (id - 1);
-};
-})();
 
 
 // text rendering
@@ -6245,139 +6386,6 @@ handle_ui.on("js-expand-archive", function (evt) {
     }
     return false;
 });
-
-
-// popup dialogs
-function popup_skeleton(options) {
-    var hc = new HtmlCollector, $d = null;
-    options = options || {};
-    hc.push('<div class="modal" role="dialog"><div class="modal-dialog'
-        + (!options.anchor || options.anchor === window ? " modal-dialog-centered" : "")
-        + (options.style ? '" style="' + escape_entities(options.style) : '')
-        + '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8"'
-        + (options.form_class ? ' class="' + options.form_class + '"' : '')
-        + '>', '</form></div></div></div>');
-    hc.push_actions = function (actions) {
-        hc.push('<div class="popup-actions">', '</div>');
-        if (actions)
-            hc.push(actions.join("")).pop();
-        return hc;
-    };
-    function show_errors(data) {
-        var form = $d.find("form")[0],
-            dbody = $d.find(".popup-body"),
-            m = render_xmsg(2, data.error);
-        $d.find(".msg-error").remove();
-        dbody.length ? dbody.prepend(m) : $d.find("h2").after(m);
-        for (var f in data.errf || {}) {
-            var e = form[f];
-            if (e) {
-                var x = $(e).closest(".entryi, .f-i");
-                (x.length ? x : $(e)).addClass("has-error");
-            }
-        }
-        return $d;
-    }
-    function close() {
-        tooltip.erase();
-        $d.find("textarea, input").unautogrow();
-        $d.trigger("closedialog");
-        $d.remove();
-        removeClass(document.body, "modal-open");
-    }
-    hc.show = function (visible) {
-        if (!$d) {
-            $d = $(hc.render()).appendTo(document.body);
-            $d.find(".need-tooltip").each(tooltip);
-            $d.on("click", function (event) {
-                event.target === $d[0] && close();
-            });
-            $d.find("button[name=cancel]").on("click", close);
-            if (options.action) {
-                if (options.action instanceof HTMLFormElement) {
-                    $d.find("form").attr({action: options.action.action, method: options.action.method});
-                } else {
-                    $d.find("form").attr({action: options.action, method: options.method || "post"});
-                }
-            }
-            for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
-                if (options[k] != null)
-                    $d.children().css(k, options[k]);
-            }
-            $d.show_errors = show_errors;
-            $d.close = close;
-        }
-        if (visible !== false) {
-            popup_near($d, options.anchor || window);
-            $d.find("textarea, input[type=text]").autogrow();
-        }
-        return $d;
-    };
-    return hc;
-}
-
-function popup_near(elt, anchor) {
-    tooltip.erase();
-    if (elt.jquery)
-        elt = elt[0];
-    while (!hasClass(elt, "modal-dialog"))
-        elt = elt.childNodes[0];
-    var bgelt = elt.parentNode;
-    addClass(bgelt, "show");
-    addClass(document.body, "modal-open");
-    if (!hasClass(elt, "modal-dialog-centered")) {
-        var anchorPos = $(anchor).geometry(),
-            wg = $(window).geometry(),
-            po = $(bgelt).offset(),
-            y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
-        y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - po.top;
-        elt.style.top = y + "px";
-        var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
-        x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) - po.left;
-        elt.style.left = x + "px";
-    }
-    var efocus;
-    $(elt).find("input, button, textarea, select").filter(":visible").each(function () {
-        if (hasClass(this, "want-focus")) {
-            efocus = this;
-            return false;
-        } else if (!efocus
-                   && !hasClass(this, "dangerous")
-                   && !hasClass(this, "no-focus")) {
-            efocus = this;
-        }
-    });
-    efocus && focus_at(efocus);
-}
-
-function override_deadlines(callback) {
-    var self = this, hc = popup_skeleton({anchor: this});
-    hc.push('<p>' + (this.getAttribute("data-override-text") || "Are you sure you want to override the deadline?") + '</p>');
-    hc.push_actions([
-        '<button type="button" name="bsubmit" class="btn-primary"></button>',
-        '<button type="button" name="cancel">Cancel</button>'
-    ]);
-    var $d = hc.show(false);
-    $d.find("button[name=bsubmit]")
-        .html(this.getAttribute("aria-label")
-              || $(this).html()
-              || this.getAttribute("value")
-              || "Save changes")
-        .on("click", function (event) {
-            if (callback && $.isFunction(callback)) {
-                callback();
-            } else {
-                var form = self.closest("form");
-                $(form).append('<input type="hidden" name="' + (self.getAttribute("data-override-submit") || "") + '" value="1"><input type="hidden" name="override" value="1">');
-                addClass(form, "submitting");
-                form.submit();
-            }
-            $d.close();
-        });
-    hc.show();
-}
-handle_ui.on("js-override-deadlines", override_deadlines);
-
 
 
 // ajax checking for paper updates
