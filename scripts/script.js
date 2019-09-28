@@ -1622,36 +1622,6 @@ return tooltip;
 })($);
 
 
-// temporary text
-if (Object.prototype.toString.call(window.operamini) === '[object OperaMini]'
-    || !("placeholder" in document.createElement("input"))
-    || !("placeholder" in document.createElement("textarea"))) {
-    window.mktemptext = (function () {
-    function ttaction(event) {
-        var $e = $(this), p = $e.attr("placeholder"), v = $e.val();
-        if (event.type == "focus" && v === p)
-            $e.val("");
-        if (event.type == "blur" && (v === "" | v === p))
-            $e.val(p);
-        $e.toggleClass("temptext", event.type != "focus" && (v === "" || v === p));
-    }
-
-    return function ($base) {
-        $base.find("input[placeholder], textarea[placeholder]").each(function () {
-            if (!hasClass(this, "has-mktemptext")) {
-                $(this).on("focus blur change input", ttaction).addClass("has-mktemptext");
-                ttaction.call(this, {type: "blur"});
-            }
-        });
-    };
-    })();
-
-    $(function () { mktemptext($(document)); });
-} else {
-    window.mktemptext = $.noop;
-}
-
-
 // initialization
 window.hotcrp_deadlines = (function ($) {
 var dl, dlname, dltime, reload_timeout, reload_nerrors = 0, redisplay_timeout;
@@ -3081,7 +3051,6 @@ function row_order_change(e, delta, action) {
             || action > 0)
            && (max_rows <= 0 || trs.length < max_rows)) {
         var $newtr = $($tbody[0].getAttribute("data-row-template")).appendTo($tbody);
-        mktemptext($newtr);
         $newtr.find(".need-tooltip").each(tooltip);
         $newtr.find(".need-suggest").each(suggest);
         trs = $tbody.children();

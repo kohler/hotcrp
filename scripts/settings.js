@@ -91,7 +91,6 @@ handle_ui.on("js-settings-option-new", function (event) {
         ++next;
     h = h.replace(/_0/g, "_" + next);
     var odiv = $(h).appendTo("#settings_opts");
-    mktemptext(odiv);
     odiv.find(".need-autogrow").autogrow();
     odiv.find(".need-tooltip").each(tooltip);
     $("#optn_" + next)[0].focus();
@@ -131,7 +130,6 @@ handle_ui.on("js-settings-add-decision-type", function (event) {
     $("#settings-decision-type-notes").removeClass("hidden");
     var h = $("#settings-new-decision-type").html().replace(/_0/g, "_" + next),
         $r = $(h).appendTo($t);
-    mktemptext($r);
     $r.find("input[type=text]").autogrow();
     $r.find("input[name=dec_name_" + next + "]")[0].focus();
 });
@@ -150,7 +148,6 @@ handle_ui.on("js-settings-new-autosearch", function (event) {
         ++next;
     h = h.replace(/_0/g, "_" + next);
     odiv = $(h).appendTo("#settings_tag_autosearch");
-    mktemptext(odiv);
     odiv.find("input[type=text]").autogrow();
     $("#tag_autosearch_t_" + next)[0].focus();
 });
@@ -167,7 +164,6 @@ handle_ui.on("js-settings-add-track", function () {
     $("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\" class=\"mg has-fold fold3o\"></div>");
     var $j = jQuery("#trackgroup" + i);
     $j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
-    mktemptext($j);
     $j.find(".need-suggest").each(suggest);
     $j.find("input[name^=name]").focus();
 });
@@ -203,7 +199,6 @@ function add() {
     var $mydiv = $("#roundname_" + i).closest(".js-settings-review-round");
     $("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
     $("#extrev_roundtag").append('<option value="#' + i + '" id="extrev_roundtag_' + i + '">(new round)</option>');
-    mktemptext($mydiv);
     $("#roundname_" + i).focus().on("input change", namechange);
 }
 
@@ -528,7 +523,6 @@ function rfs(data) {
     $("#reviewform_container").on("unfold", ".settings-revfield", function (evt, opts) {
         $(this).find("textarea").css("height", "auto").autogrow();
         $(this).find("input[type=text]").autogrow();
-        mktemptext($(this));
     });
 
     // highlight errors, apply request
@@ -690,7 +684,6 @@ handle_ui.on("js-settings-resp-round-new", function () {
     jQuery("#response_n").before("<div id=\"response_" + i + "\" class=\"settings-g\"></div>");
     j = jQuery("#response_" + i);
     j.html(jQuery("#response_n").html().replace(/_n\"/g, "_" + i + "\""));
-    mktemptext(j);
     j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());
     j.find(".need-suggest").each(suggest);
     return false;
