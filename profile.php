@@ -656,8 +656,12 @@ John Adams,john@earbox.org,UC Berkeley,pc
         '<dl class="ctelt dd"><dt><code>collaborators</code></dt>',
         '<dd>Collaborators</dd></dl>',
         '<dl class="ctelt dd"><dt><code>follow</code></dt>',
-        '<dd>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”</dd></dl>',
-        "</div>\n";
+        '<dd>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”</dd></dl>';
+    if ($Conf->has_topics()) {
+        echo '<dl class="ctelt dd"><dt><code>topic: &lt;TOPIC NAME&gt;</code></dt>',
+            '<dd>Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)</dd></dl>';
+    }
+    echo "</div>\n";
 
     echo '</div></form></div>';
 }
