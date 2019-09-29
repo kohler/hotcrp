@@ -1027,23 +1027,6 @@ function form_differs(form, want_ediff) {
     return want_ediff ? ediff : !!ediff;
 }
 
-function form_defaults(form, values) {
-    if (values) {
-        $(form).find("input, select, textarea").each(function () {
-            if (input_is_checkboxlike(this))
-                this.setAttribute("data-default-checked", values[this.name] ? "1" : "");
-            else
-                this.setAttribute("data-default-value", values[this.name] || "");
-        });
-    } else {
-        values = {};
-        $(form).find("input, select, textarea").each(function () {
-            values[this.name] = input_default_value(this);
-        });
-        return values;
-    }
-}
-
 function form_highlight(form, elt) {
     (form instanceof HTMLElement) || (form = $(form)[0]);
     toggleClass(form, "alert", (elt && form_differs(elt)) || form_differs(form));
