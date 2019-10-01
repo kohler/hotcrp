@@ -98,17 +98,19 @@ select, button {
 	background: #ffc9d6; /* #ed6182; */
 	color: #f33360;
 }
+
 h1 {
-	display: inline;
-	font-size: 144%;
+	font-size: 1.4rem;
+	font-weight: normal;
 	line-height: 1.25;
 	margin: 0;
 }
 #header-site > h1 {
-	font-weight: normal;
+	display: inline;
+	font-weight: bold;
 }
-.header-site-page > h1 {
-	font-size: 100%;
+h1.paptitle {
+	padding: 6px 24px;
 }
 .header-site-name {
 	font-weight: bold;
@@ -117,9 +119,6 @@ h1 {
 	clear: both;
 	float: left;
 	padding: 0.5em 0 0 24px;
-}
-#header-page > h1, h1.paptitle {
-	font-weight: normal;
 }
 #header-page.header-page-submission {
 	float: none;
@@ -131,10 +130,6 @@ h1 {
 	background: white;
 	border-top: 1px solid #f33360; /*#b2a584;*/
 	border-bottom: 1px solid #f33360; /*#b2a584;*/
-}
-h1.paptitle {
-	display: block;
-	padding: 0.25em 24px 0.25em 24px;
 }
 
 /* Tab bar */

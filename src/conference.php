@@ -3436,17 +3436,16 @@ class Conf {
         echo '<div id="header">';
 
         // site header
-        $is_home = $id === "home";
-        $site_div = '<div id="header-site" class="'
-            . ($is_home ? "header-site-home" : "header-site-page")
-            . '"><h1><a class="qq" href="'
-            . $this->hoturl("index", ["cap" => null])
-            . '"><span class="header-site-name">'
-            . htmlspecialchars($this->short_name) . '</span>';
-        if (!$is_home) {
-            $site_div .= ' Home';
+        if ($id === "home") {
+            $site_div = '<div id="header-site" class="header-site-home">'
+                . '<h1><a class="qq" href="' . $this->hoturl("index", ["cap" => null])
+                . '">' . htmlspecialchars($this->short_name) . '</a></h1></div>';
+        } else {
+            $site_div = '<div id="header-site" class="header-site-page">'
+                . '<a class="qq" href="' . $this->hoturl("index", ["cap" => null])
+                . '"><span class="header-site-name">' . htmlspecialchars($this->short_name)
+                . '</span> Home</a></div>';
         }
-        $site_div .= '</a></h1></div>';
 
         // $header_profile
         $profile_html = "";
