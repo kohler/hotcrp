@@ -89,11 +89,11 @@ h2.paptitle {
 	-moz-column-gap: 18px;
 	column-gap: 18px;
 }
-.pspcard_fold {
+.pspcard-fold {
 	padding: 7px 0;
 	display: block;
 }
-.pspcard_open {
+.pspcard-open {
 	display: none;
 }
 .pcard, .pcontainer-nostrip > .pcard {

@@ -1311,7 +1311,7 @@ class PaperTable {
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
         if (!$this->npapstrip) {
             echo '<div class="pcontainer"><div class="pspcard">',
-                '<div class="pspcard_body"><div class="pspcard_fold">',
+                '<div class="pspcard-body"><div class="pspcard-fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
 
             if (($viewable = $this->prow->viewable_tags($this->user))) {
@@ -1321,8 +1321,8 @@ class PaperTable {
             } else
                 echo '<hr class="c" />';
 
-            echo '</div><div class="pspcard_open">';
-            Ht::stash_script('$(".pspcard_fold").click(function(evt){$(".pspcard_fold").hide();$(".pspcard_open").show();evt.preventDefault()})');
+            echo '</div><div class="pspcard-open">';
+            Ht::stash_script('$(".pspcard-fold").click(function(evt){$(".pspcard-fold").hide();$(".pspcard-open").show();evt.preventDefault()})');
         }
         echo '<div';
         if ($foldid)
@@ -2134,7 +2134,7 @@ class PaperTable {
     }
 
     static function echo_review_clickthrough() {
-        echo '<div class="pcard revcard js-clickthrough-terms"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
+        echo '<div class="pcard revcard js-clickthrough-terms"><div class="revcard-head"><h3>Reviewing terms</h3></div><div class="revcard-body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
         self::_echo_clickthrough("review");
         echo "</form></div></div>";
     }
@@ -2208,9 +2208,9 @@ class PaperTable {
             echo '<div class="pcontainer pcontainer-nostrip">';
         echo '<div class="pcard papcard">';
         if ($this->editable)
-            echo '<div class="pedcard_body">';
+            echo '<div class="pedcard-body">';
         else
-            echo '<div class="papcard_body">';
+            echo '<div class="papcard-body">';
 
         if ($this->editable) {
             echo '<div id="foldpaper">';
@@ -2244,7 +2244,7 @@ class PaperTable {
         } else if (!$this->editable
                    && $this->user->act_author_view($this->prow)
                    && !$this->user->contactId) {
-            echo '<hr class="papcard_sep" />',
+            echo '<hr class="papcard-sep" />',
                 "To edit this submission, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
         }
 
@@ -2255,7 +2255,7 @@ class PaperTable {
 
     private function _paptabSepContaining($t) {
         if ($t !== "")
-            echo '<hr class="papcard_sep" />', $t;
+            echo '<hr class="papcard-sep" />', $t;
     }
 
     function _paptabReviewLinks($rtable, $editrrow, $ifempty) {
@@ -2269,7 +2269,7 @@ class PaperTable {
         if (($empty = ($t === "")))
             $t = $ifempty;
         if ($t)
-            echo '<hr class="papcard_sep" />';
+            echo '<hr class="papcard-sep" />';
         echo $t, "</div></div>\n";
         return $empty;
     }
@@ -2471,7 +2471,7 @@ class PaperTable {
             }
         }
         if (!empty($viewable)) {
-            echo '<div class="pcard notecard"><div class="notecard_body">',
+            echo '<div class="pcard notecard"><div class="notecard-body">',
                 '<a href="', hoturl("review", "p={$this->prow->paperId}&amp;m=r&amp;text=1"), '" class="xx">',
                 Ht::img("txt24.png", "[Text]", "dlimg"),
                 "&nbsp;<u>", ucfirst(join(" and ", $viewable)),

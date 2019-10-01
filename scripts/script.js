@@ -3727,7 +3727,7 @@ function add_review(rrow) {
             + '" data-rid="' + rrow.rid + i + '">', '</div>');
 
     // HEADER
-    hc.push('<div class="revcard_head">', '</div>');
+    hc.push('<div class="revcard-head">', '</div>');
 
     // edit/text links
     if (rrow.editable) {
@@ -3787,13 +3787,13 @@ function add_review(rrow) {
     hc.push_pop('<hr class="c">');
 
     // body
-    hc.push('<div class="revcard_body fx20">', '</div>');
+    hc.push('<div class="revcard-body fx20">', '</div>');
     hc.push_pop(render_review_body(rrow));
 
     // ratings
     has_user_rating = "user_rating" in rrow;
     if ((rrow.ratings && rrow.ratings.length) || has_user_rating) {
-        hc.push('<div class="revcard_rating fx20">', '</div>');
+        hc.push('<div class="revcard-rating fx20">', '</div>');
         hc.push(unparse_ratings(rrow.ratings || [], rrow.user_rating || 0, has_user_rating));
     }
 
@@ -4275,7 +4275,7 @@ function render_cmt($c, cj, editing, msg) {
     var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead, i;
     cmts[cj_cid(cj)] = cj;
     if (cj.response) {
-        chead = $c.closest(".cmtcard").find(".cmtcard_head");
+        chead = $c.closest(".cmtcard").find(".cmtcard-head");
         chead.find(".cmtinfo").remove();
     }
 
@@ -4406,28 +4406,28 @@ function add(cj, editing) {
             iddiv = '<div id="' + cid + '" class="cmtid' + (cj.editable ? " editable" : "");
         if (!$c.hasClass("cmtcard") && ($pc = $(".pcontainer > .cmtcard").last()).length) {
             if (!cj.is_new)
-                $pc.append('<div class="cmtcard_link"><a class="qq" href="#' + cid + '">Later comments &#x25BC;</a></div>');
+                $pc.append('<div class="cmtcard-link"><a class="qq" href="#' + cid + '">Later comments &#x25BC;</a></div>');
         }
         if (!$c.hasClass("cmtcard") || cj.response || $c.hasClass("response")) {
             var t;
             if (cj.response) {
                 t = iddiv + ' response pcard cmtcard">';
                 if (cj.text !== false)
-                    t += '<div class="cmtcard_head"><h3>' +
+                    t += '<div class="cmtcard-head"><h3>' +
                         (cj.response == "1" ? "Response" : cj.response + " Response") +
                         '</h3></div>';
             } else {
                 t = '<div class="pcard cmtcard">';
             }
-            $c = $(t + '<div class="cmtcard_body"></div></div>').appendTo(".pcontainer");
+            $c = $(t + '<div class="cmtcard-body"></div></div>').appendTo(".pcontainer");
             if (!cj.response && $pc && $pc.length)
-                $c.prepend('<div class="cmtcard_link"><a class="qq" href="#' + ($pc.find("[id]").last().attr("id")) + '">Earlier comments &#x25B2;</a></div>');
+                $c.prepend('<div class="cmtcard-link"><a class="qq" href="#' + ($pc.find("[id]").last().attr("id")) + '">Earlier comments &#x25B2;</a></div>');
         }
         if (cj.response)
             j = $('<div class="cmtg"></div>');
         else
             j = $(iddiv + ' cmtg"></div>');
-        j.appendTo($c.find(".cmtcard_body"));
+        j.appendTo($c.find(".cmtcard-body"));
     }
     if (editing == null && cj.response && cj.draft && cj.editable)
         editing = true;
@@ -4543,7 +4543,7 @@ function nextprev_shortcut(evt, key) {
         if (walk && !walk.hasAttribute("id") && $(walk).hasClass("cmtcard"))
             walk = $(walk).find(".cmtg")[jdir]()[0];
     } else {
-        $j = $(".cmtcard[id], .revcard[id], .cmtcard > .cmtcard_body > .cmtg[id]");
+        $j = $(".cmtcard[id], .revcard[id], .cmtcard > .cmtcard-body > .cmtg[id]");
         walk = $j[jdir]()[0];
     }
     if (walk && walk.hasAttribute("id"))

@@ -909,7 +909,7 @@ $blind\n";
             } else {
                 $req = 'Please take a moment to accept or decline our review request.';
             }
-            echo '<div class="revcard_bodyinsert">',
+            echo '<div class="revcard-bodyinsert">',
                 Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-top:0"],
                             '<div style="padding-top:5px">' . $req . '</div>'),
                 "</div>\n";
@@ -1000,7 +1000,7 @@ $blind\n";
             Ht::hidden_default_submit("default", "");
         if ($rrow)
             echo Ht::hidden("version", get($rrow, "reviewEditVersion", 0) + 1);
-        echo '<div class="revcard_head">';
+        echo '<div class="revcard-head">';
 
         // Links
         if ($rrow) {
@@ -1075,7 +1075,7 @@ $blind\n";
     </tr></table></div>\n";
 
         // review card
-        echo '<div class="revcard_body">';
+        echo '<div class="revcard-body">';
 
         // administrator?
         $admin = $viewer->allow_administer($prow);

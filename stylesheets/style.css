@@ -2552,19 +2552,19 @@ a.badge:active {
 	padding: 5px 0;
 	border-radius: 4px;
 }
-.pspcard_body {
+.pspcard-body {
 	padding: 7px 8px;
 	background: white;
 	border-radius: 2px;
 }
-.pspcard_fold {
+.pspcard-fold {
 	display: none;
 }
 .js-tag-editor {
 	font-size: 13px;
 	font-size: 0.8125rem;
 }
-.pspcard_body textarea, .pspcard_body select {
+.pspcard-body textarea, .pspcard-body select {
 	font-size: inherit;
 }
 .psc {
@@ -2938,16 +2938,16 @@ ul.x > li:last-child {
 	border: 1px solid #9999bf;
 	border-radius: 4px;
 }
-.papcard_body, .pedcard_body {
+.papcard-body, .pedcard-body {
 	background: #ffffff;
 	padding: 8px 16px;
 	border-radius: 2px;
 }
-.papcard_sep {
+.papcard-sep {
 	background-color: #cec1ff;
 	margin: 1em 0;
 }
-.pedcard_head {
+.pedcard-head {
 	padding: 3px 16px 4px;
 }
 
@@ -2957,9 +2957,6 @@ ul.x > li:last-child {
 	margin-bottom: -8px;
 	padding: 3px 0 5px;
 	position: relative;
-}
-.notecard_body {
-	padding: 0 16px;
 }
 
 /* reviews */
@@ -2974,22 +2971,22 @@ ul.x > li:last-child {
 #body-offline .revcard {
 	margin: 16px 7em;
 }
-.revcard_head {
+.revcard-head {
 	padding: 3px 16px 4px;
 }
-.revcard_body {
+.revcard-body {
 	background: #ffffff;
 	padding: 12px 16px;
 	border-radius: 2px;
 }
-.revcard_bodyinsert {
+.revcard-bodyinsert {
 	background: #ffebeb;
 	padding: 12px 16px;
 	margin: -12px -16px 12px;
 	border-top-left-radius: 2px;
 	border-top-right-radius: 2px;
 }
-.revcard_head h3 {
+.revcard-head h3 {
 	display: inline;
 	padding: 0 1.5em 0 0;
 }
@@ -3173,10 +3170,10 @@ ul.x > li:last-child {
 .cmtcard.response {
 	background: #ffddc1;
 }
-.cmtcard_head {
+.cmtcard-head {
 	padding: 0 16px 4px;
 }
-.cmtcard_body {
+.cmtcard-body {
 	background: #ffffff;
 	padding: 0 16px;
 	border-radius: 2px;
@@ -3185,7 +3182,7 @@ ul.x > li:last-child {
 	display: inline;
 	padding: 0 1.5em 0 0;
 }
-.cmtcard_head .cmtfn {
+.cmtcard-head .cmtfn {
 	font-size: smaller;
 }
 .cmtg {
@@ -3195,15 +3192,15 @@ ul.x > li:last-child {
 .cmtg:first-child {
 	border-top: 0 none;
 }
-.cmtcard_link {
+.cmtcard-link {
 	font-size: 69%;
 	font-weight: bold;
 	color: #666666;
 }
-.cmtcard_link:first-child {
+.cmtcard-link:first-child {
 	padding: 0 16px 4px;
 }
-.cmtcard_link:last-child {
+.cmtcard-link:last-child {
 	padding: 4px 16px 0;
 }
 .cmtfn > .barsep {
@@ -3304,7 +3301,7 @@ ul.x > li:last-child {
 .cmttime, .cmtvis {
 	color: #999999;
 }
-.cmtcard_head .cmttime, .cmtcard_head .cmtvis {
+.cmtcard-head .cmttime, .cmtcard-head .cmtvis {
 	color: #555555;
 }
 .cmtnumhead span.cmtnumat {
@@ -3347,7 +3344,7 @@ body {
 	margin-left: 0;
 	margin-bottom: 16px;
 }
-.pspcard_body {
+.pspcard-body {
 	-webkit-column-count: 200px 2;
 	columns: 200px 2;
 }

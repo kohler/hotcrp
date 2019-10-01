@@ -34,7 +34,7 @@ visible only to PC chairs.</p>";
         echo $hth->subhead("Finding tags");
         echo "<p>A paper’s tags are shown like this on the paper page:</p>
 
-<div class=\"pspcard p\" style=\"position:static\"><div class=\"pspcard_body\">
+<div class=\"pspcard p\" style=\"position:static\"><div class=\"pspcard-body\">
 <div class=\"psc\">
  <div class=\"pst\">
   <span class=\"psfn\">Tags</span>
