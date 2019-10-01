@@ -3263,7 +3263,7 @@ class Conf {
         hotcrp_setcookie($name, $value, $opt);
     }
 
-    function header_head($title, $extra = null) {
+    function header_head($title, $extra = []) {
         global $Me, $Now, $ConfSitePATH;
         // clear session list cookies
         foreach ($_COOKIE as $k => $v)
@@ -3373,7 +3373,7 @@ class Conf {
             $huser->cid = $Me->contactId;
         Ht::stash_script("hotcrp_user=" . json_encode_browser($huser) . ";");
 
-        $pid = $extra ? get($extra, "paperId") : null;
+        $pid = get($extra, "paperId");
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
         if (!$pid && $this->paper)
             $pid = $this->paper->paperId;
@@ -3407,7 +3407,7 @@ class Conf {
         return false;
     }
 
-    function header_body($title, $id, $extra = null) {
+    function header_body($title, $id, $extra = []) {
         global $ConfSitePATH, $Me, $Now;
         echo "<body";
         if ($id)
@@ -3443,8 +3443,9 @@ class Conf {
             . $this->hoturl("index", ["cap" => null])
             . '"><span class="header-site-name">'
             . htmlspecialchars($this->short_name) . '</span>';
-        if (!$is_home)
+        if (!$is_home) {
             $site_div .= ' Home';
+        }
         $site_div .= '</a></h1></div>';
 
         // $header_profile
@@ -3497,9 +3498,9 @@ class Conf {
             $action_bar = actionBar();
 
         $title_div = get($extra, "title_div");
-        if (!$title_div) {
-            if (is_array($title))
-                $title = $title[0] . " &nbsp;&#x2215;&nbsp; <strong>" . $title[1] . "</strong>";
+        if ($title_div === null) {
+            if (($subtitle = get($extra, "subtitle")))
+                $title .= " &nbsp;&#x2215;&nbsp; <strong>" . $subtitle . "</strong>";
             if ($title && $title !== "Home")
                 $title_div = '<div id="header-page"><h1>' . $title . '</h1></div>';
             else if ($action_bar)
@@ -3564,7 +3565,7 @@ class Conf {
         }
     }
 
-    function header($title, $id, $extra = null) {
+    function header($title, $id, $extra = []) {
         if (!$this->headerPrinted) {
             $this->header_head($title, $extra);
             $this->header_body($title, $id, $extra);

@@ -422,7 +422,7 @@ class AutoassignerInterface {
     }
 }
 
-$Conf->header(["Assignments", "Automatic"], "autoassign");
+$Conf->header("Assignments", "autoassign", ["subtitle" => "Automatic"]);
 echo '<div class="psmode">',
     '<div class="papmode active"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
