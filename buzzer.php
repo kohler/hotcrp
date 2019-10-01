@@ -69,7 +69,7 @@ if (!$Me->isPC && !$Me->tracker_kiosk_state)
     $Me->escape();
 
 
-$Conf->header("Discussion status", "buzzer", ["action_bar" => false, "class" => "hide-tracker"]);
+$Conf->header("Discussion status", "buzzer", ["action_bar" => false, "body_class" => "hide-tracker"]);
 $Conf->stash_hotcrp_pc($Me, true);
 
 echo '<div id="tracker-table" class="demargin" style="margin-top:1em"></div>';

@@ -25,8 +25,17 @@ html {
 #header-right, h1.paptitle, div#footer {
 	padding-right: 12px;
 }
+h1.leftmenu, h2.leftmenu {
+	margin-bottom: 16px;
+}
 table.vbar {
 	margin-right: 12px;
+}
+body.leftmenu {
+	background: white;
+}
+body.leftmenu > #header {
+	background: #ecf2f4;
 }
 div#body {
 	margin: 0 12px;
@@ -54,8 +63,23 @@ h2.paptitle {
 	float: none;
 	position: static;
 	width: auto;
+}
+.pspcard {
 	margin-left: 0;
 	margin-bottom: 16px;
+}
+.leftmenu-menu-container {
+	margin-top: 0;
+	padding-top: 0;
+	margin-left: -12px;
+	margin-right: -12px;
+	padding-left: 12px;
+	padding-right: 12px;
+	padding-bottom: 12px;
+	background: #ecf2f4;
+}
+.leftmenu-if-left {
+	display: none;
 }
 .leftmenu-list {
 	-webkit-columns: 100px 4;
@@ -80,6 +104,7 @@ h2.paptitle {
 	margin: 0 -12px;
 }
 .leftmenu-content {
+	padding-top: 20px;
 	padding-left: 12px;
 	padding-right: 12px;
 }

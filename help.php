@@ -19,8 +19,7 @@ if ($want_topic !== $topic)
     $Conf->self_redirect($Qreq, ["t" => $want_topic]);
 $topicj = $help_topics->get($topic);
 
-$Conf->header_head($topic === "topics" ? "Help" : ["Help", $topicj->title, true]);
-$Conf->header_body("Help", "help");
+$Conf->header("Help", "help", ["title_div" => '<hr class="c">', "body_class" => "leftmenu"]);
 
 class HtHead extends Ht {
     public $conf;
@@ -214,7 +213,7 @@ function meaningful_round_name(Contact $user) {
 }
 
 
-echo '<div class="leftmenu-menu-container"><div class="leftmenu-list">';
+echo '<div class="leftmenu-menu-container"><h1 class="leftmenu">Help</h1><div class="leftmenu-list">';
 foreach ($help_topics->groups() as $gj) {
     if ($gj->name === $topic)
         echo '<div class="leftmenu-item active">', $gj->title, '</div>';
@@ -227,7 +226,7 @@ foreach ($help_topics->groups() as $gj) {
 echo "</div></div>\n",
     '<div class="leftmenu-content-container"><div id="helpcontent" class="leftmenu-content">';
 
-echo '<h2 class="helppage">', $topicj->title, '</h2>';
+echo '<h2 class="leftmenu">', $topicj->title, '</h2>';
 $hth->render_group($topic);
 echo "</div></div>\n";
 

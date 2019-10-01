@@ -53,14 +53,14 @@ if (isset($Qreq->cancel) && $Qreq->post_ok())
 $Sv->crosscheck();
 
 $group_titles = $Sv->group_titles();
-$Conf->header("Settings", "settings", ["subtitle" => $group_titles[$Group]]);
+$Conf->header("Settings", "settings", ["subtitle" => $group_titles[$Group], "title_div" => '<hr class="c">', "body_class" => "leftmenu"]);
 echo Ht::unstash(); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
 echo Ht::form(hoturl_post("settings", "group=$Group"),
               ["id" => "settingsform", "class" => "need-unload-protection"]);
 
-echo '<div class="leftmenu-menu-container"><div class="leftmenu-list">';
+echo '<div class="leftmenu-menu-container"><h1 class="leftmenu">Settings</h1><div class="leftmenu-list">';
 foreach ($group_titles as $name => $title) {
     if ($name === $Group)
         echo '<div class="leftmenu-item active">', $title, '</div>';
@@ -68,23 +68,20 @@ foreach ($group_titles as $name => $title) {
         echo '<div class="leftmenu-item ui js-click-child">',
             '<a href="', hoturl("settings", "group={$name}"), '">', $title, '</a></div>';
 }
-echo "</div></div>\n",
-    '<div class="leftmenu-content-container"><div class="leftmenu-content">';
-
-function doActionArea($top) {
-    echo '<div class="aab aabr aabig">',
-        '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
-        '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
-        '<hr class="c" /></div>';
-}
-
-doActionArea(true);
+echo '</div><div class="leftmenu-if-left if-alert mt-5">',
+    Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
+    "</div></div>\n",
+    '<div class="leftmenu-content-container"><div class="leftmenu-content">',
+    '<h2 class="leftmenu">', $group_titles[$Group], '</h2>';
 
 $Sv->report(isset($Qreq->update) && $Qreq->post_ok());
 $Sv->render_group($Group);
 
-doActionArea(false);
-echo "</div></div></form>\n";
+
+echo '<div class="aab aabr aabig">',
+    '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
+    '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
+    '<hr class="c" /></div></div></div></form>', "\n";
 
 Ht::stash_script('hiliter_children("#settingsform")');
 $Conf->footer();

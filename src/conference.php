@@ -95,6 +95,7 @@ class Conf {
     public $paper_opts;
 
     public $headerPrinted = false;
+    private $_footer_printed = false;
     private $_save_logs = false;
     public $_session_handler;
 
@@ -3412,7 +3413,7 @@ class Conf {
         echo "<body";
         if ($id)
             echo ' id="body-', $id, '"';
-        $class = get($extra, "class");
+        $class = get($extra, "body_class");
         if (($list = $this->active_list()))
             $class = ($class ? $class . " " : "") . "has-hotlist";
         if ($class)
@@ -3579,21 +3580,30 @@ class Conf {
         return count($args) == 2 ? $args : null;
     }
 
-    function footer() {
-        global $Me, $ConfSitePATH;
-        echo "</div>\n", // class='body'
-            '<div id="footer"><div id="footer-crp">',
-            $this->opt("extraFooter", ""),
-            '<a class="uu" href="https://hotcrp.com/">HotCRP</a>';
-        if (!$this->opt("noFooterVersion")) {
-            if ($Me && $Me->privChair) {
-                echo " v", HOTCRP_VERSION;
-                if (($git_data = self::git_status()) && $git_data[0] !== $git_data[1])
-                    echo " [", substr($git_data[0], 0, 7), "...]";
-            } else
-                echo "<!-- Version ", HOTCRP_VERSION, " -->";
+    function print_footer() {
+        global $Me;
+        if (!$this->_footer_printed) {
+            echo '<div id="footer"><div id="footer-crp">',
+                $this->opt("extraFooter", ""),
+                '<a class="uu" href="https://hotcrp.com/">HotCRP</a>';
+            if (!$this->opt("noFooterVersion")) {
+                if ($Me && $Me->privChair) {
+                    echo " v", HOTCRP_VERSION;
+                    if (($git_data = self::git_status())
+                        && $git_data[0] !== $git_data[1])
+                        echo " [", substr($git_data[0], 0, 7), "...]";
+                } else {
+                    echo "<!-- Version ", HOTCRP_VERSION, " -->";
+                }
+            }
+            echo '</div><hr class="c"></div>';
         }
-        echo "</div>\n  <hr class=\"c\"></div>\n";
+        $this->_footer_printed = true;
+    }
+
+    function footer() {
+        echo "</div>"; // class='body'
+        $this->print_footer();
         echo Ht::unstash(), "</body>\n</html>\n";
     }
 

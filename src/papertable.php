@@ -236,7 +236,7 @@ class PaperTable {
 
         $Conf->header($title, $id, [
             "action_bar" => actionBar($action_mode, $qreq),
-            "title_div" => $t, "class" => "paper", "paperId" => $qreq->paperId
+            "title_div" => $t, "body_class" => "paper", "paperId" => $qreq->paperId
         ]);
         if ($format)
             echo Ht::unstash_script("render_text.on_page()");

@@ -76,6 +76,9 @@ select, button {
 #header {
 	padding-bottom: 24px;
 }
+body.leftmenu > #header {
+	padding-bottom: 8px;
+}
 #header-right {
 	padding: 8px 24px 0;
 	font-size: smaller;
@@ -99,11 +102,17 @@ select, button {
 	color: #f33360;
 }
 
-h1 {
+h1, h2 {
+	font-size: 140%;
 	font-size: 1.4rem;
-	font-weight: normal;
 	line-height: 1.25;
 	margin: 0;
+}
+h1 {
+	font-weight: normal;
+}
+h2 {
+	font-weight: bold;
 }
 #header-site > h1 {
 	display: inline;
@@ -131,12 +140,21 @@ h1.paptitle {
 	border-top: 1px solid #f33360; /*#b2a584;*/
 	border-bottom: 1px solid #f33360; /*#b2a584;*/
 }
+h1.leftmenu {
+	margin-bottom: 36px;
+}
+h2.leftmenu {
+	margin-bottom: 36px;
+}
 
 /* Tab bar */
 table.vbar {
 	float: right;
 	font-size: smaller;
-	margin: 8px 24px 0 0;
+}
+#header > table.vbar {
+	margin-top: 8px;
+	margin-right: 24px;
 }
 #body-home table.vbar {
 	margin-top: -4px;
@@ -302,15 +320,27 @@ label.checki {
 }
 .mt-2 {
 	margin-top: 0.5em;
+	margin-top: 0.5rem;
 }
 .mt-3 {
 	margin-top: 1em;
+	margin-top: 1rem;
+}
+.mt-4 {
+	margin-top: 1.5em;
+	margin-top: 1.5rem;
+}
+.mt-5 {
+	margin-top: 2.25em;
+	margin-top: 2.25rem;
 }
 .ml-2 {
 	margin-left: 0.5em;
+	margin-left: 0.5rem;
 }
 .ml-3 {
 	margin-left: 1em;
+	margin-left: 1rem;
 }
 
 .mb-0-last-child > *:last-child {
@@ -375,7 +405,10 @@ form {
 body.paper {
 	background: #dce4e8;
 }
-#body-help, #body-settings, #body-buzzer {
+body.leftmenu {
+	background: linear-gradient(to right, #ecf2f4, #ecf2f4 164px, white 164px, white);
+}
+#body-buzzer{
 	background: #ecf2f4;
 }
 
@@ -387,9 +420,14 @@ body.paper {
 
 /* footer */
 #footer {
-	margin-top: 36px;
-	padding: 0 24px 8px 12px;
+	margin-top: 48px;
+	padding-bottom: 8px;
 	clear: both;
+}
+body > #footer {
+	margin-top: 36px;
+	padding-left: 12px;
+	padding-right: 24px;
 }
 #footer-crp {
 	float: right;
@@ -958,6 +996,12 @@ button:disabled, button:disabled:hover,
 	border-color: #c5c5c5;
 	background: rgba(222, 222, 222, 0.5);
 }
+.if-alert {
+	display: none;
+}
+.alert .if-alert {
+	display: block;
+}
 .aabig button, .aabig .btn {
 	padding: 4px 9px 4px;
 	min-height: 31px;
@@ -1139,14 +1183,14 @@ div.hint {
 
 
 /* settings */
-h3.settings, h2.helppage, h3.helppage, h3.profile, h4.helppage {
+h3.settings, h3.helppage, h3.profile, h4.helppage {
 	color: #4b4f6d;
-}
-h2.helppage {
-	font-size: 140%;
 }
 h3.settings {
 	margin: 3em 0 1em;
+}
+h2.leftmenu + h3.settings {
+	margin-top: 0;
 }
 h3.helppage, h3.profile {
 	margin: 2em 0 1em;
@@ -1236,10 +1280,13 @@ th.settings-simplehead {
 
 /* help pages */
 .leftmenu-menu-container {
+	position: sticky;
+	top: 16px;
+	margin-top: -16px;
+	padding-top: 16px;
 	width: 140px;
 	font-size: smaller;
 	float: left;
-	position: absolute;
 }
 .leftmenu-item {
 	-webkit-column-break-inside: avoid;
@@ -1265,27 +1312,20 @@ th.settings-simplehead {
 	display: table-cell;
 }
 .leftmenu-content-container {
-	margin-left: 140px;
-	padding-bottom: 2em;
-	background: #eeeeee;
-	border: 1px solid #bbbbbb;
-	padding: 5px 0;
-	border-radius: 4px;
+	margin-left: 164px;
 }
 .leftmenu-content {
-	background: white;
-	border-radius: 2px;
-	padding: 16px;
+	padding-bottom: 16px;
 }
 .leftmenu-content > .demargin {
-	margin-left: -16px;
-	margin-right: -16px;
+	margin-left: -24px;
+	margin-right: -24px;
 }
 .leftmenu-content > .demargin .remargin-left {
-	padding-left: 16px;
+	padding-left: 24px;
 }
 .leftmenu-content > .demargin .remargin-right {
-	padding-right: 16px;
+	padding-right: 24px;
 }
 .profiletext, .settingstext {
 	max-width: 800px;
@@ -1576,11 +1616,6 @@ div.formatdescription {
 }
 .revrating-choice.revrating-unused > .ct {
 	min-width: 1em;
-}
-
-h2 {
-	margin-top: 0;
-	font-size: larger;
 }
 
 span.author, span.conflict {
@@ -2915,9 +2950,6 @@ ul.x > li:last-child {
 }
 .pedcard_head {
 	padding: 3px 16px 4px;
-}
-.pedcard_head h2 {
-	display: inline;
 }
 
 /* paper notes */
