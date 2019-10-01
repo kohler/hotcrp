@@ -3583,28 +3583,27 @@ class Conf {
     function print_footer() {
         global $Me;
         if (!$this->_footer_printed) {
-            echo '<div id="footer"><div id="footer-crp">',
-                $this->opt("extraFooter", ""),
-                '<a class="uu" href="https://hotcrp.com/">HotCRP</a>';
-            if (!$this->opt("noFooterVersion")) {
-                if ($Me && $Me->privChair) {
-                    echo " v", HOTCRP_VERSION;
-                    if (($git_data = self::git_status())
-                        && $git_data[0] !== $git_data[1])
-                        echo " [", substr($git_data[0], 0, 7), "...]";
-                } else {
-                    echo "<!-- Version ", HOTCRP_VERSION, " -->";
-                }
-            }
-            echo '</div><hr class="c"></div>';
         }
         $this->_footer_printed = true;
     }
 
     function footer() {
-        echo "</div>"; // class='body'
-        $this->print_footer();
-        echo Ht::unstash(), "</body>\n</html>\n";
+        global $Me;
+        echo "<hr class=\"c\"></div>", // class='body'
+            '<div id="footer">',
+            $this->opt("extraFooter", ""),
+            '<a class="uu" href="https://hotcrp.com/">HotCRP</a>';
+        if (!$this->opt("noFooterVersion")) {
+            if ($Me && $Me->privChair) {
+                echo " v", HOTCRP_VERSION;
+                if (($git_data = self::git_status())
+                    && $git_data[0] !== $git_data[1])
+                    echo " [", substr($git_data[0], 0, 7), "...]";
+            } else {
+                echo "<!-- Version ", HOTCRP_VERSION, " -->";
+            }
+        }
+        echo '</div>', Ht::unstash(), "</body>\n</html>\n";
     }
 
     function hotcrp_pc_json(Contact $user) {

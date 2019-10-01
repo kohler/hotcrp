@@ -78,7 +78,7 @@ $Sv->report(isset($Qreq->update) && $Qreq->post_ok());
 $Sv->render_group($Group);
 
 
-echo '<div class="aab aabr aabig">',
+echo '<div class="aab aabig">',
     '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
     '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
     '<hr class="c" /></div></div></div></form>', "\n";

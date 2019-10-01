@@ -388,8 +388,23 @@ form {
 
 
 /* body */
+body {
+	position: relative;
+	min-height: 100vh;
+}
+body.paper {
+	background: #dce4e8;
+}
+body.leftmenu {
+	background: linear-gradient(to right, #ecf2f4, #ecf2f4 164px, white 164px, white);
+}
+#body-buzzer {
+	background: #ecf2f4;
+}
 #body {
-	margin: 0 24px;
+	margin-left: 24px;
+	margin-right: 24px;
+	padding-bottom: 48px;
 	position: relative;
 	z-index: 3;
 }
@@ -402,15 +417,6 @@ form {
 #body > .demargin .remargin-right {
 	padding-right: 24px;
 }
-body.paper {
-	background: #dce4e8;
-}
-body.leftmenu {
-	background: linear-gradient(to right, #ecf2f4, #ecf2f4 164px, white 164px, white);
-}
-#body-buzzer{
-	background: #ecf2f4;
-}
 
 #msg-initial {
 	padding: 0 24px;
@@ -420,23 +426,16 @@ body.leftmenu {
 
 /* footer */
 #footer {
-	margin-top: 48px;
-	padding-bottom: 8px;
-	clear: both;
-}
-body > #footer {
-	margin-top: 36px;
-	padding-left: 12px;
-	padding-right: 24px;
-}
-#footer-crp {
-	float: right;
+	position: absolute;
+	bottom: 0;
+	right: 0;
 	font-size: 69%;
 	background: #ffc9d6;
 	color: #f33360;
 	padding: 0.2em 0.5em;
-	border-radius: 4px;
-	border: 1px solid #f33360;
+	border-top-left-radius: 4px;
+	border-top: 1px solid #f33360;
+	border-left: 1px solid #f33360;
 }
 
 
@@ -3074,8 +3073,8 @@ ul.x > li:last-child {
 	margin-bottom: 0;
 }
 .settingsgroup {
-	margin: 12px -16px;
-	padding: 12px 16px;
+	margin: 12px -24px;
+	padding: 12px 24px;
 	background: #eae8f2;
 	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%),
 		linear-gradient(to top, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%);
