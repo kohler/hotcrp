@@ -95,7 +95,6 @@ class Conf {
     public $paper_opts;
 
     public $headerPrinted = false;
-    private $_footer_printed = false;
     private $_save_logs = false;
     public $_session_handler;
 
@@ -3434,7 +3433,7 @@ class Conf {
         if ($this->default_format)
             Ht::stash_script("render_text.set_default_format(" . $this->default_format . ")");
 
-        echo '<div id="header">';
+        echo '<div id="top">';
 
         // site header
         if ($id === "home") {
@@ -3578,13 +3577,6 @@ class Conf {
         if (is_dir("$ConfSitePATH/.git"))
             exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
         return count($args) == 2 ? $args : null;
-    }
-
-    function print_footer() {
-        global $Me;
-        if (!$this->_footer_printed) {
-        }
-        $this->_footer_printed = true;
     }
 
     function footer() {

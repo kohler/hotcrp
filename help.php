@@ -82,12 +82,12 @@ class HtHead extends Ht {
             $js["rel"] = "nofollow";
         return $this->conf->hotlink($html, $page, $options, $js);
     }
-    function search_link($html, $q = null) {
+    function search_link($html, $q = null, $js = []) {
         if ($q === null)
             $q = $html;
         if (is_string($q))
             $q = ["q" => $q];
-        return $this->hotlink($html ? : htmlspecialchars($q["q"]), "search", $q);
+        return $this->hotlink($html ? : htmlspecialchars($q["q"]), "search", $q, $js);
     }
     function help_link($html, $topic = null) {
         if ($topic === null) {
@@ -213,7 +213,7 @@ function meaningful_round_name(Contact $user) {
 }
 
 
-echo '<div class="leftmenu-menu-container"><h1 class="leftmenu">Help</h1><div class="leftmenu-list">';
+echo '<div class="leftmenu-left"><div class="leftmenu-menu"><h1 class="leftmenu">Help</h1><div class="leftmenu-list">';
 foreach ($help_topics->groups() as $gj) {
     if ($gj->name === $topic)
         echo '<div class="leftmenu-item active">', $gj->title, '</div>';
@@ -223,12 +223,11 @@ foreach ($help_topics->groups() as $gj) {
     if ($gj->name === "topics")
         echo '<div class="c g"></div>';
 }
-echo "</div></div>\n",
-    '<div class="leftmenu-content-container"><div id="helpcontent" class="leftmenu-content">';
-
-echo '<h2 class="leftmenu">', $topicj->title, '</h2>';
+echo "</div></div></div>\n",
+    '<div id="helpcontent" class="leftmenu-content">',
+    '<h2 class="leftmenu">', $topicj->title, '</h2>';
 $hth->render_group($topic);
-echo "</div></div>\n";
+echo "</div>\n";
 
 
 $Conf->footer();

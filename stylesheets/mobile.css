@@ -31,11 +31,14 @@ h1.leftmenu, h2.leftmenu {
 table.vbar {
 	margin-right: 12px;
 }
-body.leftmenu {
+body.leftmenu, body.paper {
 	background: white;
 }
-body.leftmenu > #header {
+body.leftmenu > #top {
 	background: #ecf2f4;
+}
+body.paper > #top {
+	background: #dce4e8;
 }
 div#body {
 	margin: 0 12px;
@@ -59,16 +62,25 @@ h2.paptitle {
 	text-indent: -1.5em;
 	margin-left: 1.5em;
 }
-.pspcard, .leftmenu-menu-container {
+.pcard-left, .leftmenu-left {
 	float: none;
 	position: static;
 	width: auto;
 }
-.pspcard {
-	margin-left: 0;
-	margin-bottom: 16px;
+.pcard-left {
+	margin-left: -12px;
+	margin-right: -12px;
 }
-.leftmenu-menu-container {
+.pspcard {
+	padding: 8px 16px;
+}
+.pspcard-open {
+	padding-bottom: 4px;
+}
+.pslcard {
+	display: none;
+}
+.leftmenu-menu {
 	margin-top: 0;
 	padding-top: 0;
 	margin-left: -12px;
@@ -90,20 +102,19 @@ h2.paptitle {
 	column-gap: 18px;
 }
 .pspcard-fold {
-	padding: 7px 0;
 	display: block;
 }
 .pspcard-open {
 	display: none;
 }
 .pcard, .pcontainer-nostrip > .pcard {
-	margin-left: 0;
-	margin-right: 0;
-}
-.leftmenu-content-container {
-	margin: 0 -12px;
+	margin-left: -12px;
+	margin-right: -12px;
+	padding-left: 16px;
+	padding-right: 16px;
 }
 .leftmenu-content {
+	margin: 0 -12px;
 	padding-top: 20px;
 	padding-left: 12px;
 	padding-right: 12px;

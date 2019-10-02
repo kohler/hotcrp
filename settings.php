@@ -60,7 +60,7 @@ echo $Conf->make_script_file("scripts/settings.js"), "\n";
 echo Ht::form(hoturl_post("settings", "group=$Group"),
               ["id" => "settingsform", "class" => "need-unload-protection"]);
 
-echo '<div class="leftmenu-menu-container"><h1 class="leftmenu">Settings</h1><div class="leftmenu-list">';
+echo '<div class="leftmenu-left"><div class="leftmenu-menu"><h1 class="leftmenu">Settings</h1><div class="leftmenu-list">';
 foreach ($group_titles as $name => $title) {
     if ($name === $Group)
         echo '<div class="leftmenu-item active">', $title, '</div>';
@@ -70,8 +70,8 @@ foreach ($group_titles as $name => $title) {
 }
 echo '</div><div class="leftmenu-if-left if-alert mt-5">',
     Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
-    "</div></div>\n",
-    '<div class="leftmenu-content-container"><div class="leftmenu-content">',
+    "</div></div></div>\n",
+    '<div class="leftmenu-content">',
     '<h2 class="leftmenu">', $group_titles[$Group], '</h2>';
 
 $Sv->report(isset($Qreq->update) && $Qreq->post_ok());
@@ -81,7 +81,7 @@ $Sv->render_group($Group);
 echo '<div class="aab aabig">',
     '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
     '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
-    '<hr class="c" /></div></div></div></form>', "\n";
+    '<hr class="c" /></div></div></form>', "\n";
 
 Ht::stash_script('hiliter_children("#settingsform")');
 $Conf->footer();

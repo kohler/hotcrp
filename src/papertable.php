@@ -212,16 +212,18 @@ class PaperTable {
                 && ($highlight = get($paperTable->matchPreg, "title")))
                 $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
 
-            if (!$title_matches && ($format = $prow->title_format()))
+            if (!$title_matches && ($format = $prow->title_format())) {
                 $t .= '<span class="ptitle need-format" data-format="' . $format . '">';
-            else
+            } else {
                 $t .= '<span class="ptitle">';
-            if ($highlight_text)
+            }
+            if ($highlight_text) {
                 $t .= $highlight_text;
-            else if ($prow->title === "")
+            } else if ($prow->title === "") {
                 $t .= "[No title]";
-            else
+            } else {
                 $t .= htmlspecialchars($prow->title);
+            }
 
             $t .= '</span></span></a>';
             if ($viewable_tags && $Conf->tags()->has_decoration) {
@@ -398,6 +400,7 @@ class PaperTable {
                 $c .= "<a class=\"q fn ui js-foldup\" "
                     . "href=\"" . $this->conf->selfurl($this->qreq, ["atab" => $what])
                     . "\"" . $foldnumclass . ">" . $n
+                    . '<span class="t-editor">✎ </span>'
                     . "</a><span class=\"fx\">" . $n . "</span>";
             else
                 $c .= $n;
@@ -417,7 +420,7 @@ class PaperTable {
             $c .= '</a>';
         }
         $c .= "</span>";
-        if ($editfolder) {
+        if ($editfolder && false) {
             $c .= "<span class=\"pstedit fn\">"
                 . "<a class=\"ui xx need-tooltip js-foldup\" href=\""
                 . $this->conf->selfurl($this->qreq, ["atab" => $what])
@@ -1310,8 +1313,8 @@ class PaperTable {
 
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
         if (!$this->npapstrip) {
-            echo '<div class="pcontainer"><div class="pspcard">',
-                '<div class="pspcard-body"><div class="pspcard-fold">',
+            echo '<div class="pcontainer"><div class="pcard-left">',
+                '<div class="pspcard"><div class="pspcard-fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
 
             if (($viewable = $this->prow->viewable_tags($this->user))) {
@@ -1600,8 +1603,12 @@ class PaperTable {
             Ht::stash_script('edit_paper_ui.prepare_pstags.call($$("foldtags"))');
         }
 
-        echo $this->papt("tags", "Tags", ["type" => "ps", "editfolder" => ($is_editable ? "tags" : 0)]),
-            '<div class="psv">';
+        if ($is_editable) {
+            echo $this->papt("tags", 'Tags', ["type" => "ps", "fold" => "tags"]);
+        } else {
+            echo $this->papt("tags", "Tags", ["type" => "ps"]);
+        }
+        echo '<div class="psv">';
         if ($is_editable) {
             // tag report form
             $treport = PaperApi::tagreport($this->user, $this->prow);
@@ -1628,10 +1635,9 @@ class PaperTable {
                 echo Ht::msg($tm0, $tms);
             echo "</div>";
             $editable = $this->prow->editable_tags($this->user);
-            echo '<div style="position:relative">',
-                '<textarea cols="20" rows="4" name="tags" style="width:97%;margin:0" class="want-focus need-suggest tags">',
+            echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest tags">',
                 $tagger->unparse($editable),
-                "</textarea></div>",
+                '</textarea>',
                 '<div class="aab aabr aab-compact"><div class="aabut">',
                 Ht::submit("save", "Save", ["class" => "btn-primary"]),
                 '</div><div class="aabut">',
@@ -2200,17 +2206,16 @@ class PaperTable {
     }
 
     function paptabBegin() {
-        if ($this->prow->paperId)
+        if ($this->prow->paperId) {
             $this->_papstrip();
-        if ($this->npapstrip)
-            echo "</div></div></div>\n";
-        else
+        }
+        if ($this->npapstrip) {
+            echo '</div></div><div class="pslcard"></div></div>';
+        } else {
             echo '<div class="pcontainer pcontainer-nostrip">';
-        echo '<div class="pcard papcard">';
-        if ($this->editable)
-            echo '<div class="pedcard-body">';
-        else
-            echo '<div class="papcard-body">';
+        }
+        echo '<div class="pcard papcard"><div class="',
+            ($this->editable ? "pedcard" : "papcard"), '-body">';
 
         if ($this->editable) {
             echo '<div id="foldpaper">';

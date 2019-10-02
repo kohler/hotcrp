@@ -1010,15 +1010,18 @@ $blind\n";
                 "</div>";
         }
 
-        echo "<h3>";
+        echo '<h3><span class="revcard-header-name">';
         if ($rrow) {
-            echo '<a href="', hoturl("review", "r=$reviewOrdinal" . $forceShow), '" class="q">Edit Review';
+            echo '<a class="nn" href="',
+                $rrow->conf->hoturl("review", "r=$reviewOrdinal" . $forceShow),
+                '">Edit ', ($rrow->is_subreview() ? "Subreview" : "Review");
             if ($rrow->reviewOrdinal)
                 echo "&nbsp;#", $reviewOrdinal;
             echo "</a>";
-        } else
-            echo "Write Review";
-        echo "</h3>\n";
+        } else {
+            echo "New Review";
+        }
+        echo "</span></h3>\n";
 
         $revname = $revtime = "";
         if ($rrow && $viewer->active_review_token_for($prow, $rrow)) {

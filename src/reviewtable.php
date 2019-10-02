@@ -62,7 +62,11 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         }
         if (!$rr->reviewSubmitted
             && ($rr->timeApprovalRequested >= 0 || !$rr->is_subreview())) {
-            $id .= " (" . $rr->status_description() . ")";
+            $d = $rr->status_description();
+            if ($d === "draft")
+                $id = "Draft " . $id;
+            else
+                $id .= " (" . $d . ")";
         }
         $rlink = unparseReviewOrdinal($rr);
 
@@ -115,7 +119,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
             $t .= ($rtype ? '<td class="rl">' . $rtype . '</td>' : '<td></td>');
         } else {
             if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
-                $n = $user->name_html_for($rr);
+                $n = $user->reviewer_html_for($rr);
             } else {
                 $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
             }
@@ -125,11 +129,6 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
             $t .= '<td class="rl"><span class="taghl" title="'
                 . $rr->email . '">' . $n . '</span>'
                 . ($rtype ? " $rtype" : "") . "</td>";
-            if ($show_colors
-                && ($p = $conf->pc_member_by_id($rr->contactId))
-                && ($color = $p->viewable_color_classes($user))) {
-                $tclass .= ($tclass ? " " : "") . $color;
-            }
         }
 
         // requester

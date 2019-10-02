@@ -847,11 +847,11 @@ function hoturl(page, options) {
             hoturl_clean(x, /^fn=(\w+)$/);
             want_forceShow = true;
         }
-    } else if (page === "review")
+    } else if (page === "review") {
         hoturl_clean(x, /^r=(\d+[A-Z]+)$/);
-    else if (page === "help")
+    } else if (page === "help") {
         hoturl_clean(x, /^t=(\w+)$/);
-    else if (page.substring(0, 3) === "api") {
+    } else if (page.substring(0, 3) === "api") {
         if (page.length > 3) {
             x.t = "api" + siteurl_suffix;
             x.v.push("fn=" + page.substring(4));
@@ -859,8 +859,9 @@ function hoturl(page, options) {
         hoturl_clean(x, /^p=(\d+)$/, true);
         hoturl_clean(x, /^fn=(\w+)$/);
         want_forceShow = true;
-    } else if (page === "doc")
+    } else if (page === "doc") {
         hoturl_clean(x, /^file=([^&]+)$/);
+    }
 
     if (hotcrp_want_override_conflict && want_forceShow
         && !hoturl_find(x, /^forceShow=/))
@@ -3481,6 +3482,36 @@ $(function () {
     }
 });
 
+var add_pslitem = (function () {
+var pslcard, observer;
+function observer_fn(entries) {
+    for (var i = 0; i !== entries.length; ++i) {
+        var e = entries[i],
+            it = $(pslcard).find("a[href='#" + e.target.id + "']")[0];
+        it && toggleClass(it.parentElement, "pslitem-intersecting", e.isIntersecting);
+    }
+}
+return function (id, name) {
+    if (pslcard === undefined) {
+        pslcard = $(".pslcard")[0];
+    }
+    if (!pslcard) {
+    } else if (name === false) {
+        observer && observer.unobserve($$(id));
+        $(pslcard).find("a[href='#" + id + "']").remove();
+    } else {
+        if (!pslcard.firstChild) {
+            $(pslcard).append('<div class="pslitem ui js-click-child" style="margin-bottom:6px"><a href="#top" class="x hover-child">Top</a></div>');
+            if (window.IntersectionObserver) {
+                observer = new IntersectionObserver(observer_fn, {threshold: 0.125});
+            }
+        }
+        $(pslcard).append('<div class="pslitem ui js-click-child"><a href="#' + id + '" class="x hover-child">' + name + '</a></div>');
+        observer && observer.observe($$(id));
+    }
+};
+})();
+
 // reviews
 window.review_form = (function ($) {
 var formj, form_order;
@@ -3729,24 +3760,26 @@ function add_review(rrow) {
     // HEADER
     hc.push('<div class="revcard-head">', '</div>');
 
-    // edit/text links
-    if (rrow.editable) {
-        hc.push('<div class="float-right"><a class="xx" href="' + hoturl_html("review", rlink) + '">'
-                + '<img class="b" src="' + assetsurl + 'images/edit48.png" alt="[Edit]" width="16" height="16">'
-                + '&nbsp;<u>Edit</u></a></div>');
+    // review description
+    var rdesc = rrow.subreview ? "Subreview" : "Review";
+    if (rrow.draft) {
+        rdesc = "Draft " + rdesc;
+    }
+    if (rrow.ordinal) {
+        rdesc += " #" + rid;
     }
 
+    // edit/text links
     if (rrow.folded) {
-        hc.push('<h3><a class="u ui js-foldup" href="" data-fold-target="20"><span class="expander"><span class="in0 fx20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L8 15L15 1z" /></svg></span><span class="in1 fn20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span></span>', '</a></h3>');
+        hc.push('<h3><a class="ui js-foldup nn" href="" data-fold-target="20"><span class="expander"><span class="in0 fx20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L8 15L15 1z" /></svg></span><span class="in1 fn20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span></span>', '</a></h3>');
     } else {
-        hc.push('<h3><a class="u" href="' + hoturl_html("review", rlink) + '">', '</a></h3>');
+        hc.push('<h3><a class="nn" href="' + hoturl_html("review", rlink) + '">', '</a></h3>');
     }
-    if (rrow.draft) {
-        hc.push('Draft ');
-    }
-    hc.push(rrow.subreview ? 'Subreview' : 'Review');
-    if (rrow.ordinal) {
-        hc.push(' #' + rid);
+    hc.push('<span class="revcard-header-name">' + rdesc + '</span>');
+    if (rrow.editable && rrow.folded) {
+        hc.push('</a> <a class="nn" href="' + hoturl_html("review", rlink) + '"><span class="t-editor">✎</span>');
+    } else if (rrow.editable) {
+        hc.push(' <span class="t-editor">✎</span>');
     }
     hc.pop();
 
@@ -3799,9 +3832,11 @@ function add_review(rrow) {
 
     // complete render
     var $j = $(hc.render()).appendTo($(".pcontainer"));
-    if (has_user_rating)
+    if (has_user_rating) {
         $j.find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
+    }
     score_header_tooltips($j);
+    add_pslitem("r" + rid, rdesc);
 }
 
 return {
@@ -3854,8 +3889,19 @@ function cj_cid(cj) {
 
 function comment_identity_time(cj) {
     var t = [], res = [], x, i, tag;
-    if (cj.ordinal) {
-        t.push('<div class="cmtnumhead"><a class="qq" href="#' + cj_cid(cj)
+    if (cj.response || cj.is_new) {
+    } else if (cj.editable) {
+        t.push('<div class="cmtnumid"><a href="#' + cj_cid(cj) +
+               '" class="nn ui hover-child cmteditor">');
+        if (cj.ordinal) {
+            t.push('<div class="cmtnum"><span class="cmtnumat">@</span><span class="cmtnumnum">' +
+               cj.ordinal + '</span></div> ');
+        } else {
+            t.push('Edit ');
+        }
+        t.push('<span class="t-editor">✎</span></a></div>');
+    } else if (cj.ordinal) {
+        t.push('<div class="cmtnumid cmtnum"><a class="qq" href="#' + cj_cid(cj)
                + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
                + cj.ordinal + '</span></a></div>');
     }
@@ -4079,10 +4125,12 @@ function activate_editing($c, cj) {
         .on("change", visibility_change)
         .change();
 
-    for (i in cj.tags || [])
+    for (i in cj.tags || []) {
         tags.push(cj.tags[i].replace(detwiddle, "~"));
-    if (tags.length)
+    }
+    if (tags.length) {
         fold($c.find(".cmteditinfo")[0], false, 3);
+    }
     $c.find("input[name=tags]").val(tags.join(" ")).autogrow();
 
     if (cj.docs && cj.docs.length) {
@@ -4091,8 +4139,9 @@ function activate_editing($c, cj) {
             $c.find(".has-editable-attachments .entry").append(render_edit_attachment(i, cj.docs[i]));
     }
 
-    if (!cj.visiblity || cj.blind)
+    if (!cj.visiblity || cj.blind) {
         $c.find("input[name=blind]").prop("checked", true);
+    }
 
     if (cj.response) {
         if (resp_rounds[cj.response].words > 0)
@@ -4101,8 +4150,9 @@ function activate_editing($c, cj) {
         ready_change.call($ready[0]);
     }
 
-    if (cj.is_new)
+    if (cj.is_new) {
         $c.find("select[name=visibility], input[name=blind]").addClass("ignore-diff");
+    }
 
     var $f = $c.find("form");
     $f.on("submit", submit_editor).on("click", "button", buttonclick_editor);
@@ -4175,10 +4225,12 @@ function make_save_callback($c) {
             editing_response = $c.c.response
                 && edit_allowed($c.c, true)
                 && (!data.cmt || data.cmt.draft);
-        if (!data.cmt && !$c.c.is_new)
+        if (!data.cmt && !$c.c.is_new) {
             delete cmts[cid];
-        if (!data.cmt && editing_response)
+        }
+        if (!data.cmt && editing_response) {
             data.cmt = {is_new: true, response: $c.c.response, editable: true};
+        }
         if (data.cmt) {
             var data_cid = cj_cid(data.cmt);
             if (cid !== data_cid) {
@@ -4187,8 +4239,9 @@ function make_save_callback($c) {
                 newcmt && papercomment.add(newcmt);
             }
             render_cmt($c, data.cmt, editing_response, data.msg);
-        } else
+        } else {
             $c.closest(".cmtg").html(data.msg);
+        }
     };
 }
 
@@ -4214,8 +4267,9 @@ function save_editor(elt, action, really) {
     }
     $f.find("input[name=draft]").remove();
     var $ready = $f.find("input[name=ready]");
-    if ($ready.length && !$ready[0].checked)
+    if ($ready.length && !$ready[0].checked) {
         $f.children("div").append('<input type="hidden" name="draft" value="1">');
+    }
     $c.find("button").prop("disabled", true);
     // work around a Safari bug with FormData
     $f.find("input[type=file]").each(function () {
@@ -4223,23 +4277,28 @@ function save_editor(elt, action, really) {
             this.disabled = true;
     });
     var arg = {p: hotcrp_paperid};
-    if ($c.c.cid)
+    if ($c.c.cid) {
         arg.c = $c.c.cid;
-    if (really)
+    }
+    if (really) {
         arg.override = 1;
-    if (hotcrp_want_override_conflict)
+    }
+    if (hotcrp_want_override_conflict) {
         arg.forceShow = 1;
-    if (action === "delete")
+    }
+    if (action === "delete") {
         arg.delete = 1;
+    }
     var url = hoturl_post("api/comment", arg),
         callback = make_save_callback($c);
-    if (window.FormData)
+    if (window.FormData) {
         $.ajax(url, {
             method: "POST", data: new FormData($f[0]), success: callback,
             processData: false, contentType: false, timeout: 120000
         });
-    else
+    } else {
         $.post(url, $f.serialize(), callback);
+    }
 }
 
 function keydown_editor(evt) {
@@ -4254,13 +4313,13 @@ function buttonclick_editor(evt) {
     if (this.name === "bsubmit") {
         evt.preventDefault();
         save_editor(this, "submit");
-    } else if (this.name === "cancel")
+    } else if (this.name === "cancel") {
         render_cmt($c, $c.c, false);
-    else if (this.name === "delete")
+    } else if (this.name === "delete") {
         override_deadlines.call(this, function () {
             save_editor(self, self.name, true);
         });
-    else if (this.name === "showtags") {
+    } else if (this.name === "showtags") {
         fold($c.find(".cmteditinfo")[0], false, 3);
         $c.find("input[name=tags]").focus();
     }
@@ -4274,6 +4333,20 @@ function submit_editor(evt) {
 function render_cmt($c, cj, editing, msg) {
     var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead, i;
     cmts[cj_cid(cj)] = cj;
+    if (cj.is_new && !editing) {
+        var $i = $c.closest(".cmtid");
+        if (!$i.hasClass("cmtcard")
+            && !$i[0].previousSibling
+            && !$i[0].nextSibling) {
+            $i = $i.parent();
+        }
+        if ($i.hasClass("cmtcard")) {
+            add_pslitem($i[0].id, false);
+        }
+        $("#ccnew a[href='#" + $i[0].id + "']").closest(".aabut").removeClass("hidden");
+        $i.remove();
+        return;
+    }
     if (cj.response) {
         chead = $c.closest(".cmtcard").find(".cmtcard-head");
         chead.find(".cmtinfo").remove();
@@ -4281,35 +4354,38 @@ function render_cmt($c, cj, editing, msg) {
 
     // opener
     t = [];
-    if (cj.visibility && !cj.response)
+    if (cj.visibility && !cj.response) {
         t.push("cmt" + cj.visibility + "vis");
+    }
     if (cj.color_classes) {
         make_pattern_fill(cj.color_classes);
         t.push("cmtcolor " + cj.color_classes);
     }
-    if (t.length)
+    if (t.length) {
         hc.push('<div class="' + t.join(" ") + '">', '</div>');
+    }
 
     // header
-    hc.push('<div class="cmtt">', '</div>');
-    if (cj.is_new && !editing) {
-        hc.push('<h3><a class="q ui fn cmteditor" href="">+&nbsp;', '</a></h3>');
-        if (cj.response)
-            hc.push_pop(cj.response == "1" ? "Add Response" : "Add " + cj.response + " Response");
-        else
-            hc.push_pop("Add Comment");
-    } else if (cj.is_new && !cj.response)
-        hc.push('<h3>Add Comment</h3>');
-    else if (cj.editable && !editing) {
-        t = '<div class="cmtinfo float-right"><a class="xx ui editor cmteditor" href=""><u>Edit</u></a></div>';
-        cj.response ? $(t).prependTo(chead) : hc.push(t);
+    if (cj.editable) {
+        hc.push('<div class="cmtt ui js-click-child">', '</div>');
+    } else {
+        hc.push('<div class="cmtt">', '</div>');
+    }
+    if (cj.is_new && !cj.response) {
+        hc.push('<div class="cmtnumid"><div class="cmtnum">New Comment</div></div>');
+    } else if (cj.editable && !editing) {
+        if (cj.response) {
+            var $h3 = $(chead).find("h3");
+            $h3.append(' <span class="t-editor">✎</span>').wrap('<a href="" class="nn ui cmteditor"></a>');
+        }
     }
     t = comment_identity_time(cj);
     if (cj.response) {
         chead.find(".cmtthead").remove();
         chead.append('<div class="cmtthead">' + t + '</div>');
-    } else
+    } else {
         hc.push(t);
+    }
     hc.pop_collapse();
 
     // text
@@ -4325,9 +4401,9 @@ function render_cmt($c, cj, editing, msg) {
             hc.push_pop(' It will not be shown to reviewers.');
     }
     hc.pop();
-    if (editing)
+    if (editing) {
         render_editing(hc, cj);
-    else {
+    } else {
         hc.push('<div class="cmttext"></div>');
         if (cj.docs && cj.docs.length) {
             hc.push('<div class="cmtattachments">', '</div>');
@@ -4400,40 +4476,68 @@ function render_preview(evt, format, value, dest) {
 }
 
 function add(cj, editing) {
-    var cid = cj_cid(cj), j = $("#" + cid), $pc = null;
+    var cid = cj_cid(cj), j = $("#" + cid), $pc = null, cdesc = null, t;
     if (!j.length) {
-        var $c = $(".pcontainer").children().last(),
-            iddiv = '<div id="' + cid + '" class="cmtid' + (cj.editable ? " editable" : "");
-        if (!$c.hasClass("cmtcard") && ($pc = $(".pcontainer > .cmtcard").last()).length) {
-            if (!cj.is_new)
-                $pc.append('<div class="cmtcard-link"><a class="qq" href="#' + cid + '">Later comments &#x25BC;</a></div>');
+        var $c = $(".pcontainer").children().last();
+        if (cj.is_new && !editing) {
+            if (!$c.hasClass("cmtcard") || $c[0].id !== "ccnew") {
+                $c = $('<div class="pcard cmtcard" id="ccnew"><div class="cmtcard-body"><div class="aab aabig"></div></div></div>').appendTo(".pcontainer");
+            }
+            t = '<div class="aabut"><a href="#' + cid + '" class="btn ui js-edit-comment">Add ';
+            if (cj.response) {
+                t += (cj.response == "1" ? "" : cj.response + " ") + "response";
+            } else {
+                t += "comment";
+            }
+            $c.find(".aabig").append(t + '</a></div>');
+            cmts[cid] = cj;
+            return;
+        } else if ($c[0].id === "ccnew") {
+            $c = $c.prev();
         }
-        if (!$c.hasClass("cmtcard") || cj.response || $c.hasClass("response")) {
+
+        var iddiv = '<div id="' + cid + '" class="cmtid' + (cj.editable ? " editable" : "");
+        if (!$c.hasClass("cmtcard")
+            || cj.response
+            || $c.hasClass("response")) {
             var t;
             if (cj.response) {
                 t = iddiv + ' response pcard cmtcard">';
-                if (cj.text !== false)
-                    t += '<div class="cmtcard-head"><h3>' +
-                        (cj.response == "1" ? "Response" : cj.response + " Response") +
-                        '</h3></div>';
+                if (cj.text !== false) {
+                    cdesc = (cj.response == "1" ? "" : cj.response + " ") + "Response";
+                    t += '<div class="cmtcard-head"><h3><span class="cmtcard-header-name">' +
+                        cdesc + '</span></h3></div>';
+                }
             } else {
-                t = '<div class="pcard cmtcard">';
+                t = '<div class="pcard cmtcard" id="cc' + cid + '">';
+                cdesc = "Comment";
             }
-            $c = $(t + '<div class="cmtcard-body"></div></div>').appendTo(".pcontainer");
-            if (!cj.response && $pc && $pc.length)
-                $c.prepend('<div class="cmtcard-link"><a class="qq" href="#' + ($pc.find("[id]").last().attr("id")) + '">Earlier comments &#x25B2;</a></div>');
+            $c = $(t + '<div class="cmtcard-body"></div></div>').insertAfter($c);
+            if (cdesc) {
+                add_pslitem(cj.response ? cid : "cc" + cid, cdesc);
+            }
+        } else {
+            var $psl = $(".pslcard").children().last();
+            if ($psl.length === 1 && $psl.find("a").text() === "Comment")
+                $psl.find("a").text("Comments");
         }
-        if (cj.response)
+        if (cj.response) {
             j = $('<div class="cmtg"></div>');
-        else
+        } else {
             j = $(iddiv + ' cmtg"></div>');
+        }
         j.appendTo($c.find(".cmtcard-body"));
     }
-    if (editing == null && cj.response && cj.draft && cj.editable)
+    if (editing == null && cj.response && cj.draft && cj.editable) {
         editing = true;
-    if (!newcmt && cid === "cnew")
+    }
+    if (!newcmt && cid === "cnew") {
         newcmt = cj;
+    }
     render_cmt(j, cj, editing);
+    if (cj.response && cj.is_new) {
+        $("#ccnew a[href='#" + cid + "']").closest(".aabut").addClass("hidden");
+    }
     return $$(cid);
 }
 
@@ -4443,13 +4547,16 @@ function edit_this() {
 
 function edit(cj) {
     var cid = cj_cid(cj), elt = $$(cid);
-    if (!elt && cj.response)
+    if (!elt && (cj.is_new || cj.response)) {
         elt = add(cj, true);
-    if (!elt && /\beditcomment\b/.test(window.location.search))
+    }
+    if (!elt && /\beditcomment\b/.test(window.location.search)) {
         return false;
+    }
     var $c = $cmt(elt);
-    if (!$c.find("textarea[name=text]").length)
+    if (!$c.find("textarea[name=text]").length) {
         render_cmt($c, cj, true);
+    }
     location.hash = "#" + cid;
     $c.scrollIntoView();
     var te = $c.find("textarea[name=text]")[0];

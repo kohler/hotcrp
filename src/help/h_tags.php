@@ -34,15 +34,18 @@ visible only to PC chairs.</p>";
         echo $hth->subhead("Finding tags");
         echo "<p>A paper’s tags are shown like this on the paper page:</p>
 
-<div class=\"pspcard p\" style=\"position:static\"><div class=\"pspcard-body\">
-<div class=\"psc\">
- <div class=\"pst\">
-  <span class=\"psfn\">Tags</span>
-  <span class=\"pstedit\"><a class=\"xx\"><span style=\"display:inline-block;position:relative;width:16px\">",
-    Ht::img("edit48.png", "[Edit]", "editimg"), "</span>&nbsp;<u class=\"x\">Edit</u></a></span>
-  <hr class=\"c\"></div>
-<div class=\"psv\"><div class=\"taghl\">#earlyaccept</div></div></div>
-</div></div><hr class=\"c\">
+<div class=\"pcard-left p c\" style=\"position:static;margin-bottom:1rem\">
+<div class=\"pspcard\"><div class=\"psc has-fold foldc\"><div class=\"pst ui js-foldup\">",
+    '<span class="psfn"><a href="" class="q ui js-foldup">',
+    expander(null, 0), "Tags</a></span></div><div class=\"psv\">",
+    '<div class="fn">', $hth->search_link(null, "#earlyaccept", ["class" => "nn pw"]), '</div>',
+    '<div class="fx"><textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest tags">earlyaccept</textarea>',
+    '<div class="aab aabr aab-compact"><div class="aabut">',
+    Ht::button("Save", ["class" => "btn-primary ui js-foldup"]),
+    '</div><div class="aabut">',
+    Ht::button("Cancel", ["class" => "ui js-foldup"]),
+    '</div></div></div>',
+    "</div></div></div></div><hr class=\"c\">
 
 <p>To find all papers with tag “#discuss”:</p>
 
@@ -70,10 +73,8 @@ Tags are not case sensitive.</p>";
         echo $hth->subhead("Changing tags", "changing");
         echo "
 <ul>
-<li><p><strong>For one paper:</strong> Go to a paper page, select the Tags box’s
-“Edit” link, and enter tags separated by spaces.</p>
-
-<p>" . Ht::img("extagsset.png", "[Tag entry on review screen]", ["width" => 142, "height" => 87]) . "</p></li>
+<li><p><strong>For one paper:</strong> Go to a paper page, click the
+expander ", expander(true), " next to “Tags”, and enter tags separated by spaces.</p></li>
 
 <li><p><strong>For many papers:</strong> ", $hth->hotlink("Search", "search"),
 " for papers, select them, and use the action area underneath the
