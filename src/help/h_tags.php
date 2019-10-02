@@ -61,7 +61,7 @@ as a column.</p>
                 echo "Currently PC members can see tags for any paper, including conflicts.";
             else
                 echo "They are hidden from conflicted PC members; for instance, if a PC member searches for a tag, the result will never include their conflicts.";
-            echo $this->hth->setting_link("tag_seeall");
+            echo $this->hth->setting_link("tag_seeall"), " ";
         }
         echo "Additionally, twiddle tags, which have names like “#~tag”, are
 visible only to their creators; each PC member has an independent set.
@@ -74,7 +74,7 @@ Tags are not case sensitive.</p>";
         echo "
 <ul>
 <li><p><strong>For one paper:</strong> Go to a paper page, click the
-expander ", expander(true), " next to “Tags”, and enter tags separated by spaces.</p></li>
+“", expander(true), "Tags” expander, and enter tags separated by spaces.</p></li>
 
 <li><p><strong>For many papers:</strong> ", $hth->hotlink("Search", "search"),
 " for papers, select them, and use the action area underneath the
