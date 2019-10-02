@@ -2243,7 +2243,7 @@ handle_ui.on("js-tracker", function (event) {
             hc.push('<input type="hidden" name="tr' + trno + '-p" value="' + hotcrp_paperid + '">');
         if (tr.listinfo)
             hc.push('<input type="hidden" name="tr' + trno + '-listinfo" value="' + escape_entities(tr.listinfo) + '">');
-        hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_entities(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div>');
+        hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><div class="entry"><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_entities(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div></div>');
         var vis = tr.visibility || "", vistype = vis === "" ? "" : vis.charAt(0);
         hc.push('<div class="entryi has-fold fold' + (vistype === "" ? "c" : "o") + '" data-fold-values="+ -"><label for="htctl-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
         hc.push('<span class="select"><select id="htctl-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup" data-default-value="' + vistype + '">', '</select></span>');
@@ -7856,13 +7856,13 @@ handle_ui.on("js-edit-formulas", function () {
             hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete formula">x</a>');
         } else
             hc.push(escape_entities(f.name));
-        hc.push('</div></div><div class="entryi"><label for="htctl_formulaexpression_' + nformulas + '">Expression</label>');
+        hc.push('</div></div><div class="entryi"><label for="htctl_formulaexpression_' + nformulas + '">Expression</label><div class="entry">');
         if (f.editable)
-            hc.push('<textarea class="editformulas-expression need-autogrow" id="htctl_formulaexpression_' + nformulas + '" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:39.5rem;width:99%">' + escape_entities(f.expression) + '</textarea>')
+            hc.push('<textarea class="editformulas-expression need-autogrow" id="htctl_formulaexpression_' + nformulas + '" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:99%">' + escape_entities(f.expression) + '</textarea>')
                 .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '">');
         else
-            hc.push('<div class="entry">' + escape_entities(f.expression) + '</div>');
-        hc.push_pop('</div>');
+            hc.push(escape_entities(f.expression));
+        hc.push_pop('</div></div>');
     }
     function click(event) {
         if (this.name === "add") {
