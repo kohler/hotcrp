@@ -3195,7 +3195,7 @@ a:hover .t-editor,
 /* comments */
 .cmtcard {
 	border-top: 5px solid #e6e1cf;
-	padding-bottom: 48px;
+	padding-bottom: 12px;
 	background: #f8f8f6;
 	position: relative;
 }
