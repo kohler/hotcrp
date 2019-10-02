@@ -1436,7 +1436,6 @@ class PaperTable {
             return;
 
         $selectors = $this->conf->setting("sub_pcconfsel");
-        $show_colors = $this->user->can_view_reviewer_tags($this->prow);
 
         if ($selectors) {
             $confset = $this->conf->conflict_types();
@@ -1467,7 +1466,7 @@ class PaperTable {
             if ($this->prow->paperId && $pct < CONFLICT_AUTHOR)
                 $pcconfmatch = $this->prow->potential_conflict_html($p, $pct <= 0);
 
-            $label = '<span class="taghl">' . $this->user->name_html_for($p) . '</span>';
+            $label = $this->user->reviewer_html_for($p);
             if ($p->affiliation)
                 $label .= '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</span>';
 
@@ -1475,8 +1474,6 @@ class PaperTable {
             if (!$selectors)
                 echo ' checki';
             echo ' clearfix';
-            if ($show_colors && ($classes = $p->viewable_color_classes($this->user)))
-                echo ' ', $classes;
             if ($pct)
                 echo ' boldtag';
             if ($pcconfmatch)

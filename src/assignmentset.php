@@ -1426,10 +1426,8 @@ class AssignmentSet {
             $deltarev->shepherd && $nrev->load_shepherd();
             foreach ($this->conf->pc_members() as $p)
                 if ($deltarev->get($p->contactId)->ass) {
-                    $t = '<div class="ctelt"><div class="ctelti';
-                    if (($k = $p->viewable_color_classes($this->user)))
-                        $t .= ' ' . $k;
-                    $t .= '"><span class="taghl">' . $this->user->name_html_for($p) . "</span>: "
+                    $t = '<div class="ctelt"><div class="ctelti">'
+                        . $this->user->reviewer_html_for($p) . ": "
                         . plural($deltarev->get($p->contactId)->ass, "assignment")
                         . self::review_count_report($nrev, $deltarev, $p, "After assignment:&nbsp;")
                         . "<hr class=\"c\" /></div></div>";

@@ -675,14 +675,10 @@ $summary = [];
 $nrev = new AssignmentCountSet($Conf);
 $nrev->load_rev();
 foreach ($Conf->pc_members() as $id => $p) {
-    $t = '<div class="ctelt"><label class="checki ctelti';
-    if (($k = $p->viewable_color_classes($Me)))
-        $t .= ' ' . $k;
-    $t .= '"><span class="checkc">'
+    $t = '<div class="ctelt"><label class="checki ctelti"><span class="checkc">'
         . Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),
                        ["id" => "pcc$id", "class" => "uix js-range-click js-pcsel-tag"])
-        . ' </span>'
-        . '<span class="taghl">' . $Me->name_html_for($p) . '</span>'
+        . '</span>' . $Me->reviewer_html_for($p)
         . AssignmentSet::review_count_report($nrev, null, $p, "")
         . "</label></div>";
     $summary[] = $t;
