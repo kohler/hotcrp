@@ -52,6 +52,17 @@ input[type=text], input[type=email], input[type=password], input[type=date], tex
 form {
 	margin: 0;
 }
+ul.x {
+	margin: 0 0 1em;
+	padding-left: 0 !important;
+}
+ul.x > li {
+	margin: 0 0 0.25em;
+	list-style-type: none;
+}
+ul.x > li:last-child {
+	margin-bottom: 0;
+}
 
 
 /* page background */
@@ -1717,6 +1728,11 @@ pre.email {
 	float: right;
 	white-space: nowrap;
 }
+.namelist-columns {
+	-webkit-columns: 12em 4;
+	columns: 12em 4;
+	column-gap: 18px;
+}
 .ctable, .pc-ctable, .search-ctable {
 	-webkit-columns: 300px 4;
 	columns: 300px 4;
@@ -2568,8 +2584,8 @@ a.badge:active {
 	font-size: 0.8125rem;
 }
 .pspcard {
-	background: #ebf0f2; /*#ecf2f4;*/
-	color: #222222;
+	background: #edf3f5;
+	color: #2b2b2b;
 	padding: 16px 16px 20px 24px;
 }
 .pspcard-fold {
@@ -2589,16 +2605,10 @@ a.badge:active {
 	font-size: 0.8125rem;
 }
 .psc {
-	padding-top: 7px;
-	border-top: 1px solid #eeeeee;
-	margin-bottom: 7px;
+	margin-bottom: 16px;
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
-}
-.psc:first-child {
-	padding-top: 0;
-	border-top: 0 none;
 }
 .psc:last-child {
 	margin-bottom: 0;
@@ -2656,9 +2666,10 @@ a.badge:active {
 	font-size: smaller;
 	color: #555555;
 }
-.od, .odname {
+.od, .odname, ul.x > li.odname {
 	margin: 0 0 0 1.5em;
 	text-indent: -1.5em;
+	list-style-type: none;
 }
 .sd {
 	margin: 0.5em 0;
@@ -2672,18 +2683,6 @@ a.badge:active {
 .archiveexpansion {
 	font-size: smaller;
 	color: #777777;
-}
-
-ul.x {
-	margin: 0 0 1em;
-	padding-left: 0 !important;
-}
-ul.x > li {
-	margin: 0 0 0.25em;
-	list-style-type: none;
-}
-ul.x > li:last-child {
-	margin-bottom: 0;
 }
 
 /* suggestions */
@@ -3300,24 +3299,31 @@ a:hover .t-editor,
 	position: relative;
 	margin: 0 -5px -3px;
 	padding: 0 5px 3px;
-	background: #f5ecec;
-	background: linear-gradient(to right, #f5ecec, #f5ecec 735px, rgba(245,236,236,0) 735px);
-}
-.overlong-mark {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	padding-bottom: 5px;
-	background: #ffffff;
-	background: linear-gradient(to top, rgba(255,255,255,0), #ffffff 10px);
-}
-.overlong-allowed {
-	visibility: hidden;
+	/*background: #f5ecec;
+	background: linear-gradient(to right, #f5ecec, #f5ecec 735px, rgba(245,236,236,0) 735px);*/
 }
 .overlong-content {
 	position: relative;
 	z-index: 1;
+}
+.overlong-underlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 735px;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+}
+.overlong-allowed {
+	visibility: hidden;
+	flex-grow: 0;
+}
+.overlong-mark {
+	flex-grow: 1;
+	background: #f5ecec;
+	background: linear-gradient(to bottom, rgba(245,236,236,0), #f4ecec 10px);
 }
 .cmtnumid {
 	display: inline-block;
@@ -3353,7 +3359,7 @@ del .tagbg {
 	-webkit-text-decoration-line: line-through;
 	text-decoration-line: line-through;
 }
-.rl > .taghl > .tagbg {
+.rl > .taghl > .tagbg, .odname > .taghl > .tagbg {
 	margin-left: -2px;
 }
 
@@ -3373,20 +3379,28 @@ del .tagbg {
 body {
 	color: black;
 }
-.pspcard {
-	float: none;
+.pcard-left {
 	position: static;
 	width: auto;
 	margin-left: 0;
 	margin-bottom: 16px;
-	-webkit-column-count: 200px 2;
+	border-bottom: 1px solid #f33360; /*#b2a584;*/
+}
+.pspcard {
+	-webkit-columns: 200px 2;
 	columns: 200px 2;
+}
+.pslcard {
+	display: none;
 }
 #body, .pcard, .pspcard {
 	margin-left: 0;
 	margin-right: 0;
 	padding-left: 0;
 	padding-right: 0;
+}
+#ccnew {
+	display: none;
 }
 }
 

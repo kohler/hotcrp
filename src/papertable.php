@@ -1523,18 +1523,15 @@ class PaperTable {
         $pcm = $this->conf->pc_members();
         foreach ($this->prow->pc_conflicts() as $id => $x) {
             $p = $pcm[$id];
-            $text = "<p class=\"odname\">" . $this->user->name_html_for($p) . "</p>";
-            if ($this->user->isPC && ($classes = $p->viewable_color_classes($this->user)))
-                $text = "<div class=\"pscopen $classes taghh\">$text</div>";
-            $pcconf[$p->sort_position] = $text;
+            $pcconf[$p->sort_position] = '<li class="odname">' . $this->user->reviewer_html_for($p) . '</li>';
         }
         ksort($pcconf);
-        if (!count($pcconf))
-            $pcconf[] = "<p class=\"odname\">None</p>";
+        if (empty($pcconf))
+            $pcconf[] = '<li class="odname">None</li>';
         $this->_papstripBegin();
         $option = $this->conf->paper_opts->get(PaperOption::PCCONFID);
         echo $this->papt("pcconf", $option->title_html(), ["type" => "ps"]),
-            '<div class="psv">', join("", $pcconf), "</div></div>\n";
+            '<div class="psv"><ul class="x namelist-columns">', join("", $pcconf), "</ul></div></div>\n";
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit) {
