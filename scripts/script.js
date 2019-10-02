@@ -7538,11 +7538,13 @@ function prepare_psedit(url) {
                     val = saveval;
                     var $p = $(self).find(".js-psedit-result").first();
                     $p.html(data.result || $ctl[0].options[$ctl[0].selectedIndex].innerHTML);
-                    if (data.color_classes)
+                    if (data.color_classes) {
                         make_pattern_fill(data.color_classes || "");
-                    $p.closest("div.taghh").removeClass().addClass("taghh pscopen " + (data.color_classes || ""));
-                } else
+                        $p.html('<span class="taghh ' + data.color_classes + '">' + $p.html() + '</span>');
+                    }
+                } else {
                     done(false, data.error);
+                }
             });
         $ctl.prop("disabled", true);
     }
