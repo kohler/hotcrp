@@ -1918,17 +1918,19 @@ class PaperTable {
         $m = "";
         $has_author = $this->prow->has_author($this->user);
         $can_view_decision = $this->prow->outcome != 0 && $this->user->can_view_decision($this->prow);
-        if ($has_author)
+        if ($has_author) {
             $m .= $this->_edit_message_for_author();
-        else if ($this->conf->allow_final_versions()
-                 && $this->prow->outcome > 0
-                 && !$this->prow->can_author_view_decision())
+        } else if ($this->conf->allow_final_versions()
+                   && $this->prow->outcome > 0
+                   && !$this->prow->can_author_view_decision()) {
             $m .= Ht::msg("The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 0);
-        else
+        } else {
             $m .= Ht::msg("You aren’t a contact for this submission, but as an administrator you can still make changes.", 0);
+        }
         if ($this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_update_paper", $this->prow)
-            && ($v = $this->conf->_i("submit")))
+            && ($v = $this->conf->_i("submit"))) {
             $m .= Ht::msg($v, 0);
+        }
         if ($this->edit_status
             && $this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {
