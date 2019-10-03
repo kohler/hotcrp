@@ -1217,9 +1217,9 @@ class PaperTable {
             . '"><span class="checkc">'
             . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => 1, "id" => false])
             . ' </span>'
-            . Ht::entry("newcontact_name_{$num}", $name, ["size" => 30, "placeholder" => "Name", "class" => "want-focus js-autosubmit", "autocomplete" => "off"])
+            . Ht::entry("newcontact_email_{$num}", $email, ["size" => 30, "placeholder" => "Email", "class" => $this->control_class("newcontact_email_{$num}", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off"])
             . '  '
-            . Ht::entry("newcontact_email_{$num}", $email, ["size" => 20, "placeholder" => "Email", "class" => $this->control_class("newcontact_email_{$num}", "js-autosubmit"), "autocomplete" => "off"])
+            . Ht::entry("newcontact_name_{$num}", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off"])
             . $this->messages_at("newcontact_{$num}")
             . $this->messages_at("newcontact_name_{$num}")
             . $this->messages_at("newcontact_email_{$num}")
@@ -1991,7 +1991,7 @@ class PaperTable {
                        && $this->user->can_finalize_paper($this->prow)) {
                 $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper"]);
             } else if ($this->prow->paperId) {
-                $buttons[] = Ht::submit("updatecontacts", "Save contacts");
+                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-primary"]);
             }
             if (!empty($buttons)) {
                 $buttons[] = Ht::submit("cancel", "Cancel");

@@ -3077,16 +3077,18 @@ handle_ui.on("js-email-populate", function () {
     var self = this,
         v = self.value.toLowerCase().trim(),
         f = this.closest("form"),
-        fn = null, ln = null, nn = null, af = null, placeholder = true;
+        fn = null, ln = null, nn = null, af = null, placeholder = false;
     if (this.name === "email" || this.name === "uemail") {
         fn = f.firstName;
         ln = f.lastName;
         af = f.affiliation;
+        placeholder = true;
     } else if (this.name.substring(0, 7) === "auemail") {
         var idx = this.name.substring(7);
         nn = f["auname" + idx];
         af = f["auaff" + idx];
-        placeholder = false;
+    } else if (this.name.substring(0, 16) === "newcontact_email") {
+        nn = f["newcontact_name" + this.name.substring(16)];
     }
     if (!fn && !ln && !nn && !af)
         return;
