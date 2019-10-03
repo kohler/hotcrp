@@ -2557,11 +2557,12 @@ class PaperTable {
         $this->render_rc(false, $this->include_comments());
     }
 
+    function paptabEndWithoutReviews() {
+        echo "</div></div>\n";
+    }
+
     function paptabEndWithReviewMessage() {
-        if ($this->editable) {
-            echo "</div></div>\n";
-            return;
-        }
+        assert(!$this->editable);
 
         $m = [];
         if ($this->all_rrows

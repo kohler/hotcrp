@@ -413,9 +413,9 @@ if (($ps || $prow) && $paperTable->mode === "edit") {
 confHeader();
 $paperTable->paptabBegin();
 
-if ($paperTable->mode === "edit")
-    $paperTable->paptabEndWithReviewMessage();
-else {
+if ($paperTable->mode === "edit") {
+    $paperTable->paptabEndWithoutReviews();
+} else {
     if ($paperTable->mode === "re") {
         $paperTable->paptabEndWithEditableReview();
         $paperTable->paptabComments();
