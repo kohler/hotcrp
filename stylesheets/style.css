@@ -2983,7 +2983,7 @@ a.badge:active {
 /* reviews */
 .revcard {
 	border-top: 5px solid #fad5d5;
-	padding-bottom: 48px;
+	margin-bottom: 48px;
 	position: relative;
 }
 #body-offline .revcard {
@@ -3195,7 +3195,8 @@ a:hover .t-editor,
 /* comments */
 .cmtcard {
 	border-top: 5px solid #e6e1cf;
-	padding-bottom: 12px;
+	border-bottom: 1px solid transparent;
+	margin-bottom: -1px;
 	background: #f8f8f6;
 	position: relative;
 }
@@ -3223,14 +3224,15 @@ a:hover .t-editor,
 .cmtcard-head .cmtfn {
 	font-size: smaller;
 }
-.cmtg {
-	border-top: 1px solid #f7f1df;
-	padding-top: 10px;
-	padding-bottom: 24px;
+.cmtcard-body {
+	margin-bottom: 36px;
 }
-.cmtg:first-child {
-	border-top: 0 none;
-	padding-top: 12px;
+.response > .cmtcard-body {
+	margin-bottom: 48px;
+}
+.cmtg {
+	margin-top: 20px;
+	margin-bottom: 32px;
 }
 .cmtfn > .barsep {
 	color: #eadeb7;
