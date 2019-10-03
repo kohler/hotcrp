@@ -95,9 +95,12 @@
         "callback": "Search_API::search"
     },
     {
+        "name": "session", "get": true,
+        "callback": "Session_API::getsession"
+    },
+    {
         "name": "session", "post": true,
-        "callback": "Session_API::setsession",
-        "synonym": ["setsession"]
+        "callback": "Session_API::setsession"
     },
     {
         "name": "settags", "post": true,

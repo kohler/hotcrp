@@ -7247,7 +7247,7 @@ function transfer_form_values($dst, $src, names) {
 // login UI
 handle_ui.on("js-signin", function (event) {
     var form = this;
-    $.post(hoturl_post("api/session"), {}, function (data) {
+    $.get(hoturl("api/session"), function (data) {
         if (data && data.postvalue) {
             siteurl_postvalue = data.postvalue;
             form.action = form.action.replace(/([?&]post=)[^&#;]*/, "$1" + urlencode(siteurl_postvalue));

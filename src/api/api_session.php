@@ -3,6 +3,11 @@
 // Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
 
 class Session_API {
+    static function getsession(Contact $user) {
+        ensure_session(0);
+        return ["ok" => true, "postvalue" => post_value()];
+    }
+
     static function setsession(Contact $user, $qreq) {
         ensure_session(0);
 
