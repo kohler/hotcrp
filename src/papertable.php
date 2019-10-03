@@ -11,9 +11,9 @@ class PaperTable {
     private $crows;
     private $mycrows;
     private $can_view_reviews = false;
-    var $rrow = null;
-    var $editrrow = null;
-    var $mode;
+    public $rrow;
+    public $editrrow;
+    public $mode;
     private $prefer_approvable = false;
     private $allreviewslink;
     private $edit_status = null;

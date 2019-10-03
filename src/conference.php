@@ -3914,11 +3914,11 @@ class Conf {
         return $this->_api_map;
     }
     private function check_api_json($fj, $user, $method) {
-        if (isset($fj->allow_if) && !$this->xt_allowed($fj, $user))
+        if (isset($fj->allow_if) && !$this->xt_allowed($fj, $user)) {
             return false;
-        else if (!$method)
+        } else if (!$method) {
             return true;
-        else {
+        } else {
             $methodx = get($fj, strtolower($method));
             return $methodx
                 || ($method === "POST" && $methodx === null && get($fj, "get"));

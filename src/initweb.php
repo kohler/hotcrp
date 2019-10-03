@@ -16,21 +16,24 @@ if ($_SERVER["REQUEST_METHOD"] !== "GET"
 }
 
 // Check for PHP suffix
-if ($Conf->opt("phpSuffix") !== null)
+if ($Conf->opt("phpSuffix") !== null) {
     Navigation::get()->php_suffix = $Conf->opt("phpSuffix");
+}
 
 // Collect $Qreq
 $Qreq = make_qreq();
 
 // Check for redirect to https
-if ($Conf->opt("redirectToHttps"))
+if ($Conf->opt("redirectToHttps")) {
     Navigation::redirect_http_to_https($Conf->opt("allowLocalHttp"));
+}
 
 // Check and fix zlib output compression
 global $zlib_output_compression;
 $zlib_output_compression = false;
-if (function_exists("zlib_get_coding_type"))
+if (function_exists("zlib_get_coding_type")) {
     $zlib_output_compression = zlib_get_coding_type();
+}
 if ($zlib_output_compression) {
     header("Content-Encoding: $zlib_output_compression");
     header("Vary: Accept-Encoding", false);

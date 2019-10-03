@@ -24,8 +24,9 @@ function serialize_object(x) {
         return "";
 }
 
-if (!window.JSON || !window.JSON.parse)
+if (!window.JSON || !window.JSON.parse) {
     window.JSON = {parse: $.parseJSON};
+}
 
 var hasClass, addClass, removeClass, toggleClass, classList;
 if ("classList" in document.createElement("span")
