@@ -42,17 +42,20 @@ class MailRecipients {
             $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
             $dec_pcount = edb_map($result);
             $dec_tcount = array(0 => 0, 1 => 0, -1 => 0);
-            foreach ($dec_pcount as $dnum => $dcount)
+            foreach ($dec_pcount as $dnum => $dcount) {
                 $dec_tcount[$dnum > 0 ? 1 : ($dnum < 0 ? -1 : 0)] += $dcount;
-            if ($type == "somedec:no" || $type == "somedec:yes") {
+            }
+            if ($type === "somedec:no" || $type === "somedec:yes") {
                 $dmaxcount = -1;
-                foreach ($dec_pcount as $dnum => $dcount)
-                    if (($type[8] == "n" ? $dnum < 0 : $dnum > 0)
+                $wantno = $type[8] === "n";
+                foreach ($dec_pcount as $dnum => $dcount) {
+                    if (($wantno ? $dnum < 0 : $dnum > 0)
                         && $dcount > $dmaxcount
                         && ($dname = $this->conf->decision_name($dnum))) {
                         $type = "dec:$dname";
                         $dmaxcount = $dcount;
                     }
+                }
             }
 
             $this->defsel("bydec_group", "Contact authors by decision", self::F_GROUP);
