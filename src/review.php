@@ -909,7 +909,7 @@ $blind\n";
             } else {
                 $req = 'Please take a moment to accept or decline our review request.';
             }
-            echo '<div class="revcard-bodyinsert">',
+            echo '<div class="revcard-bodyinsert demargin remargin">',
                 Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-top:0"],
                             '<div style="padding-top:5px">' . $req . '</div>'),
                 "</div>\n";

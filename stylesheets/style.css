@@ -428,13 +428,14 @@ td.g {
 	position: relative;
 	z-index: 3;
 }
-#body > .demargin {
-	margin: 0 -24px;
+.demargin {
+	margin-left: -24px;
+	margin-right: -24px;
 }
-#body > .demargin .remargin-left {
+.demargin .remargin-left, .demargin.remargin {
 	padding-left: 24px;
 }
-#body > .demargin .remargin-right {
+.demargin .remargin-right, .demargin.remargin {
 	padding-right: 24px;
 }
 
@@ -1338,16 +1339,6 @@ th.settings-simplehead {
 .leftmenu-content {
 	margin-left: 164px;
 	padding-bottom: 16px;
-}
-.leftmenu-content > .demargin {
-	margin-left: -24px;
-	margin-right: -24px;
-}
-.leftmenu-content > .demargin .remargin-left {
-	padding-left: 24px;
-}
-.leftmenu-content > .demargin .remargin-right {
-	padding-right: 24px;
 }
 .profiletext, .settingstext {
 	max-width: 800px;
@@ -3019,10 +3010,9 @@ a:hover .t-editor,
 }
 .revcard-bodyinsert {
 	background: #ffebeb;
-	padding: 12px 0;
-	margin: -12px 0 12px;
-	border-top-left-radius: 2px;
-	border-top-right-radius: 2px;
+	margin-bottom: 12px;
+	padding-top: 12px;
+	padding-bottom: 12px;
 }
 .revthead {
 	display: inline;

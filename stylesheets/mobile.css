@@ -43,13 +43,14 @@ body.paper > #top {
 div#body {
 	margin: 0 12px;
 }
-div#body > .demargin {
-	margin: 0 -12px;
+.demargin {
+	margin-left: -12px;
+	margin-right: -12px;
 }
-div#body > .demargin .remargin-left {
+.demargin .remargin-left, .demargin.remargin {
 	padding-left: 12px;
 }
-div#body > .demargin .remargin-right {
+.demargin .remargin-right, .demargin.remargin {
 	padding-right: 12px;
 }
 #msg-initial {
@@ -119,18 +120,12 @@ h2.paptitle {
 	padding-left: 12px;
 	padding-right: 12px;
 }
-.leftmenu-content > .xmsg, .leftmenu-content > .demargin {
+.leftmenu-content > .xmsg {
 	margin-left: -12px;
 	margin-right: -12px;
 }
 .leftmenu-content > .xmsg > .xmsgc {
 	padding-left: 12px;
-	padding-right: 12px;
-}
-.leftmenu-content > .demargin .remargin-left {
-	padding-left: 12px;
-}
-.leftmenu-content > .demargin .remargin-right {
 	padding-right: 12px;
 }
 input, textarea {

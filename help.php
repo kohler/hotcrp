@@ -63,12 +63,12 @@ class HtHead extends Ht {
                 . "</td><td class=\"helplist-dd remargin-right\">"
                 . $entry . "</td></tr></tbody></table></div>\n";
         } else {
-            $t = "<tr class=\"k{$this->_rowidx}\">"
-                . "<td class=\"sentry remargin-left";
-            if ((string) $entry === "")
+            $t = '<tr class="k' . $this->_rowidx . '"><td class="sentry remargin-left';
+            if ((string) $entry === "") {
                 $t .= ' remargin-right" colspan="2">' . $caption;
-            else
+            } else {
                 $t .= '">' . $caption . '</td><td class="sentry remargin-right">' . $entry;
+            }
             $t .= "</td></tr>\n";
         }
         $this->_rowidx = 1 - $this->_rowidx;
