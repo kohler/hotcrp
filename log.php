@@ -675,7 +675,7 @@ foreach ($lrg->page_rows($page) as $row) {
 if (!$Me->privChair || !empty($exclude_pids)) {
     echo '<div class="msgs-wide">';
     if (!$Me->privChair)
-        $Conf->msg("xinfo", "Only showing your actions and entries for papers you administer.");
+        $Conf->msg("Only showing your actions and entries for papers you administer.", "xinfo");
     else if (!empty($exclude_pids)
              && (!$include_pids || array_intersect_key($include_pids, $exclude_pids))
              && array_keys($exclude_pids) != array_keys($Me->hidden_papers ? : [])) {
@@ -687,9 +687,9 @@ if (!$Me->privChair || !empty($exclude_pids)) {
         if ($page > 1 && $lrg->page_delta() > 0)
             $req["offset"] = $lrg->page_delta();
         if ($Qreq->forceShow)
-            $Conf->msg("xinfo", "Showing all entries. (" . Ht::link("Unprivileged view", $Conf->selfurl($Qreq, $req + ["forceShow" => null])) . ")");
+            $Conf->msg("Showing all entries. (" . Ht::link("Unprivileged view", $Conf->selfurl($Qreq, $req + ["forceShow" => null])) . ")", "xinfo");
         else
-            $Conf->msg("xinfo", "Not showing entries for " . Ht::link("conflicted administered papers", hoturl("search", "q=" . join("+", array_keys($exclude_pids)))) . ".");
+            $Conf->msg("Not showing entries for " . Ht::link("conflicted administered papers", hoturl("search", "q=" . join("+", array_keys($exclude_pids)))) . ".", "xinfo");
     }
     echo '</div>';
 }

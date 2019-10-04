@@ -313,12 +313,13 @@ if (!$Qreq->post_ok()) {
         $UserStatus->send_email = true;
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if (!$UserStatus->has_error()) {
-        if ($UserStatus->has_messages())
-            $Conf->msg($UserStatus->problem_status(), $UserStatus->messages());
+        if ($UserStatus->has_messages()) {
+            $Conf->msg($UserStatus->messages(), $UserStatus->problem_status());
+        }
         if ($newProfile) {
-            $Conf->msg("xconfirm", "Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.");
+            $Conf->msg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.", "xconfirm");
         } else {
-            $Conf->msg("xconfirm", "Profile updated.");
+            $Conf->msg("Profile updated.", "xconfirm");
             if ($Acct->contactId != $Me->contactId)
                 $Qreq->u = $Acct->email;
         }

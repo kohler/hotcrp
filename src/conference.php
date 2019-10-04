@@ -3085,7 +3085,16 @@ class Conf {
     // Message routines
     //
 
-    static function msg_on(Conf $conf = null, $type, $text) {
+    static function msg_on(Conf $conf = null, $text, $type) {
+        if (is_array($type)
+            || (is_string($type)
+                && !preg_match('{\Ax?(?:merror|warning|confirm)\z}', $type)
+                && (is_int($text) || preg_match('{\Ax?(?:merror|warning|confirm)\z}', $text)))) {
+            error_log("bad Conf::msg_on " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            $tmp = $text;
+            $text = $type;
+            $type = $tmp;
+        }
         if (PHP_SAPI === "cli") {
             if (is_array($text))
                 $text = join("\n", $text);
@@ -3096,7 +3105,7 @@ class Conf {
                 fwrite(STDOUT, "$text\n");
         } else if ($conf && !$conf->headerPrinted) {
             ensure_session();
-            $_SESSION[$conf->dsn]["msgs"][] = [$type, $text];
+            $_SESSION[$conf->dsn]["msgs"][] = [$text, $type];
         } else if ($type[0] === "x" || is_int($type)) {
             echo Ht::msg($text, $type);
         } else {
@@ -3106,53 +3115,53 @@ class Conf {
         }
     }
 
-    function msg($type, $text) {
-        self::msg_on($this, $type, $text);
+    function msg($text, $type) {
+        self::msg_on($this, $text, $type);
     }
 
     function infoMsg($text, $minimal = false) {
-        $this->msg($minimal ? "xinfo" : "info", $text);
+        self::msg_on($this, $text, $minimal ? "xinfo" : "info");
     }
 
     static function msg_info($text, $minimal = false) {
-        self::msg_on(self::$g, $minimal ? "xinfo" : "info", $text);
+        self::msg_on(self::$g, $text, $minimal ? "xinfo" : "info");
     }
 
     function warnMsg($text, $minimal = false) {
-        $this->msg($minimal ? "xwarning" : "warning", $text);
+        self::msg_on($this, $text, $minimal ? "xwarning" : "warning");
     }
 
     static function msg_warning($text, $minimal = false) {
-        self::msg_on(self::$g, $minimal ? "xwarning" : "warning", $text);
+        self::msg_on(self::$g, $text, $minimal ? "xwarning" : "warning");
     }
 
     function confirmMsg($text, $minimal = false) {
-        $this->msg($minimal ? "xconfirm" : "confirm", $text);
+        self::msg_on($this, $text, $minimal ? "xconfirm" : "confirm");
     }
 
     static function msg_confirm($text, $minimal = false) {
-        self::msg_on(self::$g, $minimal ? "xconfirm" : "confirm", $text);
+        self::msg_on(self::$g, $text, $minimal ? "xconfirm" : "confirm");
     }
 
     function errorMsg($text, $minimal = false) {
-        $this->msg($minimal ? "xmerror" : "merror", $text);
+        self::msg_on($this, $text, $minimal ? "xmerror" : "merror");
         return false;
     }
 
     static function msg_error($text, $minimal = false) {
-        self::msg_on(self::$g, $minimal ? "xmerror" : "merror", $text);
+        self::msg_on(self::$g, $text, $minimal ? "xmerror" : "merror");
         return false;
     }
 
     static function msg_debugt($text) {
         if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true)
             $text = json_encode_browser($text);
-        self::msg_on(self::$g, "merror", Ht::pre_text_wrap($text));
+        self::msg_on(self::$g, Ht::pre_text_wrap($text), "merror");
         return false;
     }
 
     function post_missing_msg() {
-        $this->msg("merror", "Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.");
+        $this->msg("Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.", "merror");
     }
 
 

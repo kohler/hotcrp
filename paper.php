@@ -275,9 +275,9 @@ function update_paper(Qrequest $qreq, $action) {
     if ($notes || $webnotes)
         $webmsg .= " " . $notes . $webnotes;
     if ($ps->has_error())
-        $Conf->msg("merror", $webmsg);
+        $Conf->msg($webmsg, "merror");
     else
-        $Conf->msg($prow->$submitkey > 0 ? "confirm" : "warning", $webmsg);
+        $Conf->msg($webmsg, $prow->$submitkey > 0 ? "confirm" : "warning");
 
     // mail confirmation to all contact authors if changed
     if (!empty($ps->diffs)) {

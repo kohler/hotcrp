@@ -43,7 +43,7 @@ class Home_Partial {
             }
             if ($qreq->method() === "POST" || $qreq->post) {
                 ensure_session(0);
-                $user->conf->msg(1, "Your session has changed since you last used this tab. Please try again.");
+                $user->conf->msg("Your session has changed since you last used this tab. Please try again.", 1);
                 unset($qreq->signin, $qreq->signout);
                 $user->conf->self_redirect($qreq);
                 $signin = $signout = false;
@@ -52,7 +52,7 @@ class Home_Partial {
         // signout
         if ($signout && $qreq->post_ok()) {
             if (!$user->is_empty() && !$user->conf->opt("httpAuthLogin")) {
-                $user->conf->msg("xconfirm", "You have been signed out.");
+                $user->conf->msg("You have been signed out.", "xconfirm");
             }
             $user = LoginHelper::logout($user, true);
         }
@@ -70,7 +70,7 @@ class Home_Partial {
         // disabled
         if (!$user->is_empty() && $user->is_disabled()) {
             $user->conf->header("Account disabled", "home", ["action_bar" => false]);
-            $user->conf->msg(0, "Your account on this site has been disabled by a site administrator. Please contact them with questions.");
+            $user->conf->msg("Your account on this site has been disabled by a site administrator. Please contact them with questions.", 0);
             $user->conf->footer();
             exit;
         }
@@ -182,7 +182,7 @@ class Home_Partial {
 
     function render_message(Contact $user) {
         if (($t = $user->conf->_i("home", false)))
-            $user->conf->msg(0, $t);
+            $user->conf->msg($t, 0);
     }
 
     function render_welcome(Contact $user) {
