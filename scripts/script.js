@@ -2951,8 +2951,9 @@ $(document).on("focus", "input.js-autosubmit", function (event) {
 });
 
 $(document).on("keypress", "input.js-autosubmit", function (event) {
-    if (event_modkey(event) || event_key(event) !== "Enter")
+    if (event_modkey(event) || event_key(event) !== "Enter") {
         return;
+    }
     var $f = $(event.target).closest("form"),
         type = $f.data("autosubmitType"),
         defaulte = $f[0] ? $f[0]["default"] : null;
@@ -3961,19 +3962,20 @@ function render_editing(hc, cj) {
 
     var msgx = [], msg;
     if (cj.response
-        && resp_rounds[cj.response].instrux)
+        && resp_rounds[cj.response].instrux) {
         msgx.push(resp_rounds[cj.response].instrux);
+    }
     if (cj.response
-        && !hotcrp_status.myperm.act_author)
+        && !hotcrp_status.myperm.act_author) {
         msgx.push('You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.');
-    else if (cj.review_token
-             && hotcrp_status.myperm.review_tokens
-             && hotcrp_status.myperm.review_tokens.indexOf(cj.review_token) >= 0)
+    } else if (cj.review_token
+               && hotcrp_status.myperm.review_tokens
+               && hotcrp_status.myperm.review_tokens.indexOf(cj.review_token) >= 0) {
         msgx.push('You have a review token for this paper, so your comment will be anonymous.');
-    else if (!cj.response
-             && cj.author_email
-             && hotcrp_user.email
-             && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase()) {
+    } else if (!cj.response
+               && cj.author_email
+               && hotcrp_user.email
+               && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase()) {
         if (hotcrp_status.myperm.act_author)
             msg = "You didn’t write this comment, but as a fellow author you can edit it.";
         else
@@ -3991,12 +3993,14 @@ function render_editing(hc, cj) {
         hc.push('<div class="cmthint"><p>' + msgx.join('</p><p>') + '</p></div>');
 
     hc.push('<form><div style="font-weight:normal;font-style:normal">', '</div></form>');
-    if (cj.review_token)
+    if (cj.review_token) {
         hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '">');
+    }
     hc.push('<div class="f-i">', '</div>');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
-    if (fmt.has_preview)
+    if (fmt.has_preview) {
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
+    }
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
     hc.push_pop('<textarea name="text" class="reviewtext cmttext suggest-emoji need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
 
@@ -4016,8 +4020,9 @@ function render_editing(hc, cj) {
             au_option = 'Eventually visible to authors';
             au_description = 'Authors cannot view comments at the moment.';
         }
-        if (hotcrp_status.rev.blind === true)
+        if (hotcrp_status.rev.blind === true) {
             au_option += ' (anonymous to authors)';
+        }
 
         // visibility
         hc.push('<div class="entryi"><label for="' + cid + '-visibility">Visibility</label><div class="entry">', '</div></div>');
@@ -4051,10 +4056,11 @@ function render_editing(hc, cj) {
     // delete
     if (!cj.is_new) {
         x = cj.response ? "response" : "comment";
-        if (edit_allowed(cj))
+        if (edit_allowed(cj)) {
             bnote = "Are you sure you want to delete this " + x + "?";
-        else
+        } else {
             bnote = "Are you sure you want to override the deadline and delete this " + x + "?";
+        }
         btnbox.push('<button type="button" name="delete" class="btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="' + bnote + '">' + $("#licon-trash").html() + '</button>');
     }
 

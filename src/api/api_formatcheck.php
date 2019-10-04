@@ -9,8 +9,9 @@ class FormatCheck_API {
         } catch (Exception $e) {
             json_exit(404, "No such document");
         }
-        if (($whynot = $docreq->perm_view_document($user)))
+        if (($whynot = $docreq->perm_view_document($user))) {
             json_exit(isset($whynot["permission"]) ? 403 : 404, whyNotText($whynot));
+        }
         $runflag = $qreq->soft ? CheckFormat::RUN_PREFER_NO : CheckFormat::RUN_YES;
         $cf = new CheckFormat($user->conf, $runflag);
         $doc = $cf->fetch_document($docreq->prow, $docreq->dtype, $docreq->docid);

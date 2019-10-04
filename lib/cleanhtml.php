@@ -44,16 +44,16 @@ class CleanHTML {
             $x .= substr($t, 0, $p);
             $t = substr($t, $p);
 
-            if (preg_match('/\A<!\[[ie]/', $t))
+            if (preg_match('/\A<!\[[ie]/', $t)) {
                 return self::_cleanHTMLError($err, "an Internet Explorer conditional comment");
-            else if (preg_match('/\A(<!\[CDATA\[.*?)(\]\]>|\z)(.*)\z/s', $t, $m)) {
+            } else if (preg_match('/\A(<!\[CDATA\[.*?)(\]\]>|\z)(.*)\z/s', $t, $m)) {
                 $x .= $m[1] . "]]>";
                 $t = $m[3];
-            } else if (preg_match('/\A<!--.*?(-->|\z)(.*)\z/s', $t, $m))
+            } else if (preg_match('/\A<!--.*?(-->|\z)(.*)\z/s', $t, $m)) {
                 $t = $m[2];
-            else if (preg_match('/\A<!(\S+)/s', $t, $m))
+            } else if (preg_match('/\A<!(\S+)/s', $t, $m)) {
                 return self::_cleanHTMLError($err, "<code>$m[1]</code> declarations");
-            else if (preg_match('/\A<\s*([A-Za-z0-9]+)\s*(.*)\z/s', $t, $m)) {
+            } else if (preg_match('/\A<\s*([A-Za-z0-9]+)\s*(.*)\z/s', $t, $m)) {
                 $tag = strtolower($m[1]);
                 if (!isset($this->goodtags[$tag])) {
                     if (!($this->flags & self::BADTAGS_IGNORE))
@@ -66,28 +66,32 @@ class CleanHTML {
                 $x .= "<" . $tag;
                 // XXX should sanitize 'id', 'class', 'data-', etc.
                 while ($t !== "" && $t[0] !== "/" && $t[0] !== ">") {
-                    if (!preg_match(',\A([^\s/<>=\'"]+)\s*(.*)\z,s', $t, $m))
+                    if (!preg_match(',\A([^\s/<>=\'"]+)\s*(.*)\z,s', $t, $m)) {
                         return self::_cleanHTMLError($err, "garbage <code>" . htmlspecialchars($t) . "</code> within some <code>&lt;$tag&gt;</code> tag");
+                    }
                     $attr = strtolower($m[1]);
-                    if (strlen($attr) > 2 && $attr[0] === "o" && $attr[1] === "n")
+                    if (strlen($attr) > 2 && $attr[0] === "o" && $attr[1] === "n") {
                         return self::_cleanHTMLError($err, "an event handler attribute in some <code>&lt;$tag&gt;</code> tag");
-                    else if ($attr === "style" || $attr === "script" || $attr === "id")
+                    } else if ($attr === "style" || $attr === "script" || $attr === "id") {
                         return self::_cleanHTMLError($err, "<code>$attr</code> attribute in some <code>&lt;$tag&gt;</code> tag");
+                    }
                     $x .= " " . $attr;
                     $t = $m[2];
                     if (preg_match(',\A=\s*(\'.*?\'|".*?"|\w+)\s*(.*)\z,s', $t, $m)) {
-                        if ($m[1][0] === "'" || $m[1][0] === "\"")
+                        if ($m[1][0] === "'" || $m[1][0] === "\"") {
                             $m[1] = substr($m[1], 1, -1);
+                        }
                         $m[1] = html_entity_decode($m[1], ENT_HTML5);
-                        if ($attr === "href" && preg_match(',\A\s*javascript\s*:,i', $m[1]))
+                        if ($attr === "href" && preg_match(',\A\s*javascript\s*:,i', $m[1])) {
                             return self::_cleanHTMLError($err, "<code>href</code> attribute to JavaScript URL");
+                        }
                         $x .= "=\"" . htmlspecialchars($m[1]) . "\"";
                         $t = $m[2];
                     }
                 }
-                if ($t === "")
+                if ($t === "") {
                     return self::_cleanHTMLError($err, "an unclosed <code>&lt;$tag&gt;</code> tag");
-                else if ($t[0] === ">") {
+                } else if ($t[0] === ">") {
                     $t = substr($t, 1);
                     if (isset($this->emptytags[$tag])
                         && !preg_match(',\A\s*<\s*/' . $tag . '\s*>,si', $t))
@@ -100,20 +104,23 @@ class CleanHTML {
                 } else if (preg_match(',\A/\s*>(.*)\z,s', $t, $m)) {
                     $x .= " />";
                     $t = $m[1];
-                } else
+                } else {
                     return self::_cleanHTMLError($err, "garbage in some <code>&lt;$tag&gt;</code> tag");
+                }
             } else if (preg_match(',\A<\s*/\s*([A-Za-z0-9]+)\s*>(.*)\z,s', $t, $m)) {
                 $tag = strtolower($m[1]);
                 if (!isset($this->goodtags[$tag])) {
-                    if (!($this->flags & self::BADTAGS_IGNORE))
+                    if (!($this->flags & self::BADTAGS_IGNORE)) {
                         return self::_cleanHTMLError($err, "some <code>&lt;/$tag&gt;</code> tag");
+                    }
                     $x .= "&lt;";
                     $t = substr($t, 1);
                     continue;
-                } else if (count($tagstack) == 0)
+                } else if (empty($tagstack)) {
                     return self::_cleanHTMLError($err, "a extra close tag <code>&lt;/$tag&gt;</code>");
-                else if (($last = array_pop($tagstack)) !== $tag)
+                } else if (($last = array_pop($tagstack)) !== $tag) {
                     return self::_cleanHTMLError($err, "a close tag <code>&lt;/$tag</code> that doesn’t match the open tag <code>&lt;$last</code>");
+                }
                 $x .= "</$tag>";
                 $t = $m[2];
             } else {
@@ -122,8 +129,9 @@ class CleanHTML {
             }
         }
 
-        if (count($tagstack) > 0)
+        if (!empty($tagstack)) {
             return self::_cleanHTMLError($err, "unclosed tags, including <code>&lt;$tagstack[0]&gt;</code>");
+        }
 
         return preg_replace('/\r\n?/', "\n", $x);
     }

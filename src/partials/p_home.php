@@ -106,21 +106,24 @@ class Home_Partial {
 
 
     function render_head(Contact $user, Qrequest $qreq) {
-        if ($user->is_empty() || isset($qreq->signin))
+        if ($user->is_empty() || isset($qreq->signin)) {
             $user->conf->header("Sign in", "home");
-        else
+        } else {
             $user->conf->header("Home", "home");
+        }
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
-        if ($user->privChair)
+        if ($user->privChair) {
             echo '<div id="msg-clock-drift"></div>';
+        }
     }
 
     function render_sidebar(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         echo '<div class="homeside">';
         $gx->start_render();
-        foreach ($gx->members("home/sidebar/*") as $gj)
+        foreach ($gx->members("home/sidebar/*") as $gj) {
             $gx->render($gj, [$user, $qreq, $gx, $gj]);
+        }
         $gx->end_render();
         echo "</div>\n";
     }
@@ -128,8 +131,9 @@ class Home_Partial {
     function render_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
         echo '<div class="homeinside"><h4>Administration</h4><ul>';
         $gx->start_render();
-        foreach ($gx->members("home/sidebar/admin/*") as $gj)
+        foreach ($gx->members("home/sidebar/admin/*") as $gj) {
             $gx->render($gj, [$user, $qreq, $gx, $gj]);
+        }
         $gx->end_render();
         echo '</ul></div>';
     }
@@ -152,13 +156,15 @@ class Home_Partial {
     function render_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
         ob_start();
         $gx->start_render();
-        foreach ($gx->members("home/sidebar/info/*") as $gj)
+        foreach ($gx->members("home/sidebar/info/*") as $gj) {
             $gx->render($gj, [$user, $qreq, $gx, $gj]);
+        }
         $gx->end_render();
-        if (($t = ob_get_clean()))
+        if (($t = ob_get_clean())) {
             echo '<div class="homeinside"><h4>',
                 $user->conf->_c("home", "Conference information"),
                 '</h4><ul>', $t, '</ul></div>';
+        }
     }
     function render_info_deadline(Contact $user) {
         if ($user->has_reportable_deadline())
@@ -362,8 +368,9 @@ class Home_Partial {
                 $sumpcSubmit / $npc,
                 $this->_merit_field && $npcScore ? $this->_merit_field->name_html : false,
                 $this->_merit_field && $npcScore ? $this->_merit_field->unparse_average($sumpcScore / $npcScore) : false);
-            if ($user->isPC || $user->privChair)
+            if ($user->isPC || $user->privChair) {
                 echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class=\"barsep\">·</span><a href=\"", $conf->hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
+            }
             echo "<br>\n";
         }
         if ($this->_my_rinfo
