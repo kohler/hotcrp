@@ -89,8 +89,6 @@
     },
     {
         "name": "home/review_tokens", "position": 10000,
-        "allow_request_if": ["getpost", "req.token", "!empty"],
-        "request_callback": "ReviewToken_Partial::request",
         "render_callback": "*Home_Partial::render_review_tokens"
     },
     {

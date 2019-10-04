@@ -1839,27 +1839,35 @@ function popup_skeleton(options) {
         $d.remove();
         removeClass(document.body, "modal-open");
     }
+    function show() {
+        $d = $(hc.render()).appendTo(document.body);
+        $d.find(".need-tooltip").each(tooltip);
+        $d.on("click", function (event) {
+            event.target === $d[0] && close();
+        });
+        $d.find("button[name=cancel]").on("click", close);
+        $d.on("keydown", function (event) {
+            if (event_modkey(event) === 0 && event_key(event) === "Escape") {
+                close();
+            }
+        });
+        if (options.action) {
+            if (options.action instanceof HTMLFormElement) {
+                $d.find("form").attr({action: options.action.action, method: options.action.method});
+            } else {
+                $d.find("form").attr({action: options.action, method: options.method || "post"});
+            }
+        }
+        for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
+            if (options[k] != null)
+                $d.children().css(k, options[k]);
+        }
+        $d.show_errors = show_errors;
+        $d.close = close;
+    }
     hc.show = function (visible) {
         if (!$d) {
-            $d = $(hc.render()).appendTo(document.body);
-            $d.find(".need-tooltip").each(tooltip);
-            $d.on("click", function (event) {
-                event.target === $d[0] && close();
-            });
-            $d.find("button[name=cancel]").on("click", close);
-            if (options.action) {
-                if (options.action instanceof HTMLFormElement) {
-                    $d.find("form").attr({action: options.action.action, method: options.action.method});
-                } else {
-                    $d.find("form").attr({action: options.action, method: options.method || "post"});
-                }
-            }
-            for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
-                if (options[k] != null)
-                    $d.children().css(k, options[k]);
-            }
-            $d.show_errors = show_errors;
-            $d.close = close;
+            show();
         }
         if (visible !== false) {
             popup_near($d, options.anchor || window);
@@ -3517,7 +3525,36 @@ return function (id, name) {
 };
 })();
 
+
 // reviews
+handle_ui.on("js-review-tokens", function () {
+    var $d;
+    function submit(evt) {
+        $d.find(".msg").remove();
+        $.post(hoturl_post("api/reviewtoken"), $d.find("form").serialize(),
+            function (data) {
+                if (data.ok) {
+                    $d.close();
+                    if (data.message) {
+                        document.cookie = "hotcrpmessage=" + encodeURIComponent(JSON.stringify(data.message));
+                        location.assign(location.href);
+                    }
+                } else {
+                    $d.find("h2").after(render_xmsg(2, data.error || "Internal error."));
+                }
+            });
+        return false;
+    }
+    var hc = popup_skeleton();
+    hc.push('<h2>Review tokens</h2>');
+    hc.push('<p>Enter tokens to gain access to the corresponding reviews.</p>');
+    hc.push('<input type="text" size="60" name="token" value="' + escape_entities(this.getAttribute("data-review-tokens") || "") + '" placeholder="Review tokens">');
+    hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save tokens</button>',
+        '<button type="button" name="cancel">Cancel</button>']);
+    $d = hc.show();
+    $d.on("submit", "form", submit);
+});
+
 window.review_form = (function ($) {
 var formj, form_order;
 var rtype_info = {

@@ -3535,6 +3535,23 @@ class Conf {
             foreach ($msgs as $m)
                 $this->msg($m[0], $m[1]);
         }
+        if (isset($_COOKIE["hotcrpmessage"])) {
+            $message = json_decode(rawurldecode($_COOKIE["hotcrpmessage"]));
+            if (is_array($message)) {
+                if (count($message) === 2
+                    && (is_int($message[1]) || $message[1] === "confirm")) {
+                    $message = [$message];
+                }
+                foreach ($message as $m) {
+                    if (is_array($m)
+                        && (is_int($m[1]) || $m[1] === "confirm")
+                        && ($t = CleanHTML::basic_clean_all($m[0])) !== false) {
+                        $this->msg($t, $m[1]);
+                    }
+                }
+                hotcrp_setcookie("hotcrpmessage", "", ["expires" => $Now - 3600]);
+            }
+        }
         echo "</div>\n";
 
         echo "<div id=\"body\" class=\"body\">\n";

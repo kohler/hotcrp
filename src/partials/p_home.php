@@ -482,34 +482,26 @@ class Home_Partial {
 
     // Review token printing
     function render_review_tokens(Contact $user, Qrequest $qreq, $gx) {
-        if ($this->_tokens_done
-            || !$user->has_email()
-            || !$user->conf->setting("rev_tokens")
-            || ($this->_in_reviews && !$user->is_reviewer()))
-            return;
-
-        $tokens = [];
-        foreach ($user->session("rev_tokens", []) as $tt)
-            $tokens[] = encode_token((int) $tt);
-
-        if (!$this->_in_reviews)
-            echo '<div class="homegrp" id="homerev">',
-                $this->render_h2_home("Reviews", $gx);
-        echo '<table id="foldrevtokens" class="fold2', empty($tokens) ? "c" : "o", '" style="display:inline-table">',
-            '<tr><td class="fn2"><a href="" class="fn2 ui js-foldup">Add review tokens</a></td>',
-            '<td class="fx2">Review tokens: &nbsp;';
-
-        echo Ht::form($user->conf->hoturl_post("index")),
-            Ht::entry("token", join(" ", $tokens), ["size" => max(15, count($tokens) * 8)]),
-            " &nbsp;", Ht::submit("Save");
-        if (empty($tokens))
-            echo '<div class="f-h">Enter tokens to gain access to the corresponding reviews.</div>';
-        echo '</form>';
-
-        echo '</td></tr></table>', "\n";
-        if (!$this->_in_reviews)
-            echo '</div>', "\n";
-        $this->_tokens_done = true;
+        if (!$this->_tokens_done
+            && $user->has_email()
+            && $user->conf->setting("rev_tokens")
+            && (!$this->_in_reviews || $user->is_reviewer())) {
+            if (!$this->_in_reviews) {
+                echo '<div class="homegrp" id="homerev">',
+                    $this->render_h2_home("Reviews", $gx);
+            }
+            $tokens = array_map("encode_token", $user->review_tokens());
+            $ttexts = array_map(function ($t) use ($user) {
+                return Ht::link($t, $user->conf->hoturl("paper", ["p" => "token:$t"]));
+            }, $tokens);
+            echo '<a href="" class="ui js-review-tokens" data-review-tokens="',
+                join(" ", $tokens), '">Review tokens</a>',
+                (empty($tokens) ? "" : " (" . join(", ", $ttexts) . ")");
+            if (!$this->_in_reviews) {
+                echo '</div>', "\n";
+            }
+            $this->_tokens_done = true;
+        }
     }
 
     function render_review_requests(Contact $user, Qrequest $qreq, $gx) {

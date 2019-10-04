@@ -159,6 +159,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function set_annex($name, $x) {
         $this->____x[$name] = $x;
     }
+    function is_post() {
+        return $this->____method === "POST";
+    }
     function approve_post() {
         $this->____post_ok = true;
     }

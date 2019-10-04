@@ -465,7 +465,9 @@ class Contact {
 
         // Add review tokens from session
         if (($rtokens = $this->session("rev_tokens"))) {
-            $this->_review_tokens = $rtokens;
+            foreach ($rtokens as $t) {
+                $this->_review_tokens[] = (int) $t;
+            }
             ++self::$rights_version;
         }
 
@@ -1862,27 +1864,32 @@ class Contact {
     }
 
     function change_review_token($token, $on) {
-        assert($token !== false || $on === false);
-        if (!$this->_review_tokens)
-            $this->_review_tokens = array();
+        assert(($token === false && $on === false) || is_int($token));
+        if (!$this->_review_tokens) {
+            $this->_review_tokens = [];
+        }
         $old_ntokens = count($this->_review_tokens);
-        if (!$on && $token === false)
-            $this->_review_tokens = array();
-        else {
+        if (!$on && $token === false) {
+            $this->_review_tokens = [];
+        } else {
             $pos = array_search($token, $this->_review_tokens);
-            if (!$on && $pos !== false)
+            if (!$on && $pos !== false) {
                 array_splice($this->_review_tokens, $pos, 1);
-            else if ($on && $pos === false && $token != 0)
+            } else if ($on && $pos === false && $token != 0) {
                 $this->_review_tokens[] = $token;
+            }
         }
         $new_ntokens = count($this->_review_tokens);
-        if ($new_ntokens === 0)
+        if ($new_ntokens === 0) {
             $this->_review_tokens = null;
-        if ($new_ntokens !== $old_ntokens)
+        }
+        if ($new_ntokens !== $old_ntokens) {
             $this->update_my_rights();
-        if ($this->_activated && $new_ntokens != $old_ntokens)
-            $this->save_session("rev_tokens", $this->_review_tokens);
-        return $new_ntokens != $old_ntokens;
+            if ($this->_activated) {
+                $this->save_session("rev_tokens", $this->_review_tokens);
+            }
+        }
+        return $new_ntokens !== $old_ntokens;
     }
 
 
@@ -4061,10 +4068,9 @@ class Contact {
 
 
     private function unassigned_review_token() {
-        while (1) {
+        while (true) {
             $token = mt_rand(1, 2000000000);
-            $result = $this->conf->qe("select reviewId from PaperReview where reviewToken=$token");
-            if (edb_nrows($result) == 0)
+            if (!$this->conf->fetch_ivalue("select reviewId from PaperReview where reviewToken=$token"))
                 return ", reviewToken=$token";
         }
     }

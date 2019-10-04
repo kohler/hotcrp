@@ -166,6 +166,7 @@ src/api/api_mail.php
 src/api/api_paperpc.php
 src/api/api_preference.php
 src/api/api_requestreview.php
+src/api/api_reviewtoken.php
 src/api/api_search.php
 src/api/api_searchconfig.php
 src/api/api_session.php
@@ -272,7 +273,6 @@ src/papertable.php
 src/paperrank.php
 src/partials/p_adminhome.php
 src/partials/p_home.php
-src/partials/p_reviewtoken.php
 src/review.php
 src/reviewdiffinfo.php
 src/reviewinfo.php

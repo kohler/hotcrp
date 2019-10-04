@@ -143,6 +143,7 @@ h1 {
 }
 h2 {
 	font-weight: bold;
+	margin-bottom: 1rem;
 }
 #header-site > h1 {
 	display: inline;

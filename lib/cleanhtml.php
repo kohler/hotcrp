@@ -26,13 +26,7 @@ class CleanHTML {
         return false;
     }
 
-    static function basic() {
-        if (!self::$g)
-            self::$g = new CleanHTML;
-        return self::$g;
-    }
-
-    function clean($t, &$err) {
+    function clean($t, &$err = null) {
         $tagstack = array();
 
         $x = "";
@@ -136,8 +130,30 @@ class CleanHTML {
         return preg_replace('/\r\n?/', "\n", $x);
     }
 
-    static function basic_clean($t, &$err) {
-        $x = self::basic();
-        return $x->clean($t, $err);
+    function clean_all($t, &$err = null) {
+        $x = [];
+        foreach (is_array($t) ? $t : [$t] as $s) {
+            if (is_string($s)
+                && ($s = $this->clean($s, $err)) !== false) {
+                $x[] = $s;
+            } else {
+                return false;
+            }
+        }
+        return $x;
+    }
+
+    static function basic() {
+        if (!self::$g)
+            self::$g = new CleanHTML;
+        return self::$g;
+    }
+
+    static function basic_clean($t, &$err = null) {
+        return self::basic()->clean($t, $err);
+    }
+
+    static function basic_clean_all($t, &$err = null) {
+        return self::basic()->clean_all($t, $err);
     }
 }
