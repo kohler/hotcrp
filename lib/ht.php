@@ -320,19 +320,20 @@ class Ht {
             $js["class"] = "aab";
         $t = "<div" . self::extra($js) . ">";
         foreach ($actions as $i => $a) {
-            if ($a === "")
-                continue;
-            $t .= '<div class="aabut';
-            if ($i + 1 < count($actions) && $actions[$i + 1] === "")
-                $t .= ' aabutsp';
-            $t .= '">';
-            if (is_array($a)) {
-                $t .= $a[0];
-                if (count($a) > 1 && $a[1] !== "")
+            if ($a !== "") {
+                $t .= '<div class="aabut';
+                if ($i + 1 < count($actions) && $actions[$i + 1] === "") {
+                    $t .= " aabutsp";
+                }
+                if (is_array($a) && count($a) > 2 && (string) $a[2] !== "") {
+                    $t .= " " . $a[2];
+                }
+                $t .= '">' . (is_array($a) ? $a[0] : $a);
+                if (is_array($a) && count($a) > 1 && (string) $a[1] !== "") {
                     $t .= '<div class="hint">' . $a[1] . '</div>';
-            } else
-                $t .= $a;
-            $t .= '</div>';
+                }
+                $t .= '</div>';
+            }
         }
         return $t . $extra_text . "</div>\n";
     }
