@@ -2657,24 +2657,30 @@ class PaperTable {
     // Functions for loading papers
 
     static function clean_request(Qrequest $qreq) {
-        if (!isset($qreq->paperId) && isset($qreq->p))
+        if (!isset($qreq->paperId) && isset($qreq->p)) {
             $qreq->paperId = $qreq->p;
-        if (!isset($qreq->reviewId) && isset($qreq->r))
+        }
+        if (!isset($qreq->reviewId) && isset($qreq->r)) {
             $qreq->reviewId = $qreq->r;
-        if (!isset($qreq->commentId) && isset($qreq->c))
+        }
+        if (!isset($qreq->commentId) && isset($qreq->c)) {
             $qreq->commentId = $qreq->c;
+        }
         if (!isset($qreq->reviewId)
-            && preg_match(',\A/\d+[A-Z]+\z,i', Navigation::path()))
+            && preg_match(',\A/\d+[A-Z]+\z,i', Navigation::path())) {
             $qreq->reviewId = substr(Navigation::path(), 1);
-        else if (!isset($qreq->paperId)
-                 && ($pc = Navigation::path_component(0)))
+        } else if (!isset($qreq->paperId)
+                   && ($pc = Navigation::path_component(0))) {
             $qreq->paperId = $pc;
+        }
         if (!isset($qreq->paperId)
             && isset($qreq->reviewId)
-            && preg_match('/\A(\d+)[A-Z]+\z/i', $qreq->reviewId, $m))
+            && preg_match('/\A(\d+)[A-Z]+\z/i', $qreq->reviewId, $m)) {
             $qreq->paperId = $m[1];
-        if (isset($qreq->paperId) || isset($qreq->reviewId))
+        }
+        if (isset($qreq->paperId) || isset($qreq->reviewId)) {
             unset($qreq->q);
+        }
     }
 
     static private function simple_qreq($qreq) {
@@ -2781,39 +2787,51 @@ class PaperTable {
         $rf = $this->conf->review_form();
         Ht::stash_script("review_form.set_form(" . json_encode_browser($rf->unparse_json($round_mask, $min_view_score)) . ")");
 
-        $rrid = strtoupper((string) $this->qreq->reviewId);
-        while ($rrid !== "" && $rrid[0] === "0")
-            $rrid = substr($rrid, 1);
+        $want_rid = $want_rordinal = -1;
+        $rtext = (string) $this->qreq->reviewId;
+        if ($rtext !== "" && $rtext !== "new") {
+            if (ctype_digit($rtext)) {
+                $want_rid = intval($rtext);
+            } else if (str_starts_with($rtext, (string) $this->prow->paperId)
+                       && ($x = substr($rtext, strlen($this->prow->paperId))) !== ""
+                       && ctype_alpha($x)) {
+                $want_rordinal = parseReviewOrdinal(strtoupper($x));
+            }
+        }
 
         $this->rrow = $myrrow = $approvable_rrow = null;
         foreach ($this->viewable_rrows as $rrow) {
-            if ($rrid !== ""
-                && (strcmp($rrow->reviewId, $rrid) == 0
-                    || ($rrow->reviewOrdinal
-                        && strcmp($rrow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal), $rrid) == 0)))
+            if (($want_rid > 0 && $rrow->reviewId == $want_rid)
+                || ($want_rordinal > 0 && $rrow->reviewOrdinal == $want_rordinal)) {
                 $this->rrow = $rrow;
+            }
             if ($rrow->contactId == $this->user->contactId
-                || (!$myrrow && $this->user->is_my_review($rrow)))
+                || (!$myrrow && $this->user->is_my_review($rrow))) {
                 $myrrow = $rrow;
+            }
             if (($rrow->requestedBy == $this->user->contactId || $this->admin)
                 && !$rrow->reviewSubmitted
                 && $rrow->timeApprovalRequested > 0
-                && !$approvable_rrow)
+                && !$approvable_rrow) {
                 $approvable_rrow = $rrow;
+            }
         }
 
-        if ($this->rrow)
+        if ($this->rrow) {
             $this->editrrow = $this->rrow;
-        else if (!$approvable_rrow
-                 || ($myrrow
-                     && $myrrow->reviewModified
-                     && !$this->prefer_approvable))
+        } else if (!$approvable_rrow
+                   || ($myrrow
+                       && $myrrow->reviewModified
+                       && !$this->prefer_approvable)) {
             $this->editrrow = $myrrow;
-        else
+        } else {
             $this->editrrow = $approvable_rrow;
+        }
 
-        if ($want_review && $this->user->can_review($this->prow, $this->editrrow, false))
+        if ($want_review
+            && $this->user->can_review($this->prow, $this->editrrow, false)) {
             $this->mode = "re";
+        }
     }
 
     function resolveComments() {

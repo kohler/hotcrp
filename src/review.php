@@ -995,7 +995,12 @@ $blind\n";
         $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
         $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
 
-        echo '<div class="pcard revcard" id="r', $reviewOrdinal, '">',
+        echo '<div class="pcard revcard" id="r', $reviewOrdinal, '" data-pid="',
+            $prow->paperId, '" data-rid="', ($rrow ? $rrow->reviewId : "new");
+        if ($rrow && $rrow->reviewOrdinal) {
+            echo '" data-review-ordinal="', unparseReviewOrdinal((int) $rrow->reviewOrdinal);
+        }
+        echo '">',
             Ht::form($reviewPostLink, ["class" => "editrevform need-unload-protection"]),
             Ht::hidden_default_submit("default", "");
         if ($rrow)
@@ -2196,7 +2201,6 @@ class ReviewValues extends MessageSet {
         if (count($pids) > 1)
             $t = '<span class="has-hotlist" data-hotlist="p/s/' . join("+", $pids) . '">' . $t . '</span>';
         $this->msg(null, $t, self::INFO);
-        return true;
     }
 
     private function _single_approval_state() {
@@ -2208,18 +2212,28 @@ class ReviewValues extends MessageSet {
 
     function finish() {
         $confirm = false;
-        if ($this->submitted)
-            $confirm = $this->_confirm_message("Reviews %2\$s submitted.", $this->submitted);
-        if ($this->updated)
-            $confirm = $this->_confirm_message("Reviews %2\$s updated.", $this->updated);
-        if ($this->approval_requested)
-            $confirm = $this->_confirm_message("Reviews %2\$s submitted for approval.", $this->approval_requested);
-        if ($this->approved)
-            $confirm = $this->_confirm_message("Reviews %2\$s approved.", $this->approved);
-        if ($this->saved_draft)
+        if ($this->submitted) {
+            $this->_confirm_message("Reviews %2\$s submitted.", $this->submitted);
+            $confirm = true;
+        }
+        if ($this->updated) {
+            $this->_confirm_message("Reviews %2\$s updated.", $this->updated);
+            $confirm = true;
+        }
+        if ($this->approval_requested) {
+            $this->_confirm_message("Reviews %2\$s submitted for approval.", $this->approval_requested);
+            $confirm = true;
+        }
+        if ($this->approved) {
+            $this->_confirm_message("Reviews %2\$s approved.", $this->approved);
+            $confirm = true;
+        }
+        if ($this->saved_draft) {
             $this->_confirm_message("Draft reviews for papers %2\$s saved.", $this->saved_draft, $this->_single_approval_state());
-        if ($this->author_notified)
+        }
+        if ($this->author_notified) {
             $this->_confirm_message("Authors were notified about updated reviews %2\$s.", $this->author_notified);
+        }
         $nunchanged = $this->unchanged ? count($this->unchanged) : 0;
         $nignoredBlank = $this->blank ? count($this->blank) : 0;
         if ($nunchanged + $nignoredBlank > 1
@@ -2227,33 +2241,53 @@ class ReviewValues extends MessageSet {
             || !$this->has_messages()) {
             if ($this->unchanged) {
                 $single = null;
-                if ($this->unchanged == $this->unchanged_draft)
+                if ($this->unchanged == $this->unchanged_draft) {
                     $single = $this->_single_approval_state();
+                }
                 $this->_confirm_message("Reviews %2\$s unchanged.", $this->unchanged, $single);
             }
-            if ($this->blank)
+            if ($this->blank) {
                 $this->_confirm_message("Ignored blank review forms %2\$s.", $this->blank);
+            }
         }
         $this->finished = $confirm ? 2 : 1;
     }
 
-    function report() {
-        if (!$this->finished)
+    function message_status() {
+        if (!$this->finished) {
             $this->finish();
-        if ($this->finished < 3 && $this->has_messages()) {
-            $hdr = "";
+        }
+        if ($this->has_messages()) {
+            $m = [];
             if ($this->text !== null) {
                 if ($this->has_error() && $this->has_warning())
-                    $hdr = $this->conf->_("There were errors and warnings while parsing the uploaded review file.");
+                    $m[] = $this->conf->_("There were errors and warnings while parsing the uploaded review file.");
                 else if ($this->has_error())
-                    $hdr = $this->conf->_("There were errors while parsing the uploaded review file.");
+                    $m[] = $this->conf->_("There were errors while parsing the uploaded review file.");
                 else if ($this->has_warning())
-                    $hdr = $this->conf->_("There were warnings while parsing the uploaded review file.");
+                    $m[] = $this->conf->_("There were warnings while parsing the uploaded review file.");
             }
-            $m = '<div class="parseerr"><p>' . join("</p>\n<p>", $this->messages()) . '</p></div>';
-            $this->conf->msg($hdr . $m, $this->has_error() || $this->has_problem_at("ready") ? "merror" : ($this->has_warning() || $this->finished == 1 ? "warning" : "confirm"));
+            $m[] = '<div class="parseerr"><p>' . join("</p>\n<p>", $this->messages()) . '</p></div>';
+            if ($this->has_error() || $this->has_problem_at("ready")) {
+                return [$m, 2];
+            } else if ($this->has_warning() || $this->finished == 1) {
+                return [$m, 1];
+            } else {
+                return [$m, "confirm"];
+            }
+        } else {
+            return ["Nothing to do.", 0];
         }
-        $this->finished = 3;
+    }
+
+    function report() {
+        if ($this->finished < 3) {
+            $mx = $this->message_status();
+            if ($mx[1]) {
+                $this->conf->msg($mx[0], $mx[1]);
+            }
+            $this->finished = 3;
+        }
     }
 
     function json_report() {

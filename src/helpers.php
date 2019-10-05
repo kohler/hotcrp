@@ -606,9 +606,9 @@ function parseReviewOrdinal($t) {
 }
 
 function unparseReviewOrdinal($ord) {
-    if (!$ord)
+    if (!$ord) {
         return ".";
-    else if (is_object($ord)) {
+    } else if (is_object($ord)) {
         if ($ord->reviewOrdinal)
             return $ord->paperId . unparseReviewOrdinal($ord->reviewOrdinal);
         else

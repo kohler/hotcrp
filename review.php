@@ -66,8 +66,9 @@ if (isset($Qreq->uploadForm)
         $tf->msg(null, 'Only the first review form in the file was parsed. <a href="' . hoturl("offline") . '">Upload multiple-review files here.</a>', MessageSet::WARNING);
     $tf->report();
     loadRows();
-} else if (isset($Qreq->uploadForm))
+} else if (isset($Qreq->uploadForm)) {
     Conf::msg_error("Select a review form to upload.");
+}
 
 
 // check review submit requirements
