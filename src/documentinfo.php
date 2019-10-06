@@ -943,14 +943,17 @@ class DocumentInfo implements JsonSerializable {
     }
 
     static function log_download_activity($docs, Contact $user) {
-        if ($user->is_actas_user() || $user->is_anonymous_user()) {
+        if ($user->is_actas_user()
+            || $user->is_anonymous_user()
+            || ($user->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR))) {
             return;
         }
         $byn = [];
         $any_nonauthor = false;
         foreach ($docs as $doc) {
             if ($doc->documentType !== DTYPE_COMMENT
-                && $doc->conf === $user->conf) {
+                && $doc->conf === $user->conf
+                && $doc->paperId > 0) {
                 // XXX ignores documents from other conferences
                 $byn[$doc->documentType][$doc->paperId] = true;
                 $any_nonauthor = $any_nonauthor || !$doc->prow || !$doc->prow->has_author($user);
