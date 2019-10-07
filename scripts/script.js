@@ -2369,12 +2369,13 @@ handle_ui.on("js-tracker", function (event) {
         var hc = popup_skeleton({minWidth: "38rem"});
         hc.push('<h2>Meeting tracker</h2>');
         var trackers, trno = 1, nshown = 0;
-        if (!dl.tracker)
+        if (!dl.tracker) {
             trackers = [];
-        else if (!dl.tracker.ts)
+        } else if (!dl.tracker.ts) {
             trackers = [dl.tracker];
-        else
+        } else {
             trackers = dl.tracker.ts;
+        }
         for (var i = 0; i !== trackers.length; ++i) {
             if (trackers[i].allow_administer) {
                 push_tracker(hc, trackers[i]);

@@ -398,12 +398,14 @@ class MeetingTracker {
         for ($i = 1; isset($qreq["tr{$i}-id"]); ++$i) {
             // Parse arguments
             $trackerid = $qreq["tr{$i}-id"];
-            if (ctype_digit($trackerid))
+            if (ctype_digit($trackerid)) {
                 $trackerid = intval($trackerid);
+            }
             $name = trim($qreq["tr{$i}-name"]);
             $logo = trim($qreq["tr{$i}-logo"]);
-            if ($logo === "☞")
+            if ($logo === "☞") {
                 $logo = "";
+            }
 
             $vis = trim($qreq["tr{$i}-vis"]);
             if ($vis !== ""
@@ -411,16 +413,19 @@ class MeetingTracker {
                 && !isset($qreq["tr{$i}-vistype"])) {
                 $vistype = $vis[0];
                 $vis = ltrim(substr($vis, 1));
-            } else
+            } else {
                 $vistype = trim($qreq["tr{$i}-vistype"]);
+            }
             if ($vistype === "+" || $vistype === "-") {
-                if ($vis !== "" && str_starts_with($vis, "#"))
+                if ($vis !== "" && str_starts_with($vis, "#")) {
                     $vis = substr($vis, 1);
-                if (strcasecmp($vis, "pc") === 0)
+                }
+                if (strcasecmp($vis, "pc") === 0) {
                     $vistype = $vis = "";
+                }
                 if ($vis !== "" && !$user->conf->pc_tag_exists($vis)) {
                     $errf["tr{$i}-vis"] = true;
-                    $error[] = "A PC tag is expected here.";
+                    $error[] = "No such PC tag.";
                 }
                 $vis = $vistype . $vis;
             } else
@@ -446,8 +451,9 @@ class MeetingTracker {
                 $error[] = "Bad paper number.";
             }
             $position = false;
-            if ($p !== "" && $xlist)
+            if ($p !== "" && $xlist) {
                 $position = array_search((int) $p, $xlist->ids);
+            }
 
             $stop = $qreq->stopall || !!$qreq["tr{$i}-stop"];
 
@@ -488,12 +494,15 @@ class MeetingTracker {
                 }
             } else if (($match = self::tracker_search($trackerid, $trs)) !== false) {
                 $tr = $trs[$match];
-                if (!isset($qreq["tr{$i}-name"]))
+                if (!isset($qreq["tr{$i}-name"])) {
                     $name = (string) get($tr, "name");
-                if (!isset($qreq["tr{$i}-vis"]))
+                }
+                if (!isset($qreq["tr{$i}-vis"])) {
                     $vis = (string) get($tr, "visibility");
-                if (!isset($qreq["tr{$i}-logo"]))
+                }
+                if (!isset($qreq["tr{$i}-logo"])) {
                     $logo = (string) get($tr, "logo");
+                }
                 if ($name === (string) get($tr, "name")
                     && $vis === (string) get($tr, "visibility")
                     && $logo === (string) get($tr, "logo")
@@ -569,13 +578,16 @@ class MeetingTracker {
             $ti->paper_offset = $tr->position === 0 ? 0 : 1;
             $ti->papers = array_slice($tr->ids, $tr->position - $ti->paper_offset, 3 + $ti->paper_offset);
         }
-        if (isset($tr->name))
+        if (isset($tr->name)) {
             $ti->name = $tr->name;
-        if (isset($tr->logo))
+        }
+        if (isset($tr->logo)) {
             $ti->logo = $tr->logo;
+        }
         if (isset($tr->visibility)
-            && ($user->privChair || substr($tr->visibility, 1, 1) !== "~"))
+            && ($user->privChair || substr($tr->visibility, 1, 1) !== "~")) {
             $ti->visibility = $tr->visibility;
+        }
         return $ti;
     }
 
@@ -585,8 +597,9 @@ class MeetingTracker {
             if (isset($ti->papers))
                 $pids = array_merge($pids, $ti->papers);
         }
-        if (empty($pids))
+        if (empty($pids)) {
             return;
+        }
 
         $track_manager = $user->is_track_manager();
         $show_pc_conflicts = $track_manager || $user->tracker_kiosk_state > 0;
@@ -610,8 +623,9 @@ class MeetingTracker {
             where p.paperId in (" . join(",", $pids) . ")
             group by p.paperId");
         $prows = new PaperInfoSet;
-        while (($prow = PaperInfo::fetch($result, $user)))
+        while (($prow = PaperInfo::fetch($result, $user))) {
             $prows->add($prow);
+        }
         Dbl::free($result);
 
         foreach ($tis as $ti_index => $ti) {
@@ -655,8 +669,9 @@ class MeetingTracker {
                         $p->other_pc_conflicts = $more;
                 }
             }
-            if (isset($ti->papers))
+            if (isset($ti->papers)) {
                 $ti->papers = $papers;
+            }
         }
     }
 
@@ -689,9 +704,11 @@ class MeetingTracker {
             $dl->tracker_status = self::tracker_status($tracker);
             $dl->now = microtime(true);
         }
-        if ($tracker->position_at)
+        if ($tracker->position_at) {
             $dl->tracker_status_at = $tracker->position_at;
-        if (($tcs = $user->conf->opt("trackerCometSite")))
+        }
+        if (($tcs = $user->conf->opt("trackerCometSite"))) {
             $dl->tracker_site = $tcs;
+        }
     }
 }
