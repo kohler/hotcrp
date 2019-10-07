@@ -3702,8 +3702,14 @@ class Conf {
         if (!$user) {
             return 0;
         } else if (!is_numeric($user)) {
-            if ($user->email && !$user->contactId && !$user->is_site_contact)
-                $text .= " <{$user->email}>";
+            if ($user->email
+                && !$user->contactId
+                && !$user->is_site_contact) {
+                $suffix = " <{$user->email}>";
+                if (!str_ends_with($text, $suffix)) {
+                    $text .= $suffix;
+                }
+            }
             return $user->contactId;
         } else {
             return $user;
