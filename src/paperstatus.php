@@ -652,17 +652,20 @@ class PaperStatus extends MessageSet {
 
         // Status
         if (!isset($pj->submitted)) {
-            if (isset($pj->draft))
+            if (isset($pj->draft)) {
                 $pj->submitted = !$pj->draft;
-            if (isset($pj->status) && $pj->status === "submitted")
+            }
+            if (isset($pj->status) && $pj->status === "submitted") {
                 $pj->submitted = true;
-            else if (isset($pj->status) && $pj->status === "draft")
+            } else if (isset($pj->status) && $pj->status === "draft") {
                 $pj->submitted = false;
-            else
+            } else {
                 $pj->submitted = $this->prow && $this->prow->timeSubmitted != 0;
+            }
         }
-        if (!isset($pj->draft))
+        if (!isset($pj->draft)) {
             $pj->draft = !$pj->submitted;
+        }
         if (!isset($pj->withdrawn)) {
             if (isset($pj->status) && $pj->status === "withdrawn")
                 $pj->withdrawn = true;
