@@ -2254,7 +2254,7 @@ handle_ui.on("js-tracker", function (event) {
             hc.push('<option value="' + i + '"' + (i === vistype ? " selected" : "") + '>' + vismap[i] + '</option>');
         hc.pop();
         hc.push_pop('  <input type="text" name="tr' + trno + '-vis" value="' + escape_entities(vis.substring(1)) + '" placeholder="(tag)" class="need-suggest need-autogrow pc-tags fx">');
-        if ((vis = dl.tracker.global_visibility)) {
+        if (dl.tracker && (vis = dl.tracker.global_visibility)) {
             hc.push('<div class="entryi"><label><a href="' + hoturl("settings", "group=tracks") + '" target="_blank">Global visibility</a></label><div class="entry">', '</div></div>');
             if (vis === "+none")
                 hc.push('Administrators only');
