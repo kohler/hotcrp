@@ -46,7 +46,7 @@
         "callback": "GraphData_Api::graphdata"
     },
     {
-        "name": "jserror", "get": true, "post": true,
+        "name": "jserror", "get": true,
         "callback": "Error_API::jserror"
     },
     {

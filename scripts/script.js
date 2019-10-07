@@ -181,7 +181,7 @@ function log_jserror(errormsg, error, noconsole) {
     if (error && error.stack)
         errormsg.stack = error.stack;
     if (errormsg.lineno == null || errormsg.lineno > 1)
-        $.ajax(hoturl_post("api/jserror"), {
+        $.ajax(hoturl("api/jserror"), {
             global: false, method: "POST", cache: false, data: errormsg
         });
     if (error && !noconsole && typeof console === "object" && console.error)

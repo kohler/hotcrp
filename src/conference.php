@@ -3941,6 +3941,7 @@ class Conf {
             && $method !== "HEAD"
             && $method !== "OPTIONS"
             && !$qreq->post_ok()
+            && (!$uf || get($uf, "post"))
             && (!$uf || !get($uf, "allow_xss"))) {
             return new JsonResult(403, "Missing credentials.");
         }
