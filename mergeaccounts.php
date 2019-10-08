@@ -34,10 +34,10 @@ function crpmerge($qreq, $MiniMe) {
 
     if (!$merger->has_error()) {
         $Conf->confirmMsg("Merged account " . htmlspecialchars($merger->oldu->email) . ".");
-        $merger->newu->log_activity("Merged account " . $merger->oldu->email);
+        $merger->newu->log_activity("Account merged " . $merger->oldu->email);
         go(hoturl("index"));
     } else {
-        $merger->newu->log_activity("Merged account " . $merger->oldu->email . " with errors");
+        $merger->newu->log_activity("Account merged " . $merger->oldu->email . " with errors");
         $MergeError = '<div class="multimessage">'
             . join("\n", array_map(function ($m) { return '<div class="mmm">' . $m . '</div>'; },
                                    $merger->errors()))

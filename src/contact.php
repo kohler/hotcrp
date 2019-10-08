@@ -1295,8 +1295,8 @@ class Contact {
             if (($flags & self::SAVE_NOTIFY) && !$u->is_disabled()) {
                 $u->sendAccountInfo("create", false);
             }
-            $type = $u->is_disabled() ? "disabled " : "";
-            $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Created {$type}account");
+            $type = $u->is_disabled() ? " disabled" : "";
+            $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Account created" . $type);
         }
 
         return $u;
@@ -1591,7 +1591,7 @@ class Contact {
                 }
                 $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
                 $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
-                $this->conf->log_for($this, null, "Created password reset " . substr($rest["capability"], 0, 8) . "...");
+                $this->conf->log_for($this, null, "Password link sent " . substr($rest["capability"], 0, 8) . "...");
                 $template = "@resetpassword";
             }
         } else {

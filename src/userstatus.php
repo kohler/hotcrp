@@ -723,7 +723,7 @@ class UserStatus extends MessageSet {
             $user->mark_activity();
         }
         if (!empty($this->diffs)) {
-            $user->conf->log_for($this->viewer, $user, "Updated profile " . join(", ", array_keys($this->diffs)));
+            $user->conf->log_for($this->viewer, $user, "Account edited " . join(", ", array_keys($this->diffs)));
         }
         return $user;
     }

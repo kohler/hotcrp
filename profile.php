@@ -412,7 +412,7 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
                 $Conf->invalidate_caches(["pc" => 1]);
             // done
             $Conf->confirmMsg("Permanently deleted account " . htmlspecialchars($Acct->email) . ".");
-            $Me->log_activity_for($Acct, "Permanently deleted account " . htmlspecialchars($Acct->email));
+            $Me->log_activity_for($Acct, "Account deleted " . htmlspecialchars($Acct->email));
             go(hoturl("users", "t=all"));
         }
     }
