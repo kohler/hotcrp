@@ -482,14 +482,18 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
 
         $req_visibility = get(self::$visibility_revmap, get($req, "visibility", ""));
-        if ($req_visibility === null && $this->commentId)
+        if ($req_visibility === null && $this->commentId) {
             $req_visibility = $this->commentType & COMMENTTYPE_VISIBILITY;
+        }
 
         $is_response = !!($this->commentType & COMMENTTYPE_RESPONSE);
+        $response_name = null;
         if ($is_response) {
             $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR;
-            if (!get($req, "submit"))
+            if (!get($req, "submit")) {
                 $ctype |= COMMENTTYPE_DRAFT;
+            }
+            $response_name = $this->conf->resp_round_name($this->commentRound);
         } else if ($contact->act_author_view($this->prow)) {
             if ($req_visibility === null)
                 $req_visibility = COMMENTTYPE_AUTHOR;
@@ -513,17 +517,19 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         // tags
         if ($is_response) {
             $ctags = " response ";
-            if (($rname = $this->conf->resp_round_name($this->commentRound)) != "1")
-                $ctags .= "{$rname}response ";
+            if ($response_name != "1") {
+                $ctags .= "{$response_name}response ";
+            }
         } else if (get($req, "tags")
                    && preg_match_all(',\S+,', $req->tags, $m)
                    && !$contact->act_author_view($this->prow)) {
             $tagger = new Tagger($contact);
             $ctags = [];
-            foreach ($m[0] as $tt)
+            foreach ($m[0] as $tt) {
                 if (($tt = $tagger->check($tt, Tagger::NOVALUE))
                     && !stri_ends_with($tt, "response"))
                     $ctags[strtolower($tt)] = $tt;
+            }
             $tagger->sort($ctags);
             $ctags = count($ctags) ? " " . join(" ", $ctags) . " " : null;
         } else {
@@ -623,7 +629,39 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             return false;
 
         // log
-        $acting_contact->log_activity_for($this->contactId ? : $contact->contactId, "Comment $cmtid " . ($text !== false ? "saved" : "deleted"), $this->prow->$LinkColumn);
+        $log = $is_response ? "Response $cmtid" : "Comment $cmtid";
+        if ($is_response && $response_name != "1") {
+            $log .= " ($response_name)";
+        }
+        if ($text === false) {
+            $log .= " deleted";
+        } else {
+            $log .= $this->commentId ? " edited" : " added";
+            if ($ctype & COMMENTTYPE_DRAFT) {
+                $log .= " draft";
+            }
+            $ch = [];
+            if ($this->commentId
+                && $text !== ($this->commentOverflow ? : $this->comment)) {
+                $ch[] = "text";
+            }
+            if ($this->commentId
+                && ($ctype | COMMENTTYPE_DRAFT) !== ($this->commentType | COMMENTTYPE_DRAFT)) {
+                $ch[] = "visibility";
+            }
+            if ($ctags !== $this->commentTags) {
+                $ch[] = "tags";
+            }
+            if ($docids !== $old_docids) {
+                $ch[] = "attachments";
+            }
+            if (!empty($ch)) {
+                $log .= " " . join(", ", $ch);
+            }
+        }
+        $acting_contact->log_activity_for($this->contactId ? : $contact->contactId, $log, $this->prow->$LinkColumn);
+
+        // update autosearch
         $this->conf->update_autosearch_tags($this->prow);
 
         // ordinal
@@ -645,16 +683,19 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         // document links
         if ($docids !== $old_docids) {
-            if ($old_docids)
+            if ($old_docids) {
                 $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType>=? and linkType<?", $this->prow->paperId, $this->commentId, 0, 1024);
+            }
             if ($docids) {
                 $qv = [];
-                foreach ($docids as $i => $did)
+                foreach ($docids as $i => $did) {
                     $qv[] = [$this->prow->paperId, $this->commentId, $i, $did];
+                }
                 $this->conf->qe("insert into DocumentLink (paperId,linkId,linkType,documentId) values ?v", $qv);
             }
-            if ($old_docids)
+            if ($old_docids) {
                 $this->prow->mark_inactive_linked_documents();
+            }
             $this->prow->invalidate_linked_documents();
         }
 

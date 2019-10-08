@@ -4413,10 +4413,11 @@ function render_cmt($c, cj, editing, msg) {
     }
 
     // header
+    t = cj.is_new ? '>' : ' id="cid' + cj.cid + '">';
     if (cj.editable) {
-        hc.push('<div class="cmtt ui js-click-child">', '</div>');
+        hc.push('<div class="cmtt ui js-click-child"' + t, '</div>');
     } else {
-        hc.push('<div class="cmtt">', '</div>');
+        hc.push('<div class="cmtt"' + t, '</div>');
     }
     if (cj.is_new && !cj.response) {
         hc.push('<div class="cmtnumid"><div class="cmtnum">New Comment</div></div>');
