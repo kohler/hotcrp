@@ -1870,19 +1870,22 @@ class ReviewValues extends MessageSet {
                 continue;
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
-            if ($fval === false)
+            if ($fval === false) {
                 $fval = $old_fval;
+            }
             if ($f->has_options) {
-                if ($fval === 0 && $rrow && !$f->allow_empty)
+                if ($fval === 0 && $rrow && !$f->allow_empty) {
                     $fval = $old_fval;
+                }
                 $fval_diffs = $fval !== $old_fval;
             } else {
                 // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
                 $fval = convert_to_utf8($fval);
                 $fval_diffs = $fval !== $old_fval && cleannl($fval) !== cleannl($old_fval);
             }
-            if ($fval_diffs)
+            if ($fval_diffs) {
                 $diffinfo->add_field($f, $fval);
+            }
             if ($fval_diffs || !$rrow) {
                 if ($f->main_storage) {
                     $qf[] = "{$f->main_storage}=?";
@@ -1904,8 +1907,9 @@ class ReviewValues extends MessageSet {
                     }
                 }
             }
-            if (!$f->has_options && $f->include_word_count())
+            if (!$f->has_options && $f->include_word_count()) {
                 $wc += count_words($fval);
+            }
         }
         if ($set_sfields !== null) {
             $qf[] = "sfields=?";
@@ -1918,8 +1922,9 @@ class ReviewValues extends MessageSet {
 
         // get the current time
         $now = time();
-        if ($rrow && $rrow->reviewModified >= $now)
+        if ($rrow && $rrow->reviewModified >= $now) {
             $now = $rrow->reviewModified + 1;
+        }
 
         if ($newsubmit) {
             array_push($qf, "reviewSubmitted=?", "reviewNeedsSubmit=?");
@@ -1973,14 +1978,16 @@ class ReviewValues extends MessageSet {
             && $this->conf->sversion >= 104
             && $this->conf->opt("formatInfo")) {
             $fmt = null;
-            foreach ($this->conf->opt("formatInfo") as $k => $f)
+            foreach ($this->conf->opt("formatInfo") as $k => $f) {
                 if (get($f, "name")
                     && strcasecmp($f["name"], $this->req["reviewFormat"]) == 0)
                     $fmt = (int) $k;
+            }
             if (!$fmt
                 && $this->req["reviewFormat"]
-                && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $f["reviewFormat"]))
+                && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $f["reviewFormat"])) {
                 $fmt = 0;
+            }
             $qf[] = "reviewFormat=?";
             $qv[] = $fmt;
         }
@@ -2039,11 +2046,13 @@ class ReviewValues extends MessageSet {
                 && ($diffinfo->view_score >= VIEWSCORE_AUTHORDEC
                     || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
             $table_suffix = "";
-            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
+            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS) {
                 $table_suffix = ", PaperTag read";
+            }
             $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
-            if (!$result)
+            if (!$result) {
                 return $result;
+            }
             Dbl::free($result);
             $locked = true;
             $max_ordinal = $this->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $prow->paperId);
@@ -2062,8 +2071,9 @@ class ReviewValues extends MessageSet {
             if (!empty($qf)) {
                 array_push($qv, $prow->paperId, $rrow->reviewId);
                 $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf) . " where paperId=? and reviewId=?", $qv);
-            } else
+            } else {
                 $result = true;
+            }
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
             if ($user->is_signed_in()) {
@@ -2078,17 +2088,20 @@ class ReviewValues extends MessageSet {
         }
 
         // unlock tables even if problem
-        if ($locked)
+        if ($locked) {
             $this->conf->qe_raw("unlock tables");
-        if (!$result)
+        }
+        if (!$result) {
             return false;
+        }
 
         // update caches
         Contact::update_rights();
 
         // look up review ID
-        if (!$reviewId)
+        if (!$reviewId) {
             return false;
+        }
         $this->req["reviewId"] = $reviewId;
         $prow->invalidate_reviews();
         $new_rrow = $prow->fresh_review_of_id($reviewId);
@@ -2115,8 +2128,9 @@ class ReviewValues extends MessageSet {
 
         // potentially email chair, reviewers, and authors
         $reviewer = $user;
-        if ($contactId != $user->contactId)
+        if ($contactId != $user->contactId) {
             $reviewer = $this->conf->cached_user_by_id($contactId);
+        }
 
         $this->_mailer_info = [
             "rrow" => $new_rrow,
@@ -2182,8 +2196,9 @@ class ReviewValues extends MessageSet {
                 $this->single_approval = +$new_rrow->timeApprovalRequested;
             }
         }
-        if ($diffinfo->notify_author)
+        if ($diffinfo->notify_author) {
             $this->author_notified[] = $what;
+        }
 
         return true;
     }

@@ -67,8 +67,9 @@ function errorMsgExit($msg) {
 
 
 // general error messages
-if ($Qreq->post && $Qreq->post_empty())
+if ($Qreq->post && $Qreq->post_empty()) {
     $Conf->post_missing_msg();
+}
 
 
 // grab paper row
@@ -94,14 +95,18 @@ if ($prow && $Qreq->m === "api" && isset($Qreq->fn) && $Conf->has_api($Qreq->fn)
 if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
     if (!($whyNot = $Me->perm_withdraw_paper($prow))) {
         $reason = (string) $Qreq->reason;
-        if ($reason === "" && $Me->can_administer($prow) && $Qreq->doemail > 0)
+        if ($reason === ""
+            && $Me->can_administer($prow)
+            && $Qreq->doemail > 0) {
             $reason = (string) $Qreq->emailNote;
+        }
 
         $aset = new AssignmentSet($Me, true);
         $aset->enable_papers($prow);
         $aset->parse("paper,action,withdraw reason\n{$prow->paperId},withdraw," . CsvGenerator::quote($reason));
-        if (!$aset->execute())
+        if (!$aset->execute()) {
             error_log("{$Conf->dbname}: withdraw #{$prow->paperId} failure: " . json_encode($aset->json_result()));
+        }
         loadRows();
 
         // email contact authors themselves
@@ -161,8 +166,9 @@ function update_paper(Qrequest $qreq, $action) {
     $prepared = $ps->prepare_save_paper_json($pj);
 
     if (!$prepared) {
-        if (!$prow && $qreq->has_files())
+        if (!$prow && $qreq->has_files()) {
             $ps->error_at(null, "<strong>Your uploaded files were ignored.</strong>");
+        }
         $emsg = $ps->landmarked_messages();
         Conf::msg_error(space_join($Conf->_("Please fix these errors and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
         return false;
@@ -200,8 +206,9 @@ function update_paper(Qrequest $qreq, $action) {
         $submitkey = "timeSubmitted";
         $storekey = "paperStorageId";
     }
-    if (get($pj, "submitted") || $Conf->can_pc_see_active_submissions())
+    if (get($pj, "submitted") || $Conf->can_pc_see_active_submissions()) {
         $Conf->update_papersub_setting(1);
+    }
 
     // confirmation message
     if ($action == "final") {
@@ -217,86 +224,102 @@ function update_paper(Qrequest $qreq, $action) {
         $actiontext = "Updated";
         $template = "@updatepaper";
     }
-    if ($prow)
+    if ($prow) {
         $difftext = join(", ", array_keys($ps->diffs));
-    else // only mark submission
+    } else { // only mark submission
         $difftext = join(", ", array_intersect(array_keys($ps->diffs), ["submission", "final"]));
+    }
 
     // additional information
     $notes = array();
     if ($action == "final") {
-        if ($prow->$submitkey === null || $prow->$submitkey <= 0)
+        if ($prow->$submitkey === null || $prow->$submitkey <= 0) {
             $notes[] = $Conf->_("The final version has not yet been submitted.");
+        }
         $deadline = $Conf->printableTimeSetting("final_soft", "span");
         if ($deadline != "N/A" && $Conf->deadlinesAfter("final_soft")) {
             $x = $Conf->_("The deadline for submitting final versions was %s.", $deadline);
             if ($x != "")
                 $notes[] = "<strong>$x</strong>";
-        } else if ($deadline != "N/A")
+        } else if ($deadline != "N/A") {
             $notes[] = $Conf->_("You have until %s to make further changes.", $deadline);
+        }
     } else {
-        if (get($pj, "submitted"))
+        if (get($pj, "submitted")) {
             $notes[] = $Conf->_("You will receive email when reviews are available.");
-        else if ($prow->size == 0 && !$Conf->opt("noPapers"))
+        } else if ($prow->size == 0 && !$Conf->opt("noPapers")) {
             $notes[] = $Conf->_("The submission has not yet been uploaded.");
-        else if ($Conf->setting("sub_freeze") > 0)
+        } else if ($Conf->setting("sub_freeze") > 0) {
             $notes[] = $Conf->_("The submission has not yet been completed.");
-        else
+        } else {
             $notes[] = $Conf->_("The submission is marked as not ready for review.");
+        }
         $deadline = $Conf->printableTimeSetting("sub_update", "span");
-        if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
+        if ($deadline != "N/A"
+            && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0)) {
             $notes[] = $Conf->_("Further updates are allowed until %s.", $deadline);
+        }
         $deadline = $Conf->printableTimeSetting("sub_sub", "span");
         if ($deadline != "N/A" && $prow->timeSubmitted <= 0) {
-            if ($Conf->setting("sub_freeze") > 0)
+            if ($Conf->setting("sub_freeze") > 0) {
                 $x = $Conf->_("If the submission is not completed by %s, it will not be considered.", $deadline);
-            else
+            } else {
                 $x = $Conf->_("If the submission is not ready for review by %s, it will not be considered.", $deadline);
-            if ($x != "")
+            }
+            if ($x != "") {
                 $notes[] = "<strong>$x</strong>";
+            }
         }
     }
     $notes = join(" ", array_filter($notes, function ($n) { return $n !== ""; }));
 
     $webnotes = "";
-    if ($ps->has_messages())
+    if ($ps->has_messages()) {
         $webnotes .= " <ul><li>" . join("</li><li>", $ps->landmarked_messages()) . "</li></ul>";
+    }
 
     $logtext = $actiontext . ($difftext ? " $difftext" : "");
     $Me->log_activity($logtext, $prow->paperId);
 
     // HTML confirmation
-    if ($ps->has_error())
+    if ($ps->has_error()) {
         $webmsg = $Conf->_("Some or all of your changes were not saved. Please correct these errors and save again.");
-    else if (empty($ps->diffs))
+    } else if (empty($ps->diffs)) {
         $webmsg = $Conf->_("No changes to submission #%d.", $prow->paperId);
-    else
+    } else {
         $webmsg = $Conf->_("$actiontext submission #%d.", $prow->paperId);
-    if ($notes || $webnotes)
+    }
+    if ($notes || $webnotes) {
         $webmsg .= " " . $notes . $webnotes;
-    if ($ps->has_error())
+    }
+    if ($ps->has_error()) {
         $Conf->msg($webmsg, "merror");
-    else
+    } else {
         $Conf->msg($webmsg, $prow->$submitkey > 0 ? "confirm" : "warning");
+    }
 
     // mail confirmation to all contact authors if changed
     if (!empty($ps->diffs)) {
         if (!$Me->can_administer($prow) || $qreq->doemail > 0) {
             $options = array("infoNames" => 1);
             if ($Me->can_administer($prow)) {
-                if (!$prow->has_author($Me))
+                if (!$prow->has_author($Me)) {
                     $options["adminupdate"] = true;
-                if (isset($qreq->emailNote))
+                }
+                if (isset($qreq->emailNote)) {
                     $options["reason"] = $qreq->emailNote;
+                }
             }
-            if ($notes !== "")
+            if ($notes !== "") {
                 $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
+            }
             HotCRPMailer::send_contacts($template, $prow, $options);
         }
 
         // other mail confirmations
-        if ($action == "final" && !Dbl::has_error() && !$ps->has_error())
+        if ($action == "final" && !Dbl::has_error() && !$ps->has_error()) {
             $prow->notify_final_submit("final_submit_watch_callback", $Me);
+        }
     }
 
     return !$ps->has_error();
@@ -306,17 +329,19 @@ function update_paper(Qrequest $qreq, $action) {
 if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
     // choose action
     $action = "update";
-    if ($Qreq->submitfinal && $prow)
+    if ($Qreq->submitfinal && $prow) {
         $action = "final";
-    else if ($Qreq->submitpaper
-             && (($prow && $prow->size > 0)
-                 || $Qreq->has_file("paperUpload")
-                 || $Conf->opt("noPapers")))
+    } else if ($Qreq->submitpaper
+               && (($prow && $prow->size > 0)
+                   || $Qreq->has_file("paperUpload")
+                   || $Conf->opt("noPapers"))) {
         $action = "submit";
+    }
 
     $whyNot = update_paper($Qreq, $action);
-    if ($whyNot === true)
+    if ($whyNot === true) {
         $Conf->self_redirect($Qreq, ["p" => $prow->paperId, "m" => "edit"]);
+    }
 
     // If we get here, we failed to update.
     // Use the request unless the request failed because updates
@@ -331,9 +356,9 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
         $pj = PaperSaver::apply_all($Qreq, $prow, $Me, "updatecontacts");
         $ps = new PaperStatus($Conf, $Me);
         if ($ps->prepare_save_paper_json($pj)) {
-            if (!$ps->diffs)
+            if (!$ps->diffs) {
                 Conf::msg_warning($Conf->_("No changes to submission #%d.", $prow->paperId));
-            else if ($ps->execute_save_paper_json($pj)) {
+            } else if ($ps->execute_save_paper_json($pj)) {
                 Conf::msg_confirm($Conf->_("Updated contacts for submission #%d.", $prow->paperId));
                 $Me->log_activity("Updated contacts", $prow->paperId);
                 $Conf->self_redirect($Qreq);
@@ -358,17 +383,20 @@ if ($Qreq->delete && $Qreq->post_ok()) {
         Conf::msg_error("Only the program chairs can permanently delete submissions. Authors can withdraw submissions, which is effectively the same.");
     } else {
         // mail first, before contact info goes away
-        if (!$Me->can_administer($prow) || $Qreq->doemail > 0)
+        if (!$Me->can_administer($prow) || $Qreq->doemail > 0) {
             HotCRPMailer::send_contacts("@deletepaper", $prow, array("reason" => (string) $Qreq->emailNote, "infoNames" => 1));
-        if ($prow->delete_from_database($Me))
+        }
+        if ($prow->delete_from_database($Me)) {
             $Conf->confirmMsg("Submission #{$prow->paperId} deleted.");
+        }
         $prow = null;
         errorMsgExit("");
     }
 }
 if ($Qreq->cancel && $Qreq->post_ok()) {
-    if ($prow && $prow->timeSubmitted && $Qreq->m === "edit")
+    if ($prow && $prow->timeSubmitted && $Qreq->m === "edit") {
         unset($Qreq->m);
+    }
     $Conf->self_redirect($Qreq);
 }
 
@@ -400,10 +428,11 @@ if ($paperTable->mode == "edit") {
 $paperTable->initialize($editable, $editable && $useRequest);
 if (($ps || $prow) && $paperTable->mode === "edit") {
     $old_overrides = $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
-    if ($ps)
+    if ($ps) {
         $ps->ignore_duplicates = true;
-    else
+    } else {
         $ps = new PaperStatus($Conf, $Me);
+    }
     $ps->paper_json($prow, ["msgs" => true, "editable" => true]);
     $Me->set_overrides($old_overrides);
     $paperTable->set_edit_status($ps);
@@ -429,10 +458,12 @@ if ($paperTable->mode === "edit") {
     if ($Qreq->editcomment) {
         $cid = $Qreq->c;
         $preferred_resp_round = false;
-        if (($x = $Qreq->response))
+        if (($x = $Qreq->response)) {
             $preferred_resp_round = $Conf->resp_round_number($x);
-        if ($preferred_resp_round === false)
+        }
+        if ($preferred_resp_round === false) {
             $preferred_resp_round = $Me->preferred_resp_round_number($prow);
+        }
         $j = null;
         foreach ($prow->viewable_comments($Me) as $crow) {
             if ($crow->commentId == $cid

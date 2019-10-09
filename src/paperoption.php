@@ -17,25 +17,29 @@ class PaperOptionValue {
         $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
-        if (empty($values) && $prow && $o->id <= -1000)
+        if (empty($values) && $prow && $o->id <= -1000) {
             $this->assign_intrinsic();
-        else
+        } else {
             $this->assign_value_data([$values, $data_array]);
+        }
     }
     function assign_value_data($value_data) {
         $old_values = $this->_values;
         $this->_values = $value_data[0];
         $this->_data_array = $value_data[1];
-        if (count($this->_values) > 1 && $this->_data_array !== null)
+        if (count($this->_values) > 1 && $this->_data_array !== null) {
             $this->option->expand_values($this->_values, $this->_data_array);
+        }
         if (count($this->_values) == 1 || !$this->option->takes_multiple()) {
             $this->value = get($this->_values, 0);
             $this->_data = empty($this->_data_array) ? null : $this->_data_array[0];
-        } else
+        } else {
             $this->value = $this->_data = null;
+        }
         $this->anno = null;
-        if ($this->_documents !== null && $this->_values != $old_values)
+        if ($this->_documents !== null && $this->_values != $old_values) {
             $this->_documents = null;
+        }
     }
     private function assign_intrinsic() {
         $s = null;
@@ -58,10 +62,11 @@ class PaperOptionValue {
         if ($this->_documents === null) {
             $this->option->refresh_documents($this);
             $this->_documents = [];
-            foreach ($this->sorted_values() as $docid)
+            foreach ($this->sorted_values() as $docid) {
                 if ($docid > 1
                     && ($d = $this->prow->document($this->id, $docid)))
                     $this->_documents[] = $d;
+            }
             DocumentInfo::assign_unique_filenames($this->_documents);
         }
         return $this->_documents;
@@ -74,9 +79,10 @@ class PaperOptionValue {
         return $doc ? $doc->content() : false;
     }
     function document_by_id($docid) {
-        foreach ($this->documents() as $doc)
+        foreach ($this->documents() as $doc) {
             if ($doc->paperStorageId == $docid)
                 return $doc;
+        }
         return null;
     }
     function attachment($name) {
@@ -89,13 +95,15 @@ class PaperOptionValue {
         return $this->_values;
     }
     function sorted_values() {
-        if ($this->_data_array === null && count($this->_values) > 1)
+        if ($this->_data_array === null && count($this->_values) > 1) {
             $this->assign_value_data($this->prow->option_value_data($this->id));
+        }
         return $this->_values;
     }
     function data() {
-        if ($this->_data_array === null)
+        if ($this->_data_array === null) {
             $this->assign_value_data($this->prow->option_value_data($this->id));
+        }
         return $this->_data;
     }
     function invalidate() {
@@ -920,8 +928,9 @@ class PaperOption implements Abbreviator {
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">';
         if (($fi = $ov->prow->edit_format())
-            && !get($extra, "no_format_description"))
+            && !get($extra, "no_format_description")) {
             echo $fi->description_preview_html();
+        }
         echo Ht::textarea($this->formid, $reqv, [
                 "id" => $this->readable_formid(),
                 "class" => $pt->control_class($this->formid, "papertext need-autogrow"),
@@ -1233,10 +1242,11 @@ class DocumentPaperOption extends PaperOption {
         if ($qreq->has_file($this->formid)) {
             $pid = $prow ? $prow->paperId : -1;
             return DocumentInfo::make_file_upload($pid, $this->id, $qreq->file($this->formid), $this->conf);
-        } else if ($qreq["remove_{$this->formid}"])
+        } else if ($qreq["remove_{$this->formid}"]) {
             return null;
-        else
+        } else {
             return $opt_pj;
+        }
     }
 
     function validate_document(DocumentInfo $doc) {
@@ -1347,9 +1357,9 @@ class NumericPaperOption extends PaperOption {
 
     function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
         $v = trim((string) $qreq[$this->formid]);
-        if ($v === "")
+        if ($v === "") {
             return null;
-        else if (is_numeric($v)) {
+        } else if (is_numeric($v)) {
             $iv = intval($v);
             if ((float) $iv === floatval($v))
                 return $iv;
@@ -1473,14 +1483,16 @@ class AttachmentsPaperOption extends PaperOption {
 
     function expand_values(&$values, &$data_array) {
         $j = null;
-        foreach ($data_array as $d)
+        foreach ($data_array as $d) {
             if (str_starts_with($d, "{"))
                 $j = json_decode($d);
+        }
         if ($j && isset($j->all_dids)) {
             $values = $j->all_dids;
             $data_array = array_fill(0, count($values), null);
-        } else
+        } else {
             array_multisort($data_array, SORT_NUMERIC, $values);
+        }
     }
 
     function parse_search($oms) {
@@ -1515,12 +1527,13 @@ class AttachmentsPaperOption extends PaperOption {
             $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
             echo '<div class="has-document" data-document-name="', $oname, '">',
                 '<div class="document-file">',
-                    $doc->link_html(htmlspecialchars($doc->unique_filename)),
+                $doc->link_html(htmlspecialchars($doc->unique_filename)),
                 '</div><div class="document-stamps">';
-            if (($stamps = PaperTable::pdf_stamps_html($doc)))
+            if (($stamps = PaperTable::pdf_stamps_html($doc))) {
                 echo $stamps;
+            }
             echo '</div><div class="document-actions">',
-                    Ht::link("Delete", "", ["class" => "ui js-remove-document document-action"]),
+                Ht::link("Delete", "", ["class" => "ui js-remove-document document-action"]),
                 '</div></div>';
         }
         echo '</div>', Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}_attachments"]),
@@ -1539,15 +1552,17 @@ class AttachmentsPaperOption extends PaperOption {
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
         $pid = $prow ? $prow->paperId : -1;
         $attachments = $opt_pj ? : [];
-        for ($i = count($attachments) - 1; $i >= 0; --$i)
+        for ($i = count($attachments) - 1; $i >= 0; --$i) {
             if (isset($attachments[$i]->docid)) {
                 $pfx = "remove_{$this->formid}_{$attachments[$i]->docid}";
                 if ($qreq["{$pfx}_{$i}"] || $qreq[$pfx] /* XXX backwards compat */)
                     array_splice($attachments, $i, 1);
             }
-        for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i)
+        }
+        for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
             if (($f = $qreq->file("{$this->formid}_new_$i")))
                 $attachments[] = DocumentInfo::make_file_upload($pid, $this->id, $f, $this->conf);
+        }
         return empty($attachments) ? null : $attachments;
     }
 
@@ -1567,8 +1582,9 @@ class AttachmentsPaperOption extends PaperOption {
             $uids = array_unique($result, SORT_NUMERIC);
             $uids[0] = [$uids[0], json_encode(["all_dids" => $result])];
             return $uids;
-        } else
+        } else {
             return $result;
+        }
     }
 
     function list_display($isrow) {

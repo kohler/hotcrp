@@ -1183,12 +1183,13 @@ class PaperInfo {
 
     function force_option($o) {
         $id = is_object($o) ? $o->id : $o;
-        if (($ov = get($this->options(), $id)))
+        if (($ov = get($this->options(), $id))) {
             return $ov;
-        else if (($opt = $this->conf->paper_opts->get($id)))
+        } else if (($opt = $this->conf->paper_opts->get($id))) {
             return new PaperOptionValue($this, $opt);
-        else
+        } else {
             return null;
+        }
     }
 
     function invalidate_options($reload = false) {
@@ -1267,13 +1268,16 @@ class PaperInfo {
     }
     function mark_inactive_documents() {
         $dids = [];
-        if ($this->paperStorageId > 1)
+        if ($this->paperStorageId > 1) {
             $dids[] = $this->paperStorageId;
-        if ($this->finalPaperStorageId > 1)
+        }
+        if ($this->finalPaperStorageId > 1) {
             $dids[] = $this->finalPaperStorageId;
-        foreach ($this->options() as $oa)
+        }
+        foreach ($this->options() as $oa) {
             if ($oa->option->has_document())
                 $dids = array_merge($dids, $oa->unsorted_values());
+        }
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
     }
     function mark_inactive_linked_documents() {
@@ -2058,8 +2062,9 @@ class PaperInfo {
 
     function delete_from_database(Contact $user = null) {
         // XXX email self?
-        if ($this->paperId <= 0)
+        if ($this->paperId <= 0) {
             return false;
+        }
         $rrows = $this->reviews_by_id();
 
         $qs = [];
@@ -2071,16 +2076,21 @@ class PaperInfo {
 
         if (!Dbl::$nerrors) {
             $this->conf->update_papersub_setting(-1);
-            if ($this->outcome > 0)
+            if ($this->outcome > 0) {
                 $this->conf->update_paperacc_setting(-1);
-            if ($this->leadContactId > 0 || $this->shepherdContactId > 0)
+            }
+            if ($this->leadContactId > 0 || $this->shepherdContactId > 0) {
                 $this->conf->update_paperlead_setting(-1);
-            if ($this->managerContactId > 0)
+            }
+            if ($this->managerContactId > 0) {
                 $this->conf->update_papermanager_setting(-1);
-            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewToken > 0; }))
+            }
+            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewToken > 0; })) {
                 $this->conf->update_rev_tokens_setting(-1);
-            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewType == REVIEW_META; }))
+            }
+            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewType == REVIEW_META; })) {
                 $this->conf->update_metareviews_setting(-1);
+            }
             $this->conf->log_for($user, $user, "Deleted", $this->paperId);
             return true;
         } else {

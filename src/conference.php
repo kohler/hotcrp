@@ -3668,9 +3668,9 @@ class Conf {
     const action_log_query = "insert into ActionLog (ipaddr, contactId, destContactId, trueContactId, paperId, timestamp, action) values ?v";
 
     function save_logs($on) {
-        if ($on && $this->_save_logs === false)
+        if ($on && $this->_save_logs === false) {
             $this->_save_logs = array();
-        else if (!$on && $this->_save_logs !== false) {
+        } else if (!$on && $this->_save_logs !== false) {
             $qv = [];
             $last_pids = null;
             foreach ($this->_save_logs as $cid_text => $pids) {
@@ -3692,8 +3692,9 @@ class Conf {
                     $last_pids = $pids;
                 }
             }
-            if (!empty($qv))
+            if (!empty($qv)) {
                 $this->qe(self::action_log_query, $qv);
+            }
             $this->_save_logs = false;
         }
     }

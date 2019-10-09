@@ -240,8 +240,9 @@ class PaperTable {
             "action_bar" => actionBar($action_mode, $qreq),
             "title_div" => $t, "body_class" => "paper", "paperId" => $qreq->paperId
         ]);
-        if ($format)
+        if ($format) {
             echo Ht::unstash_script("render_text.on_page()");
+        }
     }
 
     private function abstract_foldable($abstract) {
@@ -2174,8 +2175,9 @@ class PaperTable {
                 return Conf::xt_position_compare($a, $b);
         });
 
-        if (($m = $this->_edit_message()))
+        if (($m = $this->_edit_message())) {
             echo $m;
+        }
 
         if (!$this->quit) {
             $this->echoActions(true);
@@ -2185,8 +2187,9 @@ class PaperTable {
                  ++$this->edit_fields_position) {
                 $o = $this->edit_fields[$this->edit_fields_position];
                 $reqv = null;
-                if ($this->useRequest && $this->qreq["has_{$o->formid}"])
+                if ($this->useRequest && $this->qreq["has_{$o->formid}"]) {
                     $reqv = $o->parse_request_display($this->qreq, $this->user, $this->prow);
+                }
                 $o->echo_editable_html($this->prow->force_option($o->id), $reqv, $this);
             }
 
@@ -2750,12 +2753,14 @@ class PaperTable {
         self::clean_request($qreq);
         $pid = self::lookup_pid($qreq, $user);
         if (self::simple_qreq($qreq)
-            && ($pid === null || (string) $pid !== $qreq->paperId))
+            && ($pid === null || (string) $pid !== $qreq->paperId)) {
             self::redirect_request($pid, $qreq, $user);
+        }
         $sel = ["paperId" => $pid, "topics" => true, "options" => true];
         if ($user->privChair
-            || ($user->isPC && $user->conf->timePCReviewPreferences()))
+            || ($user->isPC && $user->conf->timePCReviewPreferences())) {
             $sel["reviewerPreference"] = true;
+        }
         $prow = $user->conf->fetch_paper($sel, $user);
         $whynot = $user->perm_view_paper($prow, false, $pid);
         if (!$whynot
@@ -2763,11 +2768,14 @@ class PaperTable {
             && isset($qreq->reviewId)
             && !$user->privChair
             && (!($rrow = $prow->review_of_id($qreq->reviewId))
-                || !$user->can_view_review($prow, $rrow)))
+                || !$user->can_view_review($prow, $rrow))) {
             $whynot = ["conf" => $user->conf, "invalidId" => "paper"];
-        if ($whynot)
+        }
+        if ($whynot) {
             $qreq->set_annex("paper_whynot", $whynot);
-        return ($user->conf->paper = $whynot ? null : $prow);
+        }
+        $user->conf->paper = $whynot ? null : $prow;
+        return $user->conf->paper;
     }
 
     function resolveReview($want_review) {

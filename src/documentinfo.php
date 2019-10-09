@@ -88,31 +88,34 @@ class DocumentInfo implements JsonSerializable {
     }
 
     static function make_file_upload($paperId, $documentType, $upload, $conf) {
-        if (!$upload || !is_array($upload))
+        if (!$upload || !is_array($upload)) {
             return null;
+        }
         $args = ["paperId" => $paperId,
                  "documentType" => $documentType,
                  "timestamp" => time(),
                  "mimetype" => get($upload, "type")];
         if (isset($upload["name"])
             && strlen($upload["name"]) <= 255
-            && is_valid_utf8($upload["name"]))
+            && is_valid_utf8($upload["name"])) {
             $args["filename"] = $upload["name"];
+        }
         $fnhtml = isset($args["filename"]) ? " “" . htmlspecialchars($args["filename"]) . "”" : "";
 
         $content = false;
-        if (isset($upload["content"]))
+        if (isset($upload["content"])) {
             $content = $args["content"] = $upload["content"];
-        else if (isset($upload["content_file"]))
+        } else if (isset($upload["content_file"])) {
             $args["content_file"] = $upload["content_file"];
-        else if (isset($upload["tmp_name"]) && is_readable($upload["tmp_name"])) {
+        } else if (isset($upload["tmp_name"]) && is_readable($upload["tmp_name"])) {
             $args["size"] = filesize($upload["tmp_name"]);
             if ($args["size"] > 0)
                 $args["content_file"] = $upload["tmp_name"];
             else
                 $args["error_html"] = "Uploaded file$fnhtml was empty, not saving.";
-        } else
+        } else {
             $args["error_html"] = "Uploaded file$fnhtml could not be read.";
+        }
         self::fix_mimetype($args);
         return new DocumentInfo($args, $conf);
     }
