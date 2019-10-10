@@ -1317,14 +1317,14 @@ th.settings-simplehead {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
-	padding: 0.25ex 5px 0.6ex 5px;
+	padding: 2px 5px 4px 5px;
 	margin-left: -5px;
 	cursor: pointer;
 	clear: left;
 }
 .leftmenu-item.active {
-	padding-top: 0.5ex;
-	padding-bottom: 0.5ex;
+	padding-top: 3px;
+	padding-bottom: 3px;
 	margin-left: -6px;
 	background: white;
 	border-radius: 5px;
