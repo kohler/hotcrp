@@ -634,23 +634,28 @@ foreach ($lrg->page_rows($page) as $row) {
         $act = $m[4];
     } else if (substr($act, 0, 7) === "Comment"
                && preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
-        $at = "<a href=\"" . hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Comment " . $m[1] . "</a>";
+        $at = "<a href=\"" . $Conf->hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Comment " . $m[1] . "</a>";
         $act = $m[2];
     } else if (substr($act, 0, 8) === "Response"
                && preg_match('/\AResponse (\d+)(.*)\z/s', $act, $m)) {
-        $at = "<a href=\"" . hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Response " . $m[1] . "</a>";
+        $at = "<a href=\"" . $Conf->hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Response " . $m[1] . "</a>";
         $act = $m[2];
     } else if (strpos($act, " mail ") !== false
                && preg_match('/\A(Sending|Sent|Account was sent) mail #(\d+)(.*)\z/s', $act, $m)) {
-        $at = $m[1] . " <a href=\"" . hoturl("mail", "fromlog=$m[2]") . "\">mail #$m[2]</a>";
+        $at = $m[1] . " <a href=\"" . $Conf->hoturl("mail", "fromlog=$m[2]") . "\">mail #$m[2]</a>";
         $act = $m[3];
-    } else if (substr($act, 0, 5) === "Tag: ") {
-        $at = "Tag: ";
-        $act = substr($act, 5);
-        while (preg_match('/\A([-+])#([^\s#]*)(#[-+\d.]+ ?| ?)(.*)\z/s', $act, $m)) {
-            $at .= $m[1] . "<a href=\"" . hoturl("search", "q=%23" . urlencode($m[2])) . "\">#"
-                . htmlspecialchars($m[2]) . "</a>" . htmlspecialchars($m[3]);
-            $act = $m[4];
+    } else if (substr($act, 0, 3) === "Tag"
+               && preg_match('{\ATag:? ((?:[-+]#[^\s#]*(?:#[-+\d.]+|)(?: |\z))+)(.*)\z}s', $act, $m)) {
+        $at = "Tag";
+        $act = $m[2];
+        foreach (explode(" ", $m[1]) as $word) {
+            if (($hash = strpos($word, "#", 2)) === false) {
+                $hash = strlen($word);
+            }
+            $at .= " " . $word[0] . '<a href="'
+                . $Conf->hoturl("search", ["q" => substr($word, 1, $hash - 1)])
+                . '">' . htmlspecialchars(substr($word, 1, $hash - 1))
+                . '</a>' . substr($word, $hash);
         }
     } else if ($row->paperId > 0
                && (substr($act, 0, 8) === "Updated "

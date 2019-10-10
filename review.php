@@ -79,7 +79,7 @@ if (isset($Qreq->unsubmitreview)
     && $Qreq->post_ok()) {
     $result = $Me->unsubmit_review_row($paperTable->editrrow);
     if ($result) {
-        $Me->log_activity_for($paperTable->editrrow->contactId, "Unsubmitted review {$paperTable->editrrow->reviewId}", $prow);
+        $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} unsubmitted", $prow);
         $Conf->confirmMsg("Unsubmitted review.");
     }
     $Conf->self_redirect($Qreq);             // normally does not return
@@ -146,7 +146,7 @@ if (isset($Qreq->deletereview)
     else {
         $result = $Conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
         if ($result) {
-            $Me->log_activity_for($paperTable->editrrow->contactId, "Deleted review {$paperTable->editrrow->reviewId}", $prow);
+            $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
             $Conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
             if ($paperTable->editrrow->reviewToken != 0)
@@ -265,7 +265,7 @@ if (isset($Qreq->accept)
                 $Now, $prow->paperId, $rrow->reviewId);
             if ($Me->is_signed_in())
                 $rrow->delete_acceptor();
-            $Me->log_activity_for($rrow->contactId, "Accepted review {$rrow->reviewId}", $prow);
+            $Me->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} accepted", $prow);
         }
         $Conf->confirmMsg("Thank you for confirming your intention to finish this review. You can download the paper and review form below.");
         $Conf->self_redirect($Qreq);

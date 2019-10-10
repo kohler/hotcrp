@@ -344,7 +344,7 @@ class Tag_Assigner extends Assigner {
                 $aset->conf->save_setting("has_colontag", 1);
                 $aset->conf->invalidate_caches("taginfo");
             });
-        $aset->user->log_activity("Tag: " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);
+        $aset->user->log_activity("Tag " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);
         $aset->cleanup_notify_tracker($this->pid);
     }
 }

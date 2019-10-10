@@ -2109,10 +2109,22 @@ class ReviewValues extends MessageSet {
         // log updates -- but not if review token is used
         if (!$usedReviewToken
             && $diffinfo->nonempty()) {
-            $text = ($newsubmit ? "Submitted" : ($submit ? "Updated" : "Updated draft"))
-                . " review $reviewId";
-            if ($diffinfo->fields())
-                $text .= " " . join(", ", array_map(function ($f) { return $f->search_keyword(); }, $diffinfo->fields()));
+            $actions = [];
+            if (!$rrow) {
+                $actions[] = "started";
+            }
+            if ($newsubmit) {
+                $actions[] = "submitted";
+            }
+            if ($rrow && !$newsubmit && $diffinfo->fields()) {
+                $actions[] = "edited";
+            }
+            $text = "Review $reviewId " . join(", ", $actions) . ($submit ? "" : " draft");
+            if ($diffinfo->fields()) {
+                $text .= " " . join(", ", array_map(function ($f) {
+                    return $f->search_keyword();
+                }, $diffinfo->fields()));
+            }
             $user->log_activity_for($rrow ? $rrow->contactId : $user->contactId, $text, $prow);
         }
 

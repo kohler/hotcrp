@@ -3679,12 +3679,12 @@ class Conf {
                 $what = substr($cid_text, $pos + 1);
                 $pids = array_keys($pids);
 
-                // Combine `Tag:` messages
-                if (substr($what, 0, 5) === "Tag: "
+                // Combine `Tag` messages
+                if (substr($what, 0, 4) === "Tag "
                     && ($n = count($qv)) > 0
-                    && substr($qv[$n-1][4], 0, 5) === "Tag: "
+                    && substr($qv[$n-1][4], 0, 4) === "Tag "
                     && $last_pids === $pids) {
-                    $qv[$n-1][4] = $what . substr($qv[$n-1][4], 4);
+                    $qv[$n-1][4] = $what . substr($qv[$n-1][4], 3);
                 } else {
                     foreach (self::format_log_values($what, $user, $dest_user, $true_user, $pids) as $x) {
                         $qv[] = $x;
