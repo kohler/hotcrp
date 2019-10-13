@@ -2945,10 +2945,10 @@ a.badge:active {
 	padding-left: 24px;
 	padding-right: 24px;
 }
-.pcontainer-nostrip > .pcard {
+/*.pcontainer-nostrip > .pcard {
 	margin-left: 8em;
 	margin-right: 8em;
-}
+}*/
 .papcard {
 	position: relative;
 }
