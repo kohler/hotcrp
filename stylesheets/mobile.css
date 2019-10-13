@@ -19,7 +19,7 @@
 html {
 	font-size: 14px;
 }
-#header-site, #header-page, h1.paptitle, div.submission_modes {
+#header-site, #header-page, h1.paptitle, div.submission-modes {
 	padding-left: 12px;
 }
 #header-right, h1.paptitle, div#footer {
@@ -53,8 +53,9 @@ div#body {
 .demargin .remargin-right, .demargin.remargin {
 	padding-right: 12px;
 }
-#msg-initial {
-	padding: 0 12px;
+#msgs-initial {
+	margin-left: 12px;
+	margin-right: 12px;
 }
 div.paptitle {
 	margin-left: 0;

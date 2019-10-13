@@ -405,7 +405,7 @@ td.g {
 .c, .clear {
 	clear: both;
 }
-.clearfix:after, .pst:after, .pavt:after, .papet:after, .submission_modes:after,
+.clearfix:after, .pst:after, .pavt:after, .papet:after,
 .revvt:after, .revet:after, .rvg:after, .cmteditinfo:after, .aa:after, .aab:after,
 .entryi:after, .popup-actions:after, .modal-content:after, .f-horizontal:after {
 	clear: both;
@@ -439,9 +439,9 @@ td.g {
 	padding-right: 24px;
 }
 
-#msg-initial {
-	padding: 0 24px;
-	margin: -24px 0 24px;
+#msgs-initial {
+	margin-left: 24px;
+	margin-right: 24px;
 }
 
 
@@ -2557,7 +2557,7 @@ a.badge:active {
 }
 
 /* paper banner */
-.submission_modes {
+.submission-modes {
 	float: left;
 	padding: 12px 0 0 24px;
 	z-index: 5;

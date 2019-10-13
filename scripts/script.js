@@ -6530,7 +6530,7 @@ function check_version(url, versionstr) {
     var x;
     function updateverifycb(json) {
         var e;
-        if (json && json.messages && (e = $$("msg-initial")))
+        if (json && json.messages && (e = $$("msgs-initial")))
             e.innerHTML = json.messages + e.innerHTML;
     }
     function updatecb(json) {

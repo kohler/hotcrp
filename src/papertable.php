@@ -2100,7 +2100,7 @@ class PaperTable {
 
         // paper tabs
         if ($canEdit || $canReview || $canAssign || $canHome) {
-            $t .= '<div class="submission_modes">';
+            $t .= '<div class="submission-modes">';
 
             // home link
             $highlight = ($this->mode !== "assign" && $this->mode !== "edit"
