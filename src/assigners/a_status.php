@@ -147,11 +147,16 @@ class Status_Assigner extends Assigner {
     function execute(AssignmentSet $aset) {
         global $Now;
         $submitted = $this->item["_submitted"];
+        $old_submitted = $this->item->get(true, "_submitted");
         $withdrawn = $this->item["_withdrawn"];
+        $old_withdrawn = $this->item->get(true, "_withdrawn");
         $aset->stage_qe("update Paper set timeSubmitted=?, timeWithdrawn=?, withdrawReason=? where paperId=?", $submitted, $withdrawn, $this->item["_withdraw_reason"], $this->pid);
-        if (($withdrawn > 0) !== ($this->item->get(true, "_withdrawn") > 0))
-            $aset->user->log_activity($withdrawn > 0 ? "Withdrew" : "Revived", $this->pid);
-        if (($submitted > 0) !== ($this->item->get(true, "_submitted") > 0)) {
+        if (($withdrawn > 0) !== ($old_withdrawn > 0)) {
+            $aset->user->log_activity($withdrawn > 0 ? "Paper withdrawn" : "Paper revived", $this->pid);
+        } else if (($submitted > 0) !== ($old_submitted > 0)) {
+            $aset->user->log_activity($submitted > 0 ? "Paper submitted" : "Paper unsubmitted", $this->pid);
+        }
+        if (($submitted > 0) !== ($old_submitted > 0)) {
             $aset->cleanup_callback("papersub", function ($aset, $vals) {
                 $aset->conf->update_papersub_setting(min($vals));
             }, $submitted > 0 ? 1 : 0);

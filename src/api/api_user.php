@@ -56,7 +56,7 @@ class User_API {
             && $qreq->clickthrough_id
             && ($hash = Filer::sha1_hash_as_text($qreq->clickthrough_id))) {
             $user->merge_and_save_data(["clickthrough" => [$hash => $Now]]);
-            $user->log_activity("Agree to terms " . substr($hash, 0, 10) . "...");
+            $user->log_activity("Terms agreed " . substr($hash, 0, 10) . "...");
             return ["ok" => true];
         } else if ($qreq->clickthrough_accept) {
             return new JsonResult(400, "Parameter error.");

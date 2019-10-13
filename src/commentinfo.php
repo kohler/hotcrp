@@ -656,7 +656,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $ch[] = "attachments";
             }
             if (!empty($ch)) {
-                $log .= " " . join(", ", $ch);
+                $log .= ": " . join(", ", $ch);
             }
         }
         $acting_contact->log_activity_for($this->contactId ? : $contact->contactId, $log, $this->prow->$LinkColumn);

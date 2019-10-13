@@ -2091,7 +2091,7 @@ class PaperInfo {
             if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewType == REVIEW_META; })) {
                 $this->conf->update_metareviews_setting(-1);
             }
-            $this->conf->log_for($user, $user, "Deleted", $this->paperId);
+            $this->conf->log_for($user, $user, "Paper deleted", $this->paperId);
             return true;
         } else {
             return false;

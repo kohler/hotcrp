@@ -360,7 +360,7 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
                 Conf::msg_warning($Conf->_("No changes to submission #%d.", $prow->paperId));
             } else if ($ps->execute_save_paper_json($pj)) {
                 Conf::msg_confirm($Conf->_("Updated contacts for submission #%d.", $prow->paperId));
-                $Me->log_activity("Updated contacts", $prow->paperId);
+                $Me->log_activity("Paper edited: contacts", $prow->paperId);
                 $Conf->self_redirect($Qreq);
             }
         } else {

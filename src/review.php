@@ -2121,7 +2121,7 @@ class ReviewValues extends MessageSet {
             }
             $text = "Review $reviewId " . join(", ", $actions) . ($submit ? "" : " draft");
             if ($diffinfo->fields()) {
-                $text .= " " . join(", ", array_map(function ($f) {
+                $text .= ": " . join(", ", array_map(function ($f) {
                     return $f->search_keyword();
                 }, $diffinfo->fields()));
             }

@@ -109,7 +109,7 @@ class RequestReview_API {
             } else {
                 $msg = "Proposed an external review from " . Text::user_html($xreviewer) . ". An administrator must approve this proposal for it to take effect.";
             }
-            $user->log_activity("Proposed review for $email", $prow);
+            $user->log_activity("Review proposal added for $email", $prow);
             $prow->conf->update_autosearch_tags($prow);
             HotCRPMailer::send_administrators("@proposereview", $prow,
                                               ["requester_contact" => $requester,
@@ -201,7 +201,7 @@ class RequestReview_API {
             HotCRPMailer::send_to($requester, "@denyreviewrequest", $prow,
                 ["reviewer_contact" => $reviewer_contact]);
 
-            $user->log_activity_for($requester, "Denied proposed review for $email", $prow);
+            $user->log_activity_for($requester, "Review proposal denied for $email", $prow);
             $prow->conf->update_autosearch_tags($prow);
             return new JsonResult(["ok" => true, "action" => "deny"]);
         } else {
@@ -308,7 +308,7 @@ class RequestReview_API {
                 HotCRPMailer::send_to($requser, "@refusereviewrequest", $reqprow,
                     ["reviewer_contact" => $rrow, "reason" => $reason]);
             }
-            $user->log_activity_for($rrow->contactId, "Refused review request", $prow);
+            $user->log_activity_for($rrow->contactId, "Review $rrow->reviewId declined", $prow);
         }
 
         if ($qreq->redirect) {
@@ -363,12 +363,12 @@ class RequestReview_API {
             if ($rrow->reviewToken) {
                 $user->conf->update_rev_tokens_setting(0);
             }
-            $user->log_activity_for($rrow->contactId, "Retracted review request", $prow);
+            $user->log_activity_for($rrow->contactId, "Review $rrow->reviewId retracted", $prow);
         }
         foreach ($requests as $req) {
             $user->conf->qe("delete from ReviewRequest where paperId=? and email=?",
                 $prow->paperId, $req->email);
-            $user->log_activity("Retracted review request for $req->email", $prow);
+            $user->log_activity("Review proposal retracted for $req->email", $prow);
         }
 
         $prow->conf->update_autosearch_tags($prow);
@@ -440,9 +440,9 @@ class RequestReview_API {
                 $prow->paperId, $email);
 
         if ($refusals[0]->contactId) {
-            $user->log_activity_for($refusals[0]->contactId, "Removed review refusal", $prow);
+            $user->log_activity_for($refusals[0]->contactId, "Review undeclined", $prow);
         } else {
-            $user->log_activity("Removed review refusal for <{$refusals[0]->email}>", $prow);
+            $user->log_activity("Review undeclined for <{$refusals[0]->email}>", $prow);
         }
 
         return new JsonResult(["ok" => true, "action" => "undecline"]);

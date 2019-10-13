@@ -1301,7 +1301,7 @@ class SettingValues extends MessageSet {
 
             $this->conf->qe_raw("unlock tables");
             if (!empty($this->changes)) {
-                $this->user->log_activity("Settings edited " . join(", ", $this->changes));
+                $this->user->log_activity("Settings edited: " . join(", ", $this->changes));
             }
 
             // clean up
