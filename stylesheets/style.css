@@ -3081,9 +3081,9 @@ a:hover .t-editor,
 	margin-top: 1rem;
 }
 .papegroup {
-	margin-left: -16px;
-	margin-right: -16px;
-	padding: 1rem 16px;
+	margin-left: -24px;
+	margin-right: -24px;
+	padding: 1rem 24px;
 	background: #eae8f2;
 	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%),
 		linear-gradient(to top, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%);
