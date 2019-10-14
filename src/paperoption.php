@@ -17,16 +17,36 @@ class PaperValue {
         $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
-        if (empty($values) && $prow && $o->id <= -1000) {
+        if (empty($values) && $prow && $o->id <= 0) {
             $this->assign_intrinsic();
         } else {
-            $this->assign_value_data([$values, $data_array]);
+            $this->set_value_data($values, $data_array);
         }
     }
+    static function make($prow, PaperOption $o, $value = null, $data = null) {
+        if ($value === null) {
+            return new PaperValue($prow, $o, [], []);
+        } else {
+            return new PaperValue($prow, $o, [$value], [$data]);
+        }
+    }
+    static function make_error($prow, PaperOption $o, $error_html) {
+        $ov = new PaperValue($prow, $o, [], []);
+        $ov->anno["error_html"] = $error_html;
+        return $ov;
+    }
     function assign_value_data($value_data) {
+        error_log("bad assign_value_data");
+        $this->set_value_data($value_data[0], $value_data[1]);
+    }
+    function load_value_data() {
+        $ovd = $this->prow->option_value_data($this->id);
+        $this->set_value_data($ovd[0], $ovd[1]);
+    }
+    function set_value_data($values, $data_array) {
         $old_values = $this->_values;
-        $this->_values = $value_data[0];
-        $this->_data_array = $value_data[1];
+        $this->_values = $values;
+        $this->_data_array = $data_array;
         if (count($this->_values) > 1 && $this->_data_array !== null) {
             $this->option->expand_values($this->_values, $this->_data_array);
         }
@@ -49,11 +69,14 @@ class PaperValue {
             $s = $this->prow->abstract;
         } else if ($this->id === PaperOption::COLLABORATORSID) {
             $s = $this->prow->collaborators;
+        } else {
+            IntrinsicValue::assign_intrinsic($this);
+            return;
         }
         if ($s !== null && $s !== "") {
-            $this->assign_value_data([[1], [$s]]);
+            $this->set_value_data([1], [$s]);
         } else {
-            $this->assign_value_data([[], []]);
+            $this->set_value_data([], []);
         }
     }
     function documents() {
@@ -96,19 +119,19 @@ class PaperValue {
     }
     function sorted_values() {
         if ($this->_data_array === null && count($this->_values) > 1) {
-            $this->assign_value_data($this->prow->option_value_data($this->id));
+            $this->load_value_data();
         }
         return $this->_values;
     }
     function data() {
         if ($this->_data_array === null) {
-            $this->assign_value_data($this->prow->option_value_data($this->id));
+            $this->load_value_data();
         }
         return $this->_data;
     }
     function invalidate() {
         $this->prow->invalidate_options(true);
-        $this->assign_value_data($this->prow->option_value_data($this->id));
+        $this->load_value_data();
     }
 }
 
@@ -307,9 +330,10 @@ class PaperOptionList {
             $this->_ijlist = [];
             expand_json_includes_callback(["etc/intrinsicoptions.json", self::DTYPE_SUBMISSION_JSON, self::DTYPE_FINAL_JSON, $this->conf->opt("intrinsicOptions"), $this->conf->setting_json("ioptions")], [$this, "_add_intrinsic_json"]);
             $nijlist = [];
-            foreach ($this->_ijlist as $id => $x)
+            foreach ($this->_ijlist as $id => $x) {
                 if (($ij = $this->conf->xt_search_name($this->_ijlist, $id, null)))
                     $nijlist[$ij->id] = $ij;
+            }
             $this->_ijlist = $nijlist;
         }
         return $this->_ijlist;
@@ -419,16 +443,27 @@ class PaperOptionList {
         return $this->get($id);
     }
 
-    function field_list(PaperInfo $prow = null) {
+    private function unsorted_field_list(PaperInfo $prow = null) {
         $nonfinal = !$prow || $prow->outcome <= 0;
         $olist = [];
-        foreach ($this->intrinsic_json_list() as $id => $oj)
+        foreach ($this->intrinsic_json_list() as $id => $oj) {
             if (($o = $this->_get_field($id, $oj, $nonfinal)))
                 $olist[$id] = $o;
-        foreach ($this->option_json_list() as $id => $oj)
+        }
+        foreach ($this->option_json_list() as $id => $oj) {
             if (($o = $this->_get_field($id, $oj, $nonfinal)))
                 $olist[$id] = $o;
+        }
+        return $olist;
+    }
+    function field_list(PaperInfo $prow = null) {
+        $olist = $this->unsorted_field_list($prow);
         uasort($olist, "PaperOption::compare");
+        return $olist;
+    }
+    function form_field_list(PaperInfo $prow = null) {
+        $olist = $this->unsorted_field_list($prow);
+        uasort($olist, "PaperOption::form_compare");
         return $olist;
     }
 
@@ -508,9 +543,11 @@ class PaperOptionList {
 class PaperOption implements Abbreviator {
     const MINFIXEDID = 1000000;
     const TITLEID = -1000;
-    const ABSTRACTID = -1004;
     const AUTHORSID = -1001;
+    const ANONYMITYID = -1002;
     const CONTACTSID = -1003;
+    const ABSTRACTID = -1004;
+    const TOPICSID = -1005;
     const PCCONFID = -1006;
     const COLLABORATORSID = -1007;
 
@@ -683,6 +720,17 @@ class PaperOption implements Abbreviator {
         $ap = $a->display_position();
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->display_position();
+        $bp = $bp !== false ? $bp : PHP_INT_MAX;
+        if ($ap !== $bp)
+            return $ap < $bp ? -1 : 1;
+        else
+            return Conf::xt_position_compare($a, $b);
+    }
+
+    static function form_compare($a, $b) {
+        $ap = $a->form_position();
+        $ap = $ap !== false ? $ap : PHP_INT_MAX;
+        $bp = $b->form_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
         if ($ap !== $bp)
             return $ap < $bp ? -1 : 1;
@@ -904,6 +952,13 @@ class PaperOption implements Abbreviator {
     function value_compare($av, $bv) {
         return 0;
     }
+    function value_messages(PaperValue $ov, MessageSet $ms) {
+        if ($this->required
+            && !$this->value_present($ov)
+            && $this->test_exists($ov->prow)) {
+            $m->error_at($this->field_key(), "Entry required.");
+        }
+    }
 
     static function basic_value_compare($av, $bv) {
         $av = $av ? $av->value : null;
@@ -948,6 +1003,38 @@ class PaperOption implements Abbreviator {
 
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return null;
+    }
+
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        return false;
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        return false;
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    }
+    function echo_web_edit_text(PaperTable $pt, $ov, $reqov, $extra = []) {
+        $default_value = null;
+        if ($ov->data() !== $reqov->data()
+            && trim($ov->data()) !== trim(cleannl($reqov->data()))) {
+            $default_value = $ov->data();
+        }
+        $pt->echo_editable_option_papt($this);
+        echo '<div class="papev">';
+        if (($fi = $ov->prow->edit_format())
+            && !get($extra, "no_format_description")) {
+            echo $fi->description_preview_html();
+        }
+        echo Ht::textarea($this->formid, $reqov->data(), [
+                "id" => $this->readable_formid(),
+                "class" => $pt->control_class($this->formid, "papertext need-autogrow"),
+                "rows" => max($this->display_space, 1),
+                "cols" => 60,
+                "spellcheck" => get($extra, "no_spellcheck") ? null : "true",
+                "data-default-value" => $default_value
+            ]),
+            $pt->messages_at($this->formid),
+            "</div></div>\n\n";
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
@@ -1006,17 +1093,28 @@ class CheckboxPaperOption extends PaperOption {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
     }
 
-    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
-        $reqv = !!($reqv === null ? $ov->value : $reqv);
-        $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->readable_formid(), "data-default-checked" => !!$ov->value]);
-        $pt->echo_editable_option_papt($this,
-            '<span class="checkc">' . $cb . "</span>" . $pt->edit_title_html($this),
-            ["for" => "checkbox", "tclass" => "ui js-click-child"]);
-        echo $pt->messages_at($this->formid), "</div>\n\n";
-    }
-
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return $ov->value ? true : false;
+    }
+
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        return PaperValue::make($prow, $this, $qreq[$this->formid] > 0 ? 1 : null);
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        if (is_bool($j) || $j === null) {
+            return PaperValue::make($prow, $this, $j ? 1 : null);
+        } else {
+            return PaperValue::make_error($prow, $this, "Option should be “true” or “false”.");
+        }
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        $cb = Ht::checkbox($this->formid, 1, !!$reqov->value, [
+            "id" => $this->readable_formid(), "data-default-checked" => !!$ov->value
+        ]);
+        $pt->echo_editable_option_papt($this,
+            '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
+            ["for" => "checkbox", "tclass" => "ui js-click-child"]);
+        echo $pt->messages_at($this->formid), "</div>\n\n";
     }
 
     function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
@@ -1122,9 +1220,41 @@ class SelectorPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
-        $reqv = $reqv === null ? $ov->value : $reqv;
-        $reqv = $reqv && isset($this->selector[$reqv - 1]) ? $reqv : 0;
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+        return get($this->selector, $ov->value - 1, null);
+    }
+
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        $v = trim((string) $qreq[$this->formid]);
+        if ($v === "" || $v === "0") {
+            return PaperValue::make($prow, $this);
+        } else {
+            $iv = ctype_digit($v) ? intval($v) : -1;
+            if ($iv > 0 && isset($this->selector[$iv - 1])) {
+                return PaperValue::make($prow, $this, $iv);
+            } else if (($iv = array_search($v, $this->selector)) !== false) {
+                return PaperValue::make($prow, $this, $iv + 1);
+            } else {
+                return PaperValue::make_error($prow, $this, "Option doesn’t match any of the selectors.");
+            }
+        }
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        $v = false;
+        if ($j === null || $j === 0) {
+            return PaperValue::make($prow, $this);
+        } else if (is_string($j)) {
+            $v = array_search($j, $this->selector);
+        } else if (is_int($j) && isset($this->selector[$j - 1])) {
+            $v = $j - 1;
+        }
+        if ($v !== false) {
+            return PaperValue::make($prow, $this, $v + 1);
+        } else {
+            return PaperValue::make_error($prow, $this, "Option doesn’t match any of the selectors.");
+        }
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         $pt->echo_editable_option_papt($this, null,
             $this->type === "selector"
             ? ["for" => $this->readable_formid()]
@@ -1132,26 +1262,24 @@ class SelectorPaperOption extends PaperOption {
         echo '<div class="papev">';
         if ($this->type === "selector") {
             $sel = [];
-            if (!$ov->value)
+            if (!$ov->value) {
                 $sel[0] = "(Select one)";
-            foreach ($this->selector as $val => $text)
+            }
+            foreach ($this->selector as $val => $text) {
                 $sel[$val + 1] = $text;
-            echo Ht::select($this->formid, $sel, $reqv,
+            }
+            echo Ht::select($this->formid, $sel, $reqov->value,
                 ["id" => $this->readable_formid(),
                  "data-default-value" => $ov->value]);
         } else {
             foreach ($this->selector as $val => $text) {
                 echo '<div class="checki"><label><span class="checkc">',
-                    Ht::radio($this->formid, $val + 1, $val + 1 == $reqv,
+                    Ht::radio($this->formid, $val + 1, $val + 1 == $reqov->value,
                         ["data-default-checked" => $val + 1 == $ov->value]),
-                    ' </span>', htmlspecialchars($text), '</label></div>';
+                    '</span>', htmlspecialchars($text), '</label></div>';
             }
         }
         echo $pt->messages_at($this->formid), "</div></div>\n\n";
-    }
-
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
-        return get($this->selector, $ov->value - 1, null);
     }
 
     function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
@@ -1216,7 +1344,44 @@ class DocumentPaperOption extends PaperOption {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
     }
 
-    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+        if (!$ov->value) {
+            return null;
+        } else if (($doc = $ps->document_to_json($this->id, $ov->value))) {
+            return $doc;
+        } else {
+            return false;
+        }
+    }
+
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        if ($qreq->has_file($this->formid)) {
+            $ov = PaperValue::make($prow, $this, -1);
+            $ov->anno["file_upload"] = $fup = DocumentInfo::make_file_upload($prow->paperId, $this->id, $qreq->file($this->formid), $this->conf);
+            if (isset($fup->error_html)) {
+                $ov->anno["error_html"] = $fup->error_html;
+            }
+            return $ov;
+        } else if ($qreq["remove_{$this->formid}"]) {
+            return PaperValue::make($ps->prow, $this);
+        } else {
+            return null;
+        }
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        if ($j !== null) {
+            // XXX validate $j as document
+            $ov = PaperValue::make($prow, $this, -1);
+            $ov->anno["file_upload"] = $j;
+            if (isset($j->error_html)) {
+                $ov->anno["error_html"] = $j->error_html;
+            }
+            return $ov;
+        } else {
+            return PaperValue::make($prow, $this);
+        }
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXXX this is super gross
         if ($this->id > 0 && $ov->value)
             $docid = $ov->value;
@@ -1229,16 +1394,6 @@ class DocumentPaperOption extends PaperOption {
         else
             $docid = 0;
         $pt->echo_editable_document($this, $docid);
-    }
-
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
-        if (!$ov->value) {
-            return null;
-        } else if (($doc = $ps->document_to_json($this->id, $ov->value))) {
-            return $doc;
-        } else {
-            return false;
-        }
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
@@ -1345,17 +1500,43 @@ class NumericPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
-        $reqv = (string) ($reqv === null ? $ov->value : $reqv);
-        $pt->echo_editable_option_papt($this);
-        echo '<div class="papev">',
-            Ht::entry($this->formid, $reqv, ["id" => $this->readable_formid(), "size" => 8, "class" => "js-autosubmit" . $pt->has_error_class($this->formid), "data-default-value" => $ov->value]),
-            $pt->messages_at($this->formid),
-            "</div></div>\n\n";
-    }
-
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return $ov->value;
+    }
+
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        $v = trim((string) $qreq[$this->formid]);
+        $iv = intval($v);
+        if (!is_numeric($v) || (float) $iv !== floatval($v)) {
+            $iv = null;
+        }
+        $ov = PaperValue::make($prow, $this, $iv);
+        $ov->anno["request"] = $v;
+        return $ov;
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        if (is_int($j)) {
+            return PaperValue::make($prow, $this, $j);
+        } else if ($j === null || $j === false) {
+            return PaperValue::make($prow, $this);
+        } else {
+            return PaperValue::make_error($prow, $this, "Option should be an integer.");
+        }
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        $reqx = $reqov->value;
+        if ($reqov->anno && isset($reqov->anno["request"])) {
+            $reqx = $reqov->anno["request"];
+        }
+        $pt->echo_editable_option_papt($this);
+        echo '<div class="papev">',
+            Ht::entry($this->formid, $reqx, [
+                "id" => $this->readable_formid(), "size" => 8,
+                "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
+                "data-default-value" => $ov->value
+            ]),
+            $pt->messages_at($this->formid),
+            "</div></div>\n\n";
     }
 
     function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
@@ -1425,13 +1606,30 @@ class TextPaperOption extends PaperOption {
     }
 
 
-    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
-        $this->echo_editable_text_html($ov, $reqv, $pt);
-    }
-
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         $x = $ov->data();
         return $x !== "" ? $x : null;
+    }
+
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        $v = trim((string) $qreq[$this->formid]);
+        if ($v !== "") {
+            return PaperValue::make($prow, $this, 1, convert_to_utf8($v));
+        } else {
+            return PaperValue::make($prow, $this);
+        }
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        if (is_string($j) && $j !== "") {
+            return PaperValue::make($prow, $this, 1, $j);
+        } else if ($j === null || $j === "") {
+            return PaperValue::make($prow, $this);
+        } else {
+            return PaperValue::make_error($prow, $this, "Option should be a string.");
+        }
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        $this->echo_web_edit_text($pt, $ov, $reqov);
     }
 
     function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
@@ -1523,7 +1721,38 @@ class AttachmentsPaperOption extends PaperOption {
         return ($av && $av->value_count() ? 1 : 0) - ($bv && $bv->value_count() ? 1 : 0);
     }
 
-    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+        $attachments = [];
+        foreach ($ov->documents() as $doc)
+            if (($doc = $ps->document_to_json($this->id, $doc)))
+                $attachments[] = $doc;
+        return empty($attachments) ? null : $attachments;
+    }
+
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        $did = $anno = [];
+        foreach ($prow->force_option($this)->sorted_values() as $i => $did) {
+            if (!isset($qreq["remove_{$this->formid}_{$did}_{$i}"]))
+                $did[] = $did;
+        }
+        for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
+            if (($f = $qreq->file("{$this->formid}_new_$i"))) {
+                $fup = DocumentInfo::make_file_upload($ps->prow->paperId, $this->id, $f, $this->conf);
+                if (isset($fup->error_html)) {
+                    $anno["error_html"][] = $fup->error_html;
+                }
+                $anno["document" . count($did)] = $fup;
+                $did[] = -1;
+            }
+        }
+        $ov = new PaperValue($prow, $this, $did, array_fill(0, count($did), null));
+        $ov->anno = $anno;
+        return $ov;
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        throw new Error();
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         $pt->echo_editable_option_papt($this, $this->title_html() . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid(), "for" => false]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" id="', $this->formid, '_attachments">';
         foreach ($ov->documents() as $i => $doc) {
@@ -1542,14 +1771,6 @@ class AttachmentsPaperOption extends PaperOption {
         echo '</div>', Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}_attachments"]),
             $pt->messages_at($this->formid),
             "</div>\n\n";
-    }
-
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
-        $attachments = [];
-        foreach ($ov->documents() as $doc)
-            if (($doc = $ps->document_to_json($this->id, $doc)))
-                $attachments[] = $doc;
-        return empty($attachments) ? null : $attachments;
     }
 
     function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
@@ -1642,29 +1863,18 @@ class IntrinsicPaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
 
-    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
-        if ($this->id === PaperOption::TITLEID) {
-            $this->echo_editable_text_html($ov, $reqv, $pt, ["no_format_description" => true]);
-        } else if ($this->id === PaperOption::ABSTRACTID) {
-            if ((int) $this->conf->opt("noAbstract") !== 1) {
-                $this->echo_editable_text_html($ov, $reqv, $pt);
-            }
-        } else if ($this->id === PaperOption::AUTHORSID) {
-            $pt->echo_editable_authors($this);
-        } else if ($this->id === -1002) {
-            $pt->echo_editable_anonymity($this);
-        } else if ($this->id === PaperOption::CONTACTSID) {
-            $pt->echo_editable_contact_author($this);
-        } else if ($this->id === -1005) {
-            $pt->echo_editable_topics($this);
-        } else if ($this->id === PaperOption::PCCONFID) {
-            $pt->echo_editable_pc_conflicts($this);
-        } else if ($this->id === PaperOption::COLLABORATORSID) {
-            if ($this->conf->setting("sub_collab")
-                && ($pt->editable !== "f" || $pt->user->can_administer($pt->prow))) {
-                $this->echo_editable_text_html($ov, $reqv, $pt, ["no_format_description" => true, "no_spellcheck" => true]);
-            }
+    function value_present(PaperValue $ov) {
+        if ($this->id >= DTYPE_FINAL) {
+            return $ov->value > 1;
+        } else {
+            return !!$ov->value;
         }
+    }
+    function value_messages(PaperValue $ov, MessageSet $ms) {
+        IntrinsicValue::value_messages($this, $ov, $ms);
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        IntrinsicValue::echo_web_edit($this, $pt, $ov, $reqov);
     }
     function render(FieldRender $fr, PaperValue $ov) {
         if ($this->id === PaperOption::TITLEID) {

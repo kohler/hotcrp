@@ -2161,19 +2161,12 @@ class PaperTable {
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
         echo '<div>';
 
-        $this->edit_fields = [];
-        foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
-            if ($this->user->can_edit_option($this->prow, $o))
-                $this->edit_fields[] = $o;
-        }
-        usort($this->edit_fields, function ($a, $b) {
-            $ap = $a->form_position();
-            $bp = $b->form_position();
-            if ($ap != $bp)
-                return $ap < $bp ? -1 : 1;
-            else
-                return Conf::xt_position_compare($a, $b);
-        });
+        $this->edit_fields = array_values(array_filter(
+            $this->conf->paper_opts->form_field_list($this->prow),
+            function ($o) {
+                return $this->user->can_edit_option($this->prow, $o);
+            }
+        ));
 
         if (($m = $this->_edit_message())) {
             echo $m;
@@ -2186,11 +2179,11 @@ class PaperTable {
                  $this->edit_fields_position < count($this->edit_fields);
                  ++$this->edit_fields_position) {
                 $o = $this->edit_fields[$this->edit_fields_position];
-                $reqv = null;
+                $ov = $reqov = $this->prow->force_option($o);
                 if ($this->useRequest && $this->qreq["has_{$o->formid}"]) {
-                    $reqv = $o->parse_request_display($this->qreq, $this->user, $this->prow);
+                    $reqov = $o->parse_web($this->prow, $this->qreq);
                 }
-                $o->echo_editable_html($this->prow->force_option($o->id), $reqv, $this);
+                $o->echo_web_edit($this, $ov, $reqov);
             }
 
             // Submit button

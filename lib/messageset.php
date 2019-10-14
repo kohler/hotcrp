@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class MessageSet {
+    public $user;
     public $ignore_msgs = false;
     public $ignore_duplicates = false;
     private $allow_error;

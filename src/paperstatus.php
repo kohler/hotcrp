@@ -4,7 +4,7 @@
 
 class PaperStatus extends MessageSet {
     public $conf;
-    public $user;
+    // public $user; -- inherited from MessageSet
     public $prow;
     public $paperId;
     private $uploaded_documents;
@@ -41,6 +41,13 @@ class PaperStatus extends MessageSet {
                 $this->$k = $options[$k];
         $this->_on_document_import[] = [$this, "document_import_check_filename"];
         $this->clear();
+    }
+
+    static function make_prow(Contact $user, PaperInfo $prow) {
+        $ps = new PaperStatus($prow->conf, $user);
+        $ps->prow = $prow;
+        $ps->paperId = $prow->paperId;
+        return $ps;
     }
 
     function clear() {
@@ -147,8 +154,7 @@ class PaperStatus extends MessageSet {
             return null;
         $this->user = $user;
         $original_no_msgs = $this->ignore_msgs;
-        $this->ignore_msgs = !get($args, "msgs");
-        $for_editable = !!get($args, "editable");
+        $this->ignore_msgs = true;
 
         $this->prow = $prow;
         $this->paperId = $prow->paperId;
@@ -289,73 +295,6 @@ class PaperStatus extends MessageSet {
             }
             if ($prow->collaborators) {
                 $pj->collaborators = $prow->collaborators;
-            }
-        }
-
-        // Now produce messages.
-        if (!$this->ignore_msgs
-            && $pj->title === "") {
-            $this->error_at("title", $this->_("Entry required."));
-        }
-        if (!$this->ignore_msgs
-            && (!isset($pj->abstract) || $pj->abstract === "")
-            && !$this->conf->opt("noAbstract")) {
-            $this->error_at("abstract", $this->_("Entry required."));
-        }
-        if ($prow->paperStorageId <= 1
-            && !$this->conf->opt("noPapers")) {
-            $this->warning_at("paper", $this->_("Entry required to complete submission."));
-        }
-        if (!$this->ignore_msgs
-            && $can_view_authors) {
-            $msg1 = $msg2 = false;
-            foreach ($prow->author_list() as $n => $au) {
-                if (strpos($au->email, "@") === false
-                    && strpos($au->affiliation, "@") !== false) {
-                    $msg1 = true;
-                    $this->warning_at("author" . ($n + 1), null);
-                } else if ($au->firstName === "" && $au->lastName === ""
-                           && $au->email === "" && $au->affiliation !== "") {
-                    $msg2 = true;
-                    $this->warning_at("author" . ($n + 1), null);
-                }
-            }
-            $max_authors = $this->conf->opt("maxAuthors");
-            if (!$prow->author_list()) {
-                $this->error_at("authors", $this->_("Entry required."));
-                $this->error_at("author1", false);
-            }
-            if ($max_authors > 0 && count($prow->author_list()) > $max_authors) {
-                $this->error_at("authors", $this->_("Each submission can have at most %d authors.", $max_authors));
-            }
-            if ($msg1) {
-                $this->warning_at("authors", "You may have entered an email address in the wrong place. The first author field is for author name, the second for email address, and the third for affiliation.");
-            }
-            if ($msg2) {
-                $this->warning_at("authors", "Please enter a name and optional email address for every author.");
-            }
-        }
-        if (!$this->ignore_msgs
-            && $can_view_authors
-            && $this->conf->setting("sub_collab")
-            && ($prow->outcome <= 0 || ($user && !$user->can_view_decision($prow)))
-            && !$prow->collaborators) {
-            $this->warning_at("collaborators", $this->_("Enter the authors’ external conflicts of interest. If none of the authors have external conflicts, enter “None”."));
-        }
-        if (!$this->ignore_msgs
-            && $can_view_authors
-            && $this->conf->setting("sub_pcconf")
-            && ($prow->outcome <= 0 || ($user && !$user->can_view_decision($prow)))) {
-            $pcs = [];
-            foreach ($this->conf->full_pc_members() as $p) {
-                if (!$prow->has_conflict($p)
-                    && $prow->potential_conflict($p)) {
-                    $n = Text::name_html($p);
-                    $pcs[] = $for_editable ? Ht::link($n, "#pcc{$p->contactId}", ["class" => "uu"]) : $n;
-                }
-            }
-            if (!empty($pcs)) {
-                $this->warning_at("pcconf", $this->_("You may have missed conflicts of interest with %s. Please verify that all conflicts are correctly marked.", commajoin($pcs, "and")) . ($for_editable ? $this->_(" Hover over “possible conflict” labels for more information.") : ""));
             }
         }
 

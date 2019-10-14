@@ -367,6 +367,8 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
     $whyNot = update_paper($Qreq, $action);
     if ($whyNot === true) {
         $Conf->self_redirect($Qreq, ["p" => $prow->paperId, "m" => "edit"]);
+    } else {
+        // $Conf->self_redirect($Qreq, ["p" => $prow ? $prow->paperId : "new", "m" => "edit"]);
     }
 
     // If we get here, we failed to update.
@@ -453,14 +455,20 @@ if ($paperTable->mode == "edit") {
 
 $paperTable->initialize($editable, $editable && $useRequest);
 if (($ps || $prow) && $paperTable->mode === "edit") {
-    $old_overrides = $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
     if ($ps) {
         $ps->ignore_duplicates = true;
     } else {
         $ps = new PaperStatus($Conf, $Me);
     }
-    $ps->paper_json($prow, ["msgs" => true, "editable" => true]);
-    $Me->set_overrides($old_overrides);
+    if ($prow) {
+        $old_overrides = $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
+        foreach ($Conf->paper_opts->form_field_list($prow) as $o) {
+            if ($Me->can_edit_option($prow, $o)) {
+                $o->value_messages($prow->force_option($o), $ps);
+            }
+        }
+        $Me->set_overrides($old_overrides);
+    }
     $paperTable->set_edit_status($ps);
 }
 

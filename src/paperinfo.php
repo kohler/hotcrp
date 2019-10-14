@@ -1182,13 +1182,15 @@ class PaperInfo {
     }
 
     function force_option($o) {
-        $id = is_object($o) ? $o->id : $o;
-        if (($ov = get($this->options(), $id))) {
-            return $ov;
-        } else if (($opt = $this->conf->paper_opts->get($id))) {
-            return new PaperValue($this, $opt);
+        if (is_object($o)) {
+            $ov = get($this->options(), $o->id);
+            return $ov ? : new PaperValue($this, $o);
         } else {
-            return null;
+            $ov = get($this->options(), $o);
+            if (!$ov && ($o = $this->conf->paper_opts->get($o))) {
+                $ov = new PaperValue($this, $o);
+            }
+            return $ov;
         }
     }
 

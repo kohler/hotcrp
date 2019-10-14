@@ -219,6 +219,7 @@ src/helpers.php
 src/hotcrpmailer.php
 src/init.php
 src/initweb.php
+src/intrinsicvalue.php
 src/listaction.php
 src/listactions/la_assign.php
 src/listactions/la_decide.php

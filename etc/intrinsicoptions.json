@@ -1,7 +1,8 @@
 [
     {
         "name": "title", "json_key": "title", "id": -1000,
-        "form_position": 1, "display_space": 1, "type": "intrinsic"
+        "form_position": 1, "display_space": 1, "type": "intrinsic",
+        "required": true
     },
     {
         "name": "submission_version", "id": -1008,
