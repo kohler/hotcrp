@@ -267,10 +267,11 @@ class Home_Partial {
     function render_search(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->privChair
-            && ((!$conf->has_any_submitted()
-                 && !($user->isPC && $conf->setting("pc_seeall")))
-                || !$user->is_reviewer()))
+            && ($user->isPC
+                ? !$conf->setting("pc_seeall") && !$conf->has_any_submitted()
+                : !$user->is_reviewer())) {
             return;
+        }
 
         echo '<div class="homegrp" id="homelist">',
             Ht::form($conf->hoturl("search"), ["method" => "get"]),

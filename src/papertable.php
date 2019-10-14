@@ -16,7 +16,7 @@ class PaperTable {
     public $mode;
     private $prefer_approvable = false;
     private $allreviewslink;
-    private $edit_status = null;
+    private $edit_status;
 
     public $editable;
     public $edit_fields;

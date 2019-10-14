@@ -5,6 +5,8 @@
 class PaperStatus extends MessageSet {
     public $conf;
     public $user;
+    public $prow;
+    public $paperId;
     private $uploaded_documents;
     private $no_email = false;
     private $export_ids = false;
@@ -14,8 +16,6 @@ class PaperStatus extends MessageSet {
     private $allow_any_content_file = false;
     private $content_file_prefix = false;
     private $add_topics = false;
-    public $prow;
-    public $paperId;
     private $_on_document_export = [];
     private $_on_document_import = [];
     private $_cf;
@@ -817,27 +817,28 @@ class PaperStatus extends MessageSet {
     static function check_title(PaperStatus $ps, $pj) {
         $v = convert_to_utf8(get_s($pj, "title"));
         if ($v === ""
-            && (isset($pj->title) || !$ps->prow || (string) $ps->prow->title === ""))
+            && (isset($pj->title) || !$ps->prow || (string) $ps->prow->title === "")) {
             $ps->error_at("title", $ps->_("Entry required."));
-        if (!$ps->prow
-            || (!$ps->has_error_at("title")
-                && isset($pj->title)
-                && $v !== (string) $ps->prow->title))
+        }
+        if (!$ps->has_error_at("title")
+            && isset($pj->title)
+            && $v !== ($ps->prow ? (string) $ps->prow->title : "")) {
             $ps->save_paperf("title", $v, "title");
+        }
     }
 
     static function check_abstract(PaperStatus $ps, $pj) {
         $v = convert_to_utf8(get_s($pj, "abstract"));
         if ($v === ""
-            && (isset($pj->abstract) || !$ps->prow || (string) $ps->prow->abstract === "")) {
-            if (!$ps->conf->opt("noAbstract"))
-                $ps->error_at("abstract", $ps->_("Entry required."));
+            && (isset($pj->abstract) || !$ps->prow || (string) $ps->prow->abstract === "")
+            && !$ps->conf->opt("noAbstract")) {
+            $ps->error_at("abstract", $ps->_("Entry required."));
         }
-        if (!$ps->prow
-            || (!$ps->has_error_at("abstract")
-                && isset($pj->abstract)
-                && $v !== (string) $ps->prow->abstract))
+        if (!$ps->has_error_at("abstract")
+            && isset($pj->abstract)
+            && $v !== ($ps->prow ? (string) $ps->prow->abstract : "")) {
             $ps->save_paperf("abstract", $v, "abstract");
+        }
     }
 
     static private function author_information($pj) {
@@ -868,21 +869,20 @@ class PaperStatus extends MessageSet {
             $ps->error_at("authors", null);
             $ps->error_at("auemail" . $aux->index, $ps->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
-        if (!$ps->prow || isset($pj->authors)) {
+        if (isset($pj->authors)
+            && !$ps->has_error_at("authors")) {
             $v = convert_to_utf8(self::author_information($pj));
-            if (!$ps->prow
-                || (!$ps->has_error_at("authors")
-                    && $v !== $ps->prow->authorInformation))
+            if ($v !== ($ps->prow ? $ps->prow->authorInformation : ""))
                 $ps->save_paperf("authorInformation", $v, "authors");
         }
     }
 
     static function check_collaborators(PaperStatus $ps, $pj) {
         $v = convert_to_utf8(get_s($pj, "collaborators"));
-        if (!$ps->prow
-            || (isset($pj->collaborators)
-                && $v !== (string) $ps->prow->collaborators))
+        if (isset($pj->collaborators)
+            && $v !== ($ps->prow ? (string) $ps->prow->collaborators : "")) {
             $ps->save_paperf("collaborators", $v, "collaborators");
+        }
     }
 
     static function check_nonblind(PaperStatus $ps, $pj) {
@@ -900,16 +900,14 @@ class PaperStatus extends MessageSet {
             if (isset($pj->$k) && $pj->$k) {
                 $pj->$k = $ps->upload_document($pj->$k, $ps->conf->paper_opts->get($i ? DTYPE_FINAL : DTYPE_SUBMISSION));
             }
-            if (!$ps->prow
-                || (isset($pj->$k)
-                    && !$ps->has_error_at($i ? "final" : "paper"))) {
+            if (isset($pj->$k)
+                && !$ps->has_error_at($i ? "final" : "paper")) {
                 $null_id = $i ? 0 : 1;
                 $new_id = isset($pj->$k) && $pj->$k ? $pj->$k->paperStorageId : $null_id;
                 $prowk = $i ? "finalPaperStorageId" : "paperStorageId";
-                if (($ps->prow ? $ps->prow->$prowk : $null_id) != $new_id)
+                if ($new_id != ($ps->prow ? $ps->prow->$prowk : $null_id)) {
                     $ps->save_paperf($prowk, $new_id, $k);
-                else if (!$ps->prow)
-                    $ps->save_paperf($prowk, $new_id);
+                }
             }
         }
     }
@@ -1311,7 +1309,16 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    static function check_required_options(PaperStatus $ps) {
+    static function postcheck_set_default_columns(PaperStatus $ps) {
+        foreach (["title" => "", "abstract" => "", "authorInformation" => "",
+                  "collaborators" => "", "paperStorageId" => 1,
+                  "finalPaperStorageId" => 0] as $f => $v) {
+            if (!isset($ps->_paper_upd[$f]))
+                $ps->_paper_upd[$f] = $v;
+        }
+    }
+
+    static function postcheck_required_options(PaperStatus $ps) {
         $prow = null;
         $fail = false;
         foreach ($ps->conf->paper_opts->option_list() as $o) {
@@ -1336,6 +1343,11 @@ class PaperStatus extends MessageSet {
     function execute_save_paper_json($pj) {
         global $Now;
         if (!empty($this->_paper_upd)) {
+            $need_insert = $this->paperId <= 0;
+            if ($need_insert) {
+                self::postcheck_set_default_columns($this);
+            }
+
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER) {
                 $this->save_paperf("blind", 0);
             } else if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL) {
@@ -1392,7 +1404,6 @@ class PaperStatus extends MessageSet {
 
             $this->save_paperf("timeModified", $Now);
 
-            $need_insert = $this->paperId <= 0;
             if (!$need_insert) {
                 $qv = array_values($this->_paper_upd);
                 $qv[] = $this->paperId;
@@ -1428,7 +1439,7 @@ class PaperStatus extends MessageSet {
         self::execute_options($this);
 
         if ($this->_paper_submitted) {
-            self::check_required_options($this);
+            self::postcheck_required_options($this);
         }
 
         // maybe update `papersub` settings

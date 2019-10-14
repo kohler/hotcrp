@@ -7,11 +7,11 @@ class PaperOptionValue {
     public $id;
     public $option;
     public $value;
+    public $anno;
     private $_values;
     private $_data;
     private $_data_array;
-    public $anno = null;
-    private $_documents = null;
+    private $_documents;
 
     function __construct($prow, PaperOption $o, $values = [], $data_array = []) {
         $this->prow = $prow;
