@@ -458,7 +458,7 @@ class PaperInfo {
         foreach ($this->conf->paper_opts->option_list() as $o) {
             if ($o->required
                 && (!$user || $user->can_view_option($this, $o))) {
-                $ov = $this->option($o) ? : new PaperOptionValue($this, $o);
+                $ov = $this->option($o) ? : new PaperValue($this, $o);
                 if (!$o->value_present($ov))
                     $f[$o->json_key()] = true;
             }
@@ -1154,11 +1154,11 @@ class PaperInfo {
         $option_array = [];
         foreach ($this->_option_values as $oid => $ovalues) {
             if (($o = $paper_opts->get($oid)))
-                $option_array[$oid] = new PaperOptionValue($this, $o, $ovalues, get($this->_option_data, $oid));
+                $option_array[$oid] = new PaperValue($this, $o, $ovalues, get($this->_option_data, $oid));
         }
         foreach ($paper_opts->include_empty_option_list() as $oid => $o) {
             if (!isset($option_array[$oid]))
-                $option_array[$oid] = new PaperOptionValue($this, $o);
+                $option_array[$oid] = new PaperValue($this, $o);
         }
         return $option_array;
     }
@@ -1186,7 +1186,7 @@ class PaperInfo {
         if (($ov = get($this->options(), $id))) {
             return $ov;
         } else if (($opt = $this->conf->paper_opts->get($id))) {
-            return new PaperOptionValue($this, $opt);
+            return new PaperValue($this, $opt);
         } else {
             return null;
         }

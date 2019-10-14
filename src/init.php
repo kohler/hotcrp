@@ -90,7 +90,6 @@ class SiteLoader {
         "ContactCountMatcher" => "src/papersearch.php",
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
-        "FeatureRender" => "src/paperoption.php", // XXX
         "FieldRender" => "src/paperoption.php",
         "FormatChecker" => "src/formatspec.php",
         "HashAnalysis" => "lib/filer.php",
@@ -102,6 +101,7 @@ class SiteLoader {
         "NumericOrderPaperColumn" => "src/papercolumn.php",
         "PaperInfoSet" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",
+        "PaperValue" => "src/paperoption.php",
         "ReviewField" => "src/review.php",
         "ReviewFieldInfo" => "src/review.php",
         "ReviewForm" => "src/review.php",

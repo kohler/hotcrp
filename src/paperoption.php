@@ -2,7 +2,7 @@
 // paperoption.php -- HotCRP helper class for paper options
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
-class PaperOptionValue {
+class PaperValue {
     public $prow;
     public $id;
     public $option;
@@ -111,6 +111,9 @@ class PaperOptionValue {
         $this->assign_value_data($this->prow->option_value_data($this->id));
     }
 }
+
+class_alias("PaperValue", "PaperOptionValue"); // XXX backward compat
+
 
 class FieldRender {
     public $table;
@@ -829,10 +832,10 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
-    function refresh_documents(PaperOptionValue $ov) {
+    function refresh_documents(PaperValue $ov) {
     }
 
-    function attachment(PaperOptionValue $ov, $name) {
+    function attachment(PaperValue $ov, $name) {
         return null;
     }
 
@@ -895,7 +898,7 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
-    function value_present(PaperOptionValue $ov) {
+    function value_present(PaperValue $ov) {
         return !!$ov->value;
     }
     function value_compare($av, $bv) {
@@ -913,10 +916,10 @@ class PaperOption implements Abbreviator {
             return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
     }
 
-    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
     }
 
-    function echo_editable_text_html(PaperOptionValue $ov, $reqv, PaperTable $pt,
+    function echo_editable_text_html(PaperValue $ov, $reqv, PaperTable $pt,
                                      $extra = []) {
         $default_value = null;
         if ($reqv === null) {
@@ -943,7 +946,7 @@ class PaperOption implements Abbreviator {
             "</div></div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return null;
     }
 
@@ -986,7 +989,7 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
-    function render(FieldRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperValue $ov) {
     }
 
     function format_spec() {
@@ -1003,7 +1006,7 @@ class CheckboxPaperOption extends PaperOption {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
     }
 
-    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
         $reqv = !!($reqv === null ? $ov->value : $reqv);
         $cb = Ht::checkbox($this->formid, 1, $reqv, ["id" => $this->readable_formid(), "data-default-checked" => !!$ov->value]);
         $pt->echo_editable_option_papt($this,
@@ -1012,7 +1015,7 @@ class CheckboxPaperOption extends PaperOption {
         echo $pt->messages_at($this->formid), "</div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return $ov->value ? true : false;
     }
 
@@ -1030,7 +1033,7 @@ class CheckboxPaperOption extends PaperOption {
         return $isrow ? true : ["column" => true, "className" => "pl_option plc"];
     }
 
-    function render(FieldRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperValue $ov) {
         if ($fr->for_page() && $ov->value) {
             $fr->title = "";
             $fr->set_html('✓ <span class="pavfn">' . $this->title_html() . '</span>');
@@ -1119,7 +1122,7 @@ class SelectorPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
         $reqv = $reqv === null ? $ov->value : $reqv;
         $reqv = $reqv && isset($this->selector[$reqv - 1]) ? $reqv : 0;
         $pt->echo_editable_option_papt($this, null,
@@ -1147,7 +1150,7 @@ class SelectorPaperOption extends PaperOption {
         echo $pt->messages_at($this->formid), "</div></div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return get($this->selector, $ov->value - 1, null);
     }
 
@@ -1176,7 +1179,7 @@ class SelectorPaperOption extends PaperOption {
         return true;
     }
 
-    function render(FieldRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperValue $ov) {
         $fr->set_text(get($this->selector, $ov->value - 1, ""));
     }
 }
@@ -1213,7 +1216,7 @@ class DocumentPaperOption extends PaperOption {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
     }
 
-    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
         // XXXX this is super gross
         if ($this->id > 0 && $ov->value)
             $docid = $ov->value;
@@ -1228,7 +1231,7 @@ class DocumentPaperOption extends PaperOption {
         $pt->echo_editable_document($this, $docid);
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
         if (!$ov->value) {
             return null;
         } else if (($doc = $ps->document_to_json($this->id, $ov->value))) {
@@ -1278,7 +1281,7 @@ class DocumentPaperOption extends PaperOption {
         return true;
     }
 
-    function render(FieldRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperValue $ov) {
         if ($this->id <= 0 && $fr->for_page()) {
             $fr->table->render_submission($fr, $this);
         } else if (($d = $ov->document(0))) {
@@ -1335,14 +1338,14 @@ class NumericPaperOption extends PaperOption {
         return $x;
     }
 
-    function value_present(PaperOptionValue $ov) {
+    function value_present(PaperValue $ov) {
         return $ov->value !== null;
     }
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
         $reqv = (string) ($reqv === null ? $ov->value : $reqv);
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
@@ -1351,7 +1354,7 @@ class NumericPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return $ov->value;
     }
 
@@ -1379,7 +1382,7 @@ class NumericPaperOption extends PaperOption {
         return $isrow ? true : ["column" => true, "className" => "pl_option plrd"];
     }
 
-    function render(FieldRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperValue $ov) {
         if ($ov->value !== null) {
             $fr->set_text($ov->value);
         }
@@ -1409,7 +1412,7 @@ class TextPaperOption extends PaperOption {
         }
     }
 
-    function value_present(PaperOptionValue $ov) {
+    function value_present(PaperValue $ov) {
         return (string) $ov->data() !== "";
     }
     function value_compare($av, $bv) {
@@ -1422,11 +1425,11 @@ class TextPaperOption extends PaperOption {
     }
 
 
-    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
         $this->echo_editable_text_html($ov, $reqv, $pt);
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
         $x = $ov->data();
         return $x !== "" ? $x : null;
     }
@@ -1447,7 +1450,7 @@ class TextPaperOption extends PaperOption {
         return ["row" => true, "className" => "pl_textoption"];
     }
 
-    function render(FieldRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperValue $ov) {
         $d = $ov->data();
         if ($d !== null && $d !== "") {
             $fr->value = $d;
@@ -1474,7 +1477,7 @@ class AttachmentsPaperOption extends PaperOption {
         return true;
     }
 
-    function attachment(PaperOptionValue $ov, $name) {
+    function attachment(PaperValue $ov, $name) {
         foreach ($ov->documents() as $xdoc)
             if ($xdoc->unique_filename == $name)
                 return $xdoc;
@@ -1520,7 +1523,7 @@ class AttachmentsPaperOption extends PaperOption {
         return ($av && $av->value_count() ? 1 : 0) - ($bv && $bv->value_count() ? 1 : 0);
     }
 
-    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
         $pt->echo_editable_option_papt($this, $this->title_html() . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid(), "for" => false]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" id="', $this->formid, '_attachments">';
         foreach ($ov->documents() as $i => $doc) {
@@ -1541,7 +1544,7 @@ class AttachmentsPaperOption extends PaperOption {
             "</div>\n\n";
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps) {
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
         $attachments = [];
         foreach ($ov->documents() as $doc)
             if (($doc = $ps->document_to_json($this->id, $doc)))
@@ -1591,7 +1594,7 @@ class AttachmentsPaperOption extends PaperOption {
         return true;
     }
 
-    function render(FieldRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperValue $ov) {
         $ts = [];
         foreach ($ov->documents() as $d) {
             if ($fr->want_text()) {
@@ -1639,7 +1642,7 @@ class IntrinsicPaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
 
-    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
         if ($this->id === PaperOption::TITLEID) {
             $this->echo_editable_text_html($ov, $reqv, $pt, ["no_format_description" => true]);
         } else if ($this->id === PaperOption::ABSTRACTID) {
@@ -1663,7 +1666,7 @@ class IntrinsicPaperOption extends PaperOption {
             }
         }
     }
-    function render(FieldRender $fr, PaperOptionValue $ov) {
+    function render(FieldRender $fr, PaperValue $ov) {
         if ($this->id === PaperOption::TITLEID) {
             $fr->value = $ov->prow->title ? : "[No title]";
             $fr->value_format = $ov->prow->title_format();
