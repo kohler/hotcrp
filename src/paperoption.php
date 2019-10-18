@@ -1843,6 +1843,9 @@ class IntrinsicPaperOption extends PaperOption {
     function value_messages(PaperValue $ov, MessageSet $ms) {
         IntrinsicValue::value_messages($this, $ov, $ms);
     }
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        return IntrinsicValue::parse_web($this, $prow, $qreq);
+    }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         IntrinsicValue::echo_web_edit($this, $pt, $ov, $reqov);
     }

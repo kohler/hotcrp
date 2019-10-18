@@ -82,6 +82,19 @@ class IntrinsicValue {
             }
         }
     }
+    static function parse_web($o, PaperInfo $prow, Qrequest $qreq) {
+        if ($o->id === PaperOption::TITLEID) {
+            $v = $qreq->title;
+        } else if ($o->id === PaperOption::ABSTRACTID) {
+            $v = $qreq->abstract;
+        } else if ($o->id === PaperOption::COLLABORATORSID) {
+            $v = $qreq->collaborators;
+        } else {
+            // XXX
+            $v = "";
+        }
+        return PaperOption::make($prow, $o, 1, $v);
+    }
     static function echo_web_edit($o, PaperTable $pt, $ov, $reqov) {
         if ($o->id === PaperOption::TITLEID) {
             $o->echo_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true]);
