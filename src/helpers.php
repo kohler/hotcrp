@@ -117,14 +117,14 @@ class JsonResult {
             $user->save_session("msgs", null);
             $t = "";
             foreach ($msgs as $msg) {
-                if (($msg[0] === "merror" || $msg[0] === "xmerror")
+                if (($msg[1] === "merror" || $msg[1] === "xmerror")
                     && !isset($this->content["error"])) {
-                    $this->content["error"] = $msg[1];
+                    $this->content["error"] = $msg[0];
                 }
                 if ($div) {
-                    $t .= Ht::msg($msg[1], $msg[0]);
+                    $t .= Ht::msg($msg[0], $msg[1]);
                 } else {
-                    $t .= "<span class=\"$msg[0]\">$msg[1]</span>";
+                    $t .= "<span class=\"$msg[1]\">$msg[0]</span>";
                 }
             }
             if ($t !== "") {
