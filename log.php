@@ -648,7 +648,7 @@ foreach ($lrg->page_rows($page) as $row) {
                && preg_match('{\ATag:? ((?:[-+]#[^\s#]*(?:#[-+\d.]+|)(?: |\z))+)(.*)\z}s', $act, $m)) {
         $at = "Tag";
         $act = $m[2];
-        foreach (explode(" ", $m[1]) as $word) {
+        foreach (explode(" ", rtrim($m[1])) as $word) {
             if (($hash = strpos($word, "#", 2)) === false) {
                 $hash = strlen($word);
             }
