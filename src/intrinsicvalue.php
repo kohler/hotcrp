@@ -93,7 +93,7 @@ class IntrinsicValue {
             // XXX
             $v = "";
         }
-        return PaperOption::make($prow, $o, 1, $v);
+        return PaperValue::make($prow, $o, 1, $v);
     }
     static function echo_web_edit($o, PaperTable $pt, $ov, $reqov) {
         if ($o->id === PaperOption::TITLEID) {
