@@ -956,7 +956,7 @@ class PaperOption implements Abbreviator {
         if ($this->required
             && !$this->value_present($ov)
             && $this->test_exists($ov->prow)) {
-            $m->error_at($this->field_key(), "Entry required.");
+            $ms->error_at($this->field_key(), "Entry required.");
         }
     }
 
