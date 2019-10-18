@@ -971,36 +971,6 @@ class PaperOption implements Abbreviator {
             return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
     }
 
-    function echo_editable_html(PaperValue $ov, $reqv, PaperTable $pt) {
-    }
-
-    function echo_editable_text_html(PaperValue $ov, $reqv, PaperTable $pt,
-                                     $extra = []) {
-        $default_value = null;
-        if ($reqv === null) {
-            $reqv = (string) $ov->data();
-        } else if ($reqv !== $ov->data()
-                   && trim(cleannl($reqv)) !== trim($ov->data())) {
-            $default_value = $ov->data();
-        }
-        $pt->echo_editable_option_papt($this);
-        echo '<div class="papev">';
-        if (($fi = $ov->prow->edit_format())
-            && !get($extra, "no_format_description")) {
-            echo $fi->description_preview_html();
-        }
-        echo Ht::textarea($this->formid, $reqv, [
-                "id" => $this->readable_formid(),
-                "class" => $pt->control_class($this->formid, "papertext need-autogrow"),
-                "rows" => max($this->display_space, 1),
-                "cols" => 60,
-                "spellcheck" => get($extra, "no_spellcheck") ? null : "true",
-                "data-default-value" => $default_value
-            ]),
-            $pt->messages_at($this->formid),
-            "</div></div>\n\n";
-    }
-
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return null;
     }
