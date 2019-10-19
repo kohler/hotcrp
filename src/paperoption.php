@@ -1700,22 +1700,22 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
-        $did = $anno = [];
+        $dids = $anno = [];
         foreach ($prow->force_option($this)->sorted_values() as $i => $did) {
             if (!isset($qreq["remove_{$this->formid}_{$did}_{$i}"]))
-                $did[] = $did;
+                $dids[] = $did;
         }
         for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
             if (($f = $qreq->file("{$this->formid}_new_$i"))) {
-                $fup = DocumentInfo::make_file_upload($ps->prow->paperId, $this->id, $f, $this->conf);
+                $fup = DocumentInfo::make_file_upload($prow->paperId, $this->id, $f, $this->conf);
                 if (isset($fup->error_html)) {
                     $anno["error_html"][] = $fup->error_html;
                 }
-                $anno["document" . count($did)] = $fup;
-                $did[] = -1;
+                $anno["document" . count($dids)] = $fup;
+                $dids[] = -1;
             }
         }
-        $ov = new PaperValue($prow, $this, $did, array_fill(0, count($did), null));
+        $ov = new PaperValue($prow, $this, $dids, array_fill(0, count($dids), null));
         $ov->anno = $anno;
         return $ov;
     }
