@@ -4120,7 +4120,7 @@ class Conf {
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
         $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i", $options);
         foreach ($ufs as $uf) {
-            if ($options || isset($uf->options))
+            if ($uf && ($options || isset($uf->options)))
                 $uf->options = $options;
         }
         return array_filter($ufs, "Conf::xt_resolve_require");

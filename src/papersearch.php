@@ -80,11 +80,11 @@ class SearchSplitter {
         $this->pos += strlen($this->str) - strlen($next);
         $this->str = $next;
     }
-    static function span_balanced_parens($str) {
+    static function span_balanced_parens($str, $pos = 0) {
         $pcount = $quote = 0;
         $len = strlen($str);
-        for ($pos = 0; $pos < $len
-                 && (!ctype_space($str[$pos]) || $pcount || $quote); ++$pos) {
+        while ($pos < $len
+               && (!ctype_space($str[$pos]) || $pcount || $quote)) {
             $ch = $str[$pos];
             // translate “” -> "
             if (ord($ch) === 0xE2
@@ -107,6 +107,7 @@ class SearchSplitter {
                     break;
                 --$pcount;
             }
+            ++$pos;
         }
         return $pos;
     }
@@ -1208,8 +1209,9 @@ class Show_SearchTerm {
             $sort = PaperSearch::parse_sorter($viewfield);
             $viewfield = $sort->type;
         }
-        if ($viewfield !== "" && $action)
+        if ($viewfield !== "" && $action) {
             $f["view"] = [[$viewfield, $action]];
+        }
         return SearchTerm::make_float($f);
     }
     static function parse_heading($word, SearchWord $sword) {
@@ -2986,7 +2988,7 @@ class PaperSearch {
                     && isset($cj->completion)
                     && $cj->completion
                     && !str_starts_with($cj->name, "?")
-                    && ($c = PaperColumn::make($this->conf, $cj, null))
+                    && ($c = PaperColumn::make($this->conf, $cj))
                     && ($cat = $c->completion_name())
                     && $c->prepare($pl, 0)) {
                     $cats[$cat] = true;

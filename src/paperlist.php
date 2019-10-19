@@ -285,15 +285,23 @@ class PaperList {
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
         }
+        $pos = strlen($k);
         $opts = null;
-        while (($sep = strrpos($k, ",")) !== false) {
-            if ($opts === null)
-                $opts = [];
-            array_unshift($opts, substr($k, $sep + 1));
-            $k = substr($k, 0, $sep);
+        while ($pos > 0) {
+            --$pos;
+            $ch = $k[$pos];
+            if ($ch === "\"" || $ch === ")" || $ch === "]" || $ch === "}") {
+                break;
+            } else if ($ch === ",") {
+                if ($opts === null)
+                    $opts = [];
+                array_unshift($opts, substr($k, $pos + 1));
+                $k = substr($k, 0, $sep);
+            }
         }
         $k = get(self::$view_synonym, $k, $k);
-        if (isset($this->_view_origin[$k]) && $this->_view_origin[$k] < $origin) {
+        if (isset($this->_view_origin[$k])
+            && $this->_view_origin[$k] < $origin) {
             return;
         }
 
@@ -457,10 +465,10 @@ class PaperList {
             $nfs = [];
             foreach ($fs as $fdef) {
                 if ($fdef->name === $name) {
-                    $nfs[] = PaperColumn::make($this->conf, $fdef, $opt);
+                    $nfs[] = PaperColumn::make($this->conf, $fdef);
                 } else {
                     if (!array_key_exists($fdef->name, $this->_columns_by_name))
-                        $this->_columns_by_name[$fdef->name][] = PaperColumn::make($this->conf, $fdef, $opt);
+                        $this->_columns_by_name[$fdef->name][] = PaperColumn::make($this->conf, $fdef);
                     $nfs = array_merge($nfs, $this->_columns_by_name[$fdef->name]);
                 }
             }
