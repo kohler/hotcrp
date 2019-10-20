@@ -1157,11 +1157,11 @@ class PaperInfo {
         $option_array = [];
         foreach ($this->_option_values as $oid => $ovalues) {
             if (($o = $paper_opts->get($oid)))
-                $option_array[$oid] = new PaperValue($this, $o, $ovalues, get($this->_option_data, $oid));
+                $option_array[$oid] = PaperValue::make_multi($this, $o, $ovalues, get($this->_option_data, $oid));
         }
         foreach ($paper_opts->include_empty_option_list() as $oid => $o) {
             if (!isset($option_array[$oid]))
-                $option_array[$oid] = new PaperValue($this, $o);
+                $option_array[$oid] = PaperValue::make_force($this, $o);
         }
         return $option_array;
     }
@@ -1187,11 +1187,11 @@ class PaperInfo {
     function force_option($o) {
         if (is_object($o)) {
             $ov = get($this->options(), $o->id);
-            return $ov ? : new PaperValue($this, $o);
+            return $ov ? : PaperValue::make_force($this, $o);
         } else {
             $ov = get($this->options(), $o);
             if (!$ov && ($o = $this->conf->paper_opts->get($o))) {
-                $ov = new PaperValue($this, $o);
+                $ov = PaperValue::make_force($this, $o);
             }
             return $ov;
         }

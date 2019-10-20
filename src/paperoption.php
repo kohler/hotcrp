@@ -10,74 +10,61 @@ class PaperValue {
     public $anno;
     private $_values;
     private $_data;
-    private $_data_array;
     private $_documents;
 
-    function __construct($prow, PaperOption $o, $values = [], $data_array = []) {
+    function __construct($prow, PaperOption $o) { // XXX should be private
         $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
-        if (empty($values) && $prow && $o->id <= 0) {
-            $this->assign_intrinsic();
-        } else {
-            $this->set_value_data($values, $data_array);
-        }
+        $this->_values = [];
+        $this->_data = [];
     }
     static function make($prow, PaperOption $o, $value = null, $data = null) {
-        if ($value === null) {
-            return new PaperValue($prow, $o, [], []);
-        } else {
-            return new PaperValue($prow, $o, [$value], [$data]);
+        $ov = new PaperValue($prow, $o);
+        if ($value !== null) {
+            $ov->set_value_data([$value], [$data]);
         }
+        return $ov;
+    }
+    static function make_multi($prow, PaperOption $o, $values, $datas) {
+        $ov = new PaperValue($prow, $o);
+        $ov->set_value_data($values, $datas);
+        return $ov;
+
     }
     static function make_error($prow, PaperOption $o, $error_html) {
-        $ov = new PaperValue($prow, $o, [], []);
+        $ov = new PaperValue($prow, $o);
         $ov->anno["error_html"] = $error_html;
         return $ov;
     }
-    function assign_value_data($value_data) {
-        error_log("bad assign_value_data");
-        $this->set_value_data($value_data[0], $value_data[1]);
+    static function make_force($prow, PaperOption $o) {
+        $ov = new PaperValue($prow, $o);
+        if ($o->id <= 0) {
+            $o->assign_force($ov);
+            $ov->anno["intrinsic"] = true;
+        }
+        return $ov;
     }
     function load_value_data() {
         $ovd = $this->prow->option_value_data($this->id);
         $this->set_value_data($ovd[0], $ovd[1]);
     }
-    function set_value_data($values, $data_array) {
-        $old_values = $this->_values;
-        $this->_values = $values;
-        $this->_data_array = $data_array;
-        if (count($this->_values) > 1 && $this->_data_array !== null) {
-            $this->option->expand_values($this->_values, $this->_data_array);
-        }
-        if (count($this->_values) == 1 || !$this->option->takes_multiple()) {
-            $this->value = get($this->_values, 0);
-            $this->_data = empty($this->_data_array) ? null : $this->_data_array[0];
-        } else {
-            $this->value = $this->_data = null;
-        }
-        $this->anno = null;
-        if ($this->_documents !== null && $this->_values != $old_values) {
+    function set_value_data($values, $datas) {
+        if ($this->_values != $values) {
+            $this->_values = $values;
             $this->_documents = null;
         }
-    }
-    private function assign_intrinsic() {
-        $s = null;
-        if ($this->id === PaperOption::TITLEID) {
-            $s = $this->prow->title;
-        } else if ($this->id === PaperOption::ABSTRACTID) {
-            $s = $this->prow->abstract;
-        } else if ($this->id === PaperOption::COLLABORATORSID) {
-            $s = $this->prow->collaborators;
-        } else {
-            IntrinsicValue::assign_intrinsic($this);
-            return;
+        $this->_data = $datas;
+        if (count($this->_values) > 1 && $this->_data !== null) {
+            $this->option->expand_values($this->_values, $this->_data);
         }
-        if ($s !== null && $s !== "") {
-            $this->set_value_data([1], [$s]);
+        if (empty($this->_values)
+            || (count($this->_values) !== 1 && $this->option->takes_multiple())) {
+            $this->value = null;
         } else {
-            $this->set_value_data([], []);
+            $this->value = get($this->_values, 0);
         }
+        $this->anno = null;
     }
     function documents() {
         assert($this->prow || empty($this->_values));
@@ -118,16 +105,20 @@ class PaperValue {
         return $this->_values;
     }
     function sorted_values() {
-        if ($this->_data_array === null && count($this->_values) > 1) {
+        if ($this->_data === null && count($this->_values) > 1) {
             $this->load_value_data();
         }
         return $this->_values;
     }
     function data() {
-        if ($this->_data_array === null) {
+        if ($this->_data === null) {
             $this->load_value_data();
         }
-        return $this->_data;
+        if ($this->value !== null) {
+            return get($this->_data, 0);
+        } else {
+            return null;
+        }
     }
     function invalidate() {
         $this->prow->invalidate_options(true);
@@ -1726,7 +1717,7 @@ class AttachmentsPaperOption extends PaperOption {
                 $dids[] = -1;
             }
         }
-        $ov = new PaperValue($prow, $this, $dids, array_fill(0, count($dids), null));
+        $ov = PaperValue::make_multi($prow, $this, $dids, array_fill(0, count($dids), null));
         $ov->anno = $anno;
         return $ov;
     }
@@ -1853,6 +1844,22 @@ class IntrinsicPaperOption extends PaperOption {
     }
     function value_messages(PaperValue $ov, MessageSet $ms) {
         IntrinsicValue::value_messages($this, $ov, $ms);
+    }
+    function assign_force(PaperValue $ov) {
+        $s = null;
+        if ($this->id === PaperOption::TITLEID) {
+            $s = $ov->prow->title;
+        } else if ($this->id === PaperOption::ABSTRACTID) {
+            $s = $ov->prow->abstract;
+        } else if ($this->id === PaperOption::COLLABORATORSID) {
+            $s = $ov->prow->collaborators;
+        } else {
+            IntrinsicValue::assign_intrinsic($ov);
+            return;
+        }
+        if ($s !== null && $s !== "") {
+            $ov->set_value_data([1], [$s]);
+        }
     }
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         return IntrinsicValue::parse_web($this, $prow, $qreq);
