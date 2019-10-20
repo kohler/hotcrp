@@ -2180,8 +2180,10 @@ class PaperTable {
                  ++$this->edit_fields_position) {
                 $o = $this->edit_fields[$this->edit_fields_position];
                 $ov = $reqov = $this->prow->force_option($o);
-                if ($this->useRequest && $this->qreq["has_{$o->formid}"]) {
-                    $reqov = $o->parse_web($this->prow, $this->qreq);
+                if ($this->useRequest
+                    && $this->qreq["has_{$o->formid}"]
+                    && ($x = $o->parse_web($this->prow, $this->qreq))) {
+                    $reqov = $x;
                 }
                 $o->echo_web_edit($this, $ov, $reqov);
             }
