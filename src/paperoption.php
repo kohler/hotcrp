@@ -880,14 +880,43 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
+    function value_present(PaperValue $ov) {
+        return !!$ov->value;
+    }
+    function value_compare($av, $bv) {
+        return 0;
+    }
+    static function basic_value_compare($av, $bv) {
+        $av = $av ? $av->value : null;
+        $bv = $bv ? $bv->value : null;
+        if ($av === $bv) {
+            return 0;
+        } else if ($av === null || $bv === null) {
+            return $av === null ? -1 : 1;
+        } else {
+            return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
+        }
+    }
+    function value_messages(PaperValue $ov, MessageSet $ms) {
+        if ($this->required
+            && !$this->value_present($ov)
+            && $this->test_exists($ov->prow)) {
+            $ms->error_at($this->field_key(), "Entry required.");
+        }
+    }
+    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+        return null;
+    }
+
+    function assign_force(PaperValue $ov) {
+    }
+    function expand_values(&$values, &$data_array) {
+    }
     function refresh_documents(PaperValue $ov) {
     }
 
     function attachment(PaperValue $ov, $name) {
         return null;
-    }
-
-    function expand_values(&$values, &$data_array) {
     }
 
     function display_name() {
@@ -946,40 +975,21 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
-    function value_present(PaperValue $ov) {
-        return !!$ov->value;
-    }
-    function value_compare($av, $bv) {
-        return 0;
-    }
-    function value_messages(PaperValue $ov, MessageSet $ms) {
-        if ($this->required
-            && !$this->value_present($ov)
-            && $this->test_exists($ov->prow)) {
-            $ms->error_at($this->field_key(), "Entry required.");
-        }
-    }
-
-    static function basic_value_compare($av, $bv) {
-        $av = $av ? $av->value : null;
-        $bv = $bv ? $bv->value : null;
-        if ($av === $bv)
-            return 0;
-        else if ($av === null || $bv === null)
-            return $av === null ? -1 : 1;
-        else
-            return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
-    }
-
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
-        return null;
-    }
-
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         return false;
     }
     function parse_json(PaperInfo $prow, $j) {
         return false;
+    }
+    function parse_json_string(PaperInfo $prow, $j, $empty = false) {
+        if (is_string($j) && ($j !== "" || $empty)) {
+            $j = UnicodeHelper::remove_f_ligatures($j);
+            return PaperValue::make($prow, $this, 1, $j);
+        } else if ($j === "") {
+            return PaperValue::make($prow, $this);
+        } else {
+            return PaperValue::make_error($prow, $this, "Expected string.");
+        }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
     }
@@ -1189,7 +1199,6 @@ class SelectorPaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
-
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return get($this->selector, $ov->value - 1, null);
     }
@@ -1266,8 +1275,9 @@ class SelectorPaperOption extends PaperOption {
 
     function store_json($pj, PaperStatus $ps) {
         if (is_string($pj)
-            && ($v = array_search($pj, $this->selector)) !== false)
+            && ($v = array_search($pj, $this->selector)) !== false) {
             $pj = $v + 1;
+        }
         if ((is_int($pj) && isset($this->selector[$pj - 1])) || $pj === null)
             return $pj;
         $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
@@ -1310,12 +1320,23 @@ class DocumentPaperOption extends PaperOption {
         return $o instanceof DocumentPaperOption;
     }
 
+    function value_present(PaperValue $ov) {
+        return $ov->value > ($this->id <= 0 ? 1 : 0);
+    }
     function value_compare($av, $bv) {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
     }
+    function assign_force(PaperValue $ov) {
+        if ($this->id == DTYPE_SUBMISSION) {
+            $ov->set_value_data([$ov->prow->paperStorageId], [null]);
+        } else if ($this->id == DTYPE_FINAL) {
+            $ov->set_value_data([$ov->prow->finalPaperStorageId], [null]);
+        }
+    }
 
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
-        if (!$ov->value) {
+        if ($ov->value === null
+            || $ov->value <= ($this->id <= 0 ? 1 : 0)) {
             return null;
         } else if (($doc = $ps->document_to_json($this->id, $ov->value))) {
             return $doc;
@@ -1353,16 +1374,17 @@ class DocumentPaperOption extends PaperOption {
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXXX this is super gross
-        if ($this->id > 0 && $ov->value)
+        if ($this->id > 0 && $ov->value) {
             $docid = $ov->value;
-        else if ($this->id == DTYPE_SUBMISSION
-                 && $ov->prow->paperStorageId > 1)
+        } else if ($this->id == DTYPE_SUBMISSION
+                   && $ov->prow->paperStorageId > 1) {
             $docid = $ov->prow->paperStorageId;
-        else if ($this->id == DTYPE_FINAL
-                 && $ov->prow->finalPaperStorageId > 0)
+        } else if ($this->id == DTYPE_FINAL
+                   && $ov->prow->finalPaperStorageId > 0) {
             $docid = $ov->prow->finalPaperStorageId;
-        else
+        } else {
             $docid = 0;
+        }
         $pt->echo_editable_document($this, $docid);
     }
 
@@ -1582,21 +1604,10 @@ class TextPaperOption extends PaperOption {
     }
 
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
-        $v = trim((string) $qreq[$this->formid]);
-        if ($v !== "") {
-            return PaperValue::make($prow, $this, 1, convert_to_utf8($v));
-        } else {
-            return PaperValue::make($prow, $this);
-        }
+        return $this->parse_json_string($prow, convert_to_utf8($qreq[$this->formid]));
     }
     function parse_json(PaperInfo $prow, $j) {
-        if (is_string($j) && $j !== "") {
-            return PaperValue::make($prow, $this, 1, $j);
-        } else if ($j === null || $j === "") {
-            return PaperValue::make($prow, $this);
-        } else {
-            return PaperValue::make_error($prow, $this, "Option should be a string.");
-        }
+        return $this->parse_json_string($prow, $j);
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         $this->echo_web_edit_text($pt, $ov, $reqov);
