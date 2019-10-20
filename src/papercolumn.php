@@ -722,13 +722,16 @@ class Tag_PaperColumn extends PaperColumn {
             return false;
         $this->ltag = strtolower($ctag);
         $this->ctag = " {$this->ltag}#";
-        if ($visible)
+        if ($visible) {
             $pl->qopts["tags"] = 1;
+        }
         if ($this->ltag[0] == ":"
             && !$this->is_value
             && ($dt = $pl->user->conf->tags()->check($this->dtag))
-            && count($dt->emoji) == 1)
+            && $dt->emoji !== null
+            && count($dt->emoji) === 1) {
             $this->emoji = $dt->emoji[0];
+        }
         if ($this->editable && $visible > 0 && ($tid = $pl->table_id())) {
             $sorter = get($pl->sorters, 0);
             if ($this->sorts_my_tag($sorter, $pl->user)
