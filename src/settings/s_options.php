@@ -108,12 +108,14 @@ class Options_SettingRenderer {
     }
     private function render_option(SettingValues $sv, PaperOption $o = null, $xpos) {
         if (!$o) {
-            $o = PaperOption::make(array("id" => 0,
+            $o = PaperOption::make((object) [
+                    "id" => 0,
                     "name" => "Field name",
                     "description" => "",
                     "type" => "checkbox",
                     "position" => count($sv->conf->paper_opts->nonfixed_option_list()) + 1,
-                    "display" => "prominent"), $sv->conf);
+                    "display" => "prominent"
+                ], $sv->conf);
         }
 
         if ($sv->use_req()) {
@@ -134,7 +136,7 @@ class Options_SettingRenderer {
                     $args["final"] = true;
                 else if ($sv->reqv("optec_$oxpos") === "search")
                     $args["exists_if"] = $sv->reqv("optecs_$oxpos");
-                $o = PaperOption::make($args, $sv->conf);
+                $o = PaperOption::make((object) $args, $sv->conf);
                 if ($o->has_selector())
                     $o->set_selector_options(explode("\n", rtrim($sv->reqv("optv_$oxpos", ""))));
             }
@@ -268,18 +270,20 @@ class Options_SettingParser extends SettingParser {
             $oarg["type"] = "checkbox";
 
         if (($optec = $sv->reqv("optec_$xpos"))) {
-            if ($optec === "final")
+            if ($optec === "final") {
                 $oarg["final"] = true;
-            else if ($optec === "search") {
+            } else if ($optec === "search") {
                 $optecs = (string) $sv->reqv("optecs_$xpos");
                 if ($optecs !== "" && $optecs !== "(All)") {
                     $ps = new PaperSearch($sv->conf->site_contact(), $optecs);
-                    if (!$this->fake_prow)
+                    if (!$this->fake_prow) {
                         $this->fake_prow = new PaperInfo(null, null, $sv->conf);
-                    if ($ps->term()->compile_condition($this->fake_prow, $ps) === null)
+                    }
+                    if ($ps->term()->compile_condition($this->fake_prow, $ps) === null) {
                         $sv->error_at("optecs_$xpos", "Search too complex for field condition. (Not all search keywords are supported for field conditions.)");
-                    else
+                    } else {
                         $oarg["exists_if"] = $optecs;
+                    }
                     if (!empty($ps->warnings))
                         $sv->warning_at("optecs_$xpos", join("<br>", $ps->warnings));
                 }
@@ -293,8 +297,9 @@ class Options_SettingParser extends SettingParser {
             if ($seltext != "") {
                 foreach (explode("\n", $seltext) as $t)
                     $oarg["selector"][] = $t;
-            } else
+            } else {
                 $sv->error_at("optv_$xpos", "Enter selectors one per line.");
+            }
         }
 
         $oarg["visibility"] = $sv->reqv("optp_$xpos", "rev");
@@ -302,7 +307,7 @@ class Options_SettingParser extends SettingParser {
         $oarg["display"] = $sv->reqv("optdt_$xpos");
         $oarg["required"] = !!$sv->reqv("optreq_$xpos");
 
-        $o = PaperOption::make($oarg, $sv->conf);
+        $o = PaperOption::make((object) $oarg, $sv->conf);
         $o->req_xpos = $xpos;
         $o->is_new = $is_new;
         return $o;

@@ -442,25 +442,28 @@ class PaperInfo {
         $f = [];
         if ($this->title === ""
             || (strlen($this->title) <= 6
-                && preg_match('{\A(?:|N/?A|TB[AD])\z}i', $this->title)))
+                && preg_match('{\A(?:|N/?A|TB[AD])\z}i', $this->title))) {
             $f["title"] = true;
-        if ((string) $this->authorInformation === "")
+        }
+        if ((string) $this->authorInformation === "") {
             $f["authors"] = true;
+        }
         if (((string) $this->abstract === ""
              || (strlen($this->abstract) <= 6
                  && preg_match('{\A(?:|N/?A|TB[AD])\s*\z}i', $this->abstract)))
-            && !$this->conf->opt("noAbstract"))
+            && !$this->conf->opt("noAbstract")) {
             $f["abstract"] = true;
+        }
         if (!$registration
             && !$this->conf->opt("noPapers")
-            && $this->paperStorageId <= 1)
+            && $this->paperStorageId <= 1) {
             $f["submission"] = true;
+        }
         foreach ($this->conf->paper_opts->option_list() as $o) {
             if ($o->required
-                && (!$user || $user->can_view_option($this, $o))) {
-                $ov = $this->option($o) ? : new PaperValue($this, $o);
-                if (!$o->value_present($ov))
-                    $f[$o->json_key()] = true;
+                && (!$user || $user->can_view_option($this, $o))
+                && !$o->value_present($this->force_option($o))) {
+                $f[$o->json_key()] = true;
             }
         }
         return $f;
