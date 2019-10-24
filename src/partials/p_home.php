@@ -377,7 +377,7 @@ class Home_Partial {
         if ($this->_my_rinfo
             && $this->_my_rinfo->num_submitted < $this->_my_rinfo->num_needs_submit
             && !$conf->time_review_open()) {
-            echo ' <span class="deadline">The site is not open for reviewing.</span><br>', "\n";
+            echo ' <em class="deadline">The site is not open for reviewing.</em><br>', "\n";
         } else if ($this->_my_rinfo
                    && $this->_my_rinfo->num_submitted < $this->_my_rinfo->num_needs_submit) {
             $missing_rounds = explode(",", $this->_my_rinfo->unsubmitted_rounds);
@@ -394,17 +394,17 @@ class Home_Partial {
                     if ($d == "N/A")
                         $d = $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, true), "span");
                     if ($d != "N/A")
-                        echo ' <span class="deadline">Please submit your ', $rname, ($this->_my_rinfo->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</span><br>\n";
+                        echo ' <em class="deadline">Please submit your ', $rname, ($this->_my_rinfo->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</em><br>\n";
                 } else if ($conf->time_review($round, $user->isPC, true)) {
-                    echo ' <span class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, false), "span"), ".</span><br>\n";
+                    echo ' <em class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, false), "span"), ".</em><br>\n";
                 } else {
-                    echo ' <span class="deadline"><strong class="overdue">The <a href="', $conf->hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></span><br>\n";
+                    echo ' <em class="deadline"><strong class="overdue">The <a href="', $conf->hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></em><br>\n";
                 }
             }
         } else if ($user->isPC && $user->can_review_any()) {
             $d = $conf->printableTimeSetting($conf->review_deadline(null, $user->isPC, false), "span");
             if ($d != "N/A")
-                echo " <span class=\"deadline\">The review deadline is $d.</span><br>\n";
+                echo " <em class=\"deadline\">The review deadline is $d.</em><br>\n";
         }
         if ($user->isPC && $user->can_review_any()) {
             echo '  <span class="hint">As a PC member, you may review <a href="', $conf->hoturl("search", "q=&amp;t=s"), "\">any submitted paper</a>.</span><br>\n";
@@ -538,9 +538,9 @@ class Home_Partial {
 
         $startable = $conf->timeStartPaper();
         if ($startable && !$user->has_email())
-            echo '<span class="deadline">', $conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to start a submission.</small>";
+            echo '<em class="deadline">', $conf->printableDeadlineSetting("sub_reg", "span"), "</em><br />\n<small>You must sign in to start a submission.</small>";
         else if ($startable || $user->privChair) {
-            echo '<strong><a href="', $conf->hoturl("paper", "p=new"), '">New submission</a></strong> <span class="deadline">(', $conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
+            echo '<strong><a href="', $conf->hoturl("paper", "p=new"), '">New submission</a></strong> <em class="deadline">(', $conf->printableDeadlineSetting("sub_reg", "span"), ")</em>";
             if ($user->privChair)
                 echo '<br><span class="hint">As an administrator, you can start a submission regardless of deadlines and on behalf of others.</span>';
         }
@@ -592,9 +592,9 @@ class Home_Partial {
                 echo '<hr class="g">';
             else if ($startable || $user->privChair)
                 echo "<br>";
-            echo '<span class="deadline">',
-                join("</span><br>\n<span class=\"deadline\">", $deadlines),
-                "</span>";
+            echo '<em class="deadline">',
+                join("</em><br>\n<em class=\"deadline\">", $deadlines),
+                "</em>";
         }
 
         echo "</div>\n";
