@@ -67,10 +67,11 @@ class PaperContactInfo {
         $this->reviewType = max($rt, $this->reviewType);
         $this->reviewSubmitted = max($rs, $this->reviewSubmitted);
         if ($rt > 0) {
-            if ($rs > 0 || $rns == 0)
-                $this->review_status = 1;
-            else if ($this->review_status == 0)
+            if ($rs > 0 || $rns == 0) {
+                $this->review_status = 2;
+            } else if ($this->review_status == 0) {
                 $this->review_status = -1;
+            }
         }
     }
 
