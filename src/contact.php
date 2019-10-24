@@ -2014,17 +2014,18 @@ class Contact {
 
             // check whether this is a potential reviewer
             // (existing external reviewer or PC)
-            if ($ci->reviewType > 0 || $am_lead)
+            if ($ci->reviewType > 0 || $am_lead) {
                 $ci->potential_reviewer = true;
-            else if ($ci->allow_administer || $ci->allow_pc)
+            } else if ($ci->allow_administer || $ci->allow_pc) {
                 $ci->potential_reviewer = !$tracks
                     || !$this->conf->check_track_review_sensitivity()
                     || ($ci->allow_administer
                         && !($this->_dangerous_track_mask & Track::BITS_REVIEW))
                     || ($this->conf->check_tracks($prow, $this, Track::ASSREV)
                         && $this->conf->check_tracks($prow, $this, Track::UNASSREV));
-            else
+            } else {
                 $ci->potential_reviewer = false;
+            }
             $ci->allow_review = $ci->potential_reviewer
                 && ($ci->can_administer || $ci->conflictType <= 0);
 
@@ -2039,8 +2040,9 @@ class Contact {
             if ($this->_capabilities !== null
                 && get($this->_capabilities, "@av{$prow->paperId}")
                 && !$isPC
-                && !$ci->review_status)
+                && $ci->review_status == 0) {
                 $ci->view_conflict_type = CONFLICT_AUTHOR;
+            }
             $ci->act_author_view = $ci->view_conflict_type >= CONFLICT_AUTHOR;
             $ci->allow_author_view = $ci->act_author_view || $ci->allow_administer;
 
@@ -2541,7 +2543,7 @@ class Contact {
         $whyNot = $prow->make_whynot();
         $base_count = count($whyNot);
         if (!$rights->allow_author_view
-            && !$rights->review_status
+            && $rights->review_status == 0
             && !$rights->allow_pc_broad) {
             $whyNot["permission"] = "view_paper";
             if ($this->is_empty())
@@ -2755,7 +2757,7 @@ class Contact {
             : !$rights->act_author_view
               && ($oview === "admin"
                   || ((!$oview || $oview == "rev")
-                      && !$rights->review_status
+                      && $rights->review_status == 0
                       && !$rights->allow_pc_broad)
                   || ($oview == "nonblind"
                       && !$this->can_view_authors($prow)))) {
@@ -2915,7 +2917,7 @@ class Contact {
                 && ($seerev != Conf::PCSEEREV_UNLESSANYINCOMPLETE
                     || !$this->has_outstanding_review())
                 && ($seerev != Conf::PCSEEREV_UNLESSINCOMPLETE
-                    || !$rights->review_status))
+                    || $rights->review_status == 0))
             || ($rights->review_status != 0
                 && !$rights->view_conflict_type
                 && $rrowSubmitted
@@ -2932,7 +2934,7 @@ class Contact {
         $whyNot = $prow->make_whynot();
         if ((!$rights->act_author_view
              && !$rights->allow_pc
-             && !$rights->review_status)
+             && $rights->review_status == 0)
             || ($rights->allow_pc
                 && !$this->conf->check_tracks($prow, $this, Track::VIEWREV)))
             $whyNot["permission"] = "view_review";

@@ -40,8 +40,9 @@ class PaperContactInfo {
             && $user->isPC
             && isset($prow->leadContactId)
             && $prow->leadContactId == $user->contactId
-            && !$prow->conf->setting("lead_noseerev"))
+            && !$prow->conf->setting("lead_noseerev")) {
             $ci->review_status = 1;
+        }
         return $ci;
     }
 
