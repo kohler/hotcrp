@@ -1208,7 +1208,51 @@ concerns.
 
 - Testconf I Submissions
 ******** test06-17external
-To: Mary Baker <mgbaker@cs.stanford.edu>
+To: Peter Druschel <pdruschel@cs.rice.edu>
+Subject: [Testconf I] Submitted review #17A "Network Text Editor (NTE): A
+ Scalable..."
+
+Greetings,
+
+Review #17A for Test Conference I (Testconf I) submission #17 has been
+submitted. The review is available at the submission site.
+
+        Site: http://hotcrp.lcdf.org/test/paper/17
+       Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
+              the MBone
+   Review by: Mary Baker <mgbaker@cs.stanford.edu>
+
+For the most up-to-date reviews and comments, or to unsubscribe from email
+notification, see the submission site.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #17A [R2]
+===========================================================================
+* Reviewer: Mary Baker <mgbaker@cs.stanford.edu>
+* Updated: {{}}
+
+Overall merit
+-------------
+2. Weak reject
+
+Reviewer expertise
+------------------
+1. No familiarity
+
+Paper summary
+-------------
+No summary
+
+Comments for author
+-------------------
+No comments
+
+******** test06-17external
+To: Mary Baker <mgbaker@cs.stanford.edu>, Peter Druschel <pdruschel@cs.rice.edu>
 Subject: [Testconf I] Submitted review #17B "Network Text Editor (NTE): A
  Scalable..."
 X-Landmark: test/test06.php:607
@@ -1253,7 +1297,7 @@ Comments for author
 Bye
 
 ******** test06-17lixia
-To: External Reviewer <external@_.com>, Mary Baker <mgbaker@cs.stanford.edu>
+To: External Reviewer <external@_.com>, Mary Baker <mgbaker@cs.stanford.edu>, Peter Druschel <pdruschel@cs.rice.edu>
 Subject: [Testconf I] Submitted review #17C "Network Text Editor (NTE): A
  Scalable..."
 X-Landmark: test/test06.php:622

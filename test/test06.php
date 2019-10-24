@@ -535,24 +535,29 @@ xassert($sv->execute());
 xassert_eqq(join(" ", $sv->changes()), "review_form");
 
 // saving a JSON review defaults to ready
+xassert_assign($user_chair, "paper,lead\n17,pdruschel\n");
 $paper17 = fetch_paper(17, $user_mgbaker);
 
 xassert_eqq($paper17->review_type($user_mgbaker), REVIEW_PRIMARY);
 xassert_eqq($paper17->review_type($user_diot), 0);
 xassert(!$user_mgbaker->can_view_authors($paper17));
 xassert(!$user_diot->can_view_authors($paper17));
+xassert(!$user_pdruschel->can_view_authors($paper17));
 $Conf->save_setting("sub_blind", Conf::BLIND_NEVER);
 Contact::update_rights();
 xassert($user_mgbaker->can_view_authors($paper17));
 xassert($user_diot->can_view_authors($paper17));
+xassert($user_pdruschel->can_view_authors($paper17));
 $Conf->save_setting("sub_blind", Conf::BLIND_OPTIONAL);
 Contact::update_rights();
 xassert(!$user_mgbaker->can_view_authors($paper17));
 xassert(!$user_diot->can_view_authors($paper17));
+xassert(!$user_pdruschel->can_view_authors($paper17));
 $Conf->save_setting("sub_blind", Conf::BLIND_UNTILREVIEW);
 Contact::update_rights();
 xassert(!$user_mgbaker->can_view_authors($paper17));
 xassert(!$user_diot->can_view_authors($paper17));
+xassert(!$user_pdruschel->can_view_authors($paper17));
 $Conf->save_setting("sub_blind", Conf::BLIND_ALWAYS);
 
 $rrow17m = fetch_review($paper17, $user_mgbaker);

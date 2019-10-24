@@ -114,14 +114,16 @@ class MailChecker {
             }
         }
         $haves = [];
-        foreach (self::$preps as $prep)
+        foreach (self::$preps as $prep) {
             $haves[] = "To: " . join(", ", $prep->to) . "\n"
                 . "Subject: " . str_replace("\r", "", $prep->subject)
                 . "\n\n" . $prep->body;
+        }
         sort($haves);
         $wants = [];
-        foreach ($mdb as $m)
+        foreach ($mdb as $m) {
             $wants[] = preg_replace('/^X-Landmark:.*?\n/m', "", $m[0]) . $m[1];
+        }
         sort($wants);
         foreach ($wants as $i => $want) {
             ++Xassert::$n;
@@ -223,7 +225,7 @@ function xassert_error_handler($errno, $emsg, $file, $line) {
 set_error_handler("xassert_error_handler");
 
 function assert_location() {
-    return caller_landmark(",^x?assert,");
+    return caller_landmark("{^(?:x?assert|MailChecker::check)}");
 }
 
 function xassert($x, $description = "") {
