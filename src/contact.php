@@ -674,14 +674,16 @@ class Contact {
         $n = Text::name_html($user);
         if ($pfx === "r"
             && isset($user->contactTags)
-            && ($viewable = $user->viewable_tags($this))) {
+            && ($this->can_view_user_tags() || $user->contactId == $this->contactId)) {
             $dt = $this->conf->tags();
-            if (($colors = $dt->color_classes($viewable))) {
-                $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
-            }
-            if ($dt->has_decoration) {
-                $tagger = new Tagger($this);
-                $n .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
+            if (($viewable = $dt->strip_nonviewable($user->contactTags, $this, null))) {
+                if (($colors = $dt->color_classes($viewable))) {
+                    $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
+                }
+                if ($dt->has_decoration) {
+                    $tagger = new Tagger($this);
+                    $n .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
+                }
             }
         }
         return $n;
