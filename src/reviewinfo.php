@@ -221,6 +221,7 @@ class ReviewInfo {
         $this->firstName = $c->firstName;
         $this->lastName = $c->lastName;
         $this->email = $c->email;
+        $this->contactTags = $c->contactTags;
         $this->sorter = $c->sorter;
     }
 
