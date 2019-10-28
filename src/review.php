@@ -1202,9 +1202,8 @@ $blind\n";
         $showtoken = $editable && $viewer->active_review_token_for($prow, $rrow);
         if ($viewer->can_view_review_identity($prow, $rrow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
-            if ($rrow->reviewType > 1
-                && $viewer->can_view_user_tags()
-                && isset($rrow->contactTags)) {
+            if (isset($rrow->contactTags)
+                && $viewer->can_view_user_tags()) {
                 $rj["reviewer"] = $viewer->reviewer_html_for($rrow);
             } else {
                 $rj["reviewer"] = Text::name_html($rrow);

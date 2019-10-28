@@ -244,7 +244,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 224) {
+        if ($this->sversion < 225) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2074,6 +2074,11 @@ class Conf {
         $any = $this->invariantq("select email from ContactInfo where email regexp '^anonymous[0-9]*\$' and not disabled limit 1");
         if ($any)
             $this->invariant_error($ie, "anonymous_user_enabled", "anonymous user is not disabled");
+
+        // no empty tags
+        $any = $this->invariantq("select email from ContactInfo where contactTags is not null and trim(contactTags)='' limit 1");
+        if ($any)
+            $this->invariant_error($ie, "empty_user_tags", "user has non-null empty user tags");
 
         // paper denormalizations match
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");

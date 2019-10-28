@@ -1623,6 +1623,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 223
         && update_schema_set_review_time_displayed($conf))
         $conf->update_schema_version(224);
+    if ($conf->sversion == 224
+        && $conf->ql("update ContactInfo set contactTags=null where contactTags=''"))
+        $conf->update_schema_version(225);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

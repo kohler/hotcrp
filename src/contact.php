@@ -849,12 +849,14 @@ class Contact {
     }
 
     function tag_value($t) {
-        if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0)
+        if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0) {
             return 0.0;
-        if ($this->contactTags
-            && ($p = stripos($this->contactTags, " $t#")) !== false)
+        } else if ($this->contactTags
+                   && ($p = stripos($this->contactTags, " $t#")) !== false) {
             return (float) substr($this->contactTags, $p + strlen($t) + 2);
-        return false;
+        } else {
+            return false;
+        }
     }
 
     static function roles_all_contact_tags($roles, $tags) {
@@ -1055,20 +1057,21 @@ class Contact {
         "country" => true, "collaborators" => true, "birthday" => true,
         "gender" => true
     ];
-    static private $no_clean_fields = [
-        "collaborators" => true, "defaultWatch" => true, "contactTags" => true
-    ];
 
     function save_assign_field($k, $v, Contact_Update $cu) {
-        if (!isset(self::$no_clean_fields[$k])) {
+        if ($k === "contactTags") {
+            if ($v !== null && trim($v) === "")
+                $v = null;
+        } else if ($k !== "collaborators" && $k !== "defaultWatch") {
             $v = simplify_whitespace($v);
             if ($k === "birthday" && !$v)
                 $v = null;
         }
         // change contactdb
         if (isset(self::$cdb_fields[$k])
-            && $this->$k !== $v)
+            && $this->$k !== $v) {
             $cu->cdb_qf[] = $k;
+        }
         // change local version
         if ($this->$k !== $v || !$this->contactId) {
             $cu->qv[$k] = $v;

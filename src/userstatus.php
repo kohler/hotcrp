@@ -658,7 +658,7 @@ class UserStatus extends MessageSet {
                 }
             }
             ksort($tags);
-            $t = empty($tags) ? "" : " " . join(" ", $tags) . " ";
+            $t = empty($tags) ? null : " " . join(" ", $tags) . " ";
             if ($user->save_assign_field("contactTags", $t, $cu))
                 $this->diffs["tags"] = true;
         }
