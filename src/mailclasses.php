@@ -121,7 +121,7 @@ class MailRecipients {
         $this->defsel("pc_group", "Program committee", self::F_GROUP);
         $selcount = count($this->sel);
         $this->defsel("pc", "Program committee", self::F_ANYPC | self::F_NOPAPERS);
-        foreach ($this->contact->viewable_user_tags() as $t)
+        foreach ($this->conf->viewable_user_tags($this->contact) as $t)
             if ($t !== "pc")
                 $this->defsel("pc:$t", "#$t program committee", self::F_ANYPC | self::F_NOPAPERS);
         if (count($this->sel) == $selcount + 1)

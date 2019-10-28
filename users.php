@@ -16,9 +16,10 @@ else if (isset($Qreq->getgo) && isset($Qreq->getaction))
 $tOpt = [];
 if ($Me->can_view_pc())
     $tOpt["pc"] = "Program committee";
-foreach ($Me->viewable_user_tags() as $t)
+foreach ($Conf->viewable_user_tags($Me) as $t) {
     if ($t !== "pc")
         $tOpt["#$t"] = "#$t program committee";
+}
 if ($Me->can_view_pc() && $Me->isPC)
     $tOpt["admin"] = "System administrators";
 if ($Me->can_view_pc() && $Me->isPC && ($Qreq->t === "pcadmin" || $Qreq->t === "pcadminx"))

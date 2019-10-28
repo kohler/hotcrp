@@ -20,10 +20,11 @@ class PaperPC_API {
             $k = "{$type}ContactId";
             $cid = $prow->$k;
         }
-        $luser = $cid ? $user->conf->pc_member_by_id($cid) : null;
-        $j = ["ok" => true, "result" => $luser ? $user->name_html_for($luser) : "None"];
-        if ($user->can_view_reviewer_tags($prow))
-            $j["color_classes"] = $cid ? $user->user_color_classes_for($luser) : "";
+        $pcu = $cid ? $user->conf->pc_member_by_id($cid) : null;
+        $j = ["ok" => true, "result" => $pcu ? $user->name_html_for($pcu) : "None"];
+        if ($user->can_view_reviewer_tags($prow)) {
+            $j["color_classes"] = $cid ? $pcu->viewable_color_classes($user) : "";
+        }
         return $j;
     }
 

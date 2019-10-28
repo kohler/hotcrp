@@ -1820,6 +1820,18 @@ class Conf {
         return $map;
     }
 
+    function viewable_user_tags(Contact $viewer) {
+        if ($viewer->privChair) {
+            return $this->pc_tags();
+        } else if ($viewer->can_view_user_tags()) {
+            $t = join(" ", $this->pc_tags());
+            $t = $this->tags()->strip_nonviewable($t, $viewer, null);
+            return explode(" ", $t);
+        } else {
+            return [];
+        }
+    }
+
 
     // contactdb
 
@@ -3631,7 +3643,7 @@ class Conf {
         $hpcj = $list = [];
         foreach ($this->pc_members() as $pcm) {
             $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_text_for($pcm), "email" => $pcm->email];
-            if (($color_classes = $user->user_color_classes_for($pcm))) {
+            if (($color_classes = $pcm->viewable_color_classes($user))) {
                 $j->color_classes = $color_classes;
             }
             if ($this->sort_by_last && $pcm->lastName) {
@@ -3648,7 +3660,7 @@ class Conf {
             $hpcj["__sort__"] = "last";
         }
         if ($user->can_view_user_tags()) {
-            $hpcj["__tags__"] = $user->viewable_user_tags();
+            $hpcj["__tags__"] = $this->viewable_user_tags($user);
         }
         if ($this->paper
             && ($user->privChair || $user->allow_administer($this->paper))) {

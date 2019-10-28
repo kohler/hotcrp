@@ -674,8 +674,11 @@ class Contact {
         $n = Text::name_html($user);
         if ($pfx === "r"
             && isset($user->contactTags)
-            && ($colors = $this->user_color_classes_for($user))) {
-            $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
+            && ($viewable = $user->viewable_tags($this))) {
+            $dt = $this->conf->tags();
+            if (($colors = $dt->color_classes($viewable))) {
+                $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
+            }
         }
         return $n;
     }
@@ -725,10 +728,6 @@ class Contact {
 
     function reviewer_text_for($x) {
         return $this->name_for("t", $x);
-    }
-
-    function user_color_classes_for(Contact $x) {
-        return $x->viewable_color_classes($this);
     }
 
     function ksort_cid_array(&$a) {
@@ -2214,16 +2213,6 @@ class Contact {
     function can_view_user_tag($tag) {
         return $this->can_view_user_tags()
             && $this->conf->tags()->strip_nonviewable($tag, $this, null) !== "";
-    }
-    function viewable_user_tags() {
-        if ($this->privChair)
-            return $this->conf->pc_tags();
-        else if ($this->can_view_pc() && $this->_can_view_pc > 1) {
-            $t = join(" ", $this->conf->pc_tags());
-            $t = $this->conf->tags()->strip_nonviewable($t, $this, null);
-            return explode(" ", $t);
-        } else
-            return [];
     }
 
     function can_view_tracker($tracker_json = null) {
