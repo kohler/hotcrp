@@ -679,6 +679,10 @@ class Contact {
             if (($colors = $dt->color_classes($viewable))) {
                 $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
             }
+            if ($dt->has_decoration) {
+                $tagger = new Tagger($this);
+                $n .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
+            }
         }
         return $n;
     }

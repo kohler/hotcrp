@@ -281,6 +281,12 @@ class ContactList {
             $t = '<span class="taghl">' . $t . '</span>';
             if ($this->user->privChair) {
                 $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? ' class="uu"' : "") . ">$t</a>";
+            }
+            if (($viewable = $row->viewable_tags($this->user))
+                && $this->conf->tags()->has_decoration) {
+                $tagger = new Tagger($this->user);
+                $t .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
+            }
             $roles = $row->viewable_pc_roles($this->user);
             if ($roles === Contact::ROLE_PC && $this->limit === "pc") {
                 $roles = 0;

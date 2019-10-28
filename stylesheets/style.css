@@ -2027,12 +2027,12 @@ td.pl_lastvisit, td.pl_logtime {
 	display: inline-block;
 	font-size: 69%;
 	line-height: 1;
-	padding: 2px 0.3em 2px;
-	background-color: #cccccc;
+	padding: 2px 0.3em 3px;
 	border-radius: 0.3em;
-	bottom: 1px;
 	position: relative;
+	bottom: 1px;
 	white-space: nowrap;
+	background: #cccccc;
 	font-weight: bold;
 }
 .aumovebox {

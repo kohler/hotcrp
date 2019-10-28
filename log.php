@@ -555,34 +555,69 @@ function searchbar(LogRowGenerator $lrg, $page) {
 }
 
 // render rows
+$user_html = [];
+
+function set_user_html($user, $qreq_n) {
+    global $Conf, $Me, $user_html;
+    if (($pc = $Conf->pc_member_by_id($user->contactId))) {
+        $user = $pc;
+    }
+    $t = Text::name_html($user);
+    if ($user->disabled === "deleted") {
+        $t = '<del>' . $t . ' &lt;' . htmlspecialchars($user->email) . '&gt;</del>';
+    }
+    if (($viewable = $user->viewable_tags($Me))) {
+        $dt = $Conf->tags();
+        if (($colors = $dt->color_classes($viewable))) {
+            $t = '<span class="' . $colors . ' taghh">' . $t . '</span>';
+        }
+    }
+    $t = '<a href="' . $Conf->hoturl("log", ["q" => "", "u" => $user->email, "n" => $qreq_n]) . '">' . $t . '</a>';
+    if ($viewable && $dt->has_decoration) {
+        $tagger = new Tagger($Me);
+        $t .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
+    }
+    $roles = 0;
+    if (isset($user->roles) && ($user->roles & Contact::ROLE_PCLIKE)) {
+        $roles = $user->viewable_pc_roles($Me);
+    }
+    if (!($roles & Contact::ROLE_PCLIKE)) {
+        $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';
+    }
+    if ($roles !== 0 && ($rolet = Contact::role_html_for($roles))) {
+        $t .= " $rolet";
+    }
+    $user_html[$user->contactId] = $t;
+    return $t;
+}
+
 function render_users($users, $via) {
-    global $Conf, $Qreq, $Me;
+    global $Conf, $Qreq, $Me, $user_html;
     $all_pc = true;
     $ts = [];
     usort($users, "Contact::compare");
     foreach ($users as $user) {
-        if ($all_pc && (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE)))
+        if ($all_pc
+            && (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE))) {
             $all_pc = false;
-        if (!$user->email && $user->disabled === "deleted")
-            return '<del>[deleted user ' . $user->contactId . ']</del>';
-        else {
-            $t = $Me->reviewer_html_for($user);
-            if ($user->disabled === "deleted")
-                $t = "<del>" . $t . " &lt;" . htmlspecialchars($user->email) . "&gt;</del>";
-            else {
-                $t = '<a href="' . hoturl("log", ["q" => "", "u" => $user->email, "n" => $Qreq->n]) . '">' . $t . '</a>';
-                $roles = 0;
-                if (isset($user->roles) && ($user->roles & Contact::ROLE_PCLIKE))
-                    $roles = $user->viewable_pc_roles($Me);
-                if (!($roles & Contact::ROLE_PCLIKE))
-                    $t .= ' &lt;' . htmlspecialchars($user->email) . '&gt;';
-                if ($roles !== 0 && ($rolet = Contact::role_html_for($roles)))
-                    $t .= " $rolet";
-                if ($via)
-                    $t .= ($via < 0 ? ' <i>via link</i>' : ' <i>via admin</i>');
-            }
-            $ts[] = $t;
         }
+        if ($user->disabled === "deleted") {
+            if ($user->email) {
+                $t = '<del>' . Text::name_html($user) . ' &lt;' . htmlspecialchars($user->email) . '&gt;</del>';
+            } else {
+                $t = '<del>[deleted user ' . $user->contactId . ']</del>';
+            }
+        } else {
+            if (isset($user_html[$user->contactId])) {
+                $t = $user_html[$user->contactId];
+            } else {
+                $t = set_user_html($user, $Qreq->n);
+            }
+            if ($via) {
+                $t .= ($via < 0 ? ' <i>via link</i>' : ' <i>via admin</i>');
+            }
+        }
+        $ts[] = $t;
     }
     if (count($ts) <= 3) {
         return join(", ", $ts);

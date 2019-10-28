@@ -854,7 +854,9 @@ class Tagger {
         return $b . '</span>';
     }
 
-    function unparse_decoration_html($tags) {
+    const DECOR_PAPER = 0;
+    const DECOR_USER = 1;
+    function unparse_decoration_html($tags, $type = 0) {
         if (is_array($tags)) {
             $tags = join(" ", $tags);
         }
@@ -882,7 +884,7 @@ class Tagger {
                     $count = max($count, (float) $value);
                 }
                 $b = self::unparse_emoji_html($e, $count);
-                if (!empty($links)) {
+                if ($type === self::DECOR_PAPER && !empty($links)) {
                     $b = '<a class="qq" href="' . $this->conf->hoturl("search", ["q" => join(" OR ", $links)]) . '">' . $b . '</a>';
                 }
                 if ($x === "") {
@@ -897,10 +899,13 @@ class Tagger {
                 if (($t = $dt->check($mx[1])) && $t->badges) {
                     $klass = ' class="badge ' . $t->badges[0] . 'badge"';
                     $tag = $this->unparse(trim($mx[0]));
-                    if (($link = $this->link($tag))) {
+                    if ($type === self::DECOR_PAPER && ($link = $this->link($tag))) {
                         $b = '<a href="' . $link . '"' . $klass . '>#' . $tag . '</a>';
                     } else {
-                        $b = '<span' . $klass . '>#' . $tag . '</span>';
+                        if ($type !== self::DECOR_USER) {
+                            $tag = '#' . $tag;
+                        }
+                        $b = '<span' . $klass . '>' . $tag . '</span>';
                     }
                     $x .= ' ' . $b;
                 }
