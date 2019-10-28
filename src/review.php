@@ -1204,8 +1204,8 @@ $blind\n";
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
             if ($rrow->reviewType > 1
                 && $viewer->can_view_user_tags()
-                && ($cuser = $prow->conf->pc_member_by_id($rrow->contactId))) {
-                $rj["reviewer"] = $viewer->reviewer_html_for($cuser);
+                && isset($rrow->contactTags)) {
+                $rj["reviewer"] = $viewer->reviewer_html_for($rrow);
             } else {
                 $rj["reviewer"] = Text::name_html($rrow);
             }

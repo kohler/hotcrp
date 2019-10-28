@@ -859,12 +859,14 @@ class Contact {
 
     static function roles_all_contact_tags($roles, $tags) {
         $t = "";
-        if ($roles & self::ROLE_PC)
+        if ($roles & self::ROLE_PC) {
             $t = " pc#0";
-        if ($tags)
+        }
+        if ($tags) {
             return $t . $tags;
-        else
+        } else {
             return $t ? $t . " " : "";
+        }
     }
 
     function all_contact_tags() {
@@ -872,6 +874,7 @@ class Contact {
     }
 
     function viewable_tags(Contact $viewer) {
+        // see also Contact::calculate_name_for
         if ($viewer->can_view_user_tags() || $viewer->contactId == $this->contactId) {
             $tags = $this->all_contact_tags();
             return $this->conf->tags()->strip_nonviewable($tags, $viewer, null);
