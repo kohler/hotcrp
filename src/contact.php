@@ -628,19 +628,21 @@ class Contact {
     }
 
     function is_disabled() {
-        if ($this->_disabled === null)
+        if ($this->_disabled === null) {
             $this->_disabled = $this->disabled
                 || (!$this->isPC && $this->conf->opt("disableNonPC"));
+        }
         return $this->_disabled;
     }
 
     function name() {
-        if ($this->firstName !== "" && $this->lastName !== "")
+        if ($this->firstName !== "" && $this->lastName !== "") {
             return $this->firstName . " " . $this->lastName;
-        else if ($this->lastName !== "")
+        } else if ($this->lastName !== "") {
             return $this->lastName;
-        else
+        } else {
             return $this->firstName;
+        }
     }
 
     function completion_items() {
@@ -664,28 +666,32 @@ class Contact {
     }
 
     private function calculate_name_for($pfx, $user) {
-        if ($pfx === "u")
+        if ($pfx === "u") {
             return $user;
-        if ($pfx === "t")
+        } else if ($pfx === "t") {
             return Text::name_text($user);
+        }
         $n = Text::name_html($user);
         if ($pfx === "r"
             && isset($user->contactTags)
-            && ($colors = $this->user_color_classes_for($user)))
+            && ($colors = $this->user_color_classes_for($user))) {
             $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
+        }
         return $n;
     }
 
     private function name_for($pfx, $x) {
         $cid = is_object($x) ? $x->contactId : $x;
         $key = $pfx . $cid;
-        if (isset($this->_name_for_map[$key]))
+        if (isset($this->_name_for_map[$key])) {
             return $this->_name_for_map[$key];
+        }
 
-        if (+$cid === $this->contactId)
+        if (+$cid === $this->contactId) {
             $x = $this;
-        else if (($pc = $this->conf->pc_member_by_id($cid)))
+        } else if (($pc = $this->conf->pc_member_by_id($cid))) {
             $x = $pc;
+        }
 
         if (!(is_object($x) && isset($x->firstName) && isset($x->lastName) && isset($x->email))) {
             if ($pfx === "u") {
@@ -693,8 +699,9 @@ class Contact {
                     error_log("bad cid at " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
                 $x = $this->conf->user_by_id($cid);
                 $this->_contact_sorter_map[$cid] = $x->sorter;
-            } else
+            } else {
                 $x = $this->name_for("u", $x);
+            }
         }
 
         return ($this->_name_for_map[$key] = $this->calculate_name_for($pfx, $x));
@@ -727,21 +734,22 @@ class Contact {
     function ksort_cid_array(&$a) {
         $pcm = $this->conf->pc_members();
         uksort($a, function ($a, $b) use ($pcm) {
-            if (isset($pcm[$a]) && isset($pcm[$b]))
+            if (isset($pcm[$a]) && isset($pcm[$b])) {
                 return $pcm[$a]->sort_position - $pcm[$b]->sort_position;
-            if (isset($pcm[$a]))
+            }
+            if (isset($pcm[$a])) {
                 $as = $pcm[$a]->sorter;
-            else if (isset($this->_contact_sorter_map[$a]))
+            } else if (isset($this->_contact_sorter_map[$a])) {
                 $as = $this->_contact_sorter_map[$a];
-            else {
+            } else {
                 $x = $this->conf->user_by_id($a);
                 $as = $this->_contact_sorter_map[$a] = $x->sorter;
             }
-            if (isset($pcm[$b]))
+            if (isset($pcm[$b])) {
                 $bs = $pcm[$b]->sorter;
-            else if (isset($this->_contact_sorter_map[$b]))
+            } else if (isset($this->_contact_sorter_map[$b])) {
                 $bs = $this->_contact_sorter_map[$b];
-            else {
+            } else {
                 $x = $this->conf->user_by_id($b);
                 $bs = $this->_contact_sorter_map[$b] = $x->sorter;
             }
@@ -860,15 +868,17 @@ class Contact {
         if ($viewer->can_view_user_tags() || $viewer->contactId == $this->contactId) {
             $tags = $this->all_contact_tags();
             return $this->conf->tags()->strip_nonviewable($tags, $viewer, null);
-        } else
+        } else {
             return "";
+        }
     }
 
     function viewable_color_classes(Contact $viewer) {
-        if (($tags = $this->viewable_tags($viewer)))
+        if (($tags = $this->viewable_tags($viewer))) {
             return $this->conf->tags()->color_classes($tags);
-        else
+        } else {
             return "";
+        }
     }
 
 

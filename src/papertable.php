@@ -209,8 +209,9 @@ class PaperTable {
             $highlight_text = null;
             $title_matches = 0;
             if ($paperTable && $paperTable->matchPreg
-                && ($highlight = get($paperTable->matchPreg, "title")))
+                && ($highlight = get($paperTable->matchPreg, "title"))) {
                 $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
+            }
 
             if (!$title_matches && ($format = $prow->title_format())) {
                 $t .= '<span class="ptitle need-format" data-format="' . $format . '">';

@@ -271,26 +271,31 @@ class ContactList {
     function content($fieldId, $row) {
         switch ($fieldId) {
         case self::FIELD_NAME:
-            if ($this->sortField == $fieldId && $this->conf->sort_by_last)
+            if ($this->sortField == $fieldId && $this->conf->sort_by_last) {
                 $t = Text::name_html($row, NameInfo::make_last_first());
-            else
+            } else {
                 $t = Text::name_html($row);
+            }
             if (trim($t) == "")
                 $t = "[No name]";
             $t = '<span class="taghl">' . $t . '</span>';
-            if ($this->user->privChair)
+            if ($this->user->privChair) {
                 $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? ' class="uu"' : "") . ">$t</a>";
             $roles = $row->viewable_pc_roles($this->user);
-            if ($roles === Contact::ROLE_PC && $this->limit === "pc")
+            if ($roles === Contact::ROLE_PC && $this->limit === "pc") {
                 $roles = 0;
-            if ($roles !== 0 && ($rolet = Contact::role_html_for($roles)))
+            }
+            if ($roles !== 0 && ($rolet = Contact::role_html_for($roles))) {
                 $t .= " $rolet";
-            if ($this->user->privChair && $row->email != $this->user->email)
+            }
+            if ($this->user->privChair && $row->email != $this->user->email) {
                 $t .= " <a href=\"" . hoturl("index", "actas=" . urlencode($row->email)) . "\">"
                     . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($row)))
                     . "</a>";
-            if ($row->is_disabled() && $this->user->isPC)
+            }
+            if ($row->is_disabled() && $this->user->isPC) {
                 $t .= ' <span class="hint">(disabled)</span>';
+            }
             return $t;
         case self::FIELD_EMAIL:
             if (!$this->user->isPC)

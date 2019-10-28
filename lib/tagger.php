@@ -817,54 +817,61 @@ class Tagger {
     }
 
     function unparse($tags) {
-        if ($tags === "" || (is_array($tags) && count($tags) == 0))
+        if ($tags === "" || (is_array($tags) && count($tags) == 0)) {
             return "";
-        if (is_array($tags))
+        }
+        if (is_array($tags)) {
             $tags = join(" ", $tags);
+        }
         $tags = str_replace("#0 ", " ", " $tags ");
-        if ($this->_contactId)
+        if ($this->_contactId) {
             $tags = str_replace(" " . $this->_contactId . "~", " ~", $tags);
+        }
         return trim($tags);
     }
 
     function unparse_hashed($tags) {
-        if (($tags = $this->unparse($tags)) !== "")
+        if (($tags = $this->unparse($tags)) !== "") {
             $tags = str_replace(" ", " #", "#" . $tags);
+        }
         return $tags;
     }
 
     static function unparse_emoji_html($e, $count) {
-        if ($count == 0)
-            $count = 1;
         $b = '<span class="tagemoji">';
-        if ($count == 0 || $count == 1)
+        if ($count == 0 || $count == 1) {
             $b .= $e;
-        else if ($count >= 5.0625)
+        } else if ($count >= 5.0625) {
             $b .= str_repeat($e, 5) . "<sup>+</sup>";
-        else {
+        } else {
             $f = floor($count + 0.0625);
             $d = round(max($count - $f, 0) * 8);
             $b .= str_repeat($e, $f);
-            if ($d)
+            if ($d) {
                 $b .= '<span style="display:inline-block;overflow-x:hidden;vertical-align:bottom;position:relative;bottom:0;width:' . ($d / 8) . 'em">' . $e . '</span>';
+            }
         }
         return $b . '</span>';
     }
 
     function unparse_decoration_html($tags) {
-        if (is_array($tags))
+        if (is_array($tags)) {
             $tags = join(" ", $tags);
-        if (!$tags || $tags === " ")
+        }
+        if (!$tags || $tags === " ") {
             return "";
+        }
         $dt = $this->conf->tags();
         $x = "";
         if ($dt->has_decoration
             && preg_match_all($dt->emoji_regex(), $tags, $m, PREG_SET_ORDER)) {
             $emoji = [];
-            foreach ($m as $mx)
-                if (($t = $dt->check($mx[1])) && $t->emoji)
+            foreach ($m as $mx) {
+                if (($t = $dt->check($mx[1])) && $t->emoji) {
                     foreach ($t->emoji as $e)
                         $emoji[$e][] = ltrim($mx[0]);
+                }
+            }
             foreach ($emoji as $e => $ts) {
                 $links = [];
                 $count = 0;
@@ -875,16 +882,18 @@ class Tagger {
                     $count = max($count, (float) $value);
                 }
                 $b = self::unparse_emoji_html($e, $count);
-                if (!empty($links))
+                if (!empty($links)) {
                     $b = '<a class="qq" href="' . $this->conf->hoturl("search", ["q" => join(" OR ", $links)]) . '">' . $b . '</a>';
-                if ($x === "")
+                }
+                if ($x === "") {
                     $x = " ";
+                }
                 $x .= $b;
             }
         }
         if ($dt->has_badges
-            && preg_match_all($dt->badge_regex(), $tags, $m, PREG_SET_ORDER))
-            foreach ($m as $mx)
+            && preg_match_all($dt->badge_regex(), $tags, $m, PREG_SET_ORDER)) {
+            foreach ($m as $mx) {
                 if (($t = $dt->check($mx[1])) && $t->badges) {
                     $klass = ' class="badge ' . $t->badges[0] . 'badge"';
                     $tag = $this->unparse(trim($mx[0]));
@@ -895,6 +904,8 @@ class Tagger {
                     }
                     $x .= ' ' . $b;
                 }
+            }
+        }
         return $x === "" ? "" : '<span class="tagdecoration">' . $x . '</span>';
     }
 
