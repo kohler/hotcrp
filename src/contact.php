@@ -829,10 +829,12 @@ class Contact {
     }
 
     function has_tag($t) {
-        if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0)
+        if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0) {
             return true;
-        if ($this->contactTags)
+        }
+        if ($this->contactTags) {
             return stripos($this->contactTags, " $t#") !== false;
+        }
         if ($this->contactTags === false) {
             trigger_error(caller_landmark(1, "/^Conf::/") . ": Contact $this->email contactTags missing " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             $this->contactTags = null;

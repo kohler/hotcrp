@@ -21,10 +21,11 @@ class ReviewerList_PaperColumn extends PaperColumn {
             if ($this->topics && $pl->conf->has_topics())
                 $pl->qopts["topics"] = true;
         }
-        if ($pl->conf->review_blindness() === Conf::BLIND_OPTIONAL)
+        if ($pl->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
             $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
-        else
+        } else {
             $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
+        }
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -46,10 +47,11 @@ class ReviewerList_PaperColumn extends PaperColumn {
                 $x[] = $t;
             }
         }
-        if ($x)
+        if ($x) {
             return '<span class="nb">' . join(',</span> <span class="nb">', $x) . '</span>';
-        else
+        } else {
             return "";
+        }
     }
     function text(PaperList $pl, PaperInfo $row) {
         $x = [];
