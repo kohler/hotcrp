@@ -27,10 +27,12 @@ function document_error($status, $msg) {
 
 function document_history_element(DocumentInfo $doc) {
     $pj = ["hash" => $doc->text_hash(), "at" => $doc->timestamp, "mimetype" => $doc->mimetype];
-    if ($doc->size)
+    if ($doc->size) {
         $pj["size"] = $doc->size;
-    if ($doc->filename)
+    }
+    if ($doc->filename) {
         $pj["filename"] = $doc->filename;
+    }
     return (object) $pj;
 }
 
@@ -74,59 +76,69 @@ function document_download($qreq) {
     $want_docid = $request_docid = (int) $dr->docid;
 
     // history
-    if ($qreq->fn === "history")
+    if ($qreq->fn === "history") {
         json_exit(["ok" => true, "result" => document_history($prow, $dr->dtype)]);
+    }
 
-    if (!isset($qreq->version) && isset($qreq->hash))
+    if (!isset($qreq->version) && isset($qreq->hash)) {
         $qreq->version = $qreq->hash;
+    }
 
     // time
     if (isset($qreq->at) && !isset($qreq->version) && $dr->dtype >= DTYPE_FINAL) {
-        if (ctype_digit($qreq->at))
+        if (ctype_digit($qreq->at)) {
             $time = intval($qreq->at);
-        else if (!($time = $Conf->parse_time($qreq->at)))
+        } else if (!($time = $Conf->parse_time($qreq->at))) {
             $time = $Now;
+        }
         $want_pj = null;
         foreach (document_history($prow, $dr->dtype) as $pj) {
-            if ($want_pj && $want_pj->at <= $time && $pj->at < $want_pj->at)
+            if ($want_pj && $want_pj->at <= $time && $pj->at < $want_pj->at) {
                 break;
-            else
+            } else {
                 $want_pj = $pj;
+            }
         }
-        if ($want_pj)
+        if ($want_pj) {
             $qreq->version = $want_pj->hash;
+        }
     }
 
     // version
     if (isset($qreq->version) && $dr->dtype >= DTYPE_FINAL) {
         $version_hash = Filer::hash_as_binary(trim($qreq->version));
-        if (!$version_hash)
+        if (!$version_hash) {
             document_error("404 Not Found", "No such version.");
+        }
         $want_docid = $Conf->fetch_ivalue("select max(paperStorageId) from PaperStorage where paperId=? and documentType=? and sha1=? and filterType is null", $dr->paperId, $dr->dtype, $version_hash);
-        if ($want_docid !== null && $Me->can_view_document_history($prow))
+        if ($want_docid !== null && $Me->can_view_document_history($prow)) {
             $request_docid = $want_docid;
+        }
     }
 
-    if ($dr->attachment && !$request_docid)
+    if ($dr->attachment && !$request_docid) {
         $doc = $prow->attachment($dr->dtype, $dr->attachment);
-    else
+    } else {
         $doc = $prow->document($dr->dtype, $request_docid);
-    if ($want_docid !== 0 && (!$doc || $doc->paperStorageId != $want_docid))
+    }
+    if ($want_docid !== 0 && (!$doc || $doc->paperStorageId != $want_docid)) {
         document_error("404 Not Found", "No such version.");
-    else if (!$doc)
+    } else if (!$doc) {
         document_error("404 Not Found", "No such " . ($dr->attachment ? "attachment" : "document") . " “" . htmlspecialchars($dr->req_filename) . "”.");
+    }
 
     // pass through filters
-    foreach ($dr->filters as $filter)
+    foreach ($dr->filters as $filter) {
         $doc = $filter->apply($doc, $prow) ? : $doc;
+    }
 
     // check for contents request
     if ($qreq->fn === "listing" || $qreq->fn === "consolidatedlisting") {
-        if (!$doc->is_archive())
+        if (!$doc->is_archive()) {
             json_exit(["ok" => false, "error" => "That file is not an archive."]);
-        else if (($listing = $doc->archive_listing(65536)) === false)
+        } else if (($listing = $doc->archive_listing(65536)) === false) {
             json_exit(["ok" => false, "error" => $doc->error ? $doc->error_html : "Internal error."]);
-        else {
+        } else {
             $listing = ArchiveInfo::clean_archive_listing($listing);
             if ($qreq->fn === "consolidatedlisting")
                 $listing = join(", ", ArchiveInfo::consolidate_archive_listing($listing));
