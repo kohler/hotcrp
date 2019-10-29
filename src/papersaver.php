@@ -52,12 +52,25 @@ class Default_PaperSaver extends PaperSaver {
         $admin = $prow ? $user->can_administer($prow) : $user->privChair;
 
         // Contacts
-        if ($qreq->setcontacts || $qreq->has_contacts || $action === "updatecontacts")
+        if ($qreq->setcontacts
+            || $qreq->has_contacts
+            || $action === "updatecontacts") {
             PaperSaver::replace_contacts($pj, $qreq);
-        else if (!$prow)
-            $pj->contacts = array($user);
-        if ($action === "updatecontacts")
+        }
+        if (!$prow) {
+            if (!isset($pj->contacts)) {
+                $pj->contacts = [];
+            }
+            $has_me = !!array_filter($pj->contacts, function ($c) use ($user) {
+                return strcasecmp($c->email, $user->email) === 0;
+            });
+            if (!$has_me) {
+                $pj->contacts[] = $user;
+            }
+        }
+        if ($action === "updatecontacts") {
             return;
+        }
 
         // Title, abstract, collaborators
         foreach (array("title", "abstract", "collaborators") as $k)
