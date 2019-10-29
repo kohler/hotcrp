@@ -114,7 +114,12 @@ function ensure_session($flags = 0) {
         session_commit();
 
         session_id($new_sid);
-        $_COOKIE[$sn] = $new_sid;
+        if (!isset($_COOKIE[$sn]) || $_COOKIE[$sn] !== $new_sid) {
+            $params = session_get_cookie_params();
+            $params["expires"] = $Now + $params["lifetime"];
+            unset($params["lifetime"]);
+            hotcrp_setcookie($sn, $new_sid, $params);
+        }
     } else {
         $session_data = null;
     }
@@ -122,7 +127,8 @@ function ensure_session($flags = 0) {
     session_start();
 
     // maybe kill old session
-    if (isset($_SESSION["deletedat"]) && $_SESSION["deletedat"] < $Now - 30) {
+    if (isset($_SESSION["deletedat"])
+        && $_SESSION["deletedat"] < $Now - 30) {
         $_SESSION = [];
     }
 
