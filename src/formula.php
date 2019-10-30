@@ -1742,10 +1742,12 @@ class Formula implements Abbreviator {
         }
 
         $rsm->finish();
-        if ($rsm->review_type())
-            $es[] = new Fexpr("=", [new RevType_Fexpr, new ConstantFexpr($rsm->review_type(), Fexpr::FREVTYPE)]);
-        if ($rsm->round)
+        if ($rsm->review_type()) {
+            $es[] = new Fexpr("==", [new RevType_Fexpr, new ConstantFexpr($rsm->review_type(), Fexpr::FREVTYPE)]);
+        }
+        if ($rsm->round) {
             $es[] = new InFexpr(new ReviewRound_Fexpr, $rsm->round);
+        }
 
         $e1 = empty($es) ? null : $es[0];
         for ($i = 1; $i < count($es); ++$i)
