@@ -103,7 +103,7 @@ class Decision_Assigner extends Assigner {
         return $x;
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
-        $aset->show_column($this->description);
+        $aset->show_column("status");
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["Paper"] = "write";
