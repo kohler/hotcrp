@@ -3192,7 +3192,7 @@ a:hover .t-editor,
 	border-top: 5px solid #ffddc1;
 	background: #fcfcfb;
 }
-#ccnew {
+#ccactions {
 	background: white;
 	padding-top: 16px;
 }
@@ -3396,7 +3396,7 @@ body {
 	padding-left: 0;
 	padding-right: 0;
 }
-#ccnew {
+#ccactions {
 	display: none;
 }
 }

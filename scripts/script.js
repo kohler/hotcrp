@@ -4248,6 +4248,21 @@ function beforeunload() {
     }
 }
 
+function save_change_id($c, ocid, ncid) {
+    if (ocid !== ncid) {
+        var cp = $c[0].closest(".cmtid");
+        cp.id = ncid;
+        cp = cp.closest(".cmtcard");
+        if (cp.id === "cc" + ocid) {
+            add_pslitem("cc" + ocid, false);
+            cp.id = "cc" + ncid;
+            add_pslitem("cc" + ncid, "Comment");
+        }
+        delete cmts[ocid];
+        newcmt && papercomment.add(newcmt);
+    }
+}
+
 function make_save_callback($c) {
     return function (data, textStatus, jqxhr) {
         if (!data.ok) {
@@ -4279,12 +4294,7 @@ function make_save_callback($c) {
             data.cmt = {is_new: true, response: $c.c.response, editable: true};
         }
         if (data.cmt) {
-            var data_cid = cj_cid(data.cmt);
-            if (cid !== data_cid) {
-                $c.closest(".cmtid")[0].id = data_cid;
-                delete cmts[cid];
-                newcmt && papercomment.add(newcmt);
-            }
+            save_change_id($c, cid, cj_cid(data.cmt));
             render_cmt($c, data.cmt, editing_response, data.msg);
         } else {
             $c.closest(".cmtg").html(data.msg);
@@ -4381,17 +4391,17 @@ function render_cmt($c, cj, editing, msg) {
     var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead, i;
     cmts[cj_cid(cj)] = cj;
     if (cj.is_new && !editing) {
-        var $i = $c.closest(".cmtid");
-        if (!$i.hasClass("cmtcard")
-            && !$i[0].previousSibling
-            && !$i[0].nextSibling) {
-            $i = $i.parent();
+        var ide = $c[0].closest(".cmtid");
+        if (!hasClass(ide, "cmtcard")
+            && !ide.previousSibling
+            && !ide.nextSibling) {
+            ide = ide.closest(".cmtcard");
         }
-        if ($i.hasClass("cmtcard")) {
-            add_pslitem($i[0].id, false);
+        if (hasClass(ide, "cmtcard")) {
+            add_pslitem(ide.id, false);
         }
-        $("#ccnew a[href='#" + $i[0].id + "']").closest(".aabut").removeClass("hidden");
-        $i.remove();
+        $("#ccactions a[href='#" + ide.id + "']").closest(".aabut").removeClass("hidden");
+        $(ide).remove();
         return;
     }
     if (cj.response) {
@@ -4439,14 +4449,16 @@ function render_cmt($c, cj, editing, msg) {
     // text
     hc.push('<div class="cmtv">', '</div>');
     hc.push('<div class="cmtmsg">', '</div>');
-    if (msg)
+    if (msg) {
         hc.push(msg);
+    }
     if (cj.response && cj.draft && cj.text) {
         hc.push('<div class="msg msg-warning"><strong>This response is a draft.</strong>', '</div>');
-        if (cj.submittable)
+        if (cj.submittable) {
             hc.push_pop(' It will not be shown to reviewers unless you <a href="" class="ui js-submit-comment">submit it unchanged</a>.');
-        else
+        } else {
             hc.push_pop(' It will not be shown to reviewers.');
+        }
     }
     hc.pop();
     if (editing) {
@@ -4496,8 +4508,9 @@ function render_cmt_text(format, value, response, textj, chead) {
         && resp_rounds[response]
         && (wlimit = resp_rounds[response].words) > 0) {
         wc = count_words(value);
-        if (wc > 0 && chead)
+        if (wc > 0 && chead) {
             chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
+        }
         if (wc > wlimit) {
             chead && chead.find(".words").addClass("wordsover");
             wc = count_words_split(value, wlimit);
@@ -4528,19 +4541,21 @@ function add(cj, editing) {
     if (!j.length) {
         var $c = $(".pcontainer").children().last();
         if (cj.is_new && !editing) {
-            if (!$c.hasClass("cmtcard") || $c[0].id !== "ccnew") {
-                $c = $('<div class="pcard cmtcard" id="ccnew"><div class="cmtcard-body"><div class="aab aabig"></div></div></div>').appendTo(".pcontainer");
+            if (!$c.hasClass("cmtcard") || $c[0].id !== "ccactions") {
+                $c = $('<div class="pcard cmtcard" id="ccactions"><div class="cmtcard-body"><div class="aab aabig"></div></div></div>').appendTo(".pcontainer");
             }
-            t = '<div class="aabut"><a href="#' + cid + '" class="btn ui js-edit-comment">Add ';
-            if (cj.response) {
-                t += (cj.response == "1" ? "" : cj.response + " ") + "response";
-            } else {
-                t += "comment";
+            if (!$c.find("a[href='#" + cid + "']").length) {
+                t = '<div class="aabut"><a href="#' + cid + '" class="btn ui js-edit-comment">Add ';
+                if (cj.response) {
+                    t += (cj.response == "1" ? "" : cj.response + " ") + "response";
+                } else {
+                    t += "comment";
+                }
+                $c.find(".aabig").append(t + '</a></div>');
             }
-            $c.find(".aabig").append(t + '</a></div>');
             cmts[cid] = cj;
             return;
-        } else if ($c[0].id === "ccnew") {
+        } else if ($c[0].id === "ccactions") {
             $c = $c.prev();
         }
 
@@ -4584,7 +4599,7 @@ function add(cj, editing) {
     }
     render_cmt(j, cj, editing);
     if (cj.response && cj.is_new) {
-        $("#ccnew a[href='#" + cid + "']").closest(".aabut").addClass("hidden");
+        $("#ccactions a[href='#" + cid + "']").closest(".aabut").addClass("hidden");
     }
     return $$(cid);
 }
