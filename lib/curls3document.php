@@ -63,8 +63,11 @@ class CurlS3Document extends S3Result {
         $hstr = preg_replace('/(?:\r\n?|\n)[ \t]+/s', " ", $hstr);
         $this->parse_response_lines(preg_split('/\r\n?|\n/', $hstr));
         $this->status = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
-        if ($this->status === 0)
+        if ($this->status === 0) {
             $this->status = null;
+        } else if ($this->status === 403) {
+            $this->status = $this->s3->check_403();
+        }
         if ($this->status === null || $this->status === 500) {
             $now = microtime(true);
             $this->tries[] = [$this->runindex, round(($now - $this->start) * 1000) / 1000, round(($now - $this->first_start) * 1000) / 1000, $this->status, curl_errno($this->curlh)];

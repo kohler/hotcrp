@@ -584,7 +584,7 @@ class Conf {
         return is_string($x) ? json_decode($x) : $x;
     }
 
-    private function __save_setting($name, $value, $data = null) {
+    function __save_setting($name, $value, $data = null) {
         $change = false;
         if ($value === null && $data === null) {
             if ($this->qe("delete from Settings where name=?", $name)) {
@@ -767,19 +767,17 @@ class Conf {
         global $Now;
         if ($this->_s3_document === false) {
             if ($this->setting_data("s3_bucket")) {
-                $opts = ["key" => $this->setting_data("s3_key"),
-                         "secret" => $this->setting_data("s3_secret"),
-                         "bucket" => $this->setting_data("s3_bucket"),
-                         "scope" => $this->setting_data("__s3_scope"),
-                         "signing_key" => $this->setting_data("__s3_signing_key")];
+                $opts = [
+                    "key" => $this->setting_data("s3_key"),
+                    "secret" => $this->setting_data("s3_secret"),
+                    "bucket" => $this->setting_data("s3_bucket"),
+                    "setting_cache" => $this,
+                    "setting_cache_prefix" => "__s3"
+                ];
                 $this->_s3_document = S3Document::make($opts);
-                list($scope, $signing_key) = $this->_s3_document->scope_and_signing_key($Now);
-                if ($opts["scope"] !== $scope || $opts["signing_key"] !== $signing_key) {
-                    $this->__save_setting("__s3_scope", 1, $scope);
-                    $this->__save_setting("__s3_signing_key", 1, $signing_key);
-                }
-            } else
+            } else {
                 $this->_s3_document = null;
+            }
         }
         return $this->_s3_document;
     }

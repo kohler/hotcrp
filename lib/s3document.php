@@ -46,9 +46,12 @@ class S3Document extends S3Result {
     private $s3_key;
     private $s3_secret;
     private $s3_region;
+    private $setting_cache;
+    private $setting_cache_prefix;
     private $s3_scope;
     private $s3_signing_key;
     private $fixed_time;
+    private $reset_key = false;
 
     static public $retry_timeout_allowance = 10; // in seconds
     static private $instances = [];
@@ -59,9 +62,9 @@ class S3Document extends S3Result {
         $this->s3_secret = $opt["secret"];
         $this->s3_bucket = $opt["bucket"];
         $this->s3_region = get($opt, "region", "us-east-1");
-        $this->s3_scope = get($opt, "scope");
-        $this->s3_signing_key = get($opt, "signing_key");
         $this->fixed_time = get($opt, "fixed_time");
+        $this->setting_cache = get($opt, "setting_cache");
+        $this->setting_cache_prefix = get($opt, "setting_cache_prefix", "__s3");
     }
 
     static function make($opt) {
@@ -81,25 +84,38 @@ class S3Document extends S3Result {
             && $this->s3_bucket === $bucket;
     }
 
-    private function check_scope($s3_scope_date) {
-        return $this->s3_scope
-            && substr($this->s3_scope, 0, 8) === $s3_scope_date
-            && preg_match('{\G/([^/]*)/s3/aws4_request\z}',
-                          $this->s3_scope, $m, 0, 8)
-            && $m[1] === $this->s3_region;
-    }
-
     function scope_and_signing_key($time) {
+        global $Now;
+        if ($this->s3_scope === null
+            && $this->setting_cache) {
+            $this->s3_scope = $this->setting_cache->setting_data($this->setting_cache_prefix . "_scope");
+            $this->s3_signing_key = $this->setting_cache->setting_data($this->setting_cache_prefix . "_signing_key");
+        }
         $s3_scope_date = gmdate("Ymd", $time);
-        if (!$this->check_scope($s3_scope_date)) {
-            $this->s3_scope = $s3_scope_date . "/" . $this->s3_region
-                . "/s3/aws4_request";
+        $expected_s3_scope = $s3_scope_date . "/" . $this->s3_region
+            . "/s3/aws4_request";
+        if ($this->s3_scope !== $expected_s3_scope) {
+            $this->reset_key = true;
+            $this->s3_scope = $expected_s3_scope;
             $date_key = hash_hmac("sha256", $s3_scope_date, "AWS4" . $this->s3_secret, true);
             $region_key = hash_hmac("sha256", $this->s3_region, $date_key, true);
             $service_key = hash_hmac("sha256", "s3", $region_key, true);
             $this->s3_signing_key = hash_hmac("sha256", "aws4_request", $service_key, true);
+            if ($this->setting_cache) {
+                $this->setting_cache->__save_setting($this->setting_cache_prefix . "_scope", $Now, $this->s3_scope);
+                $this->setting_cache->__save_setting($this->setting_cache_prefix . "_signing_key", $Now, $this->s3_signing_key);
+            }
         }
-        return array($this->s3_scope, $this->s3_signing_key);
+        return [$this->s3_scope, $this->s3_signing_key];
+    }
+
+    function check_403() {
+        if (!$this->reset_key) {
+            $this->s3_scope = $this->s3_signing_key = "";
+            return null;
+        } else {
+            return 403;
+        }
     }
 
     function signature($method, $url, $hdr, $content = null) {
@@ -247,6 +263,9 @@ class S3Document extends S3Result {
         for ($i = 1; true; ++$i) {
             $this->clear_result();
             $this->run_stream_once($skey, $method, $args);
+            if ($this->status === 403) {
+                $this->status = $this->check_403();
+            }
             if ($this->status !== null && $this->status !== 500) {
                 return;
             }
