@@ -8,8 +8,9 @@ foreach (["c" => "count", "V" => "verbose", "m" => "match", "d" => "dry-run",
     if (isset($arg[$s]) && !isset($arg[$l]))
         $arg[$l] = $arg[$s];
 }
-if (isset($arg["silent"]))
+if (isset($arg["silent"])) {
     $arg["quiet"] = false;
+}
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n"
                  . "           [-d|--dry-run] [-u USAGELIMIT]\n");
@@ -51,8 +52,9 @@ if (isset($arg["max-usage"])) {
     }
     $want_fs = $ts * (1 - (float) $arg["max-usage"]);
     $usage_threshold = $want_fs - $fs;
-    if (!isset($arg["count"]))
+    if (!isset($arg["count"])) {
         $count = 5000;
+    }
 }
 
 
@@ -61,7 +63,8 @@ $fparts = new DocumentFileTree($dp, new DocumentHashMatcher(get($arg, "match")))
 
 $ndone = $nsuccess = $bytesremoved = 0;
 
-while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_threshold)) {
+while ($count > 0
+       && ($usage_threshold === null || $bytesremoved < $usage_threshold)) {
     $x = [];
     for ($i = 0; $x ? count($x) < 5 && $i < 10 : $i < 10000; ++$i) {
         $fm = $fparts->random_match();
@@ -84,18 +87,20 @@ while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_thresh
     $fm = $x[0];
     $fparts->hide($fm);
 
-    $doc = new DocumentInfo(["sha1" => $fm->algohash,
-                             "mimetype" => Mimetype::type($fm->extension)], $Conf);
+    $doc = new DocumentInfo([
+        "sha1" => $fm->algohash,
+        "mimetype" => Mimetype::type($fm->extension)
+    ], $Conf);
     $hashalg = $doc->hash_algorithm();
     $ok = false;
     $size = 0;
-    if ($hashalg === false)
+    if ($hashalg === false) {
         fwrite(STDERR, "{$fm->fname}: unknown hash\n");
-    else if (($chash = hash_file($hashalg, $fm->fname, true)) === false)
+    } else if (($chash = hash_file($hashalg, $fm->fname, true)) === false) {
         fwrite(STDERR, "{$fm->fname}: is unreadable\n");
-    else if ($chash !== $doc->binary_hash_data())
+    } else if ($chash !== $doc->binary_hash_data()) {
         fwrite(STDERR, "{$fm->fname}: incorrect hash\n");
-    else if ($doc->check_s3()) {
+    } else if ($doc->check_s3()) {
         $size = filesize($fm->fname);
         if ($dry_run) {
             if ($verbose)
@@ -105,10 +110,12 @@ while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_thresh
             if ($verbose)
                 fwrite(STDOUT, "{$fm->fname}: removed\n");
             $ok = true;
-        } else
+        } else {
             fwrite(STDERR, "{$fm->fname}: cannot remove\n");
-    } else
+        }
+    } else {
         fwrite(STDERR, "{$fm->fname}: not on S3\n");
+    }
     --$count;
     ++$ndone;
     if ($ok) {
@@ -117,8 +124,10 @@ while ($count > 0 && ($usage_threshold === null || $bytesremoved < $usage_thresh
     }
 }
 
-if ($verbose && $usage_threshold !== null && $bytesremoved >= $usage_threshold)
+if ($verbose && $usage_threshold !== null && $bytesremoved >= $usage_threshold) {
     fwrite(STDOUT, $usage_directory . ": free space above threshold\n");
-if (!isset($arg["quiet"]))
+}
+if (!isset($arg["quiet"])) {
     fwrite(STDOUT, $usage_directory . ": " . ($dry_run ? "would remove " : "removed ") . plural($nsuccess, "file") . ", " . plural($bytesremoved, "byte") . "\n");
+}
 exit($nsuccess && $nsuccess == $ndone ? 0 : 1);

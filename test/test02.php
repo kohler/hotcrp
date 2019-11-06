@@ -8,10 +8,12 @@ $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 require_once("$ConfSitePATH/test/setup.php");
 
 // S3 unit tests
-$s3d = new S3Document(array("key" => "AKIAIOSFODNN7EXAMPLE",
-                            "secret" => "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                            "bucket" => null,
-                            "fixed_time" => gmmktime(0, 0, 0, 5, 24, 2013)));
+$s3d = new S3Document([
+    "key" => "AKIAIOSFODNN7EXAMPLE",
+    "secret" => "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    "bucket" => null,
+    "fixed_time" => gmmktime(0, 0, 0, 5, 24, 2013)
+]);
 global $Now;
 $Now = gmmktime(0, 0, 0, 5, 24, 2013);
 

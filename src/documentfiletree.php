@@ -30,8 +30,9 @@ class DocumentFileTree {
             }
         }
 
-        foreach ($this->_components as $fp)
+        foreach ($this->_components as $fp) {
             $this->_pregs[] = $matcher->make_preg($fp);
+        }
 
         $this->n = count($this->_components);
         $this->populate_dirinfo("", 0);
@@ -42,8 +43,9 @@ class DocumentFileTree {
             $dir .= $this->_components[$pos];
             ++$pos;
         }
-        if ($pos >= $this->n)
+        if ($pos >= $this->n) {
             return 1;
+        }
         $di = [];
         $preg = $this->_pregs[$pos];
         $n = 0;
@@ -101,24 +103,30 @@ class DocumentFileTree {
                     $xext = $m[1];
                     $build .= $m[1];
                     $text = substr($text, strlen($m[1]));
-                } else
+                } else {
                     $xext = "";
+                }
             } else if ($fn === "j") {
                 $l = min(strlen($xhash), 2);
-                if (substr($text, 0, $l) !== (string) substr($xhash, 0, $l))
+                if (substr($text, 0, $l) !== (string) substr($xhash, 0, $l)) {
                     return false;
+                }
                 if (preg_match('{\A([0-9a-f]{2,3})}', $text, $mm)) {
-                    if (strlen($mm[1]) > strlen($xhash))
+                    if (strlen($mm[1]) > strlen($xhash)) {
                         $xhash = $mm[1];
-                    if (strlen($mm[1]) == 2 && $xalgo === null)
+                    }
+                    if (strlen($mm[1]) == 2 && $xalgo === null) {
                         $xalgo = "";
+                    }
                     // XXX don't track that algo *cannot* be SHA-1
-                    if (strlen($mm[1]) == 2 ? $xalgo !== "" : $xalgo === "")
+                    if (strlen($mm[1]) == 2 ? $xalgo !== "" : $xalgo === "") {
                         return false;
+                    }
                     $build .= $mm[1];
                     $text = substr($text, strlen($mm[1]));
-                } else
+                } else {
                     return false;
+                }
             } else if ($fn === "a") {
                 if (preg_match('{\A(sha1|sha256)}', $text, $mm)) {
                     $malgo = $mm[1] === "sha1" ? "" : "sha2-";
@@ -128,17 +136,19 @@ class DocumentFileTree {
                         return false;
                     $build .= $mm[1];
                     $text = substr($text, strlen($mm[1]));
-                } else
+                } else {
                     return false;
+                }
             } else {
                 if ($fn === "A" || $fn === "h") {
                     if ($xalgo !== null) {
                         if ($xalgo !== (string) substr($text, 0, strlen($xalgo)))
                             return false;
-                    } else if (preg_match('{\A((?:sha2-)?)}', $text, $mm))
+                    } else if (preg_match('{\A((?:sha2-)?)}', $text, $mm)) {
                         $xalgo = $mm[1];
-                    else
+                    } else {
                         return false;
+                    }
                     $build .= $xalgo;
                     $text = substr($text, strlen($xalgo));
                     if ($fn === "A")
@@ -159,8 +169,9 @@ class DocumentFileTree {
                         $xhash = $mm[1];
                     $build .= $mm[1];
                     $text = substr($text, strlen($mm[1]));
-                } else
+                } else {
                     return false;
+                }
             }
         }
         if ((string) $text !== $match) {
@@ -305,8 +316,9 @@ class DocumentFileTreeDir {
             $this->clean();
             $r = count($this->_di) - 1;
         }
-        if ($r === 0)
+        if ($r === 0) {
             return false;
+        }
         do {
             $val = mt_rand(0, $this->_di[$r] - 1);
         } while (isset($this->_used[$val]));

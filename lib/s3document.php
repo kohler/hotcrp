@@ -9,9 +9,9 @@ class S3Result {
     public $user_data;
 
     function check_skey($skey) {
-        if ((string) $skey !== "")
+        if ((string) $skey !== "") {
             return true;
-        else {
+        } else {
             $this->status = 404;
             $this->status_text = "Filename missing";
             $this->response_headers = $this->user_data = [];
@@ -27,12 +27,13 @@ class S3Result {
             $this->status = (int) $m[1];
             $this->status_text = $m[2];
         }
-        for ($i = 1; $i != count($w); ++$i)
+        for ($i = 1; $i != count($w); ++$i) {
             if (preg_match('{\A(.*?):\s*(.*)\z}', $w[$i], $m)) {
                 $this->response_headers[strtolower($m[1])] = $m[2];
                 if (substr($m[1], 0, 11) == "x-amz-meta-")
                     $this->user_data[substr($m[1], 11)] = $m[2];
             }
+        }
     }
 }
 
@@ -112,23 +113,26 @@ class S3Document extends S3Result {
 
         if (($query = $m[3]) !== "") {
             $a = [];
-            foreach (explode("&", $query) as $x)
+            foreach (explode("&", $query) as $x) {
                 if (($pos = strpos($x, "=")) !== false) {
                     $k = substr($x, 0, $pos);
                     $v = rawurlencode(urldecode(substr($x, $pos + 1)));
                     $a[$k] = "$k=$v";
-                } else
+                } else {
                     $a[$x] = "$x=";
+                }
+            }
             ksort($a);
             $query = join("&", $a);
         }
 
         $chdr = ["Host" => $host];
-        foreach ($hdr as $k => $v)
+        foreach ($hdr as $k => $v) {
             if (strcasecmp($k, "host")) {
                 $v = trim($v);
                 $chdr[$k] = $v;
             }
+        }
         if (!isset($chdr["x-amz-content-sha256"])) {
             if ($content !== false && $content !== "" && $content !== null)
                 $h = hash("sha256", $content);
@@ -165,15 +169,17 @@ class S3Document extends S3Result {
             . hash("sha256", $canonical_request);
 
         $hdrarr = [];
-        foreach ($chdr as $k => $v)
+        foreach ($chdr as $k => $v) {
             $hdrarr[] = $k . ": " . $v;
+        }
         $signature = hash_hmac("sha256", $signable, $signing_key);
         $hdrarr[] = "Authorization: AWS4-HMAC-SHA256 Credential="
             . $this->s3_key . "/" . $scope
             . ",SignedHeaders=" . substr($chk, 1)
             . ",Signature=" . $signature;
-        if (self::$verbose)
+        if (self::$verbose) {
             error_log(var_export($hdrarr, true));
+        }
         return ["headers" => $hdrarr, "signature" => $signature];
     }
 
@@ -188,12 +194,13 @@ class S3Document extends S3Result {
                         $xkey = "x-amz-meta-$xkey";
                     $hdr[$xkey] = $xvalue;
                 }
-            } else if ($key === "content")
+            } else if ($key === "content") {
                 $content = $value;
-            else if ($key === "content_type")
+            } else if ($key === "content_type") {
                 $content_type = $value;
-            else
+            } else {
                 $hdr[$key] = $value;
+            }
         }
         $sig = $this->signature($method, $url, $hdr, $content);
         return [$url, $sig["headers"], $content, $content_type];
@@ -228,8 +235,9 @@ class S3Document extends S3Result {
     }
 
     private function run($skey, $method, $args) {
-        if (!$this->check_skey($skey))
+        if (!$this->check_skey($skey)) {
             return;
+        }
         if (isset($args["content"])
             && strlen($args["content"]) > 10000000
             && strlen($args["content"]) * 2.5 > ini_get_bytes("memory_limit")
@@ -239,8 +247,9 @@ class S3Document extends S3Result {
         for ($i = 1; true; ++$i) {
             $this->clear_result();
             $this->run_stream_once($skey, $method, $args);
-            if ($this->status !== null && $this->status !== 500)
+            if ($this->status !== null && $this->status !== 500) {
                 return;
+            }
             if (self::$retry_timeout_allowance <= 0 || $i >= 5) {
                 trigger_error("S3 error: $method $skey: failed", E_USER_WARNING);
                 return;
@@ -254,10 +263,11 @@ class S3Document extends S3Result {
     function save($skey, $content, $content_type, $user_data = null) {
         $this->run($skey, "HEAD", []);
         if ($this->status != 200
-            || get($this->response_headers, "content-length") != strlen($content))
+            || get($this->response_headers, "content-length") != strlen($content)) {
             $this->run($skey, "PUT", ["content" => $content,
                                       "content_type" => $content_type,
                                       "user_data" => $user_data]);
+        }
         return $this->status == 200;
     }
 
@@ -297,9 +307,10 @@ class S3Document extends S3Result {
 
     function ls($prefix, $args = []) {
         $suffix = "?list-type=2&prefix=" . urlencode($prefix);
-        foreach (["max-keys", "start-after", "continuation-token"] as $k)
+        foreach (["max-keys", "start-after", "continuation-token"] as $k) {
             if (isset($args[$k]))
                 $suffix .= "&" . $k . "=" . urlencode($args[$k]);
+        }
         $this->run($suffix, "GET", []);
         return get($this->response_headers, "content");
     }

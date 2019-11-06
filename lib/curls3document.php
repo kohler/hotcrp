@@ -80,8 +80,9 @@ class CurlS3Document extends S3Result {
         while (true) {
             $this->prepare();
             $this->exec();
-            if ($this->parse_result())
+            if ($this->parse_result()) {
                 return;
+            }
             $timeout = 0.005 * (1 << $this->runindex);
             S3Document::$retry_timeout_allowance -= $timeout;
             usleep(1000000 * $timeout);

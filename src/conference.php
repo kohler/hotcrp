@@ -312,21 +312,27 @@ class Conf {
         $this->crosscheck_round_settings();
 
         // S3 settings
-        foreach (array("s3_bucket", "s3_key", "s3_secret") as $k)
+        foreach (array("s3_bucket", "s3_key", "s3_secret") as $k) {
             if (!get($this->settingTexts, $k) && ($x = get($this->opt, $k)))
                 $this->settingTexts[$k] = $x;
+        }
         if (!get($this->settingTexts, "s3_key")
             || !get($this->settingTexts, "s3_secret")
-            || !get($this->settingTexts, "s3_bucket"))
+            || !get($this->settingTexts, "s3_bucket")) {
             unset($this->settingTexts["s3_key"], $this->settingTexts["s3_secret"],
                   $this->settingTexts["s3_bucket"]);
-        if (get($this->opt, "dbNoPapers") && !get($this->opt, "docstore")
-            && !get($this->opt, "filestore") && !get($this->settingTexts, "s3_bucket"))
+        }
+        if (get($this->opt, "dbNoPapers")
+            && !get($this->opt, "docstore")
+            && !get($this->opt, "filestore")
+            && !get($this->settingTexts, "s3_bucket")) {
             unset($this->opt["dbNoPapers"]);
+        }
         if ($this->_s3_document
             && (!isset($this->settingTexts["s3_bucket"])
-                || !$this->_s3_document->check_key_secret_bucket($this->settingTexts["s3_key"], $this->settingTexts["s3_secret"], $this->settingTexts["s3_bucket"])))
+                || !$this->_s3_document->check_key_secret_bucket($this->settingTexts["s3_key"], $this->settingTexts["s3_secret"], $this->settingTexts["s3_bucket"]))) {
             $this->_s3_document = false;
+        }
 
         // tracks settings
         $this->_tracks = $this->_track_tags = null;
