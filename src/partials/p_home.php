@@ -470,12 +470,11 @@ class Home_Partial {
             echo "</div>";
 
         if ($user->is_reviewer()) {
-            echo "<div class=\"homesubgrp has-fold fold20c ui-unfold js-open-activity\" id=\"homeactivity\" data-fold-session=\"foldhomeactivity\">",
+            echo "<div class=\"homesubgrp has-fold fold20c ui-unfold js-open-activity need-fold-storage\" id=\"homeactivity\" data-fold-storage=\"homeactivity\">",
                 foldupbutton(20),
                 "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class=\"fx20\">:</span></a>",
                 "</div>";
-            if (!$user->session("foldhomeactivity", 1))
-                Ht::stash_script("foldup.call(\$(\"#homeactivity\")[0],null,20)");
+            Ht::stash_script("fold_storage()");
         }
 
         echo "</div>\n";

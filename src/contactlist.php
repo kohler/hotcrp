@@ -770,9 +770,9 @@ class ContactList {
         if ($foldclasses && $foldsession) {
             $fs = [];
             foreach (self::$folds as $k => $fold) {
-                $fs[$k + 1] = $foldsession . $fold;
+                $fs[$k + 1] = $fold;
             }
-            $x .= "\" data-fold-session=\"" . htmlspecialchars(json_encode_browser($fs));
+            $x .= "\" data-fold-session=\"" . htmlspecialchars(json_encode_browser($fs)) . "\" data-fold-session-prefix=\"" . htmlspecialchars($foldsession);
         }
         $x .= "\">\n";
 

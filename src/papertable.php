@@ -251,14 +251,9 @@ class PaperTable {
     }
 
     private function echoDivEnter() {
-        // translate session
-        $unfolds = $this->user->session("foldpaper", []);
-        if (is_string($unfolds))
-            $unfolds = explode(" ", $unfolds);
-
         // 5: topics, 6: abstract, 7: [JavaScript abstract expansion],
         // 8: blind authors, 9: full authors
-        $foldsession = [5 => "t", 6 => "b", 8 => "a", 9 => "p"];
+        $foldstorage = [5 => "t", 6 => "b", 8 => "a", 9 => "p"];
         $this->foldnumber = ["topics" => 5];
 
         // other expansions
@@ -272,12 +267,12 @@ class PaperTable {
                 if (strlen($o->display_group) > 1
                     && !isset($this->foldnumber[$o->display_group])) {
                     $this->foldnumber[$o->display_group] = $next_foldnum;
-                    $foldsession[$next_foldnum] = str_replace(" ", "_", $o->display_group);
+                    $foldstorage[$next_foldnum] = str_replace(" ", "_", $o->display_group);
                     ++$next_foldnum;
                 }
                 if ($o->display_expand) {
                     $this->foldnumber[$o->formid] = $next_foldnum;
-                    $foldsession[$next_foldnum] = $o->formid;
+                    $foldstorage[$next_foldnum] = $o->formid;
                     ++$next_foldnum;
                 }
             }
@@ -286,9 +281,8 @@ class PaperTable {
         // what is folded?
         // if highlighting, automatically unfold abstract/authors
         $this->foldmap = [];
-        foreach ($foldsession as $num => $k) {
-            $this->foldmap[$num] = !in_array($k, $unfolds)
-                && ($this->allFolded || $k === "a");
+        foreach ($foldstorage as $num => $k) {
+            $this->foldmap[$num] = $this->allFolded || $k === "a";
         }
         if ($this->foldmap[6]) {
             $abstract = $this->entryData("abstract");
@@ -302,7 +296,7 @@ class PaperTable {
         }
 
         // collect folders
-        $folders = array("clearfix");
+        $folders = ["clearfix", "need-fold-storage"];
         foreach ($this->foldmap as $num => $f) {
             if ($num !== 8 || $this->user->view_authors_state($this->prow) === 1)
                 $folders[] = "fold" . $num . ($f ? "c" : "o");
@@ -310,8 +304,9 @@ class PaperTable {
 
         // echo div
         echo '<div id="foldpaper" class="', join(" ", $folders),
-            '" data-fold-session-prefix="foldpaper." data-fold-session="',
-            htmlspecialchars(json_encode_browser($foldsession)), '">';
+            '" data-fold-storage-prefix="p." data-fold-storage="',
+            htmlspecialchars(json_encode_browser($foldstorage)), '">';
+        Ht::stash_script("fold_storage()");
     }
 
     private function echoDivExit() {
@@ -1358,7 +1353,7 @@ class PaperTable {
             $fold = 0;
 
         $option = $this->conf->paper_opts->get(PaperOption::COLLABORATORSID);
-        $this->_papstripBegin("pscollab", $fold, ["data-fold-session" => "foldpscollab"]);
+        $this->_papstripBegin("pscollab", $fold, ["data-fold-storage" => "p.collab", "class" => "need-fold-storage"]);
         echo $this->papt("collaborators", $option->title_html(),
                          ["type" => "ps", "fold" => "pscollab", "folded" => $fold]),
             '<div class="psv"><div class="fx">', $data,

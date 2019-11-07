@@ -2686,8 +2686,43 @@ var hotcrp_load = (function ($) {
 })(jQuery);
 
 
+function fold_storage() {
+    if (!this || this === window) {
+        $(".need-fold-storage").each(fold_storage);
+    } else {
+        removeClass(this, "need-fold-storage");
+        var sn = this.getAttribute("data-fold-storage"), smap, k, v,
+            spfx = this.getAttribute("data-fold-storage-prefix") || "";
+        if (sn.charAt(0) === "{" || sn.charAt(0) === "[") {
+            smap = JSON.parse(sn) || {};
+        } else {
+            var m = this.className.match(/\bfold(\d*)[oc]\b/),
+                n = m[1] === "" ? 0 : +m[1];
+            smap = {};
+            smap[n] = sn;
+        }
+        sn = wstorage.json(true, "fold") || wstorage.json(false, "fold") || {};
+        for (k in smap) {
+            if (sn[spfx + smap[k]]) {
+                foldup.call(this, null, {f: false, n: +k});
+            }
+        }
+    }
+}
+
+function fold_session_for(foldnum, type) {
+    var s = this.getAttribute("data-fold-" + type);
+    if (s && (s.charAt(0) === "{" || s.charAt(0) === "[")) {
+        s = (JSON.parse(s) || {})[foldnum];
+    }
+    if (s && this.hasAttribute("data-fold-" + type + "-prefix")) {
+        s = this.getAttribute("data-fold-" + type + "-prefix") + s;
+    }
+    return s;
+}
+
 function fold(elt, dofold, foldnum) {
-    var i, foldname, opentxt, closetxt, isopen, foldnumid;
+    var i, foldname, opentxt, closetxt, isopen, foldnumid, s;
 
     // find element
     if (elt && ($.isArray(elt) || elt.jquery)) {
@@ -2723,17 +2758,15 @@ function fold(elt, dofold, foldnum) {
         }
 
         // check for session
-        var ses = elt.getAttribute("data-fold-session");
-        if (ses) {
-            if (ses.charAt(0) === "{" || ses.charAt(0) === "[") {
-                ses = (JSON.parse(ses) || {})[foldnum];
-            }
-            if (elt.hasAttribute("data-fold-session-prefix")) {
-                ses = elt.getAttribute("data-fold-session-prefix") + ses;
-            }
-            if (ses) {
-                $.post(hoturl_post("api/session", {v: ses + (isopen ? "=1" : "=0")}));
-            }
+        if ((s = fold_session_for.call(elt, foldnum, "storage"))) {
+            var sj = wstorage.json(true, "fold") || {};
+            isopen ? delete sj[s] : sj[s] = 1;
+            wstorage(true, "fold", $.isEmptyObject(sj) ? null : sj);
+            var sj = wstorage.json(false, "fold") || {};
+            isopen ? delete sj[s] : sj[s] = 1;
+            wstorage(false, "fold", $.isEmptyObject(sj) ? null : sj);
+        } else if ((s = fold_session_for.call(elt, foldnum, "session"))) {
+            $.post(hoturl_post("api/session", {v: s + (isopen ? "=1" : "=0")}));
         }
     }
 
