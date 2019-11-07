@@ -132,9 +132,6 @@ class PaperList {
     private $_column_errors_by_name = [];
     private $_current_find_column;
 
-    private $_header_script = "";
-    private $_header_script_map = [];
-
     // columns access
     public $qopts; // set by PaperColumn::prepare
     public $sorters = [];
@@ -1355,21 +1352,6 @@ class PaperList {
         return new PaperListReviewAnalysis($xrow, $row);
     }
 
-    function add_header_script($script, $uniqueid = false) {
-        if ($uniqueid) {
-            if (isset($this->_header_script_map[$uniqueid]))
-                return;
-            $this->_header_script_map[$uniqueid] = true;
-        }
-        if ($this->_header_script !== ""
-            && ($ch = $this->_header_script[strlen($this->_header_script) - 1]) !== "}"
-            && $ch !== "{"
-            && $ch !== ";") {
-            $this->_header_script .= ";";
-        }
-        $this->_header_script .= $script;
-    }
-
     private function _columns($field_list, $table_html, $all) {
         $this->conf->xt_factory_error_handler = [$this, "column_error"];
         $field_list = $this->_canonicalize_columns($field_list);
@@ -1659,10 +1641,6 @@ class PaperList {
             $tfoot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($tfoot)
             $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable-colored" : "") . '">' . $tfoot . "</tfoot>\n";
-
-        // header scripts to set up delegations
-        if ($this->_header_script)
-            $rstate->thead .= '  ' . Ht::script($this->_header_script) . "\n";
 
         $rstate->rows = $body;
         return $rstate;
