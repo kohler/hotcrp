@@ -2694,10 +2694,12 @@ function fold(elt, dofold, foldnum) {
         for (i = 0; i < elt.length; i++)
             fold(elt[i], dofold, foldnum);
         return false;
-    } else if (typeof elt == "string")
+    } else if (typeof elt == "string") {
         elt = $$("fold" + elt) || $$(elt);
-    if (!elt)
+    }
+    if (!elt) {
         return false;
+    }
 
     // find element name, fold number, fold/unfold
     foldname = /^fold/.test(elt.id || "") ? elt.id.substr(4) : false;
@@ -2706,7 +2708,7 @@ function fold(elt, dofold, foldnum) {
     closetxt = "fold" + foldnumid + "c";
 
     // check current fold state
-    isopen = elt.className.indexOf(opentxt) >= 0;
+    isopen = hasClass(elt, opentxt);
     if (dofold == null || !dofold != isopen) {
         // perform fold
         if (isopen) {
@@ -2715,18 +2717,23 @@ function fold(elt, dofold, foldnum) {
             elt.className = elt.className.replace(closetxt, opentxt);
         }
         var focused = document.activeElement;
-        if (!focused || !hasClass(focused, "keep-focus"))
-            (!isopen && focus_within(elt)) || refocus_within(elt);
+        if ((!focused || !hasClass(focused, "keep-focus"))
+            && (isopen || !focus_within(elt))) {
+            refocus_within(elt);
+        }
 
         // check for session
         var ses = elt.getAttribute("data-fold-session");
         if (ses) {
-            if (ses.charAt(0) === "{" || ses.charAt(0) === "[")
+            if (ses.charAt(0) === "{" || ses.charAt(0) === "[") {
                 ses = (JSON.parse(ses) || {})[foldnum];
-            if (elt.hasAttribute("data-fold-session-prefix"))
+            }
+            if (elt.hasAttribute("data-fold-session-prefix")) {
                 ses = elt.getAttribute("data-fold-session-prefix") + ses;
-            if (ses)
+            }
+            if (ses) {
                 $.post(hoturl_post("api/session", {v: ses + (isopen ? "=1" : "=0")}));
+            }
         }
     }
 
@@ -2735,15 +2742,17 @@ function fold(elt, dofold, foldnum) {
 
 function foldup(event, opts) {
     var e = this, dofold = false, m, x;
-    if (typeof opts === "number")
+    if (typeof opts === "number") {
         opts = {n: opts};
-    else if (!opts)
+    } else if (!opts) {
         opts = {};
+    }
     if (this.tagName === "DIV"
         && event
         && event.target.closest("a")
-        && !opts.required)
+        && !opts.required) {
         return;
+    }
     if (!("n" in opts)
         && e.hasAttribute("data-fold-target")
         && (m = e.getAttribute("data-fold-target").match(/^(\D[^#]*$|.*(?=#)|)#?(\d*)([co]?)$/))) {
@@ -2761,10 +2770,12 @@ function foldup(event, opts) {
            && !hasClass(e, "has-fold")
            && (opts.n == null
                || (!hasClass(e, foldname + "c")
-                   && !hasClass(e, foldname + "o"))))
+                   && !hasClass(e, foldname + "o")))) {
         e = e.parentNode;
-    if (!e)
+    }
+    if (!e) {
         return true;
+    }
     if (opts.n == null && (m = e.className.match(/\bfold(\d*)[oc]\b/))) {
         opts.n = +m[1];
         foldname = "fold" + (opts.n || "");
@@ -2772,9 +2783,9 @@ function foldup(event, opts) {
     if (!("f" in opts)
         && (this.tagName === "INPUT" || this.tagName === "SELECT")) {
         var value = null;
-        if (this.type === "checkbox")
+        if (this.type === "checkbox") {
             opts.f = !this.checked;
-        else if (this.type === "radio") {
+        } else if (this.type === "radio") {
             if (!this.checked)
                 return true;
             value = this.value;
@@ -2792,8 +2803,9 @@ function foldup(event, opts) {
         fold(e, dofold, opts.n || 0);
         $(e).trigger(opts.f ? "fold" : "unfold", opts);
     }
-    if (this.hasAttribute("aria-expanded"))
+    if (this.hasAttribute("aria-expanded")) {
         this.setAttribute("aria-expanded", dofold ? "false" : "true");
+    }
     if (event && typeof event === "object" && event.type === "click"
         && !hasClass(event.target, "uix")) {
         event.stopPropagation();

@@ -1438,27 +1438,32 @@ class PaperList {
     }
 
     private function _table_render($report_id, $options) {
-        if (!$this->_prepare($report_id))
+        if (!$this->_prepare($report_id)) {
             return PaperListTableRender::make_error("Internal error");
+        }
         // need tags for row coloring
-        if ($this->user->can_view_tags(null))
+        if ($this->user->can_view_tags(null)) {
             $this->qopts["tags"] = true;
+        }
 
         // get column list
         $field_list = $this->_list_columns();
-        if ($field_list === false)
+        if ($field_list === false) {
             return PaperListTableRender::make_error("No matching report");
+        }
         $field_list = $this->_columns($field_list, true, false);
         $rows = $this->_rows($field_list);
 
         if (empty($rows)) {
-            if ($rows === null)
+            if ($rows === null) {
                 return null;
+            }
             if (($altq = $this->search->alternate_query())) {
                 $altqh = htmlspecialchars($altq);
                 $url = $this->search->url_site_relative_raw($altq);
-                if (substr($url, 0, 5) == "search")
+                if (substr($url, 0, 5) == "search") {
                     $altqh = "<a href=\"" . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $altqh . "</a>";
+                }
                 return PaperListTableRender::make_error("No matching papers. Did you mean “{$altqh}”?");
             }
             return PaperListTableRender::make_error("No matching papers");
@@ -1478,48 +1483,58 @@ class PaperList {
                     ++$next_fold;
                 }
             }
-            if ($fdef->name == "title")
+            if ($fdef->name == "title") {
                 $titlecol = $ncol;
-            if ($fdef->viewable_column() && $fdef->is_visible)
+            }
+            if ($fdef->viewable_column() && $fdef->is_visible) {
                 ++$ncol;
+            }
         }
 
         // count non-callout columns
         $skipcallout = 0;
-        foreach ($fieldDef as $fdef)
+        foreach ($fieldDef as $fdef) {
             if ($fdef->viewable_column()) {
                 if ($fdef->position === null || $fdef->position >= 100)
                     break;
                 else
                     ++$skipcallout;
             }
+        }
 
         // create render state
         $rstate = new PaperListTableRender($ncol, $titlecol, $skipcallout);
 
         // prepare table attributes
         $this->table_attr["class"] = ["pltable"];
-        if ($this->_table_class)
+        if ($this->_table_class) {
             $this->table_attr["class"][] = $this->_table_class;
-        if (get($options, "list"))
+        }
+        if (get($options, "list")) {
             $this->table_attr["class"][] = "has-hotlist has-fold";
-        if ($this->_table_id)
+        }
+        if ($this->_table_id) {
             $this->table_attr["id"] = $this->_table_id;
-        if (!empty($options["attributes"]))
+        }
+        if (!empty($options["attributes"])) {
             foreach ($options["attributes"] as $n => $v)
                 $this->table_attr[$n] = $v;
+        }
         if (get($options, "fold_session_prefix")) {
             $this->table_attr["data-fold-session-prefix"] = $options["fold_session_prefix"];
             $this->table_attr["data-fold-session"] = json_encode_browser([
                 "2" => "anonau", "5" => "force", "6" => "rownum", "7" => "statistics"
             ]);
         }
-        if ($this->search->is_order_anno)
+        if ($this->search->is_order_anno) {
             $this->table_attr["data-order-tag"] = $this->search->is_order_anno;
-        if ($this->groups)
+        }
+        if ($this->groups) {
             $this->table_attr["data-groups"] = json_encode_browser($this->groups);
-        if (get($options, "list"))
+        }
+        if (get($options, "list")) {
             $this->table_attr["data-hotlist"] = $this->session_list_object()->info_string();
+        }
         if ($this->sortable && ($url = $this->search->url_site_relative_raw())) {
             $url = Navigation::siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
             $this->table_attr["data-sort-url-template"] = $url;
@@ -1531,8 +1546,9 @@ class PaperList {
         $need_render = false;
         foreach ($rows as $row) {
             $this->_row_setup($row);
-            if ($grouppos >= 0)
+            if ($grouppos >= 0) {
                 $grouppos = $this->_groups_for($grouppos, $rstate, $body, false);
+            }
             $body[] = $this->_row_content($rstate, $row, $fieldDef);
             if ($this->need_render && !$need_render) {
                 Ht::stash_script('$(plinfo.render_needed)', 'plist_render_needed');
@@ -1543,19 +1559,23 @@ class PaperList {
                 $this->need_render = false;
             }
         }
-        if ($grouppos >= 0 && $grouppos < count($this->groups))
+        if ($grouppos >= 0 && $grouppos < count($this->groups)) {
             $this->_groups_for($grouppos, $rstate, $body, true);
-        if ($this->count === 0)
+        }
+        if ($this->count === 0) {
             return PaperListTableRender::make_error("No matching papers");
+        }
 
         // analyze `has`, including authors
-        foreach ($fieldDef as $fdef)
+        foreach ($fieldDef as $fdef) {
             $this->mark_has($fdef->name, $fdef->has_content);
+        }
 
         // statistics rows
         $tfoot = "";
-        if (!$this->_view_columns)
+        if (!$this->_view_columns) {
             $tfoot = $this->_statistics_rows($rstate, $fieldDef);
+        }
 
         // analyze folds
         $this->_analyze_folds($rstate, $fieldDef);
@@ -1610,12 +1630,14 @@ class PaperList {
         // table skeleton including fold classes
         $enter = "<table";
         foreach ($this->table_attr as $k => $v) {
-            if (is_array($v) || is_object($v))
+            if (is_array($v) || is_object($v)) {
                 $v = $k === "class" ? join(" ", $v) : json_encode_browser($v);
-            if ($k === "data-columns" || $k === "data-groups")
+            }
+            if ($k === "data-columns" || $k === "data-groups") {
                 $enter .= " $k='" . str_replace("'", "&#039;", htmlspecialchars($v, ENT_NOQUOTES)) . "'";
-            else
+            } else {
                 $enter .= " $k=\"" . htmlspecialchars($v) . "\"";
+            }
         }
         $rstate->table_start = $enter . ">\n";
         $rstate->table_end = "</table>";
@@ -1631,16 +1653,19 @@ class PaperList {
             $rstate->thead = $colhead;
             $rstate->tbody_class = "pltable" . ($rstate->hascolors ? " pltable-colored" : "");
         }
-        if ($this->has_editable_tags)
+        if ($this->has_editable_tags) {
             $rstate->tbody_class .= " need-editable-tags";
+        }
 
         // footer
         reset($fieldDef);
         if (current($fieldDef) instanceof Selector_PaperColumn
-            && !get($options, "nofooter"))
+            && !get($options, "nofooter")) {
             $tfoot .= $this->_footer($ncol, get_s($options, "footer_extra"));
-        if ($tfoot)
+        }
+        if ($tfoot) {
             $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable-colored" : "") . '">' . $tfoot . "</tfoot>\n";
+        }
 
         $rstate->rows = $body;
         return $rstate;
