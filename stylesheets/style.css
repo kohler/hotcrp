@@ -2462,6 +2462,7 @@ tr.plx {
 	font-weight: 500;
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
+	text-indent: 0;
 }
 h1 .badge {
 	font-size: 51%;
