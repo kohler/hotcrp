@@ -79,7 +79,7 @@ class DocumentRequest {
         $this->opt = $this->dtype = null;
         while ((string) $dtname !== "" && $this->dtype === null) {
             if (str_starts_with($dtname, "comment-")
-                && preg_match('{\Acomment-(?:c[aAxX]?\d+|\w*response)\z}', $dtname)) {
+                && preg_match('{\Acomment-(?:c[aAxX]?\d+|(?:|[a-zA-Z][-a-zA-Z0-9]*)response)\z}', $dtname)) {
                 $this->dtype = DTYPE_COMMENT;
                 $this->linkid = substr($dtname, 8);
                 break;
