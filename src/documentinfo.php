@@ -712,10 +712,16 @@ class DocumentInfo implements JsonSerializable {
         } else if ($this->documentType == DTYPE_FINAL) {
             $fn .= "final" . $this->paperId;
         } else if ($this->documentType == DTYPE_COMMENT) {
-            assert(!$filters);
-            $fn .= "paper" . $this->paperId . "/comment";
-            if (($cmt = get($rest, "_comment")))
-                $fn .= "-" . $cmt->unparse_html_id();
+            $cmt = get($rest, "_comment");
+            assert(!$filters && $cmt);
+            $fn .= "paper" . $this->paperId;
+            if (!$cmt) {
+                $fn .= "/comment";
+            } else if ($cmt->is_response()) {
+                $fn .= "/" . $cmt->unparse_html_id();
+            } else {
+                $fn .= "/comment-" . $cmt->unparse_html_id();
+            }
             return $fn . "/" . ($this->unique_filename ? : $this->filename);
         } else {
             $o = $this->conf->paper_opts->get($this->documentType);
@@ -736,9 +742,10 @@ class DocumentInfo implements JsonSerializable {
             $fn .= $oabbr;
         }
         $mimetype = $this->mimetype;
-        if ($filters === null && isset($this->filters_applied))
+        if ($filters === null && isset($this->filters_applied)) {
             $filters = $this->filters_applied;
-        if ($filters)
+        }
+        if ($filters) {
             foreach (is_array($filters) ? $filters : [$filters] as $filter) {
                 if (is_string($filter))
                     $filter = FileFilter::find_by_name($filter);
@@ -747,13 +754,15 @@ class DocumentInfo implements JsonSerializable {
                     $mimetype = $filter->mimetype($this, $mimetype);
                 }
             }
+        }
         if ($mimetype) {
-            if (($ext = Mimetype::extension($mimetype)))
+            if (($ext = Mimetype::extension($mimetype))) {
                 $fn .= $ext;
-            else if ($this->filename
-                     && preg_match('/(\.[A-Za-z0-9]{1,5})\z/', $this->filename, $m)
-                     && (!$filters || $mimetype === $this->mimetype))
+            } else if ($this->filename
+                       && preg_match('/(\.[A-Za-z0-9]{1,5})\z/', $this->filename, $m)
+                       && (!$filters || $mimetype === $this->mimetype)) {
                 $fn .= $m[1];
+            }
         }
         return $fn;
     }

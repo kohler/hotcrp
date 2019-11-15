@@ -1373,26 +1373,30 @@ class Conf {
     }
 
     static function round_name_error($rname) {
-        if ((string) $rname === "")
+        if ((string) $rname === "") {
             return "Empty round name.";
-        else if (!preg_match('/\A[a-zA-Z][-a-zA-Z0-9]*\z/', $rname))
+        } else if (!preg_match('/\A[a-zA-Z](?:|[-a-zA-Z0-9]*[a-zA-Z0-9])\z/', $rname)) {
             return "Round names must start with a letter and contain only letters, numbers, and dashes.";
-        else if (preg_match('/\A(?:none|any|all|default|unnamed|.*response|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))\z/i', $rname))
+        } else if (preg_match('/\A(?:none|any|all|default|unnamed|.*response|response.*|draft.*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))\z/i', $rname)) {
             return "Round name $rname is reserved.";
-        else
+        } else {
             return false;
+        }
     }
 
     function sanitize_round_name($rname) {
-        if ($rname === null)
+        if ($rname === null) {
             return (string) get($this->settingTexts, "rev_roundtag");
-        else if ($rname === "" || !strcasecmp($rname, "(none)")
-                 || !strcasecmp($rname, "none") || !strcasecmp($rname, "unnamed"))
+        } else if ($rname === ""
+                   || !strcasecmp($rname, "(none)")
+                   || !strcasecmp($rname, "none")
+                   || !strcasecmp($rname, "unnamed")) {
             return "";
-        else if (self::round_name_error($rname))
+        } else if (self::round_name_error($rname)) {
             return false;
-        else
+        } else {
             return $rname;
+        }
     }
 
     function assignment_round_option($external) {
@@ -1481,14 +1485,7 @@ class Conf {
     }
 
     static function resp_round_name_error($rname) {
-        if ((string) $rname === "")
-            return "Empty round name.";
-        else if (!preg_match('/\A[a-zA-Z][-a-zA-Z0-9]*\z/', $rname))
-            return "Round names must start with a letter and contain only letters, numbers, and dashes.";
-        else if (preg_match('/\A(?:none|any|draft-?.*|.*response)\z/i', $rname))
-            return "Round name “{$rname}” is reserved.";
-        else
-            return false;
+        return self::round_name_error($rname);
     }
 
     function resp_round_number($rname) {

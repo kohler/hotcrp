@@ -92,9 +92,14 @@ class DocumentRequest {
         $this->opt = $this->dtype = null;
         while ((string) $dtname !== "" && $this->dtype === null) {
             if (str_starts_with($dtname, "comment-")
-                && preg_match('{\Acomment-(?:c[aAxX]?\d+|(?:|[a-zA-Z][-a-zA-Z0-9]*)response)\z}', $dtname)) {
+                && preg_match('{\Acomment-(?:c[aAxX]?\d+|(?:|[a-zA-Z](?:|[-a-zA-Z0-9]*))response)\z}', $dtname)) {
                 $this->dtype = DTYPE_COMMENT;
                 $this->linkid = substr($dtname, 8);
+                break;
+            } else if ((str_starts_with($dtname, "response") || str_ends_with($dtname, "response"))
+                       && preg_match('{\A[-a-zA-Z0-9]*\z}', $dtname)) {
+                $this->dtype = DTYPE_COMMENT;
+                $this->linkid = $dtname;
                 break;
             }
             if (($dtnum = cvtint($dtname, null)) !== null) {
@@ -131,6 +136,17 @@ class DocumentRequest {
             $this->dtype = $this->opt->id;
         } else if ($this->dtype === null) {
             throw new Exception("Document “{$dtname}” not found.");
+        }
+
+        // canonicalize response naming
+        if ($this->dtype === DTYPE_COMMENT) {
+            if (str_starts_with($this->linkid, "response")) {
+                if (strlen($this->linkid) > 8) {
+                    $this->linkid = substr($this->linkid, 0, $this->linkid[8] === "-" ? 9 : 8) . "response";
+                }
+            } else if (str_ends_with($this->linkid, "-response")) {
+                $this->linkid = substr($this->linkid, 0, -9) . "response";
+            }
         }
 
         if (isset($req["filter"])) {
