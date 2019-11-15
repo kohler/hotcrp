@@ -19,7 +19,7 @@ class MessageSet {
     const ERROR = 2;
 
     function __construct() {
-        $this->clear();
+        $this->clear_messages();
     }
     function clear_messages() {
         $this->errf = $this->msgs = [];

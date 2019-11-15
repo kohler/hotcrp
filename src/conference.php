@@ -481,11 +481,15 @@ class Conf {
             }
 
         // remove final slash from $Opt["paperSite"]
-        if (!isset($this->opt["paperSite"]) || $this->opt["paperSite"] == "")
+        if (!isset($this->opt["paperSite"]) || $this->opt["paperSite"] === "") {
             $this->opt["paperSite"] = Navigation::base_absolute();
-        if ($this->opt["paperSite"] == "" && isset($this->opt["defaultPaperSite"]))
+        }
+        if ($this->opt["paperSite"] == "" && isset($this->opt["defaultPaperSite"])) {
             $this->opt["paperSite"] = $this->opt["defaultPaperSite"];
-        $this->opt["paperSite"] = preg_replace('|/+\z|', "", $this->opt["paperSite"]);
+        }
+        while (str_ends_with($this->opt["paperSite"], "/")) {
+            $this->opt["paperSite"] = substr($this->opt["paperSite"], 0, -1);
+        }
 
         // option name updates (backwards compatibility)
         foreach (array("assetsURL" => "assetsUrl",
@@ -1413,8 +1417,9 @@ class Conf {
             $this->__save_setting("tag_rounds", 1, $rtext);
             $this->crosscheck_round_settings();
             return $this->round_number($rname, false);
-        } else
+        } else {
             return false;
+        }
     }
 
     function round_selector_options($isexternal) {
@@ -2826,8 +2831,9 @@ class Conf {
         if ($result->error) {
             self::msg_error($result->error_html);
             return false;
-        } else
+        } else {
             return true;
+        }
     }
 
     function make_csvg($basename, $flags = 0) {

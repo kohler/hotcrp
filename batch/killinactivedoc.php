@@ -31,5 +31,6 @@ if (count($killable)) {
     $Conf->qe_raw("update PaperStorage set paper=NULL where paperStorageId in ("
         . join(",", array_keys($killable)) . ")");
     fwrite(STDOUT, count($killable) . " documents killed.\n");
-} else
+} else {
     fwrite(STDOUT, "Nothing to do\n");
+}

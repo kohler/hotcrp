@@ -145,8 +145,9 @@ class CommentInfo {
             if ($this->commentType & COMMENTTYPE_DRAFT)
                 $t = "Draft $t";
             return $t;
-        } else
+        } else {
             return null;
+        }
     }
 
     static function group_by_identity($crows, Contact $viewer, $separateColors) {
@@ -179,11 +180,13 @@ class CommentInfo {
                 $result[] = [$cr, 1, $connector];
                 if ($record)
                     $known_cids[$cid] = count($result) - 1;
-            } else
+            } else {
                 ++$result[$known_cids[$cid]][1];
+            }
         }
-        if (!empty($result))
+        if (!empty($result)) {
             $result[count($result) - 1][2] = "";
+        }
         return $result;
     }
 
@@ -229,10 +232,11 @@ class CommentInfo {
 
     function viewable_tags(Contact $viewer) {
         if ($this->commentTags
-            && $viewer->can_view_comment_tags($this->prow, $this))
+            && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->strip_nonviewable($this->commentTags, $viewer, $this->prow);
-        else
+        } else {
             return null;
+        }
     }
 
     function viewable_nonresponse_tags(Contact $viewer) {
@@ -242,8 +246,9 @@ class CommentInfo {
             if ($this->commentType & COMMENTTYPE_RESPONSE)
                 $tags = trim(preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", " $tags "));
             return $tags;
-        } else
+        } else {
             return null;
+        }
     }
 
     function has_tag($tag) {

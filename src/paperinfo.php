@@ -1212,21 +1212,24 @@ class PaperInfo {
 
     function document($dtype, $did = 0, $full = false) {
         if ($did <= 0) {
-            if ($dtype == DTYPE_SUBMISSION)
+            if ($dtype == DTYPE_SUBMISSION) {
                 $did = $this->paperStorageId;
-            else if ($dtype == DTYPE_FINAL)
+            } else if ($dtype == DTYPE_FINAL) {
                 $did = $this->finalPaperStorageId;
-            else if (($oa = $this->force_option($dtype))
-                     && $oa->option->is_document())
+            } else if (($oa = $this->force_option($dtype))
+                       && $oa->option->is_document()) {
                 return $oa->document(0);
+            }
         }
 
-        if ($did <= 1)
+        if ($did <= 1) {
             return null;
+        }
 
         if ($this->_document_array !== null
-            && array_key_exists($did, $this->_document_array))
+            && array_key_exists($did, $this->_document_array)) {
             return $this->_document_array[$did];
+        }
 
         if ((($dtype == DTYPE_SUBMISSION
               && $did == $this->paperStorageId
@@ -1241,8 +1244,9 @@ class PaperInfo {
         if ($this->_document_array === null) {
             $result = $this->conf->qe("select " . $this->_document_sql() . " from PaperStorage where paperId=? and inactive=0", $this->paperId);
             $this->_document_array = [];
-            while (($di = DocumentInfo::fetch($result, $this->conf, $this)))
+            while (($di = DocumentInfo::fetch($result, $this->conf, $this))) {
                 $this->_document_array[$di->paperStorageId] = $di;
+            }
             Dbl::free($result);
         }
         if (!array_key_exists($did, $this->_document_array)) {
@@ -1320,9 +1324,10 @@ class PaperInfo {
     }
     function linked_documents($linkid, $min, $max) {
         $docs = [];
-        foreach (get($this->doclink_array(), $linkid, []) as $lt => $docid)
+        foreach (get($this->doclink_array(), $linkid, []) as $lt => $docid) {
             if ($lt >= $min && $lt < $max)
                 $docs[] = $this->document(-2, $docid);
+        }
         if (!empty($docs))
             DocumentInfo::assign_unique_filenames($docs);
         return $docs;
