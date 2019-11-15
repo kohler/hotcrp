@@ -4476,10 +4476,10 @@ function render_cmt($c, cj, editing, msg) {
     }
     if (cj.is_new && !cj.response) {
         hc.push('<div class="cmtnumid"><div class="cmtnum">New Comment</div></div>');
-    } else if (cj.editable && !editing) {
-        if (cj.response) {
-            var $h3 = $(chead).find("h3");
-            $h3.append(' <span class="t-editor">✎</span>').wrap('<a href="" class="nn ui cmteditor"></a>');
+    } else if (cj.editable && !editing && cj.response) {
+        var $h3 = $(chead).find("h3");
+        if (!$h3.find("a").length) {
+            $h3.html('<a href="" class="nn ui cmteditor">' + $h3.html() + ' <span class="t-editor">✎</span></a>');
         }
     }
     t = comment_identity_time(cj);
