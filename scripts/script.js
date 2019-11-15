@@ -4275,7 +4275,7 @@ function render_attachment_link(hc, doc) {
         if (doc.size > 921)
             hc.push(Math.round(doc.size / 1024));
         else if (doc.size > 0)
-            hc.push(Math.round(doc.size / 102.4) / 10);
+            hc.push(Math.max(Math.round(doc.size / 102.4), 1) / 10);
         else
             hc.push("0");
         hc.pop();
