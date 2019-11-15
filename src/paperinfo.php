@@ -1327,11 +1327,15 @@ class PaperInfo {
     function linked_documents($linkid, $min, $max) {
         $docs = [];
         foreach (get($this->doclink_array(), $linkid, []) as $lt => $docid) {
-            if ($lt >= $min && $lt < $max)
-                $docs[] = $this->document(-2, $docid);
+            if ($lt >= $min
+                && $lt < $max
+                && ($d = $this->document(-2, $docid))) {
+                $docs[] = $d;
+            }
         }
-        if (!empty($docs))
+        if (!empty($docs)) {
             DocumentInfo::assign_unique_filenames($docs);
+        }
         return $docs;
     }
     function invalidate_linked_documents() {

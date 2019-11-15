@@ -21,6 +21,7 @@ class DocumentInfo implements JsonSerializable {
     public $filterType;
     public $originalStorageId;
     public $inactive = 0;
+    private $_owner;
 
     public $content;
     public $content_file;
@@ -127,6 +128,19 @@ class DocumentInfo implements JsonSerializable {
         $args["mimetype"] = Mimetype::content_type($content, get($args, "mimetype"));
     }
 
+
+    function with_owner($owner) {
+        if ($this->_owner === null) {
+            $this->_owner = $owner;
+            return $this;
+        } else if ($this->_owner === $owner) {
+            return $this;
+        } else {
+            $d = clone $this;
+            $d->_owner = $owner;
+            return $d;
+        }
+    }
 
     function add_error_html($error_html, $warning = false) {
         if (!$warning) {
@@ -705,22 +719,21 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
-    function export_filename($filters = null, $rest = null) {
+    function export_filename($filters = null) {
         $fn = $this->conf->download_prefix;
         if ($this->documentType == DTYPE_SUBMISSION) {
             $fn .= "paper" . $this->paperId;
         } else if ($this->documentType == DTYPE_FINAL) {
             $fn .= "final" . $this->paperId;
         } else if ($this->documentType == DTYPE_COMMENT) {
-            $cmt = get($rest, "_comment");
-            assert(!$filters && $cmt);
+            assert(!$filters && $this->_owner && $this->_owner instanceof CommentInfo);
             $fn .= "paper" . $this->paperId;
-            if (!$cmt) {
+            if (!$this->_owner) {
                 $fn .= "/comment";
-            } else if ($cmt->is_response()) {
-                $fn .= "/" . $cmt->unparse_html_id();
+            } else if ($this->_owner->is_response()) {
+                $fn .= "/" . $this->_owner->unparse_html_id();
             } else {
-                $fn .= "/comment-" . $cmt->unparse_html_id();
+                $fn .= "/comment-" . $this->_owner->unparse_html_id();
             }
             return $fn . "/" . ($this->unique_filename ? : $this->filename);
         } else {
@@ -786,21 +799,19 @@ class DocumentInfo implements JsonSerializable {
             }
     }
 
-    function url($filters = null, $rest = null, $flags = 0) {
-        if ($filters === null)
+    function url($filters = null, $flags = 0) {
+        if ($filters === null) {
             $filters = $this->filters_applied;
-        if ($this->mimetype)
-            $f = "file=" . rawurlencode($this->export_filename($filters, $rest));
-        else {
+        }
+        if ($this->mimetype) {
+            $f = "file=" . rawurlencode($this->export_filename($filters));
+        } else {
             $f = "p=$this->paperId";
             if ($this->documentType == DTYPE_FINAL)
                 $f .= "&amp;final=1";
             else if ($this->documentType > 0)
                 $f .= "&amp;dt=$this->documentType";
         }
-        foreach ($rest ? : [] as $k => $v)
-            if ($k[0] !== "_")
-                $f .= "&amp;" . urlencode($k) . "=" . urlencode($v);
         return $this->conf->hoturl("doc", $f, $flags);
     }
 
@@ -932,25 +943,26 @@ class DocumentInfo implements JsonSerializable {
         return null;
     }
 
-    function unparse_json($rest = null) {
+    function unparse_json() {
         $x = [];
         foreach (["filename", "mimetype", "size"] as $k)
             if ($this->$k)
                 $x[$k] = $this->$k;
         if ($this->has_hash())
             $x["hash"] = $this->text_hash();
-        $x["siteurl"] = $this->url(null, $rest, Conf::HOTURL_SITE_RELATIVE | Conf::HOTURL_RAW);
+        $x["siteurl"] = $this->url(null, Conf::HOTURL_SITE_RELATIVE | Conf::HOTURL_RAW);
         return (object) $x;
     }
     function jsonSerialize() {
         $x = [];
-        foreach (get_object_vars($this) as $k => $v)
+        foreach (get_object_vars($this) as $k => $v) {
             if ($k === "content" && is_string($v) && strlen($v) > 50)
                 $x[$k] = substr($v, 0, 50) . "…";
             else if ($k === "sha1" && is_string($v))
                 $x[$k] = Filer::hash_as_text($v);
-            else if ($k !== "conf" && $k !== "prow" && $v !== null)
+            else if ($v !== null && $k !== "conf" && $k !== "prow" && $k[0] !== "_")
                 $x[$k] = $v;
+        }
         return $x;
     }
 

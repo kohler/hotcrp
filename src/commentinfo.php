@@ -258,7 +258,9 @@ class CommentInfo {
 
     function attachments() {
         if ($this->commentType & COMMENTTYPE_HASDOC) {
-            return $this->prow->linked_documents($this->commentId, 0, 1024);
+            return array_map(function ($doc) {
+                return $doc->with_owner($this);
+            }, $this->prow->linked_documents($this->commentId, 0, 1024));
         } else {
             return [];
         }
@@ -389,7 +391,7 @@ class CommentInfo {
 
         // attachments
         foreach ($this->attachments() as $doc) {
-            $docj = $doc->unparse_json(["_comment" => $this]);
+            $docj = $doc->unparse_json();
             if (isset($cj->editable)) {
                 $docj->docid = $doc->paperStorageId;
             }
