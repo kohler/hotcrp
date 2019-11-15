@@ -8,12 +8,12 @@ if (isset($arg["h"]) || isset($arg["help"])) {
     exit(0);
 }
 
-$storageIds = $Conf->active_document_ids();
+$didmap = DocumentInfo::active_document_map($Conf);
 $force = isset($arg["f"]) || isset($arg["force"]);
 
 $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
         compression, sha1, documentType, filename, infoJson
-        from PaperStorage where paperStorageId not in (" . join(",", $storageIds) . ")
+        from PaperStorage where paperStorageId not in (" . join(",", array_keys($didmap)) . ")
         and paper is not null and paperStorageId>1 order by timestamp");
 $killable = array();
 while (($doc = DocumentInfo::fetch($result, $Conf)))

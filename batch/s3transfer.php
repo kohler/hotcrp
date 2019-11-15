@@ -11,7 +11,7 @@ require_once("$ConfSitePATH/src/init.php");
 
 $active = false;
 if (isset($arg["a"]) || isset($arg["active"]))
-    $active = array_flip($Conf->active_document_ids());
+    $active = DocumentInfo::active_document_map($Conf);
 $kill = isset($arg["k"]) || isset($arg["kill"]);
 $match = false;
 if (isset($arg["m"]) || isset($arg["match"]))

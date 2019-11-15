@@ -981,4 +981,27 @@ class DocumentInfo implements JsonSerializable {
             }
         }
     }
+
+    static function active_document_map(Conf $conf) {
+        $q = ["select paperStorageId from Paper where paperStorageId>1",
+            "select finalPaperStorageId from Paper where finalPaperStorageId>1",
+            "select documentId from DocumentLink where documentId>1"];
+        $document_option_ids = array();
+        foreach ($conf->paper_opts->full_option_list() as $id => $o) {
+            if ($o->has_document())
+                $document_option_ids[] = $id;
+        }
+        if (!empty($document_option_ids)) {
+            $q[] = "select value from PaperOption where optionId in ("
+                . join(",", $document_option_ids) . ") and value>1";
+        }
+
+        $result = $conf->qe_raw(join(" UNION ", $q));
+        $ids = [];
+        while (($row = $result->fetch_row())) {
+            $ids[(int) $row[0]] = true;
+        }
+        Dbl::free($result);
+        return $ids;
+    }
 }

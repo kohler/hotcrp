@@ -1278,6 +1278,7 @@ class PaperInfo {
         }
     }
     function mark_inactive_documents() {
+        // see also DocumentInfo::active_document_map
         $dids = [];
         if ($this->paperStorageId > 1) {
             $dids[] = $this->paperStorageId;
@@ -1292,6 +1293,7 @@ class PaperInfo {
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
     }
     function mark_inactive_linked_documents() {
+        // see also DocumentInfo::active_document_map
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType<=? and paperStorageId not in (select documentId from DocumentLink where paperId=?)", $this->paperId, DTYPE_COMMENT, $this->paperId);
     }
 

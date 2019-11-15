@@ -2776,27 +2776,6 @@ class Conf {
     // Paper storage
     //
 
-    function active_document_ids() {
-        $q = array("select paperStorageId from Paper where paperStorageId>1",
-            "select finalPaperStorageId from Paper where finalPaperStorageId>1",
-            "select paperStorageId from PaperComment where paperStorageId>1");
-        $document_option_ids = array();
-        foreach ($this->paper_opts->option_list() as $id => $o)
-            if ($o->has_document())
-                $document_option_ids[] = $id;
-        if (!empty($document_option_ids))
-            $q[] = "select value from PaperOption where optionId in ("
-                . join(",", $document_option_ids) . ") and value>1";
-
-        $result = $this->qe_raw(join(" UNION ", $q));
-        $ids = array();
-        while (($row = edb_row($result)))
-            $ids[(int) $row[0]] = true;
-        Dbl::free($result);
-        ksort($ids);
-        return array_keys($ids);
-    }
-
     function download_documents($docs, $attachment) {
         if (count($docs) == 1
             && $docs[0]->paperStorageId <= 1
