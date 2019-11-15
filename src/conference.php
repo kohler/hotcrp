@@ -2797,14 +2797,6 @@ class Conf {
         return array_keys($ids);
     }
 
-    function document_by_id($did, PaperInfo $prow = null) {
-        $result = $this->qe("select * from PaperStorage where paperStorageId=?"
-            . ($prow ? " and paperId={$prow->paperId}" : ""), $did);
-        $doc = DocumentInfo::fetch($result, $this, $prow);
-        Dbl::free($result);
-        return $doc;
-    }
-
     function download_documents($docs, $attachment) {
         if (count($docs) == 1
             && $docs[0]->paperStorageId <= 1

@@ -88,13 +88,6 @@ class PaperValue {
         $doc = $this->document($index);
         return $doc ? $doc->content() : false;
     }
-    function document_by_id($docid) {
-        foreach ($this->documents() as $doc) {
-            if ($doc->paperStorageId == $docid)
-                return $doc;
-        }
-        return null;
-    }
     function attachment($name) {
         return $this->option->attachment($this, $name);
     }
