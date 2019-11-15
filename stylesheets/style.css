@@ -3301,7 +3301,6 @@ a:hover .t-editor,
 	position: absolute;
 	top: 0;
 	left: 0;
-	width: 735px;
 	right: 0;
 	bottom: 0;
 	display: flex;
@@ -3310,6 +3309,7 @@ a:hover .t-editor,
 .overlong-allowed {
 	visibility: hidden;
 	flex-grow: 0;
+	padding: 0 5px;
 }
 .overlong-mark {
 	flex-grow: 1;
