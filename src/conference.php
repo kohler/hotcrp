@@ -3201,15 +3201,18 @@ class Conf {
         global $ConfSitePATH;
         if (str_starts_with($url, "scripts/")) {
             $post = "";
-            if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
+            if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false) {
                 $post = "mtime=$mtime";
-            if (get($this->opt, "strictJavascript") && !$no_strict)
+            }
+            if (get($this->opt, "strictJavascript") && !$no_strict) {
                 $url = $this->opt["scriptAssetsUrl"] . "cacheable.php?file=" . urlencode($url)
                     . "&strictjs=1" . ($post ? "&$post" : "");
-            else
+            } else {
                 $url = $this->opt["scriptAssetsUrl"] . $url . ($post ? "?$post" : "");
-            if ($this->opt["scriptAssetsUrl"] === Navigation::siteurl())
+            }
+            if ($this->opt["scriptAssetsUrl"] === Navigation::siteurl()) {
                 return Ht::script_file($url);
+            }
         }
         return Ht::script_file($url, ["crossorigin" => "anonymous", "integrity" => $integrity]);
     }
@@ -3235,17 +3238,19 @@ class Conf {
 
     function prepare_content_security_policy() {
         if (($csp = $this->opt("contentSecurityPolicy"))) {
-            if (is_string($csp))
+            if (is_string($csp)) {
                 $csp = [$csp];
-            else if ($csp === true)
+            } else if ($csp === true) {
                 $csp = [];
+            }
             $report_only = false;
             if (($pos = array_search("'report-only'", $csp)) !== false) {
                 $report_only = true;
                 array_splice($csp, $pos, 1);
             }
-            if (empty($csp))
+            if (empty($csp)) {
                 array_push($csp, "script-src", "'nonce'");
+            }
             if (($pos = array_search("'nonce'", $csp)) !== false) {
                 $nonceval = base64_encode(random_bytes(16));
                 $csp[$pos] = "'nonce-$nonceval'";
@@ -3338,18 +3343,20 @@ class Conf {
 
         // jQuery
         $stash = Ht::unstash();
-        if (isset($this->opt["jqueryUrl"]))
+        if (isset($this->opt["jqueryUrl"])) {
             Ht::stash_html($this->make_script_file($this->opt["jqueryUrl"], true) . "\n");
-        else {
+        } else {
             $jqueryVersion = get($this->opt, "jqueryVersion", "3.4.1");
             if ($jqueryVersion[0] === "3") {
                 Ht::stash_html("<!--[if lt IE 9]>" . $this->make_jquery_script_file("1.12.4") . "<![endif]-->\n");
                 Ht::stash_html("<![if !IE|gte IE 9]>" . $this->make_jquery_script_file($jqueryVersion) . "<![endif]>\n");
-            } else
+            } else {
                 Ht::stash_html($this->make_jquery_script_file($jqueryVersion) . "\n");
+            }
         }
-        if ($this->opt("jqueryMigrate"))
+        if ($this->opt("jqueryMigrate")) {
             Ht::stash_html($this->make_script_file("//code.jquery.com/jquery-migrate-3.0.0.js", true));
+        }
 
         // Javascript settings to set before script.js
         $nav = Navigation::get();
@@ -3357,10 +3364,12 @@ class Conf {
             . ";siteurl_base_path=" . json_encode_browser($nav->base_path)
             . ";siteurl_suffix=\"" . $nav->php_suffix . "\"");
         $p = "";
-        if (($x = $this->opt("sessionDomain")))
+        if (($x = $this->opt("sessionDomain"))) {
             $p .= "; domain=" . $x;
-        if ($this->opt("sessionSecure"))
+        }
+        if ($this->opt("sessionSecure")) {
             $p .= "; secure";
+        }
         Ht::stash_script("siteurl_postvalue=" . json_encode(post_value(true)) . ";siteurl_cookie_params=" . json_encode($p));
         if (self::$hoturl_defaults) {
             $urldefaults = [];
@@ -3371,60 +3380,77 @@ class Conf {
         }
         Ht::stash_script("assetsurl=" . json_encode_browser($this->opt["assetsUrl"]) . ";");
         $huser = (object) array();
-        if ($Me && $Me->email)
+        if ($Me && $Me->email) {
             $huser->email = $Me->email;
-        if ($Me && $Me->is_pclike())
+        }
+        if ($Me && $Me->is_pclike()) {
             $huser->is_pclike = true;
-        if ($Me && $Me->has_account_here())
+        }
+        if ($Me && $Me->has_account_here()) {
             $huser->cid = $Me->contactId;
+        }
         Ht::stash_script("hotcrp_user=" . json_encode_browser($huser) . ";");
 
         $pid = get($extra, "paperId");
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
-        if (!$pid && $this->paper)
+        if (!$pid && $this->paper) {
             $pid = $this->paper->paperId;
-        if ($pid)
+        }
+        if ($pid) {
             Ht::stash_script("hotcrp_paperid=$pid");
-        if ($pid && $Me && $Me->is_admin_force())
+        }
+        if ($pid && $Me && $Me->is_admin_force()) {
             Ht::stash_script("hotcrp_want_override_conflict=true");
+        }
 
         // script.js
-        if (!$this->opt("noDefaultScript"))
+        if (!$this->opt("noDefaultScript")) {
             Ht::stash_html($this->make_script_file("scripts/script.js") . "\n");
+        }
 
         // other scripts
-        foreach ($this->opt("scripts", []) as $file)
+        foreach ($this->opt("scripts", []) as $file) {
             Ht::stash_html($this->make_script_file($file) . "\n");
+        }
 
-        if ($stash)
+        if ($stash) {
             Ht::stash_html($stash);
+        }
     }
 
     function has_interesting_deadline($my_deadlines) {
         global $Now;
-        if (get($my_deadlines->sub, "open"))
-            foreach (["reg", "update", "sub"] as $k)
+        if (get($my_deadlines->sub, "open")) {
+            foreach (["reg", "update", "sub"] as $k) {
                 if ($Now <= get($my_deadlines->sub, $k, 0) || get($my_deadlines->sub, "{$k}_ingrace"))
                     return true;
-        if (get($my_deadlines, "is_author") && get($my_deadlines, "resps"))
-            foreach (get($my_deadlines, "resps") as $r)
+            }
+        }
+        if (get($my_deadlines, "is_author") && get($my_deadlines, "resps")) {
+            foreach (get($my_deadlines, "resps") as $r) {
                 if ($r->open && ($Now <= $r->done || get($r, "ingrace")))
                     return true;
+            }
+        }
         return false;
     }
 
     function header_body($title, $id, $extra = []) {
         global $ConfSitePATH, $Me, $Now;
         echo "<body";
-        if ($id)
+        if ($id) {
             echo ' id="body-', $id, '"';
+        }
         $class = get($extra, "body_class");
-        if (($list = $this->active_list()))
+        if (($list = $this->active_list())) {
             $class = ($class ? $class . " " : "") . "has-hotlist";
-        if ($class)
+        }
+        if ($class) {
             echo ' class="', $class, '"';
-        if ($list)
+        }
+        if ($list) {
             echo ' data-hotlist="', htmlspecialchars($list->info_string()), '"';
+        }
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
@@ -3499,24 +3525,28 @@ class Conf {
         }
 
         $action_bar = get($extra, "action_bar");
-        if ($action_bar === null)
+        if ($action_bar === null) {
             $action_bar = actionBar();
+        }
 
         $title_div = get($extra, "title_div");
         if ($title_div === null) {
-            if (($subtitle = get($extra, "subtitle")))
+            if (($subtitle = get($extra, "subtitle"))) {
                 $title .= " &nbsp;&#x2215;&nbsp; <strong>" . $subtitle . "</strong>";
-            if ($title && $title !== "Home")
+            }
+            if ($title && $title !== "Home") {
                 $title_div = '<div id="header-page"><h1>' . $title . '</h1></div>';
-            else if ($action_bar)
+            } else if ($action_bar) {
                 $title_div = '<hr class="c">';
+            }
         }
 
         echo $site_div, '<div id="header-right">', $profile_html;
-        if ($my_deadlines && $this->has_interesting_deadline($my_deadlines))
+        if ($my_deadlines && $this->has_interesting_deadline($my_deadlines)) {
             echo '<div id="header-deadline">&nbsp;</div>';
-        else
+        } else {
             echo '<div id="header-deadline" class="hidden"></div>';
+        }
         echo '</div>', ($title_div ? : ""), ($action_bar ? : "");
 
         echo "  <hr class=\"c\">\n";
