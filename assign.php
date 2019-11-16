@@ -92,19 +92,20 @@ function pcAssignments($qreq) {
     $aset->enable_papers($prow);
     $aset->parse(join("", $t));
     if ($aset->execute()) {
-        if ($qreq->ajax)
+        if ($qreq->ajax) {
             json_exit(["ok" => true]);
-        else {
+        } else {
             $Conf->confirmMsg("Assignments saved." . $aset->errors_div_html());
             $Conf->self_redirect($qreq);
             // NB normally does not return
             loadRows();
         }
     } else {
-        if ($qreq->ajax)
+        if ($qreq->ajax) {
             json_exit(["ok" => false, "error" => join("<br />", $aset->errors_html())]);
-        else
+        } else {
             $Conf->errorMsg(join("<br />", $aset->errors_html()));
+        }
     }
 }
 

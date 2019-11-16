@@ -7,8 +7,10 @@ require_once("src/papersearch.php");
 if ($Me->is_empty())
     $Me->escape();
 
-if (isset($Qreq->default) && $Qreq->defaultact)
+if (isset($Qreq->default) && $Qreq->defaultact) {
     $Qreq->fn = $Qreq->defaultact;
+}
+assert(!!$Qreq->ajax);
 
 
 // paper group
@@ -125,11 +127,6 @@ function savesearch() {
 if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && $Qreq->post_ok()) {
     savesearch();
 }
-
-
-// exit early if Ajax
-if ($Qreq->ajax)
-    json_exit(["response" => ""]);
 
 
 // set display options, including forceShow if chair

@@ -809,9 +809,11 @@ class AssignmentSet {
     }
     function error_at($lineno, $message) {
         $this->astate->msg($lineno, $message, 2);
+        return false;
     }
     function error_here($message) {
         $this->astate->msg($this->astate->lineno, $message, 2);
+        return false;
     }
     function clear_errors() {
         $this->astate->clear_messages();
@@ -960,6 +962,7 @@ class AssignmentSet {
             $cset = null;
             $cset_text = "user";
         }
+
         if ($cset) {
             $text = "";
             if ($first && $last)
@@ -969,24 +972,27 @@ class AssignmentSet {
             if ($email)
                 $text .= " <$email>";
             $ret = ContactSearch::make_cset($text, $this->astate->user, $cset);
-            if (count($ret->ids) === 1)
+            if (count($ret->ids) === 1) {
                 return $ret->contacts();
-            else if (empty($ret->ids))
-                $this->error_here("No $cset_text matches “" . self::req_user_html($req) . "”.");
-            else
-                $this->error_here("“" . self::req_user_html($req) . "” matches more than one $cset_text, use a full email address to disambiguate.");
-            return false;
+            } else if (empty($ret->ids)) {
+                return $this->error_here("No $cset_text matches “" . self::req_user_html($req) . "”.");
+            } else {
+                return $this->error_here("“" . self::req_user_html($req) . "” matches more than one $cset_text, use a full email address to disambiguate.");
+            }
+        } else {
+            // create contact
+            if ($email
+                && validate_email($email)
+                && ($u = $this->astate->user_by_email($email, true, $req))) {
+                return [$u];
+            } else if (!$email) {
+                return $this->error_here("Missing email address.");
+            } else if (!validate_email($email)) {
+                return $this->error_here("Email address “" . htmlspecialchars($email) . "” is invalid.");
+            } else {
+                return $this->error_here("Could not create user.");
+            }
         }
-
-        // create contact
-        if (!$email)
-            return $this->error_here("Missing email address.");
-        else if (!validate_email($email))
-            return $this->error_here("Email address “" . htmlspecialchars($email) . "” is invalid.");
-        else if (($u = $this->astate->user_by_email($email, true, $req)))
-            return [$u];
-        else
-            return $this->error_here("Could not create user.");
     }
 
     static private function is_csv_header($req) {
@@ -1001,12 +1007,13 @@ class AssignmentSet {
             if (!self::is_csv_header($req)) {
                 $csv->unshift($req);
                 if (count($req) === 3
-                    && (!$req[2] || strpos($req[2], "@") !== false))
+                    && (!$req[2] || strpos($req[2], "@") !== false)) {
                     $req = ["paper", "name", "email"];
-                else if (count($req) == 2)
+                } else if (count($req) == 2) {
                     $req = ["paper", "user"];
-                else
+                } else {
                     $req = ["paper", "action", "user", "round"];
+                }
             }
             $csv->set_header($req);
         }
@@ -1029,16 +1036,21 @@ class AssignmentSet {
         $has_action = $csv->has_column("action");
         if (!$has_action && !isset($this->astate->defaults["action"])) {
             $defaults = [];
-            if ($csv->has_column("tag"))
+            if ($csv->has_column("tag")) {
                 $defaults[] = "tag";
-            if ($csv->has_column("preference"))
+            }
+            if ($csv->has_column("preference")) {
                 $defaults[] = "preference";
-            if ($csv->has_column("lead"))
+            }
+            if ($csv->has_column("lead")) {
                 $defaults[] = "lead";
-            if ($csv->has_column("shepherd"))
+            }
+            if ($csv->has_column("shepherd")) {
                 $defaults[] = "shepherd";
-            if ($csv->has_column("decision"))
+            }
+            if ($csv->has_column("decision")) {
                 $defaults[] = "decision";
+            }
             if (count($defaults) == 1) {
                 $this->astate->defaults["action"] = $defaults[0];
                 if (in_array($defaults[0], ["lead", "shepherd", "manager"]))
@@ -1085,26 +1097,31 @@ class AssignmentSet {
             if (!isset($this->searches[$pfield])) {
                 $search = new PaperSearch($this->user, ["q" => $pfield, "t" => $this->search_type, "reviewer" => $this->astate->reviewer]);
                 $this->searches[$pfield] = $search->paper_ids();
-                if ($report_error)
+                if ($report_error) {
                     foreach ($search->warnings as $w)
                         $this->error_here($w);
+                }
             }
             $npids = $this->searches[$pfield];
             $val = 1;
         } else {
-            if ($report_error)
+            if ($report_error) {
                 $this->error_here("Bad paper column");
+            }
             return 0;
         }
-        if (empty($npids) && $report_error)
+        if (empty($npids) && $report_error) {
             $this->astate->warning("No papers match “" . htmlspecialchars($pfield) . "”");
+        }
 
         // Implement paper restriction
-        if ($this->enabled_pids !== null)
+        if ($this->enabled_pids !== null) {
             $npids = array_intersect($npids, $this->enabled_pids);
+        }
 
-        foreach ($npids as $pid)
+        foreach ($npids as $pid) {
             $pids[$pid] = $val;
+        }
         return $val;
     }
 
@@ -1140,8 +1157,9 @@ class AssignmentSet {
         // parse paper
         $pids = [];
         $x = $this->collect_papers((string) $req["paper"], $pids, true);
-        if (empty($pids))
+        if (empty($pids)) {
             return false;
+        }
         $pfield_straight = $x == 2;
         $pids = array_keys($pids);
 
@@ -1153,16 +1171,18 @@ class AssignmentSet {
                 return $this->error_here("Action missing.");
         }
         if ($this->enabled_actions !== null
-            && !isset($this->enabled_actions[$aparser->type]))
+            && !isset($this->enabled_actions[$aparser->type])) {
             return $this->error_here("Action " . htmlspecialchars($aparser->type) . " disabled.");
+        }
 
         // load state
         $aparser->load_state($this->astate);
 
         // clean user parts
         $contacts = $this->lookup_users($req, $aparser);
-        if ($contacts === false || $contacts === null)
+        if ($contacts === false || $contacts === null) {
             return false;
+        }
 
         // maybe filter papers
         if (count($pids) > 20
@@ -1171,9 +1191,10 @@ class AssignmentSet {
             && $contacts[0]->contactId > 0
             && ($pf = $aparser->paper_filter($contacts[0], $req, $this->astate))) {
             $npids = [];
-            foreach ($pids as $p)
+            foreach ($pids as $p) {
                 if (get($pf, $p))
                     $npids[] = $p;
+            }
             $pids = $npids;
         }
 
@@ -1289,12 +1310,14 @@ class AssignmentSet {
             }
             $this->apply($linereq[1], $linereq[2]);
         }
-        if ($alertf)
+        if ($alertf) {
             call_user_func($alertf, $this, $csv->lineno(), false);
+        }
 
         // call finishers
-        foreach ($this->astate->finishers as $fin)
+        foreach ($this->astate->finishers as $fin) {
             $fin->apply_finisher($this->astate);
+        }
 
         // create assigners for difference
         $this->assigners_pidhead = $pidtail = [];
@@ -1324,8 +1347,9 @@ class AssignmentSet {
 
     function assigned_types() {
         $types = array();
-        foreach ($this->assigners as $assigner)
+        foreach ($this->assigners as $assigner) {
             $types[$assigner->type] = true;
+        }
         ksort($types);
         return array_keys($types);
     }
@@ -1336,21 +1360,24 @@ class AssignmentSet {
             $xpids = array();
             $lpid = $rpid = -1;
             foreach ($pids as $pid) {
-                if ($lpid >= 0 && $pid != $rpid + 1)
+                if ($lpid >= 0 && $pid != $rpid + 1) {
                     $xpids[] = $lpid == $rpid ? $lpid : "$lpid-$rpid";
-                if ($lpid < 0 || $pid != $rpid + 1)
+                }
+                if ($lpid < 0 || $pid != $rpid + 1) {
                     $lpid = $pid;
+                }
                 $rpid = $pid;
             }
-            if ($lpid >= 0)
+            if ($lpid >= 0) {
                 $xpids[] = $lpid == $rpid ? $lpid : "$lpid-$rpid";
+            }
             $pids = $xpids;
         }
         return $pids;
     }
 
     function type_description() {
-        if ($this->assignment_type === null)
+        if ($this->assignment_type === null) {
             foreach ($this->assigners as $assigner) {
                 $desc = $assigner->unparse_description();
                 if ($this->assignment_type === null
@@ -1359,6 +1386,7 @@ class AssignmentSet {
                 else
                     $this->assignment_type = "";
             }
+        }
         return $this->assignment_type;
     }
 
@@ -1374,12 +1402,13 @@ class AssignmentSet {
         usort($assigners, function ($assigner1, $assigner2) {
             $c1 = $assigner1->contact;
             $c2 = $assigner2->contact;
-            if ($c1 && $c2)
+            if ($c1 && $c2) {
                 return strnatcasecmp($c1->sorter, $c2->sorter);
-            else if ($c1 || $c2)
+            } else if ($c1 || $c2) {
                 return $c1 ? -1 : 1;
-            else
+            } else {
                 return strcmp($c1->type, $c2->type);
+            }
         });
         $t = "";
         foreach ($assigners as $assigner) {
@@ -1398,14 +1427,16 @@ class AssignmentSet {
     function echo_unparse_display() {
         $this->set_my_conflicts();
         $deltarev = new AssignmentCountSet($this->conf);
-        foreach ($this->assigners as $assigner)
+        foreach ($this->assigners as $assigner) {
             $assigner->account($this, $deltarev);
+        }
 
         $query = $this->assigned_pids(true);
-        if ($this->unparse_search)
+        if ($this->unparse_search) {
             $query_order = "(" . $this->unparse_search . ") THEN HEADING:none " . join(" ", $query);
-        else
+        } else {
             $query_order = empty($query) ? "NONE" : join(" ", $query);
+        }
         foreach ($this->unparse_columns as $k => $v) {
             if ($v)
                 $query_order .= " show:$k";
@@ -1424,7 +1455,7 @@ class AssignmentSet {
             $deltarev->rev && $nrev->load_rev();
             $deltarev->lead && $nrev->load_lead();
             $deltarev->shepherd && $nrev->load_shepherd();
-            foreach ($this->conf->pc_members() as $p)
+            foreach ($this->conf->pc_members() as $p) {
                 if ($deltarev->get($p->contactId)->ass) {
                     $t = '<div class="ctelt"><div class="ctelti">'
                         . $this->user->reviewer_html_for($p) . ": "
@@ -1433,24 +1464,28 @@ class AssignmentSet {
                         . "<hr class=\"c\" /></div></div>";
                     $summary[] = $t;
                 }
-            if (!empty($summary))
+            }
+            if (!empty($summary)) {
                 echo "<div class=\"g\"></div>\n",
                     "<h3>Summary</h3>\n",
                     '<div class="pc-ctable">', join("", $summary), "</div>\n";
+            }
         }
     }
 
     function unparse_csv() {
         $this->set_my_conflicts();
         $acsv = new AssignmentCsv;
-        foreach ($this->assigners as $assigner)
+        foreach ($this->assigners as $assigner) {
             if (($x = $assigner->unparse_csv($this, $acsv))) {
                 if (isset($x[0])) {
                     foreach ($x as $elt)
                         $acsv->add($elt);
-                } else
+                } else {
                     $acsv->add($x);
+                }
             }
+        }
         $acsv->header = array_keys($acsv->header);
         return $acsv;
     }
@@ -1462,10 +1497,11 @@ class AssignmentSet {
     function execute($verbose = false) {
         global $Now;
         if ($this->has_error() || empty($this->assigners)) {
-            if ($verbose && $this->astate->has_messages())
+            if ($verbose && $this->astate->has_messages()) {
                 $this->report_errors();
-            else if ($verbose)
+            } else if ($verbose) {
                 $this->conf->warnMsg("Nothing to assign.");
+            }
             return !$this->has_error(); // true means no errors
         }
 
@@ -1482,44 +1518,51 @@ class AssignmentSet {
                 $assigner->cid = $assigner->contact->contactId;
             }
             $assigner->add_locks($this, $locks);
-            if ($assigner->pid > 0)
+            if ($assigner->pid > 0) {
                 $pids[$assigner->pid] = true;
+            }
         }
 
         // execute assignments
         $tables = array();
-        foreach ($locks as $t => $type)
+        foreach ($locks as $t => $type) {
             $tables[] = "$t $type";
+        }
         $this->conf->qe("lock tables " . join(", ", $tables));
         $this->cleanup_callbacks = $this->cleanup_notify_tracker = [];
         $this->qe_stager = null;
 
-        foreach ($this->assigners as $assigner)
+        foreach ($this->assigners as $assigner) {
             $assigner->execute($this);
+        }
 
-        if ($this->qe_stager)
+        if ($this->qe_stager) {
             call_user_func($this->qe_stager, null);
+        }
         $this->conf->qe("unlock tables");
         $this->conf->save_logs(false);
 
         // confirmation message
-        if ($verbose) {
-            if ($this->conf->setting("pcrev_assigntime") == $Now)
-                $this->conf->confirmMsg("Assignments saved! You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".");
-            else
-                $this->conf->confirmMsg("Assignments saved!");
+        if ($verbose && $this->conf->setting("pcrev_assigntime") == $Now) {
+            $this->conf->confirmMsg("Assignments saved! You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".");
+        } else if ($verbose) {
+            $this->conf->confirmMsg("Assignments saved!");
         }
 
         // clean up
-        foreach ($this->assigners as $assigner)
+        foreach ($this->assigners as $assigner) {
             $assigner->cleanup($this);
-        foreach ($this->cleanup_callbacks as $cb)
+        }
+        foreach ($this->cleanup_callbacks as $cb) {
             call_user_func($cb[0], $this, $cb[1]);
+        }
         if (!empty($this->cleanup_notify_tracker)
-            && $this->conf->opt("trackerCometSite"))
+            && $this->conf->opt("trackerCometSite")) {
             MeetingTracker::contact_tracker_comet($this->conf, array_keys($this->cleanup_notify_tracker));
-        if (!empty($pids))
+        }
+        if (!empty($pids)) {
             $this->conf->update_autosearch_tags(array_keys($pids));
+        }
 
         return true;
     }
@@ -1528,16 +1571,19 @@ class AssignmentSet {
         $this->stage_qe_apply($query, array_slice(func_get_args(), 1));
     }
     function stage_qe_apply($query, $args) {
-        if (!$this->qe_stager)
+        if (!$this->qe_stager) {
             $this->qe_stager = Dbl::make_multi_qe_stager($this->conf->dblink);
+        }
         call_user_func($this->qe_stager, $query, $args);
     }
 
     function cleanup_callback($name, $func, $arg = null) {
-        if (!isset($this->cleanup_callbacks[$name]))
+        if (!isset($this->cleanup_callbacks[$name])) {
             $this->cleanup_callbacks[$name] = [$func, null];
-        if (func_num_args() > 2)
+        }
+        if (func_num_args() > 2) {
             $this->cleanup_callbacks[$name][1][] = $arg;
+        }
     }
     function cleanup_update_rights() {
         $this->cleanup_callback("update_rights", "Contact::update_rights");
@@ -1548,23 +1594,28 @@ class AssignmentSet {
 
     private static function _review_count_link($count, $word, $pl, $prefix, $pc) {
         $word = $pl ? plural($count, $word) : $count . "&nbsp;" . $word;
-        if ($count == 0)
+        if ($count == 0) {
             return $word;
-        return '<a class="qq" href="' . $pc->conf->hoturl("search", "q=" . urlencode("$prefix:$pc->email"))
-            . '">' . $word . "</a>";
+        } else {
+            return '<a class="qq" href="' . $pc->conf->hoturl("search", "q=" . urlencode("$prefix:$pc->email")) . '">' . $word . "</a>";
+        }
     }
 
     private static function _review_count_report_one($ct, $pc) {
         $t = self::_review_count_link($ct->rev, "review", true, "re", $pc);
         $x = array();
-        if ($ct->meta != 0)
+        if ($ct->meta != 0) {
             $x[] = self::_review_count_link($ct->meta, "meta", false, "meta", $pc);
-        if ($ct->pri != $ct->rev && (!$ct->meta || $ct->meta != $ct->rev))
+        }
+        if ($ct->pri != $ct->rev && (!$ct->meta || $ct->meta != $ct->rev)) {
             $x[] = self::_review_count_link($ct->pri, "primary", false, "pri", $pc);
-        if ($ct->sec != 0 && $ct->sec != $ct->rev && $ct->pri + $ct->sec != $ct->rev)
+        }
+        if ($ct->sec != 0 && $ct->sec != $ct->rev && $ct->pri + $ct->sec != $ct->rev) {
             $x[] = self::_review_count_link($ct->sec, "secondary", false, "sec", $pc);
-        if (!empty($x))
+        }
+        if (!empty($x)) {
             $t .= " (" . join(", ", $x) . ")";
+        }
         return $t;
     }
 
@@ -1572,12 +1623,15 @@ class AssignmentSet {
         $data = [];
         $ct = $nrev->get($pc->contactId);
         $deltarev && ($ct = $ct->add($deltarev->get($pc->contactId)));
-        if (!$deltarev || $deltarev->rev)
+        if (!$deltarev || $deltarev->rev) {
             $data[] = self::_review_count_report_one($ct, $pc);
-        if ($deltarev && $deltarev->lead)
+        }
+        if ($deltarev && $deltarev->lead) {
             $data[] = self::_review_count_link($ct->lead, "lead", true, "lead", $pc);
-        if ($deltarev && $deltarev->shepherd)
+        }
+        if ($deltarev && $deltarev->shepherd) {
             $data[] = self::_review_count_link($ct->shepherd, "shepherd", true, "shepherd", $pc);
+        }
         return '<span class="pcrevsum">' . $prefix . join(", ", $data) . "</span>";
     }
 

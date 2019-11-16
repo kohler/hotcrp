@@ -5,11 +5,13 @@
 class PaperApi {
     static function tagreport(Contact $user, $prow) {
         $ret = (object) ["ok" => $user->can_view_tags($prow)];
-        if ($prow)
+        if ($prow) {
             $ret->pid = $prow->paperId;
+        }
         $ret->tagreport = [];
-        if (!$ret->ok)
+        if (!$ret->ok) {
             return $ret;
+        }
         if (($vt = $user->conf->tags()->filter("vote"))) {
             $myprefix = $user->contactId . "~";
             $qv = $myvotes = array();
@@ -18,16 +20,17 @@ class PaperApi {
                 $myvotes[$lbase] = 0;
             }
             $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag join Paper using (paperId) where timeSubmitted>0 and tag?a group by tag", $qv);
-            while (($row = edb_row($result))) {
+            while (($row = $result->fetch_row())) {
                 $lbase = strtolower(substr($row[0], strlen($myprefix)));
                 $myvotes[$lbase] += +$row[1];
             }
             Dbl::free($result);
             foreach ($vt as $lbase => $t) {
-                if ($myvotes[$lbase] < $t->vote)
+                if ($myvotes[$lbase] < $t->vote) {
                     $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 0, "message" => plural($t->vote - $myvotes[$lbase], "vote") . " remaining", "search" => "editsort:-#~{$t->tag}"];
-                else if ($myvotes[$lbase] > $t->vote)
+                } else if ($myvotes[$lbase] > $t->vote) {
                     $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 1, "message" => plural($myvotes[$lbase] - $t->vote, "vote") . " over", "search" => "editsort:-#~{$t->tag}"];
+                }
             }
         }
         return $ret;
@@ -40,10 +43,11 @@ class PaperApi {
     }
 
     static function settags_api(Contact $user, $qreq, $prow) {
-        if ($qreq->cancel)
+        if ($qreq->cancel) {
             return ["ok" => true];
-        if ($prow && !$user->can_view_paper($prow))
+        } else if ($prow && !$user->can_view_paper($prow)) {
             return ["ok" => false, "error" => "No such paper."];
+        }
 
         // save tags using assigner
         $pids = [];
@@ -54,19 +58,22 @@ class PaperApi {
                 foreach (TagInfo::split($qreq->tags) as $t)
                     $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
             }
-            foreach (TagInfo::split((string) $qreq->addtags) as $t)
+            foreach (TagInfo::split((string) $qreq->addtags) as $t) {
                 $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
-            foreach (TagInfo::split((string) $qreq->deltags) as $t)
+            }
+            foreach (TagInfo::split((string) $qreq->deltags) as $t) {
                 $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t . "#clear");
+            }
         } else if (isset($qreq->tagassignment)) {
             $pid = -1;
-            foreach (preg_split('/[\s,]+/', $qreq->tagassignment) as $w)
-                if ($w !== "" && ctype_digit($w))
+            foreach (preg_split('/[\s,]+/', $qreq->tagassignment) as $w) {
+                if ($w !== "" && ctype_digit($w)) {
                     $pid = intval($w);
-                else if ($w !== "" && $pid > 0) {
+                } else if ($w !== "" && $pid > 0) {
                     $x[] = "$pid,tag," . CsvGenerator::quote($w);
                     $pids[$pid] = true;
                 }
+            }
         }
         $assigner = new AssignmentSet($user);
         $assigner->parse(join("\n", $x));
@@ -89,8 +96,9 @@ class PaperApi {
                 }
             }
             $jr = new JsonResult(["ok" => true, "p" => (object) $p]);
-        } else
+        } else {
             $jr = new JsonResult(["ok" => false, "error" => $error]);
+        }
         return $jr;
     }
 
