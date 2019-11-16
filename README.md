@@ -55,14 +55,11 @@ as a guide).
 2. Edit `conf/options.php`, which is annotated to guide you.
 (`lib/createdb.sh` creates this file based on `src/distoptions.php`.)
 
-3. Configure your web server to access HotCRP. The right way to do this
-depends on which server you’re running.
-
-    **Nginx**: Configure Nginx to access `php-fpm` for anything under
-the HotCRP URL path. All accesses should be redirected to `index.php`.
-This example, which would go in a `server` block, makes `/testconf`
-point at a HotCRP installation in /home/kohler/hotcrp (assuming
-`php-fpm` is listening on port 9000):
+3. Configure your web server to access HotCRP. For Nginx, configure Nginx to
+access `php-fpm` for anything under the HotCRP URL path. All accesses
+should be redirected to `index.php`. This example, which would go in a
+`server` block, makes `/testconf` point at a HotCRP installation in
+/home/kohler/hotcrp (assuming `php-fpm` is listening on port 9000):
 
         location /testconf/ {
             fastcgi_pass 127.0.0.1:9000;
