@@ -1407,8 +1407,9 @@ class PaperTable {
 
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
         if (!$this->npapstrip) {
-            echo '<div class="pcontainer"><div class="pcard-left">',
-                '<div class="pspcard"><div class="pspcard-fold">',
+            echo '<div class="pcontainer"><div class="pcard-left',
+                (strlen($this->conf->short_name) > 30 ? " pcard-longname" : ""),
+                '"><div class="pspcard"><div class="pspcard-fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
 
             if (($viewable = $this->prow->viewable_tags($this->user))) {
@@ -2373,7 +2374,10 @@ class PaperTable {
             $this->_papstrip();
         }
         if ($this->npapstrip) {
-            echo '</div></div><div class="pslcard"></div></div>';
+            echo '</div></div><div class="pslcard"><div class="pslcard-home">',
+                '<a href="#top" class="qq"><span class="header-site-name">',
+                htmlspecialchars($this->conf->short_name), '</span> #',
+                $this->prow->paperId, '</a></div></div></div>';
         } else {
             echo '<div class="pcontainer pcontainer-nostrip">';
         }

@@ -2564,16 +2564,18 @@ a.badge:active {
 /* paper strip */
 .pcard-left {
 	position: absolute;
+	z-index: 4;
 	top: 0;
 	bottom: 0;
 	left: -24px;
-	z-index: 4;
 	width: 248px;
 	width: 15.5rem;
 	font-size: 13px;
 	font-size: 0.8125rem;
 }
 .pspcard {
+	position: relative;
+	z-index: 1;
 	background: #edf3f5;
 	color: #2b2b2b;
 	padding: 16px 16px 20px 24px;
@@ -2584,8 +2586,18 @@ a.badge:active {
 .pslcard {
 	-webkit-position: sticky;
 	position: sticky;
-	top: 16px;
+	top: 84px;
 	padding: 20px 16px 20px 24px;
+}
+.pslcard-home {
+	position: absolute;
+	z-index: -1;
+	bottom: 100%;
+	left: 0px;
+	right: 0px;
+	padding: 3rem 16px 2px 24px;
+	overflow-wrap: break-word;
+	color: #d41743;
 }
 .pslitem-intersecting {
 	font-weight: bold;

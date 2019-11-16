@@ -3553,17 +3553,18 @@ return function (id, name) {
     if (pslcard === undefined) {
         pslcard = $(".pslcard")[0];
     }
+    if (observer === undefined) {
+        if (window.IntersectionObserver) {
+            observer = new IntersectionObserver(observer_fn, {threshold: 0.125});
+        } else {
+            observer = null;
+        }
+    }
     if (!pslcard) {
     } else if (name === false) {
         observer && observer.unobserve($$(id));
         $(pslcard).find("a[href='#" + id + "']").remove();
     } else {
-        if (!pslcard.firstChild) {
-            $(pslcard).append('<div class="pslitem ui js-click-child" style="margin-bottom:6px"><a href="#top" class="x hover-child">Top</a></div>');
-            if (window.IntersectionObserver) {
-                observer = new IntersectionObserver(observer_fn, {threshold: 0.125});
-            }
-        }
         $(pslcard).append('<div class="pslitem ui js-click-child"><a href="#' + id + '" class="x hover-child">' + name + '</a></div>');
         observer && observer.observe($$(id));
     }
