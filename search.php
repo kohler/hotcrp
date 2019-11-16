@@ -10,7 +10,7 @@ if ($Me->is_empty())
 if (isset($Qreq->default) && $Qreq->defaultact) {
     $Qreq->fn = $Qreq->defaultact;
 }
-assert(!!$Qreq->ajax);
+assert(!$Qreq->ajax);
 
 
 // paper group

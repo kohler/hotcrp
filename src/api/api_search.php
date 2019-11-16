@@ -29,7 +29,7 @@ class Search_API {
     }
 
     static function fieldhtml(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
-        $fdef = $qreq->f ? $user->conf->paper_columns($qreq->f, $user) : null;
+        $fdef = $qreq->f ? $user->conf->paper_columns($qreq->f, $user) : [];
         if (count($fdef) > 1) {
             return new JsonResult(400, "“" . htmlspecialchars($qreq->f) . "” expands to more than one field.");
         } else if (!$fdef || !isset($fdef[0]->fold) || !$fdef[0]->fold) {
