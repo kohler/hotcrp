@@ -28,16 +28,18 @@ class LoginHelper {
         if (isset($_SESSION["reauth"])) {
             unset($_SESSION["reauth"]);
             header("HTTP/1.0 401 Unauthorized");
-            if (is_string($conf->opt("httpAuthLogin")))
+            if (is_string($conf->opt("httpAuthLogin"))) {
                 header("WWW-Authenticate: " . $conf->opt("httpAuthLogin"));
-            else
+            } else {
                 header("WWW-Authenticate: Basic realm=\"HotCRP\"");
+            }
             exit;
         }
 
         // if user is still valid, OK
-        if ($Me->has_account_here())
+        if ($Me->has_account_here()) {
             return;
+        }
 
         // check HTTP auth
         if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
@@ -47,11 +49,12 @@ class LoginHelper {
             exit;
         }
         $qreq->email = $_SERVER["REMOTE_USER"];
-        if (validate_email($qreq->email))
+        if (validate_email($qreq->email)) {
             $qreq->preferredEmail = $qreq->email;
-        else if (($x = $conf->opt("defaultEmailDomain"))
-                 && validate_email($qreq->email . "@" . $x))
+        } else if (($x = $conf->opt("defaultEmailDomain"))
+                   && validate_email($qreq->email . "@" . $x)) {
             $qreq->preferredEmail = $qreq->email . "@" . $x;
+        }
         $qreq->action = "login";
         self::login_redirect($conf, $qreq); // redirect on success
 
@@ -76,8 +79,9 @@ class LoginHelper {
         // do LDAP login before validation, since we might create an account
         if ($conf->opt("ldapLogin")) {
             $qreq->action = "login";
-            if (!self::ldap_login($qreq))
+            if (!self::ldap_login($qreq)) {
                 return null;
+            }
         }
 
         // look up user in our database
@@ -250,11 +254,13 @@ class LoginHelper {
 
     static private function unquote_double_quoted_request($qreq) {
         if (strpos($qreq->email, "@") !== false
-            || strpos($qreq->email, "%40") === false)
+            || strpos($qreq->email, "%40") === false) {
             return false;
+        }
         // error_log("double-encoded request: " . json_encode($qreq));
-        foreach ($qreq->keys() as $k)
+        foreach ($qreq->keys() as $k) {
             $qreq[$k] = rawurldecode($qreq[$k]);
+        }
         return true;
     }
 
@@ -293,10 +299,11 @@ class LoginHelper {
         if (Mailer::allow_send($user->email)) {
             $msg .= " Login information has been emailed to you. Return here when you receive it to complete the registration process. If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
         } else {
-            if ($conf->opt("sendEmail"))
+            if ($conf->opt("sendEmail")) {
                 $msg .= " The email address you provided seems invalid.";
-            else
+            } else {
                 $msg .= " The system cannot send email at this time.";
+            }
             $msg .= " Although an account was created for you, you need help to retrieve your password. Contact " . Text::user_html($conf->site_contact()) . ".";
         }
         if (isset($qreq->password) && trim($qreq->password) !== "") {

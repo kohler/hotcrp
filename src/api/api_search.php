@@ -5,8 +5,9 @@
 class Search_API {
     static function search(Contact $user, Qrequest $qreq) {
         $topt = PaperSearch::search_types($user, $qreq->t);
-        if (empty($topt) || ($qreq->t && !isset($topt[$qreq->t])))
+        if (empty($topt) || ($qreq->t && !isset($topt[$qreq->t]))) {
             return new JsonResult(403, "Permission error.");
+        }
         $t = $qreq->t ? : key($topt);
 
         $q = $qreq->q;
@@ -38,43 +39,50 @@ class Search_API {
         if (!isset($qreq->q) && $prow) {
             $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
             $qreq->q = $prow->paperId;
-        } else if (!isset($qreq->q))
+        } else if (!isset($qreq->q)) {
             $qreq->q = "";
-        if ($qreq->f == "au" || $qreq->f == "authors")
+        }
+        if ($qreq->f == "au" || $qreq->f == "authors") {
             $qreq->q = ((int) $qreq->aufull ? "show" : "hide") . ":aufull " . $qreq->q;
+        }
         $search = new PaperSearch($user, $qreq);
 
         $report = "pl";
-        if ($qreq->session && str_starts_with($qreq->session, "pf"))
+        if ($qreq->session && str_starts_with($qreq->session, "pf")) {
             $report = "pf";
+        }
         $pl = new PaperList($search, ["report" => $report]);
         $response = $pl->column_json($qreq->f);
         if (!$response) {
             return ["ok" => false];
         } else {
             $response["ok"] = true;
-            if ($qreq->session && $qreq->post_ok())
+            if ($qreq->session && $qreq->post_ok()) {
                 Session_API::setsession($user, $qreq->session);
+            }
             return $response;
         }
     }
 
     static function fieldtext(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
-        if ($qreq->f === null)
+        if ($qreq->f === null) {
             return new JsonResult(400, "Missing parameter.");
+        }
         $fdefs = [];
         foreach (preg_split('/\s+/', trim($qreq->f)) as $fid) {
-            if ($user->conf->paper_columns($fid, $user))
+            if ($user->conf->paper_columns($fid, $user)) {
                 $fdefs[] = $fid;
-            else if ($fid !== "")
+            } else if ($fid !== "") {
                 return new JsonResult(404, "No such field “{$fid}”.");
+            }
         }
 
         if (!isset($qreq->q) && $prow) {
             $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
             $qreq->q = $prow->paperId;
-        } else if (!isset($qreq->q))
+        } else if (!isset($qreq->q)) {
             $qreq->q = "";
+        }
         $search = new PaperSearch($user, $qreq);
 
         $pl = new PaperList($search, ["report" => "pl"]);

@@ -36,9 +36,10 @@ class PaperStatus extends MessageSet {
         foreach (array("no_email", "export_ids", "hide_docids",
                        "export_content", "disable_users",
                        "allow_any_content_file", "content_file_prefix",
-                       "add_topics") as $k)
+                       "add_topics") as $k) {
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
+        }
         $this->_on_document_import[] = [$this, "document_import_check_filename"];
         $this->clear();
     }
@@ -91,38 +92,50 @@ class PaperStatus extends MessageSet {
             $doc = $docid;
             $docid = $doc->paperStorageId;
         }
-        if (!$doc)
+        if (!$doc) {
             return null;
+        }
         assert($doc instanceof DocumentInfo);
 
         $d = (object) array();
-        if ($docid && !$this->hide_docids)
+        if ($docid && !$this->hide_docids) {
             $d->docid = $docid;
-        if ($doc->mimetype)
+        }
+        if ($doc->mimetype) {
             $d->mimetype = $doc->mimetype;
-        if ($doc->has_hash())
+        }
+        if ($doc->has_hash()) {
             $d->hash = $doc->text_hash();
-        if ($doc->timestamp)
+        }
+        if ($doc->timestamp) {
             $d->timestamp = $doc->timestamp;
-        if ($doc->size)
+        }
+        if ($doc->size) {
             $d->size = $doc->size;
-        if ($doc->filename)
+        }
+        if ($doc->filename) {
             $d->filename = $doc->filename;
+        }
         $meta = null;
-        if (isset($doc->infoJson) && is_object($doc->infoJson))
+        if (isset($doc->infoJson) && is_object($doc->infoJson)) {
             $meta = $doc->infoJson;
-        else if (isset($doc->infoJson) && is_string($doc->infoJson))
+        } else if (isset($doc->infoJson) && is_string($doc->infoJson)) {
             $meta = json_decode($doc->infoJson);
-        if ($meta)
+        }
+        if ($meta) {
             $d->metadata = $meta;
+        }
         if ($this->export_content
-            && ($content = $doc->content()) !== false)
+            && ($content = $doc->content()) !== false) {
             $d->content_base64 = base64_encode($content);
-        foreach ($this->_on_document_export as $cb)
+        }
+        foreach ($this->_on_document_export as $cb) {
             if (call_user_func($cb, $d, $doc, $dtype, $this) === false)
                 return null;
-        if (!count(get_object_vars($d)))
+        }
+        if (!count(get_object_vars($d))) {
             $d = null;
+        }
 
         // maybe warn about format check
         if ($d
@@ -130,11 +143,13 @@ class PaperStatus extends MessageSet {
             && $doc->mimetype === "application/pdf"
             && ($spec = $this->conf->format_spec($doc->documentType))
             && !$spec->is_empty()) {
-            if (!$this->_cf)
+            if (!$this->_cf) {
                 $this->_cf = new CheckFormat($this->conf, CheckFormat::RUN_NO);
+            }
             $this->_cf->check_document($this->prow, $doc);
-            if ($this->_cf->has_problem())
+            if ($this->_cf->has_problem()) {
                 $this->msg($field, false, $this->_cf->problem_status());
+            }
         }
 
         return $d;
@@ -144,14 +159,17 @@ class PaperStatus extends MessageSet {
     }
 
     function paper_json($prow, $args = array()) {
-        if (is_int($prow))
+        if (is_int($prow)) {
             $prow = $this->conf->fetch_paper(["paperId" => $prow, "topics" => true, "options" => true], $this->user);
+        }
         $original_user = $user = $this->user;
-        if (get($args, "forceShow"))
+        if (get($args, "forceShow")) {
             $user = null;
+        }
 
-        if (!$prow || ($user && !$user->can_view_paper($prow)))
+        if (!$prow || ($user && !$user->can_view_paper($prow))) {
             return null;
+        }
         $this->user = $user;
         $original_no_msgs = $this->ignore_msgs;
         $this->ignore_msgs = true;
@@ -170,16 +188,18 @@ class PaperStatus extends MessageSet {
             if ($pj->decision === false) {
                 $pj->decision = (int) $prow->outcome;
                 $submitted_status = $pj->decision > 0 ? "accepted" : "rejected";
-            } else
+            } else {
                 $submitted_status = $pj->decision;
+            }
         }
 
         if ($prow->timeWithdrawn > 0) {
             $pj->status = "withdrawn";
             $pj->withdrawn = true;
             $pj->withdrawn_at = (int) $prow->timeWithdrawn;
-            if (get($prow, "withdrawReason"))
+            if (get($prow, "withdrawReason")) {
                 $pj->withdraw_reason = $prow->withdrawReason;
+            }
         } else if ($prow->timeSubmitted > 0) {
             $pj->status = $submitted_status;
             $pj->submitted = true;
@@ -187,27 +207,33 @@ class PaperStatus extends MessageSet {
             $pj->status = "inprogress";
             $pj->draft = true;
         }
-        if (($t = $prow->submitted_at()))
+        if (($t = $prow->submitted_at())) {
             $pj->submitted_at = $t;
+        }
 
         $can_view_authors = !$user
             || $user->can_view_authors($prow);
         if ($can_view_authors) {
             $contacts = array();
-            foreach ($prow->named_contacts() as $cflt)
+            foreach ($prow->named_contacts() as $cflt) {
                 $contacts[strtolower($cflt->email)] = $cflt;
+            }
 
             $pj->authors = array();
             foreach ($prow->author_list() as $au) {
                 $aux = (object) array();
-                if ($au->email)
+                if ($au->email) {
                     $aux->email = $au->email;
-                if ($au->firstName)
+                }
+                if ($au->firstName) {
                     $aux->first = $au->firstName;
-                if ($au->lastName)
+                }
+                if ($au->lastName) {
                     $aux->last = $au->lastName;
-                if ($au->affiliation)
+                }
+                if ($au->affiliation) {
                     $aux->affiliation = $au->affiliation;
+                }
                 $lemail = strtolower((string) $au->email);
                 if ($lemail && ($cflt = get($contacts, $lemail))
                     && $cflt->conflictType >= CONFLICT_AUTHOR) {
@@ -218,19 +244,24 @@ class PaperStatus extends MessageSet {
             }
 
             $other_contacts = array();
-            foreach ($contacts as $cflt)
+            foreach ($contacts as $cflt) {
                 if ($cflt->conflictType >= CONFLICT_AUTHOR) {
                     $aux = (object) array("email" => $cflt->email);
-                    if ($cflt->firstName)
+                    if ($cflt->firstName) {
                         $aux->first = $cflt->firstName;
-                    if ($cflt->lastName)
+                    }
+                    if ($cflt->lastName) {
                         $aux->last = $cflt->lastName;
-                    if ($cflt->affiliation)
+                    }
+                    if ($cflt->affiliation) {
                         $aux->affiliation = $cflt->affiliation;
+                    }
                     $other_contacts[] = $aux;
                 }
-            if (!empty($other_contacts))
+            }
+            if (!empty($other_contacts)) {
                 $pj->contacts = $other_contacts;
+            }
         }
 
         if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL) {
@@ -351,16 +382,18 @@ class PaperStatus extends MessageSet {
                 $pstatus->error_at_option($o, "Bad content_file: only simple filenames allowed.");
                 return false;
             }
-            if ((string) $this->content_file_prefix !== "")
+            if ((string) $this->content_file_prefix !== "") {
                 $docj->content_file = $this->content_file_prefix . $docj->content_file;
+            }
         }
     }
 
     function upload_document($docj, PaperOption $o) {
         // $docj can be a DocumentInfo or a JSON.
         // If it is a JSON, its format is set by document_to_json.
-        if (is_array($docj) && count($docj) === 1 && isset($docj[0]))
+        if (is_array($docj) && count($docj) === 1 && isset($docj[0])) {
             $docj = $docj[0];
+        }
         if (!is_object($docj)) {
             $this->format_error_at($o->field_key(), $docj);
             return null;
@@ -371,9 +404,10 @@ class PaperStatus extends MessageSet {
         assert(!isset($docj->filter));
 
         // check on_document_import
-        foreach ($this->_on_document_import as $cb)
+        foreach ($this->_on_document_import as $cb) {
             if (call_user_func($cb, $docj, $o, $this) === false)
                 return null;
+        }
 
         // validate JSON
         if ($docj instanceof DocumentInfo) {
@@ -393,8 +427,9 @@ class PaperStatus extends MessageSet {
                 $doc = DocumentInfo::fetch($result, $this->conf, $this->prow);
                 Dbl::free($result);
                 if (!$doc
-                    || ((string) $dochash !== "" && $doc->text_hash() !== $dochash))
+                    || ((string) $dochash !== "" && $doc->text_hash() !== $dochash)) {
                     $doc = null;
+                }
             }
 
             if (!$doc) {
@@ -403,9 +438,10 @@ class PaperStatus extends MessageSet {
                     "documentType" => $o->id
                 ];
                 foreach (["timestamp", "mimetype", "content", "content_base64",
-                          "content_file", "metadata", "filename"] as $k)
+                          "content_file", "metadata", "filename"] as $k) {
                     if (isset($docj->$k))
                         $args[$k] = $docj->$k;
+                }
                 DocumentInfo::fix_mimetype($args);
                 $doc = new DocumentInfo($args, $this->conf, $this->prow);
             }
@@ -442,43 +478,50 @@ class PaperStatus extends MessageSet {
             && ($old_au = $this->prow->author_by_email($aux->email))) {
             $aux->first = get($old_au, "first", "");
             $aux->last = get($old_au, "last", "");
-            if ($aux->affiliation === "")
+            if ($aux->affiliation === "") {
                 $aux->affiliation = get($old_au, "affiliation", "");
+            }
         }
         // set contactness and author index
-        if (is_object($au) && isset($au->contact))
+        if (is_object($au) && isset($au->contact)) {
             $aux->contact = !!$au->contact;
-        if (is_object($au) && isset($au->index) && is_int($au->index))
+        }
+        if (is_object($au) && isset($au->index) && is_int($au->index)) {
             $aux->index = $au->index;
-        else
+        } else {
             $aux->index = count($pj->authors) + count($pj->bad_authors);
+        }
 
         if ($aux->first !== "" || $aux->last !== ""
-            || $aux->email !== "" || $aux->affiliation !== "")
+            || $aux->email !== "" || $aux->affiliation !== "") {
             $pj->authors[] = $aux;
-        else
+        } else {
             $pj->bad_authors[] = $aux;
+        }
         if ($aux->email) {
             $lemail = strtolower($aux->email);
             $au_by_lemail[$lemail] = $aux;
             if (!validate_email($lemail)
-                && (!$this->prow || !$this->prow->author_by_email($lemail)))
+                && (!$this->prow || !$this->prow->author_by_email($lemail))) {
                 $pj->bad_email_authors[] = $aux;
+            }
         }
     }
 
     private function normalize_topics($pj) {
         $topics = $pj->topics;
         unset($pj->topics);
-        if (is_string($topics))
+        if (is_string($topics)) {
             $topics = explode("\n", cleannl($topics));
+        }
         if (is_array($topics)) {
             $new_topics = (object) array();
             foreach ($topics as $v) {
-                if ($v && (is_int($v) || is_string($v)))
+                if ($v && (is_int($v) || is_string($v))) {
                     $new_topics->$v = true;
-                else if ($v)
+                } else if ($v) {
                     $this->format_error_at("topics", $v);
+                }
             }
             $topics = $new_topics;
         }
@@ -486,35 +529,40 @@ class PaperStatus extends MessageSet {
             $topicset = $this->conf->topic_set();
             $pj->topics = (object) array();
             foreach ($topics as $k => $v) {
-                if (!$v)
-                    /* skip */;
-                else if (isset($topicset[$k]))
+                if (!$v) {
+                    // skip
+                } else if (isset($topicset[$k])) {
                     $pj->topics->$k = true;
-                else {
+                } else {
                     $tid = array_search($k, $topicset->as_array(), true);
                     if ($tid === false && $k !== "" && !ctype_digit($k)) {
                         $tmatches = [];
-                        foreach ($topicset as $tid => $tname)
+                        foreach ($topicset as $tid => $tname) {
                             if (strcasecmp($k, $tname) == 0)
                                 $tmatches[] = $tid;
+                        }
                         if (empty($tmatches) && $this->add_topics) {
                             $this->conf->qe("insert into TopicArea set topicName=?", $k);
-                            if (!$this->conf->has_topics())
+                            if (!$this->conf->has_topics()) {
                                 $this->conf->save_setting("has_topics", 1);
+                            }
                             $this->conf->invalidate_topics();
                             $topicset = $this->conf->topic_set();
                             $tid = array_search($k, $topicset->as_array(), true);
-                        } else if (count($tmatches) === 1)
+                        } else if (count($tmatches) === 1) {
                             $tid = $tmatches[0];
+                        }
                     }
-                    if ($tid !== false)
+                    if ($tid !== false) {
                         $pj->topics->$tid = true;
-                    else
+                    } else {
                         $pj->bad_topics[] = $k;
+                    }
                 }
             }
-        } else if ($topics)
+        } else if ($topics) {
             $this->format_error_at("topics", $topics);
+        }
     }
 
     private function normalize_options($pj, $options) {
@@ -522,14 +570,15 @@ class PaperStatus extends MessageSet {
         $pj->options = (object) array();
         foreach ($options as $id => $oj) {
             $omatches = $this->conf->paper_opts->find_all($id);
-            if (count($omatches) != 1)
+            if (count($omatches) != 1) {
                 $pj->bad_options[$id] = true;
-            else {
+            } else {
                 $o = current($omatches);
                 // XXX setting decision in JSON?
                 if (($o->final && (!$this->prow || $this->prow->outcome <= 0))
-                    || $o->id <= 0)
+                    || $o->id <= 0) {
                     continue;
+                }
                 $oid = $o->id;
                 $pj->options->$oid = $oj;
             }
@@ -540,16 +589,18 @@ class PaperStatus extends MessageSet {
         $confset = $this->conf->conflict_types();
         $conflicts = get($pj, "pc_conflicts");
         $pj->pc_conflicts = (object) array();
-        if (is_object($conflicts))
+        if (is_object($conflicts)) {
             $conflicts = (array) $conflicts;
+        }
         foreach ($conflicts as $email => $ct) {
-            if (is_int($email) && is_string($ct))
+            if (is_int($email) && is_string($ct)) {
                 list($email, $ct) = array($ct, true);
-            if (!($pccid = $this->conf->pc_member_by_email($email)))
+            }
+            if (!($pccid = $this->conf->pc_member_by_email($email))) {
                 $pj->bad_pc_conflicts->$email = true;
-            else if (!is_bool($ct) && !is_int($ct) && !is_string($ct))
+            } else if (!is_bool($ct) && !is_int($ct) && !is_string($ct)) {
                 $this->format_error_at("pc_conflicts", $ct);
-            else {
+            } else {
                 $ctn = $confset->parse_json($ct);
                 if ($ctn === false) {
                     $pj->bad_pc_conflicts->$email = $ct;
@@ -563,11 +614,13 @@ class PaperStatus extends MessageSet {
     private function valid_contact($email) {
         global $Me;
         if ($email) {
-            if (validate_email($email) || strcasecmp($email, $Me->email) == 0)
+            if (validate_email($email) || strcasecmp($email, $Me->email) == 0) {
                 return true;
-            foreach ($this->prow ? $this->prow->contacts(true) : [] as $cflt)
+            }
+            foreach ($this->prow ? $this->prow->contacts(true) : [] as $cflt) {
                 if (strcasecmp($cflt->email, $email) == 0)
                     return true;
+            }
         }
         return false;
     }
@@ -594,18 +647,19 @@ class PaperStatus extends MessageSet {
         $au_by_lemail = [];
         $pj->bad_authors = $pj->bad_email_authors = [];
         if (isset($pj->authors)) {
-            if (is_array($pj->authors))
+            if (is_array($pj->authors)) {
                 $input_authors = $pj->authors;
-            else {
+            } else {
                 $this->format_error_at("authors", $pj->authors);
                 $input_authors = [];
             }
             $pj->authors = [];
             foreach ($input_authors as $k => $au) {
-                if (is_string($au) || is_object($au))
+                if (is_string($au) || is_object($au)) {
                     $this->normalize_author($pj, $au, $au_by_lemail);
-                else
+                } else {
                     $this->format_error_at("authors", $au);
+                }
             }
         }
 
@@ -626,28 +680,31 @@ class PaperStatus extends MessageSet {
             $pj->draft = !$pj->submitted;
         }
         if (!isset($pj->withdrawn)) {
-            if (isset($pj->status) && $pj->status === "withdrawn")
+            if (isset($pj->status) && $pj->status === "withdrawn") {
                 $pj->withdrawn = true;
-            else
+            } else {
                 $pj->withdrawn = $this->prow && $this->prow->timeWithdrawn != 0;
+            }
         }
         foreach (["withdrawn_at", "submitted_at", "final_submitted_at"] as $k)
             if (isset($pj->$k)) {
-                if (is_numeric($pj->$k))
+                if (is_numeric($pj->$k)) {
                     $pj->$k = (int) $pj->$k;
-                else if (is_string($pj->$k))
+                } else if (is_string($pj->$k)) {
                     $pj->$k = $this->conf->parse_time($pj->$k, $Now);
-                else
+                } else {
                     $pj->$k = false;
-                if ($pj->$k === false || $pj->$k < 0)
+                }
+                if ($pj->$k === false || $pj->$k < 0) {
                     $pj->$k = $Now;
+                }
             }
 
         // Blindness
         if (isset($pj->nonblind)) {
-            if (($x = friendly_boolean($pj->nonblind)) !== null)
+            if (($x = friendly_boolean($pj->nonblind)) !== null) {
                 $pj->nonblind = $x;
-            else {
+            } else {
                 $this->format_error_at("nonblind", $pj->nonblind);
                 unset($pj->nonblind);
             }
@@ -655,19 +712,20 @@ class PaperStatus extends MessageSet {
 
         // Topics
         $pj->bad_topics = array();
-        if (isset($pj->topics))
+        if (isset($pj->topics)) {
             $this->normalize_topics($pj);
+        }
 
         // Options
         $pj->bad_options = array();
         if (isset($pj->options)) {
-            if (is_associative_array($pj->options) || is_object($pj->options))
+            if (is_associative_array($pj->options) || is_object($pj->options)) {
                 $this->normalize_options($pj, $pj->options);
-            else if (is_array($pj->options) && count($pj->options) == 1 && is_object($pj->options[0]))
+            } else if (is_array($pj->options) && count($pj->options) == 1 && is_object($pj->options[0])) {
                 $this->normalize_options($pj, $pj->options[0]);
-            else if ($pj->options === false)
+            } else if ($pj->options === false) {
                 $pj->options = (object) array();
-            else {
+            } else {
                 $this->format_error_at("options", $pj->options);
                 unset($pj->options);
             }
@@ -676,64 +734,71 @@ class PaperStatus extends MessageSet {
         // PC conflicts
         $pj->bad_pc_conflicts = (object) array();
         if (get($pj, "pc_conflicts")
-            && (is_object($pj->pc_conflicts) || is_array($pj->pc_conflicts)))
+            && (is_object($pj->pc_conflicts) || is_array($pj->pc_conflicts))) {
             $this->normalize_pc_conflicts($pj);
-        else if (get($pj, "pc_conflicts") === false)
+        } else if (get($pj, "pc_conflicts") === false) {
             $pj->pc_conflicts = (object) array();
-        else if (isset($pj->pc_conflicts)) {
+        } else if (isset($pj->pc_conflicts)) {
             $this->format_error_at("pc_conflicts", $pj->pc_conflicts);
             unset($pj->pc_conflicts);
         }
 
         // verify emails on authors marked as contacts
         $pj->bad_contacts = array();
-        foreach (get($pj, "authors") ? : array() as $au)
+        foreach (get($pj, "authors") ? : array() as $au) {
             if (get($au, "contact")
                 && (!isset($au->email) || !$this->valid_contact($au->email)))
                 $pj->bad_contacts[] = $au;
+        }
 
         // Contacts
         $contacts = get($pj, "contacts");
         if ($contacts !== null) {
-            if (is_object($contacts) || is_array($contacts))
+            if (is_object($contacts) || is_array($contacts)) {
                 $contacts = (array) $contacts;
-            else {
+            } else {
                 $this->format_error_at("contacts", $contacts);
                 $contacts = [];
             }
             $pj->contacts = [];
             // verify emails on explicitly named contacts
             foreach ($contacts as $k => $v) {
-                if (!$v)
+                if (!$v) {
                     continue;
-                if ($v === true)
-                    $v = (object) array();
-                else if (is_string($v) && is_int($k)) {
-                    $v = trim($v);
-                    if ($this->valid_contact($v))
-                        $v = (object) array("email" => $v);
-                    else
-                        $v = Text::analyze_name($v);
                 }
-                if (is_object($v) && !get($v, "email") && is_string($k))
+                if ($v === true) {
+                    $v = (object) [];
+                } else if (is_string($v) && is_int($k)) {
+                    $v = trim($v);
+                    if ($this->valid_contact($v))  {
+                        $v = (object) ["email" => $v];
+                    } else {
+                        $v = Text::analyze_name($v);
+                    }
+                }
+                if (is_object($v) && !get($v, "email") && is_string($k)) {
                     $v->email = $k;
+                }
                 if (is_object($v) && get($v, "email")) {
-                    if ($this->valid_contact($v->email))
+                    if ($this->valid_contact($v->email)) {
                         $pj->contacts[] = (object) array_merge((array) get($au_by_lemail, strtolower($v->email)), (array) $v);
-                    else
+                    } else {
                         $pj->bad_contacts[] = $v;
-                } else
+                    }
+                } else {
                     $this->format_error_at("contacts", $v);
+                }
             }
         }
 
         // Inherit contactness
         if (isset($pj->authors) && $this->prow) {
-            foreach ($this->prow->contacts(true) as $cflt)
+            foreach ($this->prow->contacts(true) as $cflt) {
                 if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR
                     && ($aux = get($au_by_lemail, strtolower($cflt->email)))
                     && !isset($aux->contact))
                     $aux->contact = true;
+            }
         }
         // If user modifies paper, make them a contact (not just an author)
         if ($this->prow
@@ -742,14 +807,16 @@ class PaperStatus extends MessageSet {
             && $this->prow->conflict_type($this->user) === CONFLICT_AUTHOR) {
             if (!isset($pj->contacts)) {
                 $pj->contacts = [];
-                foreach ($this->prow->contacts(true) as $cflt)
+                foreach ($this->prow->contacts(true) as $cflt) {
                     if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR)
                         $pj->contacts[] = (object) ["email" => $cflt->email];
+                }
             }
             if (!array_filter($pj->contacts, function ($cflt) {
                     return strcasecmp($this->user->email, $cflt->email) === 0;
-                }))
+                })) {
                 $pj->contacts[] = (object) ["email" => $this->user->email];
+            }
         }
     }
 
@@ -866,32 +933,38 @@ class PaperStatus extends MessageSet {
         }
 
         $submitted = $pj_submitted;
-        if (isset($pj->submitted_at))
+        if (isset($pj->submitted_at)) {
             $submitted_at = $pj->submitted_at;
-        else if ($ps->prow)
+        } else if ($ps->prow) {
             $submitted_at = $ps->prow->submitted_at();
-        else
+        } else {
             $submitted_at = 0;
+        }
         if ($pj_withdrawn) {
-            if ($pj_submitted && $submitted_at <= 0)
+            if ($pj_submitted && $submitted_at <= 0) {
                 $submitted_at = -100;
-            else if (!$pj_submitted)
+            } else if (!$pj_submitted) {
                 $submitted_at = 0;
-            else
+            } else {
                 $submitted_at = -$submitted_at;
+            }
             if (!$ps->prow || $ps->prow->timeWithdrawn <= 0) {
                 $ps->save_paperf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now, "status");
                 $ps->save_paperf("timeSubmitted", $submitted_at);
-            } else if (($ps->prow->submitted_at() > 0) !== $pj_submitted)
-                $ps->save_paperf("timeSubmitted", $submitted_at, "status");
-        } else if ($pj_submitted) {
-            if (!$ps->prow || $ps->prow->timeSubmitted <= 0) {
-                if ($submitted_at <= 0 || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN)
-                    $submitted_at = $Now;
+            } else if (($ps->prow->submitted_at() > 0) !== $pj_submitted) {
                 $ps->save_paperf("timeSubmitted", $submitted_at, "status");
             }
-            if ($ps->prow && $ps->prow->timeWithdrawn != 0)
+        } else if ($pj_submitted) {
+            if (!$ps->prow || $ps->prow->timeSubmitted <= 0) {
+                if ($submitted_at <= 0
+                    || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN) {
+                    $submitted_at = $Now;
+                }
+                $ps->save_paperf("timeSubmitted", $submitted_at, "status");
+            }
+            if ($ps->prow && $ps->prow->timeWithdrawn != 0) {
                 $ps->save_paperf("timeWithdrawn", 0, "status");
+            }
         } else if ($ps->prow && ($ps->prow->timeWithdrawn > 0 || $ps->prow->timeSubmitted > 0)) {
             $ps->save_paperf("timeSubmitted", 0, "status");
             $ps->save_paperf("timeWithdrawn", 0);
@@ -902,18 +975,21 @@ class PaperStatus extends MessageSet {
     static function check_final_status(PaperStatus $ps, $pj) {
         global $Now;
         if (isset($pj->final_submitted)) {
-            if ($pj->final_submitted)
+            if ($pj->final_submitted) {
                 $time = get($pj, "final_submitted_at") ? : $Now;
-            else
+            } else {
                 $time = 0;
-            if (!$ps->prow || $ps->prow->timeFinalSubmitted != $time)
+            }
+            if (!$ps->prow || $ps->prow->timeFinalSubmitted != $time) {
                 $ps->save_paperf("timeFinalSubmitted", $time, "final_status");
+            }
         }
     }
 
     static function check_topics(PaperStatus $ps, $pj) {
-        if (!empty($pj->bad_topics))
+        if (!empty($pj->bad_topics)) {
             $ps->warning_at("topics", $ps->_("Unknown topics ignored (%2\$s).", count($pj->bad_topics), htmlspecialchars(join("; ", $pj->bad_topics))));
+        }
         if (isset($pj->topics)) {
             $old_topics = $ps->prow ? $ps->prow->topic_list() : [];
             $new_topics = array_map("intval", array_keys((array) $pj->topics));
@@ -939,25 +1015,30 @@ class PaperStatus extends MessageSet {
     }
 
     static function check_options(PaperStatus $ps, $pj) {
-        if (!empty($pj->bad_options))
+        if (!empty($pj->bad_options)) {
             $ps->warning_at("options", $ps->_("Unknown options ignored (%2\$s).", count($pj->bad_options), htmlspecialchars(join("; ", array_keys($pj->bad_options)))));
-        if (!isset($pj->options))
+        }
+        if (!isset($pj->options)) {
             return;
+        }
 
         $parsed_options = array();
         foreach ($pj->options as $oid => $oj) {
             $o = $ps->conf->paper_opts->get($oid);
             $result = null;
-            if ($oj !== null)
+            if ($oj !== null) {
                 $result = $o->store_json($oj, $ps);
-            if ($result === null || $result === false)
+            }
+            if ($result === null || $result === false) {
                 $result = [];
-            else if (!is_array($result))
+            } else if (!is_array($result)) {
                 $result = [[$result]];
-            else if (count($result) == 2 && !is_int($result[1]))
+            } else if (count($result) == 2 && !is_int($result[1])) {
                 $result = [$result];
-            if (!$ps->has_error_at($o->field_key()))
+            }
+            if (!$ps->has_error_at($o->field_key())) {
                 $parsed_options[$o->id] = $result;
+            }
         }
 
         ksort($parsed_options);
@@ -987,29 +1068,33 @@ class PaperStatus extends MessageSet {
                     }
                     $ps->_option_ins[] = $qv0;
                 }
-                if ($opt->has_document())
+                if ($opt->has_document()) {
                     $ps->_document_change = true;
+                }
             }
         }
     }
 
     static function execute_options(PaperStatus $ps) {
-        if (!empty($ps->_option_delid))
+        if (!empty($ps->_option_delid)) {
             $ps->conf->qe("delete from PaperOption where paperId=? and optionId?a", $ps->paperId, $ps->_option_delid);
+        }
         if (!empty($ps->_option_ins)) {
-            foreach ($ps->_option_ins as &$x)
+            foreach ($ps->_option_ins as &$x) {
                 $x[0] = $ps->paperId;
+            }
             $ps->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $ps->_option_ins);
         }
     }
 
     static private function contacts_array($pj) {
         $contacts = array();
-        foreach (get($pj, "authors") ? : [] as $au)
+        foreach (get($pj, "authors") ? : [] as $au) {
             if (get($au, "email") && validate_email($au->email)) {
                 $c = clone $au;
                 $contacts[strtolower($c->email)] = $c;
             }
+        }
         foreach (get($pj, "contacts") ? : array() as $v) {
             $lemail = strtolower($v->email);
             $c = (object) array_merge((array) get($contacts, $lemail), (array) $v);
@@ -1024,12 +1109,14 @@ class PaperStatus extends MessageSet {
 
         // extract PC conflicts
         if (isset($pj->pc_conflicts)) {
-            foreach ((array) $pj->pc_conflicts as $email => $type)
+            foreach ((array) $pj->pc_conflicts as $email => $type) {
                 $cflts[strtolower($email)] = $type;
+            }
         } else if ($this->prow) {
-            foreach ($this->prow->conflicts(true) as $cflt)
+            foreach ($this->prow->conflicts(true) as $cflt) {
                 if ($cflt->conflictType < CONFLICT_AUTHOR)
                     $cflts[strtolower($cflt->email)] = $cflt->conflictType;
+            }
         }
 
         // extract contacts
@@ -1049,10 +1136,11 @@ class PaperStatus extends MessageSet {
             foreach ($pj->authors as $aux) {
                 if (isset($aux->email)) {
                     $lemail = strtolower($aux->email);
-                    if (!isset($aux->contact))
+                    if (!isset($aux->contact)) {
                         $ctype = max(get_i($cflts, $lemail), CONFLICT_AUTHOR);
-                    else
+                    } else {
                         $ctype = $aux->contact ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR;
+                    }
                     $cflts[$lemail] = $ctype;
                 }
             }
@@ -1061,11 +1149,12 @@ class PaperStatus extends MessageSet {
                 $lemail = strtolower($cflt->email);
                 $cflts[$lemail] = max(get_i($cflts, $lemail), $cflt->conflictType);
             }
-            foreach ($this->prow->author_list() as $au)
+            foreach ($this->prow->author_list() as $au) {
                 if ($au->email !== "") {
                     $lemail = strtolower($au->email);
                     $cflts[$lemail] = max(get_i($cflts, $lemail), CONFLICT_AUTHOR);
                 }
+            }
         }
 
         // chair conflicts cannot be overridden
@@ -1075,8 +1164,9 @@ class PaperStatus extends MessageSet {
                     $lemail = strtolower($cflt->email);
                     if (get_i($cflts, $lemail) < CONFLICT_CHAIRMARK
                         && $this->user
-                        && !$this->user->can_administer($this->prow))
+                        && !$this->user->can_administer($this->prow)) {
                         $cflts[$lemail] = CONFLICT_CHAIRMARK;
+                    }
                 }
             }
         }
@@ -1100,19 +1190,22 @@ class PaperStatus extends MessageSet {
         }
         foreach ($pj->bad_contacts as $reg) {
             $key = "contacts";
-            if (isset($reg->index) && is_int($reg->index))
+            if (isset($reg->index) && is_int($reg->index)) {
                 $key = (isset($reg->is_new) && $reg->is_new === true ? "newcontact_email_" : "contact_") . $reg->index;
-            if (!isset($reg->email))
+            }
+            if (!isset($reg->email)) {
                 $ps->error_at($key, $ps->_("Contact %s has no associated email.", Text::user_html($reg)));
-            else
+            } else {
                 $ps->error_at($key, $ps->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
+            }
             $ps->error_at("contacts", false);
         }
     }
 
     static function check_conflicts(PaperStatus $ps, $pj) {
-        if (isset($pj->contacts))
+        if (isset($pj->contacts)) {
             self::check_contacts($ps, $pj);
+        }
 
         $ps->_new_conflicts = $new_cflts = $ps->conflicts_array($pj);
         $old_cflts = $ps->conflicts_array((object) []);
@@ -1120,11 +1213,13 @@ class PaperStatus extends MessageSet {
             $new_ctype = get_i($new_cflts, $lemail);
             $old_ctype = get_i($old_cflts, $lemail);
             if ($new_ctype !== $old_ctype) {
-                if ($new_ctype >= CONFLICT_AUTHOR || $old_ctype >= CONFLICT_AUTHOR)
+                if ($new_ctype >= CONFLICT_AUTHOR || $old_ctype >= CONFLICT_AUTHOR) {
                     $ps->diffs["contacts"] = true;
+                }
                 if (($new_ctype > 0 && $new_ctype < CONFLICT_AUTHOR)
-                    || ($old_ctype > 0 && $old_ctype < CONFLICT_AUTHOR))
+                    || ($old_ctype > 0 && $old_ctype < CONFLICT_AUTHOR)) {
                     $ps->diffs["pc_conflicts"] = true;
+                }
             }
         }
     }
@@ -1163,18 +1258,21 @@ class PaperStatus extends MessageSet {
     static function execute_conflicts(PaperStatus $ps) {
         if ($ps->_conflict_ins !== null) {
             $ps->conf->qe("delete from PaperConflict where paperId=?", $ps->paperId);
-            foreach ($ps->_conflict_ins as &$x)
+            foreach ($ps->_conflict_ins as &$x) {
                 $x[0] = $ps->paperId;
-            if (!empty($ps->_conflict_ins))
+            }
+            if (!empty($ps->_conflict_ins)) {
                 $ps->conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values ?v", $ps->_conflict_ins);
+            }
         }
     }
 
     private function save_paperf($f, $v, $diff = null) {
         assert(!isset($this->_paper_upd[$f]));
         $this->_paper_upd[$f] = $v;
-        if ($diff)
+        if ($diff) {
             $this->diffs[$diff] = true;
+        }
     }
 
     function prepare_save_paper_json($pj) {
@@ -1252,8 +1350,9 @@ class PaperStatus extends MessageSet {
         foreach (["title" => "", "abstract" => "", "authorInformation" => "",
                   "collaborators" => "", "paperStorageId" => 1,
                   "finalPaperStorageId" => 0] as $f => $v) {
-            if (!isset($ps->_paper_upd[$f]))
+            if (!isset($ps->_paper_upd[$f])) {
                 $ps->_paper_upd[$f] = $v;
+            }
         }
     }
 
