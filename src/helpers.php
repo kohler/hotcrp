@@ -158,23 +158,22 @@ function json_exit($json, $arg2 = null) {
     if (JsonResultException::$capturing) {
         throw new JsonResultException($json);
     } else {
+        if ($json->status && !isset($json->content["ok"])) {
+            $json->content["ok"] = $json->status <= 299;
+        }
+        if ($json->status && !isset($json->content["status"])) {
+            $json->content["status"] = $json->status;
+        }
+        if ($Qreq->post && !$Qreq->post_ok()) {
+            $json->content["postvalue"] = post_value(true);
+        }
         if ($Qreq && $Qreq->post_ok()) {
+            // Don’t set status on unvalidated requests, since that can leak
+            // information (e.g. via <link prefetch onerror>).
             if ($json->status) {
                 http_response_code($json->status);
             }
             header("Access-Control-Allow-Origin: *");
-        } else if ($json->status) {
-            // Don’t set status on unvalidated requests, since that can leak
-            // information (e.g. via <link prefetch onerror>).
-            if (!isset($json->content["ok"])) {
-                $json->content["ok"] = $json->status <= 299;
-            }
-            if (!isset($json->content["status"])) {
-                $json->content["status"] = $json->status;
-            }
-            if ($Qreq->post && !$Qreq->post_ok()) {
-                $json->content["postvalue"] = post_value(true);
-            }
         }
         header("Content-Type: application/json; charset=utf-8");
         echo json_encode_browser($json->content);

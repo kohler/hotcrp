@@ -4053,15 +4053,14 @@ class Conf {
             }
             if (!get($j, "ok") && !get($j, "error")) {
                 Conf::msg_error("Internal error.");
-            } else if (($x = get($j, "error"))) {
+            } else if (($x = get($j, "error"))) { // XXX many instances of `error` are html
                 Conf::msg_error(htmlspecialchars($x));
             } else if (($x = get($j, "error_html"))) {
                 Conf::msg_error($x);
             }
             Navigation::redirect_site($qreq->redirect);
         } else {
-            $j = $this->call_api($fn, $uf, $user, $qreq, $prow);
-            json_exit($j);
+            json_exit($this->call_api($fn, $uf, $user, $qreq, $prow));
         }
     }
 
