@@ -6,11 +6,11 @@ require_once("init.php");
 global $Conf, $Me, $Qreq;
 
 // Check method: GET/HEAD/POST only, except OPTIONS is allowed for API calls
-if ($_SERVER["REQUEST_METHOD"] !== "GET"
-    && $_SERVER["REQUEST_METHOD"] !== "HEAD"
-    && $_SERVER["REQUEST_METHOD"] !== "POST"
-    && (Navigation::page() !== "api"
-        || $_SERVER["REQUEST_METHOD"] !== "OPTIONS")) {
+if (!($_SERVER["REQUEST_METHOD"] === "GET"
+      || $_SERVER["REQUEST_METHOD"] === "HEAD"
+      || $_SERVER["REQUEST_METHOD"] === "POST"
+      || (Navigation::page() === "api"
+          && $_SERVER["REQUEST_METHOD"] === "OPTIONS"))) {
     header("HTTP/1.0 405 Method Not Allowed");
     exit;
 }
@@ -71,12 +71,16 @@ function initialize_user() {
         if (isset($_COOKIE[$sn])) {
             $sid = $_COOKIE[$sn];
             $l = strlen($Qreq->post);
-            if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l))
+            if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
                 $Qreq->approve_post();
-            else
+            } else if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 error_log("{$Conf->dbname}: bad post={$Qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
+            }
         } else if ($Qreq->post === "<empty-session>"
                    || $Qreq->post === ".empty") {
+            if ($_SERVER["REQUEST_METHOD"] === "POST") {
+                error_log("{$Conf->dbname}: empty post, url=" . $_SERVER["REQUEST_URI"]);
+            }
             $Qreq->approve_post();
         }
     }
