@@ -37,7 +37,7 @@ class PaperApi {
     }
 
     static function tagreport_api(Contact $user, $qreq, $prow) {
-        return new JsonResult((array) self::tagreport($user));
+        return new JsonResult((array) self::tagreport($user, $prow));
     }
 
     static function settags_api(Contact $user, $qreq, $prow) {
