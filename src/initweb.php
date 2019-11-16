@@ -85,6 +85,7 @@ function initialize_user() {
     // upgrade session format
     if (!isset($_SESSION["u"]) && isset($_SESSION["trueuser"])) {
         $_SESSION["u"] = $_SESSION["trueuser"]->email;
+        unset($_SESSION["trueuser"]);
     }
 
     // determine user
