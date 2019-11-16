@@ -91,44 +91,41 @@ class JsonResult {
             assert(!($values instanceof JsonResult));
             $this->content = (array) $values;
         } else if (is_string($values)) {
-            if ($this->status && $this->status > 299) {
-                $this->content = ["ok" => false, "error" => $values];
-            } else {
-                $this->content = ["ok" => true, "response" => $values];
-            }
+            assert($this->status && $this->status > 299);
+            $this->content = ["ok" => false, "error" => $values];
         } else {
             $this->content = $values;
         }
     }
-    static function make($json, Contact $user = null, $arg2 = null) {
-        if (is_int($json)) {
-            $json = new JsonResult($json, $arg2);
-        } else if (!is_object($json) || !($json instanceof JsonResult)) {
-            $json = new JsonResult($json);
+    static function make($jr, $arg2 = null) {
+        if (is_int($jr)) {
+            $jr = new JsonResult($jr, $arg2);
+        } else if (!is_object($jr) || !($jr instanceof JsonResult)) {
+            $jr = new JsonResult($jr);
         }
-        if (!$json->has_messages && $user) {
-            $json->take_messages($user);
-        }
-        return $json;
+        return $jr;
     }
-    function take_messages(Contact $user, $div = false) {
-        if (session_id() !== ""
-            && ($msgs = $user->session("msgs", []))) {
+    function take_messages(Contact $user) {
+        if (($msgs = $user->session("msgs", []))) {
             $user->save_session("msgs", null);
-            $t = "";
             foreach ($msgs as $msg) {
-                if (($msg[1] === "merror" || $msg[1] === "xmerror")
-                    && !isset($this->content["error"])) {
-                    $this->content["error"] = $msg[0];
+                list($text, $type) = $msg;
+                assert($type === "merror" || $type === "xmerror");
+                if (is_string($text)) {
+                    $text = [$text];
                 }
-                if ($div) {
-                    $t .= Ht::msg($msg[0], $msg[1]);
-                } else {
-                    $t .= "<span class=\"$msg[1]\">$msg[0]</span>";
+                if ($type === "merror" || $type === "xmerror") {
+                    foreach ($text as $t) {
+                        if (!isset($this->content["error"])) {
+                            $this->content["error"] = $t;
+                        } else {
+                            if (is_string($this->content["error"])) {
+                                $this->content["error"] = [$this->content["error"]];
+                            }
+                            $this->content["error"][] = $t;
+                        }
+                    }
                 }
-            }
-            if ($t !== "") {
-                $this->content["response"] = $t . get_s($this->content, "response");
             }
             $this->has_messages = true;
         }
@@ -154,7 +151,10 @@ class JsonResultException extends Exception {
 
 function json_exit($json, $arg2 = null) {
     global $Me, $Qreq;
-    $json = JsonResult::make($json, $Me ? : null, $arg2);
+    $json = JsonResult::make($json, $arg2);
+    if ($Me && session_id() !== "") {
+        $json->take_messages($Me);
+    }
     if (JsonResultException::$capturing) {
         throw new JsonResultException($json);
     } else {

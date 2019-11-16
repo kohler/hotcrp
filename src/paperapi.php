@@ -37,9 +37,7 @@ class PaperApi {
     }
 
     static function tagreport_api(Contact $user, $qreq, $prow) {
-        $jr = new JsonResult((array) self::tagreport($user, $prow));
-        $jr->take_messages($user, true);
-        return $jr;
+        return new JsonResult((array) self::tagreport($user));
     }
 
     static function settags_api(Contact $user, $qreq, $prow) {
