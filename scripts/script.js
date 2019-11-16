@@ -7400,8 +7400,10 @@ handle_ui.on("js-check-format", function () {
         },
         success: function (data) {
             clearTimeout(running);
-            if (data.ok || data.response)
-                $cf.html(data.response);
+            if (data.response && !data.result)
+                data.result = data.response; // XXX backward compat
+            if (data.ok || data.result)
+                $cf.html(data.result);
         }
     });
 });

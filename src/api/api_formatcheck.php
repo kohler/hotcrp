@@ -18,7 +18,7 @@ class FormatCheck_API {
         $cf->check_document($docreq->prow, $doc);
         return [
             "ok" => !$cf->failed,
-            "response" => $cf->document_report($docreq->prow, $doc),
+            "result" => $cf->document_report($docreq->prow, $doc),
             "has_error" => $cf->has_error()
         ];
     }
