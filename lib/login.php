@@ -12,7 +12,7 @@ class LoginHelper {
         if ($explicit && $user->conf->opt("httpAuthLogin")) {
             ensure_session(ENSURE_SESSION_REGENERATE_ID);
             $_SESSION["reauth"] = true;
-            go("");
+            Navigation::redirect("");
         } else if ($explicit) {
             kill_session();
         }
@@ -141,11 +141,12 @@ class LoginHelper {
         if ($qreq->action === "forgot" && $qreq->post_ok()) {
             $worked = $xuser->sendAccountInfo("forgot", true);
             if ($worked === "@resetpassword") {
-                $conf->confirmMsg("A password reset link has been emailed to " . htmlspecialchars($qreq->email) . ". When you receive that email, follow its instructions to create a new password.");
+                $conf->msg("A password reset link has been emailed to " . htmlspecialchars($qreq->email) . ". When you receive that email, visit that link to create a new password.", "xconfirm");
             } else if ($worked) {
-                $conf->confirmMsg("Your password has been emailed to " . htmlspecialchars($qreq->email) . ". When you receive that email, return here to sign in.");
+                $conf->msg("Your password has been emailed to " . htmlspecialchars($qreq->email) . ". When you receive that email, return here to sign in.", "xconfirm");
                 $conf->log_for($xuser, null, "Password sent");
             }
+            Navigation::redirect("");
             return null;
         }
 
@@ -222,7 +223,7 @@ class LoginHelper {
     static function check_postlogin(Contact $user, Qrequest $qreq) {
         // Check for the cookie
         if (!isset($_SESSION["testsession"]) || !$_SESSION["testsession"]) {
-            return Conf::msg_error("You appear to have disabled cookies in your browser. This site requires cookies to function.");
+            return $user->conf->msg("You appear to have disabled cookies in your browser. This site requires cookies to function.", "xmerror");
         }
         unset($_SESSION["testsession"]);
 
@@ -234,9 +235,9 @@ class LoginHelper {
             $where = $_SESSION["login_bounce"][1];
         } else {
             $user->save_session("freshlogin", true);
-            $where = hoturl("index");
+            $where = $user->conf->hoturl("index");
         }
-        go($where);
+        Navigation::redirect($where);
         exit;
     }
 
@@ -309,7 +310,7 @@ class LoginHelper {
         if (isset($qreq->password) && trim($qreq->password) !== "") {
             $msg .= " The password you supplied on the login screen was ignored.";
         }
-        $conf->confirmMsg($msg);
+        $conf->msg($msg, "xconfirm");
         return null;
     }
 
@@ -322,6 +323,6 @@ class LoginHelper {
         }
         $user->save_roles(Contact::ROLE_ADMIN, null);
         $user->conf->save_setting("setupPhase", null);
-        $user->conf->confirmMsg(ltrim($msg));
+        $user->conf->msg(ltrim($msg), "xconfirm");
     }
 }
