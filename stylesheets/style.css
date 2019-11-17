@@ -221,13 +221,13 @@ td.quicklinks, #tracker-connect {
 
 
 /* generic horizontal styles */
-:link, :visited, a.nv, a.ui {
+:link, :visited, .btn-link, a.nv, a.ui {
 	color: #004daa;
 }
 .ptitle:visited, .pnum:visited, .track:visited {
 	color: #660099;
 }
-a:hover, a.nv:hover, a.ui:hover, .js-click-child:hover a.hover-child {
+a:hover, a.nv:hover, a.ui:hover, .btn-link:hover, .js-click-child:hover a.hover-child {
 	color: #c45500;
 }
 a.q, a.u, a.qx {
@@ -240,7 +240,7 @@ a.btn {
 	cursor: default;
 }
 a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.mailto:active,
-a.attention {
+a.attention, .btn-link:active {
 	color: red;
 }
 a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,
@@ -412,7 +412,7 @@ td.g {
 	content: "";
 	display: block;
 }
-.inline {
+.d-inline {
 	display: inline;
 }
 .d-block {
@@ -1012,6 +1012,17 @@ button:disabled, button:disabled:hover,
 	color: rgba(102, 102, 102, 0.5);
 	border-color: #c5c5c5;
 	background: rgba(222, 222, 222, 0.5);
+}
+button.btn-link {
+	text-decoration: underline;
+	padding: 0;
+	border: 0 none;
+	background: initial;
+	cursor: pointer;
+}
+button.btn-link:hover {
+	border: 0 none;
+	background: initial;
 }
 .if-alert {
 	display: none;

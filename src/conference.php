@@ -3517,7 +3517,9 @@ class Conf {
                 $profile_parts[] = '<a href="' . $this->hoturl("index", ["signin" => 1, "cap" => null]) . '" class="nw">Sign in</a>';
             }
             if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"])) {
-                $profile_parts[] = '<a href="' . $this->hoturl_post("index", ["signout" => 1, "cap" => null]) . '" class="nw">Sign out</a>';
+                $profile_parts[] = Ht::form($this->hoturl_post("index", ["signout" => 1, "cap" => null]), ["class" => "d-inline"])
+                    . Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"])
+                    . "</form>";
             }
 
             if (!empty($profile_parts))
