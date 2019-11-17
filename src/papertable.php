@@ -1405,11 +1405,10 @@ class PaperTable {
             "</div>\n\n";
     }
 
-    private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
+    private function _papstrip_framework() {
         if (!$this->npapstrip) {
             echo '<div class="pcontainer"><div class="pcard-left',
-                (strlen($this->conf->short_name) > 30 ? " pcard-longname" : ""),
-                '"><div class="pspcard"><div class="pspcard-fold">',
+                '"><div class="pspcard"><div class="ui pspcard-fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
 
             if (($viewable = $this->prow->viewable_tags($this->user))) {
@@ -1421,8 +1420,12 @@ class PaperTable {
             }
 
             echo '</div><div class="pspcard-open">';
-            Ht::stash_script('$(".pspcard-fold").click(function(evt){$(".pspcard-fold").hide();$(".pspcard-open").show();evt.preventDefault()})');
         }
+        ++$this->npapstrip;
+    }
+
+    private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
+        $this->_papstrip_framework();
         echo '<div';
         if ($foldid) {
             echo " id=\"fold$foldid\"";
@@ -1441,7 +1444,6 @@ class PaperTable {
             }
         }
         echo '">';
-        ++$this->npapstrip;
     }
 
     private function papstripCollaborators() {
@@ -2227,7 +2229,6 @@ class PaperTable {
         if ($this->user->allow_view_authors($this->prow) && !$this->editable) {
             $this->papstripCollaborators();
         }
-
         if ($this->user->can_set_decision($this->prow)) {
             $this->papstripOutcomeSelector();
         }
@@ -2237,7 +2238,6 @@ class PaperTable {
         if ($this->user->can_view_shepherd($this->prow)) {
             $this->papstripShepherd($this->mode === "assign");
         }
-
         if ($this->user->can_accept_review_assignment($this->prow)
             && $this->conf->timePCReviewPreferences()
             && ($this->user->roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR))) {

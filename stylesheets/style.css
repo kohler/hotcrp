@@ -3668,7 +3668,10 @@ body {
 .fold61c .fx61, .fold61o .fn61,
 .fold99c .fx99, .fold99o .fn99,
 .hidden {
-	display: none;
+	display: none !important;
+}
+.unhidden {
+	display: block !important;
 }
 
 /* score help */

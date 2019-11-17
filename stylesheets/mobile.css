@@ -75,6 +75,7 @@ h2.paptitle {
 }
 .pspcard {
 	padding: 8px 16px;
+	border-bottom: 1px solid #f33360;
 }
 .pspcard-open {
 	padding-bottom: 4px;

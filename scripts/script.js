@@ -7440,27 +7440,25 @@ $(background_format_check);
 });
 
 handle_ui.on("js-check-submittable", function (event) {
-    var $f = $(this).closest("form"),
-        readye = $f[0].submitpaper,
-        was = $f.attr("data-submitted"), is = true;
+    var f = this.closest("form"),
+        readye = f.submitpaper,
+        was = f.getAttribute("data-submitted"), is = true;
     if (this && this.tagName === "INPUT" && this.type === "file" && this.value)
-        fold($f.find(".ready-container"), false);
+        fold($(f).find(".ready-container"), false);
     if (readye && readye.type === "checkbox")
         is = readye.checked && $(readye).is(":visible");
     var t;
-    if ($f.attr("data-contacts-only"))
+    if (f.getAttribute("data-contacts-only")) {
         t = "Save contacts";
-    else if (!is)
+    } else if (!is) {
         t = "Save draft";
-    else if (was)
+    } else if (was) {
         t = "Save and resubmit";
-    else
+    } else {
         t = "Save and submit";
-    var $b = $f.find(".btn-savepaper");
-    if ($b.length && $b[0].tagName === "INPUT")
-        $b.val(t);
-    else
-        $b.html(t);
+    }
+    $("input.btn-savepaper").val(t);
+    $("button.btn-savepaper").html(t);
 });
 
 handle_ui.on("js-add-attachment", function () {
@@ -7606,17 +7604,15 @@ handle_ui.on("js-follow-change", function (event) {
         });
 });
 
-var edit_paper_ui = (function ($) {
-
-var edit_conditions = {};
-
-function check_still_ready(event) {
-    var sub = this.submitpaper;
-    if (sub && sub.type === "checkbox" && !sub.checked) {
-        if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
-            event.preventDefault();
+handle_ui.on("pspcard-fold", function (event) {
+    if (!event.target.closest("a")) {
+        addClass(this, "hidden");
+        $(this.parentElement).find(".pspcard-open").addClass("unhidden");
     }
-}
+});
+
+var edit_paper_ui = (function ($) {
+var edit_conditions = {};
 
 function prepare_psedit(url) {
     var self = this,
@@ -7917,6 +7913,14 @@ function run_edit_conditions() {
             ec = JSON.parse(this.getAttribute("data-edit-condition"));
         toggleClass(this, "hidden", !evaluate_edit_condition(ec, f));
     });
+}
+
+function check_still_ready(event) {
+    var sub = this.submitpaper;
+    if (sub && sub.type === "checkbox" && !sub.checked) {
+        if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
+            event.preventDefault();
+    }
 }
 
 
