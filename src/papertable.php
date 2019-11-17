@@ -2128,24 +2128,21 @@ class PaperTable {
             // check whether we can save
             $old_overrides = $this->user->set_overrides(Contact::OVERRIDE_CHECK_TIME);
             if ($this->canUploadFinal) {
-                $updater = "submitfinal";
                 $whyNot = $this->user->perm_submit_final_paper($this->prow);
             } else if ($this->prow->paperId) {
-                $updater = "update";
                 $whyNot = $this->user->perm_update_paper($this->prow);
             } else {
-                $updater = "update";
                 $whyNot = $this->user->perm_start_paper();
             }
             $this->user->set_overrides($old_overrides);
             // produce button
             $save_name = $this->_save_name();
             if (!$whyNot) {
-                $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn-primary btn-savepaper"]), "");
+                $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary btn-savepaper"]), ""];
             } else if ($this->admin) {
                 $revWhyNot = filter_whynot($whyNot, ["deadline", "rejected"]);
                 $x = whyNotText($revWhyNot) . " Are you sure you want to override the deadline?";
-                $buttons[] = array(Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => $updater]), "(admin only)");
+                $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($this->prow)) {
                 $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper"]);
@@ -2191,7 +2188,10 @@ class PaperTable {
             echo '<div class="checki"><label><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), "</span>",
                 "Email authors, including:</label> ",
                 Ht::entry("emailNote", $v, ["size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
-                "</div>\n";
+                "</div>";
+        }
+        if (!$top && $this->mode === "edit" && $this->canUploadFinal) {
+            echo Ht::hidden("submitfinal", 1);
         }
 
         $buttons = $this->_collect_actions();
