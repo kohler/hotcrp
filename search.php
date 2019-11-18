@@ -4,8 +4,9 @@
 
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
-if ($Me->is_empty())
+if ($Me->is_empty()) {
     $Me->escape();
+}
 
 if (isset($Qreq->default) && $Qreq->defaultact) {
     $Qreq->fn = $Qreq->defaultact;

@@ -854,48 +854,48 @@ class Conf {
                 $e = substr($e, 1);
                 $not = true;
             }
-            if (!is_string($e))
+            if (!is_string($e)) {
                 $b = $e;
-            else if ($e === "chair" || $e === "admin")
+            } else if ($e === "chair" || $e === "admin") {
                 $b = !$user || $user->privChair;
-            else if ($e === "manager")
+            } else if ($e === "manager") {
                 $b = !$user || $user->is_manager();
-            else if ($e === "pc")
+            } else if ($e === "pc") {
                 $b = !$user || $user->isPC;
-            else if ($e === "reviewer")
+            } else if ($e === "reviewer") {
                 $b = !$user || $user->is_reviewer();
-            else if ($e === "view_review")
+            } else if ($e === "view_review") {
                 $b = !$user || $user->can_view_some_review();
-            else if ($e === "lead" || $e === "shepherd")
+            } else if ($e === "lead" || $e === "shepherd") {
                 $b = $this->has_any_lead_or_shepherd();
-            else if ($e === "empty")
+            } else if ($e === "empty") {
                 $b = $user && $user->is_empty();
-            else if ($e === "post")
+            } else if ($e === "post") {
                 $b = $qreq && $qreq->post_ok() && $qreq->method() === "POST";
-            else if ($e === "getpost")
+            } else if ($e === "getpost") {
                 $b = $qreq && $qreq->post_ok()
                     && ($qreq->method() === "GET" || $qreq->method() === "POST");
-            else if (strpos($e, "::") !== false) {
+            } else if (strpos($e, "::") !== false) {
                 self::xt_resolve_require($xt);
                 $b = call_user_func($e, $xt, $user, $this);
-            } else {
-                // check if setting exists
-                if (str_starts_with($e, "opt."))
-                    $b = !!$this->opt(substr($e, 4));
-                else if (str_starts_with($e, "setting."))
-                    $b = !!$this->setting(substr($e, 8));
-                else if (str_starts_with($e, "req.")) {
-                    $b = false;
-                    foreach (explode(" ", $e) as $w) {
-                        if (str_starts_with($w, "req."))
-                            $w = substr($w, 4);
-                        $b = $b || ($qreq && isset($qreq[$w]));
+            } else if (str_starts_with($e, "opt.")) {
+                $b = !!$this->opt(substr($e, 4));
+            } else if (str_starts_with($e, "setting.")) {
+                $b = !!$this->setting(substr($e, 8));
+            } else if (str_starts_with($e, "req.")) {
+                $b = false;
+                foreach (explode(" ", $e) as $w) {
+                    if (str_starts_with($w, "req.")) {
+                        $w = substr($w, 4);
                     }
-                } else
-                    $b = !!$this->setting($e);
+                    $b = $b || ($qreq && isset($qreq[$w]));
+                }
+            } else {
+                $b = !!$this->setting($e);
             }
-            if ($not ? $b : !$b)
+            if ($not ? $b : !$b) {
                 return false;
+            }
         }
         return true;
     }
@@ -3277,9 +3277,10 @@ class Conf {
     function header_head($title, $extra = []) {
         global $Me, $Now, $ConfSitePATH;
         // clear session list cookies
-        foreach ($_COOKIE as $k => $v)
+        foreach ($_COOKIE as $k => $v) {
             if (str_starts_with($k, "hotlist-info"))
                 $this->set_cookie($k, "", $Now - 86400);
+        }
 
         echo "<!DOCTYPE html>
 <html lang=\"en\">

@@ -90,18 +90,18 @@ class Home_Partial {
     }
 
     static function need_profile_redirect(Contact $user) {
-        if (!$user->firstName && !$user->lastName)
+        if (!$user->firstName && !$user->lastName) {
             return true;
-        if ($user->conf->opt("noProfileRedirect"))
+        } else if ($user->conf->opt("noProfileRedirect")) {
             return false;
-        if (!$user->affiliation)
-            return true;
-        if ($user->is_pc_member()
-            && !$user->has_review()
-            && (!$user->collaborators()
-                || ($user->conf->has_topics() && !$user->topic_interest_map())))
-            return true;
-        return false;
+        } else {
+            return !$user->affiliation
+                || ($user->is_pc_member()
+                    && !$user->has_review()
+                    && (!$user->collaborators()
+                        || ($user->conf->has_topics()
+                            && !$user->topic_interest_map())));
+        }
     }
 
 

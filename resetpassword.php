@@ -4,27 +4,34 @@
 
 require_once("src/initweb.php");
 
-if ($Conf->external_login())
+if ($Conf->external_login()) {
     error_go(false, "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
+}
 
 $resetcap = $Qreq->resetcap;
-if ($resetcap === null && preg_match(',\A/(U?1[-\w]+)(?:/|\z),i', Navigation::path(), $m))
+if ($resetcap === null
+    && preg_match(',\A/(U?1[-\w]+)(?:/|\z),i', Navigation::path(), $m)) {
     $resetcap = $m[1];
-if (!$resetcap)
+}
+if (!$resetcap) {
     error_go(false, "You didn’t enter the full password reset link into your browser. Make sure you include the reset code (the string of letters, numbers, and other characters at the end).");
+}
 
 $iscdb = substr($resetcap, 0, 1) === "U";
 $capmgr = $Conf->capability_manager($resetcap);
 $capdata = $capmgr->check($resetcap);
-if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
+if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD) {
     error_go(false, "That password reset code has expired, or you didn’t enter it correctly.");
+}
 
-if ($iscdb)
+if ($iscdb) {
     $Acct = $Conf->contactdb_user_by_id($capdata->contactId);
-else
+} else {
     $Acct = $Conf->user_by_id($capdata->contactId);
-if (!$Acct)
+}
+if (!$Acct) {
     error_go(false, "That password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
+}
 
 // don't show information about the current user, if there is one
 $Me = new Contact;
@@ -40,8 +47,9 @@ if (isset($Qreq->go) && $Qreq->post_ok()) {
         Conf::msg_error("The two passwords you entered did not match.");
     } else {
         $Acct->change_password($Qreq->password, 0);
-        if (!$iscdb || !($log_acct = $Conf->user_by_email($Acct->email)))
+        if (!$iscdb || !($log_acct = $Conf->user_by_email($Acct->email))) {
             $log_acct = $Acct;
+        }
         $log_acct->log_activity("Password reset via " . substr($resetcap, 0, 8) . "...");
         $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");
         $capmgr->delete($capdata);
@@ -75,13 +83,13 @@ echo "</div>
     '<div class="f-i"><label>Suggested password</label>',
     htmlspecialchars($Qreq->autopassword), '</div>';
 echo '<div class="', Ht::control_class("password", "f-i"), '">
-  <label for="reset_password">New password</label>',
-    Ht::password("password", "", ["class" => "want-focus", "tabindex" => 1, "size" => 36, "id" => "reset_password", "autocomplete" => "new-password"]), '</div>
+  <label for="password">New password</label>',
+    Ht::password("password", "", ["class" => "want-focus", "tabindex" => 1, "size" => 36, "id" => "password", "autocomplete" => "new-password"]), '</div>
 <div class="', Ht::control_class("password", "f-i"), '">
-  <label for="reset_password2">New password (again)</label>',
-    Ht::password("password2", "", ["tabindex" => 1, "size" => 36, "id" => "reset_password2", "autocomplete" => "new-password"]), '</div>
+  <label for="password2">New password (again)</label>',
+    Ht::password("password2", "", ["tabindex" => 1, "size" => 36, "id" => "password2", "autocomplete" => "new-password"]), '</div>
 <div class="f-i" style="margin-top:2em">',
-    Ht::submit("go", "Reset password", ["class" => "btn-primary"]),
+    Ht::submit("resetpassword", "Reset password", ["class" => "btn-primary"]),
     "</div>
 </div></form></div>\n";
 Ht::stash_script("focus_within(\$(\"#homereset\"));window.scroll(0,0)");

@@ -10,11 +10,14 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $____x = [];
     private $____post_ok = false;
     private $____post_empty = false;
+    private $____path = false;
     function __construct($method, $data = null) {
         $this->____method = $method;
-        if ($data)
-            foreach ((array) $data as $k => $v)
+        if ($data) {
+            foreach ((array) $data as $k => $v) {
                 $this->$k = $v;
+            }
+        }
     }
     function method() {
         return $this->____method;
@@ -24,8 +27,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function& offsetGet($offset) {
         $x = null;
-        if (property_exists($this, $offset))
+        if (property_exists($this, $offset)) {
             $x =& $this->$offset;
+        }
         return $x;
     }
     function offsetSet($offset, $value) {
@@ -44,8 +48,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function& __get($name) {
         $x = null;
-        if (property_exists($this, $name))
+        if (property_exists($this, $name)) {
             $x =& $this->$name;
+        }
         return $x;
     }
     function __isset($name) {
@@ -55,15 +60,17 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         unset($this->$name);
     }
     function get($name, $default = null) {
-        if (property_exists($this, $name))
+        if (property_exists($this, $name)) {
             $default = $this->$name;
+        }
         return $default;
     }
     function get_a($name, $default = null) {
         if (property_exists($this, $name)) {
             $default = $this->$name;
-            if ($default === "__array__" && isset($this->____a[$name]))
+            if ($default === "__array__" && isset($this->____a[$name])) {
                 $default = $this->____a[$name];
+            }
         }
         return $default;
     }
@@ -86,7 +93,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
     }
     function count() {
-        return count(get_object_vars($this)) - 6;
+        return count(get_object_vars($this)) - 7;
     }
     function jsonSerialize() {
         return $this->as_array();
@@ -173,5 +180,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function post_empty() {
         return $this->____post_empty;
+    }
+    function path() {
+        return $this->____path;
+    }
+    function set_path($path) {
+        $this->____path = $path;
     }
 }

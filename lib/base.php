@@ -286,12 +286,16 @@ function uploaded_file_error($finfo) {
 
 function make_qreq() {
     $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
-    foreach ($_GET as $k => $v)
+    $qreq->set_path(Navigation::path());
+    foreach ($_GET as $k => $v) {
         $qreq->set_req($k, $v);
-    foreach ($_POST as $k => $v)
+    }
+    foreach ($_POST as $k => $v) {
         $qreq->set_req($k, $v);
-    if (empty($_POST))
+    }
+    if (empty($_POST)) {
         $qreq->set_post_empty();
+    }
 
     // $_FILES requires special processing since we want error messages.
     $errors = [];
@@ -308,12 +312,14 @@ function make_qreq() {
             if ($fi["error"] == UPLOAD_ERR_OK) {
                 if (is_uploaded_file($fi["tmp_name"]))
                     $qreq->set_file($n, $fi);
-            } else if (($err = uploaded_file_error($fi)))
+            } else if (($err = uploaded_file_error($fi))) {
                 $errors[] = $err;
+            }
         }
     }
-    if (!empty($errors) && Conf::$g)
+    if (!empty($errors) && Conf::$g) {
         Conf::msg_error("<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>");
+    }
 
     return $qreq;
 }

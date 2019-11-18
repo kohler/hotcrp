@@ -96,13 +96,13 @@ etc/assignmentparsers.json
 etc/capabilityhandlers.json
 etc/formulafunctions.json
 etc/helptopics.json
-etc/homepartials.json
 etc/intrinsicoptions.json
 etc/listactions.json
 etc/mailkeywords.json
 etc/mailtemplates.json
 etc/msgs.json
 etc/optiontypes.json
+etc/pagepartials.json
 etc/papercolumns.json
 etc/profilegroups.json
 etc/reviewformlibrary.json
