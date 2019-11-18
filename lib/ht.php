@@ -116,31 +116,6 @@ class Ht {
         return $x . ' accept-charset="UTF-8"' . self::extra($extra) . $suffix;
     }
 
-    static function form_div($action, $extra = null) {
-        $div = "<div";
-        if (($x = get($extra, "divclass"))) {
-            $div .= ' class="' . $x . '"';
-            unset($extra["divclass"]);
-        }
-        if (($x = get($extra, "divstyle"))) {
-            $div .= ' style="' . $x . '"';
-            unset($extra["divstyle"]);
-        }
-        $div .= '>';
-        if (strcasecmp(get_s($extra, "method"), "get") == 0
-            && ($qpos = strpos($action, "?")) !== false) {
-            if (($hpos = strpos($action, "#", $qpos + 1)) === false) {
-                $hpos = strlen($action);
-            }
-            foreach (preg_split('/(?:&amp;|&)/', substr($action, $qpos + 1, $hpos - $qpos - 1)) as $m) {
-                if (($eqpos = strpos($m, "=")) !== false)
-                    $div .= '<input type="hidden" name="' . substr($m, 0, $eqpos) . '" value="' . urldecode(substr($m, $eqpos + 1)) . '" />';
-            }
-            $action = substr($action, 0, $qpos) . substr($action, $hpos);
-        }
-        return self::form($action, $extra) . $div;
-    }
-
     static function hidden($name, $value = "", $extra = null) {
         return '<input type="hidden" name="' . htmlspecialchars($name)
             . '" value="' . htmlspecialchars($value) . '"'
