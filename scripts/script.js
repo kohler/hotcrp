@@ -7356,7 +7356,7 @@ handle_ui.on("js-signin", function (event) {
     $.get(hoturl("api/session"), function (data) {
         if (data && data.postvalue) {
             siteurl_postvalue = data.postvalue;
-            form.action = form.action.replace(/([?&]post=)[^&#;]*/, "$1" + urlencode(siteurl_postvalue));
+            form.setAttribute("action", form.getAttribute("action").replace(/([?&]post=)[^&#;]*/, "$1" + urlencode(siteurl_postvalue)));
         }
         form.submit();
     });
@@ -7364,7 +7364,10 @@ handle_ui.on("js-signin", function (event) {
 
 handle_ui.on("js-forgot-password", function (event) {
     var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
-    hc.push('<p>Enter your email and we’ll send you instructions for signing in.</p>');
+    hc.push('<h2>Reset password</h2>');
+    if (this.hasAttribute("data-message")) {
+        hc.push('<p>' + this.getAttribute("data-message") + '</p>');
+    }
     hc.push('<div class="f-i"><label for="forgotpassword_email">Email</label>', '</div>');
     hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="username" id="forgotpassword_email">');
     hc.push_actions(['<button type="submit" class="btn-primary">Reset password</button>',
@@ -7374,7 +7377,7 @@ handle_ui.on("js-forgot-password", function (event) {
 });
 
 handle_ui.on("js-create-account", function (event) {
-    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "new"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
+    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "create"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
     hc.push('<h2>Create account</h2>');
     hc.push('<p>Enter your email and we’ll create an account and send you an initial password.</p>')
     hc.push('<div class="f-i"><label for="createaccount_email">Email</label>', '</div>');

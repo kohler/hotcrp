@@ -352,6 +352,10 @@ label.checki {
 .mb-0 {
 	margin-bottom: 0 !important;
 }
+.mb-5 {
+	margin-bottom: 2.25em;
+	margin-bottom: 2.25rem;
+}
 .mt-2 {
 	margin-top: 0.5em;
 	margin-top: 0.5rem;
@@ -812,12 +816,12 @@ h2.home-3 {
 .homeinside {
 	padding-bottom: 0.75em;
 }
+.ui-submit > div {
+	max-width: 25rem;
+}
 .homeinside h4 {
 	display: inline;
 	color: #555555;
-}
-#homeacct {
-	max-width: 25rem;
 }
 .homeside ul {
 	margin: 0;

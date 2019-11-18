@@ -1547,6 +1547,11 @@ class Conf {
     function external_login() {
         return isset($this->opt["ldapLogin"]) || isset($this->opt["httpAuthLogin"]);
     }
+    function allow_user_self_register() {
+        return !$this->external_login()
+            && !$this->opt("disableNewUsers")
+            && !$this->opt("disableNonPC");
+    }
 
     function default_site_contact() {
         $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
@@ -2754,16 +2759,19 @@ class Conf {
         $x = [];
         foreach ($qreq as $k => $v) {
             $ak = get(self::$selfurl_safe, $k);
-            if ($ak === true)
+            if ($ak === true) {
                 $ak = $k;
+            }
             if ($ak
                 && ($ak === $k || !isset($qreq[$ak]))
                 && !array_key_exists($ak, $params)
-                && !is_array($v))
+                && !is_array($v)) {
                 $x[$ak] = $v;
+            }
         }
-        foreach ($params as $k => $v)
+        foreach ($params as $k => $v) {
             $x[$k] = $v;
+        }
         return $this->hoturl(Navigation::page(), $x, $flags);
     }
 

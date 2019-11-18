@@ -55,8 +55,7 @@ class LoginHelper {
                    && validate_email($qreq->email . "@" . $x)) {
             $qreq->preferredEmail = $qreq->email . "@" . $x;
         }
-        $qreq->action = "login";
-        self::login_redirect($conf, $qreq); // redirect on success
+        self::login_redirect($conf, $qreq, "go"); // redirect on success
 
         $conf->header("Error", "home");
         Conf::msg_error("This site is using HTTP authentication to manage its users, and you have provided incorrect authentication data.");
@@ -64,7 +63,7 @@ class LoginHelper {
         exit;
     }
 
-    static function login_redirect(Conf $conf, Qrequest $qreq) {
+    static function login_redirect(Conf $conf, Qrequest $qreq, $signinaction) {
         global $Now;
         $external_login = $conf->external_login();
 
@@ -78,7 +77,6 @@ class LoginHelper {
 
         // do LDAP login before validation, since we might create an account
         if ($conf->opt("ldapLogin")) {
-            $qreq->action = "login";
             if (!self::ldap_login($qreq)) {
                 return null;
             }
@@ -101,13 +99,14 @@ class LoginHelper {
         }
 
         // create account if requested
-        if ($qreq->action === "new" && $qreq->post_ok()) {
-            if ($conf->opt("disableNewUsers") || $conf->opt("disableNonPC")) {
+        if ($signinaction === "create" && $qreq->post_ok()) {
+            if (!$conf->allow_user_self_register()) {
                 Ht::error_at("email", "New users can’t self-register for this site.");
                 return false;
             }
             $user = self::create_account($conf, $qreq, $user, $cdb_user);
             if (!$user) {
+                $conf->self_redirect(null, ["signin" => 1, "email" => $qreq->email]);
                 return null;
             }
             // If we get here, it's the first account and we're going to
@@ -138,7 +137,7 @@ class LoginHelper {
 
         // maybe reset password
         $xuser = $user ? : $cdb_user;
-        if ($qreq->action === "forgot" && $qreq->post_ok()) {
+        if ($signinaction === "forgot" && $qreq->post_ok()) {
             $worked = $xuser->sendAccountInfo("forgot", true);
             if ($worked === "@resetpassword") {
                 $conf->msg("A password reset link has been emailed to " . htmlspecialchars($qreq->email) . ". When you receive that email, visit that link to create a new password.", "xconfirm");
