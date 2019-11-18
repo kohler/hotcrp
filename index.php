@@ -41,7 +41,7 @@ if ($page_template->name === "index") {
     $Me = Home_Partial::signin_requests($Me, $Qreq);
     // That also got rid of all disabled users.
 
-    $gex = new GroupedExtensions($Me, ["etc/homepartials.json"],
+    $gex = new GroupedExtensions($Me, ["etc/pagepartials.json"],
                                  $Conf->opt("pagePartials"));
     foreach ($gex->members("home") as $gj)
         $gex->request($gj, $Qreq, [$Me, $Qreq, $gex, $gj]);
