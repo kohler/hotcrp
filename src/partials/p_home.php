@@ -22,7 +22,7 @@ class Home_Partial {
         // ensure session if `signin` is set
         $signinaction = false;
         if ($qreq->signin) {
-            ensure_session(0);
+            ensure_session();
             if (isset($qreq->email)
                 && in_array($qreq->action, ["go", "forgot", "create"])) {
                 $signinaction = $qreq->action;
@@ -58,7 +58,7 @@ class Home_Partial {
                 error_log($msg);
             }
             if ($qreq->method() === "POST" || $qreq->post) {
-                ensure_session(0);
+                ensure_session();
                 $user->conf->msg("Your session has changed since you last used this tab. Please try again.", 1);
                 unset($qreq->signin, $qreq->signout);
                 $user->conf->self_redirect($qreq);
@@ -225,6 +225,18 @@ class Home_Partial {
     private function _create_message(Conf $conf) {
         return $conf->_("Enter your email and we’ll create an account and send you an initial password.");
     }
+    private function _render_signin_email(Conf $conf, $email, $focus) {
+        $external_login = $conf->external_login();
+        echo '<div class="', Ht::control_class("email", "f-i"), '">',
+            Ht::label($external_login ? "Username" : "Email", "signin_email"),
+            Ht::entry("email", $email, [
+                "size" => 36, "id" => "signin_email", "class" => "fullw",
+                "autocomplete" => "username", "tabindex" => 1,
+                "type" => $external_login || str_ends_with($email, "@_.com") ? "text" : "email",
+                "autofocus" => $focus
+            ]),
+            Ht::render_messages_at("email"), '</div>';
+    }
 
     private function render_signin_login(Contact $user, Qrequest $qreq) {
         global $Now;
@@ -248,16 +260,8 @@ class Home_Partial {
             && ($x = $conf->opt("contactdb_loginFormHeading"))) {
             echo $x;
         }
-        echo '<div class="', Ht::control_class("email", "f-i"), '">',
-            Ht::label($is_external_login ? "Username" : "Email", "signin_email"),
-            Ht::entry("email", $email_value, [
-                "size" => 36, "id" => "signin_email", "class" => "fullw",
-                "autocomplete" => "username", "tabindex" => 1,
-                "type" => $is_external_login || str_ends_with($email_value, "@_.com") ? "text" : "email",
-                "autofocus" => $focus_email
-            ]),
-            Ht::render_messages_at("email"),
-            '</div><div class="', Ht::control_class("password", "f-i"), '">';
+        $this->_render_signin_email($conf, $email_value, $focus_email);
+        echo '<div class="', Ht::control_class("password", "f-i"), '">';
         if (!$is_external_login) {
             echo '<div class="float-right"><a href="?signin=1&amp;action=forgot" class="n x small ui js-forgot-password" data-message="',
                 htmlspecialchars($this->_forgot_message($conf)),
@@ -288,42 +292,24 @@ class Home_Partial {
     }
 
     private function render_signin_forgot(Contact $user, Qrequest $qreq) {
-        $conf = $user->conf;
         echo $this->render_h2_home("Reset password");
-        if (($m = $this->_forgot_message($conf))) {
+        if (($m = $this->_forgot_message($user->conf))) {
             echo '<p class="mb-5">', $m, '</p>';
         }
-        echo '<div class="', Ht::control_class("email", "f-i"), '">',
-            Ht::label("Email", "signin_email"),
-            Ht::entry("email", $qreq->email, [
-                "size" => 36, "id" => "signin_email", "class" => "fullw",
-                "autocomplete" => "username", "tabindex" => 1,
-                "type" => $conf->external_login() || str_ends_with($qreq->email, "@_.com") ? "text" : "email",
-                "autofocus" => true
-            ]),
-            Ht::render_messages_at("email"),
-            '</div><div class="popup-actions">',
+        $this->_render_signin_email($user->conf, $qreq->email, true);
+        echo '<div class="popup-actions">',
             Ht::submit("action", "Reset password", ["class" => "btn-primary", "tabindex" => 1, "value" => "forgot"]),
             Ht::submit("action", "Cancel", ["tabindex" => 1, "value" => "cancel"]),
             '</div>';
     }
 
     private function render_signin_create(Contact $user, Qrequest $qreq) {
-        $conf = $user->conf;
         echo $this->render_h2_home("Create account");
-        if (($m = $this->_create_message($conf))) {
+        if (($m = $this->_create_message($user->conf))) {
             echo '<p class="mb-5">', $m, '</p>';
         }
-        echo '<div class="', Ht::control_class("email", "f-i"), '">',
-            Ht::label("Email", "signin_email"),
-            Ht::entry("email", $qreq->email, [
-                "size" => 36, "id" => "signin_email", "class" => "fullw",
-                "autocomplete" => "username", "tabindex" => 1,
-                "type" => $conf->external_login() || str_ends_with($qreq->email, "@_.com") ? "text" : "email",
-                "autofocus" => true
-            ]),
-            Ht::render_messages_at("email"),
-            '</div><div class="popup-actions">',
+        $this->_render_signin_email($user->conf, $qreq->email, true);
+        echo '<div class="popup-actions">',
             Ht::submit("action", "Create account", ["class" => "btn-success", "tabindex" => 1, "value" => "create"]),
             Ht::submit("action", "Cancel", ["tabindex" => 1, "value" => "cancel"]),
             '</div>';
@@ -334,9 +320,8 @@ class Home_Partial {
             echo '<div class="homegrp fold',
                 $qreq->signin ? "o" : "c",
                 '" id="homeacct">',
-                Ht::form($user->conf->hoturl("index", [
-                    "signin" => 1, "post" => post_value(true)
-                ]), ["class" => "ui-submit js-signin"]);
+                Ht::form($user->conf->hoturl("index", ["signin" => 1]), ["class" => "ui-submit js-signin"]),
+                Ht::hidden("post", post_value(true));
             $action = $qreq->signin ? $qreq->action : null;
             if ($action === "forgot" && !$user->conf->external_login()) {
                 $this->render_signin_forgot($user, $qreq);
