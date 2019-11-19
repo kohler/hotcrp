@@ -77,6 +77,7 @@ class GroupedExtensions {
             if (!empty($gj->synonym))
                 $this->_synonym_subgroups[] = $gj;
         }
+        $this->reset_render();
     }
     function get($name) {
         if (isset($this->_subgroups[$name])) {
@@ -126,8 +127,7 @@ class GroupedExtensions {
         if ($cb[0] === "*") {
             $colons = strpos($cb, ":");
             $klass = substr($cb, 1, $colons - 1);
-            if (!$this->_render_classes
-                || !isset($this->_render_classes[$klass])) {
+            if (!isset($this->_render_classes[$klass])) {
                 $this->_render_classes[$klass] = new $klass(...$args);
             }
             $cb = [$this->_render_classes[$klass], substr($cb, $colons + 2)];
@@ -146,14 +146,22 @@ class GroupedExtensions {
 
     function reset_render() {
         assert(!isset($this->_render_state));
-        $this->_render_classes = null;
+        $this->_render_classes = ["Conf" => $this->user->conf];
     }
     function start_render($heading_number = 3, $heading_class = null) {
         $this->_render_stack[] = $this->_render_state;
         $this->_render_state = [null, $heading_number, $heading_class];
     }
+    function push_render_cleanup($name) {
+        assert(isset($this->_render_state));
+        $this->_render_state[] = $name;
+    }
     function end_render() {
         assert(!empty($this->_render_stack));
+        for ($i = count($this->_render_state) - 1; $i > 2; --$i) {
+            if (($gj = $this->get($this->_render_state[$i])))
+                $this->render($gj, [$this]);
+        }
         $this->_render_state = array_pop($this->_render_stack);
     }
     function render($gj, $args) {
@@ -173,7 +181,7 @@ class GroupedExtensions {
         }
         if (isset($gj->render_callback)) {
             Conf::xt_resolve_require($gj);
-            $this->call_callback($gj->render_callback, $args);
+            return $this->call_callback($gj->render_callback, $args);
         } else if (isset($gj->render_html)) {
             echo $gj->render_html;
         }

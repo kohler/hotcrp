@@ -3,12 +3,12 @@
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class Home_Partial {
+    private $_nh2 = 0;
     private $_in_reviews;
     private $_merit_field;
     private $_my_rinfo;
     private $_pc_rinfo;
     private $_tokens_done;
-    private $_nh2 = 0;
 
     static function signin_requests(Contact $user, Qrequest $qreq) {
         // prepare auto-signin when email & password set
@@ -120,12 +120,13 @@ class Home_Partial {
         }
     }
 
-    function render_head(Contact $user, Qrequest $qreq) {
+    function render_head(Contact $user, Qrequest $qreq, $gx) {
         if ($user->is_empty()) {
             $user->conf->header("Sign in", "home");
         } else {
             $user->conf->header("Home", "home");
         }
+        $gx->push_render_cleanup("footer");
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
         if ($user->privChair) {
             echo '<div id="msg-clock-drift"></div>';

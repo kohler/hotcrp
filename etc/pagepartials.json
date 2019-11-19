@@ -1,5 +1,9 @@
 [
     {
+        "name": "footer", "render_callback": "*Conf::footer"
+    },
+
+    {
         "name": "home/profile_redirect", "position": 100,
         "request_callback": "Home_Partial::profile_redirect_request"
     },

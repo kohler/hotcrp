@@ -4391,7 +4391,7 @@ class Conf {
 
     function page_template($page) {
         if ($page === "index") {
-            return (object) ["name" => "index"];
+            return (object) ["name" => "index", "group" => "home"];
         } else if (in_array($page, ["doc", "paper", "search", "review", "assign", "autoassign", "bulkassign", "buzzer", "checkupdates", "profile", "conflictassign", "deadlines", "graph", "help", "log", "mail", "manualassign", "mergeaccounts", "offline", "resetpassword", "reviewprefs", "scorechart", "settings", "users"])) {
             return (object) ["name" => $page, "require" => "$page.php"];
         } else {

@@ -34,23 +34,24 @@ $page_template = $Conf->page_template($nav->page);
 
 if (!$page_template) {
     header("HTTP/1.0 404 Not Found");
-    exit;
-}
-if ($page_template->name === "index") {
+} else if (isset($page_template->group)) {
     // handle signin/signout -- may change $Me
-    $Me = Home_Partial::signin_requests($Me, $Qreq);
-    // That also got rid of all disabled users.
-
-    $gex = new GroupedExtensions($Me, ["etc/pagepartials.json"],
-                                 $Conf->opt("pagePartials"));
-    foreach ($gex->members("home") as $gj)
-        $gex->request($gj, $Qreq, [$Me, $Qreq, $gex, $gj]);
-    $gex->start_render();
-    foreach ($gex->members("home") as $gj)
-        $gex->render($gj, [$Me, $Qreq, $gex, $gj]);
-    $gex->end_render();
-
-    $Conf->footer();
+    if ($page_template->name === "index") {
+        $Me = Home_Partial::signin_requests($Me, $Qreq);
+        // that also got rid of disabled users
+    }
+    $gx = new GroupedExtensions($Me, ["etc/pagepartials.json"],
+                                $Conf->opt("pagePartials"));
+    foreach ($gx->members($page_template->group) as $gj) {
+        if ($gx->request($gj, $Qreq, [$Me, $Qreq, $gx, $gj]) === false)
+            break;
+    }
+    $gx->start_render();
+    foreach ($gx->members($page_template->group) as $gj) {
+        if ($gx->render($gj, [$Me, $Qreq, $gx, $gj]) === false)
+            break;
+    }
+    $gx->end_render();
 } else {
     include($page_template->require);
 }
