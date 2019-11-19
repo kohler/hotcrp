@@ -35,10 +35,11 @@ class HtHead extends Ht {
         $this->_help_topics = $help_topics;
     }
     static function subhead($title, $id = null) {
-        if ($id || $title)
+        if ($id || $title) {
             return '<h3 class="helppage"' . ($id ? " id=\"{$id}\"" : "") . '>' . $title . "</h3>\n";
-        else
+        } else {
             return "";
+        }
     }
     function table($tabletype = false) {
         $this->_rowidx = 0;
@@ -47,12 +48,13 @@ class HtHead extends Ht {
     }
     function tgroup($title, $id = null) {
         $this->_rowidx = 0;
-        if ($this->_tabletype)
+        if ($this->_tabletype) {
             return $this->subhead($title, $id);
-        else
+        } else {
             return '<tr><td class="sentry nw remargin-left remargin-right" colspan="2"><h4 class="helppage"'
                 . ($id ? " id=\"{$id}\"" : "") . '>'
                 . $title . "</h4></td></tr>\n";
+        }
     }
     function trow($caption, $entry = null) {
         if ($this->_tabletype) {
@@ -78,15 +80,18 @@ class HtHead extends Ht {
         return $this->_tabletype ? "" : "</tbody></table>\n";
     }
     function hotlink($html, $page, $options = null, $js = []) {
-        if (!isset($js["rel"]))
+        if (!isset($js["rel"])) {
             $js["rel"] = "nofollow";
+        }
         return $this->conf->hotlink($html, $page, $options, $js);
     }
     function search_link($html, $q = null, $js = []) {
-        if ($q === null)
+        if ($q === null) {
             $q = $html;
-        if (is_string($q))
+        }
+        if (is_string($q)) {
             $q = ["q" => $q];
+        }
         return $this->hotlink($html ? : htmlspecialchars($q["q"]), "search", $q, $js);
     }
     function help_link($html, $topic = null) {
@@ -94,12 +99,14 @@ class HtHead extends Ht {
             $topic = $html;
             $html = "Learn more";
         }
-        if (is_string($topic) && ($hash = strpos($topic, "#")) !== false)
+        if (is_string($topic) && ($hash = strpos($topic, "#")) !== false) {
             $topic = ["t" => substr($topic, 0, $hash), "anchor" => substr($topic, $hash + 1)];
-        else if (is_string($topic))
+        } else if (is_string($topic)) {
             $topic = ["t" => $topic];
-        if (isset($topic["t"]) && ($group = $this->_help_topics->canonical_group($topic["t"])))
+        }
+        if (isset($topic["t"]) && ($group = $this->_help_topics->canonical_group($topic["t"]))) {
             $topic["t"] = $group;
+        }
         return $this->hotlink($html, "help", $topic);
     }
     function setting_link($html, $siname = null) {
@@ -132,8 +139,9 @@ class HtHead extends Ht {
         }
     }
     function search_form($q, $size = 20) {
-        if (is_string($q))
+        if (is_string($q)) {
             $q = ["q" => $q];
+        }
         $t = Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "nw"])
             . Ht::entry("q", $q["q"], ["size" => $size])
             . " &nbsp;"
@@ -149,25 +157,29 @@ class HtHead extends Ht {
     }
     function example_tag($property) {
         $vt = [];
-        if ($this->user->isPC)
+        if ($this->user->isPC) {
             $vt = $this->conf->tags()->filter($property);
+        }
         return empty($vt) ? $property : current($vt)->tag;
     }
     function current_tag_list($property) {
         $vt = [];
-        if ($this->user->isPC)
+        if ($this->user->isPC) {
             $vt = $this->conf->tags()->filter($property);
-        if (empty($vt))
+        }
+        if (empty($vt)) {
             return "";
-        else
+        } else {
             return " (currently " . join(", ", array_map(function ($t) {
                 return $this->search_link($t->tag, "#{$t->tag}");
             }, $vt)) . ")";
+        }
     }
     function render_group($topic) {
         $this->_help_topics->start_render(3, "helppage");
-        foreach ($this->_help_topics->members($topic) as $gj)
+        foreach ($this->_help_topics->members($topic) as $gj) {
             $this->_help_topics->render($gj, [$this, $gj]);
+        }
         $this->_help_topics->end_render();
     }
     function groups() {
