@@ -98,5 +98,26 @@
     {
         "name": "home/submissions", "position": 7000,
         "render_callback": "*Home_Partial::render_submissions"
+    },
+
+    {
+        "name": "resetpassword/request", "position": 100,
+        "request_callback": "*ResetPassword_Partial::reset_request"
+    },
+    {
+        "name": "resetpassword/head", "position": 1000,
+        "render_callback": "*ResetPassword_Partial::render_reset_head"
+    },
+    {
+        "name": "resetpassword/message", "position": 2000,
+        "alias": "home/message"
+    },
+    {
+        "name": "resetpassword/welcome", "position": 2500,
+        "alias": "home/welcome"
+    },
+    {
+        "name": "resetpassword/body", "position": 3000,
+        "render_callback": "*ResetPassword_Partial::render_reset_body"
     }
 ]

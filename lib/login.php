@@ -55,7 +55,10 @@ class LoginHelper {
                    && validate_email($qreq->email . "@" . $x)) {
             $qreq->preferredEmail = $qreq->email . "@" . $x;
         }
-        self::login_redirect($conf, $qreq, "go"); // redirect on success
+        $url = self::login($conf, $qreq, "go");
+        if ($url !== false) {
+            Navigation::redirect($url);
+        }
 
         $conf->header("Error", "home");
         Conf::msg_error("This site is using HTTP authentication to manage its users, and you have provided incorrect authentication data.");
@@ -63,7 +66,7 @@ class LoginHelper {
         exit;
     }
 
-    static function login_redirect(Conf $conf, Qrequest $qreq, $signinaction) {
+    static function login(Conf $conf, Qrequest $qreq, $signinaction) {
         global $Now;
         $external_login = $conf->external_login();
 
@@ -76,10 +79,8 @@ class LoginHelper {
         }
 
         // do LDAP login before validation, since we might create an account
-        if ($conf->opt("ldapLogin")) {
-            if (!self::ldap_login($qreq)) {
-                return null;
-            }
+        if ($conf->opt("ldapLogin") && !self::ldap_login($qreq)) {
+            return false;
         }
 
         // look up user in our database
@@ -106,8 +107,7 @@ class LoginHelper {
             }
             $user = self::create_account($conf, $qreq, $user, $cdb_user);
             if (!$user) {
-                $conf->self_redirect(null, ["signin" => 1, "email" => $qreq->email]);
-                return null;
+                return $conf->selfurl(null, ["signin" => 1, "email" => $qreq->email]);
             }
             // If we get here, it's the first account and we're going to
             // log them in automatically. XXX should show the password
@@ -118,7 +118,8 @@ class LoginHelper {
         if (!$user && $external_login) {
             $user = Contact::create($conf, null, $qreq->as_array(), Contact::SAVE_ANY_EMAIL);
             if (!$user) {
-                return Conf::msg_error($conf->db_error_html(true, "while adding your account"));
+                Conf::msg_error($conf->db_error_html(true, "while adding your account"));
+                return false;
             }
         }
 
@@ -140,13 +141,12 @@ class LoginHelper {
         if ($signinaction === "forgot" && $qreq->post_ok()) {
             $worked = $xuser->sendAccountInfo("forgot", true);
             if ($worked === "@resetpassword") {
-                $conf->msg("A password reset link has been emailed to " . htmlspecialchars($qreq->email) . ". When you receive that email, visit that link to create a new password.", "xconfirm");
+                $conf->msg("A password reset link has been emailed to you. When you receive that email, visit that link to create a new password.", "xconfirm");
             } else if ($worked) {
-                $conf->msg("Your password has been emailed to " . htmlspecialchars($qreq->email) . ". When you receive that email, return here to sign in.", "xconfirm");
+                $conf->msg("Your password has been emailed to you. When you receive that email, return here to sign in.", "xconfirm");
                 $conf->log_for($xuser, null, "Password sent");
             }
-            Navigation::redirect("");
-            return null;
+            return $conf->selfurl(null);
         }
 
         // check password
@@ -216,7 +216,7 @@ class LoginHelper {
         if ($qreq->go !== null) {
             $url .= "&go=" . urlencode($qreq->go);
         }
-        Navigation::redirect($url);
+        return $url;
     }
 
     static function check_postlogin(Contact $user, Qrequest $qreq) {

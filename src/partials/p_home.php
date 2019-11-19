@@ -76,7 +76,10 @@ class Home_Partial {
         if ($user->conf->opt("httpAuthLogin")) {
             LoginHelper::check_http_auth($user, $qreq);
         } else if ($signin) {
-            LoginHelper::login_redirect($user->conf, $qreq, $signinaction);
+            $url = LoginHelper::login($user->conf, $qreq, $signinaction);
+            if ($url !== false) {
+                Navigation::redirect($url);
+            }
         } else if (($signin || $signout) && $qreq->post) {
             unset($qreq->signin, $qreq->signout);
             $user->conf->self_redirect($qreq);
@@ -220,7 +223,7 @@ class Home_Partial {
         echo '</div>';
     }
 
-    private function _forgot_message(Conf $conf) {
+    static function forgot_message(Conf $conf) {
         return $conf->_("Enter your email and we’ll send you instructions for signing in.");
     }
     private function _create_message(Conf $conf) {
@@ -265,7 +268,7 @@ class Home_Partial {
         echo '<div class="', Ht::control_class("password", "f-i"), '">';
         if (!$is_external_login) {
             echo '<div class="float-right"><a href="?signin=1&amp;action=forgot" class="n x small ui js-forgot-password" data-message="',
-                htmlspecialchars($this->_forgot_message($conf)),
+                htmlspecialchars(self::forgot_message($conf)),
                 '">Forgot your password?</a></div>';
         }
         echo Ht::label("Password", "signin_password"),
@@ -294,7 +297,7 @@ class Home_Partial {
 
     private function render_signin_forgot(Contact $user, Qrequest $qreq) {
         echo $this->render_h2_home("Reset password");
-        if (($m = $this->_forgot_message($user->conf))) {
+        if (($m = self::forgot_message($user->conf))) {
             echo '<p class="mb-5">', $m, '</p>';
         }
         $this->_render_signin_email($user->conf, $qreq->email, true);
@@ -321,7 +324,7 @@ class Home_Partial {
             echo '<div class="homegrp fold',
                 $qreq->signin ? "o" : "c",
                 '" id="homeacct">',
-                Ht::form($user->conf->hoturl("index", ["signin" => 1]), ["class" => "ui-submit js-signin"]),
+                Ht::form($user->conf->hoturl("index", ["signin" => 1]), ["class" => "ui-submit js-signin compact-form"]),
                 Ht::hidden("post", post_value(true));
             $action = $qreq->signin ? $qreq->action : null;
             if ($action === "forgot" && !$user->conf->external_login()) {

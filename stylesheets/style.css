@@ -816,7 +816,8 @@ h2.home-3 {
 .homeinside {
 	padding-bottom: 0.75em;
 }
-.ui-submit > div {
+.compact-form > div {
+	max-width: 25em;
 	max-width: 25rem;
 }
 .homeinside h4 {

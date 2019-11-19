@@ -1234,19 +1234,24 @@ class Contact {
 
     static function create(Conf $conf, $actor, $reg, $flags = 0, $roles = 0) {
         // clean registration
-        if (is_array($reg))
+        if (is_array($reg)) {
             $reg = (object) $reg;
+        }
         assert(is_string($reg->email));
         $reg->email = trim($reg->email);
         assert($reg->email !== "");
-        if (!isset($reg->firstName) && isset($reg->first))
+        if (!isset($reg->firstName) && isset($reg->first)) {
             $reg->firstName = $reg->first;
-        if (!isset($reg->lastName) && isset($reg->last))
+        }
+        if (!isset($reg->lastName) && isset($reg->last)) {
             $reg->lastName = $reg->last;
-        if (isset($reg->name) && !isset($reg->firstName) && !isset($reg->lastName))
+        }
+        if (isset($reg->name) && !isset($reg->firstName) && !isset($reg->lastName)) {
             list($reg->firstName, $reg->lastName) = Text::split_name($reg->name);
-        if (isset($reg->preferred_email) && !isset($reg->preferredEmail))
+        }
+        if (isset($reg->preferred_email) && !isset($reg->preferredEmail)) {
             $reg->preferredEmail = $reg->preferred_email;
+        }
 
         // look up existing accounts
         $valid_email = validate_email($reg->email);
