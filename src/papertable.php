@@ -743,7 +743,6 @@ class PaperTable {
         if (!$this->entryMatches
             && ($format = $this->prow->format_of($text))) {
             $fr->value .= ' need-format" data-format="' . $format . '">' . $text;
-            Ht::stash_script('$(render_text.on_page)', 'render_on_page');
         } else {
             $fr->value .= ' format0">' . Ht::format0($text);
         }

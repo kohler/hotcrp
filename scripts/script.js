@@ -3518,6 +3518,8 @@ $.extend(render_text, {
     on: on,
     on_page: function () { $(".need-format").each(on); }
 });
+
+$(render_text.on_page);
 return render_text;
 })($);
 

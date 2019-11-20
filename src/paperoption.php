@@ -210,7 +210,6 @@ class FieldRender {
                 $html = htmlspecialchars($this->value);
             }
         } else {
-            Ht::stash_script('$(render_text.on_page)', 'render_on_page');
             $html = htmlspecialchars($this->value);
             $divclass = $divclass ? "need-format " . $divclass : "need-format";
             $rest = ' data-format="' . $this->value_format . '"';
