@@ -1330,9 +1330,9 @@ class PaperTable {
 
         echo '<div class="papeg">',
             '<div class="', $this->control_class("contacts", "papet"),
-            '" id="contacts"><span class="', $this->control_class("contacts", "papfn", "is-"), '">',
+            '" id="contacts"><label class="', $this->control_class("contacts", "papfn", "is-"), '">',
             $this->edit_title_html($option),
-            '</span></div>';
+            '</label></div>';
 
         // Editable version
         $this->echo_field_hint($option);
@@ -2304,7 +2304,7 @@ class PaperTable {
     static function echo_review_clickthrough() {
         echo '<div class="pcard revcard js-clickthrough-terms"><div class="revcard-head"><h3>Reviewing terms</h3></div><div class="revcard-body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
         self::_echo_clickthrough("review");
-        echo "</form></div></div>";
+        echo "</div></div>";
     }
 
     private function _echo_editable_form() {
@@ -2324,7 +2324,7 @@ class PaperTable {
             && !$this->conf->setting("sub_freeze")) {
             Ht::stash_script('$("#paperform").on("submit", edit_paper_ui)');
         }
-        Ht::stash_script('$(function(){$("#paperform input[name=paperUpload]").trigger("change")})');
+        Ht::stash_script('$(edit_paper_ui.onload)');
     }
 
     private function _echo_editable_body() {

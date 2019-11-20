@@ -3543,32 +3543,39 @@ $(function () {
 });
 
 var add_pslitem = (function () {
-var pslcard, observer;
+var pslcard, observer, linkmap;
 function observer_fn(entries) {
     for (var i = 0; i !== entries.length; ++i) {
-        var e = entries[i],
-            it = $(pslcard).find("a[href='#" + e.target.id + "']")[0];
-        it && toggleClass(it.parentElement, "pslitem-intersecting", e.isIntersecting);
+        var e = entries[i], psli = linkmap.get(e.target);
+        psli && toggleClass(psli, "pslitem-intersecting", e.isIntersecting);
     }
 }
-return function (id, name) {
-    if (pslcard === undefined) {
-        pslcard = $(".pslcard")[0];
-    }
+return function (id, name, elt) {
     if (observer === undefined) {
-        if (window.IntersectionObserver) {
+        if (window.IntersectionObserver && window.WeakMap) {
             observer = new IntersectionObserver(observer_fn, {threshold: 0.125});
+            linkmap = new WeakMap;
         } else {
             observer = null;
         }
     }
-    if (!pslcard) {
-    } else if (name === false) {
-        observer && observer.unobserve($$(id));
-        $(pslcard).find("a[href='#" + id + "']").remove();
-    } else {
-        $(pslcard).append('<div class="pslitem ui js-click-child"><a href="#' + id + '" class="x hover-child">' + name + '</a></div>');
-        observer && observer.observe($$(id));
+    if (pslcard === undefined) {
+        pslcard = $(".pslcard")[0];
+    }
+    if (pslcard) {
+        if (name === false) {
+            observer && observer.unobserve($$(id));
+            $(pslcard).find("a[href='#" + id + "']").remove();
+        } else {
+            var $psli = $('<div class="pslitem ui js-click-child"><a href="#' + id + '" class="x hover-child">' + name + '</a></div>');
+            $psli.appendTo(pslcard);
+            if (observer) {
+                elt = elt || $$(id);
+                linkmap.set(elt, $psli[0]);
+                observer.observe(elt);
+            }
+            return $psli[0];
+        }
     }
 };
 })();
@@ -7939,6 +7946,28 @@ edit_paper_ui.prepare_pstagindex = prepare_pstagindex;
 edit_paper_ui.edit_condition = function () {
     run_edit_conditions();
     $("#paperform").on("change click", "input, select, textarea", run_edit_conditions);
+};
+edit_paper_ui.onload = function () {
+    $("#paperform input[name=paperUpload]").trigger("change");
+    $(".papet").each(function () {
+        var l = this.firstChild, id;
+        if (l.tagName === "LABEL") {
+            id = this.id || l.getAttribute("for") || $(l).find("input").attr("id");
+        }
+        if (id) {
+            var x = l.firstChild;
+            while (x && x.nodeType !== 3) {
+                x = x.nextSibling;
+            }
+            var e = x ? add_pslitem(id, x.data.trim(), this.parentElement) : null;
+            if (e && hasClass(this, "has-error")) {
+                addClass(e.firstChild, "is-error");
+            }
+            if (e && hasClass(this, "has-warning")) {
+                addClass(e.firstChild, "is-warning");
+            }
+        }
+    });
 };
 return edit_paper_ui;
 })($);
