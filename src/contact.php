@@ -2749,7 +2749,9 @@ class Contact {
     }
 
     function can_edit_option(PaperInfo $prow, $opt) {
-        return $this->edit_option_state($prow, $opt) === 2;
+        $eos = $this->edit_option_state($prow, $opt);
+        return $eos === 2
+            || ($eos === 1 && ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS));
     }
 
     function user_option_list() {
