@@ -922,7 +922,7 @@ function hoturl_go(page, options) {
 }
 
 function hoturl_post_go(page, options) {
-    var $form = $('<form method="POST" enctype="multipart/form-data" accept-charset="UTF-8"><div><input type="hidden" name="____empty____" value="1"></div></form>');
+    var $form = $('<form method="POST" enctype="multipart/form-data" accept-charset="UTF-8"><input type="hidden" name="____empty____" value="1"></form>');
     $form[0].action = hoturl_post(page, options);
     $form.appendTo(document.body);
     $form.submit();
@@ -1856,10 +1856,16 @@ function popup_skeleton(options) {
             }
         });
         if (options.action) {
+            var f = $d.find("form")[0];
             if (options.action instanceof HTMLFormElement) {
-                $d.find("form").attr({action: options.action.action, method: options.action.method});
+                $(f).attr({action: options.action.action, method: options.action.method});
             } else {
-                $d.find("form").attr({action: options.action, method: options.method || "post"});
+                $(f).attr({action: options.action, method: options.method || "post"});
+            }
+            if (f.getAttribute("method") === "post"
+                && !/post=/.test(f.getAttribute("action"))
+                && !/^(?:[a-z]*:|\/\/)/.test(f.getAttribute("action"))) {
+                $(f).prepend('<input type="hidden" name="post" value="' + escape_entities(siteurl_postvalue) + '">');
             }
         }
         for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
@@ -7369,14 +7375,14 @@ handle_ui.on("js-signin", function (event) {
     $.get(hoturl("api/session"), function (data) {
         if (data && data.postvalue) {
             siteurl_postvalue = data.postvalue;
-            form.setAttribute("action", form.getAttribute("action").replace(/([?&]post=)[^&#;]*/, "$1" + urlencode(siteurl_postvalue)));
+            form.post && (form.post.value = siteurl_postvalue);
         }
         form.submit();
     });
 });
 
 handle_ui.on("js-forgot-password", function (event) {
-    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "forgot"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
+    var hc = popup_skeleton({action: hoturl("index", {signin: 1, action: "forgot"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
     hc.push('<h2>Reset password</h2>');
     if (this.hasAttribute("data-message")) {
         hc.push('<p>' + this.getAttribute("data-message") + '</p>');
@@ -7390,7 +7396,7 @@ handle_ui.on("js-forgot-password", function (event) {
 });
 
 handle_ui.on("js-create-account", function (event) {
-    var hc = popup_skeleton({action: hoturl_post("index", {signin: 1, action: "create"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
+    var hc = popup_skeleton({action: hoturl("index", {signin: 1, action: "create"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
     hc.push('<h2>Create account</h2>');
     hc.push('<p>Enter your email and we’ll create an account and send you an initial password.</p>')
     hc.push('<div class="f-i"><label for="createaccount_email">Email</label>', '</div>');
