@@ -108,6 +108,8 @@ body.paper > #top {
 	background: #dce4e8;
 	padding-bottom: 8px;
 	border-bottom: 1px solid #f33360;
+	position: relative;
+	z-index: 4;
 }
 #header-right {
 	padding: 8px 24px 0;
@@ -255,6 +257,7 @@ tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
 div.js-assignment-fold:hover a.js-assignment-fold,
+.js-click-child:hover a.hover-child,
 a.mailto:hover, a:hover u.x, .ul {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
@@ -2588,6 +2591,9 @@ a.badge:active {
 	width: 15.5rem;
 	font-size: 13px;
 	font-size: 0.8125rem;
+}
+.pcard-left-nostrip {
+	background: #e2e9ec;
 }
 .pspcard {
 	position: relative;

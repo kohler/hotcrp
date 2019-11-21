@@ -1620,7 +1620,7 @@ class PaperTable {
                 echo '<span class="checkc">',
                     Ht::checkbox("pcc$id", $ct > 0 ? $ct : CONFLICT_AUTHORMARK,
                                  $ct > 0, $js),
-                    ' </span>', $label;
+                    '</span>', $label;
             }
             echo "</label>";
             if ($pcconfmatch) {
@@ -2373,13 +2373,15 @@ class PaperTable {
             $this->_papstrip();
         }
         if ($this->npapstrip) {
-            echo '</div></div><div class="pslcard"><div class="pslcard-home">',
-                '<a href="#top" class="qq"><span class="header-site-name">',
-                htmlspecialchars($this->conf->short_name), '</span> #',
-                $this->prow->paperId, '</a></div></div></div>';
+            echo '</div></div><div class="pslcard">';
         } else {
-            echo '<div class="pcontainer pcontainer-nostrip">';
+            echo '<div class="pcontainer"><div class="pcard-left pcard-left-nostrip"><div class="pslcard">';
         }
+        echo '<div class="pslcard-home">',
+            '<a href="#top" class="qq"><span class="header-site-name">',
+            htmlspecialchars($this->conf->short_name), '</span> ',
+            ($this->prow->paperId > 0 ? "#{$this->prow->paperId}" : " new submission"),
+            '</a></div></div></div>';
         echo '<div class="pcard papcard"><div class="',
             ($this->editable ? "pedcard" : "papcard"), '-body">';
 

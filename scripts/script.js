@@ -3554,7 +3554,7 @@ return function (id, name, elt) {
     if (observer === undefined) {
         observer = linkmap = null;
         if (window.IntersectionObserver) {
-            observer = new IntersectionObserver(observer_fn, {threshold: 0.125});
+            observer = new IntersectionObserver(observer_fn, {threshold: 0.025});
         }
         if (window.WeakMap) {
             linkmap = new WeakMap;
