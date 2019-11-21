@@ -11,12 +11,14 @@ if (isset($arg["h"]) || isset($arg["help"])
            "Usage: php batch/addusers.php [-n CONFID] [--modify] [--no-email] [JSONFILE | CSVFILE | -e JSON]\n");
     exit($status);
 }
-if (isset($arg["modify"]))
+if (isset($arg["modify"])) {
     $arg["m"] = false;
-if (isset($arg["expr"]))
+}
+if (isset($arg["expr"])) {
     $arg["e"] = $arg["expr"];
-else if (isset($arg["expression"]))
+} else if (isset($arg["expression"])) {
     $arg["e"] = $arg["expression"];
+}
 
 require_once("$ConfSitePATH/src/init.php");
 

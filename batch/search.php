@@ -1,34 +1,41 @@
 <?php
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
 require_once("$ConfSitePATH/lib/getopt.php");
 
-$arg = getopt_rest($argv, "hn:t:f:", ["help", "name:", "type:", "field:"]);
+$arg = getopt_rest($argv, "hn:t:f:", ["help", "name:", "type:", "field:", "show:", "header"]);
 if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/search.php [-n CONFID] [-t TYPE] [-f FIELD]+ [QUERY...]\n");
+    fwrite(STDOUT, "Usage: php batch/search.php [-n CONFID] [-t COLLECTION] [-f FIELD]+ [QUERY...]
+Output a CSV file containing the FIELDs for the papers matching QUERY.
+
+Options include:
+  -t, --type COLLECTION  Search COLLECTION “s” (submitted) or “all” [s].
+  -f, --show FIELD       Include FIELD in output.
+  --header               Always include header.
+  QUERY...               A search term.\n");
     exit(0);
 }
-if (isset($arg["type"]) && !isset($arg["t"]))
+if (isset($arg["type"]) && !isset($arg["t"])) {
     $arg["t"] = $arg["type"];
+}
+
+require_once("$ConfSitePATH/src/init.php");
 
 $user = $Conf->site_contact();
 $t = get($arg, "t", "s");
 $searchtypes = PaperSearch::search_types($user, $t);
 if (!isset($searchtypes[$t])) {
-    fwrite(STDERR, "batch/search.php: No such search collection ‘{$t}’\n");
+    fwrite(STDERR, "batch/search.php: No search collection ‘{$t}’\n");
     exit(1);
 }
 
 $search = new PaperSearch($user, ["q" => join(" ", $arg["_"]), "t" => $t]);
 $paperlist = new PaperList($search, ["report" => "empty"]);
 $paperlist->set_view("pid", true);
-if (isset($arg["f"])) {
-    foreach (is_array($arg["f"]) ? $arg["f"] : [$arg["f"]] as $f)
-        $paperlist->set_view($f, true);
-}
-if (isset($arg["field"])) {
-    foreach (is_array($arg["field"]) ? $arg["field"] : [$arg["field"]] as $f)
-        $paperlist->set_view($f, true);
+$fields = array_merge(mkarray(get($arg, "f", [])),
+                      mkarray(get($arg, "field", [])),
+                      mkarray(get($arg, "show", [])));
+foreach ($fields as $f) {
+    $paperlist->set_view($f, true);
 }
 list($header, $body) = $paperlist->text_csv("empty");
 foreach ($search->warnings as $w) {
@@ -36,7 +43,7 @@ foreach ($search->warnings as $w) {
 }
 if (!empty($body)) {
     $csv = new CsvGenerator;
-    if (count($header) > 1) {
+    if (isset($arg["header"]) || count($header) > 1) {
         $csv->add(array_keys($header));
     }
     $csv->add($body);
