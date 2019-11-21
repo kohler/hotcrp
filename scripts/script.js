@@ -7965,7 +7965,7 @@ edit_paper_ui.onload = function () {
             while (x && x.nodeType !== 3) {
                 x = x.nextSibling;
             }
-            var e = x ? add_pslitem(id, x.data.trim(), this.parentElement) : null;
+            var e = x ? add_pslitem(id, escape_entities(x.data.trim()), this.parentElement) : null;
             if (e) {
                 hasClass(this, "has-error") && addClass(e.firstChild, "is-error");
                 hasClass(this, "has-warning") && addClass(e.firstChild, "is-warning");
