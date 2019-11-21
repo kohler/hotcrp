@@ -76,6 +76,7 @@ users.php
 
 batch/.htaccess
 batch/addusers.php
+batch/assign.php
 batch/checkinvariants.php
 batch/deletepapers.php
 batch/fixdelegation.php
