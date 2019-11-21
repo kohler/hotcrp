@@ -3552,28 +3552,28 @@ function observer_fn(entries) {
 }
 return function (id, name, elt) {
     if (observer === undefined) {
-        if (window.IntersectionObserver && window.WeakMap) {
+        observer = linkmap = null;
+        if (window.IntersectionObserver) {
             observer = new IntersectionObserver(observer_fn, {threshold: 0.125});
-            linkmap = new WeakMap;
-        } else {
-            observer = null;
         }
-    }
-    if (pslcard === undefined) {
+        if (window.WeakMap) {
+            linkmap = new WeakMap;
+        }
         pslcard = $(".pslcard")[0];
     }
-    if (pslcard) {
+    if (name == undefined) {
+        elt = typeof id === "string" ? $$(id) : id;
+        return linkmap ? linkmap.get(elt) : null;
+    } else if (pslcard) {
         if (name === false) {
             observer && observer.unobserve($$(id));
             $(pslcard).find("a[href='#" + id + "']").remove();
         } else {
             var $psli = $('<div class="pslitem ui js-click-child"><a href="#' + id + '" class="x hover-child">' + name + '</a></div>');
             $psli.appendTo(pslcard);
-            if (observer) {
-                elt = elt || $$(id);
-                linkmap.set(elt, $psli[0]);
-                observer.observe(elt);
-            }
+            elt = elt || $$(id);
+            linkmap && linkmap.set(elt, $psli[0]);
+            observer && observer.observe(elt);
             return $psli[0];
         }
     }
@@ -7922,8 +7922,11 @@ edit_conditions.pc_conflict = function (ec, form) {
 function run_edit_conditions() {
     $(".has-edit-condition").each(function () {
         var f = this.closest("form"),
-            ec = JSON.parse(this.getAttribute("data-edit-condition"));
-        toggleClass(this, "hidden", !evaluate_edit_condition(ec, f));
+            ec = JSON.parse(this.getAttribute("data-edit-condition")),
+            off = !evaluate_edit_condition(ec, f),
+            link = add_pslitem(this);
+        toggleClass(this, "hidden", off);
+        link && toggleClass(link, "hidden", off);
     });
 }
 
@@ -7960,11 +7963,10 @@ edit_paper_ui.onload = function () {
                 x = x.nextSibling;
             }
             var e = x ? add_pslitem(id, x.data.trim(), this.parentElement) : null;
-            if (e && hasClass(this, "has-error")) {
-                addClass(e.firstChild, "is-error");
-            }
-            if (e && hasClass(this, "has-warning")) {
-                addClass(e.firstChild, "is-warning");
+            if (e) {
+                hasClass(this, "has-error") && addClass(e.firstChild, "is-error");
+                hasClass(this, "has-warning") && addClass(e.firstChild, "is-warning");
+                hasClass(this.parentElement, "hidden") && addClass(e, "hidden");
             }
         }
     });
