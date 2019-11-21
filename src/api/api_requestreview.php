@@ -199,7 +199,7 @@ class RequestReview_API {
                 "email" => $email
             ];
             HotCRPMailer::send_to($requester, "@denyreviewrequest", $prow,
-                ["reviewer_contact" => $reviewer_contact]);
+                ["reviewer_contact" => $reviewer_contact, "reason" => $reason]);
 
             $user->log_activity_for($requester, "Review proposal denied for $email", $prow);
             $prow->conf->update_autosearch_tags($prow);
