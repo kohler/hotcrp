@@ -2308,7 +2308,10 @@ class PaperTable {
     }
 
     private function _echo_editable_form() {
-        $form_js = ["id" => "paperform", "class" => "need-unload-protection"];
+        $form_js = [
+            "id" => "paperform", "class" => "need-unload-protection",
+            "data-alert-toggle" => "paperform-alert"
+        ];
         if ($this->prow->timeSubmitted > 0) {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;
         }

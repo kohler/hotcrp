@@ -1031,7 +1031,11 @@ function form_differs(form, want_ediff) {
 
 function form_highlight(form, elt) {
     (form instanceof HTMLElement) || (form = $(form)[0]);
-    toggleClass(form, "alert", (elt && form_differs(elt)) || form_differs(form));
+    var alerting = (elt && form_differs(elt)) || form_differs(form);
+    toggleClass(form, "alert", alerting);
+    if (form.hasAttribute("data-alert-toggle")) {
+        $("." + form.getAttribute("data-alert-toggle")).toggleClass("hidden", !alerting);
+    }
 }
 
 function hiliter_children(form) {
@@ -7469,7 +7473,6 @@ handle_ui.on("js-check-submittable", function (event) {
     } else {
         t = "Save and submit";
     }
-    $("input.btn-savepaper").val(t);
     $("button.btn-savepaper").html(t);
 });
 
@@ -7970,6 +7973,13 @@ edit_paper_ui.onload = function () {
             }
         }
     });
+    var h = $(".btn-savepaper").first();
+    $(".pslcard").append('<div class="paperform-alert hidden mt-5">'
+        + '<button class="ui btn btn-highlight btn-savepaper">'
+        + h.html() + '</button></div>')
+        .find(".btn-savepaper").click(function () {
+            $("#paperform .btn-savepaper").first().click();
+        });
 };
 return edit_paper_ui;
 })($);
