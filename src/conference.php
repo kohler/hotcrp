@@ -3311,7 +3311,7 @@ class Conf {
         echo $this->make_css_link("stylesheets/style.css"), "\n";
         if ($this->opt("mobileStylesheet")) {
             echo '<meta name="viewport" content="width=device-width, initial-scale=1">', "\n";
-            echo $this->make_css_link("stylesheets/mobile.css", "screen and (max-width: 1024px)"), "\n";
+            echo $this->make_css_link("stylesheets/mobile.css", "screen and (max-width: 1100px)"), "\n";
         }
         foreach (mkarray($this->opt("stylesheets", [])) as $css)
             echo $this->make_css_link($css), "\n";

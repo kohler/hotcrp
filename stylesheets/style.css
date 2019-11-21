@@ -435,6 +435,10 @@ td.g {
 	position: relative;
 	z-index: 3;
 }
+body.paper > #body {
+	margin-left: 0;
+	margin-right: 0;
+}
 .demargin {
 	margin-left: -24px;
 	margin-right: -24px;
@@ -2586,7 +2590,6 @@ a.badge:active {
 	z-index: 4;
 	top: 0;
 	bottom: 0;
-	left: -24px;
 	width: 248px;
 	width: 15.5rem;
 	font-size: 13px;
@@ -2971,16 +2974,11 @@ a.badge:active {
 
 /* papers */
 .pcard {
-	margin-left: 224px;
-	margin-left: 14rem;
-	margin-right: -24px;
+	margin-left: 248px;
+	margin-left: 15.5rem;
 	padding-left: 24px;
 	padding-right: 24px;
 }
-/*.pcontainer-nostrip > .pcard {
-	margin-left: 8em;
-	margin-right: 8em;
-}*/
 .papcard {
 	position: relative;
 }
