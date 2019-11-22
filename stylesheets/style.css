@@ -87,7 +87,7 @@ body {
 	min-height: 100vh;
 }
 body.paper {
-	background: linear-gradient(to right, #dce4e8, #dce4e8 15.5rem, white 15.5rem, white);
+	background: linear-gradient(to right, #e2e9ec, #e2e9ec 15.5rem, white 15.5rem, white);
 }
 body.leftmenu {
 	background: linear-gradient(to right, #ecf2f4, #ecf2f4 164px, white 164px, white);
