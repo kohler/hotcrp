@@ -18,7 +18,7 @@ assert(!$Qreq->ajax);
 if (isset($Qreq->t) && !isset($Qreq->q)) {
     $Qreq->q = "";
 }
-$Qreq->t = PaperSearch::canonical_search_type($Qreq->t);
+$Qreq->t = PaperSearch::canonical_search_type(trim((string) $Qreq->t));
 $tOpt = PaperSearch::search_types($Me, $Qreq->t);
 if (empty($tOpt)) {
     $Conf->header("Search", "search");
