@@ -15,6 +15,9 @@ assert(!$Qreq->ajax);
 
 
 // paper group
+if (isset($Qreq->t) && !isset($Qreq->q)) {
+    $Qreq->q = "";
+}
 $Qreq->t = PaperSearch::canonical_search_type($Qreq->t);
 $tOpt = PaperSearch::search_types($Me, $Qreq->t);
 if (empty($tOpt)) {
@@ -22,11 +25,10 @@ if (empty($tOpt)) {
     Conf::msg_error("You aren’t allowed to search submissions.");
     exit;
 }
-if (!isset($tOpt[$Qreq->t])) {
+if ($Qreq->t !== "" && !isset($tOpt[$Qreq->t])) {
     Conf::msg_error("You aren’t allowed to search that collection of submissions.");
-    unset($Qreq->t);
 }
-if (!isset($Qreq->t)) {
+if (!isset($tOpt[$Qreq->t])) {
     $Qreq->t = key($tOpt);
 }
 
