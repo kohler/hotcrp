@@ -760,7 +760,7 @@ class Limit_SearchTerm extends SearchTerm {
         parent::__construct("in");
         $this->limit = $limit;
         $this->lflag = 0;
-        if (!in_array($limit, ["a", "ar", "vis", "all"], true)) {
+        if (!in_array($limit, ["a", "ar", "viewable", "all"], true)) {
             if (in_array($limit, ["r", "act", "unsub"], true)
                 || ($conf->can_pc_see_active_submissions()
                     && !in_array($limit, ["s", "acc"], true)))
@@ -771,11 +771,8 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        if ($word === "editpref")
-            $word = "rable";
-        else if ($word === "reqrevs")
-            $word = "req";
-        if ($word === "rable") {
+        $word = PaperSearch::canonical_search_type($word);
+        if ($word === "reviewable") {
             $u = $srch->reviewer_user();
             if ($srch->user->privChair || $srch->user === $u) {
                 if ($u->can_accept_review_assignment_ignore_conflict(null)) {
@@ -791,25 +788,29 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     function trivial_rights(Contact $user, PaperSearch $srch) {
-        if ($user->has_hidden_papers())
+        if ($user->has_hidden_papers()) {
             return false;
-        else if (in_array($this->limit, ["und", "acc", "vis"], true))
+        } else if (in_array($this->limit, ["undec", "acc", "viewable"], true)) {
             return $user->privChair;
-        else if (in_array($this->limit, ["rable", "admin", "alladmin"], true))
+        } else if (in_array($this->limit, ["reviewable", "admin", "alladmin"], true)) {
             return false;
-        else
+        } else {
             return true;
+        }
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
         $ff = ["true"];
-        if ($this->lflag === self::LFLAG_SUBMITTED)
+        if ($this->lflag === self::LFLAG_SUBMITTED) {
             $ff[] = "Paper.timeSubmitted>0";
-        else if ($this->lflag === self::LFLAG_ACTIVE)
+        }
+        else if ($this->lflag === self::LFLAG_ACTIVE) {
             $ff[] = "Paper.timeWithdrawn<=0";
+        }
 
-        if (in_array($this->limit, ["a", "ar", "admin"], true))
+        if (in_array($this->limit, ["a", "ar", "alladmin", "admin"], true)) {
             $sqi->add_conflict_table();
+        }
         if (in_array($this->limit, ["ar", "r", "rout"], true)) {
             $sqi->add_reviewer_columns();
             if ($sqi->top)
@@ -818,10 +819,10 @@ class Limit_SearchTerm extends SearchTerm {
 
         switch ($this->limit) {
         case "all":
-        case "vis":
+        case "viewable":
         case "s":
         case "act":
-        case "rable":
+        case "reviewable":
             break;
         case "a":
             $ff[] = $sqi->user->act_author_view_sql("PaperConflict");
@@ -847,7 +848,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "acc":
             $ff[] = "Paper.outcome>0";
             break;
-        case "und":
+        case "undec":
             $ff[] = "Paper.outcome=0";
             break;
         case "unsub":
@@ -885,7 +886,7 @@ class Limit_SearchTerm extends SearchTerm {
             return false;
         switch ($this->limit) {
         case "all":
-        case "vis":
+        case "viewable":
         case "s":
         case "act":
             return true;
@@ -897,17 +898,18 @@ class Limit_SearchTerm extends SearchTerm {
         case "r":
             return $row->has_reviewer($srch->user);
         case "rout":
-            foreach ($row->reviews_of_user($srch->user, $srch->user->review_tokens()) as $rrow)
+            foreach ($row->reviews_of_user($srch->user, $srch->user->review_tokens()) as $rrow) {
                 if ($rrow->reviewNeedsSubmit != 0)
                     return true;
+            }
             return false;
         case "acc":
             return $row->outcome > 0
                 && $srch->user->can_view_decision($row);
-        case "und":
+        case "undec":
             return $row->outcome == 0
                 || !$srch->user->can_view_decision($row);
-        case "rable":
+        case "reviewable":
             $user = $srch->reviewer_user();
             return $user->can_accept_review_assignment_ignore_conflict($row)
                 && ($srch->user === $user
@@ -921,10 +923,11 @@ class Limit_SearchTerm extends SearchTerm {
         case "alladmin":
             return $srch->user->allow_administer($row);
         case "req":
-            foreach ($row->reviews_by_id() as $rrow)
+            foreach ($row->reviews_by_id() as $rrow) {
                 if ($rrow->reviewType == REVIEW_EXTERNAL
                     && $rrow->requestedBy == $srch->cid)
                     return true;
+            }
             return false;
         default:
             return false;
@@ -1126,7 +1129,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
     function promote(PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher(">0");
-        if (in_array($srch->limit(), ["r", "rout", "rable"], true))
+        if (in_array($srch->limit(), ["r", "rout", "reviewable"], true))
             $rsm->add_contact($srch->cid);
         else if ($srch->limit() === "req") {
             $rsm->apply_requester($srch->cid);
@@ -1512,20 +1515,20 @@ class PaperSearch {
 
     static public $search_type_names = [
         "a" => "Your submissions",
-        "acc" => "Accepted papers",
-        "act" => "Active papers",
-        "all" => "All papers",
-        "editpref" => "Reviewable papers",
+        "acc" => "Accepted submissions",
+        "act" => "Active submissions",
+        "admin" => "Submissions you administer",
+        "all" => "Everything",
+        "alladmin" => "Submissions you’re allowed to administer",
         "lead" => "Your discussion leads",
-        "admin" => "Papers you administer",
+        "admin" => "Submissions you administer",
         "r" => "Your reviews",
-        "rable" => "Reviewable papers",
+        "reviewable" => "Reviewable submissions",
         "req" => "Your review requests",
-        "reqrevs" => "Your review requests",
         "rout" => "Your incomplete reviews",
-        "s" => "Submitted papers",
-        "und" => "Undecided papers",
-        "alladmin" => "Papers you’re allowed to administer"
+        "s" => "Submissions",
+        "undec" => "Undecided submissions",
+        "viewable" => "Submissions you can view"
     ];
 
     const LFLAG_SUBMITTED = 1;
@@ -1562,48 +1565,46 @@ class PaperSearch {
         // reviewer
         if (($reviewer = get($options, "reviewer"))) {
             if (is_string($reviewer)) {
-                if (strcasecmp($reviewer, $user->email) == 0)
+                if (strcasecmp($reviewer, $user->email) == 0) {
                     $reviewer = $user;
-                else if ($user->can_view_pc())
+                } else if ($user->can_view_pc()) {
                     $reviewer = $this->conf->pc_member_by_email($reviewer);
-                else
+                } else {
                     $reviewer = null;
-            } else if (!is_object($reviewer) || !($reviewer instanceof Contact))
+                }
+            } else if (!is_object($reviewer) || !($reviewer instanceof Contact)) {
                 $reviewer = null;
-            if ($reviewer)
+            }
+            if ($reviewer) {
                 $this->_reviewer_user = $reviewer;
+            }
         }
 
         // paper selection
-        $limit = (string) get($options, "t");
-        if ($limit === "0")
-            $limit = "";
-        else if ($limit === "undec")
-            $limit = "und";
-        else if ($limit === "manager")
-            $limit = "admin";
-        if (in_array($limit, ["a", "r", "ar", "rout", "vis"], true)
+        $limit = self::canonical_search_type((string) get($options, "t"));
+        if (in_array($limit, ["a", "r", "ar", "rout", "viewable"], true)
             || ($user->privChair && in_array($limit, ["all", "unsub", "alladmin"], true))
-            || ($user->isPC && in_array($limit, ["acc", "reqrevs", "req", "lead", "rable",
-                                                 "editpref", "admin", "alladmin", "und"], true)))
-            /* ok */;
-        else if ($user->privChair && !$limit && $this->conf->timeUpdatePaper())
+            || ($user->isPC && in_array($limit, ["acc", "req", "lead", "reviewable",
+                                                 "admin", "alladmin", "undec"], true))) {
+            /* ok */
+        } else if ($user->privChair && !$limit && $this->conf->timeUpdatePaper()) {
             $limit = "all";
-        else if (($user->privChair && $limit === "act")
-                 || ($user->isPC
-                     && in_array($limit, ["", "act", "all"], true)
-                     && $this->conf->can_pc_see_active_submissions()))
+        } else if (($user->privChair && $limit === "act")
+                   || ($user->isPC
+                       && in_array($limit, ["", "act", "all"], true)
+                       && $this->conf->can_pc_see_active_submissions())) {
             $limit = "act";
-        else if ($user->isPC && in_array($limit, ["", "s", "act", "all"], true))
+        } else if ($user->isPC && in_array($limit, ["", "s", "act", "all"], true)) {
             $limit = "s";
-        else if ($limit === "rable")
+        } else if ($limit === "reviewable") {
             $limit = "r";
-        else if (!$user->is_reviewer())
+        } else if (!$user->is_reviewer()) {
             $limit = "a";
-        else if (!$user->is_author())
+        } else if (!$user->is_author()) {
             $limit = "r";
-        else
+        } else {
             $limit = "ar";
+        }
 
         // URL base
         $this->_urlbase = get($options, "pageurl");
@@ -2602,8 +2603,9 @@ class PaperSearch {
     function simple_search_options() {
         $limit = $xlimit = $this->limit();
         if ($this->q === "re:me"
-            && in_array($xlimit, ["s", "act", "rout", "rable"]))
+            && in_array($xlimit, ["s", "act", "rout", "reviewable"])) {
             $xlimit = "r";
+        }
         if ($this->_matches !== null
             || ($this->q !== ""
                 && ($this->q !== "re:me" || $xlimit !== "r"))
@@ -2613,19 +2615,20 @@ class PaperSearch {
                 && !$this->user->privChair
                 && !in_array($xlimit, ["a", "r", "ar"], true))
             || ($this->conf->has_tracks()
-                && $limit === "rable")
-            || $this->user->has_hidden_papers())
+                && $limit === "reviewable")
+            || $this->user->has_hidden_papers()) {
             return false;
-        if ($limit === "rable") {
+        }
+        if ($limit === "reviewable") {
             if ($this->reviewer_user()->isPC)
                 $limit = $this->conf->can_pc_see_active_submissions() ? "act" : "s";
             else
                 $limit = "r";
         }
         $queryOptions = [];
-        if ($limit === "s")
+        if ($limit === "s") {
             $queryOptions["finalized"] = 1;
-        else if ($limit === "unsub") {
+        } else if ($limit === "unsub") {
             $queryOptions["unsub"] = 1;
             $queryOptions["active"] = 1;
         } else if ($limit === "acc") {
@@ -2634,29 +2637,32 @@ class PaperSearch {
                 $queryOptions["finalized"] = 1;
             } else
                 return false;
-        } else if ($limit === "und") {
+        } else if ($limit === "undec") {
             $queryOptions["undecided"] = 1;
             $queryOptions["finalized"] = 1;
-        } else if ($limit === "r")
+        } else if ($limit === "r") {
             $queryOptions["myReviews"] = 1;
-        else if ($limit === "rout")
+        } else if ($limit === "rout") {
             $queryOptions["myOutstandingReviews"] = 1;
-        else if ($limit === "a") {
+        } else if ($limit === "a") {
             // If complex author SQL, always do search the long way
-            if ($this->user->act_author_view_sql("%", true))
+            if ($this->user->act_author_view_sql("%", true)) {
                 return false;
+            }
             $queryOptions["author"] = 1;
-        } else if ($limit === "req" || $limit === "reqrevs")
+        } else if ($limit === "req") {
             $queryOptions["myReviewRequests"] = 1;
-        else if ($limit === "act")
+        } else if ($limit === "act") {
             $queryOptions["active"] = 1;
-        else if ($limit === "lead")
+        } else if ($limit === "lead") {
             $queryOptions["myLead"] = 1;
-        else if ($limit !== "all"
-                 && ($limit !== "vis" || !$this->user->privChair))
+        } else if ($limit !== "all"
+                   && ($limit !== "viewable" || !$this->user->privChair)) {
             return false; /* don't understand limit */
-        if ($this->q === "re:me" && $limit !== "rout")
+        }
+        if ($this->q === "re:me" && $limit !== "rout") {
             $queryOptions["myReviews"] = 1;
+        }
         return $queryOptions;
     }
 
@@ -2706,18 +2712,20 @@ class PaperSearch {
             $lx = $this->conf->_($listname);
         else {
             $limit = $this->limit();
-            if ($this->q === "re:me" && ($limit === "s" || $limit === "act"))
+            if ($this->q === "re:me" && ($limit === "s" || $limit === "act")) {
                 $limit = "r";
-            $lx = $this->conf->_c("search_types", get(self::$search_type_names, $limit, "Papers"));
+            }
+            $lx = self::search_type_description($this->conf, $limit);
         }
         if ($this->q === ""
             || ($this->q === "re:me" && $this->limit() === "s")
-            || ($this->q === "re:me" && $this->limit() === "act"))
+            || ($this->q === "re:me" && $this->limit() === "act")) {
             return $lx;
-        else if (($td = $this->_tag_description()))
+        } else if (($td = $this->_tag_description())) {
             return "$td in $lx";
-        else
+        } else {
             return "$lx search";
+        }
     }
 
     function listid($sort = null) {
@@ -2798,56 +2806,98 @@ class PaperSearch {
     }
 
 
+    static function search_type_description(Conf $conf, $t) {
+        return $conf->_c("search_type", self::$search_type_names[$t], "Submissions");
+    }
+
+    static function canonical_search_type($reqtype) {
+        if ($reqtype === 0 || $reqtype === "0") {
+            return "";
+        } else if ($reqtype === "manager") {
+            return "admin";
+        } else if ($reqtype === "vis" || $reqtype === "visible") {
+            return "viewable";
+        } else if ($reqtype === "und") {
+            return "undec";
+        } else if ($reqtype === "reqrevs") {
+            return "req";
+        } else if ($reqtype === "rable" || $reqtype === "editpref") {
+            return "reviewable";
+        } else {
+            return $reqtype;
+        }
+    }
+
     static function search_types(Contact $user, $reqtype = null) {
         $ts = [];
+        if ($reqtype === "viewable") {
+            $ts[] = "viewable";
+        }
         if ($user->isPC) {
-            if ($user->conf->can_pc_see_active_submissions())
+            if ($user->conf->can_pc_see_active_submissions()) {
                 $ts[] = "act";
+            }
             $ts[] = "s";
             if ($user->conf->time_pc_view_decision(false)
-                && $user->conf->has_any_accepted())
+                && $user->conf->has_any_accepted()) {
                 $ts[] = "acc";
+            }
+        }
+        if ($user->is_reviewer()) {
+            $ts[] = "r";
+        }
+        if ($user->has_outstanding_review()
+            || ($user->is_reviewer() && $reqtype === "rout")) {
+            $ts[] = "rout";
+        }
+        if ($user->isPC) {
+            if ($user->is_requester() || $reqtype === "req") {
+                $ts[] = "req";
+            }
+            if ($user->is_discussion_lead() || $reqtype === "lead") {
+                $ts[] = "lead";
+            }
+            if (($user->privChair ? $user->conf->has_any_manager() : $user->is_manager())
+                || $reqtype === "admin") {
+                $ts[] = "admin";
+            }
+            if ($reqtype === "alladmin") {
+                $ts[] = "alladmin";
+            }
+        }
+        if ($user->is_author() || $reqtype === "a") {
+            $ts[] = "a";
+        }
+        if ($user->privChair
+            && !$user->conf->can_pc_see_active_submissions()
+            && $reqtype === "act") {
+            $ts[] = "act";
         }
         if ($user->privChair) {
             $ts[] = "all";
-            if (!$user->conf->can_pc_see_active_submissions() && $reqtype === "act")
-                $ts[] = "act";
         }
-        if ($user->is_reviewer())
-            $ts[] = "r";
-        if ($user->has_outstanding_review()
-            || ($user->is_reviewer() && $reqtype === "rout"))
-            $ts[] = "rout";
-        if ($user->isPC) {
-            if ($user->is_requester() || $reqtype === "req")
-                $ts[] = "req";
-            if ($user->is_discussion_lead() || $reqtype === "lead")
-                $ts[] = "lead";
-            if (($user->privChair ? $user->conf->has_any_manager() : $user->is_manager())
-                || $reqtype === "admin")
-                $ts[] = "admin";
-        }
-        if ($user->is_author() || $reqtype === "a")
-            $ts[] = "a";
-        return self::expand_search_types($user, $ts);
+        return self::expand_search_types($user->conf, $ts);
     }
 
     static function manager_search_types(Contact $user) {
         if ($user->privChair) {
-            if ($user->conf->has_any_manager())
+            if ($user->conf->has_any_manager()) {
                 $ts = ["admin", "alladmin", "s"];
-            else
+            } else {
                 $ts = ["s"];
-            array_push($ts, "acc", "und", "all");
-        } else
+            }
+            array_push($ts, "acc", "undec", "all");
+        } else {
             $ts = ["admin"];
-        return self::expand_search_types($user, $ts);
+        }
+        return self::expand_search_types($user->conf, $ts);
     }
 
-    static private function expand_search_types(Contact $user, $ts) {
+    static private function expand_search_types(Conf $conf, $ts) {
         $topt = [];
-        foreach ($ts as $t)
-            $topt[$t] = $user->conf->_c("search_type", self::$search_type_names[$t]);
+        foreach ($ts as $t) {
+            $topt[$t] = self::search_type_description($conf, $t);
+        }
         return $topt;
     }
 

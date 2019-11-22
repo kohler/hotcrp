@@ -771,6 +771,7 @@ class PaperList {
         case "ar":
         case "r":
         case "rable":
+        case "reviewable":
         case "rout":
             $this->_default_linkto("finishreview");
             /* fallthrough */
@@ -778,8 +779,9 @@ class PaperList {
         case "lead":
         case "manager":
         case "admin":
+        case "alladmin":
         case "s":
-        case "vis":
+        case "viewable":
         case "req":
             return "sel id title revtype revstat status authors tags";
         case "reqrevs":

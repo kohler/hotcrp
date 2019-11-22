@@ -35,23 +35,23 @@ try “-term”.  Or select ", $hth->hotlink("Advanced search", "search", "opt=1
 <p>You can search several categories, depending on your role in the
 conference. Options include:</p>
 <ul>
-<li><b>Submitted papers</b> &mdash; all submitted papers.</li>
-<li><b>All papers</b> &mdash; all papers, including withdrawn and other non-submitted papers.</li>
-<li><b>Your submissions</b> &mdash; papers for which you’re a contact.</li>
-<li><b>Your reviews</b> &mdash; papers you’ve been assigned to review.</li>
-<li><b>Your incomplete reviews</b> &mdash; papers you’ve been assigned to review, but haven’t submitted a review yet.</li>
+<li><b>", PaperSearch::search_type_description($hth->conf, "s"), "</b> &mdash; all submissions ready for review.</li>
+<li><b>", PaperSearch::search_type_description($hth->conf, "a"), "</b> &mdash; submissions for which you’re a contact.</li>
+<li><b>", PaperSearch::search_type_description($hth->conf, "r"), "</b> &mdash; submissions you’ve been assigned to review.</li>
+<li><b>", PaperSearch::search_type_description($hth->conf, "rout"), "</b> &mdash; submissions you’ve been assigned to review, but have not reviewed yet.</li>
+<li><b>", PaperSearch::search_type_description($hth->conf, "all"), "</b> &mdash; all submissions, including withdrawn submissions and submissions that were never completed.</li>
 </ul>
 
 <p>Search won’t show you information you aren’t supposed to see.  For example,
 authors can only search their own submissions, and if the conference used
 anonymous submission, then only the PC chairs can search by author.</p>
 
-<p>By default, search examines paper titles, abstracts, and authors. ",
+<p>By default, search examines titles, abstracts, and authors. ",
 $hth->hotlink("Advanced search", "search", "opt=1"), "
 can search other fields, including authors/collaborators and reviewers.
 Also, <b>keywords</b> search specific characteristics such as titles,
 authors, reviewer names, and numbers of reviewers.  For example,
-“ti:foo” means “search for ‘foo’ in paper
+“ti:foo” means “search for ‘foo’ in submission
 titles.”  Keywords are listed in the ", $hth->help_link("search keywords reference", "keywords"), ".</p>";
 
     echo $hth->subhead("Search results");

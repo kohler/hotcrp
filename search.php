@@ -15,28 +15,33 @@ assert(!$Qreq->ajax);
 
 
 // paper group
+$Qreq->t = PaperSearch::canonical_search_type($Qreq->t);
 $tOpt = PaperSearch::search_types($Me, $Qreq->t);
 if (empty($tOpt)) {
     $Conf->header("Search", "search");
-    Conf::msg_error("You are not allowed to search for papers.");
+    Conf::msg_error("You aren’t allowed to search submissions.");
     exit;
 }
-if (isset($Qreq->t) && !isset($tOpt[$Qreq->t])) {
-    Conf::msg_error("You aren’t allowed to search that paper collection.");
+if (!isset($tOpt[$Qreq->t])) {
+    Conf::msg_error("You aren’t allowed to search that collection of submissions.");
     unset($Qreq->t);
 }
-if (!isset($Qreq->t))
+if (!isset($Qreq->t)) {
     $Qreq->t = key($tOpt);
+}
 
 // search canonicalization
-if (isset($Qreq->q))
+if (isset($Qreq->q)) {
     $Qreq->q = trim($Qreq->q);
-if (isset($Qreq->q) && $Qreq->q === "(All)")
+}
+if (isset($Qreq->q) && $Qreq->q === "(All)") {
     $Qreq->q = "";
-if ((isset($Qreq->qa) || isset($Qreq->qo) || isset($Qreq->qx)) && !isset($Qreq->q))
+}
+if ((isset($Qreq->qa) || isset($Qreq->qo) || isset($Qreq->qx)) && !isset($Qreq->q)) {
     $Qreq->q = PaperSearch::canonical_query((string) $Qreq->qa, $Qreq->qo, $Qreq->qx, $Qreq->qt, $Conf);
-else
+} else {
     unset($Qreq->qa, $Qreq->qo, $Qreq->qx);
+}
 
 
 // paper selection
@@ -101,10 +106,12 @@ function savesearch() {
 
     // support directly recursive definition (to e.g. change display options)
     if (($t = $Conf->setting_data("ss:$name")) && ($t = json_decode($t))) {
-        if (isset($Qreq->q) && trim($Qreq->q) == "ss:$name")
+        if (isset($Qreq->q) && trim($Qreq->q) == "ss:$name") {
             $Qreq->q = (isset($t->q) ? $t->q : "");
-        if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId)
+        }
+        if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId) {
             return Conf::msg_error("You don’t have permission to change “ss:" . htmlspecialchars($name) . "”.");
+        }
     }
 
     $arr = array();
@@ -142,10 +149,11 @@ if ($Me->privChair && !isset($Qreq->forceShow)
 // search
 $Conf->header("Search", "search");
 echo Ht::unstash(); // need the JS right away
-if (isset($Qreq->q))
+if (isset($Qreq->q)) {
     $Search = new PaperSearch($Me, $Qreq);
-else
+} else {
     $Search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => "NONE"]);
+}
 $pl = new PaperList($Search, ["sort" => true, "report" => "pl", "display" => $Qreq->display], $Qreq);
 if (isset($Qreq->forceShow)) {
     $pl->set_view("force", !!$Qreq->forceShow);
