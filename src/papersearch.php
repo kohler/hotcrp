@@ -2807,7 +2807,7 @@ class PaperSearch {
 
 
     static function search_type_description(Conf $conf, $t) {
-        return $conf->_c("search_type", self::$search_type_names[$t], "Submissions");
+        return $conf->_c("search_type", get(self::$search_type_names, $t, "Submissions"));
     }
 
     static function canonical_search_type($reqtype) {
