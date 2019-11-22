@@ -2436,27 +2436,28 @@ class PaperTable {
         }
     }
 
-    function _paptabReviewLinks($rtable, $editrrow, $ifempty) {
+    function _review_overview_card($rtable, $editrrow, $ifempty, $msgs) {
         require_once("reviewtable.php");
-
         $t = "";
         if ($rtable) {
             $t .= review_table($this->user, $this->prow, $this->all_rrows,
                                $editrrow, $this->mode);
         }
-        $t .= $this->review_links($editrrow);
+        $t .= $this->_review_links($editrrow);
         if (($empty = ($t === ""))) {
             $t = $ifempty;
         }
-        if ($t) {
-            echo '<hr class="papcard-sep">';
+        if ($msgs) {
+            $t .= join("", array_map(function ($t) { return "<p class=\"sd\">{$t}</p>"; }, $msgs));
         }
-        echo $t, "</div></div>\n";
+        if ($t) {
+            echo '<hr class="papcard-sep">', $t;
+        }
+        echo '</div></div>';
         return $empty;
     }
 
-    private function review_links($editrrow) {
-        // $user, PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviewslink
+    private function _review_links($editrrow) {
         $prow = $this->prow;
         $cflttype = $this->user->view_conflict_type($prow);
         $allow_admin = $this->user->allow_administer($prow);
@@ -2638,7 +2639,7 @@ class PaperTable {
             $this->_paptabSepContaining("You are this submission’s administrator.");
         }
 
-        $empty = $this->_paptabReviewLinks(true, null, '<p>There are no reviews or comments for you to view.</p>');
+        $empty = $this->_review_overview_card(true, null, '<p>There are no reviews or comments for you to view.</p>', []);
         if ($empty) {
             return;
         }
@@ -2768,11 +2769,8 @@ class PaperTable {
                 $m[] = "You can’t begin your assigned review because the site is not open for reviewing.";
             }
         }
-        if (!empty($m)) {
-            $this->_paptabSepContaining(join("<br>", $m));
-        }
 
-        $this->_paptabReviewLinks(false, null, "");
+        $this->_review_overview_card($this->user->can_view_review_assignment($this->prow, null), null, "", $m);
     }
 
     function paptabEndWithEditableReview() {
@@ -2810,12 +2808,9 @@ class PaperTable {
                 }
             }
         }
-        if (!empty($msgs)) {
-            $this->_paptabSepContaining(join("<br>\n", $msgs));
-        }
 
         // links
-        $this->_paptabReviewLinks(true, $this->editrrow, "");
+        $this->_review_overview_card(true, $this->editrrow, "", $msgs);
 
         // review form, possibly with deadline warning
         $opt = array("edit" => $this->mode === "re");

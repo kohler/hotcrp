@@ -290,9 +290,9 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row) {
-            if (!$pl->user->can_view_review_assignment($row, null))
+            if (!$pl->user->can_view_review_assignment($row, null)) {
                 $row->_review_status_sort_info = -2147483647;
-            else {
+            } else {
                 list($done, $started) = $this->data($row, $pl->user);
                 $row->_review_status_sort_info = $done + $started / 1000.0;
             }
@@ -305,12 +305,14 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     }
     function header(PaperList $pl, $is_text) {
         $round_name = "";
-        if ($this->round !== null)
+        if ($this->round !== null) {
             $round_name = ($pl->conf->round_name($this->round) ? : "unnamed") . " ";
-        if ($is_text)
+        }
+        if ($is_text) {
             return "# {$round_name}Reviews";
-        else
+        } else {
             return '<span class="need-tooltip" data-tooltip="# completed reviews / # assigned reviews" data-tooltip-dir="b">#&nbsp;' . $round_name . 'Reviews</span>';
+        }
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_review_assignment($row, null);
