@@ -136,19 +136,22 @@ class Filer {
             $downloadname = null;
         } else if (is_array($doc)) {
             $z = new ZipDocument($downloadname);
-            foreach ($doc as $d)
+            foreach ($doc as $d) {
                 $z->add($d);
+            }
             return $z->download();
         }
 
         if (!$doc->ensure_content()) {
             $error_html = "Don’t know how to download.";
-            if ($doc->error && isset($doc->error_html))
+            if ($doc->error && isset($doc->error_html)) {
                 $error_html = $doc->error_html;
+            }
             return (object) ["error" => true, "error_html" => $error_html];
         }
-        if ($doc->size == 0 && !$doc->ensure_size())
+        if ($doc->size == 0 && !$doc->ensure_size()) {
             return (object) ["error" => true, "error_html" => "Empty file."];
+        }
 
         // Print paper
         header("Content-Type: " . Mimetype::type_with_charset($doc->mimetype));
@@ -205,50 +208,60 @@ class Filer {
     const FPATH_MKDIR = 2;
     static function docstore_path(DocumentInfo $doc, $flags = 0) {
         global $Now;
-        if ($doc->error || !($pattern = $doc->conf->docstore()))
+        if ($doc->error || !($pattern = $doc->conf->docstore())) {
             return null;
-        if (!($path = self::_expand_docstore($pattern, $doc, true)))
+        }
+        if (!($path = self::_expand_docstore($pattern, $doc, true))) {
             return null;
+        }
         if ($flags & self::FPATH_EXISTS) {
             if (!is_readable($path)) {
                 // clean up presence of old files saved w/o extension
                 $g = self::_expand_docstore($pattern, $doc, false);
                 if ($path && $g !== $path && is_readable($g)) {
-                    if (!@rename($g, $path))
+                    if (!@rename($g, $path)) {
                         $path = $g;
-                } else
+                    }
+                } else {
                     return null;
+                }
             }
-            if (filemtime($path) < $Now - 172800 && !self::$no_touch)
+            if (filemtime($path) < $Now - 172800 && !self::$no_touch) {
                 @touch($path, $Now);
+            }
         }
         if (($flags & self::FPATH_MKDIR)
-            && !self::prepare_docstore(self::docstore_fixed_prefix($pattern), $path))
+            && !self::prepare_docstore(self::docstore_fixed_prefix($pattern), $path)) {
             return $doc->add_error_html("File system storage cannot be initialized.", true);
-        return $path;
+        } else {
+            return $path;
+        }
     }
 
     static function docstore_fixed_prefix($pattern) {
-        if ($pattern == "")
+        if ($pattern == "") {
             return $pattern;
+        }
         $prefix = "";
         while (($pos = strpos($pattern, "%")) !== false) {
-            if ($pos == strlen($pattern) - 1)
+            if ($pos == strlen($pattern) - 1) {
                 break;
-            else if ($pattern[$pos + 1] === "%") {
+            } else if ($pattern[$pos + 1] === "%") {
                 $prefix .= substr($pattern, 0, $pos + 1);
                 $pattern = substr($pattern, $pos + 2);
             } else {
                 $prefix .= substr($pattern, 0, $pos);
-                if (($rslash = strrpos($prefix, "/")) !== false)
+                if (($rslash = strrpos($prefix, "/")) !== false) {
                     return substr($prefix, 0, $rslash + 1);
-                else
+                } else {
                     return "";
+                }
             }
         }
         $prefix .= $pattern;
-        if ($prefix[strlen($prefix) - 1] !== "/")
+        if ($prefix[strlen($prefix) - 1] !== "/") {
             $prefix .= "/";
+        }
         return $prefix;
     }
 
@@ -272,35 +285,39 @@ class Filer {
         while (preg_match('/\A(.*?)%(\d*)([%hxHjaA])(.*)\z/', $pattern, $m)) {
             $x .= $m[1];
             list($fwidth, $fn, $pattern) = [$m[2], $m[3], $m[4]];
-            if ($fn === "%")
+            if ($fn === "%") {
                 $x .= "%";
-            else if ($fn === "x") {
-                if ($extension)
+            } else if ($fn === "x") {
+                if ($extension) {
                     $x .= Mimetype::extension($doc->mimetype);
+                }
             } else {
                 if ($hash === false
-                    && ($hash = $doc->text_hash()) === false)
+                    && ($hash = $doc->text_hash()) === false) {
                     return false;
-                if ($fn === "h" && $fwidth === "")
+                }
+                if ($fn === "h" && $fwidth === "") {
                     $x .= $hash;
-                else if ($fn === "a")
+                } else if ($fn === "a") {
                     $x .= $doc->hash_algorithm();
-                else if ($fn === "A")
+                } else if ($fn === "A") {
                     $x .= $doc->hash_algorithm_prefix();
-                else if ($fn === "j")
+                } else if ($fn === "j") {
                     $x .= substr($hash, 0, strlen($hash) === 40 ? 2 : 3);
-                else {
+                } else {
                     $h = $hash;
                     if (strlen($h) !== 40) {
                         $pos = strpos($h, "-") + 1;
-                        if ($fn === "h")
+                        if ($fn === "h") {
                             $x .= substr($h, 0, $pos);
+                        }
                         $h = substr($h, $pos);
                     }
-                    if ($fwidth === "")
+                    if ($fwidth === "") {
                         $x .= $h;
-                    else
+                    } else {
                         $x .= substr($h, 0, intval($fwidth));
+                    }
                 }
             }
         }
@@ -310,14 +327,15 @@ class Filer {
     static private function _make_fpath_parents($fdir, $fpath) {
         $lastslash = strrpos($fpath, "/");
         $container = substr($fpath, 0, $lastslash);
-        while (str_ends_with($container, "/"))
+        while (str_ends_with($container, "/")) {
             $container = substr($container, 0, strlen($container) - 1);
+        }
         if (!is_dir($container)) {
             if (strlen($container) < strlen($fdir)
                 || !($parent = self::_make_fpath_parents($fdir, $container))
-                || !@mkdir($container, 0770))
+                || !@mkdir($container, 0770)) {
                 return false;
-            if (!@chmod($container, 02770 & fileperms($parent))) {
+            } else if (!@chmod($container, 02770 & fileperms($parent))) {
                 @rmdir($container);
                 return false;
             }

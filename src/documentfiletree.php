@@ -5,7 +5,7 @@
 class DocumentFileTree {
     private $_components = [];
     private $_pregs = [];
-    private $n;
+    private $_n;
 
     private $_algo;
     private $_hash;
@@ -20,13 +20,15 @@ class DocumentFileTree {
         foreach (preg_split("{/+}", $dp) as $fdir) {
             if ($fdir !== "") {
                 if (preg_match('/%\d*[%hxHjaA]/', $fdir)) {
-                    if (count($this->_components) % 2 == 0)
+                    if (count($this->_components) % 2 == 0) {
                         $this->_components[] = "";
+                    }
                     $this->_components[] = "/$fdir";
-                } else if (count($this->_components) % 2 == 0)
+                } else if (count($this->_components) % 2 == 0) {
                     $this->_components[] = "/$fdir";
-                else
+                } else {
                     $this->_components[count($this->_components) - 1] .= "/$fdir";
+                }
             }
         }
 
@@ -34,22 +36,22 @@ class DocumentFileTree {
             $this->_pregs[] = $matcher->make_preg($fp);
         }
 
-        $this->n = count($this->_components);
+        $this->_n = count($this->_components);
         $this->populate_dirinfo("", 0);
     }
 
     private function populate_dirinfo($dir, $pos) {
-        if ($pos < $this->n && $pos % 1 == 0) {
+        if ($pos < $this->_n && $pos % 1 == 0) {
             $dir .= $this->_components[$pos];
             ++$pos;
         }
-        if ($pos >= $this->n) {
+        if ($pos >= $this->_n) {
             return 1;
         }
         $di = [];
         $preg = $this->_pregs[$pos];
         $n = 0;
-        $isdir = $pos + 1 < $this->n;
+        $isdir = $pos + 1 < $this->_n;
         foreach (scandir($dir, SCANDIR_SORT_NONE) as $x) {
             $x = "/$x";
             if ($x !== "/." && $x !== "/.." && preg_match($preg, $x)) {
@@ -81,22 +83,25 @@ class DocumentFileTree {
         $build = "";
         while (preg_match('{\A(.*?)%(\d*)([%hxHjaA])(.*)\z}', $match, $m)) {
             if ($m[1] !== "") {
-                if (substr($text, 0, strlen($m[1])) !== $m[1])
+                if (substr($text, 0, strlen($m[1])) !== $m[1]) {
                     return false;
+                }
                 $build .= $m[1];
                 $text = substr($text, strlen($m[1]));
             }
 
             list($fwidth, $fn, $match) = [$m[2], $m[3], $m[4]];
             if ($fn === "%") {
-                if (substr($text, 0, 1) !== "%")
+                if (substr($text, 0, 1) !== "%") {
                     return false;
+                }
                 $build .= "%";
                 $text = substr($text, 1);
             } else if ($fn === "x") {
                 if ($xext !== null) {
-                    if (substr($text, 0, strlen($xext)) != $xext)
+                    if (substr($text, 0, strlen($xext)) != $xext) {
                         return false;
+                    }
                     $build .= $xext;
                     $text = substr($text, strlen($xext));
                 } else if (preg_match('{\A(\.(?:avi|bib|bin|bz2|csv|docx?|gif|gz|html|jpg|json|md|mp4|pdf|png|pptx?|ps|rtf|smil|svgz?|tar|tex|tiff|txt|webm|xlsx?|xz|zip))}', $text, $m)) {
@@ -130,10 +135,12 @@ class DocumentFileTree {
             } else if ($fn === "a") {
                 if (preg_match('{\A(sha1|sha256)}', $text, $mm)) {
                     $malgo = $mm[1] === "sha1" ? "" : "sha2-";
-                    if ($xalgo === null)
+                    if ($xalgo === null) {
                         $xalgo = $malgo;
-                    if ($xalgo !== $malgo)
+                    }
+                    if ($xalgo !== $malgo) {
                         return false;
+                    }
                     $build .= $mm[1];
                     $text = substr($text, strlen($mm[1]));
                 } else {
@@ -151,18 +158,21 @@ class DocumentFileTree {
                     }
                     $build .= $xalgo;
                     $text = substr($text, strlen($xalgo));
-                    if ($fn === "A")
+                    if ($fn === "A") {
                         continue;
+                    }
                 }
-                if (substr($text, 0, strlen($xhash)) !== $xhash)
+                if (substr($text, 0, strlen($xhash)) !== $xhash) {
                     return false;
+                }
                 if ($fwidth === "") {
-                    if ($xalgo === "")
+                    if ($xalgo === "") {
                         $fwidth = "40";
-                    else if ($xalgo === "sha2-")
+                    } else if ($xalgo === "sha2-") {
                         $fwidth = "64";
-                    else
+                    } else {
                         $fwidth = "40,64";
+                    }
                 }
                 if (preg_match('{\A([0-9a-f]{' . $fwidth . '})}', $text, $mm)) {
                     if (strlen($mm[1]) > strlen($xhash))
@@ -201,10 +211,11 @@ class DocumentFileTree {
         while ($l + 2 < $r) {
             $m = $l + (($r - $l) >> 1) & ~1;
             //$verbose && error_log("*$val ?{$m}[" . $di[$m] . "," . $di[$m + 2] . ") @[$l,$r)");
-            if ($val < $di[$m])
+            if ($val < $di[$m]) {
                 $r = $m;
-            else
+            } else {
                 $l = $m;
+            }
         }
         return $l;
     }
@@ -212,7 +223,7 @@ class DocumentFileTree {
     function first_match(DocumentFileTreeMatch $after = null) {
         $this->clear();
         $fm = new DocumentFileTreeMatch;
-        for ($i = 0; $i < $this->n; ++$i) {
+        for ($i = 0; $i < $this->_n; ++$i) {
             if ($i % 2 == 0) {
                 $fm->fname .= $this->_components[$i];
             } else {
@@ -231,7 +242,7 @@ class DocumentFileTree {
     function random_match() {
         $this->clear();
         $fm = new DocumentFileTreeMatch;
-        for ($i = 0; $i < $this->n; ++$i) {
+        for ($i = 0; $i < $this->_n; ++$i) {
             if ($i % 2 == 0) {
                 $fm->fname .= $this->_components[$i];
             } else {
@@ -274,8 +285,9 @@ class DocumentFileTreeMatch {
         return $this->algohash !== null;
     }
     function atime() {
-        if ($this->_atime === null)
+        if ($this->_atime === null) {
             $this->_atime = fileatime($this->fname);
+        }
         return $this->_atime;
     }
 }
@@ -328,10 +340,11 @@ class DocumentFileTreeDir {
         while ($l + 2 < $r) {
             $m = $l + (($r - $l) >> 1) & ~1;
             //$verbose && error_log("*$val ?{$m}[" . $di[$m] . "," . $di[$m + 2] . ") @[$l,$r)");
-            if ($val < $this->_di[$m])
+            if ($val < $this->_di[$m]) {
                 $r = $m;
-            else
+            } else {
                 $l = $m;
+            }
         }
         return $l;
     }
@@ -349,10 +362,12 @@ class DocumentFileTreeDir {
     function next_index($idx) {
         for ($tries = count($this->_di) >> 1; $tries > 0; --$tries) {
             $idx = $idx + 2;
-            if ($idx === count($this->_di) - 1)
+            if ($idx === count($this->_di) - 1) {
                 $idx = 0;
-            if (!$this->index_used($idx))
+            }
+            if (!$this->index_used($idx)) {
                 return $idx;
+            }
         }
         return false;
     }
@@ -388,22 +403,25 @@ class DocumentFileTreeDir {
                 return true;
             }
             $next = $this->next_index($idx);
-            if ($next === false || $next <= $idx)
+            if ($next === false || $next <= $idx) {
                 return false;
+            }
             $idx = $next;
         }
     }
 
     function append_random_component(DocumentFileTree $ftree, $position, $fm) {
-        if (($idx = $this->random_index()) === false)
+        if (($idx = $this->random_index()) === false) {
             return false;
+        }
         for ($tries = count($this->_di) >> 1; $tries >= 0; --$tries) {
             if (($build = $ftree->match_component($this->_di[$idx + 1], $position))) {
                 $fm->append_component($idx, $build);
                 return true;
             }
-            if (($idx = $this->next_index($idx)) === false)
+            if (($idx = $this->next_index($idx)) === false) {
                 return false;
+            }
         }
         return false;
     }

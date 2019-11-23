@@ -177,8 +177,9 @@ class ZipDocument {
     function create() {
         global $Now;
 
-        if (!empty($this->warnings))
+        if (!empty($this->warnings)) {
             $this->add_as(join("\n", $this->warnings) . "\n", "README-warnings.txt");
+        }
 
         if ($this->conf->opt("docstore")) {
             // calculate hash for zipfile contents
@@ -204,14 +205,17 @@ class ZipDocument {
             }
         }
 
-        if (!($tmpdir = $this->tmpdir()))
+        if (!($tmpdir = $this->tmpdir())) {
             return $this->_make_document("Could not create temporary directory.");
-        if (!($zipcmd = $this->conf->opt("zipCommand", "zip")))
+        }
+        if (!($zipcmd = $this->conf->opt("zipCommand", "zip"))) {
             return $this->_make_document("<code>zip</code> is not supported on this installation.");
+        }
 
         DocumentInfo::prefetch_content(array_slice($this->_docs, $this->_saveindex));
-        while ($this->_saveindex < count($this->_docs))
+        while ($this->_saveindex < count($this->_docs)) {
             $this->_save_one();
+        }
 
         if (!$this->filestore) {
             for ($n = 0; isset($this->_files["_hotcrp$n.zip"]); ++$n) {
@@ -226,13 +230,13 @@ class ZipDocument {
         set_time_limit(60);
         $command = "cd $tmpdir; $zipcmd $opts " . escapeshellarg($this->filestore) . " " . join(" ", array_map("escapeshellarg", $topfiles));
         $out = system("$command 2>&1", $status);
-        if ($status == 0 && file_exists($this->filestore))
+        if ($status == 0 && file_exists($this->filestore)) {
             return $this->_make_document();
-
-        if ($status != 0)
+        } else if ($status != 0) {
             return $this->_make_document("<code>zip</code> returned an error. Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-        else
+        } else {
             return $this->_make_document("<code>zip</code> result unreadable or empty. Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+        }
     }
 
     function download() {
