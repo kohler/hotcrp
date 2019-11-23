@@ -92,7 +92,7 @@ while ($count > 0
        && $fm->atime() < $Now - 86400
        && $fm->mtime() < $Now - 86400
        && !$keep_temp) {
-    $fparts->hide($fm);
+    $tmp_fparts->hide($fm);
 
     $ok = false;
     $size = filesize($fm->fname);
