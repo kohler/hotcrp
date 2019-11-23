@@ -275,6 +275,7 @@ class DocumentFileTreeMatch {
     public $algohash;
     public $extension;
     private $_atime;
+    private $_mtime;
 
     function append_component($idx, $suffix) {
         $this->bdirs[] = $this->fname;
@@ -289,6 +290,12 @@ class DocumentFileTreeMatch {
             $this->_atime = fileatime($this->fname);
         }
         return $this->_atime;
+    }
+    function mtime() {
+        if ($this->_mtime === null) {
+            $this->_mtime = filemtime($this->fname);
+        }
+        return $this->_mtime;
     }
 }
 

@@ -2,7 +2,7 @@
 // cleandocstore.php -- HotCRP maintenance script
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
-$arg = getopt("hn:c:Vm:du:q", ["help", "name:", "count:", "verbose", "match:", "dry-run", "max-usage:", "quiet", "silent"]);
+$arg = getopt("hn:c:Vm:du:q", ["help", "name:", "count:", "verbose", "match:", "dry-run", "max-usage:", "quiet", "silent", "keep-temp"]);
 foreach (["c" => "count", "V" => "verbose", "m" => "match", "d" => "dry-run",
           "u" => "max-usage", "q" => "quiet"] as $s => $l) {
     if (isset($arg[$s]) && !isset($arg[$l]))
@@ -13,7 +13,7 @@ if (isset($arg["silent"])) {
 }
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n"
-                 . "           [-d|--dry-run] [-u USAGELIMIT]\n");
+                 . "           [-d|--dry-run] [-u USAGELIMIT] [--keep-temp]\n");
     exit(0);
 }
 if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
@@ -35,7 +35,9 @@ $usage_directory = $m[1];
 $count = isset($arg["count"]) ? intval($arg["count"]) : 10;
 $verbose = isset($arg["verbose"]);
 $dry_run = isset($arg["dry-run"]);
+$keep_temp = isset($arg["keep-temp"]);
 $usage_threshold = null;
+$hash_matcher = new DocumentHashMatcher(get($arg, "match"));
 
 if (isset($arg["max-usage"])) {
     if (!is_numeric($arg["max-usage"])
@@ -58,13 +60,7 @@ if (isset($arg["max-usage"])) {
 }
 
 
-$fparts = new DocumentFileTree($dp, new DocumentHashMatcher(get($arg, "match")));
-
-
-$ndone = $nsuccess = $bytesremoved = 0;
-
-while ($count > 0
-       && ($usage_threshold === null || $bytesremoved < $usage_threshold)) {
+function fparts_random_match($fparts) {
     $x = [];
     for ($i = 0; $x ? count($x) < 5 && $i < 10 : $i < 10000; ++$i) {
         $fm = $fparts->random_match();
@@ -73,18 +69,58 @@ while ($count > 0
         else
             $fparts->hide($fm);
     }
-    if (!$x) {
+    if ($x) {
+        usort($x, function ($a, $b) {
+            if ($a->atime() !== false && $b->atime() !== false)
+                return $a->atime() - $b->atime();
+            else
+                return $a->atime() ? -1 : 1;
+        });
+    } else {
         fwrite(STDERR, "Can't find anything to delete.\n");
-        break;
     }
+    return get($x, 0);
+}
 
-    usort($x, function ($a, $b) {
-        if ($a->atime() !== false && $b->atime() !== false)
-            return $a->atime() - $b->atime();
-        else
-            return $a->atime() ? -1 : 1;
-    });
-    $fm = $x[0];
+
+$ndone = $nsuccess = $bytesremoved = 0;
+$tmp_fparts = new DocumentFileTree(Filer::docstore_fixed_prefix($dp) . "tmp/%h%x", $hash_matcher);
+
+while ($count > 0
+       && ($usage_threshold === null || $bytesremoved < $usage_threshold)
+       && ($fm = fparts_random_match($tmp_fparts))
+       && $fm->atime() < $Now - 86400
+       && $fm->mtime() < $Now - 86400
+       && !$keep_temp) {
+    $fparts->hide($fm);
+
+    $ok = false;
+    $size = filesize($fm->fname);
+    if ($dry_run) {
+        if ($verbose)
+            fwrite(STDOUT, "{$fm->fname}: would remove\n");
+        $ok = true;
+    } else if (unlink($fm->fname)) {
+        if ($verbose)
+            fwrite(STDOUT, "{$fm->fname}: removed\n");
+        $ok = true;
+    } else {
+        fwrite(STDERR, "{$fm->fname}: cannot remove\n");
+    }
+    --$count;
+    ++$ndone;
+    if ($ok) {
+        ++$nsuccess;
+        $bytesremoved += $size;
+    }
+}
+
+
+$fparts = new DocumentFileTree($dp, $hash_matcher);
+
+while ($count > 0
+       && ($usage_threshold === null || $bytesremoved < $usage_threshold)
+       && ($fm = fparts_random_match($fparts))) {
     $fparts->hide($fm);
 
     $doc = new DocumentInfo([
