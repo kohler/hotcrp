@@ -2502,11 +2502,11 @@ h1 .badge {
 }
 .orangebadge {
 	background: #ee9900;
-	color: #222222;
+	color: #111111;
 }
 .yellowbadge {
 	background: #e2e200;
-	color: #222222;
+	color: #111111;
 }
 .greenbadge {
 	background: #008800;
@@ -2522,7 +2522,7 @@ h1 .badge {
 }
 .pinkbadge {
 	background: #ffc3c8;
-	color: #222222;
+	color: #111111;
 }
 a.badge:hover {
 	color: #ffa25b;
