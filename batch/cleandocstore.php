@@ -2,7 +2,10 @@
 // cleandocstore.php -- HotCRP maintenance script
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
-$arg = getopt("hn:c:Vm:du:q", ["help", "name:", "count:", "verbose", "match:",
+$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
+require_once("$ConfSitePATH/lib/getopt.php");
+
+$arg = getopt_rest($argv, "hn:c:Vm:du:q", ["help", "name:", "count:", "verbose", "match:",
     "dry-run", "max-usage:", "quiet", "silent", "keep-temp", "docstore"]);
 foreach (["c" => "count", "V" => "verbose", "m" => "match", "d" => "dry-run",
           "u" => "max-usage", "q" => "quiet"] as $s => $l) {
@@ -23,7 +26,6 @@ if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
     exit(1);
 }
 
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 
 $confdp = $Conf->docstore();
