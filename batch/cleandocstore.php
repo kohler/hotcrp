@@ -122,7 +122,6 @@ function fparts_random_match() {
     if (empty($fmatches)) {
         return null;
     } else {
-        error_log(json_encode(array_keys($fmatches)));
         $fm = $fmatches[0];
         $ftrees[$fm->treeid]->hide($fm);
         return $fm;
