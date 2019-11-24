@@ -243,15 +243,17 @@ function expand_includes($files, $expansions = array()) {
 
 function read_included_options(&$files) {
     global $Opt;
-    if (is_string($files))
+    if (is_string($files)) {
         $files = [$files];
-    for ($i = 0; $i != count($files); ++$i)
+    }
+    for ($i = 0; $i !== count($files); ++$i) {
         foreach (expand_includes($files[$i]) as $f) {
             $key = "missing";
             if ((@include $f) !== false)
                 $key = "loaded";
             $Opt[$key][] = $f;
         }
+    }
 }
 
 function expand_json_includes_callback($includelist, $callback) {
@@ -296,31 +298,40 @@ function expand_json_includes_callback($includelist, $callback) {
 }
 
 global $Opt;
-if (!$Opt)
+if (!$Opt) {
     $Opt = array();
+}
 if (!get($Opt, "loaded")) {
     SiteLoader::read_main_options();
-    if (get($Opt, "multiconference"))
+    if (get($Opt, "multiconference")) {
         Multiconference::init();
-    if (get($Opt, "include"))
+    }
+    if (get($Opt, "include")) {
         read_included_options($Opt["include"]);
+    }
 }
-if (!get($Opt, "loaded") || get($Opt, "missing"))
+if (!get($Opt, "loaded") || get($Opt, "missing")) {
     Multiconference::fail_bad_options();
-if (get($Opt, "dbLogQueries"))
+}
+if (get($Opt, "dbLogQueries")) {
     Dbl::log_queries($Opt["dbLogQueries"], get($Opt, "dbLogQueryFile"));
+}
 
 
 // Allow lots of memory
-if (!get($Opt, "memoryLimit") && ini_get_bytes("memory_limit") < (128 << 20))
+if (!get($Opt, "memoryLimit") && ini_get_bytes("memory_limit") < (128 << 20)) {
     $Opt["memoryLimit"] = "128M";
-if (get($Opt, "memoryLimit"))
+}
+if (get($Opt, "memoryLimit")) {
     ini_set("memory_limit", $Opt["memoryLimit"]);
+}
 
 
 // Create the conference
 global $Conf;
-if (!$Conf)
+if (!$Conf) {
     $Conf = Conf::$g = new Conf($Opt, true);
-if (!$Conf->dblink)
+}
+if (!$Conf->dblink) {
     Multiconference::fail_bad_database();
+}
