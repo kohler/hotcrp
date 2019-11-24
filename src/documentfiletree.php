@@ -2,7 +2,8 @@
 // documentfiletree.php -- document helper class for trees of HotCRP papers
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
-class DocumentFileTree {
+class DocumentFileTree implements JsonSerializable {
+    public $treeid;
     private $_components = [];
     private $_pregs = [];
     private $_n;
@@ -13,8 +14,9 @@ class DocumentFileTree {
 
     private $_dirinfo = [];
 
-    function __construct($dp, DocumentHashMatcher $matcher) {
+    function __construct($dp, DocumentHashMatcher $matcher, $treeid = 0) {
         assert(is_string($dp) && $dp[0] === "/");
+        $this->treeid = $treeid;
         $this->_matcher = $matcher;
 
         foreach (preg_split("{/+}", $dp) as $fdir) {
@@ -222,7 +224,7 @@ class DocumentFileTree {
 
     function first_match(DocumentFileTreeMatch $after = null) {
         $this->clear();
-        $fm = new DocumentFileTreeMatch;
+        $fm = new DocumentFileTreeMatch($this->treeid);
         for ($i = 0; $i < $this->_n; ++$i) {
             if ($i % 2 == 0) {
                 $fm->fname .= $this->_components[$i];
@@ -241,7 +243,7 @@ class DocumentFileTree {
 
     function random_match() {
         $this->clear();
-        $fm = new DocumentFileTreeMatch;
+        $fm = new DocumentFileTreeMatch($this->treeid);
         for ($i = 0; $i < $this->_n; ++$i) {
             if ($i % 2 == 0) {
                 $fm->fname .= $this->_components[$i];
@@ -260,15 +262,27 @@ class DocumentFileTree {
 
     function hide(DocumentFileTreeMatch $fm) {
         // account for removal
+        assert($fm->treeid === $this->treeid);
         $delta = null;
         for ($i = count($fm->idxes) - 1; $i >= 0; --$i) {
             $this->_dirinfo[$fm->bdirs[$i]]->hide_component_index($fm->idxes[$i]);
         }
         $fm->idxes = $fm->bdirs = [];
     }
+
+    function jsonSerialize() {
+        $answer = ["__treeid__" => $this->treeid];
+        $dirs = $this->_dirinfo;
+        ksort($dirs);
+        foreach ($dirs as $dname => $di) {
+            $answer[$dname] = $di->jsonSerialize();
+        }
+        return $answer;
+    }
 }
 
 class DocumentFileTreeMatch {
+    public $treeid;
     public $bdirs = [];
     public $idxes = [];
     public $fname = "";
@@ -277,6 +291,9 @@ class DocumentFileTreeMatch {
     private $_atime;
     private $_mtime;
 
+    function __construct($treeid) {
+        $this->treeid = $treeid;
+    }
     function append_component($idx, $suffix) {
         $this->bdirs[] = $this->fname;
         $this->idxes[] = $idx;
@@ -299,7 +316,7 @@ class DocumentFileTreeMatch {
     }
 }
 
-class DocumentFileTreeDir {
+class DocumentFileTreeDir implements JsonSerializable {
     private $_di;
     private $_used = [];
     private $_sorted = false;
@@ -441,5 +458,9 @@ class DocumentFileTreeDir {
         }
         assert($i < $this->_di[$idx + 2]);
         $this->_used[$i] = true;
+    }
+
+    function jsonSerialize() {
+        return $this->_di;
     }
 }
