@@ -145,10 +145,12 @@ while ($count > 0
         if ($hashalg === false) {
             fwrite(STDERR, "{$fm->fname}: unknown hash\n");
             $ok = false;
-        } else if (($chash = hash_file($hashalg, $fm->fname, true)) === false) {
+        } else if (!$dry_run
+                   && ($chash = hash_file($hashalg, $fm->fname, true)) === false) {
             fwrite(STDERR, "{$fm->fname}: is unreadable\n");
             $ok = false;
-        } else if ($chash !== $doc->binary_hash_data()) {
+        } else if (!$dry_run
+                   && $chash !== $doc->binary_hash_data()) {
             fwrite(STDERR, "{$fm->fname}: incorrect hash\n");
             fwrite(STDERR, "  data hash is " . $doc->hash_algorithm_prefix() . bin2hex($chash) . "\n");
             $ok = false;
