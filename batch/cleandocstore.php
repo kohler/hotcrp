@@ -107,6 +107,7 @@ function fparts_random_match() {
     }
     usort($fmatches, function ($a, $b) {
         global $Now;
+        // week-old temporary files should be removed first
         $at = $a->atime();
         if (($a->treeid & 1) && $at < $Now - 604800) {
             $at = 1;
