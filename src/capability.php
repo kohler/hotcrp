@@ -98,16 +98,19 @@ class CapabilityManager {
     }
 
     static function apply_hoturl_capability($name, $isadd) {
-        if (Conf::$hoturl_defaults === null)
+        if (Conf::$hoturl_defaults === null) {
             Conf::$hoturl_defaults = [];
+        }
         $cap = urldecode(get(Conf::$hoturl_defaults, "cap", ""));
         $a = array_diff(explode(" ", $cap), [$name, ""]);
-        if ($isadd)
+        if ($isadd) {
             $a[] = $name;
-        if (empty($a))
+        }
+        if (empty($a)) {
             unset(Conf::$hoturl_defaults["cap"]);
-        else
+        } else {
             Conf::$hoturl_defaults["cap"] = urlencode(join(" ", $a));
+        }
     }
 
     static function apply_old_author_view(Contact $user, $uf, $isadd) {
