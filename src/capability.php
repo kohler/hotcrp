@@ -127,8 +127,10 @@ class CapabilityManager {
         global $Now;
         if ($at && $at >= $Now - 2592000) {
             $user->set_capability("@ra$pid", $cid);
-            if ($user->is_activated())
+            if ($user->is_activated()) {
+                ensure_session();
                 self::apply_hoturl_capability($uf->name, $cid);
+            }
         } else {
             $user->conf->warnMsg("The review link you followed has expired. Sign in to the site to view or edit reviews.");
         }
