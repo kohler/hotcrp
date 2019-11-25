@@ -182,18 +182,7 @@ class LoginHelper {
 
         // store authentication
         ensure_session(ENSURE_SESSION_REGENERATE_ID);
-        $us = Contact::session_users();
-        $uindex = Contact::session_user_index($xuser->email);
-        if ($uindex === false) {
-            $uindex = count($us);
-            $us[] = $xuser->email;
-            if ($uindex > 0) {
-                $_SESSION["us"] = $us;
-            }
-        }
-        if ($uindex === 0) {
-            $_SESSION["u"] = $xuser->email;
-        }
+        self::change_session_users([$xuser->email => 1]);
         $_SESSION["testsession"] = true;
 
         // activate
@@ -209,14 +198,37 @@ class LoginHelper {
         // redirect
         $nav = Navigation::get();
         $url = $nav->server . $nav->base_path;
-        if (count($us) > 1) {
-            $url .= "u/" . $uindex . "/";
+        if (isset($_SESSION["us"])) {
+            $url .= "u/" . Contact::session_user_index($xuser->email) . "/";
         }
         $url .= "?postlogin=1";
         if ($qreq->go !== null) {
             $url .= "&go=" . urlencode($qreq->go);
         }
         return $url;
+    }
+
+    static function change_session_users($uinstr) {
+        $us = Contact::session_users();
+        foreach ($uinstr as $e => $delta) {
+            for ($i = 0; $i !== count($us); ++$i) {
+                if (strcasecmp($us[$i], $e) === 0)
+                    break;
+            }
+            if ($delta < 0 && $i !== count($us)) {
+                array_splice($us, $i, 1);
+            } else if ($delta > 0 && $i === count($us)) {
+                $us[] = $e;
+            }
+        }
+        if (count($us) > 1) {
+            $_SESSION["us"] = $us;
+        } else {
+            unset($_SESSION["us"]);
+        }
+        if (!isset($_SESSION["u"]) || $us[0] !== $_SESSION["u"]) {
+            $_SESSION["u"] = $us[0];
+        }
     }
 
     static function check_postlogin(Contact $user, Qrequest $qreq) {

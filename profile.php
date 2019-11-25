@@ -5,45 +5,108 @@
 require_once("src/initweb.php");
 
 // check for change-email capabilities
+
 function change_email_by_capability($Qreq) {
     global $Conf, $Me;
+    ensure_session();
     $capmgr = $Conf->capability_manager();
-    $capdata = $capmgr->check($Qreq->changeemail);
+    $capdata = $capmgr->check(trim($Qreq->changeemail));
     if (!$capdata
         || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
+        || !$capdata->contactId
         || !($capdata->data = json_decode($capdata->data))
         || !get($capdata->data, "uemail")) {
-        error_go(false, "That email change code has expired, or you didn’t enter it correctly.");
+        if (trim($Qreq->changeemail) !== "1") {
+            Ht::error_at("changeemail", "That email change code has expired, or you didn’t enter it correctly.");
+        }
+        $capdata = false;
     }
 
-    if ($capdata->contactId) {
-        $Acct = $Conf->user_by_id($capdata->contactId);
+    $Acct = null;
+    if ($capdata && !($Acct = $Conf->user_by_id($capdata->contactId))) {
+        Ht::error_at("changeemail", "The account associated with that email change code no longer exists.");
+    }
+    if ($Acct && strcasecmp($Acct->email, $capdata->data->oldemail) !== 0) {
+        Ht::error_at("changeemail", "You have changed your email address since creating that email change code.");
+        $Acct = null;
+    }
+
+    $newemail = $Acct ? $capdata->data->uemail : null;
+    if ($Acct && $Conf->user_id_by_email($newemail)) {
+        Conf::msg_error("The email address you requested, " . htmlspecialchars($newemail) . ", is already in use on this site. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+        return false;
+    }
+
+    $newcdbu = $newemail ? $Conf->contactdb_user_by_email($newemail) : null;
+    if ($newcdbu) {
+        if ($newcdbu->disabled) {
+            Conf::msg_error("changeemail", "That user is globally disabled.");
+            return false;
+        } else if ($newcdbu->allow_contactdb_password()
+                   && $Qreq->go
+                   && $Qreq->post_ok()) {
+            $Qreq->password = trim((string) $Qreq->password);
+            if ($Qreq->password === "") {
+                Ht::error_at("password", "Password missing.");
+                unset($Qreq->go);
+            } else if (!$newcdbu->check_password($Qreq->password)) {
+                Ht::error_at("password", "That password is incorrect.");
+                unset($Qreq->go);
+            }
+        }
+    }
+
+    if ($newemail
+        && $Qreq->go
+        && $Qreq->post_ok()) {
+        $Acct->change_email($newemail);
+        $capmgr->delete($capdata);
+        $Conf->confirmMsg("Your email address has been changed.");
+        if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId) {
+            $Me = $Acct->activate($Qreq);
+        }
+        if (Contact::session_user_index($capdata->data->oldemail) !== false) {
+            LoginHelper::change_session_users([
+                $capdata->data->oldemail => -1, $newemail => 1
+            ]);
+        }
+        Navigation::redirect($Conf->hoturl("profile"));
     } else {
-        error_go(false, "That email change code was created improperly due to a server error. Please create another email change code, or sign out of your current account and create a new account using your preferred email address.");
-    }
-
-    if (!$Acct) {
-        error_go(false, "No such account.");
-    } else if (isset($capdata->data->oldemail)
-               && strcasecmp($Acct->email, $capdata->data->oldemail) !== 0) {
-        error_go(false, "You have changed your email address since creating that email change code.");
-    }
-
-    $email = $capdata->data->uemail;
-    if ($Conf->user_id_by_email($email)) {
-        error_go(false, "Email address “" . htmlspecialchars($email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
-    }
-
-    $Acct->change_email($email);
-    $capmgr->delete($capdata);
-
-    $Conf->confirmMsg("Your email address has been changed.");
-    if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId) {
-        $Me = $Acct->activate($Qreq);
+        $Conf->header("Change email", "account", ["action_bar" => false]);
+        if ($Acct) {
+            echo '<p class="mb-5">Complete the email change using this form.</p>';
+        } else {
+            echo '<p class="mb-5">Enter an email change code.</p>';
+        }
+        echo Ht::form($Conf->hoturl("profile", "changeemail=1"), ["class" => "compact-form", "id" => "changeemailform"]),
+            Ht::hidden("post", post_value());
+        if ($Acct) {
+            echo '<div class="f-i"><label>Old email</label>', htmlspecialchars($Acct->email), '</div>',
+                '<div class="f-i"><label>New email</label>',
+                Ht::entry("email", $newemail, ["autocomplete" => "username", "readonly" => true, "class" => "fullw"]),
+                '</div>';
+        }
+        echo '<div class="', Ht::control_class("changeemail", "f-i"), '"><label for="changeemail">Change code</label>',
+            Ht::entry("changeemail", $Qreq->changeemail == "1" ? "" : $Qreq->changeemail, ["id" => "changeemail", "class" => "fullw", "autocomplete" => "one-time-code"]),
+            Ht::render_messages_at("changeemail"), '</div>';
+        if ($newcdbu && $newcdbu->allow_contactdb_password()) {
+            echo '<div class="', Ht::control_class("password", "f-i"), '"><label for="password">Password for ', htmlspecialchars($newemail), '</label>',
+            Ht::password("password", "", ["autocomplete" => "password", "class" => "fullw"]),
+            Ht::render_messages_at("password"), '</div>';
+        }
+        echo '<div class="popup-actions">',
+            Ht::submit("go", "Change email", ["class" => "btn-primary", "value" => 1]),
+            Ht::submit("cancel", "Cancel"),
+            '</div></form>';
+        Ht::stash_script("focus_within(\$(\"#changeemailform\"));window.scroll(0,0)");
+        $Conf->footer();
+        exit;
     }
 }
-if ($Qreq->changeemail
-    && !$Me->is_actas_user()) {
+
+if ($Qreq->changeemail && $Qreq->cancel) {
+    $Conf->self_redirect($Qreq);
+} else if ($Qreq->changeemail && !$Me->is_actas_user()) {
     change_email_by_capability($Qreq);
 }
 
@@ -175,14 +238,19 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
         } else if ($Acct && !$Acct->has_account_here()) {
             return $user_status->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
         }
-        if (!$newProfile && !$Me->privChair) {
+        if (!$newProfile && (!$Me->privChair || $Acct === $Me)) {
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
             $capmgr = $Conf->capability_manager();
-            $rest = array("capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => $Now + 259200, "data" => json_encode_db(array("oldemail" => $Acct->email, "uemail" => $cj->email)))));
+            $capability = $capmgr->create(CAPTYPE_CHANGEEMAIL, [
+                "user" => $Acct, "timeExpires" => $Now + 259200,
+                "data" => json_encode_db(["oldemail" => $Acct->email, "uemail" => $cj->email])
+            ]);
+            $rest = ["capability" => $capability];
             $mailer = new HotCRPMailer($Conf, $Acct, null, $rest);
             $prep = $mailer->make_preparation("@changeemail", $rest);
-            if ($prep->sendable) {
+            if ($prep->sendable
+                || $Conf->opt("debugShowSensitiveEmail")) {
                 $prep->send();
                 $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . ". Use the link it contains to confirm your email change request.");
             } else {

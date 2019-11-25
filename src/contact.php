@@ -1108,12 +1108,23 @@ class Contact {
 
     function change_email($email) {
         assert($this->has_account_here());
+        $old_email = $this->email;
         $aupapers = self::email_authored_papers($this->conf, $email, $this);
         $this->conf->ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
         $this->save_authored_papers($aupapers);
-        if ($this->roles & Contact::ROLE_PCLIKE)
-            $this->conf->invalidate_caches(["pc" => 1]);
+
+        if (!$this->password
+            && ($cdbu = $this->contactdb_user())
+            && $cdbu->password) {
+            $this->password = $cdbu->password;
+        }
         $this->email = $email;
+        $this->contactdb_update(null, true);
+
+        if ($this->roles & Contact::ROLE_PCLIKE) {
+            $this->conf->invalidate_caches(["pc" => 1]);
+        }
+        $this->conf->log_for($this, $this, "Account edited: email ($old_email to $email)");
     }
 
     static function email_authored_papers(Conf $conf, $email, $reg) {
