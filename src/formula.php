@@ -243,6 +243,8 @@ class Fexpr implements JsonSerializable {
                 return "($t1 !== null && $t2 ? $t1 $op $t2 : null)";
             } else if ($op === "**") {
                 return "($t1 !== null && $t2 !== null ? pow($t1, $t2) : null)";
+            } else if ($op === "+" || $op === "-") {
+                return "($t1 !== null || $t2 !== null ? $t1 $op $t2 : null)";
             } else {
                 if (Formula::$opprec[$op] === 8)
                     $op = $this->args[0]->format_comparator($op, $state->conf, $this->args[1]);
@@ -1261,7 +1263,7 @@ class FormulaCompiler {
     }
     function _add_tagval($tag) {
         if ($tag === false) {
-            return "false";
+            return "null";
         }
         $t_tagpos = $this->_add_tagpos($tag);
         if (strpos($tag, "*") === false) {
@@ -1269,7 +1271,7 @@ class FormulaCompiler {
         } else {
             $delta = "strpos(\$tags, \"#\", $t_tagpos) + 1";
         }
-        return $this->define_gvar("tagval_$tag", "($t_tagpos !== false ? (float) substr(\$tags, $delta) : false)");
+        return $this->define_gvar("tagval_$tag", "($t_tagpos !== false ? (float) substr(\$tags, $delta) : null)");
     }
     function _add_now() {
         if ($this->check_gvar('$now')) {

@@ -48,7 +48,7 @@ class Formula_PaperColumn extends PaperColumn {
         $as = $a->$k;
         $bs = $b->$k;
         if ($as === null || $bs === null) {
-            return $as === $bs ? 0 : ($as === null ? -1 : 1);
+            return $as === $bs ? 0 : ($as === null ? 1 : -1);
         } else {
             return $as == $bs ? 0 : ($as < $bs ? -1 : 1);
         }
