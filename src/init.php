@@ -262,18 +262,21 @@ function expand_json_includes_callback($includelist, $callback) {
     foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $str) {
         $expandable = null;
         if (is_string($str)) {
-            if (str_starts_with($str, "@"))
+            if (str_starts_with($str, "@")) {
                 $expandable = substr($str, 1);
-            else if (!preg_match('/\A[\s\[\{]/', $str)
-                     || ($str[0] === "[" && !preg_match('/\]\s*\z/', $str)))
+            } else if (!preg_match('/\A[\s\[\{]/', $str)
+                       || ($str[0] === "[" && !preg_match('/\]\s*\z/', $str))) {
                 $expandable = $str;
+            }
         }
         if ($expandable) {
-            foreach (expand_includes($expandable) as $f)
+            foreach (expand_includes($expandable) as $f) {
                 if (($x = file_get_contents($f)))
                     $includes[] = [$x, $f];
-        } else
+            }
+        } else {
             $includes[] = [$str, "entry $k"];
+        }
     }
     foreach ($includes as $xentry) {
         list($entry, $landmark) = $xentry;
@@ -287,12 +290,15 @@ function expand_json_includes_callback($includelist, $callback) {
             $entry = $x;
         }
         foreach (is_array($entry) ? $entry : [$entry] as $k => $v) {
-            if ($v === null || $v === false)
+            if ($v === null || $v === false) {
                 continue;
-            if (is_object($v))
+            }
+            if (is_object($v)) {
                 $v->__subposition = ++Conf::$next_xt_subposition;
-            if (!call_user_func($callback, $v, $k, $landmark))
+            }
+            if (!call_user_func($callback, $v, $k, $landmark)) {
                 error_log(($Conf ? "$Conf->dbname: " : "") . "$landmark: Invalid expansion " . json_encode($v) . ".");
+            }
         }
     }
 }

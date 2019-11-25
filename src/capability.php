@@ -15,10 +15,11 @@ class CapabilityManager {
         $contactId = get($options, "contactId", 0);
         if (!$contactId
             && ($user = get($options, "user"))) {
-            if ($this->prefix === "U")
+            if ($this->prefix === "U") {
                 $contactId = $user->contactdb_user()->contactDbId;
-            else
+            } else {
                 $contactId = $user->contactId;
+            }
         }
         $paperId = get($options, "paperId", 0);
         $timeExpires = get($options, "timeExpires", time() + 259200);

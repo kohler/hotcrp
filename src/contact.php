@@ -502,10 +502,12 @@ class Contact {
 
         // Check forceShow
         $this->_overrides = 0;
-        if ($qreq && $qreq->forceShow && $this->is_manager())
+        if ($qreq && $qreq->forceShow && $this->is_manager()) {
             $this->_overrides |= self::OVERRIDE_CONFLICT;
-        if ($qreq && $qreq->override)
+        }
+        if ($qreq && $qreq->override) {
             $this->_overrides |= self::OVERRIDE_TIME;
+        }
 
         return $this;
     }
@@ -549,8 +551,9 @@ class Contact {
             return $this;
         } else if ($refresh || $this->_contactdb_user === false) {
             $cdbu = null;
-            if ($this->has_email())
+            if ($this->has_email()) {
                 $cdbu = $this->conf->contactdb_user_by_email($this->email);
+            }
             $this->_contactdb_user = $cdbu;
         }
         return $this->_contactdb_user;
@@ -558,16 +561,18 @@ class Contact {
 
     private function _contactdb_save_roles($cdbur) {
         global $Now;
-        if (($roles = $this->contactdb_roles()))
+        if (($roles = $this->contactdb_roles())) {
             Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=values(roles), activity_at=values(activity_at)", $cdbur->contactDbId, $cdbur->confid, $roles, $Now);
-        else
+        } else {
             Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=? and roles=0", $cdbur->contactDbId, $cdbur->confid);
+        }
     }
     function contactdb_update($update_keys = null, $only_update_empty = false) {
         if (!($cdb = $this->conf->contactdb())
             || !$this->has_account_here()
-            || !validate_email($this->email))
+            || !validate_email($this->email)) {
             return false;
+        }
 
         $cdbur = $this->conf->contactdb_user_by_email($this->email);
         $cdbux = $cdbur ? : new Contact(null, $this->conf);
@@ -1076,8 +1081,9 @@ class Contact {
         if ($this->$k !== $v || !$this->contactId) {
             $cu->qv[$k] = $v;
             $this->$k = $v;
-            if ($k === "email")
+            if ($k === "email") {
                 $this->_contactdb_user = false;
+            }
             return true;
         } else {
             return false;
@@ -1087,10 +1093,12 @@ class Contact {
     function save_cleanup($us) {
         self::set_sorter($this, $this->conf);
         $this->_disabled = null;
-        if (isset($us->diffs["topics"]))
+        if (isset($us->diffs["topics"])) {
             $this->_topic_interest_map = null;
-        if (isset($us->diffs["roles"]))
+        }
+        if (isset($us->diffs["roles"])) {
             $this->conf->invalidate_caches(["pc" => 1]);
+        }
     }
 
     const SAVE_NOTIFY = 1;
@@ -1508,20 +1516,24 @@ class Contact {
             || ($localok && $cdbu && !$cdbu->password)) {
             $updater = ["passwordUseTime" => $Now];
             if ($cdbok) {
-                if ($this->check_password_encryption($cdbu->password, true))
+                if ($this->check_password_encryption($cdbu->password, true)) {
                     $updater["password"] = $this->hash_password($input);
-                if (!$cdbu->passwordTime)
+                }
+                if (!$cdbu->passwordTime) {
                     $updater["passwordTime"] = $Now;
+                }
             } else {
                 $updater["password"] = $this->hash_password($input);
                 $updater["passwordTime"] = $this->passwordTime ? : $Now;
             }
             $cdbu->apply_updater($updater, true);
             // clear local password, if any
-            if ($localok)
+            if ($localok) {
                 $this->apply_updater(["passwordUseTime" => $Now, "password" => "", "passwordTime" => $Now], false);
-            if ($info)
+            }
+            if ($info) {
                 $info->cdb = true;
+            }
             $cdbok = true;
             $localok = false;
         }
@@ -1538,10 +1550,12 @@ class Contact {
             if ($localusetime
                 && $cdbu->passwordUseTime > $localusetime) {
                 $x = $this->conf->opt("obsoletePasswordInterval");
-                if (is_string($x))
+                if (is_string($x)) {
                     $x = SettingParser::parse_interval($x);
-                if ($x === true)
+                }
+                if ($x === true) {
                     $x = 63072000; // 2 years
+                }
                 if ($x > 0
                     && $localusetime < $Now - $x) {
                     $localok = false;

@@ -12,34 +12,40 @@ function change_email_by_capability($Qreq) {
     if (!$capdata
         || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
         || !($capdata->data = json_decode($capdata->data))
-        || !get($capdata->data, "uemail"))
+        || !get($capdata->data, "uemail")) {
         error_go(false, "That email change code has expired, or you didn’t enter it correctly.");
+    }
 
-    if ($capdata->contactId)
+    if ($capdata->contactId) {
         $Acct = $Conf->user_by_id($capdata->contactId);
-    else
+    } else {
         error_go(false, "That email change code was created improperly due to a server error. Please create another email change code, or sign out of your current account and create a new account using your preferred email address.");
+    }
 
-    if (!$Acct)
+    if (!$Acct) {
         error_go(false, "No such account.");
-    else if (isset($capdata->data->oldemail)
-             && strcasecmp($Acct->email, $capdata->data->oldemail) !== 0)
+    } else if (isset($capdata->data->oldemail)
+               && strcasecmp($Acct->email, $capdata->data->oldemail) !== 0) {
         error_go(false, "You have changed your email address since creating that email change code.");
+    }
 
     $email = $capdata->data->uemail;
-    if ($Conf->user_id_by_email($email))
+    if ($Conf->user_id_by_email($email)) {
         error_go(false, "Email address “" . htmlspecialchars($email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+    }
 
     $Acct->change_email($email);
     $capmgr->delete($capdata);
 
     $Conf->confirmMsg("Your email address has been changed.");
-    if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId)
+    if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId) {
         $Me = $Acct->activate($Qreq);
+    }
 }
 if ($Qreq->changeemail
-    && !$Me->is_actas_user())
+    && !$Me->is_actas_user()) {
     change_email_by_capability($Qreq);
+}
 
 if (!$Me->is_signed_in()) {
     $Me->escape();
@@ -151,10 +157,12 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
                 $cj->id = $new_acct->contactId;
             } else {
                 $msg = "Email address “" . htmlspecialchars($cj->email) . "” is already in use.";
-                if ($Me->privChair)
+                if ($Me->privChair) {
                     $msg = str_replace("an account", "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
-                if (!$newProfile)
+                }
+                if (!$newProfile) {
                     $msg .= " You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.";
+                }
                 return $user_status->error_at("email", $msg);
             }
         } else if ($Conf->external_login()) {
@@ -177,8 +185,9 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             if ($prep->sendable) {
                 $prep->send();
                 $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . ". Use the link it contains to confirm your email change request.");
-            } else
+            } else {
                 Conf::msg_error("Mail cannot be sent to " . htmlspecialchars($cj->email) . " at this time. Your email address was unchanged.");
+            }
             // Save changes *except* for new email, by restoring old email.
             $cj->email = $Acct->email;
             $Acct->preferredEmail = $old_preferredEmail;
@@ -269,48 +278,56 @@ function parseBulkFile($text, $filename) {
             $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> " . $e;
     }
 
-    if (!empty($ustatus->unknown_topics))
+    if (!empty($ustatus->unknown_topics)) {
         $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin(array_keys($ustatus->unknown_topics))) . ").";
-    if (count($success) == 1)
+    }
+    if (count($success) == 1) {
         $successMsg = "Saved account " . $success[0] . ".";
-    else if (count($success))
+    } else if (count($success)) {
         $successMsg = "Saved " . plural($success, "account") . ": " . commajoin($success) . ".";
-    if (count($errors))
+    }
+    if (count($errors)) {
         $errorMsg = '<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . "</p></div>";
-    if (count($success) && count($errors))
+    }
+    if (count($success) && count($errors)) {
         $Conf->confirmMsg($successMsg . "<br />$errorMsg");
-    else if (count($success))
+    } else if (count($success)) {
         $Conf->confirmMsg($successMsg);
-    else if (count($errors))
+    } else if (count($errors)) {
         Conf::msg_error($errorMsg);
-    else
+    } else {
         $Conf->warnMsg("Nothing to do.");
+    }
     return empty($errors);
 }
 
 if (!$Qreq->post_ok()) {
     // do nothing
 } else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
-    if (($text = $Qreq->file_contents("bulk")) === false)
+    if (($text = $Qreq->file_contents("bulk")) === false) {
         Conf::msg_error("Internal error: cannot read file.");
-    else
+    } else {
         parseBulkFile($text, $Qreq->file_filename("bulk"));
+    }
     $Qreq->bulkentry = "";
     $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
 } else if ($Qreq->savebulk && $newProfile) {
     $success = true;
-    if ($Qreq->bulkentry && $Qreq->bulkentry !== "Enter users one per line")
+    if ($Qreq->bulkentry && $Qreq->bulkentry !== "Enter users one per line") {
         $success = parseBulkFile($Qreq->bulkentry, "");
-    if (!$success)
+    }
+    if (!$success) {
         $Me->save_session("profile_bulkentry", array($Now, $Qreq->bulkentry));
+    }
     $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
 } else if (isset($Qreq->save)) {
     assert($Acct->is_empty() === $newProfile);
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->set_user($Acct);
     $UserStatus->parse_request_group("", $cj, $Qreq);
-    if ($newProfile)
+    if ($newProfile) {
         $UserStatus->send_email = true;
+    }
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if (!$UserStatus->has_error()) {
         if ($UserStatus->has_messages()) {
@@ -323,9 +340,9 @@ if (!$Qreq->post_ok()) {
             if ($Acct->contactId != $Me->contactId)
                 $Qreq->u = $Acct->email;
         }
-        if (isset($Qreq->redirect))
+        if (isset($Qreq->redirect)) {
             go(hoturl("index"));
-        else {
+        } else {
             $xcj = [];
             if ($newProfile) {
                 foreach (["roles", "follow", "tags"] as $k)
@@ -367,15 +384,17 @@ function databaseTracks($who) {
     $result = $Conf->qe_raw("select paperId from PaperReview
         where PaperReview.contactId=$who
         group by paperId order by paperId");
-    while (($row = edb_row($result)))
+    while (($row = edb_row($result))) {
         $tracks->review[] = $row[0];
+    }
 
     // find comments
     $result = $Conf->qe_raw("select paperId from PaperComment
         where PaperComment.contactId=$who
         group by paperId order by paperId");
-    while (($row = edb_row($result)))
+    while (($row = edb_row($result))) {
         $tracks->comment[] = $row[0];
+    }
 
     return $tracks;
 }
@@ -385,31 +404,33 @@ function textArrayPapers($pids) {
 }
 
 if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
-    if (!$Me->privChair)
+    if (!$Me->privChair) {
         Conf::msg_error("Only administrators can delete accounts.");
-    else if ($Acct->contactId == $Me->contactId)
+    } else if ($Acct->contactId == $Me->contactId) {
         Conf::msg_error("You aren’t allowed to delete your own account.");
-    else if ($Acct->has_account_here()) {
+    } else if ($Acct->has_account_here()) {
         $tracks = databaseTracks($Acct->contactId);
-        if (!empty($tracks->soleAuthor))
+        if (!empty($tracks->soleAuthor)) {
             Conf::msg_error("This account can’t be deleted since it is sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ". You will be able to delete the account after deleting those papers or adding additional paper contacts.");
-        else if ($Acct->data("locked"))
+        } else if ($Acct->data("locked")) {
             Conf::msg_error("This account is locked and can’t be deleted.");
-        else {
+        } else {
             $Conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?", $Acct->contactId, $Acct->firstName, $Acct->lastName, $Acct->unaccentedName, $Acct->email);
             foreach (array("ContactInfo",
                            "PaperComment", "PaperConflict", "PaperReview",
                            "PaperReviewPreference", "PaperReviewRefused",
                            "PaperWatch", "ReviewRating", "TopicInterest")
-                     as $table)
+                     as $table) {
                 $Conf->qe_raw("delete from $table where contactId=$Acct->contactId");
+            }
             // delete twiddle tags
             $assigner = new AssignmentSet($Me, true);
             $assigner->parse("paper,tag\nall,{$Acct->contactId}~all#clear\n");
             $assigner->execute();
             // clear caches
-            if ($Acct->isPC || $Acct->privChair)
+            if ($Acct->isPC || $Acct->privChair) {
                 $Conf->invalidate_caches(["pc" => 1]);
+            }
             // done
             $Conf->confirmMsg("Permanently deleted account " . htmlspecialchars($Acct->email) . ".");
             $Me->log_activity_for($Acct, "Account deleted " . htmlspecialchars($Acct->email));
@@ -424,15 +445,17 @@ function echo_modes($hlbulk) {
         '<div class="papmode', ($hlbulk == 0 ? " active" : ""), '">',
         Ht::link($newProfile || $Me->email == $Acct->email ? "Your profile" : "Profile", $Me->conf->selfurl(null, ["u" => null])),
         '</div><div class="papmode', ($hlbulk == 1 ? " active" : ""), '">';
-    if ($newProfile)
+    if ($newProfile) {
         echo Ht::link("New account", "", ["class" => "ui tla"]);
-    else
+    } else {
         echo Ht::link("New account", hoturl("profile", "u=new"));
+    }
     echo '</div><div class="papmode', ($hlbulk == 2 ? " active" : ""), '">';
-    if ($newProfile)
+    if ($newProfile) {
         echo Ht::link("Bulk update", "#bulk", ["class" => "ui tla"]);
-    else
+    } else {
         echo Ht::link("Bulk update", hoturl("profile", "u=new#bulk"));
+    }
     echo '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
 }
 
@@ -548,12 +571,13 @@ if ($UserStatus->has_messages()) {
 
 echo '<div id="foldaccount" class="';
 if (isset($formcj->roles)
-    && (isset($formcj->roles->pc) || isset($formcj->roles->chair)))
+    && (isset($formcj->roles->pc) || isset($formcj->roles->chair))) {
     echo "fold1o fold2o";
-else if (isset($formcj->roles) && isset($formcj->roles->sysadmin))
+} else if (isset($formcj->roles) && isset($formcj->roles->sysadmin)) {
     echo "fold1c fold2o";
-else
+} else {
     echo "fold1c fold2c";
+}
 echo "\">\n";
 
 
@@ -597,8 +621,9 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $buttons[] = "";
     $buttons[] = [Ht::button("Delete user", $args), "(admin only)"];
 }
-if (!$newProfile && $Acct->contactId == $Me->contactId)
+if (!$newProfile && $Acct->contactId == $Me->contactId) {
     array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
+}
 
 echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
 

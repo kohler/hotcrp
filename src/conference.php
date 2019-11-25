@@ -192,10 +192,12 @@ class Conf {
 
     function __construct($options, $make_dsn) {
         // unpack dsn, connect to database, load current settings
-        if ($make_dsn && ($this->dsn = Dbl::make_dsn($options)))
+        if ($make_dsn && ($this->dsn = Dbl::make_dsn($options))) {
             list($this->dblink, $options["dbName"]) = Dbl::connect_dsn($this->dsn);
-        if (!isset($options["confid"]))
+        }
+        if (!isset($options["confid"])) {
             $options["confid"] = get($options, "dbName");
+        }
         $this->opt = $options;
         $this->dbname = $options["dbName"];
         $this->paper_opts = new PaperOptionList($this);
@@ -206,8 +208,9 @@ class Conf {
         if ($this->dblink) {
             Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|Conf::fetch|call_user_func)/";
             $this->load_settings();
-        } else
+        } else {
             $this->crosscheck_options();
+        }
     }
 
 
@@ -448,12 +451,14 @@ class Conf {
             && (!isset($this->opt["shortName"]) || $this->opt["shortName"] == "")) {
             $this->opt["shortNameDefaulted"] = true;
             $this->opt["longName"] = $this->opt["shortName"] = $confid;
-        } else if (!isset($this->opt["longName"]) || $this->opt["longName"] == "")
+        } else if (!isset($this->opt["longName"]) || $this->opt["longName"] == "") {
             $this->opt["longName"] = $this->opt["shortName"];
-        else if (!isset($this->opt["shortName"]) || $this->opt["shortName"] == "")
+        } else if (!isset($this->opt["shortName"]) || $this->opt["shortName"] == "") {
             $this->opt["shortName"] = $this->opt["longName"];
-        if (!isset($this->opt["downloadPrefix"]) || $this->opt["downloadPrefix"] == "")
+        }
+        if (!isset($this->opt["downloadPrefix"]) || $this->opt["downloadPrefix"] == "") {
             $this->opt["downloadPrefix"] = $confid . "-";
+        }
         $this->short_name = $this->opt["shortName"];
         $this->long_name = $this->opt["longName"];
 
@@ -1871,8 +1876,9 @@ class Conf {
             $acct = Contact::fetch($result, $this);
             Dbl::free($result);
             return $acct;
-        } else
+        } else {
             return null;
+        }
     }
 
     function contactdb_user_by_email($email) {
@@ -3842,12 +3848,14 @@ class Conf {
 
     function capability_manager($for = null) {
         if ($for && substr($for, 0, 1) === "U") {
-            if (($cdb = $this->contactdb()))
+            if (($cdb = $this->contactdb())) {
                 return new CapabilityManager($cdb, "U");
-            else
+            } else {
                 return null;
-        } else
+            }
+        } else {
             return new CapabilityManager($this->dblink, "");
+        }
     }
 
 

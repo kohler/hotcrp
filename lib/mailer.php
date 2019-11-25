@@ -27,24 +27,28 @@ class MailPreparation {
             && !$p->unique_preparation;
     }
     function merge($p) {
-        foreach ($p->to as $email)
+        foreach ($p->to as $email) {
             if (!in_array($email, $this->to))
                 $this->to[] = $email;
-        foreach ($p->contactIds as $cid)
+        }
+        foreach ($p->contactIds as $cid) {
             if (!in_array($cid, $this->contactIds))
                 $this->contactIds[] = $cid;
+        }
     }
     function send() {
-        if ($this->conf->call_hooks("send_mail", null, $this) === false)
+        if ($this->conf->call_hooks("send_mail", null, $this) === false) {
             return false;
+        }
 
         $headers = $this->headers;
         $eol = Mailer::eol();
 
         // create valid To: header
         $to = $this->to;
-        if (is_array($to))
+        if (is_array($to)) {
             $to = join(", ", $to);
+        }
         $to = MimeText::encode_email_header("To: ", $to);
         $headers["to"] = $to . $eol;
 
@@ -63,9 +67,9 @@ class MailPreparation {
             $f = popen($extra ? "$sendmail $extra" : $sendmail, "wb");
             fwrite($f, $htext . $eol . $this->body);
             $status = pclose($f);
-            if (pcntl_wifexitedwith($status, 0))
+            if (pcntl_wifexitedwith($status, 0)) {
                 return true;
-            else {
+            } else {
                 $this->conf->set_opt("internalMailer", false);
                 error_log("Mail " . $headers["to"] . " failed to send, falling back (status $status)");
             }
@@ -75,8 +79,9 @@ class MailPreparation {
             if (strpos($to, $eol) === false) {
                 unset($headers["to"]);
                 $to = substr($to, 4); // skip "To: "
-            } else
+            } else {
                 $to = "";
+            }
             unset($headers["subject"]);
             $htext = substr(join("", $headers), 0, -2);
             return mail($to, $this->subject, $this->body, $htext, $extra);
@@ -85,10 +90,11 @@ class MailPreparation {
                    && !preg_match('/\Aanonymous\d*\z/', $to)) {
             unset($headers["mime-version"], $headers["content-type"]);
             $text = join("", $headers) . $eol . $this->body;
-            if (PHP_SAPI != "cli")
+            if (PHP_SAPI != "cli") {
                 $this->conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");
-            else if (!$this->conf->opt("disablePrintEmail"))
+            } else if (!$this->conf->opt("disablePrintEmail")) {
                 fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
+            }
             return null;
         }
     }
@@ -127,25 +133,29 @@ class Mailer {
     function reset($recipient = null, $settings = array()) {
         $this->recipient = $recipient;
         foreach (array("width", "sensitivity", "reason", "adminupdate", "notes",
-                       "capability") as $k)
+                       "capability") as $k) {
             $this->$k = get($settings, $k);
-        if ($this->width === null)
+        }
+        if ($this->width === null) {
             $this->width = 75;
-        else if (!$this->width)
+        } else if (!$this->width) {
             $this->width = 10000000;
+        }
     }
 
     static function eol() {
         global $Conf;
         if (self::$eol === null) {
-            if (($x = $Conf->opt("postfixMailer", null)) === null)
+            if (($x = $Conf->opt("postfixMailer", null)) === null) {
                 $x = $Conf->opt("postfixEOL");
-            if (!$x)
+            }
+            if (!$x) {
                 self::$eol = "\r\n";
-            else if ($x === true || !is_string($x))
+            } else if ($x === true || !is_string($x)) {
                 self::$eol = PHP_EOL;
-            else
+            } else {
                 self::$eol = $x;
+            }
         }
         return self::$eol;
     }
@@ -153,51 +163,60 @@ class Mailer {
 
     function expand_user($contact, $out) {
         $r = Text::analyze_name($contact);
-        if (is_object($contact) && get_s($contact, "preferredEmail") != "")
+        if (is_object($contact) && get_s($contact, "preferredEmail") != "") {
             $r->email = $contact->preferredEmail;
+        }
 
         // maybe infer username
         if ($r->firstName === ""
             && $r->lastName === ""
             && is_object($contact)
             && (get_s($contact, "email") !== ""
-                || get_s($contact, "preferredEmail") !== ""))
+                || get_s($contact, "preferredEmail") !== "")) {
             $this->infer_user_name($r, $contact);
+        }
 
         $email = $r->email;
-        if ($email === "")
+        if ($email === "") {
             $email = "<none>";
-        if ($out === "EMAIL")
+        }
+        if ($out === "EMAIL") {
             return $email;
+        }
 
-        if ($out === "NAME" || $out === "CONTACT")
+        if ($out === "NAME" || $out === "CONTACT") {
             $t = $r->name;
-        else if ($out === "FIRST")
+        } else if ($out === "FIRST") {
             $t = $r->firstName;
-        else if ($out === "LAST")
+        } else if ($out === "LAST") {
             $t = $r->lastName;
-        else
+        } else {
             $t = "";
+        }
 
         if ($t !== ""
             && $this->expansionType === self::EXPAND_EMAIL
-            && preg_match('#[\000-\037()[\]<>@,;:\\".]#', $t))
+            && preg_match('#[\000-\037()[\]<>@,;:\\".]#', $t)) {
             $t = "\"" . addcslashes($t, '"\\') . "\"";
+        }
 
         if ($out === "CONTACT") {
-            if ($t === "")
+            if ($t === "") {
                 return $email;
-            else if ($email[0] === "<")
+            } else if ($email[0] === "<") {
                 return $t . " " . $email;
-            else
+            } else {
                 return $t . " <" . $email . ">";
+            }
         } else if ($out === "NAME") {
-            if ($t === "" && $this->expansionType !== self::EXPAND_EMAIL)
+            if ($t === "" && $this->expansionType !== self::EXPAND_EMAIL) {
                 return $email;
-            else
+            } else {
                 return $t;
-        } else
+            }
+        } else {
             return $t;
+        }
     }
 
     function infer_user_name($r, $contact) {
@@ -250,16 +269,17 @@ class Mailer {
     }
 
     static function kw_url($args, $isbool, $m) {
-        if (!$args)
+        if (!$args) {
             return $m->conf->opt("paperSite");
-        else {
+        } else {
             $a = preg_split('/\s*,\s*/', $args);
             foreach ($a as &$t) {
                 $t = $m->expand($t, "urlpart");
                 $t = preg_replace('/\&(?=\&|\z)/', "", $t);
             }
-            if (!isset($a[1]))
+            if (!isset($a[1])) {
                 $a[1] = "";
+            }
             for ($i = 2; isset($a[$i]); ++$i) {
                 if ($a[$i] !== "") {
                     if ($a[1] !== "")
@@ -352,19 +372,22 @@ class Mailer {
                         $ok = call_user_func([$this, substr($uf->expand_if, 1)], $uf);
                     else
                         $ok = call_user_func($uf->expand_if, $this, $uf);
-                } else
+                } else {
                     $ok = $uf->expand_if;
+                }
             }
 
-            if (!$ok)
+            if (!$ok) {
                 $x = null;
-            else if ($uf->callback[0] === "*")
+            } else if ($uf->callback[0] === "*") {
                 $x = call_user_func([$this, substr($uf->callback, 1)], $args, $isbool, $uf);
-            else
+            } else {
                 $x = call_user_func($uf->callback, $args, $isbool, $this, $uf);
+            }
 
-            if ($x !== null)
+            if ($x !== null) {
                 return $isbool ? $x : (string) $x;
+            }
         }
 
         if ($isbool)
@@ -377,20 +400,22 @@ class Mailer {
 
 
     private function _pushIf(&$ifstack, $text, $yes) {
-        if ($yes !== false && $yes !== true && $yes !== null)
+        if ($yes !== false && $yes !== true && $yes !== null) {
             $yes = (bool) $yes;
-        if ($yes === true || $yes === null)
+        }
+        if ($yes === true || $yes === null) {
             array_push($ifstack, $yes);
-        else
+        } else {
             array_push($ifstack, $text);
+        }
     }
 
     private function _popIf(&$ifstack, &$text) {
-        if (count($ifstack) == 0)
+        if (count($ifstack) == 0) {
             return null;
-        else if (($pop = array_pop($ifstack)) === true || $pop === null)
+        } else if (($pop = array_pop($ifstack)) === true || $pop === null) {
             return $pop;
-        else {
+        } else {
             $text = $pop;
             return false;
         }
@@ -402,10 +427,12 @@ class Mailer {
             $yes = $this->_popIf($ifstack, $text);
             if ($yes !== null)
                 $yes = !$yes;
-        } else
+        } else {
             $yes = true;
-        if ($yes && $cond)
+        }
+        if ($yes && $cond) {
             $yes = $this->expandvar("%" . substr($cond, 1, strlen($cond) - 2) . "%", true);
+        }
         $this->_pushIf($ifstack, $text, $yes);
         return $yes;
     }
