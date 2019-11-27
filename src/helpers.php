@@ -110,6 +110,9 @@ class JsonResult {
             $user->save_session("msgs", null);
             foreach ($msgs as $msg) {
                 list($text, $type) = $msg;
+                if ($type !== "merror" && $type !== "xmerror") {
+                    error_log(var_export($type, true) . " " . $text);
+                }
                 assert($type === "merror" || $type === "xmerror");
                 if (is_string($text)) {
                     $text = [$text];
