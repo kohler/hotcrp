@@ -13,7 +13,7 @@
         "callback": "User_API::clickthrough"
     },
     {
-        "name": "comment", "paper": true, "post": true,
+        "name": "comment", "paper": true, "get": true, "post": true,
         "callback": "Comment_API::run"
     },
     {

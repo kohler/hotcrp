@@ -22,6 +22,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function method() {
         return $this->____method;
     }
+    function is_get() {
+        return $this->____method === "GET";
+    }
+    function is_post() {
+        return $this->____method === "POST";
+    }
     function offsetExists($offset) {
         return property_exists($this, $offset);
     }
@@ -165,9 +171,6 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function set_annex($name, $x) {
         $this->____x[$name] = $x;
-    }
-    function is_post() {
-        return $this->____method === "POST";
     }
     function approve_post() {
         $this->____post_ok = true;

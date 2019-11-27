@@ -41,9 +41,10 @@ class CommentInfo {
         assert(($prow || $conf) && (!$prow || !$conf || $prow->conf === $conf));
         $this->conf = $prow ? $prow->conf : $conf;
         $this->prow = $prow;
-        if ($x)
+        if ($x) {
             foreach ($x as $k => $v)
                 $this->$k = $v;
+        }
         $this->commentId = (int) $this->commentId;
         $this->paperId = (int) $this->paperId;
         $this->commentType = (int) $this->commentType;
@@ -79,10 +80,12 @@ class CommentInfo {
                 $j = ["words" => $rrd->words];
                 $crow->commentRound = $rrd->number;
                 if ($Me->can_respond($prow, $crow)) {
-                    if (($m = $rrd->instructions($prow->conf)) !== false)
+                    if (($m = $rrd->instructions($prow->conf)) !== false) {
                         $j["instrux"] = $m;
-                    if ($rrd->done)
+                    }
+                    if ($rrd->done) {
                         $j["done"] = $rrd->done;
+                    }
                 }
                 $t[] = "papercomment.set_resp_round(" . json_encode($rrd->name) . "," . json_encode($j) . ")";
             }
@@ -258,9 +261,7 @@ class CommentInfo {
 
     function attachments() {
         if ($this->commentType & COMMENTTYPE_HASDOC) {
-            return array_map(function ($doc) {
-                return $doc->with_owner($this);
-            }, $this->prow->linked_documents($this->commentId, 0, 1024));
+            return $this->prow->linked_documents($this->commentId, 0, 1024, $this);
         } else {
             return [];
         }
@@ -405,10 +406,11 @@ class CommentInfo {
         if (!($this->commentType & COMMENTTYPE_RESPONSE)) {
             $ordinal = $this->unparse_ordinal();
             $x = "Comment" . ($ordinal ? " @$ordinal" : "");
-        } else if (($rname = $this->conf->resp_round_text($this->commentRound)))
+        } else if (($rname = $this->conf->resp_round_text($this->commentRound))) {
             $x = "$rname Response";
-        else
+        } else {
             $x = "Response";
+        }
         if ($contact->can_view_comment_identity($this->prow, $this)) {
             $x .= " by " . Text::user_text($this->commenter());
         } else if (($p = $this->unparse_commenter_pseudonym($contact))
@@ -424,12 +426,14 @@ class CommentInfo {
             $tagger = new Tagger($contact);
             $x .= prefix_word_wrap("* ", $tagger->unparse_hashed($tags), 2);
         }
-        if (!$no_title || $tags)
+        if (!$no_title || $tags) {
             $x .= "\n";
-        if ($this->commentOverflow)
+        }
+        if ($this->commentOverflow) {
             $x .= $this->commentOverflow;
-        else
+        } else {
             $x .= $this->comment;
+        }
         return rtrim($x) . "\n";
     }
 

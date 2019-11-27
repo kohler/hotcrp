@@ -781,22 +781,38 @@ class DocumentInfo implements JsonSerializable {
     }
 
     static function assign_unique_filenames($docs) {
-        $by_unique_filename = [];
-        foreach ($docs as $d)
-            $d->unique_filename = null;
-        foreach ($docs as $d)
-            if ($d->unique_filename === null) {
-                $d->unique_filename = $d->filename;
-                while (get($by_unique_filename, $d->unique_filename)) {
-                    if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $d->unique_filename, $m))
-                        $d->unique_filename = $m[1] . ($m[2] + 1) . $m[3];
-                    else if (preg_match('/\A(.*?)(\.\w+|)\z/', $d->unique_filename, $m) && $m[1] !== "")
-                        $d->unique_filename = $m[1] . " (1)" . $m[2];
-                    else
-                        $d->unique_filename .= " (1)";
-                }
-                $by_unique_filename[$d->unique_filename] = true;
+        if (empty($docs)) {
+            return;
+        } else if (count($docs) === 1) {
+            $docs[0]->unique_filename = $docs[0]->filename;
+            return;
+        }
+        $used = [];
+        foreach ($docs as $d) {
+            if (!in_array($d->filename, $used)) {
+                $d->unique_filename = $used[] = $d->filename;
+            } else {
+                $d->unique_filename = null;
             }
+        }
+        if (count($used) !== count($docs)) {
+            foreach ($docs as $d) {
+                if ($d->unique_filename === null) {
+                    $fn = $d->filename;
+                    while (in_array($fn, $used)) {
+                        if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $fn, $m)) {
+                            $fn = $m[1] . ($m[2] + 1) . $m[3];
+                        } else if (preg_match('/\A(.*?)(\.\w+|)\z/', $fn, $m) && $m[1] !== "") {
+                            $fn = $m[1] . " (1)" . $m[2];
+                        } else {
+                            $fn .= " (1)";
+                        }
+                    }
+                    $d->unique_filename = $fn;
+                    $used[] = $fn;
+                }
+            }
+        }
     }
 
     function url($filters = null, $flags = 0) {
@@ -945,11 +961,21 @@ class DocumentInfo implements JsonSerializable {
 
     function unparse_json() {
         $x = [];
-        foreach (["filename", "mimetype", "size"] as $k)
-            if ($this->$k)
-                $x[$k] = $this->$k;
-        if ($this->has_hash())
+        if ($this->filename) {
+            $x["filename"] = $this->filename;
+        }
+        if ($this->unique_filename && $this->unique_filename !== $this->filename) {
+            $x["unique_filename"] = $this->unique_filename;
+        }
+        if ($this->mimetype) {
+            $x["mimetype"] = $this->mimetype;
+        }
+        if ($this->size) {
+            $x["size"] = $this->size;
+        }
+        if ($this->has_hash()) {
             $x["hash"] = $this->text_hash();
+        }
         $x["siteurl"] = $this->url(null, Conf::HOTURL_SITE_RELATIVE | Conf::HOTURL_RAW);
         return (object) $x;
     }

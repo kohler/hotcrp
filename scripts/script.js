@@ -4285,11 +4285,12 @@ function render_edit_attachment(i, doc) {
 
 function render_attachment_link(hc, doc) {
     hc.push('<a href="' + text_to_html(siteurl + doc.siteurl) + '" class="q">', '</a>');
-    if (doc.mimetype === "application/pdf")
+    if (doc.mimetype === "application/pdf") {
         hc.push('<img src="' + assetsurl + 'images/pdf.png" alt="[PDF]" class="sdlimg">');
-    else
+    } else {
         hc.push('<img src="' + assetsurl + 'images/generic.png" alt="[Attachment]" class="sdlimg">');
-    hc.push(' ' + text_to_html(doc.filename || "Attachment"));
+    }
+    hc.push(' ' + text_to_html(doc.unique_filename || doc.filename || "Attachment"));
     if (doc.size != null) {
         hc.push(' <span class="dlsize">(', 'kB)</span>');
         if (doc.size > 921)

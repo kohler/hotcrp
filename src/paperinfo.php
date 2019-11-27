@@ -1324,13 +1324,13 @@ class PaperInfo {
         }
         return $this->_doclink_array;
     }
-    function linked_documents($linkid, $min, $max) {
+    function linked_documents($linkid, $min, $max, $owner = null) {
         $docs = [];
         foreach (get($this->doclink_array(), $linkid, []) as $lt => $docid) {
             if ($lt >= $min
                 && $lt < $max
                 && ($d = $this->document(-2, $docid))) {
-                $docs[] = $d;
+                $docs[] = $owner ? $d->with_owner($owner) : $d;
             }
         }
         if (!empty($docs)) {
