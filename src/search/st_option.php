@@ -193,7 +193,10 @@ class Option_SearchTerm extends SearchTerm {
         } else if (!$srch->user->can_view_option($row, $this->om->option)) {
             return false;
         } else {
-            return (object) ["type" => "option", "id" => $this->om->option->id, "compar" => $this->om->compar, "value" => $this->om->value];
+            return (object) [
+                "type" => "option", "id" => $this->om->option->id,
+                "compar" => $this->om->compar, "value" => $this->om->value
+            ];
         }
     }
 }

@@ -106,9 +106,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function as_array() {
         $d = [];
-        foreach (get_object_vars($this) as $k => $v)
+        foreach (get_object_vars($this) as $k => $v) {
             if (substr($k, 0, 4) !== "____")
                 $d[$k] = $v;
+        }
         return $d;
     }
     function as_object() {
@@ -116,9 +117,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function keys() {
         $d = [];
-        foreach (array_keys(get_object_vars($this)) as $k)
+        foreach (array_keys(get_object_vars($this)) as $k) {
             if (substr($k, 0, 4) !== "____")
                 $d[] = $k;
+        }
         return $d;
     }
     function contains($key) {
@@ -135,20 +137,23 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function file($name) {
         $f = null;
-        if (array_key_exists($name, $this->____files))
+        if (array_key_exists($name, $this->____files)) {
             $f = $this->____files[$name];
+        }
         return $f;
     }
     function file_filename($name) {
         $fn = false;
-        if (array_key_exists($name, $this->____files))
+        if (array_key_exists($name, $this->____files)) {
             $fn = $this->____files[$name]["name"];
+        }
         return $fn;
     }
     function file_contents($name) {
         $data = false;
-        if (array_key_exists($name, $this->____files))
+        if (array_key_exists($name, $this->____files)) {
             $data = @file_get_contents($this->____files[$name]["tmp_name"]);
+        }
         return $data;
     }
     function files() {
@@ -165,8 +170,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     function annex($name) {
         $x = null;
-        if (array_key_exists($name, $this->____x))
+        if (array_key_exists($name, $this->____x)) {
             $x = $this->____x[$name];
+        }
         return $x;
     }
     function set_annex($name, $x) {
