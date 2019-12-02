@@ -6,8 +6,8 @@ class PaperTable {
     public $conf;
     public $prow;
     public $user;
-    private $all_rrows;
-    private $viewable_rrows;
+    private $all_rrows = [];
+    private $viewable_rrows = [];
     private $crows;
     private $mycrows;
     private $can_view_reviews = false;
@@ -2467,15 +2467,13 @@ class PaperTable {
 
         $nvisible = 0;
         $myrr = null;
-        if ($this->all_rrows) {
-            foreach ($this->all_rrows as $rr) {
-                if ($this->user->can_view_review($prow, $rr)) {
-                    $nvisible++;
-                }
-                if ($rr->contactId == $this->user->contactId
-                    || (!$myrr && $this->user->is_my_review($rr))) {
-                    $myrr = $rr;
-                }
+        foreach ($this->all_rrows as $rr) {
+            if ($this->user->can_view_review($prow, $rr)) {
+                $nvisible++;
+            }
+            if ($rr->contactId == $this->user->contactId
+                || (!$myrr && $this->user->is_my_review($rr))) {
+                $myrr = $rr;
             }
         }
 
