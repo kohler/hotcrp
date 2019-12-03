@@ -2032,13 +2032,11 @@ class ReviewValues extends MessageSet {
             $qf[] = "reviewEditVersion=?";
             $qv[] = $this->req["version"] + 0;
         }
-        if ($diffinfo->nonempty()
-            && $this->conf->sversion >= 98) {
+        if ($diffinfo->nonempty()) {
             $qf[] = "reviewWordCount=?";
             $qv[] = $wc;
         }
         if (isset($this->req["reviewFormat"])
-            && $this->conf->sversion >= 104
             && $this->conf->opt("formatInfo")) {
             $fmt = null;
             foreach ($this->conf->opt("formatInfo") as $k => $f) {
