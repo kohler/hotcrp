@@ -106,7 +106,8 @@
     },
     {
         "name": "resetpassword/head", "position": 1000,
-        "render_callback": "*ResetPassword_Partial::render_reset_head"
+        "render_callback": "*ResetPassword_Partial::render_reset_head",
+        "htitle": "Reset password"
     },
     {
         "name": "resetpassword/message", "position": 2000,
@@ -118,6 +119,22 @@
     },
     {
         "name": "resetpassword/body", "position": 3000,
-        "render_callback": "*ResetPassword_Partial::render_reset_body"
+        "render_callback": "*ResetPassword_Partial::render_reset_body",
+        "page": "resetpassword"
+    },
+
+    {
+        "name": "forgotpassword/request", "position": 100,
+        "request_callback": "*ResetPassword_Partial::forgot_request"
+    },
+    {
+        "name": "forgotpassword/head", "position": 1000,
+        "render_callback": "*ResetPassword_Partial::render_forgot_head",
+        "htitle": "Forgot password"
+    },
+    {
+        "name": "forgotpassword/body", "position": 3000,
+        "render_callback": "*ResetPassword_Partial::render_reset_body",
+        "page": "forgotpassword"
     }
 ]

@@ -4402,7 +4402,7 @@ class Conf {
             return (object) ["name" => "index", "group" => "home"];
         } else if (in_array($page, ["doc", "paper", "search", "review", "assign", "autoassign", "bulkassign", "buzzer", "checkupdates", "profile", "conflictassign", "deadlines", "graph", "help", "log", "mail", "manualassign", "mergeaccounts", "offline", "reviewprefs", "scorechart", "settings", "users"])) {
             return (object) ["name" => $page, "require" => "$page.php"];
-        } else if ($page === "resetpassword") {
+        } else if (in_array($page, ["resetpassword", "forgotpassword"])) {
             return (object) ["name" => $page, "group" => $page];
         } else {
             return null;

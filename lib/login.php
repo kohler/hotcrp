@@ -141,7 +141,7 @@ class LoginHelper {
         if ($signinaction === "forgot" && $qreq->post_ok()) {
             $worked = $xuser->sendAccountInfo("forgot", true);
             if ($worked === "@resetpassword") {
-                $conf->msg("A password reset link has been emailed to you. When you receive that email, visit that link to create a new password.", "xconfirm");
+                $conf->msg("A password reset link has been emailed to you. When you receive that email, visit the link to create a new password.", "xconfirm");
             } else if ($worked) {
                 $conf->msg("Your password has been emailed to you. When you receive that email, return here to sign in.", "xconfirm");
                 $conf->log_for($xuser, null, "Password sent");

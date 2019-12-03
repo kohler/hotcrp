@@ -56,6 +56,7 @@ checkupdates.php
 conflictassign.php
 deadlines.php
 doc.php
+forgotpassword.php
 graph.php
 help.php
 index.php

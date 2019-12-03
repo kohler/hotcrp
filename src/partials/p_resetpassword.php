@@ -8,8 +8,24 @@ class ResetPassword_Partial {
     private $_reset_user;
 
     // Password reset
+    function forgot_request(Contact $user, Qrequest $qreq) {
+        if ($qreq->cancel && $qreq->post_ok()) {
+            Navigation::redirect("");
+        }
+        ensure_session();
+        $email = trim((string) $qreq->email);
+        if ($email !== "" && $qreq->go && $qreq->post_ok()) {
+            $url = LoginHelper::login($user->conf, $qreq, "forgot");
+            if ($url !== false) {
+                Navigation::redirect("");
+            }
+        }
+    }
     function reset_request(Contact $user, Qrequest $qreq) {
         global $Now;
+        if ($qreq->cancel && $qreq->post_ok()) {
+            Navigation::redirect("");
+        }
         ensure_session();
         $conf = $user->conf;
         if ($qreq->resetcap === null
@@ -59,17 +75,23 @@ class ResetPassword_Partial {
         if ($this->_reset_user
             && $qreq->go
             && $qreq->post_ok()) {
-            $p1 = trim((string) $qreq->password);
-            $p2 = trim((string) $qreq->password2);
+            $p1 = (string) $qreq->password;
+            $p2 = (string) $qreq->password2;
             if ($p1 === "") {
                 if ($p2 !== "" || $qreq->autopassword) {
-                    Ht::error_at("password", "You must enter a password.");
+                    Ht::error_at("password", "Password required.");
                 }
-            } else if ($p1 !== $p2) {
-                Ht::error_at("password", "The passwords you entered did not match.");
+            } else if (trim($p1) !== $p1) {
+                Ht::error_at("password", "Passwords cannot begin or end with spaces.");
+                Ht::error_at("password2");
+            } else if (strlen($p1) < 4) {
+                Ht::error_at("password", "Password too short.");
                 Ht::error_at("password2");
             } else if (!Contact::valid_password($p1)) {
                 Ht::error_at("password", "Invalid password.");
+                Ht::error_at("password2");
+            } else if ($p1 !== $p2) {
+                Ht::error_at("password", "The passwords you entered did not match.");
                 Ht::error_at("password2");
             } else {
                 $accthere = $conf->user_by_email($this->_reset_user->email)
@@ -90,8 +112,8 @@ class ResetPassword_Partial {
             Navigation::redirect($conf->hoturl("index"));
         }
     }
-    function render_reset_head(Contact $user, Qrequest $qreq, $gx) {
-        $user->conf->header("Reset password", "resetpassword", ["action_bar" => false]);
+    function render_reset_head(Contact $user, Qrequest $qreq, $gx, $gj) {
+        $user->conf->header($gj->htitle, "resetpassword", ["action_bar" => false]);
         $gx->push_render_cleanup("footer");
         if ($user->conf->external_login()) {
             $user->conf->errorMsg("Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
@@ -102,7 +124,7 @@ class ResetPassword_Partial {
         if (!isset($qreq->autopassword)
             || trim($qreq->autopassword) !== $qreq->autopassword
             || strlen($qreq->autopassword) < 16
-            || !preg_match("/\\A[-0-9A-Za-z@_+=]*\\z/", $qreq->autopassword)) {
+            || !preg_match('{\A[-0-9A-Za-z@_+=]*\z}', $qreq->autopassword)) {
             $qreq->autopassword = Contact::random_password();
         }
         echo Ht::hidden("resetcap", $this->_reset_cap),
@@ -125,25 +147,32 @@ class ResetPassword_Partial {
             Ht::render_messages_at("password2"),
             '</div>';
     }
-    private function _render_reset_other($user, $qreq) {
-        echo '<p class="mb-5">', Home_Partial::forgot_message($user->conf),
-            ' Or enter a password reset code if you have one.</p>',
-            '<div class="', Ht::control_class("resetcap", "f-i"), '">',
-            '<label for="resetcap">Email or password reset code</label>',
-            Ht::entry("resetcap", $qreq->resetcap, ["class" => "want-focus fullw", "tabindex" => 1, "size" => 36, "id" => "resetcap"]),
+    private function _render_reset_other($user, $qreq, $page) {
+        echo '<p class="mb-5">', Home_Partial::forgot_message($user->conf);
+        if ($page === "resetpassword") {
+            echo ' Or enter a password reset code if you have one.';
+            $k = "resetcap";
+        } else {
+            $k = "email";
+        }
+        echo '</p><div class="', Ht::control_class($k, "f-i"), '">',
+            '<label for="', $k, '">',
+            ($k === "email" ? "Email" : "Email or password reset code"),
+            '</label>',
+            Ht::entry($k, $qreq[$k], ["class" => "want-focus fullw", "tabindex" => 1, "size" => 36, "id" => $k]),
             Ht::render_messages_at("resetcap"),
             Ht::render_messages_at("email"),
             '</div>';
     }
-    function render_reset_body(Contact $user, Qrequest $qreq, $gx) {
+    function render_reset_body(Contact $user, Qrequest $qreq, $gx, $gj) {
         echo '<div class="homegrp" id="homereset">',
-            Ht::form($user->conf->hoturl("resetpassword"), ["class" => "compact-form"]),
+            Ht::form($user->conf->hoturl($gj->page), ["class" => "compact-form"]),
             Ht::hidden("post", post_value());
         if ($this->_reset_user) {
             $this->_render_reset_success($user, $qreq);
-            $k = "btn-success";
+            $k = "btn-danger";
         } else {
-            $this->_render_reset_other($user, $qreq);
+            $this->_render_reset_other($user, $qreq, $gj->page);
             $k = "btn-primary";
         }
         echo '<div class="popup-actions">',
@@ -152,5 +181,14 @@ class ResetPassword_Partial {
             '</div>';
         echo '</form></div>';
         Ht::stash_script("focus_within(\$(\"#homereset\"));window.scroll(0,0)");
+    }
+
+    function render_forgot_head(Contact $user, Qrequest $qreq, $gx) {
+        $user->conf->header("Forgot password", "resetpassword", ["action_bar" => false]);
+        $gx->push_render_cleanup("footer");
+        if ($user->conf->external_login()) {
+            $user->conf->errorMsg("Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
+            return false;
+        }
     }
 }

@@ -267,9 +267,9 @@ class Home_Partial {
         $this->_render_signin_email($conf, $email_value, $focus_email);
         echo '<div class="', Ht::control_class("password", "f-i"), '">';
         if (!$is_external_login) {
-            echo '<div class="float-right"><a href="?signin=1&amp;action=forgot" class="n x small ui js-forgot-password" data-message="',
-                htmlspecialchars(self::forgot_message($conf)),
-                '">Forgot your password?</a></div>';
+            echo '<div class="float-right"><a href="',
+                $conf->hoturl("forgotpassword"),
+                '" class="n x small uix js-forgot-password">Forgot your password?</a></div>';
         }
         echo Ht::label("Password", "signin_password"),
             Ht::password("password", $password_value, [

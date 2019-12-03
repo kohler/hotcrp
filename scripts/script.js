@@ -7383,17 +7383,10 @@ handle_ui.on("js-signin", function (event) {
 });
 
 handle_ui.on("js-forgot-password", function (event) {
-    var hc = popup_skeleton({action: hoturl("index", {signin: 1, action: "forgot"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
-    hc.push('<h2>Reset password</h2>');
-    if (this.hasAttribute("data-message")) {
-        hc.push('<p>' + this.getAttribute("data-message") + '</p>');
+    var e = this.closest("form");
+    if (e && e.email) {
+        this.href = hoturl_add(this.href, "email=" + urlencode(e.email.value));
     }
-    hc.push('<div class="f-i"><label for="forgotpassword_email">Email</label>', '</div>');
-    hc.push_pop('<input type="text" name="email" size="36" class="fullw" autocomplete="username" id="forgotpassword_email">');
-    hc.push_actions(['<button type="submit" class="btn-primary">Reset password</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    var $d = hc.show();
-    transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
 });
 
 handle_ui.on("js-create-account", function (event) {
