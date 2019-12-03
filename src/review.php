@@ -186,18 +186,21 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return self::unparse_visibility_value($this->view_score);
     }
 
+    function value_empty($value) {
+        return $value === null
+            || $value === ""
+            || ($this->has_options && (int) $value === 0);
+    }
+
     function is_round_visible(ReviewInfo $rrow = null) {
         if (!$this->round_mask) {
             return true;
+        } else {
+            // NB missing $rrow is only possible for PC reviews
+            $round = $rrow ? $rrow->reviewRound : $this->conf->assignment_round(false);
+            return $round === null
+                || ($this->round_mask & (1 << $round));
         }
-        // NB missing $rrow is only possible for PC reviews
-        $round = $rrow ? $rrow->reviewRound : $this->conf->assignment_round(false);
-        return $round === null
-            || ($this->round_mask & (1 << $round))
-            || ($rrow
-                && ($fid = $this->id)
-                && isset($rrow->$fid)
-                && ($this->has_options ? (int) $rrow->$fid !== 0 : $rrow->$fid !== ""));
     }
 
     function include_word_count() {
@@ -363,30 +366,10 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return $retstr;
     }
 
-    function parse_is_empty($text) {
-        return $text === ""
-            || ($this->has_options
-                && ($text === "0"
-                    || $text[0] === "("
-                    || strcasecmp($text, "No entry") === 0));
-    }
-
-    function parse_is_explicit_empty($text) {
-        return $this->has_options
-            && ($text === "0" || strcasecmp($text, "No entry") === 0);
-    }
-
-    function parse_value($text, $strict) {
-        if (!$strict
-            && strlen($text) > 1
-            && preg_match('/\A\s*([0-9]+|[A-Z])(?:\W|\z)/', $text, $m)) {
-            $text = $m[1];
-        }
-        if (!$strict && ctype_digit($text)) {
-            $text = intval($text);
-        }
-        if (!$text || !$this->has_options || !isset($this->options[$text])) {
-            return null;
+    function parse_option_value($text) {
+        assert($this->has_options);
+        if (!$text || !isset($this->options[$text])) {
+            return false;
         } else if ($this->option_letter) {
             return $this->option_letter - ord($text);
         } else {
@@ -394,8 +377,33 @@ class ReviewField implements Abbreviator, JsonSerializable {
         }
     }
 
-    function normalize_fvalue($fval) {
-        if ($this->parse_value($fval, true)) {
+    function parse_value($text) {
+        if ($this->has_options) {
+            $text = trim($text);
+            if ($text === ""
+                || $text === "0"
+                || $text[0] === "("
+                || strcasecmp($text, "No entry") === 0) {
+                return 0;
+            } else {
+                return $this->parse_option_value($text);
+            }
+        } else {
+            $text = rtrim($text);
+            if ($text !== "") {
+                $text .= "\n";
+            }
+            return $text;
+        }
+    }
+
+    function parse_is_explicit_empty($text) {
+        return $this->has_options
+            && ($text === "0" || strcasecmp($text, "No entry") === 0);
+    }
+
+    function normalize_option_value($fval) {
+        if ($this->parse_option_value($fval)) {
             return $this->option_letter ? $fval : (int) $fval;
         } else {
             return 0;
@@ -604,7 +612,7 @@ class ReviewForm implements JsonSerializable {
                 $fval = $rvalues->req[$fid];
             }
             if ($f->has_options) {
-                $rval = $f->normalize_fvalue($rval);
+                $rval = $f->normalize_option_value($rval);
             }
 
             echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="',
@@ -635,8 +643,8 @@ class ReviewForm implements JsonSerializable {
             if ($f->has_options) {
                 // Keys to $f->options are string if option_letter, else int.
                 // Need to match exactly.
-                $fval = $f->normalize_fvalue($fval);
-                $rval = $f->normalize_fvalue($rval);
+                $fval = $f->normalize_option_value($fval);
+                $rval = $f->normalize_option_value($rval);
                 foreach ($f->options as $num => $what) {
                     echo '<label class="checki"><span class="checkc">',
                         $f->unparse_web_control($num, $fval, $rval),
@@ -662,7 +670,7 @@ class ReviewForm implements JsonSerializable {
         foreach ($this->forder as $fid => $f) {
             if (isset($rrow->$fid)
                 && (!$f->round_mask || $f->is_round_visible($rrow))
-                && ($f->has_options ? (int) $rrow->$fid !== 0 : $rrow->$fid !== ""))
+                && !$f->value_empty($rrow->$fid))
                 $view_score = max($view_score, $f->view_score);
         }
         return $view_score;
@@ -1772,24 +1780,11 @@ class ReviewValues extends MessageSet {
         if ($f->has_options) {
             $oldval = (int) $oldval;
         }
-        $newval = $oldval;
         if (isset($this->req[$fid])) {
-            $newval = $this->req[$fid];
-            if ($f->has_options) {
-                $newval = trim($newval);
-                if ($f->parse_is_empty($newval)) {
-                    $newval = 0;
-                } else {
-                    $newval = $f->parse_value($newval, false) ? : false;
-                }
-            } else {
-                $newval = rtrim($newval);
-                if ($newval !== "") {
-                    $newval .= "\n";
-                }
-            }
+            return [$oldval, $f->parse_value($this->req[$fid])];
+        } else {
+            return [$oldval, $oldval];
         }
-        return [$oldval, $newval];
     }
 
     private function fvalue_nonempty(ReviewField $f, $fval) {
@@ -1822,13 +1817,16 @@ class ReviewValues extends MessageSet {
                     && ($f->has_options || cleannl($old_fval) !== cleannl($fval))) {
                     $anydiff = true;
                 }
-                if ($f->has_options && $fval === 0 && !$f->allow_empty) {
-                    if ($f->view_score >= VIEWSCORE_PC) {
-                        $missingfields[] = $f;
-                        $unready = $unready || $submit;
-                    }
-                } else if ($this->fvalue_nonempty($f, $fval)) {
+                if (!$f->value_empty($fval)
+                    || ($fval === 0
+                        && isset($this->req[$f->id])
+                        && $f->parse_is_explicit_empty($this->req[$f->id]))) {
                     $anynonempty = true;
+                } else if ($f->has_options
+                           && !$f->allow_empty
+                           && $f->view_score >= VIEWSCORE_PC) {
+                    $missingfields[] = $f;
+                    $unready = $unready || $submit;
                 }
             }
         }

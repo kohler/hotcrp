@@ -371,7 +371,7 @@ class ConstantFexpr extends Fexpr {
             $this->x = 89 - ord($letter);
         } else if ($format instanceof ReviewField
                    && $letter
-                   && ($x = $format->parse_value($letter, true))) {
+                   && ($x = $format->parse_option_value($letter))) {
             $this->x = $x;
         } else if ($format === self::FROUND
                    && ($round = $conf->round_number($this->x, false)) !== false) {
