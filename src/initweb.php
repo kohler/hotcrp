@@ -53,6 +53,20 @@ if ($Me === false) {
 
 
 // Initialize user
+function initialize_user_redirect($nav, $uindex, $nusers) {
+    if ($nav->page === "api") {
+        json_exit(["ok" => false, "error" => "You have been signed out."]);
+    } else if ($_SERVER["REQUEST_METHOD"] === "GET") {
+        $page = $nusers > 0 ? "u/$uindex/" : "";
+        if ($nav->page !== "index" || $nav->path !== "") {
+            $page .= $nav->page . $nav->php_suffix . $nav->path;
+        }
+        Navigation::redirect_base($page . $nav->query);
+    } else {
+        Conf::msg_error("You have been signed out from this account.");
+    }
+}
+
 function initialize_user() {
     global $Conf, $Me, $Now, $Qreq;
     $nav = Navigation::get();
@@ -94,32 +108,28 @@ function initialize_user() {
 
     // determine user
     $trueemail = isset($_SESSION["u"]) ? $_SESSION["u"] : null;
-    if (isset($_SESSION["us"])) {
-        $uindex = false;
-        if ($nav->shifted_path !== ""
-            && substr($nav->shifted_path, 0, 2) === "u/") {
-            $uindex = (int) substr($nav->shifted_path, 2);
-        } else if ($nav->shifted_path === ""
-                   && isset($_GET["i"])
-                   && $_SERVER["REQUEST_METHOD"] === "GET") {
+    $numusers = isset($_SESSION["us"]) ? count($_SESSION["us"]) : ($trueemail ? 1 : 0);
+
+    $uindex = false;
+    if ($nav->shifted_path === "") {
+        if (isset($_GET["i"]) && $_SERVER["REQUEST_METHOD"] === "GET") {
             $uindex = Contact::session_user_index($_GET["i"]);
-        }
-        if ($uindex !== false
-            && $uindex >= 0
-            && $uindex < count($_SESSION["us"])) {
-            $trueemail = $_SESSION["us"][$uindex];
-        } else {
-            $uindex = (int) Contact::session_user_index($trueemail);
-        }
-        if ($nav->shifted_path === ""
-            && $_SERVER["REQUEST_METHOD"] === "GET") {
-            $page = "u/" . $uindex . "/";
-            if ($nav->page !== "index" || $nav->path !== "") {
-                $page .= $nav->page . $nav->php_suffix . $nav->path;
+            if ($uindex === false) {
+                initialize_user_redirect($nav, 0, $numusers);
             }
-            Navigation::redirect_base($page . $nav->query);
+        } else if ($numusers > 1 && $_SERVER["REQUEST_METHOD"] === "GET") {
+            initialize_user_redirect($nav, 0, $numusers);
+        }
+    } else if (substr($nav->shifted_path, 0, 2) === "u/") {
+        $uindex = (int) substr($nav->shifted_path, 2);
+        if ($uindex < 0 || $uindex >= $numusers) {
+            initialize_user_redirect($nav, 0, $numusers);
         }
     }
+    if ($uindex > 0) {
+        $trueemail = $_SESSION["us"][$uindex];
+    }
+
     if (isset($_GET["i"])
         && $_SERVER["REQUEST_METHOD"] === "GET"
         && $trueemail
