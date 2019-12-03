@@ -2917,8 +2917,9 @@ class Contact {
         if ($rights->allow_pc) {
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
                 $s = $this->conf->round_setting("pc_seeblindrev", $round);
-                if ($s >= 0)
+                if ($s >= 0) {
                     return $s ? 0 : Conf::PCSEEREV_YES;
+                }
             }
         } else {
             if ($this->conf->round_setting("extrev_view", $round) == 2)
@@ -2981,39 +2982,41 @@ class Contact {
              && !$rights->allow_pc
              && $rights->review_status == 0)
             || ($rights->allow_pc
-                && !$this->conf->check_tracks($prow, $this, Track::VIEWREV)))
+                && !$this->conf->check_tracks($prow, $this, Track::VIEWREV))) {
             $whyNot["permission"] = "view_review";
-        else if ($prow->timeWithdrawn > 0)
+        } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = 1;
-        else if ($prow->timeSubmitted <= 0)
+        } else if ($prow->timeSubmitted <= 0) {
             $whyNot["notSubmitted"] = 1;
-        else if ($rights->act_author_view
-                 && $this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
-                 && $this->has_outstanding_review()
-                 && $this->has_review())
+        } else if ($rights->act_author_view
+                   && $this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
+                   && $this->has_outstanding_review()
+                   && $this->has_review()) {
             $whyNot["reviewsOutstanding"] = 1;
-        else if ($rights->act_author_view
-                 && !$rrowSubmitted)
+        } else if ($rights->act_author_view
+                   && !$rrowSubmitted) {
             $whyNot["permission"] = "view_review";
-        else if ($rights->act_author_view)
+        } else if ($rights->act_author_view) {
             $whyNot["deadline"] = "au_seerev";
-        else if ($rights->view_conflict_type)
+        } else if ($rights->view_conflict_type) {
             $whyNot["conflict"] = 1;
-        else if (!$rights->allow_pc
-                 && $prow->review_submitted($this))
+        } else if (!$rights->allow_pc
+                   && $prow->review_submitted($this)) {
             $whyNot["externalReviewer"] = 1;
-        else if (!$rrowSubmitted)
+        } else if (!$rrowSubmitted) {
             $whyNot["reviewNotSubmitted"] = 1;
-        else if ($rights->allow_pc
-                 && $this->seerev_setting($prow, $rrow, $rights) == Conf::PCSEEREV_UNLESSANYINCOMPLETE
-                 && $this->has_outstanding_review())
+        } else if ($rights->allow_pc
+                   && $this->seerev_setting($prow, $rrow, $rights) == Conf::PCSEEREV_UNLESSANYINCOMPLETE
+                   && $this->has_outstanding_review()) {
             $whyNot["reviewsOutstanding"] = 1;
-        else if (!$this->conf->time_review_open())
+        } else if (!$this->conf->time_review_open()) {
             $whyNot["deadline"] = "rev_open";
-        else
+        } else {
             $whyNot["reviewNotComplete"] = 1;
-        if ($rights->allow_administer)
+        }
+        if ($rights->allow_administer) {
             $whyNot["forceShow"] = 1;
+        }
         return $whyNot;
     }
 
@@ -3578,20 +3581,21 @@ class Contact {
         // So returning -3 means all scores are visible.
         // Deadlines are not considered.
         $rights = $this->rights($prow);
-        if ($rights->can_administer)
+        if ($rights->can_administer) {
             return VIEWSCORE_ADMINONLY - 1;
-        else if ($rrow ? $this->is_owned_review($rrow) : $rights->allow_review)
+        } else if ($rrow ? $this->is_owned_review($rrow) : $rights->allow_review) {
             return VIEWSCORE_REVIEWERONLY - 1;
-        else if (!$this->can_view_review($prow, $rrow))
+        } else if (!$this->can_view_review($prow, $rrow)) {
             return VIEWSCORE_EMPTYBOUND;
-        else if ($rights->act_author_view
-                 && $prow->outcome
-                 && $rights->can_view_decision)
+        } else if ($rights->act_author_view
+                   && $prow->outcome
+                   && $rights->can_view_decision) {
             return VIEWSCORE_AUTHORDEC - 1;
-        else if ($rights->act_author_view)
+        } else if ($rights->act_author_view) {
             return VIEWSCORE_AUTHOR - 1;
-        else
+        } else {
             return VIEWSCORE_PC - 1;
+        }
     }
 
     function permissive_view_score_bound($as_author = false) {

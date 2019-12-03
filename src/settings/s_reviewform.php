@@ -26,16 +26,18 @@ class ReviewForm_SettingParser extends SettingParser {
                     $onum = $letters ? ord($m[1]) : intval($m[1]);
                     $lowonum = min($lowonum, $onum);
                     $opts[$onum] = $m[2];
-                } else if (preg_match('/^(?:0\.\s*)?No entry$/i', $line))
+                } else if (preg_match('/^(?:0\.\s*)?No entry$/i', $line)) {
                     $allow_empty = true;
-                else
+                } else {
                     return false;
+                }
             }
         }
 
         // numeric options must start from 1
-        if (!$letters && count($opts) > 0 && $lowonum != 1)
+        if (!$letters && count($opts) > 0 && $lowonum != 1) {
             return false;
+        }
 
         $text = "";
         $seqopts = array();
@@ -51,8 +53,9 @@ class ReviewForm_SettingParser extends SettingParser {
             $fj->option_letter = chr($lowonum);
         }
         $fj->options = array_values($seqopts);
-        if ($allow_empty)
+        if ($allow_empty) {
             $fj->allow_empty = true;
+        }
         return true;
     }
 
@@ -103,10 +106,11 @@ class ReviewForm_SettingParser extends SettingParser {
                 $sv->error_at("description_$fid", htmlspecialchars($sn) . " description: " . $err);
         }
 
-        if ($pos > 0)
+        if ($pos > 0) {
             $fj->position = $pos;
-        else
+        } else {
             unset($fj->position);
+        }
 
         if ($f->has_options) {
             $ok = true;
@@ -114,15 +118,17 @@ class ReviewForm_SettingParser extends SettingParser {
                 $ok = $this->check_options($sv, $fid, $fj);
             if ((!$ok || count($fj->options) < 2) && $pos > 0) {
                 $sv->error_at("options_$fid", htmlspecialchars($sn) . ": Invalid choices.");
-                if ($this->option_error)
+                if ($this->option_error) {
                     $sv->error_at(null, $this->option_error);
+                }
                 $this->option_error = false;
             }
             if ($sv->has_reqv("option_class_prefix_$fid")) {
                 $prefixes = ["sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr"];
                 $pindex = array_search($sv->reqv("option_class_prefix_$fid"), $prefixes) ? : 0;
-                if ($sv->reqv("option_class_prefix_flipped_$fid"))
+                if ($sv->reqv("option_class_prefix_flipped_$fid")) {
                     $pindex ^= 1;
+                }
                 $fj->option_class_prefix = $prefixes[$pindex];
             }
         }
@@ -130,10 +136,11 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($sv->has_reqv("round_list_$fid")) {
             $fj->round_mask = 0;
             foreach (explode(" ", trim($sv->reqv("round_list_$fid"))) as $round_name) {
-                if (strcasecmp($round_name, "all") === 0)
+                if (strcasecmp($round_name, "all") === 0) {
                     $fj->round_mask = 0;
-                else if ($round_name !== "")
+                } else if ($round_name !== "") {
                     $fj->round_mask |= 1 << (int) $sv->conf->round_number($round_name, false);
+                }
             }
         }
     }
@@ -214,29 +221,34 @@ class ReviewForm_SettingParser extends SettingParser {
                     $clear_tfields[] = $f;
             }
         }
-        if (!$clear_sfields && !$clear_tfields)
+        if (!$clear_sfields && !$clear_tfields) {
             return;
+        }
 
         // clear fields from json storage
         $clearf = Dbl::make_multi_qe_stager($conf->dblink);
         $result = $conf->qe("select * from PaperReview where sfields is not null or tfields is not null");
         while (($rrow = ReviewInfo::fetch($result, $conf))) {
             $cleared = false;
-            foreach ($clear_sfields as $f)
+            foreach ($clear_sfields as $f) {
                 if (isset($rrow->{$f->id})) {
                     unset($rrow->{$f->id}, $rrow->{$f->short_id});
                     $cleared = true;
                 }
-            if ($cleared)
+            }
+            if ($cleared) {
                 $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId]);
+            }
             $cleared = false;
-            foreach ($clear_tfields as $f)
+            foreach ($clear_tfields as $f) {
                 if (isset($rrow->{$f->id})) {
                     unset($rrow->{$f->id}, $rrow->{$f->short_id});
                     $cleared = true;
                 }
-            if ($cleared)
+            }
+            if ($cleared) {
                 $clearf("update PaperReview set tfields=? where paperId=? and reviewId=?", [$rrow->unparse_tfields(), $rrow->paperId, $rrow->reviewId]);
+            }
         }
         $clearf(null);
     }
@@ -252,8 +264,9 @@ class ReviewForm_SettingParser extends SettingParser {
                 if ($result && $result->affected_rows > 0)
                     $updates[$f->name] = true;
             }
-            if ($f->json_storage)
+            if ($f->json_storage) {
                 $clear_sfields[] = $f;
+            }
         }
 
         if ($clear_sfields) {
@@ -262,13 +275,15 @@ class ReviewForm_SettingParser extends SettingParser {
             $result = $conf->qe("select * from PaperReview where sfields is not null");
             while (($rrow = ReviewInfo::fetch($result, $conf))) {
                 $cleared = false;
-                foreach ($clear_sfields as $f)
+                foreach ($clear_sfields as $f) {
                     if (isset($rrow->{$f->id}) && $rrow->{$f->id} > count($f->options)) {
                         unset($rrow->{$f->id}, $rrow->{$f->short_id});
                         $cleared = $updates[$f->name] = true;
                     }
-                if ($cleared)
+                }
+                if ($cleared) {
                     $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId]);
+                }
             }
             $clearf(null);
         }
@@ -278,8 +293,9 @@ class ReviewForm_SettingParser extends SettingParser {
 
     function save(SettingValues $sv, Si $si) {
         global $Now;
-        if (!$sv->update("review_form", json_encode_db($this->nrfj)))
+        if (!$sv->update("review_form", json_encode_db($this->nrfj))) {
             return;
+        }
         $oform = $sv->conf->review_form();
         $nform = new ReviewForm($this->nrfj, $sv->conf);
         $clear_fields = $clear_options = [];
@@ -293,11 +309,15 @@ class ReviewForm_SettingParser extends SettingParser {
                        && count($nf->options) < count($of->options)) {
                 $clear_options[] = $nf;
             }
-            if ($of && $of->include_word_count() != $nf->include_word_count()) {
+            if ($of
+                && $of->include_word_count() != $nf->include_word_count()) {
                 $reset_wordcount = true;
             }
-            if ($of && $of->displayed && $of->view_score < VIEWSCORE_AUTHORDEC
-                && $nf->displayed && $nf->view_score >= VIEWSCORE_AUTHORDEC) {
+            if ($of
+                && $of->displayed
+                && $nf->displayed
+                && $of->view_score < VIEWSCORE_AUTHORDEC
+                && $nf->view_score >= VIEWSCORE_AUTHORDEC) {
                 $assign_ordinal = true;
             }
             foreach (self::$setting_prefixes as $fx) {
@@ -306,8 +326,9 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         $sv->conf->invalidate_caches(["rf" => true]);
         // reset existing review values
-        if (!empty($clear_fields))
+        if (!empty($clear_fields)) {
             $this->clear_existing_fields($clear_fields, $sv->conf);
+        }
         // ensure no review has a nonexisting option
         if (!empty($clear_options)) {
             $updates = $this->clear_nonexisting_options($clear_options, $sv->conf);
@@ -316,15 +337,13 @@ class ReviewForm_SettingParser extends SettingParser {
                 $sv->warning_at(null, "Your changes invalidated some existing review scores. The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $updates) . ".");
             }
         }
-        // reset all word counts if author visibility changed
-        if ($reset_wordcount)
-            $sv->conf->qe("update PaperReview set reviewWordCount=null");
         // assign review ordinals if necessary
         if ($assign_ordinal) {
             $rrows = [];
             $result = $sv->conf->qe("select * from PaperReview where reviewOrdinal=0 and reviewSubmitted>0");
-            while (($rrow = ReviewInfo::fetch($result, $sv->conf)))
+            while (($rrow = ReviewInfo::fetch($result, $sv->conf))) {
                 $rrows[] = $rrow;
+            }
             Dbl::free($result);
             $locked = false;
             foreach ($rrows as $rrow) {
@@ -334,12 +353,18 @@ class ReviewForm_SettingParser extends SettingParser {
                         $locked = true;
                     }
                     $max_ordinal = $sv->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $rrow->paperId);
-                    if ($max_ordinal !== null)
+                    if ($max_ordinal !== null) {
                         $sv->conf->qe("update PaperReview set reviewOrdinal=?, timeDisplayed=? where paperId=? and reviewId=?", $max_ordinal + 1, $Now, $rrow->paperId, $rrow->reviewId);
+                    }
                 }
             }
-            if ($locked)
+            if ($locked) {
                 $sv->conf->qe("unlock tables");
+            }
+        }
+        // reset all word counts if author visibility changed
+        if ($reset_wordcount) {
+            $sv->conf->qe("update PaperReview set reviewWordCount=null");
         }
     }
 }

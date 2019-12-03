@@ -102,9 +102,10 @@ class ReviewInfo {
             assert($this->$k !== null, "null $k");
             $this->$k = (int) $this->$k;
         }
-        foreach (["reviewModified", "reviewSubmitted", "reviewAuthorSeen"] as $k)
+        foreach (["reviewModified", "reviewSubmitted", "reviewAuthorSeen"] as $k) {
             if (isset($this->$k))
                 $this->$k = (int) $this->$k;
+        }
         if (isset($this->tfields) && ($x = json_decode($this->tfields, true))) {
             foreach ($x as $k => $v)
                 $this->$k = $v;
@@ -121,15 +122,17 @@ class ReviewInfo {
     }
     static function fetch($result, Conf $conf) {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
-        if ($rrow)
+        if ($rrow) {
             $rrow->merge($conf);
+        }
         return $rrow;
     }
     static function review_signature_sql(Conf $conf, $scores = null) {
         $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit";
-        foreach ($scores ? : [] as $fid)
+        foreach ($scores ? : [] as $fid) {
             if (($f = $conf->review_field($fid)) && $f->main_storage)
                 $t .= ", ' " . $f->short_id . "=', " . $f->id;
+        }
         return "group_concat($t order by r.reviewId)";
     }
     static function make_signature(PaperInfo $prow, $signature) {
@@ -231,22 +234,25 @@ class ReviewInfo {
             $n = intval(substr($id, 1), 10);
             $json_storage = $sversion >= 174 ? $id : null;
             if ($id[0] === "t") {
-                if (isset(self::$new_text_fields[$n]) && $sversion < 175)
+                if ($sversion < 175 && isset(self::$new_text_fields[$n])) {
                     return new ReviewFieldInfo($id, $id, false, self::$new_text_fields[$n], $json_storage);
-                else if ($json_storage)
+                } else if ($json_storage) {
                     return new ReviewFieldInfo($id, $id, false, null, $json_storage);
-                else
+                } else {
                     return false;
+                }
             } else if ($id[0] === "s") {
                 if (isset(self::$new_score_fields[$n])) {
                     $fid = self::$new_score_fields[$n];
                     return new ReviewFieldInfo($fid, $id, true, $fid, null);
-                } else if ($json_storage)
+                } else if ($json_storage) {
                     return new ReviewFieldInfo($id, $id, true, null, $json_storage);
-                else
+                } else {
                     return false;
-            } else
+                }
+            } else {
                 return false;
+            }
         } else if (isset(self::$text_field_map[$id])) {
             $short_id = self::$text_field_map[$id];
             $main_storage = $sversion < 175 ? $id : null;
@@ -255,57 +261,63 @@ class ReviewInfo {
         } else if (isset(self::$score_field_map[$id])) {
             $short_id = self::$score_field_map[$id];
             return new ReviewFieldInfo($id, $short_id, true, $id, null);
-        } else
+        } else {
             return false;
+        }
     }
 
     function field_match_pregexes($reg, $field) {
         $data = $this->$field;
         $field_deaccent = $field . "_deaccent";
         if (!isset($this->$field_deaccent)) {
-            if (preg_match('/[\x80-\xFF]/', $data))
+            if (preg_match('/[\x80-\xFF]/', $data)) {
                 $this->$field_deaccent = UnicodeHelper::deaccent($data);
-            else
+            } else {
                 $this->$field_deaccent = false;
+            }
         }
         return Text::match_pregexes($reg, $data, $this->$field_deaccent);
     }
 
     function unparse_sfields() {
         $data = null;
-        foreach (get_object_vars($this) as $k => $v)
+        foreach (get_object_vars($this) as $k => $v) {
             if (strlen($k) === 3
                 && $k[0] === "s"
                 && (int) $v !== 0
                 && ($n = cvtint(substr($k, 1))) >= self::MIN_SFIELD)
                 $data[$k] = (int) $v;
-        if ($data === null)
-            return null;
-        return json_encode_db($data);
+        }
+        return $data === null ? null : json_encode_db($data);
     }
     function unparse_tfields() {
         global $Conf;
         $data = null;
-        foreach (get_object_vars($this) as $k => $v)
+        foreach (get_object_vars($this) as $k => $v) {
             if (strlen($k) === 3
                 && $k[0] === "t"
                 && $v !== null
                 && $v !== "")
                 $data[$k] = $v;
-        if ($data === null)
+        }
+        if ($data === null) {
             return null;
+        }
         $json = json_encode_db($data);
-        if ($json === null)
+        if ($json === null) {
             error_log(($Conf ? "{$Conf->dbname}: " : "") . "review #{$this->paperId}/{$this->reviewId}: text fields cannot be converted to JSON");
+        }
         return $json;
     }
 
     static function compare_id($a, $b) {
-        if ($a->paperId != $b->paperId)
+        if ($a->paperId != $b->paperId) {
             return (int) $a->paperId < (int) $b->paperId ? -1 : 1;
-        if ($a->reviewId != $b->reviewId)
+        } else if ($a->reviewId != $b->reviewId) {
             return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
-        return 0;
+        } else {
+            return 0;
+        }
     }
 
 
@@ -324,17 +336,19 @@ class ReviewInfo {
         $cid = is_object($user) ? $user->contactId : $user;
         $str = ",$cid ";
         $pos = strpos("," . $this->allRatings, $str);
-        if ($pos !== false)
+        if ($pos !== false) {
             return intval(substr($this->allRatings, $pos + strlen($str) - 1));
-        return null;
+        } else {
+            return null;
+        }
     }
 
     static function unparse_rating($rating) {
-        if (isset(self::$rating_bits[$rating]))
+        if (isset(self::$rating_bits[$rating])) {
             return self::$rating_bits[$rating];
-        else if (!$rating)
+        } else if (!$rating) {
             return "none";
-        else {
+        } else {
             $a = [];
             foreach (self::$rating_bits as $k => $v)
                 if ($rating & $k)
@@ -351,32 +365,36 @@ class ReviewInfo {
         }
         $n = 0;
         foreach (preg_split('/\s+/', $s) as $word) {
-            if (($k = array_search($word, ReviewInfo::$rating_bits)) !== false)
+            if (($k = array_search($word, ReviewInfo::$rating_bits)) !== false) {
                 $n |= $k;
-            else if ($word !== "" && $word !== "none")
+            } else if ($word !== "" && $word !== "none") {
                 return false;
+            }
         }
         return $n;
     }
 
 
     private function _load_data() {
-        if (!property_exists($this, "data"))
+        if (!property_exists($this, "data")) {
             $this->data = $this->conf->fetch_value("select `data` from PaperReview where paperId=? and reviewId=?", $this->paperId, $this->reviewId);
+        }
         $this->_data = $this->data ? json_decode($this->data) : (object) [];
     }
 
     private function _save_data() {
         $this->data = json_encode_db($this->_data);
-        if ($this->data === "{}")
+        if ($this->data === "{}") {
             $this->data = null;
+        }
         $this->conf->qe("update PaperReview set `data`=? where paperId=? and reviewId=?", $this->data, $this->paperId, $this->reviewId);
     }
 
     function acceptor() {
         global $Now;
-        if ($this->_data === null)
+        if ($this->_data === null) {
             $this->_load_data();
+        }
         if (!isset($this->_data->acceptor)) {
             $this->_data->acceptor = (object) ["text" => hotcrp_random_password(), "at" => $Now];
             $this->_save_data();
@@ -384,14 +402,16 @@ class ReviewInfo {
         return $this->_data->acceptor;
     }
     function acceptor_is($text) {
-        if ($this->_data === null)
+        if ($this->_data === null) {
             $this->_load_data();
+        }
         return isset($this->_data->acceptor)
             && $this->_data->acceptor->text === $text;
     }
     function delete_acceptor() {
-        if ($this->_data === null)
+        if ($this->_data === null) {
             $this->_load_data();
+        }
         if (isset($this->_data->acceptor) && $this->_data->acceptor->at) {
             $this->_data->acceptor->at = 0;
             $this->_save_data();
