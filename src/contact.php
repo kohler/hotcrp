@@ -2943,21 +2943,21 @@ class Contact {
                 && $this->is_owned_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY)) {
             return true;
+        } else if ($rrow && $rrow->reviewSubmitted <= 0) {
+            return false;
         }
-        $rrowSubmitted = !$rrow || $rrow->reviewSubmitted > 0;
         $seerev = $this->seerev_setting($prow, $rrow, $rights);
+        if ($rrow) {
+            $viewscore = min($viewscore, $rrow->reviewViewScore);
+        }
         // See also PaperInfo::can_view_review_identity_of.
         return ($rights->act_author_view
-                && $rrowSubmitted
-                // NB: Reviews lacking author-visible fields have no ordinals.
-                && (!$rrow || $rrow->reviewOrdinal > 0)
-                && $this->can_view_submitted_review_as_author($prow)
                 && ($viewscore >= VIEWSCORE_AUTHOR
                     || ($viewscore >= VIEWSCORE_AUTHORDEC
                         && $prow->outcome
-                        && $rights->can_view_decision)))
+                        && $rights->can_view_decision))
+                && $this->can_view_submitted_review_as_author($prow))
             || ($rights->allow_pc
-                && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
                 && $seerev > 0
                 && ($seerev != Conf::PCSEEREV_UNLESSANYINCOMPLETE
@@ -2966,7 +2966,6 @@ class Contact {
                     || $rights->review_status == 0))
             || ($rights->review_status != 0
                 && !$rights->view_conflict_type
-                && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
                 && $prow->review_not_incomplete($this)
                 && $seerev >= 0);

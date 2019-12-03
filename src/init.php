@@ -29,7 +29,7 @@ define("DTYPE_SUBMISSION", 0);
 define("DTYPE_FINAL", -1);
 define("DTYPE_COMMENT", -2);
 
-define("VIEWSCORE_EMPTY", -3);         // score no one can see
+define("VIEWSCORE_EMPTY", -3);         // score no one can see; see also reviewViewScore
 define("VIEWSCORE_ADMINONLY", -2);
 define("VIEWSCORE_REVIEWERONLY", -1);
 define("VIEWSCORE_PC", 0);

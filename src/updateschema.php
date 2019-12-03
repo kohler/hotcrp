@@ -1626,6 +1626,20 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 224
         && $conf->ql("update ContactInfo set contactTags=null where contactTags=''"))
         $conf->update_schema_version(225);
+    if ($conf->sversion == 225
+        && $conf->ql("lock tables PaperReview write")) {
+        if ($conf->ql("alter table PaperReview add `reviewViewScore` tinyint(1) NOT NULL DEFAULT '-3'")) {
+            $conf->ql("update PaperReview set reviewViewScore=" . ReviewInfo::VIEWSCORE_RECOMPUTE);
+            $conf->review_form()->compute_view_scores();
+            $ok = true;
+        } else {
+            $ok = false;
+        }
+        $conf->ql("unlock tables");
+        if ($ok) {
+            $conf->update_schema_version(226);
+        }
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

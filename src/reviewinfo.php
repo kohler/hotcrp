@@ -31,6 +31,8 @@ class ReviewInfo {
     //public $data;
     private $_data;
 
+    const VIEWSCORE_RECOMPUTE = -100;
+
     static public $text_field_map = [
         "paperSummary" => "t01", "commentsToAuthor" => "t02",
         "commentsToPC" => "t03", "commentsToAddress" => "t04",
@@ -94,11 +96,11 @@ class ReviewInfo {
         return get(self::$type_revmap, $type, "clearreview");
     }
 
-    private function merge(Conf $conf) {
+    private function merge(Conf $conf, $recomputing_view_scores) {
         $this->conf = $conf;
         foreach (["paperId", "reviewId", "contactId", "reviewType",
                   "reviewRound", "requestedBy", "reviewBlind",
-                  "reviewOrdinal", "reviewNeedsSubmit"] as $k) {
+                  "reviewOrdinal", "reviewNeedsSubmit", "reviewViewScore"] as $k) {
             assert($this->$k !== null, "null $k");
             $this->$k = (int) $this->$k;
         }
@@ -114,16 +116,20 @@ class ReviewInfo {
             foreach ($x as $k => $v)
                 $this->$k = $v;
         }
+        if (!$recomputing_view_scores && $this->reviewViewScore == self::VIEWSCORE_RECOMPUTE) {
+            assert($this->reviewViewScore != self::VIEWSCORE_RECOMPUTE);
+            $conf->review_form()->compute_view_scores();
+        }
     }
-    static function fetch($result, Conf $conf) {
+    static function fetch($result, Conf $conf, $recomputing_view_scores = false) {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
         if ($rrow) {
-            $rrow->merge($conf);
+            $rrow->merge($conf, $recomputing_view_scores);
         }
         return $rrow;
     }
     static function review_signature_sql(Conf $conf, $scores = null) {
-        $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit";
+        $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit, ' ', r.reviewViewScore";
         foreach ($scores ? : [] as $fid) {
             if (($f = $conf->review_field($fid)) && $f->main_storage)
                 $t .= ", ' " . $f->short_id . "=', " . $f->id;
@@ -139,15 +145,15 @@ class ReviewInfo {
              $rrow->reviewBlind, $rrow->reviewModified, $rrow->reviewSubmitted,
              $rrow->reviewAuthorSeen, $rrow->reviewOrdinal,
              $rrow->timeDisplayed, $rrow->timeApprovalRequested,
-             $rrow->reviewNeedsSubmit) = $vals;
-        for ($i = 14; isset($vals[$i]); ++$i) {
+             $rrow->reviewNeedsSubmit, $rrow->reviewViewScore) = $vals;
+        for ($i = 15; isset($vals[$i]); ++$i) {
             $eq = strpos($vals[$i], "=");
             $f = self::field_info(substr($vals[$i], 0, $eq), $prow->conf);
             $fid = $f->id;
             $rrow->$fid = substr($vals[$i], $eq + 1);
             $prow->_mark_has_score($fid);
         }
-        $rrow->merge($prow->conf);
+        $rrow->merge($prow->conf, false);
         return $rrow;
     }
 

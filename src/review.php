@@ -1347,6 +1347,31 @@ $blind\n";
 
         return $t . "</td></tr>";
     }
+
+    function compute_view_scores() {
+        $result = $this->conf->qe("select * from PaperReview where reviewViewScore=" . ReviewInfo::VIEWSCORE_RECOMPUTE);
+        $updatef = Dbl::make_multi_qe_stager($this->conf->dblink);
+        $pids = $rids = [];
+        $last_view_score = ReviewInfo::VIEWSCORE_RECOMPUTE;
+        while (($rrow = ReviewInfo::fetch($result, $this->conf, true))) {
+            $view_score = $this->nonempty_view_score($rrow);
+            if ($last_view_score !== $view_score) {
+                if (!empty($rids)) {
+                    $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", [$last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE]);
+                }
+                $pids = $rids = [];
+                $last_view_score = $view_score;
+            }
+            if (empty($pids) || $pids[count($pids) - 1] !== $rrow->paperId) {
+                $pids[] = $rrow->paperId;
+            }
+            $rids[] = $rrow->reviewId;
+        }
+        if (!empty($rids)) {
+            $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", [$last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE]);
+        }
+        $updatef(null);
+    }
 }
 
 class ReviewValues extends MessageSet {
@@ -1919,6 +1944,7 @@ class ReviewValues extends MessageSet {
 
         $qf = $qv = [];
         $tfields = $sfields = $set_sfields = $set_tfields = null;
+        $view_score = VIEWSCORE_EMPTY;
         $diffinfo = new ReviewDiffInfo($prow, $rrow);
         $wc = 0;
         foreach ($this->rf->forder as $fid => $f) {
@@ -1972,6 +1998,9 @@ class ReviewValues extends MessageSet {
             }
             if (!$f->has_options && $f->include_word_count()) {
                 $wc += count_words($fval);
+            }
+            if (!$f->value_empty($fval)) {
+                $view_score = max($view_score, $f->view_score);
             }
         }
         if ($set_sfields !== null) {
@@ -2060,6 +2089,8 @@ class ReviewValues extends MessageSet {
         }
         $notification_bound = $now - ReviewForm::NOTIFICATION_DELAY;
         if (!$rrow || $diffinfo->nonempty()) {
+            $qf[] = "reviewViewScore=?";
+            $qv[] = $view_score;
             // XXX distinction between VIEWSCORE_AUTHOR/VIEWSCORE_AUTHORDEC?
             if ($diffinfo->view_score >= VIEWSCORE_AUTHOR) {
                 $qf[] = "reviewAuthorModified=?";

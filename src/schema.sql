@@ -279,6 +279,7 @@ CREATE TABLE `PaperReview` (
   `reviewAuthorNotified` bigint(11) NOT NULL DEFAULT '0',
   `reviewAuthorSeen` bigint(1) DEFAULT NULL,
   `reviewOrdinal` int(1) NOT NULL DEFAULT '0',
+  `reviewViewScore` tinyint(2) NOT NULL DEFAULT '-3',
   `timeDisplayed` bigint(11) NOT NULL DEFAULT '0',
   `timeApprovalRequested` bigint(11) NOT NULL DEFAULT '0',
   `reviewEditVersion` int(1) NOT NULL DEFAULT '0',
@@ -513,7 +514,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 225);
+insert into Settings (name, value) values ('allowPaperOption', 226);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

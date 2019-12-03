@@ -1767,9 +1767,10 @@ class PaperInfo {
     }
 
     function has_author_seen_any_review() {
-        foreach ($this->reviews_by_id() as $rrow)
+        foreach ($this->reviews_by_id() as $rrow) {
             if ($rrow->reviewAuthorSeen)
                 return true;
+        }
         return false;
     }
 

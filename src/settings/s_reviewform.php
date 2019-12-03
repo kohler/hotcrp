@@ -299,7 +299,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $oform = $sv->conf->review_form();
         $nform = new ReviewForm($this->nrfj, $sv->conf);
         $clear_fields = $clear_options = [];
-        $reset_wordcount = $assign_ordinal = false;
+        $reset_wordcount = $assign_ordinal = $reset_view_score = false;
         foreach ($nform->all_fields() as $nf) {
             $of = get($oform->fmap, $nf->id);
             if ($nf->displayed && (!$of || !$of->displayed)) {
@@ -312,6 +312,12 @@ class ReviewForm_SettingParser extends SettingParser {
             if ($of
                 && $of->include_word_count() != $nf->include_word_count()) {
                 $reset_wordcount = true;
+            }
+            if ($of
+                && $of->displayed
+                && $nf->displayed
+                && $of->view_score != $nf->view_score) {
+                $reset_view_score = true;
             }
             if ($of
                 && $of->displayed
@@ -365,6 +371,14 @@ class ReviewForm_SettingParser extends SettingParser {
         // reset all word counts if author visibility changed
         if ($reset_wordcount) {
             $sv->conf->qe("update PaperReview set reviewWordCount=null");
+        }
+        // reset all view scores if view scores changed
+        if ($reset_view_score) {
+            // XXX should lock out other setting changes
+            $sv->conf->qe("lock tables PaperReview write");
+            $sv->conf->qe("update PaperReview set reviewViewScore=" . ReviewInfo::VIEWSCORE_RECOMPUTE);
+            $nform->compute_view_scores();
+            $sv->conf->qe("unlock tables");
         }
     }
 }
