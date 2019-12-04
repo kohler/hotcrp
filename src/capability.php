@@ -132,7 +132,7 @@ class CapabilityManager {
                 ensure_session();
                 self::apply_hoturl_capability($uf->name, $cid);
             }
-        } else {
+        } else if ($cid && $cid != $user->contactId) {
             $user->conf->warnMsg("The review link you followed has expired. Sign in to the site to view or edit reviews.");
         }
     }
@@ -150,7 +150,9 @@ class CapabilityManager {
         $result = $user->conf->qe("select * from PaperReviewRefused where `data` is not null and timeRefused>=?", $Now - 604800);
         while (($refusal = $result->fetch_object())) {
             $data = json_decode($refusal->data);
-            if ($data && isset($data->acceptor) && isset($data->acceptor->text)
+            if ($data
+                && isset($data->acceptor)
+                && isset($data->acceptor->text)
                 && $data->acceptor->text === $uf->match_data[2]) {
                 self::make_review_acceptor($user, $data->acceptor->at, $refusal->paperId, $isadd ? (int) $refusal->contactId : null, $uf);
                 return;
