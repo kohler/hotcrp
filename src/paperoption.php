@@ -1337,7 +1337,7 @@ class DocumentPaperOption extends PaperOption {
             }
             return $ov;
         } else if ($qreq["remove_{$this->formid}"]) {
-            return PaperValue::make($ps->prow, $this);
+            return PaperValue::make($prow, $this);
         } else {
             return null;
         }
