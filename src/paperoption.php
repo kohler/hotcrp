@@ -119,8 +119,6 @@ class PaperValue {
     }
 }
 
-class_alias("PaperValue", "PaperOptionValue"); // XXX backward compat
-
 
 class FieldRender {
     public $table;
