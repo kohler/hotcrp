@@ -200,7 +200,7 @@ class Comment_API {
             $status = $status ? 200 : 400;
         }
         $j = ["ok" => $status <= 299];
-        if ($crow->commentId) {
+        if ($crow && $crow->commentId) {
             $j["cmt"] = $crow->unparse_json($user);
         }
         if ($msg) {
