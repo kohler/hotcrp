@@ -47,7 +47,7 @@ replaced by a combination of <code>email</code>, <code>name</code>,
 columns can contain a tag value, using “tag#value” syntax, or the value
 can be supplied separately.</p>';
 
-        $hth->render_group("bulkassignactions/*");
+        $hth->render_group("bulkassignactions");
     }
 
     static function render_action_review($hth, $gj) {

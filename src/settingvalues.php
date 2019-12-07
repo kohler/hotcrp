@@ -480,10 +480,16 @@ class SettingValues extends MessageSet {
         }
     }
     function render_group($g) {
-        $this->gxt()->start_render(3, "settings");
-        foreach ($this->group_members($g) as $gj)
-            $this->gxt()->render($gj, [$this, $gj]);
-        $this->gxt()->end_render();
+        $g = strtolower($g);
+        $gx = $this->gxt();
+        $gx->start_render(3, "settings");
+        if (($gj = $gx->get($g))) {
+            $gx->render($gj, [$this, $gj]);
+        }
+        foreach ($gx->members($g) as $gj) {
+            $gx->render($gj, [$this, $gj]);
+        }
+        $gx->end_render();
     }
 
 

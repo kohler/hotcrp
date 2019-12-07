@@ -925,23 +925,25 @@ class Conf {
         if (isset($map[$name])) {
             $list = $map[$name];
             $nlist = count($list);
-            if ($nlist > 1)
+            if ($nlist > 1) {
                 usort($list, "Conf::xt_priority_compare");
+            }
             for ($i = 0; $i < $nlist; ++$i) {
                 $xt = $list[$i];
                 while ($i + 1 < $nlist
                        && isset($xt->merge)
                        && $xt->merge) {
+                    ++$i;
                     $overlay = $xt;
                     unset($overlay->merge, $overlay->__subposition);
-                    $xt = $list[$i + 1];
+                    $xt = $list[$i];
                     object_replace_recursive($xt, $overlay);
                     $overlay->priority = -PHP_INT_MAX;
-                    ++$i;
                 }
                 if (self::xt_priority_compare($xt, $found) <= 0
-                    && $this->xt_checkf($xt, $user))
+                    && $this->xt_checkf($xt, $user)) {
                     return $xt;
+                }
             }
         }
         return $found;

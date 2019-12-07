@@ -175,8 +175,11 @@ class HtHead extends Ht {
             }, $vt)) . ")";
         }
     }
-    function render_group($topic) {
+    function render_group($topic, $top = false) {
         $this->_help_topics->start_render(3, "helppage");
+        if ($top && ($gj = $this->_help_topics->get($topic))) {
+            $this->_help_topics->render($gj, [$this, $gj]);
+        }
         foreach ($this->_help_topics->members($topic) as $gj) {
             $this->_help_topics->render($gj, [$this, $gj]);
         }
@@ -228,18 +231,20 @@ function meaningful_round_name(Contact $user) {
 
 echo '<div class="leftmenu-left"><div class="leftmenu-menu"><h1 class="leftmenu">Help</h1><div class="leftmenu-list">';
 foreach ($help_topics->groups() as $gj) {
-    if ($gj->name === $topic)
+    if ($gj->name === $topic) {
         echo '<div class="leftmenu-item active">', $gj->title, '</div>';
-    else if (isset($gj->title))
+    } else if (isset($gj->title)) {
         echo '<div class="leftmenu-item ui js-click-child">',
             '<a href="', hoturl("help", "t=$gj->name"), '">', $gj->title, '</a></div>';
-    if ($gj->name === "topics")
+    }
+    if ($gj->name === "topics") {
         echo '<div class="c g"></div>';
+    }
 }
 echo "</div></div></div>\n",
     '<div id="helpcontent" class="leftmenu-content">',
     '<h2 class="leftmenu">', $topicj->title, '</h2>';
-$hth->render_group($topic);
+$hth->render_group($topic, true);
 echo "</div>\n";
 
 

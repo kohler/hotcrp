@@ -140,7 +140,7 @@ class Home_Partial {
         $conf = $user->conf;
         echo '<div class="homeside">';
         $gx->start_render();
-        foreach ($gx->members("home/sidebar/*") as $gj) {
+        foreach ($gx->members("home/sidebar") as $gj) {
             $gx->render($gj, [$user, $qreq, $gx, $gj]);
         }
         $gx->end_render();
@@ -155,7 +155,7 @@ class Home_Partial {
     function render_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
         echo '<div class="homeinside"><h4>Administration</h4><ul>';
         $gx->start_render();
-        foreach ($gx->members("home/sidebar/admin/*") as $gj) {
+        foreach ($gx->members("home/sidebar/admin") as $gj) {
             $gx->render($gj, [$user, $qreq, $gx, $gj]);
         }
         $gx->end_render();
@@ -180,7 +180,7 @@ class Home_Partial {
     function render_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
         ob_start();
         $gx->start_render();
-        foreach ($gx->members("home/sidebar/info/*") as $gj) {
+        foreach ($gx->members("home/sidebar/info") as $gj) {
             $gx->render($gj, [$user, $qreq, $gx, $gj]);
         }
         $gx->end_render();
