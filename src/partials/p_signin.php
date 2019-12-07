@@ -1,31 +1,122 @@
 <?php
-// src/partials/p_resetpassword.php -- HotCRP password reset partials
+// src/partials/p_signin.php -- HotCRP password reset partials
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
-class ResetPassword_Partial {
+class Signin_Partial {
     private $_reset_cap;
     private $_reset_capdata;
     private $_reset_user;
+    private $_stop = false;
 
-    // Password reset
-    function forgot_request(Contact $user, Qrequest $qreq) {
+    private function forgot_message(Conf $conf) {
+        return $conf->_("Enter your email and we’ll send you instructions for signing in.");
+    }
+    private function _render_email_entry($user, $qreq, $k) {
+        echo '<div class="', Ht::control_class($k, "f-i"), '">',
+            '<label for="', $k, '">',
+            ($k === "email" ? "Email" : "Email or password reset code"),
+            '</label>',
+            Ht::entry($k, $qreq[$k], ["class" => "want-focus fullw", "size" => 36, "id" => $k, "autocomplete" => ($k === "email" ? "email" : null)]),
+            Ht::render_messages_at("resetcap"),
+            Ht::render_messages_at("email"),
+            '</div>';
+    }
+
+
+    // Create account request
+    private function _create_message(Conf $conf) {
+        return $conf->_("Enter your email and we’ll create an account and send you an initial password.");
+    }
+    function create_request(Contact $user, Qrequest $qreq) {
         if ($qreq->cancel && $qreq->post_ok()) {
             Navigation::redirect("");
+        } else if (!$user->conf->allow_user_self_register()) {
+            $user->conf->msg("New users can’t self-register for this site.", 2);
+            $this->_stop = true;
+            return;
         }
+
         ensure_session();
         $email = trim((string) $qreq->email);
         if ($email !== "" && $qreq->go && $qreq->post_ok()) {
-            $url = LoginHelper::login($user->conf, $qreq, "forgot");
+            $url = LoginHelper::login($user->conf, $qreq, "create");
             if ($url !== false) {
                 Navigation::redirect("");
             }
         }
     }
-    function reset_request(Contact $user, Qrequest $qreq) {
-        global $Now;
+    function render_create_head(Contact $user, Qrequest $qreq, $gx) {
+        $user->conf->header("New account", "newaccount", ["action_bar" => false]);
+        $gx->push_render_cleanup(":footer");
+        return !$this->_stop;
+    }
+    function render_create_body(Contact $user, Qrequest $qreq, $gx, $gj) {
+        echo '<div class="homegrp" id="homeaccount">',
+            Ht::form($user->conf->hoturl("newaccount"), ["class" => "compact-form"]),
+            Ht::hidden("post", post_value());
+        if (($m = $this->_create_message($user->conf))) {
+            echo '<p class="mb-5">', $m, '</p>';
+        }
+        $this->_render_email_entry($user, $qreq, "email");
+        echo '<div class="popup-actions">',
+            Ht::submit("go", "Create account", ["class" => "btn-success", "value" => 1]),
+            Ht::submit("cancel", "Cancel"),
+            '</div>';
+        echo '</form></div>';
+        Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
+    }
+
+
+    // Forgot password request
+    function check_password_links(Contact $user, Qrequest $qreq) {
         if ($qreq->cancel && $qreq->post_ok()) {
             Navigation::redirect("");
+        } else if ($user->conf->external_login()) {
+            $user->conf->msg("Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.", 2);
+            $this->_stop = true;
         }
+    }
+    function forgot_request(Contact $user, Qrequest $qreq) {
+        self::check_password_links($user, $qreq);
+        if (!$this->_stop) {
+            ensure_session();
+            $email = trim((string) $qreq->email);
+            if ($email !== "" && $qreq->go && $qreq->post_ok()) {
+                $url = LoginHelper::login($user->conf, $qreq, "forgot");
+                if ($url !== false) {
+                    Navigation::redirect("");
+                }
+            }
+        }
+    }
+    function render_forgot_head(Contact $user, Qrequest $qreq, $gx) {
+        $user->conf->header("Forgot password", "resetpassword", ["action_bar" => false]);
+        $gx->push_render_cleanup(":footer");
+        return !$this->_stop;
+    }
+    function render_forgot_body(Contact $user, Qrequest $qreq, $gx, $gj) {
+        echo '<div class="homegrp" id="homeaccount">',
+            Ht::form($user->conf->hoturl("forgotpassword"), ["class" => "compact-form"]),
+            Ht::hidden("post", post_value()),
+            '<p class="mb-5">', $this->forgot_message($user->conf), '</p>';
+        $this->_render_email_entry($user, $qreq, "email");
+        echo '<div class="popup-actions">',
+            Ht::submit("go", "Reset password", ["class" => "btn-primary", "value" => 1]),
+            Ht::submit("cancel", "Cancel"),
+            '</div>';
+        echo '</form></div>';
+        Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
+    }
+
+
+    // Password reset
+    function reset_request(Contact $user, Qrequest $qreq) {
+        global $Now;
+        self::check_password_links($user, $qreq);
+        if ($this->_stop) {
+            return;
+        }
+
         ensure_session();
         $conf = $user->conf;
         if ($qreq->resetcap === null
@@ -114,11 +205,8 @@ class ResetPassword_Partial {
     }
     function render_reset_head(Contact $user, Qrequest $qreq, $gx, $gj) {
         $user->conf->header($gj->htitle, "resetpassword", ["action_bar" => false]);
-        $gx->push_render_cleanup("footer");
-        if ($user->conf->external_login()) {
-            $user->conf->errorMsg("Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
-            return false;
-        }
+        $gx->push_render_cleanup(":footer");
+        return !$this->_stop;
     }
     private function _render_reset_success($user, $qreq) {
         if (!isset($qreq->autopassword)
@@ -137,42 +225,27 @@ class ResetPassword_Partial {
 
             '<div class="', Ht::control_class("password", "f-i"), '">',
             '<label for="password">New password</label>',
-            Ht::password("password", "", ["class" => "want-focus fullw", "tabindex" => 1, "size" => 36, "id" => "password", "autocomplete" => "new-password"]),
+            Ht::password("password", "", ["class" => "want-focus fullw", "size" => 36, "id" => "password", "autocomplete" => "new-password"]),
             Ht::render_messages_at("password"),
             '</div>',
 
             '<div class="', Ht::control_class("password2", "f-i"), '">',
             '<label for="password2">New password (again)</label>',
-            Ht::password("password2", "", ["class" => "fullw", "tabindex" => 1, "size" => 36, "id" => "password2", "autocomplete" => "new-password"]),
+            Ht::password("password2", "", ["class" => "fullw", "size" => 36, "id" => "password2", "autocomplete" => "new-password"]),
             Ht::render_messages_at("password2"),
             '</div>';
     }
-    private function _render_reset_other($user, $qreq, $page) {
-        echo '<p class="mb-5">', Home_Partial::forgot_message($user->conf);
-        if ($page === "resetpassword") {
-            echo ' Or enter a password reset code if you have one.';
-            $k = "resetcap";
-        } else {
-            $k = "email";
-        }
-        echo '</p><div class="', Ht::control_class($k, "f-i"), '">',
-            '<label for="', $k, '">',
-            ($k === "email" ? "Email" : "Email or password reset code"),
-            '</label>',
-            Ht::entry($k, $qreq[$k], ["class" => "want-focus fullw", "tabindex" => 1, "size" => 36, "id" => $k]),
-            Ht::render_messages_at("resetcap"),
-            Ht::render_messages_at("email"),
-            '</div>';
-    }
     function render_reset_body(Contact $user, Qrequest $qreq, $gx, $gj) {
-        echo '<div class="homegrp" id="homereset">',
-            Ht::form($user->conf->hoturl($gj->page), ["class" => "compact-form"]),
+        echo '<div class="homegrp" id="homeaccount">',
+            Ht::form($user->conf->hoturl("resetpassword"), ["class" => "compact-form"]),
             Ht::hidden("post", post_value());
         if ($this->_reset_user) {
             $this->_render_reset_success($user, $qreq);
             $k = "btn-danger";
         } else {
-            $this->_render_reset_other($user, $qreq, $gj->page);
+            echo '<p class="mb-5">', $this->forgot_message($user->conf),
+                ' Or enter a password reset code if you have one.</p>';
+            $this->_render_email_entry($user, $qreq, "resetcap");
             $k = "btn-primary";
         }
         echo '<div class="popup-actions">',
@@ -180,15 +253,6 @@ class ResetPassword_Partial {
             Ht::submit("cancel", "Cancel"),
             '</div>';
         echo '</form></div>';
-        Ht::stash_script("focus_within(\$(\"#homereset\"));window.scroll(0,0)");
-    }
-
-    function render_forgot_head(Contact $user, Qrequest $qreq, $gx) {
-        $user->conf->header("Forgot password", "resetpassword", ["action_bar" => false]);
-        $gx->push_render_cleanup("footer");
-        if ($user->conf->external_login()) {
-            $user->conf->errorMsg("Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
-            return false;
-        }
+        Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
     }
 }

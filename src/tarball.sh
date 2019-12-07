@@ -276,7 +276,7 @@ src/papertable.php
 src/paperrank.php
 src/partials/p_adminhome.php
 src/partials/p_home.php
-src/partials/p_resetpassword.php
+src/partials/p_signin.php
 src/review.php
 src/reviewdiffinfo.php
 src/reviewinfo.php

@@ -129,7 +129,7 @@ class Home_Partial {
         } else {
             $user->conf->header("Home", "home");
         }
-        $gx->push_render_cleanup("footer");
+        $gx->push_render_cleanup(":footer");
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
         if ($user->privChair) {
             echo '<div id="msg-clock-drift"></div>';
@@ -269,7 +269,7 @@ class Home_Partial {
         if (!$is_external_login) {
             echo '<div class="float-right"><a href="',
                 $conf->hoturl("forgotpassword"),
-                '" class="n x small uix js-forgot-password">Forgot your password?</a></div>';
+                '" class="n x small uix js-href-add-email">Forgot your password?</a></div>';
         }
         echo Ht::label("Password", "signin_password"),
             Ht::password("password", $password_value, [
@@ -286,9 +286,9 @@ class Home_Partial {
             Ht::submit("action", "Sign in", ["id" => "signin_signin", "class" => "btn-success", "tabindex" => 1, "value" => "go"]),
             '</div>';
         if ($conf->allow_user_self_register()) {
-            echo '<p class="hint">New to the site? <a href="?signin=1&amp;action=create" class="ui js-create-account" data-message="',
-                htmlspecialchars($this->_create_message($conf)),
-                '">Create an account</a></p>';
+            echo '<p class="hint">New to the site? <a href="',
+                $conf->hoturl("newaccount"),
+                '" class="uix js-href-add-email">Create an account</a></p>';
         }
         echo '</div><div class="fn">',
             Ht::submit("action", "Sign in", ["class" => "btn-success", "tabindex" => 1, "value" => "start"]),
@@ -327,6 +327,7 @@ class Home_Partial {
                 Ht::form($user->conf->hoturl("index", ["signin" => 1]), ["class" => "ui-submit js-signin compact-form"]),
                 Ht::hidden("post", post_value(true));
             $action = $qreq->signin ? $qreq->action : null;
+            assert($action !== "forgot" && $action !== "create");
             if ($action === "forgot" && !$user->conf->external_login()) {
                 $this->render_signin_forgot($user, $qreq);
             } else if ($action === "create" && $user->conf->allow_user_self_register()) {

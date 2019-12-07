@@ -1,7 +1,8 @@
 [
     {
-        "name": "footer", "render_callback": "*Conf::footer"
+        "name": ":footer", "render_callback": "*Conf::footer"
     },
+
 
     {
         "name": "home/profile_redirect", "position": 100,
@@ -67,6 +68,7 @@
         "render_callback": "*Home_Partial::render_info_accepted"
     },
 
+
     {
         "name": "home/message", "position": 2000,
         "render_callback": "*Home_Partial::render_message"
@@ -100,41 +102,61 @@
         "render_callback": "*Home_Partial::render_submissions"
     },
 
+
     {
-        "name": "resetpassword/request", "position": 100,
-        "request_callback": "*ResetPassword_Partial::reset_request"
+        "name": "newaccount/request", "position": 100,
+        "request_callback": "*Signin_Partial::create_request"
     },
     {
-        "name": "resetpassword/head", "position": 1000,
-        "render_callback": "*ResetPassword_Partial::render_reset_head",
-        "htitle": "Reset password"
+        "name": "newaccount/head", "position": 1000,
+        "render_callback": "*Signin_Partial::render_create_head",
+        "htitle": "Create account"
     },
     {
-        "name": "resetpassword/message", "position": 2000,
-        "alias": "home/message"
+        "name": "newaccount/message", "position": 2000, "alias": "home/message"
     },
     {
-        "name": "resetpassword/welcome", "position": 2500,
-        "alias": "home/welcome"
+        "name": "newaccount/welcome", "position": 2500, "alias": "home/welcome"
     },
     {
-        "name": "resetpassword/body", "position": 3000,
-        "render_callback": "*ResetPassword_Partial::render_reset_body",
-        "page": "resetpassword"
+        "name": "newaccount/body", "position": 3000,
+        "render_callback": "*Signin_Partial::render_create_body"
     },
+
 
     {
         "name": "forgotpassword/request", "position": 100,
-        "request_callback": "*ResetPassword_Partial::forgot_request"
+        "request_callback": "*Signin_Partial::forgot_request"
     },
     {
         "name": "forgotpassword/head", "position": 1000,
-        "render_callback": "*ResetPassword_Partial::render_forgot_head",
+        "render_callback": "*Signin_Partial::render_forgot_head",
         "htitle": "Forgot password"
     },
     {
         "name": "forgotpassword/body", "position": 3000,
-        "render_callback": "*ResetPassword_Partial::render_reset_body",
-        "page": "forgotpassword"
+        "render_callback": "*Signin_Partial::render_forgot_body"
+    },
+
+
+    {
+        "name": "resetpassword/request", "position": 100,
+        "request_callback": "*Signin_Partial::reset_request"
+    },
+    {
+        "name": "resetpassword/head", "position": 1000,
+        "render_callback": "*Signin_Partial::render_reset_head",
+        "htitle": "Reset password"
+    },
+    {
+        "name": "resetpassword/message", "position": 2000, "alias": "home/message"
+    },
+    {
+        "name": "resetpassword/welcome", "position": 2500, "alias": "home/welcome"
+    },
+    {
+        "name": "resetpassword/body", "position": 3000,
+        "render_callback": "*Signin_Partial::render_reset_body",
+        "page": "resetpassword"
     }
 ]

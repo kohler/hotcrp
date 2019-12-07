@@ -139,6 +139,10 @@ class LoginHelper {
         // maybe reset password
         $xuser = $user ? : $cdb_user;
         if ($signinaction === "forgot" && $qreq->post_ok()) {
+            if ($external_login) {
+                Ht::error_at("email", "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
+                return false;
+            }
             $worked = $xuser->sendAccountInfo("forgot", true);
             if ($worked === "@resetpassword") {
                 $conf->msg("A password reset link has been emailed to you. When you receive that email, visit the link to create a new password.", "xconfirm");

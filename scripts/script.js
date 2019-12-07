@@ -7382,23 +7382,11 @@ handle_ui.on("js-signin", function (event) {
     });
 });
 
-handle_ui.on("js-forgot-password", function (event) {
+handle_ui.on("js-href-add-email", function (event) {
     var e = this.closest("form");
     if (e && e.email) {
         this.href = hoturl_add(this.href, "email=" + urlencode(e.email.value));
     }
-});
-
-handle_ui.on("js-create-account", function (event) {
-    var hc = popup_skeleton({action: hoturl("index", {signin: 1, action: "create"}), method: "post", maxWidth: "25rem", form_class: "ui-submit js-signin"});
-    hc.push('<h2>Create account</h2>');
-    hc.push('<p>Enter your email and we’ll create an account and send you an initial password.</p>')
-    hc.push('<div class="f-i"><label for="createaccount_email">Email</label>', '</div>');
-    hc.push_pop('<input type="email" name="email" size="36" class="fullw" autocomplete="email" id="createaccount_email">');
-    hc.push_actions(['<button type="submit" class="btn-success">Create account</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    var $d = hc.show();
-    transfer_form_values($d.find("form"), $(this).closest("form"), ["email"]);
 });
 
 

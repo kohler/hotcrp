@@ -32,26 +32,36 @@ if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "style
 require_once("src/initweb.php");
 $page_template = $Conf->page_template($nav->page);
 
-if (!$page_template) {
-    header("HTTP/1.0 404 Not Found");
-} else if (isset($page_template->group)) {
-    // handle signin/signout -- may change $Me
-    if ($page_template->name === "index") {
-        $Me = Home_Partial::signin_requests($Me, $Qreq);
-        // that also got rid of disabled users
-    }
-    $gx = new GroupedExtensions($Me, ["etc/pagepartials.json"],
-                                $Conf->opt("pagePartials"));
-    foreach ($gx->members($page_template->group) as $gj) {
-        if ($gx->request($gj, $Qreq, [$Me, $Qreq, $gx, $gj]) === false)
-            break;
-    }
-    $gx->start_render();
-    foreach ($gx->members($page_template->group) as $gj) {
-        if ($gx->render($gj, [$Me, $Qreq, $gx, $gj]) === false)
-            break;
-    }
-    $gx->end_render();
-} else {
+if ($page_template && isset($page_template->require)) {
     include($page_template->require);
+} else {
+    $gx = new GroupedExtensions($Me, ["etc/pagepartials.json"], $Conf->opt("pagePartials"));
+
+    if ($page_template) {
+        $group = $page_template->group;
+    } else if (!str_starts_with($nav->page, ":") && $gx->is_group($nav->page)) {
+        $group = $nav->page;
+    } else {
+        $group = null;
+    }
+
+    if ($group) {
+        // handle signin/signout -- may change $Me
+        if ($group === "index") {
+            $Me = Home_Partial::signin_requests($Me, $Qreq);
+            // that also got rid of disabled users
+        }
+        foreach ($gx->members($group) as $gj) {
+            if ($gx->request($gj, $Qreq, [$Me, $Qreq, $gx, $gj]) === false)
+                break;
+        }
+        $gx->start_render();
+        foreach ($gx->members($group) as $gj) {
+            if ($gx->render($gj, [$Me, $Qreq, $gx, $gj]) === false)
+                break;
+        }
+        $gx->end_render();
+    } else {
+        header("HTTP/1.0 404 Not Found");
+    }
 }
