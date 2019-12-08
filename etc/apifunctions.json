@@ -1,8 +1,10 @@
 [
     {
         "name": "administrator", "paper": true, "get": true, "post": true,
-        "callback": "PaperPC_API::manager_api",
-        "synonym": ["manager"]
+        "callback": "PaperPC_API::manager_api"
+    },
+    {
+        "name": "manager", "alias": "administrator"
     },
     {
         "name": "alltags", "get": true,
@@ -38,8 +40,7 @@
     },
     {
         "name": "formatcheck", "get": true, "post": true,
-        "callback": "FormatCheck_API::run",
-        "synonym": ["checkformat"]
+        "callback": "FormatCheck_API::run"
     },
     {
         "name": "graphdata", "get": true,
@@ -91,8 +92,13 @@
     },
     {
         "name": "revpref", "get": true, "post": true,
-        "callback": "Preference_API::pref_api",
-        "synonym": ["reviewpref", "pref"]
+        "callback": "Preference_API::pref_api"
+    },
+    {
+        "name": "reviewpref", "alias": "revpref"
+    },
+    {
+        "name": "pref", "alias": "revpref"
     },
     {
         "name": "search", "get": true,
@@ -120,8 +126,7 @@
     },
     {
         "name": "taganno", "post": true,
-        "callback": "TagAnno_API::set",
-        "synonym": ["settaganno"]
+        "callback": "TagAnno_API::set"
     },
     {
         "name": "tagreport", "paper": true, "get": true,
@@ -141,8 +146,10 @@
     },
     {
         "name": "viewoptions", "get": true, "post": true,
-        "callback": "SearchConfig_API::viewoptions",
-        "synonym": ["listreport"]
+        "callback": "SearchConfig_API::viewoptions"
+    },
+    {
+        "name": "listreport", "alias": "viewoptions"
     },
     {
         "name": "votereport", "paper": true, "get": true, "post": true,

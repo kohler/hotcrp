@@ -54,7 +54,7 @@ class GroupedExtensions {
         $sgs = $this->_all;
         $this->_all = $this->_groups = [];
         foreach ($sgs as $name => $xtl) {
-            if (($xt = $conf->xt_search_name($sgs, $name, $user))
+            if (($xt = $conf->xt_search_name($sgs, $name, $user, null, true))
                 && Conf::xt_enabled($xt)
                 && (!isset($xt->position) || $xt->position !== false)) {
                 $this->_all[$name] = $xt;

@@ -821,12 +821,16 @@ class Conf {
         return $ap < $bp ? -1 : ($ap == $bp ? 0 : 1);
     }
     static function xt_add(&$a, $name, $xt) {
-        $a[$name][] = $xt;
-        if (($syn = get($xt, "synonym"))) {
-            foreach (is_string($syn) ? [$syn] : $syn as $synname)
-                $a[$synname][] = $xt;
+        if (is_string($name)) {
+            $a[$name][] = $xt;
+            if (($syn = get($xt, "synonym"))) {
+                foreach (is_string($syn) ? [$syn] : $syn as $synname)
+                    $a[$synname][] = $xt;
+            }
+            return true;
+        } else {
+            return false;
         }
-        return true;
     }
     static private function xt_combine($xt1, $xt2) {
         foreach (get_object_vars($xt2) as $k => $v)
@@ -924,13 +928,16 @@ class Conf {
                 || $this->xt_check($xt->allow_if, $xt, $user);
         }
     }
-    function xt_search_name($map, $name, $user, $found = null) {
-        if (isset($map[$name])) {
+    function xt_search_name($map, $name, $user, $found = null, $noalias = false) {
+        for ($aliases = 0;
+             $aliases < 5 && $name !== null && isset($map[$name]);
+             ++$aliases) {
             $list = $map[$name];
             $nlist = count($list);
             if ($nlist > 1) {
                 usort($list, "Conf::xt_priority_compare");
             }
+            $name = null;
             for ($i = 0; $i < $nlist; ++$i) {
                 $xt = $list[$i];
                 while ($i + 1 < $nlist
@@ -943,9 +950,13 @@ class Conf {
                     object_replace_recursive($xt, $overlay);
                     $overlay->priority = -PHP_INT_MAX;
                 }
-                if (self::xt_priority_compare($xt, $found) <= 0
-                    && $this->xt_checkf($xt, $user)) {
-                    return $xt;
+                if (self::xt_priority_compare($xt, $found) <= 0) {
+                    if (isset($xt->alias) && is_string($xt->alias) && !$noalias) {
+                        $name = $xt->alias;
+                        break;
+                    } else if ($this->xt_checkf($xt, $user)) {
+                        return $xt;
+                    }
                 }
             }
         }
@@ -3970,10 +3981,7 @@ class Conf {
     // assignment parsers
 
     function _add_assignment_parser_json($uf) {
-        if (isset($uf->name) && is_string($uf->name)) {
-            return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
-        }
-        return false;
+        return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
     }
     function assignment_parser($keyword, Contact $user = null) {
         require_once("assignmentset.php");
@@ -4019,12 +4027,7 @@ class Conf {
     // API
 
     function _add_api_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)
-            && isset($fj->callback) && is_string($fj->callback)) {
-            return self::xt_add($this->_api_map, $fj->name, $fj);
-        } else {
-            return false;
-        }
+        return self::xt_add($this->_api_map, $fj->name, $fj);
     }
     private function api_map() {
         if ($this->_api_map === null) {
@@ -4037,7 +4040,9 @@ class Conf {
         return $this->_api_map;
     }
     private function check_api_json($fj, $user, $method) {
-        if (isset($fj->allow_if) && !$this->xt_allowed($fj, $user)) {
+        if ((isset($fj->allow_if) && !$this->xt_allowed($fj, $user))
+            || !isset($fj->callback)
+            || !is_string($fj->callback)) {
             return false;
         } else if (!$method) {
             return true;
