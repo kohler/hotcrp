@@ -194,11 +194,12 @@
         "position": 1000
     },
     {
-        "name": "keywords", "title": "Search keywords", "synonym": ["syntax"],
+        "name": "keywords", "title": "Search keywords",
         "description": "Quick reference to search keywords and syntax.",
         "render_callback": "Keywords_HelpTopic::render",
         "position": 2000
     },
+    {   "name": "syntax", "alias": "keywords"   },
     {
         "name": "tags", "title": "Tags",
         "description": "How to use tags to define paper sets and discussion orders.",
@@ -271,11 +272,12 @@
         "position": 6000
     },
     {
-        "name": "reviewratings", "title": "Review ratings", "synonym": ["revrate"],
+        "name": "reviewratings", "title": "Review ratings",
         "description": "Rating the quality of reviews.",
         "render_callback": "RevRate_HelpTopic::render",
         "position": 7000
     },
+    {   "name": "revrate", "alias": "reviewratings"   },
     {
         "name": "votetags", "title": "Voting",
         "description": "PC members can vote for papers using tags.",

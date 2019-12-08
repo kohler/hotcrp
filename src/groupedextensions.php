@@ -6,11 +6,9 @@ class GroupedExtensions {
     private $user;
     private $_groups;
     private $_all;
-    private $_is_group;
     private $_render_state;
     private $_render_stack;
     private $_render_classes;
-    private $_synonym_subgroups = [];
     private $_annexes = [];
     static private $next_placeholder;
 
@@ -25,11 +23,6 @@ class GroupedExtensions {
             } else {
                 $fj->group = $fj->name;
             }
-        }
-        if (!isset($fj->synonym)) {
-            $fj->synonym = [];
-        } else if (is_string($fj->synonym)) {
-            $fj->synonym = [$fj->synonym];
         }
         if (!isset($fj->anchorid)
             && !str_starts_with($fj->name, "__")
@@ -61,9 +54,6 @@ class GroupedExtensions {
                 if ($xt->name === $xt->group && !isset($xt->alias)) {
                     $this->_groups[$name] = $xt;
                 }
-                if (!empty($xt->synonym)) {
-                    $this->_synonym_subgroups[] = $xt;
-                }
             }
         }
         $this->reset_render();
@@ -85,30 +75,17 @@ class GroupedExtensions {
             return Conf::xt_position_compare($aj, $bj);
         }
     }
-    function is_group($name) {
-        if ($this->_is_group === null) {
-            $this->_is_group = [];
-            foreach ($this->_all as $gj) {
-                $this->_is_group[$gj->group] = true;
-            }
-        }
-        return isset($this->_is_group[$name]);
-    }
     function get($name) {
-        if (isset($this->_all[$name])) {
-            return $this->_all[$name];
+        $gj = get($this->_all, $name);
+        for ($nalias = 0; $nalias < 5 && $gj && isset($gj->alias); ++$nalias) {
+            $gj = get($this->_all, $gj->alias);
         }
-        foreach ($this->_synonym_subgroups as $gj) {
-            if (in_array($name, $gj->synonym))
-                return $gj;
-        }
-        return null;
+        return $gj;
     }
     function canonical_group($name) {
         if (($gj = $this->get($name))) {
-            return $gj->group;
-        } else if ($this->is_group($name)) {
-            return $name;
+            $pos = strpos($gj->group, "/");
+            return $pos === false ? $gj->group : substr($gj->group, 0, $pos);
         } else {
             return false;
         }
@@ -121,16 +98,27 @@ class GroupedExtensions {
             $name = $gj->name;
         }
         $r = [];
+        $alias = false;
         foreach ($this->_all as $gj) {
             if ($gj->group === $name && $gj->name !== $name) {
-                while (isset($gj->alias) && ($xgj = $this->get($gj->alias))) {
-                    $gj = $xgj;
+                if (!isset($gj->alias)) {
+                    $r[] = $gj;
+                } else if (isset($gj->position)) {
+                    $r[] = $gj;
+                    $alias = true;
                 }
-                $r[] = $gj;
             }
         }
         usort($r, [$this, "subgroup_compare"]);
-        return $r;
+        if ($alias) {
+            $rr = [];
+            foreach ($r as $gj) {
+                $rr[] = isset($gj->alias) ? $this->get($gj->alias) : $gj;
+            }
+            return $rr;
+        } else {
+            return $r;
+        }
     }
     function all() {
         uasort($this->_all, [$this, "subgroup_compare"]);

@@ -1,9 +1,10 @@
 [
     {
-        "name": ":footer", "render_callback": "*Conf::footer"
+        "name": "__footer", "render_callback": "*Conf::footer"
     },
 
 
+    {   "name": "home"   },
     {
         "name": "home/profile_redirect", "position": 100,
         "request_callback": "Home_Partial::profile_redirect_request"
@@ -103,6 +104,7 @@
     },
 
 
+    {   "name": "newaccount"   },
     {
         "name": "newaccount/request", "position": 100,
         "request_callback": "*Signin_Partial::create_request"
@@ -124,6 +126,7 @@
     },
 
 
+    {   "name": "forgotpassword"   },
     {
         "name": "forgotpassword/request", "position": 100,
         "request_callback": "*Signin_Partial::forgot_request"
@@ -139,6 +142,7 @@
     },
 
 
+    {   "name": "resetpassword"   },
     {
         "name": "resetpassword/request", "position": 100,
         "request_callback": "*Signin_Partial::reset_request"

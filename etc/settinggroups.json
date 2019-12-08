@@ -1,8 +1,9 @@
 [
     {
-        "name": "basics", "synonym": ["info"], "position": 0,
+        "name": "basics", "position": 0,
         "title": "Basics"
     },
+    {   "name": "info", "alias": "basics"   },
     {
         "name": "basics/names", "position": 10,
         "render_callback": "Basics_SettingParser::render_names",
@@ -20,14 +21,16 @@
     },
 
     {
-        "name": "decisions", "synonym": ["dec"], "position": 800,
+        "name": "decisions", "position": 800,
         "title": "Decisions"
     },
+    {   "name": "dec", "alias": "decisions"   },
     {
-        "name": "decisions/responses", "synonym": ["responses"], "position": 10,
+        "name": "decisions/responses", "position": 10,
         "title": "Responses",
         "render_callback": "Responses_SettingParser::render"
     },
+    {   "name": "responses", "alias": "decisions/responses"   },
     {
         "name": "responses/properties/name", "position": 10,
         "render_response_property_callback": "Responses_SettingParser::render_name_property"
@@ -86,14 +89,17 @@
         "render_callback": "Messages_SettingRenderer::render"
     },
     {
-        "name": "reviewform", "synonym": ["rfo"], "position": 600,
+        "name": "reviewform", "position": 600,
         "title": "Review form",
         "render_callback": "ReviewForm_SettingRenderer::render"
     },
+    {   "name": "rfo", "alias": "reviewform"   },
     {
-        "name": "reviews", "synonym": ["rev", "review"], "position": 500,
+        "name": "reviews", "position": 500,
         "title": "Reviews"
     },
+    {   "name": "rev", "alias": "reviews"   },
+    {   "name": "review", "alias": "reviews"   },
     {
         "name": "__crosscheck/reviews", "position": 500,
         "crosscheck_callback": "Reviews_SettingRenderer::crosscheck"
@@ -118,9 +124,10 @@
         "render_callback": "Reviews_SettingRenderer::render_ratings"
     },
     {
-        "name": "submissions", "synonym": ["sub"], "position": 300,
+        "name": "submissions", "position": 300,
         "title": "Submissions"
     },
+    {   "name": "sub", "alias": "submissions"   },
     {
         "name": "__crosscheck/submissions", "position": 300,
         "crosscheck_callback": "Submissions_SettingRenderer::crosscheck"
@@ -152,9 +159,10 @@
         "render_callback": "SubForm_SettingRenderer::render"
     },
     {
-        "name": "options", "group": "subform", "synonym": ["opt"], "position": 440,
+        "name": "options", "group": "subform", "position": 440,
         "render_callback": "Options_SettingRenderer::render"
     },
+    {   "name": "opt", "alias": "options"   },
     {
         "name": "__crosscheck/options", "position": 400,
         "crosscheck_callback": "Options_SettingRenderer::crosscheck"

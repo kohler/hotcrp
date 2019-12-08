@@ -39,13 +39,11 @@ if ($page_template && isset($page_template->require)) {
 
     if ($page_template) {
         $group = $page_template->group;
-    } else if (!str_starts_with($nav->page, ":") && $gx->is_group($nav->page)) {
-        $group = $nav->page;
     } else {
-        $group = null;
+        $group = $gx->canonical_group($nav->page);
     }
 
-    if ($group) {
+    if ($group && !str_starts_with($group, "__")) {
         // handle signin/signout -- may change $Me
         if ($group === "index") {
             $Me = Home_Partial::signin_requests($Me, $Qreq);

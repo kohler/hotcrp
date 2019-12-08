@@ -47,7 +47,7 @@ class Signin_Partial {
     }
     function render_create_head(Contact $user, Qrequest $qreq, $gx) {
         $user->conf->header("New account", "newaccount", ["action_bar" => false]);
-        $gx->push_render_cleanup(":footer");
+        $gx->push_render_cleanup("__footer");
         return !$this->_stop;
     }
     function render_create_body(Contact $user, Qrequest $qreq, $gx, $gj) {
@@ -91,7 +91,7 @@ class Signin_Partial {
     }
     function render_forgot_head(Contact $user, Qrequest $qreq, $gx) {
         $user->conf->header("Forgot password", "resetpassword", ["action_bar" => false]);
-        $gx->push_render_cleanup(":footer");
+        $gx->push_render_cleanup("__footer");
         return !$this->_stop;
     }
     function render_forgot_body(Contact $user, Qrequest $qreq, $gx, $gj) {
@@ -205,7 +205,7 @@ class Signin_Partial {
     }
     function render_reset_head(Contact $user, Qrequest $qreq, $gx, $gj) {
         $user->conf->header($gj->htitle, "resetpassword", ["action_bar" => false]);
-        $gx->push_render_cleanup(":footer");
+        $gx->push_render_cleanup("__footer");
         return !$this->_stop;
     }
     private function _render_reset_success($user, $qreq) {
