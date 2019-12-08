@@ -467,8 +467,6 @@ class SettingValues extends MessageSet {
     function mark_interesting_group($g) {
         foreach ($this->group_members($g) as $gj) {
             $this->interesting_groups[$gj->name] = true;
-            foreach ($gj->synonym as $syn)
-                $this->interesting_groups[$syn] = true;
         }
     }
     function crosscheck() {

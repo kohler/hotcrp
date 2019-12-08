@@ -823,10 +823,6 @@ class Conf {
     static function xt_add(&$a, $name, $xt) {
         if (is_string($name)) {
             $a[$name][] = $xt;
-            if (($syn = get($xt, "synonym"))) {
-                foreach (is_string($syn) ? [$syn] : $syn as $synname)
-                    $a[$synname][] = $xt;
-            }
             return true;
         } else {
             return false;
@@ -4365,7 +4361,7 @@ class Conf {
     // hooks
 
     function _add_hook_json($fj) {
-        if (isset($fj->callback) && is_string($fj->callback) && !isset($fj->synonym)) {
+        if (isset($fj->callback) && is_string($fj->callback)) {
             if (isset($fj->event) && is_string($fj->event)) {
                 return self::xt_add($this->_hook_map, $fj->event, $fj);
             } else if (isset($fj->match) && is_string($fj->match)) {
