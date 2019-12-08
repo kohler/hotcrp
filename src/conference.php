@@ -4005,11 +4005,7 @@ class Conf {
     // formula functions
 
     function _add_formula_function_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)) {
-            return self::xt_add($this->_formula_functions, $fj->name, $fj);
-        } else {
-            return false;
-        }
+        return self::xt_add($this->_formula_functions, $fj->name, $fj);
     }
     function formula_function($fname, Contact $user) {
         if ($this->_formula_functions === null) {
