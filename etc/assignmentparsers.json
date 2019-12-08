@@ -1,9 +1,9 @@
 [
     {
         "name": "none", "parser_class": "Null_AssignmentParser",
-        "synonym": ["null"],
         "position": false
     },
+    {   "name": "null", "alias": "none"   },
     {
         "name": "review", "parser_class": "Review_AssignmentParser",
         "review_type": null,
@@ -13,46 +13,52 @@
     },
     {
         "name": "metareview", "parser_class": "Review_AssignmentParser",
-        "synonym": ["meta"],
         "review_type": "meta",
         "parameters": ["user", "[review round]"],
         "group": "review", "description": "Assign metareview"
     },
+    {   "name": "meta", "alias": "metareview"   },
     {
         "name": "primaryreview", "parser_class": "Review_AssignmentParser",
-        "synonym": ["pri", "primary"],
         "review_type": "primary",
         "parameters": ["user", "[review round]"],
         "group": "review", "description": "Assign primary review"
     },
+    {   "name": "pri", "alias": "primaryreview"   },
+    {   "name": "primary", "alias": "primaryreview"   },
     {
         "name": "secondaryreview", "parser_class": "Review_AssignmentParser",
-        "synonym": ["sec", "secondary"],
         "review_type": "secondary",
         "parameters": ["user", "[review round]"],
         "group": "review", "description": "Assign secondary review"
     },
+    {   "name": "sec", "alias": "secondaryreview"   },
+    {   "name": "secondary", "alias": "secondaryreview"   },
     {
         "name": "pcreview", "parser_class": "Review_AssignmentParser",
-        "synonym": ["optionalreview", "optionalpcreview"],
         "review_type": "optional",
         "parameters": ["user", "[review round]"],
         "group": "review", "description": "Assign optional PC review"
     },
+    {   "name": "optionalreview", "alias": "pcreview"   },
+    {   "name": "optionalpcreview", "alias": "pcreview"   },
     {
         "name": "externalreview", "parser_class": "Review_AssignmentParser",
-        "synonym": ["ext", "external", "extreview"],
         "review_type": "external",
         "parameters": ["user", "[review round]"],
         "group": "review", "description": "Assign external review"
     },
+    {   "name": "ext", "alias": "externalreview"   },
+    {   "name": "external", "alias": "externalreview"   },
+    {   "name": "extreview", "alias": "externalreview"   },
     {
         "name": "clearreview", "parser_class": "Review_AssignmentParser",
-        "synonym": ["noreview", "unassignreview"],
         "review_type": "none",
         "parameters": ["user", "[review type]", "[review round]"],
         "group": "review", "description": "Remove review assignment"
     },
+    {   "name": "noreview", "alias": "clearreview"   },
+    {   "name": "unassignreview", "alias": "clearreview"   },
     {
         "name": "unsubmitreview", "parser_class": "UnsubmitReview_AssignmentParser",
         "parameters": ["user", "[review type]", "[review round]"],
@@ -66,10 +72,10 @@
     },
     {
         "name": "clearlead", "parser_class": "Lead_AssignmentParser",
-        "synonym": ["nolead"],
         "type": "lead", "remove": true,
         "position": false, "parameters": []
     },
+    {   "name": "nolead", "alias": "clearlead"   },
     {
         "name": "shepherd", "parser_class": "Lead_AssignmentParser",
         "type": "shepherd", "remove": false,
@@ -78,23 +84,28 @@
     },
     {
         "name": "clearshepherd", "parser_class": "Lead_AssignmentParser",
-        "synonym": ["noshepherd"],
         "type": "shepherd", "remove": true,
         "position": false, "parameters": []
     },
+    {   "name": "noshepherd", "alias": "clearshepherd"   },
     {
         "name": "administrator", "parser_class": "Lead_AssignmentParser",
-        "synonym": ["admin", "manager"],
         "type": "manager", "remove": false,
         "parameters": ["user"],
         "description": "Set submission administrator"
     },
+    {   "name": "admin", "alias": "administrator"   },
+    {   "name": "manager", "alias": "administrator"   },
     {
         "name": "clearadministrator", "parser_class": "Lead_AssignmentParser",
-        "synonym": ["clearmanager", "clearadmin", "noadministrator", "nomanager", "noadmin"],
         "type": "manager", "remove": true,
         "position": false, "parameters": []
     },
+    {   "name": "clearmanager", "alias": "clearadministrator"   },
+    {   "name": "clearadmin", "alias": "clearadministrator"   },
+    {   "name": "noadministrator", "alias": "clearadministrator"   },
+    {   "name": "nomanager", "alias": "clearadministrator"   },
+    {   "name": "noadmin", "alias": "clearadministrator"   },
     {
         "name": "conflict", "parser_class": "Conflict_AssignmentParser",
         "remove": false, "iscontact": false,
@@ -103,10 +114,10 @@
     },
     {
         "name": "clearconflict", "parser_class": "Conflict_AssignmentParser",
-        "synonym": ["noconflict"],
         "remove": true, "iscontact": false,
         "position": false, "parameters": ["user"]
     },
+    {   "name": "noconflict", "alias": "clearconflict"   },
     {
         "name": "contact", "parser_class": "Conflict_AssignmentParser",
         "remove": false, "iscontact": true,
@@ -115,25 +126,25 @@
     },
     {
         "name": "clearcontact", "parser_class": "Conflict_AssignmentParser",
-        "synonym": ["nocontact"],
         "remove": true, "iscontact": true,
         "parameters": ["user"], "group": "contact",
         "description": "Clear contact author relationship"
     },
+    {   "name": "nocontact", "alias": "clearcontact"   },
     {
         "name": "tag", "parser_class": "Tag_AssignmentParser",
-        "synonym": ["settag"],
         "remove": false, "next": false,
         "parameters": ["tag", "[tag value]"],
         "description": "Set tag"
     },
+    {   "name": "settag", "alias": "tag"   },
     {
         "name": "cleartag", "parser_class": "Tag_AssignmentParser",
-        "synonym": ["notag"],
         "remove": true,
         "parameters": ["tag", "[tag value]"], "group": "tag",
         "description": "Remove tag"
     },
+    {   "name": "notag", "alias": "cleartag"   },
     {
         "name": "nexttag", "parser_class": "Tag_AssignmentParser",
         "remove": false, "next": true,
@@ -142,17 +153,19 @@
     },
     {
         "name": "seqnexttag", "parser_class": "Tag_AssignmentParser",
-        "synonym": ["seqtag", "nextseqtag"],
         "remove": false, "next": "seq",
         "parameters": ["tag"], "group": "tag",
         "description": "Add to gapless tag order"
     },
+    {   "name": "seqtag", "alias": "seqnexttag"   },
+    {   "name": "nextseqtag", "alias": "seqnexttag"   },
     {
         "name": "pref", "parser_class": "Preference_AssignmentParser",
-        "synonym": ["preference", "revpref"],
         "parameters": ["user", "preference", "[expertise]"],
         "description": "Set reviewer preference"
     },
+    {   "name": "preference", "alias": "pref"   },
+    {   "name": "revpref", "alias": "pref"   },
     {
         "name": "decision", "parser_class": "Decision_AssignmentParser",
         "remove": false,
@@ -181,10 +194,10 @@
     },
     {
         "name": "revive", "parser_class": "Status_AssignmentParser",
-        "synonym": ["unwithdraw"],
         "type": "revive",
         "parameters": [], "description": "Revive (unwithdraw) submission"
     },
+    {   "name": "unwithdraw", "alias": "revive"   },
     {
         "name": "follow", "parser_class": "Follow_AssignmentParser",
         "parameters": ["user", "following"], "default_follow": "yes",
@@ -192,10 +205,10 @@
     },
     {
         "name": "unfollow", "parser_class": "Follow_AssignmentParser",
-        "synonym": ["nofollow"],
         "parameters": ["user"], "default_follow": "no", "position": false,
         "description": "Block review and comment notifications"
     },
+    {   "name": "nofollow", "alias": "unfollow"   },
     {
         "name": "clearfollow", "parser_class": "Follow_AssignmentParser",
         "parameters": ["user"], "default_follow": "clear", "position": false,

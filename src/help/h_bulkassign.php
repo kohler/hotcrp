@@ -141,8 +141,8 @@ a conflict type, such as “advisor” or “institutional”.</p>";
     static function echo_actions(Contact $user, $hth = null) {
         $apge = new GroupedExtensions($user, "etc/assignmentparsers.json", $user->conf->opt("assignmentParsers"));
         $apx = [];
-        foreach ($apge->all() as $name => $uf) {
-            if ($uf->name === $name) {
+        foreach ($apge->all() as $uf) {
+            if (!isset($uf->alias)) {
                 $t = '<tr><td class="pad';
                 if ($uf->group !== $uf->name) {
                     $t .= ' padl';
