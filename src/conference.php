@@ -822,9 +822,10 @@ class Conf {
     }
     static function xt_add(&$a, $name, $xt) {
         $a[$name][] = $xt;
-        if (($syn = get($xt, "synonym")))
+        if (($syn = get($xt, "synonym"))) {
             foreach (is_string($syn) ? [$syn] : $syn as $synname)
                 $a[$synname][] = $xt;
+        }
         return true;
     }
     static private function xt_combine($xt1, $xt2) {
@@ -909,17 +910,19 @@ class Conf {
                        || $this->xt_check($xt->allow_if, $xt, $user));
     }
     static function xt_allow_list($xt) {
-        if ($xt && isset($xt->allow_if))
+        if ($xt && isset($xt->allow_if)) {
             return is_array($xt->allow_if) ? $xt->allow_if : [$xt->allow_if];
-        else
+        } else {
             return [];
+        }
     }
     function xt_checkf($xt, $user) {
-        if ($this->_xt_allow_callback !== null)
+        if ($this->_xt_allow_callback !== null) {
             return call_user_func($this->_xt_allow_callback, $xt, $user);
-        else
+        } else {
             return !isset($xt->allow_if)
                 || $this->xt_check($xt->allow_if, $xt, $user);
+        }
     }
     function xt_search_name($map, $name, $user, $found = null) {
         if (isset($map[$name])) {
@@ -983,8 +986,9 @@ class Conf {
                 self::xt_combine($xt, $fxt);
                 $prio = self::xt_priority_compare($xt, $found);
                 if ($prio <= 0 && $this->xt_checkf($xt, $user)) {
-                    if ($prio < 0)
+                    if ($prio < 0) {
                         $xts = [];
+                    }
                     $xts[] = $found = $xt;
                 }
             }
@@ -992,8 +996,9 @@ class Conf {
         return $xts;
     }
     function xt_factory_error($message) {
-        if ($this->xt_factory_error_handler)
+        if ($this->xt_factory_error_handler) {
             call_user_func($this->xt_factory_error_handler, $message);
+        }
     }
 
 
@@ -1002,8 +1007,9 @@ class Conf {
         if (is_string($val) && str_starts_with($key, ":") && str_ends_with($key, ":")) {
             $this->_emoji_codes->emoji[$key] = $val;
             return true;
-        } else
+        } else {
             return false;
+        }
     }
     function emoji_code_map() {
         global $ConfSitePATH;
@@ -1022,8 +1028,9 @@ class Conf {
             $this->_defined_formulas = [];
             if ($this->setting("formulas")) {
                 $result = $this->q("select * from Formula order by lower(name)");
-                while ($result && ($f = Formula::fetch($this, $result)))
+                while ($result && ($f = Formula::fetch($this, $result))) {
                     $this->_defined_formulas[$f->formulaId] = $f;
+                }
                 Dbl::free($result);
             }
         }
@@ -2217,8 +2224,9 @@ class Conf {
 
     function invalidate_caches($caches = null) {
         if (!self::$no_invalidate_caches) {
-            if (is_string($caches))
+            if (is_string($caches)) {
                 $caches = [$caches => true];
+            }
             if (!$caches || isset($caches["pc"])) {
                 $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_members_and_admins_cache = $this->_pc_chairs_cache = null;
                 $this->_user_cache = [];
@@ -2232,14 +2240,18 @@ class Conf {
                 $this->_review_form_cache = $this->_defined_rounds = null;
                 $this->_abbrev_matcher = null;
             }
-            if (!$caches || isset($caches["taginfo"]) || isset($caches["tracks"]))
+            if (!$caches || isset($caches["taginfo"]) || isset($caches["tracks"])) {
                 $this->_taginfo = null;
-            if (!$caches || isset($caches["formulas"]))
+            }
+            if (!$caches || isset($caches["formulas"])) {
                 $this->_formula_functions = null;
-            if (!$caches || isset($caches["assigners"]))
+            }
+            if (!$caches || isset($caches["assigners"])) {
                 $this->_assignment_parsers = null;
-            if (!$caches || isset($caches["tracks"]))
+            }
+            if (!$caches || isset($caches["tracks"])) {
                 Contact::update_rights();
+            }
         }
     }
 
@@ -3913,38 +3925,42 @@ class Conf {
     }
 
     function resolve_ims_requirement($s, $isreq) {
-        if ($isreq)
+        if ($isreq) {
             return null;
-        else if (str_starts_with($s, "setting."))
+        } else if (str_starts_with($s, "setting.")) {
             return [$this->setting(substr($s, 8))];
-        else if (str_starts_with($s, "opt."))
+        } else if (str_starts_with($s, "opt.")) {
             return [$this->opt(substr($s, 4))];
-        else
+        } else {
             return null;
+        }
     }
 
 
     // search keywords
 
     function _add_search_keyword_json($kwj) {
-        if (isset($kwj->name) && is_string($kwj->name))
+        if (isset($kwj->name) && is_string($kwj->name)) {
             return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
-        else if (is_string($kwj->match) && is_string($kwj->expand_callback)) {
+        } else if (is_string($kwj->match) && is_string($kwj->expand_callback)) {
             $this->_search_keyword_factories[] = $kwj;
             return true;
-        } else
+        } else {
             return false;
+        }
     }
     private function make_search_keyword_map() {
         $this->_search_keyword_base = $this->_search_keyword_factories = [];
         expand_json_includes_callback(["etc/searchkeywords.json"], [$this, "_add_search_keyword_json"]);
-        if (($olist = $this->opt("searchKeywords")))
+        if (($olist = $this->opt("searchKeywords"))) {
             expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
+        }
         usort($this->_search_keyword_factories, "Conf::xt_priority_compare");
     }
     function search_keyword($keyword, Contact $user = null) {
-        if ($this->_search_keyword_base === null)
+        if ($this->_search_keyword_base === null) {
             $this->make_search_keyword_map();
+        }
         $uf = $this->xt_search_name($this->_search_keyword_base, $keyword, $user);
         $ufs = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $user, $uf);
         return self::xt_resolve_require($ufs[0]);
@@ -3954,8 +3970,9 @@ class Conf {
     // assignment parsers
 
     function _add_assignment_parser_json($uf) {
-        if (isset($uf->name) && is_string($uf->name))
+        if (isset($uf->name) && is_string($uf->name)) {
             return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
+        }
         return false;
     }
     function assignment_parser($keyword, Contact $user = null) {
@@ -3963,8 +3980,9 @@ class Conf {
         if ($this->_assignment_parsers === null) {
             $this->_assignment_parsers = [];
             expand_json_includes_callback(["etc/assignmentparsers.json"], [$this, "_add_assignment_parser_json"]);
-            if (($olist = $this->opt("assignmentParsers")))
+            if (($olist = $this->opt("assignmentParsers"))) {
                 expand_json_includes_callback($olist, [$this, "_add_assignment_parser_json"]);
+            }
         }
         $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $user);
         $uf = self::xt_resolve_require($uf);
@@ -3979,16 +3997,19 @@ class Conf {
     // formula functions
 
     function _add_formula_function_json($fj) {
-        if (isset($fj->name) && is_string($fj->name))
+        if (isset($fj->name) && is_string($fj->name)) {
             return self::xt_add($this->_formula_functions, $fj->name, $fj);
-        return false;
+        } else {
+            return false;
+        }
     }
     function formula_function($fname, Contact $user) {
         if ($this->_formula_functions === null) {
             $this->_formula_functions = [];
             expand_json_includes_callback(["etc/formulafunctions.json"], [$this, "_add_formula_function_json"]);
-            if (($olist = $this->opt("formulaFunctions")))
+            if (($olist = $this->opt("formulaFunctions"))) {
                 expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
+            }
         }
         $uf = $this->xt_search_name($this->_formula_functions, $fname, $user);
         return self::xt_resolve_require($uf);
@@ -3999,17 +4020,19 @@ class Conf {
 
     function _add_api_json($fj) {
         if (isset($fj->name) && is_string($fj->name)
-            && isset($fj->callback) && is_string($fj->callback))
+            && isset($fj->callback) && is_string($fj->callback)) {
             return self::xt_add($this->_api_map, $fj->name, $fj);
-        else
+        } else {
             return false;
+        }
     }
     private function api_map() {
         if ($this->_api_map === null) {
             $this->_api_map = [];
             expand_json_includes_callback(["etc/apifunctions.json"], [$this, "_add_api_json"]);
-            if (($olist = $this->opt("apiFunctions")))
+            if (($olist = $this->opt("apiFunctions"))) {
                 expand_json_includes_callback($olist, [$this, "_add_api_json"]);
+            }
         }
         return $this->_api_map;
     }
@@ -4044,20 +4067,20 @@ class Conf {
             && (!$uf || get($uf, "post"))
             && (!$uf || !get($uf, "allow_xss"))) {
             return new JsonResult(403, "Missing credentials.");
-        }
-        if (!$uf) {
-            if ($this->has_api($fn, $user, null))
+        } else if (!$uf) {
+            if ($this->has_api($fn, $user, null)) {
                 return new JsonResult(405, "Method not supported.");
-            else if ($this->has_api($fn, null, $qreq->method()))
+            } else if ($this->has_api($fn, null, $qreq->method())) {
                 return new JsonResult(403, "Permission error.");
-            else
+            } else {
                 return new JsonResult(404, "Function not found.");
-        }
-        if (!$prow && get($uf, "paper")) {
+            }
+        } else if (!$prow && get($uf, "paper")) {
             return self::paper_error_json_result($qreq->annex("paper_whynot"));
+        } else {
+            self::xt_resolve_require($uf);
+            return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
         }
-        self::xt_resolve_require($uf);
-        return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
     }
     static function paper_error_json_result($whynot) {
         $result = ["ok" => false];
@@ -4105,10 +4128,12 @@ class Conf {
     function _add_list_action_json($fj) {
         $ok = false;
         if (isset($fj->name) && is_string($fj->name)) {
-            if (isset($fj->render_callback) && is_string($fj->render_callback))
+            if (isset($fj->render_callback) && is_string($fj->render_callback)) {
                 $ok = self::xt_add($this->_list_action_renderers, $fj->name, $fj);
-            if (isset($fj->callback) && is_string($fj->callback))
+            }
+            if (isset($fj->callback) && is_string($fj->callback)) {
                 $ok = self::xt_add($this->_list_action_map, $fj->name, $fj);
+            }
         } else if (is_string($fj->match) && is_string($fj->expand_callback)) {
             $this->_list_action_factories[] = $fj;
             $ok = true;
@@ -4119,8 +4144,9 @@ class Conf {
         if ($this->_list_action_map === null) {
             $this->_list_action_map = $this->_list_action_renderers = $this->_list_action_factories = [];
             expand_json_includes_callback(["etc/listactions.json"], [$this, "_add_list_action_json"]);
-            if (($olist = $this->opt("listActions")))
+            if (($olist = $this->opt("listActions"))) {
                 expand_json_includes_callback($olist, [$this, "_add_list_action_json"]);
+            }
             usort($this->_list_action_factories, "Conf::xt_priority_compare");
         }
         return $this->_list_action_map;
@@ -4137,8 +4163,9 @@ class Conf {
             return $this->check_api_json($xt, $user, $method);
         };
         $uf = $this->xt_search_name($this->list_action_map(), $name, $user);
-        if (($s = strpos($name, "/")) !== false)
+        if (($s = strpos($name, "/")) !== false) {
             $uf = $this->xt_search_name($this->list_action_map(), substr($name, 0, $s), $user, $uf);
+        }
         $ufs = $this->xt_search_factories($this->_list_action_factories, $name, $user, $uf);
         $this->_xt_allow_callback = null;
         return self::xt_resolve_require($ufs[0]);
@@ -4150,8 +4177,9 @@ class Conf {
     function _add_paper_column_json($fj) {
         $cb = isset($fj->callback) && is_string($fj->callback);
         $ok = false;
-        if (isset($fj->name) && is_string($fj->name) && $cb)
+        if (isset($fj->name) && is_string($fj->name) && $cb) {
             $ok = self::xt_add($this->_paper_column_map, $fj->name, $fj);
+        }
         if (isset($fj->match) && is_string($fj->match)
             && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
             $this->_paper_column_factories[] = $fj;
@@ -4196,13 +4224,14 @@ class Conf {
 
     function _add_option_type_json($fj) {
         $cb = isset($fj->callback) && is_string($fj->callback);
-        if (isset($fj->name) && is_string($fj->name) && $cb)
+        if (isset($fj->name) && is_string($fj->name) && $cb) {
             return self::xt_add($this->_option_type_map, $fj->name, $fj);
-        else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
+        } else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
             $this->_option_type_factories[] = $fj;
             return true;
-        } else
+        } else {
             return false;
+        }
     }
     function option_type_map() {
         if ($this->_option_type_map === null) {
@@ -4236,8 +4265,9 @@ class Conf {
             && isset($fj->callback) && is_string($fj->callback)) {
             $this->_capability_factories[] = $fj;
             return true;
-        } else
+        } else {
             return false;
+        }
     }
     function capability_handler($cap) {
         if ($this->_capability_factories === null) {
@@ -4256,13 +4286,14 @@ class Conf {
 
     function _add_mail_keyword_json($fj) {
         $cb = isset($fj->callback) && is_string($fj->callback);
-        if (isset($fj->name) && is_string($fj->name) && $cb)
+        if (isset($fj->name) && is_string($fj->name) && $cb) {
             return self::xt_add($this->_mail_keyword_map, $fj->name, $fj);
-        else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
+        } else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
             $this->_mail_keyword_factories[] = $fj;
             return true;
-        } else
+        } else {
             return false;
+        }
     }
     function mail_keyword_map() {
         if ($this->_mail_keyword_map === null) {
@@ -4288,8 +4319,9 @@ class Conf {
             if (is_array($fj->body))
                 $fj->body = join("", $fj->body);
             return self::xt_add($this->_mail_template_map, $fj->name, $fj);
-        } else
+        } else {
             return false;
+        }
     }
     function mail_template_map() {
         if ($this->_mail_template_map === null) {
@@ -4333,9 +4365,9 @@ class Conf {
 
     function _add_hook_json($fj) {
         if (isset($fj->callback) && is_string($fj->callback) && !isset($fj->synonym)) {
-            if (isset($fj->event) && is_string($fj->event))
+            if (isset($fj->event) && is_string($fj->event)) {
                 return self::xt_add($this->_hook_map, $fj->event, $fj);
-            else if (isset($fj->match) && is_string($fj->match)) {
+            } else if (isset($fj->match) && is_string($fj->match)) {
                 $this->_hook_factories[] = $fj;
                 return true;
             }
@@ -4343,15 +4375,19 @@ class Conf {
         return false;
     }
     function add_hook($name, $callback = null, $priority = null) {
-        if ($this->_hook_map === null)
+        if ($this->_hook_map === null) {
             $this->hook_map();
+        }
         $fj = is_object($name) ? $name : $callback;
-        if (is_string($fj))
+        if (is_string($fj)) {
             $fj = (object) ["callback" => $fj];
-        if (is_string($name))
+        }
+        if (is_string($name)) {
             $fj->event = $name;
-        if ($priority !== null)
+        }
+        if ($priority !== null) {
             $fj->priority = $priority;
+        }
         return $this->_add_hook_json($fj) ? $fj : false;
     }
     function remove_hook($fj) {

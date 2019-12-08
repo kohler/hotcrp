@@ -144,21 +144,24 @@ a conflict type, such as “advisor” or “institutional”.</p>";
         foreach ($apge->all() as $name => $uf) {
             if ($uf->name === $name) {
                 $t = '<tr><td class="pad';
-                if ($uf->group !== $uf->name)
+                if ($uf->group !== $uf->name) {
                     $t .= ' padl';
+                }
                 $t .= '">';
-                $n = '<code>' . htmlspecialchars($name) . '</code>';
+                $n = '<code>' . htmlspecialchars($uf->name) . '</code>';
                 if ($hth
-                    && ($xt = $hth->member("bulkassignactions/{$name}"))
-                    && $xt->anchorid)
+                    && ($xt = $hth->member("bulkassignactions/{$uf->name}"))
+                    && $xt->anchorid) {
                     $n = '<a href="#' . $xt->anchorid . '">' . $n . '</a>';
+                }
                 $t .= $n . '</td><td class="pad"><code>pid</code>';
                 foreach (get($uf, "parameters", []) as $param) {
                     $t .= ', ';
-                    if ($param[0] === "[")
+                    if ($param[0] === "[") {
                         $t .= '[<code>' . substr($param, 1, -1) . '</code>]';
-                    else
+                    } else {
                         $t .= '<code>' . $param . '</code>';
+                    }
                 }
                 $t .= '</td><td class="pad">' . get($uf, "description", "")
                     . '</td></tr>';

@@ -3,8 +3,9 @@
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-if (!$Me->privChair)
+if (!$Me->privChair) {
     $Me->escape();
+}
 
 $Sv = SettingValues::make_request($Me, $Qreq);
 $Sv->session_highlight();
@@ -12,24 +13,29 @@ $Sv->session_highlight();
 function choose_setting_group($qreq, SettingValues $sv) {
     global $Conf, $Me;
     $req_group = $qreq->group;
-    if (!$req_group && preg_match(',\A/\w+\z,', Navigation::path()))
+    if (!$req_group && preg_match(',\A/\w+\z,', Navigation::path())) {
         $req_group = substr(Navigation::path(), 1);
+    }
     $want_group = $req_group;
-    if (!$want_group && isset($_SESSION["sg"])) // NB not conf-specific session, global
+    if (!$want_group && isset($_SESSION["sg"])) { // NB not conf-specific session, global
         $want_group = $_SESSION["sg"];
+    }
     $want_group = $sv->canonical_group($want_group);
     if (!$want_group || !$sv->is_titled_group($want_group)) {
-        if ($sv->conf->can_some_author_view_review())
+        if ($sv->conf->can_some_author_view_review()) {
             $want_group = $sv->canonical_group("decisions");
-        else if ($sv->conf->deadlinesAfter("sub_sub") || $sv->conf->time_review_open())
+        } else if ($sv->conf->deadlinesAfter("sub_sub") || $sv->conf->time_review_open()) {
             $want_group = $sv->canonical_group("reviews");
-        else
+        } else {
             $want_group = $sv->canonical_group("sub");
+        }
     }
-    if (!$want_group)
+    if (!$want_group) {
         $Me->escape();
-    if ($want_group !== $req_group && !$qreq->post && $qreq->post_empty())
+    }
+    if ($want_group !== $req_group && !$qreq->post && $qreq->post_empty()) {
         $Conf->self_redirect($qreq, ["group" => $want_group, "anchor" => $sv->group_anchorid($req_group)]);
+    }
     $sv->mark_interesting_group($want_group);
     return $want_group;
 }
@@ -47,8 +53,9 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
         $Conf->self_redirect($Qreq);
     }
 }
-if (isset($Qreq->cancel) && $Qreq->post_ok())
+if (isset($Qreq->cancel) && $Qreq->post_ok()) {
     $Conf->self_redirect($Qreq);
+}
 
 $Sv->crosscheck();
 
@@ -62,11 +69,12 @@ echo Ht::form(hoturl_post("settings", "group=$Group"),
 
 echo '<div class="leftmenu-left"><div class="leftmenu-menu"><h1 class="leftmenu">Settings</h1><div class="leftmenu-list">';
 foreach ($group_titles as $name => $title) {
-    if ($name === $Group)
+    if ($name === $Group) {
         echo '<div class="leftmenu-item active">', $title, '</div>';
-    else
+    } else {
         echo '<div class="leftmenu-item ui js-click-child">',
             '<a href="', hoturl("settings", "group={$name}"), '">', $title, '</a></div>';
+    }
 }
 echo '</div><div class="leftmenu-if-left if-alert mt-5">',
     Ht::submit("update", "Save changes", ["class" => "btn-primary"]),

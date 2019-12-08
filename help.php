@@ -9,14 +9,17 @@ $help_topics = new GroupedExtensions($Me, [
     "etc/helptopics.json"
 ], $Conf->opt("helpTopics"));
 
-if (!$Qreq->t && preg_match(',\A/(\w+)\z,i', Navigation::path()))
+if (!$Qreq->t && preg_match(',\A/(\w+)\z,i', Navigation::path())) {
     $Qreq->t = substr(Navigation::path(), 1);
+}
 $topic = $Qreq->t ? : "topics";
 $want_topic = $help_topics->canonical_group($topic);
-if (!$want_topic)
+if (!$want_topic) {
     $want_topic = "topics";
-if ($want_topic !== $topic)
+}
+if ($want_topic !== $topic) {
     $Conf->self_redirect($Qreq, ["t" => $want_topic]);
+}
 $topicj = $help_topics->get($topic);
 
 $Conf->header("Help", "help", ["title_div" => '<hr class="c">', "body_class" => "leftmenu"]);
