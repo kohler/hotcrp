@@ -4286,22 +4286,22 @@ class Conf {
     // mail keywords
 
     function _add_mail_keyword_json($fj) {
-        $cb = isset($fj->callback) && is_string($fj->callback);
-        if (isset($fj->name) && is_string($fj->name) && $cb) {
+        if (isset($fj->name) && is_string($fj->name)) {
             return self::xt_add($this->_mail_keyword_map, $fj->name, $fj);
-        } else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
+        } else if (is_string($fj->match)) {
             $this->_mail_keyword_factories[] = $fj;
             return true;
         } else {
             return false;
         }
     }
-    function mail_keyword_map() {
+    private function mail_keyword_map() {
         if ($this->_mail_keyword_map === null) {
             $this->_mail_keyword_map = $this->_mail_keyword_factories = [];
             expand_json_includes_callback(["etc/mailkeywords.json"], [$this, "_add_mail_keyword_json"]);
-            if (($mks = $this->opt("mailKeywords")))
+            if (($mks = $this->opt("mailKeywords"))) {
                 expand_json_includes_callback($mks, [$this, "_add_mail_keyword_json"]);
+            }
             usort($this->_mail_keyword_factories, "Conf::xt_priority_compare");
         }
         return $this->_mail_keyword_map;
