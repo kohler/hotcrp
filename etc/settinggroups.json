@@ -47,13 +47,19 @@
     {
         "name": "decisions/review-visibility", "position": 20,
         "title": "Review visibility",
-        "render_callback": "ReviewVisibility_SettingParser::render",
+        "render_callback": "ReviewVisibility_SettingParser::render"
+    },
+    {
+        "name": "__crosscheck/review-visibility", "position": 800,
         "crosscheck_callback": "ReviewVisibility_SettingParser::crosscheck"
     },
     {
         "name": "decisions/decision-visibility", "position": 25,
         "title": "Decision visibility",
-        "render_callback": "DecisionVisibility_SettingParser::render",
+        "render_callback": "DecisionVisibility_SettingParser::render"
+    },
+    {
+        "name": "__crosscheck/decision-visibility", "position": 805,
         "crosscheck_callback": "DecisionVisibility_SettingParser::crosscheck"
     },
     {
@@ -67,7 +73,10 @@
     },
     {
         "name": "decisions/final-versions", "position": 105,
-        "render_callback": "FinalVersions_SettingParser::render",
+        "render_callback": "FinalVersions_SettingParser::render"
+    },
+    {
+        "name": "__crosscheck/final-versions", "position": 810,
         "crosscheck_callback": "FinalVersions_SettingParser::crosscheck"
     },
 
@@ -83,7 +92,10 @@
     },
     {
         "name": "reviews", "synonym": ["rev", "review"], "position": 500,
-        "title": "Reviews",
+        "title": "Reviews"
+    },
+    {
+        "name": "__crosscheck/reviews", "position": 500,
         "crosscheck_callback": "Reviews_SettingRenderer::crosscheck"
     },
     {
@@ -107,7 +119,10 @@
     },
     {
         "name": "submissions", "synonym": ["sub"], "position": 300,
-        "title": "Submissions",
+        "title": "Submissions"
+    },
+    {
+        "name": "__crosscheck/submissions", "position": 300,
         "crosscheck_callback": "Submissions_SettingRenderer::crosscheck"
     },
     {
@@ -138,8 +153,11 @@
     },
     {
         "name": "options", "group": "subform", "synonym": ["opt"], "position": 440,
-        "crosscheck_callback": "Options_SettingRenderer::crosscheck",
         "render_callback": "Options_SettingRenderer::render"
+    },
+    {
+        "name": "__crosscheck/options", "position": 400,
+        "crosscheck_callback": "Options_SettingRenderer::crosscheck"
     },
     {
         "name": "options/properties/type", "position": 10,
@@ -200,9 +218,12 @@
     },
     {
         "name": "tracks", "group": "tags", "position": 750,
-        "crosscheck_callback": "Tracks_SettingRenderer::crosscheck",
         "render_callback": "Tracks_SettingRenderer::render",
         "title": "Tracks", "anchorid": "tracks"
+    },
+    {
+        "name": "__crosscheck/tracks", "position": 750,
+        "crosscheck_callback": "Tracks_SettingRenderer::crosscheck"
     },
     {
         "name": "tracks/permissions/view", "position": 10,

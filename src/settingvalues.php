@@ -472,7 +472,7 @@ class SettingValues extends MessageSet {
         }
     }
     function crosscheck() {
-        foreach ($this->gxt()->all() as $gj) {
+        foreach ($this->group_members("__crosscheck") as $gj) {
             if (isset($gj->crosscheck_callback)) {
                 Conf::xt_resolve_require($gj);
                 call_user_func($gj->crosscheck_callback, $this, $gj);
