@@ -3951,7 +3951,7 @@ class Conf {
     // search keywords
 
     function _add_search_keyword_json($kwj) {
-        if (isset($kwj->name) && is_string($kwj->name)) {
+        if (isset($kwj->name)) {
             return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
         } else if (is_string($kwj->match) && is_string($kwj->expand_callback)) {
             $this->_search_keyword_factories[] = $kwj;
