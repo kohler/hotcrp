@@ -4176,9 +4176,8 @@ class Conf {
     // paper columns
 
     function _add_paper_column_json($fj) {
-        $cb = isset($fj->callback) && is_string($fj->callback);
         $ok = false;
-        if (isset($fj->name) && is_string($fj->name) && $cb) {
+        if (isset($fj->name)) {
             $ok = self::xt_add($this->_paper_column_map, $fj->name, $fj);
         }
         if (isset($fj->match) && is_string($fj->match)
@@ -4193,8 +4192,9 @@ class Conf {
             require_once("papercolumn.php");
             $this->_paper_column_map = $this->_paper_column_factories = [];
             expand_json_includes_callback(["etc/papercolumns.json"], [$this, "_add_paper_column_json"]);
-            if (($olist = $this->opt("paperColumns")))
+            if (($olist = $this->opt("paperColumns"))) {
                 expand_json_includes_callback($olist, [$this, "_add_paper_column_json"]);
+            }
             usort($this->_paper_column_factories, "Conf::xt_priority_compare");
         }
         return $this->_paper_column_map;

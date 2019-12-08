@@ -12,8 +12,9 @@
     {
         "name": "id",
         "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+Id_PaperColumn",
-        "position": 50, "synonym": ["pid"]
+        "position": 50
     },
+    {   "name": "pid", "alias": "id"   },
     {
         "name": "title",
         "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+Title_PaperColumn",
@@ -44,13 +45,20 @@
     {
         "name": "mypref",
         "column": true, "sort": true, "completion": true, "className": "pl_revpref", "callback": "+Preference_PaperColumn",
-        "position": 500, "synonym": ["myrevpref", "mypreference", "pref", "revpref", "preference"]
+        "position": 500
     },
+    {   "name": "mypreference", "alias": "mypref"   },
+    {   "name": "myrevpref", "alias": "mypref"   },
+    {   "name": "pref", "alias": "mypref"   },
+    {   "name": "revpref", "alias": "mypref"   },
+    {   "name": "preference", "alias": "mypref"   },
     {
         "name": "editmypref",
         "column": true, "edit": true, "sort": true, "className": "pl_editrevpref", "callback": "+Preference_PaperColumn",
-        "position": 500, "synonym": ["editrevpref"]
+        "position": 500
     },
+    {   "name": "editpreference", "alias": "editmypref"   },
+    {   "name": "editrevpref", "alias": "editmypref"   },
     {
         "match": "(?:pref:|revpref:|preference:)(.+?)", "priority": -1, "allow_if": "manager",
         "expand_callback": "Preference_PaperColumn::expand",
@@ -75,23 +83,30 @@
     {
         "name": "assignment",
         "column": true, "sort": true, "completion": true, "callback": "+AssignReview_PaperColumn",
-        "position": 840, "synonym": ["assrev", "assign"]
+        "position": 840
     },
+    {   "name": "assrev", "alias": "assignment"   },
+    {   "name": "assign", "alias": "assignment"   },
     {
         "name": "conf",
         "column": true, "sort": true, "completion": false, "className": "plc", "callback": "+Conflict_PaperColumn",
-        "position": 855, "synonym": "conflict", "is_pc": false
+        "position": 855, "is_pc": false
     },
+    {   "name": "conflict", "alias": "conf"   },
     {
         "name": "editconf",
         "column": true, "minimal": true, "className": "plc", "callback": "+Conflict_PaperColumn",
         "position": 855, "is_pc": true, "edit": true
     },
+    {   "name": "editconflict", "alias": "editconf"   },
     {
         "name": "confdesc",
         "column": true, "sort": true, "completion": false, "className": "plc", "callback": "+Conflict_PaperColumn",
-        "position": 856, "synonym": ["conflictdesc", "confdescription", "conflictdescription"], "is_pc": false, "show_description": true
+        "position": 856, "is_pc": false, "show_description": true
     },
+    {   "name": "conflictdesc", "alias": "confdesc"   },
+    {   "name": "confdescription", "alias": "confdesc"   },
+    {   "name": "conflictdescription", "alias": "confdesc"   },
     {
         "name": "status",
         "column": true, "sort": true, "completion": true, "callback": "+StatusPaperColumn",
@@ -110,8 +125,9 @@
     {
         "name": "pagecount",
         "column": true, "sort": true, "fold": true, "completion": true, "minimal": true, "className": "plr", "callback": "+PageCount_PaperColumn",
-        "position": 1000, "synonym": ["pages"]
+        "position": 1000
     },
+    {   "name": "pages", "alias": "pagecount"   },
     {
         "match": ".*", "priority": -2100,
         "column": true, "fold": true, "sort": true, "completion": true, "minimal": true,
@@ -165,14 +181,18 @@
     {
         "name": "abstract",
         "row": true, "fold": true, "completion": true, "callback": "+Abstract_PaperColumn",
-        "synonym": ["abstracts"], "position": 140
+        "position": 140
     },
+    {   "name": "ab", "alias": "abstract"   },
+    {   "name": "abstracts", "alias": "abstract"   },
     {
         "name": "authors",
         "row": true, "fold": 1, "completion": true, "sort": true,
         "callback": "+Authors_PaperColumn",
-        "synonym": ["au", "author"], "position": 150
+        "position": 150
     },
+    {   "name": "au", "alias": "authors"   },
+    {   "name": "author", "alias": "authors"   },
     {
         "name": "potentialconflict",
         "row": true, "callback": "+ConflictMatch_PaperColumn",
@@ -185,9 +205,10 @@
     {
         "name": "collab",
         "row": true, "fold": true, "completion": true, "callback": "+Collab_PaperColumn",
-        "synonym": ["collaborators", "co"],
         "position": 160
     },
+    {   "name": "co", "alias": "collab"   },
+    {   "name": "collaborators", "alias": "collab"   },
     {
         "name": "topics",
         "row": true, "fold": true, "completion": true, "callback": "+Topics_PaperColumn",
@@ -196,21 +217,26 @@
     {
         "name": "pcconflicts",
         "row": true, "fold": true, "completion": "pcconflicts", "callback": "+PCConflicts_PaperColumn",
-        "synonym": ["conflicts", "pc-conflicts", "pcconf"],
         "position": 450
     },
+    {   "name": "conflicts", "alias": "pcconflicts"   },
+    {   "name": "pc-conflicts", "alias": "pcconflicts"   },
+    {   "name": "pcconf", "alias": "pcconflicts"   },
     {
         "name": "allpref",
         "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
-        "synonym": ["allrevpref"],
         "position": 550
     },
+    {   "name": "allrevpref", "alias": "allpref"   },
+    {   "name": "allpreference", "alias": "allpref"   },
     {
         "name": "alltopicpref",
         "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
-        "topics": true, "synonym": ["alltopicrevpref", "allrevtopicpref"],
-        "position": 550
+        "topics": true, "position": 550
     },
+    {   "name": "alltopicrevpref", "alias": "alltopicpref"   },
+    {   "name": "alltopicpreference", "alias": "alltopicpref"   },
+    {   "name": "allrevtopicpref", "alias": "alltopicpref"   },
     {
         "name": "reviewers",
         "row": true, "fold": true, "completion": true, "callback": "+ReviewerList_PaperColumn",
@@ -230,10 +256,12 @@
     },
     {
         "name": "administrator",
-        "row": true, "sort": true, "fold": true, "synonym": ["admin"],
+        "row": true, "sort": true, "fold": true,
         "callback": "+Administrator_PaperColumn",
         "position": 1500
     },
+    {   "name": "manager", "alias": "administrator"   },
+    {   "name": "admin", "alias": "administrator"   },
     {
         "name": "lead",
         "row": true, "sort": true, "fold": true, "completion": true,
