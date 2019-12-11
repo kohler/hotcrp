@@ -2296,8 +2296,9 @@ class Conf {
     }
     function parse_time($d, $reference = null) {
         global $Now;
-        if ($reference === null)
+        if ($reference === null) {
             $reference = $Now;
+        }
         if (!isset($this->opt["dateFormatTimezoneRemover"])) {
             $x = array();
             if (function_exists("timezone_abbreviations_list")) {
@@ -2317,12 +2318,25 @@ class Conf {
             $this->opt["dateFormatTimezoneRemover"] =
                 "/(?:\\s|\\A)(?:" . join("|", $x) . ")(?:\\s|\\z)/i";
         }
-        if ($this->opt["dateFormatTimezoneRemover"])
+        if ($this->opt["dateFormatTimezoneRemover"]) {
             $d = preg_replace($this->opt["dateFormatTimezoneRemover"], " ", $d);
-        $d = preg_replace_callback('/\b(utc(?=[-+])|aoe(?=\s|\z))/i', function ($m) {
-            return strcasecmp($m[1], "aoe") === 0 ? "GMT-1200" : "GMT";
-        }, $d);
-        return strtotime($d, $reference);
+        }
+        if (preg_match('/\A(.*)\b(utc(?=[-+])|aoe(?=\s|\z))(.*)\z/i', $d, $m)) {
+            if (strcasecmp($m[2], "aoe") === 0) {
+                $d = strtotime($m[1] . "GMT-1200" . $m[3], $reference);
+                if ($d !== false
+                    && $d % 86400 == 43200
+                    && ($dx = strtotime($m[1] . " T23:59:59 GMT-1200" . $m[3], $reference)) === $d + 86399) {
+                    return $dx;
+                } else {
+                    return $d;
+                }
+            } else {
+                return strtotime($m[1] . "GMT" . $m[3], $reference);
+            }
+        } else {
+            return strtotime($d, $reference);
+        }
     }
 
     private function _unparse_time($value, $type, $useradjust, $preadjust = null) {

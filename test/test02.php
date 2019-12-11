@@ -219,6 +219,14 @@ $t = $Conf->parse_time("29 May 2018 03:00:00");
 xassert_eqq($t, 1527606000);
 $t = $Conf->unparse_time(1527606000);
 xassert_eqq($t, "29 May 2018 3am AoE");
+$t = $Conf->parse_time("29 May 2018 23:59:59 AoE");
+xassert_eqq($t, 1527681599);
+$t = $Conf->parse_time("29 May 2018 AoE");
+xassert_eqq($t, 1527681599);
+$t = $Conf->parse_time("29 May 2018 12am AoE");
+xassert_eqq($t, 1527595200);
+$t = $Conf->parse_time("29 May AoE", 1527606000);
+xassert_eqq($t, 1527681599);
 
 // review ordinal tests
 foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
