@@ -45,7 +45,7 @@ if ($page_template && isset($page_template->require)) {
 
     if ($group && !str_starts_with($group, "__")) {
         // handle signin/signout -- may change $Me
-        if ($group === "index") {
+        if ($group === "index" || $group === "home") {
             $Me = Home_Partial::signin_requests($Me, $Qreq);
             // that also got rid of disabled users
         }
