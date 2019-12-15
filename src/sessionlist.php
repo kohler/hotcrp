@@ -108,6 +108,11 @@ class SessionList {
         return is_int($w) || ctype_digit($w[strlen($w) - 1]);
     }
 
+    static private function encoding_ends_with_r($a) {
+        $w = $a[count($a) - 1];
+        return !is_int($w) && $w[0] === "r";
+    }
+
     static function encode_ids($ids) {
         if (empty($ids))
             return "";
@@ -160,7 +165,7 @@ class SessionList {
             while ($i + $d < $n && $ids[$i + $d] === $ids[$i] + $sign * $d) {
                 ++$d;
             }
-            if ($d === 1 && $a[count($a) - 1][0] === "r") {
+            if ($d === 1 && self::encoding_ends_with_r($a)) {
                 array_pop($a);
                 if (self::encoding_ends_numerically($a)) {
                     $a[] = "s";
