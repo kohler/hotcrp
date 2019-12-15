@@ -28,8 +28,10 @@ class SessionList {
 
     static function decode_ids($s) {
         if (str_starts_with($s, "[")
-            && ($a = json_decode($s)) !== null)
+            && ($a = json_decode($s)) !== null) {
             return is_array($a) ? $a : [$a];
+        }
+
         $a = [];
         $l = strlen($s);
         $next = null;
@@ -148,24 +150,28 @@ class SessionList {
             $d = 1;
             $step = 1;
             if (($i + 1 < $n && $ids[$i + 1] === $ids[$i] - 1)
-                || ($sign < 0 && ($i + 1 === $n || $ids[$i + 1] !== $ids[$i] + 1)))
+                || ($sign < 0 && ($i + 1 === $n || $ids[$i + 1] !== $ids[$i] + 1))) {
                 $step = -1;
+            }
             if (($sign > 0) !== ($step > 0)) {
                 $sign = -$sign;
                 $a[] = "z";
             }
-            while ($i + $d < $n && $ids[$i + $d] === $ids[$i] + $sign * $d)
+            while ($i + $d < $n && $ids[$i + $d] === $ids[$i] + $sign * $d) {
                 ++$d;
+            }
             if ($d === 1 && $a[count($a) - 1][0] === "r") {
                 array_pop($a);
-                if (self::encoding_ends_numerically($a))
+                if (self::encoding_ends_numerically($a)) {
                     $a[] = "s";
+                }
                 $a[] = $ids[$i];
                 $sign = 1;
-            } else if ($d >= 1 && $d <= 8)
+            } else if ($d >= 1 && $d <= 8) {
                 $a[] = chr(96 + $d);
-            else
+            } else {
                 $a[] = "q" . $d;
+            }
 
             $i += $d;
             $next = $ids[$i - 1] + $sign;
@@ -177,13 +183,16 @@ class SessionList {
         if (($j = json_decode($info))
             && (isset($j->ids) || isset($j->digest))) {
             $list = new SessionList;
-            foreach ($j as $key => $value)
+            foreach ($j as $key => $value) {
                 $list->$key = $value;
-            if (is_string($list->ids))
+            }
+            if (is_string($list->ids)) {
                 $list->ids = self::decode_ids($list->ids);
+            }
             return $list;
-        } else
+        } else {
             return null;
+        }
     }
     function full_site_relative_url() {
         $args = Conf::$hoturl_defaults ? : [];
@@ -192,13 +201,15 @@ class SessionList {
         else if ($this->urlbase) {
             $url = $this->urlbase;
             if (preg_match(',\Ap/[^/]*/([^/]*)(?:|/([^/]*))\z,', $this->listid, $m)) {
-                if ($m[1] !== "" || str_starts_with($url, "search"))
+                if ($m[1] !== "" || str_starts_with($url, "search")) {
                     $url .= (strpos($url, "?") ? "&" : "?") . "q=" . $m[1];
-                if (isset($m[2]) && $m[2] !== "")
+                }
+                if (isset($m[2]) && $m[2] !== "") {
                     foreach (explode("&", $m[2]) as $kv) {
                         $eq = strpos($kv, "=");
                         $args[substr($kv, 0, $eq)] = substr($kv, $eq + 1);
                     }
+                }
             }
         } else {
             return null;
@@ -211,28 +222,32 @@ class SessionList {
     }
     function info_string() {
         $j = [];
-        if ($this->ids !== null)
+        if ($this->ids !== null) {
             $j["ids"] = self::encode_ids($this->ids);
-        foreach (get_object_vars($this) as $k => $v)
+        }
+        foreach (get_object_vars($this) as $k => $v) {
             if ($v != null
                 && !in_array($k, ["ids", "id_position", "curid", "previd", "nextid"], true))
                 $j[$k] = $v;
+        }
         return json_encode_browser($j);
     }
 
     static function load_cookie($type) {
         $found = null;
-        foreach ($_COOKIE as $k => $v)
+        foreach ($_COOKIE as $k => $v) {
             if (($k === "hotlist-info" && $found === null)
                 || (str_starts_with($k, "hotlist-info-")
                     && ($found === null || strnatcmp($k, $found) > 0)))
                 $found = $k;
+        }
         if ($found
             && ($list = SessionList::decode_info_string($_COOKIE[$found]))
-            && $list->list_type() === $type)
+            && $list->list_type() === $type) {
             return $list;
-        else
+        } else {
             return null;
+        }
     }
     function set_cookie() {
         global $Conf, $Now;
@@ -241,8 +256,9 @@ class SessionList {
     }
 
     function set_current_id($id) {
-        if ($this->curid !== $id)
+        if ($this->curid !== $id) {
             $this->curid = $this->previd = $this->nextid = null;
+        }
         $this->id_position = $this->ids ? array_search($id, $this->ids) : false;
         return $this->id_position === false ? null : $this;
     }
