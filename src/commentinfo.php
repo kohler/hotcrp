@@ -89,7 +89,7 @@ class CommentInfo {
                 }
                 $t[] = "papercomment.set_resp_round(" . json_encode($rrd->name) . "," . json_encode($j) . ")";
             }
-            echo Ht::unstash_script(join($t, ";"));
+            echo Ht::unstash_script(join(";", $t));
             Icons::stash_licon("ui_tag");
             Icons::stash_licon("ui_attachment");
             Icons::stash_licon("ui_trash");
