@@ -295,8 +295,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             }
         } else if ($rrow->reviewType > 0
                    && $rrow->reviewSubmitted <= 0
-                   && $rrow->reviewNeedsSubmit <= 0) {
-            // don't count delegated reviews unless contacts given
+                   && $rrow->reviewNeedsSubmit <= 0
+                   && !$this->completeness) {
+            // don't count delegated reviews unless contacts or completeness given
             return false;
         }
         if ($this->wordcountexpr
