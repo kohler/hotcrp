@@ -977,10 +977,11 @@ $blind\n";
             if ($rrow->timeApprovalRequested < 0) {
                 $buttons[] = Ht::submit("submitreview", "Update approved review", ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
             } else if ($my_review) {
-                if ($rrow->timeApprovalRequested == 0)
+                if ($rrow->timeApprovalRequested == 0) {
                     $subtext = "Submit for approval";
-                else
+                } else {
                     $subtext = "Resubmit for approval";
+                }
                 $buttons[] = Ht::submit("submitreview", $subtext, ["class" => "btn-primary need-clickthrough-enable", "disabled" => $disabled]);
             } else {
                 $buttons[] = Ht::submit("submitreview", "Approve review", ["class" => "btn-highlight need-clickthrough-enable", "disabled" => $disabled]);
@@ -1044,8 +1045,9 @@ $blind\n";
         echo '">',
             Ht::form($reviewPostLink, ["class" => "editrevform need-unload-protection"]),
             Ht::hidden_default_submit("default", "");
-        if ($rrow)
+        if ($rrow) {
             echo Ht::hidden("version", get($rrow, "reviewEditVersion", 0) + 1);
+        }
         echo '<div class="revcard-head">';
 
         // Links
