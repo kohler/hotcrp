@@ -2256,22 +2256,24 @@ class ReviewValues extends MessageSet {
                    && ($diffinfo->fields() || $approvalstate > 1)
                    && $new_rrow->requestedBy
                    && !$this->no_notify) {
-            if ($approvalstate === 3)
+            if ($approvalstate === 3) {
                 $this->_mailer_template = "@reviewapprove";
-            else if ($approvalstate === 2)
+            } else if ($approvalstate === 2) {
                 $this->_mailer_template = "@reviewapprovalrequest";
-            else if ($new_rrow->requestedBy == $user->contactId)
+            } else if ($new_rrow->requestedBy == $user->contactId) {
                 $this->_mailer_template = "@reviewpreapprovaledit";
-            else
+            } else {
                 $this->_mailer_template = "@reviewapprovalupdate";
+            }
             $this->_mailer_always_combine = true;
             $this->_mailer_info["combination_type"] = 1;
             $this->_mailer_diff_view_score = null;
             $this->_mailer_info["rrow_unsubmitted"] = true;
             $prow->notify_reviews([$this, "review_watch_callback"], $user);
         }
-        if (!empty($this->_mailer_preps))
+        if (!empty($this->_mailer_preps)) {
             HotCRPMailer::send_combined_preparations($this->_mailer_preps);
+        }
         unset($this->_mailer_info, $this->_mailer_preps);
 
         // record what happened
@@ -2316,11 +2318,13 @@ class ReviewValues extends MessageSet {
                 $x = "<a href=\"" . hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
                 $pids[] = $m[2];
             }
-        if ($single === null)
+        if ($single === null) {
             $single = $this->text === null;
+        }
         $t = $this->conf->_($fmt, count($info), commajoin($info), $single);
-        if (count($pids) > 1)
+        if (count($pids) > 1) {
             $t = '<span class="has-hotlist" data-hotlist="p/s/' . join("+", $pids) . '">' . $t . '</span>';
+        }
         $this->msg(null, $t, self::INFO);
     }
 

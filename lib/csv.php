@@ -82,9 +82,10 @@ class CsvParser {
 
     static public function split_lines($str) {
         $b = array();
-        foreach (preg_split('/([^\r\n]*(?:\z|\r\n?|\n))/', $str, 0, PREG_SPLIT_DELIM_CAPTURE) as $line)
+        foreach (preg_split('/([^\r\n]*(?:\z|\r\n?|\n))/', $str, 0, PREG_SPLIT_DELIM_CAPTURE) as $line) {
             if ($line !== "")
                 $b[] = $line;
+        }
         return $b;
     }
 
@@ -96,16 +97,17 @@ class CsvParser {
 
     private function set_type($type) {
         $this->type = $type;
-        if ($this->type === self::TYPE_COMMA)
+        if ($this->type === self::TYPE_COMMA) {
             $this->typefn = "parse_comma";
-        else if ($this->type === self::TYPE_BAR)
+        } else if ($this->type === self::TYPE_BAR) {
             $this->typefn = "parse_bar";
-        else if ($this->type === self::TYPE_TAB)
+        } else if ($this->type === self::TYPE_TAB) {
             $this->typefn = "parse_tab";
-        else if ($this->type === self::TYPE_DOUBLEBAR)
+        } else if ($this->type === self::TYPE_DOUBLEBAR) {
             $this->typefn = "parse_doublebar";
-        else
+        } else {
             $this->typefn = "parse_guess";
+        }
     }
 
     function set_comment_chars($s) {
@@ -238,10 +240,12 @@ class CsvParser {
 
     static function linelen($line) {
         $len = strlen($line);
-        if ($len > 0 && $line[$len - 1] === "\n")
+        if ($len > 0 && $line[$len - 1] === "\n") {
             --$len;
-        if ($len > 0 && $line[$len - 1] === "\r")
+        }
+        if ($len > 0 && $line[$len - 1] === "\r") {
             --$len;
+        }
         return $len;
     }
 
@@ -298,24 +302,30 @@ class CsvParser {
 
     private function parse_guess($line) {
         $pipe = $tab = $comma = $doublepipe = -1;
-        if ($this->type & self::TYPE_BAR)
+        if ($this->type & self::TYPE_BAR) {
             $pipe = substr_count($line, "|");
-        if ($this->type & self::TYPE_DOUBLEBAR)
+        }
+        if ($this->type & self::TYPE_DOUBLEBAR) {
             $doublepipe = substr_count($line, "||");
-        if ($doublepipe > 0 && $pipe > 0 && $doublepipe * 2.1 > $pipe)
+        }
+        if ($doublepipe > 0 && $pipe > 0 && $doublepipe * 2.1 > $pipe) {
             $pipe = -1;
-        if ($this->type & self::TYPE_TAB)
+        }
+        if ($this->type & self::TYPE_TAB) {
             $tab = substr_count($line, "\t");
-        if ($this->type & self::TYPE_COMMA)
+        }
+        if ($this->type & self::TYPE_COMMA) {
             $comma = substr_count($line, ",");
-        if ($tab > $pipe && $tab > $doublepipe && $tab > $comma)
+        }
+        if ($tab > $pipe && $tab > $doublepipe && $tab > $comma) {
             $this->set_type(self::TYPE_TAB);
-        else if ($doublepipe > $pipe && $doublepipe > $comma)
+        } else if ($doublepipe > $pipe && $doublepipe > $comma) {
             $this->set_type(self::TYPE_DOUBLEBAR);
-        else if ($pipe > $comma)
+        } else if ($pipe > $comma) {
             $this->set_type(self::TYPE_PIPE);
-        else
+        } else {
             $this->set_type(self::TYPE_COMMA);
+        }
         $fn = $this->typefn;
         assert($fn !== "parse_guess");
         return $this->$fn($line);
@@ -365,11 +375,13 @@ class CsvParser {
         while ($pos !== $linelen) {
             $bpos = $pos;
             $pos = strpos($line, "|", $pos);
-            if ($pos === false)
+            if ($pos === false) {
                 $pos = $linelen;
+            }
             $a[] = substr($line, $bpos, $pos - $bpos);
-            if ($pos !== $linelen && $line[$pos] === "|")
+            if ($pos !== $linelen && $line[$pos] === "|") {
                 ++$pos;
+            }
         }
         return $a;
     }
@@ -381,11 +393,13 @@ class CsvParser {
         while ($pos !== $linelen) {
             $bpos = $pos;
             $pos = strpos($line, "||", $pos);
-            if ($pos === false)
+            if ($pos === false) {
                 $pos = $linelen;
+            }
             $a[] = substr($line, $bpos, $pos - $bpos);
-            if ($pos + 1 <= $linelen && $line[$pos] === "|" && $line[$pos + 1] === "|")
+            if ($pos + 1 <= $linelen && $line[$pos] === "|" && $line[$pos + 1] === "|") {
                 $pos += 2;
+            }
         }
         return $a;
     }
@@ -397,12 +411,14 @@ class CsvParser {
         while ($pos !== $linelen) {
             $bpos = $pos;
             $pos = strpos($line, "\t", $pos);
-            if ($pos === false)
+            if ($pos === false) {
                 $pos = $linelen;
+            }
             $field = substr($line, $bpos, $pos - $bpos);
             $a[] = $field;
-            if ($pos !== $linelen && $line[$pos] === "\t")
+            if ($pos !== $linelen && $line[$pos] === "\t") {
                 ++$pos;
+            }
         }
         return $a;
     }
@@ -436,22 +452,24 @@ class CsvGenerator {
     }
 
     static function quote($text, $quote_empty = false) {
-        if ($text === "")
+        if ($text === "") {
             return $quote_empty ? '""' : $text;
-        else if (preg_match('/\A[-_@\$+A-Za-z0-9.](?:[-_@\$+A-Za-z0-9. \t]*[-_\$+A-Za-z0-9.]|)\z/', $text))
+        } else if (preg_match('/\A[-_@\$+A-Za-z0-9.](?:[-_@\$+A-Za-z0-9. \t]*[-_\$+A-Za-z0-9.]|)\z/', $text)) {
             return $text;
-        else
+        } else {
             return self::always_quote($text);
+        }
     }
 
 
     function __construct($flags = self::TYPE_COMMA) {
         $this->type = $flags & self::FLAG_TYPE;
         $this->flags = $flags;
-        if ($this->flags & self::FLAG_CRLF)
+        if ($this->flags & self::FLAG_CRLF) {
             $this->lf = "\r\n";
-        else if ($this->flags & self::FLAG_CR)
+        } else if ($this->flags & self::FLAG_CR) {
             $this->lf = "\r";
+        }
     }
 
     function select($selection, $header = null) {
@@ -553,8 +571,9 @@ class CsvGenerator {
             error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             $this->add_string($row);
             return $this;
-        } else if (empty($row))
+        } else if (empty($row)) {
             return $this;
+        }
         reset($row);
         if (is_array(current($row)) || is_object(current($row))) {
             foreach ($row as $x)
@@ -579,11 +598,13 @@ class CsvGenerator {
                     foreach ($srow as &$x)
                         $x = self::quote($x);
                 }
+                unset($x);
                 $this->add_string(join(",", $srow) . $this->lf);
-            } else if ($this->type == self::TYPE_TAB)
+            } else if ($this->type == self::TYPE_TAB) {
                 $this->add_string(join("\t", $srow) . $this->lf);
-            else
+            } else {
                 $this->add_string(join("|", $srow) . $this->lf);
+            }
             if (($this->flags & self::FLAG_ITEM_COMMENTS)
                 && $this->selection
                 && isset($row["__postcomment__"])
@@ -606,16 +627,19 @@ class CsvGenerator {
     }
 
     function download_headers() {
-        if ($this->is_csv())
+        if ($this->is_csv()) {
             header("Content-Type: text/csv; charset=utf-8; header=" . ($this->headerline !== "" ? "present" : "absent"));
-        else
+        } else {
             header("Content-Type: text/plain; charset=utf-8");
+        }
         $inline = $this->inline;
-        if ($inline === null)
+        if ($inline === null) {
             $inline = Mimetype::disposition_inline($this->is_csv() ? "text/csv" : "text/plain");
+        }
         $filename = $this->filename;
-        if (!$filename)
+        if (!$filename) {
             $filename = "data" . $this->extension();
+        }
         header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=" . mime_quote_string($filename));
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
@@ -623,14 +647,16 @@ class CsvGenerator {
 
     function download() {
         global $zlib_output_compression;
-        if (!$zlib_output_compression)
+        if (!$zlib_output_compression) {
             header("Content-Length: " . (strlen($this->headerline) + $this->lines_length));
+        }
         echo $this->headerline;
         // try to avoid out-of-memory
-        if ($this->lines_length <= 10000000)
+        if ($this->lines_length <= 10000000) {
             echo join("", $this->lines);
-        else
+        } else {
             foreach ($this->lines as $line)
                 echo $line;
+        }
     }
 }
