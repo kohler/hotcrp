@@ -390,7 +390,7 @@ class CsvParser {
         return $a;
     }
 
-    private function parse_tab($line, $header) {
+    private function parse_tab($line) {
         $a = [];
         $linelen = self::linelen($line);
         $pos = 0;
