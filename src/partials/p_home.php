@@ -223,26 +223,7 @@ class Home_Partial {
         echo '</div>';
     }
 
-    static function forgot_message(Conf $conf) {
-        return $conf->_("Enter your email and we’ll send you instructions for signing in.");
-    }
-    private function _create_message(Conf $conf) {
-        return $conf->_("Enter your email and we’ll create an account and send you an initial password.");
-    }
-    private function _render_signin_email(Conf $conf, $email, $focus) {
-        $external_login = $conf->external_login();
-        echo '<div class="', Ht::control_class("email", "f-i"), '">',
-            Ht::label($external_login ? "Username" : "Email", "signin_email"),
-            Ht::entry("email", $email, [
-                "size" => 36, "id" => "signin_email", "class" => "fullw",
-                "autocomplete" => "username", "tabindex" => 1,
-                "type" => $external_login || str_ends_with($email, "@_.com") ? "text" : "email",
-                "autofocus" => $focus
-            ]),
-            Ht::render_messages_at("email"), '</div>';
-    }
-
-    private function render_signin_login(Contact $user, Qrequest $qreq) {
+    static private function render_signin_login(Contact $user, Qrequest $qreq) {
         global $Now;
         $conf = $user->conf;
         $is_external_login = $conf->external_login();
@@ -257,6 +238,13 @@ class Home_Partial {
             $user->save_session("password_reset", null);
         }
 
+        // heading
+        echo '<div class="homegrp fold',
+            $qreq->signin ? "o" : "c",
+            '" id="homeacct">',
+            Ht::form($user->conf->hoturl("index", ["signin" => 1]), ["class" => "ui-submit js-signin compact-form"]),
+            Ht::hidden("post", post_value(true));
+
         echo '<p class="mb-5">', $conf->_("Sign in to submit or review papers."), '</p>',
             '<div class="fx">',
             Ht::unstash_script('fold("homeacct",false)');
@@ -264,7 +252,19 @@ class Home_Partial {
             && ($x = $conf->opt("contactdb_loginFormHeading"))) {
             echo $x;
         }
-        $this->_render_signin_email($conf, $email_value, $focus_email);
+
+        // email
+        echo '<div class="', Ht::control_class("email", "f-i"), '">',
+            Ht::label($is_external_login ? "Username" : "Email", "signin_email"),
+            Ht::entry("email", $email_value, [
+                "size" => 36, "id" => "signin_email", "class" => "fullw",
+                "autocomplete" => "username", "tabindex" => 1,
+                "type" => $is_external_login || str_ends_with($email_value, "@_.com") ? "text" : "email",
+                "autofocus" => $focus_email
+            ]),
+            Ht::render_messages_at("email"), '</div>';
+
+        // password
         echo '<div class="', Ht::control_class("password", "f-i"), '">';
         if (!$is_external_login) {
             echo '<div class="float-right"><a href="',
@@ -282,6 +282,7 @@ class Home_Partial {
         if ($password_reset) {
             echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
         }
+
         echo '<div class="popup-actions">',
             Ht::submit("action", "Sign in", ["id" => "signin_signin", "class" => "btn-success", "tabindex" => 1, "value" => "go"]),
             '</div>';
@@ -292,50 +293,14 @@ class Home_Partial {
         }
         echo '</div><div class="fn">',
             Ht::submit("action", "Sign in", ["class" => "btn-success", "tabindex" => 1, "value" => "start"]),
-            '</div>';
-    }
-
-    private function render_signin_forgot(Contact $user, Qrequest $qreq) {
-        echo $this->render_h2_home("Reset password");
-        if (($m = self::forgot_message($user->conf))) {
-            echo '<p class="mb-5">', $m, '</p>';
-        }
-        $this->_render_signin_email($user->conf, $qreq->email, true);
-        echo '<div class="popup-actions">',
-            Ht::submit("action", "Reset password", ["class" => "btn-primary", "tabindex" => 1, "value" => "forgot"]),
-            Ht::submit("action", "Cancel", ["tabindex" => 1, "value" => "cancel"]),
-            '</div>';
-    }
-
-    private function render_signin_create(Contact $user, Qrequest $qreq) {
-        echo $this->render_h2_home("Create account");
-        if (($m = $this->_create_message($user->conf))) {
-            echo '<p class="mb-5">', $m, '</p>';
-        }
-        $this->_render_signin_email($user->conf, $qreq->email, true);
-        echo '<div class="popup-actions">',
-            Ht::submit("action", "Create account", ["class" => "btn-success", "tabindex" => 1, "value" => "create"]),
-            Ht::submit("action", "Cancel", ["tabindex" => 1, "value" => "cancel"]),
-            '</div>';
+            '</div></form></div>';
     }
 
     function render_signin(Contact $user, Qrequest $qreq) {
         if (!$user->has_email() || $qreq->signin) {
-            echo '<div class="homegrp fold',
-                $qreq->signin ? "o" : "c",
-                '" id="homeacct">',
-                Ht::form($user->conf->hoturl("index", ["signin" => 1]), ["class" => "ui-submit js-signin compact-form"]),
-                Ht::hidden("post", post_value(true));
             $action = $qreq->signin ? $qreq->action : null;
             assert($action !== "forgot" && $action !== "create");
-            if ($action === "forgot" && !$user->conf->external_login()) {
-                $this->render_signin_forgot($user, $qreq);
-            } else if ($action === "create" && $user->conf->allow_user_self_register()) {
-                $this->render_signin_create($user, $qreq);
-            } else {
-                $this->render_signin_login($user, $qreq);
-            }
-            echo '</form></div>';
+            self::render_signin_login($user, $qreq);
         }
     }
 
