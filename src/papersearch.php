@@ -13,13 +13,15 @@ class SearchWord {
         $this->qword = $this->word = $qword;
         $this->quoted = $qword !== "" && $qword[0] === "\""
             && strpos($qword, "\"", 1) === strlen($qword) - 1;
-        if ($this->quoted)
+        if ($this->quoted) {
             $this->word = substr($qword, 1, -1);
+        }
     }
     static function quote($text) {
         if ($text === ""
-            || !preg_match('{\A[-A-Za-z0-9_.@/]+\z}', $text))
+            || !preg_match('{\A[-A-Za-z0-9_.@/]+\z}', $text)) {
             $text = "\"" . str_replace("\"", "\\\"", $text) . "\"";
+        }
         return $text;
     }
 }
@@ -94,17 +96,19 @@ class SearchSplitter {
                 $ch = "\"";
             }
             if ($quote) {
-                if ($ch === "\\" && $pos + 1 < strlen($str))
+                if ($ch === "\\" && $pos + 1 < strlen($str)) {
                     ++$pos;
-                else if ($ch === "\"")
+                } else if ($ch === "\"") {
                     $quote = 0;
+                }
             } else if ($ch === "\"") {
                 $quote = 1;
             } else if ($ch === "(" || $ch === "[" || $ch === "{") {
                 ++$pcount;
             } else if ($ch === ")" || $ch === "]" || $ch === "}") {
-                if (!$pcount)
+                if (!$pcount) {
                     break;
+                }
                 --$pcount;
             }
             ++$pos;
@@ -161,18 +165,20 @@ class SearchTerm {
     }
     static function make_op($op, $terms) {
         $opstr = is_object($op) ? $op->op : $op;
-        if ($opstr === "not")
+        if ($opstr === "not") {
             $qr = new Not_SearchTerm;
-        else if ($opstr === "and" || $opstr === "space")
+        } else if ($opstr === "and" || $opstr === "space") {
             $qr = new And_SearchTerm($opstr);
-        else if ($opstr === "or")
+        } else if ($opstr === "or") {
             $qr = new Or_SearchTerm;
-        else if ($opstr === "xor")
+        } else if ($opstr === "xor") {
             $qr = new Xor_SearchTerm;
-        else
+        } else {
             $qr = new Then_SearchTerm($op);
-        foreach (is_array($terms) ? $terms : [$terms] as $qt)
+        }
+        foreach (is_array($terms) ? $terms : [$terms] as $qt) {
             $qr->append($qt);
+        }
         return $qr->finish();
     }
     static function make_not(SearchTerm $term) {
@@ -205,13 +211,15 @@ class SearchTerm {
     }
     function apply_strspan($span) {
         $span1 = get($this->float, "strspan");
-        if ($span && $span1)
+        if ($span && $span1) {
             $span = [min($span[0], $span1[0]), max($span[1], $span1[1])];
+        }
         $this->set_float("strspan", $span ? : $span1);
     }
     function set_strspan_owner($str) {
-        if (!isset($this->float["strspan_owner"]))
+        if (!isset($this->float["strspan_owner"])) {
             $this->set_float("strspan_owner", $str);
+        }
     }
 
 
@@ -222,8 +230,9 @@ class SearchTerm {
 
     // apply rounds to reviewer searches
     function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
-        if ($this->get_float("used_revadj") && $revadj)
+        if ($this->get_float("used_revadj") && $revadj) {
             $revadj->used_revadj = true;
+        }
         return $this;
     }
 
@@ -234,23 +243,26 @@ class SearchTerm {
 
 
     static function andjoin_sqlexpr($ff) {
-        if (empty($ff) || in_array("false", $ff, true))
+        if (empty($ff) || in_array("false", $ff, true)) {
             return "false";
+        }
         $ff = array_filter($ff, function ($f) { return $f !== "true"; });
-        if (empty($ff))
+        if (empty($ff)) {
             return "true";
-        else if (count($ff) === 1)
+        } else if (count($ff) === 1) {
             return join("", $ff);
-        else
+        } else {
             return "(" . join(" and ", $ff) . ")";
+        }
     }
     static function orjoin_sqlexpr($q, $default = "false") {
-        if (empty($q))
+        if (empty($q)) {
             return $default;
-        else if (in_array("true", $q, true))
+        } else if (in_array("true", $q, true)) {
             return "true";
-        else
+        } else {
             return "(" . join(" or ", $q) . ")";
+        }
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -332,14 +344,15 @@ class Op_SearchTerm extends SearchTerm {
         if ($term) {
             foreach ($term->float as $k => $v) {
                 $v1 = get($this->float, $k);
-                if (($k === "sort" || $k === "view" || $k === "tags") && $v1)
+                if (($k === "sort" || $k === "view" || $k === "tags") && $v1) {
                     array_splice($this->float[$k], count($v1), 0, $v);
-                else if ($k === "strspan" && $v1)
+                } else if ($k === "strspan" && $v1) {
                     $this->apply_strspan($v);
-                else if (is_array($v1) && is_array($v))
+                } else if (is_array($v1) && is_array($v)) {
                     $this->float[$k] = array_replace_recursive($v1, $v);
-                else if ($k !== "opinfo" || $v1 === null)
+                } else if ($k !== "opinfo" || $v1 === null) {
                     $this->float[$k] = $v;
+                }
             }
             $this->child[] = $term;
         }
@@ -434,24 +447,26 @@ class Not_SearchTerm extends Op_SearchTerm {
             $ff = "false";
         $sqi->negated = !$sqi->negated;
         $sqi->top = $top;
-        if ($ff === "false")
+        if ($ff === "false") {
             return "true";
-        else if ($ff === "true")
+        } else if ($ff === "true") {
             return "false";
-        else
+        } else {
             return "not coalesce($ff,0)";
+        }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return !$this->child[0]->exec($row, $srch);
     }
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
         $x = $this->child[0]->compile_condition($row, $srch);
-        if ($x === null)
+        if ($x === null) {
             return null;
-        else if ($x === false || $x === true)
+        } else if ($x === false || $x === true) {
             return !$x;
-        else
+        } else {
             return (object) ["type" => "not", "child" => [$x]];
+        }
     }
 }
 
@@ -492,9 +507,10 @@ class And_SearchTerm extends Op_SearchTerm {
             $myrevadj = $this->child[0];
             $used_revadj = $myrevadj->merge($revadj);
         }
-        foreach ($this->child as &$qv)
+        foreach ($this->child as &$qv) {
             if (!($qv instanceof ReviewAdjustment_SearchTerm))
                 $qv = $qv->adjust_reviews($myrevadj ? : $revadj, $srch);
+        }
         if ($myrevadj && !$myrevadj->used_revadj) {
             $this->child[0] = $myrevadj->promote($srch);
             if ($used_revadj)
@@ -504,14 +520,16 @@ class And_SearchTerm extends Op_SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $ff = array();
-        foreach ($this->child as $subt)
+        foreach ($this->child as $subt) {
             $ff[] = $subt->sqlexpr($sqi);
+        }
         return self::andjoin_sqlexpr($ff);
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        foreach ($this->child as $subt)
+        foreach ($this->child as $subt) {
             if (!$subt->exec($row, $srch))
                 return false;
+        }
         return true;
     }
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
@@ -519,31 +537,35 @@ class And_SearchTerm extends Op_SearchTerm {
         $ok = true;
         foreach ($this->child as $subt) {
             $x = $subt->compile_condition($row, $srch);
-            if ($x === null)
+            if ($x === null) {
                 return null;
-            else if ($x === false)
+            } else if ($x === false) {
                 $ok = false;
-            else if ($x !== true)
+            } else if ($x !== true) {
                 $ch[] = $x;
+            }
         }
-        if (!$ok || empty($ch))
+        if (!$ok || empty($ch)) {
             return $ok;
-        else if (count($ch) === 1)
+        } else if (count($ch) === 1) {
             return $ch[0];
-        else
+        } else {
             return (object) ["type" => "and", "child" => $ch];
+        }
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
-        foreach ($this->child as $qv)
+        foreach ($this->child as $qv) {
             $qv->extract_metadata($top, $srch);
+        }
     }
     function default_sorter($top, $thenmap, PaperSearch $srch) {
         $s = false;
         foreach ($this->child as $qv) {
             $s1 = $qv->default_sorter($top, $thenmap, $srch);
-            if ($s && $s1)
+            if ($s && $s1) {
                 return false;
+            }
             $s = $s ? : $s1;
         }
         return $s;
@@ -582,8 +604,9 @@ class Or_SearchTerm extends Op_SearchTerm {
         $top = $sqi->top;
         $sqi->top = false;
         $ff = [];
-        foreach ($this->child as $subt)
+        foreach ($this->child as $subt) {
             $ff[] = $subt->sqlexpr($sqi);
+        }
         $sqi->top = $top;
         return self::orjoin_sqlexpr($ff);
     }
@@ -605,20 +628,22 @@ class Or_SearchTerm extends Op_SearchTerm {
             else if ($x !== false)
                 $ch[] = $x;
         }
-        if ($ok || empty($ch))
+        if ($ok || empty($ch)) {
             return $ok;
-        else if (count($ch) === 1)
+        } else if (count($ch) === 1) {
             return $ch[0];
-        else
+        } else {
             return (object) ["type" => "or", "child" => $ch];
+        }
     }
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
         return self::compile_or_condition($this->child, $row, $srch);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
-        foreach ($this->child as $qv)
+        foreach ($this->child as $qv) {
             $qv->extract_metadata(false, $srch);
+        }
     }
 }
 
@@ -643,8 +668,9 @@ class Xor_SearchTerm extends Op_SearchTerm {
                 $newchild[] = $qv;
             }
         }
-        if ($revadj)
+        if ($revadj) {
             array_unshift($newchild, $revadj);
+        }
         return $this->_finish_combine($newchild, false);
     }
 
@@ -652,22 +678,25 @@ class Xor_SearchTerm extends Op_SearchTerm {
         $top = $sqi->top;
         $sqi->top = false;
         $ff = [];
-        foreach ($this->child as $subt)
+        foreach ($this->child as $subt) {
             $ff[] = "coalesce(" . $subt->sqlexpr($sqi) . ",0)";
+        }
         $sqi->top = $top;
         return empty($ff) ? "false" : "(" . join(" xor ", $ff) . ")";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $x = false;
-        foreach ($this->child as $subt)
+        foreach ($this->child as $subt) {
             if ($subt->exec($row, $srch))
                 $x = !$x;
+        }
         return $x;
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
-        foreach ($this->child as $qv)
+        foreach ($this->child as $qv) {
             $qv->extract_metadata(false, $srch);
+        }
     }
 }
 
@@ -711,8 +740,9 @@ class Then_SearchTerm extends Op_SearchTerm {
                     $newhmasks[] = $hlmask << $pos;
                 foreach ($qv->highlight_types ? : array() as $hltype)
                     $newhtypes[] = $hltype;
-            } else if ($qv)
+            } else if ($qv) {
                 $newvalues[] = $qv;
+            }
         }
 
         $this->nthen = count($newvalues);
@@ -728,15 +758,17 @@ class Then_SearchTerm extends Op_SearchTerm {
         $top = $sqi->top;
         $sqi->top = false;
         $ff = [];
-        foreach ($this->child as $subt)
+        foreach ($this->child as $subt) {
             $ff[] = $subt->sqlexpr($sqi);
+        }
         $sqi->top = $top;
         return self::orjoin_sqlexpr(array_slice($ff, 0, $this->nthen), "true");
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        for ($i = 0; $i < $this->nthen; ++$i)
+        for ($i = 0; $i < $this->nthen; ++$i) {
             if ($this->child[$i]->exec($row, $srch))
                 return true;
+        }
         return false;
     }
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
@@ -744,8 +776,9 @@ class Then_SearchTerm extends Op_SearchTerm {
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
-        foreach ($this->child as $qv)
+        foreach ($this->child as $qv) {
             $qv->extract_metadata(false, $srch);
+        }
     }
 }
 
@@ -1363,23 +1396,26 @@ class ContactCountMatcher extends CountMatcher {
             && $this->_contacts[0] == $cid;
     }
     function contact_match_sql($fieldname) {
-        if ($this->_contacts === null)
+        if ($this->_contacts === null) {
             return "true";
-        else
+        } else {
             return $fieldname . sql_in_numeric_set($this->_contacts);
+        }
     }
     function test_contact($cid) {
         return $this->_contacts === null || in_array($cid, $this->_contacts);
     }
     function add_contact($cid) {
-        if ($this->_contacts === null)
-            $this->_contacts = array();
-        if (!in_array($cid, $this->_contacts))
+        if ($this->_contacts === null) {
+            $this->_contacts = [];
+        }
+        if (!in_array($cid, $this->_contacts)) {
             $this->_contacts[] = $cid;
+        }
     }
     function set_contacts($contacts) {
         assert($contacts === null || is_array($contacts) || is_int($contacts));
-        $this->_contacts = is_int($contacts) ? array($contacts) : $contacts;
+        $this->_contacts = is_int($contacts) ? [$contacts] : $contacts;
     }
 }
 
@@ -1404,18 +1440,20 @@ class SearchQueryInfo {
         // * All added tables must match at most one Paper row each,
         //   except MyReviews and Limiter.
         assert($joiner || !count($this->tables));
-        if (!isset($this->tables[$table]))
+        if (!isset($this->tables[$table])) {
             $this->tables[$table] = $joiner;
-        else if ($joiner && $joiner[0] === "join")
+        } else if ($joiner && $joiner[0] === "join") {
             $this->tables[$table][0] = "join";
+        }
     }
     function add_column($name, $expr) {
         assert(!isset($this->columns[$name]) || $this->columns[$name] === $expr);
         $this->columns[$name] = $expr;
     }
     function add_conflict_table() {
-        if (!isset($this->tables["PaperConflict"]))
+        if (!isset($this->tables["PaperConflict"])) {
             $this->add_table("PaperConflict", ["left join", "PaperConflict", "PaperConflict.contactId=" . ($this->user->contactId ? : -100)]);
+        }
     }
     function add_conflict_columns() {
         $this->add_conflict_table();
@@ -1449,26 +1487,31 @@ class SearchQueryInfo {
         $this->add_review_signature_columns();
         if (($f = $this->conf->review_field($fid))
             && $f->main_storage
-            && (!$this->_review_scores || !in_array($fid, $this->_review_scores)))
+            && (!$this->_review_scores || !in_array($fid, $this->_review_scores))) {
             $this->_review_scores[] = $fid;
+        }
     }
     function add_review_word_count_columns() {
         $this->add_review_signature_columns();
-        if (!isset($this->columns["reviewWordCountSignature"]))
+        if (!isset($this->columns["reviewWordCountSignature"])) {
             $this->add_column("reviewWordCountSignature", "(select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId)");
+        }
     }
     function add_rights_columns() {
-        if (!isset($this->columns["managerContactId"]))
+        if (!isset($this->columns["managerContactId"])) {
             $this->columns["managerContactId"] = "Paper.managerContactId";
-        if (!isset($this->columns["leadContactId"]))
+        }
+        if (!isset($this->columns["leadContactId"])) {
             $this->columns["leadContactId"] = "Paper.leadContactId";
+        }
         // XXX could avoid the following if user is privChair for everything:
         $this->add_conflict_columns();
         $this->add_reviewer_columns();
     }
     function add_allConflictType_column() {
-        if (!isset($this->columns["allConflictType"]))
+        if (!isset($this->columns["allConflictType"])) {
             $this->add_column("allConflictType", "(select group_concat(contactId, ' ', conflictType) from PaperConflict where PaperConflict.paperId=Paper.paperId)");
+        }
     }
 }
 
@@ -1873,23 +1916,29 @@ class PaperSearch {
     }
 
     static function parse_saved_search($word, SearchWord $sword, PaperSearch $srch) {
-        if (!$srch->user->isPC)
+        if (!$srch->user->isPC) {
             return null;
+        }
         if (($nextq = $srch->_expand_saved_search($word, $srch->_ssRecursion))) {
             $srch->_ssRecursion[$word] = true;
             $qe = $srch->_search_expression($nextq);
             unset($srch->_ssRecursion[$word]);
-        } else
+        } else {
             $qe = null;
-        if (!$qe && $nextq === false)
-            $srch->warn("Saved search “" . htmlspecialchars($word) . "” is defined in terms of itself.");
-        else if (!$qe && !$srch->conf->setting_data("ss:$word"))
-            $srch->warn("There is no “" . htmlspecialchars($word) . "” saved search.");
-        else if (!$qe)
-            $srch->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
-        $qe = $qe ? : new False_SearchTerm;
-        if ($nextq)
+        }
+        if (!$qe) {
+            if ($nextq === false) {
+                $srch->warn("Saved search “" . htmlspecialchars($word) . "” is defined in terms of itself.");
+            } else if (!$srch->conf->setting_data("ss:$word")) {
+                $srch->warn("There is no “" . htmlspecialchars($word) . "” saved search.");
+            } else {
+                $srch->warn("The “" . htmlspecialchars($word) . "” saved search is defined incorrectly.");
+            }
+            $qe = new False_SearchTerm;
+        }
+        if ($nextq) {
             $qe->set_strspan_owner($nextq);
+        }
         return $qe;
     }
 
@@ -1900,12 +1949,14 @@ class PaperSearch {
         $sword->kwdef = $this->conf->search_keyword($keyword, $this->user);
         if ($sword->kwdef && get($sword->kwdef, "parse_callback")) {
             $qx = call_user_func($sword->kwdef->parse_callback, $word, $sword, $this);
-            if ($qx && !is_array($qx))
+            if ($qx && !is_array($qx)) {
                 $qt[] = $qx;
-            else if ($qx)
+            } else if ($qx) {
                 $qt = array_merge($qt, $qx);
-        } else
+            }
+        } else {
             $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
+        }
     }
 
     static private function _search_word_breakdown($word) {
@@ -1957,8 +2008,9 @@ class PaperSearch {
                     return $qe;
             }
         }
-        if ($keyword && $keyword[0] === '"')
+        if ($keyword && $keyword[0] === '"') {
             $keyword = trim(substr($keyword, 1, strlen($keyword) - 2));
+        }
 
         $qt = [];
         $sword = new SearchWord($word);
@@ -1980,10 +2032,11 @@ class PaperSearch {
 
     static function escape_word($str) {
         $pos = SearchSplitter::span_balanced_parens($str);
-        if ($pos === strlen($str))
+        if ($pos === strlen($str)) {
             return $str;
-        else
+        } else {
             return "\"" . str_replace("\"", "\\\"", $str) . "\"";
+        }
     }
 
     static private function _shift_keyword($splitter, $curqe) {
@@ -2165,21 +2218,24 @@ class PaperSearch {
 
         while (!$splitter->is_empty()) {
             $op = self::_shift_keyword($splitter, $curqe);
-            if ($curqe && !$op)
+            if ($curqe && !$op) {
                 $op = SearchOperator::get($parens ? "SPACE" : $defaultop);
+            }
             if (!$op) {
                 $curqe = self::_shift_word($splitter, $conf);
                 if ($qt !== "n") {
                     $wordbrk = self::_search_word_breakdown($curqe);
-                    if (!$wordbrk[0])
+                    if (!$wordbrk[0]) {
                         $curqe = ($qt === "tag" ? "#" : $qt . ":") . $curqe;
-                    else if ($wordbrk[1] === ":")
+                    } else if ($wordbrk[1] === ":") {
                         $curqe .= $splitter->shift_balanced_parens();
+                    }
                 }
             } else if ($op->op === ")") {
                 while (count($stack)
-                       && $stack[count($stack) - 1]->op->op !== "(")
+                       && $stack[count($stack) - 1]->op->op !== "(") {
                     $curqe = self::_pop_canonicalize_stack($curqe, $stack);
+                }
                 if (count($stack)) {
                     array_pop($stack);
                     --$parens;
@@ -2191,37 +2247,45 @@ class PaperSearch {
             } else {
                 $end_precedence = $op->precedence - ($op->precedence <= 1);
                 while (count($stack)
-                       && $stack[count($stack) - 1]->op->precedence > $end_precedence)
+                       && $stack[count($stack) - 1]->op->precedence > $end_precedence) {
                     $curqe = self::_pop_canonicalize_stack($curqe, $stack);
+                }
                 $top = count($stack) ? $stack[count($stack) - 1] : null;
-                if ($top && !$op->unary && $top->op->op === $op->op)
+                if ($top && !$op->unary && $top->op->op === $op->op) {
                     $top->qe[] = $curqe;
-                else
+                } else {
                     $stack[] = (object) ["op" => $op, "qe" => [$curqe]];
+                }
                 $curqe = null;
             }
         }
 
-        if ($type === "none")
+        if ($type === "none") {
             array_unshift($stack, (object) array("op" => SearchOperator::get("NOT"), "qe" => array()));
-        while (count($stack))
+        }
+        while (!empty($stack)) {
             $curqe = self::_pop_canonicalize_stack($curqe, $stack);
+        }
         return $curqe;
     }
 
     static function canonical_query($qa, $qo, $qx, $qt, Conf $conf) {
         $qt = self::_canonical_qt($qt);
         $x = [];
-        if (($qa = self::_canonical_expression($qa, "all", $qt, $conf)) !== "")
+        if (($qa = self::_canonical_expression($qa, "all", $qt, $conf)) !== "") {
             $x[] = $qa;
-        if (($qo = self::_canonical_expression($qo, "any", $qt, $conf)) !== "")
+        }
+        if (($qo = self::_canonical_expression($qo, "any", $qt, $conf)) !== "") {
             $x[] = $qo;
-        if (($qx = self::_canonical_expression($qx, "none", $qt, $conf)) !== "")
+        }
+        if (($qx = self::_canonical_expression($qx, "none", $qt, $conf)) !== "") {
             $x[] = $qx;
-        if (count($x) == 1)
+        }
+        if (count($x) == 1) {
             return preg_replace('/\A\((.*)\)\z/', '$1', $x[0]);
-        else
+        } else {
             return join(" AND ", $x);
+        }
     }
 
 
@@ -2278,20 +2342,21 @@ class PaperSearch {
 
     private function _add_sorters($qe, $thenmap) {
         if (($sorters = $qe->get_float("sort"))) {
-            foreach ($sorters as $s)
+            foreach ($sorters as $s) {
                 if (($s = self::parse_sorter($s))) {
                     $s->thenmap = $thenmap;
                     $this->_sorters[] = $s;
                 }
+            }
         } else if (($s = $qe->default_sorter(true, $thenmap, $this))) {
             $this->_sorters[] = $s;
         }
     }
 
     private function _assign_order_anno_group($g, $dt, $anno_index) {
-        if (($ta = $dt->order_anno_entry($anno_index)))
+        if (($ta = $dt->order_anno_entry($anno_index))) {
             $this->groupmap[$g] = $ta;
-        else if (!isset($this->groupmap[$g])) {
+        } else if (!isset($this->groupmap[$g])) {
             $ta = new TagAnno;
             $ta->tag = $dt->tag;
             $ta->heading = "";
