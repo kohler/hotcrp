@@ -1648,11 +1648,7 @@ class Contact {
                 $template = "@resetpassword";
             }
         } else {
-            if ($this->plaintext_password()) {
-                $template = "@accountinfo";
-            } else {
-                return false;
-            }
+            $template = "@accountinfo";
         }
 
         $mailer = new HotCRPMailer($this->conf, $this, null, $rest);
