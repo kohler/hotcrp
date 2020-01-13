@@ -178,8 +178,8 @@ function pathNodeMayBeNearer(pathNode, point, dist) {
     if ("clientX" in point) {
         var bounds = pathNode.getBoundingClientRect();
         var dx = point[0] - point.clientX, dy = point[1] - point.clientY;
-        if (oob(bounds.left + dx, bounds.top + dy,
-                bounds.right + dx, bounds.bottom + dy))
+        if (bounds && oob(bounds.left + dx, bounds.top + dy,
+                          bounds.right + dx, bounds.bottom + dy))
             return false;
     }
     // check path
