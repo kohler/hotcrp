@@ -102,8 +102,9 @@ class ReviewForm_SettingParser extends SettingParser {
                 $fj->description = trim($x);
                 if ($fj->description === "")
                     unset($fj->description);
-            } else if ($pos > 0)
+            } else if ($pos > 0) {
                 $sv->error_at("description_$fid", htmlspecialchars($sn) . " description: " . $err);
+            }
         }
 
         if ($pos > 0) {
@@ -114,8 +115,9 @@ class ReviewForm_SettingParser extends SettingParser {
 
         if ($f->has_options) {
             $ok = true;
-            if ($sv->has_reqv("options_$fid"))
+            if ($sv->has_reqv("options_$fid")) {
                 $ok = $this->check_options($sv, $fid, $fj);
+            }
             if ((!$ok || count($fj->options) < 2) && $pos > 0) {
                 $sv->error_at("options_$fid", htmlspecialchars($sn) . ": Invalid choices.");
                 if ($this->option_error) {

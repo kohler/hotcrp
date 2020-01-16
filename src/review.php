@@ -85,13 +85,15 @@ class ReviewField implements Abbreviator, JsonSerializable {
         $this->name_html = htmlspecialchars($this->name);
         $this->description = (get($j, "description") ? : "");
         $this->display_space = get_i($j, "display_space");
-        if (!$this->has_options && $this->display_space < 3)
+        if (!$this->has_options && $this->display_space < 3) {
             $this->display_space = 3;
+        }
         $vis = get($j, "visibility");
         if ($vis === null) {
             $vis = get($j, "view_score");
-            if (is_int($vis))
+            if (is_int($vis)) {
                 $vis = self::$view_score_upgrade_map[$vis];
+            }
         }
         $this->view_score = VIEWSCORE_PC;
         if (is_string($vis) && isset(self::$view_score_map[$vis])) {
@@ -116,11 +118,13 @@ class ReviewField implements Abbreviator, JsonSerializable {
             }
             $this->options = array();
             if ($this->option_letter) {
-                foreach (array_reverse($options, true) as $i => $n)
+                foreach (array_reverse($options, true) as $i => $n) {
                     $this->options[chr($this->option_letter - $i - 1)] = $n;
+                }
             } else {
-                foreach ($options as $i => $n)
+                foreach ($options as $i => $n) {
                     $this->options[$i + 1] = $n;
+                }
             }
             if (($p = get($j, "option_class_prefix"))) {
                 $this->option_class_prefix = $p;
