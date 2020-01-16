@@ -129,9 +129,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
             if (($p = get($j, "option_class_prefix"))) {
                 $this->option_class_prefix = $p;
             }
-            if (get($j, "allow_empty")) {
-                $this->allow_empty = true;
-            }
+            $this->allow_empty = !!get($j, "allow_empty");
         }
         $this->_typical_score = false;
     }
