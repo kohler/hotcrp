@@ -14,41 +14,51 @@ class ListAction {
     }
 
     static private function do_call($name, Contact $user, Qrequest $qreq, $selection) {
-        if ($qreq->method() !== "GET" && $qreq->method() !== "HEAD" && !$qreq->post_ok())
-            return new JsonResult(403, ["ok" => false, "error" => "Missing credentials."]);
+        if ($qreq->method() !== "GET"
+            && $qreq->method() !== "HEAD"
+            && !$qreq->post_ok()) {
+            return new JsonResult(403, "Missing credentials.");
+        }
         $uf = $user->conf->list_action($name, $user, $qreq->method());
         if (!$uf) {
-            if ($user->conf->has_list_action($name, $user, null))
-                return new JsonResult(405, ["ok" => false, "error" => "Method not supported."]);
-            else if ($user->conf->has_list_action($name, null, $qreq->method()))
-                return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
-            else
-                return new JsonResult(404, ["ok" => false, "error" => "Function not found."]);
+            if ($user->conf->has_list_action($name, $user, null)) {
+                return new JsonResult(405, "Method not supported.");
+            } else if ($user->conf->has_list_action($name, null, $qreq->method())) {
+                return new JsonResult(403, "Permission error.");
+            } else {
+                return new JsonResult(404, "Function not found.");
+            }
         }
-        if (is_array($selection))
+        if (is_array($selection)) {
             $selection = new SearchSelection($selection);
-        if (get($uf, "paper") && $selection->is_empty())
-            return new JsonResult(400, ["ok" => false, "error" => "No papers selected."]);
+        }
+        if (get($uf, "paper") && $selection->is_empty()) {
+            return new JsonResult(400, "No papers selected.");
+        }
         if ($uf->callback[0] === "+") {
             $class = substr($uf->callback, 1);
             $action = new $class($user->conf, $uf);
-        } else
+        } else {
             $action = call_user_func($uf->callback, $user->conf, $uf);
-        if (!$action || !$action->allow($user))
-            return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
-        else
+        }
+        if (!$action || !$action->allow($user)) {
+            return new JsonResult(403, "Permission error.");
+        } else {
             return $action->run($user, $qreq, $selection);
+        }
     }
 
     static function call($name, Contact $user, Qrequest $qreq, $selection) {
         $res = self::do_call($name, $user, $qreq, $selection);
-        if (is_string($res))
+        if (is_string($res)) {
             $res = new JsonResult(400, ["ok" => false, "error" => $res]);
+        }
         if ($res instanceof JsonResult) {
-            if ($res->status >= 300 && !$qreq->ajax)
+            if ($res->status >= 300 && !$qreq->ajax) {
                 Conf::msg_error($res->content["error"]);
-            else
+            } else {
                 json_exit($res);
+            }
         } else if ($res instanceof CsvGenerator) {
             csv_exit($res);
         }
@@ -96,18 +106,21 @@ class ListAction {
                           "action" => ReviewInfo::unparse_assigner_action($rrow->reviewType),
                           "email" => $u->email,
                           "round" => $round ? $round_list[$round] : "none"];
-                    if ($rrow->reviewToken)
+                    if ($rrow->reviewToken) {
                         $d["review_token"] = $any_token = encode_token((int) $rrow->reviewToken);
+                    }
                     $texts[] = $d;
                     $any_round = $any_round || $round != 0;
                 }
             }
         }
         $header = array("paper", "action", "email");
-        if ($any_round)
+        if ($any_round) {
             $header[] = "round";
-        if ($any_token)
+        }
+        if ($any_token) {
             $header[] = "review_token";
+        }
         $header[] = "title";
         return [$header, $texts];
     }

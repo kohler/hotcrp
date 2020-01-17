@@ -5,11 +5,12 @@
 class Get_ListAction extends ListAction {
     static function render(PaperList $pl) {
         $actions = array_values($pl->displayable_list_actions("get/"));
-        foreach ($pl->user->user_option_list() as $o)
+        foreach ($pl->user->user_option_list() as $o) {
             if ($pl->user->can_view_some_option($o)
                 && $o->is_document()
                 && $pl->has($o->field_key()))
                 $actions[] = GetDocument_ListAction::make_list_action($o);
+        }
         usort($actions, "Conf::xt_position_compare");
         $last_group = null;
         foreach ($actions as $fj) {
@@ -32,8 +33,9 @@ class Get_ListAction extends ListAction {
             return Ht::select("getfn", $sel_opt, $pl->qreq->getfn,
                               ["class" => "want-focus js-submit-action-info-get", "style" => "max-width:10em"])
                 . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "data-default-submit-all" => 1, "class" => "uix js-submit-mark"]);
-        } else
+        } else {
             return null;
+        }
     }
     function run(Contact $user, $qreq, $ssel) {
         if (($opts = $user->conf->paper_opts->find_all($qreq->getfn))
@@ -42,17 +44,19 @@ class Get_ListAction extends ListAction {
             && $user->can_view_some_option($o)) {
             $ga = new GetDocument_ListAction($o->id);
             return $ga->run($user, $qreq, $ssel);
-        } else
+        } else {
             return self::ENOENT;
+        }
     }
 }
 
 class GetCheckFormat_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $papers = [];
-        foreach ($user->paper_set($ssel) as $prow)
+        foreach ($user->paper_set($ssel) as $prow) {
             if ($user->can_view_pdf($prow))
                 $papers[$prow->paperId] = $prow;
+        }
         $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format"]);
         $csvg->download_headers();
         echo $csvg->headerline;
@@ -61,16 +65,19 @@ class GetCheckFormat_ListAction extends ListAction {
             $pages = "?";
             if ($prow->mimetype == "application/pdf") {
                 $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
-                if (($doc = $cf->fetch_document($prow, $dtype)))
+                if (($doc = $cf->fetch_document($prow, $dtype))) {
                     $cf->check_document($prow, $doc);
+                }
                 if ($doc && !$cf->failed) {
                     $errf = $cf->problem_fields();
                     $format = empty($errf) ? "ok" : join(",", $errf);
                     $pages = $cf->pages;
-                } else
+                } else {
                     $format = "error";
-            } else
+                }
+            } else {
                 $format = "notpdf";
+            }
             echo $prow->paperId, ",", CsvGenerator::quote($prow->title), ",", $pages, ",", CsvGenerator::quote($format), "\n";
             ob_flush();
             flush();
@@ -147,8 +154,9 @@ class GetAbstract_ListAction extends ListAction {
                 $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
             }
         }
-        if (!empty($texts))
+        if (!empty($texts)) {
             downloadText(join("", $texts), "abstract$rfSuffix");
+        }
     }
 }
 
@@ -170,8 +178,9 @@ class GetAuthors_ListAction extends ListAction {
         $texts = array();
         $want_contacttype = false;
         foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow) {
-            if (!$user->allow_view_authors($prow))
+            if (!$user->allow_view_authors($prow)) {
                 continue;
+            }
             $admin = $user->allow_administer($prow);
             $contact_emails = [];
             if ($admin) {
@@ -187,16 +196,19 @@ class GetAuthors_ListAction extends ListAction {
                 if ($admin && $lemail && isset($contact_emails[$lemail])) {
                     $line[] = "yes";
                     unset($contact_emails[$lemail]);
-                } else if ($admin)
+                } else if ($admin) {
                     $line[] = "no";
+                }
                 $texts[] = $line;
             }
-            foreach ($contact_emails as $c)
+            foreach ($contact_emails as $c) {
                 $texts[] = [$prow->paperId, $prow->title, $c->firstName, $c->lastName, $c->email, $c->affiliation, "contact_only"];
+            }
         }
         $header = ["paper", "title", "first", "last", "email", "affiliation"];
-        if ($want_contacttype)
+        if ($want_contacttype) {
             $header[] = "iscontact";
+        }
         return $user->conf->make_csvg("authors")->select($header)->add($texts);
     }
 }
@@ -209,13 +221,15 @@ class GetContacts_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $contact_map = GetAuthors_ListAction::contact_map($user->conf, $ssel);
         $texts = [];
-        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow)
-            if ($user->allow_administer($prow))
+        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow) {
+            if ($user->allow_administer($prow)) {
                 foreach ($prow->contacts() as $cid => $c) {
                     $a = $contact_map[$cid];
                     $aa = $prow->author_by_email($a->email) ? : $a;
                     $texts[] = [$prow->paperId, $prow->title, $aa->firstName, $aa->lastName, $aa->email, $aa->affiliation];
                 }
+            }
+        }
         return $user->conf->make_csvg("contacts")
             ->select(["paper", "title", "first", "last", "email", "affiliation"])
             ->add($texts);
@@ -234,11 +248,12 @@ class GetPcconflicts_ListAction extends ListAction {
         foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow) {
             if ($user->can_view_conflicts($prow)) {
                 $m = [];
-                foreach ($prow->conflicts() as $cid => $c)
+                foreach ($prow->conflicts() as $cid => $c) {
                     if (isset($pcm[$cid])) {
                         $pc = $pcm[$cid];
                         $m[$pc->sort_position] = [$prow->paperId, $prow->title, $pc->firstName, $pc->lastName, $pc->email, $confset->unparse_text($c->conflictType)];
                     }
+                }
                 if ($m) {
                     ksort($m);
                     $texts[] = $m;
@@ -255,15 +270,18 @@ class GetPcconflicts_ListAction extends ListAction {
 class GetTopics_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $texts = array();
-        foreach ($user->paper_set($ssel, ["topics" => 1]) as $row)
+        foreach ($user->paper_set($ssel, ["topics" => 1]) as $row) {
             if ($user->can_view_paper($row)) {
                 $out = array();
-                foreach ($row->topic_map() as $t)
+                foreach ($row->topic_map() as $t) {
                     $out[] = [$row->paperId, $row->title, $t];
-                if (empty($out))
+                }
+                if (empty($out)) {
                     $out[] = [$row->paperId, $row->title, "<none>"];
+                }
                 $texts[] = $out;
             }
+        }
         return $user->conf->make_csvg("topics")
             ->select(["paper", "title", "topic"])
             ->add($texts);

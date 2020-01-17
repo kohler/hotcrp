@@ -20,17 +20,20 @@ class GetDocument_ListAction extends ListAction {
     }
     static function expand($name, $user, $fj) {
         if (($o = $user->conf->paper_opts->find(substr($name, 4)))
-            && $o->is_document())
+            && $o->is_document()) {
             return [self::make_list_action($o)];
-        else
+        } else {
             return null;
+        }
     }
     static function error_document(PaperOption $opt, PaperInfo $row, $error_html = "") {
-        if (!$error_html)
+        if (!$error_html) {
             $error_html = htmlspecialchars($row->conf->_("Submission #%d has no %s field.", $row->paperId, $opt->title()));
+        }
         $x = new DocumentInfo(["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $error_html], $row->conf);
-        if (($mimetypes = $opt->mimetypes()) && count($mimetypes) == 1)
+        if (($mimetypes = $opt->mimetypes()) && count($mimetypes) == 1) {
             $x->mimetype = $mimetypes[0]->mimetype;
+        }
         return $x;
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -38,12 +41,13 @@ class GetDocument_ListAction extends ListAction {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $opt = $user->conf->paper_opts->get($this->dt);
         foreach ($user->paper_set($ssel) as $row) {
-            if (($whyNot = $user->perm_view_option($row, $opt)))
+            if (($whyNot = $user->perm_view_option($row, $opt))) {
                 $errors[] = self::error_document($opt, $row, whyNotText($whyNot));
-            else if (($doc = $row->document($opt->id)))
+            } else if (($doc = $row->document($opt->id))) {
                 $downloads[] = $doc;
-            else
+            } else {
                 $errors[] = self::error_document($opt, $row);
+            }
         }
         $user->set_overrides($old_overrides);
         if (!empty($downloads)) {
