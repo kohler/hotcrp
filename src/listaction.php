@@ -35,7 +35,9 @@ class ListAction {
         if (get($uf, "paper") && $selection->is_empty()) {
             return new JsonResult(400, "No papers selected.");
         }
-        if ($uf->callback[0] === "+") {
+        if (!is_string($uf->callback)) {
+            return new JsonResult(400, "Function not found.");
+        } else if ($uf->callback[0] === "+") {
             $class = substr($uf->callback, 1);
             $action = new $class($user->conf, $uf);
         } else {

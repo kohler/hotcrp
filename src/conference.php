@@ -4032,9 +4032,7 @@ class Conf {
         return $this->_api_map;
     }
     private function check_api_json($fj, $user, $method) {
-        if ((isset($fj->allow_if) && !$this->xt_allowed($fj, $user))
-            || !isset($fj->callback)
-            || !is_string($fj->callback)) {
+        if (isset($fj->allow_if) && !$this->xt_allowed($fj, $user)) {
             return false;
         } else if (!$method) {
             return true;
@@ -4074,6 +4072,8 @@ class Conf {
             }
         } else if (!$prow && get($uf, "paper")) {
             return self::paper_error_json_result($qreq->annex("paper_whynot"));
+        } else if (!is_string($uf->callback)) {
+            return new JsonResult(404, "Function not found.");
         } else {
             self::xt_resolve_require($uf);
             return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
