@@ -1420,7 +1420,7 @@ class AssignmentSet {
             if ($this->my_conflicts[$prow->paperId] !== true)
                 $t = '<em>Hidden for conflict</em>';
             else
-                $t = PaperList::wrapChairConflict($t);
+                $t = PaperList::wrap_override_conflict($t);
         }
         return $t;
     }
