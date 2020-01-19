@@ -7,18 +7,22 @@ class PreferenceList_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->topics = get($cj, "topics");
-        if (isset($cj->options) && in_array("topics", $cj->options))
+        if (isset($cj->options) && in_array("topics", $cj->options)) {
             $this->topics = true;
+        }
     }
     function prepare(PaperList $pl, $visible) {
-        if ($this->topics && !$pl->conf->has_topics())
+        if ($this->topics && !$pl->conf->has_topics()) {
             $this->topics = false;
-        if (!$pl->user->is_manager())
+        }
+        if (!$pl->user->is_manager()) {
             return false;
+        }
         if ($visible) {
             $pl->qopts["allReviewerPreference"] = true;
-            if ($this->topics)
+            if ($this->topics) {
                 $pl->qopts["topics"] = true;
+            }
             $pl->conf->stash_hotcrp_pc($pl->user);
         }
         return true;
@@ -48,7 +52,8 @@ class PreferenceList_PaperColumn extends PaperColumn {
             $t = '<span class="need-allpref">Loading</span>';
             $pl->need_render = true;
             return $t;
-        } else
+        } else {
             return '';
+        }
     }
 }

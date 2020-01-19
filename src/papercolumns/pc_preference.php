@@ -14,10 +14,12 @@ class Preference_PaperColumn extends PaperColumn {
     private $override_statistics;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        if (isset($cj->user))
+        if (isset($cj->user)) {
             $this->contact = $conf->pc_member_by_email($cj->user);
-        if (get($cj, "edit"))
+        }
+        if (get($cj, "edit")) {
             $this->mark_editable();
+        }
         $this->statistics = new ScoreInfo;
     }
     function mark_editable() {
@@ -30,45 +32,53 @@ class Preference_PaperColumn extends PaperColumn {
         $this->contact = $this->contact ? : $reviewer;
         $this->not_me = $this->contact->contactId !== $pl->user->contactId;
         if (!$pl->user->isPC
-            || ($this->not_me && !$pl->user->is_manager()))
+            || ($this->not_me && !$pl->user->is_manager())) {
             return false;
-        if ($visible)
+        }
+        if ($visible) {
             $pl->qopts["topics"] = 1;
+        }
         $this->prefix =  "";
-        if ($this->row)
+        if ($this->row) {
             $this->prefix = $pl->user->reviewer_html_for($this->contact);
+        }
         $this->secondary_sort_topic_score = $pl->report_id() === "editpref";
         return true;
     }
     private function preference_values($row) {
-        if ($this->not_me && !$this->viewer_contact->can_administer($row))
+        if ($this->not_me && !$this->viewer_contact->can_administer($row)) {
             return [null, null];
-        else
+        } else {
             return $row->reviewer_preference($this->contact);
+        }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         list($ap, $ae) = $this->preference_values($a);
-        if ($ap === 0 && $ae === null && $a->has_conflict($this->contact))
+        if ($ap === 0 && $ae === null && $a->has_conflict($this->contact)) {
             $ap = false;
+        }
         list($bp, $be) = $this->preference_values($b);
-        if ($bp === 0 && $be === null && $b->has_conflict($this->contact))
+        if ($bp === 0 && $be === null && $b->has_conflict($this->contact)) {
             $bp = false;
-        if ($ap === false || $bp === false)
+        }
+        if ($ap === false || $bp === false) {
             return $ap === $bp ? 0 : ($ap === false ? 1 : -1);
-        if ($ap === null || $bp === null)
+        } else if ($ap === null || $bp === null) {
             return $ap === $bp ? 0 : ($ap === null ? 1 : -1);
-        if ($ap !== $bp)
+        } else if ($ap !== $bp) {
             return $ap < $bp ? 1 : -1;
-        if ($ae !== $be) {
-            if (($ae === null) !== ($be === null))
+        } else if ($ae !== $be) {
+            if (($ae === null) !== ($be === null)) {
                 return $ae === null ? 1 : -1;
+            }
             return (float) $ae < (float) $be ? 1 : -1;
         }
         if ($this->secondary_sort_topic_score) {
             $at = $a->topic_interest_score($this->contact);
             $bt = $b->topic_interest_score($this->contact);
-            if ($at != $bt)
+            if ($at != $bt) {
                 return $at < $bt ? 1 : -1;
+            }
         }
         return 0;
     }
@@ -76,23 +86,25 @@ class Preference_PaperColumn extends PaperColumn {
         $pfcol = $rtcol = [];
         foreach ($fields as $fdef) {
             if ($fdef instanceof ReviewerType_PaperColumn
-                && $fdef->is_visible)
+                && $fdef->is_visible) {
                 $rtcol[] = $fdef;
-            else if ($fdef instanceof Preference_PaperColumn
-                     && $fdef->is_visible)
+            } else if ($fdef instanceof Preference_PaperColumn
+                       && $fdef->is_visible) {
                 $pfcol[] = $fdef;
+            }
         }
         $this->show_conflict = count($pfcol) !== 1
             || count($rtcol) !== 1
             || $rtcol[0]->contact()->contactId !== $this->contact->contactId;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->contact === $pl->user || $this->row)
+        if ($this->contact === $pl->user || $this->row) {
             return "Preference";
-        else if ($is_text)
+        } else if ($is_text) {
             return $pl->user->name_text_for($this->contact) . " preference";
-        else
+        } else {
             return $pl->user->name_html_for($this->contact) . "<br>preference";
+        }
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return $this->not_me && !$pl->user->allow_administer($row);
@@ -160,26 +172,29 @@ class Preference_PaperColumn extends PaperColumn {
         $x = $statistics->statistic($stat);
         if ($x == 0
             && $stat !== ScoreInfo::COUNT
-            && $statistics->statistic(ScoreInfo::COUNT) == 0)
+            && $statistics->statistic(ScoreInfo::COUNT) == 0) {
             return "";
-        else if (in_array($stat, [ScoreInfo::COUNT, ScoreInfo::SUM, ScoreInfo::MEDIAN]))
+        } else if (in_array($stat, [ScoreInfo::COUNT, ScoreInfo::SUM, ScoreInfo::MEDIAN])) {
             return $x;
-        else
+        } else {
             return sprintf("%.2f", $x);
+        }
     }
     function statistic($pl, $stat) {
         $t = $this->unparse_statistic($this->statistics, $stat);
         if ($this->override_statistics) {
             $tt = $this->unparse_statistic($this->override_statistics, $stat);
-            if ($t !== $tt)
+            if ($t !== $tt) {
                 $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
+            }
         }
         return $t;
     }
 
     static function expand($name, $user, $xfj, $m) {
-        if (!($fj = (array) $user->conf->basic_paper_column("pref", $user)))
+        if (!($fj = (array) $user->conf->basic_paper_column("pref", $user))) {
             return null;
+        }
         $rs = [];
         foreach (ContactSearch::make_pc($m[1], $user)->ids as $cid) {
             $u = $user->conf->cached_user_by_id($cid);
@@ -189,8 +204,9 @@ class Preference_PaperColumn extends PaperColumn {
                 $rs[] = (object) $fj;
             }
         }
-        if (empty($rs))
+        if (empty($rs)) {
             $user->conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[1]) . "”.");
+        }
         return $rs;
     }
 }
