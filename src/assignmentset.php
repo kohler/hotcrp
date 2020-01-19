@@ -742,7 +742,6 @@ class AssignmentSet {
     private $assigners_pidhead = [];
     private $enabled_pids = null;
     private $enabled_actions = null;
-    private $my_conflicts = null;
     private $astate;
     private $searches = array();
     private $search_type = "s";
@@ -876,14 +875,6 @@ class AssignmentSet {
 
     private static function req_user_html($req) {
         return Text::user_html_nolink($req["firstName"], $req["lastName"], $req["email"]);
-    }
-
-    private function set_my_conflicts() {
-        $this->my_conflicts = array();
-        $result = $this->conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=?", $this->user->contactId);
-        while (($row = edb_row($result)))
-            $this->my_conflicts[$row[0]] = ($row[1] ? $row[1] : true);
-        Dbl::free($result);
     }
 
     private static function apply_user_parts($req, $a) {
@@ -1396,8 +1387,9 @@ class AssignmentSet {
              $index !== null;
              $index = $assigner->next_index) {
             $assigners[] = $assigner = $this->assigners[$index];
-            if ($assigner->contact && !isset($assigner->contact->sorter))
+            if ($assigner->contact && !isset($assigner->contact->sorter)) {
                 Contact::set_sorter($assigner->contact, $this->conf);
+            }
         }
         usort($assigners, function ($assigner1, $assigner2) {
             $c1 = $assigner1->contact;
@@ -1410,22 +1402,19 @@ class AssignmentSet {
                 return strcmp($c1->type, $c2->type);
             }
         });
-        $t = "";
+        $t = [];
         foreach ($assigners as $assigner) {
             if (($text = $assigner->unparse_display($this))) {
-                $t .= ($t ? ", " : "") . '<span class="nw">' . $text . '</span>';
+                $t[] = $text;
             }
         }
-        if (isset($this->my_conflicts[$prow->paperId])) {
-            if ($this->my_conflicts[$prow->paperId] !== true)
-                $t = '<em>Hidden for conflict</em>';
-            else
-                $t = PaperList::wrap_override_conflict($t);
+        if (!empty($t)) {
+            return '<span class="nw">' . join(',</span> <span class="nw">', $t) . '</span>';
+        } else {
+            return "";
         }
-        return $t;
     }
     function echo_unparse_display() {
-        $this->set_my_conflicts();
         $deltarev = new AssignmentCountSet($this->conf);
         foreach ($this->assigners as $assigner) {
             $assigner->account($this, $deltarev);
@@ -1474,13 +1463,13 @@ class AssignmentSet {
     }
 
     function unparse_csv() {
-        $this->set_my_conflicts();
         $acsv = new AssignmentCsv;
         foreach ($this->assigners as $assigner) {
             if (($x = $assigner->unparse_csv($this, $acsv))) {
                 if (isset($x[0])) {
-                    foreach ($x as $elt)
+                    foreach ($x as $elt) {
                         $acsv->add($elt);
+                    }
                 } else {
                     $acsv->add($x);
                 }
@@ -1648,11 +1637,22 @@ class AutoassignmentPaperColumn extends PaperColumn {
     function __construct(AssignmentSet $aset) {
         parent::__construct($aset->conf, ["name" => "autoassignment", "row" => true, "className" => "pl_autoassignment"]);
         $this->aset = $aset;
+        $this->override = PaperColumn::OVERRIDE_IFEMPTY_LINK;
     }
     function header(PaperList $pl, $is_text) {
         return "Assignment";
     }
+    function content_empty(PaperList $pl, PaperInfo $row) {
+        return !$pl->user->can_administer($row)
+            && !($pl->user->overrides() & Contact::OVERRIDE_CONFLICT);
+    }
     function content(PaperList $pl, PaperInfo $row) {
-        return $this->aset->unparse_paper_assignment($row);
+        $t = $this->aset->unparse_paper_assignment($row);
+        if ($t !== ""
+            && ($pl->user->overrides() & Contact::OVERRIDE_CONFLICT)
+            && !$pl->user->can_administer($row)) {
+            $t = '<em>Hidden for conflict</em>';
+        }
+        return $t;
     }
 }

@@ -10,6 +10,7 @@ class PreferenceList_PaperColumn extends PaperColumn {
         if (isset($cj->options) && in_array("topics", $cj->options)) {
             $this->topics = true;
         }
+        $this->override = PaperColumn::OVERRIDE_IFEMPTY_LINK;
     }
     function prepare(PaperList $pl, $visible) {
         if ($this->topics && !$pl->conf->has_topics()) {
@@ -31,11 +32,11 @@ class PreferenceList_PaperColumn extends PaperColumn {
         return "Preferences";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->allow_administer($row);
+        return !$pl->user->can_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $prefs = $row->reviewer_preferences();
-        $ts = array();
+        $ts = [];
         if ($this->topics || $row->reviewer_preferences()) {
             foreach ($row->conf->pc_members() as $pcid => $pc) {
                 if (($pref = $row->reviewer_preference($pcid, $this->topics))) {

@@ -566,10 +566,6 @@ class PaperList {
     }
 
     // content downloaders
-    static function wrap_override_conflict($text) {
-        return '<span class="fn5"><em>Hidden for conflict</em> <span class="barsep">·</span> <a class="fn5" href="#">Override conflicts</a></span><span class="fx5">' . $text . "</span>";
-    }
-
     function reviewer_user() {
         return $this->_reviewer_user;
     }
