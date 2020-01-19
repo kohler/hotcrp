@@ -8214,8 +8214,6 @@ handle_ui.on("js-select-all", function () {
 });
 
 
-var paperlist_ui = (function ($) {
-
 handle_ui.on("js-tag-list-action", function () {
     $("select.js-submit-action-info-tag").on("change", function () {
         var $t = $(this).closest(".linelink"),
@@ -8251,7 +8249,7 @@ handle_ui.on("js-assign-list-action", function () {
     });
 });
 
-function paperlist_submit(event) {
+handle_ui.on("js-paperlist-submit", function (event) {
     // analyze why this is being submitted
     var $self = $(this), fn = $self.data("submitMark");
     $self.removeData("submitMark");
@@ -8291,13 +8289,7 @@ function paperlist_submit(event) {
         action = hoturl_add(action, "action=" + encodeURIComponent(fn));
     }
     this.action = action;
-}
-
-return function (event) {
-    if (event.type === "submit")
-        paperlist_submit.call(this, event);
-};
-})($);
+});
 
 
 handle_ui.on("js-unfold-pcselector", function () {

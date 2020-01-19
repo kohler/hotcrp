@@ -501,11 +501,10 @@ if ($pl_text) {
     echo "<div class=\"maintabsep\"></div>\n\n<div class=\"pltable-fullw-container\">";
 
     if ($pl->has("sel")) {
-        echo Ht::form($Conf->selfurl($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel"]),
+        echo Ht::form($Conf->selfurl($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel", "class" => "ui-submit js-paperlist-submit"]),
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
             Ht::hidden("forceShow", (string) $Qreq->forceShow, ["id" => "forceShow"]),
             Ht::hidden_default_submit("default", 1);
-        Ht::stash_script('$("#sel").on("submit", paperlist_ui)');
     }
 
     echo $pl_text;

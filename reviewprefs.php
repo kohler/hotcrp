@@ -326,10 +326,9 @@ if ($Qreq->q)
     $hoturl_args["q"] = $Qreq->q;
 if ($Qreq->sort)
     $hoturl_args["sort"] = $Qreq->sort;
-echo Ht::form(hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" => "assignpc"]),
+echo Ht::form(hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-paperlist-submit assignpc"]),
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1);
-Ht::stash_script('$("#sel").on("submit", paperlist_ui)');
 echo "<div class=\"pltable-fullw-container\">\n",
     '<noscript><div style="text-align:center">', Ht::submit("fn", "Save changes", ["value" => "saveprefs"]), '</div></noscript>',
     $pl_text,
