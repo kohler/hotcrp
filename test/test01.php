@@ -716,18 +716,22 @@ assert_search_papers($user_marina, "admin:me", "4");
 xassert($user_marina->is_manager());
 
 // conflict overrides
-xassert_assign($Conf->site_contact(), "action,paper,user\nconflict,4 5,chair@_.com");
+xassert_assign($Conf->site_contact(), "action,paper,user,tag\nconflict,4 5,chair@_.com\ntag,4 5,,testtag");
 $paper4 = $Conf->fetch_paper(4, $user_chair);
 $paper5 = $Conf->fetch_paper(5, $user_chair);
 assert(!$user_chair->can_administer($paper4));
 assert(!$user_chair->allow_administer($paper4));
 assert(!$user_chair->can_administer($paper5));
 assert($user_chair->allow_administer($paper5));
+xassert_eqq($paper4->viewable_tags($user_chair), "");
+xassert_eqq($paper5->viewable_tags($user_chair), "");
 $overrides = $user_chair->add_overrides(Contact::OVERRIDE_CONFLICT);
 assert(!$user_chair->can_administer($paper4));
 assert(!$user_chair->allow_administer($paper4));
 assert($user_chair->can_administer($paper5));
 assert($user_chair->allow_administer($paper5));
+xassert_eqq($paper4->viewable_tags($user_chair), "");
+xassert_eqq($paper5->viewable_tags($user_chair), " fart#9 testtag#0");
 $user_chair->set_overrides($overrides);
 xassert_assign($Conf->site_contact(), "action,paper,user\nclearconflict,4 5,chair@_.com");
 
