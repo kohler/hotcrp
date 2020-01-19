@@ -10,7 +10,7 @@ class Conflict_PaperColumn extends PaperColumn {
     private $editable = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
+        $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         if (($this->show_user = isset($cj->user)))
             $this->contact = $conf->pc_member_by_email($cj->user);
         $this->show_description = !!get($cj, "show_description");
@@ -20,7 +20,7 @@ class Conflict_PaperColumn extends PaperColumn {
     }
     function mark_editable() {
         $this->editable = true;
-        $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
+        $this->override = PaperColumn::OVERRIDE_BOTH;
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ? : $pl->reviewer_user();

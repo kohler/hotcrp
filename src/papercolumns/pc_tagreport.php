@@ -7,7 +7,7 @@ class TagReport_PaperColumn extends PaperColumn {
     private $viewtype;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
+        $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->tag = $cj->tag;
     }
     function prepare(PaperList $pl, $visible) {

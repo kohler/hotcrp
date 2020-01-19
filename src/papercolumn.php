@@ -4,9 +4,11 @@
 
 class PaperColumn extends Column {
     const OVERRIDE_NONE = 0;
-    const OVERRIDE_FOLD_IFEMPTY = 1;
-    const OVERRIDE_FOLD_BOTH = 2;
-    const OVERRIDE_ALWAYS = 3;
+    const OVERRIDE_FOLD_IFEMPTY = 1; // XXX backward compat
+    const OVERRIDE_IFEMPTY = 1;
+    const OVERRIDE_IFEMPTY_LINK = 2;
+    const OVERRIDE_BOTH = 3;
+    const OVERRIDE_FORCE = 4;
     public $override = 0;
 
     const PREP_SORT = -1;
@@ -223,7 +225,7 @@ class StatusPaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->is_long = $cj->name === "statusfull";
-        $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
+        $this->override = PaperColumn::OVERRIDE_BOTH;
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         foreach ($rows as $row) {
@@ -258,7 +260,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     private $round;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
+        $this->override = PaperColumn::OVERRIDE_BOTH;
         $this->round = get($cj, "round", null);
     }
     function prepare(PaperList $pl, $visible) {
@@ -452,7 +454,7 @@ class Authors_PaperColumn extends PaperColumn {
 class Collab_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
+        $this->override = PaperColumn::OVERRIDE_IFEMPTY;
     }
     function prepare(PaperList $pl, $visible) {
         return !!$pl->conf->setting("sub_collab") && $pl->user->can_view_some_authors();
@@ -650,7 +652,7 @@ class TagList_PaperColumn extends PaperColumn {
     private $editable;
     function __construct(Conf $conf, $cj, $editable = false) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_ALWAYS;
+        $this->override = PaperColumn::OVERRIDE_FORCE;
         $this->editable = $editable;
     }
     function mark_editable() {
@@ -681,13 +683,15 @@ class TagList_PaperColumn extends PaperColumn {
         return !$pl->user->can_view_tags($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($this->editable)
+        if ($this->editable) {
             $pl->row_attr["data-tags-editable"] = 1;
+        }
         if ($this->editable || $pl->row_tags || $pl->row_tags_overridable) {
             $pl->need_render = true;
             return '<span class="need-tags"></span>';
-        } else
+        } else {
             return "";
+        }
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $pl->tagger->unparse_hashed($row->viewable_tags($pl->user));
@@ -704,7 +708,7 @@ class Tag_PaperColumn extends PaperColumn {
     private $editsort;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
+        $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->dtag = $cj->tag;
         $this->is_value = get($cj, "tagvalue");
     }
@@ -933,7 +937,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     public $score;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
+        $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->format_field = $conf->review_field($cj->review_field_id);
         $this->score = $this->format_field->id;
     }

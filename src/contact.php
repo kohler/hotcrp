@@ -2022,8 +2022,9 @@ class Contact {
         // correct $forceShow
         $forceShow = $ci->allow_administer
             && ($this->_overrides & self::OVERRIDE_CONFLICT) !== 0;
-        if ($forceShow)
+        if ($forceShow) {
             $ci = $ci->get_forced_rights();
+        }
 
         // set other rights
         if ($ci->rights_forced !== $forceShow) {

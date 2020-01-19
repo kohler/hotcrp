@@ -3690,8 +3690,12 @@ body {
 .hidden {
 	display: none !important;
 }
+.fold5o div.fx5,
 .unhidden {
 	display: block !important;
+}
+.fold5o span.fx5 {
+	display: inline !important;
 }
 
 /* score help */

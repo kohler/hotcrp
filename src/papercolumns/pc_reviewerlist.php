@@ -22,9 +22,9 @@ class ReviewerList_PaperColumn extends PaperColumn {
                 $pl->qopts["topics"] = true;
         }
         if ($pl->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
-            $this->override = PaperColumn::OVERRIDE_FOLD_BOTH;
+            $this->override = PaperColumn::OVERRIDE_BOTH;
         } else {
-            $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
+            $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         }
         return true;
     }

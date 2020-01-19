@@ -925,19 +925,13 @@ class PaperList {
 
     private function _row_field_content(PaperColumn $fdef, PaperInfo $row) {
         $content = "";
-        if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_FOLD_IFEMPTY) {
+        $override = $this->row_overridable ? $fdef->override : 0;
+        if ($override <= 0) {
             $empty = $fdef->content_empty($this, $row);
-            if ($empty) {
-                $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-                $empty = $fdef->content_empty($this, $row);
-                if (!$empty && $fdef->is_visible) {
-                    $content = $this->_wrap_conflict("", $fdef->content($this, $row), $fdef);
-                }
-                $this->user->set_overrides($overrides);
-            } else if ($fdef->is_visible) {
+            if (!$empty && $fdef->is_visible) {
                 $content = $fdef->content($this, $row);
             }
-        } else if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_FOLD_BOTH) {
+        } else if ($override === PaperColumn::OVERRIDE_BOTH) {
             $content1 = $content2 = "";
             $empty1 = $fdef->content_empty($this, $row);
             if (!$empty1 && $fdef->is_visible) {
@@ -951,16 +945,26 @@ class PaperList {
             $this->user->set_overrides($overrides);
             $empty = $empty1 && $empty2;
             $content = $this->_wrap_conflict($content1, $content2, $fdef);
-        } else if ($this->row_overridable && $fdef->override === PaperColumn::OVERRIDE_ALWAYS) {
+        } else if ($override === PaperColumn::OVERRIDE_FORCE) {
             $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             $empty = $fdef->content_empty($this, $row);
             if (!$empty && $fdef->is_visible) {
                 $content = $fdef->content($this, $row);
             }
             $this->user->set_overrides($overrides);
-        } else {
+        } else { // $override > 0
             $empty = $fdef->content_empty($this, $row);
-            if (!$empty && $fdef->is_visible) {
+            if ($empty) {
+                $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+                $empty = $fdef->content_empty($this, $row);
+                if (!$empty && $fdef->is_visible) {
+                    if ($override === PaperColumn::OVERRIDE_IFEMPTY_LINK) {
+                        $content = '<em>Hidden for conflict</em> · <a class="ui js-override-conflict" href="">Override</a>';
+                    }
+                    $content = $this->_wrap_conflict($content, $fdef->content($this, $row), $fdef);
+                }
+                $this->user->set_overrides($overrides);
+            } else if ($fdef->is_visible) {
                 $content = $fdef->content($this, $row);
             }
         }
@@ -983,6 +987,19 @@ class PaperList {
             } else {
                 $this->row_tags = $row->viewable_tags($this->user);
             }
+        }
+    }
+
+    static private function _prepend_row_header($content, $ch) {
+        $ch = '<em class="plx">' . $ch . ':</em> ';
+        if (str_starts_with($content, '<div class="fn5"')) {
+            return preg_replace_callback('/(<div class="f[nx]5">)/', function ($m) use ($ch) {
+                return $m[1] . $ch;
+            }, $content);
+        } else if (preg_match('/\A((?:<(?:div|p|ul|ol|li).*?>)*)([\s\S]*)\z/', $content, $m)) {
+            return $m[1] . $ch . $m[2];
+        } else {
+            return $ch . $content;
         }
     }
 
@@ -1032,11 +1049,11 @@ class PaperList {
             list($empty, $content) = $this->_row_field_content($fdef, $row);
             if ($fdef->is_visible) {
                 if ($content !== "" && ($ch = $fdef->header($this, false))) {
-                    if ($content[0] !== "<"
-                        || !preg_match('/\A((?:<(?:div|p|ul|ol|li).*?>)*)([\s\S]*)\z/', $content, $cm)) {
-                        $cm = [null, "", $content];
+                    if ($content[0] === "<") {
+                        $content = self::_prepend_row_header($content, $ch);
+                    } else {
+                        $content = '<em class="plx">' . $ch . ':</em> ' . $content;
                     }
-                    $content = $cm[1] . '<em class="plx">' . $ch . ':</em> ' . $cm[2];
                 }
                 $tt .= "<div class=\"" . $fdef->className;
                 if ($fdef->fold) {

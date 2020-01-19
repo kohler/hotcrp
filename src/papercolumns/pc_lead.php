@@ -5,7 +5,7 @@
 class Lead_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_FOLD_IFEMPTY;
+        $this->override = PaperColumn::OVERRIDE_IFEMPTY;
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->user->can_view_lead(null)
