@@ -242,7 +242,7 @@ class Home_Partial {
         echo '<div class="homegrp fold',
             $qreq->signin ? "o" : "c",
             '" id="homeacct">',
-            Ht::form($user->conf->hoturl("index", ["signin" => 1]), ["class" => "ui-submit js-signin compact-form"]),
+            Ht::form($user->conf->hoturl("index", ["signin" => 1]), ["class" => "ui ui-submit js-signin compact-form"]),
             Ht::hidden("post", post_value(true));
 
         echo '<p class="mb-5">', $conf->_("Sign in to submit or review papers."), '</p>',

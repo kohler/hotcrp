@@ -1671,7 +1671,7 @@ class PaperTable {
 
         if ($editable) {
             $this->conf->stash_hotcrp_pc($this->user);
-            echo '<form class="ui-submit fx"><div>',
+            echo '<form class="ui ui-submit fx"><div>',
                 Ht::select($type, [], 0, ["class" => "psc-select want-focus", "style" => "width:99%", "data-pcselector-options" => "0 assignable selected", "data-pcselector-selected" => $value]),
                 '</div></form>';
             Ht::stash_script('edit_paper_ui.prepare_psedit.call($$("fold' . $type . '"),{p:' . $this->prow->paperId . ',fn:"' . $type . '"})');
@@ -1778,7 +1778,7 @@ class PaperTable {
     function papstripOutcomeSelector() {
         $this->_papstripBegin("decision", $this->qreq->atab !== "decision");
         echo $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
-            '<div class="psv"><form class="ui-submit fx"><div>';
+            '<div class="psv"><form class="ui ui-submit fx"><div>';
         if (isset($this->qreq->forceShow)) {
             echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
         }
@@ -1922,7 +1922,7 @@ class PaperTable {
 
         $this->_papstripBegin();
 
-        echo '<form class="ui-submit"><div>',
+        echo '<form class="ui ui-submit"><div>',
             $this->papt("watch",
                 '<label><span class="checkc">'
                 . Ht::checkbox("follow", 1, $this->user->following_reviews($this->prow, $watch), ["class" => "uich js-follow-change"])
