@@ -187,8 +187,9 @@ $pl = new PaperList($psearch);
 $j = $pl->text_json("id conf");
 xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 xassert_eqq($j[17]->conf, "Y");
-foreach ([1, 2, 3, 4, 5, 15, 16, 18] as $i)
+foreach ([1, 2, 3, 4, 5, 15, 16, 18] as $i) {
     xassert_eqq($j[$i]->conf, "N");
+}
 
 assert_search_papers($user_chair, "re:estrin", "4 8 18");
 assert_search_papers($user_shenker, "re:estrin", "4 8 18");
@@ -705,6 +706,7 @@ assert_search_papers($user_chair, "conflict:me", "");
 assert_search_papers($user_chair, "admin:me", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 assert_search_papers($user_marina, "admin:me", "");
 xassert(!$user_marina->is_manager());
+
 xassert_assign($user_chair, "action,paper,user\nadministrator,4,marina@poema.ru\n");
 xassert($Conf->setting("papermanager") > 0);
 assert_search_papers($user_chair, "has:admin", "4");
@@ -712,6 +714,22 @@ assert_search_papers($user_chair, "admin:me", "1 2 3 5 6 7 8 9 10 11 12 13 14 15
 assert_search_papers($user_chair, "admin:marina", "4");
 assert_search_papers($user_marina, "admin:me", "4");
 xassert($user_marina->is_manager());
+
+// conflict overrides
+xassert_assign($Conf->site_contact(), "action,paper,user\nconflict,4 5,chair@_.com");
+$paper4 = $Conf->fetch_paper(4, $user_chair);
+$paper5 = $Conf->fetch_paper(5, $user_chair);
+assert(!$user_chair->can_administer($paper4));
+assert(!$user_chair->allow_administer($paper4));
+assert(!$user_chair->can_administer($paper5));
+assert($user_chair->allow_administer($paper5));
+$overrides = $user_chair->add_overrides(Contact::OVERRIDE_CONFLICT);
+assert(!$user_chair->can_administer($paper4));
+assert(!$user_chair->allow_administer($paper4));
+assert($user_chair->can_administer($paper5));
+assert($user_chair->allow_administer($paper5));
+$user_chair->set_overrides($overrides);
+xassert_assign($Conf->site_contact(), "action,paper,user\nclearconflict,4 5,chair@_.com");
 
 // preference assignments
 xassert_assign($user_chair, "paper,user,pref\n1,marina,10\n");
