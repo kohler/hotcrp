@@ -29,8 +29,10 @@ class PaperContactInfo {
     public $can_view_decision;
     public $view_authors_state;
 
+    // cached by PaperInfo methods
     public $vsreviews_array;
     public $vsreviews_version;
+    public $viewable_tags;
 
     static function make_empty(PaperInfo $prow, $user) {
         $ci = new PaperContactInfo;
@@ -157,7 +159,7 @@ class PaperContactInfo {
     function get_forced_rights() {
         if (!$this->forced_rights_link) {
             $ci = $this->forced_rights_link = clone $this;
-            $ci->vsreviews_array = null;
+            $ci->vsreviews_array = $ci->viewable_tags = null;
         }
         return $this->forced_rights_link;
     }
@@ -299,8 +301,6 @@ class PaperInfo {
     private $_request_array;
     private $_refusal_array;
     private $_author_view_user;
-    private $_viewable_tags;
-    private $_viewable_tags_cid;
     public $_row_set;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
@@ -383,8 +383,7 @@ class PaperInfo {
         if ($this->_rights_version !== Contact::$rights_version) {
             if ($this->_rights_version) {
                 $this->_contact_info = $this->_reviews_have = [];
-                $this->_review_array = $this->_conflict_array =
-                    $this->_viewable_tags = null;
+                $this->_review_array = $this->_conflict_array = null;
                 ++$this->_review_array_version;
                 unset($this->reviewSignatures, $this->allConflictType);
             }
@@ -833,23 +832,23 @@ class PaperInfo {
 
     function viewable_tags(Contact $user) {
         // see also Contact::can_view_tag()
-        if (!$user->isPC || (string) $this->all_tags_text() === "")
+        if (!$user->isPC || (string) $this->all_tags_text() === "") {
             return "";
-        $this->check_rights_version();
-        if ($this->_viewable_tags === null
-            || $this->_viewable_tags_cid !== $user->contactId) {
+        }
+        $rights = $user->__rights($this);
+        if ($rights->viewable_tags === null) {
             $tags = $this->all_tags_text();
             $dt = $this->conf->tags();
-            if ($user->can_view_most_tags($this))
+            if ($user->can_view_most_tags($this)) {
                 $tags = $dt->strip_nonviewable($tags, $user, $this);
-            else if ($dt->has_sitewide && $user->can_view_tags($this))
+            } else if ($dt->has_sitewide && $user->can_view_tags($this)) {
                 $tags = Tagger::strip_nonsitewide($tags, $user);
-            else
+            } else {
                 $tags = "";
-            $this->_viewable_tags = $dt->sort($tags);
-            $this->_viewable_tags_cid = $user->contactId;
+            }
+            $rights->viewable_tags = $dt->sort($tags);
         }
-        return $this->_viewable_tags;
+        return $rights->viewable_tags;
     }
 
     function searchable_tags(Contact $user) {
