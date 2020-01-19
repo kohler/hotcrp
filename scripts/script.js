@@ -7239,14 +7239,13 @@ $(window).on("hotcrptags", function (evt, rv) {
         render_row_tags(pidfield(rv.pid, fields.tags)[0]);
 });
 
-function fold_override(checkbox) {
+function fold_override(dofold) {
     $(function () {
-        var on = checkbox.checked;
-        fold(self, !on, 5);
-        $("#forceShow").val(on ? 1 : 0);
+        fold(self, dofold, 5);
+        $("#forceShow").val(dofold ? 0 : 1);
         // show the color classes appropriate to this conflict state
         $(self).find(".colorconflict").each(function () {
-            var a = pattrnear(this, on ? "data-color-classes" : "data-color-classes-conflicted");
+            var a = pattrnear(this, dofold ? "data-color-classes-conflicted" : "data-color-classes");
             this.className = this.className.replace(/(?:^|\s+)(?:\S*tag|k[01]|tagbg)(?= |$)/g, "").trim() + (a ? " " + a : "");
         });
     });
@@ -7261,10 +7260,11 @@ handle_ui.on("js-plinfo", function (event) {
         dofold = !this.checked;
     }
     if (type) {
+        self || initialize();
         type = type.split(/\s+/);
         for (var i = 0; i != type.length; ++i) {
             if (type[i] === "force")
-                fold_override(this);
+                fold_override(dofold);
             else if (type[i] === "rownum")
                 fold(self, dofold, 6);
             else
