@@ -2534,7 +2534,7 @@ class PaperTable {
             || !$prow) {
             /* no link */;
         } else if ($myrr && $editrrow != $myrr) {
-            $myrlink = unparseReviewOrdinal($myrr);
+            $myrlink = $myrr->unparse_ordinal();
             $a = '<a href="' . hoturl("review", "p=$prow->paperId&r=$myrlink") . '" class="xx revlink">';
             if ($this->user->can_review($prow, $myrr)) {
                 $x = $a . Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u></a>";

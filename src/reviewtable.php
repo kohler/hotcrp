@@ -58,7 +58,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         // review ID
         $id = $rr->is_subreview() ? "Subreview" : "Review";
         if ($rr->reviewOrdinal) {
-            $id .= " #" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
+            $id .= " #" . $rr->unparse_ordinal();
         }
         if (!$rr->reviewSubmitted
             && ($rr->timeApprovalRequested >= 0 || !$rr->is_subreview())) {
@@ -68,7 +68,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
             else
                 $id .= " (" . $d . ")";
         }
-        $rlink = unparseReviewOrdinal($rr);
+        $rlink = $rr->unparse_ordinal();
 
         $t = '<td class="rl nw">';
         if ($rrow && $rrow->reviewId == $rr->reviewId) {

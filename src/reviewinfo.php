@@ -220,6 +220,10 @@ class ReviewInfo {
         }
     }
 
+    function unparse_ordinal() {
+        return unparseReviewOrdinal($this);
+    }
+
 
     function assign_name($c) {
         $this->firstName = $c->firstName;

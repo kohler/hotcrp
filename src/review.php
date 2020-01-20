@@ -928,7 +928,7 @@ $blind\n";
 
         $n = ($no_title ? "" : $this->conf->short_name . " ") . "Review";
         if ($rrow->reviewOrdinal) {
-            $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+            $n .= " #" . $rrow->unparse_ordinal();
         }
         if ($rrow->reviewRound
             && $contact->can_view_review_round($prow, $rrow)) {
@@ -1058,7 +1058,7 @@ $blind\n";
                   $options, ReviewValues $rvalues = null) {
         $editmode = get($options, "edit", false);
 
-        $reviewOrdinal = unparseReviewOrdinal($rrow);
+        $reviewOrdinal = $rrow ? $rrow->unparse_ordinal() : ".";
         self::check_review_author_seen($prow, $rrow, $viewer);
 
         if (!$editmode) {
@@ -1353,7 +1353,7 @@ $blind\n";
     function unparse_flow_entry(PaperInfo $prow, ReviewInfo $rrow, Contact $contact) {
         // See also CommentInfo::unparse_flow_entry
         $barsep = ' <span class="barsep">·</span> ';
-        $a = '<a href="' . hoturl("paper", "p=$prow->paperId#r" . unparseReviewOrdinal($rrow)) . '"';
+        $a = '<a href="' . hoturl("paper", "p=$prow->paperId#r" . $rrow->unparse_ordinal()) . '"';
         $t = '<tr class="pl"><td class="pl_eventicon">' . $a . '>'
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_eventid pl_rowclick">'
@@ -1376,7 +1376,7 @@ $blind\n";
         $t .= "</small><br>";
 
         if ($rrow->reviewSubmitted) {
-            $t .= "Review #" . unparseReviewOrdinal($rrow) . " submitted";
+            $t .= "Review #" . $rrow->unparse_ordinal() . " submitted";
             $xbarsep = $barsep;
         } else {
             $xbarsep = "";

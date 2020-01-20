@@ -34,7 +34,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
                 $ranal = $pl->make_review_analysis($rrow, $row);
                 $d = $rrow->status_description();
                 if ($rrow->reviewOrdinal) {
-                    $d = rtrim("#" . unparseReviewOrdinal($rrow) . " " . $d);
+                    $d = rtrim("#" . $rrow->unparse_ordinal() . " " . $d);
                 }
                 $d = $ranal->wrap_link($d, "uu nw");
                 if (!$rrow->reviewSubmitted

@@ -90,12 +90,14 @@ class PaperListReviewAnalysis {
         return $x;
     }
     function wrap_link($html, $klass = null) {
-        if (!$this->rrow)
+        if (!$this->rrow) {
             return $html;
-        if (!$this->rrow->reviewSubmitted)
-            $href = $this->prow->conf->hoturl("review", "r=" . unparseReviewOrdinal($this->rrow));
-        else
-            $href = $this->prow->conf->hoturl("paper", "p=" . $this->rrow->paperId . "#r" . unparseReviewOrdinal($this->rrow));
+        }
+        if (!$this->rrow->reviewSubmitted) {
+            $href = $this->prow->conf->hoturl("review", "r=" . $this->rrow->unparse_ordinal());
+        } else {
+            $href = $this->prow->conf->hoturl("paper", "p=" . $this->rrow->paperId . "#r" . $this->rrow->unparse_ordinal());
+        }
         $t = $klass ? "<a class=\"$klass\"" : "<a";
         return $t . ' href="' . $href . '">' . $html . '</a>';
     }
