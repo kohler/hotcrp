@@ -2,7 +2,7 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/lib/getopt.php");
 
-$arg = getopt_rest($argv, "hn:t:xwac", ["help", "name:", "type:", "narrow", "wide", "all", "no-header", "comments"]);
+$arg = getopt_rest($argv, "hn:t:xwacN", ["help", "name:", "type:", "narrow", "wide", "all", "no-header", "comments", "sitename"]);
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/reviews.php [-n CONFID] [-t COLLECTION] [-acx] [QUERY...]
 Output a CSV file containing all reviews for the papers matching QUERY.
@@ -12,6 +12,7 @@ Options include:
   -x, --narrow           Narrow output.
   -a, --all              Include all reviews, not just submitted reviews.
   -c, --comments         Include comments.
+  -N, --sitename         Include site name and class in CSV.
   --no-header            Omit CSV header.
   QUERY...               A search term.\n");
     exit(0);
@@ -40,7 +41,11 @@ foreach ($search->warnings as $w) {
 }
 
 $csv = new CsvGenerator;
-$header = ["pid", "review", "email", "round"];
+$header = [];
+if (isset($arg["N"]) || isset($arg["sitename"])) {
+    array_push($header, "sitename", "siteclass");
+}
+array_push($header, "pid", "review", "email", "round");
 if ($all) {
     $header[] = "reviewstatus";
 }
@@ -79,7 +84,11 @@ foreach ($search->sorted_paper_ids() as $pid) {
               || (!$all && $rrow->reviewSubmitted <= 0)) {
             continue;
         }
-        $x = ["pid" => $prow->paperId];
+        $x = [
+            "sitename" => $Conf->opt("confid"),
+            "siteclass" => $Conf->opt("siteclass"),
+            "pid" => $prow->paperId
+        ];
         if ($iscomment) {
             $x["review"] = $rrow->unparse_html_id();
             $x["email"] = $rrow->reviewEmail;
