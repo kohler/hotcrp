@@ -163,7 +163,7 @@ if (!$reviewer)
 $textarg = ["lastFirst" => $Conf->sort_by_last];
 foreach ($Conf->pc_members() as $pc)
     $rev_opt[$pc->email] = Text::name_html($pc, $textarg) . " ("
-        . plural(defval($rev_count, $pc->contactId, 0), "assignment") . ")";
+        . plural(get($rev_count, $pc->contactId, 0), "assignment") . ")";
 
 echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<td>", Ht::select("reviewer", $rev_opt, $reviewer ? $reviewer->email : 0), "</td></tr>",

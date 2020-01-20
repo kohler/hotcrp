@@ -23,10 +23,11 @@ if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql"
     die_hard("* Can't reinitialize database.\n" . $Conf->dblink->error . "\n");
 }
 do {
-    if (($result = $Conf->dblink->store_result()))
+    if (($result = $Conf->dblink->store_result())) {
         $result->free();
-    else if ($Conf->dblink->errno)
+    } else if ($Conf->dblink->errno) {
         break;
+    }
 } while ($Conf->dblink->more_results() && $Conf->dblink->next_result());
 if ($Conf->dblink->errno) {
     die_hard("* Error initializing database.\n" . $Conf->dblink->error . "\n");
@@ -38,10 +39,12 @@ $Conf->qe_raw("insert into Settings set name='options', value=1, data='[{\"id\":
 $Conf->load_settings();
 // Contactdb.
 if (($cdb = $Conf->contactdb())) {
-    if (!$cdb->multi_query(file_get_contents("$ConfSitePATH/test/cdb-schema.sql")))
+    if (!$cdb->multi_query(file_get_contents("$ConfSitePATH/test/cdb-schema.sql"))) {
         die_hard("* Can't reinitialize contact database.\n" . $cdb->error);
-    while ($cdb->more_results())
+    }
+    while ($cdb->more_results()) {
         Dbl::free($cdb->next_result());
+    }
     $cdb->query("insert into Conferences set dbname='" . $cdb->real_escape_string($Conf->dbname) . "'");
 }
 
@@ -158,10 +161,12 @@ class MailChecker {
         foreach ($ms as $m) {
             $m[1] = trim($m[1]);
             if ($m[1] === ""
-                && preg_match('/\nX-Landmark:\s*(\S+)/', $m[2], $mx))
+                && preg_match('/\nX-Landmark:\s*(\S+)/', $m[2], $mx)) {
                 $m[1] = $mx[1];
-            if ($m[1] !== "")
+            }
+            if ($m[1] !== "") {
                 self::$messagedb[$m[1]][] = [$m[2], $m[3]];
+            }
         }
     }
 }
@@ -179,24 +184,28 @@ if (!$json)
 $us = new UserStatus($Conf->site_contact());
 foreach ($json->contacts as $c) {
     $user = $us->save($c);
-    if ($user)
+    if ($user) {
         MailChecker::check_db("create-{$c->email}");
-    else
+    } else {
         die_hard("* failed to create user $c->email\n");
+    }
 }
 foreach ($json->papers as $p) {
     $ps = new PaperStatus($Conf);
-    if (!$ps->save_paper_json($p))
+    if (!$ps->save_paper_json($p)) {
         die_hard("* failed to create paper $p->title:\n" . htmlspecialchars_decode(join("\n", $ps->messages())) . "\n");
+    }
 }
 
 function setup_assignments($assignments, Contact $user) {
-    if (is_array($assignments))
+    if (is_array($assignments)) {
         $assignments = join("\n", $assignments);
+    }
     $assignset = new AssignmentSet($user, true);
     $assignset->parse($assignments, null, null);
-    if (!$assignset->execute())
+    if (!$assignset->execute()) {
         die_hard("* failed to run assignments:\n" . join("\n", $assignset->errors_text(true)) . "\n");
+    }
 }
 setup_assignments($json->assignments_1, $Admin);
 
@@ -215,10 +224,11 @@ class Xassert {
 
 function xassert_error_handler($errno, $emsg, $file, $line) {
     if ((error_reporting() || $errno != E_NOTICE) && Xassert::$disabled <= 0) {
-        if (get(Xassert::$emap, $errno))
+        if (get(Xassert::$emap, $errno)) {
             $emsg = Xassert::$emap[$errno] . ":  $emsg";
-        else
+        } else {
             $emsg = "PHP Message $errno:  $emsg";
+        }
         fwrite(STDERR, "$emsg in $file on line $line\n");
         ++Xassert::$nerror;
     }
@@ -232,10 +242,11 @@ function assert_location() {
 
 function xassert($x, $description = "") {
     ++Xassert::$n;
-    if (!$x)
+    if (!$x) {
         trigger_error("Assertion" . ($description ? " " . $description : "") . " failed at " . assert_location() . "\n", E_USER_WARNING);
-    else
+    } else {
         ++Xassert::$nsuccess;
+    }
     return !!$x;
 }
 
@@ -244,64 +255,69 @@ function xassert_exit() {
         && !Xassert::$nerror;
     echo ($ok ? "* " : "! "), plural(Xassert::$nsuccess, "test"), " succeeded out of ", Xassert::$n, " tried.\n";
     if (Xassert::$nerror
-        && ($nerror = Xassert::$nerror - (Xassert::$n - Xassert::$nsuccess)))
+        && ($nerror = Xassert::$nerror - (Xassert::$n - Xassert::$nsuccess))) {
         echo "! ", plural($nerror, "other error"), ".\n";
+    }
     exit($ok ? 0 : 1);
 }
 
 function xassert_eqq($a, $b) {
     ++Xassert::$n;
     $ok = $a === $b;
-    if ($ok)
+    if ($ok) {
         ++Xassert::$nsuccess;
-    else
+    } else {
         trigger_error("Assertion " . var_export($a, true) . " === " . var_export($b, true)
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    }
     return $ok;
 }
 
 function xassert_neqq($a, $b) {
     ++Xassert::$n;
     $ok = $a !== $b;
-    if ($ok)
+    if ($ok) {
         ++Xassert::$nsuccess;
-    else
+    } else {
         trigger_error("Assertion " . var_export($a, true) . " !== " . var_export($b, true)
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    }
     return $ok;
 }
 
 function xassert_eq($a, $b) {
     ++Xassert::$n;
     $ok = $a == $b;
-    if ($ok)
+    if ($ok) {
         ++Xassert::$nsuccess;
-    else
+    } else {
         trigger_error("Assertion " . var_export($a, true) . " == " . var_export($b, true)
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    }
     return $ok;
 }
 
 function xassert_neq($a, $b) {
     ++Xassert::$n;
     $ok = $a != $b;
-    if ($ok)
+    if ($ok) {
         ++Xassert::$nsuccess;
-    else
+    } else {
         trigger_error("Assertion " . var_export($a, true) . " != " . var_export($b, true)
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    }
     return $ok;
 }
 
 function xassert_array_eqq($a, $b) {
     ++Xassert::$n;
     $problem = "";
-    if ($a === null && $b === null)
-        /* ok */;
-    else if (is_array($a) && is_array($b)) {
-        if (count($a) !== count($b))
+    if ($a === null && $b === null) {
+        // ok
+    } else if (is_array($a) && is_array($b)) {
+        if (count($a) !== count($b)) {
             $problem = "size " . count($a) . " !== " . count($b);
-        else {
+        } else {
             $ka = array_keys($a);
             $va = array_values($a);
             $kb = array_keys($b);
@@ -312,23 +328,26 @@ function xassert_array_eqq($a, $b) {
                 else if ($va[$i] !== $vb[$i])
                     $problem = "value {$ka[$i]} differs, " . var_export($va[$i], true) . " !== " . var_export($vb[$i], true);
         }
-    } else
+    } else {
         $problem = "different types";
-    if ($problem === "")
+    }
+    if ($problem === "") {
         ++Xassert::$nsuccess;
-    else
+    } else {
         trigger_error("Array assertion failed, $problem at " . assert_location() . "\n", E_USER_WARNING);
+    }
     return $problem === "";
 }
 
 function xassert_match($a, $b) {
     ++Xassert::$n;
     $ok = is_string($a) && preg_match($b, $a);
-    if ($ok)
+    if ($ok) {
         ++Xassert::$nsuccess;
-    else
+    } else {
         trigger_error("Assertion " . var_export($a, true) . " ~= " . $b
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    }
     return $ok;
 }
 
@@ -340,14 +359,16 @@ function search_json($user, $text, $cols = "id") {
 function search_text_col($user, $text, $col = "id") {
     $pl = new PaperList(new PaperSearch($user, $text));
     $x = array();
-    foreach ($pl->text_json($col) as $pid => $p)
+    foreach ($pl->text_json($col) as $pid => $p) {
         $x[] = $pid . " " . $p->$col . "\n";
+    }
     return join("", $x);
 }
 
 function assert_search_papers($user, $text, $result) {
-    if (is_array($result))
+    if (is_array($result)) {
         $result = join(" ", $result);
+    }
     $result = preg_replace_callback('/(\d+)-(\d+)/', function ($m) {
         return join(" ", range(+$m[1], +$m[2]));
     }, $result);
@@ -365,10 +386,11 @@ function tag_normalize_compare($a, $b) {
     $ax = ($a_twiddle > 0 ? substr($a, $a_twiddle + 1) : $a);
     $bx = ($b_twiddle > 0 ? substr($b, $b_twiddle + 1) : $b);
     if (($cmp = strcasecmp($ax, $bx)) == 0) {
-        if (($a_twiddle > 0) != ($b_twiddle > 0))
+        if (($a_twiddle > 0) != ($b_twiddle > 0)) {
             $cmp = ($a_twiddle > 0 ? 1 : -1);
-        else
+        } else {
             $cmp = strcasecmp($a, $b);
+        }
     }
     return $cmp;
 }
@@ -382,10 +404,12 @@ function paper_tag_normalize($prow) {
             $at = strpos($c->email, "@");
             $tag = ($at ? substr($c->email, 0, $at) : $c->email) . substr($tag, $twiddle);
         }
-        if (strlen($tag) > 2 && substr($tag, strlen($tag) - 2) == "#0")
+        if (strlen($tag) > 2 && substr($tag, strlen($tag) - 2) == "#0") {
             $tag = substr($tag, 0, strlen($tag) - 2);
-        if ($tag)
+        }
+        if ($tag) {
             $t[] = $tag;
+        }
     }
     usort($t, "tag_normalize_compare");
     return $t;

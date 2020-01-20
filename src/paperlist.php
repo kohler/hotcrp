@@ -586,13 +586,13 @@ class PaperList {
     function _compare_pc($contactId1, $contactId2, $sorter) {
         $pc1 = $this->conf->pc_member_by_id($contactId1);
         $pc2 = $this->conf->pc_member_by_id($contactId2);
-        if ($pc1 === $pc2)
+        if ($pc1 === $pc2) {
             return 0;
-        else if (!$pc1 || !$pc2)
+        } else if (!$pc1 || !$pc2) {
             return $pc1 ? -1 : 1;
-        else if (empty($sorter->anno))
+        } else if (empty($sorter->anno)) {
             return Contact::compare($pc1, $pc2);
-        else {
+        } else {
             $s1 = Contact::make_sorter($pc1, $sorter->anno);
             $s2 = Contact::make_sorter($pc2, $sorter->anno);
             return strnatcasecmp($s1, $s2);
@@ -601,17 +601,21 @@ class PaperList {
 
     function displayable_list_actions($prefix) {
         $la = [];
-        foreach ($this->conf->list_action_map() as $name => $fjs)
+        foreach ($this->conf->list_action_map() as $name => $fjs) {
             if (str_starts_with($name, $prefix)) {
                 $uf = null;
-                foreach ($fjs as $fj)
+                foreach ($fjs as $fj) {
                     if (Conf::xt_priority_compare($fj, $uf) <= 0
                         && $this->conf->xt_allowed($fj, $this->user)
-                        && $this->action_xt_displayed($fj))
+                        && $this->action_xt_displayed($fj)) {
                         $uf = $fj;
-                if ($uf)
+                    }
+                }
+                if ($uf) {
                     $la[$name] = $uf;
+                }
             }
+        }
         return $la;
     }
 
@@ -1648,7 +1652,7 @@ class PaperList {
 
         // header cells
         $colhead = "";
-        if (!defval($options, "noheader")) {
+        if (!get($options, "noheader")) {
             $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">";
             $titleextra = $this->_make_title_header_extra($rstate, $fieldDef,
                                                           get($options, "header_links"));
@@ -1746,9 +1750,9 @@ class PaperList {
 
     function table_html($report_id, $options = array()) {
         $render = $this->table_render($report_id, $options);
-        if ($render->error)
+        if ($render->error) {
             return $render->error;
-        else
+        } else {
             return $render->table_start
                 . (self::$include_stash ? Ht::unstash() : "")
                 . ($render->thead ? : "")
@@ -1757,17 +1761,20 @@ class PaperList {
                 . $render->tbody_end()
                 . ($render->tfoot ? : "")
                 . "</table>";
+        }
     }
 
     function column_json($fields) {
-        if (!$this->_prepare())
+        if (!$this->_prepare()) {
             return null;
+        }
 
         // get column list, check sort
         $field_list = $this->_columns($fields, false, true);
         $rows = $this->_rows($field_list);
-        if ($rows === null)
+        if ($rows === null) {
             return null;
+        }
 
         // turn off forceShow
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
@@ -1779,13 +1786,15 @@ class PaperList {
             $p = ["id" => $row->paperId];
             foreach ($field_list as $fdef) {
                 list($empty, $content) = $this->_row_field_content($fdef, $row);
-                if ($content !== "")
+                if ($content !== "") {
                     $p[$fdef->name] = $content;
+                }
             }
             $data[$row->paperId] = $p;
             foreach ($this->row_attr as $k => $v) {
-                if (!isset($attr[$row->paperId]))
+                if (!isset($attr[$row->paperId])) {
                     $attr[$row->paperId] = [];
+                }
                 $attr[$row->paperId][$k] = $v;
             }
         }
@@ -1821,14 +1830,16 @@ class PaperList {
     }
 
     function text_json($fields) {
-        if (!$this->_prepare())
+        if (!$this->_prepare()) {
             return null;
+        }
 
         // get column list, check sort
         $field_list = $this->_columns($fields, false, true);
         $rows = $this->_rows($field_list);
-        if ($rows === null)
+        if ($rows === null) {
             return null;
+        }
 
         $data = [];
         foreach ($rows as $row) {
@@ -1837,8 +1848,9 @@ class PaperList {
             foreach ($field_list as $fdef) {
                 if ($fdef->viewable()
                     && !$fdef->content_empty($this, $row)
-                    && ($text = $fdef->text($this, $row)) !== "")
+                    && ($text = $fdef->text($this, $row)) !== "") {
                     $p[$fdef->name] = $text;
+                }
             }
             $data[$row->paperId] = (object) $p;
         }
@@ -1850,8 +1862,9 @@ class PaperList {
         foreach ($fieldDef as $fdef) {
             $empty = $fdef->content_empty($this, $row);
             $c = $empty ? "" : $fdef->text($this, $row);
-            if ($c !== "")
+            if ($c !== "") {
                 $fdef->has_content = true;
+            }
             $csv[$fdef->name] = $c;
         }
         return $csv;
@@ -1868,25 +1881,30 @@ class PaperList {
     }
 
     function text_csv($report_id, $options = array()) {
-        if (!$this->_prepare($report_id))
+        if (!$this->_prepare($report_id)) {
             return null;
+        }
 
         // get column list, check sort
         $field_list = $this->_list_columns();
-        if ($field_list === false)
+        if ($field_list === false) {
             return null;
+        }
         $field_list = $this->_columns($field_list, true, false); /* XXX */
         $rows = $this->_rows($field_list);
-        if ($rows === null || empty($rows))
+        if ($rows === null || empty($rows)) {
             return null;
+        }
 
         // get field array
         $fieldDef = array();
-        foreach ($field_list as $fdef)
+        foreach ($field_list as $fdef) {
             if ($fdef->viewable()
                 && $fdef->is_visible
-                && $fdef->header($this, true) != "")
+                && $fdef->header($this, true) != "") {
                 $fieldDef[] = $fdef;
+            }
+        }
 
         // collect row data
         $body = array();
@@ -1894,16 +1912,19 @@ class PaperList {
         foreach ($rows as $row) {
             $this->_row_setup($row);
             $csv = $this->_row_text_csv_data($row, $fieldDef);
-            if ($grouppos >= 0)
+            if ($grouppos >= 0) {
                 $grouppos = $this->_groups_for_csv($grouppos, $csv);
+            }
             $body[] = $csv;
         }
 
         // header cells
         $header = [];
-        foreach ($fieldDef as $fdef)
-            if ($fdef->has_content)
+        foreach ($fieldDef as $fdef) {
+            if ($fdef->has_content) {
                 $header[$fdef->name] = $fdef->header($this, true);
+            }
+        }
 
         return [$header, $body];
     }
@@ -1930,16 +1951,18 @@ class PaperList {
         }
         if (((get($this->_viewing, "anonau") && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
              || get($this->_viewing, "aufull"))
-            && !get($this->_viewing, "au"))
+            && !get($this->_viewing, "au")) {
             $res["150 authors"] = "hide:authors";
+        }
         ksort($res, SORT_NATURAL);
         $res = array_values($res);
 
         foreach ($this->sorters as $s) {
             $sn = $s->field->sort_name($this, $s);
             $res[] = "sort:" . PaperSearch::escape_word($sn . ($s->reverse ? ",reverse" : ""));
-            if ($sn === "id")
+            if ($sn === "id") {
                 break;
+            }
         }
         while (!empty($res) && $res[count($res) - 1] === "sort:id") {
             array_pop($res);

@@ -214,29 +214,33 @@ class ReviewField implements Abbreviator, JsonSerializable {
     function typical_score() {
         if ($this->_typical_score === false && $this->has_options) {
             $n = count($this->options);
-            if ($n == 1)
+            if ($n == 1) {
                 $this->_typical_score = $this->unparse_value(1);
-            else if ($this->option_letter)
+            } else if ($this->option_letter) {
                 $this->_typical_score = $this->unparse_value(1 + (int) (($n - 1) / 2));
-            else
+            } else {
                 $this->_typical_score = $this->unparse_value(2);
+            }
         }
         return $this->_typical_score;
     }
 
     function typical_score_range() {
-        if (!$this->has_options || count($this->options) < 2)
+        if (!$this->has_options || count($this->options) < 2) {
             return null;
+        }
         $n = count($this->options);
-        if ($this->option_letter)
+        if ($this->option_letter) {
             return [$this->unparse_value($n - ($n > 2)), $this->unparse_value($n - 1 - ($n > 2) - ($n > 3))];
-        else
+        } else {
             return [$this->unparse_value(1 + ($n > 2)), $this->unparse_value(2 + ($n > 2) + ($n > 3))];
+        }
     }
 
     function full_score_range() {
-        if (!$this->has_options)
+        if (!$this->has_options) {
             return null;
+        }
         $f = $this->option_letter ? count($this->options) : 1;
         $l = $this->option_letter ? 1 : count($this->options);
         return [$this->unparse_value($f), $this->unparse_value($l)];
@@ -269,54 +273,63 @@ class ReviewField implements Abbreviator, JsonSerializable {
     static function unparse_letter($option_letter, $value) {
         $ivalue = (int) $value;
         $ch = $option_letter - $ivalue;
-        if ($value < $ivalue + 0.25)
+        if ($value < $ivalue + 0.25) {
             return chr($ch);
-        else if ($value < $ivalue + 0.75)
+        } else if ($value < $ivalue + 0.75) {
             return chr($ch - 1) . chr($ch);
-        else
+        } else {
             return chr($ch - 1);
+        }
     }
 
     function value_class($value) {
-        if (count($this->options) > 1)
+        if (count($this->options) > 1) {
             $n = (int) (($value - 1) * 8.0 / (count($this->options) - 1) + 1.5);
-        else
+        } else {
             $n = 1;
+        }
         return "sv " . $this->option_class_prefix . $n;
     }
 
     function unparse_value($value, $flags = 0, $real_format = null) {
-        if (is_object($value))
+        if (is_object($value)) {
             $value = get($value, $this->id);
+        }
         if (!$this->has_options) {
-            if ($flags & self::VALUE_TRIM)
+            if ($flags & self::VALUE_TRIM) {
                 $value = rtrim($value);
+            }
             return $value;
         }
-        if (!$value)
+        if (!$value) {
             return null;
-        if (!$this->option_letter || is_numeric($value))
+        }
+        if (!$this->option_letter || is_numeric($value)) {
             $value = (float) $value;
-        else if (strlen($value) === 1)
+        } else if (strlen($value) === 1) {
             $value = (float) $this->option_letter - ord($value);
-        else if (ord($value[0]) + 1 === ord($value[1]))
+        } else if (ord($value[0]) + 1 === ord($value[1])) {
             $value = ($this->option_letter - ord($value[0])) - 0.5;
-        if (!is_float($value) || $value <= 0.8)
+        }
+        if (!is_float($value) || $value <= 0.8) {
             return null;
-        if ($this->option_letter)
+        }
+        if ($this->option_letter) {
             $text = self::unparse_letter($this->option_letter, $value);
-        else if ($real_format)
+        } else if ($real_format) {
             $text = sprintf($real_format, $value);
-        else if ($flags & self::VALUE_STRING)
+        } else if ($flags & self::VALUE_STRING) {
             $text = (string) $value;
-        else
+        } else {
             $text = $value;
+        }
         if ($flags & (self::VALUE_SC | self::VALUE_REV_NUM)) {
             $vc = $this->value_class($value);
-            if ($flags & self::VALUE_REV_NUM)
+            if ($flags & self::VALUE_REV_NUM) {
                 $text = '<span class="rev_num ' . $vc . '">' . $text . '.</span>';
-            else
+            } else {
                 $text = '<span class="' . $vc . '">' . $text . '</span>';
+            }
         }
         return $text;
     }
@@ -330,21 +343,26 @@ class ReviewField implements Abbreviator, JsonSerializable {
         assert($this->has_options);
         $max = count($this->options);
 
-        if (!is_object($v))
+        if (!is_object($v)) {
             $v = new ScoreInfo($v, true);
+        }
         $counts = $v->counts($max);
 
         $avgtext = $this->unparse_average($v->mean());
-        if ($v->count() > 1 && ($stddev = $v->stddev_s()))
+        if ($v->count() > 1 && ($stddev = $v->stddev_s())) {
             $avgtext .= sprintf(" ± %.2f", $stddev);
+        }
 
         $args = "v=" . join(",", $counts);
-        if ($myscore && $counts[$myscore - 1] > 0)
+        if ($myscore && $counts[$myscore - 1] > 0) {
             $args .= "&amp;h=$myscore";
-        if ($this->option_letter)
+        }
+        if ($this->option_letter) {
             $args .= "&amp;c=" . chr($this->option_letter - 1);
-        if ($this->option_class_prefix !== "sv")
+        }
+        if ($this->option_class_prefix !== "sv") {
             $args .= "&amp;sv=" . urlencode($this->option_class_prefix);
+        }
 
         if ($style == 1) {
             $width = 5 * $max + 3;
@@ -355,11 +373,13 @@ class ReviewField implements Abbreviator, JsonSerializable {
                 . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"$args&amp;s=2\" title=\"$avgtext\"></div>"
                 . "<br>";
             if ($this->option_letter) {
-                for ($key = $max; $key >= 1; --$key)
+                for ($key = $max; $key >= 1; --$key) {
                     $retstr .= ($key < $max ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
+                }
             } else {
-                for ($key = 1; $key <= $max; ++$key)
+                for ($key = 1; $key <= $max; ++$key) {
                     $retstr .= ($key > 1 ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
+                }
             }
             $retstr .= '<br><span class="sc_sum">' . $avgtext . "</span></div>";
         }
@@ -415,13 +435,15 @@ class ReviewField implements Abbreviator, JsonSerializable {
     function unparse_web_control($subtype, $fval, $rval) {
         if ($this->has_options) {
             $opt = ["id" => "{$this->id}_{$subtype}"];
-            if ($fval !== $rval)
+            if ($fval !== $rval) {
                 $opt["data-default-checked"] = $rval === $subtype;
+            }
             return Ht::radio($this->id, $subtype, $fval === $subtype, $opt);
         } else {
             $opt = ["class" => "reviewtext need-autogrow", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
-            if ($fval !== $rval)
+            if ($fval !== $rval) {
                 $opt["data-default-value"] = (string) $rval;
+            }
             return Ht::textarea($this->id, (string) $fval, $opt);
         }
     }
@@ -455,12 +477,13 @@ class ReviewForm implements JsonSerializable {
     static private $review_author_seen = null;
 
     static function fmap_compare($a, $b) {
-        if ($a->displayed != $b->displayed)
+        if ($a->displayed != $b->displayed) {
             return $a->displayed ? -1 : 1;
-        else if ($a->displayed && $a->display_order != $b->display_order)
+        } else if ($a->displayed && $a->display_order != $b->display_order) {
             return $a->display_order < $b->display_order ? -1 : 1;
-        else
+        } else {
             return strcmp($a->id, $b->id);
+        }
     }
 
     function __construct($rfj, Conf $conf) {
@@ -468,7 +491,7 @@ class ReviewForm implements JsonSerializable {
         $this->fmap = $this->fieldName = $this->forder = [];
 
         // parse JSON
-        if (!$rfj)
+        if (!$rfj) {
             $rfj = json_decode('{
 "overAllMerit":{"name":"Overall merit","position":1,"visibility":"au",
   "options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},
@@ -477,6 +500,7 @@ class ReviewForm implements JsonSerializable {
 "t01":{"name":"Paper summary","position":3,"display_space":5,"visibility":"au"},
 "t02":{"name":"Comments to authors","position":4,"visibility":"au"},
 "t03":{"name":"Comments to PC","position":5,"visibility":"pc"}}');
+        }
 
         foreach ($rfj as $fid => $j) {
             if (($finfo = ReviewInfo::field_info($fid, $conf))) {
@@ -541,16 +565,20 @@ class ReviewForm implements JsonSerializable {
             $bit = 1;
             foreach ($this->forder as $f) {
                 $words = preg_split('/[^A-Za-z0-9_.\']+/', strtolower(UnicodeHelper::deaccent($f->name)));
-                if (count($words) <= 4) // Few words --> all of them meaningful
+                if (count($words) <= 4) { // Few words --> all of them meaningful
                     continue;
-                foreach ($words as $w)
+                }
+                foreach ($words as $w) {
                     $bits[$w] = get($bits, $w, 0) | $bit;
+                }
                 $bit <<= 1;
             }
             $stops = [];
-            foreach ($bits as $w => $v)
-                if ($v & ($v - 1))
+            foreach ($bits as $w => $v) {
+                if ($v & ($v - 1)) {
                     $stops[] = str_replace("'", "", $w);
+                }
+            }
             $this->_stopwords = join("|", $stops);
         }
         return $this->_stopwords;
@@ -601,8 +629,9 @@ class ReviewForm implements JsonSerializable {
     private function webFormRows(PaperInfo $prow, $rrow, Contact $contact,
                                  ReviewValues $rvalues = null) {
         $format_description = "";
-        if (($fi = $this->format_info($rrow)))
+        if (($fi = $this->format_info($rrow))) {
             $format_description = $fi->description_preview_html();
+        }
         echo '<div class="rve">';
         foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f) {
             $rval = "";
@@ -621,10 +650,11 @@ class ReviewForm implements JsonSerializable {
                 $rvalues ? $rvalues->control_class($fid, "revet") : "revet",
                 '"><label class="revfn" for="', $f->id;
             if ($f->has_options) {
-                if ($rval || $f->allow_empty)
+                if ($rval || $f->allow_empty) {
                     echo "_", $rval;
-                else
+                } else {
                     echo "_", key($f->options);
+                }
             }
             echo '">', $f->name_html, '</label>';
             if ($f->view_score < VIEWSCORE_REVIEWERONLY) {
@@ -638,8 +668,9 @@ class ReviewForm implements JsonSerializable {
             }
             echo '</div>';
 
-            if ($f->description)
+            if ($f->description) {
                 echo '<div class="revhint">', $f->description, "</div>";
+            }
 
             echo '<div class="revev">';
             if ($f->has_options) {
@@ -672,8 +703,9 @@ class ReviewForm implements JsonSerializable {
         foreach ($this->forder as $fid => $f) {
             if (isset($rrow->$fid)
                 && (!$f->round_mask || $f->is_round_visible($rrow))
-                && !$f->value_empty($rrow->$fid))
+                && !$f->value_empty($rrow->$fid)) {
                 $view_score = max($view_score, $f->view_score);
+            }
         }
         return $view_score;
     }
@@ -684,8 +716,9 @@ class ReviewForm implements JsonSerializable {
             if (isset($rrow->$fid)
                 && (!$f->round_mask || $f->is_round_visible($rrow))
                 && $f->include_word_count()
-                && $rrow->$fid !== "")
+                && $rrow->$fid !== "") {
                 $wc += count_words($rrow->$fid);
+            }
         }
         return $wc;
     }
@@ -698,8 +731,9 @@ class ReviewForm implements JsonSerializable {
             foreach (self::$review_author_seen as $x) {
                 if ($x[0] === $conf) {
                     $q[] = $x[1];
-                    for ($i = 2; $i < count($x); ++$i)
+                    for ($i = 2; $i < count($x); ++$i) {
                         $qv[] = $x[$i];
+                    }
                 } else {
                     $next[] = $x;
                 }
@@ -736,15 +770,17 @@ class ReviewForm implements JsonSerializable {
         if (!$prow || !$rrow || !$user->can_view_review_time($prow, $rrow)) {
             return 0;
         } else if ($user->view_score_bound($prow, $rrow) >= VIEWSCORE_AUTHORDEC - 1) {
-            if ($rrow->reviewAuthorModified !== null)
+            if ($rrow->reviewAuthorModified !== null) {
                 return $rrow->reviewAuthorModified;
-            else if (!$rrow->reviewAuthorNotified
-                     || $rrow->reviewModified - $rrow->reviewAuthorNotified <= self::NOTIFICATION_DELAY)
+            } else if (!$rrow->reviewAuthorNotified
+                       || $rrow->reviewModified - $rrow->reviewAuthorNotified <= self::NOTIFICATION_DELAY) {
                 return $rrow->reviewModified;
-            else
+            } else {
                 return $rrow->reviewAuthorNotified;
-        } else
+            }
+        } else {
             return $rrow->reviewModified;
+        }
     }
 
     function textFormHeader($type) {
@@ -1280,29 +1316,35 @@ $blind\n";
         if ((string) $rrow->allRatings !== ""
             && $viewer->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
             $rj["ratings"] = array_values($rrow->ratings());
-            if ($flags & self::RJ_UNPARSE_RATINGS)
+            if ($flags & self::RJ_UNPARSE_RATINGS) {
                 $rj["ratings"] = array_map("ReviewInfo::unparse_rating", $rj["ratings"]);
+            }
         }
         if ($editable && $viewer->can_rate_review($prow, $rrow)) {
             $rj["user_rating"] = $rrow->rating_of_user($viewer);
-            if ($flags & self::RJ_UNPARSE_RATINGS)
+            if ($flags & self::RJ_UNPARSE_RATINGS) {
                 $rj["user_rating"] = ReviewInfo::unparse_rating($rj["user_rating"]);
+            }
         }
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        foreach ($this->paper_visible_fields($viewer, $prow, $rrow) as $fid => $f)
+        foreach ($this->paper_visible_fields($viewer, $prow, $rrow) as $fid => $f) {
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
                 $fval = get($rrow, $fid);
-                if ($f->has_options)
+                if ($f->has_options) {
                     $fval = $f->unparse_value((int) $fval);
+                }
                 $rj[$f->uid()] = $fval;
             }
-        if (($fmt = $rrow->reviewFormat) === null)
+        }
+        if (($fmt = $rrow->reviewFormat) === null) {
             $fmt = $this->conf->default_format;
-        if ($fmt)
+        }
+        if ($fmt) {
             $rj["format"] = $fmt;
+        }
 
         return (object) $rj;
     }

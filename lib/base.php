@@ -247,13 +247,13 @@ function json_encode_db($x, $flags = 0) {
 // array and object helpers
 
 function get($var, $idx, $default = null) {
-    if (is_array($var))
+    if (is_array($var)) {
         return array_key_exists($idx, $var) ? $var[$idx] : $default;
-    else if (is_object($var))
+    } else if (is_object($var)) {
         return property_exists($var, $idx) ? $var->$idx : $default;
-    else if ($var === null)
+    } else if ($var === null) {
         return $default;
-    else {
+    } else {
         error_log("inappropriate get: " . var_export($var, true) . ": " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $default;
     }
@@ -322,13 +322,6 @@ function make_qreq() {
     }
 
     return $qreq;
-}
-
-function defval($var, $idx, $defval = null) {
-    if (is_array($var))
-        return (isset($var[$idx]) ? $var[$idx] : $defval);
-    else
-        return (isset($var->$idx) ? $var->$idx : $defval);
 }
 
 function is_associative_array($a) {

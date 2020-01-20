@@ -2519,8 +2519,9 @@ class PaperSearch {
     }
 
     private function _prepare() {
-        if ($this->_matches !== null)
+        if ($this->_matches !== null) {
             return;
+        }
 
         if ($this->limit() === "x") {
             $this->_matches = [];
@@ -2533,8 +2534,9 @@ class PaperSearch {
         // collect papers
         list($result, $need_filter) = $this->_prepare_result($qe);
         $rowset = new PaperInfoSet;
-        while (($row = PaperInfo::fetch($result, $this->user)))
+        while (($row = PaperInfo::fetch($result, $this->user))) {
             $rowset->add($row);
+        }
         Dbl::free($result);
 
         // correct query, create thenmap, groupmap, highlightmap
@@ -2547,25 +2549,30 @@ class PaperSearch {
         if ($need_filter) {
             $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             foreach ($rowset->all() as $row) {
-                if (!$this->_limit_qe->exec($row, $this))
+                if (!$this->_limit_qe->exec($row, $this)) {
                     $x = false;
-                else if ($need_then) {
+                } else if ($need_then) {
                     $x = false;
                     for ($i = 0; $i < $qe->nthen && $x === false; ++$i)
                         if ($qe->child[$i]->exec($row, $this))
                             $x = $i;
-                } else
+                } else {
                     $x = !!$qe->exec($row, $this);
-                if ($x === false)
+                }
+                if ($x === false) {
                     continue;
+                }
                 $this->_matches[] = $row->paperId;
-                if ($this->thenmap !== null)
+                if ($this->thenmap !== null) {
                     $this->thenmap[$row->paperId] = $x;
+                }
                 if ($need_then) {
-                    for ($j = $qe->nthen; $j < count($qe->child); ++$j)
+                    for ($j = $qe->nthen; $j < count($qe->child); ++$j) {
                         if ($qe->child[$j]->exec($row, $this)
-                            && ($qe->highlights[$j - $qe->nthen] & (1 << $x)))
+                            && ($qe->highlights[$j - $qe->nthen] & (1 << $x))) {
                             $this->highlightmap[$row->paperId][] = $qe->highlight_types[$j - $qe->nthen];
+                        }
+                    }
                 }
             }
             $this->user->set_overrides($old_overrides);
@@ -2574,20 +2581,24 @@ class PaperSearch {
         }
 
         // add deleted papers explicitly listed by number (e.g. action log)
-        if ($this->_allow_deleted)
+        if ($this->_allow_deleted) {
             $this->_add_deleted_papers($qe);
+        }
 
         // sort information
         $this->_add_sorters($qe, null);
-        if ($qe->type === "then")
-            for ($i = 0; $i < $qe->nthen; ++$i)
+        if ($qe->type === "then") {
+            for ($i = 0; $i < $qe->nthen; ++$i) {
                 $this->_add_sorters($qe->child[$i], $this->thenmap ? $i : null);
+            }
+        }
 
         // group information
         $this->groupmap = [];
         $sole_qe = $qe;
-        if ($qe->type === "then")
+        if ($qe->type === "then") {
             $sole_qe = $qe->nthen == 1 ? $qe->child[0] : null;
+        }
         if (!$sole_qe) {
             for ($i = 0; $i < $qe->nthen; ++$i) {
                 $h = $qe->child[$i]->get_float("heading");
@@ -2598,10 +2609,11 @@ class PaperSearch {
                 }
                 $this->groupmap[$i] = TagAnno::make_heading($h);
             }
-        } else if (($h = $sole_qe->get_float("heading")))
+        } else if (($h = $sole_qe->get_float("heading"))) {
             $this->groupmap[0] = TagAnno::make_heading($h);
-        else
+        } else {
             $this->_check_order_anno($sole_qe, $rowset);
+        }
     }
 
     function paper_ids() {
@@ -2614,8 +2626,9 @@ class PaperSearch {
         if ($this->_default_sort || $this->_sorters) {
             $pl = new PaperList($this, ["sort" => $this->_default_sort]);
             return $pl->paper_ids();
-        } else
+        } else {
             return $this->paper_ids();
+        }
     }
 
     function view_list() {
@@ -2629,17 +2642,21 @@ class PaperSearch {
 
     function restrict_match($callback) {
         $m = [];
-        foreach ($this->paper_ids() as $pid)
-            if (call_user_func($callback, $pid))
+        foreach ($this->paper_ids() as $pid) {
+            if (call_user_func($callback, $pid)) {
                 $m[] = $pid;
-        if ($this->_matches !== false)
+            }
+        }
+        if ($this->_matches !== false) {
             $this->_matches = $m;
+        }
     }
 
     function test(PaperInfo $prow) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $qe = $this->term();
-        $x = $this->_limit_qe->exec($prow, $this) && $qe->exec($prow, $this);
+        $x = $this->_limit_qe->exec($prow, $this)
+            && $qe->exec($prow, $this);
         $this->user->set_overrides($old_overrides);
         return $x;
     }
@@ -2648,9 +2665,12 @@ class PaperSearch {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $qe = $this->term();
         $results = [];
-        foreach ($prows as $prow)
-            if ($this->_limit_qe->exec($prow, $this) && $qe->exec($prow, $this))
+        foreach ($prows as $prow) {
+            if ($this->_limit_qe->exec($prow, $this)
+                && $qe->exec($prow, $this)) {
                 $results[] = $prow;
+            }
+        }
         $this->user->set_overrides($old_overrides);
         return $results;
     }
@@ -2685,10 +2705,11 @@ class PaperSearch {
             return false;
         }
         if ($limit === "reviewable") {
-            if ($this->reviewer_user()->isPC)
+            if ($this->reviewer_user()->isPC) {
                 $limit = $this->conf->can_pc_see_active_submissions() ? "act" : "s";
-            else
+            } else {
                 $limit = "r";
+            }
         }
         $queryOptions = [];
         if ($limit === "s") {
@@ -2700,8 +2721,9 @@ class PaperSearch {
             if ($this->user->privChair || $this->conf->can_all_author_view_decision()) {
                 $queryOptions["accepted"] = 1;
                 $queryOptions["finalized"] = 1;
-            } else
+            } else {
                 return false;
+            }
         } else if ($limit === "undec") {
             $queryOptions["undecided"] = 1;
             $queryOptions["finalized"] = 1;
@@ -2737,39 +2759,42 @@ class PaperSearch {
             && preg_match('/\A' . TAG_REGEX . '\z/', $this->q)
             && $this->user->can_view_tags(null)
             && in_array($this->limit(), ["s", "all", "r"], true)) {
-            if ($this->q[0] === "~")
+            if ($this->q[0] === "~"
+                || $this->conf->fetch_ivalue("select exists(select * from PaperTag where tag=?) from dual", $this->q)) {
                 return "#" . $this->q;
-            $result = $this->conf->qe("select paperId from PaperTag where tag=? limit 1", $this->q);
-            if (count(Dbl::fetch_first_columns($result)))
-                return "#" . $this->q;
+            }
         }
         return false;
     }
 
     function url_site_relative_raw($q = null) {
         $url = $this->_urlbase;
-        if ($q === null)
+        if ($q === null) {
             $q = $this->q;
-        if ($q !== "" || substr($this->_urlbase, 0, 6) === "search")
+        }
+        if ($q !== "" || substr($this->_urlbase, 0, 6) === "search") {
             $url .= (strpos($url, "?") === false ? "?" : "&")
                 . "q=" . urlencode($q);
+        }
         return $url;
     }
 
     private function _tag_description() {
-        if ($this->q === "")
+        if ($this->q === "") {
             return false;
-        else if (strlen($this->q) <= 24)
+        } else if (strlen($this->q) <= 24) {
             return htmlspecialchars($this->q);
-        else if (!preg_match(',\A(#|-#|tag:|-tag:|notag:|order:|rorder:)(.*)\z,', $this->q, $m))
+        } else if (!preg_match('/\A(#|-#|tag:|-tag:|notag:|order:|rorder:)(.*)\z/', $this->q, $m)) {
             return false;
+        }
         $tagger = new Tagger($this->user);
-        if (!$tagger->check($m[2]))
+        if (!$tagger->check($m[2])) {
             return false;
-        else if ($m[1] === "-tag:")
+        } else if ($m[1] === "-tag:") {
             return "no" . substr($this->q, 1);
-        else
+        } else {
             return $this->q;
+        }
     }
 
     function description($listname) {
@@ -2795,10 +2820,13 @@ class PaperSearch {
 
     function listid($sort = null) {
         $rest = [];
-        if ($this->_reviewer_user && $this->_reviewer_user->contactId !== $this->cid)
+        if ($this->_reviewer_user
+            && $this->_reviewer_user->contactId !== $this->cid) {
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
-        if ((string) $sort !== "")
+        }
+        if ((string) $sort !== "") {
             $rest[] = "sort=" . urlencode($sort);
+        }
         return "p/" . $this->_named_limit . "/" . urlencode($this->q)
             . ($rest ? "/" . join("&", $rest) : "");
     }
@@ -2816,16 +2844,18 @@ class PaperSearch {
                 }
             }
             return $args;
-        } else
+        } else {
             return null;
+        }
     }
 
     function create_session_list_object($ids, $listname, $sort = null) {
         $sort = $sort !== null ? $sort : $this->_default_sort;
         $l = new SessionList($this->listid($sort), $ids,
                              $this->description($listname), $this->_urlbase);
-        if ($this->field_highlighters())
+        if ($this->field_highlighters()) {
             $l->highlight = $this->_match_preg_query ? : true;
+        }
         return $l;
     }
 

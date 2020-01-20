@@ -66,8 +66,9 @@ if ($Qreq->fn) {
 if ($Qreq->redisplay) {
     $settings = [];
     foreach ($Qreq as $k => $v) {
-        if ($v && substr($k, 0, 4) === "show")
+        if ($v && substr($k, 0, 4) === "show") {
             $settings[substr($k, 4)] = true;
+        }
     }
     if (!get($settings, "au") && (get($settings, "anonau") || get($settings, "aufull"))) {
         $settings["au"] = false;
@@ -85,10 +86,11 @@ if ($Qreq->scoresort) {
     Session_API::setsession($Me, "scoresort=" . $Qreq->scoresort);
 }
 if ($Qreq->redisplay) {
-    if (isset($Qreq->forceShow) && !$Qreq->forceShow && $Qreq->showforce)
+    if (isset($Qreq->forceShow) && !$Qreq->forceShow && $Qreq->showforce) {
         $forceShow = 0;
-    else
+    } else {
         $forceShow = $Qreq->forceShow || $Qreq->showforce ? 1 : null;
+    }
     $Conf->self_redirect($Qreq, ["anchor" => "view", "forceShow" => $forceShow]);
 }
 
@@ -97,13 +99,14 @@ if ($Qreq->redisplay) {
 function savesearch() {
     global $Conf, $Me, $Qreq;
 
-    $name = simplify_whitespace(defval($Qreq, "ssname", ""));
+    $name = simplify_whitespace(get($Qreq, "ssname", ""));
     $tagger = new Tagger($Me);
     if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-        if ($name == "")
+        if ($name == "") {
             return Conf::msg_error("Saved search name missing.");
-        else
+        } else {
             return Conf::msg_error("“" . htmlspecialchars($name) . "” contains characters not allowed in saved search names.  Stick to letters, numbers, and simple punctuation.");
+        }
     }
 
     // support directly recursive definition (to e.g. change display options)
@@ -116,14 +119,17 @@ function savesearch() {
         }
     }
 
-    $arr = array();
-    foreach (array("q", "qt", "t", "sort") as $k)
-        if (isset($Qreq[$k]))
+    $arr = [];
+    foreach (array("q", "qt", "t", "sort") as $k) {
+        if (isset($Qreq[$k])) {
             $arr[$k] = $Qreq[$k];
-    if ($Me->privChair)
+        }
+    }
+    if ($Me->privChair) {
         $arr["owner"] = "chair";
-    else
+    } else {
         $arr["owner"] = $Me->contactId;
+    }
 
     if ($Qreq->deletesearch) {
         Dbl::qe_raw("delete from Settings where name='ss:" . sqlq($name) . "'");
@@ -393,14 +399,19 @@ if ($Me->isPC || $Me->privChair) {
                     foldupbutton(),
                     "</td><td>";
                 $arest = "";
-                foreach (array("qt", "t", "sort") as $k)
-                    if (isset($sv->$k))
+                foreach (array("qt", "t", "sort") as $k) {
+                    if (isset($sv->$k)) {
                         $arest .= "&amp;" . $k . "=" . urlencode($sv->$k);
+                    }
+                }
                 echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), '</a><div class="fx" style="padding-bottom:0.5ex;font-size:smaller">',
-                    "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(defval($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
-                if ($Me->privChair || !defval($sv, "owner") || $sv->owner == $Me->contactId)
+                    "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(get($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
+                if ($Me->privChair
+                    || !get($sv, "owner")
+                    || $sv->owner == $Me->contactId) {
                     echo ' <span class="barsep">·</span> ',
                         "<a href=\"", $Conf->selfurl($Qreq, ["deletesearch" => 1, "ssname" => $sn, "post" => post_value()]), "\">Delete</a>";
+                }
                 echo "</div></td></tr></table>";
                 ++$n;
             }
@@ -481,8 +492,9 @@ if ($ss)
 if ($pl->count > 0)
     echo '  <td><div class="tll"><a class="ui tla nw" href="#view">View options</a></div></td>', "\n";
 echo "</tr></table></div></div>\n\n";
-if ($pl->count == 0)
+if ($pl->count == 0) {
     Ht::stash_script("addClass(document.body,\"want-hash-focus\")");
+}
 echo Ht::unstash();
 
 
@@ -509,21 +521,26 @@ if ($pl_text) {
 
     echo $pl_text;
     if ($pl->count == 0 && $Qreq->t != "s") {
-        $a = array();
-        foreach (array("q", "qa", "qo", "qx", "qt", "sort", "showtags") as $xa)
+        $a = [];
+        foreach (["q", "qa", "qo", "qx", "qt", "sort", "showtags"] as $xa) {
             if (isset($Qreq[$xa])
-                && ($xa != "q" || !isset($Qreq->qa)))
+                && ($xa != "q" || !isset($Qreq->qa))) {
                 $a[] = "$xa=" . urlencode($Qreq[$xa]);
+            }
+        }
         reset($tOpt);
         echo " in ", strtolower($tOpt[$Qreq->t]);
-        if (key($tOpt) != $Qreq->t && $Qreq->t !== "all")
+        if (key($tOpt) != $Qreq->t && $Qreq->t !== "all") {
             echo " (<a href=\"", hoturl("search", join("&amp;", $a)), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
+        }
     }
 
-    if ($pl->has("sel"))
+    if ($pl->has("sel")) {
         echo "</form>";
+    }
     echo "</div>\n";
-} else
+} else {
     echo '<hr class="g">';
+}
 
 $Conf->footer();

@@ -188,9 +188,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $docpsiz = get($bj, "papersize");
             $docmarg = get($bj, "margin");
             foreach ($bj->pages as $i => $pg)
-                if (($psiz = defval($pg, "papersize", $docpsiz))
+                if (($psiz = get($pg, "papersize", $docpsiz))
                     && is_array($psiz)
-                    && ($marg = defval($pg, "margin", $docmarg))
+                    && ($marg = get($pg, "margin", $docmarg))
                     && is_array($marg)
                     && $spec->is_checkable($i + 1, "textblock")) {
                     $pwidth = $psiz[1] - $marg[1] - $marg[3];
