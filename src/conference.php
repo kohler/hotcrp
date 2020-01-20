@@ -225,18 +225,20 @@ class Conf {
         $this->settings = array();
         $this->settingTexts = array();
         foreach ($this->opt_override ? : [] as $k => $v) {
-            if ($v === null)
+            if ($v === null) {
                 unset($this->opt[$k]);
-            else
+            } else {
                 $this->opt[$k] = $v;
+            }
         }
         $this->opt_override = [];
 
         $result = $this->q_raw("select name, value, data from Settings");
         while ($result && ($row = $result->fetch_row())) {
             $this->settings[$row[0]] = (int) $row[1];
-            if ($row[2] !== null)
+            if ($row[2] !== null) {
                 $this->settingTexts[$row[0]] = $row[2];
+            }
             if (substr($row[0], 0, 4) == "opt.") {
                 $okey = substr($row[0], 4);
                 $this->opt_override[$okey] = get($this->opt, $okey);
@@ -265,16 +267,20 @@ class Conf {
         }
 
         // update options
-        if (isset($this->opt["ldapLogin"]) && !$this->opt["ldapLogin"])
+        if (isset($this->opt["ldapLogin"]) && !$this->opt["ldapLogin"]) {
             unset($this->opt["ldapLogin"]);
-        if (isset($this->opt["httpAuthLogin"]) && !$this->opt["httpAuthLogin"])
+        }
+        if (isset($this->opt["httpAuthLogin"]) && !$this->opt["httpAuthLogin"]) {
             unset($this->opt["httpAuthLogin"]);
+        }
 
         // GC old capabilities
         if (get($this->settings, "__capability_gc", 0) < $Now - 86400) {
-            foreach (array($this->dblink, $this->contactdb()) as $db)
-                if ($db)
+            foreach (array($this->dblink, $this->contactdb()) as $db) {
+                if ($db) {
                     Dbl::ql($db, "delete from Capability where timeExpires>0 and timeExpires<$Now");
+                }
+            }
             $this->q_raw("insert into Settings set name='__capability_gc', value=$Now on duplicate key update value=values(value)");
             $this->settings["__capability_gc"] = $Now;
         }
@@ -288,18 +294,22 @@ class Conf {
 
         // enforce invariants
         foreach (["pcrev_any", "extrev_view"] as $x) {
-            if (!isset($this->settings[$x]))
+            if (!isset($this->settings[$x])) {
                 $this->settings[$x] = 0;
+            }
         }
-        if (!isset($this->settings["sub_blind"]))
+        if (!isset($this->settings["sub_blind"])) {
             $this->settings["sub_blind"] = self::BLIND_ALWAYS;
-        if (!isset($this->settings["rev_blind"]))
+        }
+        if (!isset($this->settings["rev_blind"])) {
             $this->settings["rev_blind"] = self::BLIND_ALWAYS;
+        }
         if (!isset($this->settings["seedec"])) {
-            if (get($this->settings, "au_seedec"))
+            if (get($this->settings, "au_seedec")) {
                 $this->settings["seedec"] = self::SEEDEC_ALL;
-            else if (get($this->settings, "rev_seedec"))
+            } else if (get($this->settings, "rev_seedec")) {
                 $this->settings["seedec"] = self::SEEDEC_REV;
+            }
         }
         if (get($this->settings, "pc_seeallrev") == 2) {
             $this->settings["pc_seeblindrev"] = 1;
@@ -316,8 +326,9 @@ class Conf {
 
         // S3 settings
         foreach (array("s3_bucket", "s3_key", "s3_secret") as $k) {
-            if (!get($this->settingTexts, $k) && ($x = get($this->opt, $k)))
+            if (!get($this->settingTexts, $k) && ($x = get($this->opt, $k))) {
                 $this->settingTexts[$k] = $x;
+            }
         }
         if (!get($this->settingTexts, "s3_key")
             || !get($this->settingTexts, "s3_secret")
@@ -356,13 +367,15 @@ class Conf {
             && ($ss = get($this->settings, "sub_sub", 0)) > 0
             && $ss > $Now
             && (get($this->settings, "pc_seeallpdf", 0) <= 0
-                || !$this->can_pc_see_active_submissions()))
+                || !$this->can_pc_see_active_submissions())) {
             $this->_pc_see_pdf = false;
+        }
 
         $this->au_seerev = get($this->settings, "au_seerev", 0);
         $this->tag_au_seerev = null;
-        if ($this->au_seerev == self::AUSEEREV_TAGS)
+        if ($this->au_seerev == self::AUSEEREV_TAGS) {
             $this->tag_au_seerev = explode(" ", get_s($this->settingTexts, "tag_au_seerev"));
+        }
         $this->tag_seeall = get($this->settings, "tag_seeall", 0) > 0;
         $this->ext_subreviews = get($this->settings, "pcrev_editdelegate", 0);
 
@@ -394,11 +407,13 @@ class Conf {
             $max_rs = [];
             foreach ($this->_round_settings as $rs) {
                 if ($rs && isset($rs->pc_seeallrev)
-                    && self::pcseerev_compare($rs->pc_seeallrev, get($max_rs, "pc_seeallrev", 0)) > 0)
+                    && self::pcseerev_compare($rs->pc_seeallrev, get($max_rs, "pc_seeallrev", 0)) > 0) {
                     $max_rs["pc_seeallrev"] = $rs->pc_seeallrev;
+                }
                 if ($rs && isset($rs->extrev_view)
-                    && $rs->extrev_view > get($max_rs, "extrev_view", 0))
+                    && $rs->extrev_view > get($max_rs, "extrev_view", 0)) {
                     $max_rs["extrev_view"] = $rs->extrev_view;
+                }
             }
             $this->_round_settings["max"] = (object) $max_rs;
         }
@@ -418,26 +433,31 @@ class Conf {
     }
 
     private function crosscheck_track_settings($j) {
-        if (is_string($j) && !($j = json_decode($j)))
+        if (is_string($j) && !($j = json_decode($j))) {
             return;
+        }
         $this->_tracks = [];
         $default_track = Track::$zero;
         $this->_track_tags = [];
         foreach ((array) $j as $k => $v) {
-            if ($k !== "_")
+            if ($k !== "_") {
                 $this->_track_tags[] = $k;
-            if (!isset($v->viewpdf) && isset($v->view))
+            }
+            if (!isset($v->viewpdf) && isset($v->view)) {
                 $v->viewpdf = $v->view;
+            }
             $t = Track::$zero;
-            foreach (Track::$map as $tname => $idx)
+            foreach (Track::$map as $tname => $idx) {
                 if (isset($v->$tname)) {
                     $t[$idx] = $v->$tname;
                     $this->_track_sensitivity |= 1 << $idx;
                 }
-            if ($k === "_")
+            }
+            if ($k === "_") {
                 $default_track = $t;
-            else
+            } else {
                 $this->_tracks[$k] = $t;
+            }
         }
         $this->_tracks["_"] = $default_track;
     }
@@ -463,17 +483,18 @@ class Conf {
         $this->long_name = $this->opt["longName"];
 
         // expand ${confid}, ${confshortname}
-        foreach (array("sessionName", "downloadPrefix", "conferenceSite",
-                       "paperSite", "defaultPaperSite", "contactName",
-                       "contactEmail", "docstore") as $k)
+        foreach (["sessionName", "downloadPrefix", "conferenceSite",
+                  "paperSite", "defaultPaperSite", "contactName",
+                  "contactEmail", "docstore"] as $k) {
             if (isset($this->opt[$k]) && is_string($this->opt[$k])
                 && strpos($this->opt[$k], "$") !== false) {
                 $this->opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $this->opt[$k]);
                 $this->opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $this->short_name, $this->opt[$k]);
             }
+        }
         $this->download_prefix = $this->opt["downloadPrefix"];
 
-        foreach (array("emailFrom", "emailSender", "emailCc", "emailReplyTo") as $k)
+        foreach (["emailFrom", "emailSender", "emailCc", "emailReplyTo"] as $k) {
             if (isset($this->opt[$k]) && is_string($this->opt[$k])
                 && strpos($this->opt[$k], "$") !== false) {
                 $this->opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $this->opt[$k]);
@@ -484,6 +505,7 @@ class Conf {
                     $this->opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $v, $this->opt[$k]);
                 }
             }
+        }
 
         // remove final slash from $Opt["paperSite"]
         if (!isset($this->opt["paperSite"]) || $this->opt["paperSite"] === "") {
@@ -497,45 +519,54 @@ class Conf {
         }
 
         // option name updates (backwards compatibility)
-        foreach (array("assetsURL" => "assetsUrl",
-                       "jqueryURL" => "jqueryUrl", "jqueryCDN" => "jqueryCdn",
-                       "disableCSV" => "disableCsv") as $kold => $knew)
-            if (isset($this->opt[$kold]) && !isset($this->opt[$knew]))
+        foreach (["assetsURL" => "assetsUrl",
+                  "jqueryURL" => "jqueryUrl", "jqueryCDN" => "jqueryCdn",
+                  "disableCSV" => "disableCsv"] as $kold => $knew) {
+            if (isset($this->opt[$kold]) && !isset($this->opt[$knew])) {
                 $this->opt[$knew] = $this->opt[$kold];
+            }
+        }
 
         // set assetsUrl and scriptAssetsUrl
         if (!isset($this->opt["scriptAssetsUrl"]) && isset($_SERVER["HTTP_USER_AGENT"])
-            && strpos($_SERVER["HTTP_USER_AGENT"], "MSIE") !== false)
+            && strpos($_SERVER["HTTP_USER_AGENT"], "MSIE") !== false) {
             $this->opt["scriptAssetsUrl"] = Navigation::siteurl();
-        if (!isset($this->opt["assetsUrl"]))
+        }
+        if (!isset($this->opt["assetsUrl"])) {
             $this->opt["assetsUrl"] = Navigation::siteurl();
-        if ($this->opt["assetsUrl"] !== "" && !str_ends_with($this->opt["assetsUrl"], "/"))
+        }
+        if ($this->opt["assetsUrl"] !== "" && !str_ends_with($this->opt["assetsUrl"], "/")) {
             $this->opt["assetsUrl"] .= "/";
-        if (!isset($this->opt["scriptAssetsUrl"]))
+        }
+        if (!isset($this->opt["scriptAssetsUrl"])) {
             $this->opt["scriptAssetsUrl"] = $this->opt["assetsUrl"];
+        }
         Ht::$img_base = $this->opt["assetsUrl"] . "images/";
 
         // set docstore
-        if (get($this->opt, "docstore") === true)
+        if (get($this->opt, "docstore") === true) {
             $this->opt["docstore"] = "docs";
-        else if (!get($this->opt, "docstore") && get($this->opt, "filestore")) { // backwards compat
+        } else if (!get($this->opt, "docstore") && get($this->opt, "filestore")) { // backwards compat
             $this->opt["docstore"] = $this->opt["filestore"];
             if ($this->opt["docstore"] === true)
                 $this->opt["docstore"] = "filestore";
             $this->opt["docstoreSubdir"] = get($this->opt, "filestoreSubdir");
         }
-        if (get($this->opt, "docstore") && $this->opt["docstore"][0] !== "/")
+        if (get($this->opt, "docstore") && $this->opt["docstore"][0] !== "/") {
             $this->opt["docstore"] = $ConfSitePATH . "/" . $this->opt["docstore"];
+        }
         $this->_docstore = false;
         if (($dpath = get($this->opt, "docstore"))) {
-            if (strpos($dpath, "%") !== false)
+            if (strpos($dpath, "%") !== false) {
                 $this->_docstore = $dpath;
-            else {
-                if ($dpath[strlen($dpath) - 1] === "/")
+            } else {
+                if ($dpath[strlen($dpath) - 1] === "/") {
                     $dpath = substr($dpath, 0, strlen($dpath) - 1);
+                }
                 $use_subdir = get($this->opt, "docstoreSubdir");
-                if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
+                if ($use_subdir && ($use_subdir === true || $use_subdir > 0)) {
                     $dpath .= "/%" . ($use_subdir === true ? 2 : $use_subdir) . "h";
+                }
                 $this->_docstore = $dpath . "/%h%x";
             }
         }
@@ -547,17 +578,19 @@ class Conf {
                     self::msg_error("Timezone option “" . htmlspecialchars($this->opt["timezone"]) . "” is invalid; falling back to “America/New_York”.");
                     date_default_timezone_set("America/New_York");
                 }
-            } else if (!ini_get("date.timezone") && !getenv("TZ"))
+            } else if (!ini_get("date.timezone") && !getenv("TZ")) {
                 date_default_timezone_set("America/New_York");
+            }
         }
         $this->_date_format_initialized = false;
 
         // set safePasswords
         if (!get($this->opt, "safePasswords")
-            || (is_int($this->opt["safePasswords"]) && $this->opt["safePasswords"] < 1))
+            || (is_int($this->opt["safePasswords"]) && $this->opt["safePasswords"] < 1)) {
             $this->opt["safePasswords"] = 0;
-        else if ($this->opt["safePasswords"] === true)
+        } else if ($this->opt["safePasswords"] === true) {
             $this->opt["safePasswords"] = 1;
+        }
 
         // set defaultFormat
         $this->default_format = (int) get($this->opt, "defaultFormat");
@@ -565,8 +598,9 @@ class Conf {
 
         // other caches
         $sort_by_last = !!get($this->opt, "sortByLastName");
-        if (!$this->sort_by_last != !$sort_by_last)
+        if (!$this->sort_by_last != !$sort_by_last) {
             $this->invalidate_caches("pc");
+        }
         $this->sort_by_last = $sort_by_last;
 
         $this->_api_map = null;
@@ -603,8 +637,9 @@ class Conf {
         } else {
             $value = (int) $value;
             $dval = $data;
-            if (is_array($dval) || is_object($dval))
+            if (is_array($dval) || is_object($dval)) {
                 $dval = json_encode_db($dval);
+            }
             if ($this->qe("insert into Settings set name=?, value=?, data=? on duplicate key update value=values(value), data=values(data)", $name, $value, $dval)) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $data;
@@ -613,10 +648,11 @@ class Conf {
         }
         if ($change && str_starts_with($name, "opt.")) {
             $oname = substr($name, 4);
-            if ($value === null && $data === null)
+            if ($value === null && $data === null) {
                 $this->opt[$oname] = get($this->opt_override, $oname);
-            else
+            } else {
                 $this->opt[$oname] = $data === null ? $value : $data;
+            }
         }
         return $change;
     }
@@ -625,10 +661,12 @@ class Conf {
         $change = $this->__save_setting($name, $value, $data);
         if ($change) {
             $this->crosscheck_settings();
-            if (str_starts_with($name, "opt."))
+            if (str_starts_with($name, "opt.")) {
                 $this->crosscheck_options();
-            if (str_starts_with($name, "tag_") || $name === "tracks")
+            }
+            if (str_starts_with($name, "tag_") || $name === "tracks") {
                 $this->invalidate_caches(["taginfo" => true, "tracks" => true]);
+            }
         }
         return $change;
     }
@@ -646,20 +684,22 @@ class Conf {
     function opt_timestamp() {
         if ($this->_opt_timestamp === null) {
             $this->_opt_timestamp = 1;
-            foreach (get($this->opt, "loaded", []) as $fn)
+            foreach (get($this->opt, "loaded", []) as $fn) {
                 $this->_opt_timestamp = max($this->_opt_timestamp, +@filemtime($fn));
+            }
         }
         return $this->_opt_timestamp;
     }
 
 
     static function pcseerev_compare($sr1, $sr2) {
-        if ($sr1 == $sr2)
+        if ($sr1 == $sr2) {
             return 0;
-        else if ($sr1 == self::PCSEEREV_YES || $sr2 == self::PCSEEREV_YES)
+        } else if ($sr1 == self::PCSEEREV_YES || $sr2 == self::PCSEEREV_YES) {
             return $sr1 == self::PCSEEREV_YES ? 1 : -1;
-        else
+        } else {
             return $sr1 > $sr2 ? 1 : -1;
+        }
     }
 
 
@@ -711,29 +751,27 @@ class Conf {
         return Dbl::fetch_ivalue(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
     }
 
-    function db_error_html($getdb = true, $while = "") {
+    function db_error_html($getdb = true) {
         $text = "<p>Database error";
-        if ($while)
-            $text .= " $while";
-        if ($getdb)
+        if ($getdb) {
             $text .= ": " . htmlspecialchars($this->dblink->error);
+        }
         return $text . "</p>";
     }
 
-    function db_error_text($getdb = true, $while = "") {
+    function db_error_text($getdb = true) {
         $text = "Database error";
-        if ($while)
-            $text .= " $while";
-        if ($getdb)
+        if ($getdb) {
             $text .= ": " . $this->dblink->error;
+        }
         return $text;
     }
 
     function query_error_handler($dblink, $query) {
         $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
-        if (PHP_SAPI == "cli")
+        if (PHP_SAPI == "cli") {
             fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n");
-        else {
+        } else {
             error_log("$landmark: database error: $dblink->error in $query");
             self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
