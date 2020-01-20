@@ -865,11 +865,7 @@ $blind\n";
             if ($req && isset($req[$fid])) {
                 $fval = rtrim($req[$fid]);
             } else if ($rrow != null && isset($rrow->$fid)) {
-                if ($f->has_options) {
-                    $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
-                } else {
-                    $fval = rtrim(cleannl($rrow->$fid));
-                }
+                $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
             }
             if ($f->has_options && isset($f->options[$fval])) {
                 $fval = "$fval. " . $f->options[$fval];
@@ -950,10 +946,7 @@ $blind\n";
         foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f) {
             $fval = "";
             if (isset($rrow->$fid)) {
-                if ($f->has_options)
-                    $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING);
-                else
-                    $fval = rtrim(cleannl($rrow->$fid));
+                $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
             }
             if ($fval == "") {
                 continue;

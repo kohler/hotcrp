@@ -2035,6 +2035,17 @@ class PaperInfo {
         return $this->merge_reviews_and_comments($this->viewable_submitted_reviews_by_display($user), $this->viewable_comments($user));
     }
 
+    function viewable_reviews_and_comments(Contact $user) {
+        $this->ensure_full_reviews();
+        $rrows = [];
+        foreach ($this->reviews_by_display($user) as $rrow) {
+            if ($user->can_view_review($this, $rrow)) {
+                $rrows[] = $rrow;
+            }
+        }
+        return $this->merge_reviews_and_comments($rrows, $this->viewable_comments($user));
+    }
+
     static function review_or_comment_text_separator($a, $b) {
         if (!$a || !$b) {
             return "";

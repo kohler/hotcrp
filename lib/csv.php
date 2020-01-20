@@ -476,6 +476,9 @@ class CsvGenerator {
         assert(empty($this->lines) && $this->headerline === "");
         if ($header === false || $header === []) {
             $this->selection = $selection;
+        } else if ($header === true) {
+            $this->add($selection);
+            $this->selection = $selection;
         } else if ($header !== null) {
             assert(is_array($selection) && !is_associative_array($selection)
                    && is_array($header) && !is_associative_array($header)
@@ -483,9 +486,11 @@ class CsvGenerator {
             $this->add($header);
             $this->selection = $selection;
         } else if (is_associative_array($selection)) {
+            assert($header === null);
             $this->add(array_values($selection));
             $this->selection = array_keys($selection);
         } else {
+            assert($header === null);
             $this->add($selection);
             $this->selection = $selection;
         }
