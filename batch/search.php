@@ -2,7 +2,7 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/lib/getopt.php");
 
-$arg = getopt_rest($argv, "hn:t:f:", ["help", "name:", "type:", "field:", "show:", "header"]);
+$arg = getopt_rest($argv, "hn:t:f:", ["help", "name:", "type:", "field:", "show:", "header", "no-header"]);
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/search.php [-n CONFID] [-t COLLECTION] [-f FIELD]+ [QUERY...]
 Output a CSV file containing the FIELDs for the papers matching QUERY.
@@ -10,7 +10,8 @@ Output a CSV file containing the FIELDs for the papers matching QUERY.
 Options include:
   -t, --type COLLECTION  Search COLLECTION “s” (submitted) or “all” [s].
   -f, --show FIELD       Include FIELD in output.
-  --header               Always include header.
+  --header               Always include CSV header.
+  --no-header            Omit CSV header.
   QUERY...               A search term.\n");
     exit(0);
 }
@@ -24,7 +25,7 @@ $user = $Conf->site_contact();
 $t = get($arg, "t", "s");
 $searchtypes = PaperSearch::search_types($user, $t);
 if (!isset($searchtypes[$t])) {
-    fwrite(STDERR, "batch/search.php: No search collection ‘{$t}’\n");
+    fwrite(STDERR, "batch/search.php: No search collection ‘{$t}’.\n");
     exit(1);
 }
 
@@ -43,7 +44,8 @@ foreach ($search->warnings as $w) {
 }
 if (!empty($body)) {
     $csv = new CsvGenerator;
-    if (isset($arg["header"]) || count($header) > 1) {
+    if ((isset($arg["header"]) || count($header) > 1)
+        && !isset($arg["no-header"])) {
         $csv->add(array_keys($header));
     }
     $csv->add($body);
