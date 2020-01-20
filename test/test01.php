@@ -731,7 +731,7 @@ assert(!$user_chair->allow_administer($paper4));
 assert($user_chair->can_administer($paper5));
 assert($user_chair->allow_administer($paper5));
 xassert_eqq($paper4->viewable_tags($user_chair), "");
-xassert_eqq($paper5->viewable_tags($user_chair), " fart#9 testtag#0");
+xassert_match($paper5->viewable_tags($user_chair), '/\A fart#\d+ testtag#0\z/');
 $user_chair->set_overrides($overrides);
 xassert_assign($Conf->site_contact(), "action,paper,user\nclearconflict,4 5,chair@_.com");
 
