@@ -46,8 +46,8 @@ if (isset($arg["N"]) || isset($arg["sitename"])) {
     array_push($header, "sitename", "siteclass");
 }
 array_push($header, "pid", "review", "email", "round");
-if ($all) {
-    $header[] = "reviewstatus";
+if ($all || $comments) {
+    $header[] = "status";
 }
 if ($narrow) {
     $header[] = "field";
@@ -103,7 +103,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
             } else {
                 $rs .= "comment";
             }
-            $x["reviewstatus"] = $rs;
+            $x["status"] = $rs;
             $x["field"] = "comment";
             $x["format"] = $rrow->commentFormat;
             $x["data"] = $rrow->commentOverflow ? : $rrow->comment;
@@ -112,7 +112,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
             $x["review"] = $rrow->unparse_ordinal();
             $x["email"] = $rrow->email;
             $x["round"] = $Conf->round_name($rrow->reviewRound);
-            $x["reviewstatus"] = $rrow->status_description();
+            $x["status"] = $rrow->status_description();
             if ($rrow->reviewFormat === null) {
                 $x["format"] = $Conf->default_format;
             } else {
