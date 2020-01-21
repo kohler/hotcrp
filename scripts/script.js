@@ -6871,7 +6871,7 @@ function make_tagmap() {
             p = t.indexOf("*");
             t = t.replace(/([^-A-Za-z_0-9])/g, "\\$1");
             if (p === 0)
-                x.push('(?!.*~)' . t.replace('\\*', '.*'));
+                x.push('(?!.*~)' + t.replace('\\*', '.*'));
             else if (p > 0)
                 x.push(t.replace('\\*', '.*'));
             else if (t === "any")
