@@ -21,7 +21,7 @@ class Tag_ListAction extends ListAction {
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
             . Ht::entry("tag", $pl->qreq->tag,
                         ["size" => 15, "class" => "want-focus js-autosubmit js-submit-action-info-tag need-suggest tags", "data-autosubmit-type" => "tag"])
-            . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uix js-submit-mark"]);
+            . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-mark"]);
         if ($pl->user->privChair) {
             $t .= '<div class="fx"><div style="margin:2px 0">'
                 . Ht::checkbox("tagcr_gapless", 1, !!$pl->qreq->tagcr_gapless, array("style" => "margin-left:0"))

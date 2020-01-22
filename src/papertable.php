@@ -1478,7 +1478,7 @@ class PaperTable {
         $ptopics = $this->prow->topic_map();
         $topics = $this->conf->topic_set();
         foreach ($topics->group_list() as $tg) {
-            $arg = ["class" => "uix js-range-click topic-entry", "id" => false,
+            $arg = ["class" => "uic js-range-click topic-entry", "id" => false,
                     "data-range-type" => "topic"];
             $isgroup = count($tg) >= 4;
             if ($isgroup && strcasecmp($tg[0], $topics[$tg[1]]) === 0) {
@@ -1616,7 +1616,7 @@ class PaperTable {
                 $js["disabled"] = $disabled;
                 $js["data-default-checked"] = $pct > 0;
                 $js["data-range-type"] = "pcc";
-                $js["class"] = "uix js-range-click conflict-entry";
+                $js["class"] = "uic js-range-click conflict-entry";
                 echo '<span class="checkc">',
                     Ht::checkbox("pcc$id", $ct > 0 ? $ct : CONFLICT_AUTHORMARK,
                                  $ct > 0, $js),

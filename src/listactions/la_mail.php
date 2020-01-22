@@ -8,7 +8,7 @@ class Mail_ListAction extends ListAction {
     }
     static function render(PaperList $pl) {
         return [Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $pl->qreq->recipients, ["class" => "want-focus"])
-            . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "mail", "data-default-submit-all" => 1, "class" => "uix js-submit-mark"])];
+            . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "mail", "data-default-submit-all" => 1, "class" => "uic js-submit-mark"])];
     }
     function run(Contact $user, $qreq, $ssel) {
         $r = in_array($qreq->recipients, ["au", "rev"]) ? $qreq->recipients : "all";

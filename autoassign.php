@@ -678,7 +678,7 @@ $nrev->load_rev();
 foreach ($Conf->pc_members() as $id => $p) {
     $t = '<div class="ctelt"><label class="checki ctelti"><span class="checkc">'
         . Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),
-                       ["id" => "pcc$id", "class" => "uix js-range-click js-pcsel-tag"])
+                       ["id" => "pcc$id", "class" => "uic js-range-click js-pcsel-tag"])
         . '</span>' . $Me->reviewer_html_for($p)
         . AssignmentSet::review_count_report($nrev, null, $p, "")
         . "</label></div>";

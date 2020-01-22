@@ -980,7 +980,7 @@ handle_ui.trigger = function (className, event) {
 };
 return handle_ui;
 })($);
-$(document).on("click", ".ui, .uix", handle_ui);
+$(document).on("click", ".ui, .uic", handle_ui);
 $(document).on("change", ".uich", handle_ui);
 $(document).on("keydown", ".uikd", handle_ui);
 $(document).on("input", ".uii", handle_ui);
@@ -2849,8 +2849,10 @@ function foldup(event, opts) {
     if (this.hasAttribute("aria-expanded")) {
         this.setAttribute("aria-expanded", dofold ? "false" : "true");
     }
-    if (event && typeof event === "object" && event.type === "click"
-        && !hasClass(event.target, "uix")) {
+    if (event
+        && typeof event === "object"
+        && event.type === "click"
+        && !hasClass(event.target, "uic")) {
         event.stopPropagation();
         event.preventDefault(); // needed for expanders despite handle_ui!
     }
@@ -4984,8 +4986,7 @@ demand_load.tags = demand_load.make(function (resolve, reject) {
 demand_load.mentions = demand_load.make(function (resolve, reject) {
     if (hotcrp_user.is_pclike)
         $.get(hoturl("api/mentioncompletion", {p: hotcrp_paperid}), null, function (v) {
-            var tlist = (v && v.mentioncompletion) || [];
-            tlist = tlist.map(completion_item);
+            var tlist = ((v && v.mentioncompletion) || []).map(completion_item);
             tlist.sort(function (a, b) { return strnatcmp(a.s, b.s); });
             resolve(tlist);
         });

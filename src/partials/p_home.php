@@ -269,7 +269,7 @@ class Home_Partial {
         if (!$is_external_login) {
             echo '<div class="float-right"><a href="',
                 $conf->hoturl("forgotpassword"),
-                '" class="n x small uix js-href-add-email">Forgot your password?</a></div>';
+                '" class="n x small uic js-href-add-email">Forgot your password?</a></div>';
         }
         echo Ht::label("Password", "signin_password"),
             Ht::password("password", $password_value, [
@@ -289,7 +289,7 @@ class Home_Partial {
         if ($conf->allow_user_self_register()) {
             echo '<p class="hint">New to the site? <a href="',
                 $conf->hoturl("newaccount"),
-                '" class="uix js-href-add-email">Create an account</a></p>';
+                '" class="uic js-href-add-email">Create an account</a></p>';
         }
         echo '</div><div class="fn">',
             Ht::submit("action", "Sign in", ["class" => "btn-success", "tabindex" => 1, "value" => "start"]),
