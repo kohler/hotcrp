@@ -950,7 +950,7 @@ var handle_ui = (function ($) {
 var callbacks = {};
 function handle_ui(event) {
     var e = event.target;
-    if ((e && (hasClass(e, "ui") || hasClass("uin")))
+    if ((e && (hasClass(e, "ui") || hasClass(e, "uin")))
         || (this.tagName === "A" && hasClass(this, "ui"))) {
         event.preventDefault();
     }
