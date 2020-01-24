@@ -442,7 +442,7 @@ class Contact {
                 Conf::$hoturl_defaults["actas"] = urlencode($actascontact->email);
                 $_SESSION["last_actas"] = $actascontact->email;
                 self::$true_user = $this;
-                return $actascontact->activate($qreq);
+                return $actascontact->activate($qreq, true);
             }
         }
 

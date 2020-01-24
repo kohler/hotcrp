@@ -147,6 +147,13 @@ function initialize_user() {
     }
     $Me = $Me->activate($Qreq, true);
 
+    // author view capability documents should not be indexed
+    if (!$Me->email
+        && $Me->has_author_view_capability()
+        && !$Conf->opt("allowIndexPapers")) {
+        header("X-Robots-Tag: noindex, noarchive");
+    }
+
     // redirect if disabled
     if ($Me->is_disabled()) {
         if ($nav->page === "api") {
