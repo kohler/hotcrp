@@ -4271,7 +4271,7 @@ class Conf {
         // XXX precondition: $user->can_view_paper($prow) || !$prow
         $uf = $this->api($fn, $user, $qreq->method());
         if ($uf && get($uf, "redirect") && $qreq->redirect
-            && preg_match('@\A(?![a-z]+:|/).+@', $qreq->redirect)) {
+            && preg_match('/\A(?![a-z]+:|\/)./', $qreq->redirect)) {
             try {
                 JsonResultException::$capturing = true;
                 $j = $this->call_api($fn, $uf, $user, $qreq, $prow);

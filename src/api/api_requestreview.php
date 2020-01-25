@@ -288,6 +288,9 @@ class RequestReview_API {
             $user->conf->qe("update PaperReviewRefused set reason=? where paperId=? and email=?",
                 $reason, $prow->paperId, $email);
         }
+        if ($reason === null && !empty($refusals)) {
+            $reason = $refusals[0]->reason;
+        }
 
         $user->conf->qe_raw("unlock tables");
 
@@ -314,7 +317,7 @@ class RequestReview_API {
         if ($qreq->redirect) {
             $user->conf->confirmMsg("Thank you for telling us that you are unable to review submission #{$prow->paperId}.");
         }
-        return new JsonResult(["ok" => true, "action" => "decline"]);
+        return new JsonResult(["ok" => true, "action" => "decline", "reason" => $reason]);
     }
 
     static function retractreview($user, $qreq, $prow) {

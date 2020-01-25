@@ -229,26 +229,30 @@ if (isset($Qreq->text)) {
 // retract review request
 if ((isset($Qreq->refuse) || isset($Qreq->decline))
     && ($Qreq->post_ok() || $Me->capability("@ra" . $prow->paperId))) {
+    $decline_email = null;
     if ($paperTable->editrrow) {
-        $Qreq->email = $paperTable->editrrow->email;
+        $Qreq->email = $decline_email = $paperTable->editrrow->email;
+    } else if (($ra_cid = $Me->capability("@ra" . $prow->paperId))
+               && ($ra_user = $Conf->cached_user_by_id($ra_cid))) {
+        $Qreq->email = $decline_email = $ra_user->email;
     }
     $result = RequestReview_API::declinereview($Me, $Qreq, $prow);
     $result = JsonResult::make($result);
     if ($result->content["ok"]) {
         if (($Qreq->refuse === "1" || $Qreq->decline === "1")
-            && $paperTable->editrrow
+            && $decline_email
             && !isset($Qreq->reason)) {
             $Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review. If you’d like, you may enter a brief explanation here.</p>"
-                . Ht::form(hoturl_post("api/declinereview", ["p" => $prow->paperId, "email" => $Me->email, "redirect" => $Conf->hoturl("index")]))
-                . Ht::textarea("reason", "", ["rows" => 3, "cols" => 40, "spellcheck" => true])
+                . Ht::form(hoturl_post("api/declinereview", ["p" => $prow->paperId, "email" => $decline_email, "redirect" => $Conf->hoturl_site_relative_raw("index")]))
+                . Ht::textarea("reason", $result->content["reason"], ["rows" => 3, "cols" => 40, "spellcheck" => true])
                 . '<hr class="c">'
                 . Ht::submit("Update explanation", ["class" => "btn-primary"])
                 . '</form>');
         } else {
             $Conf->confirmMsg("Review declined. Thank you for telling us that you cannot complete your review.");
+            unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retract);
+            $Conf->self_redirect($Qreq);
         }
-        unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retract);
-        $Conf->self_redirect($Qreq);
     } else {
         $result->export_errors();
         loadRows();
