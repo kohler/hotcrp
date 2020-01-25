@@ -185,7 +185,7 @@ class PaperTable {
             && $list->highlight
             && preg_match('_\Ap/([^/]*)/([^/]*)(?:/|\z)_', $list->listid, $m)) {
             $hlquery = is_string($list->highlight) ? $list->highlight : urldecode($m[2]);
-            $ps = new PaperSearch($user, ["t" => $m[1], "q" => $hlquery]);
+            $ps = new PaperSearch($this->user, ["t" => $m[1], "q" => $hlquery]);
             foreach ($ps->field_highlighters() as $k => $v) {
                 $this->matchPreg[$k] = $v;
             }
