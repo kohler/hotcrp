@@ -2060,6 +2060,9 @@ class Contact {
                 && $this->_capabilities !== null
                 && ($ru = $this->reviewer_capability_user($prow->paperId))
                 && ($rci = $prow->contact_info($ru))) {
+                if ($rci->review_status == 0) {
+                    $rci->review_status = PaperContactInfo::RS_DECLINED;
+                }
                 $ci->reviewType = $rci->reviewType;
                 $ci->review_status = $rci->review_status;
             }
@@ -2574,9 +2577,11 @@ class Contact {
         }
         $rights = $this->rights($prow);
         return $rights->allow_author_view
-            || ($rights->review_status > 0
+            || ($pdf
                 // assigned reviewer can view PDF of withdrawn, but submitted, paper
-                && (!$pdf || $prow->timeSubmitted != 0))
+                ? $rights->review_status > PaperContactInfo::RS_DECLINED
+                  && $prow->timeSubmitted != 0
+                : $rights->review_status > 0)
             || ($rights->allow_pc_broad
                 && $this->conf->timePCViewPaper($prow, $pdf)
                 && (!$pdf || $this->conf->check_tracks($prow, $this, Track::VIEWPDF)));
