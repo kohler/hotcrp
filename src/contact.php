@@ -1013,10 +1013,12 @@ class Contact {
         foreach (preg_split('{\s+}', $text) as $s) {
             if ($s !== "") {
                 $isadd = $s[0] !== "-";
-                if ($s[0] === "-" || $s[0] === "+")
+                if ($s[0] === "-" || $s[0] === "+") {
                     $s = substr($s, 1);
-                if ($s !== "" && ($uf = $this->conf->capability_handler($s)))
+                }
+                if ($s !== "" && ($uf = $this->conf->capability_handler($s))) {
                     call_user_func($uf->callback, $this, $uf, $isadd, $s);
+                }
             }
         }
     }
@@ -2507,25 +2509,29 @@ class Contact {
             return null;
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
-        if (!$rights->allow_author && $rights->allow_author_view)
+        if (!$rights->allow_author && $rights->allow_author_view) {
             $whyNot["signin"] = "edit_paper";
-        else if (!$rights->allow_author)
+        } else if (!$rights->allow_author) {
             $whyNot["author"] = 1;
-        if ($prow->timeWithdrawn > 0)
+        }
+        if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = 1;
+        }
         // NB logic order here is important elsewhere
         // Don’t report “rejected” error to admins
         if ($prow->outcome <= 0
             || (!$rights->allow_administer
-                && !$rights->can_view_decision))
+                && !$rights->can_view_decision)) {
             $whyNot["rejected"] = 1;
-        else if (!$this->conf->allow_final_versions())
+        } else if (!$this->conf->allow_final_versions()) {
             $whyNot["deadline"] = "final_open";
-        else if (!$this->conf->time_submit_final_version()
-                 && !$this->override_deadlines($rights))
+        } else if (!$this->conf->time_submit_final_version()
+                   && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "final_done";
-        if ($rights->allow_administer)
+        }
+        if ($rights->allow_administer) {
             $whyNot["override"] = 1;
+        }
         return $whyNot;
     }
 
@@ -2541,14 +2547,15 @@ class Contact {
 
     function no_paper_whynot($pid) {
         $whynot = ["conf" => $this->conf, "paperId" => $pid];
-        if (!ctype_digit((string) $pid))
+        if (!ctype_digit((string) $pid)) {
             $whynot["invalidId"] = "paper";
-        else if ($this->can_view_missing_papers())
+        } else if ($this->can_view_missing_papers()) {
             $whynot["noPaper"] = true;
-        else {
+        } else {
             $whynot["permission"] = "view_paper";
-            if ($this->is_empty())
+            if ($this->is_empty()) {
                 $whynot["signin"] = "view_paper";
+            }
         }
         return $whynot;
     }
@@ -2562,8 +2569,9 @@ class Contact {
             return false;
         }
         if ($this->privChair
-            && !($this->dangerous_track_mask() & Track::BITS_VIEW))
+            && !($this->dangerous_track_mask() & Track::BITS_VIEW)) {
             return true;
+        }
         $rights = $this->rights($prow);
         return $rights->allow_author_view
             || ($rights->review_status > 0

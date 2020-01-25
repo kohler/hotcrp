@@ -265,7 +265,7 @@ class SessionList {
             $this->curid = $this->previd = $this->nextid = null;
         }
         $this->id_position = $this->ids ? array_search($id, $this->ids) : false;
-        return $this->id_position === false ? null : $this;
+        return $this->id_position !== false;
     }
     function neighbor_id($delta) {
         if ($this->id_position !== false) {

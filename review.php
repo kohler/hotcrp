@@ -28,8 +28,9 @@ function errorMsgExit($msg) {
 // collect paper ID
 function loadRows() {
     global $Conf, $Me, $Qreq, $prow, $paperTable;
-    if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me)))
+    if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
         errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
+    }
     $paperTable = new PaperTable($prow, $Qreq);
     $paperTable->resolveReview(true);
 }
@@ -86,8 +87,9 @@ if (isset($Qreq->unsubmitreview)
     loadRows();
 } else if (isset($Qreq->update)
            && $paperTable->editrrow
-           && $paperTable->editrrow->reviewSubmitted)
+           && $paperTable->editrrow->reviewSubmitted) {
     $Qreq->ready = 1;
+}
 
 
 // update review action
@@ -227,8 +229,9 @@ if (isset($Qreq->text)) {
 // retract review request
 if ((isset($Qreq->refuse) || isset($Qreq->decline))
     && ($Qreq->post_ok() || $Me->capability("@ra" . $prow->paperId))) {
-    if ($paperTable->editrrow)
+    if ($paperTable->editrrow) {
         $Qreq->email = $paperTable->editrrow->email;
+    }
     $result = RequestReview_API::declinereview($Me, $Qreq, $prow);
     $result = JsonResult::make($result);
     if ($result->content["ok"]) {

@@ -105,7 +105,7 @@ class PaperTable {
 
         // choose list
         if (!$this->conf->has_active_list()) {
-            $this->conf->set_active_list($this->find_session_list($prow->paperId));
+            $this->conf->set_active_list($this->find_session_list($prow));
         } else {
             $list = $this->conf->active_list();
             assert($list && ($list->set_current_id($prow->paperId) || $list->digest));
@@ -117,16 +117,17 @@ class PaperTable {
             && preg_match('_\Ap/([^/]*)/([^/]*)(?:/|\z)_', $list->listid, $m)) {
             $hlquery = is_string($list->highlight) ? $list->highlight : urldecode($m[2]);
             $ps = new PaperSearch($user, ["t" => $m[1], "q" => $hlquery]);
-            foreach ($ps->field_highlighters() as $k => $v)
+            foreach ($ps->field_highlighters() as $k => $v) {
                 $this->matchPreg[$k] = $v;
+            }
         }
         if (empty($this->matchPreg)) {
             $this->matchPreg = null;
         }
     }
-    private function find_session_list($pid) {
+    private function find_session_list($prow) {
         if (($list = SessionList::load_cookie("p"))
-            && ($list->set_current_id($pid) || $list->digest)) {
+            && ($list->set_current_id($prow->paperId) || $list->digest)) {
             return $list;
         }
 
@@ -135,33 +136,38 @@ class PaperTable {
         $listdesc = $this->qreq->ls;
         if ($listdesc) {
             if (($opt = PaperSearch::unparse_listid($listdesc))) {
-                $list = $this->try_list($opt, $pid);
+                $list = $this->try_list($opt, $prow);
             }
             if (!$list && preg_match('{\A(all|s):(.*)\z}s', $listdesc, $m)) {
-                $list = $this->try_list(["t" => $m[1], "q" => $m[2]], $pid);
+                $list = $this->try_list(["t" => $m[1], "q" => $m[2]], $prow);
             }
             if (!$list && preg_match('{\A[a-z]+\z}', $listdesc)) {
-                $list = $this->try_list(["t" => $listdesc], $pid);
+                $list = $this->try_list(["t" => $listdesc], $prow);
             }
             if (!$list) {
-                $list = $this->try_list(["q" => $listdesc], $pid);
+                $list = $this->try_list(["q" => $listdesc], $prow);
             }
         }
 
         // default lists
         if (!$list) {
-            $list = $this->try_list([], $pid);
+            $list = $this->try_list([], $prow);
         }
         if (!$list && $this->user->privChair) {
-            $list = $this->try_list(["t" => "all"], $pid);
+            $list = $this->try_list(["t" => "all"], $prow);
         }
 
         return $list;
     }
-    private function try_list($opt, $pid) {
+    private function try_list($opt, $prow) {
         $srch = new PaperSearch($this->user, $opt);
-        $list = $srch->session_list_object();
-        return $list->set_current_id($pid);
+        if ($srch->test($prow)) {
+            $list = $srch->session_list_object();
+            $list->set_current_id($prow->paperId);
+            return $list;
+        } else {
+            return null;
+        }
     }
 
     private static function _combine_match_preg($m1, $m) {
@@ -230,7 +236,7 @@ class PaperTable {
 
             $highlight_text = null;
             $title_matches = 0;
-            if ($paperTable && $paperTable->matchPreg
+            if ($paperTable->matchPreg
                 && ($highlight = get($paperTable->matchPreg, "title"))) {
                 $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
             }

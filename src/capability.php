@@ -142,6 +142,7 @@ class CapabilityManager {
 
         $result = $user->conf->qe("select * from PaperReview where reviewId=?", $uf->match_data[1]);
         $rrow = ReviewInfo::fetch($result, $user->conf);
+        Dbl::free($result);
         if ($rrow && $rrow->acceptor_is($uf->match_data[2])) {
             self::make_review_acceptor($user, $rrow->acceptor()->at, $rrow->paperId, $isadd ? (int) $rrow->contactId : null, $uf);
             return;
@@ -155,6 +156,7 @@ class CapabilityManager {
                 && isset($data->acceptor->text)
                 && $data->acceptor->text === $uf->match_data[2]) {
                 self::make_review_acceptor($user, $data->acceptor->at, $refusal->paperId, $isadd ? (int) $refusal->contactId : null, $uf);
+                Dbl::free($result);
                 return;
             }
         }

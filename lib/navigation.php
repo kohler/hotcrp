@@ -3,7 +3,8 @@
 // Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
 
 class NavigationState {
-    // Base URL:    PROTOCOL://HOST[:PORT]/SITEPATH/
+    // Base URL:    PROTOCOL://HOST[:PORT]/BASEPATH/
+    // Site URL:    PROTOCOL://HOST[:PORT]/BASEPATH/[u/NNN/]
     // Current URL: PROTOCOL://HOST[:PORT]/SITEPATH/PAGE/PATH?QUERY
     public $protocol;           // "PROTOCOL://"
     public $host;               // "HOST"
