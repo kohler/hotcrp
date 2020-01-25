@@ -559,7 +559,7 @@ class PaperList {
         $pt = $this->_paper_link_page ? : "paper";
         if ($pt === "finishreview") {
             $ci = $row->contact_info($this->user);
-            $pt = $ci->review_status <= 0 ? "review" : "paper";
+            $pt = $ci->review_status <= PaperContactInfo::RS_UNSUBMITTED ? "review" : "paper";
         }
         $pl = "p=" . $row->paperId;
         if ($pt === "paper" && $this->_paper_link_mode)

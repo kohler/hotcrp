@@ -2102,7 +2102,7 @@ class Contact {
                     && $prow->can_author_view_decision())
                 || ($ci->allow_pc_broad
                     && $this->conf->time_pc_view_decision($ci->view_conflict_type > 0))
-                || ($ci->review_status > 0
+                || ($ci->review_status > PaperContactInfo::RS_UNSUBMITTED
                     && $this->conf->time_reviewer_view_decision()
                     && ($ci->allow_pc_broad
                         || $this->conf->setting("extrev_view") > 0));
@@ -2110,13 +2110,13 @@ class Contact {
             // check view-authors state
             if ($ci->act_author_view && !$ci->allow_administer) {
                 $ci->view_authors_state = 2;
-            } else if ($ci->allow_pc_broad || $ci->review_status != 0) {
+            } else if ($ci->allow_pc_broad || $ci->review_status > 0) {
                 $bs = $this->conf->submission_blindness();
                 $nb = $bs == Conf::BLIND_NEVER
                     || ($bs == Conf::BLIND_OPTIONAL
                         && !$prow->blind)
                     || ($bs == Conf::BLIND_UNTILREVIEW
-                        && $ci->review_status > 1)
+                        && $ci->review_status > PaperContactInfo::RS_PROXIED)
                     || ($prow->outcome > 0
                         && ($isPC || $ci->allow_review)
                         && $ci->can_view_decision
@@ -2566,7 +2566,7 @@ class Contact {
             return true;
         $rights = $this->rights($prow);
         return $rights->allow_author_view
-            || ($rights->review_status != 0
+            || ($rights->review_status > 0
                 // assigned reviewer can view PDF of withdrawn, but submitted, paper
                 && (!$pdf || $prow->timeSubmitted != 0))
             || ($rights->allow_pc_broad
@@ -2735,7 +2735,7 @@ class Contact {
             }
         } else if ($rights->act_author_view) {
             return 2;
-        } else if ($rights->allow_pc_broad || $rights->review_status != 0) {
+        } else if ($rights->allow_pc_broad || $rights->review_status > 0) {
             if ($oview === "nonblind") {
                 return $rights->view_authors_state;
             } else {
@@ -2857,7 +2857,7 @@ class Contact {
             $rights = $this->rights($prow);
             return $rights->allow_administer
                 || $rights->allow_pc
-                || $rights->review_status != 0
+                || $rights->review_status > 0
                 || $this->can_view_review($prow, $rrow);
         } else {
             return $this->can_view_review_identity($prow, $rrow);
@@ -2961,7 +2961,7 @@ class Contact {
                     || !$this->has_outstanding_review())
                 && ($seerev != Conf::PCSEEREV_UNLESSINCOMPLETE
                     || $rights->review_status == 0))
-            || ($rights->review_status != 0
+            || ($rights->review_status > 0
                 && !$rights->view_conflict_type
                 && $viewscore >= VIEWSCORE_PC
                 && $prow->review_not_incomplete($this)
@@ -3347,7 +3347,7 @@ class Contact {
         return ($author
                 || ($rights->allow_review
                     && ($prow->timeSubmitted > 0
-                        || $rights->review_status != 0
+                        || $rights->review_status > 0
                         || ($rights->allow_administer && $rights->rights_forced))
                     && ($this->conf->setting("cmt_always") > 0
                         || $this->conf->time_review(null, $rights->allow_pc, true)
@@ -3524,7 +3524,7 @@ class Contact {
 
     function can_view_comment_tags(PaperInfo $prow, $crow) {
         $rights = $this->rights($prow);
-        return $rights->allow_pc || $rights->review_status != 0;
+        return $rights->allow_pc || $rights->review_status > 0;
     }
 
     function can_view_some_draft_response() {

@@ -8,7 +8,11 @@ class PaperContactInfo {
     public $conflictType = 0;
     public $reviewType = 0;
     public $reviewSubmitted = 0;
-    public $review_status = 0;    // 0: no review, 1: complete, -1: needs submit
+    public $review_status = 0;    // 0 means no review
+    const RS_DECLINED = 1;        // declined assigned review
+    const RS_UNSUBMITTED = 2;     // review not submitted, needs submit
+    const RS_PROXIED = 3;         // review proxied (e.g., lead)
+    const RS_SUBMITTED = 4;       // review submitted
 
     public $rights_forced = null;
     public $forced_rights_link = null;
@@ -43,7 +47,7 @@ class PaperContactInfo {
             && isset($prow->leadContactId)
             && $prow->leadContactId == $user->contactId
             && !$prow->conf->setting("lead_noseerev")) {
-            $ci->review_status = 1;
+            $ci->review_status = PaperContactInfo::RS_PROXIED;
         }
         return $ci;
     }
@@ -70,9 +74,9 @@ class PaperContactInfo {
         $this->reviewSubmitted = max($rs, $this->reviewSubmitted);
         if ($rt > 0) {
             if ($rs > 0 || $rns == 0) {
-                $this->review_status = 2;
+                $this->review_status = PaperContactInfo::RS_SUBMITTED;
             } else if ($this->review_status == 0) {
-                $this->review_status = -1;
+                $this->review_status = PaperContactInfo::RS_UNSUBMITTED;
             }
         }
     }
@@ -764,7 +768,7 @@ class PaperInfo {
 
     function review_not_incomplete($contact) {
         $ci = $this->contact_info($contact);
-        return $ci && $ci->review_status > 0;
+        return $ci && $ci->review_status > PaperContactInfo::RS_UNSUBMITTED;
     }
 
     function review_submitted($contact) {
