@@ -102,14 +102,83 @@ class PaperTable {
         if (isset($ms["re"]) && isset($this->qreq->reviewId)) {
             $this->mode = "re";
         }
+    }
 
-        // choose list
-        if (!$this->conf->has_active_list()) {
-            $this->conf->set_active_list($this->find_session_list($prow));
+    static function do_header($paperTable, $id, $action_mode, $qreq) {
+        global $Conf, $Me;
+        $prow = $paperTable ? $paperTable->prow : null;
+        $format = 0;
+
+        $t = '<div id="header-page" class="header-page-submission"><div id="header-page-submission-inner"><h1 class="paptitle';
+
+        if (!$paperTable) {
+            if (($pid = $qreq->paperId) && ctype_digit($pid)) {
+                $title = "#$pid";
+            } else {
+                $title = $Conf->_c("paper_title", "Submission");
+            }
+            $t .= '">' . $title;
+        } else if (!$prow->paperId) {
+            $title = $Conf->_c("paper_title", "New submission");
+            $t .= '">' . $title;
         } else {
-            $list = $this->conf->active_list();
-            assert($list && ($list->set_current_id($prow->paperId) || $list->digest));
+            $paperTable->initialize_list();
+            $title = "#" . $prow->paperId;
+            $viewable_tags = $prow->viewable_tags($Me);
+            if ($viewable_tags || $Me->can_view_tags($prow)) {
+                $t .= ' has-tag-classes';
+                if (($color = $prow->conf->tags()->color_classes($viewable_tags)))
+                    $t .= ' ' . $color;
+            }
+            $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
+                . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
+                . ' &nbsp; ';
+
+            $highlight_text = null;
+            $title_matches = 0;
+            if ($paperTable->matchPreg
+                && ($highlight = get($paperTable->matchPreg, "title"))) {
+                $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
+            }
+
+            if (!$title_matches && ($format = $prow->title_format())) {
+                $t .= '<span class="ptitle need-format" data-format="' . $format . '">';
+            } else {
+                $t .= '<span class="ptitle">';
+            }
+            if ($highlight_text) {
+                $t .= $highlight_text;
+            } else if ($prow->title === "") {
+                $t .= "[No title]";
+            } else {
+                $t .= htmlspecialchars($prow->title);
+            }
+
+            $t .= '</span></span></a>';
+            if ($viewable_tags && $Conf->tags()->has_decoration) {
+                $tagger = new Tagger($Me);
+                $t .= $tagger->unparse_decoration_html($viewable_tags);
+            }
         }
+
+        $t .= '</h1></div></div>';
+        if ($paperTable && $prow->paperId) {
+            $t .= $paperTable->_paptabBeginKnown();
+        }
+
+        $Conf->header($title, $id, [
+            "action_bar" => actionBar($action_mode, $qreq),
+            "title_div" => $t, "body_class" => "paper", "paperId" => $qreq->paperId
+        ]);
+        if ($format) {
+            echo Ht::unstash_script("render_text.on_page()");
+        }
+    }
+
+    private function initialize_list() {
+        assert(!$this->conf->has_active_list());
+        $list = $this->find_session_list();
+        $this->conf->set_active_list($list);
 
         $this->matchPreg = [];
         if (($list = $this->conf->active_list())
@@ -125,7 +194,12 @@ class PaperTable {
             $this->matchPreg = null;
         }
     }
-    private function find_session_list($prow) {
+    private function find_session_list() {
+        $prow = $this->prow;
+        if ($prow->paperId <= 0) {
+            return null;
+        }
+
         if (($list = SessionList::load_cookie("p"))
             && ($list->set_current_id($prow->paperId) || $list->digest)) {
             return $list;
@@ -203,76 +277,6 @@ class PaperTable {
 
     function can_view_reviews() {
         return $this->can_view_reviews;
-    }
-
-    static function do_header($paperTable, $id, $action_mode, $qreq) {
-        global $Conf, $Me;
-        $prow = $paperTable ? $paperTable->prow : null;
-        $format = 0;
-
-        $t = '<div id="header-page" class="header-page-submission"><div id="header-page-submission-inner"><h1 class="paptitle';
-
-        if (!$paperTable) {
-            if (($pid = $qreq->paperId) && ctype_digit($pid)) {
-                $title = "#$pid";
-            } else {
-                $title = $Conf->_c("paper_title", "Submission");
-            }
-            $t .= '">' . $title;
-        } else if (!$prow->paperId) {
-            $title = $Conf->_c("paper_title", "New submission");
-            $t .= '">' . $title;
-        } else {
-            $title = "#" . $prow->paperId;
-            $viewable_tags = $prow->viewable_tags($Me);
-            if ($viewable_tags || $Me->can_view_tags($prow)) {
-                $t .= ' has-tag-classes';
-                if (($color = $prow->conf->tags()->color_classes($viewable_tags)))
-                    $t .= ' ' . $color;
-            }
-            $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
-                . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
-                . ' &nbsp; ';
-
-            $highlight_text = null;
-            $title_matches = 0;
-            if ($paperTable->matchPreg
-                && ($highlight = get($paperTable->matchPreg, "title"))) {
-                $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
-            }
-
-            if (!$title_matches && ($format = $prow->title_format())) {
-                $t .= '<span class="ptitle need-format" data-format="' . $format . '">';
-            } else {
-                $t .= '<span class="ptitle">';
-            }
-            if ($highlight_text) {
-                $t .= $highlight_text;
-            } else if ($prow->title === "") {
-                $t .= "[No title]";
-            } else {
-                $t .= htmlspecialchars($prow->title);
-            }
-
-            $t .= '</span></span></a>';
-            if ($viewable_tags && $Conf->tags()->has_decoration) {
-                $tagger = new Tagger($Me);
-                $t .= $tagger->unparse_decoration_html($viewable_tags);
-            }
-        }
-
-        $t .= '</h1></div></div>';
-        if ($paperTable && $prow->paperId) {
-            $t .= $paperTable->_paptabBeginKnown();
-        }
-
-        $Conf->header($title, $id, [
-            "action_bar" => actionBar($action_mode, $qreq),
-            "title_div" => $t, "body_class" => "paper", "paperId" => $qreq->paperId
-        ]);
-        if ($format) {
-            echo Ht::unstash_script("render_text.on_page()");
-        }
     }
 
     private function abstract_foldable($abstract) {
