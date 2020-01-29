@@ -362,7 +362,7 @@ class LogRowGenerator {
                 $row->paperIdArray = [];
             }
             if (preg_match('/\A(.* |)\(papers ([\d, ]+)\)?\z/', $row->action, $m)) {
-                $row->cleanedAction = $m[1];
+                $row->cleanedAction = rtrim($m[1]);
                 foreach (preg_split('/[\s,]+/', $m[2]) as $p) {
                     if ($p !== "")
                         $row->paperIdArray[] = (int) $p;
@@ -640,6 +640,9 @@ function set_user_html($user, $qreq_n) {
 
 function render_users($users, $via) {
     global $Conf, $Qreq, $Me, $user_html;
+    if (empty($users) && $via < 0) {
+        return "<i>via author link</i>";
+    }
     $all_pc = true;
     $ts = [];
     usort($users, "Contact::compare");
