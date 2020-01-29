@@ -181,27 +181,23 @@ class ZipDocument {
             $this->add_as(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         }
 
-        if ($this->conf->opt("docstore")) {
+        if (($dstore_tmp = Filer::docstore_tmpdir($this->conf->opt("docstore")))) {
             // calculate hash for zipfile contents
             $xdocs = $this->_docs;
             usort($xdocs, function ($a, $b) {
                 return strcmp($a->filename, $b->filename);
             });
             $signature = count($xdocs) . "\n";
-            foreach ($xdocs as $doc)
+            foreach ($xdocs as $doc) {
                 $signature .= $doc->filename . "\n" . $doc->text_hash() . "\n";
-            $sha1 = sha1($signature, false);
+            }
+            $this->filestore = $dstore_tmp . hash("sha256", $signature, false) . ".zip";
             // maybe zipfile with that signature already exists
-            $dstore_prefix = Filer::docstore_fixed_prefix($this->conf->opt("docstore"));
-            $zfn = $dstore_prefix . "tmp/" . $sha1 . ".zip";
-            if (Filer::prepare_docstore($dstore_prefix, $zfn)) {
-                $this->filestore = $zfn;
-                if (file_exists($zfn)) {
-                    if (@filemtime($zfn) < $Now - 21600) {
-                        @touch($zfn);
-                    }
-                    return $this->_make_document();
+            if (file_exists($this->filestore)) {
+                if (@filemtime($this->filestore) < $Now - 21600) {
+                    @touch($zfn);
                 }
+                return $this->_make_document();
             }
         }
 

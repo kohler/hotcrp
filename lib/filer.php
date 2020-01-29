@@ -269,7 +269,7 @@ class Filer {
         return $prefix;
     }
 
-    static function prepare_docstore($parent, $path) {
+    static private function prepare_docstore($parent, $path) {
         if (!self::_make_fpath_parents($parent, $path))
             return false;
         // Ensure an .htaccess file exists, even if someone else made the
@@ -281,6 +281,20 @@ class Filer {
             return false;
         }
         return true;
+    }
+
+    static function docstore_tmpdir($pattern) {
+        if (is_object($pattern)) {
+            $pattern = $pattern->opt("docstore");
+        }
+        if ($pattern
+            && ($prefix = self::docstore_fixed_prefix($pattern))) {
+            $tmpdir = $prefix . "tmp/";
+            if (self::prepare_docstore($tmpdir, $tmpdir)) {
+                return $tmpdir;
+            }
+        }
+        return false;
     }
 
     static private function _expand_docstore($pattern, DocumentInfo $doc, $extension) {
