@@ -3978,13 +3978,16 @@ class Conf {
 
     function log_for($user, $dest_user, $text, $pids = null) {
         if (is_object($pids)) {
-            $pids = array($pids->paperId);
-        } else if (!is_array($pids)) {
-            $pids = $pids > 0 ? array($pids) : array();
-        }
-        $ps = [];
-        foreach ($pids as $p) {
-            $ps[] = is_object($p) ? $p->paperId : $p;
+            $pids = [$pids->paperId];
+        } else if (is_array($pids)) {
+            foreach ($pids as &$p) {
+                $p = is_object($p) ? $p->paperId : $p;
+            }
+            unset($p);
+        } else if ($pids === null || $pids <= 0) {
+            $pids = [];
+        } else {
+            $pids = [$pids];
         }
 
         $true_user = 0;
@@ -3992,22 +3995,22 @@ class Conf {
             if ($user->is_actas_user()) {
                 $true_user = Contact::$true_user->contactId;
             } else if (!$user->contactId
-                       && count($ps) === 1
-                       && $user->has_capability_for($ps[0])) {
-                $true_user = -1;
+                       && !empty($pids)
+                       && $user->has_capability_for($pids[0])) {
+                $true_user = -1; // indicate download via link
             }
         }
         $user = self::log_clean_user($user, $text);
         $dest_user = self::log_clean_user($dest_user, $text);
 
         if ($this->_save_logs === false) {
-            $this->qe(self::action_log_query, self::format_log_values($text, $user, $dest_user, $true_user, $ps));
+            $this->qe(self::action_log_query, self::format_log_values($text, $user, $dest_user, $true_user, $pids));
         } else {
             $key = "$user,$dest_user,$true_user|$text";
             if (!isset($this->_save_logs[$key])) {
                 $this->_save_logs[$key] = [];
             }
-            foreach ($ps as $p) {
+            foreach ($pids as $p) {
                 $this->_save_logs[$key][$p] = true;
             }
         }
