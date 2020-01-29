@@ -572,8 +572,9 @@ class MeetingTracker {
                 && self::check_tracker_admin_perm($user, get($tr, "admin_perm")))) {
             $ti->allow_administer = true;
         }
-        if ($user->conf->opt("trackerHideConflicts"))
+        if ($user->conf->opt("trackerHideConflicts")) {
             $ti->hide_conflicts = true;
+        }
         if ($tr->position !== false) {
             $ti->paper_offset = $tr->position === 0 ? 0 : 1;
             $ti->papers = array_slice($tr->ids, $tr->position - $ti->paper_offset, 3 + $ti->paper_offset);
@@ -602,7 +603,9 @@ class MeetingTracker {
         }
 
         $track_manager = $user->is_track_manager();
-        $show_pc_conflicts = $track_manager || $user->tracker_kiosk_state > 0;
+        $show_pc_conflicts = $track_manager
+            || $user->conf->setting("sub_pcconfvis") != 1
+            || $user->tracker_kiosk_state > 0;
         $hide_conflicted_papers = $user->conf->opt("trackerHideConflicts");
 
         $col = "";
