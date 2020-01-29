@@ -7,6 +7,7 @@ class DocumentFileTree implements JsonSerializable {
     private $_components = [];
     private $_pregs = [];
     private $_n;
+    private $_filecount;
 
     private $_algo;
     private $_hash;
@@ -40,7 +41,7 @@ class DocumentFileTree implements JsonSerializable {
         }
 
         $this->_n = count($this->_components);
-        $this->populate_dirinfo("", 0);
+        $this->_filecount = $this->populate_dirinfo("", 0);
     }
 
     private function populate_dirinfo($dir, $pos) {
@@ -292,6 +293,11 @@ class DocumentFileTree implements JsonSerializable {
             $this->_dirinfo[$fm->bdirs[$i]]->hide_component_index($fm->idxes[$i]);
         }
         $fm->idxes = $fm->bdirs = [];
+        --$this->_filecount;
+    }
+
+    function is_empty() {
+        return $this->_filecount === 0;
     }
 
     function jsonSerialize() {

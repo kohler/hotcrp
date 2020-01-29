@@ -90,7 +90,9 @@ function fparts_random_match() {
             continue;
         }
         $n = 0;
-        for ($j = 0; $n < 5 && $j < ($n ? 10 : 10000); ++$j) {
+        for ($j = 0;
+             $n < 5 && $j < ($n ? 10 : 10000) && !$ftree->is_empty();
+             ++$j) {
             $fm = $ftree->random_match();
             if ($fm->is_complete()
                 && (($fm->treeid & 1) === 0
