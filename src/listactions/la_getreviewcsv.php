@@ -17,7 +17,7 @@ class GetReviewCSV_ListAction extends ListAction {
             $au_seerev = $user->conf->au_seerev;
             $user->conf->au_seerev = Conf::AUSEEREV_YES;
         }
-        $errors = $items = $fields = [];
+        $errors = $items = $fields = $pids = [];
         $has_id = $has_ordinal = false;
         foreach ($user->paper_set($ssel) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
@@ -45,17 +45,24 @@ class GetReviewCSV_ListAction extends ListAction {
                         $text[$f->name] = $f->unparse_value(get($rrow, $f->id), ReviewField::VALUE_TRIM);
                     }
                     $items[] = $text;
+                    $pids[$prow->paperId] = true;
                 }
             }
         }
         $selection = ["paper", "title"];
-        if ($has_ordinal)
+        if ($has_ordinal) {
             $selection[] = "review";
-        if ($has_id)
+        }
+        if ($has_id) {
             array_push($selection, "reviewername", "email");
-        foreach ($rf->all_fields() as $fid => $f)
+        }
+        foreach ($rf->all_fields() as $fid => $f) {
             if (isset($fields[$fid]))
                 $selection[] = $f->name;
+        }
+        if (!empty($pids)) {
+            $user->log_activity("Download reviews CSV", array_keys($pids));
+        }
         return $user->conf->make_csvg($this->author_view ? "aureviews" : "reviews")
             ->select($selection)->add($items);
     }

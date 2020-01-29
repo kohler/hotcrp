@@ -24,9 +24,9 @@ class GetReviewBase_ListAction extends ListAction {
         uksort($errors, "strnatcmp");
 
         if (empty($texts)) {
-            if (empty($errors))
+            if (empty($errors)) {
                 Conf::msg_error("No papers selected.");
-            else {
+            } else {
                 $errors = array_map("htmlspecialchars", array_keys($errors));
                 Conf::msg_error(join("<br>", $errors) . "<br>Nothing to download.");
             }
@@ -37,20 +37,24 @@ class GetReviewBase_ListAction extends ListAction {
         $nerrors = 0;
         foreach ($errors as $ee => $iserror) {
             $warnings[] = $ee;
-            if ($iserror)
+            if ($iserror) {
                 $nerrors++;
+            }
         }
-        if ($nerrors)
+        if ($nerrors) {
             array_unshift($warnings, "Some " . ($this->isform ? "review forms" : "reviews") . " are missing:");
+        }
 
         $rfname = $this->author_view ? "aureview" : "review";
-        if (!$this->iszip)
+        if (!$this->iszip) {
             $rfname .= count($texts) === 1 ? $texts[0][0] : "s";
+        }
 
-        if ($this->isform)
+        if ($this->isform) {
             $header = $user->conf->review_form()->textFormHeader(count($texts) > 1 && !$this->iszip);
-        else
+        } else {
             $header = "";
+        }
 
         if (!$this->iszip) {
             $text = $header;
@@ -68,11 +72,13 @@ class GetReviewBase_ListAction extends ListAction {
         } else {
             $zip = new ZipDocument($user->conf->download_prefix . "reviews.zip");
             $zip->warnings = $warnings;
-            foreach ($texts as $pt)
+            foreach ($texts as $pt) {
                 $zip->add_as($header . $pt[1], $user->conf->download_prefix . $rfname . $pt[0] . ".txt");
+            }
             $result = $zip->download();
-            if (!$result->error)
+            if (!$result->error) {
                 exit;
+            }
         }
     }
 }
@@ -98,9 +104,9 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
             $whyNot = $user->perm_review($prow, null);
             if ($whyNot
                 && !isset($whyNot["deadline"])
-                && !isset($whyNot["reviewNotAssigned"]))
+                && !isset($whyNot["reviewNotAssigned"])) {
                 $errors[whyNotText($whyNot, true)] = true;
-            else {
+            } else {
                 $t = "";
                 if ($whyNot) {
                     $t = whyNotText($whyNot, true);
@@ -109,10 +115,12 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
                         $t .= prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== ");
                 }
                 $rrows = $prow->full_reviews_of_user($user);
-                if (empty($rrows))
+                if (empty($rrows)) {
                     $rrows[] = null;
-                foreach ($rrows as $rrow)
+                }
+                foreach ($rrows as $rrow) {
                     $t .= $rf->textForm($prow, $rrow, $user, null) . "\n";
+                }
                 $texts[] = [$prow->paperId, $t];
             }
         }
@@ -139,15 +147,16 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             $au_seerev = $user->conf->au_seerev;
             $user->conf->au_seerev = Conf::AUSEEREV_YES;
         }
-        $errors = $texts = [];
+        $errors = $texts = $pids = [];
         foreach ($user->paper_set($ssel) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
                 $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
                 continue;
             }
             $rctext = "";
-            if ($this->include_paper)
+            if ($this->include_paper) {
                 $rctext = GetAbstract_ListAction::render($prow, $user);
+            }
             $last_rc = null;
             $viewer = $this->author_view ? $prow->author_view_user() : $user;
             foreach ($prow->viewable_submitted_reviews_and_comments($user) as $rc) {
@@ -156,10 +165,11 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                         ? $viewer->can_view_review($prow, $rc)
                         : $viewer->can_view_comment($prow, $rc))) {
                     $rctext .= PaperInfo::review_or_comment_text_separator($last_rc, $rc);
-                    if (isset($rc->reviewId))
+                    if (isset($rc->reviewId)) {
                         $rctext .= $rf->pretty_text($prow, $rc, $viewer, false, true);
-                    else
+                    } else {
                         $rctext .= $rc->unparse_text($viewer, true);
+                    }
                     $last_rc = $rc;
                 }
             }
@@ -170,8 +180,10 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                         . "* Paper #{$prow->paperId} {$prow->title}\n\n" . $rctext;
                 }
                 $texts[] = [$prow->paperId, $rctext];
-            } else if (($whyNot = $user->perm_view_review($prow, null)))
+                $pids[$prow->paperId] = true;
+            } else if (($whyNot = $user->perm_view_review($prow, null))) {
                 $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
+            }
         }
         if (!$this->iszip) {
             foreach ($texts as $i => &$pt) {
@@ -184,6 +196,9 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
         if ($this->author_view && $user->privChair) {
             $user->conf->au_seerev = $au_seerev;
             Contact::update_rights();
+        }
+        if (!empty($pids)) {
+            $user->log_activity("Download reviews", array_keys($pids));
         }
         $this->finish($user, $texts, $errors);
     }
