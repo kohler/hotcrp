@@ -111,7 +111,7 @@ $first_timestamp = false;
 if ($Qreq->date === "") {
     $Qreq->date = "now";
 }
-if ($Qreq->date !== "now" && isset($Qreq->search)) {
+if ($Qreq->date !== "now" && isset($Qreq->q)) {
     $first_timestamp = $Conf->parse_time($Qreq->date);
     if ($first_timestamp === false) {
         Ht::error_at("date", "Invalid date. Try format “YYYY-MM-DD HH:MM:SS”.");
