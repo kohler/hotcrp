@@ -242,12 +242,14 @@ function goPaperForm($baseUrl = null, $args = array()) {
         return "";
     $list = $Conf->active_list();
     $x = Ht::form($Conf->hoturl($baseUrl ? : "paper"), ["method" => "get", "class" => "gopaper"]);
-    if ($baseUrl == "profile")
+    if ($baseUrl == "profile") {
         $x .= Ht::entry("u", "", array("id" => "quicklink-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow"));
-    else
+    } else {
         $x .= Ht::entry("p", "", array("id" => "quicklink-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow"));
-    foreach ($args as $k => $v)
+    }
+    foreach ($args as $k => $v) {
         $x .= Ht::hidden($k, $v);
+    }
     $x .= "&nbsp; " . Ht::submit("Search") . "</form>";
     return $x;
 }
@@ -259,24 +261,27 @@ function rm_rf_tempdir($tempdir) {
 
 function clean_tempdirs() {
     $dir = sys_get_temp_dir() ? : "/";
-    while (substr($dir, -1) === "/")
+    while (substr($dir, -1) === "/") {
         $dir = substr($dir, 0, -1);
+    }
     $dirh = opendir($dir);
     $now = time();
-    while (($fname = readdir($dirh)) !== false)
+    while (($fname = readdir($dirh)) !== false) {
         if (preg_match('/\Ahotcrptmp\d+\z/', $fname)
             && is_dir("$dir/$fname")
             && ($mtime = @filemtime("$dir/$fname")) !== false
             && $mtime < $now - 1800)
             rm_rf_tempdir("$dir/$fname");
+    }
     closedir($dirh);
 }
 
 function tempdir($mode = 0700) {
     $dir = sys_get_temp_dir() ? : "/";
-    while (substr($dir, -1) === "/")
+    while (substr($dir, -1) === "/") {
         $dir = substr($dir, 0, -1);
-    for ($i = 0; $i < 100; $i++) {
+    }
+    for ($i = 0; $i !== 100; $i++) {
         $path = $dir . "/hotcrptmp" . mt_rand(0, 9999999);
         if (mkdir($path, $mode)) {
             register_shutdown_function("rm_rf_tempdir", $path);

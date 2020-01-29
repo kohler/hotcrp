@@ -109,23 +109,27 @@ class Filer {
         if (($dar = $Conf->opt("docstoreAccelRedirect"))
             && ($ds = $Conf->opt("docstore"))
             && !$no_accel) {
-            if (!str_ends_with($ds, "/"))
+            if (!str_ends_with($ds, "/")) {
                 $ds .= "/";
+            }
             if (str_starts_with($filename, $ds)
                 && ($tail = substr($filename, strlen($ds)))
                 && preg_match(',\A[^/]+,', $tail)) {
-                if (!str_ends_with($dar, "/"))
+                if (!str_ends_with($dar, "/")) {
                     $dar .= "/";
+                }
                 header("X-Accel-Redirect: $dar$tail");
                 return;
             }
         }
         // write length header, flush output buffers
-        if (!$zlib_output_compression)
+        if (!$zlib_output_compression) {
             header("Content-Length: " . filesize($filename));
+        }
         flush();
-        while (@ob_end_flush())
-            /* do nothing */;
+        while (@ob_end_flush()) {
+            // do nothing
+        }
         // read file directly to output
         readfile($filename);
     }

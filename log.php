@@ -94,24 +94,28 @@ if ($Qreq->q !== "") {
     $where = array();
     $str = $Qreq->q;
     while (($str = ltrim($str)) !== "") {
-        if ($str[0] === '"')
+        if ($str[0] === '"') {
             preg_match('/\A"([^"]*)"?/', $str, $m);
-        else
+        } else {
             preg_match('/\A([^"\s]+)/', $str, $m);
+        }
         $str = (string) substr($str, strlen($m[0]));
-        if ($m[1] !== "")
+        if ($m[1] !== "") {
             $where[] = "action like " . Dbl::utf8ci("'%" . sqlq_for_like($m[1]) . "%'");
+        }
     }
     $wheres[] = "(" . join(" or ", $where) . ")";
 }
 
 $first_timestamp = false;
-if ($Qreq->date === "")
+if ($Qreq->date === "") {
     $Qreq->date = "now";
+}
 if ($Qreq->date !== "now" && isset($Qreq->search)) {
     $first_timestamp = $Conf->parse_time($Qreq->date);
-    if ($first_timestamp === false)
+    if ($first_timestamp === false) {
         Ht::error_at("date", "Invalid date. Try format “YYYY-MM-DD HH:MM:SS”.");
+    }
 }
 
 class LogRowGenerator {
@@ -172,8 +176,9 @@ class LogRowGenerator {
 
     private function page_offset($pageno) {
         $offset = ($pageno - 1) * $this->page_size;
-        if ($offset > 0 && $this->delta > 0)
+        if ($offset > 0 && $this->delta > 0) {
             $offset -= $this->page_size - $this->delta;
+        }
         return $offset;
     }
 
@@ -194,14 +199,16 @@ class LogRowGenerator {
                     return;
             }
             $xpageno = $pageno;
-            while ($xpageno > 1 && !isset($this->page_to_offset[$xpageno]))
+            while ($xpageno > 1 && !isset($this->page_to_offset[$xpageno])) {
                 --$xpageno;
+            }
             $db_offset = $xpageno > 1 ? $this->page_to_offset[$xpageno] : 0;
         }
 
         $q = "select logId, timestamp, contactId, destContactId, trueContactId, action, paperId from ActionLog";
-        if (!empty($this->wheres))
+        if (!empty($this->wheres)) {
             $q .= " where " . join(" and ", $this->wheres);
+        }
         $q .= " order by logId desc";
 
         $this->rows = [];
@@ -226,8 +233,9 @@ class LogRowGenerator {
                 if (!$this->filter || call_user_func($this->filter, $row)) {
                     $this->rows[] = $row;
                     ++$n;
-                    if ($n % $this->page_size === 0)
+                    if ($n % $this->page_size === 0) {
                         $this->page_to_offset[$pageno + ($n / $this->page_size)] = $db_offset;
+                    }
                     if (!$this->explode_mail) {
                         if (substr($row->action, 0, 11) === "Sent mail #") {
                             $this->mail_stash = $row;
@@ -238,8 +246,9 @@ class LogRowGenerator {
                                 $row->paperIdArray[] = $row->paperId;
                                 $row->paperId = null;
                             }
-                        } else
+                        } else {
                             $this->mail_stash = null;
+                        }
                     }
                 }
             }
@@ -247,10 +256,12 @@ class LogRowGenerator {
             $exhausted = $first_db_offset + $limit !== $db_offset;
         }
 
-        if ($n > 0)
+        if ($n > 0) {
             $this->lower_offset_bound = max($this->lower_offset_bound, $this->rows_offset + $n);
-        if ($exhausted)
+        }
+        if ($exhausted) {
             $this->upper_offset_bound = min($this->upper_offset_bound, $this->rows_offset + $n);
+        }
         $this->rows_max_offset = $exhausted ? INF : $this->rows_offset + $n;
     }
 
@@ -259,12 +270,14 @@ class LogRowGenerator {
         assert(is_int($pageno) && $pageno >= 1);
         $offset = $this->page_offset($pageno);
         if ($offset >= $this->lower_offset_bound && $offset < $this->upper_offset_bound) {
-            if ($load_npages)
+            if ($load_npages) {
                 $limit = $load_npages * $this->page_size;
-            else
+            } else {
                 $limit = ($nlinks + 1) * $this->page_size + 30;
-            if ($this->filter)
+            }
+            if ($this->filter) {
                 $limit = max($limit, 2000);
+            }
             $this->load_rows($pageno, $limit);
         }
         return $offset < $this->lower_offset_bound;
@@ -277,11 +290,14 @@ class LogRowGenerator {
 
     function page_rows($pageno, $load_npages = null) {
         assert(is_int($pageno) && $pageno >= 1);
-        if (!$this->has_page($pageno, $load_npages))
+        if (!$this->has_page($pageno, $load_npages)) {
             return [];
+        }
         $offset = $this->page_offset($pageno);
-        if ($offset < $this->rows_offset || $offset + $this->page_size > $this->rows_max_offset)
+        if ($offset < $this->rows_offset
+            || $offset + $this->page_size > $this->rows_max_offset) {
             $this->load_rows($pageno, $this->page_size);
+        }
         return array_slice($this->rows, $offset - $this->rows_offset, $this->page_size);
     }
 
@@ -291,8 +307,9 @@ class LogRowGenerator {
 
     function page_link_html($pageno, $html) {
         $url = $this->log_url_base;
-        if ($pageno !== 1 && $this->delta > 0)
+        if ($pageno !== 1 && $this->delta > 0) {
             $url .= "&amp;offset=" . $this->delta;
+        }
         return '<a href="' . $url . '&amp;page=' . $pageno . '">' . $html . '</a>';
     }
 
@@ -323,40 +340,48 @@ class LogRowGenerator {
     }
 
     function users_for($row, $key) {
-        if (!empty($this->need_users))
+        if (!empty($this->need_users)) {
             $this->_make_users();
+        }
         $uid = $row->$key;
-        if (!$uid && $key === "contactId")
+        if (!$uid && $key === "contactId") {
             $uid = $row->destContactId;
+        }
         $u = $uid ? [$this->users[$uid]] : [];
         if ($key === "destContactId" && isset($row->destContactIdArray)) {
-            foreach ($row->destContactIdArray as $uid)
+            foreach ($row->destContactIdArray as $uid) {
                 $u[] = $this->users[$uid];
+            }
         }
         return $u;
     }
 
     function paper_ids($row) {
         if (!isset($row->cleanedAction)) {
-            if (!isset($row->paperIdArray))
+            if (!isset($row->paperIdArray)) {
                 $row->paperIdArray = [];
+            }
             if (preg_match('/\A(.* |)\(papers ([\d, ]+)\)?\z/', $row->action, $m)) {
                 $row->cleanedAction = $m[1];
-                foreach (preg_split('/[\s,]+/', $m[2]) as $p)
+                foreach (preg_split('/[\s,]+/', $m[2]) as $p) {
                     if ($p !== "")
                         $row->paperIdArray[] = (int) $p;
-            } else
+                }
+            } else {
                 $row->cleanedAction = $row->action;
-            if ($row->paperId)
+            }
+            if ($row->paperId) {
                 $row->paperIdArray[] = (int) $row->paperId;
+            }
             $row->paperIdArray = array_unique($row->paperIdArray);
         }
         return $row->paperIdArray;
     }
 
     function cleaned_action($row) {
-        if (!isset($row->cleanedAction))
+        if (!isset($row->cleanedAction)) {
             $this->paper_ids($row);
+        }
         return $row->cleanedAction;
     }
 }
@@ -381,30 +406,33 @@ class LogRowFilter {
             preg_match_all('/\d+/', $m[2], $mm);
             $pids = [];
             $included = !$includes;
-            foreach ($mm[0] as $pid)
+            foreach ($mm[0] as $pid) {
                 if (isset($pidset[$pid]) === $want) {
                     $pids[] = $pid;
                     $included = $included || isset($includes[$pid]);
                 }
-            if (empty($pids) || !$included)
+            }
+            if (empty($pids) || !$included) {
                 return false;
-            else if (count($pids) === 1) {
+            } else if (count($pids) === 1) {
                 $row->action = $m[1];
                 $row->paperId = $pids[0];
-            } else
+            } else {
                 $row->action = $m[1] . " (papers " . join(", ", $pids) . ")";
+            }
             return true;
         } else
             return $this->user->privChair;
     }
     function __invoke($row) {
         if ($this->user->hidden_papers !== null
-            && !$this->test_pidset($row, $this->user->hidden_papers, false, null))
+            && !$this->test_pidset($row, $this->user->hidden_papers, false, null)) {
             return false;
-        else if ($row->contactId === $this->user->contactId)
+        } else if ($row->contactId === $this->user->contactId) {
             return true;
-        else
+        } else {
             return $this->test_pidset($row, $this->pidset, $this->want, $this->includes);
+        }
     }
 }
 
@@ -416,16 +444,18 @@ if ($Qreq->download) {
 
 $exclude_pids = $Me->hidden_papers ? : [];
 if ($Me->privChair && $Conf->has_any_manager()) {
-    foreach ($Me->paper_set(["myConflicts" => true]) as $prow)
+    foreach ($Me->paper_set(["myConflicts" => true]) as $prow) {
         if (!$Me->allow_administer($prow))
             $exclude_pids[$prow->paperId] = true;
+    }
 }
 
 if (!$Me->privChair) {
     $good_pids = [];
-    foreach ($Me->paper_set($Conf->check_any_admin_tracks($Me) ? [] : ["myManaged" => true]) as $prow)
+    foreach ($Me->paper_set($Conf->check_any_admin_tracks($Me) ? [] : ["myManaged" => true]) as $prow) {
         if ($Me->allow_administer($prow))
             $good_pids[$prow->paperId] = true;
+    }
     $lrg->set_filter(new LogRowFilter($Me, $good_pids, true, $include_pids));
 } else if (!$Qreq->forceShow && !empty($exclude_pids)) {
     $lrg->set_filter(new LogRowFilter($Me, $exclude_pids, false, $include_pids));
@@ -436,12 +466,15 @@ if ($Qreq->download) {
     $csvg->select(["date", "email", "affected_email", "via", "papers", "action"]);
     foreach ($lrg->page_rows(1) as $row) {
         $xusers = $xdest_users = [];
-        foreach ($lrg->users_for($row, "contactId") as $u)
+        foreach ($lrg->users_for($row, "contactId") as $u) {
             $xusers[] = $u->email;
-        foreach ($lrg->users_for($row, "destContactId") as $u)
+        }
+        foreach ($lrg->users_for($row, "destContactId") as $u) {
             $xdest_users[] = $u->email;
-        if ($xdest_users == $xusers)
+        }
+        if ($xdest_users == $xusers) {
             $xdest_users = [];
+        }
         $csvg->add([
             strftime("%Y-%m-%d %H:%M:%S %z", $row->timestamp),
             join(" ", $xusers),
@@ -456,24 +489,28 @@ if ($Qreq->download) {
 
 if ($first_timestamp) {
     $page = 1;
-    while ($lrg->page_after($page, $first_timestamp, ceil(2000 / $lrg->page_size())))
+    while ($lrg->page_after($page, $first_timestamp, ceil(2000 / $lrg->page_size()))) {
         ++$page;
+    }
     $delta = 0;
-    foreach ($lrg->page_rows($page) as $row)
+    foreach ($lrg->page_rows($page) as $row) {
         if ($row->timestamp > $first_timestamp)
             ++$delta;
+    }
     if ($delta) {
         $lrg->set_page_delta($delta);
         ++$page;
     }
 } else if ($page === false) { // handle `earliest`
     $page = 1;
-    while ($lrg->has_page($page + 1, ceil(2000 / $lrg->page_size())))
+    while ($lrg->has_page($page + 1, ceil(2000 / $lrg->page_size()))) {
         ++$page;
+    }
 } else if ($Qreq->offset
            && ($delta = cvtint($Qreq->offset)) >= 0
-           && $delta < $lrg->page_size())
+           && $delta < $lrg->page_size()) {
     $lrg->set_page_delta($delta);
+}
 
 
 // render search list
@@ -482,14 +519,15 @@ function searchbar(LogRowGenerator $lrg, $page) {
 
     $date = "";
     $dplaceholder = null;
-    if (Ht::problem_status_at("date"))
+    if (Ht::problem_status_at("date")) {
         $date = $Qreq->date;
-    else if ($page === 1)
+    } else if ($page === 1) {
         $dplaceholder = "now";
-    else if (($rows = $lrg->page_rows($page)))
+    } else if (($rows = $lrg->page_rows($page))) {
         $dplaceholder = $Conf->unparse_time($rows[0]->timestamp);
-    else if ($first_timestamp)
+    } else if ($first_timestamp) {
         $dplaceholder = $Conf->unparse_time($first_timestamp);
+    }
 
     echo Ht::form(hoturl("log"), ["method" => "get", "id" => "searchform"]);
     if ($Qreq->forceShow)
@@ -523,32 +561,41 @@ function searchbar(LogRowGenerator $lrg, $page) {
 
     if ($page > 1 || $lrg->has_page(2)) {
         $urls = ["q=" . urlencode($Qreq->q)];
-        foreach (array("p", "u", "n", "forceShow") as $x)
+        foreach (["p", "u", "n", "forceShow"] as $x) {
             if ($Qreq[$x])
                 $urls[] = "$x=" . urlencode($Qreq[$x]);
+        }
         $lrg->set_log_url_base(hoturl("log", join("&amp;", $urls)));
         echo "<table class=\"lognav\"><tr><td><div class=\"lognavdr\">";
-        if ($page > 1)
+        if ($page > 1) {
             echo $lrg->page_link_html(1, "<strong>Newest</strong>"), " &nbsp;|&nbsp;&nbsp;";
+        }
         echo "</div></td><td><div class=\"lognavxr\">";
-        if ($page > 1)
+        if ($page > 1) {
             echo $lrg->page_link_html($page - 1, "<strong>" . Icons::ui_linkarrow(3) . "Newer</strong>");
+        }
         echo "</div></td><td><div class=\"lognavdr\">";
-        if ($page - $nlinks > 1)
+        if ($page - $nlinks > 1) {
             echo "&nbsp;...";
-        for ($p = max($page - $nlinks, 1); $p < $page; ++$p)
+        }
+        for ($p = max($page - $nlinks, 1); $p < $page; ++$p) {
             echo "&nbsp;", $lrg->page_link_html($p, $p);
+        }
         echo "</div></td><td><div><strong class=\"thispage\">&nbsp;", $page, "&nbsp;</strong></div></td><td><div class=\"lognavd\">";
-        for ($p = $page + 1; $p <= $page + $nlinks && $lrg->has_page($p); ++$p)
+        for ($p = $page + 1; $p <= $page + $nlinks && $lrg->has_page($p); ++$p) {
             echo $lrg->page_link_html($p, $p), "&nbsp;";
-        if ($lrg->has_page($page + $nlinks + 1))
+        }
+        if ($lrg->has_page($page + $nlinks + 1)) {
             echo "...&nbsp;";
+        }
         echo "</div></td><td><div class=\"lognavx\">";
-        if ($lrg->has_page($page + 1))
+        if ($lrg->has_page($page + 1)) {
             echo $lrg->page_link_html($page + 1, "<strong>Older" . Icons::ui_linkarrow(1) . "</strong>");
+        }
         echo "</div></td><td><div class=\"lognavd\">";
-        if ($lrg->has_page($page + $nlinks + 1))
+        if ($lrg->has_page($page + $nlinks + 1)) {
             echo "&nbsp;&nbsp;|&nbsp; ", $lrg->page_link_html("earliest", "<strong>Oldest</strong>");
+        }
         echo "</div></td></tr></table>";
     }
     echo "<hr class=\"g\">\n";
@@ -718,22 +765,25 @@ foreach ($lrg->page_rows($page) as $row) {
 
 if (!$Me->privChair || !empty($exclude_pids)) {
     echo '<div class="msgs-wide">';
-    if (!$Me->privChair)
+    if (!$Me->privChair) {
         $Conf->msg("Only showing your actions and entries for papers you administer.", "xinfo");
-    else if (!empty($exclude_pids)
-             && (!$include_pids || array_intersect_key($include_pids, $exclude_pids))
-             && array_keys($exclude_pids) != array_keys($Me->hidden_papers ? : [])) {
+    } else if (!empty($exclude_pids)
+               && (!$include_pids || array_intersect_key($include_pids, $exclude_pids))
+               && array_keys($exclude_pids) != array_keys($Me->hidden_papers ? : [])) {
         $req = [];
-        foreach (["q", "p", "u", "n"] as $k)
+        foreach (["q", "p", "u", "n"] as $k) {
             if ($Qreq->$k !== "")
                 $req[$k] = $Qreq->$k;
+        }
         $req["page"] = $page;
-        if ($page > 1 && $lrg->page_delta() > 0)
+        if ($page > 1 && $lrg->page_delta() > 0) {
             $req["offset"] = $lrg->page_delta();
-        if ($Qreq->forceShow)
+        }
+        if ($Qreq->forceShow) {
             $Conf->msg("Showing all entries. (" . Ht::link("Unprivileged view", $Conf->selfurl($Qreq, $req + ["forceShow" => null])) . ")", "xinfo");
-        else
+        } else {
             $Conf->msg("Not showing entries for " . Ht::link("conflicted administered papers", hoturl("search", "q=" . join("+", array_keys($exclude_pids)))) . ".", "xinfo");
+        }
     }
     echo '</div>';
 }
@@ -749,7 +799,8 @@ if (!empty($trs)) {
         "\n  <tbody class=\"pltable\">\n",
         join("", $trs),
         "  </tbody>\n</table>\n";
-} else
+} else {
     echo "No records\n";
+}
 
 $Conf->footer();
