@@ -76,7 +76,7 @@ foreach (array_merge([$confdp], get($arg, "_", [])) as $i => $dp) {
     }
     $ftrees[] = new DocumentFileTree($dp, $hash_matcher, count($ftrees));
     if (!$keep_temp) {
-        $ftrees[] = new DocumentFileTree(Filer::docstore_fixed_prefix($dp) . "tmp/%h%x", $hash_matcher, count($ftrees));
+        $ftrees[] = new DocumentFileTree(Filer::docstore_fixed_prefix($dp) . "tmp/%w", $hash_matcher, count($ftrees));
     } else {
         $ftrees[] = null;
     }
