@@ -59,7 +59,7 @@ class GetCheckFormat_ListAction extends ListAction {
         }
         $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format"]);
         $csvg->download_headers();
-        echo $csvg->headerline;
+        $csvg->flush();
         $cf = new CheckFormat($user->conf, CheckFormat::RUN_PREFER_NO);
         foreach ($papers as $prow) {
             $pages = "?";
