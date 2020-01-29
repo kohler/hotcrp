@@ -462,9 +462,13 @@ if (!$Me->privChair) {
 }
 
 if ($Qreq->download) {
+    session_commit();
     $csvg = $Conf->make_csvg("log");
-    $csvg->select(["date", "email", "affected_email", "via", "papers", "action"]);
+    $narrow = true;
+    $csvg->select(["date", "email", "affected_email", "via",
+                   $narrow ? "paper" : "papers", "action"]);
     foreach ($lrg->page_rows(1) as $row) {
+        $date = strftime("%Y-%m-%d %H:%M:%S %z", $row->timestamp);
         $xusers = $xdest_users = [];
         foreach ($lrg->users_for($row, "contactId") as $u) {
             $xusers[] = $u->email;
@@ -475,14 +479,36 @@ if ($Qreq->download) {
         if ($xdest_users == $xusers) {
             $xdest_users = [];
         }
-        $csvg->add([
-            strftime("%Y-%m-%d %H:%M:%S %z", $row->timestamp),
-            join(" ", $xusers),
-            join(" ", $xdest_users),
-            $row->trueContactId ? ($row->trueContactId < 0 ? "link" : "admin") : "",
-            join(" ", $lrg->paper_ids($row)),
-            $lrg->cleaned_action($row)
-        ]);
+        if ($row->trueContactId) {
+            $via = $row->trueContactId < 0 ? "link" : "admin";
+        } else {
+            $via = "";
+        }
+        $pids = $lrg->paper_ids($row);
+        $action = $lrg->cleaned_action($row);
+        if ($narrow) {
+            if (empty($xusers)) {
+                $xusers = [""];
+            }
+            if (empty($xdest_users)) {
+                $xdest_users = [""];
+            }
+            if (empty($pids)) {
+                $pids = [];
+            }
+            foreach ($xusers as $u1) {
+                foreach ($xdest_users as $u2) {
+                    foreach ($pids as $p) {
+                        $csvg->add([$date, $u1, $u2, $via, $p, $action]);
+                    }
+                }
+            }
+        } else {
+            $csvg->add([
+                $date, join(" ", $xusers), join(" ", $xdest_users),
+                $via, join(" ", $pids), $action
+            ]);
+        }
     }
     csv_exit($csvg);
 }
