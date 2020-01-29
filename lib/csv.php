@@ -721,7 +721,7 @@ class CsvGenerator {
     function download() {
         global $zlib_output_compression;
         if ($this->stream) {
-            $this->flush();
+            $this->flush($this->stream);
             Filer::download_file($this->stream_filename);
         } else {
             if (!($this->flags & self::FLAG_FLUSHED) && !$zlib_output_compression) {
