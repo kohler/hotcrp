@@ -114,7 +114,7 @@ class Filer {
             }
             if (str_starts_with($filename, $ds)
                 && ($tail = substr($filename, strlen($ds)))
-                && preg_match(',\A[^/]+,', $tail)) {
+                && preg_match('/\A[^\/]+/', $tail)) {
                 if (!str_ends_with($dar, "/")) {
                     $dar .= "/";
                 }

@@ -442,6 +442,9 @@ class CsvGenerator {
     private $headerline = "";
     private $lines = [];
     private $lines_length = 0;
+    private $stream;
+    private $stream_filename;
+    private $stream_length;
     private $selection;
     private $selection_is_names = false;
     private $lf = "\n";
@@ -562,9 +565,34 @@ class CsvGenerator {
     }
 
     function add_string($text) {
+        if ($this->lines_length >= 10000000 && $this->stream !== false) {
+            $this->_flush_stream();
+        }
         $this->lines[] = $text;
         $this->lines_length += strlen($text);
         return $this;
+    }
+
+    private function _flush_stream() {
+        global $Conf, $Now;
+        if ($this->stream === null) {
+            $this->stream = false;
+            if (($dir = Filer::docstore_tmpdir($Conf) ? : tempdir())) {
+                if (!str_ends_with($dir, "/")) {
+                    $dir .= "/";
+                }
+                for ($i = 0; $i !== 100; ++$i) {
+                    $fn = $dir . "csvtmp-$Now-" . mt_rand(0, 99999999) . ".csv";
+                    if (($this->stream = @fopen($fn, "xb"))) {
+                        $this->stream_filename = $fn;
+                        break;
+                    }
+                }
+            }
+        }
+        if ($this->stream !== false) {
+            $this->stream_length += $this->flush($this->stream);
+        }
     }
 
     function add_comment($text) {
@@ -642,6 +670,7 @@ class CsvGenerator {
 
 
     function unparse() {
+        assert($this->stream_length === 0);
         return $this->headerline . join("", $this->lines);
     }
 
@@ -691,9 +720,14 @@ class CsvGenerator {
 
     function download() {
         global $zlib_output_compression;
-        if (!($this->flags & self::FLAG_FLUSHED) && !$zlib_output_compression) {
-            header("Content-Length: " . $this->lines_length);
+        if ($this->stream) {
+            $this->flush();
+            Filer::download_file($this->stream_filename);
+        } else {
+            if (!($this->flags & self::FLAG_FLUSHED) && !$zlib_output_compression) {
+                header("Content-Length: " . $this->lines_length);
+            }
+            $this->flush();
         }
-        $this->flush();
     }
 }
