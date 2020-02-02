@@ -1222,6 +1222,16 @@ div.hint {
 }
 
 
+/* column content */
+.main-column p, .main-column dl {
+	max-width: 800px;
+}
+.main-column ul, .main-column ol {
+	max-width: 772px;
+	padding-left: 28px;
+}
+
+
 /* settings */
 h3.settings, h3.helppage, h3.profile, h4.helppage {
 	color: #4b4f6d;
@@ -1253,12 +1263,11 @@ th.settings-simplehead {
 	font-size: smaller;
 	padding-right: 1em;
 }
-.settings-p, .settings-itemheading {
+.settings-itemheading {
 	max-width: 800px;
 	margin-bottom: 0.35em;
 }
 .settings-ap {
-	max-width: 800px;
 	margin-top: 0.35em;
 }
 .settings-ap.f-hx {
@@ -1360,7 +1369,7 @@ th.settings-simplehead {
 	margin-left: 164px;
 	padding-bottom: 16px;
 }
-.profiletext, .settingstext {
+.profiletext {
 	max-width: 800px;
 }
 .profile-g {
@@ -1373,15 +1382,6 @@ th.settings-simplehead {
 }
 h3 + .profile-g {
 	margin-top: 1em;
-}
-#helpcontent > p, #helpcontent > dl {
-	max-width: 800px;
-}
-#helpcontent > ul, #helpcontent > ol {
-	max-width: 772px;
-}
-#helpcontent > ul, #helpcontent > ol {
-	padding-left: 28px;
 }
 .helplist-item {
 	padding: 3px 0;

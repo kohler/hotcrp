@@ -721,8 +721,9 @@ class PaperOption implements Abbreviator {
 
     static function make_readable_formid($s) {
         $s = strtolower(preg_replace('{[^A-Za-z0-9]+}', "-", UnicodeHelper::deaccent($s)));
-        if ($s[strlen($s) - 1] === "-")
+        if ($s[strlen($s) - 1] === "-") {
             $s = substr($s, 0, -1);
+        }
         if (!preg_match('{\A(?:title|paper|submission|final|authors|blind|contacts|abstract|topics|pcconf|collaborators|submit|paperform|htctl.*|fold.*|pcc\d+|body.*|tracker.*|msg.*|header.*|footer.*|quicklink.*|tla.*|-|)\z}', $s))
             return $s;
         else

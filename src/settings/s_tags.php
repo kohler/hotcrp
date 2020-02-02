@@ -70,7 +70,7 @@ class Tags_SettingRenderer {
 
         echo Ht::hidden("has_tag_color", 1),
             '<h3 class="settings g" id="colors-and-styles">Colors and styles</h3>',
-            "<p class=\"settingtext\">Submissions tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
+            "<p>Submissions tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
             '<table class="demargin"><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr>',
             join("", $tag_colors_rows), "</table>\n";
     }

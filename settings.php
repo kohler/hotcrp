@@ -79,7 +79,7 @@ foreach ($group_titles as $name => $title) {
 echo '</div><div class="leftmenu-if-left if-alert mt-5">',
     Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
     "</div></div></div>\n",
-    '<div class="leftmenu-content">',
+    '<div class="leftmenu-content main-column">',
     '<h2 class="leftmenu">', $group_titles[$Group], '</h2>';
 
 $Sv->report(isset($Qreq->update) && $Qreq->post_ok());

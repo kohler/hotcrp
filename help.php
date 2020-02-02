@@ -245,7 +245,7 @@ foreach ($help_topics->groups() as $gj) {
     }
 }
 echo "</div></div></div>\n",
-    '<div id="helpcontent" class="leftmenu-content">',
+    '<div id="helpcontent" class="leftmenu-content main-column">',
     '<h2 class="leftmenu">', $topicj->title, '</h2>';
 $hth->render_group($topic, true);
 echo "</div>\n";

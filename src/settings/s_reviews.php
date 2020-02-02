@@ -64,7 +64,7 @@ class Reviews_SettingRenderer {
 
         // Deadlines
         echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
-        echo '<p class="settingtext">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
+        echo '<p>Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
         echo '<p class="f-h">', ($sv->type_hint("date") ? : ""), '</p>';
 
         $rounds = $sv->conf->round_list();
@@ -205,7 +205,7 @@ class Reviews_SettingRenderer {
                 "Can PC reviewers request external reviews?",
                 ["fold" => true]);
         echo '<div class="fx">';
-        // echo '<p class="settingtext">Secondary PC reviews can be delegated to external reviewers. When the external review is complete, the secondary PC reviewer need not complete a review of their own.</p>', "\n";
+        // echo '<p>Secondary PC reviews can be delegated to external reviewers. When the external review is complete, the secondary PC reviewer need not complete a review of their own.</p>', "\n";
         $sv->echo_radio_table("pcrev_editdelegate", [
                 0 => "No",
                 1 => "Yes",
