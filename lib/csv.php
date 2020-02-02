@@ -444,7 +444,7 @@ class CsvGenerator {
     private $lines_length = 0;
     private $stream;
     private $stream_filename;
-    private $stream_length;
+    private $stream_length = 0;
     private $selection;
     private $selection_is_names = false;
     private $lf = "\n";
