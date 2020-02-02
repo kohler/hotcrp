@@ -32,13 +32,33 @@ class HtHead extends Ht {
     private $_help_topics;
     private $_renderers = [];
     private $_sv;
+    private $_h3ids;
     function __construct($help_topics, Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_help_topics = $help_topics;
     }
-    static function subhead($title, $id = null) {
+    function subhead($title, $id = null) {
+        if (!$id && $title) {
+            $id = preg_replace('/[^A-Za-z0-9]+|<.*?>/', "-", strtolower($title));
+            if (str_ends_with($id, "-")) {
+                $id = substr($id, 0, strlen($id) - 1);
+            }
+            if (preg_match('/\A(?:htctl.*|fold.*|body.*|tracker.*|msg.*|header.*|quicklink.*|tla.*|-|)\z/', $id)) {
+                $id = ($id === "" || $id === "-" ? null : "h-$id");
+            }
+            if ($id) {
+                $n = "";
+                while (isset($this->_h3ids[$id . $n])) {
+                    $n = (int) $n + 1;
+                }
+                $id .= $n;
+            }
+        }
         if ($id || $title) {
+            if ($id) {
+                $this->_h3ids[$id] = true;
+            }
             return '<h3 class="helppage"' . ($id ? " id=\"{$id}\"" : "") . '>' . $title . "</h3>\n";
         } else {
             return "";
