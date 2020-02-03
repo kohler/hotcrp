@@ -21,7 +21,7 @@ function choose_setting_group($qreq, SettingValues $sv) {
         $want_group = $_SESSION["sg"];
     }
     $want_group = $sv->canonical_group($want_group);
-    if (!$want_group || !$sv->is_titled_group($want_group)) {
+    if (!$want_group || !$sv->group_title($want_group)) {
         if ($sv->conf->can_some_author_view_review()) {
             $want_group = $sv->canonical_group("decisions");
         } else if ($sv->conf->deadlinesAfter("sub_sub") || $sv->conf->time_review_open()) {
@@ -59,8 +59,7 @@ if (isset($Qreq->cancel) && $Qreq->post_ok()) {
 
 $Sv->crosscheck();
 
-$group_titles = $Sv->group_titles();
-$Conf->header("Settings", "settings", ["subtitle" => $group_titles[$Group], "title_div" => '<hr class="c">', "body_class" => "leftmenu"]);
+$Conf->header("Settings", "settings", ["subtitle" => $Sv->group_title($Group), "title_div" => '<hr class="c">', "body_class" => "leftmenu"]);
 echo Ht::unstash(); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
@@ -68,19 +67,19 @@ echo Ht::form(hoturl_post("settings", "group=$Group"),
               ["id" => "settingsform", "class" => "need-unload-protection"]);
 
 echo '<div class="leftmenu-left"><div class="leftmenu-menu"><h1 class="leftmenu">Settings</h1><div class="leftmenu-list">';
-foreach ($group_titles as $name => $title) {
-    if ($name === $Group) {
-        echo '<div class="leftmenu-item active">', $title, '</div>';
-    } else {
+foreach ($Sv->group_members("") as $gj) {
+    if ($gj->name === $Group) {
+        echo '<div class="leftmenu-item active">', $gj->title, '</div>';
+    } else if ($gj->title) {
         echo '<div class="leftmenu-item ui js-click-child">',
-            '<a href="', hoturl("settings", "group={$name}"), '">', $title, '</a></div>';
+            '<a href="', hoturl("settings", "group={$gj->name}"), '">', $gj->title, '</a></div>';
     }
 }
 echo '</div><div class="leftmenu-if-left if-alert mt-5">',
     Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
     "</div></div></div>\n",
     '<div class="leftmenu-content main-column">',
-    '<h2 class="leftmenu">', $group_titles[$Group], '</h2>';
+    '<h2 class="leftmenu">', $Sv->group_title($Group), '</h2>';
 
 $Sv->report(isset($Qreq->update) && $Qreq->post_ok());
 $Sv->render_group($Group);
