@@ -1,6 +1,6 @@
 <?php
 // api_formatcheck.php -- HotCRP format check API call
-// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class FormatCheck_API {
     static function run(Contact $user, $qreq) {

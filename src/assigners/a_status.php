@@ -1,6 +1,6 @@
 <?php
 // a_status.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Withdraw_AssignmentFinisher {
     // When withdrawing a paper, remove voting tags so people don't have

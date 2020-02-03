@@ -1,6 +1,6 @@
 <?php
 // src/partials/p_home.php -- HotCRP home page partials
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Home_Partial {
     private $_nh2 = 0;

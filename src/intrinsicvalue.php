@@ -1,6 +1,6 @@
 <?php
 // intrinsicvalue.php -- HotCRP helper class for paper options
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class IntrinsicValue {
     static function assign_intrinsic(PaperValue $ov) {

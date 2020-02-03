@@ -1,6 +1,6 @@
 <?php
 // api_session.php -- HotCRP session API calls
-// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class Session_API {
     static function getsession(Contact $user) {

@@ -1,6 +1,6 @@
 <?php
 // pc_formulagraph.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     public $formula;

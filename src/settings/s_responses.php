@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_responses.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Responses_SettingParser extends SettingParser {
     static function resp_round_names(Conf $conf) {

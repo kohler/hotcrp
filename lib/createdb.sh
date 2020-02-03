@@ -1,6 +1,6 @@
 #! /bin/sh
 ## createdb.sh -- HotCRP database setup
-## Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+## Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C CONFNAME=
 if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./

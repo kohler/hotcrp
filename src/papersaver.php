@@ -1,6 +1,6 @@
 <?php
 // papersaver.php -- HotCRP helper for mapping requests to JSON
-// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class PaperSaver {
     static private $list = [];

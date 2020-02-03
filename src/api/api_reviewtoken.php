@@ -1,6 +1,6 @@
 <?php
 // api_reviewtoken.php -- HotCRP review token API call
-// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class ReviewToken_API {
     static function run(Contact $user, Qrequest $qreq) {

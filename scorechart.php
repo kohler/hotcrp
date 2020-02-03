@@ -1,6 +1,6 @@
 <?php
 // scorechart.php -- HotCRP chart generator
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 // Generates a PNG image of a bar chat.
 // Arguments are passed in as v; s is graph style.

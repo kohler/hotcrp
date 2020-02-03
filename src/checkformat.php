@@ -1,6 +1,6 @@
 <?php
 // checkformat.php -- HotCRP/banal integration
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CheckFormat extends MessageSet implements FormatChecker {
     const RUN_YES = 0;

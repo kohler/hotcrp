@@ -1,6 +1,6 @@
 <?php
 // userstatus.php -- HotCRP helpers for reading/storing users as JSON
-// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class UserStatus extends MessageSet {
     public $conf;

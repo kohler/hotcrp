@@ -1,6 +1,6 @@
 <?php
 // src/help/h_revrate.php -- HotCRP help functions
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class RevRate_HelpTopic {
     static function render($hth) {

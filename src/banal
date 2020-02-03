@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 #
 # Copyright (C) 2007 Geoffrey M. Voelker
-# Copyright (c) 2016-2019 Eddie Kohler; see LICENSE.
+# Copyright (c) 2016-2020 Eddie Kohler; see LICENSE.
 #
 # banal -- analyze pdf formatting
 #

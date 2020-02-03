@@ -1,6 +1,6 @@
 <?php
 // pc_conflictmatch.php -- HotCRP paper columns for author/collaborator match
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class ConflictMatch_PaperColumn extends PaperColumn {
     private $contact;

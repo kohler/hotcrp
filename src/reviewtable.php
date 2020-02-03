@@ -1,6 +1,6 @@
 <?php
 // reviewtable.php -- HotCRP helper class for table of all reviews
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 function _review_table_actas($user, $rr) {
     if (!get($rr, "contactId") || $rr->contactId == $user->contactId)

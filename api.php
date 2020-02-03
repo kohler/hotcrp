@@ -1,6 +1,6 @@
 <?php
 // api.php -- HotCRP JSON API access page
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 // argument cleaning
 require_once("lib/navigation.php");

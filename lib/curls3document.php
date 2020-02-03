@@ -1,6 +1,6 @@
 <?php
 // curls3document.php -- S3 access using curl functions
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CurlS3Document extends S3Result {
     public $s3;

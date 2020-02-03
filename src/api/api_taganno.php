@@ -1,6 +1,6 @@
 <?php
 // api_taganno.php -- HotCRP tag annotation API calls
-// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class TagAnno_API {
     static function get(Contact $user, Qrequest $qreq) {

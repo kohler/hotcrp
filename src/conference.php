@@ -1,6 +1,6 @@
 <?php
 // conference.php -- HotCRP central helper class (singleton)
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Track {
     const VIEW = 0;

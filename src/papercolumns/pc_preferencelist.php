@@ -1,6 +1,6 @@
 <?php
 // pc_preferencelist.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PreferenceList_PaperColumn extends PaperColumn {
     private $topics;

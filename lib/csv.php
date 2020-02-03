@@ -1,6 +1,6 @@
 <?php
 // csv.php -- HotCRP CSV parsing functions
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 if (!function_exists("gmp_init")) {
     global $ConfSitePATH;

@@ -1,6 +1,6 @@
 <?php
 // api_preference.php -- HotCRP preference API call
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Preference_API {
     static function pref_api(Contact $user, $qreq, $prow) {

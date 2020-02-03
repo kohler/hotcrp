@@ -1,6 +1,6 @@
 <?php
 // search/st_paperpc.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperPC_SearchTerm extends SearchTerm {
     private $kind;

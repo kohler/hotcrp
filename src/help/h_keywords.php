@@ -1,6 +1,6 @@
 <?php
 // src/help/h_keywords.php -- HotCRP help functions
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Keywords_HelpTopic {
     static function render($hth) {

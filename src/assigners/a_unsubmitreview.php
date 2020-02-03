@@ -1,6 +1,6 @@
 <?php
 // a_unsubmitreview.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class UnsubmitReview_AssignmentParser extends AssignmentParser {
     function __construct() {

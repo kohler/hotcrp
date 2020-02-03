@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getdocument.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class GetDocument_ListAction extends ListAction {
     private $dt;

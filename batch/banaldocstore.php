@@ -1,6 +1,6 @@
 <?php
 // banaldocstore.php -- HotCRP maintenance script
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 $arg = getopt("hn:c:Vm:dqo:", ["help", "name:", "count:", "verbose", "match:", "max-usage:", "quiet", "silent", "output"]);
 foreach (["c" => "count", "V" => "verbose", "m" => "match",

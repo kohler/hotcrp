@@ -1,6 +1,6 @@
 <?php
 // useractions.php -- HotCRP helpers for user actions
-// Copyright (c) 2008-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class UserActions {
     static function disable(Contact $user, $ids) {

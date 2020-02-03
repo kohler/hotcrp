@@ -1,6 +1,6 @@
 <?php
 // filefilter.php -- HotCRP helper class for filtering documents
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class FileFilter {
     public $id;

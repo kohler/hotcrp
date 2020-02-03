@@ -1,6 +1,6 @@
 <?php
 // cacheable.php -- HotCRP cacheability helper
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 session_cache_limiter("");
 header("Cache-Control: max-age=315576000, public");

@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_reviews.php -- HotCRP settings > reviews page
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Reviews_SettingRenderer {
     private static function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {

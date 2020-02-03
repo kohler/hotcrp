@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getreviewcsv.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class GetReviewCSV_ListAction extends ListAction {
     private $include_paper;

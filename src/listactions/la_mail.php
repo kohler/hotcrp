@@ -1,6 +1,6 @@
 <?php
 // listactions/la_mail.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Mail_ListAction extends ListAction {
     function allow(Contact $user) {

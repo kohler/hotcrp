@@ -1,6 +1,6 @@
 <?php
 // checkupdates.php -- HotCRP update checker helper
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
 header("Content-Type: " . ($Qreq->text ? "text/plain" : "application/json"));

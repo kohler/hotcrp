@@ -1,6 +1,6 @@
 <?php
 // cleanhtml.php -- HTML cleaner for CSS prevention
-// Copyright (c) 2006-2019 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CleanHTML {
     const BADTAGS_IGNORE = 1;
