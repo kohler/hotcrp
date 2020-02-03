@@ -58,23 +58,6 @@ class GroupedExtensions {
         }
         $this->reset_render();
     }
-    function subgroup_compare($aj, $bj) {
-        if ($aj->group !== $bj->group) {
-            if (isset($this->_groups[$aj->group])) {
-                $aj = $this->_groups[$aj->group];
-            }
-            if (isset($this->_groups[$bj->group])) {
-                $bj = $this->_groups[$bj->group];
-            }
-        }
-        $aisg = $aj->group === $aj->name;
-        $bisg = $bj->group === $bj->name;
-        if ($aisg !== $bisg) {
-            return $aisg ? -1 : 1;
-        } else {
-            return Conf::xt_position_compare($aj, $bj);
-        }
-    }
     function get($name) {
         $gj = get($this->_all, $name);
         for ($nalias = 0; $nalias < 5 && $gj && isset($gj->alias); ++$nalias) {
@@ -109,7 +92,7 @@ class GroupedExtensions {
                 }
             }
         }
-        usort($r, [$this, "subgroup_compare"]);
+        usort($r, "Conf::xt_position_compare");
         if ($alias) {
             $rr = [];
             foreach ($r as $gj) {
@@ -119,10 +102,6 @@ class GroupedExtensions {
         } else {
             return $r;
         }
-    }
-    function all() {
-        uasort($this->_all, [$this, "subgroup_compare"]);
-        return $this->_all;
     }
     function groups() {
         uasort($this->_groups, "Conf::xt_position_compare");

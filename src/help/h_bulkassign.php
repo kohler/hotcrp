@@ -138,34 +138,41 @@ on the user’s site preferences).</p>";
 a conflict type, such as “advisor” or “institutional”.</p>";
     }
 
+    static function add_bulk_assignment_action(&$apx, $uf, $hth) {
+        if (!isset($uf->alias)) {
+            $t = '<tr><td class="pad';
+            if ($uf->group !== $uf->name) {
+                $t .= ' padl';
+            }
+            $t .= '">';
+            $n = '<code>' . htmlspecialchars($uf->name) . '</code>';
+            if ($hth
+                && ($xt = $hth->member("bulkassignactions/{$uf->name}"))
+                && $xt->anchorid) {
+                $n = '<a href="#' . $xt->anchorid . '">' . $n . '</a>';
+            }
+            $t .= $n . '</td><td class="pad"><code>pid</code>';
+            foreach (get($uf, "parameters", []) as $param) {
+                $t .= ', ';
+                if ($param[0] === "[") {
+                    $t .= '[<code>' . substr($param, 1, -1) . '</code>]';
+                } else {
+                    $t .= '<code>' . $param . '</code>';
+                }
+            }
+            $t .= '</td><td class="pad">' . get($uf, "description", "")
+                . '</td></tr>';
+            $apx[] = $t;
+        }
+    }
+
     static function echo_actions(Contact $user, $hth = null) {
         $apge = new GroupedExtensions($user, "etc/assignmentparsers.json", $user->conf->opt("assignmentParsers"));
         $apx = [];
-        foreach ($apge->all() as $uf) {
-            if (!isset($uf->alias)) {
-                $t = '<tr><td class="pad';
-                if ($uf->group !== $uf->name) {
-                    $t .= ' padl';
-                }
-                $t .= '">';
-                $n = '<code>' . htmlspecialchars($uf->name) . '</code>';
-                if ($hth
-                    && ($xt = $hth->member("bulkassignactions/{$uf->name}"))
-                    && $xt->anchorid) {
-                    $n = '<a href="#' . $xt->anchorid . '">' . $n . '</a>';
-                }
-                $t .= $n . '</td><td class="pad"><code>pid</code>';
-                foreach (get($uf, "parameters", []) as $param) {
-                    $t .= ', ';
-                    if ($param[0] === "[") {
-                        $t .= '[<code>' . substr($param, 1, -1) . '</code>]';
-                    } else {
-                        $t .= '<code>' . $param . '</code>';
-                    }
-                }
-                $t .= '</td><td class="pad">' . get($uf, "description", "")
-                    . '</td></tr>';
-                $apx[] = $t;
+        foreach ($apge->groups() as $ufg) {
+            self::add_bulk_assignment_action($apx, $ufg, $hth);
+            foreach ($apge->members($ufg->name) as $uf) {
+                self::add_bulk_assignment_action($apx, $uf, $hth);
             }
         }
         if (!empty($apx)) {
