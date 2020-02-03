@@ -3,9 +3,11 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class GroupedExtensions {
+    private $_jall = [];
+    private $_potential_members = [];
+    private $conf;
     private $user;
-    private $_groups;
-    private $_all;
+    private $_raw = [];
     private $_render_state;
     private $_render_stack;
     private $_render_classes;
@@ -30,38 +32,40 @@ class GroupedExtensions {
             $x = substr($fj->name, $pos + 1);
             $fj->anchorid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9_:.]+/', "-", strtolower($x));
         }
-        $this->_all[$fj->name][] = $fj;
+        $this->_jall[$fj->name][] = $fj;
+        if ($fj->group === $fj->name) {
+            assert(strpos($fj->group, "/") === false);
+            $this->_potential_members[""][] = $fj->name;
+        } else {
+            $this->_potential_members[$fj->group][] = $fj->name;
+        }
         return true;
     }
     function __construct(Contact $user, $args /* ... */) {
-        $conf = $user->conf;
+        $this->conf = $user->conf;
         $this->user = $user;
         self::$next_placeholder = 1;
-        // read all arguments; produce _all: name => array
-        $this->_all = [];
         foreach (func_get_args() as $i => $arg) {
             if ($i > 0 && $arg)
                 expand_json_includes_callback($arg, [$this, "_add_json"]);
         }
-        // reduce _all to one entry per name, produce _groups
-        $sgs = $this->_all;
-        $this->_all = $this->_groups = [];
-        foreach ($sgs as $name => $xtl) {
-            if (($xt = $conf->xt_search_name($sgs, $name, $user, null, true))
-                && Conf::xt_enabled($xt)
-                && (!isset($xt->position) || $xt->position !== false)) {
-                $this->_all[$name] = $xt;
-                if ($xt->name === $xt->group && !isset($xt->alias)) {
-                    $this->_groups[$name] = $xt;
-                }
-            }
-        }
         $this->reset_render();
     }
+    function get_raw($name) {
+        if (!array_key_exists($name, $this->_raw)) {
+            if (($xt = $this->conf->xt_search_name($this->_jall, $name, $this->user, null, true))
+                && Conf::xt_enabled($xt)) {
+                $this->_raw[$name] = $xt;
+            } else {
+                $this->_raw[$name] = null;
+            }
+        }
+        return $this->_raw[$name];
+    }
     function get($name) {
-        $gj = get($this->_all, $name);
-        for ($nalias = 0; $nalias < 5 && $gj && isset($gj->alias); ++$nalias) {
-            $gj = get($this->_all, $gj->alias);
+        $gj = $this->get_raw($name);
+        for ($nalias = 0; $gj && isset($gj->alias) && $nalias < 5; ++$nalias) {
+            $gj = $this->get_raw($gj->alias);
         }
         return $gj;
     }
@@ -74,22 +78,19 @@ class GroupedExtensions {
         }
     }
     function members($name) {
-        if ((string) $name === "") {
-            return $this->groups();
-        }
         if (($gj = $this->get($name))) {
             $name = $gj->name;
         }
         $r = [];
         $alias = false;
-        foreach ($this->_all as $gj) {
-            if ($gj->group === $name && $gj->name !== $name) {
-                if (!isset($gj->alias)) {
-                    $r[] = $gj;
-                } else if (isset($gj->position)) {
-                    $r[] = $gj;
-                    $alias = true;
-                }
+        foreach (get($this->_potential_members, $name, []) as $subname) {
+            if (($gj = $this->get_raw($subname))
+                && $gj->group === ($name === "" ? $gj->name : $name)
+                && $gj->name !== $name
+                && (!isset($gj->alias) || isset($gj->position))
+                && (!isset($gj->position) || $gj->position !== false)) {
+                $r[] = $gj;
+                $alias = $alias || isset($gj->alias);
             }
         }
         usort($r, "Conf::xt_position_compare");
@@ -104,8 +105,7 @@ class GroupedExtensions {
         }
     }
     function groups() {
-        uasort($this->_groups, "Conf::xt_position_compare");
-        return $this->_groups;
+        return $this->members("");
     }
 
     private function call_callback($cb, $args) {
