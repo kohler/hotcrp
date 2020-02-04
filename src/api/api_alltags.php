@@ -4,28 +4,30 @@
 
 class AllTags_API {
     static function run(Contact $user) {
-        if (!$user->isPC)
+        if (!$user->isPC) {
             json_exit(403, "Permission error.");
-        else if ($user->conf->check_track_view_sensitivity()
-                 || (!$user->conf->tag_seeall
-                     && ($user->privChair
-                         ? $user->conf->has_any_manager()
-                         : $user->is_manager()
-                           || $user->conf->check_track_sensitivity(Track::HIDDENTAG))))
+        } else if ($user->conf->check_track_view_sensitivity()
+                   || (!$user->conf->tag_seeall
+                       && ($user->privChair
+                           ? $user->conf->has_any_manager()
+                           : $user->is_manager()
+                             || $user->conf->check_track_sensitivity(Track::HIDDENTAG)))) {
             return self::hard_alltags_api($user);
-        else
+        } else {
             return self::easy_alltags_api($user);
+        }
     }
 
     static private function strip($tag, Contact $user, PaperInfo $prow = null) {
         $twiddle = strpos($tag, "~");
         if ($twiddle === false
-            || ($twiddle === 0 && $tag[1] === "~" && $user->allow_administer($prow)))
+            || ($twiddle === 0 && $tag[1] === "~" && $user->allow_administer($prow))) {
             return $tag;
-        else if ($twiddle > 0 && substr($tag, 0, $twiddle) == $user->contactId)
+        } else if ($twiddle > 0 && substr($tag, 0, $twiddle) == $user->contactId) {
             return substr($tag, $twiddle);
-        else
+        } else {
             return false;
+        }
     }
 
     static private function easy_alltags_api(Contact $user) {

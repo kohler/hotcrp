@@ -106,13 +106,13 @@ class JsonResult {
         return $jr;
     }
     function take_messages(Contact $user) {
-        if (($msgs = $user->session("msgs", []))) {
-            $user->save_session("msgs", null);
-            foreach ($msgs as $msg) {
+        if (($msgs = $user->session("msgs", []))
+            && count($msgs) > $user->conf->initial_msg_count) {
+            $xmsgs = array_splice($msgs, $user->conf->initial_msg_count);
+            $user->save_session("msgs", empty($msgs) ? null : $msgs);
+            foreach ($xmsgs as $msg) {
                 list($text, $type) = $msg;
-                if ($type !== "merror" && $type !== "xmerror") {
-                    error_log(var_export($type, true) . " " . $text);
-                }
+                error_log($_SERVER["REQUEST_URI"] . " " . $type . " " . json_encode($text));
                 assert($type === "merror" || $type === "xmerror");
                 if (is_string($text)) {
                     $text = [$text];

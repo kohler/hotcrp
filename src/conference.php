@@ -97,6 +97,7 @@ class Conf {
     public $headerPrinted = false;
     private $_save_logs = false;
     public $_session_handler;
+    public $initial_msg_count;
 
     private $_collator;
     private $rounds = null;
@@ -3320,21 +3321,31 @@ class Conf {
             $type = $tmp;
         }
         if (PHP_SAPI === "cli") {
-            if (is_array($text))
+            if (is_array($text)) {
                 $text = join("\n", $text);
-            if ($type === "xmerror" || $type === "merror" || $type === 2)
+            }
+            if ($type === "xmerror" || $type === "merror" || $type === 2) {
                 fwrite(STDERR, "$text\n");
-            else if ($type === "xwarning" || $type === "warning" || $type === 1
-                     || !defined("HOTCRP_TESTHARNESS"))
+            } else if ($type === "xwarning" || $type === "warning" || $type === 1
+                       || !defined("HOTCRP_TESTHARNESS")) {
                 fwrite(STDOUT, "$text\n");
+            }
         } else if ($conf && !$conf->headerPrinted) {
             ensure_session();
+            if (!isset($conf->initial_msg_count)) {
+                $conf->initial_msg_count = 0;
+                if (isset($_SESSION[$conf->dsn])
+                    && isset($_SESSION[$conf->dsn]["msgs"])) {
+                    $conf->initial_msg_count = count($_SESSION[$conf->dsn]["msgs"]);
+                }
+            }
             $_SESSION[$conf->dsn]["msgs"][] = [$text, $type];
         } else if (is_int($type) || $type[0] === "x") {
             echo Ht::msg($text, $type);
         } else {
-            if (is_array($text))
+            if (is_array($text)) {
                 $text = '<div class="multimessage">' . join("", array_map(function ($x) { return '<div class="mmm">' . $x . '</div>'; }, $text)) . '</div>';
+            }
             echo "<div class=\"$type\">$text</div>";
         }
     }
