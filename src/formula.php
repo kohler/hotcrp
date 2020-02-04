@@ -174,14 +174,14 @@ class Fexpr implements JsonSerializable {
 
     function typecheck(Conf $conf) {
         // comparison operators help us resolve
-        if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠)\z,', $this->op)
-            && count($this->args) === 2) {
-            list($a0, $a1) = $this->args;
-            if ($a0 instanceof ConstantFexpr) {
-                $a0->typecheck_neighbor($conf, $a1);
-            }
-            if ($a1 instanceof ConstantFexpr) {
-                $a1->typecheck_neighbor($conf, $a0);
+        if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠|greatest|least)\z,', $this->op)) {
+            for ($i = 0; $i !== count($this->args); ++$i) {
+                $a = $this->args[$i];
+                if ($a instanceof ConstantFexpr
+                    && $a->format_ === false
+                    && ($b = get($this->args, $i ? $i - 1 : $i + 1))) {
+                    $a->typecheck_neighbor($conf, $b);
+                }
             }
         }
         if (($x = $this->typecheck_arguments($conf))) {
@@ -987,12 +987,13 @@ class Revtype_Fexpr extends Sub_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
-        if ($state->looptype === self::LMY)
+        if ($state->looptype === self::LMY) {
             $rt = $state->define_gvar("myrevtype", "\$prow->review_type(\$contact)");
-        else {
+        } else {
             $view_score = $state->user->permissive_view_score_bound();
-            if (VIEWSCORE_PC <= $view_score)
+            if (VIEWSCORE_PC <= $view_score) {
                 return "null";
+            }
             $state->queryOptions["reviewSignatures"] = true;
             $rrow = $state->_rrow();
             return "({$rrow} ? {$rrow}->reviewType : null)";
@@ -1011,12 +1012,13 @@ class ReviewRound_Fexpr extends Sub_Fexpr {
     function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         $rrow = $state->_rrow();
-        if ($state->looptype === self::LMY)
+        if ($state->looptype === self::LMY) {
             return $state->define_gvar("myrevround", "{$rrow} ? {$rrow}->reviewRound : null");
-        else {
+        } else {
             $view_score = $state->user->permissive_view_score_bound();
-            if (VIEWSCORE_PC <= $view_score)
+            if (VIEWSCORE_PC <= $view_score) {
                 return "null";
+            }
             $state->queryOptions["reviewSignatures"] = true;
             $rrow_vsb = $state->_rrow_view_score_bound();
             return "(" . VIEWSCORE_PC . " > $rrow_vsb ? {$rrow}->reviewRound : null)";
@@ -1940,7 +1942,7 @@ class Formula implements Abbreviator {
         } else if (preg_match('/\A(?:is|status):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($this->conf, $m[1]));
             $t = $m[2];
-        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)?|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
+        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords|)|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
             $t = ":" . $m[2];
             $e = $this->_reviewer_decoration($this->_reviewer_base($m[1]), $t);
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer|re|rev|review)\b(.*)\z/is', $t, $m)) {
