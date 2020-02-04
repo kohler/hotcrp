@@ -295,7 +295,7 @@ class PaperList {
                 if ($opts === null)
                     $opts = [];
                 array_unshift($opts, substr($k, $pos + 1));
-                $k = substr($k, 0, $sep);
+                $k = substr($k, 0, $pos);
             }
         }
         $k = get(self::$view_synonym, $k, $k);
