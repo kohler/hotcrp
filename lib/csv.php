@@ -466,6 +466,14 @@ class CsvGenerator {
         }
     }
 
+    static function quote_join($array, $quote_empty = false) {
+        $x = [];
+        foreach ($array as $t) {
+            $x[] = self::quote($t, $quote_empty);
+        }
+        return join(",", $x);
+    }
+
 
     function __construct($flags = self::TYPE_COMMA) {
         $this->type = $flags & self::FLAG_TYPE;
