@@ -535,47 +535,55 @@ class ContactList {
         firstName, lastName, email, affiliation, roles, contactTags,
         $phone phone, u.collaborators, lastLogin, disabled";
         if (isset($queryOptions["reviews"])) {
-            $rf[] = "count(if(reviewNeedsSubmit=0,reviewSubmitted,reviewId)) numReviews";
-            $rf[] = "count(reviewSubmitted) numReviewsSubmitted";
+            $rf[] = "sum(reviewNeedsSubmit<>0 or reviewSubmitted>0 or timeApprovalRequested<0) numReviews";
+            $rf[] = "sum(reviewSubmitted>0 or timeApprovalRequested<0) numReviewsSubmitted";
             $pq .= ", numReviews, numReviewsSubmitted";
         }
-        if (isset($queryOptions["revratings"]))
+        if (isset($queryOptions["revratings"])) {
             $pq .= ", numGoodRatings, numBadRatings";
-        if (isset($queryOptions["leads"]))
+        }
+        if (isset($queryOptions["leads"])) {
             $pq .= ",\n    (select count(paperId) from Paper where leadContactId=u.contactId" . $this->_pid_restriction() . ") numLeads";
-        if (isset($queryOptions["shepherds"]))
+        }
+        if (isset($queryOptions["shepherds"])) {
             $pq .= ",\n    (select count(paperId) from Paper where shepherdContactId=u.contactId" . $this->_pid_restriction() . ") numShepherds";
-        if (isset($queryOptions['scores']))
+        }
+        if (isset($queryOptions['scores'])) {
             foreach ($queryOptions['scores'] as $score) {
-                $rf[] = "group_concat(if(reviewSubmitted>0,$score,null)) $score";
+                $rf[] = "group_concat(if(reviewSubmitted>0 or timeApprovalRequested<0,$score,null)) $score";
                 $pq .= ", $score";
             }
+        }
         if (isset($queryOptions["repapers"])) {
             $rf[] = "group_concat(r.paperId) paperIds";
             $rf[] = "group_concat(reviewId) reviewIds";
             $rf[] = "group_concat(reviewOrdinal) reviewOrdinals";
             $pq .= ", paperIds, reviewIds, reviewOrdinals";
-        } else if (isset($queryOptions["papers"]))
+        } else if (isset($queryOptions["papers"])) {
             $pq .= ",\n\t(select group_concat(paperId) from PaperConflict where contactId=u.contactId and conflictType>=" . CONFLICT_AUTHOR . ") paperIds";
+        }
 
         $pq .= "\n      from ContactInfo u\n";
         if (isset($queryOptions["reviews"])) {
             $j = "left join";
-            if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext" || $this->limit == "resub" || $this->limit == "extsub")
+            if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext" || $this->limit == "resub" || $this->limit == "extsub") {
                 $j = "join";
+            }
             $pq .= "    $j (select " . join(", ", $rf)
                 . "\n\t\tfrom PaperReview r join Paper p on (p.paperId=r.paperId)";
             $jwhere = array();
-            if ($this->limit == "req" || $this->limit == "ext" || $this->limit == "extsub")
+            if ($this->limit == "req" || $this->limit == "ext" || $this->limit == "extsub") {
                 $jwhere[] = "r.reviewType=" . REVIEW_EXTERNAL;
-            if ($this->limit == "req")
+            }
+            if ($this->limit == "req")  {
                 $jwhere[] = "r.requestedBy=" . $this->user->contactId;
-            if (($cfltpids = $this->_conflict_pids()))
+            }
+            if (($cfltpids = $this->_conflict_pids())) {
                 $jwhere[] = "(r.paperId not in (" . join(",", $cfltpids) . ") or r.contactId=" . $this->user->contactId . ")";
-            $jwhere[] = "(p.timeSubmitted>0 or r.reviewSubmitted>0)";
-            if (count($jwhere))
-                $pq .= "\n\t\twhere " . join(" and ", $jwhere);
-            $pq .= " group by r.contactId) as r on (r.contactId=u.contactId)\n";
+            }
+            $jwhere[] = "(p.timeSubmitted>0 or r.reviewSubmitted>0 or r.timeApprovalRequested<0)";
+            $pq .= "\n\t\twhere " . join(" and ", $jwhere)
+                . " group by r.contactId) as r on (r.contactId=u.contactId)\n";
         }
         if (isset($queryOptions["revratings"])) {
             $pq .= "    left join (select PaperReview.contactId,
@@ -594,42 +602,49 @@ class ContactList {
         }
         if ($aulimit) {
             $limitselect = "select contactId from PaperConflict join Paper on (Paper.paperId=PaperConflict.paperId) where conflictType>=" . CONFLICT_AUTHOR;
-            if ($this->limit == "au")
+            if ($this->limit == "au") {
                 $limitselect .= " and timeSubmitted>0";
-            else if ($this->limit == "aurej")
+            } else if ($this->limit == "aurej") {
                 $limitselect .= " and outcome<0";
-            else if ($this->limit == "auacc")
+            } else if ($this->limit == "auacc") {
                 $limitselect .= " and outcome>0";
-            else if ($this->limit == "auuns")
+            } else if ($this->limit == "auuns") {
                 $limitselect .= " and timeSubmitted<=0";
+            }
             $pq .= "join ($limitselect group by contactId) as au on (au.contactId=u.contactId)\n";
         }
 
         $mainwhere = array();
-        if (isset($queryOptions["where"]))
+        if (isset($queryOptions["where"])) {
             $mainwhere[] = $queryOptions["where"];
-        if ($this->limit == "pc")
+        }
+        if ($this->limit == "pc") {
             $mainwhere[] = "u.roles!=0 and (u.roles&" . Contact::ROLE_PC . ")!=0";
-        if ($this->limit == "admin")
+        } else if ($this->limit == "admin") {
             $mainwhere[] = "u.roles!=0 and (u.roles&" . (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR) . ")!=0";
-        if ($this->limit == "pcadmin" || $this->limit == "pcadminx")
+        } else if ($this->limit == "pcadmin" || $this->limit == "pcadminx") {
             $mainwhere[] = "u.roles!=0 and (u.roles&" . Contact::ROLE_PCLIKE . ")!=0";
-        if (count($mainwhere))
+        }
+        if (!empty($mainwhere)) {
             $pq .= "\twhere " . join(" and ", $mainwhere) . "\n";
+        }
 
         // make query
         $result = $this->conf->qe_raw($pq);
-        if (!$result)
+        if (!$result)  {
             return NULL;
+        }
 
         // fetch data
         Contact::$allow_nonexistent_properties = true;
         $rows = array();
-        while (($row = Contact::fetch($result, $this->conf)))
+        while (($row = Contact::fetch($result, $this->conf))) {
             $rows[] = $row;
+        }
         Contact::$allow_nonexistent_properties = false;
-        if (isset($queryOptions["topics"]))
+        if (isset($queryOptions["topics"])) {
             Contact::load_topic_interests($rows);
+        }
         return $rows;
     }
 
@@ -700,8 +715,9 @@ class ContactList {
         $ids = array();
         foreach ($srows as $row) {
             if (($this->limit == "resub" || $this->limit == "extsub")
-                && $row->numReviewsSubmitted == 0)
+                && $row->numReviewsSubmitted == 0) {
                 continue;
+            }
 
             $trclass = "k" . ($this->count % 2);
             if ($show_colors && ($k = $row->viewable_color_classes($this->user))) {
