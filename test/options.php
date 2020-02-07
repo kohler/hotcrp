@@ -7,7 +7,6 @@ $Opt["dbPassword"] = "m5LuaN23j26g";
 $Opt["shortName"] = "Testconf I";
 $Opt["longName"] = "Test Conference I";
 $Opt["paperSite"] = "http://hotcrp.lcdf.org/test/";
-$Opt["safePasswords"] = true;
 $Opt["passwordHmacKey"] = "6MFZ8fnvAudRVRn4CXsMNrqVjSvTZqrVBFLEBfxRvxvsEjWn";
 $Opt["contactName"] = "Eddie Kohler";
 $Opt["contactEmail"] = "ekohler@hotcrp.lcdf.org";

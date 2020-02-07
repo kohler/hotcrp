@@ -8050,14 +8050,6 @@ handle_ui.on("js-delete-user", function (event) {
     $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
-handle_ui.on("js-plaintext-password", function (event) {
-    foldup.call(this);
-    var open = $(this).closest(".foldo, .foldc").hasClass("foldo");
-    var form = $(this).closest("form")[0];
-    if (form && form.whichpassword)
-        form.whichpassword.value = open ? "t" : "";
-});
-
 var profile_ui = (function ($) {
 return function (event) {
     if (hasClass(this, "js-role")) {

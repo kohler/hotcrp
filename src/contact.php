@@ -1483,26 +1483,14 @@ class Contact {
     }
 
     private function check_password_encryption($hash, $iscdb) {
-        if ($iscdb)
-            $safe = $this->conf->opt("contactdb_safePasswords", 2);
-        else
-            $safe = $this->conf->opt("safePasswords");
-        if ($safe < 1
-            || ($method = $this->password_hash_method()) === false
-            || ($hash !== "" && $hash[0] !== " " && $safe == 1))
-            return false;
-        else if ($hash === "" || $hash[0] !== " ")
-            return true;
-        else
-            return $hash[1] !== "\$"
-                || password_needs_rehash(substr($hash, 2), $method);
+        return $hash === ""
+            || $hash[0] !== " "
+            || $hash[1] !== "\$"
+            || password_needs_rehash(substr($hash, 2), $this->password_hash_method());
     }
 
     private function hash_password($input) {
-        if (($method = $this->password_hash_method()) !== false)
-            return " \$" . password_hash($input, $method);
-        else
-            return $input;
+        return " \$" . password_hash($input, $this->password_hash_method());
     }
 
     function check_password($input, $info = null) {
@@ -1637,18 +1625,13 @@ class Contact {
                 $template = "@createaccount";
             }
         } else if ($sendtype === "forgot") {
-            if ($this->conf->opt("safePasswords") <= 1
-                && $this->plaintext_password()) {
-                $template = "@accountinfo";
-            } else {
-                if (!$cdbu && $this->conf->contactdb()) {
-                    error_log("{$this->conf->dbname}: {$this->email} local capability");
-                }
-                $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
-                $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
-                $this->conf->log_for($this, null, "Password link sent " . substr($rest["capability"], 0, 8) . "...");
-                $template = "@resetpassword";
+            if (!$cdbu && $this->conf->contactdb()) {
+                error_log("{$this->conf->dbname}: {$this->email} local capability");
             }
+            $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
+            $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
+            $this->conf->log_for($this, null, "Password link sent " . substr($rest["capability"], 0, 8) . "...");
+            $template = "@resetpassword";
         } else {
             $template = "@accountinfo";
         }

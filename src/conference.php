@@ -585,14 +585,6 @@ class Conf {
         }
         $this->_date_format_initialized = false;
 
-        // set safePasswords
-        if (!get($this->opt, "safePasswords")
-            || (is_int($this->opt["safePasswords"]) && $this->opt["safePasswords"] < 1)) {
-            $this->opt["safePasswords"] = 0;
-        } else if ($this->opt["safePasswords"] === true) {
-            $this->opt["safePasswords"] = 1;
-        }
-
         // set defaultFormat
         $this->default_format = (int) get($this->opt, "defaultFormat");
         $this->_format_info = null;
@@ -1652,10 +1644,6 @@ class Conf {
 
 
     // users
-
-    function password_storage_cleartext() {
-        return $this->opt["safePasswords"] < 1;
-    }
 
     function external_login() {
         return isset($this->opt["ldapLogin"]) || isset($this->opt["httpAuthLogin"]);

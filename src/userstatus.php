@@ -108,10 +108,6 @@ class UserStatus extends MessageSet {
                 $cj->$k = $x;
         }
 
-        if (get($args, "include_password")
-            && ($pw = $user->plaintext_password()))
-            $cj->__passwords = ["", "", $pw];
-
         if ($user->roles)
             $cj->roles = self::unparse_roles_json($user->roles);
 
@@ -752,14 +748,10 @@ class UserStatus extends MessageSet {
         if (!$us->conf->external_login()
             && !$us->user->is_empty()
             && $us->viewer->can_change_password($us->user)
-            && (isset($qreq->upassword) || isset($qreq->upasswordt))) {
-            if ($qreq->whichpassword === "t" && $qreq->upasswordt) {
-                $pw = $pw2 = trim($qreq->upasswordt);
-            } else {
-                $pw = trim((string) $qreq->upassword);
-                $pw2 = trim((string) $qreq->upassword2);
-            }
-            $cj->__passwords = [(string) $qreq->upassword, (string) $qreq->upassword2, (string) $qreq->upasswordt];
+            && isset($qreq->upassword)) {
+            $pw = trim((string) $qreq->upassword);
+            $pw2 = trim((string) $qreq->upassword2);
+            $cj->__passwords = [(string) $qreq->upassword, (string) $qreq->upassword2];
             if ($pw === "" && $pw2 === "") {
                 /* do nothing */;
             } else if ($pw !== $pw2) {
@@ -769,11 +761,10 @@ class UserStatus extends MessageSet {
             } else if ($us->viewer->can_change_password(null)
                        && strcasecmp($us->viewer->email, $us->user->email)) {
                 $cj->new_password = $pw;
+            } else if ($us->user->check_password(trim((string) $qreq->oldpassword))) {
+                $cj->new_password = $pw;
             } else {
-                if ($us->user->check_password(trim((string) $qreq->oldpassword)))
-                    $cj->new_password = $pw;
-                else
-                    $us->error_at("password", "Incorrect current password. New password ignored.");
+                $us->error_at("password", "Incorrect current password. New password ignored.");
             }
         }
 
@@ -781,12 +772,15 @@ class UserStatus extends MessageSet {
         if (isset($qreq->pctype) && $us->viewer->privChair) {
             $cj->roles = (object) array();
             $pctype = $qreq->pctype;
-            if ($pctype === "chair")
+            if ($pctype === "chair") {
                 $cj->roles->chair = $cj->roles->pc = true;
-            if ($pctype === "pc")
+            }
+            if ($pctype === "pc") {
                 $cj->roles->pc = true;
-            if ($qreq->ass)
+            }
+            if ($qreq->ass) {
                 $cj->roles->sysadmin = true;
+            }
         }
 
         $follow = [];
@@ -973,7 +967,7 @@ class UserStatus extends MessageSet {
         echo '<div id="foldpassword" class="profile-g foldc ',
             ($us->has_problem_at("password") ? "fold3o" : "fold3c"),
             '">';
-        $pws = get($reqj, "__passwords", ["", "", ""]);
+        $pws = get($reqj, "__passwords", ["", ""]);
         // Hit a button to change your password
         echo Ht::button("Change password", ["class" => "ui js-foldup fn3", "data-fold-target" => "3o"]);
         // Display the following after the button is clicked
@@ -990,25 +984,10 @@ class UserStatus extends MessageSet {
         echo '<div class="', $us->control_class("password", "f-i"), '">
       <div class="f-c">New password</div>',
             Ht::password("upassword", $pws[0], ["size" => 52, "class" => "fn", "autocomplete" => $us->autocomplete("new-password")]);
-        if ($us->user->plaintext_password() && $us->viewer->privChair) {
-            echo Ht::entry("upasswordt", $pws[2], ["size" => 52, "class" => "fx", "autocomplete" => $us->autocomplete("new-password")]);
-        }
         echo '</div>
     <div class="', $us->control_class("password", "f-i"), ' fn">
       <div class="f-c">Repeat new password</div>',
             Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]), "</div>\n";
-        if ($us->user->plaintext_password()
-            && ($us->viewer->privChair || $us->conf->password_storage_cleartext())) {
-            echo "  <div class=\"f-h\">";
-            if ($us->conf->password_storage_cleartext())
-                echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
-            if ($us->viewer->privChair) {
-                if ($us->conf->password_storage_cleartext())
-                    echo " <span class=\"sep\"></span>";
-                echo '<span class="n"><a class="ui js-plaintext-password" href=""><span class="fn">Show password</span><span class="fx">Hide password</span></a></span>';
-            }
-            echo "</div>\n";
-        }
         echo "</div></div>"; // .fx3 #foldpassword
     }
 

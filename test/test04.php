@@ -37,15 +37,13 @@ if (!$Conf->contactdb()) {
 $user_chair = $Conf->user_by_email("chair@_.com");
 $marina = "marina@poema.ru";
 
-$Conf->set_opt("safePasswords", 0);
-$Conf->set_opt("contactdb_safePasswords", 0);
 user($marina)->change_password("rosdevitch", 0);
 xassert_eqq(password($marina), "");
-xassert_eqq(password($marina, true), "rosdevitch");
+xassert_neqq(password($marina, true), "");
 xassert(user($marina)->check_password("rosdevitch"));
 $Conf->qe("update ContactInfo set password=? where contactId=?", "rosdevitch", user($marina)->contactId);
-xassert_eqq(password($marina), "rosdevitch");
-xassert_eqq(password($marina, true), "rosdevitch");
+xassert_neqq(password($marina), "");
+xassert_neqq(password($marina, true), "");
 xassert(user($marina)->check_password("rosdevitch"));
 
 // different password in localdb => both passwords work
@@ -69,7 +67,7 @@ xassert(!user($marina)->check_password("dungdevitch"));
 // update local password only
 save_password($marina, "ncurses", false);
 xassert_eqq(password($marina), "ncurses");
-xassert_eqq(password($marina, true), "isdevitch");
+xassert_neqq(password($marina, true), "ncurses");
 xassert(user($marina)->check_password("ncurses"));
 
 // logging in with global password makes local password obsolete
@@ -87,11 +85,8 @@ xassert(user($marina)->check_password("ncurses"));
 // restore to "this is a cdb password"
 user($marina)->change_password("isdevitch", 0);
 xassert_eqq(password($marina), "");
+save_password($marina, "isdevitch", true);
 xassert_eqq(password($marina, true), "isdevitch");
-
-// start upgrading passwords
-$Conf->set_opt("safePasswords", 2);
-$Conf->set_opt("contactdb_safePasswords", 2);
 // current status: local password is empty, global password "isdevitch"
 
 // checking an unencrypted password encrypts it

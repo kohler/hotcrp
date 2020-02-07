@@ -553,7 +553,7 @@ if ($UserStatus->has_error()) {
 
 // obtain user json
 $UserStatus->set_user($Acct);
-$userj = $UserStatus->user_json(["include_password" => true]);
+$userj = $UserStatus->user_json();
 if (!$useRequest
     && $Me->privChair
     && $Acct->is_empty()
@@ -622,9 +622,6 @@ echo '<div class="is-tla active" id="tla-default">',
     Ht::hidden("profile_contactid", $Acct->contactId);
 if (isset($Qreq->redirect)) {
     echo Ht::hidden("redirect", $Qreq->redirect);
-}
-if ($Me->privChair) {
-    echo Ht::hidden("whichpassword", "");
 }
 
 if ($UserStatus->has_messages()) {
