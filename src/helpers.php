@@ -107,8 +107,8 @@ class JsonResult {
     }
     function take_messages(Contact $user) {
         if (($msgs = $user->session("msgs", []))
-            && count($msgs) > $user->conf->initial_msg_count) {
-            $xmsgs = array_splice($msgs, $user->conf->initial_msg_count);
+            && count($msgs) > $user->conf->initial_msg_count()) {
+            $xmsgs = array_splice($msgs, $user->conf->initial_msg_count());
             $user->save_session("msgs", empty($msgs) ? null : $msgs);
             foreach ($xmsgs as $msg) {
                 list($text, $type) = $msg;

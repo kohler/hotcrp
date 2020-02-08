@@ -97,7 +97,7 @@ class Conf {
     public $headerPrinted = false;
     private $_save_logs = false;
     public $_session_handler;
-    public $initial_msg_count;
+    private $_initial_msg_count;
 
     private $_collator;
     private $rounds = null;
@@ -3320,13 +3320,7 @@ class Conf {
             }
         } else if ($conf && !$conf->headerPrinted) {
             ensure_session();
-            if (!isset($conf->initial_msg_count)) {
-                $conf->initial_msg_count = 0;
-                if (isset($_SESSION[$conf->dsn])
-                    && isset($_SESSION[$conf->dsn]["msgs"])) {
-                    $conf->initial_msg_count = count($_SESSION[$conf->dsn]["msgs"]);
-                }
-            }
+            $this->initial_msg_count();
             $_SESSION[$conf->dsn]["msgs"][] = [$text, $type];
         } else if (is_int($type) || $type[0] === "x") {
             echo Ht::msg($text, $type);
@@ -3385,6 +3379,18 @@ class Conf {
 
     function post_missing_msg() {
         $this->msg("Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.", "merror");
+    }
+
+    function initial_msg_count() {
+        if (!isset($this->_initial_msg_count)
+            && session_id() !== "")  {
+            $this->_initial_msg_count = 0;
+            if (isset($_SESSION[$this->dsn])
+                && isset($_SESSION[$this->dsn]["msgs"])) {
+                $this->_initial_msg_count = count($_SESSION[$conf->dsn]["msgs"]);
+            }
+        }
+        return $this->_initial_msg_count;
     }
 
 
