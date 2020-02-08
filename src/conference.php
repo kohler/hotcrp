@@ -3320,7 +3320,7 @@ class Conf {
             }
         } else if ($conf && !$conf->headerPrinted) {
             ensure_session();
-            $this->initial_msg_count();
+            $conf->initial_msg_count();
             $_SESSION[$conf->dsn]["msgs"][] = [$text, $type];
         } else if (is_int($type) || $type[0] === "x") {
             echo Ht::msg($text, $type);
