@@ -82,7 +82,7 @@ class Signin_Partial {
             ensure_session();
             $email = trim((string) $qreq->email);
             if ($email !== "" && $qreq->go && $qreq->post_ok()) {
-                $url = LoginHelper::login($user->conf, $qreq, "forgot");
+                $url = LoginHelper::forgot_password($user->conf, $qreq);
                 if ($url !== false) {
                     Navigation::redirect("");
                 }
@@ -132,7 +132,7 @@ class Signin_Partial {
                 && $qreq->post_ok()) {
                 $nqreq = new Qrequest("POST", ["email" => $resetcap]);
                 $nqreq->approve_post();
-                $url = LoginHelper::login($conf, $nqreq, "forgot");
+                $url = LoginHelper::forgot_password($conf, $nqreq);
                 if ($url !== false) {
                     $conf->self_redirect();
                 }
@@ -230,7 +230,7 @@ class Signin_Partial {
             '</div>',
 
             '<div class="', Ht::control_class("password2", "f-i"), '">',
-            '<label for="password2">New password (again)</label>',
+            '<label for="password2">Repeat new password</label>',
             Ht::password("password2", "", ["class" => "fullw", "size" => 36, "id" => "password2", "autocomplete" => "new-password"]),
             Ht::render_messages_at("password2"),
             '</div>';

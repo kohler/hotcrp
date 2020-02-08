@@ -4,7 +4,6 @@
 
 class LoginHelper {
     static function logout(Contact $user, $explicit) {
-        global $Now;
         if (isset($_SESSION)) {
             $_SESSION = [];
             session_commit();
@@ -66,8 +65,46 @@ class LoginHelper {
         exit;
     }
 
+    static private function user_lookup(Conf $conf, Qrequest $qreq) {
+        // Look up the account information
+        // to determine if the user is registered
+        if (!isset($qreq->email)
+            || ($qreq->email = trim($qreq->email)) === "") {
+            Ht::error_at("email", "Enter your email address.");
+            return false;
+        }
+        if (strpos($qreq->email, "@") === false) {
+            self::unquote_double_quoted_request($qreq);
+        }
+
+        // look up database users
+        $user = $conf->user_by_email($qreq->email);
+        $cdb_user = null;
+        if ($conf->opt("contactdb_dsn")) {
+            if ($user) {
+                $cdb_user = $user->contactdb_user();
+            } else {
+                $cdb_user = $conf->contactdb_user_by_email($qreq->email);
+            }
+        }
+
+        // if no user found, then fail
+        if (!$user && (!$cdb_user || !$cdb_user->allow_contactdb_password())) {
+            Ht::error_at("email", "No account for " . htmlspecialchars($qreq->email) . ". Did you enter the correct email address?");
+            return false;
+        }
+
+        // if user disabled, then fail
+        if (($user && $user->is_disabled())
+            || (!$user && $cdb_user && $cdb_user->is_disabled())) {
+            Ht::error_at("email", "Your account is disabled. Contact the site administrator for more information.");
+            return false;
+        }
+
+        return [$user, $cdb_user];
+    }
+
     static function login(Conf $conf, Qrequest $qreq, $signinaction) {
-        global $Now;
         $external_login = $conf->external_login();
 
         // In all cases, we need to look up the account information
@@ -136,24 +173,8 @@ class LoginHelper {
             return false;
         }
 
-        // maybe reset password
-        $xuser = $user ? : $cdb_user;
-        if ($signinaction === "forgot" && $qreq->post_ok()) {
-            if ($external_login) {
-                Ht::error_at("email", "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
-                return false;
-            }
-            $worked = $xuser->sendAccountInfo("forgot", true);
-            if ($worked === "@resetpassword") {
-                $conf->msg("A password reset link has been emailed to you. When you receive that email, visit the link to create a new password.", "xconfirm");
-            } else if ($worked) {
-                $conf->msg("Your password has been emailed to you. When you receive that email, return here to sign in.", "xconfirm");
-                $conf->log_for($xuser, null, "Password sent");
-            }
-            return $conf->selfurl(null);
-        }
-
         // check password
+        $xuser = $user ? : $cdb_user;
         if (!$external_login) {
             if (!$qreq->post_ok()) {
                 Ht::warning_at("password", "Automatic login links have been disabled to improve site security. Enter your password to sign in.");
@@ -339,5 +360,30 @@ class LoginHelper {
         $user->save_roles(Contact::ROLE_ADMIN, null);
         $user->conf->save_setting("setupPhase", null);
         $user->conf->msg(ltrim($msg), "xconfirm");
+    }
+
+
+    static function forgot_password(Conf $conf, Qrequest $qreq) {
+        if ($conf->external_login()) {
+            Ht::error_at("email", "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
+            return false;
+        }
+
+        // Look up accounts
+        $users = self::user_lookup($conf, $qreq);
+        if (!$users) {
+            return false;
+        }
+
+        // maybe reset password
+        $xuser = $users[0] ? : $users[1];
+        $worked = $xuser->sendAccountInfo("forgot", true);
+        if ($worked === "@resetpassword") {
+            $conf->msg("A password reset link has been emailed to you. When you receive that email, visit the link to create a new password.", "xconfirm");
+        } else if ($worked) {
+            $conf->msg("Your password has been emailed to you. When you receive that email, return here to sign in.", "xconfirm");
+            $conf->log_for($xuser, null, "Password sent");
+        }
+        return $conf->selfurl(null);
     }
 }
