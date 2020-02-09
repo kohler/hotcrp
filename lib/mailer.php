@@ -49,7 +49,7 @@ class MailPreparation {
         if (is_array($to)) {
             $to = join(", ", $to);
         }
-        $to = MimeText::encode_email_header("To: ", $to);
+        $to = (new MimeText)->encode_email_header("To: ", $to);
         $headers["to"] = $to . $eol;
 
         // set sendmail parameters
@@ -581,8 +581,9 @@ class Mailer {
         $prep = $this->preparation = $this->create_preparation();
         $mail = $this->expand($template);
         $this->preparation = null;
+        $mimetext = new MimeText;
 
-        $subject = MimeText::encode_header("Subject: ", $mail["subject"]);
+        $subject = $mimetext->encode_header("Subject: ", $mail["subject"]);
         $prep->subject = substr($subject, 9);
 
         $prep->body = $mail["body"];
@@ -611,7 +612,7 @@ class Mailer {
         // parse headers
         $fromHeader = $this->conf->opt("emailFromHeader");
         if ($fromHeader === null) {
-            $fromHeader = MimeText::encode_email_header("From: ", $this->conf->opt("emailFrom"));
+            $fromHeader = $mimetext->encode_email_header("From: ", $this->conf->opt("emailFrom"));
             $this->conf->set_opt("emailFromHeader", $fromHeader);
         }
         $eol = self::eol();
@@ -622,9 +623,9 @@ class Mailer {
         $prep->headers["to"] = "";
         foreach (self::$email_fields as $lcfield => $field) {
             if (($text = get_s($mail, $lcfield)) !== "" && $text !== "<none>") {
-                if (($hdr = MimeText::encode_email_header($field . ": ", $text)))
+                if (($hdr = $mimetext->encode_email_header($field . ": ", $text))) {
                     $prep->headers[$lcfield] = $hdr . $eol;
-                else {
+                } else {
                     $prep->errors[$lcfield] = $text;
                     error_log("mailer error on $lcfield: $text");
                     $prep->sendable = false;
@@ -676,17 +677,32 @@ class Mailer {
 }
 
 class MimeText {
+    public $in;
+    public $out;
+    public $linelen;
+
+    function reset($header, $str) {
+        if (preg_match('/[\r\n]/', $str)) {
+            $this->in = simplify_whitespace($str);
+        } else {
+            $this->in = $str;
+        }
+        $this->out = $header;
+        $this->linelen = strlen($header);
+    }
+
     /// Quote potentially non-ASCII header text a la RFC2047 and/or RFC822.
-    static function append(&$result, &$linelen, $str, $utf8) {
+    private function append($str, $utf8) {
         if ($utf8) {
             // replace all special characters used by the encoder
             $str = str_replace(array('=',   '_',   '?',   ' '),
                                array('=3D', '=5F', '=3F', '_'), $str);
             // define nonsafe characters
-            if ($utf8 > 1)
+            if ($utf8 > 1) {
                 $matcher = ',[^-0-9a-zA-Z!*+/=_],';
-            else
+            } else {
                 $matcher = ',[\x80-\xFF],';
+            }
             preg_match_all($matcher, $str, $m, PREG_OFFSET_CAPTURE);
             $xstr = "";
             $last = 0;
@@ -696,8 +712,9 @@ class MimeText {
                 $last = $mx[1] + 1;
             }
             $xstr .= substr($str, $last);
-        } else
+        } else {
             $xstr = $str;
+        }
 
         // append words to the line
         while ($xstr != "") {
@@ -706,10 +723,10 @@ class MimeText {
 
             // add a line break
             $maxlinelen = ($utf8 ? 76 - 12 : 78);
-            if (($linelen + $z > $maxlinelen && $linelen > 30)
-                || ($utf8 && substr($result, strlen($result) - 2) == "?=")) {
-                $result .= Mailer::eol() . " ";
-                $linelen = 1;
+            if (($this->linelen + $z > $maxlinelen && $this->linelen > 30)
+                || ($utf8 && substr($this->out, strlen($this->out) - 2) == "?=")) {
+                $this->out .= Mailer::eol() . " ";
+                $this->linelen = 1;
                 while (!$utf8 && $xstr !== "" && ctype_space($xstr[0])) {
                     $xstr = substr($xstr, 1);
                     --$z;
@@ -718,42 +735,43 @@ class MimeText {
 
             // if encoding, skip intact UTF-8 characters;
             // otherwise, try to break at a space
-            if ($utf8 && $linelen + $z > $maxlinelen) {
-                $z = $maxlinelen - $linelen;
-                if ($xstr[$z - 1] == "=")
+            if ($utf8 && $this->linelen + $z > $maxlinelen) {
+                $z = $maxlinelen - $this->linelen;
+                if ($xstr[$z - 1] == "=") {
                     $z -= 1;
-                else if ($xstr[$z - 2] == "=")
+                } else if ($xstr[$z - 2] == "=") {
                     $z -= 2;
+                }
                 while ($z > 3
                        && $xstr[$z] == "="
                        && ($chr = hexdec(substr($xstr, $z + 1, 2))) >= 128
-                       && $chr < 192)
+                       && $chr < 192) {
                     $z -= 3;
-            } else if ($linelen + $z > $maxlinelen) {
-                $y = strrpos(substr($xstr, 0, $maxlinelen - $linelen), " ");
-                if ($y > 0)
+                }
+            } else if ($this->linelen + $z > $maxlinelen) {
+                $y = strrpos(substr($xstr, 0, $maxlinelen - $this->linelen), " ");
+                if ($y > 0) {
                     $z = $y;
+                }
             }
 
             // append
-            if ($utf8)
+            if ($utf8) {
                 $astr = "=?utf-8?q?" . substr($xstr, 0, $z) . "?=";
-            else
+            } else {
                 $astr = substr($xstr, 0, $z);
+            }
 
-            $result .= $astr;
-            $linelen += strlen($astr);
+            $this->out .= $astr;
+            $this->linelen += strlen($astr);
 
             $xstr = substr($xstr, $z);
         }
     }
 
-    static function encode_email_header($header, $str) {
-        if (preg_match('/[\r\n]/', $str))
-            $str = simplify_whitespace($str);
-
-        $text = $header;
-        $linelen = strlen($text);
+    function encode_email_header($header, $str) {
+        $this->reset($header, $str);
+        $str = $this->in;
 
         // separate $str into emails, quote each separately
         while (true) {
@@ -768,67 +786,70 @@ class MimeText {
                     $m[1] = "\"$m[1]\"";
             }
             // 3. bare email
-            if (!$match)
+            if (!$match) {
                 $match = preg_match("/\\A[,;\\s]*()<?\\s*([^\\s\\000-\\037()[\\]<>,;:\\\\\"]+)\\s*>?\\s*(.*)\\z/s", $str, $m);
+            }
             // otherwise, fail
-            if (!$match)
+            if (!$match) {
                 break;
+            }
 
             list($name, $email, $str) = array($m[1], $m[2], $m[3]);
-            if (strpos($email, "@") !== false && !validate_email($email))
+            if (strpos($email, "@") !== false && !validate_email($email)) {
                 return false;
-            if ($str !== "" && $str[0] !== "," && $str[0] !== ";")
+            }
+            if ($str !== "" && $str[0] !== "," && $str[0] !== ";") {
                 return false;
-            if ($email === "none" || $email === "hidden")
+            }
+            if ($email === "none" || $email === "hidden") {
                 continue;
+            }
 
-            if ($text !== $header) {
-                $text .= ", ";
-                $linelen += 2;
+            if ($this->out !== $header) {
+                $this->out .= ", ";
+                $this->linelen += 2;
             }
 
             // unquote any existing UTF-8 encoding
             if ($name !== ""
                 && $name[0] === "="
-                && strcasecmp(substr($name, 0, 10), "=?utf-8?q?") == 0)
+                && strcasecmp(substr($name, 0, 10), "=?utf-8?q?") == 0) {
                 $name = self::decode_header($name);
+            }
 
             $utf8 = preg_match('/[\x80-\xFF]/', $name) ? 2 : 0;
             if ($name !== ""
                 && $name[0] === "\""
                 && preg_match("/\\A\"([^\\\\\"]|\\\\.)*\"\\z/s", $name)) {
-                if ($utf8)
-                    self::append($text, $linelen, substr($name, 1, -1), $utf8);
-                else
-                    self::append($text, $linelen, $name, false);
+                if ($utf8) {
+                    $this->append(substr($name, 1, -1), $utf8);
+                } else {
+                    $this->append($name, false);
+                }
             } else if ($utf8) {
-                self::append($text, $linelen, $name, $utf8);
+                $this->append($name, $utf8);
             } else {
-                self::append($text, $linelen, rfc2822_words_quote($name), false);
+                $this->append(rfc2822_words_quote($name), false);
             }
 
-            if ($name === "")
-                self::append($text, $linelen, $email, false);
-            else
-                self::append($text, $linelen, " <$email>", false);
+            if ($name === "") {
+                $this->append($email, false);
+            } else {
+                $this->append(" <$email>", false);
+            }
         }
 
-        if (!preg_match('/\A[\s,;]*\z/', $str))
+        if (preg_match('/\A[\s,;]*\z/', $str)) {
+            return $this->out;
+        } else {
             return false;
-        return $text;
+        }
     }
 
-    static function encode_header($header, $str) {
-        if (preg_match('/[\r\n]/', $str))
-            $str = simplify_whitespace($str);
-
-        $text = $header;
-        $linelen = strlen($text);
-        if (preg_match('/[\x80-\xFF]/', $str))
-            self::append($text, $linelen, $str, true);
-        else
-            self::append($text, $linelen, $str, false);
-        return $text;
+    function encode_header($header, $str) {
+        $this->reset($header, $str);
+        $this->append($str, preg_match('/[\x80-\xFF]/', $str));
+        return $this->out;
     }
 
     static function chr_hexdec_callback($m) {
@@ -846,7 +867,8 @@ class MimeText {
                 $text = substr($text, strlen($m[0]));
             }
             return $out . $text;
-        } else
+        } else {
             return $text;
+        }
     }
 }
