@@ -522,9 +522,11 @@ class MailSender {
         $this->process_prep($fake_prep, $last_prep, (object) array("paperId" => -1));
         $this->echo_mailinfo($nrows_done, $nrows_total);
 
-        if (!$this->started) {
-            if (empty($preperrors))
+        if ($this->mcount === 0) {
+            if (empty($preperrors)) {
                 Conf::msg_error("No users match “" . $this->recip->unparse() . "” for that search.");
+            }
+            echo Ht::unstash_script("addClass(document.getElementById('foldmail'),'hidden');document.getElementById('mailform').action=" . json_encode_browser($this->conf->hoturl("mail", "check=1", Conf::HOTURL_RAW | Conf::HOTURL_POST)));
             return false;
         }
 
@@ -683,9 +685,10 @@ if ($Me->is_manager()) {
     foreach (Mailer::$email_fields as $lcfield => $field)
         if ($lcfield !== "to" && $lcfield !== "bcc") {
             $xfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
-            $ec = Ht::control_class($xfield);
-            echo "  <tr><td class=\"mhnp nw$ec\"><label for=\"$xfield\">$field:</label></td><td class=\"mhdp\">",
-                Ht::entry($xfield, $Qreq[$xfield], ["size" => 64, "class" => "text-monospace$ec", "id" => $xfield]),
+            echo "  <tr><td class=\"",
+                Ht::control_class($xfield, "mhnp nw"),
+                "\"><label for=\"$xfield\">$field:</label></td><td class=\"mhdp\">",
+                Ht::entry($xfield, $Qreq[$xfield], ["size" => 64, "class" => Ht::control_class($xfield, "text-monospace"), "id" => $xfield]),
                 ($xfield == "replyto" ? "<hr class=\"g\">" : ""),
                 "</td></tr>\n\n";
         }
