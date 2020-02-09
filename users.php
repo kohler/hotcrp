@@ -219,9 +219,6 @@ if ($Me->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel)) {
         modify_confirm(UserActions::disable($Me, $papersel), "Accounts disabled.", true);
     } else if ($Qreq->modifytype == "enableaccount") {
         modify_confirm(UserActions::enable($Me, $papersel), "Accounts enabled.", true);
-    } else if ($Qreq->modifytype == "resetpassword"
-               && $Me->can_change_password(null)) {
-        modify_confirm(UserActions::reset_password($Me, $papersel), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . urlencode($Qreq->t) . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
     } else if ($Qreq->modifytype == "sendaccount") {
         modify_confirm(UserActions::send_account_info($Me, $papersel), "Account information sent.", false);
     }
