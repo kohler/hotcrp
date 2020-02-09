@@ -462,6 +462,7 @@ class SettingValues extends MessageSet {
         return $this->gxt()->members(strtolower($g));
     }
     function mark_interesting_group($g) {
+        $this->interesting_groups[$this->canonical_group($g)] = true;
         foreach ($this->group_members($g) as $gj) {
             $this->interesting_groups[$gj->name] = true;
         }
