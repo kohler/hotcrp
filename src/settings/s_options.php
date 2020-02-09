@@ -67,8 +67,8 @@ class Options_SettingRenderer {
             . '</div></div>';
     }
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold5" . ($o->final || !$o->id ? "o" : "c"));
-        return '<div class="' . $sv->control_class("optec_$xpos", "entryi fx5")
+        $self->add_option_class("fold10" . ($o->final || !$o->id ? "o" : "c"));
+        return '<div class="' . $sv->control_class("optec_$xpos", "entryi fx10")
             . '">' . $sv->label("optec_$xpos", "Condition")
             . '<div class="entry">'
             . '<span class="sep">'

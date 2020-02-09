@@ -35,7 +35,7 @@ handle_ui.on("js-settings-option-description", function () {
 });
 
 handle_ui.on("js-settings-option-presence", function (event) {
-    foldup.call(this, null, {n: 5, f: false});
+    foldup.call(this, null, {n: 10, f: false});
     foldup.call(this, null, {n: 9, f: false});
     if (document.activeElement === this)
         $(this).closest(".settings-opt").find(".settings-opt-presence").focus();
