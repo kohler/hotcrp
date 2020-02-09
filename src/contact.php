@@ -1777,18 +1777,17 @@ class Contact {
 
     function is_metareviewer() {
         if (!isset($this->_is_metareviewer)) {
-            if ($this->isPC && $this->conf->setting("metareviews"))
-                $this->_is_metareviewer = !!$this->conf->fetch_ivalue("select exists (select * from PaperReview where contactId={$this->contactId} and reviewType=" . REVIEW_META . ")");
-            else
-                $this->_is_metareviewer = false;
+            $this->_is_metareviewer = $this->isPC
+                && $this->conf->setting("metareviews")
+                && !!$this->conf->fetch_ivalue("select exists (select * from PaperReview where contactId={$this->contactId} and reviewType=" . REVIEW_META . ")");
         }
         return $this->_is_metareviewer;
     }
 
     function contactdb_roles() {
-        if ($this->is_disabled())
+        if ($this->is_disabled()) {
             return 0;
-        else {
+        } else {
             $this->is_author(); // load _db_roles
             return $this->roles
                 | ($this->_db_roles & (self::ROLE_AUTHOR | self::ROLE_REVIEWER));
@@ -1824,13 +1823,11 @@ class Contact {
     function is_explicit_manager() {
         $this->check_rights_version();
         if (!isset($this->_is_explicit_manager)) {
-            $this->_is_explicit_manager = false;
-            if ($this->contactId > 0
+            $this->_is_explicit_manager = $this->contactId > 0
                 && $this->isPC
                 && ($this->conf->check_any_admin_tracks($this)
                     || ($this->conf->has_any_manager()
-                        && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactId) > 0)))
-                $this->_is_explicit_manager = true;
+                        && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactId) > 0));
         }
         return $this->_is_explicit_manager;
     }

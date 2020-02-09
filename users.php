@@ -6,62 +6,76 @@ require_once("src/initweb.php");
 require_once("src/contactlist.php");
 
 $getaction = "";
-if (isset($Qreq->get))
+if (isset($Qreq->get)) {
     $getaction = $Qreq->get;
-else if (isset($Qreq->getgo) && isset($Qreq->getaction))
+} else if (isset($Qreq->getgo) && isset($Qreq->getaction)) {
     $getaction = $Qreq->getaction;
+}
 
 
 // list type
 $tOpt = [];
-if ($Me->can_view_pc())
+if ($Me->can_view_pc()) {
     $tOpt["pc"] = "Program committee";
+}
 foreach ($Conf->viewable_user_tags($Me) as $t) {
     if ($t !== "pc")
         $tOpt["#$t"] = "#$t program committee";
 }
-if ($Me->can_view_pc() && $Me->isPC)
+if ($Me->can_view_pc()
+    && $Me->isPC) {
     $tOpt["admin"] = "System administrators";
-if ($Me->can_view_pc() && $Me->isPC && ($Qreq->t === "pcadmin" || $Qreq->t === "pcadminx"))
+}
+if ($Me->can_view_pc()
+    && $Me->isPC
+    && ($Qreq->t === "pcadmin" || $Qreq->t === "pcadminx")) {
     $tOpt["pcadmin"] = "PC and system administrators";
-if ($Me->privChair || ($Me->isPC && $Conf->setting("pc_seeallrev"))) {
+}
+if ($Me->privChair
+    || ($Me->isPC && $Conf->setting("pc_seeallrev"))) {
     $tOpt["re"] = "All reviewers";
     $tOpt["ext"] = "External reviewers";
     $tOpt["extsub"] = "External reviewers who completed a review";
 }
-if ($Me->isPC)
+if ($Me->isPC) {
     $tOpt["req"] = "External reviewers you requested";
-if ($Me->privChair || ($Me->isPC && $Conf->subBlindNever()))
+}
+if ($Me->privChair || ($Me->isPC && $Conf->subBlindNever())) {
     $tOpt["au"] = "Contact authors of submitted papers";
+}
 if ($Me->privChair
-    || ($Me->isPC && $Conf->time_pc_view_decision(true)))
+    || ($Me->isPC && $Conf->time_pc_view_decision(true))) {
     $tOpt["auacc"] = "Contact authors of accepted papers";
+}
 if ($Me->privChair
-    || ($Me->isPC && $Conf->subBlindNever() && $Conf->time_pc_view_decision(true)))
+    || ($Me->isPC && $Conf->subBlindNever() && $Conf->time_pc_view_decision(true))) {
     $tOpt["aurej"] = "Contact authors of rejected papers";
+}
 if ($Me->privChair) {
     $tOpt["auuns"] = "Contact authors of non-submitted papers";
     $tOpt["all"] = "All users";
 }
-if (empty($tOpt))
+if (empty($tOpt)) {
     $Me->escape();
+}
 if (isset($Qreq->t) && !isset($tOpt[$Qreq->t])) {
     if (str_starts_with($Qreq->t, "pc:")
-        && isset($tOpt["#" . substr($Qreq->t, 3)]))
+        && isset($tOpt["#" . substr($Qreq->t, 3)])) {
         $Qreq->t = "#" . substr($Qreq->t, 3);
-    else if (isset($tOpt["#" . $Qreq->t]))
+    } else if (isset($tOpt["#" . $Qreq->t])) {
         $Qreq->t = "#" . $Qreq->t;
-    else if ($Qreq->t === "#pc")
+    } else if ($Qreq->t === "#pc") {
         $Qreq->t = "pc";
-    else if ($Qreq->t === "pcadminx" && isset($tOpt["pcadmin"]))
+    } else if ($Qreq->t === "pcadminx" && isset($tOpt["pcadmin"])) {
         $Qreq->t = "pcadmin";
-    else {
+    } else {
         Conf::msg_error("Unknown user collection.");
         unset($Qreq->t);
     }
 }
-if (!isset($Qreq->t))
+if (!isset($Qreq->t)) {
     $Qreq->t = key($tOpt);
+}
 
 
 // paper selection and download actions
@@ -70,8 +84,9 @@ function paperselPredicate($papersel) {
 }
 
 $Qreq->allow_a("pap");
-if (isset($Qreq->pap) && is_string($Qreq->pap))
+if (isset($Qreq->pap) && is_string($Qreq->pap)) {
     $Qreq->pap = preg_split('/\s+/', $Qreq->pap);
+}
 if ((isset($Qreq->pap) && is_array($Qreq->pap))
     || ($getaction && !isset($Qreq->pap))) {
     $allowed_papers = array();
@@ -86,10 +101,12 @@ if ((isset($Qreq->pap) && is_array($Qreq->pap))
         foreach ($Qreq->pap as $p)
             if (($p = cvtint($p)) > 0 && isset($allowed_papers[$p]))
                 $papersel[] = $p;
-    } else
+    } else {
         $papersel = array_keys($allowed_papers);
-    if (empty($papersel))
+    }
+    if (empty($papersel)) {
         unset($papersel);
+    }
 }
 
 if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
@@ -186,24 +203,28 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
 // modifications
 function modify_confirm($j, $ok_message, $ok_message_optional) {
     global $Conf;
-    if (get($j, "ok") && get($j, "warnings"))
+    if (get($j, "ok") && get($j, "warnings")) {
         $Conf->warnMsg("<div>" . join('</div><div style="margin-top:0.5em">', $j->warnings) . "</div>");
-    if (get($j, "ok") && $ok_message
+    }
+    if (get($j, "ok")
+        && $ok_message
         && (!$ok_message_optional || !get($j, "warnings"))
-        && (!isset($j->users) || !empty($j->users)))
+        && (!isset($j->users) || !empty($j->users))) {
         $Conf->confirmMsg($ok_message);
+    }
 }
 
 if ($Me->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel)) {
-    if ($Qreq->modifytype == "disableaccount")
+    if ($Qreq->modifytype == "disableaccount") {
         modify_confirm(UserActions::disable($Me, $papersel), "Accounts disabled.", true);
-    else if ($Qreq->modifytype == "enableaccount")
+    } else if ($Qreq->modifytype == "enableaccount") {
         modify_confirm(UserActions::enable($Me, $papersel), "Accounts enabled.", true);
-    else if ($Qreq->modifytype == "resetpassword"
-             && $Me->can_change_password(null))
+    } else if ($Qreq->modifytype == "resetpassword"
+               && $Me->can_change_password(null)) {
         modify_confirm(UserActions::reset_password($Me, $papersel), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . urlencode($Qreq->t) . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
-    else if ($Qreq->modifytype == "sendaccount")
+    } else if ($Qreq->modifytype == "sendaccount") {
         modify_confirm(UserActions::send_account_info($Me, $papersel), "Account information sent.", false);
+    }
     unset($Qreq->modifygo, $Qreq->modifytype);
     $Conf->self_redirect($Qreq);
 }
@@ -215,19 +236,21 @@ function do_tags($qreq) {
     $t1 = array();
     $errors = array();
     foreach (preg_split('/[\s,]+/', (string) $qreq->tag) as $t) {
-        if ($t === "")
-            /* nada */;
-        else if (!($t = $tagger->check($t, Tagger::NOPRIVATE)))
+        if ($t === "") {
+            /* nada */
+        } else if (!($t = $tagger->check($t, Tagger::NOPRIVATE))) {
             $errors[] = $tagger->error_html;
-        else if (TagInfo::base($t) === "pc")
+        } else if (TagInfo::base($t) === "pc") {
             $errors[] = "The “pc” user tag is set automatically for all PC members.";
-        else
+        } else {
             $t1[] = $t;
+        }
     }
-    if (count($errors))
+    if (count($errors)) {
         return Conf::msg_error(join("<br>", $errors));
-    else if (!count($t1))
+    } else if (!count($t1)) {
         return $Conf->warnMsg("Nothing to do.");
+    }
 
     // modify database
     Dbl::qe("lock tables ContactInfo write, ActionLog write");
@@ -242,14 +265,16 @@ function do_tags($qreq) {
             $removes[] = $t;
             $likes[] = "contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like($tag) . "#%'");
         }
-        foreach (Dbl::fetch_first_columns(Dbl::qe("select contactId from ContactInfo where " . join(" or ", $likes))) as $cid)
+        foreach (Dbl::fetch_first_columns(Dbl::qe("select contactId from ContactInfo where " . join(" or ", $likes))) as $cid) {
             $users[(int) $cid] = (object) array("id" => (int) $cid, "add_tags" => [], "remove_tags" => $removes);
+        }
     }
     // account for request
     $key = $qreq->tagtype === "d" ? "remove_tags" : "add_tags";
     foreach ($papersel as $cid) {
-        if (!isset($users[(int) $cid]))
+        if (!isset($users[(int) $cid])) {
             $users[(int) $cid] = (object) array("id" => (int) $cid, "add_tags" => [], "remove_tags" => []);
+        }
         $users[(int) $cid]->$key = array_merge($users[(int) $cid]->$key, $t1);
     }
     // apply modifications
@@ -265,35 +290,41 @@ function do_tags($qreq) {
         $Conf->confirmMsg("Tags saved.");
         unset($qreq->tagact, $qreq->tag);
         $Conf->self_redirect($qreq);
-    } else
+    } else {
         Conf::msg_error($us->errors());
+    }
 }
 
 if ($Me->privChair && $Qreq->tagact && $Qreq->post_ok() && isset($papersel)
-    && preg_match('/\A[ads]\z/', (string) $Qreq->tagtype))
+    && preg_match('/\A[ads]\z/', (string) $Qreq->tagtype)) {
     do_tags($Qreq);
+}
 
 
 // set scores to view
 if (isset($Qreq->redisplay)) {
     $sv = [];
-    foreach (ContactList::$folds as $key)
+    foreach (ContactList::$folds as $key) {
         $sv[] = "uldisplay.$key=" . ($Qreq->get("show$key") ? 0 : 1);
-    foreach ($Conf->all_review_fields() as $f)
+    }
+    foreach ($Conf->all_review_fields() as $f) {
         if ($Qreq["has_show{$f->id}"])
             $sv[] = "uldisplay.{$f->id}=" . ($Qreq->get("show{$f->id}") ? 0 : 1);
-    if (isset($Qreq->scoresort))
+    }
+    if (isset($Qreq->scoresort)) {
         $sv[] = "ulscoresort=" . ListSorter::canonical_short_score_sort($Qreq->scoresort);
+    }
     Session_API::setsession($Me, join(" ", $sv));
     $Conf->self_redirect($Qreq);
 }
 
-if ($Qreq->t === "pc")
+if ($Qreq->t === "pc") {
     $title = "Program committee";
-else if (str_starts_with($Qreq->t, "#"))
+} else if (str_starts_with($Qreq->t, "#")) {
     $title = "#" . substr($Qreq->t, 1) . " program committee";
-else
+} else {
     $title = "Users";
+}
 $Conf->header($title, "users", ["action_bar" => actionBar("account")]);
 
 
@@ -309,8 +340,9 @@ if (count($tOpt) > 1) {
 <tr><td><div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
     echo Ht::form(hoturl("users"), ["method" => "get"]);
-    if (isset($Qreq->sort))
+    if (isset($Qreq->sort)) {
         echo Ht::hidden("sort", $Qreq->sort);
+    }
     echo Ht::select("t", $tOpt, $Qreq->t, ["class" => "want-focus"]),
         " &nbsp;", Ht::submit("Go"), "</form>";
 
@@ -318,21 +350,23 @@ if (count($tOpt) > 1) {
 
     // Display options
     echo Ht::form(hoturl("users"), ["method" => "get"]);
-    foreach (array("t", "sort") as $x)
+    foreach (array("t", "sort") as $x) {
         if (isset($Qreq[$x]))
             echo Ht::hidden($x, $Qreq[$x]);
+    }
 
     echo '<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class="pad">';
     foreach (array("tags" => "Tags",
                    "aff" => "Affiliations", "collab" => "Collaborators",
-                   "topics" => "Topics") as $fold => $text)
+                   "topics" => "Topics") as $fold => $text) {
         if (get($pl->have_folds, $fold) !== null) {
             $k = array_search($fold, ContactList::$folds) + 1;
             echo Ht::checkbox("show$fold", 1, $pl->have_folds[$fold],
                               ["data-fold-target" => "foldul#$k", "class" => "uich js-foldup"]),
                 "&nbsp;", Ht::label($text), "<br />\n";
         }
+    }
     echo "</td>";
     if (isset($pl->scoreMax)) {
         echo '<td class="pad">';
@@ -352,9 +386,10 @@ if (count($tOpt) > 1) {
     echo "<td>", Ht::submit("redisplay", "Redisplay"), "</td></tr>\n";
     if (isset($pl->scoreMax)) {
         $ss = [];
-        foreach (ListSorter::score_sort_selector_options() as $k => $v)
+        foreach (ListSorter::score_sort_selector_options() as $k => $v) {
             if (in_array($k, ["average", "variance", "maxmin"]))
                 $ss[$k] = $v;
+        }
         echo '<tr><td colspan="3"><hr class="g"><b>Sort scores by:</b> &nbsp;',
             Ht::select("scoresort", $ss,
                        ListSorter::canonical_long_score_sort($Me->session("ulscoresort", "A"))),
@@ -373,10 +408,11 @@ if (count($tOpt) > 1) {
 }
 
 
-if ($Me->privChair && $Qreq->t == "pc")
+if ($Me->privChair && $Qreq->t == "pc") {
     $Conf->infoMsg('<p><a href="' . hoturl("profile", "u=new&amp;role=pc") . '" class="btn">Create accounts</a></p>Select a PC member’s name to edit their profile or remove them from the PC.');
-else if ($Me->privChair && $Qreq->t == "all")
+} else if ($Me->privChair && $Qreq->t == "all") {
     $Conf->infoMsg('<p><a href="' . hoturl("profile", "u=new") . '" class="btn">Create accounts</a></p>Select a user to edit their profile.  Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user would see it.');
+}
 
 
 if ($pl->any->sel) {
@@ -385,8 +421,9 @@ if ($pl->any->sel) {
         echo Ht::hidden("sort", $Qreq->sort);
 }
 echo $pl_text;
-if ($pl->any->sel)
+if ($pl->any->sel) {
     echo "</div></form>";
+}
 
 
 $Conf->footer();
