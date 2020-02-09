@@ -3387,7 +3387,7 @@ class Conf {
             $this->_initial_msg_count = 0;
             if (isset($_SESSION[$this->dsn])
                 && isset($_SESSION[$this->dsn]["msgs"])) {
-                $this->_initial_msg_count = count($_SESSION[$conf->dsn]["msgs"]);
+                $this->_initial_msg_count = count($_SESSION[$this->dsn]["msgs"]);
             }
         }
         return $this->_initial_msg_count;
