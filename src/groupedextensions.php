@@ -83,7 +83,7 @@ class GroupedExtensions {
         }
         $r = [];
         $alias = false;
-        foreach (get($this->_potential_members, $name, []) as $subname) {
+        foreach (array_unique(get($this->_potential_members, $name, [])) as $subname) {
             if (($gj = $this->get_raw($subname))
                 && $gj->group === ($name === "" ? $gj->name : $name)
                 && $gj->name !== $name
