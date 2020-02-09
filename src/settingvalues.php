@@ -1211,11 +1211,12 @@ class SettingValues extends MessageSet {
                 return $v;
             $err = $tagger->error_html;
         } else if ($si->type === "emailheader") {
-            $v = (new MimeText)->encode_email_header("", $v);
+            $mt = new MimeText;
+            $v = $mt->encode_email_header("", $v);
             if ($v !== false) {
                 return ($v == "" ? "" : MimeText::decode_header($v));
             }
-            $err = "Should be an email header.";
+            $err = "Malformed destination list: " . $mt->unparse_error();
         } else if ($si->type === "emailstring") {
             $v = trim($v);
             if ($v === "" && $si->optional)

@@ -626,11 +626,12 @@ class Mailer {
                 if (($hdr = $mimetext->encode_email_header($field . ": ", $text))) {
                     $prep->headers[$lcfield] = $hdr . $eol;
                 } else {
-                    $prep->errors[$lcfield] = $text;
+                    $prep->errors[$lcfield] = $mimetext->unparse_error();
                     error_log("mailer error on $lcfield: $text");
                     $prep->sendable = false;
-                    if (!get($rest, "no_error_quit"))
-                        Conf::msg_error("$field destination “<samp>" . htmlspecialchars($text) . "</samp>” isn't a valid email list.");
+                    if (!get($rest, "no_error_quit")) {
+                        Conf::msg_error("Malformed $field field:" . $prep->errors[$lcfield]);
+                    }
                 }
             }
         }
@@ -678,6 +679,9 @@ class Mailer {
 
 class MimeText {
     public $in;
+    public $errorpos;
+    public $errorlen;
+    public $errortext;
     public $out;
     public $linelen;
 
@@ -687,6 +691,9 @@ class MimeText {
         } else {
             $this->in = $str;
         }
+        $this->errorpos = false;
+        $this->errorlen = false;
+        $this->errortext = false;
         $this->out = $header;
         $this->linelen = strlen($header);
     }
@@ -771,40 +778,79 @@ class MimeText {
 
     function encode_email_header($header, $str) {
         $this->reset($header, $str);
+        if (strpos($this->in, chr(0xE2)) !== false) {
+            $this->in = str_replace(["“", "”"], ["\"", "\""], $this->in);
+        }
         $str = $this->in;
+        $inlen = strlen($str);
 
         // separate $str into emails, quote each separately
         while (true) {
+            $str = preg_replace('/\A[,;\s]+/', "", $str);
+            if ($str === "") {
+                return $this->out;
+            }
 
             // try three types of match in turn:
             // 1. name <email> [RFC 822]
-            $match = preg_match("/\\A[,;\\s]*((?:(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\\s\\000-\\037()[\\]<>@,;:\\\\\".]+)\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m);
-            // 2. name including periods but no quotes <email> (canonicalize)
-            if (!$match) {
-                $match = preg_match("/\\A[,;\\s]*((?:[^\\s\\000-\\037()[\\]<>@,;:\\\\\"]+\\s*?)*)\\s*<\\s*(.*?)\\s*>\\s*(.*)\\z/s", $str, $m);
-                if ($match)
-                    $m[1] = "\"$m[1]\"";
-            }
-            // 3. bare email
-            if (!$match) {
-                $match = preg_match("/\\A[,;\\s]*()<?\\s*([^\\s\\000-\\037()[\\]<>,;:\\\\\"]+)\\s*>?\\s*(.*)\\z/s", $str, $m);
-            }
-            // otherwise, fail
-            if (!$match) {
-                break;
+            // 2. name including periods and “\'” but no quotes <email>
+            if (preg_match('/\A((?:(?:"(?:[^"\\\\]|\\\\.)*"|[^\s\000-\037()[\\]<>@,;:\\\\".]+)\s*?)*)\s*<\s*(.*?)(\s*>\s*)(.*)\z/s', $str, $m)
+                || preg_match('/\A((?:[^\000-\037()[\\]<>@,;:\\\\"]|\\\\\')+?)\s*<\s*(.*?)(\s*>\s*)(.*)\z/s', $str, $m)) {
+                $emailpos = $inlen - strlen($m[4]) - strlen($m[3]) - strlen($m[2]);
+                $name = $m[1];
+                $email = $m[2];
+                $str = $m[4];
+            } else if (preg_match('/\A<\s*([^\s\000-\037()[\\]<>,;:\\\\"]+)(\s*>?\s*)(.*)\z/s', $str, $m)) {
+                $emailpos = $inlen - strlen($m[3]) - strlen($m[2]) - strlen($m[1]);
+                $name = "";
+                $email = $m[1];
+                $str = $m[3];
+            } else if (preg_match('/\A(none|hidden|[^\s\000-\037()[\\]<>,;:\\\\"]+@[^\s\000-\037()[\\]<>,;:\\\\"]+)(\s*)(.*)\z/s', $str, $m)) {
+                $emailpos = $inlen - strlen($m[3]) - strlen($m[2]) - strlen($m[1]);
+                $name = "";
+                $email = $m[1];
+                $str = $m[3];
+            } else {
+                $this->errorpos = $inlen - strlen($str);
+                if (preg_match('/[\s<>@]/', $str)) {
+                    $this->errortext = "Invalid destination (possible quoting problem).";
+                } else {
+                    $this->errortext = "Invalid email address.";
+                }
+                return false;
             }
 
-            list($name, $email, $str) = array($m[1], $m[2], $m[3]);
-            if (strpos($email, "@") !== false && !validate_email($email)) {
+            // Validate email
+            if (!validate_email($email)
+                && $email !== "none"
+                && $email !== "hidden") {
+                if (strpos($email, "@") === false) {
+                    error_log("mailer is going to bail out on something it didn't previously $email");
+                }
+                $this->errorpos = $emailpos;
+                $this->errorlen = strlen($email);
+                $this->errortext = "Invalid email address.";
                 return false;
             }
-            if ($str !== "" && $str[0] !== "," && $str[0] !== ";") {
-                return false;
+
+            // Validate rest of string
+            if ($str !== ""
+                && $str[0] !== ","
+                && $str[0] !== ";") {
+                if ($this->errorpos === false) {
+                    $this->errorpos = $inlen - strlen($str);
+                    $this->errortext = "Destinations should be separated with commas.";
+                }
+                if (!preg_match('/\A<?\s*([^\s>]*)/', $str, $m)
+                    || !validate_email($m[1])) {
+                    return false;
+                }
             }
+
+            // Append email
             if ($email === "none" || $email === "hidden") {
                 continue;
             }
-
             if ($this->out !== $header) {
                 $this->out .= ", ";
                 $this->linelen += 2;
@@ -838,18 +884,36 @@ class MimeText {
                 $this->append(" <$email>", false);
             }
         }
-
-        if (preg_match('/\A[\s,;]*\z/', $str)) {
-            return $this->out;
-        } else {
-            return false;
-        }
     }
 
     function encode_header($header, $str) {
         $this->reset($header, $str);
         $this->append($str, preg_match('/[\x80-\xFF]/', $str));
         return $this->out;
+    }
+
+    function unparse_error() {
+        if ($this->errorpos !== false) {
+            $str = str_replace("\t", " ", $this->in);
+            $t = '<pre>';
+            if ($this->errorlen) {
+                $t .= htmlspecialchars(substr($str, 0, $this->errorpos))
+                    . '<span class="is-error">'
+                    . htmlspecialchars(substr($str, $this->errorpos, $this->errorlen))
+                    . '</span>'
+                    . htmlspecialchars(substr($str, $this->errorpos + $this->errorlen));
+                $arrow = str_repeat("↑", $this->errorlen);
+            } else {
+                $t .= htmlspecialchars($str);
+                $arrow = "↑";
+            }
+            $space = str_repeat(" ", $this->errorpos);
+            return $t . "\n"
+                . $space . '<span class="is-error">' . $arrow . '</span>' . "\n"
+                . $space . '<span class="is-error">' . htmlspecialchars($this->errortext) . '</span></pre>';
+        } else {
+            return false;
+        }
     }
 
     static function chr_hexdec_callback($m) {

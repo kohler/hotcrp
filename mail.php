@@ -489,9 +489,10 @@ class MailSender {
                 foreach ($prep->errors as $lcfield => $hline) {
                     $reqfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
                     Ht::error_at($reqfield);
-                    $emsg = Mailer::$email_fields[$lcfield] . " destination isn’t a valid email list: <blockquote><samp>" . htmlspecialchars($hline) . "</samp></blockquote> Make sure email address are separated by commas; put names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
-                    if (!isset($preperrors[$emsg]))
+                    $emsg = "Malformed " . Mailer::$email_fields[$lcfield] . " field: " . $hline . " Put names in \"double quotes\" and email addresses in &lt;angle brackets&gt;, and separate destinations with commas.";
+                    if (!isset($preperrors[$emsg])) {
                         Conf::msg_error($emsg);
+                    }
                     $preperrors[$emsg] = true;
                 }
             } else if ($this->process_prep($prep, $last_prep, $row)) {
