@@ -246,19 +246,23 @@ class Si {
             if (!$base_si->extensible
                 || ($base_si->extensible === self::X_SIMPLE
                     && !preg_match('{\A_(?:\$|n|m?\d+)\z}', $m[2]))) {
-                if ($base_si->extensible !== false)
+                if ($base_si->extensible !== false) {
                     error_log("$name: cloning non-extensible setting $base_si->name, " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+                }
                 return null;
             }
             $si = clone $base_si;
             $si->name = $name;
-            if ($si->storage)
+            if ($si->storage) {
                 $si->storage .= $m[2];
-            if ($si->extensible === self::X_WORD)
+            }
+            if ($si->extensible === self::X_WORD) {
                 $si->title .= " (" . htmlspecialchars(substr($m[2], 1)) . ")";
+            }
             if ($si->message_context_setting
-                && str_starts_with($si->message_context_setting, "+"))
+                && str_starts_with($si->message_context_setting, "+")) {
                 $si->message_context_setting .= $m[2];
+            }
             $conf->_setting_info[$name] = $si;
         }
         return $k ? $si->$k : $si;
@@ -425,10 +429,11 @@ class SettingValues extends MessageSet {
     function set_req($k, $v) {
         $this->req[$k] = $v;
         if (preg_match('/\A(?:has_)?(\S+?)(|_n|_m?\d+)\z/', $k, $m)) {
-            if (!isset($this->req_has_suffixes[$m[1]]))
+            if (!isset($this->req_has_suffixes[$m[1]])) {
                 $this->req_has_suffixes[$m[1]] = [$m[2]];
-            else if (!in_array($m[2], $this->req_has_suffixes[$m[1]]))
+            } else if (!in_array($m[2], $this->req_has_suffixes[$m[1]])) {
                 $this->req_has_suffixes[$m[1]][] = $m[2];
+            }
         }
     }
     function unset_req($k) {
@@ -494,8 +499,9 @@ class SettingValues extends MessageSet {
     }
     function error_at($field, $html = false) {
         if (is_array($field)) {
-            foreach ($field as $f)
+            foreach ($field as $f) {
                 $this->error_at($f, $html);
+            }
         } else {
             $fname = $field instanceof Si ? $field->name : $field;
             parent::error_at($fname, $html);
@@ -503,8 +509,9 @@ class SettingValues extends MessageSet {
     }
     function warning_at($field, $html = false) {
         if (is_array($field)) {
-            foreach ($field as $f)
+            foreach ($field as $f) {
                 $this->warning_at($f, $html);
+            }
         } else {
             $fname = $field instanceof Si ? $field->name : $field;
             parent::warning_at($fname, $html);
@@ -512,8 +519,9 @@ class SettingValues extends MessageSet {
     }
     private function report_mx(&$msgs, &$lastmsg, $mx) {
         $t = $mx[1];
-        if ($mx[2] === MessageSet::WARNING)
+        if ($mx[2] === MessageSet::WARNING) {
             $t = "Warning: " . $t;
+        }
         $loc = null;
         if ($mx[0] && ($si = Si::get($this->conf, $mx[0])) && $si->title) {
             $loc = htmlspecialchars($si->title);
@@ -522,11 +530,13 @@ class SettingValues extends MessageSet {
             }
         }
         if ($lastmsg && $lastmsg[0] === $t) {
-            if ($lastmsg[1])
+            if ($lastmsg[1]) {
                 $loc = $loc ? $lastmsg[1] . ", " . $loc : $lastmsg[1];
+            }
             $msgs[count($msgs) - 1] = $loc ? $loc . ": " . $t : $t;
-        } else
+        } else {
             $msgs[] = $loc ? $loc . ": " . $t : $t;
+        }
         $lastmsg = [$t, $loc];
     }
     function report($is_update = false) {
@@ -583,20 +593,36 @@ class SettingValues extends MessageSet {
         return Ht::label($html, $name1, $label_js) . $post;
     }
     function sjs($name, $js = array()) {
+        if ($name instanceof Si) {
+            $si = $name;
+            $name = $si->name;
+        } else {
+            $si = Si::get($this->conf, $name);
+        }
         $x = ["id" => $name];
-        if (Si::get($this->conf, $name, "disabled"))
+        if ($si && $si->disabled) {
             $x["disabled"] = true;
-        foreach ($js ? : [] as $k => $v)
+        }
+        if ($si && $this->use_req() && $this->si_has_interest($si)
+            && !isset($js["data-default-value"])
+            && !isset($js["data-default-checked"])) {
+            $v = $this->si_oldv($si, null);
+            $x["data-default-value"] = $this->si_render_value($v, $si);
+        }
+        foreach ($js ? : [] as $k => $v) {
             $x[$k] = $v;
-        if ($this->has_problem_at($name))
+        }
+        if ($this->has_problem_at($name)) {
             $x["class"] = $this->control_class($name, get($x, "class", ""));
+        }
         return $x;
     }
 
     function si($name) {
         $si = Si::get($this->conf, $name);
-        if (!$si)
+        if (!$si) {
             error_log(caller_landmark(2) . ": setting $name: missing information");
+        }
         return $si;
     }
 
@@ -689,9 +715,12 @@ class SettingValues extends MessageSet {
     }
     private function si_savedv($s, Si $si, $default_value) {
         if (array_key_exists($s, $this->savedv)) {
-            $v = $this->savedv[$s][$si->storage_type & Si::SI_DATA ? 1 : 0];
-            if ($si->storage_type & Si::SI_NEGATE) {
-                $v = $v ? 0 : 1;
+            $v = $this->savedv[$s];
+            if ($v !== null) {
+                $v = $v[$si->storage_type & Si::SI_DATA ? 1 : 0];
+                if ($si->storage_type & Si::SI_NEGATE) {
+                    $v = $v ? 0 : 1;
+                }
             }
             return $v;
         } else {
@@ -778,8 +807,9 @@ class SettingValues extends MessageSet {
     function render_messages_at($field) {
         $t = "";
         $fname = $field instanceof Si ? $field->name : $field;
-        foreach ($this->messages_at($fname, true) as $mx)
-            $t .= '<p class="' . MessageSet::status_class($mx[2], "settings-ap f-h", "is-") . '">' . $mx[1] . "</p>";
+        foreach ($this->messages_at($fname, true) as $mx) {
+            $t .= '<div class="' . MessageSet::status_class($mx[2], "settings-ap f-h", "is-") . '">' . $mx[1] . "</div>";
+        }
         return $t;
     }
     function echo_messages_at($field) {
@@ -810,8 +840,9 @@ class SettingValues extends MessageSet {
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, self::strip_group_js($js));
         echo '</span>', $this->label($name, $text, ["for" => $name, "class" => get($js, "label_class")]);
-        if ($hint)
-            echo '<p class="', self::add_class("settings-ap f-hx", get($js, "hint_class")), '">', $hint, '</p>';
+        if ($hint) {
+            echo '<div class="', self::add_class("settings-ap f-hx", get($js, "hint_class")), '">', $hint, '</div>';
+        }
         $this->echo_messages_at($name);
         if (!get($js, "group_open"))
             echo "</div>\n";
@@ -851,10 +882,11 @@ class SettingValues extends MessageSet {
             unset($item["label"], $item["hint"]);
             $item["id"] = "{$name}_{$k}";
             if (!isset($item["class"])) {
-                if (isset($rest["item_class"]))
+                if (isset($rest["item_class"])) {
                     $item["class"] = $rest["item_class"];
-                else if ($fold !== false)
+                } else if ($fold !== false) {
                     $item["class"] = "uich js-foldup";
+                }
             }
 
             $label1 = "<label>";
@@ -873,60 +905,63 @@ class SettingValues extends MessageSet {
         echo "</div>\n";
     }
     function render_entry($name, $js = []) {
-        $v = $this->curv($name);
+        $si = $this->si($name);
+        $v = $this->si_curv($si, null);
         $t = "";
-        if (($si = $this->si($name))) {
-            if ($si->size && !isset($js["size"])) {
-                $js["size"] = $si->size;
-            }
-            if ($si->placeholder && !isset($js["placeholder"])) {
-                $js["placeholder"] = $si->placeholder;
-            }
-            if ($si->autogrow) {
-                $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
-            }
-            if ($si->is_date()) {
-                $v = $this->si_render_date_value($v, $si);
-            } else if ($si->type === "grace") {
-                $v = $this->si_render_grace_value($v, $si);
-            }
-            if ($si->parser_class) {
-                $t = Ht::hidden("has_$name", 1);
-            }
+        if (!$this->use_req() || !$this->si_has_interest($si)) {
+            $v = $this->si_render_value($v, $si);
         }
-        return Ht::entry($name, $v, $this->sjs($name, $js)) . $t;
+        if ($si->size && !isset($js["size"])) {
+            $js["size"] = $si->size;
+        }
+        if ($si->placeholder && !isset($js["placeholder"])) {
+            $js["placeholder"] = $si->placeholder;
+        }
+        if ($si->autogrow) {
+            $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
+        }
+        if ($si->parser_class) {
+            $t = Ht::hidden("has_$name", 1);
+        }
+        return Ht::entry($name, $v, $this->sjs($si, $js)) . $t;
     }
     function echo_entry($name) {
         echo $this->render_entry($name);
     }
     function echo_control_group($name, $description, $control,
                                 $js = null, $hint = null) {
-        if (($horizontal = get($js, "horizontal")) !== null)
-            unset($js["horizontal"]);
-        $klass = $horizontal ? "entryi" : "f-i";
         $si = $this->si($name);
-        if ($description === null && $si)
+        if (($horizontal = get($js, "horizontal")) !== null) {
+            unset($js["horizontal"]);
+        }
+        $klass = $horizontal ? "entryi" : "f-i";
+        if ($description === null) {
             $description = $si->title;
+        }
 
         echo '<div class="', $this->control_class($name, $klass), '">',
             $this->label($name, $description, ["class" => get($js, "label_class"), "no_control_class" => true]);
-        if ($horizontal)
+        if ($horizontal) {
             echo '<div class="entry">';
+        }
         echo $control, get_s($js, "control_after");
-        $thint = $si ? $this->type_hint($si->type) : null;
+        $thint = $this->type_hint($si->type);
         if ($hint || $thint) {
             echo '<div class="f-h">';
-            if ($hint && $thint)
+            if ($hint && $thint) {
                 echo '<div>', $hint, '</div><div>', $thint, '</div>';
-            else if ($hint || $thint)
-                echo $hint ? $hint : $thint;
+            } else if ($hint || $thint) {
+                echo $hint ? : $thint;
+            }
             echo '</div>';
         }
         $this->echo_messages_at($name);
-        if ($horizontal)
+        if ($horizontal) {
             echo "</div>";
-        if (!get($js, "group_open"))
+        }
+        if (!get($js, "group_open")) {
             echo "</div>\n";
+        }
     }
     function echo_entry_group($name, $description, $js = null, $hint = null) {
         $this->echo_control_group($name, $description,
@@ -934,12 +969,13 @@ class SettingValues extends MessageSet {
             $js, $hint);
     }
     function render_select($name, $values, $js = null) {
-        $v = $this->curv($name);
+        $si = $this->si($name);
+        $v = $this->si_curv($si, null);
         $t = "";
-        if (($si = $this->si($name)) && $si->parser_class) {
+        if ($si->parser_class) {
             $t = Ht::hidden("has_$name", 1);
         }
-        return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($name, $js)) . $t;
+        return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($si, $js)) . $t;
     }
     function echo_select_group($name, $values, $description, $js = null, $hint = null) {
         $this->echo_control_group($name, $description,
@@ -947,29 +983,35 @@ class SettingValues extends MessageSet {
             $js, $hint);
     }
     function render_textarea($name, $js = []) {
-        $v = $this->curv($name);
+        $si = $this->si($name);
+        $v = $this->si_curv($si, null);
         $t = "";
         $rows = 10;
-        if (($si = $this->si($name))) {
-            if ($si->size)
-                $rows = $si->size;
-            if ($si->placeholder)
-                $js["placeholder"] = $si->placeholder;
-            if ($si->autogrow || $si->autogrow === null)
-                $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
-            if ($si->parser_class)
-                $t = Ht::hidden("has_$name", 1);
+        if ($si->size) {
+            $rows = $si->size;
         }
-        if (!isset($js["rows"]))
+        if ($si->placeholder) {
+            $js["placeholder"] = $si->placeholder;
+        }
+        if ($si->autogrow || $si->autogrow === null) {
+            $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
+        }
+        if ($si->parser_class) {
+            $t = Ht::hidden("has_$name", 1);
+        }
+        if (!isset($js["rows"])) {
             $js["rows"] = $rows;
-        if (!isset($js["cols"]))
+        }
+        if (!isset($js["cols"])) {
             $js["cols"] = 80;
-        return Ht::textarea($name, $v, $this->sjs($name, $js)) . $t;
+        }
+        return Ht::textarea($name, $v, $this->sjs($si, $js)) . $t;
     }
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
-        if ($si->message_default)
+        if ($si->message_default) {
             $si->default_value = $this->si_message_default($si);
+        }
         $current = $this->curv($name);
         $description = '<a class="ui qq js-foldup" href="">'
             . expander(null, 0) . $description . '</a>';
@@ -988,8 +1030,9 @@ class SettingValues extends MessageSet {
     }
     function echo_message_horizontal($name, $description, $hint = "") {
         $si = $this->si($name);
-        if ($si->message_default)
+        if ($si->message_default) {
             $si->default_value = $this->si_message_default($si);
+        }
         $current = $this->curv($name);
         if ($current !== $si->default_value) {
             echo '<div class="entryi">',
@@ -1009,11 +1052,20 @@ class SettingValues extends MessageSet {
             $hint, $close, "</div></div>";
     }
 
-    private function si_render_date_value($v, Si $si) {
-        if ($v !== null && $this->use_req()) {
+    private function si_render_value($v, Si $si) {
+        if ($si->type === "cdate") {
+            return $v ? "1" : "";
+        } else if ($si->is_date()) {
+            return $this->si_render_date_value($v, $si);
+        } else if ($si->type === "grace") {
+            return $this->si_render_grace_value($v, $si);
+        } else {
             return $v;
-        } else if ($si->date_backup
-                   && $this->curv($si->date_backup) == $v) {
+        }
+    }
+    private function si_render_date_value($v, Si $si) {
+        if ($si->date_backup
+            && $this->curv($si->date_backup) == $v) {
             return "";
         } else if ($si->placeholder !== "N/A"
                    && $si->placeholder !== "none"

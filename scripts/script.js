@@ -996,6 +996,8 @@ function input_default_value(elt) {
     if (input_is_checkboxlike(elt)) {
         if (elt.hasAttribute("data-default-checked"))
             return !!elt.getAttribute("data-default-checked");
+        else if (elt.hasAttribute("data-default-value"))
+            return elt.value == elt.getAttribute("data-default-value");
         else
             return elt.defaultChecked;
     } else {

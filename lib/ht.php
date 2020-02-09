@@ -213,17 +213,6 @@ class Ht {
         if ($js["id"]) {
             self::$_lastcontrolid = $js["id"];
         }
-        if (isset($js["data-default-checked"]) || isset($js["data-default-value"])) {
-            $dc = get($js, "data-default-checked");
-            if ($dc === null) {
-                $dc = get($js, "data-default-value");
-            }
-            $dc = $dc ? "1" : "";
-            if (!!$checked === !!$dc) {
-                $dc = null;
-            }
-            $js["data-default-checked"] = $dc;
-        }
         $t = '<input type="checkbox"'; /* NB see Ht::radio */
         if ($name) {
             $t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";

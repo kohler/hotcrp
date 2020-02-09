@@ -6,8 +6,9 @@ class Basics_SettingParser extends SettingParser {
     static function render_names(SettingValues $sv) {
         $sv->echo_entry_group("opt.shortName", null, null, "Examples: “HotOS XIV”, “NSDI '14”");
 
-        if ($sv->oldv("opt.longName") == $sv->oldv("opt.shortName"))
+        if ($sv->oldv("opt.longName") == $sv->oldv("opt.shortName")) {
             $sv->set_oldv("opt.longName", "");
+        }
         $sv->echo_entry_group("opt.longName", null, null, "Example: “14th Workshop on Hot Topics in Operating Systems”");
 
         $sv->echo_entry_group("opt.conferenceSite", null, null, "Example: “https://yourconference.org/”");
@@ -37,8 +38,9 @@ class Basics_SettingParser extends SettingParser {
             }
         } else if ($si->name === "opt.shortName"
                    || $si->name === "opt.longName") {
-            if ($sv->oldv($si->name) !== $sv->newv($si->name))
+            if ($sv->oldv($si->name) !== $sv->newv($si->name)) {
                 $sv->cleanup_callback("update_shortName", "Basics_SettingParser::update_shortName");
+            }
         }
         return false;
     }
