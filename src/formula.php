@@ -37,6 +37,7 @@ class Fexpr implements JsonSerializable {
     const APREF = 2;
     const APCCANREV = 4;
     const ACONF = 8;
+    const APC = 16;
 
     const LNONE = 0;
     const LMY = 1;
@@ -438,15 +439,24 @@ class InFexpr extends Fexpr {
 }
 
 class AggregateFexpr extends Fexpr {
-    function __construct($fn, array $values) {
+    public $datatype;
+    function __construct($fn, array $values, $datatype = null) {
         parent::__construct($fn, $values);
+        $this->datatype = (int) $datatype;
     }
     static function parse_modifier(FormulaCall $ff, $arg) {
-        if (($ff->name === "variance" || $ff->name === "stddev")
-            && !$ff->modifier
-            && strpos($ff->text, "_") === false
-            && ($arg === ".p" || $arg === ".pop" || $arg === ".s" || $arg === ".samp")) {
-            $ff->modifier = true;
+        if (!$ff->modifier) {
+            $ff->modifier = [false, false];
+        }
+        if ($arg === ".pc"
+            && !$ff->modifier[0]) {
+            $ff->modifier[0] = Fexpr::APC;
+            return true;
+        } else if (($ff->name === "variance" || $ff->name === "stddev")
+                   && !$ff->modifier[1]
+                   && strpos($ff->text, "_") === false
+                   && in_array($arg, [".p", ".pop", ".s", ".samp"])) {
+            $ff->modifier[1] = true;
             if ($arg === ".p" || $arg === ".pop") {
                 $ff->name .= "_pop";
             }
@@ -459,7 +469,11 @@ class AggregateFexpr extends Fexpr {
         $op = $ff->name;
         if (($op === "min" || $op === "max")
             && count($ff->args) > 1) {
-            return new Fexpr($op === "min" ? "least" : "greatest", $ff->args);
+            if (!$ff->modifier) {
+                return new Fexpr($op === "min" ? "least" : "greatest", $ff->args);
+            } else {
+                return null;
+            }
         }
         if ($op === "wavg" && count($ff->args) === 1) {
             $op = "avg";
@@ -477,7 +491,7 @@ class AggregateFexpr extends Fexpr {
             $op = "arg" . substr($op, 2, 3);
             $ff->args = [$ff->args[1], $ff->args[0]];
         }
-        return new AggregateFexpr($op, $ff->args);
+        return new AggregateFexpr($op, $ff->args, $ff->modifier ? $ff->modifier[0] : null);
     }
 
     function typecheck_format() {
@@ -610,10 +624,11 @@ class AggregateFexpr extends Fexpr {
     function compile_fragments(FormulaCompiler $state) {
         foreach ($this->args as $i => $e) {
             if (($i === 0 && $this->op === "my")
-                || ($i === 1 && $this->op === "quantile"))
+                || ($i === 1 && $this->op === "quantile")) {
                 $e->compile_fragments($state);
-            else
+            } else {
                 $state->fragments[] = $e->compile($state);
+            }
         }
     }
 }
@@ -738,10 +753,11 @@ class Score_Fexpr extends Sub_Fexpr {
         $state->_ensure_rrow_score($fid);
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound();
-        if ($this->field->allow_empty)
+        if ($this->field->allow_empty) {
             return "({$this->field->view_score} > $rrow_vsb ? (int) {$rrow}->$fid : null)";
-        else
+        } else {
             return "({$this->field->view_score} > $rrow_vsb && isset({$rrow}->$fid) && {$rrow}->$fid ? (int) {$rrow}->$fid : null)";
+        }
     }
 }
 
@@ -771,8 +787,9 @@ class Pref_Fexpr extends Sub_Fexpr {
         return VIEWSCORE_PC;
     }
     function compile(FormulaCompiler $state) {
-        if (!$state->user->is_reviewer())
+        if (!$state->user->is_reviewer()) {
             return "null";
+        }
         $state->queryOptions["allReviewerPreference"] = true;
         $state->datatype |= self::APREF;
         $e = "get(get(" . $state->_add_review_prefs() . ", " . $state->_rrow_cid()
@@ -839,12 +856,13 @@ class FirstTag_Fexpr extends Sub_Fexpr {
     static function make(FormulaCall $ff) {
         $ts = [];
         foreach ($ff->args as $arg) {
-            if ($arg instanceof Tag_Fexpr)
+            if ($arg instanceof Tag_Fexpr) {
                 $ts[] = $arg->tag();
-            else if ($arg instanceof FirstTag_Fexpr)
+            } else if ($arg instanceof FirstTag_Fexpr) {
                 $ts = array_merge($ts, $arg->tags);
-            else
+            } else {
                 return null; /* XXX error message */
+            }
         }
         return new FirstTag_Fexpr($ts);
     }
@@ -882,10 +900,11 @@ class Option_Fexpr extends Sub_Fexpr {
             $state->queryOptions["options"] = true;
             $state->gstmt[] = "if (\$contact->can_view_option(\$prow, $id)) {";
             $state->gstmt[] = "  $ovar = \$prow->option($id);";
-            if ($this->option->type === "checkbox")
+            if ($this->option->type === "checkbox") {
                 $state->gstmt[] = "  $ovar = !!($ovar && {$ovar}->value);";
-            else
+            } else {
                 $state->gstmt[] = "  $ovar = $ovar ? {$ovar}->value : null;";
+            }
             $state->gstmt[] = "} else\n    $ovar = null;";
         }
         return $ovar;
@@ -897,16 +916,18 @@ class Decision_Fexpr extends Sub_Fexpr {
         $this->format_ = self::FDECISION;
     }
     function view_score(Contact $user) {
-        if ($user->can_view_some_decision_as_author())
+        if ($user->can_view_some_decision_as_author()) {
             return VIEWSCORE_AUTHOR;
-        else if ($user->conf->time_pc_view_decision(false))
+        } else if ($user->conf->time_pc_view_decision(false)) {
             return VIEWSCORE_PC;
-        else
+        } else {
             return VIEWSCORE_ADMINONLY;
+        }
     }
     function compile(FormulaCompiler $state) {
-        if ($state->check_gvar('$decision'))
+        if ($state->check_gvar('$decision')) {
             $state->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow) ? (int) \$prow->outcome : 0;";
+        }
         return '$decision';
     }
 }
@@ -928,10 +949,11 @@ class TopicScore_Fexpr extends Sub_Fexpr {
     function compile(FormulaCompiler $state) {
         $state->datatype |= Fexpr::APCCANREV;
         $state->queryOptions["topics"] = true;
-        if ($state->looptype === self::LMY)
+        if ($state->looptype === self::LMY) {
             return $state->define_gvar("mytopicscore", "\$prow->topic_interest_score(\$contact)");
-        else
+        } else {
             return "\$prow->topic_interest_score(" . $state->_rrow_cid() . ")";
+        }
     }
 }
 
@@ -1044,8 +1066,9 @@ class Conflict_Fexpr extends Sub_Fexpr {
             $rt = "\$prow->has_conflict($idx)";
         } else {
             $rt = "!!get(" . $state->_add_conflicts() . ", " . $idx . ")";
-            if ($this->ispc)
+            if ($this->ispc) {
                 $rt = "(get(" . $state->_add_pc() . ", " . $idx . ") ? $rt : null)";
+            }
         }
         return $rt;
     }
@@ -1053,12 +1076,13 @@ class Conflict_Fexpr extends Sub_Fexpr {
 
 class Review_Fexpr extends Sub_Fexpr {
     function view_score(Contact $user) {
-        if (!$user->conf->setting("rev_blind"))
+        if (!$user->conf->setting("rev_blind")) {
             return VIEWSCORE_AUTHOR;
-        else if ($user->conf->setting("pc_seeblindrev"))
+        } else if ($user->conf->setting("pc_seeblindrev")) {
             return VIEWSCORE_REVIEWERONLY;
-        else
+        } else {
             return VIEWSCORE_PC;
+        }
     }
 }
 
@@ -1090,8 +1114,9 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && $user->conf->pc_tag_exists($arg));
         $flags = ContactSearch::F_USER;
-        if ($user->can_view_reviewer_tags())
+        if ($user->can_view_reviewer_tags()) {
             $flags |= ContactSearch::F_TAG;
+        }
         if ($arg[0] === "\"") {
             $flags |= ContactSearch::F_QUOTED;
             $arg = str_replace("\"", "", $arg);
@@ -1113,8 +1138,9 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
             $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
             return "($cvt ? ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
-        } else
+        } else {
             return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact) ? array_search(' . $state->_rrow_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
+        }
     }
     function matches_at_most_once() {
         return count($this->csearch->ids) <= 1;
@@ -1126,9 +1152,11 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         }
         if (($a = get(self::$tagmap, $tag)) === null) {
             $a = array();
-            foreach ($conf->pc_members() as $pc)
-                if (($v = $pc->tag_value($tag)) !== false)
+            foreach ($conf->pc_members() as $pc) {
+                if (($v = $pc->tag_value($tag)) !== false) {
                     $a[$pc->contactId] = $v ? : true;
+                }
+            }
             self::$tagmap[$tag] = $a;
         }
         return get($a, $cid) ? : false;
@@ -1142,8 +1170,9 @@ class ReviewWordCount_Fexpr extends Sub_Fexpr {
     function compile(FormulaCompiler $state) {
         if ($state->looptype != self::LMY) {
             $view_score = $state->user->permissive_view_score_bound();
-            if (VIEWSCORE_PC <= $view_score)
+            if (VIEWSCORE_PC <= $view_score) {
                 return "null";
+            }
         }
         $state->datatype |= self::ASUBREV;
         $state->_ensure_review_word_counts();
@@ -1196,18 +1225,19 @@ class FormulaCompiler {
     }
 
     function check_gvar($gvar) {
-        if (get($this->gvar, $gvar))
+        if (get($this->gvar, $gvar)) {
             return false;
-        else {
+        } else {
             $this->gvar[$gvar] = $gvar;
             return true;
         }
     }
     function define_gvar($name, $expr) {
-        if (preg_match(',\A\$?(.*[^A-Ya-z0-9_].*)\z,', $name, $m))
+        if (preg_match(',\A\$?(.*[^A-Ya-z0-9_].*)\z,', $name, $m)) {
             $name = '$' . preg_replace_callback(',[^A-Ya-z0-9_],', function ($m) { return "Z" . dechex(ord($m[0])); }, $m[1]);
-        else
+        } else {
             $name = $name[0] === "$" ? $name : '$' . $name;
+        }
         if (get($this->gvar, $name) === null) {
             $this->gstmt[] = "$name = $expr;";
             $this->gvar[$name] = $name;
@@ -1215,9 +1245,16 @@ class FormulaCompiler {
         return $name;
     }
 
+    function _add_pc() {
+        if ($this->check_gvar('$pc')) {
+            $this->gstmt[] = "\$pc = \$contact->conf->pc_members();";
+        }
+        return '$pc';
+    }
     function _add_pc_can_review() {
-        if ($this->check_gvar('$pc_can_review'))
+        if ($this->check_gvar('$pc_can_review')) {
             $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer_ignore_conflict();";
+        }
         return '$pc_can_review';
     }
     function _add_vsreviews() {
@@ -1240,12 +1277,6 @@ class FormulaCompiler {
             $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts(\$prow) ? \$prow->conflicts() : [];";
         }
         return '$conflicts';
-    }
-    function _add_pc() {
-        if ($this->check_gvar('$pc')) {
-            $this->gstmt[] = "\$pc = \$contact->conf->pc_members();";
-        }
-        return '$pc';
     }
     function _add_tagpos($tag) {
         if ($tag === false) {
@@ -1370,17 +1401,21 @@ class FormulaCompiler {
 
     function loop_variable($datatype) {
         $g = array();
-        if ($datatype & Fexpr::APCCANREV) {
-            $g[] = $this->_add_pc_can_review();
-        }
         if ($datatype & Fexpr::ASUBREV) {
             $g[] = $this->_add_vsreviews();
         }
-        if ($datatype & Fexpr::APREF) {
-            $g[] = $this->_add_review_prefs();
-        }
-        if ($datatype & Fexpr::ACONF) {
-            $g[] = $this->_add_conflicts();
+        if ($datatype & Fexpr::APC) {
+            $g[] = $this->_add_pc();
+        } else {
+            if ($datatype & Fexpr::APCCANREV) {
+                $g[] = $this->_add_pc_can_review();
+            }
+            if ($datatype & Fexpr::APREF) {
+                $g[] = $this->_add_review_prefs();
+            }
+            if ($datatype & Fexpr::ACONF) {
+                $g[] = $this->_add_conflicts();
+            }
         }
         if (count($g) > 1) {
             $gx = str_replace('$', "", join("_and_", $g));
@@ -1396,7 +1431,7 @@ class FormulaCompiler {
         $combiner = str_replace("~r~", $t_result, $combiner);
         $p = $this->_push();
         $this->looptype = Fexpr::LALL;
-        $this->datatype = 0;
+        $this->datatype = $e->datatype;
 
         preg_match_all('/~l(\d*)~/', $combiner, $m);
         foreach (array_unique($m[1]) as $i) {
@@ -1880,8 +1915,9 @@ class Formula implements Abbreviator {
             if (($kwdef = $this->conf->formula_function($m[1], $this->user))) {
                 return $kwdef;
             }
-            $pos = strrpos($m[1], ":");
-            $m[1] = $pos === false ? "" : substr($m[1], 0, $pos);
+            $pos1 = strrpos($m[1], ":");
+            $pos2 = strrpos($m[1], ".");
+            $m[1] = substr($m[1], 0, max((int) $pos1, (int) $pos2));
         }
         return false;
     }
