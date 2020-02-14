@@ -985,7 +985,7 @@ class UserStatus extends MessageSet {
       <div class="f-c">New password</div>',
             Ht::password("upassword", $pws[0], ["size" => 52, "class" => "fn", "autocomplete" => $us->autocomplete("new-password")]);
         echo '</div>
-    <div class="', $us->control_class("password", "f-i"), ' fn">
+    <div class="', $us->control_class("password", "f-i"), '">
       <div class="f-c">Repeat new password</div>',
             Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]), "</div>\n";
         echo "</div></div>"; // .fx3 #foldpassword

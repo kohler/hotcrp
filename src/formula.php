@@ -756,8 +756,9 @@ class Pref_Fexpr extends Sub_Fexpr {
     }
     static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
         if ($ff->modifier === false && !str_starts_with($arg, ".")) {
-            if (str_starts_with($arg, ":"))
+            if (str_starts_with($arg, ":")) {
                 $arg = substr($arg, 1);
+            }
             $csm = ContactSearch::make_pc($arg, $formula->user);
             if ($csm->ids !== false) {
                 $ff->modifier = $csm->ids;
@@ -950,20 +951,22 @@ class Topic_Fexpr extends Sub_Fexpr {
     }
     static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
         if ($ff->modifier === false && !str_starts_with($arg, ".")) {
-            if (str_starts_with($arg, ":"))
+            if (str_starts_with($arg, ":")) {
                 $arg = substr($arg, 1);
+            }
             $w = new SearchWord($arg);
-            if (strcasecmp($w->word, "any") === 0 && !$w->quoted)
+            if (strcasecmp($w->word, "any") === 0 && !$w->quoted) {
                 $ff->modifier = true;
-            else if (strcasecmp($w->word, "none") === 0 && !$w->quoted)
+            } else if (strcasecmp($w->word, "none") === 0 && !$w->quoted) {
                 $ff->modifier = [false];
-            else {
+            } else {
                 $ff->modifier = $formula->conf->topic_abbrev_matcher()->find_all($w->word);
                 // XXX warn if no match
             }
             return true;
-        } else
+        } else {
             return false;
+        }
     }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["topics"] = true;
@@ -1725,7 +1728,7 @@ class Formula implements Abbreviator {
             $xt = $name === "#" ? "#" . $t : $t;
             while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9!@*_:.\/#~]+))(.*)/s', $xt, $m)
                    && ($has_args || !preg_match('/\A\s*\(/s', $m[2]))
-                   && ($marg = call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this))) {
+                   && call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this)) {
                 $t = $xt = $m[2];
             }
         }
