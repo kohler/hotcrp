@@ -3142,6 +3142,24 @@ class Contact {
                 && $this->conf->check_tracks($prow, $this, Track::ASSREV));
     }
 
+    function allow_view_preference(PaperInfo $prow = null, $aggregate = false) {
+        if ($prow) {
+            $rights = $this->rights($prow);
+            return $aggregate ? $rights->allow_pc : $rights->allow_administer;
+        } else {
+            return $this->is_manager();
+        }
+    }
+
+    function can_view_preference(PaperInfo $prow = null, $aggregate = false) {
+        if ($prow) {
+            $rights = $this->rights($prow);
+            return $aggregate ? $rights->allow_pc : $rights->can_administer;
+        } else {
+            return $this->is_manager();
+        }
+    }
+
     function can_enter_preference(PaperInfo $prow) {
         return $this->isPC
             && $this->can_become_reviewer_ignore_conflict($prow)

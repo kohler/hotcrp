@@ -94,43 +94,47 @@ class Revpref_SearchTerm extends SearchTerm {
         }
 
         $value = new RevprefSearchMatcher($count, $contacts, $safe_contacts >= 0);
-        if (strcasecmp($word, "any") == 0 || strcasecmp($word, "none") == 0)
+        if (strcasecmp($word, "any") == 0 || strcasecmp($word, "none") == 0) {
             $value->is_any = true;
-        else if (preg_match(',\A\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
-                 && ($m[2] !== "" || $m[3] !== "")) {
+        } else if (preg_match(',\A\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
+                   && ($m[2] !== "" || $m[3] !== "")) {
             if ($m[2] !== "")
                 $value->preference_match = new CountMatcher($m[1] . $m[2]);
             if ($m[3] !== "")
                 $value->expertise_match = new CountMatcher(($m[2] === "" ? $m[1] : "") . (121 - ord(strtolower($m[3]))));
-        } else
+        } else {
             return new False_SearchTerm;
+        }
 
         $qz = new Revpref_SearchTerm($value);
-        if (strcasecmp($word, "none") == 0)
+        if (strcasecmp($word, "none") == 0) {
             $qz = SearchTerm::make_not($qz);
+        }
         return $qz;
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->rpsm->preference_match
             && $this->rpsm->preference_match->test(0)
-            && !$this->rpsm->expertise_match)
+            && !$this->rpsm->expertise_match) {
             return "true";
+        }
         $where = [$this->rpsm->contact_match_sql("contactId")];
-        if (($match = $this->rpsm->preference_expertise_match()))
+        if (($match = $this->rpsm->preference_expertise_match())) {
             $where[] = $match;
+        }
         $q = "select paperId, count(PaperReviewPreference.preference) as count"
             . " from PaperReviewPreference";
-        if (count($where))
+        if (count($where)) {
             $q .= " where " . join(" and ", $where);
+        }
         $q .= " group by paperId";
         $thistab = "Revpref_" . count($sqi->tables);
         $sqi->add_table($thistab, array("left join", "($q)"));
         return "coalesce($thistab.count,0)" . $this->rpsm->countexpr();
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        $can_view = $srch->user->allow_administer($row)
-            || ($this->rpsm->safe_contacts && $srch->user->act_pc($row));
+        $can_view = $srch->user->can_view_preference($row, $this->rpsm->safe_contacts);
         $n = 0;
         foreach ($this->rpsm->contact_set() as $cid) {
             if (($cid == $srch->cid || $can_view)

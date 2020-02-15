@@ -32,7 +32,7 @@ class Preference_PaperColumn extends PaperColumn {
         $this->contact = $this->contact ? : $reviewer;
         $this->not_me = $this->contact->contactId !== $pl->user->contactId;
         if (!$pl->user->isPC
-            || ($this->not_me && !$pl->user->is_manager())) {
+            || ($this->not_me && !$pl->user->can_view_preference(null))) {
             return false;
         }
         if ($visible) {
@@ -46,7 +46,7 @@ class Preference_PaperColumn extends PaperColumn {
         return true;
     }
     private function preference_values($row) {
-        if ($this->not_me && !$this->viewer_contact->can_administer($row)) {
+        if ($this->not_me && !$this->viewer_contact->can_view_preference($row)) {
             return [null, null];
         } else {
             return $row->reviewer_preference($this->contact);
@@ -107,7 +107,7 @@ class Preference_PaperColumn extends PaperColumn {
         }
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $this->not_me && !$pl->user->allow_administer($row);
+        return $this->not_me && !$pl->user->allow_view_preference($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $pv = $row->reviewer_preference($this->contact);
@@ -143,7 +143,7 @@ class Preference_PaperColumn extends PaperColumn {
         // account for statistics and maybe wrap HTML in conflict
         if ($this->not_me
             && !$editable
-            && !$pl->user->can_administer($row)
+            && !$pl->user->can_view_preference($row)
             && $t !== "") {
             $tag = $this->row ? "div" : "span";
             $t = "<$tag class=\"fx5\">" . $t . "</$tag>";
