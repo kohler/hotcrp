@@ -116,7 +116,7 @@ class ReviewTimes {
         $this->conf->load_missing_cached_users();
 
         $users = array();
-        $tags = $this->user->can_view_reviewer_tags();
+        $tags = $this->user->can_view_user_tags();
         foreach ($this->r as $cid => $x) {
             if ($cid !== "conflicts") {
                 $users[$cid] = $u = (object) array();

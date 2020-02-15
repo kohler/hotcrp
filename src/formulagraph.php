@@ -310,7 +310,7 @@ class FormulaGraph extends MessageSet {
     private function _paper_style(PaperInfo $prow) {
         $qnum = $this->papermap[$prow->paperId][0];
         if ($this->_qstyles_bytag[$qnum]) {
-            if ($this->reviewer_color && $this->user->can_view_reviewer_tags($prow)) {
+            if ($this->reviewer_color && $this->user->can_view_user_tags()) {
                 return self::REVIEWER_COLOR;
             } else if ($prow->paperTags
                        && ($c = $prow->viewable_tags($this->user))
@@ -711,7 +711,7 @@ class FormulaGraph extends MessageSet {
                 foreach ($this->reviewers as $r) {
                     $rd = ["text" => $this->user->name_text_for($r),
                            "search" => "re:" . $r->email];
-                    if ($this->user->can_view_reviewer_tags()
+                    if ($this->user->can_view_user_tags()
                         && ($colors = $r->viewable_color_classes($this->user))) {
                         $rd["color_classes"] = $colors;
                     }

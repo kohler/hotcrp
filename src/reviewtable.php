@@ -19,9 +19,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
     $admin = $user->can_administer($prow);
     $hideUnviewable = ($cflttype > 0 && !$admin)
         || (!$user->act_pc($prow) && !$conf->setting("extrev_view"));
-    $show_colors = $user->can_view_reviewer_tags($prow);
     $show_ratings = $user->can_view_review_ratings($prow);
-    $tagger = $show_colors ? new Tagger($user) : null;
     $xsep = ' <span class="barsep">·</span> ';
     $want_scores = $mode !== "assign" && $mode !== "edit" && $mode !== "re";
     $want_requested_by = false;

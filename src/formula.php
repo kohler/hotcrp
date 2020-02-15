@@ -1114,7 +1114,7 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && $user->conf->pc_tag_exists($arg));
         $flags = ContactSearch::F_USER;
-        if ($user->can_view_reviewer_tags()) {
+        if ($user->can_view_user_tags()) {
             $flags |= ContactSearch::F_TAG;
         }
         if ($arg[0] === "\"") {
@@ -1136,9 +1136,9 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         $state->datatype |= self::ASUBREV;
         $state->queryOptions["reviewSignatures"] = true;
         if ($this->istag) {
-            $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
+            assert($state->user->can_view_user_tags());
             $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
-            return "($cvt ? ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->loop_cid() . ", " . json_encode($tag) . ") : null)";
+            return "ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->loop_cid() . ", " . json_encode($tag) . ")";
         } else {
             return '($prow->can_view_review_identity_of(' . $state->loop_cid() . ', $contact) ? array_search(' . $state->loop_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
         }

@@ -3804,10 +3804,6 @@ class Contact {
                 || ($twiddle > 0 && substr($tag, 0, $twiddle) == $this->contactId));
     }
 
-    function can_view_reviewer_tags(PaperInfo $prow = null) {
-        return $this->act_pc($prow);
-    }
-
 
     function aucollab_matchers() {
         if ($this->_aucollab_matchers === null) {
