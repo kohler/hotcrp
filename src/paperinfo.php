@@ -1114,6 +1114,17 @@ class PaperInfo {
         return $pref;
     }
 
+    function viewable_preferences(Contact $viewer, $aggregate = false) {
+        if ($viewer->can_view_preference($this, $aggregate)) {
+            return $this->preferences();
+        } else if ($viewer->isPC) {
+            $pref = $this->preference($viewer);
+            return $pref[0] || $pref[1] ? [$viewer->contactId => $pref] : [];
+        } else {
+            return [];
+        }
+    }
+
     function desirability() {
         if ($this->_desirability === null) {
             $this->_desirability = 0;

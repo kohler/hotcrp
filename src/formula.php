@@ -792,7 +792,7 @@ class Pref_Fexpr extends Sub_Fexpr {
         }
         $state->queryOptions["allReviewerPreference"] = true;
         $state->datatype |= self::APREF;
-        $e = "get(get(" . $state->_add_review_prefs() . ", " . $state->loop_cid()
+        $e = "get(get(" . $state->_add_preferences() . ", " . $state->loop_cid(true)
             . "), " . ($this->isexpertise ? 1 : 0) . ")";
         if ($this->cids) {
             $e = "(in_array(" . $state->loop_cid() . ", [" . join(",", $this->cids) . "]) ? $e : null)";
@@ -1211,6 +1211,8 @@ class FormulaCompiler {
 
     const LFLAG_RROW = 1;
     const LFLAG_RROW_VSB = 2;
+    const LFLAG_CID = 4;
+    const LFLAG_PREFERENCES = 8;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -1269,12 +1271,17 @@ class FormulaCompiler {
         }
         return '$vsreviews';
     }
-    function _add_review_prefs() {
-        if ($this->check_gvar('$allrevprefs')) {
-            $this->queryOptions["allReviewerPreference"] = true;
-            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null) ? \$prow->preferences() : [];";
+    function _add_preferences() {
+        $this->queryOptions["allReviewerPreference"] = true;
+        if ($this->_lprefix) {
+            $this->_lflags |= self::LFLAG_PREFERENCES;
+            return "\$preferences_{$this->_lprefix}";
+        } else {
+            if ($this->check_gvar('$preferences')) {
+                $this->gstmt[] = "\$preferences = \$contact->can_view_preference(\$prow) ? \$prow->preferences() : [];";
+            }
+            return '$preferences';
         }
-        return '$allrevprefs';
     }
     function _add_conflicts() {
         if ($this->check_gvar('$conflicts')) {
@@ -1324,12 +1331,15 @@ class FormulaCompiler {
         return $tag === false ? -1 : get($this->known_tag_indexes, $tag);
     }
 
-    function loop_cid() {
+    function loop_cid($aggregate = false) {
         if ($this->looptype === Fexpr::LNONE) {
             return '$rrow_cid';
         } else if ($this->looptype === Fexpr::LMY) {
             return (string) $this->user->contactId;
         } else {
+            if (!$aggregate) {
+                $this->_lflags |= self::LFLAG_CID;
+            }
             return '~i~';
         }
     }
@@ -1340,7 +1350,7 @@ class FormulaCompiler {
             return $this->define_gvar("myrrow", "\$prow->review_of_user(" . $this->user->contactId . ")");
         } else {
             $this->_add_vsreviews();
-            $this->_lflags |= self::LFLAG_RROW;
+            $this->_lflags |= self::LFLAG_RROW | self::LFLAG_CID;
             return "\$rrow_{$this->_lprefix}";
         }
     }
@@ -1351,7 +1361,7 @@ class FormulaCompiler {
         } else if ($this->looptype === Fexpr::LMY) {
             return $this->define_gvar("myrrow_vsb", "({$rrow} ? \$contact->view_score_bound(\$prow, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ")");
         } else {
-            $this->_lflags |= self::LFLAG_RROW_VSB;
+            $this->_lflags |= self::LFLAG_RROW_VSB | self::LFLAG_CID;
             return "\$rrow_vsb_{$this->_lprefix}";
         }
     }
@@ -1381,11 +1391,10 @@ class FormulaCompiler {
         $this->indent += 2;
         return $this->_lprefix;
     }
-    private function _pop($content) {
+    private function _pop() {
         $this->all_datatypes |= $this->datatype;
         list($this->_lprefix, $this->lstmt, $this->looptype, $this->datatype, $this->_lflags) = array_pop($this->_stack);
         $this->indent -= 2;
-        $this->lstmt[] = $content;
     }
     function _addltemp($expr = "null", $always_var = false) {
         if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr))
@@ -1416,15 +1425,14 @@ class FormulaCompiler {
                 $g[] = $this->_add_pc_can_review();
             }
             if ($datatype & Fexpr::APREF) {
-                $g[] = $this->_add_review_prefs();
+                $g[] = $this->_add_preferences();
             }
             if ($datatype & Fexpr::ACONF) {
                 $g[] = $this->_add_conflicts();
             }
         }
         if (count($g) > 1) {
-            $gx = str_replace('$', "", join("_and_", $g));
-            return $this->define_gvar($gx, join(" + ", $g));
+            return join(" + ", $g);
         } else if (count($g)) {
             return $g[0];
         } else {
@@ -1437,6 +1445,7 @@ class FormulaCompiler {
         $p = $this->_push();
         $this->looptype = Fexpr::LALL;
         $this->datatype = $e->datatype;
+        $loopstmt = [];
 
         preg_match_all('/~l(\d*)~/', $combiner, $m);
         foreach (array_unique($m[1]) as $i) {
@@ -1470,6 +1479,11 @@ class FormulaCompiler {
             if ($this->_lflags & self::LFLAG_RROW_VSB) {
                 $lstmt_pfx[] = "\$rrow_vsb_{$p} = \$rrow_{$p} ? \$contact->view_score_bound(\$prow, \$rrow_{$p}) : " . VIEWSCORE_EMPTYBOUND . ";";
             }
+            if ($this->_lflags & self::LFLAG_PREFERENCES) {
+                $loopstmt[] = "\$preferences_{$p} = \$prow->viewable_preferences(\$contact"
+                    . ($this->_lflags & self::LFLAG_CID ? "" : ", true")
+                    . ");";
+            }
             $this->lstmt = array_merge($lstmt_pfx, $this->lstmt);
         }
 
@@ -1477,14 +1491,14 @@ class FormulaCompiler {
             $loop = "foreach (\$groups as \$v$p) " . $this->_join_lstmt(true);
         } else {
             $g = $this->loop_variable($this->datatype);
-            $loop = "foreach ($g as \$i$p => \$v$p) " . $this->_join_lstmt(true);
-            if ($this->datatype === Fexpr::APREF) {
-                $loop = str_replace('$allrevprefs[~i~]', "\$v$p", $loop);
-            }
-            $loop = str_replace("~i~", "\$i$p", $loop);
+            $loop = "foreach ($g as \$i$p => \$v$p) "
+                . str_replace("~i~", "\$i$p", $this->_join_lstmt(true));
+            $loop = str_replace("get($g, \$i$p)", "\$v$p", $loop);
         }
+        $loopstmt[] = $loop;
 
-        $this->_pop($loop);
+        $this->_pop();
+        $this->lstmt = array_merge($this->lstmt, $loopstmt);
         return $t_result;
     }
 
@@ -1492,7 +1506,9 @@ class FormulaCompiler {
         $p = $this->_push();
         $this->looptype = Fexpr::LMY;
         $t = $this->_addltemp($e->compile($this));
-        $this->_pop($this->_join_lstmt(false));
+        $loop = $this->_join_lstmt(false);
+        $this->_pop();
+        $this->lstmt[] = $loop;
         return $t;
     }
 
