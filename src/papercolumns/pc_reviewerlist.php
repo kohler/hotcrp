@@ -9,12 +9,16 @@ class ReviewerList_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
         if (isset($cj->options) && in_array("pref", $cj->options)) {
             $this->pref = true;
-            $this->topics = in_array("topics", $cj->options) || in_array("topic", $cj->options);
+            $this->topics = in_array("topics", $cj->options)
+                || in_array("topic", $cj->options);
         }
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_some_review_identity()) {
             return false;
+        }
+        if ($this->pref && !$pl->user->allow_view_preference(null)) {
+            $this->pref = false;
         }
         $pl->qopts["reviewSignatures"] = true;
         if ($visible && $this->pref) {
@@ -22,7 +26,8 @@ class ReviewerList_PaperColumn extends PaperColumn {
             if ($this->topics && $pl->conf->has_topics())
                 $pl->qopts["topics"] = true;
         }
-        if ($pl->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
+        if ($pl->conf->review_blindness() === Conf::BLIND_OPTIONAL
+            || $this->pref) {
             $this->override = PaperColumn::OVERRIDE_BOTH;
         } else {
             $this->override = PaperColumn::OVERRIDE_IFEMPTY;
@@ -38,11 +43,12 @@ class ReviewerList_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         // see also search.php > getaction == "reviewers"
         $x = [];
+        $pref = $pl->user->can_view_preference($row);
         foreach ($row->reviews_by_display($pl->user) as $xrow) {
             if ($pl->user->can_view_review_identity($row, $xrow)) {
                 $ranal = $pl->make_review_analysis($xrow, $row);
                 $t = $pl->user->reviewer_html_for($xrow) . " " . $ranal->icon_html(false);
-                if ($this->pref) {
+                if ($pref) {
                     $t .= unparse_preference_span($row->preference($xrow->contactId, $this->topics), true);
                 }
                 $x[] = $t;
@@ -56,14 +62,15 @@ class ReviewerList_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         $x = [];
+        $pref = $pl->user->can_view_preference($row);
         foreach ($row->reviews_by_display($pl->user) as $xrow) {
             if ($pl->user->can_view_review_identity($row, $xrow)) {
                 $t = $pl->user->name_text_for($xrow);
-                if ($this->pref) {
-                    $pref = $row->preference($xrow->contactId, $this->topics);
-                    $t .= " P" . unparse_number_pm_text($pref[0]) . unparse_expertise($pref[1]);
-                    if ($this->topics && $pref[2] && !$pref[0]) {
-                        $t .= " T" . unparse_number_pm_text($pref[2]);
+                if ($pref) {
+                    $pf = $row->preference($xrow->contactId, $this->topics);
+                    $t .= " P" . unparse_number_pm_text($pf[0]) . unparse_expertise($pf[1]);
+                    if ($this->topics && $pf[2] && !$pf[0]) {
+                        $t .= " T" . unparse_number_pm_text($pf[2]);
                     }
                 }
                 $x[] = $t;
