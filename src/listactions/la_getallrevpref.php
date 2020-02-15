@@ -15,7 +15,7 @@ class GetAllRevpref_ListAction extends ListAction {
                 continue;
             $conflicts = $prow->conflicts();
             foreach ($pcm as $cid => $p) {
-                $pref = $prow->reviewer_preference($p);
+                $pref = $prow->preference($p);
                 $cflt = get($conflicts, $cid);
                 $tv = $prow->topicIds ? $prow->topic_interest_score($p) : 0;
                 if ($pref[0] !== 0 || $pref[1] !== null || $cflt || $tv) {

@@ -186,7 +186,7 @@ class Autoassigner {
         while (($row = PaperInfo::fetch($result, null, $this->conf))) {
             $pid = $row->paperId;
             foreach ($this->pcm as $cid => $p) {
-                $px = $row->reviewer_preference($p, true);
+                $px = $row->preference($p, true);
                 $rt = $row->review_type($p);
                 $this->prefinfo[$cid][$pid] = $px;
                 if ($rt == $reviewtype)

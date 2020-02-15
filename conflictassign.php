@@ -43,7 +43,7 @@ if ($Qreq->neg) {
     $filter = function ($pl, $row) {
         $user = $pl->reviewer_user();
         return $row->conflict_type($user) == 0
-            && ($row->reviewer_preference($user)[0] <= -100
+            && ($row->preference($user)[0] <= -100
                 || $row->potential_conflict($user));
     };
 }

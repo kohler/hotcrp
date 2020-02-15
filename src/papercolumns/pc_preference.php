@@ -49,7 +49,7 @@ class Preference_PaperColumn extends PaperColumn {
         if ($this->not_me && !$this->viewer_contact->can_view_preference($row)) {
             return [null, null];
         } else {
-            return $row->reviewer_preference($this->contact);
+            return $row->preference($this->contact);
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -110,7 +110,7 @@ class Preference_PaperColumn extends PaperColumn {
         return $this->not_me && !$pl->user->allow_view_preference($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $pv = $row->reviewer_preference($this->contact);
+        $pv = $row->preference($this->contact);
         $pv_exists = $pv[0] !== 0 || $pv[1] !== null;
         $editable = $this->editable && $this->contact->can_enter_preference($row);
         $has_conflict = $row->has_conflict($this->contact);

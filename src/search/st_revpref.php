@@ -138,7 +138,7 @@ class Revpref_SearchTerm extends SearchTerm {
         $n = 0;
         foreach ($this->rpsm->contact_set() as $cid) {
             if (($cid == $srch->cid || $can_view)
-                && $this->rpsm->test_preference($row->reviewer_preference($cid)))
+                && $this->rpsm->test_preference($row->preference($cid)))
                 ++$n;
         }
         return $this->rpsm->test($n);

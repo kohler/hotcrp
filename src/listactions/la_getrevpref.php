@@ -45,7 +45,7 @@ class GetRevpref_ListAction extends ListAction {
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
             if ($not_me)
                 $item["email"] = $Rev->email;
-            $item["preference"] = unparse_preference($prow->reviewer_preference($Rev));
+            $item["preference"] = unparse_preference($prow->preference($Rev));
             if ($prow->has_conflict($Rev)) {
                 $item["notes"] = "conflict";
                 $has_conflict = true;

@@ -755,11 +755,11 @@ xassert_assign($user_marina, "paper,user,pref\n4,chair@_.com,12\n");
 
 xassert_assign($user_marina, "paper,user,action\n4,chair@_.com,noconflict\n");
 
-$paper1->load_reviewer_preferences();
-xassert_eqq($paper1->reviewer_preference($user_marina), [12, null]);
+$paper1->load_preferences();
+xassert_eqq($paper1->preference($user_marina), [12, null]);
 xassert_assign($user_marina, "paper,pref\n1,13\n");
-$paper1->load_reviewer_preferences();
-xassert_eqq($paper1->reviewer_preference($user_marina), [13, null]);
+$paper1->load_preferences();
+xassert_eqq($paper1->preference($user_marina), [13, null]);
 
 // remove paper administrators
 xassert($user_marina->is_manager());
@@ -1193,10 +1193,10 @@ xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", "tag"
             "#foo HIGHLIGHT:pink #bar");
 
 // assignment synonyms
-xassert_eqq($paper16->reviewer_preference($user_varghese), [0, null]);
+xassert_eqq($paper16->preference($user_varghese), [0, null]);
 xassert_assign($user_varghese, "ID,Title,Preference\n16,Potential Benefits of Delta Encoding and Data Compression for HTTP,1X\n");
-$paper16->load_reviewer_preferences();
-xassert_eqq($paper16->reviewer_preference($user_varghese), [1, 1]);
+$paper16->load_preferences();
+xassert_eqq($paper16->preference($user_varghese), [1, 1]);
 
 xassert_eq($paper16->leadContactId, 0);
 xassert_assign($user_chair, "paperID,lead\n16,varghese\n", true);

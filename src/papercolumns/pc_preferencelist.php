@@ -35,11 +35,11 @@ class PreferenceList_PaperColumn extends PaperColumn {
         return !$pl->user->can_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $prefs = $row->reviewer_preferences();
+        $prefs = $row->preferences();
         $ts = [];
-        if ($this->topics || $row->reviewer_preferences()) {
+        if ($this->topics || $row->preferences()) {
             foreach ($row->conf->pc_members() as $pcid => $pc) {
-                if (($pref = $row->reviewer_preference($pcid, $this->topics))) {
+                if (($pref = $row->preference($pcid, $this->topics))) {
                     if ($pref[0] !== 0 || $pref[1] !== null) {
                         $ts[] = $pcid . "P" . $pref[0] . ($pref[1] !== null ? unparse_expertise($pref[1]) : "");
                     } else if ($this->topics && $pref[2]) {

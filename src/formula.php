@@ -1267,7 +1267,7 @@ class FormulaCompiler {
     function _add_review_prefs() {
         if ($this->check_gvar('$allrevprefs')) {
             $this->queryOptions["allReviewerPreference"] = true;
-            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null) ? \$prow->reviewer_preferences() : [];";
+            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null) ? \$prow->preferences() : [];";
         }
         return '$allrevprefs';
     }

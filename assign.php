@@ -470,7 +470,7 @@ if ($Me->can_administer($prow)) {
                     '</span>';
         }
         if ($revtype >= 0)
-            echo unparse_preference_span($prow->reviewer_preference($pc, true));
+            echo unparse_preference_span($prow->preference($pc, true));
         echo '</div>'; // .pctbname
         if ($pcconfmatch)
             echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($pcconfmatch)), '">', $pcconfmatch[0], '</div>';

@@ -26,10 +26,10 @@ class Preference_API {
             $aset->parse("paper,user,preference\n{$prow->paperId}," . CsvGenerator::quote($u->email) . "," . CsvGenerator::quote($qreq->pref, true));
             if (!$aset->execute())
                 return $aset->json_result();
-            $prow->load_reviewer_preferences();
+            $prow->load_preferences();
         }
 
-        $pref = $prow->reviewer_preference($u, true);
+        $pref = $prow->preference($u, true);
         $value = unparse_preference($pref[0], $pref[1]);
         $jr = new JsonResult(["ok" => true, "value" => $value === "0" ? "" : $value, "pref" => $pref[0]]);
         if ($pref[1] !== null)

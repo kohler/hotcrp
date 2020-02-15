@@ -1049,7 +1049,7 @@ class PaperInfo {
         return $vals;
     }
 
-    function load_reviewer_preferences() {
+    function load_preferences() {
         if ($this->_row_set && ++$this->_row_set->loaded_allprefs >= 10)
             $row_set = $this->_row_set->filter(function ($prow) {
                 return !property_exists($prow, "allReviewerPreference");
@@ -1068,9 +1068,10 @@ class PaperInfo {
         Dbl::free($result);
     }
 
-    function reviewer_preferences() {
-        if (!property_exists($this, "allReviewerPreference"))
-            $this->load_reviewer_preferences();
+    function preferences() {
+        if (!property_exists($this, "allReviewerPreference")) {
+            $this->load_preferences();
+        }
         if ($this->_prefs_array === null) {
             $x = array();
             if ($this->allReviewerPreference !== null && $this->allReviewerPreference !== "") {
@@ -1085,14 +1086,15 @@ class PaperInfo {
         return $this->_prefs_array;
     }
 
-    function reviewer_preference($contact, $include_topic_score = false) {
+    function preference($contact, $include_topic_score = false) {
         $cid = is_int($contact) ? $contact : $contact->contactId;
         if ($this->_prefs_cid === null
             && $this->_prefs_array === null
             && !property_exists($this, "allReviewerPreference")) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            foreach ($row_set as $prow)
+            foreach ($row_set as $prow) {
                 $prow->_prefs_cid = [$cid, null];
+            }
             $result = $this->conf->qe("select paperId, preference, expertise from PaperReviewPreference where paperId?a and contactId=?", $row_set->paper_ids(), $cid);
             while ($result && ($row = $result->fetch_row())) {
                 $prow = $row_set->get($row[0]);
@@ -1100,25 +1102,27 @@ class PaperInfo {
             }
             Dbl::free($result);
         }
-        if ($this->_prefs_cid !== null && $this->_prefs_cid[0] == $cid)
+        if ($this->_prefs_cid !== null && $this->_prefs_cid[0] == $cid) {
             $pref = $this->_prefs_cid[1];
-        else
-            $pref = get($this->reviewer_preferences(), $cid);
+        } else {
+            $pref = get($this->preferences(), $cid);
+        }
         $pref = $pref ? : [0, null];
-        if ($include_topic_score)
+        if ($include_topic_score) {
             $pref[] = $this->topic_interest_score($contact);
+        }
         return $pref;
     }
 
     function desirability() {
         if ($this->_desirability === null) {
-            $prefs = $this->reviewer_preferences();
             $this->_desirability = 0;
-            foreach ($prefs as $pf) {
-                if ($pf[0] > 0)
+            foreach ($this->preferences() as $pf) {
+                if ($pf[0] > 0) {
                     $this->_desirability += 1;
-                else if ($pf[0] > -100 && $pf[0] < 0)
+                } else if ($pf[0] > -100 && $pf[0] < 0) {
                     $this->_desirability -= 1;
+                }
             }
         }
         return $this->_desirability;

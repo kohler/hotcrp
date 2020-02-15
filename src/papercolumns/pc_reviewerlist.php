@@ -13,8 +13,9 @@ class ReviewerList_PaperColumn extends PaperColumn {
         }
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->can_view_some_review_identity())
+        if (!$pl->user->can_view_some_review_identity()) {
             return false;
+        }
         $pl->qopts["reviewSignatures"] = true;
         if ($visible && $this->pref) {
             $pl->qopts["allReviewerPreference"] = true;
@@ -42,7 +43,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
                 $ranal = $pl->make_review_analysis($xrow, $row);
                 $t = $pl->user->reviewer_html_for($xrow) . " " . $ranal->icon_html(false);
                 if ($this->pref) {
-                    $t .= unparse_preference_span($row->reviewer_preference($xrow->contactId, $this->topics), true);
+                    $t .= unparse_preference_span($row->preference($xrow->contactId, $this->topics), true);
                 }
                 $x[] = $t;
             }
@@ -59,7 +60,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
             if ($pl->user->can_view_review_identity($row, $xrow)) {
                 $t = $pl->user->name_text_for($xrow);
                 if ($this->pref) {
-                    $pref = $row->reviewer_preference($xrow->contactId, $this->topics);
+                    $pref = $row->preference($xrow->contactId, $this->topics);
                     $t .= " P" . unparse_number_pm_text($pref[0]) . unparse_expertise($pref[1]);
                     if ($this->topics && $pref[2] && !$pref[0]) {
                         $t .= " T" . unparse_number_pm_text($pref[2]);

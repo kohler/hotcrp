@@ -58,7 +58,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $this->_potconf = [];
-        $pref = $row->reviewer_preference($this->contact);
+        $pref = $row->preference($this->contact);
         $this->nonempty = !$row->has_author($this->contact)
             && ($row->potential_conflict_callback($this->contact, [$this, "_conflict_match"])
                 || $pref[0] <= -100);
