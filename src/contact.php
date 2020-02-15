@@ -2216,12 +2216,13 @@ class Contact {
     function can_view_pc() {
         $this->check_rights_version();
         if ($this->_can_view_pc === null) {
-            if ($this->is_manager() || $this->tracker_kiosk_state > 0)
+            if ($this->is_manager() || $this->tracker_kiosk_state > 0) {
                 $this->_can_view_pc = 2;
-            else if ($this->isPC)
+            } else if ($this->isPC) {
                 $this->_can_view_pc = $this->conf->opt("secretPC") ? 0 : 2;
-            else
+            } else {
                 $this->_can_view_pc = $this->conf->opt("privatePC") ? 0 : 1;
+            }
         }
         return $this->_can_view_pc > 0;
     }

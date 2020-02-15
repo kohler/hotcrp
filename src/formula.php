@@ -792,10 +792,10 @@ class Pref_Fexpr extends Sub_Fexpr {
         }
         $state->queryOptions["allReviewerPreference"] = true;
         $state->datatype |= self::APREF;
-        $e = "get(get(" . $state->_add_review_prefs() . ", " . $state->_rrow_cid()
+        $e = "get(get(" . $state->_add_review_prefs() . ", " . $state->loop_cid()
             . "), " . ($this->isexpertise ? 1 : 0) . ")";
         if ($this->cids) {
-            $e = "(in_array(" . $state->_rrow_cid() . ", [" . join(",", $this->cids) . "]) ? $e : null)";
+            $e = "(in_array(" . $state->loop_cid() . ", [" . join(",", $this->cids) . "]) ? $e : null)";
         }
         return $e;
     }
@@ -952,7 +952,7 @@ class TopicScore_Fexpr extends Sub_Fexpr {
         if ($state->looptype === self::LMY) {
             return $state->define_gvar("mytopicscore", "\$prow->topic_interest_score(\$contact)");
         } else {
-            return "\$prow->topic_interest_score(" . $state->_rrow_cid() . ")";
+            return "\$prow->topic_interest_score(" . $state->loop_cid() . ")";
         }
     }
 }
@@ -1061,7 +1061,7 @@ class Conflict_Fexpr extends Sub_Fexpr {
     function compile(FormulaCompiler $state) {
         // XXX the actual search is different
         $state->datatype |= self::ACONF;
-        $idx = $state->_rrow_cid();
+        $idx = $state->loop_cid();
         if ($state->looptype === self::LMY) {
             $rt = "\$prow->has_conflict($idx)";
         } else {
@@ -1096,7 +1096,7 @@ class Reviewer_Fexpr extends Review_Fexpr {
     function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         $state->queryOptions["reviewSignatures"] = true;
-        return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact) ? ' . $state->_rrow_cid() . ' : null)';
+        return '($prow->can_view_review_identity_of(' . $state->loop_cid() . ', $contact) ? ' . $state->loop_cid() . ' : null)';
     }
 }
 
@@ -1130,16 +1130,17 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         assert($state->user === $this->user);
         // NB the following case also catches attempts to view a non-viewable
         // user tag (the csearch will return nothing).
-        if (!$this->csearch->ids)
+        if (!$this->csearch->ids) {
             return "null";
+        }
         $state->datatype |= self::ASUBREV;
         $state->queryOptions["reviewSignatures"] = true;
         if ($this->istag) {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
             $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
-            return "($cvt ? ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
+            return "($cvt ? ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->loop_cid() . ", " . json_encode($tag) . ") : null)";
         } else {
-            return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact) ? array_search(' . $state->_rrow_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
+            return '($prow->can_view_review_identity_of(' . $state->loop_cid() . ', $contact) ? array_search(' . $state->loop_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
         }
     }
     function matches_at_most_once() {
@@ -1319,7 +1320,7 @@ class FormulaCompiler {
         return $tag === false ? -1 : get($this->known_tag_indexes, $tag);
     }
 
-    function _rrow_cid() {
+    function loop_cid() {
         if ($this->looptype === Fexpr::LNONE) {
             return '$rrow_cid';
         } else if ($this->looptype === Fexpr::LMY) {
@@ -1855,8 +1856,9 @@ class Formula implements Abbreviator {
             } else if ($m[1] === "pc") {
                 $es[] = new Fexpr(">=", [new Revtype_Fexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE)]);
             } else {
-                if (strpos($m[1], "\"") !== false)
+                if (strpos($m[1], "\"") !== false) {
                     $m[1] = str_replace(["\"", "*"], ["", "\\*"], $m[1]);
+                }
                 $es[] = new ReviewerMatch_Fexpr($this->user, $m[1]);
             }
             $ex = $m[2];

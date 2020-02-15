@@ -117,17 +117,21 @@ class ReviewTimes {
 
         $users = array();
         $tags = $this->user->can_view_reviewer_tags();
-        foreach ($this->r as $cid => $x)
+        foreach ($this->r as $cid => $x) {
             if ($cid !== "conflicts") {
                 $users[$cid] = $u = (object) array();
                 $p = $this->conf->cached_user_by_id($cid, true);
-                if ($p)
+                if ($p) {
                     $u->name = Text::name_text($p);
-                if (count($x) < $heavy_boundary)
+                }
+                if (count($x) < $heavy_boundary) {
                     $u->light = true;
-                if ($p && $tags && ($t = $p->viewable_color_classes($this->user)))
+                }
+                if ($p && $tags && ($t = $p->viewable_color_classes($this->user))) {
                     $u->color_classes = $t;
+                }
             }
+        }
 
         return (object) ["type" => "procrastination", "reviews" => $this->r, "deadlines" => $this->dl, "users" => $users];
     }
