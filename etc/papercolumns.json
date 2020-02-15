@@ -229,6 +229,8 @@
     },
     {   "name": "allrevpref", "alias": "allpref"   },
     {   "name": "allpreference", "alias": "allpref"   },
+    {   "name": "allpreferences", "alias": "allpref"   },
+    {   "name": "preferences", "alias": "allpref"   },
     {
         "name": "alltopicpref",
         "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
