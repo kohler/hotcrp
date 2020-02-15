@@ -3146,7 +3146,9 @@ class Contact {
     function allow_view_preference(PaperInfo $prow = null, $aggregate = false) {
         if ($prow) {
             $rights = $this->rights($prow);
-            return $aggregate ? $rights->allow_pc : $rights->allow_administer;
+            return $aggregate
+                ? $rights->allow_pc && $this->can_view_pc()
+                : $rights->allow_administer;
         } else {
             return $this->is_manager();
         }
@@ -3155,7 +3157,9 @@ class Contact {
     function can_view_preference(PaperInfo $prow = null, $aggregate = false) {
         if ($prow) {
             $rights = $this->rights($prow);
-            return $aggregate ? $rights->allow_pc : $rights->can_administer;
+            return $aggregate
+                ? $rights->allow_pc && $this->can_view_pc()
+                : $rights->can_administer;
         } else {
             return $this->is_manager();
         }
