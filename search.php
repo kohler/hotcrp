@@ -224,7 +224,9 @@ if ($pl_text) {
     $viewAllAuthors = ($Qreq->t == "a"
                        || ($Qreq->t == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
-    if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors) {
+    if (!$Conf->subBlindAlways()
+        || (!$Me->privChair && $viewAcceptedAuthors)
+        || $viewAllAuthors) {
         $display_options->checkbox_item(1, "au", "Authors", ["id" => "showau"]);
         if ($Me->privChair && $viewAllAuthors)
             $display_options_extra .=
@@ -241,7 +243,7 @@ if ($pl_text) {
     }
     if ($Me->privChair
         && !$Conf->subBlindNever()
-        && (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors)) {
+        && (!$Conf->subBlindAlways() || $viewAllAuthors)) {
         $display_options->checkbox_item(1, "anonau", "Deblinded authors", ["disabled" => !$pl->has("anonau")]);
     }
     if ($pl->has("collab")) {
