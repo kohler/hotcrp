@@ -208,8 +208,17 @@ class PaperList {
         if ($display !== null) {
             $this->_viewing = $this->_view_origin = $this->sorters = [];
         }
-        foreach ($this->search->view_list() as $vv) {
-            $this->set_view($vv[0], $vv[1], 0);
+        $view_list = $this->search->view_list();
+        for ($i = 0; $i !== count($view_list); ++$i) {
+            list($field, $action) = $view_list[$i];
+            $options = null;
+            while ($action === "show"
+                   && $i + 1 !== count($view_list)
+                   && $view_list[$i + 1][1] === "as") {
+                $options[] = $view_list[$i + 1][0];
+                ++$i;
+            }
+            $this->set_view($field, $action, 0, $options);
         }
         if ($display !== null) {
             $this->set_view_display($args["display"], 0);
@@ -280,23 +289,9 @@ class PaperList {
         "ccol" => -2, "columns" => -2, "force" => -3, "rownum" => -1, "statistics" => -1
     ];
 
-    function set_view($k, $v, $origin = 0) {
+    function set_view($k, $v, $origin = 0, $opts = null) {
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
-        }
-        $pos = strlen($k);
-        $opts = null;
-        while ($pos > 0) {
-            --$pos;
-            $ch = $k[$pos];
-            if ($ch === "\"" || $ch === ")" || $ch === "]" || $ch === "}") {
-                break;
-            } else if ($ch === ",") {
-                if ($opts === null)
-                    $opts = [];
-                array_unshift($opts, substr($k, $pos + 1));
-                $k = substr($k, 0, $pos);
-            }
         }
         $k = get(self::$view_synonym, $k, $k);
         if (isset($this->_view_origin[$k])

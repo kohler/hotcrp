@@ -257,6 +257,11 @@
         "view_action": "show", "sorting": false
     },
     {
+        "name": "as",
+        "parse_callback": "Show_SearchTerm::parse",
+        "view_action": "as", "sorting": false
+    },
+    {
         "name": "hide",
         "parse_callback": "Show_SearchTerm::parse", "allow_parens": true,
         "view_action": "hide", "sorting": false
