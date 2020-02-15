@@ -951,8 +951,12 @@ class TopicScore_Fexpr extends Sub_Fexpr {
         $state->queryOptions["topics"] = true;
         if ($state->looptype === self::LMY) {
             return $state->define_gvar("mytopicscore", "\$prow->topic_interest_score(\$contact)");
+        } else if ($state->user->can_view_pc()) {
+            return "\$prow->topic_interest_score(" . $state->loop_cid(true) . ")";
         } else {
-            return "\$prow->topic_interest_score(" . $state->loop_cid() . ")";
+            return "(" . $state->loop_cid() . " == " . $state->user->contactId
+                . " ? \$prow->topic_interest_score(" . $state->loop_cid() . ")"
+                . " : null)";
         }
     }
 }
