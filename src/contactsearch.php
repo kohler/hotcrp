@@ -110,8 +110,9 @@ class ContactSearch {
         } else if ($need) {
             $this->warn_html = "No users are tagged “" . htmlspecialchars($this->text) . "”.";
             return array();
-        } else
+        } else {
             return false;
+        }
     }
     private function check_user() {
         if (strcasecmp($this->text, "anonymous") == 0

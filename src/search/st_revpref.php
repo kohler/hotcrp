@@ -13,24 +13,29 @@ class RevprefSearchMatcher extends ContactCountMatcher {
         $this->safe_contacts = $safe_contacts;
     }
     function preference_expertise_match() {
-        if ($this->is_any)
+        if ($this->is_any) {
             return "(preference!=0 or expertise is not null)";
-        $where = [];
-        if ($this->preference_match)
-            $where[] = "preference" . $this->preference_match->countexpr();
-        if ($this->expertise_match)
-            $where[] = "expertise" . $this->expertise_match->countexpr();
-        return join(" and ", $where);
+        } else {
+            $where = [];
+            if ($this->preference_match) {
+                $where[] = "preference" . $this->preference_match->countexpr();
+            }
+            if ($this->expertise_match) {
+                $where[] = "expertise" . $this->expertise_match->countexpr();
+            }
+            return join(" and ", $where);
+        }
     }
     function test_preference($pref) {
-        if ($this->is_any)
+        if ($this->is_any) {
             return $pref[0] != 0 || $pref[1] !== null;
-        else
+        } else {
             return (!$this->preference_match
                     || $this->preference_match->test($pref[0]))
                 && (!$this->expertise_match
                     || ($pref[1] !== null
                         && $this->expertise_match->test($pref[1])));
+        }
     }
 }
 
@@ -42,15 +47,16 @@ class Revpref_SearchTerm extends SearchTerm {
         $this->rpsm = $rpsm;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        if (!$srch->user->isPC) // PC only
+        if (!$srch->user->isPC) { // PC only
             return null;
+        }
 
         if (preg_match('/\A((?:(?!≠|≤|≥)[^:=!<>])+)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
             $contacts = $srch->matching_special_uids($m[1], $sword->quoted, true);
-            if ($contacts !== null)
+            if ($contacts !== null) {
                 $safe_contacts = 1;
-            else {
+            } else {
                 $safe_contacts = -1;
                 $contacts = $srch->matching_uids($m[1], $sword->quoted, true);
             }
@@ -67,14 +73,15 @@ class Revpref_SearchTerm extends SearchTerm {
 
         $count = "";
         if (preg_match('/\A:?\s*((?:[=!<>]=?|≠|≤|≥|)\s*\d+|any|none)\s*((?:[:=!<>]|≠|≤|≥).*)\z/si', $word, $m)) {
-            if (strcasecmp($m[1], "any") == 0)
+            if (strcasecmp($m[1], "any") == 0) {
                 $count = ">0";
-            else if (strcasecmp($m[1], "none") == 0)
+            } else if (strcasecmp($m[1], "none") == 0) {
                 $count = "=0";
-            else if (ctype_digit($m[1]))
+            } else if (ctype_digit($m[1])) {
                 $count = (int) $m[1] ? ">=$m[1]" : "=0";
-            else
+            } else {
                 $count = $m[1];
+            }
             $word = str_starts_with($m[2], ":") ? substr($m[2], 1) : $m[2];
         }
 

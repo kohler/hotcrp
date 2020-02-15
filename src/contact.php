@@ -2206,10 +2206,11 @@ class Contact {
     }
 
     function act_pc(PaperInfo $prow = null) {
-        if ($prow)
+        if ($prow) {
             return $this->rights($prow)->allow_pc;
-        else
+        } else {
             return $this->isPC;
+        }
     }
 
     function can_view_pc() {
@@ -3151,14 +3152,17 @@ class Contact {
     }
 
     function can_accept_review_assignment_ignore_conflict(PaperInfo $prow = null) {
-        if (!$prow)
-            return $this->isPC && $this->conf->check_all_tracks($this, Track::ASSREV);
-        $rights = $this->rights($prow);
-        return ($rights->allow_administer
-                || $this->isPC)
-            && ($rights->reviewType > 0
-                || $rights->allow_administer
-                || $this->conf->check_tracks($prow, $this, Track::ASSREV));
+        if ($prow) {
+            $rights = $this->rights($prow);
+            return ($rights->allow_administer
+                    || $this->isPC)
+                && ($rights->reviewType > 0
+                    || $rights->allow_administer
+                    || $this->conf->check_tracks($prow, $this, Track::ASSREV));
+        } else {
+            return $this->isPC
+                && $this->conf->check_all_tracks($this, Track::ASSREV);
+        }
     }
 
     function can_accept_review_assignment(PaperInfo $prow) {
