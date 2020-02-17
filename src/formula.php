@@ -8,6 +8,8 @@ class FormulaCall {
     public $args = [];
     public $modifier = false;
     public $kwdef;
+    public $pos1;
+    public $pos2;
 
     function __construct($kwdef, $name) {
         $this->name = $kwdef->name;
@@ -825,7 +827,7 @@ class Tag_Fexpr extends Sub_Fexpr {
             && preg_match('/\A' . TAG_REGEX . '\z/', $ff->args[0])) {
             return new Tag_Fexpr($ff->args[0], $ff->kwdef->is_value);
         } else {
-            return null;
+            return new Fexpr_Error(null, "Invalid tag.");
         }
     }
     function view_score(Contact $user) {
@@ -890,8 +892,9 @@ class Option_Fexpr extends Sub_Fexpr {
     private $option;
     function __construct(PaperOption $option) {
         $this->option = $this->format_ = $option;
-        if ($this->option->type === "checkbox")
+        if ($this->option->type === "checkbox") {
             $this->format_ = self::FBOOL;
+        }
     }
     function compile(FormulaCompiler $state) {
         $id = $this->option->id;
@@ -1634,8 +1637,9 @@ class Formula implements Abbreviator {
     }
 
     private function parse_prefix(Contact $user = null, $allow_suffix) {
-        if ($user)
+        if ($user) {
             $this->set_user($user);
+        }
         assert($this->conf && $this->user);
         $t = $this->expression;
         if ((string) $t === "") {
@@ -1644,8 +1648,9 @@ class Formula implements Abbreviator {
         }
         $e = $this->_parse_ternary($t, false);
         if (!$e || ($t !== "" && !$allow_suffix)) {
-            if (!$this->_error_html)
+            if (!$this->_error_html) {
                 $this->add_error_at("Parse error", -strlen($t), 0, ".");
+            }
         } else if (($err = $e->typecheck($this->conf))) {
             $this->add_error_at("Type error", $err->expr->left_landmark, $err->expr->right_landmark, ': ' . $err->error_html);
         } else {
@@ -1738,10 +1743,13 @@ class Formula implements Abbreviator {
             $ff->args[] = $arg;
             return true;
         } else if ($t !== "" && $t[0] === "(") {
-            while (1) {
+            $result = true;
+            while (true) {
                 $t = substr($t, 1);
-                if (!($e = $this->_parse_ternary($t, false))) {
-                    return false;
+                if (($e = $this->_parse_ternary($t, false))) {
+                    $ff->args[] = $e;
+                } else {
+                    $result = false;
                 }
                 $ff->args[] = $e;
                 $t = ltrim($t);
@@ -1752,7 +1760,7 @@ class Formula implements Abbreviator {
                 }
             }
             $t = substr($t, 1);
-            return true;
+            return $result;
         } else if ($argtype === "optional" || !empty($ff->args)) {
             return true;
         } else if (($e = $this->_parse_expr($t, self::$opprec["u+"], false))) {
@@ -1777,15 +1785,19 @@ class Formula implements Abbreviator {
         $args = get($kwdef, "args");
         $has_args = $args !== null && $args !== false;
 
-        $pos1 = -strlen($t);
+        $ff->pos1 = $pos1 = -strlen($t);
         $t = substr($t, strlen($name));
 
         if (get($kwdef, "parse_modifier_callback")) {
             $xt = $name === "#" ? "#" . $t : $t;
             while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9!@*_:.\/#~]+))(.*)/s', $xt, $m)
-                   && ($has_args || !preg_match('/\A\s*\(/s', $m[2]))
-                   && call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this)) {
-                $t = $xt = $m[2];
+                   && ($has_args || !preg_match('/\A\s*\(/s', $m[2]))) {
+                $ff->pos2 = -strlen($m[2]);
+                if (call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this)) {
+                    $t = $xt = $m[2];
+                } else {
+                    break;
+                }
             }
         }
 
@@ -1797,13 +1809,22 @@ class Formula implements Abbreviator {
                 return null;
             }
         }
+        $ff->pos2 = -strlen($t);
 
         if (isset($kwdef->callback)) {
             if ($kwdef->callback[0] === "+") {
                 $class = substr($kwdef->callback, 1);
                 return new $class($ff, $this);
             } else {
-                return call_user_func($kwdef->callback, $ff, $this);
+                $nerror = count($this->_error_html);
+                $e = call_user_func($kwdef->callback, $ff, $this);
+                if ($e instanceof Fexpr_Error) {
+                    $this->add_error_at("Parse error", $ff->pos1, $ff->pos2, ": " . $e->error_html);
+                    $e = null;
+                } else if (!$e && $nerror === count($this->_error_html)) {
+                    $this->add_error_at("Parse error", $ff->pos1, $ff->pos2, ".");
+                }
+                return $e;
             }
         }
 
