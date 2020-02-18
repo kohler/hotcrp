@@ -1148,16 +1148,28 @@ xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
 $Conf->save_setting("tag_vote", 1, "vote#10 crap#3");
 $Conf->save_setting("tag_approval", 1, "app#0");
 xassert_assign($user_chair,
-    "paper,tag\n16,+huitema~vote#5 +crowcroft~vote#1 +crowcroft~crap#2 +estrin~app +estrin~crap#1");
+    "paper,tag\n16,+huitema~vote#5 +crowcroft~vote#1 +crowcroft~crap#2 +estrin~app +estrin~crap#1 +estrin~bar");
 $paper16 = fetch_paper(16, $user_chair);
 xassert_eqq($paper16->tag_value("{$user_estrin->contactId}~crap"), 1.0);
 xassert_eqq($paper16->tag_value("{$user_estrin->contactId}~app"), 0.0);
 xassert_eqq($paper16->tag_value("vote"), 6.0);
 xassert_eqq($paper16->tag_value("crap"), 3.0);
 xassert_eqq($paper16->tag_value("app"), 1.0);
+xassert_eqq($paper16->sorted_viewable_tags($user_chair), " app#1 crap#3 vote#6");
+xassert_eqq($paper16->sorted_searchable_tags($user_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 app#1 crap#3 vote#6");
+xassert(!$user_marina->allow_administer($paper16));
+xassert_eqq($paper16->sorted_viewable_tags($user_marina), " app#1 crap#3 vote#6");
+xassert_eqq($paper16->sorted_searchable_tags($user_marina), " 2~vote#5 4~app#0 4~crap#1 8~crap#2 8~vote#1 app#1 crap#3 vote#6");
+$Conf->save_setting("tag_approval", null);
+$paper16 = fetch_paper(16, $user_chair);
+xassert_eqq($paper16->sorted_viewable_tags($user_marina), " app#1 crap#3 vote#6");
+xassert_eqq($paper16->sorted_searchable_tags($user_marina), " 2~vote#5 4~crap#1 8~crap#2 8~vote#1 app#1 crap#3 vote#6");
+$Conf->save_setting("tag_approval", 1, "app#0");
 xassert_assign($user_chair, "paper,action\n16,withdraw\n");
-$paper16b = fetch_paper(16, $user_chair);
-xassert_eqq($paper16b->all_tags_text(), "");
+$paper16 = fetch_paper(16, $user_chair);
+xassert_eqq($paper16->all_tags_text(), " 4~bar#0");
+xassert_eqq($paper16->sorted_searchable_tags($user_marina), "");
+xassert_eqq($paper16->sorted_searchable_tags($user_estrin), " 4~bar#0");
 
 $Conf->check_invariants();
 

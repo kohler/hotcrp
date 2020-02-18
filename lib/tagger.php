@@ -203,14 +203,15 @@ class TagMap implements IteratorAggregate {
     public $has_autosearch = false;
     private $storage = array();
     private $sorted = false;
-    private $pattern_re = null;
+    private $pattern_re;
     private $pattern_storage = [];
     private $pattern_version = 0; // = count($pattern_storage)
-    private $color_re = null;
-    private $badge_re = null;
-    private $emoji_re = null;
-    private $hidden_re = null;
-    private $sitewide_re_part = null;
+    private $color_re;
+    private $badge_re;
+    private $emoji_re;
+    private $hidden_re;
+    private $sitewide_re_part;
+    private $public_peruser_re_part;
 
     const STYLE_FG = 1;
     const STYLE_BG = 2;
@@ -417,11 +418,23 @@ class TagMap implements IteratorAggregate {
         if ($this->hidden_re === null) {
             $x = [];
             foreach ($this->filter("hidden") as $t) {
-                $x[] = $t->tag_regex();
+                // XXX go back to plain # when all tag lists have values
+                $x[] = $t->tag_regex() . "(?=[# ]|\z)";
             }
             $this->hidden_re = join("|", $x);
         }
         return $this->hidden_re;
+    }
+
+    private function public_peruser_regex_part() {
+        if ($this->public_peruser_re_part === null) {
+            $x = [];
+            foreach ($this->filter("public_peruser") as $t) {
+                $x[] = '\d+~' . $t->tag_regex() . '#';
+            }
+            $this->public_peruser_re_part = join("|", $x);
+        }
+        return $this->public_peruser_re_part;
     }
 
 
@@ -548,6 +561,31 @@ class TagMap implements IteratorAggregate {
         }
     }
 
+    function strip_nonsearchable($tags, Contact $user, PaperInfo $prow) {
+        self::assert_tag_string($tags, true); // XXX remove this
+        if ((string) $tags !== ""
+            && !$user->allow_administer($prow)
+            && ($this->has_hidden || strpos($tags, "~") !== false)) {
+            $re = "(?:";
+            if ($user->contactId > 0) {
+                $re .= "(?!" . $user->contactId . "~)";
+            }
+            if ($this->has_public_peruser) {
+                $re .= "(?!" . $this->public_peruser_regex_part() . ")";
+            }
+            $re .= "\\d+~";
+            if (!$user->privChair) {
+                $re .= "|~";
+            }
+            if ($this->has_hidden && !$user->can_view_hidden_tags($prow)) {
+                $re .= "|" . $this->hidden_regex_part();
+            }
+            $re .= ")\\S+";
+            $tags = preg_replace("{ " . $re . "}i", "", $tags);
+        }
+        return $tags;
+    }
+
     function strip_nonviewable($tags, Contact $user, PaperInfo $prow = null) {
         // XXX remove assert_tag_string
         self::assert_tag_string($tags);
@@ -561,11 +599,11 @@ class TagMap implements IteratorAggregate {
             if (!$user->privChair) {
                 $re .= "|~";
             }
-            $re .= ")\\S+";
             if ($this->has_hidden
-                && !($prow ? $user->can_view_hidden_tags($prow) : $user->privChair)) {
-                $re = "(?:" . $re . "|(?:" . $this->hidden_regex_part() . ")(?:|#\\S+)(?= |\z))";
+                && ($prow ? !$user->can_view_hidden_tags($prow) : !$user->privChair)) {
+                $re .= "|" . $this->hidden_regex_part();
             }
+            $re .= ")\\S+";
             if ($tags[0] !== " ") { // XXX remove this
                 $tags = " " . $tags;
             }

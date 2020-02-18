@@ -37,6 +37,7 @@ class PaperContactInfo {
     public $vsreviews_array;
     public $vsreviews_version;
     public $viewable_tags;
+    public $searchable_tags;
 
     static function make_empty(PaperInfo $prow, $user) {
         $ci = new PaperContactInfo;
@@ -163,7 +164,7 @@ class PaperContactInfo {
     function get_forced_rights() {
         if (!$this->forced_rights_link) {
             $ci = $this->forced_rights_link = clone $this;
-            $ci->vsreviews_array = $ci->viewable_tags = null;
+            $ci->vsreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
         }
         return $this->forced_rights_link;
     }
@@ -841,6 +842,31 @@ class PaperInfo {
         return $this->paperTags;
     }
 
+    function searchable_tags(Contact $user) {
+        if (!$user->isPC || (string) $this->all_tags_text() === "") {
+            return "";
+        }
+        $rights = $user->__rights($this);
+        if ($rights->searchable_tags === null) {
+            $tags = $this->all_tags_text();
+            $dt = $this->conf->tags();
+            if ($user->can_view_most_tags($this)) {
+                $tags = $dt->strip_nonsearchable($tags, $user, $this);
+            } else if ($user->privChair && $dt->has_sitewide) {
+                $tags = $dt->strip_nonviewable_chair_conflict($tags, $user);
+            } else {
+                $tags = "";
+            }
+            $rights->searchable_tags = $tags;
+        }
+        return $rights->searchable_tags;
+    }
+
+    function sorted_searchable_tags(Contact $user) {
+        $tags = $this->searchable_tags($user);
+        return $tags === "" ? "" : $this->conf->tags()->sort($tags);
+    }
+
     function viewable_tags(Contact $user) {
         // see also Contact::can_view_tag()
         if (!$user->isPC || (string) $this->all_tags_text() === "") {
@@ -865,14 +891,6 @@ class PaperInfo {
     function sorted_viewable_tags(Contact $user) {
         // XXX don't sort until required
         return $this->viewable_tags($user);
-    }
-
-    function searchable_tags(Contact $user) {
-        if ($user->allow_administer($this)) {
-            return $this->all_tags_text();
-        } else {
-            return $this->viewable_tags($user);
-        }
     }
 
     function sorted_editable_tags(Contact $user) {
