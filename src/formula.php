@@ -830,6 +830,25 @@ class Tag_Fexpr extends Sub_Fexpr {
             return new Fexpr_Error(null, "Invalid tag.");
         }
     }
+    static function tag_value($tags, $search, $isvalue) {
+        $p = stripos($tags, $search);
+        if ($p === false) {
+            return false;
+        } else {
+            $value = (float) substr($tags, $p + strlen($search));
+            return $isvalue || $value !== (float) 0 ? $value : true;
+        }
+    }
+    static function tag_regex_value($tags, $search, $isvalue) {
+        $p = preg_matchpos($search, $tags);
+        if ($p === false) {
+            return false;
+        } else {
+            $hash = strpos($tags, "#", $p);
+            $value = (float) substr($tags, $hash);
+            return $isvalue || $value !== (float) 0 ? $value : true;
+        }
+    }
     function view_score(Contact $user) {
         $tagger = new Tagger($user);
         $e_tag = $tagger->check($this->tag, Tagger::ALLOWSTAR);
@@ -840,11 +859,17 @@ class Tag_Fexpr extends Sub_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $e_tag = $state->tagger->check($this->tag, Tagger::ALLOWSTAR);
-        $t_tagval = $state->_add_tagval($e_tag);
-        if ($this->isvalue) {
-            return $t_tagval;
+        if ($e_tag === false) {
+            return "false";
+        } else if (strpos($this->tag, "*") === false) {
+            return "Tag_Fexpr::tag_value(" . $state->_add_tags()
+                . "," . json_encode(" $this->tag#")
+                . "," . json_encode($this->isvalue) . ")";
         } else {
-            return "($t_tagval !== (float) 0 ? $t_tagval : true)";
+            $re = "{ " . str_replace('\*', '[^#\s]*', preg_quote($this->tag)) . '#}i';
+            return "Tag_Fexpr::tag_regex_value(" . $state->_add_tags()
+                . "," . json_encode($re)
+                . "," . json_encode($this->isvalue) . ")";
         }
     }
 }
@@ -1253,32 +1278,12 @@ class FormulaCompiler {
         }
         return '$conflicts';
     }
-    function _add_tagpos($tag) {
-        if ($tag === false) {
-            return "false";
-        }
+    function _add_tags() {
         if ($this->check_gvar('$tags')) {
             $this->queryOptions["tags"] = true;
-            $this->gstmt[] = "\$tags = \$contact->can_view_tags(\$prow) ? \$prow->all_tags_text() : \"\";";
+            $this->gstmt[] = "\$tags = \$prow->searchable_tags(\$contact);";
         }
-        if (strpos($tag, "*") === false) {
-            $e = "stripos(\$tags, \" $tag#\")";
-        } else {
-            $e = "preg_matchpos(\"{ " . str_replace("\\*", "[^#\\s]*", preg_quote($tag)) . "#}i\", \$tags)";
-        }
-        return $this->define_gvar("tagpos_$tag", $e);
-    }
-    function _add_tagval($tag) {
-        if ($tag === false) {
-            return "null";
-        }
-        $t_tagpos = $this->_add_tagpos($tag);
-        if (strpos($tag, "*") === false) {
-            $delta = "$t_tagpos + " . (strlen($tag) + 2);
-        } else {
-            $delta = "strpos(\$tags, \"#\", $t_tagpos) + 1";
-        }
-        return $this->define_gvar("tagval_$tag", "($t_tagpos !== false ? (float) substr(\$tags, $delta) : null)");
+        return '$tags';
     }
     function _add_now() {
         if ($this->check_gvar('$now')) {
