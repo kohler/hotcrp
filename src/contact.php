@@ -3631,15 +3631,14 @@ class Contact {
     }
 
     function can_view_tags(PaperInfo $prow = null) {
-        // see also AllTags_API::alltags
+        // see also AllTags_API::alltags, PaperInfo::{searchable,viewable}_tags
         if (!$prow) {
             return $this->isPC;
         } else {
             $rights = $this->rights($prow);
             return $rights->allow_pc
                 || ($rights->allow_pc_broad && $this->conf->tag_seeall)
-                || (($this->privChair || $rights->allow_administer)
-                    && $this->conf->tags()->has_sitewide);
+                || ($this->privChair && $this->conf->tags()->has_sitewide);
         }
     }
 

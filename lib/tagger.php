@@ -401,17 +401,19 @@ class TagMap implements IteratorAggregate {
         return !!$this->check_property($tag, "autosearch");
     }
 
-    function sitewide_regex_part() {
+
+    private function sitewide_regex_part() {
         if ($this->sitewide_re_part === null) {
-            $x = ["\\&"];
-            foreach ($this->filter("sitewide") as $t)
-                $x[] = $t->tag_regex() . "[ #=]";
+            $x = [];
+            foreach ($this->filter("sitewide") as $t) {
+                $x[] = $t->tag_regex() . "#";
+            }
             $this->sitewide_re_part = join("|", $x);
         }
         return $this->sitewide_re_part;
     }
 
-    function hidden_regex_part() {
+    private function hidden_regex_part() {
         if ($this->hidden_re === null) {
             $x = [];
             foreach ($this->filter("hidden") as $t) {
@@ -557,7 +559,7 @@ class TagMap implements IteratorAggregate {
             }
             $re .= "\\d+~";
             if (!$user->privChair) {
-                $re .= "|~+";
+                $re .= "|~";
             }
             $re .= ")\\S+";
             if ($this->has_hidden
@@ -570,6 +572,15 @@ class TagMap implements IteratorAggregate {
             $tags = preg_replace("{ " . $re . "}i", "", $tags);
         }
         return $tags;
+    }
+
+    function strip_nonviewable_chair_conflict($tags, Contact $user) {
+        // XXX Should only be called on paper tags (i.e., contains `#`).
+        // XXX Should called only if `!can_view_most_tags && can_view_tags`.
+        self::assert_tag_string($tags, true); // XXX remove this
+        $chair = $user->privChair ? "" : "|~";
+        return preg_replace('{ (?:(?!' . $user->contactId . '~)\d+~'
+            . $chair . '|(?!' . $this->sitewide_regex_part() . '))\S*}', "", $tags);
     }
 
     function sort($tags) {
@@ -883,12 +894,6 @@ class Tagger {
         }
     }
 
-
-    static function strip_nonsitewide($tags, Contact $user) {
-        $re = "{ (?:(?!" . $user->contactId . "~)\\d+~|~+|(?!"
-            . $user->conf->tags()->sitewide_regex_part() . ")\\S)\\S*}i";
-        return trim(preg_replace($re, "", " $tags "));
-    }
 
     function unparse($tags) {
         if ($tags === "" || (is_array($tags) && count($tags) == 0)) {

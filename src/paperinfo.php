@@ -852,8 +852,8 @@ class PaperInfo {
             $dt = $this->conf->tags();
             if ($user->can_view_most_tags($this)) {
                 $tags = $dt->strip_nonviewable($tags, $user, $this);
-            } else if ($dt->has_sitewide && $user->can_view_tags($this)) {
-                $tags = Tagger::strip_nonsitewide($tags, $user);
+            } else if ($user->privChair && $dt->has_sitewide) {
+                $tags = $dt->strip_nonviewable_chair_conflict($tags, $user);
             } else {
                 $tags = "";
             }
