@@ -113,7 +113,6 @@ class JsonResult {
             foreach ($xmsgs as $msg) {
                 list($text, $type) = $msg;
                 error_log($_SERVER["REQUEST_URI"] . " " . $type . " " . json_encode($text));
-                assert($type === "merror" || $type === "xmerror");
                 if (is_string($text)) {
                     $text = [$text];
                 }
