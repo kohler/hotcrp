@@ -849,45 +849,6 @@ class Tag_Fexpr extends Sub_Fexpr {
     }
 }
 
-class FirstTag_Fexpr extends Sub_Fexpr {
-    private $tags;
-    function __construct($tags) {
-        $this->tags = $tags;
-        $this->format_ = Fexpr::FTAG;
-    }
-    static function make(FormulaCall $ff) {
-        $ts = [];
-        foreach ($ff->args as $arg) {
-            if ($arg instanceof Tag_Fexpr) {
-                $ts[] = $arg->tag();
-            } else if ($arg instanceof FirstTag_Fexpr) {
-                $ts = array_merge($ts, $arg->tags);
-            } else {
-                return null; /* XXX error message */
-            }
-        }
-        return new FirstTag_Fexpr($ts);
-    }
-    function view_score(Contact $user) {
-        $tagger = new Tagger($user);
-        $vs = VIEWSCORE_EMPTYBOUND;
-        foreach ($this->tags as $t) {
-            $e_tag = $tagger->check($t);
-            $vs = min($vs, $tagger->view_score($e_tag, $user));
-        }
-        return $vs;
-    }
-    function compile(FormulaCompiler $state) {
-        $v = "null";
-        foreach (array_reverse($this->tags) as $t) {
-            $e_tag = $state->tagger->check($t);
-            $t_tagpos = $state->_add_tagpos($e_tag);
-            $v = "($t_tagpos !== false ? " . $state->known_tag_index($e_tag) . " : $v)";
-        }
-        return $v;
-    }
-}
-
 class Option_Fexpr extends Sub_Fexpr {
     private $option;
     function __construct(PaperOption $option) {
@@ -1208,7 +1169,6 @@ class FormulaCompiler {
     private $_lflags;
     public $indent = 2;
     public $queryOptions = array();
-    public $known_tag_indexes = [];
     public $tagrefs = null;
     private $_stack;
 
@@ -1301,10 +1261,6 @@ class FormulaCompiler {
             $this->queryOptions["tags"] = true;
             $this->gstmt[] = "\$tags = \$contact->can_view_tags(\$prow) ? \$prow->all_tags_text() : \"\";";
         }
-        if (!isset($this->known_tag_indexes[$tag])) {
-            $this->tagrefs[] = $tag;
-            $this->known_tag_indexes[$tag] = count($this->tagrefs) - 1;
-        }
         if (strpos($tag, "*") === false) {
             $e = "stripos(\$tags, \" $tag#\")";
         } else {
@@ -1329,9 +1285,6 @@ class FormulaCompiler {
             $this->gstmt[] = "global \$Now;";
         }
         return '$Now';
-    }
-    function known_tag_index($tag) {
-        return $tag === false ? -1 : get($this->known_tag_indexes, $tag);
     }
 
     function loop_cid($aggregate = false) {

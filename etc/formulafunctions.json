@@ -97,8 +97,6 @@
     {"name": "revprefexp", "alias": "prefexp"},
     {"name": "revprefexpertise", "alias": "prefexp"},
 
-    {"name": "firsttag", "args": true, "callback": "FirstTag_Fexpr::make"},
-
     {"name": "au", "callback": "+Author_Fexpr",
         "parse_modifier_callback": "Author_Fexpr::parse_modifier"},
     {"name": "author", "alias": "au"},
