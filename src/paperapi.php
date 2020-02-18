@@ -102,10 +102,12 @@ class PaperApi {
 
     static function votereport_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $tagger = new Tagger($user);
-        if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
+        if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
             json_exit(["ok" => false, "error" => $tagger->error_html]);
-        if (!$user->can_view_peruser_tags($prow, $tag))
+        }
+        if (!$user->can_view_peruser_tag($prow, $tag)) {
             json_exit(["ok" => false, "error" => "Permission error."]);
+        }
         $votemap = [];
         preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\S+)/i', $prow->all_tags_text(), $m);
         $is_approval = $user->conf->tags()->is_approval($tag);

@@ -22,6 +22,7 @@ class TagMapItem {
     public $approval = false;
     public $sitewide = false;
     public $rank = false;
+    public $public_peruser = false;
     public $order_anno = false;
     private $_order_anno_list;
     private $_order_anno_search;
@@ -48,7 +49,7 @@ class TagMapItem {
         }
     }
     function merge(TagMapItem $t) {
-        foreach (["chair", "readonly", "hidden", "track", "votish", "vote", "approval", "sitewide", "rank", "autosearch"] as $property) {
+        foreach (["chair", "readonly", "hidden", "track", "votish", "vote", "approval", "sitewide", "rank", "public_peruser", "autosearch"] as $property) {
             if ($t->$property)
                 $this->$property = $t->$property;
         }
@@ -188,6 +189,7 @@ class TagMap implements IteratorAggregate {
     public $has_chair = true;
     public $has_readonly = true;
     public $has_hidden = false;
+    public $has_public_peruser = false;
     public $has_votish = false;
     public $has_vote = false;
     public $has_approval = false;
@@ -368,6 +370,9 @@ class TagMap implements IteratorAggregate {
     }
     function is_sitewide($tag) {
         return !!$this->check_property($tag, "sitewide");
+    }
+    function is_public_peruser($tag) {
+        return !!$this->check_property($tag, "public_peruser");
     }
     function is_votish($tag) {
         return !!$this->check_property($tag, "votish");
@@ -606,16 +611,22 @@ class TagMap implements IteratorAggregate {
         foreach (TagInfo::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
             $t->vote = ($ti[1] ? : 1);
-            $t->votish = $map->has_vote = $map->has_votish = true;
+            $map->has_vote = true;
+            $t->votish = $map->has_votish = true;
+            $t->public_peruser = $map->has_public_peruser = true;
         }
         $vt = $conf->setting_data("tag_approval", "");
         foreach (TagInfo::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
-            $t->approval = $t->votish = $map->has_approval = $map->has_votish = true;
+            $t->approval = $map->has_approval = true;
+            $t->votish = $map->has_votish = true;
+            $t->public_peruser = $map->has_public_peruser = true;
         }
         $rt = $conf->setting_data("tag_rank", "");
         foreach (TagInfo::split_unpack($rt) as $ti) {
-            $map->add($ti[0])->rank = $map->has_rank = true;
+            $t = $map->add($ti[0]);
+            $t->rank = $map->has_rank = true;
+            $t->public_peruser = $map->has_public_peruser = true;
         }
         $ct = $conf->setting_data("tag_color", "");
         if ($ct !== "") {

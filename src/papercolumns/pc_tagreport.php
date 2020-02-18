@@ -11,7 +11,7 @@ class TagReport_PaperColumn extends PaperColumn {
         $this->tag = $cj->tag;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->can_view_any_peruser_tags($this->tag)) {
+        if (!$pl->user->can_view_peruser_tag(null, $this->tag)) {
             return false;
         }
         if ($visible) {
@@ -29,7 +29,7 @@ class TagReport_PaperColumn extends PaperColumn {
         return "#~" . $this->tag . " report";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_peruser_tags($row, $this->tag);
+        return !$pl->user->can_view_peruser_tag($row, $this->tag);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $a = [];

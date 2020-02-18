@@ -3679,20 +3679,20 @@ class Contact {
                 || ($twiddle === 0 && $tag[1] !== "~")
                 || ($twiddle > 0
                     && (substr($tag, 0, $twiddle) == $this->contactId
-                        || $dt->is_votish(substr($tag, $twiddle + 1)))))
+                        || $dt->is_public_peruser(substr($tag, $twiddle + 1)))))
             && ($twiddle !== false
                 || !$dt->has_hidden
                 || !$dt->is_hidden($tag)
                 || $this->can_view_hidden_tags($prow));
     }
 
-    function can_view_peruser_tags(PaperInfo $prow, $tag) {
-        return $this->can_view_tag($prow, ($this->contactId + 1) . "~$tag");
-    }
-
-    function can_view_any_peruser_tags($tag) {
-        return $this->is_manager()
-            || ($this->isPC && $this->conf->tags()->is_votish($tag));
+    function can_view_peruser_tag(PaperInfo $prow = null, $tag) {
+        if ($prow) {
+            return $this->can_view_tag($prow, ($this->contactId + 1) . "~$tag");
+        } else {
+            return $this->is_manager()
+                || ($this->isPC && $this->conf->tags()->is_public_peruser($tag));
+        }
     }
 
     function can_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
