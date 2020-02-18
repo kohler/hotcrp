@@ -1709,7 +1709,6 @@ class Formula implements Abbreviator {
                 } else {
                     $result = false;
                 }
-                $ff->args[] = $e;
                 $t = ltrim($t);
                 if ($t !== "" && $t[0] === ")") {
                     break;
