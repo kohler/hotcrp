@@ -862,18 +862,24 @@ class PaperInfo {
         return $rights->viewable_tags;
     }
 
-    function searchable_tags(Contact $user) {
-        if ($user->allow_administer($this))
-            return $this->all_tags_text();
-        else
-            return $this->viewable_tags($user);
+    function sorted_viewable_tags(Contact $user) {
+        // XXX don't sort until required
+        return $this->viewable_tags($user);
     }
 
-    function editable_tags(Contact $user) {
+    function searchable_tags(Contact $user) {
+        if ($user->allow_administer($this)) {
+            return $this->all_tags_text();
+        } else {
+            return $this->viewable_tags($user);
+        }
+    }
+
+    function sorted_editable_tags(Contact $user) {
         $tags = $this->all_tags_text();
         if ($tags !== "") {
             $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-            $tags = $this->viewable_tags($user);
+            $tags = $this->sorted_viewable_tags($user);
             if ($tags !== "") {
                 $etags = [];
                 foreach (explode(" ", $tags) as $tag) {
@@ -892,8 +898,8 @@ class PaperInfo {
         if (($can_override = $user->has_overridable_conflict($this))) {
             $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
-        $editable = $this->editable_tags($user);
-        $viewable = $this->viewable_tags($user);
+        $editable = $this->sorted_editable_tags($user);
+        $viewable = $this->sorted_viewable_tags($user);
         $pj->tags = TagInfo::split($viewable);
         $pj->tags_edit_text = $tagger->unparse($editable);
         $pj->tags_view_html = $tagger->unparse_link($viewable);
@@ -904,7 +910,7 @@ class PaperInfo {
         $pj->color_classes = $tagmap->color_classes($viewable);
         if ($can_override && $viewable) {
             $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
-            $viewable_c = $this->viewable_tags($user);
+            $viewable_c = $this->sorted_viewable_tags($user);
             if ($viewable_c !== $viewable) {
                 $pj->tags_conflicted = TagInfo::split($viewable_c);
                 if ($decor

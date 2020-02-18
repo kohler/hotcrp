@@ -978,12 +978,12 @@ class PaperList {
         if (isset($row->paperTags) && $row->paperTags !== "") {
             if ($this->row_overridable) {
                 $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-                $this->row_tags_overridable = $row->viewable_tags($this->user);
+                $this->row_tags_overridable = $row->sorted_viewable_tags($this->user);
                 $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
-                $this->row_tags = $row->viewable_tags($this->user);
+                $this->row_tags = $row->sorted_viewable_tags($this->user);
                 $this->user->set_overrides($overrides);
             } else {
-                $this->row_tags = $row->viewable_tags($this->user);
+                $this->row_tags = $row->sorted_viewable_tags($this->user);
             }
         }
     }

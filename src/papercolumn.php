@@ -694,7 +694,7 @@ class TagList_PaperColumn extends PaperColumn {
         }
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $pl->tagger->unparse_hashed($row->viewable_tags($pl->user));
+        return $pl->tagger->unparse_hashed($row->sorted_viewable_tags($pl->user));
     }
 }
 

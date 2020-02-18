@@ -1420,7 +1420,7 @@ class PaperTable {
                 '"><div class="pspcard"><div class="ui pspcard-fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
 
-            if (($viewable = $this->prow->viewable_tags($this->user))) {
+            if (($viewable = $this->prow->sorted_viewable_tags($this->user))) {
                 $tagger = new Tagger($this->user);
                 echo '<span class="psfn">Tags:</span> ',
                     $tagger->unparse_link($viewable);
@@ -1714,7 +1714,7 @@ class PaperTable {
 
         // Note that tags MUST NOT contain HTML special characters.
         $tagger = new Tagger($this->user);
-        $viewable = $this->prow->viewable_tags($this->user);
+        $viewable = $this->prow->sorted_viewable_tags($this->user);
 
         $tx = $tagger->unparse_link($viewable);
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
@@ -1760,7 +1760,7 @@ class PaperTable {
                 echo Ht::msg($tm0, $tms);
             }
             echo "</div>";
-            $editable = $this->prow->editable_tags($this->user);
+            $editable = $this->prow->sorted_editable_tags($this->user);
             echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest tags">',
                 $tagger->unparse($editable),
                 '</textarea>',
