@@ -413,13 +413,16 @@ if ($Me->privChair && $Qreq->t == "pc") {
 
 
 if ($pl->any->sel) {
-    echo Ht::form(hoturl_post("users", ["t" => $Qreq->t])), "<div>";
-    if (isset($Qreq->sort))
+    echo Ht::form(hoturl_post("users", ["t" => $Qreq->t])),
+        Ht::hidden("defaultact", "", ["id" => "defaultact"]),
+        Ht::hidden_default_submit("default", 1);
+    if (isset($Qreq->sort)) {
         echo Ht::hidden("sort", $Qreq->sort);
+    }
 }
 echo $pl_text;
 if ($pl->any->sel) {
-    echo "</div></form>";
+    echo "</form>";
 }
 
 
