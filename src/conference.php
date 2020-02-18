@@ -250,7 +250,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 226) {
+        if ($this->sversion < 227) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -1940,7 +1940,7 @@ class Conf {
         if ($viewer->privChair) {
             return $this->pc_tags();
         } else if ($viewer->can_view_user_tags()) {
-            $t = join(" ", $this->pc_tags());
+            $t = " " . join(" ", $this->pc_tags());
             $t = $this->tags()->strip_nonviewable($t, $viewer, null);
             return explode(" ", $t);
         } else {
@@ -2192,10 +2192,22 @@ class Conf {
         if ($any)
             $this->invariant_error($ie, "anonymous_user_enabled", "anonymous user is not disabled");
 
-        // no empty tags
-        $any = $this->invariantq("select email from ContactInfo where contactTags is not null and trim(contactTags)='' limit 1");
-        if ($any)
-            $this->invariant_error($ie, "empty_user_tags", "user has non-null empty user tags");
+        // check tag strings
+        $result = $this->qe("select distinct contactTags from ContactInfo where contactTags is not null");
+        while (($row = $result->fetch_row())) {
+            if ($row[0] === "" || !TagMap::is_tag_string($row[0], true)) {
+                $this->invariant_error($ie, "user_tags", "user has bad tag string “{$row[0]}”");
+            }
+        }
+        Dbl::free($result);
+
+        $result = $this->qe("select distinct commentTags from PaperComment where commentTags is not null");
+        while (($row = $result->fetch_row())) {
+            if ($row[0] === "" || !TagMap::is_tag_string($row[0])) {
+                $this->invariant_error($ie, "comment_tags", "comment has bad tag string “{$row[0]}”");
+            }
+        }
+        Dbl::free($result);
 
         // paper denormalizations match
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");

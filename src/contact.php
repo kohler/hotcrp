@@ -865,14 +865,10 @@ class Contact {
     }
 
     static function roles_all_contact_tags($roles, $tags) {
-        $t = "";
         if ($roles & self::ROLE_PC) {
-            $t = " pc#0";
-        }
-        if ($tags) {
-            return $t . $tags;
+            return " pc#0" . $tags;
         } else {
-            return $t ? $t . " " : "";
+            return $tags;
         }
     }
 
@@ -2242,7 +2238,7 @@ class Contact {
     }
     function can_view_user_tag($tag) {
         return $this->can_view_user_tags()
-            && $this->conf->tags()->strip_nonviewable($tag, $this, null) !== "";
+            && $this->conf->tags()->strip_nonviewable(" $tag", $this, null) !== "";
     }
 
     function can_view_tracker($tracker_json = null) {

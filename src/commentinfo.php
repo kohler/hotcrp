@@ -249,7 +249,7 @@ class CommentInfo {
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             $tags = $this->conf->tags()->strip_nonviewable($this->commentTags, $viewer, $this->prow);
             if ($this->commentType & COMMENTTYPE_RESPONSE) {
-                $tags = trim(preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", " $tags "));
+                $tags = preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", $tags);
             }
             return $tags;
         } else {
@@ -259,7 +259,7 @@ class CommentInfo {
 
     function has_tag($tag) {
         return $this->commentTags
-            && stripos($this->commentTags, " $tag ") !== false;
+            && stripos("$this->commentTags ", " $tag ") !== false;
     }
 
     function attachments() {
@@ -531,22 +531,25 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         // tags
         if ($is_response) {
-            $ctags = " response ";
+            $ctags = " response";
             if ($response_name != "1") {
-                $ctags .= "{$response_name}response ";
+                $ctags .= " {$response_name}response";
             }
         } else if (get($req, "tags")
                    && preg_match_all(',\S+,', $req->tags, $m)
                    && !$contact->act_author_view($this->prow)) {
             $tagger = new Tagger($contact);
-            $ctags = [];
+            $ts = [];
             foreach ($m[0] as $tt) {
                 if (($tt = $tagger->check($tt, Tagger::NOVALUE))
                     && !stri_ends_with($tt, "response"))
-                    $ctags[strtolower($tt)] = $tt;
+                    $ts[strtolower($tt)] = $tt;
             }
-            $tagger->sort($ctags);
-            $ctags = count($ctags) ? " " . join(" ", $ctags) . " " : null;
+            if (!empty($ts)) {
+                $ctags = " " . join(" ", $this->conf->tags()->sort($ts));
+            } else {
+                $ctags = null;
+            }
         } else {
             $ctags = null;
         }

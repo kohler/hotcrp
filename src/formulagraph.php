@@ -605,10 +605,10 @@ class FormulaGraph extends MessageSet {
 
     private function _tag_reformat() {
         if (!($axes = $this->_valuemap_axes(Fexpr::FTAG))
-            || !($rs = $this->_valuemap_collect($axes)))
+            || !($rs = $this->_valuemap_collect($axes))) {
             return;
-        $tagger = new Tagger($this->user);
-        uksort($this->tags, [$tagger, "tag_compare"]);
+        }
+        uksort($this->tags, [$this->conf->collator(), "compare"]);
         $i = -1;
         $m = [];
         foreach ($this->tags as $tag => $ri) {

@@ -1640,6 +1640,11 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
             $conf->update_schema_version(226);
         }
     }
+    if ($conf->sversion == 226
+        && $conf->ql("update ContactInfo set contactTags=trim(trailing from contactTags) where contactTags is not null")
+        && $conf->ql("update PaperComment set commentTags=trim(trailing from commentTags) where commentTags is not null")) {
+        $conf->update_schema_version(227);
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;

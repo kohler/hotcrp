@@ -529,8 +529,23 @@ class TagMap implements IteratorAggregate {
     }
 
 
+    static function is_tag_string($s, $strict = false) {
+        return (string) $s === ""
+            || preg_match($strict ? '/\A(?: [^#\s]+#[\d.]+)+\z/' : '/\A(?: \S+)+\z/', $s);
+    }
+
+    static function assert_tag_string($tags, $strict = false) {
+        if (!self::is_tag_string($tags, $strict)) {
+            trigger_error("Bad tag string $tags");
+            debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        }
+    }
+
     function strip_nonviewable($tags, Contact $user = null, PaperInfo $prow = null) {
-        if ($this->has_hidden || strpos($tags, "~") !== false) {
+        // XXX remove assert_tag_string
+        self::assert_tag_string($tags);
+        if ((string) $tags !== ""
+            && ($this->has_hidden || strpos($tags, "~") !== false)) {
             $re = "(?:";
             if ($user && $user->contactId) {
                 $re .= "(?!" . $user->contactId . "~)";
@@ -542,9 +557,13 @@ class TagMap implements IteratorAggregate {
             $re .= ")\\S+";
             if ($this->has_hidden
                 && $user
-                && !($prow ? $user->can_view_hidden_tags($prow) : $user->privChair))
-                $re = "(?:" . $re . "|(?:" . $this->hidden_regex_part() . ")(?:#\\S+|(?= )))";
-            $tags = trim(preg_replace("{ " . $re . "}i", "", " $tags "));
+                && !($prow ? $user->can_view_hidden_tags($prow) : $user->privChair)) {
+                $re = "(?:" . $re . "|(?:" . $this->hidden_regex_part() . ")(?:|#\\S+)(?= |\z))";
+            }
+            if ($tags[0] !== " ") { // XXX remove this
+                $tags = " " . $tags;
+            }
+            $tags = preg_replace("{ " . $re . "}i", "", $tags);
         }
         return $tags;
     }
@@ -554,6 +573,8 @@ class TagMap implements IteratorAggregate {
             if (is_array($tags)) {
                 $this->conf->collator()->sort($tags);
             } else {
+                // XXX remove assert_tag_string
+                self::assert_tag_string($tags);
                 $tags = explode(" ", $tags);
                 $this->conf->collator()->sort($tags);
                 $tags = join(" ", $tags);
@@ -955,24 +976,6 @@ class Tagger {
             }
         }
         return $x === "" ? "" : '<span class="tagdecoration">' . $x . '</span>';
-    }
-
-    private function trim_for_sort($x) {
-        if ($x[0] === "#")
-            $x = substr($x, 1);
-        if ($x[0] === "~" && $x[1] !== "~")
-            $x = $this->_contactId . $x;
-        else if ($x[0] === "~")
-            $x = ";" . $x;
-        return $x;
-    }
-
-    function tag_compare($a, $b) {
-        return strcasecmp($this->trim_for_sort($a), $this->trim_for_sort($b));
-    }
-
-    function sort(&$tags) {
-        usort($tags, array($this, "tag_compare"));
     }
 
     function link_base($tag) {
