@@ -541,22 +541,21 @@ class TagMap implements IteratorAggregate {
         }
     }
 
-    function strip_nonviewable($tags, Contact $user = null, PaperInfo $prow = null) {
+    function strip_nonviewable($tags, Contact $user, PaperInfo $prow = null) {
         // XXX remove assert_tag_string
         self::assert_tag_string($tags);
         if ((string) $tags !== ""
             && ($this->has_hidden || strpos($tags, "~") !== false)) {
             $re = "(?:";
-            if ($user && $user->contactId) {
+            if ($user->contactId > 0) {
                 $re .= "(?!" . $user->contactId . "~)";
             }
             $re .= "\\d+~";
-            if (!($user && $user->privChair)) {
+            if (!$user->privChair) {
                 $re .= "|~+";
             }
             $re .= ")\\S+";
             if ($this->has_hidden
-                && $user
                 && !($prow ? $user->can_view_hidden_tags($prow) : $user->privChair)) {
                 $re = "(?:" . $re . "|(?:" . $this->hidden_regex_part() . ")(?:|#\\S+)(?= |\z))";
             }
