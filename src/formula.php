@@ -1759,10 +1759,12 @@ class Formula implements Abbreviator {
         }
 
         if ($has_args) {
-            if (!$this->_parse_function_args($ff, $t)
-                || (is_int($args) && count($ff->args) !== $args)) {
+            if (!$this->_parse_function_args($ff, $t)) {
+                $this->add_error_at("Type error", $pos1, -strlen($t), ": function “" . htmlspecialchars($ff->name) . "” requires arguments.");
+                return null;
+            } else if (is_int($args) && count($ff->args) !== $args) {
                 $argcount = is_int($args) ? plural($args, "argument") : "arguments";
-                $this->add_error_at("Type error", $pos1, -strlen($t), ": function “" . htmlspecialchars($ff->name) . "” requires $argcount.");
+                $this->add_error_at("Type error", $pos1, -strlen($t), ": function “" . htmlspecialchars($ff->name) . "” requires " . plural($args, "argument") . " (" . count($ff->args) . " supplied).");
                 return null;
             }
         }
