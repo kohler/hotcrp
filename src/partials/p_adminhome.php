@@ -21,8 +21,8 @@ class AdminHome_Partial {
         $conf = $user->conf;
         $m = [];
         $errmarker = "<span class=\"is-error\">Error:</span> ";
-        if (preg_match("/^(?:[1-4]\\.|5\\.[012345])/", phpversion()))
-            $m[] = $errmarker . "HotCRP requires PHP version 5.6 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".";
+        if (preg_match("/^(?:[1-5]\\.)/", phpversion()))
+            $m[] = $errmarker . "HotCRP requires PHP version 7.0 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".";
         $result = Dbl::qx($conf->dblink, "show variables like 'max_allowed_packet'");
         $max_file_size = ini_get_bytes("upload_max_filesize");
         if (($row = edb_row($result))
