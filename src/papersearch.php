@@ -2395,10 +2395,11 @@ class PaperSearch {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         foreach ($this->_matches as $pid) {
             $row = $rowset->get($pid);
-            if ($row->has_viewable_tag($dt->tag, $this->user))
+            if ($row->has_viewable_tag($dt->tag, $this->user)) {
                 $tag_order[] = [$row->paperId, $row->tag_value($dt->tag)];
-            else
+            } else {
                 $tag_order[] = [$row->paperId, TAG_INDEXBOUND];
+            }
         }
         $this->user->set_overrides($old_overrides);
         usort($tag_order, "TagInfo::id_index_compar");

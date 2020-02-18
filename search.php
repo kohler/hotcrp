@@ -527,7 +527,7 @@ if ($pl_text) {
 
     if ($pl->has("sel")) {
         echo Ht::form($Conf->selfurl($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel", "class" => "ui-submit js-paperlist-submit"]),
-            Ht::hidden("defaultact", "", array("id" => "defaultact")),
+            Ht::hidden("defaultact", "", ["id" => "defaultact"]),
             Ht::hidden("forceShow", (string) $Qreq->forceShow, ["id" => "forceShow"]),
             Ht::hidden_default_submit("default", 1);
     }

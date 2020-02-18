@@ -792,24 +792,28 @@ class PaperInfo {
     function load_tags() {
         $result = $this->conf->qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=? group by paperId", $this->paperId);
         $this->paperTags = "";
-        if (($row = edb_row($result)) && $row[0] !== null)
+        if (($row = $result->fetch_row()) && $row[0] !== null) {
             $this->paperTags = $row[0];
+        }
         Dbl::free($result);
     }
 
     function has_tag($tag) {
-        if (!property_exists($this, "paperTags"))
+        if (!property_exists($this, "paperTags")) {
             $this->load_tags();
+        }
         return $this->paperTags !== ""
             && stripos($this->paperTags, " $tag#") !== false;
     }
 
     function has_any_tag($tags) {
-        if (!property_exists($this, "paperTags"))
+        if (!property_exists($this, "paperTags")) {
             $this->load_tags();
-        foreach ($tags as $tag)
+        }
+        foreach ($tags as $tag) {
             if (stripos($this->paperTags, " $tag#") !== false)
                 return true;
+        }
         return false;
     }
 
@@ -819,18 +823,21 @@ class PaperInfo {
     }
 
     function tag_value($tag) {
-        if (!property_exists($this, "paperTags"))
+        if (!property_exists($this, "paperTags")) {
             $this->load_tags();
+        }
         if ($this->paperTags !== ""
-            && ($pos = stripos($this->paperTags, " $tag#")) !== false)
+            && ($pos = stripos($this->paperTags, " $tag#")) !== false) {
             return (float) substr($this->paperTags, $pos + strlen($tag) + 2);
-        else
+        } else {
             return false;
+        }
     }
 
     function all_tags_text() {
-        if (!property_exists($this, "paperTags"))
+        if (!property_exists($this, "paperTags")) {
             $this->load_tags();
+        }
         return $this->paperTags;
     }
 
@@ -869,9 +876,10 @@ class PaperInfo {
             $tags = $this->viewable_tags($user);
             if ($tags !== "") {
                 $etags = [];
-                foreach (explode(" ", $tags) as $tag)
+                foreach (explode(" ", $tags) as $tag) {
                     if ($tag !== "" && $user->can_change_tag($this, $tag, 0, 1))
                         $etags[] = $tag;
+                }
                 $tags = join(" ", $etags);
             }
             $user->set_overrides($old_overrides);
@@ -881,15 +889,17 @@ class PaperInfo {
 
     function add_tag_info_json($pj, Contact $user) {
         $tagger = new Tagger($user);
-        if (($can_override = $user->has_overridable_conflict($this)))
+        if (($can_override = $user->has_overridable_conflict($this))) {
             $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        }
         $editable = $this->editable_tags($user);
         $viewable = $this->viewable_tags($user);
         $pj->tags = TagInfo::split($viewable);
         $pj->tags_edit_text = $tagger->unparse($editable);
         $pj->tags_view_html = $tagger->unparse_link($viewable);
-        if (($decor = $tagger->unparse_decoration_html($viewable)))
+        if (($decor = $tagger->unparse_decoration_html($viewable))) {
             $pj->tag_decoration_html = $decor;
+        }
         $tagmap = $this->conf->tags();
         $pj->color_classes = $tagmap->color_classes($viewable);
         if ($can_override && $viewable) {
@@ -898,15 +908,18 @@ class PaperInfo {
             if ($viewable_c !== $viewable) {
                 $pj->tags_conflicted = TagInfo::split($viewable_c);
                 if ($decor
-                    && ($decor_c = $tagger->unparse_decoration_html($viewable_c)) !== $decor)
+                    && ($decor_c = $tagger->unparse_decoration_html($viewable_c)) !== $decor) {
                     $pj->tag_decoration_html_conflicted = $decor_c;
+                }
                 if ($pj->color_classes
-                    && ($cc_c = $tagmap->color_classes($viewable_c)) !== $pj->color_classes)
+                    && ($cc_c = $tagmap->color_classes($viewable_c)) !== $pj->color_classes) {
                     $pj->color_classes_conflicted = $cc_c;
+                }
             }
         }
-        if ($can_override)
+        if ($can_override) {
             $user->set_overrides($overrides);
+        }
     }
 
 

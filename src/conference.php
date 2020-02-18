@@ -1830,18 +1830,21 @@ class Conf {
             Dbl::free($result);
 
             if ($expected_by_name_count > count($by_name_text)) {
-                foreach ($by_name_text as $us)
+                foreach ($by_name_text as $us) {
                     if (count($us) > 1) {
                         $npcus = 0;
-                        foreach ($us as $u)
+                        foreach ($us as $u) {
                             $npcus += ($u->roles & Contact::ROLE_PC ? 1 : 0);
-                        foreach ($us as $u)
+                        }
+                        foreach ($us as $u) {
                             if ($npcus > 1 || ($u->roles & Contact::ROLE_PC) == 0) {
                                 $u->nameAmbiguous = true;
                                 $u->name_analysis = null;
                                 $u->name_analysis = Text::analyze_name($u);
                             }
+                        }
                     }
+                }
             }
 
             uasort($pc, "Contact::compare");
@@ -1853,8 +1856,9 @@ class Conf {
                     $u->sort_position = count($this->_pc_members_cache);
                     $this->_pc_members_cache[$u->contactId] = $u;
                 }
-                if ($u->roles & Contact::ROLE_CHAIR)
+                if ($u->roles & Contact::ROLE_CHAIR) {
                     $this->_pc_chairs_cache[$u->contactId] = $u;
+                }
             }
 
             $this->collator()->asort($this->_pc_tags_cache);

@@ -195,8 +195,9 @@ class PaperList {
 
         if ($report) {
             $s = $this->conf->setting_data("{$report}display_default", null);
-            if ($s === null && $report === "pl")
+            if ($s === null && $report === "pl") {
                 $s = $this->conf->review_form()->default_display();
+            }
             $this->set_view_display($s, 2);
         }
 

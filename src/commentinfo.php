@@ -53,10 +53,12 @@ class CommentInfo {
 
     static function fetch($result, PaperInfo $prow = null, Conf $conf = null) {
         $cinfo = null;
-        if ($result)
+        if ($result) {
             $cinfo = $result->fetch_object("CommentInfo", [null, $prow, $conf]);
-        if ($cinfo && !is_int($cinfo->commentId))
+        }
+        if ($cinfo && !is_int($cinfo->commentId)) {
             $cinfo->merge(null, $prow, $conf);
+        }
         return $cinfo;
     }
 
@@ -246,8 +248,9 @@ class CommentInfo {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             $tags = $this->conf->tags()->strip_nonviewable($this->commentTags, $viewer, $this->prow);
-            if ($this->commentType & COMMENTTYPE_RESPONSE)
+            if ($this->commentType & COMMENTTYPE_RESPONSE) {
                 $tags = trim(preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", " $tags "));
+            }
             return $tags;
         } else {
             return null;
@@ -477,8 +480,9 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
     function save($req, Contact $acting_contact) {
         global $Now;
-        if (is_array($req))
+        if (is_array($req)) {
             $req = (object) $req;
+        }
         $Table = $this->prow->comment_table_name();
         $LinkTable = $this->prow->table_name();
         $LinkColumn = $this->prow->id_column();

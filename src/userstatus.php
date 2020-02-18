@@ -367,20 +367,23 @@ class UserStatus extends MessageSet {
         }
 
         // Tags
-        if (isset($cj->tags))
+        if (isset($cj->tags)) {
             $cj->tags = $this->make_tags_array($cj->tags, "tags");
+        }
         if (isset($cj->add_tags) || isset($cj->remove_tags)) {
             // collect old tags as map by base
-            if (!isset($cj->tags) && $old_user)
+            if (!isset($cj->tags) && $old_user) {
                 $cj->tags = preg_split('/[\s,]+/', $old_user->contactTags);
-            else if (!isset($cj->tags))
+            } else if (!isset($cj->tags)) {
                 $cj->tags = array();
+            }
             $old_tags = array();
-            foreach ($cj->tags as $t)
+            foreach ($cj->tags as $t) {
                 if ($t !== "") {
                     list($tag, $index) = TagInfo::unpack($t);
                     $old_tags[strtolower($tag)] = [$tag, $index];
                 }
+            }
             // process removals, then additions
             foreach ($this->make_tags_array(get($cj, "remove_tags"), "remove_tags") as $t) {
                 list($tag, $index) = TagInfo::unpack($t);
@@ -401,29 +404,30 @@ class UserStatus extends MessageSet {
 
         // Topics
         $in_topics = null;
-        if (isset($cj->topics))
+        if (isset($cj->topics)) {
             $in_topics = $this->make_keyed_object($cj->topics, "topics");
-        else if (isset($cj->change_topics))
+        } else if (isset($cj->change_topics)) {
             $in_topics = $this->make_keyed_object($cj->change_topics, "change_topics");
+        }
         if ($in_topics !== null) {
             $topics = !isset($cj->topics) && $old_user ? $old_user->topic_interest_map() : [];
             $cj->bad_topics = array();
             foreach ((array) $in_topics as $k => $v) {
-                if ($this->conf->topic_set()->get($k))
+                if ($this->conf->topic_set()->get($k)) {
                     $k = (int) $k;
-                else if (($tid = $this->conf->topic_abbrev_matcher()->find1($k)))
+                } else if (($tid = $this->conf->topic_abbrev_matcher()->find1($k))) {
                     $k = $tid;
-                else {
+                } else {
                     $cj->bad_topics[] = $k;
                     continue;
                 }
-                if (is_bool($v))
+                if (is_bool($v)) {
                     $v = $v ? 2 : 0;
-                else if (is_string($v) && isset(self::$topic_interest_name_map[$v]))
+                } else if (is_string($v) && isset(self::$topic_interest_name_map[$v])) {
                     $v = self::$topic_interest_name_map[$v];
-                else if (is_numeric($v))
+                } else if (is_numeric($v)) {
                     $v = (int) $v;
-                else {
+                } else {
                     $this->error_at("topics", "Topic interest format error");
                     continue;
                 }
@@ -1122,9 +1126,9 @@ topics. We use this information to help match papers to reviewers.</p>',
     function render_group($g, $cj, $reqj) {
         $this->gxt()->start_render(3, "profile");
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
-            if (array_search("pc", Conf::xt_allow_list($gj)) === false)
+            if (array_search("pc", Conf::xt_allow_list($gj)) === false) {
                 $this->gxt()->render($gj, [$this, $cj, $reqj, $gj]);
-            else if ($this->user->isPC || $this->viewer->privChair) {
+            } else if ($this->user->isPC || $this->viewer->privChair) {
                 echo '<div class="fx1">';
                 $this->gxt()->render($gj, [$this, $cj, $reqj, $gj]);
                 echo '</div>';

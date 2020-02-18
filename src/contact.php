@@ -911,17 +911,19 @@ class Contact {
 
     function data($key = null) {
         $this->make_data();
-        if ($key)
+        if ($key) {
             return get($this->data, $key);
-        else
+        } else {
             return $this->data;
+        }
     }
 
     private function encode_data() {
-        if ($this->data && ($t = json_encode($this->data)) !== "{}")
+        if ($this->data && ($t = json_encode($this->data)) !== "{}") {
             return $t;
-        else
+        } else {
             return null;
+        }
     }
 
     function save_data($key, $value) {
@@ -3634,34 +3636,41 @@ class Contact {
 
     function can_view_tags(PaperInfo $prow = null) {
         // see also AllTags_API::alltags
-        if (!$prow)
+        if (!$prow) {
             return $this->isPC;
-        $rights = $this->rights($prow);
-        return $rights->allow_pc
-            || ($rights->allow_pc_broad && $this->conf->tag_seeall)
-            || (($this->privChair || $rights->allow_administer)
-                && $this->conf->tags()->has_sitewide);
+        } else {
+            $rights = $this->rights($prow);
+            return $rights->allow_pc
+                || ($rights->allow_pc_broad && $this->conf->tag_seeall)
+                || (($this->privChair || $rights->allow_administer)
+                    && $this->conf->tags()->has_sitewide);
+        }
     }
 
     function can_view_most_tags(PaperInfo $prow = null) {
-        if (!$prow)
+        if (!$prow) {
             return $this->isPC;
-        $rights = $this->rights($prow);
-        return $rights->allow_pc
-            || ($rights->allow_pc_broad && $this->conf->tag_seeall);
+        } else {
+            $rights = $this->rights($prow);
+            return $rights->allow_pc
+                || ($rights->allow_pc_broad && $this->conf->tag_seeall);
+        }
     }
 
     function can_view_hidden_tags(PaperInfo $prow = null) {
-        if (!$prow)
+        if (!$prow) {
             return $this->privChair;
-        $rights = $this->rights($prow);
-        return $rights->can_administer
-            || $this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG);
+        } else {
+            $rights = $this->rights($prow);
+            return $rights->can_administer
+                || $this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG);
+        }
     }
 
     function can_view_tag(PaperInfo $prow, $tag) {
-        if ($this->_overrides & self::OVERRIDE_TAG_CHECKS)
+        if ($this->_overrides & self::OVERRIDE_TAG_CHECKS) {
             return true;
+        }
         $rights = $this->rights($prow);
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");

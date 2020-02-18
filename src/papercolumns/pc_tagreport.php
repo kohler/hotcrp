@@ -11,15 +11,18 @@ class TagReport_PaperColumn extends PaperColumn {
         $this->tag = $cj->tag;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->can_view_any_peruser_tags($this->tag))
+        if (!$pl->user->can_view_any_peruser_tags($this->tag)) {
             return false;
-        if ($visible)
+        }
+        if ($visible) {
             $pl->qopts["tags"] = 1;
+        }
         $dt = $pl->conf->tags()->check($this->tag);
-        if (!$dt || $dt->rank || (!$dt->vote && !$dt->approval))
+        if (!$dt || $dt->rank || (!$dt->vote && !$dt->approval)) {
             $this->viewtype = 0;
-        else
+        } else {
             $this->viewtype = $dt->approval ? 1 : 2;
+        }
         return true;
     }
     function header(PaperList $pl, $is_text) {
@@ -32,17 +35,21 @@ class TagReport_PaperColumn extends PaperColumn {
         $a = [];
         preg_match_all('/ (\d+)~' . preg_quote($this->tag) . '#(\S+)/i', $row->all_tags_text(), $m);
         for ($i = 0; $i != count($m[0]); ++$i) {
-            if ($this->viewtype == 2 && $m[2][$i] <= 0)
+            if ($this->viewtype == 2 && $m[2][$i] <= 0) {
                 continue;
+            }
             $n = $pl->user->name_html_for($m[1][$i]);
-            if ($this->viewtype != 1)
+            if ($this->viewtype != 1) {
                 $n .= " (" . $m[2][$i] . ")";
+            }
             $a[$m[1][$i]] = $n;
         }
-        if (empty($a))
+        if (empty($a)) {
             return "";
-        $pl->user->ksort_cid_array($a);
-        return '<span class="nb">' . join(',</span> <span class="nb">', $a) . '</span>';
+        } else {
+            $pl->user->ksort_cid_array($a);
+            return '<span class="nb">' . join(',</span> <span class="nb">', $a) . '</span>';
+        }
     }
 }
 
@@ -54,8 +61,9 @@ class TagReport_PaperColumnFactory {
         return (object) $cj;
     }
     static function expand($name, $user, $xfj, $m) {
-        if (!$user->can_view_most_tags())
+        if (!$user->can_view_most_tags()) {
             return null;
+        }
         $tagset = $user->conf->tags();
         if ($name === "tagreports") {
             return array_map(function ($t) use ($xfj) {
@@ -65,10 +73,11 @@ class TagReport_PaperColumnFactory {
             }));
         } else {
             $t = $tagset->check($m[1]);
-            if ($t && ($t->vote || $t->approval || $t->rank))
+            if ($t && ($t->vote || $t->approval || $t->rank)) {
                 return self::column_json($xfj, $m[1]);
-            else
+            } else {
                 return null;
+            }
         }
     }
 }

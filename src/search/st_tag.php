@@ -12,31 +12,36 @@ class TagSearchMatcher {
         $ntags = [];
         foreach ($this->tags as $t) {
             array_push($ntags, $t, "{$user->contactId}~$t");
-            if ($user->privChair)
+            if ($user->privChair) {
                 $ntags[] = "~~$t";
+            }
         }
         $this->tags = $ntags;
         return $this;
     }
     function make_term() {
-        if (empty($this->tags))
+        if (empty($this->tags)) {
             return new False_SearchTerm;
-        else
+        } else {
             return new Tag_SearchTerm($this);
+        }
     }
     function tagmatch_sql($table, Contact $user) {
         $x = [];
         foreach ($this->tags as $tm) {
-            if (($starpos = strpos($tm, "*")) !== false || $tm === "any")
+            if (($starpos = strpos($tm, "*")) !== false || $tm === "any") {
                 return false;
-            else
+            } else {
                 $x[] = "$table.tag='" . sqlq($tm) . "'";
+            }
         }
         $q = "(" . join(" or ", $x) . ")";
-        if ($this->index1)
+        if ($this->index1) {
             $q .= " and $table.tagIndex" . $this->index1->countexpr();
-        if ($this->index2)
+        }
+        if ($this->index2) {
             $q .= " and $table.tagIndex" . $this->index2->countexpr();
+        }
         return $q;
     }
     function evaluate(Contact $user, $taglist) {
@@ -44,34 +49,37 @@ class TagSearchMatcher {
             $res = [];
             foreach ($this->tags as $tm) {
                 $starpos = strpos($tm, "*");
-                if ($starpos === 0)
+                if ($starpos === 0) {
                     $res[] = '(?!.*~)' . str_replace('\\*', '.*', preg_quote($tm));
-                else if ($starpos !== false)
+                } else if ($starpos !== false) {
                     $res[] = str_replace('\\*', '.*', preg_quote($tm));
-                else if ($tm === "any" && $user->privChair)
+                } else if ($tm === "any" && $user->privChair) {
                     $res[] = "(?:{$user->contactId}~.*|~~.*|(?!.*~).*)";
-                else if ($tm === "any")
+                } else if ($tm === "any") {
                     $res[] = "(?:{$user->contactId}~.*|(?!.*~).*)";
-                else
+                } else {
                     $res[] = preg_quote($tm);
+                }
             }
             $this->_re = '{\A(?:' . join("|", $res) . ')\z}i';
         }
         foreach (TagInfo::split_unpack($taglist) as $ti) {
             if (preg_match($this->_re, $ti[0])
                 && (!$this->index1 || $this->index1->test($ti[1]))
-                && (!$this->index2 || $this->index2->test($ti[1])))
+                && (!$this->index2 || $this->index2->test($ti[1]))) {
                 return true;
+            }
         }
         return false;
     }
     function single_tag() {
         if (count($this->tags) == 1
             && $this->tags[0] !== "any"
-            && strpos($this->tags[0], "*") === false)
+            && strpos($this->tags[0], "*") === false) {
             return $this->tags[0];
-        else
+        } else {
             return false;
+        }
     }
 }
 
@@ -130,8 +138,9 @@ class Tag_SearchTerm extends SearchTerm {
                 $word = substr($word, 1);
             }
         }
-        if (str_starts_with($word, "#"))
+        if (str_starts_with($word, "#")) {
             $word = substr($word, 1);
+        }
 
         // allow external reviewers to search their own rank tag
         if (!$srch->user->isPC) {
@@ -197,24 +206,26 @@ class Tag_SearchTerm extends SearchTerm {
             if ($this->tsm->evaluate($srch->user, " {$dt->tag}#0")) {
                 $newsrch = new PaperSearch($srch->user, $dt->autosearch);
                 $newec = $newsrch->term()->compile_condition($row, $newsrch);
-                if ($newec === null)
+                if ($newec === null) {
                     return null;
-                else if ($newec === true)
+                } else if ($newec === true) {
                     return true;
-                else if ($newec !== false)
+                } else if ($newec !== false) {
                     $child[] = $newec;
+                }
                 $tags = str_replace(" {$dt->tag}#0", "", $tags);
             }
         }
         // now complete
-        if ($this->tsm->evaluate($srch->user, $tags))
+        if ($this->tsm->evaluate($srch->user, $tags)) {
             return true;
-        else if (empty($child))
+        } else if (empty($child)) {
             return false;
-        else if (count($child) === 1)
+        } else if (count($child) === 1) {
             return $child[0];
-        else
+        } else {
             return (object) ["type" => "or", "child" => $child];
+        }
     }
     function default_sorter($top, $thenmap, PaperSearch $srch) {
         if ($top && $this->tag1) {
