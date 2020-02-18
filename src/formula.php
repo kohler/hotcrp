@@ -1729,7 +1729,7 @@ class Formula implements Abbreviator {
     }
 
     static private function _pop_argument($t) {
-        if (preg_match(',\s*((?:"[^"]*(?:"|\z)|[^\s()]*)*)(.*)\z,s', $t, $m) && $m[1] !== "")
+        if (preg_match('/\s*((?:"[^"]*(?:"|\z)|[^\s()]*)*)(.*)\z/s', $t, $m) && $m[1] !== "")
             return $m;
         else
             return array($t, "", $t);

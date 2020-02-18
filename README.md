@@ -23,15 +23,15 @@ software:
 
 * Nginx, http://nginx.org/ \
   (You may be able to use another web server that works with PHP.)
-* PHP version 5.6 or higher, http://php.net/
+* PHP version 7.0 or higher, http://php.net/
   - Including MySQL support, php-fpm, php-gmp, and php-intl
 * MySQL version 5 or higher, http://mysql.org/
 * The zip compressor, http://www.info-zip.org/
 * Poppler’s version of pdftohtml, http://poppler.freedesktop.org/ (only
   required for format checking)
 
-You may need to install additional packages, such as php71, php71-fpm,
-php71-intl, php71-mysqlnd, zip, poppler-utils, and sendmail or postfix.
+You may need to install additional packages, such as php73, php73-fpm,
+php73-intl, php73-mysqlnd, zip, poppler-utils, and sendmail or postfix.
 
 Installation
 ------------
