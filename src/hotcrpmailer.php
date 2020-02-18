@@ -8,7 +8,7 @@ class HotCRPMailPreparation extends MailPreparation {
     public $paper_expansions = 0;
     public $combination_type = 0;
     public $fake = false;
-    public $sensitive; // used in mail tool
+    public $censored_preparation; // used in mail tool
 
     function __construct($conf) {
         parent::__construct($conf);
@@ -63,44 +63,54 @@ class HotCRPMailer extends Mailer {
             assert($recipient instanceof Contact);
             assert(!($recipient->overrides() & Contact::OVERRIDE_CONFLICT));
         }
-        foreach (array("requester", "reviewer", "other") as $k)
+        foreach (array("requester", "reviewer", "other") as $k) {
             $this->contacts[$k] = get($rest, $k . "_contact");
+        }
         $this->row = $row;
         assert(!$row || $this->row->paperId > 0);
-        foreach (["rrow", "comment_row", "newrev_since"] as $k)
+        foreach (["rrow", "comment_row", "newrev_since"] as $k) {
             $this->$k = get($rest, $k);
-        if (get($rest, "rrow_unsubmitted"))
+        }
+        if (get($rest, "rrow_unsubmitted")) {
             $this->rrow_unsubmitted = true;
-        if (get($rest, "no_send"))
+        }
+        if (get($rest, "no_send")) {
             $this->no_send = true;
+        }
         // Infer reviewer contact from rrow/comment_row
-        if (!$this->contacts["reviewer"] && $this->rrow && get($this->rrow, "reviewEmail"))
-            $this->contacts["reviewer"] = self::make_reviewer_contact($this->rrow);
-        else if (!$this->contacts["reviewer"] && $this->comment_row && get($this->comment_row, "reviewEmail"))
-            $this->contacts["reviewer"] = self::make_reviewer_contact($this->comment_row);
+        if (!$this->contacts["reviewer"]) {
+            if ($this->rrow && get($this->rrow, "reviewEmail")) {
+                $this->contacts["reviewer"] = self::make_reviewer_contact($this->rrow);
+            } else if ($this->comment_row && get($this->comment_row, "reviewEmail")) {
+                $this->contacts["reviewer"] = self::make_reviewer_contact($this->comment_row);
+            }
+        }
         // Do not put passwords in email that is cc'd elsewhere
         if ((!$Me || !$Me->privChair || $this->conf->opt("chairHidePasswords"))
             && (get($rest, "cc") || get($rest, "bcc"))
-            && (get($rest, "sensitivity") === null || get($rest, "sensitivity") === "display"))
-            $this->sensitivity = "high";
+            && (!$this->censor || $this->censor === self::CENSOR_DISPLAY)) {
+            $this->censor = self::CENSOR_ALL;
+        }
     }
 
 
     // expansion helpers
     private function _expand_reviewer($type, $isbool) {
-        if (!($c = $this->contacts["reviewer"]))
+        if (!($c = $this->contacts["reviewer"])) {
             return false;
+        }
         if ($this->row
             && $this->rrow
             && $this->conf->is_review_blind($this->rrow)
             && !$this->recipient->privChair
             && !$this->recipient->can_view_review_identity($this->row, $this->rrow)) {
-            if ($isbool)
+            if ($isbool) {
                 return false;
-            else if ($this->expansionType == self::EXPAND_EMAIL)
+            } else if ($this->expansionType == self::EXPAND_EMAIL) {
                 return "<hidden>";
-            else
+            } else {
                 return "Hidden for blind review";
+            }
         }
         return $this->expand_user($c, $type);
     }
@@ -159,11 +169,13 @@ class HotCRPMailer extends Mailer {
         });
 
         $text = "";
-        if (count($crows) > 1)
+        if (count($crows) > 1) {
             $text .= "Comments\n" . str_repeat("=", 75) . "\n";
+        }
         foreach ($crows as $crow) {
-            if ($text !== "")
+            if ($text !== "") {
                 $text .= "\n";
+            }
             $text .= $crow->unparse_text($this->recipient, true);
         }
 
@@ -173,8 +185,9 @@ class HotCRPMailer extends Mailer {
 
     private function get_new_assignments($contact) {
         $since = "";
-        if ($this->newrev_since)
+        if ($this->newrev_since) {
             $since = " and r.timeRequested>=$this->newrev_since";
+        }
         $result = $this->conf->qe("select r.paperId, p.title
                 from PaperReview r join Paper p using (paperId)
                 where r.contactId=" . $contact->contactId . "
@@ -184,8 +197,10 @@ class HotCRPMailer extends Mailer {
                 and p.timeSubmitted>0
                 order by r.paperId");
         $text = "";
-        while (($row = edb_row($result)))
+        while (($row = edb_row($result))) {
             $text .= ($text ? "\n#" : "#") . $row[0] . " " . $row[1];
+        }
+        Dbl::free($result);
         return $text;
     }
 
@@ -195,7 +210,7 @@ class HotCRPMailer extends Mailer {
         if ($this->row && $this->row->paperId > 0) {
             $e1 = get_s($contact, "email");
             $e2 = get_s($contact, "preferredEmail");
-            foreach ($this->row->author_list() as $au)
+            foreach ($this->row->author_list() as $au) {
                 if (($au->firstName || $au->lastName)
                     && $au->email
                     && (strcasecmp($au->email, $e1) === 0
@@ -205,13 +220,14 @@ class HotCRPMailer extends Mailer {
                     $r->name = $au->name();
                     return;
                 }
+            }
         }
     }
 
     function kw_deadline($args, $isbool, $uf) {
-        if ($uf->is_review && $args)
+        if ($uf->is_review && $args) {
             $args .= "rev_soft";
-        else if ($uf->is_review) {
+        } else if ($uf->is_review) {
             assert(!$this->row || !isset($this->row->roles));
             if (!$this->row
                 || !($rt = $this->row->review_type($this->recipient))) {
@@ -226,16 +242,18 @@ class HotCRPMailer extends Mailer {
             }
             $args = ($rt >= REVIEW_PC ? "pc" : "ext") . "rev_soft";
         }
-        if ($args && $isbool)
+        if ($args && $isbool) {
             return $this->conf->setting($args) > 0;
-        else if ($args)
+        } else if ($args) {
             return $this->conf->printableTimeSetting($args);
-        else
+        } else {
             return null;
+        }
     }
     function kw_statistic($args, $isbool, $uf) {
-        if ($this->_statistics === null)
+        if ($this->_statistics === null) {
             $this->_statistics = $this->conf->count_submitted_accepted();
+        }
         return $this->_statistics[$uf->statindex];
     }
     function kw_contactdbdescription() {
@@ -243,10 +261,12 @@ class HotCRPMailer extends Mailer {
     }
     function kw_reviewercontact($args, $isbool, $uf) {
         if ($uf->match_data[1] === "REVIEWER") {
-            if (($x = $this->_expand_reviewer($uf->match_data[2], $isbool)) !== false)
+            if (($x = $this->_expand_reviewer($uf->match_data[2], $isbool)) !== false) {
                 return $x;
-        } else if (($u = $this->contacts[strtolower($uf->match_data[1])]))
+            }
+        } else if (($u = $this->contacts[strtolower($uf->match_data[1])])) {
             return $this->expand_user($u, $uf->match_data[2]);
+        }
         return $isbool ? false : null;
     }
 
@@ -255,11 +275,13 @@ class HotCRPMailer extends Mailer {
     }
     function kw_haspaper() {
         if ($this->row && $this->row->paperId > 0) {
-            if ($this->preparation)
+            if ($this->preparation) {
                 ++$this->preparation->paper_expansions;
+            }
             return true;
-        } else
+        } else {
             return false;
+        }
     }
     function kw_hasreview() {
         return !!$this->rrow;
@@ -283,21 +305,25 @@ class HotCRPMailer extends Mailer {
     function kw_authors($args, $isbool) {
         if (!$this->recipient->is_site_contact
             && !$this->row->has_author($this->recipient)
-            && !$this->recipient->can_view_authors($this->row))
+            && !$this->recipient->can_view_authors($this->row)) {
             return $isbool ? false : "Hidden for blind review";
+        }
         return rtrim($this->row->pretty_text_author_list());
     }
     function kw_authorviewcapability($args, $isbool) {
+        $this->sensitive = true;
         if ($this->conf->opt("disableCapabilities")
-            || $this->sensitivity === "high")
+            || $this->censor === self::CENSOR_ALL) {
             return "";
+        }
         if ($this->row
             && isset($this->row->capVersion)
             && $this->recipient->act_author_view($this->row)) {
-            if (!$this->sensitivity)
+            if (!$this->censor) {
                 return "cap=" . CapabilityManager::capability_text($this->row, "a");
-            else if ($this->sensitivity === "display")
+            } else if ($this->censor === self::CENSOR_DISPLAY) {
                 return "cap=HIDDEN";
+            }
         }
         return null;
     }

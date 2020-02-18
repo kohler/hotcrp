@@ -22,10 +22,12 @@ if (isset($Qreq->fromlog)
             if (isset($row->$field) && !isset($Qreq[$field]))
                 $Qreq[$field] = $row->$field;
         }
-        if (isset($row->recipients) && !isset($Qreq->to))
+        if (isset($row->recipients) && !isset($Qreq->to)) {
             $Qreq->to = $row->recipients;
-        if ($row->q)
+        }
+        if ($row->q) {
             $Qreq["plimit"] = 1;
+        }
     }
 }
 
@@ -33,16 +35,19 @@ if (isset($Qreq->fromlog)
 $tOpt = array();
 if ($Me->privChair) {
     $tOpt["s"] = "Submitted papers";
-    if ($Conf->time_pc_view_decision(false) && $Conf->has_any_accepted())
+    if ($Conf->time_pc_view_decision(false) && $Conf->has_any_accepted()) {
         $tOpt["acc"] = "Accepted papers";
+    }
     $tOpt["unsub"] = "Unsubmitted papers";
     $tOpt["all"] = "All papers";
 }
-if ($Me->privChair ? $Conf->has_any_manager() : $Me->is_manager())
+if ($Me->privChair ? $Conf->has_any_manager() : $Me->is_manager()) {
     $tOpt["admin"] = "Papers you administer";
+}
 $tOpt["req"] = "Your review requests";
-if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t]))
+if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {
     $Qreq->t = key($tOpt);
+}
 
 // mailer options
 if (isset($Qreq->cc) && $Me->is_manager()) {
@@ -390,8 +395,8 @@ class MailSender {
 
         // hide passwords from non-chair users
         $show_prep = $prep;
-        if ($prep->sensitive) {
-            $show_prep = $prep->sensitive;
+        if ($prep->censored_preparation) {
+            $show_prep = $prep->censored_preparation;
             $show_prep->to = $prep->to;
             self::fix_body($show_prep);
         }
@@ -401,8 +406,9 @@ class MailSender {
         foreach (["To", "cc", "bcc", "reply-to", "Subject"] as $k) {
             if ($k == "To") {
                 $vh = array();
-                foreach ($show_prep->to as $to)
+                foreach ($show_prep->to as $to) {
                     $vh[] = htmlspecialchars(MimeText::decode_header($to));
+                }
                 $vh = '<div style="max-width:60em"><span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span></div>';
             } else if ($k == "Subject") {
                 $vh = htmlspecialchars(MimeText::decode_header($show_prep->subject));
@@ -438,8 +444,9 @@ class MailSender {
         global $mailer_options;
 
         $subject = trim($this->qreq->subject);
-        if ($subject === "")
+        if ($subject === "") {
             $subject = "Message";
+        }
         $subject = "[{$this->conf->short_name}] $subject";
         $emailBody = $this->qreq->emailBody;
         $template = ["subject" => $subject, "body" => $emailBody];
@@ -451,18 +458,22 @@ class MailSender {
         $paper_sensitive = preg_match('/%[A-Z0-9]+[(%]/', $prep->subject . $prep->body);
 
         $q = $this->recip->query($paper_sensitive);
-        if (!$q)
+        if (!$q) {
             return Conf::msg_error("Bad recipients value");
+        }
         $result = $this->conf->qe_raw($q);
-        if (!$result)
+        if (!$result) {
             return;
+        }
 
         if ($this->sending) {
             $this->mailid_text = " #" . intval($this->qreq->mailid);
             // Mail format matters
             $this->user->log_activity("Sending mail$this->mailid_text \"$subject\"");
+            $rest["censor"] = Mailer::CENSOR_NONE;
         } else {
             $rest["no_send"] = true;
+            $rest["censor"] = Mailer::CENSOR_DISPLAY;
         }
 
         $mailer = new HotCRPMailer($this->conf);
@@ -497,10 +508,12 @@ class MailSender {
                 }
             } else if ($this->process_prep($prep, $last_prep, $row)) {
                 if ((!$this->user->privChair || $this->conf->opt("chairHidePasswords"))
-                    && !$last_prep->sensitive) {
-                    $srest = array_merge($rest, array("sensitivity" => "display"));
-                    $mailer->reset($contact, $prow, $srest);
-                    $last_prep->sensitive = $mailer->make_preparation($template, $srest);
+                    && !$last_prep->censored_preparation
+                    && $rest["censor"] === Mailer::CENSOR_NONE) {
+                    $rest["censor"] = Mailer::CENSOR_DISPLAY;
+                    $mailer->reset($contact, $prow, $rest);
+                    $last_prep->censored_preparation = $mailer->make_preparation($template, $rest);
+                    $rest["censor"] = Mailer::CENSOR_NONE;
                 }
             }
 
@@ -519,7 +532,7 @@ class MailSender {
             }
         }
 
-        $this->process_prep($fake_prep, $last_prep, (object) array("paperId" => -1));
+        $this->process_prep($fake_prep, $last_prep, (object) ["paperId" => -1]);
         $this->echo_mailinfo($nrows_done, $nrows_total);
 
         if ($this->mcount === 0) {

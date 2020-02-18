@@ -420,8 +420,9 @@ class Contact {
         // cannot turn into a manager of conflicted papers
         if ($this->conf->setting("papermanager")) {
             $result = $this->conf->qe("select paperId from Paper join PaperConflict using (paperId) where managerContactId!=0 and managerContactId!=? and PaperConflict.contactId=? and conflictType>0", $this->contactId, $this->contactId);
-            while (($row = $result->fetch_row()))
+            while (($row = $result->fetch_row())) {
                 $u->hidden_papers[(int) $row[0]] = false;
+            }
             Dbl::free($result);
         }
 
@@ -1436,13 +1437,16 @@ class Contact {
 
     // obsolete
     private function password_hmac_key($keyid) {
-        if ($keyid === null)
+        if ($keyid === null) {
             $keyid = $this->conf->opt("passwordHmacKeyid", 0);
+        }
         $key = $this->conf->opt("passwordHmacKey.$keyid");
-        if (!$key && $keyid == 0)
+        if (!$key && $keyid == 0) {
             $key = $this->conf->opt("passwordHmacKey");
-        if (!$key) /* backwards compatibility */
+        }
+        if (!$key) { /* backwards compatibility */
             $key = $this->conf->setting_data("passwordHmacKey.$keyid");
+        }
         if (!$key) {
             error_log("missing passwordHmacKey.$keyid, using default");
             $key = "NdHHynw6JwtfSZyG3NYPTSpgPFG8UN8NeXp4tduTk2JhnSVy";
@@ -1454,13 +1458,13 @@ class Contact {
         if ($input == ""
             || $input === "*"
             || (string) $pwhash === ""
-            || $pwhash === "*")
+            || $pwhash === "*") {
             return false;
-        else if ($pwhash[0] !== " ")
+        } else if ($pwhash[0] !== " ") {
             return $pwhash === $input;
-        else if ($pwhash[1] === "\$")
+        } else if ($pwhash[1] === "\$") {
             return password_verify($input, substr($pwhash, 2));
-        else {
+        } else {
             if (($method_pos = strpos($pwhash, " ", 1)) !== false
                 && ($keyid_pos = strpos($pwhash, " ", $method_pos + 1)) !== false
                 && strlen($pwhash) > $keyid_pos + 17
@@ -1587,23 +1591,27 @@ class Contact {
         $cdbu = $this->contactdb_user();
         if (($flags & self::CHANGE_PASSWORD_ENABLE)
             && ($this->password !== ""
-                || ($cdbu && (string) $cdbu->password !== "")))
+                || ($cdbu && (string) $cdbu->password !== ""))) {
             return false;
+        }
 
         $plaintext = $new === null;
-        if ($plaintext)
+        if ($plaintext) {
             $new = self::random_password();
+        }
         assert(self::valid_password($new));
 
         $hash = $new;
-        if ($hash && !$plaintext && $this->check_password_encryption("", !!$cdbu))
+        if ($hash && !$plaintext) {
             $hash = $this->hash_password($hash);
+        }
 
         $use_time = $plaintext ? 0 : $Now;
         if ($cdbu) {
             $cdbu->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], true);
-            if ($this->contactId && $this->password)
+            if ($this->contactId && (string) $this->password !== "") {
                 $this->apply_updater(["passwordUseTime" => $use_time, "password" => "", "passwordTime" => $Now], false);
+            }
         } else if ($this->contactId) {
             $this->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], false);
         }
@@ -1627,7 +1635,7 @@ class Contact {
                 error_log("{$this->conf->dbname}: {$this->email} local capability");
             }
             $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
-            $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
+            $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, ["user" => $this, "timeExpires" => time() + 259200]);
             $this->conf->log_for($this, null, "Password link sent " . substr($rest["capability"], 0, 8) . "...");
             $template = "@resetpassword";
         } else {
@@ -1653,8 +1661,9 @@ class Contact {
         // at least one login every 30 days is marked as activity
         if ((int) $this->activity_at <= $Now - 2592000
             || (($cdbu = $this->contactdb_user())
-                && ((int) $cdbu->activity_at <= $Now - 2592000)))
+                && ((int) $cdbu->activity_at <= $Now - 2592000))) {
             $this->mark_activity();
+        }
     }
 
     function mark_activity() {
@@ -1662,25 +1671,29 @@ class Contact {
         if ((!$this->activity_at || $this->activity_at < $Now)
             && !$this->is_anonymous_user()) {
             $this->activity_at = $Now;
-            if ($this->contactId)
+            if ($this->contactId) {
                 $this->conf->ql("update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
+            }
             if (($cdbu = $this->contactdb_user())
                 && $cdbu->confid
-                && (int) $cdbu->activity_at <= $Now - 604800)
+                && (int) $cdbu->activity_at <= $Now - 604800) {
                 $this->_contactdb_save_roles($cdbu);
+            }
         }
     }
 
     function log_activity($text, $paperId = null) {
         $this->mark_activity();
-        if (!$this->is_anonymous_user())
+        if (!$this->is_anonymous_user()) {
             $this->conf->log_for($this, $this, $text, $paperId);
+        }
     }
 
     function log_activity_for($user, $text, $paperId = null) {
         $this->mark_activity();
-        if (!$this->is_anonymous_user())
+        if (!$this->is_anonymous_user()) {
             $this->conf->log_for($this, $user, $text, $paperId);
+        }
     }
 
 
@@ -1709,13 +1722,15 @@ class Contact {
             if ($this->isPC) {
                 $qs[] = "exists (select * from PaperReview where requestedBy=? and reviewType<=" . REVIEW_PC . " and contactId!=?)";
                 array_push($qv, $this->contactId, $this->contactId);
-            } else
+            } else {
                 $qs[] = "0";
+            }
             if ($this->_review_tokens) {
                 $qs[] = "exists (select * from PaperReview where reviewToken?a)";
                 $qv[] = $this->_review_tokens;
-            } else
+            } else {
                 $qs[] = "0";
+            }
             $result = $this->conf->qe_apply("select " . join(", ", $qs), $qv);
         }
         $row = $result ? $result->fetch_row() : null;
@@ -1729,10 +1744,11 @@ class Contact {
         // Update contact information from capabilities
         if ($this->_capabilities) {
             foreach ($this->_capabilities as $k => $v) {
-                if (str_starts_with($k, "@av") && $v)
+                if (str_starts_with($k, "@av") && $v) {
                     $this->_active_roles |= self::ROLE_AUTHOR;
-                else if (str_starts_with($k, "@ra") && $v)
+                } else if (str_starts_with($k, "@ra") && $v) {
                     $this->_active_roles |= self::ROLE_REVIEWER;
+                }
             }
         }
     }

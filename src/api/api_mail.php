@@ -18,30 +18,36 @@ class Mail_API {
         }
         $recipient = new Contact($recipient, $user->conf);
 
-        $mailinfo = ["requester_contact" => $user, "sensitivity" => "display"];
-        if (isset($qreq->reason))
+        $mailinfo = ["requester_contact" => $user, "censor" => Mailer::CENSOR_DISPLAY];
+        if (isset($qreq->reason)) {
             $mailinfo["reason"] = $qreq->reason;
+        }
         if (isset($qreq->r)
             && ctype_digit($qreq->r)
             && $prow
             && ($rrow = $prow->review_of_id($qreq->r))
-            && $user->can_view_review($prow, $rrow))
+            && $user->can_view_review($prow, $rrow)) {
             $mailinfo["rrow"] = $rrow;
+        }
 
         $mailer = new HotCRPMailer($user->conf, $recipient, $prow, $mailinfo);
         $j = ["ok" => true];
         if (isset($qreq->text) || isset($qreq->subject) || isset($qreq->body)) {
-            foreach (["text", "subject", "body"] as $k)
+            foreach (["text", "subject", "body"] as $k) {
                 $j[$k] = $mailer->expand($qreq[$k], $k);
+            }
+            return $j;
         } else if (isset($qreq->template)) {
             $mt = $user->conf->mail_template($qreq->template);
             if (!$mt
-                || (!$user->privChair && !get($mt, "allow_pc")))
+                || (!$user->privChair && !get($mt, "allow_pc"))) {
                 return new JsonResult(404, "No such template.");
+            }
             $j["subject"] = $mailer->expand($mt->subject, "subject");
             $j["body"] = $mailer->expand($mt->body, "body");
-        } else
+            return $j;
+        } else {
             return new JsonResult(400, "Parameter error.");
-        return $j;
+        }
     }
 }

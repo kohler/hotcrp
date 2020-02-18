@@ -70,15 +70,19 @@ class UserStatus extends MessageSet {
     static function unparse_roles_json($roles) {
         if ($roles) {
             $rj = (object) array();
-            if ($roles & Contact::ROLE_CHAIR)
+            if ($roles & Contact::ROLE_CHAIR) {
                 $rj->chair = $rj->pc = true;
-            if ($roles & Contact::ROLE_PC)
+            }
+            if ($roles & Contact::ROLE_PC) {
                 $rj->pc = true;
-            if ($roles & Contact::ROLE_ADMIN)
+            }
+            if ($roles & Contact::ROLE_ADMIN) {
                 $rj->sysadmin = true;
+            }
             return $rj;
-        } else
+        } else {
             return null;
+        }
     }
 
     static function unparse_json_main(UserStatus $us, $cj, $args) {
@@ -87,40 +91,49 @@ class UserStatus extends MessageSet {
         $cdb_user = $user->contactdb_user();
         foreach (["email", "firstName", "lastName", "affiliation",
                   "collaborators", "country"] as $k) {
-            if ($user->$k !== null && $user->$k !== "")
+            if ($user->$k !== null && $user->$k !== "") {
                 $cj->$k = $user->$k;
-            else if ($cdb_user && $cdb_user->$k !== null && $cdb_user->$k !== "")
+            } else if ($cdb_user && $cdb_user->$k !== null && $cdb_user->$k !== "") {
                 $cj->$k = $cdb_user->$k;
+            }
         }
 
         // keys that come from user
         foreach (["preferredEmail" => "preferred_email",
                   "phone" => "phone"] as $uk => $jk) {
-            if ($user->$uk !== null && $user->$uk !== "")
+            if ($user->$uk !== null && $user->$uk !== "") {
                 $cj->$jk = $user->$uk;
+            }
         }
 
-        if ($user->disabled)
+        if ($user->disabled) {
             $cj->disabled = true;
+        }
 
         foreach (["address", "city", "state", "zip", "country"] as $k) {
-            if (($x = $user->data($k)))
+            if (($x = $user->data($k))) {
                 $cj->$k = $x;
+            }
         }
 
-        if ($user->roles)
+        if ($user->roles) {
             $cj->roles = self::unparse_roles_json($user->roles);
+        }
 
         if ($user->defaultWatch) {
             $cj->follow = (object) array();
-            if ($user->defaultWatch & Contact::WATCH_REVIEW)
+            if ($user->defaultWatch & Contact::WATCH_REVIEW) {
                 $cj->follow->reviews = true;
-            if ($user->defaultWatch & Contact::WATCH_REVIEW_ALL)
+            }
+            if ($user->defaultWatch & Contact::WATCH_REVIEW_ALL) {
                 $cj->follow->reviews = $cj->follow->allreviews = true;
-            if ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED)
+            }
+            if ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED) {
                 $cj->follow->adminreviews = true;
-            if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL)
+            }
+            if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL) {
                 $cj->follow->allfinal = true;
+            }
         }
 
         if (($tags = $user->viewable_tags($us->viewer))) {
@@ -128,8 +141,9 @@ class UserStatus extends MessageSet {
             $cj->tags = explode(" ", $tagger->unparse($tags));
         }
 
-        if ($user->contactId && ($tm = $user->topic_interest_map()))
+        if ($user->contactId && ($tm = $user->topic_interest_map())) {
             $cj->topics = (object) $tm;
+        }
     }
 
     function user_json($args = []) {
@@ -152,19 +166,22 @@ class UserStatus extends MessageSet {
 
 
     private function make_keyed_object($x, $field, $lc = false) {
-        if (is_string($x))
+        if (is_string($x)) {
             $x = preg_split('/[\s,]+/', $x);
+        }
         $res = [];
         if (is_array($x)) {
             foreach ($x as $v) {
-                if (!is_string($v))
+                if (!is_string($v)) {
                     $this->error_at($field, "Format error [$field]");
-                else if ($v !== "")
+                } else if ($v !== "") {
                     $res[$lc ? strtolower($v) : $v] = true;
+                }
             }
         } else if (is_object($x)) {
-            foreach ((array) $x as $k => $v)
+            foreach ((array) $x as $k => $v) {
                 $res[$lc ? strtolower($k) : $k] = $v;
+            }
         } else {
             $this->error_at($field, "Format error [$field]");
         }
@@ -174,28 +191,34 @@ class UserStatus extends MessageSet {
     static function normalize_name($cj) {
         $cj_user = isset($cj->user) ? Text::split_name($cj->user, true) : null;
         $cj_name = Text::analyze_name($cj);
-        foreach (array("firstName", "lastName", "email") as $i => $k)
-            if ($cj_name->$k !== "" && $cj_name->$k !== false)
+        foreach (array("firstName", "lastName", "email") as $i => $k) {
+            if ($cj_name->$k !== "" && $cj_name->$k !== false) {
                 $cj->$k = $cj_name->$k;
-            else if ($cj_user && $cj_user[$i])
+            } else if ($cj_user && $cj_user[$i]) {
                 $cj->$k = $cj_user[$i];
+            }
+        }
     }
 
     private function make_tags_array($x, $key) {
         $t0 = array();
-        if (is_string($x))
+        if (is_string($x)) {
             $t0 = preg_split('/[\s,]+/', $x);
-        else if (is_array($x))
+        } else if (is_array($x)) {
             $t0 = $x;
-        else if ($x !== null)
+        } else if ($x !== null) {
             $this->error_at($key, "Format error [$key]");
+        }
         $tagger = new Tagger($this->viewer);
         $t1 = array();
         foreach ($t0 as $t) {
-            if ($t !== "" && ($t = $tagger->check($t, Tagger::NOPRIVATE)))
-                $t1[] = $t;
-            else if ($t !== "")
-                $this->error_at($key, $tagger->error_html);
+            if ($t !== "") {
+                if (($tx = $tagger->check($t, Tagger::NOPRIVATE))) {
+                    $t1[] = $tx;
+                } else {
+                    $this->error_at($key, $tagger->error_html);
+                }
+            }
         }
         return $t1;
     }
@@ -208,28 +231,32 @@ class UserStatus extends MessageSet {
                        "institution" => "affiliation",
                        "voicePhoneNumber" => "phone",
                        "addressLine1" => "address",
-                       "zipCode" => "zip", "postal_code" => "zip") as $x => $y)
-            if (isset($cj->$x) && !isset($cj->$y))
+                       "zipCode" => "zip", "postal_code" => "zip") as $x => $y) {
+            if (isset($cj->$x) && !isset($cj->$y)) {
                 $cj->$y = $cj->$x;
+            }
+        }
 
         // Stringiness
         foreach (array("firstName", "lastName", "email", "preferred_email",
                        "affiliation", "phone", "new_password",
-                       "city", "state", "zip", "country") as $k)
+                       "city", "state", "zip", "country") as $k) {
             if (isset($cj->$k) && !is_string($cj->$k)) {
                 $this->error_at($k, "Format error [$k]");
                 unset($cj->$k);
             }
+        }
 
         // Email
-        if (!get($cj, "email") && $old_user)
+        if (!get($cj, "email") && $old_user) {
             $cj->email = $old_user->email;
-        else if (!get($cj, "email"))
+        } else if (!get($cj, "email")) {
             $this->error_at("email", "Email is required.");
-        else if (!$this->has_problem_at("email")
-                 && !validate_email($cj->email)
-                 && (!$old_user || $old_user->email !== $cj->email))
+        } else if (!$this->has_problem_at("email")
+                   && !validate_email($cj->email)
+                   && (!$old_user || $old_user->email !== $cj->email)) {
             $this->error_at("email", "Invalid email address “" . htmlspecialchars($cj->email) . "”.");
+        }
 
         // ID
         if (get($cj, "id") === "new") {
@@ -238,14 +265,17 @@ class UserStatus extends MessageSet {
                 $this->error_at("email_inuse", false);
             }
         } else {
-            if (!get($cj, "id") && $old_user && $old_user->contactId)
+            if (!get($cj, "id") && $old_user && $old_user->contactId) {
                 $cj->id = $old_user->contactId;
-            if (get($cj, "id") && !is_int($cj->id))
+            }
+            if (get($cj, "id") && !is_int($cj->id)) {
                 $this->error_at("id", "Format error [id]");
+            }
             if ($old_user && get($cj, "email")
                 && strtolower($old_user->email) !== strtolower($cj->email)
-                && $this->conf->user_id_by_email($cj->email))
+                && $this->conf->user_id_by_email($cj->email)) {
                 $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+            }
         }
 
         // Contactdb information
@@ -254,10 +284,12 @@ class UserStatus extends MessageSet {
                 $cj->firstName = $old_user->firstName;
                 $cj->lastName = $old_user->lastName;
             }
-            if (!isset($cj->affiliation))
+            if (!isset($cj->affiliation)) {
                 $cj->affiliation = $old_user->affiliation;
-            if (!isset($cj->collaborators))
+            }
+            if (!isset($cj->collaborators)) {
                 $cj->collaborators = $old_user->collaborators();
+            }
         }
 
         // Password changes
@@ -272,51 +304,60 @@ class UserStatus extends MessageSet {
         if (get($cj, "preferred_email")
             && !$this->has_problem_at("preferred_email")
             && !validate_email($cj->preferred_email)
-            && (!$old_user || $old_user->preferredEmail !== $cj->preferred_email))
+            && (!$old_user || $old_user->preferredEmail !== $cj->preferred_email)) {
             $this->error_at("preferred_email", "Invalid email address “" . htmlspecialchars($cj->preferred_email) . "”");
+        }
 
         // Address
         $address = null;
-        if (is_array(get($cj, "address")))
+        if (is_array(get($cj, "address"))) {
             $address = $cj->address;
-        else {
-            if (is_string(get($cj, "address")))
+        } else {
+            if (is_string(get($cj, "address"))) {
                 $address[] = $cj->address;
-            else if (get($cj, "address"))
+            } else if (get($cj, "address")) {
                 $this->error_at("address", "Format error [address]");
-            if (is_string(get($cj, "address2")))
+            }
+            if (is_string(get($cj, "address2"))) {
                 $address[] = $cj->address2;
-            else if (is_string(get($cj, "addressLine2")))
+            } else if (is_string(get($cj, "addressLine2"))) {
                 $address[] = $cj->addressLine2;
-            else if (get($cj, "address2") || get($cj, "addressLine2"))
+            } else if (get($cj, "address2") || get($cj, "addressLine2")) {
                 $this->error_at("address2", "Format error [address2]");
+            }
         }
         if ($address !== null) {
             foreach ($address as &$a) {
-                if (!is_string($a))
+                if (!is_string($a)) {
                     $this->error_at("address", "Format error [address]");
-                else
+                } else {
                     $a = simplify_whitespace($a);
+                }
             }
             unset($a);
             while (is_string($address[count($address) - 1])
-                   && $address[count($address) - 1] === "")
+                   && $address[count($address) - 1] === "") {
                 array_pop($address);
+            }
             $cj->address = $address;
         }
 
         // Collaborators
         if (is_array(get($cj, "collaborators"))) {
-            foreach ($cj->collaborators as $c)
-                if (!is_string($c))
+            foreach ($cj->collaborators as $c) {
+                if (!is_string($c)) {
                     $this->error_at("collaborators", "Format error [collaborators]");
-            if (!$this->has_problem_at("collaborators"))
+                }
+            }
+            if (!$this->has_problem_at("collaborators")) {
                 $cj->collaborators = join("\n", $cj->collaborators);
+            }
         }
         if (get($cj, "collaborators")
             && !$this->has_problem_at("collaborators")
-            && !is_string($cj->collaborators))
+            && !is_string($cj->collaborators)) {
             $this->error_at("collaborators", "Format error [collaborators]");
+        }
         if (get($cj, "collaborators")
             && !$this->has_problem_at("collaborators")) {
             $old_collab = rtrim(cleannl($cj->collaborators));
@@ -329,28 +370,33 @@ class UserStatus extends MessageSet {
 
         // Disabled
         if (isset($cj->disabled)) {
-            if (($x = friendly_boolean($cj->disabled)) !== null)
+            if (($x = friendly_boolean($cj->disabled)) !== null) {
                 $cj->disabled = $x;
-            else
+            } else {
                 $this->error_at("disabled", "Format error [disabled]");
+            }
         }
 
         // Follow
         if (isset($cj->follow) && $cj->follow !== "") {
             $cj->follow = $this->make_keyed_object($cj->follow, "follow", true);
             $cj->bad_follow = array();
-            foreach ((array) $cj->follow as $k => $v)
-                if ($v && !in_array($k, ["reviews", "allreviews", "managedreviews", "adminreviews", "allfinal", "none"]))
+            foreach ((array) $cj->follow as $k => $v) {
+                if ($v && !in_array($k, ["reviews", "allreviews", "managedreviews", "adminreviews", "allfinal", "none"])) {
                     $cj->bad_follow[] = $k;
+                }
+            }
         }
 
         // Roles
         if (isset($cj->roles) && $cj->roles !== "") {
             $cj->roles = $this->make_keyed_object($cj->roles, "roles", true);
             $cj->bad_roles = array();
-            foreach ((array) $cj->roles as $k => $v)
-                if ($v && !in_array($k, ["pc", "chair", "sysadmin", "no", "none"]))
+            foreach ((array) $cj->roles as $k => $v) {
+                if ($v && !in_array($k, ["pc", "chair", "sysadmin", "no", "none"])) {
                     $cj->bad_roles[] = $k;
+                }
+            }
             if ($old_user
                 && (($this->no_deprivilege_self
                      && $this->viewer
@@ -359,10 +405,11 @@ class UserStatus extends MessageSet {
                     || $old_user->data("locked"))
                 && self::parse_roles_json($cj->roles) < $old_user->roles) {
                 unset($cj->roles);
-                if ($old_user->data("locked"))
+                if ($old_user->data("locked")) {
                     $this->warning_at("roles", "Ignoring request to drop privileges for locked account.");
-                else
+                } else {
                     $this->warning_at("roles", "Ignoring request to drop your privileges.");
+                }
             }
         }
 
@@ -438,22 +485,28 @@ class UserStatus extends MessageSet {
     }
 
     function check_invariants($cj) {
-        if (isset($cj->bad_follow) && !empty($cj->bad_follow))
+        if (isset($cj->bad_follow) && !empty($cj->bad_follow)) {
             $this->warning_at("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
-        if (isset($cj->bad_roles) && !empty($cj->bad_roles))
+        }
+        if (isset($cj->bad_roles) && !empty($cj->bad_roles)) {
             $this->warning_at("roles", "Unknown roles ignored (" . htmlspecialchars(commajoin($cj->bad_roles)) . ").");
-        if (isset($cj->bad_topics) && !empty($cj->bad_topics))
+        }
+        if (isset($cj->bad_topics) && !empty($cj->bad_topics)) {
             $this->warning_at("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($cj->bad_topics)) . ").");
+        }
     }
 
     static private function parse_roles_json($j) {
         $roles = 0;
-        if (isset($j->pc) && $j->pc)
+        if (isset($j->pc) && $j->pc) {
             $roles |= Contact::ROLE_PC;
-        if (isset($j->chair) && $j->chair)
+        }
+        if (isset($j->chair) && $j->chair) {
             $roles |= Contact::ROLE_CHAIR | Contact::ROLE_PC;
-        if (isset($j->sysadmin) && $j->sysadmin)
+        }
+        if (isset($j->sysadmin) && $j->sysadmin) {
             $roles |= Contact::ROLE_ADMIN;
+        }
         return $roles;
     }
 
@@ -564,8 +617,9 @@ class UserStatus extends MessageSet {
         if ($user->conf->contactdb()
             && (strcasecmp($user->email, $this->viewer->email) !== 0
                 || $this->viewer->is_actas_user()
-                || $this->viewer->is_site_contact)) // XXX want way in script to modify all
+                || $this->viewer->is_site_contact)) { // XXX want way in script to modify all
             $changing_other = true;
+        }
         $this->diffs = [];
 
         // Main fields
@@ -613,8 +667,9 @@ class UserStatus extends MessageSet {
             if (isset($cj->$k)
                 && (!$this->no_update_profile || (string) get($data, $k) === "")
                 && ($x = $cj->$k)) {
-                while (is_array($x) && $x[count($x) - 1] === "")
+                while (is_array($x) && $x[count($x) - 1] === "") {
                     array_pop($x);
+                }
                 $data->$k = $x ? : null;
             }
         }
@@ -635,17 +690,22 @@ class UserStatus extends MessageSet {
         if (isset($cj->follow)
             && (!$this->no_update_profile || $user->defaultWatch == Contact::WATCH_REVIEW)) {
             $w = 0;
-            if (get($cj->follow, "reviews"))
+            if (get($cj->follow, "reviews")) {
                 $w |= Contact::WATCH_REVIEW;
-            if (get($cj->follow, "allreviews"))
+            }
+            if (get($cj->follow, "allreviews")) {
                 $w |= Contact::WATCH_REVIEW_ALL;
+            }
             if (get($cj->follow, "adminreviews")
-                || get($cj->follow, "managedreviews"))
+                || get($cj->follow, "managedreviews")) {
                 $w |= Contact::WATCH_REVIEW_MANAGED;
-            if (get($cj->follow, "allfinal"))
+            }
+            if (get($cj->follow, "allfinal")) {
                 $w |= Contact::WATCH_FINAL_SUBMIT_ALL;
-            if ($user->save_assign_field("defaultWatch", $w, $cu))
+            }
+            if ($user->save_assign_field("defaultWatch", $w, $cu)) {
                 $this->diffs["follow"] = true;
+            }
         }
 
         // Tags
@@ -659,8 +719,9 @@ class UserStatus extends MessageSet {
             }
             ksort($tags);
             $t = empty($tags) ? null : " " . join(" ", $tags);
-            if ($user->save_assign_field("contactTags", $t, $cu))
+            if ($user->save_assign_field("contactTags", $t, $cu)) {
                 $this->diffs["tags"] = true;
+            }
         }
 
         // Initial save
@@ -668,8 +729,9 @@ class UserStatus extends MessageSet {
             $q = "update ContactInfo set "
                 . join("=?, ", array_keys($cu->qv)) . "=?"
                 . " where contactId={$user->contactId}";
-            if (!($result = $user->conf->qe_apply($q, array_values($cu->qv))))
+            if (!($result = $user->conf->qe_apply($q, array_values($cu->qv)))) {
                 return false;
+            }
             Dbl::free($result);
         }
 
@@ -679,10 +741,12 @@ class UserStatus extends MessageSet {
             $tv = [];
             $diff = false;
             foreach ($cj->topics as $k => $v) {
-                if ($v)
+                if ($v) {
                     $tv[] = [$user->contactId, $k, $v];
-                if ($v !== get($ti, $k, 0))
+                }
+                if ($v !== get($ti, $k, 0)) {
                     $diff = true;
+                }
             }
             if ($diff || empty($tv)) {
                 if (empty($tv)) {
@@ -694,8 +758,9 @@ class UserStatus extends MessageSet {
                 $user->conf->qe("delete from TopicInterest where contactId=?", $user->contactId);
                 $user->conf->qe("insert into TopicInterest (contactId,topicId,interest) values ?v", $tv);
             }
-            if ($diff)
+            if ($diff) {
                 $this->diffs["topics"] = true;
+            }
         }
 
         // Roles
@@ -813,9 +878,11 @@ class UserStatus extends MessageSet {
 
         if (isset($qreq->has_ti) && $us->viewer->isPC) {
             $topics = array();
-            foreach ($us->conf->topic_set() as $id => $t)
-                if (isset($qreq["ti$id"]) && is_numeric($qreq["ti$id"]))
+            foreach ($us->conf->topic_set() as $id => $t) {
+                if (isset($qreq["ti$id"]) && is_numeric($qreq["ti$id"])) {
                     $topics[$id] = (int) $qreq["ti$id"];
+                }
+            }
             $cj->topics = (object) $topics;
         }
     }
@@ -859,29 +926,34 @@ class UserStatus extends MessageSet {
             }
         }
         if (isset($line["address"])
-            && ($v = trim($line["address"])) !== "")
+            && ($v = trim($line["address"])) !== "") {
             $cj->address = explode("\n", cleannl($line["address"]));
+        }
 
         // topics
         if ($us->conf->has_topics()) {
             $topics = [];
-            foreach ($line as $k => $v)
+            foreach ($line as $k => $v) {
                 if (preg_match('/^topic[:\s]\s*(.*?)\s*$/i', $k, $m)) {
                     if (($tid = $us->conf->topic_abbrev_matcher()->find1($m[1]))) {
                         $v = trim($v);
                         $topics[$tid] = $v === "" ? 0 : $v;
-                    } else
+                    } else {
                         $us->unknown_topics[$m[1]] = true;
+                    }
                 }
-            if (!empty($topics))
+            }
+            if (!empty($topics)) {
                 $cj->change_topics = (object) $topics;
+            }
         }
     }
 
     function add_csv_synonyms($csv) {
         foreach (self::$csv_keys as $ks) {
-            for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i)
+            for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i) {
                 $csv->add_synonym($ks[0], $ks[$i]);
+            }
         }
     }
 
@@ -903,10 +975,11 @@ class UserStatus extends MessageSet {
 
     static function pcrole_text($cj) {
         if (isset($cj->roles)) {
-            if (isset($cj->roles->chair) && $cj->roles->chair)
+            if (isset($cj->roles->chair) && $cj->roles->chair) {
                 return "chair";
-            else if (isset($cj->roles->pc) && $cj->roles->pc)
+            } else if (isset($cj->roles->pc) && $cj->roles->pc) {
                 return "pc";
+            }
         }
         return "no";
     }
@@ -914,26 +987,30 @@ class UserStatus extends MessageSet {
     function global_profile_difference($cj, $key) {
         if (($cdb_user = $this->global_user())
             && (string) get($cj, $key) !== (string) $cdb_user->$key) {
-            if ((string) $cdb_user->$key !== "")
+            if ((string) $cdb_user->$key !== "") {
                 return '<div class="f-h">Global profile gives “' . htmlspecialchars($cdb_user->$key) . '”</div>';
-            else
+            } else {
                 return '<div class="f-h">Empty in global profile</div>';
-        } else
+            }
+        } else {
             return "";
+        }
     }
 
     static function render_main(UserStatus $us, $cj, $reqj, $uf) {
         $actas = "";
         if ($us->user !== $us->viewer
             && $us->user->email
-            && $us->viewer->privChair)
+            && $us->viewer->privChair) {
             $actas = '&nbsp;' . actas_link($us->user);
+        }
 
         echo "<div class=\"profile-g\">\n";
         if (!$us->conf->external_login()) {
             $email_class = "want-focus fullw";
-            if ($us->user->can_lookup_user())
+            if ($us->user->can_lookup_user()) {
                 $email_class .= " uii js-email-populate";
+            }
             $us->render_field("uemail", "Email" . $actas,
                 Ht::entry("uemail", get_s($reqj, "email"), ["class" => $email_class, "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => get_s($cj, "email"), "type" => "email"]));
         } else if (!$us->user->is_empty()) {
@@ -965,8 +1042,9 @@ class UserStatus extends MessageSet {
     static function render_password(UserStatus $us, $cj, $reqj, $uf) {
         if ($us->user->is_empty()
             || $us->conf->external_login()
-            || !$us->viewer->can_change_password($us->user))
+            || !$us->viewer->can_change_password($us->user)) {
             return;
+        }
 
         echo '<div id="foldpassword" class="profile-g foldc ',
             ($us->has_problem_at("password") ? "fold3o" : "fold3c"),
@@ -983,8 +1061,10 @@ class UserStatus extends MessageSet {
                 Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => $us->autocomplete("current-password"), "class" => "ignore-diff"]),
                 '</div>';
         }
-        if ($us->conf->opt("contactdb_dsn") && $us->conf->opt("contactdb_loginFormHeading"))
+        if ($us->conf->opt("contactdb_dsn")
+            && $us->conf->opt("contactdb_loginFormHeading")) {
             echo $us->conf->opt("contactdb_loginFormHeading");
+        }
         echo '<div class="', $us->control_class("password", "f-i"), '">
       <div class="f-c">New password</div>',
             Ht::password("upassword", $pws[0], ["size" => 52, "class" => "fn", "autocomplete" => $us->autocomplete("new-password")]);
@@ -1027,15 +1107,17 @@ class UserStatus extends MessageSet {
                     Ht::hidden("has_watchallfinal", 1), "</label>\n";
             }
             echo "</td></tr></table>";
-        } else
+        } else {
             echo Ht::checkbox("watchreview", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]), "&nbsp;",
                 Ht::label($us->conf->_("Send mail for new comments on authored or reviewed papers"));
+        }
         echo "</div>\n";
     }
 
     static function render_roles(UserStatus $us, $cj, $reqj, $uf) {
-        if (!$us->viewer->privChair)
+        if (!$us->viewer->privChair) {
             return;
+        }
         echo '<div class="profile-g"><h3 class="profile">Roles</h3>', "\n",
           "<table><tr><td class=\"nw\">\n";
         $pcrole = self::pcrole_text($reqj);
@@ -1059,8 +1141,9 @@ class UserStatus extends MessageSet {
     }
 
     static function render_collaborators(UserStatus $us, $cj, $reqj, $uf) {
-        if (!$us->user->isPC && !$us->viewer->privChair)
+        if (!$us->user->isPC && !$us->viewer->privChair) {
             return;
+        }
         echo '<div class="profile-g fx2"><h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
             "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
             $us->conf->_i("conflictdef"),
@@ -1108,8 +1191,9 @@ topics. We use this information to help match papers to reviewers.</p>',
 
     static function render_tags(UserStatus $us, $cj, $reqj, $uf) {
         if ((!$us->user->isPC || empty($reqj->tags))
-            && !$us->viewer->privChair)
+            && !$us->viewer->privChair) {
             return;
+        }
         $tags = isset($reqj->tags) && is_array($reqj->tags) ? $reqj->tags : [];
         echo "<div class=\"profile-g fx2\"><h3 class=\"profile\">Tags</h3>\n";
         if ($us->viewer->privChair) {

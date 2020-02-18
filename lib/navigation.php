@@ -214,20 +214,23 @@ class NavigationState {
     }
 
     function make_absolute($url) {
-        if ($url === false)
+        if ($url === false || $url === null) {
             return $this->server . $this->site_path;
+        }
         preg_match(',\A((?:https?://[^/]+)?)(/*)((?:[.][.]/)*)(.*)\z,i', $url, $m);
-        if ($m[1] !== "")
+        if ($m[1] !== "") {
             return $url;
-        else if (strlen($m[2]) > 1)
+        } else if (strlen($m[2]) > 1) {
             return $this->protocol . substr($url, 2);
-        else if ($m[2] === "/")
+        } else if ($m[2] === "/") {
             return $this->server . $url;
-        else {
+        } else {
             $site = substr($this->request_uri, 0, strlen($this->request_uri) - strlen($this->query));
-            $site = preg_replace(',/[^/]+\z,', "/", $site);
-            for (; $m[3]; $m[3] = substr($m[3], 3))
-                $site = preg_replace(',/[^/]+/\z,', "/", $site);
+            $site = preg_replace('/\/[^\/]+\z/', "/", $site);
+            while ($m[3]) {
+                $site = preg_replace('/\/[^\/]+\/\z/', "/", $site);
+                $m[3] = substr($m[3], 3);
+            }
             return $this->server . $site . $m[3] . $m[4];
         }
     }
@@ -237,10 +240,11 @@ class Navigation {
     private static $s;
 
     static function analyze($index_name = "index") {
-        if (PHP_SAPI != "cli")
+        if (PHP_SAPI !== "cli") {
             self::$s = new NavigationState($_SERVER, $index_name);
-        else
+        } else {
             self::$s = new NavigationState(null);
+        }
     }
 
     static function get() {
@@ -319,13 +323,14 @@ class Navigation {
         return self::$s->make_absolute($url);
     }
 
-    static function redirect($url) {
+    static function redirect($url = null) {
         $url = self::make_absolute($url);
         // Might have an HTML-encoded URL; decode at least &amp;.
         $url = str_replace("&amp;", "&", $url);
 
-        if (preg_match('|\A[a-z]+://|', $url))
+        if (preg_match('/\A[a-z]+:\/\//', $url)) {
             header("Location: $url");
+        }
 
         echo "<!DOCTYPE html><html lang=\"en\"><head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
@@ -350,9 +355,10 @@ class Navigation {
         if (self::$s->protocol == "http://"
             && (!$allow_http_if_localhost
                 || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
-                    && $_SERVER["REMOTE_ADDR"] !== "::1")))
+                    && $_SERVER["REMOTE_ADDR"] !== "::1"))) {
             self::redirect("https://" . (self::$s->host ? : "localhost")
                            . self::siteurl_path(self::$s->page . self::$s->php_suffix . self::$s->path . self::$s->query));
+        }
     }
 }
 

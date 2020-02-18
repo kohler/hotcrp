@@ -524,12 +524,13 @@ class Ht {
     static function problem_status_at($field) {
         return self::$_msgset ? self::$_msgset->problem_status_at($field) : 0;
     }
+    static function messages_at($field, $full = false) {
+        return self::$_msgset ? self::$_msgset->messages_at($field, $full) : [];
+    }
     static function render_messages_at($field) {
         $t = "";
-        if (self::$_msgset) {
-            foreach (self::$_msgset->messages_at($field, true) as $mx) {
-                $t .= '<p class="' . MessageSet::status_class($mx[2], "f-h", "is-") . '">' . $mx[1] . '</p>';
-            }
+        foreach (self::messages_at($field, true) as $mx) {
+            $t .= '<p class="' . MessageSet::status_class($mx[2], "f-h", "is-") . '">' . $mx[1] . '</p>';
         }
         return $t;
     }

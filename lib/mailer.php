@@ -7,11 +7,12 @@ class MailPreparation {
     public $subject = "";
     public $body = "";
     public $preparation_owner = "";
-    public $to = array();
+    public $to = [];
     public $contactIds = [];
     public $sendable = false;
-    public $headers = array();
-    public $errors = array();
+    public $sensitive = false;
+    public $headers = [];
+    public $errors = [];
     public $unique_preparation = false;
 
     function __construct($conf) {
@@ -56,8 +57,9 @@ class MailPreparation {
         $extra = $this->conf->opt("sendmailParam");
         if (($sender = $this->conf->opt("emailSender")) !== null) {
             @ini_set("sendmail_from", $sender);
-            if ($extra === null)
+            if ($extra === null) {
                 $extra = "-f" . escapeshellarg($sender);
+            }
         }
 
         if ($this->sendable
@@ -105,35 +107,40 @@ class Mailer {
     const EXPAND_HEADER = 1;
     const EXPAND_EMAIL = 2;
 
+    const CENSOR_NONE = 0;
+    const CENSOR_DISPLAY = 1;
+    const CENSOR_ALL = 2;
+
     public static $email_fields = ["to" => "To", "cc" => "Cc", "bcc" => "Bcc", "reply-to" => "Reply-To"];
     public static $template_fields = ["to", "cc", "bcc", "reply-to", "subject", "body"];
 
     public $conf;
-    public $recipient = null;
+    public $recipient;
 
     protected $width = 75;
-    protected $sensitivity = null;
-    protected $reason = null;
-    protected $adminupdate = null;
-    protected $notes = null;
-    protected $preparation = null;
-    public $capability = null;
+    protected $censor;
+    protected $reason;
+    protected $adminupdate;
+    protected $notes;
+    protected $preparation;
+    public $capability;
+    protected $sensitive;
 
-    protected $expansionType = null;
+    protected $expansionType;
 
-    protected $_unexpanded = array();
+    protected $_unexpanded = [];
 
     static private $eol = null;
 
-    function __construct(Conf $conf, $recipient = null, $settings = array()) {
+    function __construct(Conf $conf, $recipient = null, $settings = []) {
         $this->conf = $conf;
         $this->reset($recipient, $settings);
     }
 
-    function reset($recipient = null, $settings = array()) {
+    function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
-        foreach (array("width", "sensitivity", "reason", "adminupdate", "notes",
-                       "capability") as $k) {
+        foreach (["width", "censor", "reason", "adminupdate", "notes",
+                  "capability"] as $k) {
             $this->$k = get($settings, $k);
         }
         if ($this->width === null) {
@@ -141,6 +148,7 @@ class Mailer {
         } else if (!$this->width) {
             $this->width = 10000000;
         }
+        $this->sensitive = false;
     }
 
     static function eol() {
@@ -293,31 +301,35 @@ class Mailer {
     }
 
     static function kw_loginnotice($args, $isbool, $m) {
-        if ($m->conf->opt("disableCapabilities"))
+        if ($m->conf->opt("disableCapabilities")) {
             return $m->expand($m->conf->opt("mailtool_loginNotice", " To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
-        else
+        } else {
             return "";
+        }
     }
 
     static function kw_adminupdate($args, $isbool, $m) {
-        if ($m->adminupdate)
+        if ($m->adminupdate) {
             return "An administrator performed this update. ";
-        else
+        } else {
             return $m->recipient ? "" : null;
+        }
     }
 
     static function kw_notes($args, $isbool, $m, $uf) {
         $which = strtolower($uf->name);
         $value = $m->$which;
-        if ($value !== null || $m->recipient)
+        if ($value !== null || $m->recipient) {
             return (string) $value;
-        else
+        } else {
             return null;
+        }
     }
 
     static function kw_recipient($args, $isbool, $m, $uf) {
-        if ($m->preparation)
+        if ($m->preparation) {
             $m->preparation->preparation_owner = $m->recipient->email;
+        }
         return $m->expand_user($m->recipient, $uf->userx);
     }
 
@@ -327,31 +339,36 @@ class Mailer {
 
     function kw_login($args, $isbool, $uf) {
         $external_password = $this->conf->external_login();
-        if (!$this->recipient)
+        if (!$this->recipient) {
             return $external_password ? false : null;
+        }
 
         $password = false;
-        if (!$external_password) {
-            $pwd_plaintext = $this->recipient->plaintext_password();
-            if ($pwd_plaintext && !$this->sensitivity)
+        if (!$external_password
+            && ($pwd_plaintext = $this->recipient->plaintext_password())) {
+            $this->sensitive = true;
+            if (!$this->censor) {
                 $password = $pwd_plaintext;
-            else if ($pwd_plaintext && $this->sensitivity === "display")
+            } else if ($this->censor === self::CENSOR_DISPLAY) {
                 $password = "HIDDEN";
+            }
         }
 
         $loginparts = "";
         if (!$this->conf->opt("httpAuthLogin")) {
             $loginparts = "email=" . urlencode($this->recipient->email);
-            if ($password)
+            if ($password) {
                 $loginparts .= "&password=" . urlencode($password);
+            }
         }
 
-        if ($uf->name === "LOGINURL")
+        if ($uf->name === "LOGINURL") {
             return $this->conf->opt("paperSite") . ($loginparts ? "/?" . $loginparts : "/");
-        else if ($uf->name === "LOGINURLPARTS")
+        } else if ($uf->name === "LOGINURLPARTS") {
             return $loginparts;
-        else
+        } else {
             return $password;
+        }
     }
 
     function expandvar($what, $isbool = false) {
@@ -368,10 +385,11 @@ class Mailer {
             $ok = $this->recipient || (isset($uf->global) && $uf->global);
             if ($ok && isset($uf->expand_if)) {
                 if (is_string($uf->expand_if)) {
-                    if ($uf->expand_if[0] === "*")
+                    if ($uf->expand_if[0] === "*") {
                         $ok = call_user_func([$this, substr($uf->expand_if, 1)], $uf);
-                    else
+                    } else {
                         $ok = call_user_func($uf->expand_if, $this, $uf);
+                    }
                 } else {
                     $ok = $uf->expand_if;
                 }
@@ -390,9 +408,9 @@ class Mailer {
             }
         }
 
-        if ($isbool)
+        if ($isbool) {
             return $mks ? null : false;
-        else {
+        } else {
             $this->_unexpanded[$what] = true;
             return $what;
         }
@@ -425,8 +443,9 @@ class Mailer {
         assert($cond || $haselse);
         if ($haselse) {
             $yes = $this->_popIf($ifstack, $text);
-            if ($yes !== null)
+            if ($yes !== null) {
                 $yes = !$yes;
+            }
         } else {
             $yes = true;
         }
@@ -441,23 +460,26 @@ class Mailer {
         $text = "";
         $ifstack = array();
 
-        while (preg_match('/\A(.*?)%(IF|ELSE?IF|ELSE|ENDIF)((?:\(#?[-a-zA-Z0-9!@_:.\/]+(?:\([-a-zA-Z0-9!@_:.\/]*+\))*\))?)%(.*)\z/s', $rest, $m)) {
+        while (preg_match('/\A(.*?)%(IF|ELIF|ELSE?IF|ELSE|ENDIF)((?:\(#?[-a-zA-Z0-9!@_:.\/]+(?:\([-a-zA-Z0-9!@_:.\/]*+\))*\))?)%(.*)\z/s', $rest, $m)) {
             $text .= $m[1];
             $rest = $m[4];
 
-            if ($m[2] == "IF" && $m[3] != "")
+            if ($m[2] == "IF" && $m[3] != "") {
                 $yes = $this->_handleIf($ifstack, $text, $m[3], false);
-            else if (($m[2] == "ELSIF" || $m[2] == "ELSEIF") && $m[3] != "")
+            } else if (($m[2] == "ELIF" || $m[2] == "ELSIF" || $m[2] == "ELSEIF")
+                       && $m[3] != "") {
                 $yes = $this->_handleIf($ifstack, $text, $m[3], true);
-            else if ($m[2] == "ELSE" && $m[3] == "")
+            } else if ($m[2] == "ELSE" && $m[3] == "") {
                 $yes = $this->_handleIf($ifstack, $text, false, true);
-            else if ($m[2] == "ENDIF" && $m[3] == "")
+            } else if ($m[2] == "ENDIF" && $m[3] == "") {
                 $yes = $this->_popIf($ifstack, $text);
-            else
+            } else {
                 $yes = null;
+            }
 
-            if ($yes === null)
+            if ($yes === null) {
                 $text .= "%" . $m[2] . $m[3] . "%";
+            }
         }
 
         return $text . $rest;
@@ -568,14 +590,17 @@ class Mailer {
 
     function make_preparation($template, $rest = []) {
         // look up template
-        if (is_string($template) && $template[0] === "@")
+        if (is_string($template) && $template[0] === "@") {
             $template = (array) $this->conf->mail_template(substr($template, 1));
-        if (is_object($template))
+        }
+        if (is_object($template)) {
             $template = (array) $template;
+        }
         // add rest fields to template for expansion
-        foreach (self::$email_fields as $lcfield => $field)
+        foreach (self::$email_fields as $lcfield => $field) {
             if (isset($rest[$lcfield]))
                 $template[$lcfield] = $rest[$lcfield];
+        }
 
         // expand the template
         $prep = $this->preparation = $this->create_preparation();
@@ -604,10 +629,12 @@ class Mailer {
         $mail["to"] = $prep->to[0];
         $prep->sendable = self::allow_send($recip->email);
 
-        if (!isset($this->recipient->contactId))
+        if (!isset($this->recipient->contactId)) {
             error_log("no contactId in recipient: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        if ($this->recipient->contactId > 0)
+        }
+        if ($this->recipient->contactId > 0) {
             $prep->contactIds[] = $this->recipient->contactId;
+        }
 
         // parse headers
         $fromHeader = $this->conf->opt("emailFromHeader");
@@ -617,8 +644,9 @@ class Mailer {
         }
         $eol = self::eol();
         $prep->headers = [];
-        if ($fromHeader)
+        if ($fromHeader) {
             $prep->headers["from"] = $fromHeader . $eol;
+        }
         $prep->headers["subject"] = $subject . $eol;
         $prep->headers["to"] = "";
         foreach (self::$email_fields as $lcfield => $field) {
@@ -637,6 +665,7 @@ class Mailer {
         }
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . $eol;
         $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . $eol;
+        $prep->sensitive = $this->sensitive;
         return $prep;
     }
 

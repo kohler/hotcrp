@@ -860,11 +860,12 @@ class Conf {
         }
     }
     static private function xt_combine($xt1, $xt2) {
-        foreach (get_object_vars($xt2) as $k => $v)
+        foreach (get_object_vars($xt2) as $k => $v) {
             if (!property_exists($xt1, $k)
                 && $k !== "match"
                 && $k !== "expand_callback")
                 $xt1->$k = $v;
+        }
     }
     static function xt_enabled($xt) {
         return $xt && (!isset($xt->disabled) || !$xt->disabled);
@@ -2922,6 +2923,10 @@ class Conf {
 
     function hoturl_post($page, $param = null) {
         return $this->hoturl($page, $param, self::HOTURL_POST);
+    }
+
+    function hoturl_raw($page, $param = null, $flags = 0) {
+        return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
     }
 
     function hotlink($html, $page, $param = null, $js = null) {
