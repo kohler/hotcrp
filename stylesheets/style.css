@@ -996,8 +996,7 @@ button:hover, button:focus, button:active, button:focus-within,
 .alert .btn-primary,
 .alert .btn-alertable,
 .btn-highlight,
-.btn-danger,
-button.dangerous {
+.btn-danger {
 	border: 1px solid #cc0000;
 	background: #ff0000;
 	background-image: linear-gradient(#ff4040, #ff0000);
@@ -3755,7 +3754,7 @@ a.help {
 	float: right;
 	margin-left: 1em;
 }
-.popup-actions > .btn.btnl, .popup-actions > button.btnl {
+.popup-actions > .btn.float-left, .popup-actions > button.float-left {
 	float: left;
 	margin-left: 0;
 	margin-right: 1em;

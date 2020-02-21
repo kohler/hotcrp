@@ -1918,7 +1918,7 @@ function popup_near(elt, anchor) {
             efocus = this;
             return false;
         } else if (!efocus
-                   && !hasClass(this, "dangerous")
+                   && !hasClass(this, "btn-danger")
                    && !hasClass(this, "no-focus")) {
             efocus = this;
         }
@@ -2413,8 +2413,8 @@ handle_ui.on("js-tracker", function (event) {
         hc.push_actions();
         hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
         if (nshown) {
-            hc.push('<button type="button" name="stopall" class="dangerous btnl">Stop all</button>');
-            hc.push('<a class="btn btnl" target="_blank" href="' + hoturl("buzzer") + '">Tracker status page</a>');
+            hc.push('<button type="button" name="stopall" class="btn-danger float-left">Stop all</button>');
+            hc.push('<a class="btn float-left" target="_blank" href="' + hoturl("buzzer") + '">Tracker status page</a>');
         }
         $d = hc.show();
         show_elapsed();
@@ -7595,7 +7595,7 @@ handle_ui.on("js-delete-paper", function (event) {
     var f = this.closest("form"),
         hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>');
-    hc.push_actions(['<button type="submit" name="delete" value="1" class="dangerous">Delete</button>',
+    hc.push_actions(['<button type="submit" name="delete" value="1" class="btn-danger">Delete</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     transfer_form_values($d.find("form"), $(f), ["doemail", "emailNote"]);
@@ -8046,7 +8046,7 @@ handle_ui.on("js-delete-user", function (event) {
     hc.push('<p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>');
     if ((x = this.getAttribute("data-delete-info")))
         hc.push(x);
-    hc.push_actions(['<button type="submit" name="delete" value="1" class="dangerous">Delete user</button>',
+    hc.push_actions(['<button type="submit" name="delete" value="1" class="btn-danger">Delete user</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     $d.on("submit", "form", function () { addClass(f, "submitting"); });
@@ -8091,7 +8091,7 @@ handle_ui.on("js-delete-review", function () {
     var f = this.closest("form"),
         hc = popup_skeleton({anchor: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p>');
-    hc.push_actions(['<button type="submit" name="deletereview" value="1" class="dangerous">Delete review</button>',
+    hc.push_actions(['<button type="submit" name="deletereview" value="1" class="btn-danger">Delete review</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });
