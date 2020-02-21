@@ -139,11 +139,7 @@ class Home_Partial {
     function render_sidebar(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         echo '<div class="homeside">';
-        $gx->start_render();
-        foreach ($gx->members("home/sidebar") as $gj) {
-            $gx->render($gj, [$user, $qreq, $gx, $gj]);
-        }
-        $gx->end_render();
+        $gx->render_group("home/sidebar");
         echo "</div>\n";
     }
 
@@ -154,11 +150,7 @@ class Home_Partial {
 
     function render_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
         echo '<div class="homeinside"><h4>Administration</h4><ul>';
-        $gx->start_render();
-        foreach ($gx->members("home/sidebar/admin") as $gj) {
-            $gx->render($gj, [$user, $qreq, $gx, $gj]);
-        }
-        $gx->end_render();
+        $gx->render_group("home/sidebar/admin");
         echo '</ul></div>';
     }
     function render_admin_settings(Contact $user) {
@@ -179,11 +171,7 @@ class Home_Partial {
 
     function render_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
         ob_start();
-        $gx->start_render();
-        foreach ($gx->members("home/sidebar/info") as $gj) {
-            $gx->render($gj, [$user, $qreq, $gx, $gj]);
-        }
-        $gx->end_render();
+        $gx->render_group("home/sidebar/info");
         if (($t = ob_get_clean())) {
             echo '<div class="homeinside"><h4>',
                 $user->conf->_c("home", "Conference information"),

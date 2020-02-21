@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class BulkAssign_HelpTopic {
-    static function render($hth, $gj) {
+    static function render($hth) {
         echo "
 <p>The ", $hth->hotlink("bulk assignments page", "bulkassign"), " offers
 fine-grained control over review assignments, tags, leads, shepherds, and many
@@ -50,7 +50,7 @@ can be supplied separately.</p>';
         $hth->render_group("bulkassignactions");
     }
 
-    static function render_action_review($hth, $gj) {
+    static function render_action_review($hth) {
         echo "<p>The <code>review</code> action assigns reviews. The
 <code>review type</code> column sets the review type; it can be
 <code>primary</code>, <code>secondary</code>, <code>pcreview</code> (optional
@@ -97,7 +97,7 @@ all,review,all,primary,R1:R2</pre>
 the corresponding review types.</p>";
     }
 
-   static function render_action_tag($hth, $gj) {
+   static function render_action_tag($hth) {
         echo "<p>The <code>tag</code> action controls ",
             $hth->help_link("tags", "tags") . ". The <code>tag</code>
 column names the tag to add; it can contain a ",
@@ -126,14 +126,14 @@ all,cleartag,p
 6,nexttag,p</pre>";
     }
 
-    static function render_action_follow($hth, $gj) {
+    static function render_action_follow($hth) {
         echo "<p>The <code>following</code> column can be “yes” (to receive
 email notifications on updates to reviews and comments), “no” (to block
 notifications), or “default” (to revert to the default, which is based
 on the user’s site preferences).</p>";
     }
 
-    static function render_action_conflict($hth, $gj) {
+    static function render_action_conflict($hth) {
         echo "<p>The <code>conflict type</code> column can be “yes”, “no”, or
 a conflict type, such as “advisor” or “institutional”.</p>";
     }

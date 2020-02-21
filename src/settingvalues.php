@@ -449,6 +449,7 @@ class SettingValues extends MessageSet {
     private function gxt() {
         if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->user, ["etc/settinggroups.json"], $this->conf->opt("settingGroups"));
+            $this->_gxt->set_context(["hclass" => "settings", "args" => [$this]]);
         }
         return $this->_gxt;
     }
@@ -481,16 +482,7 @@ class SettingValues extends MessageSet {
         }
     }
     function render_group($g) {
-        $g = strtolower($g);
-        $gx = $this->gxt();
-        $gx->start_render(3, "settings");
-        if (($gj = $gx->get($g))) {
-            $gx->render($gj, [$this, $gj]);
-        }
-        foreach ($gx->members($g) as $gj) {
-            $gx->render($gj, [$this, $gj]);
-        }
-        $gx->end_render();
+        $this->gxt()->render_group(strtolower($g), ["top" => true]);
     }
 
 

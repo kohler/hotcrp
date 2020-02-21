@@ -44,21 +44,18 @@ if ($page_template && isset($page_template->require)) {
     }
 
     if ($group && !str_starts_with($group, "__")) {
+        $gx->root = $group;
         // handle signin/signout -- may change $Me
         if ($group === "index" || $group === "home") {
             $Me = Home_Partial::signin_requests($Me, $Qreq);
             // that also got rid of disabled users
         }
+        $gx->set_context(["args" => [$Me, $Qreq, $gx]]);
         foreach ($gx->members($group) as $gj) {
-            if ($gx->request($gj, $Qreq, [$Me, $Qreq, $gx, $gj]) === false)
+            if ($gx->request($gj, $Qreq) === false)
                 break;
         }
-        $gx->start_render();
-        foreach ($gx->members($group) as $gj) {
-            if ($gx->render($gj, [$Me, $Qreq, $gx, $gj]) === false)
-                break;
-        }
-        $gx->end_render();
+        $gx->render_group($group);
     } else {
         header("HTTP/1.0 404 Not Found");
     }

@@ -138,5 +138,7 @@
     {"id": "external-review-request-description", "itext": "External reviewers may view their assigned papers, eventually including other reviews and the decision. Before requesting an external review, you should generally check whether they are interested.", "require": ["setting.extrev_view=1"]},
     {"id": "external-review-request-description", "itext": "External reviewers may view their assigned papers, eventually including other reviews and reviewer identities and the decision. Before requesting an external review, you should generally check whether they are interested.", "require": ["setting.extrev_view=2"]},
 
-    ["(%d more permissions have default values)", "(%d more permission has default value)", ["$1=1"]]
+    ["(%d more permissions have default values)", "(%d more permission has default value)", ["$1=1"]],
+
+    {"id": "badpost", "itext": "Your session has changed since you last used this tab. Please try again."}
 ]

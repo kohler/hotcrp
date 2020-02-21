@@ -7,10 +7,11 @@ class GroupedExtensions {
     private $_potential_members = [];
     private $conf;
     private $user;
+    public $root;
     private $_raw = [];
+    private $_render_classes;
     private $_render_state;
     private $_render_stack;
-    private $_render_classes;
     private $_annexes = [];
     static private $next_placeholder;
 
@@ -49,7 +50,7 @@ class GroupedExtensions {
             if ($i > 0 && $arg)
                 expand_json_includes_callback($arg, [$this, "_add_json"]);
         }
-        $this->reset_render();
+        $this->reset_context();
     }
     function get_raw($name) {
         if (!array_key_exists($name, $this->_raw)) {
@@ -108,7 +109,9 @@ class GroupedExtensions {
         return $this->members("");
     }
 
-    private function call_callback($cb, $args) {
+    private function call_callback($cb, $gj) {
+        $args = $this->_render_state[0];
+        $args[] = $gj;
         if ($cb[0] === "*") {
             $colons = strpos($cb, ":");
             $klass = substr($cb, 1, $colons - 1);
@@ -120,56 +123,104 @@ class GroupedExtensions {
         return call_user_func_array($cb, $args);
     }
 
-    function request($gj, Qrequest $qreq, $args) {
-        if (isset($gj->request_callback)) {
-            Conf::xt_resolve_require($gj);
-            if (!isset($gj->allow_request_if)
-                || $this->user->conf->xt_check($gj->allow_request_if, $gj, $this->user, $qreq))
-                $this->call_callback($gj->request_callback, $args);
+    function reset_context() {
+        assert(empty($this->_render_stack));
+        $this->_render_state = [null, null, "h3", null];
+        $this->_render_classes = ["Conf" => $this->conf];
+    }
+    function set_context($options) {
+        if (isset($options["args"])) {
+            assert(is_array($options["args"]));
+            $this->_render_state[0] = $options["args"];
+        }
+        if (isset($options["htag"])) {
+            assert(is_string($options["htag"]));
+            $this->_render_state[2] = $options["htag"];
+        }
+        if (isset($options["hclass"])) {
+            assert(is_string($options["hclass"]));
+            $this->_render_state[3] = $options["hclass"];
         }
     }
 
-    function reset_render() {
-        assert(!isset($this->_render_state));
-        $this->_render_classes = ["Conf" => $this->user->conf];
+    function request($gj, Qrequest $qreq) {
+        if (isset($gj->request_callback)) {
+            Conf::xt_resolve_require($gj);
+            if (isset($gj->allow_request_if)
+                && !$this->conf->xt_check($gj->allow_request_if, $gj, $this->user, $qreq)) {
+                if (!$qreq->post_ok() && $qreq->method() === "POST") {
+                    $this->conf->msg($this->conf->_i("badpost"), 2);
+                }
+            } else {
+                $this->call_callback($gj->request_callback, $gj);
+            }
+        }
     }
-    function start_render($heading_number = 3, $heading_class = null) {
+
+    function start_render($options = null) {
         $this->_render_stack[] = $this->_render_state;
-        $this->_render_state = [null, $heading_number, $heading_class];
+        $this->_render_state = array_slice($this->_render_state, 0, 4);
+        if (!empty($options)) {
+            $this->set_context($options);
+        }
     }
     function push_render_cleanup($name) {
-        assert(isset($this->_render_state));
+        assert(!empty($this->_render_stack));
         $this->_render_state[] = $name;
     }
     function end_render() {
         assert(!empty($this->_render_stack));
-        for ($i = count($this->_render_state) - 1; $i > 2; --$i) {
-            if (($gj = $this->get($this->_render_state[$i])))
-                $this->render($gj, [$this]);
+        for ($i = count($this->_render_state) - 1; $i > 3; --$i) {
+            if (($gj = $this->get($this->_render_state[$i]))) {
+                $this->render($gj);
+            }
         }
         $this->_render_state = array_pop($this->_render_stack);
     }
-    function render($gj, $args) {
-        assert($this->_render_state !== null);
+    function render($gj) {
+        if (is_string($gj)) {
+            if (!($gj = $this->get($gj))) {
+                return null;
+            }
+        }
         if (isset($gj->title)
-            && $gj->title !== $this->_render_state[0]
+            && $gj->title !== $this->_render_state[1]
             && $gj->group !== $gj->name) {
-            echo '<h', $this->_render_state[1];
-            if ($this->_render_state[2]) {
-                echo ' class="', $this->_render_state[2], '"';
+            echo '<', $this->_render_state[2];
+            if ($this->_render_state[3]) {
+                echo ' class="', $this->_render_state[3], '"';
             }
             if (isset($gj->anchorid)) {
                 echo ' id="', htmlspecialchars($gj->anchorid), '"';
             }
-            echo '>', $gj->title, "</h", $this->_render_state[1], ">\n";
-            $this->_render_state[0] = $gj->title;
+            echo '>', $gj->title, '</', $this->_render_state[2], ">\n";
+            $this->_render_state[1] = $gj->title;
         }
         if (isset($gj->render_callback)) {
             Conf::xt_resolve_require($gj);
-            return $this->call_callback($gj->render_callback, $args);
+            return $this->call_callback($gj->render_callback, $gj);
         } else if (isset($gj->render_html)) {
             echo $gj->render_html;
+            return null;
+        } else {
+            return null;
         }
+    }
+    function render_group($name, $options = null) {
+        $this->start_render($options);
+        $result = null;
+        if (!empty($options) && isset($options["top"]) && $options["top"]) {
+            if (($gj = $this->get($name))) {
+                $result = $this->render($gj);
+            }
+        }
+        foreach ($this->members($name) as $gj) {
+            if ($result !== false) {
+                $result = $this->render($gj);
+            }
+        }
+        $this->end_render();
+        return $result;
     }
 
     function has_annex($name) {

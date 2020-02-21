@@ -159,7 +159,7 @@ form also can include:</p>
         }
     }
 
-    static function render_chair_conflicts($hth, $gj) {
+    static function render_chair_conflicts($hth) {
         echo $hth->subhead("Chair conflicts");
         echo "<p>Chairs and system administrators can access any information stored in the
 conference system, including reviewer identities for conflicted papers.

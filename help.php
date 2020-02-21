@@ -37,6 +37,7 @@ class HtHead extends Ht {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_help_topics = $help_topics;
+        $this->_help_topics->set_context(["hclass" => "helppage", "args" => [$this]]);
     }
     function subhead($title, $id = null) {
         if (!$id && $title) {
@@ -199,14 +200,7 @@ class HtHead extends Ht {
         }
     }
     function render_group($topic, $top = false) {
-        $this->_help_topics->start_render(3, "helppage");
-        if ($top && ($gj = $this->_help_topics->get($topic))) {
-            $this->_help_topics->render($gj, [$this, $gj]);
-        }
-        foreach ($this->_help_topics->members($topic) as $gj) {
-            $this->_help_topics->render($gj, [$this, $gj]);
-        }
-        $this->_help_topics->end_render();
+        $this->_help_topics->render_group($topic, ["top" => $top]);
     }
     function groups() {
         return $this->_help_topics->groups();

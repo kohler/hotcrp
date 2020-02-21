@@ -62,8 +62,10 @@ class UserStatus extends MessageSet {
             return "off";
     }
     private function gxt() {
-        if ($this->_gxt === null)
+        if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
+            $this->_gxt->set_context(["hclass" => "profile"]);
+        }
         return $this->_gxt;
     }
 
@@ -1208,16 +1210,21 @@ topics. We use this information to help match papers to reviewers.</p>',
     }
 
     function render_group($g, $cj, $reqj) {
-        $this->gxt()->start_render(3, "profile");
-        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+        $gx = $this->gxt();
+        $gx->start_render(["args" => [$this, $cj, $reqj]]);
+        $ok = null;
+        foreach ($gx->members(strtolower($g)) as $gj) {
             if (array_search("pc", Conf::xt_allow_list($gj)) === false) {
-                $this->gxt()->render($gj, [$this, $cj, $reqj, $gj]);
+                $ok = $gx->render($gj);
             } else if ($this->user->isPC || $this->viewer->privChair) {
                 echo '<div class="fx1">';
-                $this->gxt()->render($gj, [$this, $cj, $reqj, $gj]);
+                $ok = $gx->render($gj);
                 echo '</div>';
             }
+            if ($ok === false) {
+                break;
+            }
         }
-        $this->gxt()->end_render();
+        $gx->end_render();
     }
 }
