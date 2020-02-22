@@ -246,11 +246,14 @@ class IntlMsgSet {
                 /* do nothing */
             } else if ($pos < strlen($s) && $s[$pos] === "%") {
                 $s = substr($s, 0, $pos) . substr($s, $pos + 1);
-            } else if (preg_match('/(?:(\d+)\$)?(\d*(?:\.\d+)?)([deEifgosxX])/A', $s, $m, 0, $pos)) {
+            } else if (preg_match('/(?:(\d+)\$)?(\d*(?:\.\d+)?)([deEifgosxXH])/A', $s, $m, 0, $pos)) {
                 $argi = $m[1] ? +$m[1] : ++$argnum;
                 if (isset($args[$argi])) {
-                    $args[0] = "%{$argi}\${$m[2]}{$m[3]}";
+                    $args[0] = "%{$argi}\${$m[2]}" . ($m[3] === "H" ? "s" : $m[3]);
                     $x = call_user_func_array("sprintf", $args);
+                    if ($m[3] === "H") {
+                        $x = htmlspecialchars($x);
+                    }
                     $s = substr($s, 0, $pos - 1) . $x . substr($s, $pos + strlen($m[0]));
                     $pos = $pos - 1 + strlen($x);
                 }
@@ -262,54 +265,56 @@ class IntlMsgSet {
 
     function x($itext) {
         $args = func_get_args();
-        if (($im = $this->find(null, $itext, $args, null)))
+        if (($im = $this->find(null, $itext, $args, null))) {
             $args[0] = $im->otext;
+        }
         return $this->expand($args[0], $args, null, $im);
     }
 
     function xc($context, $itext) {
         $args = array_slice(func_get_args(), 1);
-        if (($im = $this->find($context, $itext, $args, null)))
+        if (($im = $this->find($context, $itext, $args, null))) {
             $args[0] = $im->otext;
+        }
         return $this->expand($args[0], $args, $context, $im);
     }
 
-    function xi($id, $override = null) {
+    function xi($id, $itext = null) {
         $args = array_slice(func_get_args(), 1);
-        if (empty($args))
+        if (empty($args)) {
             $args[] = "";
-        $im = null;
-        if ($override === null || $override === false)
-            $im = $this->find(null, $id, $args, null);
-        if ($im)
+        }
+        if (($im = $this->find(null, $id, $args, null))
+            && ($itext === null || $itext === false || $im->priority > 0.0)) {
             $args[0] = $im->otext;
+        }
         return $this->expand($args[0], $args, $id, $im);
     }
 
-    function xci($context, $id, $override = null) {
+    function xci($context, $id, $itext = null) {
         $args = array_slice(func_get_args(), 2);
-        if (empty($args))
+        if (empty($args)) {
             $args[] = "";
-        $im = null;
-        if ($override === null || $override === false)
-            $im = $this->find($context, $id, $args, null);
-        if ($im)
+        }
+        if (($im = $this->find($context, $id, $args, null))
+            && ($itext === null || $itext === false || $im->priority > 0.0)) {
             $args[0] = $im->otext;
+        }
         $cid = (string) $context === "" ? $id : "$context/$id";
         return $this->expand($args[0], $args, $cid, $im);
     }
 
-    function render_xci($fr, $context, $id, $override = null) {
+    function render_xci($fr, $context, $id, $itext = null) {
         $args = array_slice(func_get_args(), 3);
-        if (empty($args))
+        if (empty($args)) {
             $args[] = "";
-        $im = null;
-        if ($override === null || $override === false)
-            $im = $this->find($context, $id, $args, null);
-        if ($im) {
+        }
+        if (($im = $this->find($context, $id, $args, null))
+            && ($itext === null || $itext === false || $im->priority > 0.0)) {
             $args[0] = $im->otext;
-            if ($im->format !== null)
+            if ($im->format !== null) {
                 $fr->value_format = $im->format;
+            }
         }
         $cid = (string) $context === "" ? $id : "$context/$id";
         $fr->value = $this->expand($args[0], $args, $cid, $im);
@@ -317,8 +322,9 @@ class IntlMsgSet {
 
     function default_itext($id, $itext) {
         $args = array_slice(func_get_args(), 1);
-        if (($im = $this->find(null, $id, $args, self::PRIO_OVERRIDE)))
+        if (($im = $this->find(null, $id, $args, self::PRIO_OVERRIDE))) {
             $args[0] = $im->otext;
+        }
         return $args[0];
     }
 }
