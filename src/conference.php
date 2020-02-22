@@ -910,6 +910,8 @@ class Conf {
                 $b = $user && $user->is_empty();
             } else if ($e === "post") {
                 $b = $qreq && $qreq->post_ok() && $qreq->method() === "POST";
+            } else if ($e === "anypost") {
+                $b = $qreq && $qreq->method() === "POST";
             } else if ($e === "getpost") {
                 $b = $qreq && $qreq->post_ok()
                     && ($qreq->method() === "GET" || $qreq->method() === "POST");
