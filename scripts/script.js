@@ -7477,7 +7477,7 @@ handle_ui.on("js-check-submittable", function (event) {
     if (readye && readye.type === "checkbox")
         is = readye.checked && $(readye).is(":visible");
     var t;
-    if (f.getAttribute("data-contacts-only")) {
+    if (f.hasAttribute("data-contacts-only")) {
         t = "Save contacts";
     } else if (!is) {
         t = "Save draft";

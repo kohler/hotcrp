@@ -2156,7 +2156,7 @@ class PaperTable {
                        && $this->user->can_finalize_paper($this->prow)) {
                 $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper"]);
             } else if ($this->prow->paperId) {
-                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-primary"]);
+                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-savepaper btn-primary", "data-contacts-only" => 1]);
             }
             if (!empty($buttons)) {
                 $buttons[] = Ht::submit("cancel", "Cancel");
