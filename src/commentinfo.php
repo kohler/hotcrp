@@ -733,7 +733,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             } else {
                 $tmpl = "@commentnotify";
             }
-            HotCRPMailer::send_to($minic, $tmpl, $prow, ["comment_row" => $this]);
+            HotCRPMailer::send_to($minic, $tmpl, ["prow" => $prow, "comment_row" => $this]);
         }
     }
 }

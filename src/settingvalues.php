@@ -1112,7 +1112,7 @@ class SettingValues extends MessageSet {
 
     function expand_mail_template($name, $default) {
         if (!$this->null_mailer) {
-            $this->null_mailer = new HotCRPMailer($this->conf, null, null, array("width" => false));
+            $this->null_mailer = new HotCRPMailer($this->conf, null, ["width" => false]);
         }
         return $this->null_mailer->expand_template($name, $default);
     }

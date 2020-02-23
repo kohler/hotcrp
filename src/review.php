@@ -1934,7 +1934,7 @@ class ReviewValues extends MessageSet {
     function review_watch_callback($prow, $minic) {
         $rrow = $this->_mailer_info["rrow"];
         if ($minic->can_view_review($prow, $rrow, $this->_mailer_diff_view_score)
-            && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $prow, $this->_mailer_info))
+            && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $this->_mailer_info))
             && ($rrow->reviewSubmitted > 0
                 || $rrow->contactId == $minic->contactId
                 || $rrow->requestedBy == $minic->contactId
@@ -2276,7 +2276,7 @@ class ReviewValues extends MessageSet {
         }
 
         $this->_mailer_info = [
-            "rrow" => $new_rrow,
+            "prow" => $prow, "rrow" => $new_rrow,
             "reviewer_contact" => $reviewer,
             "check_function" => "HotCRPMailer::check_can_view_review"
         ];

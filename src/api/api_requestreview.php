@@ -136,10 +136,9 @@ class RequestReview_API {
                               "round_number" => $round]);
 
         // send confirmation mail
-        HotCRPMailer::send_to($reviewer, "@requestreview", $prow, [
-            "requester_contact" => $requester,
-            "reason" => $reason,
-            "rrow" => $prow->fresh_review_of_user($reviewer)
+        HotCRPMailer::send_to($reviewer, "@requestreview", [
+            "prow" => $prow, "rrow" => $prow->fresh_review_of_user($reviewer),
+            "requester_contact" => $requester, "reason" => $reason
         ]);
 
         return new JsonResult(["ok" => true, "action" => "request", "response" => "Requested an external review from " . Text::user_html($reviewer) . "."]);
@@ -198,8 +197,10 @@ class RequestReview_API {
                 "lastName" => $reviewer ? $reviewer->lastName : $request->lastName,
                 "email" => $email
             ];
-            HotCRPMailer::send_to($requester, "@denyreviewrequest", $prow,
-                ["reviewer_contact" => $reviewer_contact, "reason" => $reason]);
+            HotCRPMailer::send_to($requester, "@denyreviewrequest", [
+                "prow" => $prow,
+                "reviewer_contact" => $reviewer_contact, "reason" => $reason
+            ]);
 
             $user->log_activity_for($requester, "Review proposal denied for $email", $prow);
             $prow->conf->update_autosearch_tags($prow);
@@ -308,8 +309,10 @@ class RequestReview_API {
             }
             if ($requser) {
                 $reqprow = $user->conf->fetch_paper($prow->paperId, $requser);
-                HotCRPMailer::send_to($requser, "@refusereviewrequest", $reqprow,
-                    ["reviewer_contact" => $rrow, "reason" => $reason]);
+                HotCRPMailer::send_to($requser, "@refusereviewrequest", [
+                    "prow" => $reqprow,
+                    "reviewer_contact" => $rrow, "reason" => $reason
+                ]);
             }
             $user->log_activity_for($rrow->contactId, "Review $rrow->reviewId declined", $prow);
         }
@@ -386,8 +389,10 @@ class RequestReview_API {
                         && $requester->contactId != $user->contactId) {
                         $cc .= ", " . Text::user_email_to($requester);
                     }
-                    HotCRPMailer::send_to($reviewer, "@retractrequest", $prow,
-                        ["requester_contact" => $user, "cc" => $cc]);
+                    HotCRPMailer::send_to($reviewer, "@retractrequest", [
+                        "prow" => $prow,
+                        "requester_contact" => $user, "cc" => $cc
+                    ]);
                     $notified = true;
                 }
             }

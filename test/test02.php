@@ -1196,7 +1196,7 @@ xassert_eqq($au->firstName, "G.-Y. (Ken (Butt))");
 xassert_eqq($au->affiliation, "France (Crap) Telecom");
 
 // mailer expansion
-$mailer = new HotCRPMailer($Conf, null, null, ["width" => false]);
+$mailer = new HotCRPMailer($Conf, null, ["width" => false]);
 xassert_eqq($mailer->expand("%CONFNAME%//%CONFLONGNAME%//%CONFSHORTNAME%"),
     "Test Conference I (Testconf I)//Test Conference I//Testconf I\n");
 xassert_eqq($mailer->expand("%SITECONTACT%//%ADMINEMAIL%"),

@@ -68,7 +68,7 @@ if (isset($Qreq->replyto) && $Me->is_manager()) {
 
 global $mailer_options;
 $mailer_options = ["requester_contact" => $Me, "cc" => $Qreq->cc, "reply-to" => $Qreq->replyto];
-$null_mailer = new HotCRPMailer($Conf, null, null, array_merge(["width" => false], $mailer_options));
+$null_mailer = new HotCRPMailer($Conf, null, array_merge(["width" => false], $mailer_options));
 
 // template options
 if (isset($Qreq->monreq)) {
@@ -453,7 +453,7 @@ class MailSender {
         $rest = array_merge(["no_error_quit" => true], $mailer_options);
 
         // test whether this mail is paper-sensitive
-        $mailer = new HotCRPMailer($this->conf, $this->user, null, $rest);
+        $mailer = new HotCRPMailer($this->conf, $this->user, $rest);
         $prep = $mailer->make_preparation($template, $rest);
         $paper_sensitive = preg_match('/%[A-Z0-9]+[(%]/', $prep->subject . $prep->body);
 
@@ -491,9 +491,9 @@ class MailSender {
             $row->contactId = (int) $row->contactId;
 
             $contact = new Contact($row, $this->conf);
-            $prow = $row->paperId > 0 ? $row : null;
+            $rest["prow"] = $prow = $row->paperId > 0 ? $row : null;
             $rest["newrev_since"] = $this->recip->newrev_since;
-            $mailer->reset($contact, $prow, $rest);
+            $mailer->reset($contact, $rest);
             $prep = $mailer->make_preparation($template, $rest);
 
             if ($prep->errors) {
@@ -511,7 +511,7 @@ class MailSender {
                     && !$last_prep->censored_preparation
                     && $rest["censor"] === Mailer::CENSOR_NONE) {
                     $rest["censor"] = Mailer::CENSOR_DISPLAY;
-                    $mailer->reset($contact, $prow, $rest);
+                    $mailer->reset($contact, $rest);
                     $last_prep->censored_preparation = $mailer->make_preparation($template, $rest);
                     $rest["censor"] = Mailer::CENSOR_NONE;
                 }

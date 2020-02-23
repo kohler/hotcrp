@@ -5,11 +5,11 @@
 require_once("src/initweb.php");
 if (!$Me->is_manager())
     $Me->escape();
-$null_mailer = new HotCRPMailer($Conf,
-    null, null, array("requester_contact" => $Me,
-                      "other_contact" => $Me /* backwards compat */,
-                      "reason" => "",
-                      "width" => false));
+$null_mailer = new HotCRPMailer($Conf, null, [
+    "requester_contact" => $Me,
+    "other_contact" => $Me /* backwards compat */,
+    "reason" => "", "width" => false
+]);
 
 $Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
 if ($Qreq->post_ok())

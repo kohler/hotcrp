@@ -78,11 +78,11 @@ class MailChecker {
         xassert_eqq(count(self::$preps), 0);
         self::$preps = [];
     }
-    static function check1($recipient, $template, $row = null, $rest = []) {
+    static function check1($recipient, $template, $rest = []) {
         global $Conf;
         xassert_eqq(count(self::$preps), 1);
         if (count(self::$preps) === 1) {
-            $mailer = new HotCRPMailer($Conf, $recipient, $row, $rest);
+            $mailer = new HotCRPMailer($Conf, $recipient, $rest);
             $prep = $mailer->make_preparation($template, $rest);
             xassert_eqq(self::$preps[0]->subject, $prep->subject);
             xassert_eqq(self::$preps[0]->body, $prep->body);

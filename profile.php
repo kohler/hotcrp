@@ -247,7 +247,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
                 "data" => json_encode_db(["oldemail" => $Acct->email, "uemail" => $cj->email])
             ]);
             $rest = ["capability" => $capability];
-            $mailer = new HotCRPMailer($Conf, $Acct, null, $rest);
+            $mailer = new HotCRPMailer($Conf, $Acct, $rest);
             $prep = $mailer->make_preparation("@changeemail", $rest);
             if ($prep->sendable
                 || $Conf->opt("debugShowSensitiveEmail")) {

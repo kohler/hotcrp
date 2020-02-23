@@ -43,19 +43,19 @@ class HotCRPMailer extends Mailer {
     protected $_tagless = array();
 
 
-    function __construct(Conf $conf, $recipient = null, $row = null,
-                         $rest = array()) {
+    function __construct(Conf $conf, $recipient = null, $rest = []) {
         parent::__construct($conf);
-        $this->reset($recipient, $row, $rest);
-        if (isset($rest["combination_type"]))
+        $this->reset($recipient, $rest);
+        if (isset($rest["combination_type"])) {
             $this->combination_type = $rest["combination_type"];
+        }
     }
 
     static private function make_reviewer_contact($x) {
         return (object) ["email" => get($x, "reviewEmail"), "firstName" => get($x, "reviewFirstName"), "lastName" => get($x, "reviewLastName")];
     }
 
-    function reset($recipient = null, $row = null, $rest = array()) {
+    function reset($recipient = null, $rest = []) {
         global $Me;
         parent::reset($recipient, $rest);
         assert(!get($rest, "permissionContact"));
@@ -66,8 +66,8 @@ class HotCRPMailer extends Mailer {
         foreach (array("requester", "reviewer", "other") as $k) {
             $this->contacts[$k] = get($rest, $k . "_contact");
         }
-        $this->row = $row;
-        assert(!$row || $this->row->paperId > 0);
+        $this->row = get($rest, "prow");
+        assert(!$this->row || $this->row->paperId > 0);
         foreach (["rrow", "comment_row", "newrev_since"] as $k) {
             $this->$k = get($rest, $k);
         }
@@ -448,22 +448,25 @@ class HotCRPMailer extends Mailer {
         return $recipient->can_view_review($prow, $rrow);
     }
 
-    static function prepare_to($recipient, $template, $row, $rest = array()) {
+    static function prepare_to($recipient, $template, $rest = array()) {
         $answer = null;
         if (!$recipient->is_disabled()) {
             $old_overrides = $recipient->remove_overrides(Contact::OVERRIDE_CONFLICT);
-            $mailer = new HotCRPMailer($recipient->conf, $recipient, $row, $rest);
+            $mailer = new HotCRPMailer($recipient->conf, $recipient, $rest);
             $checkf = get($rest, "check_function");
-            if (!$checkf || call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow))
+            if (!$checkf
+                || call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow)) {
                 $answer = $mailer->make_preparation($template, $rest);
+            }
             $recipient->set_overrides($old_overrides);
         }
         return $answer;
     }
 
-    static function send_to($recipient, $template, $row, $rest = array()) {
-        if (($prep = self::prepare_to($recipient, $template, $row, $rest)))
+    static function send_to($recipient, $template, $rest = array()) {
+        if (($prep = self::prepare_to($recipient, $template, $rest))) {
             $prep->send();
+        }
     }
 
     static function send_contacts($template, $row, $rest = array()) {
@@ -481,11 +484,12 @@ class HotCRPMailer extends Mailer {
         $contact_info_map = $row->replace_contact_info_map(null);
 
         $preps = $contacts = array();
+        $rest["prow"] = $row;
         $rest["combination_type"] = 1;
         while (($contact = Contact::fetch($result, $row->conf))) {
             assert(empty($contact->review_tokens()));
             $row->load_my_contact_info($contact, $contact);
-            if (($p = self::prepare_to($contact, $template, $row, $rest))) {
+            if (($p = self::prepare_to($contact, $template, $rest))) {
                 $preps[] = $p;
                 $contacts[] = Text::user_html($contact);
             }
@@ -508,10 +512,12 @@ class HotCRPMailer extends Mailer {
 
     static function send_administrators($template, $row, $rest = array()) {
         $preps = array();
+        $rest["prow"] = $row;
         $rest["combination_type"] = 1;
         foreach ($row->administrators() as $u) {
-            if (($p = self::prepare_to($u, $template, $row, $rest)))
+            if (($p = self::prepare_to($u, $template, $rest))) {
                 $preps[] = $p;
+            }
         }
         self::send_combined_preparations($preps);
     }
