@@ -7,7 +7,7 @@ class UserStatus extends MessageSet {
     public $user;
     public $viewer;
     public $self;
-    public $send_email = null;
+    public $no_notify = null;
     private $no_deprivilege_self = false;
     private $no_update_profile = false;
     public $unknown_topics = null;
@@ -35,11 +35,13 @@ class UserStatus extends MessageSet {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         parent::__construct();
-        foreach (array("send_email", "no_deprivilege_self", "no_update_profile") as $k)
+        foreach (["no_notify", "no_deprivilege_self", "no_update_profile"] as $k) {
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
-        foreach (self::$field_synonym_map as $src => $dst)
+        }
+        foreach (self::$field_synonym_map as $src => $dst) {
             $this->translate_field($src, $dst);
+        }
     }
     function clear() {
         $this->clear_messages();
@@ -594,13 +596,13 @@ class UserStatus extends MessageSet {
 
         // create user
         $this->check_invariants($cj);
-        if (($send = $this->send_email) === null) {
-            $send = !$old_cdb_user;
+        if (($no_notify = $this->no_notify) === null) {
+            $no_notify = !!$old_cdb_user;
         }
         $actor = $this->viewer->is_site_contact ? null : $this->viewer;
         if (!$old_user) {
             $user = Contact::create($this->conf, $actor, $cj,
-                                    ($send ? Contact::SAVE_NOTIFY : 0) | Contact::SAVE_ROLES,
+                                    ($no_notify ? 0 : Contact::SAVE_NOTIFY) | Contact::SAVE_ROLES,
                                     $roles);
             $cj->email = $user->email; // adopt contactdb’s spelling of email
         }

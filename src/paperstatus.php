@@ -8,7 +8,7 @@ class PaperStatus extends MessageSet {
     public $prow;
     public $paperId;
     private $uploaded_documents;
-    private $no_email = false;
+    private $no_notify = false;
     private $export_ids = false;
     private $hide_docids = false;
     private $export_content = false;
@@ -33,7 +33,7 @@ class PaperStatus extends MessageSet {
     function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
         $this->user = $user;
-        foreach (array("no_email", "export_ids", "hide_docids",
+        foreach (array("no_notify", "export_ids", "hide_docids",
                        "export_content", "disable_users",
                        "allow_any_content_file", "content_file_prefix",
                        "add_topics") as $k) {
@@ -1228,7 +1228,7 @@ class PaperStatus extends MessageSet {
         if (isset($ps->diffs["contacts"]) && !$ps->has_error_at("contacts")) {
             foreach (self::contacts_array($pj) as $c) {
                 $flags = (get($c, "contact") ? 0 : Contact::SAVE_IMPORT)
-                    | ($ps->no_email ? 0 : Contact::SAVE_NOTIFY);
+                    | ($ps->no_notify ? 0 : Contact::SAVE_NOTIFY);
                 $c->disabled = !!$ps->disable_users;
                 if (!Contact::create($ps->conf, $ps->user, $c, $flags)
                     && !($flags & Contact::SAVE_IMPORT)) {

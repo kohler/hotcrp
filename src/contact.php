@@ -1343,7 +1343,7 @@ class Contact {
             if (($flags & self::SAVE_NOTIFY) && !$u->is_disabled()) {
                 $u->sendAccountInfo("create", false);
             }
-            $type = $u->is_disabled() ? " disabled" : "";
+            $type = $u->is_disabled() ? ", disabled" : "";
             $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Account created" . $type);
         }
 

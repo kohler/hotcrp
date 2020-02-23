@@ -208,7 +208,7 @@ foreach ($jp as &$j) {
 
     if (!$quiet)
         fwrite(STDERR, $pidtext . $titletext . ": ");
-    $ps = new PaperStatus($Conf, null, ["no_email" => true,
+    $ps = new PaperStatus($Conf, null, ["no_notify" => true,
                                         "disable_users" => $disable_users,
                                         "add_topics" => $add_topics,
                                         "content_file_prefix" => $content_file_prefix]);

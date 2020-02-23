@@ -321,7 +321,7 @@ function parseBulkFile($text, $filename) {
 
     $saved_users = [];
     $ustatus = new UserStatus($Me, [
-        "send_email" => true, "no_deprivilege_self" => true, "no_update_profile" => true
+        "no_deprivilege_self" => true, "no_update_profile" => true
     ]);
     $ustatus->add_csv_synonyms($csv);
 
@@ -393,9 +393,6 @@ if (!$Qreq->post_ok()) {
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->set_user($Acct);
     $UserStatus->parse_request_group("", $cj, $Qreq);
-    if ($newProfile) {
-        $UserStatus->send_email = true;
-    }
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if (!$UserStatus->has_error()) {
         if ($UserStatus->has_messages()) {

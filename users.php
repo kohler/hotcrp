@@ -275,7 +275,7 @@ function do_tags($qreq) {
         $users[(int) $cid]->$key = array_merge($users[(int) $cid]->$key, $t1);
     }
     // apply modifications
-    $us = new UserStatus($Me, ["send_email" => false]);
+    $us = new UserStatus($Me, ["no_notify" => true]);
     foreach ($users as $cid => $cj) {
         $us->save($cj);
     }

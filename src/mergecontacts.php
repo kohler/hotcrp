@@ -117,7 +117,7 @@ class MergeContacts extends MessageSet {
             if ($this->newu->tag_value($ti[0]) === false)
                 $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
 
-        $us = new UserStatus($this->conf->site_contact(), ["send_email" => false]);
+        $us = new UserStatus($this->conf->site_contact(), ["no_notify" => true]);
         $us->save($cj, $this->newu);
 
         // Remove the old contact record
@@ -134,7 +134,7 @@ class MergeContacts extends MessageSet {
             // both users in database
             $this->merge();
         else {
-            $user_status = new UserStatus($this->oldu, ["send_email" => false]);
+            $user_status = new UserStatus($this->oldu, ["no_notify" => true]);
             if ($this->oldu->contactId) {
                 // new user in contactdb, old user in database
                 $user_status->user = $this->newu;

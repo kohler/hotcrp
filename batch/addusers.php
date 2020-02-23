@@ -2,13 +2,13 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/lib/getopt.php");
 
-$arg = getopt_rest($argv, "hn:me:", array("help", "name:", "no-email", "modify", "expression:", "expr:"));
+$arg = getopt_rest($argv, "hn:me:", array("help", "name:", "no-email", "no-notify", "modify", "expression:", "expr:"));
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
     $status = isset($arg["h"]) || isset($arg["help"]) ? 0 : 1;
     fwrite($status ? STDERR : STDOUT,
-           "Usage: php batch/addusers.php [-n CONFID] [--modify] [--no-email] [JSONFILE | CSVFILE | -e JSON]\n");
+           "Usage: php batch/addusers.php [-n CONFID] [--modify] [--no-notify] [JSONFILE | CSVFILE | -e JSON]\n");
     exit($status);
 }
 if (isset($arg["modify"])) {
@@ -59,7 +59,8 @@ if ($content === false) {
     exit(1);
 }
 
-$ustatus = new UserStatus($Conf->site_contact(), ["send_email" => !isset($arg["no-email"])]);
+$no_notify = isset($arg["no-email"]) || isset($arg["no-notify"]);
+$ustatus = new UserStatus($Conf->site_contact(), ["no_notify" => $no_notify]);
 $status = 0;
 if (!preg_match(',\A\s*[\[\{],i', $content)) {
     $csv = new CsvParser(cleannl(convert_to_utf8($content)));
