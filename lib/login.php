@@ -3,6 +3,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class LoginHelper {
+    const DEBUG = 0;
+
     static function check_http_auth(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
         assert($conf->opt("httpAuthLogin") !== null);
@@ -272,6 +274,9 @@ class LoginHelper {
 
 
     static function login_error(Conf $conf, $email, $info) {
+        if (self::DEBUG) {
+            error_log("login failure: $email " . json_encode($info));
+        }
         if (isset($info["ldap"]) && isset($info["detail_html"])) {
             $e = $info["detail_html"];
         } else if (isset($info["noemail"])) {
