@@ -1273,7 +1273,7 @@ xassert(fetch_paper(27)->has_author($u));
 xassert(!user("anonymous10"));
 $u = Contact::create($Conf, null, ["email" => "anonymous10"], Contact::SAVE_ANY_EMAIL);
 xassert($u->contactId > 0);
-xassert_eqq($Conf->fetch_value("select password from ContactInfo where email='anonymous10'"), "*");
+xassert_eqq($Conf->fetch_value("select password from ContactInfo where email='anonymous10'"), " nologin");
 
 // contact tags
 xassert($user_chair->can_view_user_tags());
