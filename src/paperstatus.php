@@ -27,6 +27,7 @@ class PaperStatus extends MessageSet {
     private $_option_ins;
     private $_new_conflicts;
     private $_conflict_ins;
+    private $_created_contacts;
     private $_paper_submitted;
     private $_document_change;
 
@@ -1227,11 +1228,17 @@ class PaperStatus extends MessageSet {
     static function postcheck_contacts(PaperStatus $ps, $pj) {
         if (isset($ps->diffs["contacts"]) && !$ps->has_error_at("contacts")) {
             foreach (self::contacts_array($pj) as $c) {
-                $flags = (get($c, "contact") ? 0 : Contact::SAVE_IMPORT)
-                    | ($ps->no_notify ? 0 : Contact::SAVE_NOTIFY);
+                $flags = get($c, "contact") ? 0 : Contact::SAVE_IMPORT;
                 $c->disabled = !!$ps->disable_users;
-                if (!Contact::create($ps->conf, $ps->user, $c, $flags)
-                    && !($flags & Contact::SAVE_IMPORT)) {
+                $u = Contact::create($ps->conf, $ps->user, $c, $flags);
+                if ($u) {
+                    if ($u->password_unset()
+                        && !$u->activity_at
+                        && !$u->isPC
+                        && !$u->is_disabled()) {
+                        $ps->_created_contacts[] = $u;
+                    }
+                } else if (!($flags & Contact::SAVE_IMPORT)) {
                     $key = "contacts";
                     if (isset($c->index) && is_int($c->index)) {
                         $key = (isset($c->is_new) && $c->is_new === true ? "newcontact_" : "contact_") . $c->index;
@@ -1263,6 +1270,17 @@ class PaperStatus extends MessageSet {
             }
             if (!empty($ps->_conflict_ins)) {
                 $ps->conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values ?v", $ps->_conflict_ins);
+            }
+        }
+        if ($ps->_created_contacts !== null) {
+            $rest = ["prow" => $ps->conf->fetch_paper($ps->paperId)];
+            if (!$ps->user
+                || ($ps->user->can_administer($rest["prow"])
+                    && !$rest["prow"]->has_author($ps->user))) {
+                $rest["adminupdate"] = true;
+            }
+            foreach ($ps->_created_contacts as $u) {
+                $u->send_mail("@newaccount.paper", $rest);
             }
         }
     }
@@ -1472,9 +1490,9 @@ class PaperStatus extends MessageSet {
             }
         }
 
-        self::execute_conflicts($this);
         self::execute_topics($this);
         self::execute_options($this);
+        self::execute_conflicts($this);
 
         if ($this->_paper_submitted) {
             self::postcheck_required_options($this);

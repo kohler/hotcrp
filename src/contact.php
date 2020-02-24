@@ -641,6 +641,11 @@ class Contact {
         return $this->_disabled;
     }
 
+    function contactdb_disabled() {
+        $cdbu = $this->contactdb_user();
+        return $cdbu && $cdbu->disabled;
+    }
+
     function name() {
         if ($this->firstName !== "" && $this->lastName !== "") {
             return $this->firstName . " " . $this->lastName;
@@ -1102,10 +1107,9 @@ class Contact {
         }
     }
 
-    const SAVE_NOTIFY = 1;
-    const SAVE_ANY_EMAIL = 2;
-    const SAVE_IMPORT = 4;
-    const SAVE_ROLES = 8;
+    const SAVE_ANY_EMAIL = 1;
+    const SAVE_IMPORT = 2;
+    const SAVE_ROLES = 4;
 
     function change_email($email) {
         assert($this->has_account_here());
@@ -1231,7 +1235,7 @@ class Contact {
         } else {
             assert(isset($updater["email"]));
             if (!isset($updater["password"])) {
-                $updater["password"] = validate_email($updater["email"]) ? self::random_password() : "*";
+                $updater["password"] = validate_email($updater["email"]) ? " unset" : " nologin";
                 $updater["passwordTime"] = $Now;
             }
             if (!$is_cdb) {
@@ -1240,8 +1244,9 @@ class Contact {
             $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join("=?, ", array_keys($updater)) . "=? on duplicate key update firstName=firstName", array_values($updater));
             if ($result) {
                 $updater[$idk] = (int) $result->insert_id;
-                if ($idk === "contactId")
+                if ($idk === "contactId") {
                     $updater["contactXid"] = (int) $result->insert_id;
+                }
             }
         }
         if (($ok = !!$result)) {
@@ -1340,9 +1345,6 @@ class Contact {
 
         // notify on creation
         if ($create) {
-            if (($flags & self::SAVE_NOTIFY) && !$u->is_disabled()) {
-                $u->sendAccountInfo("create", false);
-            }
             $type = $u->is_disabled() ? ", disabled" : "";
             $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Account created" . $type);
         }
@@ -1353,85 +1355,44 @@ class Contact {
 
     // PASSWORDS
     //
-    // XXX THESE RULES ARE NOT ALL FOLLOWED BY THE CODE
+    // Password values
+    // * "": Unset password. In contactdb, means local password allowed.
+    // * " unset": Affirmatively unset password. In contactdb, overrides older
+    //   local passwords.
+    // * " reset": Affirmatively reset password. User must reset password to
+    //   log in.
+    // * " nologin": Disallows login and cannot be reset.
+    // * " $[password_hash]": Hashed password.
+    // * "[not space]....": Legacy plaintext password, reset to hashed password
+    //   on successful login.
+    // * " [hashmethod] [keyid] [salt][hash_hmac]": Legacy hashed password
+    //   using hash_hmac. `salt` is 16 bytes. Reset to hashed password on
+    //   successful login.
     //
-    // password "" or null: reset password (user must recreate password)
-    //     or password stored in contactdb
-    // password "*": invalid password, cannot be reset by user
-    // password starting with " ": legacy hashed password using hash_hmac
-    //     format: " HASHMETHOD KEYID SALT[16B]HMAC"
-    // password starting with " $": password hashed by password_hash
-    //
-    // PASSWORD PRINCIPLES
-    //
-    // - prefer contactdb password
-    // - require contactdb password if it is newer
-    //
-    // PASSWORD CHECKING RULES
-    //
-    // if (contactdb password exists)
-    //     check contactdb password;
-    // if (contactdb password matches && contactdb password needs upgrade)
-    //     upgrade contactdb password;
-    // if (contactdb password matches && local password was from contactdb)
-    //     set local password to contactdb password;
-    // if (local password was not from contactdb || no contactdb)
-    //     check local password;
-    // if (local password matches && local password needs upgrade)
-    //     upgrade local password;
-    //
-    // PASSWORD CHANGING RULES
-    //
-    // change(expected, new):
-    // if (contactdb password allowed
-    //     && (!expected || expected matches contactdb)) {
-    //     change contactdb password and update time;
-    //     set local password to "";
-    // } else
-    //     change local password and update time;
+    // Password checking guiding principles
+    // * Contactdb password generally takes preference. On successful signin
+    //   using contactdb password, local password is reset to "".
 
     static function valid_password($input) {
         return $input !== "" && $input !== "0" && $input !== "*"
             && trim($input) === $input;
     }
 
-    static function random_password($length = 14) {
-        return hotcrp_random_password($length);
-    }
-
-    function allow_contactdb_password() {
+    function password_unset() {
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && $cdbu->password !== "*";
+        return ((string) $this->password === ""
+                || str_starts_with($this->password, " unset"))
+            && (!$cdbu
+                || $this === $cdbu
+                || (string) $cdbu->password === ""
+                || str_starts_with($cdbu->password, " unset"));
     }
 
-    function plaintext_password() {
-        // Return the currently active plaintext password. This might not
-        // equal $this->password because of the cdb.
-        if ($this->password === "" || $this->password === "*") {
-            if ($this->contactId
-                && ($cdbu = $this->contactdb_user()))
-                return $cdbu->plaintext_password();
-            else
-                return false;
-        } else if ($this->password[0] === " " || $this->password === "*") {
-            return false;
-        } else {
-            return $this->password;
-        }
-    }
-
-    function password_is_reset() {
-        if (($cdbu = $this->contactdb_user())) {
-            return (string) $cdbu->password === ""
-                && ((string) $this->password === ""
-                    || $this->passwordTime < $cdbu->passwordTime);
-        } else {
-            return $this->password === "";
-        }
-    }
-
-    function password_used() {
-        return $this->passwordUseTime > 0;
+    function can_reset_password() {
+        $cdbu = $this->contactdb_user();
+        return !$this->conf->external_login()
+            && !str_starts_with((string) $this->password, " nologin")
+            && (!$cdbu || !str_starts_with((string) $cdbu->password, " nologin"));
     }
 
 
@@ -1484,7 +1445,7 @@ class Contact {
         return is_int($m) ? $m : PASSWORD_DEFAULT;
     }
 
-    private function check_password_encryption($hash, $iscdb) {
+    private function password_needs_rehash($hash) {
         return $hash === ""
             || $hash[0] !== " "
             || $hash[1] !== "\$"
@@ -1495,118 +1456,129 @@ class Contact {
         return " \$" . password_hash($input, $this->password_hash_method());
     }
 
-    function check_password($input, $info = null) {
+    function check_password_info($input, $options = []) {
         global $Now;
         assert(!$this->conf->external_login());
-        if (($this->contactId && $this->is_disabled())
-            || !self::valid_password($input)) {
-            if ($info)
-                $info->disabled = true;
-            return false;
-        }
-
         $cdbu = $this->contactdb_user();
-        $cdbok = $cdbu
-            && $cdbu->password
-            && $cdbu->allow_contactdb_password()
-            // NB $this is OK here, password hash passed in
-            && $this->check_hashed_password($input, $cdbu->password);
-        $localok = $this->contactId > 0
+
+        // check passwords
+        $local_ok = $this->contactId > 0
             && $this->password
             && $this->check_hashed_password($input, $this->password);
+        $cdb_ok = $cdbu
+            && $cdbu->password
+            && $this->check_hashed_password($input, $cdbu->password);
+        $cdb_older = !$cdbu || $cdbu->passwordTime < $this->passwordTime;
 
-        if ($cdbok
-            || ($localok && $cdbu && !$cdbu->password)) {
-            $updater = ["passwordUseTime" => $Now];
-            if ($cdbok) {
-                if ($this->check_password_encryption($cdbu->password, true)) {
-                    $updater["password"] = $this->hash_password($input);
-                }
-                if (!$cdbu->passwordTime) {
-                    $updater["passwordTime"] = $Now;
-                }
+        // invalid passwords cannot be used to log in
+        if (!self::valid_password($input)) {
+            if (trim($input) === "") {
+                return ["ok" => false, "nopw" => true];
             } else {
-                $updater["password"] = $this->hash_password($input);
-                $updater["passwordTime"] = $this->passwordTime ? : $Now;
+                return ["ok" => false, "invalid" => true];
             }
-            $cdbu->apply_updater($updater, true);
-            // clear local password, if any
-            if ($localok) {
-                $this->apply_updater(["passwordUseTime" => $Now, "password" => "", "passwordTime" => $Now], false);
-            }
-            if ($info) {
-                $info->cdb = true;
-            }
-            $cdbok = true;
-            $localok = false;
         }
 
-        if ($localok
-            && $cdbu
-            && $cdbu->password) {
-            $localusetime = max($this->passwordTime, $this->passwordUseTime);
-            if (!$cdbok) {
+        // users with reset passwords cannot log in
+        if (($cdbu
+             && str_starts_with($cdbu->password, " reset"))
+            || ($cdb_older
+                && !$cdb_ok
+                && str_starts_with($this->password, " reset"))) {
+            return ["ok" => false, "reset" => true];
+        }
+
+        // users with unset passwords cannot log in
+        if (($cdbu
+             && (!$cdb_older || !$local_ok)
+             && str_starts_with($cdbu->password, " unset"))
+            || ((!$cdbu || (string) $cdbu->password === "")
+                && str_starts_with($this->password, " unset"))
+            || ((!$cdbu || (string) $cdbu->password === "")
+                && (string) $this->password === "")) {
+            return ["ok" => false, "unset" => true, "email" => true];
+        }
+
+        // deny if no match
+        if (!$cdb_ok && !$local_ok) {
+            return ["ok" => false, "invalid" => true];
+        }
+
+        // disabled users cannot log in
+        // (NB all `anonymous` users should be disabled)
+        if (($this->contactId && $this->is_disabled())
+            || ($cdbu && $cdbu->is_disabled())) {
+            return ["ok" => false, "disabled" => true, "email" => true];
+        }
+
+        // otherwise, the login attempt succeeds
+
+        // create cdb user
+        if (!$cdbu && $this->conf->contactdb()) {
+            $this->contactdb_update(null, true);
+            $cdbu = $this->contactdb_user();
+        }
+
+        // update cdb password
+        if ($cdb_ok
+            || ($cdbu && (string) $cdbu->password === "")) {
+            $updater = ["passwordUseTime" => $Now];
+            if (!$cdb_ok || $this->password_needs_rehash($cdbu->password)) {
+                $updater["password"] = $this->hash_password($input);
+            }
+            if (!$cdb_ok || !$cdbu->passwordTime) {
+                $updater["passwordTime"] = $Now;
+            }
+            $cdbu->apply_updater($updater, true);
+
+            // clear local password
+            if ($this->contactId > 0 && (string) $this->password !== "") {
+                $this->apply_updater(["passwordUseTime" => $Now, "password" => "", "passwordTime" => $Now], false);
+                $local_ok = false;
+            }
+        }
+
+        // update local password
+        if ($local_ok) {
+            $updater = ["passwordUseTime" => $Now];
+            if ($this->password_needs_rehash($this->password)) {
+                $updater["password"] = $this->hash_password($input);
+            }
+            if (!$this->passwordTime) {
+                $updater["passwordTime"] = $Now;
+            }
+            $this->apply_updater($updater, false);
+
+            // complain about local password use
+            if ($cdbu) {
                 $t0 = $this->passwordTime ? ceil(($Now - $this->passwordTime) / 86400) : -1;
                 $t1 = $cdbu->passwordTime ? ceil(($Now - $cdbu->passwordTime) / 86400) : -1;
                 error_log("{$this->conf->dbname}: user {$this->email}: signing in with local password, which is " . ($this->passwordTime < $cdbu->passwordTime ? "older" : "newer") . " than cdb [{$t0}d/{$t1}d]");
             }
-            if ($localusetime
-                && $cdbu->passwordUseTime > $localusetime) {
-                $x = $this->conf->opt("obsoletePasswordInterval");
-                if (is_string($x)) {
-                    $x = SettingParser::parse_interval($x);
-                }
-                if ($x === true) {
-                    $x = 63072000; // 2 years
-                }
-                if ($x > 0
-                    && $localusetime < $Now - $x) {
-                    $localok = false;
-                    if ($info)
-                        $info->local_obsolete = true;
-                }
-            }
         }
 
-        if ($localok) {
-            $updater = ["passwordUseTime" => $Now];
-            if ($this->check_password_encryption($this->password, false)) {
-                $updater["password"] = $this->hash_password($input);
-                if (!$this->passwordTime)
-                    $updater["passwordTime"] = $Now;
-            }
-            $this->apply_updater($updater, false);
-            if ($info)
-                $info->local = true;
-        }
-
-        return $cdbok || $localok;
+        return ["ok" => true];
     }
 
-    const CHANGE_PASSWORD_ENABLE = 1;
-    function change_password($new, $flags) {
+    function check_password($input) {
+        $x = $this->check_password_info($input);
+        return $x["ok"];
+    }
+
+    function change_password($new) {
         global $Now;
         assert(!$this->conf->external_login());
+        assert($new !== null);
+
+        if ($new && $new[0] !== " ") {
+            $hash = $this->hash_password($new);
+            $use_time = $Now;
+        } else {
+            $hash = $new;
+            $use_time = 0;
+        }
 
         $cdbu = $this->contactdb_user();
-        if (($flags & self::CHANGE_PASSWORD_ENABLE)
-            && ($this->password !== ""
-                || ($cdbu && (string) $cdbu->password !== ""))) {
-            return false;
-        }
-
-        $plaintext = $new === null;
-        if ($plaintext) {
-            $new = self::random_password();
-        }
-        assert(self::valid_password($new));
-
-        $hash = $new;
-        if ($hash && !$plaintext) {
-            $hash = $this->hash_password($hash);
-        }
-
-        $use_time = $plaintext ? 0 : $Now;
         if ($cdbu) {
             $cdbu->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], true);
             if ($this->contactId && (string) $this->password !== "") {
@@ -1619,36 +1591,14 @@ class Contact {
     }
 
 
-    function sendAccountInfo($sendtype, $sensitive) {
-        assert(!$this->is_disabled());
-
-        $cdbu = $this->contactdb_user();
-        $rest = array();
-        if ($sendtype === "create") {
-            if ($cdbu && $cdbu->passwordUseTime) {
-                $template = "@activateaccount";
-            } else {
-                $template = "@createaccount";
-            }
-        } else if ($sendtype === "forgot") {
-            if (!$cdbu && $this->conf->contactdb()) {
-                error_log("{$this->conf->dbname}: {$this->email} local capability");
-            }
-            $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
-            $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, ["user" => $this, "timeExpires" => time() + 259200]);
-            $this->conf->log_for($this, null, "Password link sent " . substr($rest["capability"], 0, 8) . "...");
-            $template = "@resetpassword";
-        } else {
-            $template = "@accountinfo";
-        }
-
-        $mailer = new HotCRPMailer($this->conf, $this, null, $rest);
+    function send_mail($template, $rest = []) {
+        $mailer = new HotCRPMailer($this->conf, $this, $rest);
         $prep = $mailer->make_preparation($template, $rest);
         if ($prep->sendable
-            || !$sensitive
+            || !$prep->sensitive
             || $this->conf->opt("debugShowSensitiveEmail")) {
             $prep->send();
-            return $template;
+            return $prep;
         } else {
             Conf::msg_error("Mail cannot be sent to " . htmlspecialchars($this->email) . " at this time.");
             return false;

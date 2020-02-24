@@ -4,7 +4,14 @@
     },
 
 
+    {   "name": "index", "alias": "home"   },
+
+
     {   "name": "home"   },
+    {
+        "name": "home/disabled", "position": 10,
+        "request_callback": "Home_Partial::disabled_request"
+    },
     {
         "name": "home/profile_redirect", "position": 100,
         "request_callback": "Home_Partial::profile_redirect_request"
@@ -107,11 +114,12 @@
     {   "name": "newaccount"   },
     {
         "name": "newaccount/request", "position": 100,
+        "allow_request_if": "anypost",
         "request_callback": "*Signin_Partial::create_request"
     },
     {
         "name": "newaccount/head", "position": 1000,
-        "render_callback": "*Signin_Partial::render_create_head",
+        "render_callback": "Signin_Partial::render_create_head",
         "htitle": "Create account"
     },
     {
@@ -126,25 +134,83 @@
     },
 
 
+    {   "name": "signin"   },
+    {
+        "name": "signin/request", "position": 100,
+        "allow_request_if": "anypost",
+        "request_callback": "Signin_Partial::signin_request"
+    },
+    {
+        "name": "signin/head", "position": 1000,
+        "render_callback": "*Signin_Partial::render_signin_head",
+        "htitle": "Sign in"
+    },
+    {
+        "name": "signin/message", "position": 2000, "alias": "home/message"
+    },
+    {
+        "name": "signin/welcome", "position": 2500, "alias": "home/welcome"
+    },
+    {
+        "name": "signin/body", "position": 3000,
+        "render_callback": "Signin_Partial::render_signin_form"
+    },
+    {
+        "name": "signin/form/description", "position": 10,
+        "render_callback": "Signin_Partial::render_signin_form_description"
+    },
+    {
+        "name": "signin/form/email", "position": 20,
+        "render_callback": "Signin_Partial::render_signin_form_email"
+    },
+    {
+        "name": "signin/form/password", "position": 30,
+        "render_callback": "Signin_Partial::render_signin_form_password"
+    },
+
+
+    {   "name": "signout"   },
+    {
+        "name": "signout/request", "position": 100,
+        "allow_request_if": "anypost",
+        "request_callback": "Signin_Partial::signout_request"
+    },
+    {
+        "name": "signout/head", "position": 1000,
+        "render_callback": "Signin_Partial::render_signout_head",
+        "htitle": "Sign in"
+    },
+    {
+        "name": "signout/body", "position": 3000,
+        "render_callback": "Signin_Partial::render_signout_body"
+    },
+
+
     {   "name": "forgotpassword"   },
     {
         "name": "forgotpassword/request", "position": 100,
-        "request_callback": "*Signin_Partial::forgot_request"
+        "allow_request_if": "anypost",
+        "request_callback": "Signin_Partial::forgot_request"
     },
     {
         "name": "forgotpassword/head", "position": 1000,
-        "render_callback": "*Signin_Partial::render_forgot_head",
+        "render_callback": "Signin_Partial::render_forgot_head",
         "htitle": "Forgot password"
     },
     {
         "name": "forgotpassword/body", "position": 3000,
-        "render_callback": "*Signin_Partial::render_forgot_body"
+        "render_callback": "Signin_Partial::render_forgot_body"
+    },
+    {
+        "name": "forgotpassword/externallogin", "position": false,
+        "render_callback": "Signin_Partial::forgot_externallogin_message"
     },
 
 
     {   "name": "resetpassword"   },
     {
         "name": "resetpassword/request", "position": 100,
+        "allow_any_request": true,
         "request_callback": "*Signin_Partial::reset_request"
     },
     {

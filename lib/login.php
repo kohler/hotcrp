@@ -3,22 +3,6 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class LoginHelper {
-    static function logout(Contact $user, $explicit) {
-        if (isset($_SESSION)) {
-            $_SESSION = [];
-            session_commit();
-        }
-        if ($explicit && $user->conf->opt("httpAuthLogin")) {
-            ensure_session(ENSURE_SESSION_REGENERATE_ID);
-            $_SESSION["reauth"] = true;
-            Navigation::redirect("");
-        } else if ($explicit) {
-            kill_session();
-        }
-        $user = new Contact(null, $user->conf);
-        return $user->activate(null);
-    }
-
     static function check_http_auth(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
         assert($conf->opt("httpAuthLogin") !== null);
@@ -36,7 +20,7 @@ class LoginHelper {
         }
 
         // if user is still valid, OK
-        if ($Me->has_account_here()) {
+        if ($user->has_account_here()) {
             return;
         }
 
@@ -54,15 +38,16 @@ class LoginHelper {
                    && validate_email($qreq->email . "@" . $x)) {
             $qreq->preferredEmail = $qreq->email . "@" . $x;
         }
-        $url = self::login($conf, $qreq, "go");
-        if ($url !== false) {
-            Navigation::redirect($url);
-        }
 
-        $conf->header("Error", "home");
-        Conf::msg_error("This site is using HTTP authentication to manage its users, and you have provided incorrect authentication data.");
-        $conf->footer();
-        exit;
+        $info = self::login_info($conf, $qreq); // XXX
+        if ($info["ok"]) {
+            Navigation::redirect(get($info, "redirect"));
+        } else {
+            $conf->header("Error", "home");
+            Conf::msg_error("This site is using HTTP authentication to manage its users, and you have provided incorrect authentication data.");
+            $conf->footer();
+            exit;
+        }
     }
 
     static private function user_lookup(Conf $conf, Qrequest $qreq) {
@@ -70,139 +55,71 @@ class LoginHelper {
         // to determine if the user is registered
         if (!isset($qreq->email)
             || ($qreq->email = trim($qreq->email)) === "") {
-            Ht::error_at("email", "Enter your email address.");
-            return false;
+            return ["ok" => false, "email" => true, "noemail" => true];
         }
-        if (strpos($qreq->email, "@") === false) {
-            self::unquote_double_quoted_request($qreq);
-        }
-
-        // look up database users
-        $user = $conf->user_by_email($qreq->email);
-        $cdb_user = null;
-        if ($conf->opt("contactdb_dsn")) {
-            if ($user) {
-                $cdb_user = $user->contactdb_user();
-            } else {
-                $cdb_user = $conf->contactdb_user_by_email($qreq->email);
+        if (strpos($qreq->email, "@") === false
+            && strpos($qreq->email, "%40") !== false) {
+            foreach ($qreq->keys() as $k) {
+                $qreq[$k] = rawurldecode($qreq[$k]);
             }
         }
-
-        // if no user found, then fail
-        if (!$user && (!$cdb_user || !$cdb_user->allow_contactdb_password())) {
-            Ht::error_at("email", "No account for " . htmlspecialchars($qreq->email) . ". Did you enter the correct email address?");
-            return false;
-        }
-
-        // if user disabled, then fail
-        if (($user && $user->is_disabled())
-            || (!$user && $cdb_user && $cdb_user->is_disabled())) {
-            Ht::error_at("email", "Your account is disabled. Contact the site administrator for more information.");
-            return false;
-        }
-
-        return [$user, $cdb_user];
+        return $conf->user_by_email($qreq->email)
+            ? : new Contact(["email" => $qreq->email], $conf);
     }
 
-    static function login(Conf $conf, Qrequest $qreq, $signinaction) {
-        $external_login = $conf->external_login();
+    static function login_info(Conf $conf, Qrequest $qreq) {
+        assert(!$conf->external_login());
+        assert($qreq->post_ok());
 
-        // In all cases, we need to look up the account information
-        // to determine if the user is registered
-        if (!isset($qreq->email)
-            || ($qreq->email = trim($qreq->email)) === "") {
-            Ht::error_at("email", $conf->opt("ldapLogin") ? "Enter your LDAP username." : "Enter your email address.");
-            return false;
+        $user = self::user_lookup($conf, $qreq);
+        if (is_array($user)) {
+            $info = $user;
+        } else {
+            $info = $user->check_password_info(trim((string) $qreq->password));
+        }
+        if ($info["ok"]) {
+            return self::login_complete($user, $qreq);
+        } else {
+            return $info;
+        }
+    }
+
+    static function external_login_info(Conf $conf, Qrequest $qreq) {
+        assert($conf->external_login());
+
+        $user = self::user_lookup($conf, $qreq);
+        if (is_array($user)) {
+            return $user;
         }
 
         // do LDAP login before validation, since we might create an account
-        if ($conf->opt("ldapLogin") && !self::ldap_login($qreq)) {
-            return false;
-        }
-
-        // look up user in our database
-        if (strpos($qreq->email, "@") === false) {
-            self::unquote_double_quoted_request($qreq);
-        }
-        $user = $conf->user_by_email($qreq->email);
-
-        // look up or create user in contact database
-        $cdb_user = null;
-        if ($conf->opt("contactdb_dsn")) {
-            if ($user) {
-                $cdb_user = $user->contactdb_user();
-            } else {
-                $cdb_user = $conf->contactdb_user_by_email($qreq->email);
+        if ($conf->opt("ldapLogin")) {
+            $info = LdapLogin::ldap_login_info($conf, $qreq);
+            if (!$info["ok"]) {
+                return $info;
             }
-        }
-
-        // create account if requested
-        if ($signinaction === "create" && $qreq->post_ok()) {
-            if (!$conf->allow_user_self_register()) {
-                Ht::error_at("email", "New users can’t self-register for this site.");
-                return false;
-            }
-            $user = self::create_account($conf, $qreq, $user, $cdb_user);
-            if (!$user) {
-                return $conf->selfurl(null, ["signin" => 1, "email" => $qreq->email]);
-            }
-            // If we get here, it's the first account and we're going to
-            // log them in automatically. XXX should show the password
-            $qreq->password = $user->plaintext_password();
         }
 
         // auto-create account if external login
-        if (!$user && $external_login) {
+        if (!$user->contactId) {
             $user = Contact::create($conf, null, $qreq->as_array(), Contact::SAVE_ANY_EMAIL);
             if (!$user) {
-                Conf::msg_error($conf->db_error_html(true));
-                return false;
+                return ["ok" => false, "internal" => true, "email" => true];
             }
-        }
-
-        // if no user found, then fail
-        if (!$user && (!$cdb_user || !$cdb_user->allow_contactdb_password())) {
-            Ht::error_at("email", "No account for " . htmlspecialchars($qreq->email) . ". Did you enter the correct email address?");
-            return false;
         }
 
         // if user disabled, then fail
         if (($user && $user->is_disabled())
-            || (!$user && $cdb_user && $cdb_user->is_disabled())) {
-            Ht::error_at("email", "Your account is disabled. Contact the site administrator for more information.");
-            return false;
+            || (($cdbuser = $user->contactdb_user()) && $cdbuser->is_disabled())) {
+            return ["ok" => false, "disabled" => true, "email" => true];
         }
 
-        // check password
-        $xuser = $user ? : $cdb_user;
-        if (!$external_login) {
-            if (!$qreq->post_ok()) {
-                Ht::warning_at("password", "Automatic login links have been disabled to improve site security. Enter your password to sign in.");
-                return false;
-            }
+        return self::login_complete($xuser, $qreq);
+    }
 
-            $password = trim((string) $qreq->password);
-            if ($password === "") {
-                Ht::error_at("password", "Password missing.");
-                return false;
-            }
-
-            $info = (object) [];
-            if (!$xuser->check_password($password, $info)) {
-                if ($xuser->password_is_reset()) {
-                    $error = "Your previous password has been reset. Use “Forgot your password?” to create a new password.";
-                } else if (get($info, "local_obsolete")) {
-                    $error = "The password you entered has been superseded by a more recent " . $conf->opt("contactdb_description", "global") . " password. Enter the more recent password to sign in, or use “Forgot your password?”.";
-                    error_log($conf->dbname . ": " . $xuser->email . ": preventing login using obsolete local password (" . post_value(true) . ")");
-                } else {
-                    $error = "Incorrect password.";
-                }
-                Ht::error_at("password", $error);
-                return false;
-            }
-        }
-
+    static private function login_complete(Contact $luser, Qrequest $qreq) {
         // mark activity
+        $xuser = $luser->contactId ? $luser : $luser->contactdb_user();
         $xuser->mark_login();
 
         // store authentication
@@ -214,23 +131,19 @@ class LoginHelper {
         $user = $xuser->activate($qreq);
         $user->save_session("password_reset", null);
 
-        // give chair privilege to first user (external login or contactdb)
-        if ($conf->setting("setupPhase", false)) {
-            $user->activate_database_account();
-            self::first_user($user, "", false);
-        }
-
-        // redirect
         $nav = Navigation::get();
         $url = $nav->server . $nav->base_path;
         if (isset($_SESSION["us"])) {
-            $url .= "u/" . Contact::session_user_index($xuser->email) . "/";
+            $url .= "u/" . Contact::session_user_index($user->email) . "/";
         }
         $url .= "?postlogin=1";
         if ($qreq->go !== null) {
             $url .= "&go=" . urlencode($qreq->go);
         }
-        return $url;
+
+        $info = ["ok" => true, "user" => $user, "redirect" => $url];
+        self::check_setup_phase($user, $info);
+        return $info;
     }
 
     static function change_session_users($uinstr) {
@@ -256,6 +169,14 @@ class LoginHelper {
         }
     }
 
+    static private function check_setup_phase(Contact $user, &$info) {
+        if ($user->conf->setting("setupPhase")) {
+            $user->save_roles(Contact::ROLE_ADMIN, null);
+            $user->conf->save_setting("setupPhase", null);
+            $info["firstuser"] = true;
+        }
+    }
+
     static function check_postlogin(Contact $user, Qrequest $qreq) {
         // Check for the cookie
         if (!isset($_SESSION["testsession"]) || !$_SESSION["testsession"]) {
@@ -277,113 +198,121 @@ class LoginHelper {
         exit;
     }
 
-    static private function ldap_login($qreq) {
-        global $ConfSitePATH;
-        // check for bogus configurations
-        if (!function_exists("ldap_connect") || !function_exists("ldap_bind"))
-            return Conf::msg_error("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn’t support LDAP. Logins will fail until this error is fixed.");
 
-        // the body is elsewhere because we need LDAP constants, which might[?]
-        // cause errors absent LDAP support
-        require_once("$ConfSitePATH/lib/ldaplogin.php");
-        return ldapLoginAction($qreq);
-    }
+    static function new_account_info(Conf $conf, Qrequest $qreq) {
+        assert($conf->allow_user_self_register());
+        assert($qreq->post_ok());
 
-    static private function unquote_double_quoted_request($qreq) {
-        if (strpos($qreq->email, "@") !== false
-            || strpos($qreq->email, "%40") === false) {
-            return false;
-        }
-        // error_log("double-encoded request: " . json_encode($qreq));
-        foreach ($qreq->keys() as $k) {
-            $qreq[$k] = rawurldecode($qreq[$k]);
-        }
-        return true;
-    }
-
-    static private function create_account($conf, $qreq, $user, $cdb_user) {
-        // check for errors
-        if ($user && $user->has_account_here() && $user->activity_at > 0) {
-            Ht::error_at("email", "An account already exists for " . htmlspecialchars($qreq->email) . ". Enter your password or select “Forgot your password?” to reset it.");
-            return false;
-        } else if ($cdb_user
-                   && $cdb_user->allow_contactdb_password()
-                   && $cdb_user->password_used()) {
-            $desc = $conf->opt("contactdb_description") ? : "HotCRP";
-            Ht::error_at("email", "An account already exists for " . htmlspecialchars($qreq->email) . " on $desc. Sign in using your $desc password or select “Forgot your password?” to reset it.");
-            return false;
-        } else if (!validate_email($qreq->email)) {
-            Ht::error_at("email", "“" . htmlspecialchars($qreq->email) . "” is not a valid email address.");
-            return false;
-        }
-
-        // create database account
-        if (!$user || !$user->has_account_here()) {
-            if (!($user = Contact::create($conf, null, $qreq->as_array()))) {
-                return Conf::msg_error($conf->db_error_html(true));
-            }
-        }
-
-        $user->sendAccountInfo("create", true);
-        $msg = "Successfully created an account for " . htmlspecialchars($qreq->email) . ".";
-
-        // handle setup phase
-        if ($conf->setting("setupPhase", false)) {
-            self::first_user($user, $msg, true);
+        $user = self::user_lookup($conf, $qreq);
+        if (is_array($user)) {
             return $user;
         }
 
-        if (Mailer::allow_send($user->email)) {
-            $msg .= " Login information has been emailed to you. Return here when you receive it to complete the registration process. If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
+        $cdbu = $user->contactdb_user();
+        if ($cdbu && !$cdbu->password_unset()) {
+            return ["ok" => false, "email" => true, "userexists" => true, "contactdb" => true];
+        } else if (!$user->password_unset()) {
+            return ["ok" => false, "email" => true, "userexists" => true];
+        } else if (!validate_email($qreq->email)) {
+            return ["ok" => false, "email" => true, "invalidemail" => true];
         } else {
-            if ($conf->opt("sendEmail")) {
-                $msg .= " The email address you provided seems invalid.";
-            } else {
-                $msg .= " The system cannot send email at this time.";
+            if (!$user->has_account_here()
+                && !($user = Contact::create($conf, null, $qreq->as_array()))) {
+                return ["ok" => false, "email" => true, "internal" => true];
             }
-            $msg .= " Although an account was created for you, you need help to retrieve your password. Contact " . Text::user_html($conf->site_contact()) . ".";
+            $info = self::forgot_password_info($conf, $qreq);
+            if ($info["ok"] && $info["mailtemplate"] === "@resetpassword") {
+                self::check_setup_phase($user, $info);
+                $info["mailtemplate"] = "@newaccount";
+            }
+            return $info;
         }
-        if (isset($qreq->password) && trim($qreq->password) !== "") {
-            $msg .= " The password you supplied on the login screen was ignored.";
-        }
-        $conf->msg($msg, "xconfirm");
-        return null;
-    }
-
-    static private function first_user($user, $msg, $is_create) {
-        $msg .= " As the first user, you have been automatically signed in and assigned system administrator privilege.";
-        if (!$user->conf->external_login()
-            && $is_create
-            && $user->plaintext_password()) {
-            $msg .= " Your password is “<samp>" . htmlspecialchars($user->plaintext_password()) . "</samp>”. All later users will have to sign in normally.";
-        }
-        $user->save_roles(Contact::ROLE_ADMIN, null);
-        $user->conf->save_setting("setupPhase", null);
-        $user->conf->msg(ltrim($msg), "xconfirm");
     }
 
 
-    static function forgot_password(Conf $conf, Qrequest $qreq) {
+    static function forgot_password_info(Conf $conf, Qrequest $qreq) {
         if ($conf->external_login()) {
-            Ht::error_at("email", "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
-            return false;
+            return ["ok" => false, "email" => true, "noreset" => true];
         }
 
-        // Look up accounts
-        $users = self::user_lookup($conf, $qreq);
-        if (!$users) {
-            return false;
+        $user = self::user_lookup($conf, $qreq);
+        if (is_array($user)) {
+            return $user;
         }
 
-        // maybe reset password
-        $xuser = $users[0] ? : $users[1];
-        $worked = $xuser->sendAccountInfo("forgot", true);
-        if ($worked === "@resetpassword") {
-            $conf->msg("A password reset link has been emailed to you. When you receive that email, visit the link to create a new password.", "xconfirm");
-        } else if ($worked) {
-            $conf->msg("Your password has been emailed to you. When you receive that email, return here to sign in.", "xconfirm");
-            $conf->log_for($xuser, null, "Password sent");
+        // ignore reset request from disabled user
+        $cdbu = $user->contactdb_user();
+        if (!$user->can_reset_password()) {
+            return ["ok" => false, "email" => true, "nologin" => true];
+        } else if ($user->is_disabled()
+                   || (!$user->contactId && !$conf->allow_user_self_register())
+                   || ($cdbu && $cdbu->is_disabled())) {
+            $template = "@resetdisabled";
+        } else {
+            $template = "@resetpassword";
         }
-        return $conf->selfurl(null);
+        return ["ok" => true, "user" => $user, "mailtemplate" => $template];
+    }
+
+
+    static function logout(Contact $user, $explicit) {
+        if (isset($_SESSION)) {
+            $_SESSION = [];
+            session_commit();
+        }
+        if ($explicit && $user->conf->opt("httpAuthLogin")) {
+            ensure_session(ENSURE_SESSION_REGENERATE_ID);
+            $_SESSION["reauth"] = true;
+        } else if ($explicit) {
+            kill_session();
+        }
+        $user = new Contact(null, $user->conf);
+        return $user->activate(null);
+    }
+
+
+    static function login_error(Conf $conf, $email, $info) {
+        if (isset($info["ldap"]) && isset($info["detail_html"])) {
+            $e = $info["detail_html"];
+        } else if (isset($info["noemail"])) {
+            $e = $conf->opt("ldapLogin") ? "Enter your username." : "Enter your email address.";
+        } else if (isset($info["invalidemail"])) {
+            $e = "Enter a valid email address.";
+        } else if (isset($info["nocreate"])) {
+            $e = "Users can’t self-register for this site.";
+        } else if (isset($info["noreset"])) {
+            $e = "Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
+        } else if (isset($info["nologin"])) {
+            $e = "This user cannot sign in to the site.";
+        } else if (isset($info["userexists"])) {
+            $e = $conf->_ci("newaccount", "userexists", null, $email, $conf->hoturl_raw("signin", ["email" => $email]), $conf->hoturl_raw("forgotpassword"), !!get($info, "contactdb"));
+        } else if (isset($info["unset"])) {
+            if ($conf->allow_user_self_register()) {
+                $e = "No account for " . htmlspecialchars($email) . ". Check the email address or create a new account " . Ht::link("here", $conf->hoturl("newaccount", ["email" => $email])) . ".";
+            } else {
+                $e = "No account for " . htmlspecialchars($email) . ". Check the email address.";
+            }
+        } else if (isset($info["disabled"])) {
+            $e = "Your account on this site is disabled. Contact the site administrator for more information.";
+        } else if (isset($info["reset"])) {
+            $e = "Your password has expired. Use " . Ht::link("“Forgot your password?”", $conf->hoturl("forgotpassword", ["email" => $email])) . " to reset it.";
+        } else if (isset($info["nopw"])) {
+            $e = "Enter your password.";
+        } else if (isset($info["nopost"])) {
+            $e = "Automatic login links have been disabled for security. Use this form to sign in.";
+        } else if (isset($info["internal"])) {
+            $e = "Internal error.";
+        } else {
+            $e = "Incorrect password.";
+        }
+        if (isset($info["unset"]) || isset($info["disabled"]) || isset($info["email"])) {
+            Ht::error_at("email", $e);
+        } else {
+            Ht::error_at("password", $e);
+        }
+        if (isset($info["password"])) {
+            Ht::error_at("password");
+        }
+        return false;
     }
 }

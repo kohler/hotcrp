@@ -600,17 +600,18 @@ class UserStatus extends MessageSet {
             $no_notify = !!$old_cdb_user;
         }
         $actor = $this->viewer->is_site_contact ? null : $this->viewer;
-        if (!$old_user) {
-            $user = Contact::create($this->conf, $actor, $cj,
-                                    ($no_notify ? 0 : Contact::SAVE_NOTIFY) | Contact::SAVE_ROLES,
-                                    $roles);
+        if ($old_user) {
+            $old_roles = $user->roles;
+            $old_disabled = $user->disabled ? 1 : 0;
+        } else {
+            $user = Contact::create($this->conf, $actor, $cj, Contact::SAVE_ROLES, $roles);
             $cj->email = $user->email; // adopt contactdb’s spelling of email
+            $old_roles = 0;
+            $old_disabled = 1;
         }
         if (!$user) {
             return false;
         }
-        $old_roles = $user->roles;
-        $old_disabled = $user->disabled ? 1 : 0;
 
         // prepare contact update
         assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
@@ -782,7 +783,7 @@ class UserStatus extends MessageSet {
 
         // Password
         if (isset($cj->new_password)) {
-            $user->change_password($cj->new_password, 0);
+            $user->change_password($cj->new_password);
             $this->diffs["password"] = true;
         }
 
@@ -794,6 +795,17 @@ class UserStatus extends MessageSet {
         if (!empty($this->diffs)) {
             $user->conf->log_for($this->viewer, $user, "Account edited: " . join(", ", array_keys($this->diffs)));
         }
+
+        // Send creation mail
+        if (($roles & Contact::ROLE_PC)
+            && !$user->is_disabled()
+            && (!($old_roles & Contact::ROLE_PC)
+                || $old_disabled)
+            && !$user->activity_at
+            && !$this->no_notify) {
+            $user->send_mail("@newaccount.pc");
+        }
+
         return $user;
     }
 
@@ -920,15 +932,19 @@ class UserStatus extends MessageSet {
         ["follow"],
         ["tags"],
         ["add_tags"],
-        ["remove_tags"]
+        ["remove_tags"],
+        ["disabled"]
     ];
 
     static function parse_csv_main(UserStatus $us, $cj, $line, $uf) {
+        // set keys
         foreach (self::$csv_keys as $ks) {
             if (($v = trim((string) $line[$ks[0]])) !== "") {
                 $cj->{$ks[0]} = $v;
             }
         }
+
+        // clean up
         if (isset($line["address"])
             && ($v = trim($line["address"])) !== "") {
             $cj->address = explode("\n", cleannl($line["address"]));

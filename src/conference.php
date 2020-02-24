@@ -3766,11 +3766,13 @@ class Conf {
             }
 
             // sign in and out
-            if (!$Me->is_signed_in() && !isset($this->opt["httpAuthLogin"])) {
-                $profile_parts[] = '<a href="' . $this->hoturl("index", ["signin" => 1, "cap" => null]) . '" class="nw">Sign in</a>';
+            if ((!$Me->is_signed_in() && !isset($this->opt["httpAuthLogin"]))
+                && $id !== "signin") {
+                $profile_parts[] = '<a href="' . $this->hoturl("signin", ["cap" => null]) . '" class="nw">Sign in</a>';
             }
-            if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"])) {
-                $profile_parts[] = Ht::form($this->hoturl_post("index", ["signout" => 1, "cap" => null]), ["class" => "d-inline"])
+            if ((!$Me->is_empty() || isset($this->opt["httpAuthLogin"]))
+                && $id !== "signout") {
+                $profile_parts[] = Ht::form($this->hoturl_post("signout", ["cap" => null]), ["class" => "d-inline"])
                     . Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"])
                     . "</form>";
             }
@@ -4654,7 +4656,7 @@ class Conf {
 
     function page_template($page) {
         if ($page === "index") {
-            return (object) ["name" => "index", "group" => "home"];
+            return null;
         } else if (in_array($page, ["doc", "paper", "search", "review", "assign", "autoassign", "bulkassign", "buzzer", "checkupdates", "profile", "conflictassign", "deadlines", "graph", "help", "log", "mail", "manualassign", "mergeaccounts", "offline", "reviewprefs", "scorechart", "settings", "users"])) {
             return (object) ["name" => $page, "require" => "$page.php"];
         } else {

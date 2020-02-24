@@ -10,101 +10,24 @@ class Home_Partial {
     private $_pc_rinfo;
     private $_tokens_done;
 
-    static function signin_requests(Contact $user, Qrequest $qreq) {
-        // prepare auto-signin when email & password set
-        if (isset($qreq->email)
-            && isset($qreq->password)
-            && trim($qreq->email) !== ""
-            && trim($qreq->password) !== "") {
-            $qreq->signin = $qreq->get("signin", 1);
-            $qreq->action = $qreq->get("action", "go");
-        }
-        // ensure session if `signin` is set
-        $signinaction = false;
-        if ($qreq->signin) {
-            ensure_session();
-            if (isset($qreq->email)
-                && in_array($qreq->action, ["go", "forgot", "create"])) {
-                $signinaction = $qreq->action;
-            }
-        }
-        // clean up request: no signin without email/action
-        $signin = $qreq->signin && $signinaction;
-        $signout = $qreq->signout;
-        // clean up request: ignore signin to same email
-        if ($signin
-            && !$user->is_empty()
-            && strcasecmp($qreq->email, $user->email) === 0) {
-            unset($qreq->signin);
-            $signin = false;
-        }
-        // CSRF protection for signin/signout
-        $sid = session_id();
-        if (($signin || $signout) && !$qreq->post_ok()) {
-            if ($qreq->method() === "POST") {
-                $msg = "{$user->conf->dbname}: ignoring unvalidated "
-                    . ($signin ? "signin" : "signout")
-                    . ", sid=" . ($sid === "" ? ".empty" : $sid)
-                    . ", action=" . ($signin ? $signinaction : "signout");
-                if ($qreq->email) {
-                    $msg .= ", email=" . $qreq->email;
-                }
-                if ($qreq->password) {
-                    $msg .= ", password";
-                }
-                if (isset($_GET["post"])) {
-                    $msg .= ", post=" . $_GET["post"];
-                }
-                error_log($msg);
-            }
-            if ($qreq->method() === "POST" || $qreq->post) {
-                ensure_session();
-                $user->conf->msg("Your session has changed since you last used this tab. Please try again.", 1);
-                unset($qreq->signin, $qreq->signout);
-                $user->conf->self_redirect($qreq);
-                $signin = $signout = false;
-            }
-        }
-        // signout
-        if ($signout && $qreq->post_ok()) {
-            if (!$user->is_empty() && !$user->conf->opt("httpAuthLogin")) {
-                $user->conf->msg("You have been signed out.", "xconfirm");
-            }
-            $user = LoginHelper::logout($user, true);
-        }
-        // signin
-        if ($user->conf->opt("httpAuthLogin")) {
-            LoginHelper::check_http_auth($user, $qreq);
-        } else if ($signin) {
-            $url = LoginHelper::login($user->conf, $qreq, $signinaction);
-            if ($url !== false) {
-                Navigation::redirect($url);
-            }
-        } else if (($signin || $signout) && $qreq->post) {
-            unset($qreq->signin, $qreq->signout);
-            $user->conf->self_redirect($qreq);
-        } else if (isset($qreq->postlogin)) {
-            LoginHelper::check_postlogin($user, $qreq);
-        }
-        // disabled
+    static function disabled_request(Contact $user, Qrequest $qreq) {
         if (!$user->is_empty() && $user->is_disabled()) {
             $user->conf->header("Account disabled", "home", ["action_bar" => false]);
             $user->conf->msg("Your account on this site has been disabled by a site administrator. Please contact them with questions.", 0);
             $user->conf->footer();
             exit;
         }
-        return $user;
     }
-
 
     static function profile_redirect_request(Contact $user, Qrequest $qreq) {
         if ($user->has_account_here()
             && $user->session("freshlogin") === true) {
             if (self::need_profile_redirect($user)) {
                 $user->save_session("freshlogin", "redirect");
-                go($user->conf->hoturl("profile", "redirect=1"));
+                Navigation::redirect($user->conf->hoturl("profile", "redirect=1"));
+            } else {
+                $user->save_session("freshlogin", null);
             }
-            $user->save_session("freshlogin", null);
         }
     }
 
@@ -124,6 +47,9 @@ class Home_Partial {
     }
 
     function render_head(Contact $user, Qrequest $qreq, $gx) {
+        if ($qreq->signedout && $user->is_empty()) {
+            $user->conf->msg("You have been signed out of the site.", "xconfirm");
+        }
         if ($user->is_empty()) {
             $user->conf->header("Sign in", "home");
         } else {
@@ -211,84 +137,9 @@ class Home_Partial {
         echo '</div>';
     }
 
-    static private function render_signin_login(Contact $user, Qrequest $qreq) {
-        global $Now;
-        $conf = $user->conf;
-        $is_external_login = $conf->external_login();
-        $password_status = Ht::problem_status_at("password");
-        $password_reset = $user->session("password_reset");
-        $focus_email = !$password_status
-            && (!$qreq->email || Ht::problem_status_at("email"));
-        $email_value = $qreq->get("email", $password_reset ? $password_reset->email : "");
-        $password_value = (string) $qreq->password === "" || $password_status !== 1 ? "" : $qreq->password;
-        if ($password_reset && $password_reset->time < $Now - 900) {
-            $password_reset = null;
-            $user->save_session("password_reset", null);
-        }
-
-        // heading
-        echo '<div class="homegrp fold',
-            $qreq->signin ? "o" : "c",
-            '" id="homeacct">',
-            Ht::form($user->conf->hoturl("index", ["signin" => 1]), ["class" => "ui-submit uin js-signin compact-form"]),
-            Ht::hidden("post", post_value(true));
-
-        echo '<p class="mb-5">', $conf->_("Sign in to submit or review papers."), '</p>',
-            '<div class="fx">',
-            Ht::unstash_script('fold("homeacct",false)');
-        if ($conf->opt("contactdb_dsn")
-            && ($x = $conf->opt("contactdb_loginFormHeading"))) {
-            echo $x;
-        }
-
-        // email
-        echo '<div class="', Ht::control_class("email", "f-i"), '">',
-            Ht::label($is_external_login ? "Username" : "Email", "signin_email"),
-            Ht::entry("email", $email_value, [
-                "size" => 36, "id" => "signin_email", "class" => "fullw",
-                "autocomplete" => "username", "tabindex" => 1,
-                "type" => $is_external_login || str_ends_with($email_value, "@_.com") ? "text" : "email",
-                "autofocus" => $focus_email
-            ]),
-            Ht::render_messages_at("email"), '</div>';
-
-        // password
-        echo '<div class="', Ht::control_class("password", "f-i"), '">';
-        if (!$is_external_login) {
-            echo '<div class="float-right"><a href="',
-                $conf->hoturl("forgotpassword"),
-                '" class="n x small uic js-href-add-email">Forgot your password?</a></div>';
-        }
-        echo Ht::label("Password", "signin_password"),
-            Ht::password("password", $password_value, [
-                "size" => 36, "id" => "signin_password", "class" => "fullw",
-                "autocomplete" => "current-password", "tabindex" => 1,
-                "autofocus" => !$focus_email
-            ]),
-            Ht::render_messages_at("password"),
-            "</div>\n";
-        if ($password_reset) {
-            echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
-        }
-
-        echo '<div class="popup-actions">',
-            Ht::submit("action", "Sign in", ["id" => "signin_signin", "class" => "btn-success", "tabindex" => 1, "value" => "go"]),
-            '</div>';
-        if ($conf->allow_user_self_register()) {
-            echo '<p class="hint">New to the site? <a href="',
-                $conf->hoturl("newaccount"),
-                '" class="uic js-href-add-email">Create an account</a></p>';
-        }
-        echo '</div><div class="fn">',
-            Ht::submit("action", "Sign in", ["class" => "btn-success", "tabindex" => 1, "value" => "start"]),
-            '</div></form></div>';
-    }
-
-    function render_signin(Contact $user, Qrequest $qreq) {
+    function render_signin(Contact $user, Qrequest $qreq, $gx) {
         if (!$user->has_email() || $qreq->signin) {
-            $action = $qreq->signin ? $qreq->action : null;
-            assert($action !== "forgot" && $action !== "create");
-            self::render_signin_login($user, $qreq);
+            Signin_Partial::render_signin_form($user, $qreq, $gx);
         }
     }
 

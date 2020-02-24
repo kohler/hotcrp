@@ -1240,7 +1240,6 @@ xassert_eqq($u->email, "sclinx@leland.stanford.edu");
 xassert_eqq($u->firstName, "Stephen");
 xassert_eqq($u->lastName, "Lon");
 xassert_eqq($u->affiliation, "Fart World");
-xassert(preg_match('/\A[-a-zA-Z0-9_=+@]+\z/', $u->plaintext_password()));
 
 xassert(!user("scliny@leland.stanford.edu"));
 $u = Contact::create($Conf, null, ["email" => "scliny@leland.stanford.edu", "affiliation" => "Fart World"]);
@@ -1250,7 +1249,6 @@ xassert_eqq($u->email, "scliny@leland.stanford.edu");
 xassert_eqq($u->firstName, "");
 xassert_eqq($u->lastName, "");
 xassert_eqq($u->affiliation, "Fart World");
-xassert(preg_match('/\A[-a-zA-Z0-9_=+@]+\z/', $u->plaintext_password()));
 
 xassert(!user("thalerd@eecs.umich.edu"));
 $u = Contact::create($Conf, null, ["email" => "thalerd@eecs.umich.edu"]);
@@ -1260,7 +1258,6 @@ xassert_eqq($u->email, "thalerd@eecs.umich.edu");
 xassert_eqq($u->firstName, "David");
 xassert_eqq($u->lastName, "Thaler");
 xassert_eqq($u->affiliation, "University of Michigan");
-xassert(preg_match('/\A[-a-zA-Z0-9_=+@]+\z/', $u->plaintext_password()));
 xassert(fetch_paper(27)->has_author($u));
 
 xassert(!user("cengiz@isi.edu"));
@@ -1271,7 +1268,6 @@ xassert_eqq($u->email, "cengiz@isi.edu");
 xassert_eqq($u->firstName, "cengiz!");
 xassert_eqq($u->lastName, "ALAETTINOGLU");
 xassert_eqq($u->affiliation, "USC ISI");
-xassert(preg_match('/\A[-a-zA-Z0-9_=+@]+\z/', $u->plaintext_password()));
 xassert(fetch_paper(27)->has_author($u));
 
 xassert(!user("anonymous10"));

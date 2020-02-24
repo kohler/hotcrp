@@ -14,6 +14,7 @@ class MailPreparation {
     public $headers = [];
     public $errors = [];
     public $unique_preparation = false;
+    public $reset_capability;
 
     function __construct($conf) {
         $this->conf = $conf;
@@ -44,6 +45,7 @@ class MailPreparation {
 
         $headers = $this->headers;
         $eol = Mailer::eol();
+        $sent = false;
 
         // create valid To: header
         $to = $this->to;
@@ -70,14 +72,14 @@ class MailPreparation {
             fwrite($f, $htext . $eol . $this->body);
             $status = pclose($f);
             if (pcntl_wifexitedwith($status, 0)) {
-                return true;
+                $sent = true;
             } else {
                 $this->conf->set_opt("internalMailer", false);
                 error_log("Mail " . $headers["to"] . " failed to send, falling back (status $status)");
             }
         }
 
-        if ($this->sendable) {
+        if (!$sent && $this->sendable) {
             if (strpos($to, $eol) === false) {
                 unset($headers["to"]);
                 $to = substr($to, 4); // skip "To: "
@@ -86,9 +88,9 @@ class MailPreparation {
             }
             unset($headers["subject"]);
             $htext = substr(join("", $headers), 0, -2);
-            return mail($to, $this->subject, $this->body, $htext, $extra);
-
-        } else if (!$this->conf->opt("sendEmail")
+            $sent = mail($to, $this->subject, $this->body, $htext, $extra);
+        } else if (!$sent
+                   && !$this->conf->opt("sendEmail")
                    && !preg_match('/\Aanonymous\d*\z/', $to)) {
             unset($headers["mime-version"], $headers["content-type"]);
             $text = join("", $headers) . $eol . $this->body;
@@ -97,8 +99,9 @@ class MailPreparation {
             } else if (!$this->conf->opt("disablePrintEmail")) {
                 fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
             }
-            return null;
         }
+
+        return $sent;
     }
 }
 
@@ -300,12 +303,12 @@ class Mailer {
         }
     }
 
-    static function kw_loginnotice($args, $isbool, $m) {
-        if ($m->conf->opt("disableCapabilities")) {
-            return $m->expand($m->conf->opt("mailtool_loginNotice", " To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
-        } else {
-            return "";
-        }
+    static function kw_internallogin($args, $isbool, $m) {
+        return $isbool ? !$m->conf->external_login() : "";
+    }
+
+    static function kw_externallogin($args, $isbool, $m) {
+        return $isbool ? $m->conf->external_login() : "";
     }
 
     static function kw_adminupdate($args, $isbool, $m) {
@@ -334,41 +337,59 @@ class Mailer {
     }
 
     static function kw_capability($args, $isbool, $m, $uf) {
+        if ($m->capability) {
+            $this->sensitive = true;
+        }
         return $isbool || $m->capability ? $m->capability : "";
     }
 
     function kw_login($args, $isbool, $uf) {
-        $external_password = $this->conf->external_login();
+        $external_login = $this->conf->external_login();
         if (!$this->recipient) {
-            return $external_password ? false : null;
-        }
-
-        $password = false;
-        if (!$external_password
-            && ($pwd_plaintext = $this->recipient->plaintext_password())) {
-            $this->sensitive = true;
-            if (!$this->censor) {
-                $password = $pwd_plaintext;
-            } else if ($this->censor === self::CENSOR_DISPLAY) {
-                $password = "HIDDEN";
-            }
+            return $external_login ? false : null;
         }
 
         $loginparts = "";
         if (!$this->conf->opt("httpAuthLogin")) {
             $loginparts = "email=" . urlencode($this->recipient->email);
-            if ($password) {
-                $loginparts .= "&password=" . urlencode($password);
-            }
         }
 
         if ($uf->name === "LOGINURL") {
-            return $this->conf->opt("paperSite") . ($loginparts ? "/?" . $loginparts : "/");
+            return $this->conf->opt("paperSite") . "/signin" . ($loginparts ? "/?" . $loginparts : "/");
         } else if ($uf->name === "LOGINURLPARTS") {
             return $loginparts;
         } else {
-            return $password;
+            return false;
         }
+    }
+
+    function kw_needpassword($args, $isbool, $uf) {
+        $external_login = $this->conf->external_login();
+        if (!$this->recipient) {
+            return $external_login ? false : null;
+        } else {
+            return !$external_login && $this->recipient->password_unset();
+        }
+    }
+
+    function kw_passwordresetlink($args, $isbool, $uf) {
+        $external_login = $this->conf->external_login();
+        if (!$this->recipient) {
+            return $external_login ? false : null;
+        } else if ($this->censor === self::CENSOR_ALL) {
+            return "";
+        }
+        $this->sensitive = true;
+        $cap = $this->censor ? "HIDDEN" : $this->preparation->reset_capability;
+        if (!$cap) {
+            $cdbu = $this->recipient->contactdb_user();
+            if (!$cdbu && $this->conf->contactdb()) {
+                error_log("{$this->conf->dbname}: {$this->recipient->email} local capability");
+            }
+            $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
+            $cap = $this->preparation->reset_capability = $capmgr->create(CAPTYPE_RESETPASSWORD, ["user" => $this->recipient, "timeExpires" => time() + 259200]);
+        }
+        return $this->conf->hoturl("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($cap);
     }
 
     function expandvar($what, $isbool = false) {

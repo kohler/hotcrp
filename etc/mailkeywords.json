@@ -18,6 +18,8 @@
     {"name": "ADMINUPDATE", "callback": "Mailer::kw_adminupdate", "global": true},
     {"name": "REASON", "callback": "Mailer::kw_notes", "global": true},
     {"name": "NOTES", "callback": "Mailer::kw_notes", "global": true},
+    {"name": "INTERNALLOGIN", "callback": "Mailer::kw_internallogin", "global": true},
+    {"name": "EXTERNALLOGIN", "callback": "Mailer::kw_externallogin", "global": true},
 
     {"name": "CONTACT", "callback": "Mailer::kw_recipient", "userx": "CONTACT"},
     {"name": "NAME", "callback": "Mailer::kw_recipient", "userx": "NAME"},
@@ -27,7 +29,9 @@
     {"name": "CAPABILITY", "callback": "Mailer::kw_capability"},
     {"name": "LOGINURL", "callback": "*kw_login"},
     {"name": "LOGINURLPARTS", "callback": "*kw_login"},
-    {"name": "PASSWORD", "callback": "*kw_login", "global": true},
+    {"name": "PASSWORD", "callback": "*kw_login"},
+    {"name": "NEEDPASSWORD", "callback": "*kw_needpassword"},
+    {"name": "RESETPASSWORDLINK", "callback": "*kw_passwordresetlink"},
 
     {"name": "DEADLINE", "callback": "*kw_deadline", "global": true, "is_review": false},
     {"name": "REVIEWDEADLINE", "callback": "*kw_deadline", "global": true, "is_review": true},

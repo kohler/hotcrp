@@ -140,5 +140,6 @@
 
     ["(%d more permissions have default values)", "(%d more permission has default value)", ["$1=1"]],
 
-    {"id": "badpost", "itext": "Your session has changed since you last used this tab. Please try again."}
+    {"id": "badpost", "itext": "Your session has changed since you last used this tab. Please try again."},
+    {"context": "newaccount", "id": "userexists", "itext": "An account already exists for %H. If that’s your account, <a href=\"%H\">sign in</a> using your password, or use <a href=\"%H\">“Forgot your password?”</a> to reset it."}
 ]

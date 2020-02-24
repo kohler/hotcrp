@@ -36,20 +36,9 @@ if ($page_template && isset($page_template->require)) {
     include($page_template->require);
 } else {
     $gx = new GroupedExtensions($Me, ["etc/pagepartials.json"], $Conf->opt("pagePartials"));
-
-    if ($page_template) {
-        $group = $page_template->group;
-    } else {
-        $group = $gx->canonical_group($nav->page);
-    }
-
+    $group = $gx->canonical_group($nav->page);
     if ($group && !str_starts_with($group, "__")) {
         $gx->root = $group;
-        // handle signin/signout -- may change $Me
-        if ($group === "index" || $group === "home") {
-            $Me = Home_Partial::signin_requests($Me, $Qreq);
-            // that also got rid of disabled users
-        }
         $gx->set_context(["args" => [$Me, $Qreq, $gx]]);
         foreach ($gx->members($group) as $gj) {
             if ($gx->request($gj, $Qreq) === false)

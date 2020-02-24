@@ -7409,7 +7409,7 @@ handle_ui.on("js-signin", function (event) {
 
 handle_ui.on("js-href-add-email", function (event) {
     var e = this.closest("form");
-    if (e && e.email) {
+    if (e && e.email && e.email.value !== "") {
         this.href = hoturl_add(this.href, "email=" + urlencode(e.email.value));
     }
 });

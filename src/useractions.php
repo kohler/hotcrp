@@ -41,11 +41,12 @@ class UserActions {
         }
         $user->conf->save_logs(false);
 
-        // maybe create some passwords
-        $result = $user->conf->qe("select * from ContactInfo where contactId?a", $activate_ids);
+        // maybe send some enabling emails
+        $result = $user->conf->qe("select * from ContactInfo where contactId?a and roles!=0", $activate_ids);
         while (($xuser = Contact::fetch($result, $user->conf))) {
-            if ($xuser->change_password(null, Contact::CHANGE_PASSWORD_ENABLE))
-                $xuser->sendAccountInfo("create", false);
+            if ($xuser->isPC && !$xuser->activity_at) {
+                $xuser->send_mail("@newaccount.pc");
+            }
         }
         Dbl::free($result);
         return (object) ["ok" => true];
@@ -56,7 +57,7 @@ class UserActions {
         $result = $user->conf->qe("select * from ContactInfo where contactId?a", $ids);
         while (($xuser = Contact::fetch($result, $user->conf))) {
             if (!$xuser->is_disabled()) {
-                $xuser->sendAccountInfo("notify", false);
+                $xuser->send_mail("@accountinfo");
                 $done[] = $xuser->email;
             } else {
                 $disabled[] = $xuser->email;

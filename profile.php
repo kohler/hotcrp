@@ -39,18 +39,14 @@ function change_email_by_capability($Qreq) {
 
     $newcdbu = $newemail ? $Conf->contactdb_user_by_email($newemail) : null;
     if ($newcdbu) {
-        if ($newcdbu->disabled) {
+        if ($newcdbu->contactdb_disabled()) { // NB do not use is_disabled()
             Conf::msg_error("changeemail", "That user is globally disabled.");
             return false;
-        } else if ($newcdbu->allow_contactdb_password()
-                   && $Qreq->go
-                   && $Qreq->post_ok()) {
+        } else if ($Qreq->go && $Qreq->post_ok()) {
             $Qreq->password = trim((string) $Qreq->password);
-            if ($Qreq->password === "") {
-                Ht::error_at("password", "Password missing.");
-                unset($Qreq->go);
-            } else if (!$newcdbu->check_password($Qreq->password)) {
-                Ht::error_at("password", "That password is incorrect.");
+            $info = $newcdbu->check_password($Qreq->password);
+            if (!$info["ok"]) {
+                LoginHelper::login_error($Conf, $newemail, $info);
                 unset($Qreq->go);
             }
         }
@@ -89,7 +85,7 @@ function change_email_by_capability($Qreq) {
         echo '<div class="', Ht::control_class("changeemail", "f-i"), '"><label for="changeemail">Change code</label>',
             Ht::entry("changeemail", $Qreq->changeemail == "1" ? "" : $Qreq->changeemail, ["id" => "changeemail", "class" => "fullw", "autocomplete" => "one-time-code"]),
             Ht::render_messages_at("changeemail"), '</div>';
-        if ($newcdbu && $newcdbu->allow_contactdb_password()) {
+        if ($newcdbu) {
             echo '<div class="', Ht::control_class("password", "f-i"), '"><label for="password">Password for ', htmlspecialchars($newemail), '</label>',
             Ht::password("password", "", ["autocomplete" => "password", "class" => "fullw"]),
             Ht::render_messages_at("password"), '</div>';
