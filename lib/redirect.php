@@ -103,12 +103,13 @@ function ensure_session($flags = 0) {
         return;
     }
 
+    $session_data = [];
     if ($has_cookie && ($flags & ENSURE_SESSION_REGENERATE_ID)) {
         // choose new id, mark old session as deleted
         if (session_id() === "") {
             session_start();
         }
-        $session_data = $_SESSION;
+        $session_data = $_SESSION ? : [];
         $new_sid = session_create_id();
         $_SESSION["deletedat"] = $Now;
         session_commit();
@@ -120,8 +121,6 @@ function ensure_session($flags = 0) {
             unset($params["lifetime"]);
             hotcrp_setcookie($sn, $new_sid, $params);
         }
-    } else {
-        $session_data = null;
     }
 
     session_start();

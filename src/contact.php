@@ -1045,11 +1045,13 @@ class Contact {
         if (!$this->is_signed_in()) {
             // Preserve post values across session expiration.
             ensure_session();
-            $x = array();
-            if (Navigation::path())
-                $x["__PATH__"] = preg_replace(",^/+,", "", Navigation::path());
-            if ($qreq->anchor)
+            $x = [];
+            if (($path = Navigation::path())) {
+                $x["__PATH__"] = preg_replace('/^\/+/', "", $path);
+            }
+            if ($qreq->anchor) {
                 $x["anchor"] = $qreq->anchor;
+            }
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITE_RELATIVE);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, $Now + 120];
             if ($qreq->post_ok()) {

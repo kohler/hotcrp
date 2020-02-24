@@ -20,6 +20,9 @@ class Home_Partial {
     }
 
     static function profile_redirect_request(Contact $user, Qrequest $qreq) {
+        if (!$user->is_empty() && $qreq->postlogin) {
+            LoginHelper::check_postlogin($user, $qreq);
+        }
         if ($user->has_account_here()
             && $user->session("freshlogin") === true) {
             if (self::need_profile_redirect($user)) {

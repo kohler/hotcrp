@@ -176,9 +176,10 @@ function initialize_user() {
         if ($lb[0] == $Conf->dsn
             && $lb[2] !== "index"
             && $lb[2] == Navigation::page()) {
-            foreach ($lb[3] as $k => $v)
+            foreach ($lb[3] as $k => $v) {
                 if (!isset($Qreq[$k]))
                     $Qreq[$k] = $v;
+            }
             $Qreq->set_annex("after_login", true);
         }
         unset($_SESSION["login_bounce"]);

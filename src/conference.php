@@ -2847,9 +2847,10 @@ class Conf {
         }
         // create slash-based URLs if appropriate
         if ($param) {
+            $tp = "";
             if ($page === "review"
                 && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $param, $m)) {
-                $t .= "/" . $m[2];
+                $tp = "/" . $m[2];
                 $param = $m[1] . $m[3];
                 if (preg_match($are . 'p=\d+' . $zre, $param, $m)) {
                     $param = $m[1] . $m[2];
@@ -2860,12 +2861,12 @@ class Conf {
                            && preg_match($are . 't=(\w+)' . $zre, $param, $m))
                        || ($page === "settings"
                            && preg_match($are . 'group=(\w+)' . $zre, $param, $m))) {
-                $t .= "/" . $m[2];
+                $tp = "/" . $m[2];
                 $param = $m[1] . $m[3];
                 if ($param !== ""
                     && $page === "paper"
                     && preg_match($are . 'm=(\w+)' . $zre, $param, $m)) {
-                    $t .= "/" . $m[2];
+                    $tp .= "/" . $m[2];
                     $param = $m[1] . $m[3];
                 }
             } else if (($page === "profile"
@@ -2874,11 +2875,20 @@ class Conf {
                            && preg_match($are . 'g=([^&?]+)' . $zre, $param, $m))
                        || ($page === "doc"
                            && preg_match($are . 'file=([^&]+)' . $zre, $param, $m))) {
-                $t .= "/" . str_replace("%2F", "/", $m[2]);
+                $tp = "/" . str_replace("%2F", "/", $m[2]);
                 $param = $m[1] . $m[3];
             } else if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)) {
-                $t .= "/" . urldecode($m[2]);
+                $tp = "/" . urldecode($m[2]);
                 $param = $m[1] . $m[3];
+            } else {
+                $tp = "";
+            }
+            if ($tp !== "") {
+                $t .= $tp;
+                if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)
+                    && $tp === "/" . urldecode($m[2])) {
+                    $param = $m[1] . $m[3];
+                }
             }
             $param = preg_replace('/&(?:amp;)?\z/', "", $param);
         }
