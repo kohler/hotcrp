@@ -275,7 +275,7 @@ class LoginHelper {
 
     static function login_error(Conf $conf, $email, $info) {
         if (self::DEBUG) {
-            error_log("login failure: $email " . json_encode($info));
+            error_log("{$conf->dbname} login failure: $email " . json_encode($info));
         }
         if (isset($info["ldap"]) && isset($info["detail_html"])) {
             $e = $info["detail_html"];
