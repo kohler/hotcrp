@@ -286,7 +286,7 @@ function uploaded_file_error($finfo) {
 
 function make_qreq() {
     $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
-    $qreq->set_path(Navigation::path());
+    $qreq->set_page_path(Navigation::page(), Navigation::path());
     foreach ($_GET as $k => $v) {
         $qreq->set_req($k, $v);
     }
