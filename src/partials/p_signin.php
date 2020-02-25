@@ -49,7 +49,7 @@ class Signin_Partial {
                 if ($info["ok"]) {
                     Navigation::redirect(get($info, "redirect"));
                 } else {
-                    LoginHelper::login_error($user->conf, $qreq->email, $info);
+                    LoginHelper::login_error($user->conf, $qreq, $info);
                 }
             }
         } else {
@@ -254,7 +254,7 @@ class Signin_Partial {
                     Navigation::redirect($conf->hoturl("signin"));
                 }
             } else {
-                LoginHelper::login_error($user->conf, $qreq->email, $info);
+                LoginHelper::login_error($user->conf, $qreq, $info);
             }
         } else {
             self::bad_post_error($user, $qreq, "newaccount");
@@ -302,7 +302,7 @@ class Signin_Partial {
                 self::mail_user($user->conf, $info);
                 Navigation::redirect(get($info, "redirect", $qreq->annex("redirect")));
             } else {
-                LoginHelper::login_error($user->conf, $qreq->email, $info);
+                LoginHelper::login_error($user->conf, $qreq, $info);
             }
         } else {
             self::bad_post_error($user, $qreq, "forgot");

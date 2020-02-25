@@ -46,7 +46,8 @@ function change_email_by_capability($Qreq) {
             $Qreq->password = trim((string) $Qreq->password);
             $info = $newcdbu->check_password($Qreq->password);
             if (!$info["ok"]) {
-                LoginHelper::login_error($Conf, $newemail, $info);
+                $qreqa = ["email" => $newemail] + $Qreq->as_array();
+                LoginHelper::login_error($Conf, new Qrequest("POST", $qreqa), $info);
                 unset($Qreq->go);
             }
         }
