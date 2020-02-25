@@ -118,8 +118,8 @@ if ($Qreq->u === null) {
         $Qreq->u = $Qreq->user;
     } else if ($Qreq->contact) {
         $Qreq->u = $Qreq->contact;
-    } else if (preg_match(',\A/(?:new|[^\s/]+)\z,i', Navigation::path())) {
-        $Qreq->u = substr(Navigation::path(), 1);
+    } else if ($Qreq->path_component(0) !== false) {
+        $Qreq->u = $Qreq->path_component(0, true);
     }
 }
 if ($Me->privChair && $Qreq->new) {

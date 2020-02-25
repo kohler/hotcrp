@@ -9,8 +9,8 @@ $help_topics = new GroupedExtensions($Me, [
     "etc/helptopics.json"
 ], $Conf->opt("helpTopics"));
 
-if (!$Qreq->t && preg_match(',\A/(\w+)\z,i', Navigation::path())) {
-    $Qreq->t = substr(Navigation::path(), 1);
+if (!$Qreq->t && preg_match('/\A\/\w+\/*\z/i', $Qreq->path())) {
+    $Qreq->t = $Qreq->path_component(0);
 }
 $topic = $Qreq->t ? : "topics";
 $want_topic = $help_topics->canonical_group($topic);

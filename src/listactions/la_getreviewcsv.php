@@ -7,7 +7,7 @@ class GetReviewCSV_ListAction extends ListAction {
     function __construct($conf, $fj) {
         $this->author_view = !!get($fj, "author_view");
     }
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_review();
     }
     function run(Contact $user, $qreq, $ssel) {

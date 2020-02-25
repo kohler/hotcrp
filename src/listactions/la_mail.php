@@ -3,8 +3,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Mail_ListAction extends ListAction {
-    function allow(Contact $user) {
-        return $user->is_manager() && Navigation::page() !== "reviewprefs";
+    function allow(Contact $user, Qrequest $qreq) {
+        return $user->is_manager() && $qreq->page() !== "reviewprefs";
     }
     static function render(PaperList $pl) {
         return [Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $pl->qreq->recipients, ["class" => "want-focus"])

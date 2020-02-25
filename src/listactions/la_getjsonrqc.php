@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class GetJsonRQC_ListAction extends ListAction {
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {

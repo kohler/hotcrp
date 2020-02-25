@@ -10,7 +10,7 @@ function document_error($status, $msg) {
         $Me->escape();
         exit;
     } else if (str_starts_with($status, "5")) {
-        $navpath = Navigation::path();
+        $navpath = $Qreq->path();
         error_log($Conf->dbname . ": bad doc $status $msg " . json_encode($Qreq) . ($navpath ? " @$navpath" : "") . ($Me ? " {$Me->email}" : "") . (empty($_SERVER["HTTP_REFERER"]) ? "" : " R[" . $_SERVER["HTTP_REFERER"] . "]"));
     }
 
@@ -65,7 +65,7 @@ function document_download($qreq) {
     global $Conf, $Me;
 
     try {
-        $dr = new DocumentRequest($qreq, Navigation::path(), $Conf);
+        $dr = new DocumentRequest($qreq, $qreq->path(), $Conf);
     } catch (Exception $e) {
         document_error("404 Not Found", htmlspecialchars($e->getMessage()));
     }

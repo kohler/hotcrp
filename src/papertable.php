@@ -2865,12 +2865,12 @@ class PaperTable {
         if (!isset($qreq->commentId) && isset($qreq->c)) {
             $qreq->commentId = $qreq->c;
         }
-        if (!isset($qreq->reviewId)
-            && preg_match(',\A/\d+[A-Z]+\z,i', Navigation::path())) {
-            $qreq->reviewId = substr(Navigation::path(), 1);
-        } else if (!isset($qreq->paperId)
-                   && ($pc = Navigation::path_component(0))) {
-            $qreq->paperId = $pc;
+        if (($pc = $qreq->path_component(0))) {
+            if (!isset($qreq->reviewId) && preg_match('/\A\d+[A-Z]+\z/i', $pc)) {
+                $qreq->reviewId = $pc;
+            } else if (!isset($qreq->paperId)) {
+                $qreq->paperId = $pc;
+            }
         }
         if (!isset($qreq->paperId)
             && isset($qreq->reviewId)
@@ -2946,8 +2946,8 @@ class PaperTable {
             if ($qreq->t) {
                 $q .= "&t=" . urlencode($qreq->t);
             }
-            if (Navigation::page() === "assign") {
-                $q .= "&linkto=" . Navigation::page();
+            if ($qreq->page() === "assign") {
+                $q .= "&linkto=" . $qreq->page();
             }
             go($user->conf->hoturl("search", $q));
         }

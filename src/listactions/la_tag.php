@@ -37,7 +37,7 @@ class Tag_ListAction extends ListAction {
         return [Ht::select("tagfn", $tagopt, $pl->qreq->tagfn, $tagextra) . " &nbsp;",
             ["linelink-class" => "has-fold foldc fold99c ui-unfold js-tag-list-action", "content" => $t]];
     }
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->can_change_some_tag();
     }
     function run(Contact $user, $qreq, $ssel) {

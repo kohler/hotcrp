@@ -7,7 +7,7 @@ class GetLead_ListAction extends ListAction {
     function __construct($conf, $fj) {
         $this->type = $fj->type;
     }
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->isPC;
     }
     function run(Contact $user, $qreq, $ssel) {

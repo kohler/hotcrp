@@ -13,21 +13,23 @@ foreach (["emailNote", "reason"] as $x) {
 }
 if (isset($Qreq->p)
     && ctype_digit($Qreq->p)
-    && !Navigation::path()
+    && !$Qreq->path()
     && !$Qreq->post_ok()) {
     $Conf->self_redirect($Qreq);
 }
 if (!isset($Qreq->p)
     && !isset($Qreq->paperId)
-    && ($x = Navigation::path_component(0)) !== false) {
+    && ($x = $Qreq->path_component(0)) !== false) {
     if (preg_match(',\A(?:new|\d+)\z,i', $x)) {
         $Qreq->p = $x;
-        if (!isset($Qreq->m) && ($x = Navigation::path_component(1)))
+        if (!isset($Qreq->m) && ($x = $Qreq->path_component(1))) {
             $Qreq->m = $x;
+        }
         if ($Qreq->m === "api"
             && !isset($Qreq->fn)
-            && ($x = Navigation::path_component(2)))
+            && ($x = $Qreq->path_component(2))) {
             $Qreq->fn = $x;
+        }
     }
 }
 

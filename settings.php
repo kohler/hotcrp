@@ -13,8 +13,8 @@ $Sv->session_highlight();
 function choose_setting_group($qreq, SettingValues $sv) {
     global $Conf, $Me;
     $req_group = $qreq->group;
-    if (!$req_group && preg_match(',\A/\w+\z,', Navigation::path())) {
-        $req_group = substr(Navigation::path(), 1);
+    if (!$req_group && preg_match('/\A\/\w+\/*\z/', $qreq->path())) {
+        $req_group = $qreq->path_component(0);
     }
     $want_group = $req_group;
     if (!$want_group && isset($_SESSION["sg"])) { // NB not conf-specific session, global

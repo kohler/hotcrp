@@ -3,8 +3,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Assign_ListAction extends ListAction {
-    function allow(Contact $user) {
-        return $user->privChair && Navigation::page() !== "reviewprefs";
+    function allow(Contact $user, Qrequest $qreq) {
+        return $user->privChair && $qreq->page() !== "reviewprefs";
     }
     static function render(PaperList $pl) {
         return [Ht::select("assignfn",

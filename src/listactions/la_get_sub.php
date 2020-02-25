@@ -170,7 +170,7 @@ class GetAuthors_ListAction extends ListAction {
         }
         return $contact_map;
     }
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_authors();
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -215,7 +215,7 @@ class GetAuthors_ListAction extends ListAction {
 
 /* NB this search action is actually unavailable via the UI */
 class GetContacts_ListAction extends ListAction {
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -237,7 +237,7 @@ class GetContacts_ListAction extends ListAction {
 }
 
 class GetPcconflicts_ListAction extends ListAction {
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {

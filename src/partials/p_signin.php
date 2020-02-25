@@ -341,7 +341,7 @@ class Signin_Partial {
         }
 
         if ($qreq->resetcap === null
-            && preg_match('{\A/(U?1[-\w]+)(?:/|\z)}', Navigation::path(), $m)) {
+            && preg_match('/\A\/(U?1[-\w]+)(?:\/|\z)/', $qreq->path(), $m)) {
             $qreq->resetcap = $m[1];
         }
 

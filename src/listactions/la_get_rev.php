@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class GetPcassignments_ListAction extends ListAction {
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -87,7 +87,7 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
     function __construct($conf, $fj) {
         parent::__construct(true, $fj->name === "get/revformz");
     }
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->is_reviewer();
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -137,7 +137,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
         $this->author_view = !!get($fj, "author_view");
         require_once("la_get_sub.php");
     }
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_review();
     }
     function run(Contact $user, $qreq, $ssel) {

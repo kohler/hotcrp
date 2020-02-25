@@ -7,7 +7,7 @@ class GetRevpref_ListAction extends ListAction {
     function __construct($conf, $fj) {
         $this->extended = $fj->name === "get/revprefx";
     }
-    function allow(Contact $user) {
+    function allow(Contact $user, Qrequest $qreq) {
         return $user->isPC;
     }
     static function render_upload(PaperList $pl) {
