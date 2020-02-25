@@ -685,6 +685,20 @@ xassert_eqq($ms->xi("fox-saying"), "What the fox said");
 xassert_eqq($ms->xi("fox-saying", false, "Animal"), "What the Animal said");
 xassert_eqq($ms->xi("test103", false, "Ass"), "Ass %% %s %BU%%MAN%Ass");
 
+$ms->add(["itext" => "butt", "otext" => "normal butt"]);
+$ms->add(["itext" => "butt", "otext" => "fat butt", "require" => ["$1[fat]"]]);
+$ms->add(["itext" => "butt", "otext" => "two butts", "require" => ["$1[count]>1"], "priority" => 1]);
+$ms->add(["itext" => "butt", "otext" => "three butts", "require" => ["$1[count]>2"], "priority" => 2]);
+xassert_eqq($ms->x("butt"), "normal butt");
+xassert_eqq($ms->x("butt", []), "normal butt");
+xassert_eqq($ms->x("butt", ["thin" => true]), "normal butt");
+xassert_eqq($ms->x("butt", ["fat" => true]), "fat butt");
+xassert_eqq($ms->x("butt", ["fat" => false]), "normal butt");
+xassert_eqq($ms->x("butt", ["fat" => true, "count" => 2]), "two butts");
+xassert_eqq($ms->x("butt", ["fat" => false, "count" => 2]), "two butts");
+xassert_eqq($ms->x("butt", ["fat" => true, "count" => 3]), "three butts");
+xassert_eqq($ms->x("butt", ["fat" => false, "count" => 2.1]), "three butts");
+
 // i18n messages with contexts
 $ms = new IntlMsgSet;
 $ms->add("Hello", "Hello");
