@@ -301,14 +301,14 @@ class LoginHelper {
             $e = null;
         } else if (isset($info["unset"])) {
             if ($conf->allow_user_self_register()) {
-                $e = "No account for %2[email]$H. Check the email address or create a new account <a href=\"%2[newaccount]$H\">here</a>.";
+                $e = "No account for %2[email]\$H. Check the email address or create a new account <a href=\"%2[newaccount]$H\">here</a>.";
             } else {
-                $e = "No account for %2[email]$H. Check the email address.";
+                $e = "No account for %2[email]\$H. Check the email address.";
             }
         } else if (isset($info["disabled"])) {
             $e = "Your account on this site is disabled. Contact the site administrator for more information.";
         } else if (isset($info["reset"])) {
-            $e = "Your password has expired. Use <a href=\"%2[forgotpassword]$H\">“Forgot your password?”</a> to reset it.";
+            $e = "Your password has expired. Use <a href=\"%2[forgotpassword]\$H\">“Forgot your password?”</a> to reset it.";
         } else if (isset($info["nopw"])) {
             $e = "Enter your password.";
         } else if (isset($info["nopost"])) {
