@@ -1503,7 +1503,27 @@ class Contact {
 
         // deny if no match
         if (!$cdb_ok && !$local_ok) {
-            return ["ok" => false, "invalid" => true];
+            $x = ["ok" => false, "invalid" => true];
+            // report information about passwords
+            if ($this->password) {
+                if ($this->password[0] === " "
+                    && $this->password[1] !== "$") {
+                    $x["local_password"] = $this->password;
+                }
+                if ($this->passwordTime > 0) {
+                    $x["local_password_age"] = ceil(($Now - $this->passwordTime) / 8640) / 10;
+                }
+            }
+            if ($cdbu && $cdbu->password) {
+                if ($cdbu->password[0] === " "
+                    && $cdbu->password[1] !== "$") {
+                    $x["cdbu_password"] = $cdbu->password;
+                }
+                if ($cdbu->passwordTime > 0) {
+                    $x["cdb_password_age"] = ceil(($Now - $cdbu->passwordTime) / 8640) / 10;
+                }
+            }
+            return $x;
         }
 
         // disabled users cannot log in
@@ -1553,8 +1573,8 @@ class Contact {
 
             // complain about local password use
             if ($cdbu) {
-                $t0 = $this->passwordTime ? ceil(($Now - $this->passwordTime) / 86400) : -1;
-                $t1 = $cdbu->passwordTime ? ceil(($Now - $cdbu->passwordTime) / 86400) : -1;
+                $t0 = $this->passwordTime ? ceil(($Now - $this->passwordTime) / 8640) / 10 : -1;
+                $t1 = $cdbu->passwordTime ? ceil(($Now - $cdbu->passwordTime) / 8640) / 10 : -1;
                 error_log("{$this->conf->dbname}: user {$this->email}: signing in with local password, which is " . ($this->passwordTime < $cdbu->passwordTime ? "older" : "newer") . " than cdb [{$t0}d/{$t1}d]");
             }
         }
