@@ -1503,7 +1503,10 @@ class Contact {
 
         // deny if no match
         if (!$cdb_ok && !$local_ok) {
-            $x = ["ok" => false, "invalid" => true];
+            $x = [
+                "ok" => false, "invalid" => true,
+                "can_reset" => $this->can_reset_password()
+            ];
             // report information about passwords
             if ($this->password) {
                 if ($this->password[0] === " "

@@ -141,5 +141,6 @@
     ["(%d more permissions have default values)", "(%d more permission has default value)", ["$1=1"]],
 
     {"id": "badpost", "itext": "Your session has changed since you last used this tab. Please try again."},
-    {"id": "loginerror", "otext": "An account already exists for %2[email]$H. If that’s your account, <a href=\"%2[signin]$H\">sign in</a> using your password, or use <a href=\"%2[forgot]$H\">“Forgot your password?”</a> to reset it.", "require": ["$1[userexists]"]}
+    {"id": "loginerror", "otext": "An account already exists for %2[email]$H. If that’s your account, <a href=\"%2[signin]$H\">sign in</a> using your password, or use <a href=\"%2[forgotpassword]$H\">“Forgot your password?”</a> to reset it.", "require": ["$1[userexists]"]},
+    {"id": "loginerror", "otext": "Incorrect password. Enter the password or use <a href=\"%2[forgotpassword]$H\">“Forgot your password?”</a> to reset it.", "require": ["$1[invalid]", "$1[can_reset]"], "priority": 1}
 ]
