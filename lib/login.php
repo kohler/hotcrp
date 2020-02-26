@@ -301,7 +301,7 @@ class LoginHelper {
             $e = null;
         } else if (isset($info["unset"])) {
             if ($conf->allow_user_self_register()) {
-                $e = "No account for %2[email]\$H. Check the email address or create a new account <a href=\"%2[newaccount]$H\">here</a>.";
+                $e = "No account for %2[email]\$H. Check the email address or create a new account <a href=\"%2[newaccount]\$H\">here</a>.";
             } else {
                 $e = "No account for %2[email]\$H. Check the email address.";
             }
