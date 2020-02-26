@@ -229,6 +229,9 @@ td.quicklinks, #tracker-connect {
 .ptitle:visited, .pnum:visited, .track:visited {
 	color: #660099;
 }
+.is-error > a {
+	color: #ee0000;
+}
 a:hover, a.nv:hover, a.ui:hover, .btn-link:hover, .js-click-child:hover a.hover-child {
 	color: #c45500;
 }

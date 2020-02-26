@@ -278,6 +278,13 @@ class LoginHelper {
         if (self::DEBUG) {
             error_log("{$conf->dbname} login failure: $email " . json_encode($info) . " " . json_encode($qreq));
         }
+        $xemail = $email === "" ? null : $email;
+        $extra = [
+            "email" => $email,
+            "signin" => $conf->hoturl_raw("signin", ["email" => $xemail]),
+            "forgot" => $conf->hoturl_raw("forgotpassword", ["email" => $xemail]),
+            "create" => $conf->hoturl_raw("newaccount", ["email" => $xemail])
+        ];
         if (isset($info["ldap"]) && isset($info["detail_html"])) {
             $e = $info["detail_html"];
         } else if (isset($info["noemail"])) {
@@ -291,7 +298,7 @@ class LoginHelper {
         } else if (isset($info["nologin"])) {
             $e = "This user cannot sign in to the site.";
         } else if (isset($info["userexists"])) {
-            $e = $conf->_ci("newaccount", "userexists", null, $email, $conf->hoturl_raw("signin", ["email" => $email]), $conf->hoturl_raw("forgotpassword"), !!get($info, "contactdb"));
+            $e = null;
         } else if (isset($info["unset"])) {
             if ($conf->allow_user_self_register()) {
                 $e = "No account for " . htmlspecialchars($email) . ". Check the email address or create a new account " . Ht::link("here", $conf->hoturl("newaccount", ["email" => $email])) . ".";
@@ -311,6 +318,7 @@ class LoginHelper {
         } else {
             $e = "Incorrect password.";
         }
+        $e = $conf->_i("loginerror", $e, $info, $extra);
         if (isset($info["unset"]) || isset($info["disabled"]) || isset($info["email"])) {
             Ht::error_at("email", $e);
         } else {

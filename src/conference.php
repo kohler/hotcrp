@@ -4119,16 +4119,19 @@ class Conf {
             $this->_ims = new IntlMsgSet;
             $this->_ims->add_requirement_resolver([$this, "resolve_ims_requirement"]);
             $m = ["?etc/msgs.json"];
-            if (($lang = $this->opt("lang")))
+            if (($lang = $this->opt("lang"))) {
                 $m[] = "?etc/msgs.$lang.json";
+            }
             $this->_ims->set_default_priority(-1.0);
             expand_json_includes_callback($m, [$this->_ims, "addj"]);
             $this->_ims->clear_default_priority();
-            if (($mlist = $this->opt("messageOverrides")))
+            if (($mlist = $this->opt("messageOverrides"))) {
                 expand_json_includes_callback($mlist, [$this->_ims, "addj"]);
-            foreach ($this->settingTexts as $k => $v)
+            }
+            foreach ($this->settingTexts as $k => $v) {
                 if (str_starts_with($k, "msg."))
                     $this->_ims->add_override(substr($k, 4), $v);
+            }
         }
         return $this->_ims;
     }
