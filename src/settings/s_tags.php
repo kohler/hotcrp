@@ -48,8 +48,13 @@ class Tags_SettingRenderer {
         echo "</div>\n";
 
         echo '<div class="settings-g">';
-        $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
+        $sv->render_group("tags/visibility");
         echo "</div>\n";
+    }
+    static function render_tag_seeall(SettingValues $sv) {
+        echo '<div class="settings-g-1">';
+        $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
+        echo '</div>';
     }
     static function render_styles(SettingValues $sv) {
         $skip_colors = [];

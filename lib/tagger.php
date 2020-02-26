@@ -656,26 +656,33 @@ class TagMap implements IteratorAggregate {
         foreach (TagInfo::split_unpack($ct) as $ti) {
             $map->add($ti[0])->sitewide = $map->has_sitewide = true;
         }
+        $ppu = $conf->setting("tag_vote_private_peruser");
         $vt = $conf->setting_data("tag_vote", "");
         foreach (TagInfo::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
             $t->vote = ($ti[1] ? : 1);
             $map->has_vote = true;
             $t->votish = $map->has_votish = true;
-            $t->public_peruser = $map->has_public_peruser = true;
+            if (!$ppu) {
+                $t->public_peruser = $map->has_public_peruser = true;
+            }
         }
         $vt = $conf->setting_data("tag_approval", "");
         foreach (TagInfo::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
             $t->approval = $map->has_approval = true;
             $t->votish = $map->has_votish = true;
-            $t->public_peruser = $map->has_public_peruser = true;
+            if (!$ppu) {
+                $t->public_peruser = $map->has_public_peruser = true;
+            }
         }
         $rt = $conf->setting_data("tag_rank", "");
         foreach (TagInfo::split_unpack($rt) as $ti) {
             $t = $map->add($ti[0]);
             $t->rank = $map->has_rank = true;
-            $t->public_peruser = $map->has_public_peruser = true;
+            if (!$ppu) {
+                $t->public_peruser = $map->has_public_peruser = true;
+            }
         }
         $ct = $conf->setting_data("tag_color", "");
         if ($ct !== "") {

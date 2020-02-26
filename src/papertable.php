@@ -1825,7 +1825,8 @@ class PaperTable {
         }
         $reverse = $type !== "rank";
         $extradiv = "";
-        if ($type === "vote" || $type === "approval") {
+        if (($type === "vote" || $type === "approval")
+            && $this->user->can_view_peruser_tag($this->prow, $tag)) {
             $class .= " need-tooltip";
             $extradiv = ' data-tooltip-dir="h" data-tooltip-info="votereport" data-tag="' . htmlspecialchars($tag) . '"';
         }

@@ -221,6 +221,10 @@
         "render_callback": "Tags_SettingRenderer::render_tag_rank"
     },
     {
+        "name": "tags/visibility/seeall", "position": 10,
+        "render_callback": "Tags_SettingRenderer::render_tag_seeall"
+    },
+    {
         "name": "tagstyles", "group": "tags", "position": 720,
         "render_callback": "Tags_SettingRenderer::render_styles"
     },
