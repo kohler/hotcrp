@@ -279,7 +279,7 @@ class IntlMsgSet {
         $argnum = 0;
         while ($pos !== false) {
             ++$pos;
-            if (preg_match('{(?!\d+)\w+(?=%)}A', $s, $m, 0, $pos)
+            if (preg_match('/(?!\d+)\w+(?=%)/A', $s, $m, 0, $pos)
                 && ($imt = $this->find($context, strtolower($m[0]), [], null))
                 && $imt->template) {
                 $t = substr($s, 0, $pos - 1) . $this->expand($imt->otext, $args, null, null);
@@ -289,13 +289,19 @@ class IntlMsgSet {
                 /* do nothing */
             } else if ($pos < strlen($s) && $s[$pos] === "%") {
                 $s = substr($s, 0, $pos) . substr($s, $pos + 1);
-            } else if (preg_match('/(?:(\d+)\$)?(\d*(?:\.\d+)?)([deEifgosxXH])/A', $s, $m, 0, $pos)) {
+            } else if (preg_match('/(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
                 $argi = $m[1] ? +$m[1] : ++$argnum;
                 if (isset($args[$argi])) {
-                    $args[0] = "%{$argi}\${$m[2]}" . ($m[3] === "H" ? "s" : $m[3]);
-                    $x = call_user_func_array("sprintf", $args);
-                    if ($m[3] === "H") {
+                    $val = $args[$argi];
+                    if ($m[2]) {
+                        $val = get($val, substr($m[2], 1, strlen($m[2]) - 2));
+                    }
+                    $conv = $m[3] . ($m[4] === "H" || $m[4] === "U" ? "s" : $m[4]);
+                    $x = sprintf("%$conv", $val);
+                    if ($m[4] === "H") {
                         $x = htmlspecialchars($x);
+                    } else if ($m[4] === "U") {
+                        $x = urlencode($x);
                     }
                     $s = substr($s, 0, $pos - 1) . $x . substr($s, $pos + strlen($m[0]));
                     $pos = $pos - 1 + strlen($x);

@@ -674,6 +674,7 @@ xassert_eqq($ms->x("Hello"), "Bonjour");
 xassert_eqq($ms->x("%d friend", 1), "1 ami");
 xassert_eqq($ms->x("%d friend", 0), "0 amis");
 xassert_eqq($ms->x("%d friend", 2), "2 amis");
+xassert_eqq($ms->x("%1[foo]\$s friend", ["foo" => 3]), "3 friend");
 xassert_eqq($ms->x("ax"), "b");
 xassert_eqq($ms->x("bx"), "a");
 xassert_eqq($ms->x("%xOOB%x friend", 10, 11), "aOOBb friend");
