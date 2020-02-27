@@ -3,9 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Signin_Partial {
-    private $_reset_cap;
-    private $_reset_capdata;
-    private $_reset_user;
+    public $_reset_cap;
+    public $_reset_capdata;
+    public $_reset_user;
 
     private function bad_post_error(Contact $user, Qrequest $qreq, $action) {
         $sid = session_id();
@@ -23,10 +23,6 @@ class Signin_Partial {
         error_log($msg);
 
         $user->conf->msg($user->conf->_i("badpost"), 2);
-    }
-
-    static private function forgot_message(Conf $conf) {
-        return $conf->_("Enter your email and we’ll send you instructions for signing in.");
     }
 
 
@@ -85,18 +81,6 @@ class Signin_Partial {
 
         $gx->render_group("signin/form");
 
-        echo '<div class="popup-actions fx">',
-            Ht::submit("", "Sign in", ["id" => "signin_signin", "class" => "btn-success", "tabindex" => 1]);
-        if ($gx->root !== "home") {
-            echo Ht::submit("cancel", "Cancel", ["tabindex" => 1]);
-        }
-        echo '</div>';
-        if ($conf->allow_user_self_register()) {
-            echo '<p class="mt-2 hint fx">New to the site? <a href="',
-                $conf->hoturl("newaccount"),
-                '" class="uic js-href-add-email">Create an account</a></p>';
-        }
-
         if (!$unfolded) {
             echo '<div class="fn">',
                 Ht::submit("start", "Sign in", ["class" => "btn-success", "tabindex" => 1, "value" => 1]),
@@ -108,10 +92,6 @@ class Signin_Partial {
     static function render_signin_form_description(Contact $user, Qrequest $qreq) {
         echo '<p class="mb-5">',
             $user->conf->_("Sign in to submit or review papers."), '</p>';
-        if ($user->conf->opt("contactdb_dsn")
-            && ($x = $user->conf->opt("contactdb_loginFormHeading"))) {
-            echo $x;
-        }
     }
 
     static function render_signin_form_email(Contact $user, Qrequest $qreq, $gx) {
@@ -150,6 +130,23 @@ class Signin_Partial {
             Ht::render_messages_at("password"), '</div>';
         if ($password_reset) {
             echo Ht::unstash_script("\$(function(){\$(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
+        }
+    }
+
+    static function render_signin_form_actions(Contact $user, Qrequest $qreq, $gx) {
+        echo '<div class="popup-actions fx">',
+            Ht::submit("", "Sign in", ["id" => "signin_signin", "class" => "btn-success", "tabindex" => 1]);
+        if ($gx->root !== "home") {
+            echo Ht::submit("cancel", "Cancel", ["tabindex" => 1]);
+        }
+        echo '</div>';
+    }
+
+    static function render_signin_form_create(Contact $user) {
+        if ($user->conf->allow_user_self_register()) {
+            echo '<p class="mt-2 hint fx">New to the site? <a href="',
+                $user->conf->hoturl("newaccount"),
+                '" class="uic js-href-add-email">Create an account</a></p>';
         }
     }
 
@@ -318,14 +315,30 @@ class Signin_Partial {
     static function render_forgot_body(Contact $user, Qrequest $qreq, $gx, $gj) {
         echo '<div class="homegrp" id="homeaccount">',
             Ht::form($user->conf->hoturl("forgotpassword"), ["class" => "compact-form"]),
-            Ht::hidden("post", post_value()),
-            '<p class="mb-5">', self::forgot_message($user->conf), '</p>';
-        self::_render_email_entry($user, $qreq, "email");
-        echo '<div class="popup-actions">',
-            Ht::submit("go", "Reset password", ["class" => "btn-primary", "value" => 1]),
-            Ht::submit("cancel", "Cancel"),
-            '</div></form></div>';
+            Ht::hidden("post", post_value());
+        $gx->render_group("forgotpassword/form");
+        echo '</form></div>';
         Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
+    }
+    static function render_forgot_form_description(Contact $user, Qrequest $qreq, $gx) {
+        echo '<p class="mb-5">Enter your email and we’ll send you a link to reset your password.';
+        if ($gx->root === "resetpassword") {
+            echo ' Or enter a password reset code if you have one.';
+        }
+        echo '</p>';
+    }
+    static function render_forgot_form_email(Contact $user, Qrequest $qreq, $gx) {
+        self::_render_email_entry($user, $qreq,
+            $gx->root === "resetpassword" ? "resetcap" : "email");
+    }
+    function render_forgot_form_actions() {
+        echo '<div class="popup-actions">',
+            Ht::submit("go", "Reset password", [
+                "class" => $this->_reset_user ? "btn-danger" : "btn-primary",
+                "value" => 1
+            ]),
+            Ht::submit("cancel", "Cancel"),
+            '</div>';
     }
 
 
@@ -461,18 +474,43 @@ class Signin_Partial {
             Ht::form($user->conf->hoturl("resetpassword"), ["class" => "compact-form"]),
             Ht::hidden("post", post_value());
         if ($this->_reset_user) {
-            $this->_render_reset_success($user, $qreq);
-            $k = "btn-danger";
+            echo Ht::hidden("resetcap", $this->_reset_cap);
+            $gx->render_group("resetpassword/form");
         } else {
-            echo '<p class="mb-5">', self::forgot_message($user->conf),
-                ' Or enter a password reset code if you have one.</p>';
-            self::_render_email_entry($user, $qreq, "resetcap");
-            $k = "btn-primary";
+            $gx->render_group("forgotpassword/form");
         }
-        echo '<div class="popup-actions">',
-            Ht::submit("go", "Reset password", ["class" => $k, "value" => 1]),
-            Ht::submit("cancel", "Cancel"),
-            '</div></form></div>';
+        echo '</form></div>';
         Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
+    }
+    static function render_reset_form_description() {
+        echo '<p class="mb-5">Use this form to reset your password. You may want to use the random password we’ve chosen.</p>';
+    }
+    function render_reset_form_email() {
+        echo '<div class="f-i"><label>Email</label>', htmlspecialchars($this->_reset_user->email), '</div>',
+            Ht::entry("email", $this->_reset_user->email, ["class" => "hidden", "autocomplete" => "username"]);
+    }
+    static function render_reset_form_autopassword(Contact $user, Qrequest $qreq) {
+        if (!isset($qreq->autopassword)
+            || trim($qreq->autopassword) !== $qreq->autopassword
+            || strlen($qreq->autopassword) < 16
+            || !preg_match('{\A[-0-9A-Za-z@_+=]*\z}', $qreq->autopassword)) {
+            $qreq->autopassword = hotcrp_random_password();
+        }
+        echo '<div class="f-i"><label>Suggested strong password</label>',
+            htmlspecialchars($qreq->autopassword), '</div>',
+            Ht::hidden("autopassword", $qreq->autopassword);
+    }
+    static function render_reset_form_password() {
+        echo '<div class="', Ht::control_class("password", "f-i"), '">',
+            '<label for="password">New password</label>',
+            Ht::password("password", "", ["class" => "fullw", "size" => 36, "id" => "password", "autocomplete" => "new-password", "autofocus" => true]),
+            Ht::render_messages_at("password"),
+            '</div>',
+
+            '<div class="', Ht::control_class("password2", "f-i"), '">',
+            '<label for="password2">Repeat new password</label>',
+            Ht::password("password2", "", ["class" => "fullw", "size" => 36, "id" => "password2", "autocomplete" => "new-password"]),
+            Ht::render_messages_at("password2"),
+            '</div>';
     }
 }

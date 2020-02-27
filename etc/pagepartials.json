@@ -151,22 +151,12 @@
     {
         "name": "signin/welcome", "position": 2500, "alias": "home/welcome"
     },
-    {
-        "name": "signin/body", "position": 3000,
-        "render_callback": "Signin_Partial::render_signin_form"
-    },
-    {
-        "name": "signin/form/description", "position": 10,
-        "render_callback": "Signin_Partial::render_signin_form_description"
-    },
-    {
-        "name": "signin/form/email", "position": 20,
-        "render_callback": "Signin_Partial::render_signin_form_email"
-    },
-    {
-        "name": "signin/form/password", "position": 30,
-        "render_callback": "Signin_Partial::render_signin_form_password"
-    },
+    [   "signin/body", 3000, "Signin_Partial::render_signin_form"   ],
+    [   "signin/form/description", 10, "Signin_Partial::render_signin_form_description"   ],
+    [   "signin/form/email", 20, "Signin_Partial::render_signin_form_email"   ],
+    [   "signin/form/password", 30, "Signin_Partial::render_signin_form_password"   ],
+    [   "signin/form/actions", 100, "Signin_Partial::render_signin_form_actions"   ],
+    [   "signin/form/create", 150, "Signin_Partial::render_signin_form_create"   ],
 
 
     {   "name": "signout"   },
@@ -197,10 +187,10 @@
         "render_callback": "Signin_Partial::render_forgot_head",
         "htitle": "Forgot password"
     },
-    {
-        "name": "forgotpassword/body", "position": 3000,
-        "render_callback": "Signin_Partial::render_forgot_body"
-    },
+    [   "forgotpassword/body", 3000, "Signin_Partial::render_forgot_body"   ],
+    [   "forgotpassword/form/description", 10, "Signin_Partial::render_forgot_form_description"   ],
+    [   "forgotpassword/form/email", 20, "Signin_Partial::render_forgot_form_email"   ],
+    [   "forgotpassword/form/actions", 100, "*Signin_Partial::render_forgot_form_actions"   ],
     {
         "name": "forgotpassword/externallogin", "position": false,
         "render_callback": "Signin_Partial::forgot_externallogin_message"
@@ -224,9 +214,10 @@
     {
         "name": "resetpassword/welcome", "position": 2500, "alias": "home/welcome"
     },
-    {
-        "name": "resetpassword/body", "position": 3000,
-        "render_callback": "*Signin_Partial::render_reset_body",
-        "page": "resetpassword"
-    }
+    [   "resetpassword/body", 3000, "*Signin_Partial::render_reset_body"   ],
+    [   "resetpassword/form/description", 10, "Signin_Partial::render_reset_form_description"   ],
+    [   "resetpassword/form/email", 20, "*Signin_Partial::render_reset_form_email"   ],
+    [   "resetpassword/form/autopassword", 29, "Signin_Partial::render_reset_form_autopassword"   ],
+    [   "resetpassword/form/password", 30, "Signin_Partial::render_reset_form_password"   ],
+    [   "resetpassword/form/actions", 100, "forgotpassword/form/actions"   ]
 ]
