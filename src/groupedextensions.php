@@ -16,6 +16,21 @@ class GroupedExtensions {
     static private $next_placeholder;
 
     function _add_json($fj) {
+        if (is_array($fj)) {
+            $fja = $fj;
+            if (count($fja) !== 3) {
+                return false;
+            }
+            $fj = (object) [
+                "name" => $fja[0], "position" => $fja[1],
+                "__subposition" => ++Conf::$next_xt_subposition
+            ];
+            if (strpos($fja[2], "::")) {
+                $fj->render_callback = $fja[2];
+            } else {
+                $fj->alias = $fja[2];
+            }
+        }
         if (!isset($fj->name)) {
             $fj->name = "__" . self::$next_placeholder . "__";
             ++self::$next_placeholder;
@@ -84,7 +99,7 @@ class GroupedExtensions {
         }
         $r = [];
         $alias = false;
-        foreach (array_unique(get($this->_potential_members, $name, [])) as $subname) {
+        foreach (array_unique($this->_potential_members[$name] ?? []) as $subname) {
             if (($gj = $this->get_raw($subname))
                 && $gj->group === ($name === "" ? $gj->name : $name)
                 && $gj->name !== $name
@@ -109,10 +124,18 @@ class GroupedExtensions {
         return $this->members("");
     }
 
+    function render_class($klass) {
+        if (!isset($this->_render_classes[$klass])
+            && !empty($this->_render_stack)) {
+            $args = $this->_render_state[0];
+            $this->_render_classes[$klass] = new $klass(...$args);
+        }
+        return $this->_render_classes[$klass] ?? null;
+    }
     private function call_callback($cb, $gj) {
         $args = $this->_render_state[0];
         $args[] = $gj;
-        if ($cb[0] === "*") {
+        if (is_string($cb) && $cb[0] === "*") {
             $colons = strpos($cb, ":");
             $klass = substr($cb, 1, $colons - 1);
             if (!isset($this->_render_classes[$klass])) {
@@ -164,15 +187,18 @@ class GroupedExtensions {
             $this->set_context($options);
         }
     }
-    function push_render_cleanup($name) {
+    function push_render_cleanup($cleaner) {
         assert(!empty($this->_render_stack));
-        $this->_render_state[] = $name;
+        $this->_render_state[] = $cleaner;
     }
     function end_render() {
         assert(!empty($this->_render_stack));
         for ($i = count($this->_render_state) - 1; $i > 3; --$i) {
-            if (($gj = $this->get($this->_render_state[$i]))) {
+            $cleaner = $this->_render_state[$i];
+            if (is_string($cleaner) && ($gj = $this->get($cleaner))) {
                 $this->render($gj);
+            } else if (is_callable($cleaner)) {
+                $this->call_callback($cleaner, null);
             }
         }
         $this->_render_state = array_pop($this->_render_stack);
