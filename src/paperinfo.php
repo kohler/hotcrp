@@ -756,10 +756,11 @@ class PaperInfo {
             return $ci ? $ci->reviewType : 0;
         }
         $cid = self::contact_to_cid($contact);
-        if (array_key_exists($cid, $this->_contact_info))
+        if (array_key_exists($cid, $this->_contact_info)) {
             $rrow = $this->_contact_info[$cid];
-        else
+        } else {
             $rrow = $this->review_of_user($cid);
+        }
         return $rrow ? $rrow->reviewType : 0;
     }
 
@@ -778,9 +779,9 @@ class PaperInfo {
     }
 
     function pc_can_become_reviewer_ignore_conflict() {
-        if (!$this->conf->check_track_review_sensitivity())
+        if (!$this->conf->check_track_review_sensitivity()) {
             return $this->conf->pc_members();
-        else {
+        } else {
             $pcm = array();
             foreach ($this->conf->pc_members() as $cid => $pc)
                 if ($pc->can_become_reviewer_ignore_conflict($this))
@@ -1733,16 +1734,20 @@ class PaperInfo {
         $missing = [];
         foreach ($row_set as $prow) {
             $prow->_reviews_have["names"] = true;
-            foreach ($prow->reviews_by_id() as $rrow)
-                if (($u = $this->conf->cached_user_by_id($rrow->contactId, true)))
+            foreach ($prow->reviews_by_id() as $rrow) {
+                if (($u = $this->conf->cached_user_by_id($rrow->contactId, true))) {
                     $rrow->assign_name($u);
-                else
+                } else {
                     $missing[] = $rrow;
+                }
+            }
         }
         if ($this->conf->load_missing_cached_users()) {
-            foreach ($missing as $rrow)
-                if (($u = $this->conf->cached_user_by_id($rrow->contactId, true)))
+            foreach ($missing as $rrow) {
+                if (($u = $this->conf->cached_user_by_id($rrow->contactId, true))) {
                     $rrow->assign_name($u);
+                }
+            }
         }
     }
 

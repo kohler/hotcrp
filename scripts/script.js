@@ -8681,11 +8681,11 @@ function populate_pcselector(pcs) {
 
     for (var i = 0; i < optids.length; ++i) {
         var cid = optids[i], email, name, p;
-        if (cid === "" || cid === "*")
+        if (cid === "" || cid === "*") {
             optids.splice.apply(optids, [i + 1, 0].concat(pcs.__order__));
-        else if (cid === "assignable")
+        } else if (cid === "assignable") {
             optids.splice.apply(optids, [i + 1, 0].concat(pcs.__assignable__[hotcrp_paperid] || []));
-        else if (cid === "selected") {
+        } else if (cid === "selected") {
             if (selected != null)
                 optids.splice.apply(optids, [i + 1, 0, selected]);
         } else {
@@ -8702,8 +8702,9 @@ function populate_pcselector(pcs) {
                     var nameend = p.emailpos ? p.emailpos - 1 : name.length;
                     name = name.substring(p.lastpos, nameend) + ", " + name.substring(0, p.lastpos - 1) + name.substring(nameend);
                 }
-            } else
+            } else {
                 continue;
+            }
             if (!used[email]) {
                 used[email] = true;
                 var opt = document.createElement("option");
@@ -8717,9 +8718,9 @@ function populate_pcselector(pcs) {
     }
 
     if (selindex < 0) {
-        if (selected == 0 || selected == null)
+        if (selected == 0 || selected == null) {
             selindex = 0;
-        else {
+        } else {
             var opt = document.createElement("option");
             if ((p = pcs[selected])) {
                 opt.setAttribute("value", p.email);

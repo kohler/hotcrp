@@ -3934,10 +3934,12 @@ class Conf {
             }
             if ($this->sort_by_last && $pcm->lastName) {
                 $r = Text::analyze_name($pcm);
-                if (strlen($r->lastName) !== strlen($r->name))
+                if (strlen($r->lastName) !== strlen($r->name)) {
                     $j->lastpos = strlen($r->firstName) + 1;
-                if ($r->nameAmbiguous && $r->name !== "" && $r->email !== "")
+                }
+                if ($r->nameAmbiguous && $r->name !== "" && $r->email !== "") {
                     $j->emailpos = strlen($r->name) + 1;
+                }
             }
             $list[] = $pcm->contactId;
         }
@@ -3952,8 +3954,9 @@ class Conf {
             && ($user->privChair || $user->allow_administer($this->paper))) {
             $list = [];
             foreach ($this->pc_members() as $pcm) {
-                if ($pcm->can_accept_review_assignment($this->paper))
+                if ($pcm->can_accept_review_assignment($this->paper)) {
                     $list[] = $pcm->contactId;
+                }
             }
             $hpcj["__assignable__"] = [$this->paper->paperId => $list];
         }

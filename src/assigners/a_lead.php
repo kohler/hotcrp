@@ -11,8 +11,9 @@ class Lead_AssignmentParser extends AssignmentParser {
         $this->remove = $aj->remove;
     }
     function load_state(AssignmentState $state) {
-        if (!$state->mark_type($this->key, ["pid"], "Lead_Assigner::make"))
+        if (!$state->mark_type($this->key, ["pid"], "Lead_Assigner::make")) {
             return;
+        }
         $k = $this->key . "ContactId";
         foreach ($state->prows() as $prow) {
             if (($cid = +$prow->$k))
@@ -21,20 +22,22 @@ class Lead_AssignmentParser extends AssignmentParser {
         Conflict_AssignmentParser::load_conflict_state($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($this->key === "manager")
+        if ($this->key === "manager") {
             return $state->user->privChair ? true : "You can’t change paper administrators.";
-        else if (!$state->user->can_administer($prow))
+        } else if (!$state->user->can_administer($prow)) {
             return "You can’t administer #{$prow->paperId}.";
-        else
+        } else {
             return true;
+        }
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         if ($this->remove) {
             $m = $state->query(["type" => $this->key, "pid" => $prow->paperId]);
             $cids = array_map(function ($x) { return $x["_cid"]; }, $m);
             return $state->users_by_id($cids);
-        } else
+        } else {
             return false;
+        }
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
@@ -50,13 +53,15 @@ class Lead_AssignmentParser extends AssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $remcid = null;
-        if ($this->remove && $contact->contactId)
+        if ($this->remove && $contact->contactId) {
             $remcid = $contact->contactId;
+        }
         $state->remove(["type" => $this->key, "pid" => $prow->paperId, "_cid" => $remcid]);
         if (!$this->remove && $contact->contactId) {
             $it = ["type" => $this->key, "pid" => $prow->paperId, "_cid" => $contact->contactId];
-            if (isset($req["override"]) && friendly_boolean($req["override"]))
+            if (isset($req["override"]) && friendly_boolean($req["override"])) {
                 $it["_override"] = 1;
+            }
             $state->add($it);
         }
         return true;

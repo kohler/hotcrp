@@ -326,10 +326,12 @@ class Contact {
     }
 
     static function make_sorter($c, $args) {
-        if ($args === false && isset($c->unaccentedName))
+        if ($args === false && isset($c->unaccentedName)) {
             return trim("$c->unaccentedName $c->email");
-        if (is_bool($args) || $args === null)
+        }
+        if (is_bool($args) || $args === null) {
             $args = $args ? ["lastName", "firstName", "email"] : ["firstName", "lastName", "email"];
+        }
         $s = [];
         $firstName = $c->firstName;
         foreach ($args as $arg) {
@@ -341,14 +343,17 @@ class Contact {
             } else if ($arg === "firstName") {
                 $x = $firstName;
                 $firstName = false;
-            } else
+            } else {
                 $x = $c->$arg;
-            if ((string) $x !== "")
+            }
+            if ((string) $x !== "") {
                 $s[] = $x;
+            }
         }
         $t = join(" ", $s);
-        if (preg_match('/[\x80-\xFF]/', $t))
+        if (preg_match('/[\x80-\xFF]/', $t)) {
             $t = UnicodeHelper::deaccent($t);
+        }
         return $t;
     }
 

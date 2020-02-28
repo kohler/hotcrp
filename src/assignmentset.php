@@ -886,8 +886,9 @@ class AssignmentSet {
     private function lookup_users($req, $assigner) {
         // check user universe
         $users = $assigner->user_universe($req, $this->astate);
-        if ($users === "none")
+        if ($users === "none") {
             return [$this->astate->none_user()];
+        }
 
         // move all usable identification data to email, firstName, lastName
         if (isset($req["name"])) {
@@ -909,38 +910,43 @@ class AssignmentSet {
         $email = trim((string) $req["email"]);
         $lemail = strtolower($email);
         $special = null;
-        if ($lemail)
+        if ($lemail) {
             $special = $lemail;
-        else if (!$first && $last && strpos(trim($last), " ") === false)
+        } else if (!$first && $last && strpos(trim($last), " ") === false) {
             $special = trim(strtolower($last));
+        }
         $xspecial = $special;
 
         // check special: missing, "none", "any", "pc", "me", PC tag, "external"
-        if ($special === "any" || $special === "all")
+        if ($special === "any" || $special === "all") {
             return "any";
-        else if ($special === "missing" || (!$first && !$last && !$lemail))
+        } else if ($special === "missing" || (!$first && !$last && !$lemail)) {
             return "missing";
-        else if ($special === "none")
+        } else if ($special === "none") {
             return [$this->astate->none_user()];
-        else if (preg_match('{\A(?:(anonymous\d*)|new-?anonymous|anonymous-?new)\z}', $special, $m))
+        } else if (preg_match('/\A(?:(anonymous\d*)|new-?anonymous|anonymous-?new)\z/', $special, $m)) {
             return isset($m[1]) && $m[1] ? $m[1] : "anonymous-new";
+        }
         if ($special && !$first && (!$lemail || !$last)) {
             $ret = ContactSearch::make_special($special, $this->astate->user);
-            if ($ret->ids !== false)
+            if ($ret->ids !== false) {
                 return $ret->contacts();
+            }
         }
         if (($special === "ext" || $special === "external")
             && $users === "reviewers") {
             $ret = array();
-            foreach ($this->astate->reviewer_users() as $u)
+            foreach ($this->astate->reviewer_users() as $u) {
                 if (!$u->is_pc_member())
                     $ret[] = $u;
+            }
             return $ret;
         }
 
         // check for precise email match on existing contact (common case)
-        if ($lemail && ($contact = $this->astate->user_by_email($email, false)))
+        if ($lemail && ($contact = $this->astate->user_by_email($email, false))) {
             return array($contact);
+        }
 
         // check PC list
         if ($users === "pc") {
@@ -956,12 +962,14 @@ class AssignmentSet {
 
         if ($cset) {
             $text = "";
-            if ($first && $last)
+            if ($first && $last) {
                 $text = "$last, $first";
-            else if ($first || $last)
+            } else if ($first || $last) {
                 $text = "$last$first";
-            if ($email)
+            }
+            if ($email) {
                 $text .= " <$email>";
+            }
             $ret = ContactSearch::make_cset($text, $this->astate->user, $cset);
             if (count($ret->ids) === 1) {
                 return $ret->contacts();
@@ -987,7 +995,7 @@ class AssignmentSet {
     }
 
     static private function is_csv_header($req) {
-        return !!preg_grep('{\A(?:action|assignment|paper|pid|paperid|id)\z}i', $req);
+        return !!preg_grep('/\A(?:action|assignment|paper|pid|paperid|id)\z/i', $req);
     }
 
     private function install_csv_header($csv) {
@@ -1020,8 +1028,9 @@ class AssignmentSet {
                   ["tag_value", "tagvalue", "value", "index"],
                   ["conflict", "conflict_type", "conflicttype"],
                   ["withdraw_reason", "reason"]] as $ks) {
-            for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i)
+            for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i) {
                 $csv->add_synonym($ks[0], $ks[$i]);
+            }
         }
 
         $has_action = $csv->has_column("action");
@@ -1061,28 +1070,33 @@ class AssignmentSet {
     }
 
     function hide_column($coldesc, $force = false) {
-        if (!isset($this->unparse_columns[$coldesc]) || $force)
+        if (!isset($this->unparse_columns[$coldesc]) || $force) {
             $this->unparse_columns[$coldesc] = false;
+        }
     }
 
     function show_column($coldesc, $force = false) {
-        if (!isset($this->unparse_columns[$coldesc]) || $force)
+        if (!isset($this->unparse_columns[$coldesc]) || $force) {
             $this->unparse_columns[$coldesc] = true;
+        }
     }
 
     function parse_csv_comment($line) {
-        if (preg_match('/\A#\s*hotcrp_assign_display_search\s*(\S.*)\s*\z/', $line, $m))
+        if (preg_match('/\A#\s*hotcrp_assign_display_search\s*(\S.*)\s*\z/', $line, $m)) {
             $this->unparse_search = $m[1];
-        if (preg_match('/\A#\s*hotcrp_assign_show\s+(\w+)\s*\z/', $line, $m))
+        }
+        if (preg_match('/\A#\s*hotcrp_assign_show\s+(\w+)\s*\z/', $line, $m)) {
             $this->show_column($m[1]);
+        }
     }
 
     private function collect_papers($pfield, &$pids, $report_error) {
         $pfield = trim($pfield);
         if ($pfield !== "" && preg_match('/\A[\d,\s]+\z/', $pfield)) {
             $npids = [];
-            foreach (preg_split('/[,\s]+/', $pfield) as $pid)
+            foreach (preg_split('/[,\s]+/', $pfield) as $pid) {
                 $npids[] = intval($pid);
+            }
             $val = 2;
         } else if ($pfield !== "") {
             if (!isset($this->searches[$pfield])) {
@@ -1117,8 +1131,9 @@ class AssignmentSet {
     }
 
     private function collect_parser($req) {
-        if (($action = $req["action"]) === null)
+        if (($action = $req["action"]) === null) {
             $action = $this->astate->defaults["action"];
+        }
         $action = strtolower(trim($action));
         return $this->conf->assignment_parser($action, $this->user);
     }
@@ -1156,10 +1171,11 @@ class AssignmentSet {
 
         // check action
         if (!$aparser) {
-            if ($req["action"])
+            if ($req["action"]) {
                 return $this->error_here("Unknown action “" . htmlspecialchars($req["action"]) . "”.");
-            else
+            } else {
                 return $this->error_here("Action missing.");
+            }
         }
         if ($this->enabled_actions !== null
             && !isset($this->enabled_actions[$aparser->type])) {
@@ -1220,8 +1236,9 @@ class AssignmentSet {
             $pusers = $contacts;
             if (!is_array($pusers)) {
                 $pusers = $this->expand_special_user($pusers, $aparser, $prow, $req);
-                if ($pusers === false || $pusers === null)
+                if ($pusers === false || $pusers === null) {
                     break;
+                }
             }
 
             foreach ($pusers as $contact) {
