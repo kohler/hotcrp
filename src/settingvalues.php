@@ -87,46 +87,52 @@ class Si {
     }
 
     function __construct($j) {
-        if (preg_match('{_(?:\$|n|m?\d+)\z}', $j->name))
+        if (preg_match('{_(?:\$|n|m?\d+)\z}', $j->name)) {
             trigger_error("setting {$j->name} name format error");
+        }
         $this->name = $this->base_name = $this->json_name = $this->title = $j->name;
         if (isset($j->json_name)
             && ($j->json_name === false || is_string($j->json_name))) {
             $this->json_name = $j->json_name;
         }
         foreach ((array) $j as $k => $v) {
-            if (isset(self::$key_storage[$k]))
+            if (isset(self::$key_storage[$k])) {
                 $this->store($k, $j, $k, self::$key_storage[$k]);
+            }
         }
         if (isset($j->storage)) {
-            if (is_string($j->storage) && $j->storage !== "")
+            if (is_string($j->storage) && $j->storage !== "") {
                 $this->storage = $j->storage;
-            else if ($j->storage === false)
+            } else if ($j->storage === false) {
                 $this->storage = "none";
-            else
+            } else {
                 trigger_error("setting {$j->name}.storage format error");
+            }
         }
         if (isset($j->anchorid)) {
-            if (is_string($j->anchorid) || $j->anchorid === false)
+            if (is_string($j->anchorid) || $j->anchorid === false) {
                 $this->anchorid = $j->anchorid;
-            else
+            } else {
                 trigger_error("setting {$j->name}.anchorid format error");
+            }
         }
         if (isset($j->default_value)) {
-            if (is_int($j->default_value) || is_string($j->default_value))
+            if (is_int($j->default_value) || is_string($j->default_value)) {
                 $this->default_value = $j->default_value;
-            else
+            } else {
                 trigger_error("setting {$j->name}.default_value format error");
+            }
         }
         if (isset($j->extensible)) {
-            if ($j->extensible === true || $j->extensible === "simple")
+            if ($j->extensible === true || $j->extensible === "simple") {
                 $this->extensible = self::X_SIMPLE;
-            else if ($j->extensible === "word")
+            } else if ($j->extensible === "word") {
                 $this->extensible = self::X_WORD;
-            else if ($j->extensible === false)
+            } else if ($j->extensible === false) {
                 $this->extensible = false;
-            else
+            } else {
                 trigger_error("setting {$j->name}.extensible format error");
+            }
         }
 
         if (!$this->type && $this->parser_class) {
@@ -159,33 +165,39 @@ class Si {
         if ($this->storage_type & self::SI_OPT) {
             $is_value = !!($this->storage_type & self::SI_VALUE);
             $oname = substr($this->storage ? : $this->name, 4);
-            if (!isset(self::$option_is_value[$oname]))
+            if (!isset(self::$option_is_value[$oname])) {
                 self::$option_is_value[$oname] = $is_value;
-            if (self::$option_is_value[$oname] != $is_value)
+            }
+            if (self::$option_is_value[$oname] != $is_value) {
                 error_log("$oname: conflicting option_is_value");
+            }
         }
 
         // defaults for size, placeholder
         if (str_ends_with($this->type, "date")) {
-            if ($this->size === null)
+            if ($this->size === null) {
                 $this->size = 32;
-            if ($this->placeholder === null)
+            }
+            if ($this->placeholder === null) {
                 $this->placeholder = "N/A";
+            }
         } else if ($this->type === "grace") {
-            if ($this->size === null)
+            if ($this->size === null) {
                 $this->size = 15;
-            if ($this->placeholder === null)
+            }
+            if ($this->placeholder === null) {
                 $this->placeholder = "none";
+            }
         }
     }
 
     function prefix() {
-        return preg_replace('{_(?:\$|n|m?\d+)\z}', "", $this->name);
+        return preg_replace('/_(?:\$|n|m?\d+)\z/', "", $this->name);
     }
     function suffix() {
-        if (preg_match('{_(\$|n|m?\d+)\z}', $this->name, $m))
+        if (preg_match('/_(\$|n|m?\d+)\z/', $this->name, $m)) {
             return $m[1];
-        else
+        } else {
             return "";
     }
     function group() {
@@ -271,9 +283,9 @@ class Si {
 
     static private function read($info, $text, $fname) {
         $j = json_decode($text, true);
-        if (is_array($j))
+        if (is_array($j)) {
             $info = array_replace_recursive($info, $j);
-        else if (json_last_error() !== JSON_ERROR_NONE) {
+        } else if (json_last_error() !== JSON_ERROR_NONE) {
             Json::decode($text); // our JSON decoder provides error positions
             trigger_error("$fname: Invalid JSON, " . Json::last_error_msg());
         }
@@ -286,8 +298,9 @@ class Si {
             if (is_object($v) && isset($v->name) && is_string($v->name)) {
                 $conf->_setting_info[] = $v;
                 return true;
-            } else
+            } else {
                 return false;
+            }
         };
 
         $conf->_setting_info = [];
@@ -342,12 +355,15 @@ class SettingParser {
         if ($v === ""
             || strtoupper($v) === "N/A"
             || strtoupper($v) === "NONE"
-            || $v === "0")
+            || $v === "0") {
             return -1;
-        if (ctype_digit($v))
+        }
+        if (ctype_digit($v)) {
             return $v * 60;
-        if (preg_match('/\A\s*([\d]+):(\d+\.?\d*|\.\d+)\s*\z/', $v, $m))
+        }
+        if (preg_match('/\A\s*([\d]+):(\d+\.?\d*|\.\d+)\s*\z/', $v, $m)) {
             return $m[1] * 60 + $m[2];
+        }
         if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*y(?:ears?|rs?|)(?![a-z])/i', $v, $m)) {
             $t += $m[1] * 3600 * 24 * 365;
             $v = substr($v, strlen($m[0]));
@@ -376,10 +392,11 @@ class SettingParser {
             $t += $m[1];
             $v = substr($v, strlen($m[0]));
         }
-        if (trim($v) == "")
+        if (trim($v) == "") {
             return $t;
-        else
+        } else {
             return false;
+        }
     }
 }
 
@@ -550,8 +567,9 @@ class SettingValues extends MessageSet {
     }
     private function si_parser(Si $si) {
         $class = $si->parser_class ? : $si->validator_class;
-        if (!isset($this->parsers[$class]))
+        if (!isset($this->parsers[$class])) {
             $this->parsers[$class] = new $class($this, $si);
+        }
         return $this->parsers[$class];
     }
     function group_is_interesting($g) {
@@ -559,17 +577,18 @@ class SettingValues extends MessageSet {
     }
 
     static function add_class($c1, $c2) {
-        if ((string) $c1 !== "" && (string) $c2 !== "")
+        if ((string) $c1 !== "" && (string) $c2 !== "") {
             return $c1 . " " . $c2;
-        else
+        } else {
             return (string) $c1 !== "" ? $c1 : $c2;
+        }
     }
 
     function label($name, $html, $label_js = null) {
         $name1 = is_array($name) ? $name[0] : $name;
         if ($label_js
-            && (get($label_js, "class") === false
-                || get($label_js, "no_control_class"))) {
+            && (($label_js["class"] ?? null) === false
+                || ($label_js["no_control_class"] ?? false))) {
             unset($label_js["no_control_class"]);
         } else {
             foreach (is_array($name) ? $name : array($name) as $n) {
@@ -580,8 +599,9 @@ class SettingValues extends MessageSet {
             }
         }
         $post = "";
-        if (($pos = strpos($html, "<input")) !== false)
+        if (($pos = strpos($html, "<input")) !== false) {
             list($html, $post) = [substr($html, 0, $pos), substr($html, $pos)];
+        }
         return Ht::label($html, $name1, $label_js) . $post;
     }
     function sjs($name, $js = array()) {
@@ -605,7 +625,7 @@ class SettingValues extends MessageSet {
             $x[$k] = $v;
         }
         if ($this->has_problem_at($name)) {
-            $x["class"] = $this->control_class($name, get($x, "class", ""));
+            $x["class"] = $this->control_class($name, $x["class"] ?? "");
         }
         return $x;
     }
@@ -658,15 +678,16 @@ class SettingValues extends MessageSet {
     }
     function reqv($name, $default_value = null) {
         $xname = str_replace(".", "_", $name);
-        return get($this->req, $xname, $default_value);
+        return $this->req[$xname] ?? $default_value;
     }
     private function req_sis(Si $si) {
         $xsis = [];
         $xname = str_replace(".", "_", $si->name);
-        foreach (get($this->req_has_suffixes, $xname, []) as $suffix) {
+        foreach ($this->req_has_suffixes[$xname] ?? [] as $suffix) {
             $xsi = $this->si($si->name . $suffix);
-            if ($this->req_has_si($xsi))
+            if ($this->req_has_si($xsi)) {
                 $xsis[] = $xsi;
+            }
         }
         return $xsis;
     }
@@ -677,8 +698,7 @@ class SettingValues extends MessageSet {
             && $si->type !== "checkbox") {
             return array_key_exists($xname, $this->req);
         } else {
-            $has = get($this->req, "has_{$xname}");
-            return $has && $has !== false;
+            return !!($this->req["has_{$xname}"] ?? null);
         }
     }
 
@@ -828,15 +848,15 @@ class SettingValues extends MessageSet {
             Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js));
     }
     function echo_checkbox($name, $text, $js = null, $hint = null) {
-        echo '<div class="', self::add_class("checki", get($js, "group_class")),
+        echo '<div class="', self::add_class("checki", $js["group_class"] ?? null),
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, self::strip_group_js($js));
-        echo '</span>', $this->label($name, $text, ["for" => $name, "class" => get($js, "label_class")]);
+        echo '</span>', $this->label($name, $text, ["for" => $name, "class" => $js["label_class"] ?? null]);
         if ($hint) {
-            echo '<div class="', self::add_class("settings-ap f-hx", get($js, "hint_class")), '">', $hint, '</div>';
+            echo '<div class="', self::add_class("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
         }
         $this->echo_messages_at($name);
-        if (!get($js, "group_open"))
+        if (!($js["group_open"] ?? null))
             echo "</div>\n";
     }
     function echo_radio_table($name, $varr, $heading = null, $rest = null) {
@@ -847,7 +867,7 @@ class SettingValues extends MessageSet {
         if (is_string($rest)) {
             $rest = ["after" => $rest];
         }
-        $fold = $rest ? get($rest, "fold", false) : false;
+        $fold = $rest ? $rest["fold"] ?? false : false;
         if (is_string($fold) || is_int($fold)) {
             $fold = explode(" ", $fold);
         }
@@ -870,7 +890,7 @@ class SettingValues extends MessageSet {
             if (is_string($item))
                 $item = ["label" => $item];
             $label = $item["label"];
-            $hint = get($item, "hint", "");
+            $hint = $item["hint"] ?? "";
             unset($item["label"], $item["hint"]);
             $item["id"] = "{$name}_{$k}";
             if (!isset($item["class"])) {
@@ -910,7 +930,7 @@ class SettingValues extends MessageSet {
             $js["placeholder"] = $si->placeholder;
         }
         if ($si->autogrow) {
-            $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
+            $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
         }
         if ($si->parser_class) {
             $t = Ht::hidden("has_$name", 1);
@@ -923,7 +943,7 @@ class SettingValues extends MessageSet {
     function echo_control_group($name, $description, $control,
                                 $js = null, $hint = null) {
         $si = $this->si($name);
-        if (($horizontal = get($js, "horizontal")) !== null) {
+        if (($horizontal = $js["horizontal"] ?? null) !== null) {
             unset($js["horizontal"]);
         }
         $klass = $horizontal ? "entryi" : "f-i";
@@ -932,7 +952,7 @@ class SettingValues extends MessageSet {
         }
 
         echo '<div class="', $this->control_class($name, $klass), '">',
-            $this->label($name, $description, ["class" => get($js, "label_class"), "no_control_class" => true]);
+            $this->label($name, $description, ["class" => $js["label_class"] ?? null, "no_control_class" => true]);
         if ($horizontal) {
             echo '<div class="entry">';
         }
@@ -951,7 +971,7 @@ class SettingValues extends MessageSet {
         if ($horizontal) {
             echo "</div>";
         }
-        if (!get($js, "group_open")) {
+        if (!($js["group_open"] ?? null)) {
             echo "</div>\n";
         }
     }
@@ -986,7 +1006,7 @@ class SettingValues extends MessageSet {
             $js["placeholder"] = $si->placeholder;
         }
         if ($si->autogrow || $si->autogrow === null) {
-            $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
+            $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
         }
         if ($si->parser_class) {
             $t = Ht::hidden("has_$name", 1);
