@@ -65,8 +65,7 @@ class Home_Partial {
         }
     }
 
-    function render_sidebar(Contact $user, Qrequest $qreq, $gx) {
-        $conf = $user->conf;
+    static function render_sidebar(Contact $user, Qrequest $qreq, $gx) {
         echo '<div class="homeside">';
         $gx->render_group("home/sidebar");
         echo "</div>\n";
@@ -77,28 +76,28 @@ class Home_Partial {
         return "<h2 class=\"home home-{$this->_nh2}\">" . $x . "</h2>";
     }
 
-    function render_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
+    static function render_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
         echo '<div class="homeinside"><h4>Administration</h4><ul>';
         $gx->render_group("home/sidebar/admin");
         echo '</ul></div>';
     }
-    function render_admin_settings(Contact $user) {
+    static function render_admin_settings(Contact $user) {
         echo '<li>', Ht::link("Settings", $user->conf->hoturl("settings")), '</li>';
     }
-    function render_admin_users(Contact $user) {
+    static function render_admin_users(Contact $user) {
         echo '<li>', Ht::link("Users", $user->conf->hoturl("users", "t=all")), '</li>';
     }
-    function render_admin_assignments(Contact $user) {
+    static function render_admin_assignments(Contact $user) {
         echo '<li>', Ht::link("Assignments", $user->conf->hoturl("autoassign")), '</li>';
     }
-    function render_admin_mail(Contact $user) {
+    static function render_admin_mail(Contact $user) {
         echo '<li>', Ht::link("Mail", $user->conf->hoturl("mail")), '</li>';
     }
-    function render_admin_log(Contact $user) {
+    static function render_admin_log(Contact $user) {
         echo '<li>', Ht::link("Action log", $user->conf->hoturl("log")), '</li>';
     }
 
-    function render_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
+    static function render_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
         ob_start();
         $gx->render_group("home/sidebar/info");
         if (($t = ob_get_clean())) {
@@ -107,20 +106,24 @@ class Home_Partial {
                 '</h4><ul>', $t, '</ul></div>';
         }
     }
-    function render_info_deadline(Contact $user) {
-        if ($user->has_reportable_deadline())
+    static function render_info_deadline(Contact $user) {
+        if ($user->has_reportable_deadline()) {
             echo '<li>', Ht::link("Deadlines", $user->conf->hoturl("deadlines")), '</li>';
+        }
     }
-    function render_info_pc(Contact $user) {
-        if ($user->can_view_pc())
+    static function render_info_pc(Contact $user) {
+        if ($user->can_view_pc()) {
             echo '<li>', Ht::link("Program committee", $user->conf->hoturl("users", "t=pc")), '</li>';
+        }
     }
-    function render_info_site(Contact $user) {
+    static function render_info_site(Contact $user) {
         if (($site = $user->conf->opt("conferenceSite"))
-            && $site !== $user->conf->opt("paperSite"))
+            && $site !== $user->conf->opt("paperSite")) {
             echo '<li>', Ht::link("Conference site", $site), '</li>';
+        }
     }
-    function render_info_accepted(Contact $user) {
+    static function render_info_accepted(Contact $user) {
+        assert($user->conf->can_all_author_view_decision());
         if ($user->conf->can_all_author_view_decision()) {
             list($n, $nyes) = $user->conf->count_submitted_accepted();
             echo '<li>', $user->conf->_("%d papers accepted out of %d submitted.", $nyes, $n), '</li>';
@@ -128,8 +131,9 @@ class Home_Partial {
     }
 
     function render_message(Contact $user) {
-        if (($t = $user->conf->_i("home", false)))
+        if (($t = $user->conf->_i("home", false))) {
             $user->conf->msg($t, 0);
+        }
     }
 
     function render_welcome(Contact $user) {

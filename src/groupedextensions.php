@@ -18,7 +18,7 @@ class GroupedExtensions {
     function _add_json($fj) {
         if (is_array($fj)) {
             $fja = $fj;
-            if (count($fja) !== 3) {
+            if (count($fja) < 3 || !is_string($fja[0])) {
                 return false;
             }
             $fj = (object) [
@@ -29,6 +29,9 @@ class GroupedExtensions {
                 $fj->render_callback = $fja[2];
             } else {
                 $fj->alias = $fja[2];
+            }
+            if (isset($fja[3]) && is_number($fja[3])) {
+                $fj->priority = $fja[3];
             }
         }
         if (!isset($fj->name)) {

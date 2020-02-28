@@ -355,11 +355,6 @@
         "type": "checkbox"
     },
     {
-        "name": "shepherd_hide", "group": "decisions",
-        "title": "Shepherd visibility",
-        "type": "checkbox"
-    },
-    {
         "name": "sub_banal", "group": "subform",
         "type": "checkbox", "parser_class": "Banal_SettingParser",
         "storage": "val.sub_banal", "extensible": true

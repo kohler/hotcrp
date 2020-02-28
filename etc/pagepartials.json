@@ -29,51 +29,43 @@
     },
     {
         "name": "home/sidebar", "position": 1500,
-        "render_callback": "*Home_Partial::render_sidebar"
+        "render_callback": "Home_Partial::render_sidebar"
     },
     {
         "name": "home/sidebar/admin", "position": 100, "allow_if": "manager",
-        "render_callback": "*Home_Partial::render_admin_sidebar"
+        "render_callback": "Home_Partial::render_admin_sidebar"
     },
     {
         "name": "home/sidebar/admin/settings", "position": 10, "allow_if": "chair",
-        "render_callback": "*Home_Partial::render_admin_settings"
+        "render_callback": "Home_Partial::render_admin_settings"
     },
     {
         "name": "home/sidebar/admin/users", "position": 20, "allow_if": "manager",
-        "render_callback": "*Home_Partial::render_admin_users"
+        "render_callback": "Home_Partial::render_admin_users"
     },
     {
         "name": "home/sidebar/admin/assignments", "position": 30, "allow_if": "manager",
-        "render_callback": "*Home_Partial::render_admin_assignments"
+        "render_callback": "Home_Partial::render_admin_assignments"
     },
     {
         "name": "home/sidebar/admin/mail", "position": 40, "allow_if": "manager",
-        "render_callback": "*Home_Partial::render_admin_mail"
+        "render_callback": "Home_Partial::render_admin_mail"
     },
     {
         "name": "home/sidebar/admin/log", "position": 50, "allow_if": "manager",
-        "render_callback": "*Home_Partial::render_admin_log"
+        "render_callback": "Home_Partial::render_admin_log"
     },
     {
         "name": "home/sidebar/info", "position": 200,
-        "render_callback": "*Home_Partial::render_info_sidebar"
+        "render_callback": "Home_Partial::render_info_sidebar"
     },
-    {
-        "name": "home/sidebar/info/deadline", "position": 10,
-        "render_callback": "*Home_Partial::render_info_deadline"
-    },
-    {
-        "name": "home/sidebar/info/pc", "position": 20,
-        "render_callback": "*Home_Partial::render_info_pc"
-    },
-    {
-        "name": "home/sidebar/info/site", "position": 30,
-        "render_callback": "*Home_Partial::render_info_site"
-    },
+    [   "home/sidebar/info/deadline", 10, "Home_Partial::render_info_deadline"   ],
+    [   "home/sidebar/info/pc", 20, "Home_Partial::render_info_pc"   ],
+    [   "home/sidebar/info/site", 30, "Home_Partial::render_info_site"   ],
     {
         "name": "home/sidebar/info/accepted", "position": 40,
-        "render_callback": "*Home_Partial::render_info_accepted"
+        "allow_if": "conf.can_all_author_view_decision",
+        "render_callback": "Home_Partial::render_info_accepted"
     },
 
 
