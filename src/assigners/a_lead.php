@@ -30,6 +30,13 @@ class Lead_AssignmentParser extends AssignmentParser {
             return true;
         }
     }
+    function user_universe($req, AssignmentState $state) {
+        if ($this->key === "shepherd" && $state->conf->setting("extrev_shepherd")) {
+            return "pc+reviewers";
+        } else {
+            return "pc";
+        }
+    }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         if ($this->remove) {
             $m = $state->query(["type" => $this->key, "pid" => $prow->paperId]);
@@ -43,13 +50,17 @@ class Lead_AssignmentParser extends AssignmentParser {
         return $this->expand_any_user($prow, $req, $state);
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        if ($this->remove || !$contact->contactId)
+        if ($this->remove
+            || !$contact->contactId
+            || $contact->can_accept_review_assignment_ignore_conflict($prow)
+            || ($this->key === "shepherd"
+                && $state->conf->setting("extrev_shepherd")
+                && $prow->review_type($contact) == REVIEW_EXTERNAL)) {
             return true;
-        else if (!$contact->can_accept_review_assignment_ignore_conflict($prow)) {
+        } else {
             $verb = $this->key === "manager" ? "administer" : $this->key;
             return Text::user_html_nolink($contact) . " can’t $verb #{$prow->paperId}.";
-        } else
-            return true;
+        }
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $remcid = null;

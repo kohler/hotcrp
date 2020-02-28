@@ -554,7 +554,7 @@ class AssignmentParser {
             return true;
     }
     // Return a descriptor of the set of users relevant for this action.
-    // Returns `"none"`, `"pc"`, `"reviewers"`, or `"any"`.
+    // Returns `"none"`, `"pc"`, `"reviewers"`, `"pc+reviewers"`, or `"any"`.
     function user_universe($req, AssignmentState $state) {
         return "pc";
     }
@@ -955,6 +955,9 @@ class AssignmentSet {
         } else if ($users === "reviewers") {
             $cset = $this->astate->reviewer_users();
             $cset_text = "reviewer";
+        } else if ($users === "pc+reviewers") {
+            $cset = $this->astate->pc_users() + $this->astate->reviewer_users();
+            $cset_text = "PC/reviewer";
         } else {
             $cset = null;
             $cset_text = "user";

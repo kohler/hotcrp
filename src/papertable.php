@@ -1660,7 +1660,8 @@ class PaperTable {
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit) {
-        $editable = ($type === "manager" ? $this->user->privChair : $this->admin);
+        $editable = $type === "manager" ? $this->user->privChair : $this->admin;
+        $extrev_shepherd = $type === "shepherd" && $this->conf->setting("extrev_shepherd");
 
         $field = $type . "ContactId";
         if ($this->prow->$field == 0 && !$editable) {
@@ -1671,18 +1672,26 @@ class PaperTable {
         $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector"] : "");
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv">';
-        if (($p = $this->conf->pc_member_by_id($value))) {
+        if (!$value) {
+            $n = "";
+        } else if (($p = $this->conf->cached_user_by_id($value))
+                   && ($p->isPC
+                       || ($extrev_shepherd && $this->prow->review_type($p) == REVIEW_EXTERNAL))) {
             $n = $this->user->reviewer_html_for($p);
         } else {
-            $n = $value ? "<strong>[removed from PC]</strong>" : "";
+            $n = "<strong>[removed from PC]</strong>";
         }
         echo '<div class="pscopen"><p class="fn odname js-psedit-result">',
             $n, '</p></div>';
 
         if ($editable) {
             $this->conf->stash_hotcrp_pc($this->user);
+            $selopt = "0 assignable";
+            if ($type === "shepherd" && $this->conf->setting("extrev_shepherd")) {
+                $selopt .= " extrev";
+            }
             echo '<form class="ui-submit uin fx"><div>',
-                Ht::select($type, [], 0, ["class" => "psc-select want-focus", "style" => "width:99%", "data-pcselector-options" => "0 assignable selected", "data-pcselector-selected" => $value]),
+                Ht::select($type, [], 0, ["class" => "psc-select want-focus", "style" => "width:99%", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value]),
                 '</div></form>';
             Ht::stash_script('edit_paper_ui.prepare_psedit.call($$("fold' . $type . '"),{p:' . $this->prow->paperId . ',fn:"' . $type . '"})');
         }

@@ -3926,9 +3926,12 @@ class Conf {
     }
 
     function hotcrp_pc_json(Contact $user) {
-        $hpcj = $list = [];
+        $hpcj = $list = $otherj = [];
         foreach ($this->pc_members() as $pcm) {
-            $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_text_for($pcm), "email" => $pcm->email];
+            $hpcj[$pcm->contactId] = $j = (object) [
+                "name" => $user->name_text_for($pcm),
+                "email" => $pcm->email
+            ];
             if (($color_classes = $pcm->viewable_color_classes($user))) {
                 $j->color_classes = $color_classes;
             }
@@ -3959,6 +3962,31 @@ class Conf {
                 }
             }
             $hpcj["__assignable__"] = [$this->paper->paperId => $list];
+            if ($this->setting("extrev_shepherd")) {
+                $this->paper->ensure_reviewer_names();
+                $erlist = [];
+                foreach ($this->paper->reviews_by_display($user) as $rrow) {
+                    if ($rrow->reviewType == REVIEW_EXTERNAL
+                        && !$rrow->reviewToken
+                        && !in_array($rrow->contactId, $erlist)) {
+                        $r = Text::analyze_name($rrow);
+                        $otherj[$rrow->contactId] = $j = (object) [
+                            "name" => $r->name ? : $r->email, "email" => $rrow->email
+                        ];
+                        if ($this->sort_by_last && $rrow->lastName
+                            && strlen($rrow->lastName) !== strlen($rrow->name)) {
+                            $j->lastpos = strlen($r->firstName) + 1;
+                        }
+                        $erlist[] = $rrow->contactId;
+                    }
+                }
+                if (!empty($erlist)) {
+                    $hpcj["__extrev__"] = [$this->paper->paperId => $erlist];
+                }
+            }
+        }
+        if (!empty($otherj)) {
+            $hpcj["__other__"] = $otherj;
         }
         return $hpcj;
     }

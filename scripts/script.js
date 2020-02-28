@@ -8677,7 +8677,7 @@ function populate_pcselector(pcs) {
     else
         optids = optids.split(/[\s,]+/);
     var selected = this.getAttribute("data-pcselector-selected"), selindex = -1;
-    var last_first = pcs.__sort__ === "last", used = {};
+    var last_first = pcs.__sort__ === "last", used = {}, opt, curgroup = this;
 
     for (var i = 0; i < optids.length; ++i) {
         var cid = optids[i], email, name, p;
@@ -8688,6 +8688,17 @@ function populate_pcselector(pcs) {
         } else if (cid === "selected") {
             if (selected != null)
                 optids.splice.apply(optids, [i + 1, 0, selected]);
+        } else if (cid === "extrev") {
+            var extrevs = pcs.__extrev__ ? pcs.__extrev__[hotcrp_paperid] : null;
+            if (extrevs && extrevs.length) {
+                optids.splice.apply(optids, [i + 1, 0].concat(extrevs));
+                optids.splice(i + 1 + extrevs.length, 0, "endgroup");
+                curgroup = document.createElement("optgroup");
+                curgroup.setAttribute("label", "External reviewers");
+                this.appendChild(curgroup);
+            }
+        } else if (cid === "endgroup") {
+            curgroup = this;
         } else {
             cid = +optids[i];
             if (!cid) {
@@ -8695,7 +8706,8 @@ function populate_pcselector(pcs) {
                 name = optids[i];
                 if (name === "" || name === "0")
                     name = "None";
-            } else if ((p = pcs[cid])) {
+            } else if ((p = pcs[cid])
+                       || (pcs.__other__ && (p = pcs.__other__[cid]))) {
                 email = p.email;
                 name = p.name;
                 if (last_first && p.lastpos) {
@@ -8707,10 +8719,10 @@ function populate_pcselector(pcs) {
             }
             if (!used[email]) {
                 used[email] = true;
-                var opt = document.createElement("option");
+                opt = document.createElement("option");
                 opt.setAttribute("value", email);
                 opt.text = name;
-                this.add(opt);
+                curgroup.appendChild(opt);
                 if (email === selected || (email !== "none" && cid == selected))
                     selindex = this.options.length - 1;
             }
@@ -8729,7 +8741,7 @@ function populate_pcselector(pcs) {
                 opt.setAttribute("value", selected);
                 opt.text = "[removed from PC]";
             }
-            this.add(opt);
+            this.appendChild(opt);
             selindex = this.options.length - 1;
         }
     }
