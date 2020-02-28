@@ -2800,13 +2800,17 @@ function foldup(event, opts) {
     }
     if (!("n" in opts)
         && e.hasAttribute("data-fold-target")
-        && (m = e.getAttribute("data-fold-target").match(/^(\D[^#]*$|.*(?=#)|)#?(\d*)([co]?)$/))) {
+        && (m = e.getAttribute("data-fold-target").match(/^(\D[^#]*$|.*(?=#)|)#?(\d*)([cou]?)$/))) {
         if (m[1] !== "") {
             e = document.getElementById(m[1]);
         }
         opts.n = parseInt(m[2]) || 0;
         if (!("f" in opts) && m[3] !== "") {
-            opts.f = m[3] === "c";
+            if (this.tagName === "INPUT" && this.type === "checkbox" && m[3] === "u") {
+                opts.f = this.checked;
+            } else {
+                opts.f = m[3] === "c";
+            }
         }
     }
     var foldname = "fold" + (opts.n || "");
