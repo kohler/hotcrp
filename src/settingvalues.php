@@ -8,7 +8,7 @@ class Si {
     public $base_name;
     public $json_name;
     public $title;
-    public $group;
+    private $group;
     public $position;
     public $anchorid;
     public $type;
@@ -134,6 +134,9 @@ class Si {
                 trigger_error("setting {$j->name}.extensible format error");
             }
         }
+        if (!$this->group && !$this->internal) {
+            trigger_error("setting {$j->name}.group missing");
+        }
 
         if (!$this->type && $this->parser_class) {
             $this->type = "special";
@@ -199,21 +202,19 @@ class Si {
             return $m[1];
         } else {
             return "";
-    }
-    function group() {
-        if (!$this->group) {
-            error_log("setting $this->name: missing group");
         }
-        return $this->group;
     }
     function canonical_group($conf) {
+        if (!$this->group) {
+            trigger_error("setting {$this->name}.group missing");
+        }
         if (!$conf->_setting_groups) {
             $conf->_setting_groups = new GroupedExtensions($conf->site_contact(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
         }
-        return $conf->_setting_groups->canonical_group($this->group());
+        return $conf->_setting_groups->canonical_group($this->group);
     }
     function is_interesting(SettingValues $sv) {
-        return $sv->group_is_interesting($this->group());
+        return !$this->group || $sv->group_is_interesting($this->group);
     }
     function storage() {
         return $this->storage ? : $this->name;
@@ -240,7 +241,7 @@ class Si {
         return $conf->hoturl("settings", $this->hoturl_param($conf));
     }
     function sv_hoturl($sv) {
-        if ($sv->group_is_interesting($this->group())) {
+        if ($this->is_interesting($sv)) {
             return "#" . urlencode($this->anchorid ? : $this->name);
         } else {
             return $this->hoturl($sv->conf);
@@ -708,7 +709,6 @@ class SettingValues extends MessageSet {
     private function si_curv(Si $si, $default_value) {
         if ($this->use_req()
             && ($this->all_interesting
-                || !$si->group
                 || $si->is_interesting($this))) {
             return $this->reqv($si->name, $default_value);
         } else {
