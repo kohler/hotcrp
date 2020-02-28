@@ -922,6 +922,12 @@ class Conf {
                 $b = !!$this->opt(substr($e, 4));
             } else if (str_starts_with($e, "setting.")) {
                 $b = !!$this->setting(substr($e, 8));
+            } else if (str_starts_with($e, "conf.")) {
+                $f = substr($e, 5);
+                $b = !!$this->$f();
+            } else if (str_starts_with($e, "user.")) {
+                $f = substr($e, 5);
+                $b = !$user || !!$user->$f();
             } else if (str_starts_with($e, "req.")) {
                 $b = false;
                 foreach (explode(" ", $e) as $w) {
