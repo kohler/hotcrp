@@ -192,9 +192,16 @@ class Reviews_SettingRenderer {
 
 
     static function render_external(SettingValues $sv) {
-        $sv->echo_radio_table("extrev_view", [2 => "Yes", 1 => "Yes, but they can’t see comments or reviewer names", 0 => "No"],
-            'Can external reviewers see reviews, comments, and eventual decisions for their assigned submissions, once they’ve completed a review?');
-
+        $sv->render_group("reviews/external");
+    }
+    static function render_extrev_view(SettingValues $sv) {
+        $sv->echo_radio_table("extrev_view", [
+                0 => "No",
+                1 => "Yes, but they can’t see comments or reviewer names",
+                2 => "Yes"
+            ], 'Can external reviewers see reviews, comments, and eventual decisions for their assigned submissions, once they’ve completed a review?');
+    }
+    static function render_extrev_editdelegate(SettingValues $sv) {
         echo '<div id="foldpcrev_editdelegate" class="settings-g has-fold fold',
             $sv->curv("extrev_chairreq") >= 0 ? 'o' : 'c',
             ' fold2o" data-fold-values="0 1 2">';
@@ -213,7 +220,8 @@ class Reviews_SettingRenderer {
                 3 => "Yes, and external reviews are visible only to their requesters"
             ], "Can PC members edit the external reviews they requested?");
         echo "</div></div>\n";
-
+    }
+    static function render_extrev_requestmail(SettingValues $sv) {
         $t = $sv->expand_mail_template("requestreview", false);
         echo '<div id="foldmailbody_requestreview" class="settings-g ',
             ($t == $sv->expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
@@ -230,8 +238,11 @@ class Reviews_SettingRenderer {
     }
 
     static function render_ratings(SettingValues $sv) {
-        $sv->echo_radio_table("rev_ratings", [REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"],
-            'Should HotCRP collect ratings of reviews?   <a class="hint" href="' . $sv->conf->hoturl("help", "t=revrate") . '">Learn more</a>');
+        $sv->echo_radio_table("rev_ratings", [
+                REV_RATINGS_NONE => "No",
+                REV_RATINGS_PC => "Yes, PC members can rate reviews",
+                REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews"
+            ], 'Should HotCRP collect ratings of reviews?   <a class="hint" href="' . $sv->conf->hoturl("help", "t=revrate") . '">Learn more</a>');
     }
 
     static function crosscheck(SettingValues $sv) {

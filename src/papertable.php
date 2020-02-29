@@ -1691,7 +1691,7 @@ class PaperTable {
                 $selopt .= " extrev";
             }
             echo '<form class="ui-submit uin fx"><div>',
-                Ht::select($type, [], 0, ["class" => "psc-select want-focus", "style" => "width:99%", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value]),
+                Ht::select($type, [], 0, ["class" => "psc-select want-focus w-99", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value]),
                 '</div></form>';
             Ht::stash_script('edit_paper_ui.prepare_psedit.call($$("fold' . $type . '"),{p:' . $this->prow->paperId . ',fn:"' . $type . '"})');
         }

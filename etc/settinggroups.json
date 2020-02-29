@@ -118,6 +118,9 @@
         "title": "External reviews",
         "render_callback": "Reviews_SettingRenderer::render_external"
     },
+    [   "reviews/external/view", 10, "Reviews_SettingRenderer::render_extrev_view"   ],
+    [   "reviews/external/editdelegate", 20, "Reviews_SettingRenderer::render_extrev_editdelegate"   ],
+    [   "reviews/external/requestmail", 30, "Reviews_SettingRenderer::render_extrev_requestmail"   ],
     {
         "name": "reviews/ratings", "position": 40,
         "title": "Review ratings",

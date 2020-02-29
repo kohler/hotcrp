@@ -499,8 +499,8 @@ class SettingValues extends MessageSet {
             }
         }
     }
-    function render_group($g) {
-        $this->gxt()->render_group(strtolower($g), ["top" => true]);
+    function render_group($g, $options = null) {
+        $this->gxt()->render_group($g, $options);
     }
 
 
