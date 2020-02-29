@@ -351,7 +351,7 @@ class Contact {
             }
         }
         $t = join(" ", $s);
-        if (preg_match('/[\x80-\xFF]/', $t)) {
+        if (!is_usascii($t)) {
             $t = UnicodeHelper::deaccent($t);
         }
         return $t;
@@ -665,18 +665,21 @@ class Contact {
         $items = [];
 
         $x = strtolower(substr($this->email, 0, strpos($this->email, "@")));
-        if ($x !== "")
+        if ($x !== "") {
             $items[$x] = 2;
+        }
 
         $sp = strpos($this->firstName, " ") ? : strlen($this->firstName);
         $x = strtolower(UnicodeHelper::deaccent(substr($this->firstName, 0, $sp)));
-        if ($x !== "" && ctype_alnum($x))
+        if ($x !== "" && ctype_alnum($x)) {
             $items[$x] = 1;
+        }
 
         $sp = strrpos($this->lastName, " ");
         $x = strtolower(UnicodeHelper::deaccent(substr($this->lastName, $sp ? $sp + 1 : 0)));
-        if ($x !== "" && ctype_alnum($x))
+        if ($x !== "" && ctype_alnum($x)) {
             $items[$x] = 1;
+        }
 
         return $items;
     }

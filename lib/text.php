@@ -112,7 +112,7 @@ class Text {
         else
             $ret->name = $ret->firstName . " " . $ret->lastName;
         $ret->unaccentedName = $ret->orderedName = $ret->name;
-        if (preg_match('/[\x80-\xFF]/', $ret->name))
+        if (!is_usascii($ret->name))
             $ret->unaccentedName = UnicodeHelper::deaccent($ret->name);
         if ($ret->lastFirst && $ret->firstName !== "" && $ret->lastName !== "")
             $ret->orderedName = $ret->lastName . ", " . $ret->firstName;
@@ -341,7 +341,7 @@ class Text {
             $reg = (object) ["value" => $word];
 
         $word = preg_replace('/\s+/', " ", $reg->value);
-        if (!preg_match("/[\x80-\xFF]/", $word))
+        if (is_usascii($word))
             $reg->preg_raw = Text::word_regex($word);
         $reg->preg_utf8 = Text::utf8_word_regex($word);
 
@@ -394,46 +394,56 @@ class Text {
             if (!isset($match->preg_raw)) {
                 $match = $match->preg_utf8;
                 $flags = "u";
-            } else if (preg_match('/[\x80-\xFF]/', $text)) {
+            } else if (is_usascii($text)) {
+                $match = $match->preg_raw;
+            } else {
                 list($mtext, $offsetmap) = UnicodeHelper::deaccent_offsets($mtext);
                 $match = $match->preg_utf8;
                 $flags = "u";
-            } else
-                $match = $match->preg_raw;
+            }
         }
 
         $s = $clean_initial_nonletter = false;
         if ($match !== null && $match !== "") {
-            if (str_starts_with($match, self::UTF8_INITIAL_NONLETTERDIGIT))
+            if (str_starts_with($match, self::UTF8_INITIAL_NONLETTERDIGIT)) {
                 $clean_initial_nonletter = true;
-            if ($match[0] !== "{")
+            }
+            if ($match[0] !== "{") {
                 $match = "{(" . $match . ")}is" . $flags;
+            }
             $s = preg_split($match, $mtext, -1, PREG_SPLIT_DELIM_CAPTURE);
         }
-        if (!$s || count($s) == 1)
+        if (!$s || count($s) == 1) {
             return htmlspecialchars($text);
+        }
 
         $n = (int) (count($s) / 2);
-        if ($offsetmap)
-            for ($i = $b = $o = 0; $i < count($s); ++$i)
+        if ($offsetmap) {
+            for ($i = $b = $o = 0; $i < count($s); ++$i) {
                 if ($s[$i] !== "") {
                     $o += strlen($s[$i]);
                     $e = UnicodeHelper::deaccent_translate_offset($offsetmap, $o);
                     $s[$i] = substr($text, $b, $e - $b);
                     $b = $e;
                 }
-        if ($clean_initial_nonletter)
-            for ($i = 1; $i < count($s); $i += 2)
+            }
+        }
+        if ($clean_initial_nonletter) {
+            for ($i = 1; $i < count($s); $i += 2) {
                 if ($s[$i] !== ""
                     && preg_match('{\A((?!\pL|\pN)\X)(.*)\z}us', $s[$i], $m)) {
                     $s[$i - 1] .= $m[1];
                     $s[$i] = $m[2];
                 }
-        for ($i = 0; $i < count($s); ++$i)
-            if (($i % 2) && $s[$i] !== "")
+            }
+        }
+        for ($i = 0; $i < count($s); ++$i) {
+            if (($i % 2) && $s[$i] !== "") {
                 $s[$i] = '<span class="match">' . htmlspecialchars($s[$i]) . "</span>";
-            else
+            } else {
                 $s[$i] = htmlspecialchars($s[$i]);
+            }
+        }
         return join("", $s);
     }
 
@@ -447,25 +457,29 @@ class Text {
                 if (strcasecmp($needle, $v) === 0)
                     $matches[$k] = $v;
             }
-            if (!empty($matches))
+            if (!empty($matches)) {
                 return $matches;
+            }
         }
 
         $rewords = array();
-        foreach (preg_split('/[^A-Za-z_0-9*]+/', $needle) as $word)
+        foreach (preg_split('/[^A-Za-z_0-9*]+/', $needle) as $word) {
             if ($word !== "")
                 $rewords[] = str_replace("*", ".*", $word);
+        }
         $i = $flags & self::SEARCH_UNPRIVILEGE_EXACT ? 1 : 0;
         for (; $i <= 2; ++$i) {
-            if ($i == 0)
+            if ($i == 0) {
                 $re = ',\A' . join('\b.*\b', $rewords) . '\z,i';
-            else if ($i == 1)
+            } else if ($i == 1) {
                 $re = ',\A' . join('\b.*\b', $rewords) . '\b,i';
-            else
+            } else {
                 $re = ',\b' . join('.*\b', $rewords) . ',i';
+            }
             $matches = preg_grep($re, $haystacks);
-            if (!empty($matches))
+            if (!empty($matches)) {
                 return $matches;
+            }
         }
         return [];
     }

@@ -756,9 +756,9 @@ class MimeText {
                                array('=3D', '=5F', '=3F', '_'), $str);
             // define nonsafe characters
             if ($utf8 > 1) {
-                $matcher = ',[^-0-9a-zA-Z!*+/=_],';
+                $matcher = '/[^-0-9a-zA-Z!*+\/=_]/';
             } else {
-                $matcher = ',[\x80-\xFF],';
+                $matcher = '/[\x80-\xFF]/';
             }
             preg_match_all($matcher, $str, $m, PREG_OFFSET_CAPTURE);
             $xstr = "";
@@ -913,7 +913,7 @@ class MimeText {
                 $name = self::decode_header($name);
             }
 
-            $utf8 = preg_match('/[\x80-\xFF]/', $name) ? 2 : 0;
+            $utf8 = is_usascii($name) ? 0 : 2;
             if ($name !== ""
                 && $name[0] === "\""
                 && preg_match("/\\A\"([^\\\\\"]|\\\\.)*\"\\z/s", $name)) {
@@ -938,7 +938,7 @@ class MimeText {
 
     function encode_header($header, $str) {
         $this->reset($header, $str);
-        $this->append($str, preg_match('/[\x80-\xFF]/', $str));
+        $this->append($str, !is_usascii($str));
         return $this->out;
     }
 

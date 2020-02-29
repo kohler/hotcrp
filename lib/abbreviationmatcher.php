@@ -32,7 +32,7 @@ class AbbreviationMatchTracker {
 
     function __construct($pattern, $isu = null) {
         if ($isu === null)
-            $isu = !!preg_match('/[\x80-\xFF]/', $pattern);
+            $isu = !is_usascii($pattern);
         $this->isu = $isu;
         if ($isu) {
             $this->pattern = UnicodeHelper::normalize($pattern);
@@ -134,7 +134,7 @@ class AbbreviationMatchTracker {
     }
     private function mclass($subject, $sisu = null) {
         if ($sisu === null)
-            $sisu = !!preg_match('/[\x80-\xFF]/', $subject);
+            $sisu = !is_usascii($subject);
 
         if ($this->isu && $sisu) {
             if ($this->pattern === $subject)
@@ -275,7 +275,7 @@ class AbbreviationMatcher {
     private function _analyze() {
         while ($this->nanal < count($this->data)) {
             $name = $uname = simplify_whitespace($this->data[$this->nanal][0]);
-            if (preg_match('/[\x80-\xFF]/', $name)) {
+            if (!is_usascii($name)) {
                 $name = UnicodeHelper::normalize($name);
                 $uname = UnicodeHelper::deaccent($name);
             }
@@ -301,7 +301,7 @@ class AbbreviationMatcher {
         $this->matches[$pattern] = [];
 
         $spat = $upat = simplify_whitespace($pattern);
-        if (($sisu = !!preg_match('/[\x80-\xFF]/', $spat))) {
+        if (($sisu = !is_usascii($spat))) {
             $spat = UnicodeHelper::normalize($spat);
             $upat = UnicodeHelper::deaccent($spat);
         }

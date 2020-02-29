@@ -57,6 +57,10 @@ function space_join(/* $str_or_array, ... */) {
     return $t;
 }
 
+function is_usascii($str) {
+    return !preg_match('/[\x80-\xFF]/', $str);
+}
+
 function is_valid_utf8($str) {
     return !!preg_match('//u', $str);
 }
