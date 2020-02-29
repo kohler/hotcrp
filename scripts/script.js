@@ -4796,12 +4796,10 @@ function nextprev_shortcut(evt, key) {
 }
 
 function blur_keyup_shortcut(evt) {
-    var code;
     // IE compatibility
     evt = evt || window.event;
-    code = evt.charCode || evt.keyCode;
     // reject modified keys, interesting targets
-    if (code != 27 || evt.altKey || evt.ctrlKey || evt.metaKey)
+    if (evt.altKey || evt.ctrlKey || evt.metaKey || event_key(evt) !== "Escape")
         return true;
     document.activeElement && document.activeElement.blur();
     if (evt.preventDefault)
@@ -7648,53 +7646,69 @@ var edit_conditions = {};
 
 function prepare_psedit(url) {
     var self = this,
-        $ctl = $(self).find("select, textarea").first(),
-        val = $ctl.val();
+        ctl = $(self).find("select, textarea").first()[0],
+        val = $(ctl).val(),
+        keyed = 0;
     function cancel() {
-        $ctl.val(val);
+        $(ctl).val(val);
         foldup.call(self, null, {f: true});
     }
     function done(ok, message) {
         $(self).find(".psfn .savesuccess, .psfn .savefailure").remove();
-        var s = $("<span class=\"save" + (ok ? "success" : "failure") + "\"></span>");
-        s.appendTo($(self).find(".psfn"));
+        var $s = $("<span class=\"save" + (ok ? "success" : "failure") + "\"></span>");
+        $s.appendTo($(self).find(".psfn"));
         if (ok)
-            s.delay(1000).fadeOut();
+            $s.delay(1000).fadeOut();
         else
-            $ctl.val(val);
+            $(ctl).val(val);
         if (message)
-            make_bubble(message, "errorbubble").dir("l").near(s[0]);
-        $ctl.prop("disabled", false);
+            make_bubble(message, "errorbubble").dir("l").near($s[0]);
     }
-    function change() {
-        var saveval = $ctl.val();
-        $.post(hoturl_post("api", url),
-            $(self).find("form").serialize(),
-            function (data) {
-                if (data.ok) {
-                    done(true);
-                    foldup.call(self, null, {f: true});
-                    val = saveval;
-                    var $p = $(self).find(".js-psedit-result").first();
-                    $p.html(data.result || $ctl[0].options[$ctl[0].selectedIndex].innerHTML);
-                    if (data.color_classes) {
-                        make_pattern_fill(data.color_classes || "");
-                        $p.html('<span class="taghh ' + data.color_classes + '">' + $p.html() + '</span>');
-                    }
-                } else {
-                    done(false, data.error);
+    function make_callback(saveval) {
+        return function (data) {
+            if (data.ok) {
+                val = saveval;
+                done(true);
+                foldup.call(self, null, {f: true});
+                var $p = $(self).find(".js-psedit-result").first();
+                $p.html(data.result || ctl.options[ctl.selectedIndex].innerHTML);
+                if (data.color_classes) {
+                    make_pattern_fill(data.color_classes || "");
+                    $p.html('<span class="taghh ' + data.color_classes + '">' + $p.html() + '</span>');
                 }
-            });
-        $ctl.prop("disabled", true);
+            } else {
+                done(false, data.error);
+            }
+            ctl.disabled = false;
+        };
+    }
+    function change(evt) {
+        var saveval = $(ctl).val();
+        if ((keyed && evt.type !== "blur" && now_msec() <= keyed + 1)
+            || ctl.disabled) {
+        } else if (saveval !== val) {
+            $.post(hoturl_post("api", url), $(self).find("form").serialize(),
+                   make_callback(saveval));
+            ctl.disabled = true;
+        } else {
+            cancel();
+        }
     }
     function keyup(evt) {
-        if ((evt.charCode || evt.keyCode) == 27
-            && !evt.altKey && !evt.ctrlKey && !evt.metaKey) {
+        if (event_key(evt) === "Escape" && !evt.altKey && !evt.ctrlKey && !evt.metaKey) {
             cancel();
             evt.preventDefault();
         }
     }
-    $ctl.on("change", change).on("keyup", keyup);
+    function keypress(evt) {
+        if (event_key(evt) === " ")
+            /* nothing */;
+        else if (event_key.printable(evt))
+            keyed = now_msec();
+        else
+            keyed = 0;
+    }
+    $(ctl).on("change blur", change).on("keyup", keyup).on("keypress", keypress);
 }
 
 function reduce_tag_report(tagreport, min_status, tags) {
