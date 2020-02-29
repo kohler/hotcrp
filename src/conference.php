@@ -3925,36 +3925,55 @@ class Conf {
         echo '</div>', Ht::unstash(), "</body>\n</html>\n";
     }
 
-    function hotcrp_pc_json(Contact $user) {
+    private function pc_json_item($viewer, $user, $is_contact) {
+        $j = (object) [];
+        $r = null;
+        if ($is_contact) {
+            $j->name = $viewer->name_text_for($user);
+        } else {
+            $r = Text::analyze_name($user);
+            $j->name = $r->name;
+        }
+        $j->email = $user->email;
+        if ($is_contact
+            && ($color_classes = $user->viewable_color_classes($viewer))) {
+            $j->color_classes = $color_classes;
+        }
+        if ($this->sort_by_last && $user->lastName) {
+            $r = $r ? : Text::analyze_name($user);
+            if (strlen($r->lastName) !== strlen($j->name)) {
+                if ($r->nameAscii) {
+                    $j->lastpos = strlen($r->firstName) + 1;
+                } else {
+                    $j->lastpos = UnicodeHelper::utf16_strlen($r->firstName) + 1;
+                }
+            }
+            if ($r->nameAmbiguous && $r->name !== "" && $r->email !== "") {
+                if ($r->nameAscii) {
+                    $j->emailpos = strlen($r->name) + 1;
+                } else {
+                    $j->emailpos = UnicodeHelper::utf16_strlen($r->name) + 1;
+                }
+            }
+        }
+        return $j;
+    }
+
+    function hotcrp_pc_json(Contact $viewer) {
         $hpcj = $list = $otherj = [];
         foreach ($this->pc_members() as $pcm) {
-            $hpcj[$pcm->contactId] = $j = (object) [
-                "name" => $user->name_text_for($pcm),
-                "email" => $pcm->email
-            ];
-            if (($color_classes = $pcm->viewable_color_classes($user))) {
-                $j->color_classes = $color_classes;
-            }
-            if ($this->sort_by_last && $pcm->lastName) {
-                $r = Text::analyze_name($pcm);
-                if (strlen($r->lastName) !== strlen($r->name)) {
-                    $j->lastpos = strlen($r->firstName) + 1;
-                }
-                if ($r->nameAmbiguous && $r->name !== "" && $r->email !== "") {
-                    $j->emailpos = strlen($r->name) + 1;
-                }
-            }
+            $hpcj[$pcm->contactId] = $this->pc_json_item($viewer, $pcm, true);
             $list[] = $pcm->contactId;
         }
         $hpcj["__order__"] = $list;
         if ($this->sort_by_last) {
             $hpcj["__sort__"] = "last";
         }
-        if ($user->can_view_user_tags()) {
-            $hpcj["__tags__"] = $this->viewable_user_tags($user);
+        if ($viewer->can_view_user_tags()) {
+            $hpcj["__tags__"] = $this->viewable_user_tags($viewer);
         }
         if ($this->paper
-            && ($user->privChair || $user->allow_administer($this->paper))) {
+            && ($viewer->privChair || $viewer->allow_administer($this->paper))) {
             $list = [];
             foreach ($this->pc_members() as $pcm) {
                 if ($pcm->can_accept_review_assignment($this->paper)) {
@@ -3965,18 +3984,11 @@ class Conf {
             if ($this->setting("extrev_shepherd")) {
                 $this->paper->ensure_reviewer_names();
                 $erlist = [];
-                foreach ($this->paper->reviews_by_display($user) as $rrow) {
+                foreach ($this->paper->reviews_by_display($viewer) as $rrow) {
                     if ($rrow->reviewType == REVIEW_EXTERNAL
                         && !$rrow->reviewToken
                         && !in_array($rrow->contactId, $erlist)) {
-                        $r = Text::analyze_name($rrow);
-                        $otherj[$rrow->contactId] = $j = (object) [
-                            "name" => $r->name ? : $r->email, "email" => $rrow->email
-                        ];
-                        if ($this->sort_by_last && $rrow->lastName
-                            && strlen($rrow->lastName) !== strlen($rrow->name)) {
-                            $j->lastpos = strlen($r->firstName) + 1;
-                        }
+                        $otherj[$rrow->contactId] = $this->pc_json_item($viewer, $rrow, false);
                         $erlist[] = $rrow->contactId;
                     }
                 }
@@ -3991,9 +4003,9 @@ class Conf {
         return $hpcj;
     }
 
-    function stash_hotcrp_pc(Contact $user, $always = false) {
+    function stash_hotcrp_pc(Contact $viewer, $always = false) {
         if (($always || !$this->opt("largePC")) && Ht::mark_stash("hotcrp_pc"))
-            Ht::stash_script("demand_load.pc(" . json_encode_browser($this->hotcrp_pc_json($user)) . ");");
+            Ht::stash_script("demand_load.pc(" . json_encode_browser($this->hotcrp_pc_json($viewer)) . ");");
     }
 
 

@@ -14,6 +14,7 @@ class NameInfo {
     public $lastFirst;
     public $nameAmbiguous;
     public $nameAutosplit;
+    public $nameAscii;
     static function make_last_first() {
         $ni = new NameInfo;
         $ni->lastFirst = true;
@@ -112,7 +113,8 @@ class Text {
         else
             $ret->name = $ret->firstName . " " . $ret->lastName;
         $ret->unaccentedName = $ret->orderedName = $ret->name;
-        if (!is_usascii($ret->name))
+        $ret->nameAscii = is_usascii($ret->name);
+        if (!$ret->nameAscii)
             $ret->unaccentedName = UnicodeHelper::deaccent($ret->name);
         if ($ret->lastFirst && $ret->firstName !== "" && $ret->lastName !== "")
             $ret->orderedName = $ret->lastName . ", " . $ret->firstName;

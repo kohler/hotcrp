@@ -221,6 +221,10 @@ class UnicodeHelper {
         return strlen(preg_replace('/\X/u', '.', $str));
     }
 
+    static function utf16_strlen($str) {
+        return strlen($str) - preg_match_all('/[\xC0-\xDF]|[\xE0-\xEF][\x80-\xBF]|[\xF0-\xF7][\x80-\xBF]/', $str);
+    }
+
     static function utf8_prefix($str, $len) {
         preg_match('/\A\pM*\X{0,' . $len . '}/u', $str, $m);
         return isset($m[0]) ? $m[0] : false;
