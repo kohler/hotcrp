@@ -29,7 +29,7 @@ class PaperApi {
                 if ($myvotes[$lbase] < $t->vote) {
                     $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 0, "message" => plural($t->vote - $myvotes[$lbase], "vote") . " remaining", "search" => "editsort:-#~{$t->tag}"];
                 } else if ($myvotes[$lbase] > $t->vote) {
-                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 1, "message" => plural($myvotes[$lbase] - $t->vote, "vote") . " over", "search" => "editsort:-#~{$t->tag}"];
+                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 1, "message" => plural($myvotes[$lbase] - $t->vote, "overvote"), "search" => "editsort:-#~{$t->tag}"];
                 }
             }
         }

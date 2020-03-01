@@ -2294,7 +2294,7 @@ handle_ui.on("js-tracker", function (event) {
                     && tr.papers[tr.paper_offset].pid
                     && (pos = ids.indexOf(tr.papers[tr.paper_offset].pid)) > -1)
                     ids[pos] = '<b>' + ids[pos] + '</b>';
-                hc.push('<div class="entryi"><label>Submissions</label><div class="entry"><input type="hidden" name="tr' + trno + '-p" disabled>' + ids.join(" ") + '</div></div>');
+                hc.push('<div class="entryi"><label>Order</label><div class="entry"><input type="hidden" name="tr' + trno + '-p" disabled>' + ids.join(" ") + '</div></div>');
             }
         } catch (e) {
         }
