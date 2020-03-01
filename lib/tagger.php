@@ -557,7 +557,7 @@ class TagMap implements IteratorAggregate {
     static function assert_tag_string($tags, $strict = false) {
         if (!self::is_tag_string($tags, $strict)) {
             trigger_error("Bad tag string $tags");
-            debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+            error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         }
     }
 
