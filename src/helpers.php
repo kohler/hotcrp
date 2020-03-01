@@ -72,7 +72,6 @@ function hoturl_post($page, $param = null) {
 class JsonResult {
     public $status;
     public $content;
-    public $has_messages = false;
 
     function __construct($values = null) {
         if (is_int($values)) {
@@ -129,7 +128,6 @@ class JsonResult {
                     }
                 }
             }
-            $this->has_messages = true;
         }
     }
     function export_errors() {
