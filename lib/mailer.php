@@ -384,7 +384,7 @@ class Mailer {
         if (!$cap) {
             $cdbu = $this->recipient->contactdb_user();
             if (!$cdbu && $this->conf->contactdb()) {
-                error_log("{$this->conf->dbname}: {$this->recipient->email} local capability");
+                error_log("{$this->conf->dbname}: {$this->recipient->email} creating local capability");
             }
             $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
             $cap = $this->preparation->reset_capability = $capmgr->create(CAPTYPE_RESETPASSWORD, ["user" => $this->recipient, "timeExpires" => time() + 259200]);

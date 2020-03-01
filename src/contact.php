@@ -1390,12 +1390,12 @@ class Contact {
 
     function password_unset() {
         $cdbu = $this->contactdb_user();
-        return ((string) $this->password === ""
-                || str_starts_with($this->password, " unset"))
-            && (!$cdbu
-                || $this === $cdbu
+        return (!$cdbu
                 || (string) $cdbu->password === ""
-                || str_starts_with($cdbu->password, " unset"));
+                || str_starts_with($cdbu->password, " unset"))
+            && ((string) $this->password === ""
+                || str_starts_with($this->password, " unset")
+                || ($cdbu && (string) $cdbu->password !== "" && $cdbu->passwordTime >= $this->passwordTime));
     }
 
     function can_reset_password() {
@@ -1499,6 +1499,7 @@ class Contact {
         }
 
         // users with unset passwords cannot log in
+        // This logic should correspond closely with Contact::password_unset().
         if (($cdbu
              && (!$cdb_older || !$local_ok)
              && str_starts_with($cdbu->password, " unset"))

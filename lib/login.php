@@ -244,7 +244,9 @@ class LoginHelper {
 
         // ignore reset request from disabled user
         $cdbu = $user->contactdb_user();
-        if (!$user->can_reset_password()) {
+        if ($user->password_unset()) {
+            return ["ok" => false, "email" => true, "unset" => true];
+        } else if (!$user->can_reset_password()) {
             return ["ok" => false, "email" => true, "nologin" => true];
         } else if ($user->is_disabled()
                    || (!$user->contactId && !$conf->allow_user_self_register())
@@ -319,11 +321,7 @@ class LoginHelper {
             $e = "Incorrect password.";
         }
         $e = $conf->_i("loginerror", $e, $info, $extra);
-        if (isset($info["unset"]) || isset($info["disabled"]) || isset($info["email"])) {
-            Ht::error_at("email", $e);
-        } else {
-            Ht::error_at("password", $e);
-        }
+        Ht::error_at(isset($info["email"]) ? "email" : "password", $e);
         if (isset($info["password"])) {
             Ht::error_at("password");
         }
