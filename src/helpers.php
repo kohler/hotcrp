@@ -112,7 +112,7 @@ class JsonResult {
             $user->save_session("msgs", empty($msgs) ? null : $msgs);
             foreach ($xmsgs as $msg) {
                 list($text, $type) = $msg;
-                error_log($_SERVER["REQUEST_URI"] . " " . $type . " " . json_encode($text));
+                error_log($_SERVER["REQUEST_URI"] . " JsonResult::take_messages " . $type . " " . json_encode($text));
                 if (is_string($text)) {
                     $text = [$text];
                 }
