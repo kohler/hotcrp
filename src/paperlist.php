@@ -69,24 +69,29 @@ class PaperListReviewAnalysis {
         $this->prow = $prow;
         if ($rrow->reviewId) {
             $this->rrow = $rrow;
-            if ($rrow->reviewRound)
+            if ($rrow->reviewRound) {
                 $this->round = htmlspecialchars($prow->conf->round_name($rrow->reviewRound));
+            }
         }
     }
     function icon_html($includeLink) {
         $t = $this->rrow->type_icon();
-        if ($includeLink)
+        if ($includeLink) {
             $t = $this->wrap_link($t);
-        if ($this->round)
+        }
+        if ($this->round) {
             $t .= '<span class="revround" title="Review round">&nbsp;' . $this->round . "</span>";
+        }
         return $t;
     }
     function icon_text() {
         $x = "";
-        if ($this->rrow->reviewType)
+        if ($this->rrow->reviewType) {
             $x = get_s(ReviewForm::$revtype_names, $this->rrow->reviewType);
-        if ($x !== "" && $this->round)
+        }
+        if ($x !== "" && $this->round) {
             $x .= ":" . $this->round;
+        }
         return $x;
     }
     function wrap_link($html, $klass = null) {

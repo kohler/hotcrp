@@ -90,12 +90,14 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
                 && $user->can_view_review_ratings($prow, $rr)
                 && ($ratings = $rr->ratings())) {
                 $all = 0;
-                foreach ($ratings as $r)
+                foreach ($ratings as $r) {
                     $all |= $r;
-                if ($all & 126)
+                }
+                if ($all & 126) {
                     $t .= " &#x2691;";
-                else if ($all & 1)
+                } else if ($all & 1) {
                     $t .= " &#x2690;";
+                }
             }
         }
         $t .= '</td>';

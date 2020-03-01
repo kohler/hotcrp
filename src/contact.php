@@ -1506,7 +1506,7 @@ class Contact {
                 && str_starts_with($this->password, " unset"))
             || ((!$cdbu || (string) $cdbu->password === "")
                 && (string) $this->password === "")) {
-            return ["ok" => false, "unset" => true, "email" => true];
+            return ["ok" => false, "email" => true, "unset" => true];
         }
 
         // deny if no match
@@ -1541,7 +1541,7 @@ class Contact {
         // (NB all `anonymous` users should be disabled)
         if (($this->contactId && $this->is_disabled())
             || ($cdbu && $cdbu->is_disabled())) {
-            return ["ok" => false, "disabled" => true, "email" => true];
+            return ["ok" => false, "email" => true, "disabled" => true];
         }
 
         // otherwise, the login attempt succeeds

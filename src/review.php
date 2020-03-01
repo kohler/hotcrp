@@ -2350,11 +2350,12 @@ class ReviewValues extends MessageSet {
 
     private function _confirm_message($fmt, $info, $single = null) {
         $pids = array();
-        foreach ($info as &$x)
+        foreach ($info as &$x) {
             if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
                 $x = "<a href=\"" . hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
                 $pids[] = $m[2];
             }
+        }
         if ($single === null) {
             $single = $this->text === null;
         }
