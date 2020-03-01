@@ -77,10 +77,7 @@
         "name": "home/welcome", "position": 2500, "allow_if": "!pc",
         "render_callback": "*Home_Partial::render_welcome"
     },
-    {
-        "name": "home/signin", "position": 3000,
-        "render_callback": "*Home_Partial::render_signin"
-    },
+    [   "home/signin", 3000, "*Home_Partial::render_signin"   ],
     {
         "name": "home/search", "position": 4000,
         "render_callback": "*Home_Partial::render_search"
@@ -109,21 +106,10 @@
         "allow_request_if": "anypost",
         "request_callback": "*Signin_Partial::create_request"
     },
-    {
-        "name": "newaccount/head", "position": 1000,
-        "render_callback": "Signin_Partial::render_create_head",
-        "htitle": "Create account"
-    },
-    {
-        "name": "newaccount/message", "position": 2000, "alias": "home/message"
-    },
-    {
-        "name": "newaccount/welcome", "position": 2500, "alias": "home/welcome"
-    },
-    {
-        "name": "newaccount/body", "position": 3000,
-        "render_callback": "*Signin_Partial::render_create_body"
-    },
+    [   "newaccount/head", 1000, "Signin_Partial::render_create_head"   ],
+    [   "newaccount/message", 2000, "home/message"   ],
+    [   "newaccount/welcome", 2500, "home/welcome"   ],
+    [   "newaccount/body", 3000, "Signin_Partial::render_create_body"   ],
 
 
     {   "name": "signin"   },
@@ -132,17 +118,9 @@
         "allow_request_if": "anypost",
         "request_callback": "Signin_Partial::signin_request"
     },
-    {
-        "name": "signin/head", "position": 1000,
-        "render_callback": "*Signin_Partial::render_signin_head",
-        "htitle": "Sign in"
-    },
-    {
-        "name": "signin/message", "position": 2000, "alias": "home/message"
-    },
-    {
-        "name": "signin/welcome", "position": 2500, "alias": "home/welcome"
-    },
+    [   "signin/head", 1000, "Signin_Partial::render_signin_head"   ],
+    [   "signin/message", 2000, "home/message"   ],
+    [   "signin/welcome", 2500, "home/welcome"   ],
     [   "signin/body", 3000, "Signin_Partial::render_signin_form"   ],
     [   "signin/form/description", 10, "Signin_Partial::render_signin_form_description"   ],
     [   "signin/form/email", 20, "Signin_Partial::render_signin_form_email"   ],
@@ -157,15 +135,8 @@
         "allow_request_if": "anypost",
         "request_callback": "Signin_Partial::signout_request"
     },
-    {
-        "name": "signout/head", "position": 1000,
-        "render_callback": "Signin_Partial::render_signout_head",
-        "htitle": "Sign in"
-    },
-    {
-        "name": "signout/body", "position": 3000,
-        "render_callback": "Signin_Partial::render_signout_body"
-    },
+    [   "signout/head", 1000, "Signin_Partial::render_signout_head"   ],
+    [   "signout/body", 3000, "Signin_Partial::render_signout_body"   ],
 
 
     {   "name": "forgotpassword"   },
@@ -174,11 +145,7 @@
         "allow_request_if": "anypost",
         "request_callback": "Signin_Partial::forgot_request"
     },
-    {
-        "name": "forgotpassword/head", "position": 1000,
-        "render_callback": "Signin_Partial::render_forgot_head",
-        "htitle": "Forgot password"
-    },
+    [   "forgotpassword/head", 1000, "Signin_Partial::render_forgot_head"   ],
     [   "forgotpassword/body", 3000, "Signin_Partial::render_forgot_body"   ],
     [   "forgotpassword/form/description", 10, "Signin_Partial::render_forgot_form_description"   ],
     [   "forgotpassword/form/email", 20, "Signin_Partial::render_forgot_form_email"   ],
@@ -195,17 +162,9 @@
         "allow_any_request": true,
         "request_callback": "*Signin_Partial::reset_request"
     },
-    {
-        "name": "resetpassword/head", "position": 1000,
-        "render_callback": "*Signin_Partial::render_reset_head",
-        "htitle": "Reset password"
-    },
-    {
-        "name": "resetpassword/message", "position": 2000, "alias": "home/message"
-    },
-    {
-        "name": "resetpassword/welcome", "position": 2500, "alias": "home/welcome"
-    },
+    [   "resetpassword/head", 1000, "Signin_Partial::render_reset_head"   ],
+    [   "resetpassword/message", 2000, "home/message"   ],
+    [   "resetpassword/welcome", 2500, "home/welcome"   ],
     [   "resetpassword/body", 3000, "*Signin_Partial::render_reset_body"   ],
     [   "resetpassword/form/description", 10, "Signin_Partial::render_reset_form_description"   ],
     [   "resetpassword/form/email", 20, "*Signin_Partial::render_reset_form_email"   ],

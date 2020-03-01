@@ -53,7 +53,7 @@ class Signin_Partial {
         }
     }
 
-    function render_signin_head(Contact $user, Qrequest $qreq, $gx) {
+    static function render_signin_head(Contact $user, Qrequest $qreq, $gx) {
         ensure_session();
         $user->conf->header("Sign in", "home");
         $gx->push_render_cleanup("__footer");
@@ -233,7 +233,6 @@ class Signin_Partial {
     function create_request(Contact $user, Qrequest $qreq) {
         assert($qreq->method() === "POST");
         $conf = $user->conf;
-        ensure_session();
         if ($qreq->cancel) {
             Navigation::redirect();
         } else if (!$user->conf->allow_user_self_register()) {
@@ -258,6 +257,7 @@ class Signin_Partial {
         }
     }
     static function render_create_head(Contact $user, Qrequest $qreq, $gx) {
+        ensure_session();
         $user->conf->header("New account", "newaccount", ["action_bar" => false]);
         $gx->push_render_cleanup("__footer");
         if (!$user->conf->allow_user_self_register()) {
@@ -266,7 +266,7 @@ class Signin_Partial {
             return false;
         }
     }
-    function render_create_body(Contact $user, Qrequest $qreq, $gx, $gj) {
+    static function render_create_body(Contact $user, Qrequest $qreq, $gx, $gj) {
         echo '<div class="homegrp" id="homeaccount">',
             Ht::form($user->conf->hoturl("newaccount"), ["class" => "compact-form"]),
             Ht::hidden("post", post_value());
@@ -306,6 +306,7 @@ class Signin_Partial {
         }
     }
     static function render_forgot_head(Contact $user, Qrequest $qreq, $gx) {
+        ensure_session();
         $user->conf->header("Forgot password", "resetpassword", ["action_bar" => false]);
         $gx->push_render_cleanup("__footer");
         if ($user->conf->external_login()) {
@@ -435,8 +436,9 @@ class Signin_Partial {
             Ht::error_at("resetcap", "This password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
         }
     }
-    function render_reset_head(Contact $user, Qrequest $qreq, $gx, $gj) {
-        $user->conf->header($gj->htitle, "resetpassword", ["action_bar" => false]);
+    static function render_reset_head(Contact $user, Qrequest $qreq, $gx, $gj) {
+        ensure_session();
+        $user->conf->header("Reset password", "resetpassword", ["action_bar" => false]);
         $gx->push_render_cleanup("__footer");
         if ($user->conf->external_login()) {
             return $gx->render("forgotpassword/__externallogin");
