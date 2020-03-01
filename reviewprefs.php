@@ -180,7 +180,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
 
         $actions = Ht::actions([
             Ht::submit("Apply changes", ["class" => "btn-success"]),
-            Ht::submit("cancel", "Cancel")
+            Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
         ], ["class" => "aab aabig"]);
         if (count($assignset->assigned_pids()) >= 4)
             echo $actions;

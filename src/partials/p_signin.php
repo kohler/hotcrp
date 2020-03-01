@@ -137,7 +137,7 @@ class Signin_Partial {
         echo '<div class="popup-actions fx">',
             Ht::submit("", "Sign in", ["id" => "signin_signin", "class" => "btn-success", "tabindex" => 1]);
         if ($gx->root !== "home") {
-            echo Ht::submit("cancel", "Cancel", ["tabindex" => 1]);
+            echo Ht::submit("cancel", "Cancel", ["tabindex" => 1, "formnovalidate" => true]);
         }
         echo '</div>';
     }
@@ -183,7 +183,7 @@ class Signin_Partial {
                 $user->conf->_("Use this page to sign out of the site."),
                 '</div><div class="popup-actions">',
                 Ht::submit("go", "Sign out", ["class" => "btn-danger float-left", "value" => 1]),
-                Ht::submit("cancel", "Cancel", ["class" => "float-left"]),
+                Ht::submit("cancel", "Cancel", ["class" => "float-left", "formnovalidate" => true]),
                 '</div>';
         }
         echo '</form></div>';
@@ -276,7 +276,7 @@ class Signin_Partial {
         self::_render_email_entry($user, $qreq, "email");
         echo '<div class="popup-actions">',
             Ht::submit("go", "Create account", ["class" => "btn-success", "value" => 1]),
-            Ht::submit("cancel", "Cancel"),
+            Ht::submit("cancel", "Cancel", ["formnovalidate" => true]),
             '</div>';
         echo '</form></div>';
         Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
@@ -337,7 +337,7 @@ class Signin_Partial {
                 "class" => $this->_reset_user ? "btn-danger" : "btn-primary",
                 "value" => 1
             ]),
-            Ht::submit("cancel", "Cancel"),
+            Ht::submit("cancel", "Cancel", ["formnovalidate" => true]),
             '</div>';
     }
 

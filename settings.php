@@ -87,7 +87,7 @@ $Sv->render_group(strtolower($Group), ["top" => true]);
 
 echo '<div class="aab aabig">',
     '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
-    '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
+    '<div class="aabut">', Ht::submit("cancel", "Cancel", ["formnovalidate" => true]), '</div>',
     '<hr class="c" /></div></div></form>', "\n";
 
 Ht::stash_script('hiliter_children("#settingsform")');

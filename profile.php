@@ -93,7 +93,7 @@ function change_email_by_capability($Qreq) {
         }
         echo '<div class="popup-actions">',
             Ht::submit("go", "Change email", ["class" => "btn-primary", "value" => 1]),
-            Ht::submit("cancel", "Cancel"),
+            Ht::submit("cancel", "Cancel", ["formnovalidate" => true]),
             '</div></form>';
         Ht::stash_script("focus_within(\$(\"#changeemailform\"));window.scroll(0,0)");
         $Conf->footer();
@@ -650,7 +650,7 @@ if ($UserStatus->global_user() && false) {
 }
 
 $buttons = [Ht::submit("save", $newProfile ? "Create account" : "Save changes", ["class" => "btn-primary"]),
-    Ht::submit("cancel", "Cancel")];
+    Ht::submit("cancel", "Cancel", ["formnovalidate" => true])];
 
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
