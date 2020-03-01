@@ -81,21 +81,13 @@ function initialize_user() {
     $sn = session_name();
 
     // check CSRF token, using old value of session ID
-    if ($Qreq->post && $sn) {
-        if (isset($_COOKIE[$sn])) {
-            $sid = $_COOKIE[$sn];
-            $l = strlen($Qreq->post);
-            if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
-                $Qreq->approve_post();
-            } else if ($_SERVER["REQUEST_METHOD"] === "POST") {
-                error_log("{$Conf->dbname}: bad post={$Qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
-            }
-        } else if ($Qreq->post === "<empty-session>"
-                   || $Qreq->post === ".empty") {
-            if ($_SERVER["REQUEST_METHOD"] === "POST") {
-                error_log("{$Conf->dbname}: empty post, url=" . $_SERVER["REQUEST_URI"]);
-            }
+    if ($Qreq->post && $sn && isset($_COOKIE[$sn])) {
+        $sid = $_COOKIE[$sn];
+        $l = strlen($Qreq->post);
+        if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
             $Qreq->approve_post();
+        } else if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            error_log("{$Conf->dbname}: bad post={$Qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
         }
     }
     ensure_session(ENSURE_SESSION_ALLOW_EMPTY);
