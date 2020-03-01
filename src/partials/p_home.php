@@ -50,13 +50,13 @@ class Home_Partial {
     }
 
     function render_head(Contact $user, Qrequest $qreq, $gx) {
-        if ($qreq->signedout && $user->is_empty()) {
-            $user->conf->msg("You have been signed out of the site.", "xconfirm");
-        }
         if ($user->is_empty()) {
             $user->conf->header("Sign in", "home");
         } else {
             $user->conf->header("Home", "home");
+        }
+        if ($qreq->signedout && $user->is_empty()) {
+            $user->conf->msg("You have been signed out of the site.", "xconfirm");
         }
         $gx->push_render_cleanup("__footer");
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
