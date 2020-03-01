@@ -94,9 +94,9 @@ class PaperListReviewAnalysis {
             return $html;
         }
         if (!$this->rrow->reviewSubmitted) {
-            $href = $this->prow->conf->hoturl("review", "r=" . $this->rrow->unparse_ordinal());
+            $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal()]);
         } else {
-            $href = $this->prow->conf->hoturl("paper", "p=" . $this->rrow->paperId . "#r" . $this->rrow->unparse_ordinal());
+            $href = $this->prow->hoturl(["anchor" => "r" . $this->rrow->unparse_ordinal()]);
         }
         $t = $klass ? "<a class=\"$klass\"" : "<a";
         return $t . ' href="' . $href . '">' . $html . '</a>';

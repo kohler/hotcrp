@@ -70,9 +70,10 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
 
         $t = '<td class="rl nw">';
         if ($rrow && $rrow->reviewId == $rr->reviewId) {
-            if ($user->contactId == $rr->contactId && !$rr->reviewSubmitted)
+            if ($user->contactId == $rr->contactId && !$rr->reviewSubmitted) {
                 $id = "Your $id";
-            $t .= '<a href="' . $conf->hoturl("review", "p=$prow->paperId&r=$rlink") . '" class="q"><b>' . $id . '</b></a>';
+            }
+            $t .= '<a href="' . $prow->reviewurl(["r" => $rlink]) . '" class="q"><b>' . $id . '</b></a>';
         } else if (!$canView
                    || ($rr->reviewModified <= 1 && !$user->can_review($prow, $rr))) {
             $t .= $id;
@@ -80,9 +81,9 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
                    || $rr->reviewModified <= 1
                    || (($mode === "re" || $mode === "assign")
                        && $user->can_review($prow, $rr))) {
-            $t .= '<a href="' . $conf->hoturl("review", "p=$prow->paperId&r=$rlink") . '">' . $id . '</a>';
+            $t .= '<a href="' . $prow->reviewurl(["r" => $rlink]) . '">' . $id . '</a>';
         } else if (Navigation::page() !== "paper") {
-            $t .= '<a href="' . $conf->hoturl("paper", "p=$prow->paperId#r$rlink") . '">' . $id . '</a>';
+            $t .= '<a href="' . $prow->hoturl(["anchor" => "r$rlink"]) . '">' . $id . '</a>';
         } else {
             $t .= '<a href="#r' . $rlink . '">' . $id . '</a>';
             if ($show_ratings

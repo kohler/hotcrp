@@ -32,7 +32,7 @@ function loadRows() {
         errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
     }
     if (($whynot = $Me->perm_request_review($prow, null, false))) {
-        error_go(hoturl("paper", ["p" => $prow->paperId]), whyNotText($whynot));
+        error_go($prow->hoturl(), whyNotText($whynot));
     }
 }
 

@@ -378,6 +378,16 @@ class PaperInfo {
         return ["fail" => true, "paperId" => $this->paperId, "conf" => $this->conf] + $rest;
     }
 
+    function hoturl($param = [], $flags = 0) {
+        $param["p"] = $this->paperId;
+        return $this->conf->hoturl("paper", $param, $flags);
+    }
+
+    function reviewurl($param = [], $flags = 0) {
+        $param["p"] = $this->paperId;
+        return $this->conf->hoturl("review", $param, $flags);
+    }
+
 
     static private function contact_to_cid($contact) {
         assert($contact !== null);
