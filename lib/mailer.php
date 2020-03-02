@@ -387,7 +387,7 @@ class Mailer {
                 error_log("{$this->conf->dbname}: {$this->recipient->email} creating local capability");
             }
             $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
-            $cap = $this->preparation->reset_capability = $capmgr->create(CAPTYPE_RESETPASSWORD, ["user" => $this->recipient, "timeExpires" => time() + 259200]);
+            $cap = $this->preparation->reset_capability = $capmgr->create($this->recipient, CAPTYPE_RESETPASSWORD, ["timeExpires" => time() + 259200]);
         }
         return $this->conf->hoturl("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($cap);
     }

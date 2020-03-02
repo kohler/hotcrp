@@ -4149,15 +4149,7 @@ class Conf {
     // capabilities
 
     function capability_manager($for = null) {
-        if ($for && substr($for, 0, 1) === "U") {
-            if (($cdb = $this->contactdb())) {
-                return new CapabilityManager($cdb, "U");
-            } else {
-                return null;
-            }
-        } else {
-            return new CapabilityManager($this->dblink, "");
-        }
+        return new CapabilityManager($this, $for && substr($for, 0, 1) === "U");
     }
 
 

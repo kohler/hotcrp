@@ -239,8 +239,8 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
             $capmgr = $Conf->capability_manager();
-            $capability = $capmgr->create(CAPTYPE_CHANGEEMAIL, [
-                "user" => $Acct, "timeExpires" => $Now + 259200,
+            $capability = $capmgr->create($Acct, CAPTYPE_CHANGEEMAIL, [
+                "timeExpires" => $Now + 259200,
                 "data" => json_encode_db(["oldemail" => $Acct->email, "uemail" => $cj->email])
             ]);
             $rest = ["capability" => $capability];

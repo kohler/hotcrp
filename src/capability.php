@@ -3,24 +3,22 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CapabilityManager {
+    private $conf;
+    private $cdb;
     private $dblink;
-    private $prefix;
 
-    function __construct($dblink, $prefix) {
-        $this->dblink = $dblink;
-        $this->prefix = $prefix;
+    function __construct(Conf $conf, $cdb) {
+        $this->conf = $conf;
+        $this->cdb = $cdb && $conf->contactdb();
+        $this->dblink = $this->cdb ? $conf->contactdb() : $conf->dblink;
     }
 
-    function create($capabilityType, $options = array()) {
-        $contactId = get($options, "contactId", 0);
-        if (!$contactId
-            && ($user = get($options, "user"))) {
-            if ($this->prefix === "U") {
-                $contactId = $user->contactdb_user()->contactDbId;
-            } else {
-                $contactId = $user->contactId;
-            }
-        }
+    private function prefix() {
+        return $this->cdb ? "U1" : "1";
+    }
+
+    function create(Contact $user, $capabilityType, $options = []) {
+        $contactId = $this->cdb ? $user->contactdb_user()->contactDbId : $user->contactId;
         $paperId = get($options, "paperId", 0);
         $timeExpires = get($options, "timeExpires", time() + 259200);
         $data = get($options, "data");
@@ -34,31 +32,33 @@ class CapabilityManager {
         }
 
         if ($ok) {
-            return $this->prefix . "1"
-                . str_replace(["+", "/", "="], ["-a", "-b", ""], base64_encode($salt));
+            return $this->prefix() . str_replace(["+", "/", "="], ["-a", "-b", ""], base64_encode($salt));
         } else {
             return false;
         }
     }
 
     function check($capabilityText) {
-        if (substr($capabilityText, 0, strlen($this->prefix) + 1) !== $this->prefix . "1")
+        if (!str_starts_with($capabilityText, $this->prefix())) {
             return false;
+        }
         $value = base64_decode(str_replace(["-a", "-b"], ["+", "/"],
-                                           substr($capabilityText, strlen($this->prefix) + 1)));
+                                           substr($capabilityText, strlen($this->prefix()))));
         if (strlen($value) >= 2
             && ($result = Dbl::ql($this->dblink, "select * from Capability where salt=?", $value))
             && ($row = Dbl::fetch_first_object($result))
-            && ($row->timeExpires == 0 || $row->timeExpires >= time()))
+            && ($row->timeExpires == 0 || $row->timeExpires >= time())) {
             return $row;
-        else
+        } else {
             return false;
+        }
     }
 
     function delete($capdata) {
         assert(!$capdata || is_string($capdata->salt));
-        if ($capdata)
+        if ($capdata) {
             Dbl::ql($this->dblink, "delete from Capability where salt=?", $capdata->salt);
+        }
     }
 
 

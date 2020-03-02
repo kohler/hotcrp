@@ -359,9 +359,10 @@ class Signin_Partial {
             $qreq->resetcap = $m[1];
         }
 
+        // set $this->_reset_cap
         $resetcap = trim((string) $qreq->resetcap);
-        if ($resetcap === "") {
-            // nothing
+        if (preg_match('/\A\/?(U?1[-\w]+)\/?\z/', $resetcap, $m)) {
+            $this->_reset_cap = $m[1];
         } else if (strpos($resetcap, "@") !== false) {
             if ($qreq->go
                 && $qreq->method() === "POST"
@@ -374,29 +375,21 @@ class Signin_Partial {
                     Ht::error_at("resetcap");
                 }
             }
-        } else {
-            if (preg_match('{\A/?(U?1[-\w]+)/?\z}', $resetcap, $m)) {
-                $this->_reset_cap = $m[1];
-            }
-            if ($this->_reset_cap) {
-                $capmgr = $conf->capability_manager($this->_reset_cap);
-                $this->_reset_capdata = $capmgr->check($this->_reset_cap);
-            }
-            if (!$this->_reset_capdata
-                || $this->_reset_capdata->capabilityType != CAPTYPE_RESETPASSWORD) {
-                Ht::error_at("resetcap", "Unknown or expired password reset code. Please check that you entered the code correctly.");
-                $this->_reset_capdata = null;
-            }
         }
 
-        if ($this->_reset_capdata) {
-            if (str_starts_with($this->_reset_cap, "U")) {
-                $this->_reset_user = $conf->contactdb_user_by_id($this->_reset_capdata->contactId);
+        // set $this->_reset_capdata and $this->_reset_user
+        if ($this->_reset_cap) {
+            $capmgr = $conf->capability_manager($this->_reset_cap);
+            $capdata = $capmgr->check($this->_reset_cap);
+            if ($capdata && $capdata->capabilityType == CAPTYPE_RESETPASSWORD) {
+                $this->_reset_capdata = $capdata;
+                $this->_reset_user = $capmgr->user_by_capability_data($capdata);
             } else {
-                $this->_reset_user = $conf->user_by_id($this->_reset_capdata->contactId);
+                Ht::error_at("resetcap", "Unknown or expired password reset code. Please check that you entered the code correctly.");
             }
         }
 
+        // check passwords
         if ($this->_reset_user
             && $qreq->go
             && $qreq->method() === "POST"
