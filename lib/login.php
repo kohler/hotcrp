@@ -222,7 +222,7 @@ class LoginHelper {
                 && !($user = Contact::create($conf, null, $qreq->as_array()))) {
                 return ["ok" => false, "email" => true, "internal" => true];
             }
-            $info = self::forgot_password_info($conf, $qreq);
+            $info = self::forgot_password_info($conf, $qreq, true);
             if ($info["ok"] && $info["mailtemplate"] === "@resetpassword") {
                 self::check_setup_phase($user, $info);
                 $info["mailtemplate"] = "@newaccount";
@@ -232,7 +232,7 @@ class LoginHelper {
     }
 
 
-    static function forgot_password_info(Conf $conf, Qrequest $qreq) {
+    static function forgot_password_info(Conf $conf, Qrequest $qreq, $create) {
         if ($conf->external_login()) {
             return ["ok" => false, "email" => true, "noreset" => true];
         }
@@ -244,7 +244,7 @@ class LoginHelper {
 
         // ignore reset request from disabled user
         $cdbu = $user->contactdb_user();
-        if ($user->password_unset()) {
+        if ($user->password_unset() && !$create) {
             return ["ok" => false, "email" => true, "unset" => true];
         } else if (!$user->can_reset_password()) {
             return ["ok" => false, "email" => true, "nologin" => true];

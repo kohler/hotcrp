@@ -294,7 +294,7 @@ class Signin_Partial {
         if ($qreq->cancel) {
             Navigation::redirect();
         } else if ($qreq->post_ok()) {
-            $info = LoginHelper::forgot_password_info($user->conf, $qreq);
+            $info = LoginHelper::forgot_password_info($user->conf, $qreq, false);
             if ($info["ok"]) {
                 self::mail_user($user->conf, $info);
                 Navigation::redirect(get($info, "redirect", $qreq->annex("redirect")));
