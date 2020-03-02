@@ -612,6 +612,17 @@ class TagMap implements IteratorAggregate {
         return $tags;
     }
 
+    function filter_nonviewable($a, Contact $user) {
+        if (!empty($a)) {
+            $s = " " . join("#0 ", $a) . "#0";
+            $s = $this->strip_nonviewable($s, $user);
+            if ($s !== "") {
+                return explode("#0 ", ltrim($s));
+            }
+        }
+        return [];
+    }
+
     function strip_nonviewable_chair_conflict($tags, Contact $user) {
         // XXX Should only be called on paper tags (i.e., contains `#`).
         // XXX Should called only if `!can_view_most_tags && can_view_tags`.
