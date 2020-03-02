@@ -147,9 +147,11 @@ function initialize_user() {
     }
 
     // redirect if disabled
-    if ($Me->is_disabled()
-        && !in_array($nav->page, ["index", "api", "resetpassword", "forgotpassword"])) {
-        Navigation::redirect_site($Conf->hoturl_site_relative_raw("index"));
+    if ($Me->is_disabled()) {
+        $gj = $Conf->page_partials($Me)->get($nav->page);
+        if (!$gj || !get($gj, "allow_disabled")) {
+            Navigation::redirect_site($Conf->hoturl_site_relative_raw("index"));
+        }
     }
 
     // if bounced through login, add post data

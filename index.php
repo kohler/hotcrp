@@ -23,29 +23,25 @@ if ($nav->page === "u") {
 if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "stylesheets") {
     $_GET["file"] = $nav->page . $nav->path;
     include("cacheable.php");
-    exit;
 } else if ($nav->page === "api" || $nav->page === "cacheable") {
     include("{$nav->page}.php");
-    exit;
-}
-
-require_once("src/initweb.php");
-$page_template = $Conf->page_template($nav->page);
-
-if ($page_template && isset($page_template->require)) {
-    include($page_template->require);
 } else {
-    $gx = new GroupedExtensions($Me, ["etc/pagepartials.json"], $Conf->opt("pagePartials"));
-    $group = $gx->canonical_group($nav->page);
-    if ($group && !str_starts_with($group, "__")) {
-        $gx->root = $group;
+    require_once("src/initweb.php");
+    $gx = $Conf->page_partials($Me);
+    $pagej = $gx->get($nav->page);
+    if (!$pagej || str_starts_with($pagej->name, "__")) {
+        header("HTTP/1.0 404 Not Found");
+    } else if ($Me->is_disabled() && !($pagej->allow_disabled ?? false)) {
+        header("HTTP/1.0 403 Forbidden");
+    } else if (isset($pagej->render_php)) {
+        include($pagej->render_php);
+    } else {
+        $gx->root = $pagej->group;
         $gx->set_context(["args" => [$Me, $Qreq, $gx]]);
-        foreach ($gx->members($group) as $gj) {
+        foreach ($gx->members($pagej->group) as $gj) {
             if ($gx->request($gj, $Qreq) === false)
                 break;
         }
-        $gx->render_group($group);
-    } else {
-        header("HTTP/1.0 404 Not Found");
+        $gx->render_group($pagej->group);
     }
 }

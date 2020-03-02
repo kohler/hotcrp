@@ -7,7 +7,7 @@
     {   "name": "index", "alias": "home"   },
 
 
-    {   "name": "home"   },
+    {   "name": "home", "allow_disabled": true   },
     {
         "name": "home/disabled", "position": 10,
         "request_callback": "Home_Partial::disabled_request"
@@ -100,7 +100,7 @@
     },
 
 
-    {   "name": "newaccount"   },
+    {   "name": "newaccount", "allow_disabled": true   },
     {
         "name": "newaccount/request", "position": 100,
         "allow_request_if": "anypost",
@@ -112,7 +112,7 @@
     [   "newaccount/body", 3000, "Signin_Partial::render_create_body"   ],
 
 
-    {   "name": "signin"   },
+    {   "name": "signin", "allow_disabled": true   },
     {
         "name": "signin/request", "position": 100,
         "allow_request_if": "anypost",
@@ -129,7 +129,7 @@
     [   "signin/form/create", 150, "Signin_Partial::render_signin_form_create"   ],
 
 
-    {   "name": "signout"   },
+    {   "name": "signout", "allow_disabled": true   },
     {
         "name": "signout/request", "position": 100,
         "allow_request_if": "anypost",
@@ -139,7 +139,7 @@
     [   "signout/body", 3000, "Signin_Partial::render_signout_body"   ],
 
 
-    {   "name": "forgotpassword"   },
+    {   "name": "forgotpassword", "allow_disabled": true   },
     {
         "name": "forgotpassword/request", "position": 100,
         "allow_request_if": "anypost",
@@ -156,7 +156,7 @@
     },
 
 
-    {   "name": "resetpassword"   },
+    {   "name": "resetpassword", "allow_disabled": true   },
     {
         "name": "resetpassword/request", "position": 100,
         "allow_any_request": true,
@@ -170,5 +170,31 @@
     [   "resetpassword/form/email", 20, "*Signin_Partial::render_reset_form_email"   ],
     [   "resetpassword/form/autopassword", 29, "Signin_Partial::render_reset_form_autopassword"   ],
     [   "resetpassword/form/password", 30, "Signin_Partial::render_reset_form_password"   ],
-    [   "resetpassword/form/actions", 100, "forgotpassword/form/actions"   ]
+    [   "resetpassword/form/actions", 100, "forgotpassword/form/actions"   ],
+
+
+    {   "name": "api", "allow_disabled": true   },
+    {   "name": "assign", "render_php": "assign.php"   },
+    {   "name": "autoassign", "render_php": "autoassign.php"   },
+    {   "name": "bulkassign", "render_php": "bulkassign.php"   },
+    {   "name": "buzzer", "render_php": "buzzer.php"   },
+    {   "name": "checkupdates", "render_php": "checkupdates.php"   },
+    {   "name": "conflictassign", "render_php": "conflictassign.php"   },
+    {   "name": "deadlines", "render_php": "deadlines.php"   },
+    {   "name": "doc", "render_php": "doc.php"   },
+    {   "name": "graph", "render_php": "graph.php"   },
+    {   "name": "help", "render_php": "help.php"   },
+    {   "name": "log", "render_php": "log.php"   },
+    {   "name": "mail", "render_php": "mail.php"   },
+    {   "name": "manualassign", "render_php": "manualassign.php"   },
+    {   "name": "mergeaccounts", "render_php": "mergeaccounts.php"   },
+    {   "name": "offline", "render_php": "offline.php"   },
+    {   "name": "paper", "render_php": "paper.php"   },
+    {   "name": "profile", "render_php": "profile.php"   },
+    {   "name": "review", "render_php": "review.php"   },
+    {   "name": "reviewprefs", "render_php": "reviewprefs.php"   },
+    {   "name": "scorechart", "render_php": "scorechart.php"   },
+    {   "name": "search", "render_php": "search.php"   },
+    {   "name": "settings", "render_php": "settings.php"   },
+    {   "name": "users", "render_php": "users.php"   }
 ]

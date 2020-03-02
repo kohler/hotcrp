@@ -158,6 +158,7 @@ class Conf {
     private $_mail_keyword_map;
     private $_mail_keyword_factories;
     private $_mail_template_map;
+    private $_page_partials;
 
     public $paper = null; // current paper row
     private $_active_list = false;
@@ -4711,13 +4712,10 @@ class Conf {
 
     // pages
 
-    function page_template($page) {
-        if ($page === "index") {
-            return null;
-        } else if (in_array($page, ["doc", "paper", "search", "review", "assign", "autoassign", "bulkassign", "buzzer", "checkupdates", "profile", "conflictassign", "deadlines", "graph", "help", "log", "mail", "manualassign", "mergeaccounts", "offline", "reviewprefs", "scorechart", "settings", "users"])) {
-            return (object) ["name" => $page, "require" => "$page.php"];
-        } else {
-            return null;
+    function page_partials(Contact $viewer) {
+        if (!$this->_page_partials || $this->_page_partials->viewer() !== $viewer) {
+            $this->_page_partials = new GroupedExtensions($viewer, ["etc/pagepartials.json"], $this->opt("pagePartials"));
         }
+        return $this->_page_partials;
     }
 }
