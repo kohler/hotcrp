@@ -44,12 +44,29 @@ class Signin_Partial {
                 }
                 if ($info["ok"]) {
                     Navigation::redirect(get($info, "redirect"));
+                } else if (($code = self::_check_reset_code($user, $qreq))) {
+                    Navigation::redirect($user->conf->hoturl("resetpassword", ["__PATH__" => $code]));
                 } else {
                     LoginHelper::login_error($user->conf, $qreq, $info);
                 }
             }
         } else {
             self::bad_post_error($user, $qreq, "signin");
+        }
+    }
+
+    static private function _check_reset_code(Contact $user, $qreq) {
+        $pw = trim($qreq->password);
+        if ($pw
+            && (str_starts_with($pw, "U1") || str_starts_with($pw, "1"))
+            && ($capmgr = $user->conf->capability_manager($pw))
+            && ($capdata = $capmgr->check($pw))
+            && $capdata->capabilityType == CAPTYPE_RESETPASSWORD
+            && ($capuser = $capmgr->user_by_capability_data($capdata))
+            && strcasecmp($capuser->email, trim($qreq->email)) === 0) {
+            return $pw;
+        } else {
+            return false;
         }
     }
 

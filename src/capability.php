@@ -61,6 +61,14 @@ class CapabilityManager {
         }
     }
 
+    function user_by_capability_data($capdata) {
+        if ($capdata && isset($capdata->contactId) && $capdata->contactId) {
+            $method = $this->cdb ? "contactdb_user_by_id" : "user_by_id";
+            return $this->conf->$method($capdata->contactId);
+        } else {
+            return null;
+        }
+    }
 
 
     static function capability_text($prow, $capType) {
