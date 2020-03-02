@@ -7,7 +7,7 @@ class Signin_Partial {
     public $_reset_capdata;
     public $_reset_user;
 
-    private function bad_post_error(Contact $user, Qrequest $qreq, $action) {
+    static private function bad_post_error(Contact $user, Qrequest $qreq, $action) {
         $sid = session_id();
         $msg = "{$user->conf->dbname}: ignoring unvalidated $action"
             . ", sid=" . ($sid === "" ? ".empty" : $sid);
