@@ -147,12 +147,9 @@ function initialize_user() {
     }
 
     // redirect if disabled
-    if ($Me->is_disabled()) {
-        if ($nav->page === "api") {
-            json_exit(["ok" => false, "error" => "Your account is disabled."]);
-        } else if (!in_array($nav->page, ["index", "resetpassword", "forgotpassword"])) {
-            Navigation::redirect_site($Conf->hoturl_site_relative_raw("index"));
-        }
+    if ($Me->is_disabled()
+        && !in_array($nav->page, ["index", "api", "resetpassword", "forgotpassword"])) {
+        Navigation::redirect_site($Conf->hoturl_site_relative_raw("index"));
     }
 
     // if bounced through login, add post data

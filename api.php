@@ -62,7 +62,7 @@ if ($Qreq->p) {
 }
 
 // requests
-if ($Conf->has_api($Qreq->fn)) {
+if ($Conf->has_api($Qreq->fn) || $Me->is_disabled()) {
     $Conf->call_api_exit($Qreq->fn, $Me, $Qreq, $Conf->paper);
 }
 

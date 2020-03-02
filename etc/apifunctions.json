@@ -105,7 +105,7 @@
         "callback": "Search_API::search"
     },
     {
-        "name": "session", "get": true,
+        "name": "session", "get": true, "allow_disabled": true,
         "callback": "Session_API::getsession"
     },
     {

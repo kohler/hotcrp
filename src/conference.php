@@ -4324,6 +4324,8 @@ class Conf {
             && (!$uf || get($uf, "post"))
             && (!$uf || !get($uf, "allow_xss"))) {
             return new JsonResult(403, "Missing credentials.");
+        } else if ($user->is_disabled() && (!$uf || !get($uf, "allow_disabled"))) {
+            return new JsonResult(403, "Your account is disabled.");
         } else if (!$uf) {
             if ($this->has_api($fn, $user, null)) {
                 return new JsonResult(405, "Method not supported.");
