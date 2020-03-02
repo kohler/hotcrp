@@ -6,7 +6,7 @@ class GroupedExtensions {
     private $_jall = [];
     private $_potential_members = [];
     private $conf;
-    private $user;
+    private $viewer;
     public $root;
     private $_raw = [];
     private $_render_classes;
@@ -60,9 +60,9 @@ class GroupedExtensions {
         }
         return true;
     }
-    function __construct(Contact $user, $args /* ... */) {
-        $this->conf = $user->conf;
-        $this->user = $user;
+    function __construct(Contact $viewer, $args /* ... */) {
+        $this->conf = $viewer->conf;
+        $this->viewer = $viewer;
         self::$next_placeholder = 1;
         foreach (func_get_args() as $i => $arg) {
             if ($i > 0 && $arg)
@@ -70,9 +70,12 @@ class GroupedExtensions {
         }
         $this->reset_context();
     }
+    function viewer() {
+        return $this->viewer;
+    }
     function get_raw($name) {
         if (!array_key_exists($name, $this->_raw)) {
-            if (($xt = $this->conf->xt_search_name($this->_jall, $name, $this->user, null, true))
+            if (($xt = $this->conf->xt_search_name($this->_jall, $name, $this->viewer, null, true))
                 && Conf::xt_enabled($xt)) {
                 $this->_raw[$name] = $xt;
             } else {
@@ -173,7 +176,7 @@ class GroupedExtensions {
         if (isset($gj->request_callback)) {
             Conf::xt_resolve_require($gj);
             if (isset($gj->allow_request_if)
-                && !$this->conf->xt_check($gj->allow_request_if, $gj, $this->user, $qreq)) {
+                && !$this->conf->xt_check($gj->allow_request_if, $gj, $this->viewer, $qreq)) {
                 if (!$qreq->post_ok() && $qreq->method() === "POST") {
                     $this->conf->msg($this->conf->_i("badpost"), 2);
                 }
