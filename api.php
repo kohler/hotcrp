@@ -78,13 +78,14 @@ if ($Qreq->fn === "events") {
     $rows = [];
     $more = false;
     foreach ($events->events($when, 11) as $xr) {
-        if (count($rows) == 10)
+        if (count($rows) == 10) {
             $more = true;
-        else {
-            if ($xr->crow)
+        } else {
+            if ($xr->crow) {
                 $rows[] = $xr->crow->unparse_flow_entry($Me);
-            else
+            } else {
                 $rows[] = $rf->unparse_flow_entry($xr->prow, $xr->rrow, $Me);
+            }
             $when = $xr->eventTime;
         }
     }

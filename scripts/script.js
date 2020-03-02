@@ -7409,6 +7409,11 @@ handle_ui.on("js-signin", function (event) {
     });
 });
 
+handle_ui.on("js-no-signin", function (event) {
+    var e = this.closest(".js-signin");
+    e && removeClass(e, "ui-submit");
+});
+
 handle_ui.on("js-href-add-email", function (event) {
     var e = this.closest("form");
     if (e && e.email && e.email.value !== "") {

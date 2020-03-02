@@ -4346,8 +4346,9 @@ class Conf {
         if ($whynot) {
             $status = isset($whynot["noPaper"]) ? 404 : 403;
             $result["error"] = whyNotText($whynot, true);
-            if (isset($whynot["signin"]))
+            if (isset($whynot["signin"])) {
                 $result["loggedout"] = true;
+            }
         } else {
             $status = 400;
             $result["error"] = "Bad request, missing submission.";
