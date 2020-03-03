@@ -4,13 +4,18 @@
 
 require_once("src/initweb.php");
 
+$Viewer = $Me;
+if ($Me->contactId && $Me->is_disabled()) {
+    $Viewer = new Contact(["email" => $Me->email], $Conf);
+}
+
 // *** NB If you change this script, also change the logic in index.php ***
 // *** that hides the link when there are no deadlines to show.         ***
 
 // header and script
 $Conf->header("Deadlines", "deadlines");
 
-if ($Me->privChair) {
+if ($Viewer->privChair) {
     echo "<p>As PC chair, you can <a href='", hoturl("settings"), "'>change the deadlines</a>.</p>\n";
 }
 
@@ -66,7 +71,7 @@ if (($dl->rev ?? false) && ($dl->rev->open ?? false)) {
         $ps = $ph = -1;
 
         $thisdl = [];
-        if ($Me->isPC) {
+        if ($Viewer->isPC) {
             $ps = +$Conf->setting("pcrev_soft$isuf");
             $ph = +$Conf->setting("pcrev_hard$isuf");
             if ($ph && ($ph < $Now || $ps < $Now)) {

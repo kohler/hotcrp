@@ -544,6 +544,9 @@ function whyNotText($whyNot, $text_only = false) {
 
 function actionBar($mode = null, $qreq = null) {
     global $Me, $Conf;
+    if ($Me->is_disabled()) {
+        return "";
+    }
     $forceShow = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 
     $paperArg = "p=*";

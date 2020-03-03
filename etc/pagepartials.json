@@ -180,7 +180,7 @@
     {   "name": "buzzer", "render_php": "buzzer.php"   },
     {   "name": "checkupdates", "render_php": "checkupdates.php"   },
     {   "name": "conflictassign", "render_php": "conflictassign.php"   },
-    {   "name": "deadlines", "render_php": "deadlines.php"   },
+    {   "name": "deadlines", "render_php": "deadlines.php", "allow_disabled": true   },
     {   "name": "doc", "render_php": "doc.php"   },
     {   "name": "graph", "render_php": "graph.php"   },
     {   "name": "help", "render_php": "help.php"   },
@@ -196,5 +196,5 @@
     {   "name": "scorechart", "render_php": "scorechart.php"   },
     {   "name": "search", "render_php": "search.php"   },
     {   "name": "settings", "render_php": "settings.php"   },
-    {   "name": "users", "render_php": "users.php"   }
+    {   "name": "users", "render_php": "users.php", "allow_disabled": true   }
 ]

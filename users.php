@@ -5,6 +5,11 @@
 require_once("src/initweb.php");
 require_once("src/contactlist.php");
 
+$Viewer = $Me;
+if ($Viewer->contactId && $Viewer->is_disabled()) {
+    $Viewer = new Contact(["email" => $Viewer->email], $Conf);
+}
+
 $getaction = "";
 if (isset($Qreq->get)) {
     $getaction = $Qreq->get;
@@ -15,48 +20,48 @@ if (isset($Qreq->get)) {
 
 // list type
 $tOpt = [];
-if ($Me->can_view_pc()) {
+if ($Viewer->can_view_pc()) {
     $tOpt["pc"] = "Program committee";
 }
-foreach ($Conf->viewable_user_tags($Me) as $t) {
+foreach ($Conf->viewable_user_tags($Viewer) as $t) {
     if ($t !== "pc")
         $tOpt["#$t"] = "#$t program committee";
 }
-if ($Me->can_view_pc()
-    && $Me->isPC) {
+if ($Viewer->can_view_pc()
+    && $Viewer->isPC) {
     $tOpt["admin"] = "System administrators";
 }
-if ($Me->can_view_pc()
-    && $Me->isPC
+if ($Viewer->can_view_pc()
+    && $Viewer->isPC
     && ($Qreq->t === "pcadmin" || $Qreq->t === "pcadminx")) {
     $tOpt["pcadmin"] = "PC and system administrators";
 }
-if ($Me->privChair
-    || ($Me->isPC && $Conf->setting("pc_seeallrev"))) {
+if ($Viewer->privChair
+    || ($Viewer->isPC && $Conf->setting("pc_seeallrev"))) {
     $tOpt["re"] = "All reviewers";
     $tOpt["ext"] = "External reviewers";
     $tOpt["extsub"] = "External reviewers who completed a review";
 }
-if ($Me->isPC) {
+if ($Viewer->isPC) {
     $tOpt["req"] = "External reviewers you requested";
 }
-if ($Me->privChair || ($Me->isPC && $Conf->subBlindNever())) {
+if ($Viewer->privChair || ($Viewer->isPC && $Conf->subBlindNever())) {
     $tOpt["au"] = "Contact authors of submitted papers";
 }
-if ($Me->privChair
-    || ($Me->isPC && $Conf->time_pc_view_decision(true))) {
+if ($Viewer->privChair
+    || ($Viewer->isPC && $Conf->time_pc_view_decision(true))) {
     $tOpt["auacc"] = "Contact authors of accepted papers";
 }
-if ($Me->privChair
-    || ($Me->isPC && $Conf->subBlindNever() && $Conf->time_pc_view_decision(true))) {
+if ($Viewer->privChair
+    || ($Viewer->isPC && $Conf->subBlindNever() && $Conf->time_pc_view_decision(true))) {
     $tOpt["aurej"] = "Contact authors of rejected papers";
 }
-if ($Me->privChair) {
+if ($Viewer->privChair) {
     $tOpt["auuns"] = "Contact authors of non-submitted papers";
     $tOpt["all"] = "All users";
 }
 if (empty($tOpt)) {
-    $Me->escape();
+    $Viewer->escape();
 }
 if (isset($Qreq->t) && !isset($tOpt[$Qreq->t])) {
     if (str_starts_with($Qreq->t, "pc:")
@@ -90,7 +95,7 @@ if (isset($Qreq->pap) && is_string($Qreq->pap)) {
 if ((isset($Qreq->pap) && is_array($Qreq->pap))
     || ($getaction && !isset($Qreq->pap))) {
     $allowed_papers = array();
-    $pl = new ContactList($Me, true);
+    $pl = new ContactList($Viewer, true);
     // Ensure that we only select contacts we're allowed to see.
     if (($rows = $pl->rows($Qreq->t))) {
         foreach ($rows as $row)
@@ -109,7 +114,7 @@ if ((isset($Qreq->pap) && is_array($Qreq->pap))
     }
 }
 
-if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
+if ($getaction == "nameemail" && isset($papersel) && $Viewer->isPC) {
     $result = $Conf->qe_raw("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
     $people = edb_orows($result);
     csv_exit($Conf->make_csvg("users")
@@ -121,7 +126,7 @@ function urlencode_matches($m) {
     return urlencode($m[0]);
 }
 
-if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
+if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
     $users = [];
     $result = $Conf->qe_raw("select ContactInfo.* from ContactInfo where " . paperselPredicate($papersel));
     while (($user = Contact::fetch($result, $Conf))) {
@@ -133,7 +138,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     Contact::load_topic_interests($users);
 
     // NB This format is expected to be parsed by profile.php's bulk upload.
-    $tagger = new Tagger($Me);
+    $tagger = new Tagger($Viewer);
     $people = [];
     $has = (object) [];
     foreach ($users as $user) {
@@ -231,22 +236,22 @@ function modify_confirm($j, $ok_message, $ok_message_optional) {
     }
 }
 
-if ($Me->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel)) {
+if ($Viewer->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel)) {
     if ($Qreq->modifytype == "disableaccount") {
-        modify_confirm(UserActions::disable($Me, $papersel), "Accounts disabled.", true);
+        modify_confirm(UserActions::disable($Viewer, $papersel), "Accounts disabled.", true);
     } else if ($Qreq->modifytype == "enableaccount") {
-        modify_confirm(UserActions::enable($Me, $papersel), "Accounts enabled.", true);
+        modify_confirm(UserActions::enable($Viewer, $papersel), "Accounts enabled.", true);
     } else if ($Qreq->modifytype == "sendaccount") {
-        modify_confirm(UserActions::send_account_info($Me, $papersel), "Account information sent.", false);
+        modify_confirm(UserActions::send_account_info($Viewer, $papersel), "Account information sent.", false);
     }
     unset($Qreq->modifygo, $Qreq->modifytype);
     $Conf->self_redirect($Qreq);
 }
 
 function do_tags($qreq) {
-    global $Conf, $Me, $papersel;
+    global $Conf, $Viewer, $papersel;
     // check tags
-    $tagger = new Tagger($Me);
+    $tagger = new Tagger($Viewer);
     $t1 = array();
     $errors = array();
     foreach (preg_split('/[\s,]+/', (string) $qreq->tag) as $t) {
@@ -292,7 +297,7 @@ function do_tags($qreq) {
         $users[(int) $cid]->$key = array_merge($users[(int) $cid]->$key, $t1);
     }
     // apply modifications
-    $us = new UserStatus($Me, ["no_notify" => true]);
+    $us = new UserStatus($Viewer, ["no_notify" => true]);
     foreach ($users as $cid => $cj) {
         $us->save($cj);
     }
@@ -309,7 +314,7 @@ function do_tags($qreq) {
     }
 }
 
-if ($Me->privChair && $Qreq->tagact && $Qreq->post_ok() && isset($papersel)
+if ($Viewer->privChair && $Qreq->tagact && $Qreq->post_ok() && isset($papersel)
     && preg_match('/\A[ads]\z/', (string) $Qreq->tagtype)) {
     do_tags($Qreq);
 }
@@ -328,7 +333,7 @@ if (isset($Qreq->redisplay)) {
     if (isset($Qreq->scoresort)) {
         $sv[] = "ulscoresort=" . ListSorter::canonical_short_score_sort($Qreq->scoresort);
     }
-    Session_API::setsession($Me, join(" ", $sv));
+    Session_API::setsession($Viewer, join(" ", $sv));
     $Conf->self_redirect($Qreq);
 }
 
@@ -342,7 +347,7 @@ if ($Qreq->t === "pc") {
 $Conf->header($title, "users", ["action_bar" => actionBar("account")]);
 
 
-$pl = new ContactList($Me, true, $Qreq);
+$pl = new ContactList($Viewer, true, $Qreq);
 $pl_text = $pl->table_html($Qreq->t, hoturl("users", ["t" => $Qreq->t]),
                      $tOpt[$Qreq->t], 'uldisplay.');
 
@@ -384,8 +389,8 @@ if (count($tOpt) > 1) {
     echo "</td>";
     if (isset($pl->scoreMax)) {
         echo '<td class="pad">';
-        $revViewScore = $Me->permissive_view_score_bound();
-        $uldisplay = $Me->session("uldisplay", " tags overAllMerit ");
+        $revViewScore = $Viewer->permissive_view_score_bound();
+        $uldisplay = $Viewer->session("uldisplay", " tags overAllMerit ");
         foreach ($Conf->all_review_fields() as $f)
             if ($f->view_score > $revViewScore
                 && $f->has_options
@@ -406,7 +411,7 @@ if (count($tOpt) > 1) {
         }
         echo '<tr><td colspan="3"><hr class="g"><b>Sort scores by:</b> &nbsp;',
             Ht::select("scoresort", $ss,
-                       ListSorter::canonical_long_score_sort($Me->session("ulscoresort", "A"))),
+                       ListSorter::canonical_long_score_sort($Viewer->session("ulscoresort", "A"))),
             "</td></tr>";
     }
     echo "</table></form>";
@@ -422,9 +427,9 @@ if (count($tOpt) > 1) {
 }
 
 
-if ($Me->privChair && $Qreq->t == "pc") {
+if ($Viewer->privChair && $Qreq->t == "pc") {
     $Conf->infoMsg('<p><a href="' . hoturl("profile", "u=new&amp;role=pc") . '" class="btn">Create accounts</a></p>Select a PC member’s name to edit their profile or remove them from the PC.');
-} else if ($Me->privChair && $Qreq->t == "all") {
+} else if ($Viewer->privChair && $Qreq->t == "all") {
     $Conf->infoMsg('<p><a href="' . hoturl("profile", "u=new") . '" class="btn">Create accounts</a></p>Select a user to edit their profile.  Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user would see it.');
 }
 
