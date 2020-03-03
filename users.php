@@ -124,8 +124,9 @@ function urlencode_matches($m) {
 if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     $users = [];
     $result = $Conf->qe_raw("select ContactInfo.* from ContactInfo where " . paperselPredicate($papersel));
-    while (($user = Contact::fetch($result, $Conf)))
+    while (($user = Contact::fetch($result, $Conf))) {
         $users[] = $user;
+    }
     Dbl::free($result);
 
     usort($users, "Contact::compare");
@@ -140,54 +141,70 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
             "email" => $user->email, "phone" => $user->phone,
             "disabled" => !!$user->is_disabled(), "affiliation" => $user->affiliation,
             "collaborators" => rtrim($user->collaborators())];
-        if ($user->preferredEmail && $user->preferredEmail !== $user->email)
+        if ($user->preferredEmail && $user->preferredEmail !== $user->email) {
             $row->preferred_email = $user->preferredEmail;
-        if ($user->contactTags)
+        }
+        if ($user->contactTags) {
             $row->tags = $tagger->unparse($user->contactTags);
+        }
         foreach ($user->topic_interest_map() as $t => $i) {
             $k = "topic$t";
             $row->$k = $i;
         }
         $f = array();
-        if ($user->defaultWatch & Contact::WATCH_REVIEW)
+        if ($user->defaultWatch & Contact::WATCH_REVIEW) {
             $f[] = "reviews";
+        }
         if (($user->defaultWatch & Contact::WATCH_REVIEW_ALL)
-            && ($user->roles & Contact::ROLE_PCLIKE))
+            && ($user->roles & Contact::ROLE_PCLIKE)) {
             $f[] = "allreviews";
-        if ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED)
+        }
+        if ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED) {
             $f[] = "adminreviews";
-        if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL)
+        }
+        if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL) {
             $f[] = "allfinal";
-        if (empty($f))
+        }
+        if (empty($f)) {
             $f[] = "none";
+        }
         $row->follow = join(",", $f);
         if ($user->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
             $r = array();
-            if ($user->roles & Contact::ROLE_CHAIR)
+            if ($user->roles & Contact::ROLE_CHAIR) {
                 $r[] = "chair";
-            if ($user->roles & Contact::ROLE_PC)
+            }
+            if ($user->roles & Contact::ROLE_PC) {
                 $r[] = "pc";
-            if ($user->roles & Contact::ROLE_ADMIN)
+            }
+            if ($user->roles & Contact::ROLE_ADMIN) {
                 $r[] = "sysadmin";
+            }
             $row->roles = join(",", $r);
-        } else
+        } else {
             $row->roles = "";
+        }
         $people[] = $row;
 
-        foreach ((array) $row as $k => $v)
-            if ($v !== null && $v !== false && $v !== "")
+        foreach ((array) $row as $k => $v) {
+            if ($v !== null && $v !== false && $v !== "") {
                 $has->$k = true;
+            }
+        }
     }
 
     $header = array("first", "last", "email");
-    if (isset($has->preferred_email))
+    if (isset($has->preferred_email)) {
         $header[] = "preferred_email";
+    }
     $header[] = "roles";
-    if (isset($has->tags))
+    if (isset($has->tags)) {
         $header[] = "tags";
+    }
     array_push($header, "affiliation", "collaborators", "follow");
-    if (isset($has->phone))
+    if (isset($has->phone)) {
         $header[] = "phone";
+    }
     $selection = $header;
     foreach ($Conf->topic_set() as $t => $tn) {
         $k = "topic$t";

@@ -329,8 +329,8 @@ class AssignmentState {
 class AssignerContacts {
     private $conf;
     private $viewer;
-    private $by_id = array();
-    private $by_lemail = array();
+    private $by_id = [];
+    private $by_lemail = [];
     private $has_pc = false;
     private $none_user;
     static private $next_fake_id = -10;
@@ -344,50 +344,61 @@ class AssignerContacts {
     }
     private function store(Contact $c) {
         if ($c->contactId != 0) {
-            if (isset($this->by_id[$c->contactId]))
+            if (isset($this->by_id[$c->contactId])) {
                 return $this->by_id[$c->contactId];
+            }
             $this->by_id[$c->contactId] = $c;
         }
-        if ($c->email)
+        if ($c->email) {
             $this->by_lemail[strtolower($c->email)] = $c;
+        }
         return $c;
     }
     private function ensure_pc() {
         if (!$this->has_pc) {
-            foreach ($this->conf->pc_members() as $p)
+            foreach ($this->conf->pc_members() as $p) {
                 $this->store($p);
+            }
             $this->has_pc = true;
         }
     }
     function none_user() {
-        if (!$this->none_user)
+        if (!$this->none_user) {
             $this->none_user = new Contact(["contactId" => 0, "roles" => 0, "email" => "", "sorter" => ""], $this->conf);
+        }
         return $this->none_user;
     }
     function user_by_id($cid) {
-        if (!$cid)
+        if (!$cid) {
             return $this->none_user();
-        if (($c = get($this->by_id, $cid)))
+        }
+        if (($c = $this->by_id[$cid] ?? null)) {
             return $c;
+        }
         $this->ensure_pc();
-        if (($c = get($this->by_id, $cid)))
+        if (($c = $this->by_id[$cid] ?? null)) {
             return $c;
+        }
         $result = $this->conf->qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
         $c = Contact::fetch($result, $this->conf);
-        if (!$c)
+        if (!$c) {
             $c = new Contact(["contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => ""], $this->conf);
+        }
         Dbl::free($result);
         return $this->store($c);
     }
     function user_by_email($email, $create = false, $req = null) {
-        if (!$email)
+        if (!$email) {
             return $this->none_user();
+        }
         $lemail = strtolower($email);
-        if (($c = get($this->by_lemail, $lemail)))
+        if (($c = $this->by_lemail[$lemail] ?? null)) {
             return $c;
+        }
         $this->ensure_pc();
-        if (($c = get($this->by_lemail, $lemail)))
+        if (($c = $this->by_lemail[$lemail] ?? null)) {
             return $c;
+        }
         $result = $this->conf->qe("select " . self::$query . " from ContactInfo where email=?", $lemail);
         $c = Contact::fetch($result, $this->conf);
         Dbl::free($result);
@@ -464,11 +475,12 @@ class AssignmentCountSet {
         $this->conf = $conf;
     }
     function get($offset) {
-        return get($this->bypc, $offset) ? : new AssignmentCount;
+        return $this->bypc[$offset] ?? new AssignmentCount;
     }
     function ensure($offset) {
-        if (!isset($this->bypc[$offset]))
+        if (!isset($this->bypc[$offset])) {
             $this->bypc[$offset] = new AssignmentCount;
+        }
         return $this->bypc[$offset];
     }
     function load_rev() {
@@ -878,9 +890,11 @@ class AssignmentSet {
     }
 
     private static function apply_user_parts($req, $a) {
-        foreach (array("firstName", "lastName", "email") as $i => $k)
-            if (!$req[$k] && get($a, $i))
+        foreach (array("firstName", "lastName", "email") as $i => $k) {
+            if (!$req[$k] && get($a, $i)) {
                 $req[$k] = $a[$i];
+            }
+        }
     }
 
     private function lookup_users($req, $assigner) {

@@ -551,18 +551,19 @@ function actionBar($mode = null, $qreq = null) {
     $listtype = "p";
 
     $goBase = "paper";
-    if ($mode == "assign")
+    if ($mode == "assign") {
         $goBase = "assign";
-    else if ($mode == "re")
+    } else if ($mode == "re") {
         $goBase = "review";
-    else if ($mode == "account") {
+    } else if ($mode == "account") {
         $listtype = "u";
         if ($Me->privChair) {
             $goBase = "profile";
             $xmode["search"] = 1;
         }
-    } else if ($qreq && ($qreq->m || $qreq->mode))
+    } else if ($qreq && ($qreq->m || $qreq->mode)) {
         $xmode["m"] = $qreq->m ? : $qreq->mode;
+    }
 
     // quicklinks
     $x = "";
@@ -572,22 +573,25 @@ function actionBar($mode = null, $qreq = null) {
             $x .= _one_quicklink($prev, $goBase, $xmode, $listtype, true) . " ";
         if ($list->description) {
             $url = $list->full_site_relative_url();
-            if ($url)
+            if ($url) {
                 $x .= '<a id="quicklink-list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $list->description . "</a>";
-            else
+            } else {
                 $x .= '<span id="quicklink-list">' . $list->description . '</span>';
+            }
         }
         if (($next = $list->neighbor_id(1)) !== false)
             $x .= " " . _one_quicklink($next, $goBase, $xmode, $listtype, false);
         $x .= '</td>';
 
-        if ($Me->is_track_manager() && $listtype == "p")
+        if ($Me->is_track_manager() && $listtype == "p") {
             $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" href="" aria-label="Start meeting tracker">&#9759;</a><td>';
+        }
     }
 
     // paper search form
-    if ($Me->isPC || $Me->is_reviewer() || $Me->is_author())
+    if ($Me->isPC || $Me->is_reviewer() || $Me->is_author()) {
         $x .= '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . '</td>';
+    }
 
     return $x ? '<table class="vbar"><tr>' . $x . '</tr></table>' : '';
 }
