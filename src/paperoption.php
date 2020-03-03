@@ -1507,7 +1507,7 @@ class NumericPaperOption extends PaperOption {
             Ht::entry($this->formid, $reqx, [
                 "id" => $this->readable_formid(), "size" => 8,
                 "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
-                "data-default-value" => $ov->value
+                "data-default-value" => $ov->value, "inputmode" => "numeric"
             ]),
             $pt->messages_at($this->formid),
             "</div></div>\n\n";
