@@ -27,8 +27,9 @@ class Ht {
                                        "multiple" => self::ATTR_BOOL,
                                        "novalidate" => self::ATTR_BOOL,
                                        "optionstyles" => self::ATTR_SKIP,
-                                       "spellcheck" => self::ATTR_BOOLTEXT,
                                        "readonly" => self::ATTR_BOOL,
+                                       "required" => self::ATTR_BOOL,
+                                       "spellcheck" => self::ATTR_BOOLTEXT,
                                        "type" => self::ATTR_SKIP);
 
     static function extra($js) {

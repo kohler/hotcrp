@@ -118,6 +118,14 @@
         "allow_request_if": "anypost",
         "request_callback": "Signin_Partial::signin_request"
     },
+    {
+        "name": "signin/request/basic", "position": 100,
+        "signin_callback": "Signin_Partial::signin_request_basic"
+    },
+    {
+        "name": "signin/request/success", "position": 100000,
+        "signin_callback": "Signin_Partial::signin_request_success"
+    },
     [   "signin/head", 1000, "Signin_Partial::render_signin_head"   ],
     [   "signin/message", 2000, "home/message"   ],
     [   "signin/welcome", 2500, "home/welcome"   ],

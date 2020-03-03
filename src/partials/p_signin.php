@@ -27,7 +27,7 @@ class Signin_Partial {
 
 
     // Signin request
-    static function signin_request(Contact $user, Qrequest $qreq) {
+    static function signin_request(Contact $user, Qrequest $qreq, $gx) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
             Navigation::redirect();
@@ -37,13 +37,13 @@ class Signin_Partial {
             if (!$user->is_empty() && strcasecmp($qreq->email, $user->email) === 0) {
                 Navigation::redirect();
             } else if (!$qreq->start) {
-                if ($user->conf->external_login()) {
-                    $info = LoginHelper::external_login_info($user->conf, $qreq);
-                } else {
-                    $info = LoginHelper::login_info($user->conf, $qreq);
+                $info["ok"] = true;
+                foreach ($gx->members("signin/request") as $gj) {
+                    if ($info["ok"])
+                        $info = call_user_func($gj->signin_callback, $user, $qreq, $info, $gj);
                 }
-                if ($info["ok"]) {
-                    Navigation::redirect(get($info, "redirect"));
+                if ($info["ok"] || isset($info["redirect"])) {
+                    Navigation::redirect($info["redirect"] ?? "");
                 } else if (($code = self::_check_reset_code($user, $qreq))) {
                     Navigation::redirect($user->conf->hoturl("resetpassword", ["__PATH__" => $code]));
                 } else {
@@ -53,6 +53,18 @@ class Signin_Partial {
         } else {
             self::bad_post_error($user, $qreq, "signin");
         }
+    }
+
+    static function signin_request_basic(Contact $user, Qrequest $qreq, $info) {
+        if ($user->conf->external_login()) {
+            return LoginHelper::external_login_info($user->conf, $qreq);
+        } else {
+            return LoginHelper::login_info($user->conf, $qreq);
+        }
+    }
+
+    static function signin_request_success(Contact $user, Qrequest $qreq, $info)  {
+        return LoginHelper::login_complete($info, $qreq);
     }
 
     static private function _check_reset_code(Contact $user, $qreq) {

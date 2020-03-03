@@ -951,8 +951,9 @@ class Contact {
         $old = $this->encode_data();
         object_replace_recursive($this->data, array_to_object_recursive($data));
         $new = $this->encode_data();
-        if ($old !== $new)
+        if ($old !== $new) {
             $this->conf->qe("update ContactInfo set data=? where contactId=?", $new, $this->contactId);
+        }
     }
 
     function data_str() {

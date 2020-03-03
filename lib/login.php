@@ -43,7 +43,7 @@ class LoginHelper {
 
         $info = self::login_info($conf, $qreq); // XXX
         if ($info["ok"]) {
-            Navigation::redirect(get($info, "redirect"));
+            Navigation::redirect($info["redirect"] ?? "");
         } else {
             $conf->header("Error", "home");
             Conf::msg_error("This site is using HTTP authentication to manage its users, and you have provided incorrect authentication data.");
@@ -80,10 +80,9 @@ class LoginHelper {
             $info = $user->check_password_info(trim((string) $qreq->password));
         }
         if ($info["ok"]) {
-            return self::login_complete($user, $qreq);
-        } else {
-            return $info;
+            $info["user"] = $user;
         }
+        return $info;
     }
 
     static function external_login_info(Conf $conf, Qrequest $qreq) {
@@ -114,12 +113,15 @@ class LoginHelper {
         if (($user && $user->is_disabled())
             || (($cdbuser = $user->contactdb_user()) && $cdbuser->is_disabled())) {
             return ["ok" => false, "disabled" => true, "email" => true];
+        } else {
+            return ["ok" => true, "user" => $user];
         }
-
-        return self::login_complete($xuser, $qreq);
     }
 
-    static private function login_complete(Contact $luser, Qrequest $qreq) {
+    static function login_complete($info, Qrequest $qreq) {
+        assert($info["ok"] && $info["user"]);
+        $luser = $info["user"];
+
         // mark activity
         $xuser = $luser->contactId ? $luser : $luser->contactdb_user();
         $xuser->mark_login();
@@ -143,8 +145,11 @@ class LoginHelper {
             $url .= "&go=" . urlencode($qreq->go);
         }
 
-        $info = ["ok" => true, "user" => $user, "redirect" => $url];
-        self::check_setup_phase($user, $info);
+        $info["user"] = $user;
+        $info["redirect"] = $url;
+        if (self::check_setup_phase($user)) {
+            $info["firstuser"] = true;
+        }
         return $info;
     }
 
@@ -171,11 +176,13 @@ class LoginHelper {
         }
     }
 
-    static private function check_setup_phase(Contact $user, &$info) {
+    static private function check_setup_phase(Contact $user) {
         if ($user->conf->setting("setupPhase")) {
             $user->save_roles(Contact::ROLE_ADMIN, null);
             $user->conf->save_setting("setupPhase", null);
-            $info["firstuser"] = true;
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -224,8 +231,10 @@ class LoginHelper {
             }
             $info = self::forgot_password_info($conf, $qreq, true);
             if ($info["ok"] && $info["mailtemplate"] === "@resetpassword") {
-                self::check_setup_phase($user, $info);
                 $info["mailtemplate"] = "@newaccount";
+                if (self::check_setup_phase($user)) {
+                    $info["firstuser"] = true;
+                }
             }
             return $info;
         }

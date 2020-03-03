@@ -42,6 +42,6 @@ if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "style
             if ($gx->request($gj, $Qreq) === false)
                 break;
         }
-        $gx->render_group($pagej->group);
+        $gx->render_group($pagej->group, ["top" => true]);
     }
 }
