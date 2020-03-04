@@ -134,8 +134,10 @@ class Conf {
     private $_updating_autosearch_tags = false;
     private $_cdb = false;
 
-    public $xt_factory_error_handler;
+    public $xt_context;
+    private $_xt_allow_checkers;
     private $_xt_allow_callback;
+    public $xt_factory_error_handler;
 
     private $_formula_functions;
     private $_search_keyword_base;
@@ -878,13 +880,34 @@ class Conf {
         if ($xt
             && isset($xt->require)
             && !isset(self::$xt_require_resolved[$xt->require])) {
-            foreach (expand_includes($xt->require, ["autoload" => true]) as $f)
+            foreach (expand_includes($xt->require, ["autoload" => true]) as $f) {
                 require_once($f);
+            }
             self::$xt_require_resolved[$xt->require] = true;
         }
         return $xt && (!isset($xt->disabled) || !$xt->disabled) ? $xt : null;
     }
-    function xt_check($expr, $xt, Contact $user = null, Qrequest $qreq = null) {
+    function xt_swap_context($context) {
+        $old = $this->xt_context;
+        $this->xt_context = $context;
+        return $old;
+    }
+    function xt_add_allow_checker($checker) {
+        $this->_xt_allow_checkers[] = $checker;
+        return count($this->_xt_allow_checkers) - 1;
+    }
+    function xt_remove_allow_checker($checker_index) {
+        unset($this->_xt_allow_checkers[$checker_index]);
+    }
+    private function xt_check_allow_checkers($e, $xt, $user) {
+        foreach ($this->_xt_allow_checkers as $ch) {
+            if (($x = call_user_func($ch, $e, $xt, $user, $this)) !== null) {
+                return $x;
+            }
+        }
+        return null;
+    }
+    function xt_check($expr, $xt, Contact $user = null) {
         foreach (is_array($expr) ? $expr : [$expr] as $e) {
             $not = false;
             if (is_string($e)
@@ -895,6 +918,9 @@ class Conf {
             }
             if (!is_string($e)) {
                 $b = $e;
+            } else if ($this->_xt_allow_checkers
+                       && ($x = $this->xt_check_allow_checkers($e, $xt, $user)) !== null) {
+                $b = $x;
             } else if ($e === "chair" || $e === "admin") {
                 $b = !$user || $user->privChair;
             } else if ($e === "manager") {
@@ -909,13 +935,6 @@ class Conf {
                 $b = $this->has_any_lead_or_shepherd();
             } else if ($e === "empty") {
                 $b = $user && $user->is_empty();
-            } else if ($e === "post") {
-                $b = $qreq && $qreq->post_ok() && $qreq->method() === "POST";
-            } else if ($e === "anypost") {
-                $b = $qreq && $qreq->method() === "POST";
-            } else if ($e === "getpost") {
-                $b = $qreq && $qreq->post_ok()
-                    && ($qreq->method() === "GET" || $qreq->method() === "POST");
             } else if (strpos($e, "::") !== false) {
                 self::xt_resolve_require($xt);
                 $b = call_user_func($e, $xt, $user, $this);
@@ -928,16 +947,9 @@ class Conf {
                 $b = !!$this->$f();
             } else if (str_starts_with($e, "user.")) {
                 $f = substr($e, 5);
-                $b = !$user || !!$user->$f();
-            } else if (str_starts_with($e, "req.")) {
-                $b = false;
-                foreach (explode(" ", $e) as $w) {
-                    if (str_starts_with($w, "req.")) {
-                        $w = substr($w, 4);
-                    }
-                    $b = $b || ($qreq && isset($qreq[$w]));
-                }
+                $b = !$user || $user->$f();
             } else {
+                error_log("unknown xt_check $e");
                 $b = !!$this->setting($e);
             }
             if ($not ? $b : !$b) {
@@ -1158,7 +1170,7 @@ class Conf {
 
 
     function has_topics() {
-        return get($this->settings, "has_topics", 0) !== 0;
+        return ($this->settings["has_topics"] ?? 0) !== 0;
     }
 
     function topic_set() {

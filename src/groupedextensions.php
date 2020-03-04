@@ -9,7 +9,7 @@ class GroupedExtensions {
     private $viewer;
     public $root;
     private $_raw = [];
-    private $_render_classes;
+    private $_callables;
     private $_render_state;
     private $_render_stack;
     private $_annexes = [];
@@ -60,6 +60,7 @@ class GroupedExtensions {
         }
         return true;
     }
+
     function __construct(Contact $viewer, $args /* ... */) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
@@ -70,17 +71,27 @@ class GroupedExtensions {
         }
         $this->reset_context();
     }
+    function reset_context() {
+        assert(empty($this->_render_stack));
+        $this->root = null;
+        $this->_raw = [];
+        $this->_callables = ["Conf" => $this->conf];
+        $this->_render_state = [null, null, "h3", null];
+    }
     function viewer() {
         return $this->viewer;
     }
+
     function get_raw($name) {
         if (!array_key_exists($name, $this->_raw)) {
+            $old_context = $this->conf->xt_swap_context($this);
             if (($xt = $this->conf->xt_search_name($this->_jall, $name, $this->viewer, null, true))
                 && Conf::xt_enabled($xt)) {
                 $this->_raw[$name] = $xt;
             } else {
                 $this->_raw[$name] = null;
             }
+            $this->conf->xt_context = $old_context;
         }
         return $this->_raw[$name];
     }
@@ -99,7 +110,7 @@ class GroupedExtensions {
             return false;
         }
     }
-    function members($name) {
+    function members($name, $require_key = false) {
         if (($gj = $this->get($name))) {
             $name = $gj->name;
         }
@@ -109,6 +120,7 @@ class GroupedExtensions {
             if (($gj = $this->get_raw($subname))
                 && $gj->group === ($name === "" ? $gj->name : $name)
                 && $gj->name !== $name
+                && (!$require_key || isset($gj->$require_key))
                 && (!isset($gj->alias) || isset($gj->position))
                 && (!isset($gj->position) || $gj->position !== false)) {
                 $r[] = $gj;
@@ -116,7 +128,7 @@ class GroupedExtensions {
             }
         }
         usort($r, "Conf::xt_position_compare");
-        if ($alias) {
+        if ($alias && !empty($r)) {
             $rr = [];
             foreach ($r as $gj) {
                 $rr[] = isset($gj->alias) ? $this->get($gj->alias) : $gj;
@@ -130,34 +142,43 @@ class GroupedExtensions {
         return $this->members("");
     }
 
-    function render_class($klass) {
-        if (!isset($this->_render_classes[$klass])
-            && !empty($this->_render_stack)) {
-            $args = $this->_render_state[0];
-            $this->_render_classes[$klass] = new $klass(...$args);
+    function allowed($allowed, $gj) {
+        if (isset($allowed)) {
+            $old_context = $this->conf->xt_swap_context($this);
+            $ok = $this->conf->xt_check($allowed, $gj, $this->viewer);
+            $this->conf->xt_context = $old_context;
+            return $ok;
+        } else {
+            return true;
         }
-        return $this->_render_classes[$klass] ?? null;
     }
-    private function call_callback($cb, $gj) {
+    function callable($name) {
+        if (!isset($this->_callables[$name])
+            && ($args = $this->_render_state[0]) !== null) {
+            $this->_callables[$name] = new $name(...$args);
+        }
+        return $this->_callables[$name] ?? null;
+    }
+    function set_callable($name, $callable) {
+        assert(!isset($this->_callables[$name]));
+        $this->_callables[$name] = $callable;
+    }
+    function call_callback($cb, $gj) {
+        Conf::xt_resolve_require($gj);
         $args = $this->_render_state[0];
         $args[] = $gj;
         if (is_string($cb) && $cb[0] === "*") {
             $colons = strpos($cb, ":");
-            $klass = substr($cb, 1, $colons - 1);
-            if (!isset($this->_render_classes[$klass])) {
-                $this->_render_classes[$klass] = new $klass(...$args);
-            }
-            $cb = [$this->_render_classes[$klass], substr($cb, $colons + 2)];
+            $cb = [$this->callable(substr($cb, 1, $colons - 1)), substr($cb, $colons + 2)];
         }
         return call_user_func_array($cb, $args);
     }
 
-    function reset_context() {
-        assert(empty($this->_render_stack));
-        $this->_render_state = [null, null, "h3", null];
-        $this->_render_classes = ["Conf" => $this->conf];
-    }
     function set_context($options) {
+        if (isset($options["root"]))  {
+            assert(is_string($options["root"]));
+            $this->root = $options["root"];
+        }
         if (isset($options["args"])) {
             assert(is_array($options["args"]));
             $this->_render_state[0] = $options["args"];
@@ -171,19 +192,11 @@ class GroupedExtensions {
             $this->_render_state[3] = $options["hclass"];
         }
     }
-
-    function request($gj, Qrequest $qreq) {
-        if (isset($gj->request_callback)) {
-            Conf::xt_resolve_require($gj);
-            if (isset($gj->allow_request_if)
-                && !$this->conf->xt_check($gj->allow_request_if, $gj, $this->viewer, $qreq)) {
-                if (!$qreq->post_ok() && $qreq->method() === "POST") {
-                    $this->conf->msg($this->conf->_i("badpost"), 2);
-                }
-            } else {
-                $this->call_callback($gj->request_callback, $gj);
-            }
-        }
+    function args() {
+        return $this->_render_state[0];
+    }
+    function arg($i) {
+        return $this->_render_state[0][$i] ?? null;
     }
 
     function start_render($options = null) {
@@ -229,7 +242,6 @@ class GroupedExtensions {
             $this->_render_state[1] = $gj->title;
         }
         if (isset($gj->render_callback)) {
-            Conf::xt_resolve_require($gj);
             return $this->call_callback($gj->render_callback, $gj);
         } else if (isset($gj->render_html)) {
             echo $gj->render_html;
