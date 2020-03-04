@@ -52,8 +52,11 @@ class UserStatus extends MessageSet {
         $this->self = $this->user === $this->viewer
             && !$this->viewer->is_actas_user();
     }
-    function global_user() {
+    function global_self() {
         return $this->self ? $this->user->contactdb_user() : null;
+    }
+    function global_user() { // XXX
+        return $this->global_self();
     }
     function autocomplete($what) {
         if ($this->self)
@@ -1005,7 +1008,7 @@ class UserStatus extends MessageSet {
     }
 
     function global_profile_difference($cj, $key) {
-        if (($cdb_user = $this->global_user())
+        if (($cdb_user = $this->global_self())
             && (string) get($cj, $key) !== (string) $cdb_user->$key) {
             if ((string) $cdb_user->$key !== "") {
                 return '<div class="f-h">Global profile gives “' . htmlspecialchars($cdb_user->$key) . '”</div>';
