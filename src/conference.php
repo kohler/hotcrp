@@ -871,7 +871,7 @@ class Conf {
     static function xt_enabled($xt) {
         return $xt && (!isset($xt->disabled) || !$xt->disabled);
     }
-    static function xt_disabled($xt) {
+    static function xt_disabled($xt) { // XXX delete this
         return !$xt || (isset($xt->disabled) && $xt->disabled);
     }
     static function xt_resolve_require($xt) {
@@ -4695,7 +4695,7 @@ class Conf {
                     if (isset($fj->id)) {
                         $ids[$fj->id] = true;
                     }
-                    if (!self::xt_disabled($fj)) {
+                    if (self::xt_enabled($fj)) {
                         $fj->conf = $this;
                         $fj->user = $user;
                         $args[0] = $fj;

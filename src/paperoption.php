@@ -344,7 +344,7 @@ class PaperOptionList {
             if (($oj = get($this->option_json_list(), $id))
                 && ($o = PaperOption::make($oj, $this->conf))
                 && $this->conf->xt_allowed($o)
-                && !Conf::xt_disabled($o))
+                && Conf::xt_enabled($o))
                 $this->_omap[$id] = $o;
         }
         $o = $this->_omap[$id];

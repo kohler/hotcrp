@@ -3142,7 +3142,7 @@ class PaperSearch {
             }
             foreach ($this->conf->paper_column_factories() as $fxj) {
                 if (!$this->conf->xt_allowed($fxj, $this->user)
-                    || Conf::xt_disabled($fxj))
+                    || !Conf::xt_enabled($fxj))
                     continue;
                 if (isset($fxj->completion_callback)) {
                     Conf::xt_resolve_require($fxj);
