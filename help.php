@@ -246,23 +246,25 @@ function meaningful_round_name(Contact $user) {
 }
 
 
-echo '<div class="leftmenu-left"><div class="leftmenu-menu"><h1 class="leftmenu">Help</h1><div class="leftmenu-list">';
+echo '<div class="leftmenu-left"><nav class="leftmenu-menu"><h1 class="leftmenu">Help</h1><div class="leftmenu-list">';
 foreach ($help_topics->groups() as $gj) {
-    if ($gj->name === $topic) {
-        echo '<div class="leftmenu-item active">', $gj->title, '</div>';
-    } else if (isset($gj->title)) {
-        echo '<div class="leftmenu-item ui js-click-child">',
-            '<a href="', hoturl("help", "t=$gj->name"), '">', $gj->title, '</a></div>';
-    }
-    if ($gj->name === "topics") {
-        echo '<div class="c g"></div>';
+    if (isset($gj->title)) {
+        echo '<div class="leftmenu-item',
+            ($gj->name === "topics" ? " mb-3" : ""),
+            ($gj->name === $topic ? ' active">' : ' ui js-click-child">');
+        if ($gj->name === $topic) {
+            echo $gj->title;
+        } else {
+            echo Ht::link($gj->title, $Conf->hoturl("help", "t=$gj->name"));
+        }
+        echo '</div>';
     }
 }
-echo "</div></div></div>\n",
-    '<div id="helpcontent" class="leftmenu-content main-column">',
+echo "</div></nav></div>\n",
+    '<main id="helpcontent" class="leftmenu-content main-column">',
     '<h2 class="leftmenu">', $topicj->title, '</h2>';
 $hth->render_group($topic, true);
-echo "</div>\n";
+echo "</main>\n";
 
 
 $Conf->footer();

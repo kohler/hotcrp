@@ -681,7 +681,7 @@ handle_ui.on("js-settings-resp-round-new", function () {
     var i, j;
     for (i = 1; jQuery("#response_" + i).length; ++i)
         /* do nothing */;
-    jQuery("#response_n").before("<div id=\"response_" + i + "\" class=\"settings-g\"></div>");
+    jQuery("#response_n").before("<div id=\"response_" + i + "\" class=\"form-g\"></div>");
     j = jQuery("#response_" + i);
     j.html(jQuery("#response_n").html().replace(/_n\"/g, "_" + i + "\""));
     j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());

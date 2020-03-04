@@ -38,7 +38,7 @@ class Decisions_SettingParser extends SettingParser {
             $decs_pcount[$row[0]] = $row[1];
 
         // real decisions
-        echo '<div class="settings-g">',
+        echo '<div class="form-g">',
             Ht::hidden("has_decisions", 1),
             '<table><tbody id="settings-decision-types">';
         $ndec = 0;

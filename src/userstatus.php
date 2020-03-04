@@ -990,8 +990,8 @@ class UserStatus extends MessageSet {
     }
 
 
-    function render_field($field, $caption, $entry) {
-        echo '<div class="', $this->control_class($field, "f-i"), '">',
+    function render_field($field, $caption, $entry, $class = "f-i w-text") {
+        echo '<div class="', $this->control_class($field, $class), '">',
             ($field ? Ht::label($caption, $field) : '<div class="f-c">' . $caption . '</div>'),
             $entry, "</div>";
     }
@@ -1028,7 +1028,6 @@ class UserStatus extends MessageSet {
             $actas = '&nbsp;' . actas_link($us->user);
         }
 
-        echo "<div class=\"profile-g\">\n";
         if (!$us->conf->external_login()) {
             $email_class = "want-focus fullw";
             if ($us->user->can_lookup_user()) {
@@ -1048,18 +1047,16 @@ class UserStatus extends MessageSet {
                       Ht::entry("preferredEmail", get_s($reqj, "preferred_email"), ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => get_s($cj, "preferred_email"), "type" => "email"]));
         }
 
-        echo '<div class="f-2col">';
+        echo '<div class="f-2col w-text">';
         $t = Ht::entry("firstName", get_s($reqj, "firstName"), ["size" => 24, "autocomplete" => $us->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => get_s($cj, "firstName")]) . $us->global_profile_difference($cj, "firstName");
-        $us->render_field("firstName", "First name (given name)", $t);
+        $us->render_field("firstName", "First name (given name)", $t, "f-i");
 
         $t = Ht::entry("lastName", get_s($reqj, "lastName"), ["size" => 24, "autocomplete" => $us->autocomplete("family-name"), "class" => "fullw", "id" => "lastName", "data-default-value" => get_s($cj, "lastName")]) . $us->global_profile_difference($cj, "lastName");
-        $us->render_field("lastName", "Last name (family name)", $t);
+        $us->render_field("lastName", "Last name (family name)", $t, "f-i");
         echo '</div>';
 
         $t = Ht::entry("affiliation", get_s($reqj, "affiliation"), ["size" => 52, "autocomplete" => $us->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => get_s($cj, "affiliation")]) . $us->global_profile_difference($cj, "affiliation");
         $us->render_field("affiliation", "Affiliation", $t);
-
-        echo "</div>\n\n"; // .profile-g
     }
 
     static function render_password(UserStatus $us, $cj, $reqj, $uf) {
@@ -1069,7 +1066,7 @@ class UserStatus extends MessageSet {
             return;
         }
 
-        echo '<div id="foldpassword" class="profile-g foldc ',
+        echo '<div id="foldpassword" class="form-g w-text foldc ',
             ($us->has_problem_at("password") ? "fold3o" : "fold3c"),
             '">';
         $pws = get($reqj, "__passwords", ["", ""]);
@@ -1104,13 +1101,13 @@ class UserStatus extends MessageSet {
     }
 
     static function render_follow(UserStatus $us, $cj, $reqj, $uf) {
-        echo '<div class="profile-g"><h3 class="profile">Email notification</h3>';
+        echo '<h3 class="form-h">Email notification</h3>';
         $follow = isset($reqj->follow) ? $reqj->follow : (object) [];
         $cfollow = isset($cj->follow) ? $cj->follow : (object) [];
         echo Ht::hidden("has_watchreview", 1);
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
             echo Ht::hidden("has_watchallreviews", 1);
-            echo "<table><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td>",
+            echo "<table class=\"w-text\"><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td>",
                 "<td><label class=\"checki\"><span class=\"checkc\">",
                 Ht::checkbox("watchreview", 1, !!get($follow, "reviews"), ["data-default-checked" => !!get($cfollow, "reviews")]),
                 "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label>\n";
@@ -1141,8 +1138,8 @@ class UserStatus extends MessageSet {
         if (!$us->viewer->privChair) {
             return;
         }
-        echo '<div class="profile-g"><h3 class="profile">Roles</h3>', "\n",
-          "<table><tr><td class=\"nw\">\n";
+        echo '<h3 class="form-h">Roles</h3>', "\n",
+          "<table class=\"w-text\"><tr><td class=\"nw\">\n";
         $pcrole = self::pcrole_text($reqj);
         $cpcrole = self::pcrole_text($cj);
         foreach (["chair" => "PC chair", "pc" => "PC member",
@@ -1160,14 +1157,13 @@ class UserStatus extends MessageSet {
             Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "js-role keep-focus"]),
             '</span>Sysadmin</label>',
             '<p class="f-h">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</p></div></td></tr></table>', "\n";
-        echo "</div>\n";
     }
 
     static function render_collaborators(UserStatus $us, $cj, $reqj, $uf) {
         if (!$us->user->isPC && !$us->viewer->privChair) {
             return;
         }
-        echo '<div class="profile-g fx2"><h3 class="', $us->control_class("collaborators", "profile"), '">Collaborators and other affiliations</h3>', "\n",
+        echo '<div class="form-g w-text fx2"><h3 class="', $us->control_class("collaborators", "form-h"), '">Collaborators and other affiliations</h3>', "\n",
             "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
             $us->conf->_i("conflictdef"),
             " <p>Give one conflict per line, using parentheses for affiliations and institutions.<br>
@@ -1178,8 +1174,8 @@ class UserStatus extends MessageSet {
     }
 
     static function render_topics(UserStatus $us, $cj, $reqj, $uf) {
-        echo '<div id="topicinterest" class="profile-g fx1">',
-            '<h3 class="profile">Topic interests</h3>', "\n",
+        echo '<div id="topicinterest" class="form-g w-text fx1">',
+            '<h3 class="form-h">Topic interests</h3>', "\n",
             '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
@@ -1218,7 +1214,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             return;
         }
         $tags = isset($reqj->tags) && is_array($reqj->tags) ? $reqj->tags : [];
-        echo "<div class=\"profile-g fx2\"><h3 class=\"profile\">Tags</h3>\n";
+        echo "<div class=\"form-g w-text fx2\"><h3 class=\"form-h\">Tags</h3>\n";
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("contactTags", "f-i"), '">',
                 Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),

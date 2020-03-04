@@ -255,23 +255,17 @@ echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "fn=get&am
 
 echo "</form>
 
-<hr style=\"margin-top:1em\" />
+<section class=\"mt-7\">
+<h3><a class=\"x\" href=\"", $Conf->hoturl("help", ["t" => "bulkassign"]), "\">Instructions</a></h3>
 
-<div class=\"settingstext\">
-<h3><a href=\"", $Conf->hoturl("help", ["t" => "bulkassign"]), "\">Instructions</a></h3>
-
-<p>Upload a CSV (comma-separated value file) to prepare an assignment; HotCRP
+<p class=\"w-text\">Upload a CSV (comma-separated value file) to prepare an assignment; HotCRP
 will display the consequences of the requested assignment for confirmation and
 approval. The <code>action</code> column determines what kind of assignment is
-performed. Supported actions include:</p>
-
-</div>";
+performed. Supported actions include:</p>";
 
 BulkAssign_HelpTopic::echo_actions($Me);
 
-echo "<div class=\"settingstext\">
-
-<p>For example, this file clears existing R1 review assignments for papers
+echo "<p class=\"w-text\">For example, this file clears existing R1 review assignments for papers
 tagged #redo, then assigns two primary reviews for submission #1 and one
 secondary review for submission #2:</p>
 
@@ -281,8 +275,8 @@ secondary review for submission #2:</p>
 2,secondary,slugger@manny.com
 1,primary,slugger@manny.com</pre>
 
-<p><a href=\"", $Conf->hoturl("help", ["t" => "bulkassign"]), "\"><strong>Detailed instructions</strong></a></p>
-</div>\n";
+<p class=\"w-text\"><a href=\"", $Conf->hoturl("help", ["t" => "bulkassign"]), "\"><strong>Detailed instructions</strong></a></p>
+</section>\n";
 
 Ht::stash_script('$("#tsel").trigger("change")');
 $Conf->footer();

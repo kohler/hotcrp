@@ -467,7 +467,7 @@ class SettingValues extends MessageSet {
     private function gxt() {
         if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->user, ["etc/settinggroups.json"], $this->conf->opt("settingGroups"));
-            $this->_gxt->set_context(["hclass" => "settings", "args" => [$this]]);
+            $this->_gxt->set_context(["hclass" => "form-h", "args" => [$this]]);
         }
         return $this->_gxt;
     }
@@ -872,7 +872,7 @@ class SettingValues extends MessageSet {
             $fold = explode(" ", $fold);
         }
 
-        echo '<div id="', $name, '" class="', $this->control_class($name, "settings-g settings-radio");
+        echo '<div id="', $name, '" class="', $this->control_class($name, "form-g settings-radio");
         if ($fold !== false && $fold !== true) {
             echo ' has-fold fold', in_array($x, $fold) ? "o" : "c";
         }

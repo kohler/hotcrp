@@ -51,7 +51,7 @@ class Reviews_SettingRenderer {
     }
 
     static function render(SettingValues $sv) {
-        echo '<div class="settings-g">';
+        echo '<div class="form-g">';
         $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
         $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
         echo "</div>\n";
@@ -63,7 +63,7 @@ class Reviews_SettingRenderer {
 
 
         // Deadlines
-        echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
+        echo "<h3 id=\"rounds\" class=\"form-h\">Deadlines &amp; rounds</h3>\n";
         echo '<p>Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
         echo '<p class="f-h">', ($sv->type_hint("date") ? : ""), '</p>';
 
@@ -149,7 +149,7 @@ class Reviews_SettingRenderer {
 
     static function render_pc(SettingValues $sv) {
         echo '<div class="has-fold fold2c">';
-        echo '<div class="settings-g has-fold foldo">';
+        echo '<div class="form-g has-fold foldo">';
         $sv->echo_checkbox('pcrev_any', "PC members can review any submission", ["class" => "uich js-foldup"]);
         if ($sv->conf->setting("pcrev_any")
             && $sv->conf->check_track_sensitivity(Track::UNASSREV))
@@ -171,7 +171,7 @@ class Reviews_SettingRenderer {
             'Can PC members <strong>see all reviews<span class="fx2"> and comments</span></strong> except for conflicts?',
             ["after" => $hint, "fold" => Conf::PCSEEREV_IFCOMPLETE]);
 
-        echo '<div class="settings-nearby settings-g">';
+        echo '<div class="form-nearby form-g">';
         $sv->echo_checkbox("lead_seerev", "Discussion leads can always see submitted reviews and reviewer names");
         echo '</div>';
 
@@ -185,7 +185,7 @@ class Reviews_SettingRenderer {
             ["after" => $hint, "fold" => 1]);
 
 
-        echo '<div class="settings-g">';
+        echo '<div class="form-g">';
         $sv->echo_checkbox('cmt_revid', "PC can see comments when reviews are anonymous", ["class" => "uich js-foldup", "data-fold-target" => "2", "hint_class" => "fx2"], "Commenter names are hidden when reviews are anonymous.");
         echo "</div></div>\n";
     }
@@ -202,7 +202,7 @@ class Reviews_SettingRenderer {
             ], 'Can external reviewers see reviews, comments, and eventual decisions for their assigned submissions, once they’ve completed a review?');
     }
     static function render_extrev_editdelegate(SettingValues $sv) {
-        echo '<div id="foldpcrev_editdelegate" class="settings-g has-fold fold',
+        echo '<div id="foldpcrev_editdelegate" class="form-g has-fold fold',
             $sv->curv("extrev_chairreq") >= 0 ? 'o' : 'c',
             ' fold2o" data-fold-values="0 1 2">';
         $sv->echo_radio_table("extrev_chairreq", [-1 => "No",
@@ -223,7 +223,7 @@ class Reviews_SettingRenderer {
     }
     static function render_extrev_requestmail(SettingValues $sv) {
         $t = $sv->expand_mail_template("requestreview", false);
-        echo '<div id="foldmailbody_requestreview" class="settings-g ',
+        echo '<div id="foldmailbody_requestreview" class="form-g ',
             ($t == $sv->expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
             '">';
         $sv->set_oldv("mailbody_requestreview", $t["body"]);

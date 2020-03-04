@@ -15,7 +15,7 @@ class BanalSettings {
 
         $open = $sv->curv("sub_banal$suffix") > 0;
         $uropen = !in_array($sv->curv("sub_banal_pagelimit$suffix"), ["", "N/A"]);
-        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "settings-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
+        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
         echo Ht::hidden("has_sub_banal$suffix", 1),
             '<div class="settings-2col fx">';
         $sv->echo_entry_group("sub_banal_papersize$suffix", "Paper size", ["horizontal" => true], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
@@ -219,7 +219,7 @@ class BanalSettings {
 
 class SubForm_SettingRenderer {
     static function render(SettingValues $sv) {
-        echo "<h3 class=\"settings\">Abstract and PDF</h3>\n";
+        echo "<h3 class=\"form-h\">Abstract and PDF</h3>\n";
 
         echo '<div id="foldpdfupload" class="fold2o fold3o">';
         echo '<div class="f-i">',
@@ -241,8 +241,8 @@ class SubForm_SettingRenderer {
         echo '</div>';
         Ht::stash_script('function sub_nopapers_change() { var v = $("#sub_nopapers").val(); fold("pdfupload",v==1,2); fold("pdfupload",v!=0,3); } $("#sub_nopapers").on("change", sub_nopapers_change); $(sub_nopapers_change)');
 
-        echo "<h3 class=\"settings\">Conflicts and collaborators</h3>\n",
-            '<div id="foldpcconf" class="settings-g fold',
+        echo "<h3 class=\"form-h\">Conflicts and collaborators</h3>\n",
+            '<div id="foldpcconf" class="form-g fold',
             ($sv->curv("sub_pcconf") ? "o" : "c"), "\">\n";
         $sv->echo_checkbox("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "uich js-foldup"]);
         $cflt = array();
@@ -253,11 +253,11 @@ class SubForm_SettingRenderer {
         $sv->echo_checkbox("sub_collab", "Collect authors’ other collaborators as text");
         echo "</div>\n";
 
-        echo '<div class="settings-g">';
+        echo '<div class="form-g">';
         $sv->echo_message_minor("msg.conflictdef", "Definition of conflict of interest");
         echo "</div>\n";
 
-        echo '<div class="settings-g">', $sv->label("sub_pcconfvis", "When can reviewers see conflict information?"),
+        echo '<div class="form-g">', $sv->label("sub_pcconfvis", "When can reviewers see conflict information?"),
             '&nbsp; ',
             $sv->render_select("sub_pcconfvis", [1 => "Never", 0 => "When authors or tracker are visible", 2 => "Always"]),
             '</div>';

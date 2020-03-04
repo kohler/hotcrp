@@ -191,7 +191,7 @@ class Options_SettingRenderer {
     }
 
     static function render(SettingValues $sv) {
-        echo "<h3 class=\"settings\">Submission fields</h3>\n";
+        echo "<h3 class=\"form-h\">Submission fields</h3>\n";
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_options", 1), "\n\n";
 

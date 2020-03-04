@@ -4,12 +4,12 @@
 
 class Submissions_SettingRenderer {
     static function render_open(SettingValues $sv) {
-        echo '<div class="settings-g">';
+        echo '<div class="form-g">';
         $sv->echo_checkbox('sub_open', '<b>Open site for submissions</b>');
         echo "</div>\n";
     }
     static function render_deadlines(SettingValues $sv) {
-        echo '<div class="settings-g">';
+        echo '<div class="form-g">';
         // maybe sub_reg was overridden
         if (($sub_reg = $sv->conf->setting("__sub_reg", false)) !== false)
             $sv->set_oldv("sub_reg", $sub_reg);
@@ -29,7 +29,7 @@ class Submissions_SettingRenderer {
             '<strong>Blind submission:</strong> Are author names hidden from reviewers?');
     }
     static function render_pcseeall(SettingValues $sv) {
-        echo '<div class="settings-g foldo" id="foldpc_seeall">';
+        echo '<div class="form-g foldo" id="foldpc_seeall">';
         $sv->echo_checkbox("pc_seeall", "PC can view incomplete submissions before submission deadline", ["class" => "uich js-foldup"], "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions.");
         echo '<div class="fx">';
         $sv->echo_checkbox("pc_seeallpdf", "PC can view submitted PDFs before submission deadline");

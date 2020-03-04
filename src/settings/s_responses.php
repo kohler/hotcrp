@@ -33,7 +33,7 @@ class Responses_SettingParser extends SettingParser {
 
     static function render(SettingValues $sv) {
         // Authors' response
-        echo '<div class="settings-g">';
+        echo '<div class="form-g">';
         $sv->echo_checkbox("resp_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true]);
         Ht::stash_script('$(function () { $("#resp_active").on("change", function () { var ch = $$("resp_active").checked; $(".if-response-active").toggleClass("hidden", !ch); }).trigger("change"); })');
         echo '<div id="auresparea" class="if-response-active',
@@ -58,7 +58,7 @@ class Responses_SettingParser extends SettingParser {
             }
             $sv->set_oldv("resp_roundname$isuf", $rname);
 
-            echo '<div id="response', $isuf, '" class="settings-g';
+            echo '<div id="response', $isuf, '" class="form-g';
             if ($i === "n")
                 echo ' hidden';
             echo '">';
@@ -70,7 +70,7 @@ class Responses_SettingParser extends SettingParser {
             echo "</div>\n";
         }
 
-        echo '<div class="settings-g">',
+        echo '<div class="form-g">',
             Ht::button("Add response round", ["class" => "ui js-settings-resp-round-new"]),
             '</div></div></div></div>';
     }

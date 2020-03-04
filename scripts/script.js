@@ -2985,7 +2985,7 @@ function jump_hash(hash, focus) {
     // find destination element
     if (hash
         && (e = document.getElementById(hash))
-        && (p = e.closest(".papeg, .f-i, .settings-g, .entryi, .checki"))) {
+        && (p = e.closest(".papeg, .f-i, .form-g, .entryi, .checki"))) {
         var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
         if ((eg.width <= 0 && eg.height <= 0)
             || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {
@@ -6113,7 +6113,7 @@ handle_ui.on("js-annotate-order", function () {
         return false;
     }
     function ondeleteclick() {
-        var $div = $(this).closest(".settings-g"), annoid = $div.attr("data-anno-id");
+        var $div = $(this).closest(".form-g"), annoid = $div.attr("data-anno-id");
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
         $div.append('<input type="hidden" name="deleted_' + annoid + '" value="1">');
         $div.find("input[name='heading_" + annoid + "']").prop("disabled", true);
@@ -6134,7 +6134,7 @@ handle_ui.on("js-annotate-order", function () {
         var annoid = anno.annoid;
         if (annoid == null)
             annoid = "n" + (last_newannoid += 1);
-        hc.push('<div class="settings-g" data-anno-id="' + annoid + '">', '</div>');
+        hc.push('<div class="form-g" data-anno-id="' + annoid + '">', '</div>');
         hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-d">Heading</label><input id="htctl-taganno-' + annoid + '-d" name="heading_' + annoid + '" type="text" placeholder="none" size="32" class="need-autogrow"></div>');
         hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-tagval">Tag value</label><div class="entry"><input id="htctl-taganno-' + annoid + '-tagval" name="tagval_' + annoid + '" type="text" size="5">', '</div></div>');
         if (anno.annoid)

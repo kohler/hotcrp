@@ -28,7 +28,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
         echo Ht::hidden("has_tag_au_seerev", 1);
         Ht::stash_script('$("#tag_au_seerev").on("input", function () { $("#au_seerev_' . Conf::AUSEEREV_TAGS . '").click(); })');
 
-        echo '<div class="settings-g has-fold fold', $sv->curv("cmt_author") ? "o" : "c", '">';
+        echo '<div class="form-g has-fold fold', $sv->curv("cmt_author") ? "o" : "c", '">';
         $sv->echo_checkbox("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers when reviews are visible", ["class" => "uich js-foldup", "hint_class" => "fx"], "Reviewers’ comments will be identified by “Reviewer A”, “Reviewer B”, etc.");
         echo "</div>\n";
     }

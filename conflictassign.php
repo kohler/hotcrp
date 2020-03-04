@@ -16,7 +16,7 @@ echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c" />';
 
-echo '<div class="settingstext">';
+echo '<div class="w-text">';
 
 if ($Qreq->neg) {
 } else {

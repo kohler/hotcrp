@@ -644,7 +644,7 @@ $UserStatus->set_user($Acct);
 $UserStatus->render_group("", $userj, $formcj);
 
 if ($UserStatus->global_self() && false) {
-    echo '<div class="profile-g"><div class="checki"><label><span class="checkc">',
+    echo '<div class="form-g"><div class="checki"><label><span class="checkc">',
         Ht::checkbox("saveglobal", 1, $useRequest ? !!$Qreq->saveglobal : true, ["class" => "ignore-diff"]),
         '</span>Update global profile</label></div></div>';
 }

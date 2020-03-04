@@ -354,9 +354,16 @@ label.checki {
 .small {
 	font-size: smaller;
 }
+.font-italic {
+	font-style: italic;
+}
 
 .mb-0 {
 	margin-bottom: 0 !important;
+}
+.mb-3 {
+	margin-bottom: 1em;
+	margin-bottom: 1rem;
 }
 .mb-5 {
 	margin-bottom: 2.25em;
@@ -377,6 +384,10 @@ label.checki {
 .mt-5 {
 	margin-top: 2.25em;
 	margin-top: 2.25rem;
+}
+.mt-7 {
+	margin-top: 5em !important;
+	margin-top: 5rem !important;
 }
 .ml-2 {
 	margin-left: 0.5em;
@@ -539,12 +550,11 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .msg + .msg {
 	margin-top: -0.5rem;
 }
-.msg > div {
+.msg > div, .msg > p, .w-text {
 	max-width: 800px;
 }
 .msg > p {
 	margin-bottom: 0.3em;
-	max-width: 800px;
 }
 .msg > p:last-child {
 	margin-bottom: 0;
@@ -1235,27 +1245,23 @@ div.hint {
 
 
 /* settings */
-h3.settings, h3.helppage, h3.profile, h4.helppage {
+h3.form-h, h3.helppage, h4.helppage {
 	color: #4b4f6d;
 }
-h3.settings {
+h3.form-h {
 	margin: 3em 0 1em;
 }
-h2.leftmenu + h3.settings {
+h2.leftmenu + h3.form-h {
 	margin-top: 0;
 }
-h3.helppage, h3.profile {
+h3.helppage {
 	margin: 2em 0 1em;
 }
 h3.helppage + p {
 	margin-top: 0.5em;
 }
-div.aab + h3.settings {
+div.aab + h3.settings, div.aab + h3.form-h {
 	margin-top: 0.5em;
-}
-.settingtext {
-	max-width: 800px;
-	margin: 0.65em 0;
 }
 h4.helppage {
 	margin: 0.8em 0 0;
@@ -1276,17 +1282,17 @@ th.settings-simplehead {
 	margin-top: 0;
 	margin-bottom: 0;
 }
-.settings-g, .settings-revfield, .settings-revfieldremoved,
-.settings-opt {
+.form-g,
+.settings-revfield, .settings-revfieldremoved, .settings-opt {
 	margin-bottom: 2em;
 }
-.settings-g-2 {
+.form-g-2 {
 	margin-bottom: 1em;
 }
-.settings-g-1 {
+.form-g-1 {
 	margin-bottom: 0.5em;
 }
-.settings-g + .settings-nearby {
+.form-g + .form-nearby {
 	margin-top: -1em;
 }
 .settings-revfield, .settings-opt {
@@ -1377,19 +1383,9 @@ th.settings-simplehead {
 	margin-left: 164px;
 	padding-bottom: 16px;
 }
-.profiletext {
-	max-width: 800px;
-}
-.profile-g {
-	max-width: 800px;
-	margin: 2em 0 3em;
-}
-.profile-g.wide, input.wide {
+input.wide {
 	max-width: none;
 	max-width: fill-available;
-}
-h3 + .profile-g {
-	margin-top: 1em;
 }
 .helplist-item {
 	padding: 3px 0;
@@ -1400,14 +1396,12 @@ h3 + .profile-g {
 
 
 /* vertically arranged forms */
-.f-i, .f-checkbox {
-	margin: 1em 0 1.25em;
+.f-i, .f-checkbox, .f-m {
+	margin-bottom: 1.25em;
 }
 .f-horizontal {
-	margin: 1em -18px 1em 0;
-}
-.f-i:first-child, .f-horizontal:first-child {
-	margin-top: 0;
+	margin-right: -18px;
+	margin-bottom: 1em;
 }
 .f-i:last-child, .f-horizontal:last-child {
 	margin-bottom: 0;
@@ -1419,7 +1413,7 @@ label.f-c, .f-i > label {
 	margin-bottom: 0.3rem;
 	font-weight: 500;
 }
-label.strong {
+.strong {
 	font-weight: bold;
 }
 .f-c.n, .f-i > label.n {
@@ -1434,19 +1428,20 @@ label.strong {
 	margin-bottom: 0.25rem;
 }
 .f-2col {
-	margin: -1em 0;
-	padding: 0.5em 0;
 	-webkit-columns: 300px 2;
 	columns: 300px 2;
 	-webkit-column-gap: 18px;
 	column-gap: 18px;
 }
 .f-2col > .f-i {
-	margin: 0;
-	padding: 0.5em 0;
+	margin-bottom: 0;
+	padding-bottom: 1.25em;
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
+}
+.f-2col:last-child {
+	margin-bottom: -1.25em;
 }
 .f-horizontal > .f-i, .f-horizontal > .f-ig {
 	float: left;
