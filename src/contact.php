@@ -915,21 +915,21 @@ class Contact {
             $this->data = json_decode($this->data);
         }
         if (!$this->data) {
-            $this->data = (object) array();
+            $this->data = (object) [];
         }
     }
 
     function data($key = null) {
         $this->make_data();
         if ($key) {
-            return get($this->data, $key);
+            return $this->data->$key ?? null;
         } else {
             return $this->data;
         }
     }
 
     private function encode_data() {
-        if ($this->data && ($t = json_encode($this->data)) !== "{}") {
+        if ($this->data && ($t = json_encode_db($this->data)) !== "{}") {
             return $t;
         } else {
             return null;
@@ -946,14 +946,20 @@ class Contact {
     }
 
     function merge_and_save_data($data) {
-        $this->activate_database_account();
-        $this->make_data();
-        $old = $this->encode_data();
-        object_replace_recursive($this->data, array_to_object_recursive($data));
-        $new = $this->encode_data();
-        if ($old !== $new) {
-            $this->conf->qe("update ContactInfo set data=? where contactId=?", $new, $this->contactId);
-        }
+        $cdb = $this->contactDbId && !$this->contactId;
+        $key = $cdb ? "contactDbId" : "contactId";
+        $cid = $cdb ? $this->contactDbId : $this->contactId;
+        assert($cid);
+        Dbl::compare_and_swap(
+            $cdb ? $this->conf->contactdb() : $this->conf->dblink,
+            "select `data` from ContactInfo where $key=?", [$cid],
+            function ($old) use ($key, $cid, $data) {
+                $this->data = $old ? json_decode($old) : (object) [];
+                object_replace_recursive($this->data, array_to_object_recursive($data));
+                return $this->encode_data();
+            },
+            "update ContactInfo set data=?{desired} where $key=? and data?{expected}e", [$cid]
+        );
     }
 
     function data_str() {

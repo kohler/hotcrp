@@ -55,6 +55,7 @@ class User_API {
         if ($qreq->accept
             && $qreq->clickthrough_id
             && ($hash = Filer::sha1_hash_as_text($qreq->clickthrough_id))) {
+            $user->activate_database_account();
             $user->merge_and_save_data(["clickthrough" => [$hash => $Now]]);
             $user->log_activity("Terms agreed " . substr($hash, 0, 10) . "...");
             return ["ok" => true];
