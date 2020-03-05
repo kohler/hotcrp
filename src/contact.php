@@ -1385,8 +1385,7 @@ class Contact {
     //   using contactdb password, local password is reset to "".
 
     static function valid_password($input) {
-        return $input !== "" && $input !== "0" && $input !== "*"
-            && trim($input) === $input;
+        return strlen($input) > 2 && trim($input) === $input;
     }
 
     function password_unset() {
@@ -1436,19 +1435,18 @@ class Contact {
             return $pwhash === $input;
         } else if ($pwhash[1] === "\$") {
             return password_verify($input, substr($pwhash, 2));
+        } else if (($method_pos = strpos($pwhash, " ", 1)) !== false
+                   && ($keyid_pos = strpos($pwhash, " ", $method_pos + 1)) !== false
+                   && strlen($pwhash) > $keyid_pos + 17
+                   && function_exists("hash_hmac")) {
+            $method = substr($pwhash, 1, $method_pos - 1);
+            $keyid = substr($pwhash, $method_pos + 1, $keyid_pos - $method_pos - 1);
+            $salt = substr($pwhash, $keyid_pos + 1, 16);
+            return hash_hmac($method, $salt . $input, $this->password_hmac_key($keyid), true)
+                === substr($pwhash, $keyid_pos + 17);
         } else {
-            if (($method_pos = strpos($pwhash, " ", 1)) !== false
-                && ($keyid_pos = strpos($pwhash, " ", $method_pos + 1)) !== false
-                && strlen($pwhash) > $keyid_pos + 17
-                && function_exists("hash_hmac")) {
-                $method = substr($pwhash, 1, $method_pos - 1);
-                $keyid = substr($pwhash, $method_pos + 1, $keyid_pos - $method_pos - 1);
-                $salt = substr($pwhash, $keyid_pos + 1, 16);
-                return hash_hmac($method, $salt . $input, $this->password_hmac_key($keyid), true)
-                    == substr($pwhash, $keyid_pos + 17);
-            }
+            return false;
         }
-        return false;
     }
 
     private function password_hash_method() {
@@ -1482,12 +1480,10 @@ class Contact {
         $cdb_older = !$cdbu || $cdbu->passwordTime < $this->passwordTime;
 
         // invalid passwords cannot be used to log in
-        if (!self::valid_password($input)) {
-            if (trim($input) === "") {
-                return ["ok" => false, "nopw" => true];
-            } else {
-                return ["ok" => false, "invalid" => true];
-            }
+        if (trim($input) === "") {
+            return ["ok" => false, "nopw" => true];
+        } else if ($input === "0" || $input === "*") {
+            return ["ok" => false, "invalid" => true];
         }
 
         // users with reset passwords cannot log in
