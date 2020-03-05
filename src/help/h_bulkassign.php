@@ -160,9 +160,13 @@ a conflict type, such as “advisor” or “institutional”.</p>";
                     $t .= '<code>' . $param . '</code>';
                 }
             }
-            $t .= '</td><td class="pad">' . get($uf, "description", "")
-                . '</td></tr>';
-            $apx[] = $t;
+            $t .= '</td><td class="pad">';
+            if (isset($uf->description_html)) {
+                $t .= $uf->description_html;
+            } else {
+                $t .= htmlspecialchars($uf->description ?? "");
+            }
+            $apx[] = $t . '</td></tr>';
         }
     }
 

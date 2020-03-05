@@ -1385,7 +1385,7 @@ class Contact {
     //   using contactdb password, local password is reset to "".
 
     static function valid_password($input) {
-        return strlen($input) > 2 && trim($input) === $input;
+        return strlen($input) > 5 && trim($input) === $input;
     }
 
     function password_unset() {

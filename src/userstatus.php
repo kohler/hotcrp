@@ -13,6 +13,9 @@ class UserStatus extends MessageSet {
     public $unknown_topics = null;
     public $diffs;
     private $_gxt;
+    private $_req_security;
+    private $_req_need_security;
+    private $_req_passwords;
 
     static private $field_synonym_map = [
         "preferredEmail" => "preferred_email",
@@ -31,7 +34,7 @@ class UserStatus extends MessageSet {
         "high" => 2, "hi" => 2
     ];
 
-    function __construct(Contact $viewer, $options = array()) {
+    function __construct(Contact $viewer, $options = []) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         parent::__construct();
@@ -51,6 +54,16 @@ class UserStatus extends MessageSet {
         $this->user = $user;
         $this->self = $this->user === $this->viewer
             && !$this->viewer->is_actas_user();
+        if ($this->_gxt) {
+            $this->_gxt->reset_context();
+            $this->initialize_gxt();
+        }
+    }
+    function is_new_user() {
+        return $this->user && !$this->user->email;
+    }
+    function is_viewer_user() {
+        return $this->user && $this->user->contactId == $this->viewer->contactId;
     }
     function global_self() {
         return $this->self ? $this->user->contactdb_user() : null;
@@ -58,6 +71,83 @@ class UserStatus extends MessageSet {
     function global_user() { // XXX
         return $this->global_self();
     }
+    function actor() {
+        return $this->viewer->is_site_contact ? null : $this->viewer;
+    }
+
+    function gxt() {
+        if ($this->_gxt === null) {
+            $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
+            $this->initialize_gxt();
+        }
+        return $this->_gxt;
+    }
+    private function initialize_gxt() {
+        $this->_gxt->set_context(["hclass" => "form-h"]);
+        $this->_gxt->set_callable("UserStatus", $this);
+    }
+
+    function allow_security() {
+        return !$this->conf->external_login()
+            && (!$this->user
+                || $this->self
+                || (!$this->user->is_empty()
+                    && $this->viewer->privChair
+                    && !$this->conf->contactdb()
+                    && !$this->conf->opt("chairHidePasswords")));
+    }
+    static function xt_allow_security($xt, Contact $user, Conf $conf) {
+        $us = $conf->xt_context->arg(0);
+        assert($us instanceof UserStatus);
+        return $us->allow_security();
+    }
+
+    static function user_paper_info(Conf $conf, $cid) {
+        $pinfo = (object) ["soleAuthor" => [], "author" => [], "review" => [], "comment" => []];
+
+        // find authored papers
+        $result = $conf->qe("select Paper.paperId, count(pc.contactId)
+            from Paper
+            join PaperConflict c on (c.paperId=Paper.paperId and c.contactId=? and c.conflictType>=" . CONFLICT_AUTHOR . ")
+            join PaperConflict pc on (pc.paperId=Paper.paperId and pc.conflictType>=" . CONFLICT_AUTHOR . ")
+            group by Paper.paperId order by Paper.paperId", $cid);
+        while (($row = $result->fetch_row())) {
+            if ($row[1] == 1) {
+                $pinfo->soleAuthor[] = (int) $row[0];
+            }
+            $pinfo->author[] = (int) $row[0];
+        }
+        Dbl::free($result);
+
+        // find reviews
+        $result = $conf->qe("select paperId from PaperReview
+            where PaperReview.contactId=?
+            group by paperId order by paperId", $cid);
+        while (($row = $result->fetch_row())) {
+            $pinfo->review[] = (int) $row[0];
+        }
+        Dbl::free($result);
+
+        // find comments
+        $result = $conf->qe("select paperId from PaperComment
+            where PaperComment.contactId=?
+            group by paperId order by paperId", $cid);
+        while (($row = $result->fetch_row())) {
+            $pinfo->comment[] = (int) $row[0];
+        }
+
+        return $pinfo;
+    }
+
+    static function render_paper_link(Conf $conf, $pids) {
+        if (count($pids) === 1) {
+            return Ht::link("#{$pids[0]}", $conf->hoturl("paper", ["p" => $pids[0]]));
+        } else {
+            return Ht::link(commajoin(array_map(function ($p) { return "#$p"; }, $pids)),
+                            $conf->hoturl("search", ["q" => join(" ", $pids)]));
+        }
+    }
+
     function autocomplete($what) {
         if ($this->self)
             return $what;
@@ -65,13 +155,6 @@ class UserStatus extends MessageSet {
             return "nope";
         else
             return "off";
-    }
-    private function gxt() {
-        if ($this->_gxt === null) {
-            $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
-            $this->_gxt->set_context(["hclass" => "profile"]);
-        }
-        return $this->_gxt;
     }
 
     static function unparse_roles_json($roles) {
@@ -177,17 +260,17 @@ class UserStatus extends MessageSet {
             $x = preg_split('/[\s,]+/', $x);
         }
         $res = [];
-        if (is_array($x)) {
+        if (is_object($x) || is_associative_array($x)) {
+            foreach ((array) $x as $k => $v) {
+                $res[$lc ? strtolower($k) : $k] = $v;
+            }
+        } else if (is_array($x)) {
             foreach ($x as $v) {
                 if (!is_string($v)) {
                     $this->error_at($field, "Format error [$field]");
                 } else if ($v !== "") {
                     $res[$lc ? strtolower($v) : $v] = true;
                 }
-            }
-        } else if (is_object($x)) {
-            foreach ((array) $x as $k => $v) {
-                $res[$lc ? strtolower($k) : $k] = $v;
             }
         } else {
             $this->error_at($field, "Format error [$field]");
@@ -698,19 +781,19 @@ class UserStatus extends MessageSet {
         if (isset($cj->follow)
             && (!$this->no_update_profile || $user->defaultWatch == Contact::WATCH_REVIEW)) {
             $w = 0;
-            if (get($cj->follow, "reviews")) {
-                $w |= Contact::WATCH_REVIEW;
+            $wmask = ($cj->follow->partial ?? false ? 0 : 0xFFFFFFFF);
+            foreach (["reviews" => Contact::WATCH_REVIEW,
+                      "allreviews" => Contact::WATCH_REVIEW_ALL,
+                      "adminreviews" => Contact::WATCH_REVIEW_MANAGED,
+                      "managedreviews" => Contact::WATCH_REVIEW_MANAGED,
+                      "allfinal" => Contact::WATCH_FINAL_SUBMIT_ALL]
+                     as $k => $bit) {
+                if (isset($cj->follow->$k)) {
+                    $wmask |= $bit;
+                    $w |= $cj->follow->$k ? $bit : 0;
+                }
             }
-            if (get($cj->follow, "allreviews")) {
-                $w |= Contact::WATCH_REVIEW_ALL;
-            }
-            if (get($cj->follow, "adminreviews")
-                || get($cj->follow, "managedreviews")) {
-                $w |= Contact::WATCH_REVIEW_MANAGED;
-            }
-            if (get($cj->follow, "allfinal")) {
-                $w |= Contact::WATCH_FINAL_SUBMIT_ALL;
-            }
+            $w |= $user->defaultWatch & ~$wmask;
             if ($user->save_assign_field("defaultWatch", $w, $cu)) {
                 $this->diffs["follow"] = true;
             }
@@ -790,6 +873,15 @@ class UserStatus extends MessageSet {
             $this->diffs["password"] = true;
         }
 
+        // Extensions
+        $gx = $this->gxt();
+        $gx->set_context(["args" => [$this, $user, $cj]]);
+        foreach ($gx->members("", "save_callback") as $gj) {
+            if ($gx->allowed($gj->allow_save_if ?? null, $gj)) {
+                $gx->call_callback($gj->save_callback, $gj);
+            }
+        }
+
         // Clean up
         $user->save_cleanup($cu, $this);
         if ($this->viewer->contactId == $user->contactId) {
@@ -813,14 +905,20 @@ class UserStatus extends MessageSet {
     }
 
 
-    static function parse_request_main(UserStatus $us, $cj, Qrequest $qreq, $uf) {
+    static function request_main(UserStatus $us, $cj, Qrequest $qreq, $uf) {
         // email
         if (!$us->conf->external_login()) {
-            $cj->email = trim((string) $qreq->uemail);
-        } else if ($us->user->is_empty()) {
-            $cj->email = trim((string) $qreq->newUsername);
+            if (isset($qreq->uemail) || $us->user->is_empty()) {
+                $cj->email = trim((string) $qreq->uemail);
+            } else {
+                $cj->email = $us->user->email;
+            }
         } else {
-            $cj->email = $us->user->email;
+            if ($us->user->is_empty()) {
+                $cj->email = trim((string) $qreq->newUsername);
+            } else {
+                $cj->email = $us->user->email;
+            }
         }
 
         // normal fields
@@ -830,30 +928,6 @@ class UserStatus extends MessageSet {
             $v = $qreq[$k];
             if ($v !== null && ($cj->id !== "new" || trim($v) !== ""))
                 $cj->$k = $v;
-        }
-
-        // password
-        if (!$us->conf->external_login()
-            && !$us->user->is_empty()
-            && $us->viewer->can_change_password($us->user)
-            && isset($qreq->upassword)) {
-            $pw = trim((string) $qreq->upassword);
-            $pw2 = trim((string) $qreq->upassword2);
-            $cj->__passwords = [(string) $qreq->upassword, (string) $qreq->upassword2];
-            if ($pw === "" && $pw2 === "") {
-                /* do nothing */;
-            } else if ($pw !== $pw2) {
-                $us->error_at("password", "Those passwords do not match.");
-            } else if (!Contact::valid_password($pw)) {
-                $us->error_at("password", "Invalid new password.");
-            } else if ($us->viewer->can_change_password(null)
-                       && strcasecmp($us->viewer->email, $us->user->email)) {
-                $cj->new_password = $pw;
-            } else if ($us->user->check_password(trim((string) $qreq->oldpassword))) {
-                $cj->new_password = $pw;
-            } else {
-                $us->error_at("password", "Incorrect current password. New password ignored.");
-            }
         }
 
         // PC components
@@ -888,6 +962,7 @@ class UserStatus extends MessageSet {
             $follow["allfinal"] = !!$qreq->watchallfinal;
         }
         if (!empty($follow)) {
+            $follow["partial"] = true;
             $cj->follow = (object) $follow;
         }
 
@@ -906,11 +981,41 @@ class UserStatus extends MessageSet {
         }
     }
 
-    function parse_request_group($g, $cj, Qrequest $qreq) {
-        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
-            if (isset($gj->parse_request_callback)) {
-                Conf::xt_resolve_require($gj);
-                call_user_func($gj->parse_request_callback, $this, $cj, $qreq, $gj);
+
+    static function request_security(UserStatus $us, $cj, Qrequest $qreq, $uf) {
+        $us->_req_security = $us->_req_need_security = false;
+        if ($us->allow_security()
+            && isset($qreq->oldpassword)) {
+            $info = $us->viewer->check_password_info(trim((string) $qreq->oldpassword));
+            $us->_req_security = $info["ok"];
+            $us->request_group("security");
+            if (!$us->_req_security && $us->_req_need_security) {
+                $us->error_at("oldpassword", "Incorrect current password. Changes to other security settings were ignored.");
+            }
+        }
+    }
+
+    function has_req_security() {
+        $this->_req_need_security = true;
+        return $this->_req_security;
+    }
+
+    static function request_new_password(UserStatus $us, $cj, Qrequest $qreq, $uf) {
+        $pw = trim((string) $qreq->upassword);
+        $pw2 = trim((string) $qreq->upassword2);
+        $us->_req_passwords = [(string) $qreq->upassword, (string) $qreq->upassword2];
+        if ($pw === "" && $pw2 === "") {
+            // do nothing
+        } else if ($us->has_req_security()
+                   && $us->viewer->can_change_password($us->user)) {
+            if ($pw !== $pw2) {
+                $us->error_at("password", "Those passwords do not match.");
+            } else if (strlen($pw) <= 5) {
+                $us->error_at("password", "Password too short.");
+            } else if (!Contact::valid_password($pw)) {
+                $us->error_at("password", "Invalid new password.");
+            } else {
+                $cj->new_password = $pw;
             }
         }
     }
@@ -1059,40 +1164,33 @@ class UserStatus extends MessageSet {
         $us->render_field("affiliation", "Affiliation", $t);
     }
 
-    static function render_password(UserStatus $us, $cj, $reqj, $uf) {
-        if ($us->user->is_empty()
-            || $us->conf->external_login()
-            || !$us->viewer->can_change_password($us->user)) {
+    static function render_current_password(UserStatus $us, $cj, $reqj, $uf) {
+        echo '<p class="w-text">You must enter your current password to make changes to ',
+            $us->self ? "" : "other users’ ",
+            'security settings.</p>',
+            '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',
+            '<label for="oldpassword">',
+            $us->self ? "Current password" : "Current password for " . htmlspecialchars($us->viewer->email),
+            '</label>',
+            Ht::entry("viewer_email", $us->viewer->email, ["autocomplete" => "username", "class" => "hidden ignore-diff", "readonly" => true]),
+            Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "oldpassword"]),
+            '</div>';
+    }
+
+    static function render_new_password(UserStatus $us, $cj, $reqj, $uf) {
+        if (!$us->viewer->can_change_password($us->user)) {
             return;
         }
-
-        echo '<div id="foldpassword" class="form-g w-text foldc ',
-            ($us->has_problem_at("password") ? "fold3o" : "fold3c"),
-            '">';
-        $pws = get($reqj, "__passwords", ["", ""]);
-        // Hit a button to change your password
-        echo Ht::button("Change password", ["class" => "ui js-foldup fn3", "data-fold-target" => "3o"]);
-        // Display the following after the button is clicked
-        echo '<div class="fx3">';
-        if (!$us->viewer->can_change_password(null)
-            || !strcasecmp($us->user->email, $us->viewer->email)) {
-            echo '<div class="f-h">Enter your current password as well as your desired new password.</div>';
-            echo '<div class="', $us->control_class("password", "f-i"), '"><div class="f-c">Current password</div>',
-                Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => $us->autocomplete("current-password"), "class" => "ignore-diff"]),
-                '</div>';
-        }
-        if ($us->conf->opt("contactdb_dsn")
-            && $us->conf->opt("contactdb_loginFormHeading")) {
-            echo $us->conf->opt("contactdb_loginFormHeading");
-        }
-        echo '<div class="', $us->control_class("password", "f-i"), '">
-      <div class="f-c">New password</div>',
-            Ht::password("upassword", $pws[0], ["size" => 52, "class" => "fn", "autocomplete" => $us->autocomplete("new-password")]);
-        echo '</div>
-    <div class="', $us->control_class("password", "f-i"), '">
-      <div class="f-c">Repeat new password</div>',
-            Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]), "</div>\n";
-        echo "</div></div>"; // .fx3 #foldpassword
+        echo '<h3 class="form-h">Change password</h3>';
+        $pws = $us->_req_passwords ? : ["", ""];
+        echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
+            '<label for="upassword">New password</label>',
+            Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]),
+            '</div>',
+            '<div class="', $us->control_class("password", "f-i w-text"), '">',
+            '<label for="upassword2">Repeat new password</label>',
+            Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]),
+            '</div>';
     }
 
     static function render_demographics(UserStatus $us, $cj, $reqj, $uf) {
@@ -1226,9 +1324,118 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo "</div>\n";
     }
 
-    function render_group($g, $cj, $reqj) {
+    static function render_actions(UserStatus $us, $cj, $reqj, $uf) {
+        $buttons = [Ht::submit("save", $us->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
+            Ht::submit("cancel", "Cancel", ["formnovalidate" => true])];
+
+        if ($us->viewer->privChair
+            && !$us->is_new_user()
+            && !$us->is_viewer_user()
+            && $us->gxt()->root === "main") {
+            $tracks = self::user_paper_info($us->conf, $us->user->contactId);
+            $args = ["class" => "ui"];
+            if (!empty($tracks->soleAuthor)) {
+                $args["class"] .= " js-cannot-delete-user";
+                $args["data-sole-author"] = pluralx($tracks->soleAuthor, "submission") . " " . self::render_paper_link($us->conf, $tracks->soleAuthor);
+            } else {
+                $args["class"] .= " js-delete-user";
+                $x = $y = array();
+                if (!empty($tracks->author)) {
+                    $x[] = "contact for " . pluralx($tracks->author, "submission") . " " . self::render_paper_link($us->conf, $tracks->author);
+                    $y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
+                }
+                if (!empty($tracks->review)) {
+                    $x[] = "reviewer for " . pluralx($tracks->review, "submission") . " " . self::render_paper_link($us->conf, $tracks->review);
+                    $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this") . " " . pluralx($tracks->review, "review");
+                }
+                if (!empty($tracks->comment)) {
+                    $x[] = "commenter for " . pluralx($tracks->comment, "submission") . " " . self::render_paper_link($us->conf, $tracks->comment);
+                    $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
+                }
+                if (!empty($x)) {
+                    $args["data-delete-info"] = "<p>This user is " . commajoin($x) . ". Deleting the user will also " . commajoin($y) . ".</p>";
+                }
+            }
+            $buttons[] = "";
+            $buttons[] = [Ht::button("Delete user", $args), "(admin only)"];
+        }
+
+        if ($us->self
+            && $us->gxt()->root === "main") {
+            array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
+        }
+
+        echo Ht::actions($buttons, ["class" => "aab aabig mt-7"]);
+    }
+
+
+
+    static function render_bulk_entry(UserStatus $us, Qrequest $qreq) {
+        echo Ht::textarea("bulkentry", $qreq->bulkentry, [
+            "rows" => 1, "cols" => 80,
+            "placeholder" => "Enter users one per line",
+            "class" => "want-focus need-autogrow"
+        ]);
+        echo '<div class="g"><strong>OR</strong>  ',
+            '<input type="file" name="bulk" size="30"></div>';
+    }
+
+    static function render_bulk_actions(UserStatus $us, Qrequest $qreq) {
+        echo '<div class="aab aabig">',
+            '<div class="aabut">', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>',
+            '</div>';
+    }
+
+    static function render_bulk_help(UserStatus $us) {
+        echo '<section class="mt-7"><h3>Instructions</h3>',
+            "<p>Enter or upload CSV data with header, such as:</p>\n",
+            '<pre class="entryexample">
+name,email,affiliation,roles
+John Adams,john@earbox.org,UC Berkeley,pc
+"Adams, John Quincy",quincy@whitehouse.gov
+</pre>',
+            "\n<p>Or just enter an email address per line.</p>";
+
+        $rows = [];
+        foreach ($us->gxt()->members("__bulk/help/f") as $gj) {
+            $t = '<tr><td class="pad">';
+            if (isset($gj->field_html)) {
+                $t .= $gj->field_html;
+            } else if (isset($gj->field)) {
+                $t .= '<code>' . htmlspecialchars($gj->field) . '</code>';
+            } else {
+                $t .= '<code>' . htmlspecialchars(substr($gj->name, 14)) . '</code>';
+            }
+            $t .= '</td><td class="pad">' . $gj->description_html . '</td></tr>';
+            $rows[] = $t;
+        }
+
+        if (!empty($rows)) {
+            echo '<p>Supported CSV fields include:</p>',
+                '<table class="p table-striped"><thead>',
+                '<tr><th class="pll">Field</th><th class="pll">Description</th></tr></thead>',
+                '<tbody>', join('', $rows), '</tbody></table>';
+        }
+
+        echo '</section>';
+    }
+
+    static function render_bulk_help_topics(UserStatus $us) {
+        if ($us->conf->has_topics()) {
+            echo '<dl class="ctelt dd"><dt><code>topic: &lt;TOPIC NAME&gt;</code></dt>',
+                '<dd>Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)</dd></dl>';
+        }
+    }
+
+
+
+    function set_context($options) {
+        $this->gxt()->set_context($options);
+    }
+
+    function render_group($g) {
         $gx = $this->gxt();
-        $gx->start_render(["args" => [$this, $cj, $reqj]]);
+        $gx->start_render();
         $ok = null;
         foreach ($gx->members(strtolower($g)) as $gj) {
             if (array_search("pc", Conf::xt_allow_list($gj)) === false) {
@@ -1243,5 +1450,14 @@ topics. We use this information to help match papers to reviewers.</p>',
             }
         }
         $gx->end_render();
+    }
+
+    function request_group($name) {
+        $gx = $this->gxt();
+        foreach ($gx->members($name, "request_callback") as $gj) {
+            if ($gx->allowed($gj->allow_request_if ?? null, $gj)) {
+                $gx->call_callback($gj->request_callback, $gj);
+            }
+        }
     }
 }

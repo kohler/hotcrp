@@ -1,37 +1,61 @@
 [
-    {
-        "name": "main", "position": 1000,
+    {   "name": "main", "title": "Profile", "position": 100,
         "unparse_json_callback": "UserStatus::unparse_json_main",
-        "render_callback": "UserStatus::render_main",
-        "parse_request_callback": "UserStatus::parse_request_main",
+        "request_callback": "UserStatus::request_main",
         "parse_csv_callback": "UserStatus::parse_csv_main"
     },
     {
-        "name": "password", "position": 2000,
-        "render_callback": "UserStatus::render_password"
+        "name": "main/main", "position": 1000,
+        "render_callback": "UserStatus::render_main"
     },
     {
-        "name": "demographics", "position": 3000,
+        "name": "main/demographics", "position": 3000,
         "render_callback": "UserStatus::render_demographics"
     },
     {
-        "name": "follow", "position": 4000,
-        "render_callback": "UserStatus::render_follow"
-    },
-    {
-        "name": "roles", "position": 5000,
+        "name": "main/roles", "position": 5000,
         "render_callback": "UserStatus::render_roles"
     },
     {
-        "name": "collaborators", "position": 6000,
+        "name": "main/collaborators", "position": 6000,
         "render_callback": "UserStatus::render_collaborators"
     },
     {
-        "name": "topics", "position": 7000, "allow_if": ["pc", "has_topics"],
+        "name": "main/topics", "position": 7000, "allow_if": ["pc", "conf.has_topics"],
         "render_callback": "UserStatus::render_topics"
     },
-    {
-        "name": "tags", "position": 8000,
-        "render_callback": "UserStatus::render_tags"
-    }
+    [   "main/tags", 8000, "UserStatus::render_tags"   ],
+    [   "main/actions", 1000000, "UserStatus::render_actions"   ],
+
+
+    {   "name": "security", "title": "Security", "position": 200,
+        "allow_if": "UserStatus::xt_allow_security",
+        "request_callback": "UserStatus::request_security"   },
+    [   "security/currentpassword", 10, "UserStatus::render_current_password"   ],
+    {   "name": "security/newpassword", "position": 100,
+        "render_callback": "UserStatus::render_new_password",
+        "request_callback": "UserStatus::request_new_password"   },
+    [   "security/actions", 1000000, "UserStatus::render_actions"   ],
+
+
+    {   "name": "preferences", "title": "Preferences", "position": 300   },
+    [   "preferences/follow", 4000, "UserStatus::render_follow"   ],
+    [   "preferences/actions", 1000000, "UserStatus::render_actions"   ],
+
+
+    [   "__bulk/entry", 100, "UserStatus::render_bulk_entry"   ],
+    [   "__bulk/actions", 1000, "UserStatus::render_bulk_actions"   ],
+    [   "__bulk/help", 10000, "UserStatus::render_bulk_help"   ],
+    {   "name": "__bulk/help/f/email", "position": -100, "description_html": "Email"   },
+    {   "name": "__bulk/help/f/name", "position": -90, "description_html": "Name"   },
+    {   "name": "__bulk/help/f/first", "position": -90, "description_html": "First name (given name)"   },
+    {   "name": "__bulk/help/f/last", "position": -90, "description_html": "Last name (family name)"   },
+    {   "name": "__bulk/help/f/affiliation", "position": -90, "description_html": "Affiliation"   },
+    {   "name": "__bulk/help/f/roles", "position": -80, "description_html": "User roles: “<code>pc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, “<code>none</code>”"   },
+    {   "name": "__bulk/help/f/tags", "position": -80, "description_html": "PC tags (space-separated)"   },
+    {   "name": "__bulk/help/f/add_tags", "position": -80, "description_html": "PC tags to add"   },
+    {   "name": "__bulk/help/f/remove_tags", "position": -80, "description_html": "PC tags to remove"   },
+    {   "name": "__bulk/help/f/collaborators", "description_html": "Collaborators"   },
+    {   "name": "__bulk/help/f/follow", "description_html": "Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”"   },
+    {   "name": "__bulk/help/f/topics", "field": "topic:<TOPICNAME>", "description_html": "Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)", "allow_if": "conf.has_topics"   }
 ]

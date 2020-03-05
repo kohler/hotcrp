@@ -111,16 +111,26 @@ if (!$Me->is_signed_in()) {
     $Me->escape();
 }
 
-$newProfile = false;
+$newProfile = 0;
 $UserStatus = new UserStatus($Me);
+$UserStatus->set_context(["args" => [$UserStatus]]);
 
-if ($Qreq->u === null) {
-    if ($Qreq->user) {
-        $Qreq->u = $Qreq->user;
-    } else if ($Qreq->contact) {
-        $Qreq->u = $Qreq->contact;
-    } else if ($Qreq->path_component(0) !== false) {
-        $Qreq->u = $Qreq->path_component(0, true);
+if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
+    $Qreq->u = $Qreq->user ? : $Qreq->contact;
+}
+if (($p = $Qreq->path_component(0)) !== false) {
+    if (in_array($p, ["", "me", "self", "new", "bulk"])
+        || strpos($p, "@") !== false
+        || !$UserStatus->gxt()->canonical_group($p)) {
+        if ($Qreq->u === null) {
+            $Qreq->u = urldecode($p);
+        }
+        if (($p = $Qreq->path_component(1)) !== false
+            && $Qreq->t === null) {
+            $Qreq->t = $p;
+        }
+    } else if ($Qreq->t === null) {
+        $Qreq->t = $p;
     }
 }
 if ($Me->privChair && $Qreq->new) {
@@ -130,10 +140,15 @@ if ($Me->privChair && $Qreq->new) {
 
 // Load user.
 $Acct = $Me;
-if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
+if ($Qreq->u === "me" || $Qreq->u === "self") {
+    $Qreq->u = "me";
+} else if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
     if ($Qreq->u === "new") {
         $Acct = new Contact(null, $Conf);
-        $newProfile = true;
+        $newProfile = 1;
+    } else if ($Qreq->u === "bulk") {
+        $Acct = new Contact(null, $Conf);
+        $newProfile = 2;
     } else if (($id = cvtint($Qreq->u)) > 0) {
         $Acct = $Conf->user_by_id($id);
     } else if ($Qreq->u === "" && $Qreq->search) {
@@ -147,8 +162,11 @@ if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
                 $list = new SessionList("u/all/" . urlencode($Qreq->search), $cs->ids, "“" . htmlspecialchars($Qreq->u) . "”", $Conf->hoturl_site_relative_raw("users", ["t" => "all"]));
                 $list->set_cookie();
                 $Qreq->u = $Acct->email;
-                $Conf->self_redirect($Qreq);
+            } else {
+                Conf::msg_error("No user matches “" . htmlspecialchars($Qreq->u) . "”.");
+                unset($Qreq->u);
             }
+            $Conf->self_redirect($Qreq);
         }
     }
 }
@@ -157,8 +175,9 @@ if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
 if (!$Acct
     || ($Qreq->u !== null
         && $Qreq->u !== (string) $Acct->contactId
+        && ($Qreq->u !== "me" || $Acct !== $Me)
         && strcasecmp($Qreq->u, $Acct->email)
-        && ($Acct->contactId || $Qreq->u !== "new"))
+        && ($Acct->contactId || !$newProfile))
     || (isset($Qreq->profile_contactid)
         && $Qreq->profile_contactid !== (string) $Acct->contactId)) {
     if (!$Acct) {
@@ -176,8 +195,8 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_account_here())
     && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation
     && !$Qreq->post) {
     $result = $Conf->qe_raw("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Acct->contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")");
-    while (($prow = PaperInfo::fetch($result, $Me)))
-        foreach ($prow->author_list() as $au)
+    while (($prow = PaperInfo::fetch($result, $Me))) {
+        foreach ($prow->author_list() as $au) {
             if (strcasecmp($au->email, $Acct->email) == 0
                 && ($au->firstName || $au->lastName || $au->affiliation)) {
                 if (!$Acct->firstName && $au->firstName) {
@@ -193,13 +212,16 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_account_here())
                     $need_highlight = true;
                 }
             }
+        }
+    }
 }
 
 
 function save_user($cj, $user_status, $Acct, $allow_modification) {
     global $Conf, $Me, $Now, $newProfile;
-    if ($newProfile)
+    if ($newProfile) {
         $Acct = null;
+    }
 
     // check for missing fields
     UserStatus::normalize_name($cj);
@@ -324,6 +346,7 @@ function parseBulkFile($text, $filename) {
 
     while (($line = $csv->next_row()) !== false) {
         $ustatus->set_user(new Contact(null, $Conf));
+        $ustatus->set_context(["args" => [$ustatus]]);
         $ustatus->clear_messages();
         $cj = (object) ["id" => null];
         $ustatus->parse_csv_group("", $cj, $line);
@@ -339,8 +362,9 @@ function parseBulkFile($text, $filename) {
         if (($saved_user = save_user($cj, $ustatus, null, true)))
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";
-        foreach ($ustatus->problems() as $e)
+        foreach ($ustatus->problems() as $e) {
             $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> " . $e;
+        }
     }
 
     if (!empty($ustatus->unknown_topics)) {
@@ -386,10 +410,11 @@ if (!$Qreq->post_ok()) {
     }
     $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
 } else if (isset($Qreq->save)) {
-    assert($Acct->is_empty() === $newProfile);
+    assert($Acct->is_empty() === !!$newProfile);
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->set_user($Acct);
-    $UserStatus->parse_request_group("", $cj, $Qreq);
+    $UserStatus->set_context(["args" => [$UserStatus, $cj, $Qreq]]);
+    $UserStatus->request_group("");
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if (!$UserStatus->has_error()) {
         if ($UserStatus->has_messages()) {
@@ -423,57 +448,15 @@ if (!$Qreq->post_ok()) {
     go(hoturl("mergeaccounts"));
 }
 
-function databaseTracks($who) {
-    global $Conf;
-    $tracks = (object) array("soleAuthor" => array(),
-                             "author" => array(),
-                             "review" => array(),
-                             "comment" => array());
-
-    // find authored papers
-    $result = $Conf->qe_raw("select Paper.paperId, count(pc.contactId)
-        from Paper
-        join PaperConflict c on (c.paperId=Paper.paperId and c.contactId=$who and c.conflictType>=" . CONFLICT_AUTHOR . ")
-        join PaperConflict pc on (pc.paperId=Paper.paperId and pc.conflictType>=" . CONFLICT_AUTHOR . ")
-        group by Paper.paperId order by Paper.paperId");
-    while (($row = edb_row($result))) {
-        if ($row[1] == 1)
-            $tracks->soleAuthor[] = $row[0];
-        $tracks->author[] = $row[0];
-    }
-
-    // find reviews
-    $result = $Conf->qe_raw("select paperId from PaperReview
-        where PaperReview.contactId=$who
-        group by paperId order by paperId");
-    while (($row = edb_row($result))) {
-        $tracks->review[] = $row[0];
-    }
-
-    // find comments
-    $result = $Conf->qe_raw("select paperId from PaperComment
-        where PaperComment.contactId=$who
-        group by paperId order by paperId");
-    while (($row = edb_row($result))) {
-        $tracks->comment[] = $row[0];
-    }
-
-    return $tracks;
-}
-
-function textArrayPapers($pids) {
-    return commajoin(preg_replace('/(\d+)/', '<a href="' . hoturl("paper", "p=\$1&amp;ls=" . join("+", $pids)) . "\">\$1</a>", $pids));
-}
-
 if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
     if (!$Me->privChair) {
         Conf::msg_error("Only administrators can delete accounts.");
     } else if ($Acct->contactId == $Me->contactId) {
         Conf::msg_error("You aren’t allowed to delete your own account.");
     } else if ($Acct->has_account_here()) {
-        $tracks = databaseTracks($Acct->contactId);
+        $tracks = UserStatus::user_paper_info($Conf, $Acct->contactId);
         if (!empty($tracks->soleAuthor)) {
-            Conf::msg_error("This account can’t be deleted since it is sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ". You will be able to delete the account after deleting those papers or adding additional paper contacts.");
+            Conf::msg_error("This account can’t be deleted since it is sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . UserStatus::render_paper_link($Conf, $tracks->soleAuthor) . ". You will be able to delete the account after deleting those papers or adding additional paper contacts.");
         } else if ($Acct->data("locked")) {
             Conf::msg_error("This account is locked and can’t be deleted.");
         } else {
@@ -501,26 +484,19 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
     }
 }
 
-function echo_modes($hlbulk) {
-    global $Me, $Acct, $newProfile;
-    echo '<div class="psmode">',
-        '<div class="papmode', ($hlbulk == 0 ? " active" : ""), '">',
-        Ht::link($newProfile || $Me->email == $Acct->email ? "Your profile" : "Profile", $Me->conf->selfurl(null, ["u" => null])),
-        '</div><div class="papmode', ($hlbulk == 1 ? " active" : ""), '">';
-    if ($newProfile) {
-        echo Ht::link("New account", "", ["class" => "ui tla"]);
-    } else {
-        echo Ht::link("New account", hoturl("profile", "u=new"));
-    }
-    echo '</div><div class="papmode', ($hlbulk == 2 ? " active" : ""), '">';
-    if ($newProfile) {
-        echo Ht::link("Bulk update", "#bulk", ["class" => "ui tla"]);
-    } else {
-        echo Ht::link("Bulk update", hoturl("profile", "u=new#bulk"));
-    }
-    echo '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
+// canonicalize topic
+$UserStatus->set_user($Acct);
+$UserStatus->set_context(["args" => [$UserStatus]]);
+if (!$newProfile
+    && ($g = $UserStatus->gxt()->canonical_group($Qreq->t ? : "main"))) {
+    $profile_topic = $g;
+} else {
+    $profile_topic = "main";
 }
-
+if ($Qreq->t && $Qreq->t !== $profile_topic && $Qreq->method() === "GET") {
+    $Qreq->t = $profile_topic === "main" ? null : $profile_topic;
+    $Conf->self_redirect($Qreq);
+}
 
 // set session list
 if (!$newProfile
@@ -529,14 +505,20 @@ if (!$newProfile
     $Conf->set_active_list($list);
 }
 
-if ($newProfile) {
-    $title = "User update";
+// set title
+if ($newProfile == 2) {
+    $title = "Bulk update";
+} else if ($newProfile) {
+    $title = "New account";
 } else if (strcasecmp($Me->email, $Acct->email) == 0) {
     $title = "Profile";
 } else {
     $title = $Me->name_html_for($Acct) . " profile";
 }
-$Conf->header($title, "account", ["action_bar" => actionBar("account")]);
+$Conf->header($title, "account", [
+    "title_div" => '<hr class="c">', "body_class" => "leftmenu",
+    "action_bar" => actionBar("account")
+]);
 
 $useRequest = !$Acct->has_account_here() && isset($Qreq->watchreview);
 if ($UserStatus->has_error()) {
@@ -546,7 +528,6 @@ if ($UserStatus->has_error()) {
 }
 
 // obtain user json
-$UserStatus->set_user($Acct);
 $userj = $UserStatus->user_json();
 if (!$useRequest
     && $Me->privChair
@@ -578,7 +559,8 @@ if (!$newProfile) {
 if ($useRequest) {
     $UserStatus->ignore_msgs = true;
     $formcj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
-    $UserStatus->parse_request_group("", $formcj, $Qreq);
+    $UserStatus->set_context(["args" => [$UserStatus, $formcj, $Qreq]]);
+    $UserStatus->request_group("");
 } else {
     $formcj = $userj;
 }
@@ -594,29 +576,67 @@ if (($prdj = $Me->session("profile_redirect"))) {
     }
 }
 
-$form_params = array();
+// start form
+$form_params = [];
 if ($newProfile) {
-    $form_params[] = "u=new";
+    $form_params["u"] = ($newProfile === 2 ? "bulk" : "new");
 } else if ($Me->contactId != $Acct->contactId) {
-    $form_params[] = "u=" . urlencode($Acct->email);
+    $form_params["u"] = $Acct->email;
 }
+$form_params["t"] = $Qreq->t;
 if (isset($Qreq->ls)) {
-    $form_params[] = "ls=" . urlencode($Qreq->ls);
+    $form_params["ls"] = $Qreq->ls;
+}
+echo Ht::form(hoturl_post("profile", $form_params),
+              ["id" => "profile-form", "class" => "need-unload-protection"]);
+
+// left menu
+echo '<div class="leftmenu-left"><nav class="leftmenu-menu"><h1 class="leftmenu">Account</h1><div class="leftmenu-list">';
+
+if ($Me->privChair) {
+    foreach ([["New account", "new"], ["Bulk update", "bulk"], ["Your profile", null]] as $t) {
+        if (!$t[1] && !$newProfile && $Acct->contactId == $Me->contactId) {
+            continue;
+        }
+        $active = $t[1] && $newProfile === ($t[1] === "new" ? 1 : 2);
+        echo '<div class="leftmenu-item',
+            ($active ? ' active' : ' ui js-click-child'),
+            ' font-italic', '">';
+        if ($active) {
+            echo $t[0];
+        } else {
+            echo Ht::link($t[0], $Conf->selfurl(null, ["u" => $t[1], "t" => null]));
+        }
+        echo '</div>';
+    }
 }
 
-if ($newProfile) {
-    echo_modes(1);
-} else if ($Me->privChair) {
-    echo_modes(0);
+if (!$newProfile) {
+    $first = $Me->privChair;
+    foreach ($UserStatus->gxt()->groups() as $gj) {
+        if (!str_starts_with($gj->name, "__") && isset($gj->title)) {
+            echo '<div class="leftmenu-item',
+                ($gj->name === $profile_topic ? ' active' : ' ui js-click-child'),
+                ($first ? ' mt-4' : ''), '">';
+            if ($gj->name === $profile_topic) {
+                echo $gj->title;
+            } else {
+                echo Ht::link($gj->title, $Conf->selfurl(null, ["t" => $gj->name]));
+            }
+            echo '</div>';
+            $first = false;
+        }
+    }
+
+    echo '</div><div class="leftmenu-if-left if-alert mt-5">',
+        Ht::submit("save", "Save changes", ["class" => "btn-primary"]),
+        '</div>';
+} else {
+    echo '</div>';
 }
 
-echo '<div class="is-tla active" id="tla-default">',
-    Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
-             ["id" => "profile-form", "class" => "need-unload-protection"]),
-    Ht::hidden("profile_contactid", $Acct->contactId);
-if (isset($Qreq->redirect)) {
-    echo Ht::hidden("redirect", $Qreq->redirect);
-}
+echo '</nav></div>',
+    '<main id="profilecontent" class="leftmenu-content main-column">';
 
 if ($UserStatus->has_messages()) {
     $status = 0;
@@ -628,131 +648,60 @@ if ($UserStatus->has_messages()) {
     echo '<div class="msgs-wide">', Ht::msg($msgs, $status), "</div>\n";
 }
 
-echo '<div id="foldaccount" class="';
-if (isset($formcj->roles)
-    && (isset($formcj->roles->pc) || isset($formcj->roles->chair))) {
-    echo "fold1o fold2o";
-} else if (isset($formcj->roles) && isset($formcj->roles->sysadmin)) {
-    echo "fold1c fold2o";
-} else {
-    echo "fold1c fold2c";
-}
-echo "\">\n";
-
-
-$UserStatus->set_user($Acct);
-$UserStatus->render_group("", $userj, $formcj);
-
-if ($UserStatus->global_self() && false) {
-    echo '<div class="form-g"><div class="checki"><label><span class="checkc">',
-        Ht::checkbox("saveglobal", 1, $useRequest ? !!$Qreq->saveglobal : true, ["class" => "ignore-diff"]),
-        '</span>Update global profile</label></div></div>';
-}
-
-$buttons = [Ht::submit("save", $newProfile ? "Create account" : "Save changes", ["class" => "btn-primary"]),
-    Ht::submit("cancel", "Cancel", ["formnovalidate" => true])];
-
-if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
-    $tracks = databaseTracks($Acct->contactId);
-    $args = ["class" => "ui"];
-    if (!empty($tracks->soleAuthor)) {
-        $args["class"] .= " js-cannot-delete-user";
-        $args["data-sole-author"] = pluralx($tracks->soleAuthor, "submission") . " " . textArrayPapers($tracks->soleAuthor);
-    } else {
-        $args["class"] .= " js-delete-user";
-        $x = $y = array();
-        if (!empty($tracks->author)) {
-            $x[] = "contact for " . pluralx($tracks->author, "submission") . " " . textArrayPapers($tracks->author);
-            $y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
-        }
-        if (!empty($tracks->review)) {
-            $x[] = "reviewer for " . pluralx($tracks->review, "submission") . " " . textArrayPapers($tracks->review);
-            $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this") . " " . pluralx($tracks->review, "review");
-        }
-        if (!empty($tracks->comment)) {
-            $x[] = "commenter for " . pluralx($tracks->comment, "submission") . " " . textArrayPapers($tracks->comment);
-            $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
-        }
-        if (!empty($x)) {
-            $args["data-delete-info"] = "<p>This user is " . commajoin($x) . ". Deleting the user will also " . commajoin($y) . ".</p>";
-        }
-    }
-    $buttons[] = "";
-    $buttons[] = [Ht::button("Delete user", $args), "(admin only)"];
-}
-if (!$newProfile && $Acct->contactId == $Me->contactId) {
-    array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
-}
-
-echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
-
-echo "</div>\n", // foldaccount
-    "</form></div>";
-
-if ($newProfile) {
-    echo '<div class="is-tla" id="tla-bulk">';
-    echo Ht::form(hoturl_post("profile", join("&amp;", $form_params) . "#bulk")),
-        '<div class="profiletext', ($UserStatus->has_error() ? " alert" : ""), "\">\n",
-        // Don't want chrome to autofill the password changer.
-        // But chrome defaults to autofilling the password changer
-        // unless we supply an earlier password input.
-        Ht::password("chromefooler", "", ["class" => "ignore-diff hidden"]);
-
-    $bulkentry = $Qreq->bulkentry;
-    if ($bulkentry === null
+if ($newProfile === 2) {
+    if ($Qreq->bulkentry === null
         && ($session_bulkentry = $Me->session("profile_bulkentry"))
-        && is_array($session_bulkentry) && $session_bulkentry[0] > $Now - 5) {
-        $bulkentry = $session_bulkentry[1];
+        && is_array($session_bulkentry)
+        && $session_bulkentry[0] > $Now - 5) {
+        $Qreq->bulkentry = $session_bulkentry[1];
         $Me->save_session("profile_bulkentry", null);
     }
-    echo '<div class="lg">',
-        Ht::textarea("bulkentry", $bulkentry,
-                     ["rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line", "class" => "want-focus need-autogrow"]),
-        '<div class="g"><strong>OR</strong> &nbsp;',
-        '<input type="file" name="bulk" size="30" /></div></div>';
 
-    echo '<div class="lg">', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>';
-
-    echo "<p>Enter or upload CSV data with header, such as:</p>\n",
-        '<pre class="entryexample">
-name,email,affiliation,roles
-John Adams,john@earbox.org,UC Berkeley,pc
-"Adams, John Quincy",quincy@whitehouse.gov
-</pre>', "\n",
-        '<p>Or just enter an email address per line.</p>',
-        '<p>Supported CSV fields include:</p>',
-        '<div class="ctable no-hmargin">',
-        '<dl class="ctelt dd"><dt><code>email</code></dt>',
-        '<dd>Email</dd></dl>',
-        '<dl class="ctelt dd"><dt><code>name</code></dt>',
-        '<dd>User name</dd></dl>',
-        '<dl class="ctelt dd"><dt><code>first</code></dt>',
-        '<dd>First name (given name)</dd></dl>',
-        '<dl class="ctelt dd"><dt><code>last</code></dt>',
-        '<dd>Last name (family name)</dd></dl>',
-        '<dl class="ctelt dd"><dt><code>affiliation</code></dt>',
-        '<dd>Affiliation</dd></dl>',
-        '<dl class="ctelt dd"><dt><code>roles</code></dt>',
-        '<dd>User roles: “<code>pc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, or “<code>none</code>”</dd></dl>',
-        '<dl class="ctelt dd"><dt><code>tags</code></dt>',
-        '<dd>PC tags (space-separated)</dd></dl>',
-        '<dl class="ctelt dd"><dt><code>add_tags</code>, <code>remove_tags</code></dt>',
-        '<dd>PC tags to add or remove</dd></dl>',
-        '<dl class="ctelt dd"><dt><code>collaborators</code></dt>',
-        '<dd>Collaborators</dd></dl>',
-        '<dl class="ctelt dd"><dt><code>follow</code></dt>',
-        '<dd>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”</dd></dl>';
-    if ($Conf->has_topics()) {
-        echo '<dl class="ctelt dd"><dt><code>topic: &lt;TOPIC NAME&gt;</code></dt>',
-            '<dd>Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)</dd></dl>';
+    echo '<h2 class="leftmenu">Bulk update</h2>';
+    $UserStatus->set_context(["args" => [$UserStatus, $Qreq]]);
+    $UserStatus->render_group("__bulk");
+} else {
+    echo Ht::hidden("profile_contactid", $Acct->contactId);
+    if (isset($Qreq->redirect)) {
+        echo Ht::hidden("redirect", $Qreq->redirect);
     }
-    echo "</div>\n";
 
-    echo '</div></form></div>';
+    echo '<div id="foldaccount" class="';
+    if (isset($formcj->roles)
+        && (isset($formcj->roles->pc) || isset($formcj->roles->chair))) {
+        echo "fold1o fold2o";
+    } else if (isset($formcj->roles) && isset($formcj->roles->sysadmin)) {
+        echo "fold1c fold2o";
+    } else {
+        echo "fold1c fold2c";
+    }
+    echo "\">";
+
+    echo '<h2 class="leftmenu">';
+    if ($newProfile) {
+        echo 'New account';
+    } else {
+        if ($Me->contactId != $Acct->contactId) {
+            echo $Me->reviewer_html_for($Acct), ' ';
+        }
+        echo htmlspecialchars($UserStatus->gxt()->get($profile_topic)->title);
+    }
+    echo '</h2>';
+
+    $UserStatus->set_context(["root" => $profile_topic, "args" => [$UserStatus, $userj, $formcj]]);
+    $UserStatus->render_group($profile_topic);
+
+    if ($UserStatus->global_self() && false) {
+        echo '<div class="form-g"><div class="checki"><label><span class="checkc">',
+            Ht::checkbox("saveglobal", 1, $useRequest ? !!$Qreq->saveglobal : true, ["class" => "ignore-diff"]),
+            '</span>Update global profile</label></div></div>';
+    }
+
+    echo "</div>"; // foldaccount
 }
 
+echo "</main></form>";
 
-Ht::stash_script("addClass(document.body,\"want-hash-focus\")");
 if (!$newProfile) {
     Ht::stash_script('hiliter_children("#profile-form")');
 }

@@ -2888,13 +2888,24 @@ class Conf {
                     $tp .= "/" . $m[2];
                     $param = $m[1] . $m[3];
                 }
-            } else if (($page === "profile"
-                        && preg_match($are . 'u=([^&?]+)' . $zre, $param, $m))
-                       || ($page === "graph"
-                           && preg_match($are . 'g=([^&?]+)' . $zre, $param, $m))
+            } else if (($page === "graph"
+                        && preg_match($are . 'g=([^&?]+)' . $zre, $param, $m))
                        || ($page === "doc"
                            && preg_match($are . 'file=([^&]+)' . $zre, $param, $m))) {
                 $tp = "/" . str_replace("%2F", "/", $m[2]);
+                $param = $m[1] . $m[3];
+            } else if ($page === "profile"
+                       && preg_match($are . 'u=([^&?]+)' . $zre, $param, $m)) {
+                $tp = "/" . str_replace("%2F", "/", $m[2]);
+                $param = $m[1] . $m[3];
+                if ($param !== ""
+                    && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
+                    $tp .= "/" . $m[2];
+                    $param = $m[1] . $m[3];
+                }
+            } else if ($page === "profile"
+                       && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
+                $tp = "/" . $m[2];
                 $param = $m[1] . $m[3];
             } else if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)) {
                 $tp = "/" . urldecode($m[2]);
