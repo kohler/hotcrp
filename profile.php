@@ -613,19 +613,17 @@ if ($Me->privChair) {
 
 if (!$newProfile) {
     $first = $Me->privChair;
-    foreach ($UserStatus->gxt()->groups() as $gj) {
-        if (!str_starts_with($gj->name, "__") && isset($gj->title)) {
-            echo '<div class="leftmenu-item',
-                ($gj->name === $profile_topic ? ' active' : ' ui js-click-child'),
-                ($first ? ' mt-4' : ''), '">';
-            if ($gj->name === $profile_topic) {
-                echo $gj->title;
-            } else {
-                echo Ht::link($gj->title, $Conf->selfurl(null, ["t" => $gj->name]));
-            }
-            echo '</div>';
-            $first = false;
+    foreach ($UserStatus->gxt()->members("", "title") as $gj) {
+        echo '<div class="leftmenu-item',
+            ($gj->name === $profile_topic ? ' active' : ' ui js-click-child'),
+            ($first ? ' mt-4' : ''), '">';
+        if ($gj->name === $profile_topic) {
+            echo $gj->title;
+        } else {
+            echo Ht::link($gj->title, $Conf->selfurl(null, ["t" => $gj->name]));
         }
+        echo '</div>';
+        $first = false;
     }
 
     echo '</div><div class="leftmenu-if-left if-alert mt-5">',

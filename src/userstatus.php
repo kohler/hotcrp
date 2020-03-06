@@ -243,11 +243,10 @@ class UserStatus extends MessageSet {
             if ($this->user->contactId > 0) {
                 $cj->id = $this->user->contactId;
             }
-            foreach ($this->gxt()->groups() as $gj) {
-                if (isset($gj->unparse_json_callback)) {
-                    Conf::xt_resolve_require($gj);
-                    call_user_func($gj->unparse_json_callback, $this, $cj, $args);
-                }
+            $gx = $this->gxt();
+            $gx->set_context(["args" => [$this, $cj, $args]]);
+            foreach ($gx->members("", "unparse_json_callback") as $gj) {
+                $gx->call_callback($gj->unparse_json_callback, $gj);
             }
             return $cj;
         } else {
