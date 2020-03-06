@@ -472,7 +472,7 @@ class UserStatus extends MessageSet {
             $cj->follow = $this->make_keyed_object($cj->follow, "follow", true);
             $cj->bad_follow = array();
             foreach ((array) $cj->follow as $k => $v) {
-                if ($v && !in_array($k, ["reviews", "allreviews", "managedreviews", "adminreviews", "allfinal", "none"])) {
+                if ($v && !in_array($k, ["reviews", "allreviews", "managedreviews", "adminreviews", "allfinal", "none", "partial"])) {
                     $cj->bad_follow[] = $k;
                 }
             }
