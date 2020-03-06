@@ -466,33 +466,6 @@ class Signin_Partial {
             return $gx->render("forgotpassword/__externallogin");
         }
     }
-    private function _render_reset_success($user, $qreq) {
-        if (!isset($qreq->autopassword)
-            || trim($qreq->autopassword) !== $qreq->autopassword
-            || strlen($qreq->autopassword) < 16
-            || !preg_match('{\A[-0-9A-Za-z@_+=]*\z}', $qreq->autopassword)) {
-            $qreq->autopassword = hotcrp_random_password();
-        }
-        echo Ht::hidden("resetcap", $this->_reset_cap),
-            Ht::hidden("autopassword", $qreq->autopassword),
-            '<p class="mb-5">Use this form to reset your password. You may want to use the random password we’ve chosen.</p>',
-            '<div class="f-i"><label>Email</label>', htmlspecialchars($this->_reset_user->email), '</div>',
-            Ht::entry("email", $this->_reset_user->email, ["class" => "hidden", "autocomplete" => "username"]),
-            '<div class="f-i"><label>Suggested strong password</label>',
-            htmlspecialchars($qreq->autopassword), '</div>',
-
-            '<div class="', Ht::control_class("password", "f-i"), '">',
-            '<label for="password">New password</label>',
-            Ht::password("password", "", ["class" => "fullw", "size" => 36, "id" => "password", "autocomplete" => "new-password", "autofocus" => true]),
-            Ht::render_messages_at("password"),
-            '</div>',
-
-            '<div class="', Ht::control_class("password2", "f-i"), '">',
-            '<label for="password2">Repeat new password</label>',
-            Ht::password("password2", "", ["class" => "fullw", "size" => 36, "id" => "password2", "autocomplete" => "new-password"]),
-            Ht::render_messages_at("password2"),
-            '</div>';
-    }
     function render_reset_body(Contact $user, Qrequest $qreq, $gx, $gj) {
         echo '<div class="homegrp" id="homeaccount">',
             Ht::form($user->conf->hoturl("resetpassword"), ["class" => "compact-form"]),
@@ -520,9 +493,9 @@ class Signin_Partial {
             || !preg_match('{\A[-0-9A-Za-z@_+=]*\z}', $qreq->autopassword)) {
             $qreq->autopassword = hotcrp_random_password();
         }
-        echo '<div class="f-i"><label>Suggested strong password</label>',
-            htmlspecialchars($qreq->autopassword), '</div>',
-            Ht::hidden("autopassword", $qreq->autopassword);
+        echo '<div class="f-i"><label for="autopassword">Suggested strong password</label>',
+            Ht::entry("autopassword", $qreq->autopassword, ["class" => "fullw", "size" => 36, "id" => "autopassword", "readonly" => true]),
+            '</div>';
     }
     static function render_reset_form_password() {
         echo '<div class="', Ht::control_class("password", "f-i"), '">',
