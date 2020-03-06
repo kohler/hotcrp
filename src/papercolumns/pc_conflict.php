@@ -92,9 +92,10 @@ class Conflict_PaperColumn extends PaperColumn {
         $t = '<input type="checkbox" class="uic uikd uich js-assign-review js-range-click" '
             . 'data-range-type="assrevu' . $this->contact->contactId
             . '" name="assrev' . $row->paperId . 'u' . $this->contact->contactId
-            . '" value="-1"' . ($ct ? " checked" : "");
-        if ($this->show_user)
+            . '" value="-1" autocomplete="off"' . ($ct ? " checked" : "");
+        if ($this->show_user) {
             $t .= ' title="' . $pl->user->name_text_for($this->contact) . ' conflict"';
+        }
         return $t . '>';
     }
     function text(PaperList $pl, PaperInfo $row) {
