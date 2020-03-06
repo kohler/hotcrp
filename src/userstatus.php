@@ -51,10 +51,11 @@ class UserStatus extends MessageSet {
         $this->unknown_topics = null;
     }
     function set_user(Contact $user) {
+        $old_user = $this->user;
         $this->user = $user;
         $this->self = $this->user === $this->viewer
             && !$this->viewer->is_actas_user();
-        if ($this->_gxt) {
+        if ($this->_gxt && $this->user !== $old_user) {
             $this->_gxt->reset_context();
             $this->initialize_gxt();
         }
@@ -874,6 +875,7 @@ class UserStatus extends MessageSet {
         }
 
         // Extensions
+        $this->set_user($user);
         $gx = $this->gxt();
         $gx->set_context(["args" => [$this, $user, $cj]]);
         foreach ($gx->members("", "save_callback") as $gj) {

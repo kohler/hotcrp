@@ -37,9 +37,10 @@ class MergeContacts extends MessageSet {
         $cj = (object) ["email" => $this->newu->email];
 
         foreach (["firstName", "lastName", "affiliation", "country",
-                  "collaborators", "phone"] as $k)
+                  "collaborators", "phone"] as $k) {
             if ($this->replace_contact_string($k))
                 $cj->$k = $this->oldu->$k;
+        }
 
         if (($old_data = $this->oldu->data())) {
             $cj->data = (object) [];
@@ -78,10 +79,12 @@ class MergeContacts extends MessageSet {
         // ensure uniqueness in PaperConflict
         $result = $this->conf->qe("select paperId, conflictType from PaperConflict where contactId=?", $this->oldu->contactId);
         $qv = [];
-        while (($row = edb_row($result)))
+        while (($row = edb_row($result))) {
             $qv[] = [$row[0], $this->newu->contactId, $row[1]];
-        if ($qv)
+        }
+        if ($qv) {
             $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $qv);
+        }
         $this->conf->qe("delete from PaperConflict where contactId=?", $this->oldu->contactId);
 
         // merge more things
@@ -107,15 +110,19 @@ class MergeContacts extends MessageSet {
         // merge user data via Contact::save_json
         $cj = $this->basic_user_json();
 
-        if (($this->oldu->roles | $this->newu->roles) != $this->newu->roles)
+        if (($this->oldu->roles | $this->newu->roles) != $this->newu->roles) {
             $cj->roles = UserStatus::unparse_roles_json($this->oldu->roles | $this->newu->roles);
+        }
 
         $cj->tags = [];
-        foreach (TagInfo::split_unpack($this->newu->contactTags) as $ti)
+        foreach (TagInfo::split_unpack($this->newu->contactTags) as $ti) {
             $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
-        foreach (TagInfo::split_unpack($this->oldu->contactTags) as $ti)
-            if ($this->newu->tag_value($ti[0]) === false)
+        }
+        foreach (TagInfo::split_unpack($this->oldu->contactTags) as $ti) {
+            if ($this->newu->tag_value($ti[0]) === false) {
                 $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
+            }
+        }
 
         $us = new UserStatus($this->conf->site_contact(), ["no_notify" => true]);
         $us->save($cj, $this->newu);
@@ -130,10 +137,10 @@ class MergeContacts extends MessageSet {
 
     function run() {
         // actually merge users or change email
-        if ($this->oldu->contactId && $this->newu->contactId)
+        if ($this->oldu->contactId && $this->newu->contactId) {
             // both users in database
             $this->merge();
-        else {
+        } else {
             $user_status = new UserStatus($this->oldu, ["no_notify" => true]);
             if ($this->oldu->contactId) {
                 // new user in contactdb, old user in database
@@ -143,8 +150,9 @@ class MergeContacts extends MessageSet {
                 // old user in contactdb, new user in database
                 $user_status->save($this->basic_user_json(), $this->newu);
             }
-            foreach ($user_status->errors() as $e)
+            foreach ($user_status->errors() as $e) {
                 $this->add_error($e);
+            }
         }
         return !$this->has_error();
     }
