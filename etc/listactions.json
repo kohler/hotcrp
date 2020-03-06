@@ -231,7 +231,7 @@
     },
     {
         "name": "get/topics", "get": true,
-        "selector": "Paper information/Topics", "display_if": "has_topics",
+        "selector": "Paper information/Topics", "display_if": "conf.has_topics",
         "position": 1050,
         "require": "src/listactions/la_get_sub.php",
         "callback": "+GetTopics_ListAction"
