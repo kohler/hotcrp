@@ -1,6 +1,6 @@
 ******** create-huitema@bellcore.com
 To: Christian Huitema <huitema@bellcore.com>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -26,7 +26,7 @@ concerns.
 - Testconf I Submissions
 ******** create-christophe.diot@sophia.inria.fr
 To: Christophe Diot <christophe.diot@sophia.inria.fr>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -52,7 +52,7 @@ concerns.
 - Testconf I Submissions
 ******** create-estrin@usc.edu
 To: Deborah Estrin <estrin@usc.edu>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -80,7 +80,7 @@ concerns.
 
 ******** create-varghese@ccrc.wustl.edu
 To: George Varghese <varghese@ccrc.wustl.edu>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -106,7 +106,7 @@ concerns.
 - Testconf I Submissions
 ******** create-jj@cse.ucsc.edu
 To: "J. J. Garcia-Luna-Aceves" <jj@cse.ucsc.edu>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -132,7 +132,7 @@ concerns.
 - Testconf I Submissions
 ******** create-jon@cs.ucl.ac.uk
 To: Jon Crowcroft <jon@cs.ucl.ac.uk>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -158,7 +158,7 @@ concerns.
 - Testconf I Submissions
 ******** create-lixia@cs.ucla.edu
 To: Lixia Zhang <lixia@cs.ucla.edu>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -184,7 +184,7 @@ concerns.
 - Testconf I Submissions
 ******** create-marina@poema.ru
 To: Marina Tsvetaeva <marina@poema.ru>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -210,7 +210,7 @@ concerns.
 - Testconf I Submissions
 ******** create-mjh@isi.edu
 To: Mark Handley <mjh@isi.edu>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -236,7 +236,7 @@ concerns.
 - Testconf I Submissions
 ******** create-mgbaker@cs.stanford.edu
 To: Mary Baker <mgbaker@cs.stanford.edu>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -262,7 +262,7 @@ concerns.
 - Testconf I Submissions
 ******** create-pfrancis@ntt.jp
 To: Paul Francis <pfrancis@ntt.jp>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -288,7 +288,7 @@ concerns.
 - Testconf I Submissions
 ******** create-peter.danzig@usc.edu
 To: Peter Danzig <peter.danzig@usc.edu>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -314,7 +314,7 @@ concerns.
 - Testconf I Submissions
 ******** create-pdruschel@cs.rice.edu
 To: Peter Druschel <pdruschel@cs.rice.edu>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -340,7 +340,7 @@ concerns.
 - Testconf I Submissions
 ******** create-rguerin@ibm.com
 To: Roch Guerin <rguerin@ibm.com>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -366,7 +366,7 @@ concerns.
 - Testconf I Submissions
 ******** create-floyd@ee.lbl.gov
 To: Sally Floyd <floyd@ee.lbl.gov>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -392,7 +392,7 @@ concerns.
 - Testconf I Submissions
 ******** create-shenker@parc.xerox.com
 To: Scott Shenker <shenker@parc.xerox.com>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
@@ -420,7 +420,7 @@ concerns.
 
 ******** create-ojuelegba@gmail.com
 To: Wilma Ojuelegba <ojuelegba@gmail.com>
-Subject: [Testconf I] New account
+Subject: [Testconf I] Welcome to the program committee
 
 Greetings,
 
