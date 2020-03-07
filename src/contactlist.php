@@ -342,7 +342,7 @@ class ContactList {
             if ($row->numReviews == $row->numReviewsSubmitted)
                 return "$a1<b>$row->numReviewsSubmitted</b></a>";
             else
-                return "$a1<b>$row->numReviewsSubmitted</b>/$row->numReviews</a>";
+                return "$a1<b>" . (+$row->numReviewsSubmitted) . "</b>/$row->numReviews</a>";
         case self::FIELD_LEADS:
             if (!$row->numLeads)
                 return "";
