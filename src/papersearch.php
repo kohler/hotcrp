@@ -1675,14 +1675,6 @@ class PaperSearch {
         $this->_allow_deleted = $x;
     }
 
-    function __get($name) {
-        error_log("PaperSearch::$name " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        if ($name === "privChair")
-            return $this->user->privChair;
-        else
-            return null;
-    }
-
     function limit() {
         return $this->_limit_qe->limit;
     }
