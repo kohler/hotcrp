@@ -56,25 +56,20 @@ class Fexpr implements JsonSerializable {
     const FTIME = 9;
     const FDATEDELTA = 10;
     const FTIMEDELTA = 11;
-    const FDT_TIMEBIT = 1;
-    const FDT_DELTABIT = 2;
+    const FTIMEBIT = 1;
+    const FDELTABIT = 2;
     const FSEARCH = 12; // used in formulagraph.php
 
     function __construct($op = null, $args = []) {
         if (is_string($op)) {
             $this->op = $op;
-            if ($this->op === "trunc") {
-                $this->op = "floor";
-            }
-            if (func_num_args() <= 2 && is_array($args)) {
-                $this->args = $args;
-            } else {
-                assert(func_num_args() <= 2 && is_array($args));
-                $this->args = array_slice(func_get_args(), 1);
-            }
+            $this->args = $args;
         } else if ($op !== null) {
             assert($op instanceof FormulaCall);
             $this->op = $op->name;
+            $this->args = $op->args;
+            $this->left_landmark = $op->pos1;
+            $this->right_landmark = $op->pos1;
         }
     }
     function add($x) {
@@ -83,9 +78,6 @@ class Fexpr implements JsonSerializable {
     function set_landmark($left, $right) {
         $this->left_landmark = $left;
         $this->right_landmark = $right;
-    }
-    static function make(FormulaCall $ff) {
-        return new Fexpr($ff->name, $ff->args);
     }
 
     function format() {
@@ -110,58 +102,34 @@ class Fexpr implements JsonSerializable {
         return false;
     }
 
-    private function _typecheck_format_pm() {
-        $a0 = $this->args[0];
-        $f0 = $a0 instanceof Fexpr ? $a0->format() : false;
-        $d0 = is_int($f0) && $f0 >= self::FDATE && $f0 <= self::FTIMEDELTA;
-        $a1 = $this->args[1];
-        $f1 = $a1 instanceof Fexpr ? $a1->format() : false;
-        $d1 = is_int($f1) && $f1 >= self::FDATE && $f1 <= self::FTIMEDELTA;
-        if ((!$d0 && !$d1)
-            || (!$d0 && $f0)
-            || (!$d1 && $f1)) {
-            return null;
-        } else if ($this->op === "-"
-                   && $d0 && !($f0 & self::FDT_DELTABIT)
-                   && $d1 && !($f1 & self::FDT_DELTABIT)) {
-            $fx = self::FDATEDELTA;
-        } else if ($d0 && (!$d1 || ($f1 & self::FDT_DELTABIT))) {
-            $fx = $f0 & ~self::FDT_TIMEBIT;
-        } else if ($d1 && (!$d0 || ($f0 & self::FDT_DELTABIT))) {
-            $fx = $f1 & ~self::FDT_TIMEBIT;
-        } else {
-            return null;
+    static function common_format($args) {
+        $commonf = false;
+        foreach ($args as $a) {
+            if (!($a instanceof Fexpr)) {
+                return null;
+            } else if (!$a->is_null()) {
+                $af = $a->format();
+                if (!$af || ($commonf && $commonf !== $af)) {
+                    return null;
+                }
+                $commonf = $af;
+            }
         }
-        if ((($d0 ? $f0 : 0) | ($d1 ? $f1 : 0)) & self::FDT_TIMEBIT) {
-            $fx |= self::FDT_TIMEBIT;
+        return $commonf;
+    }
+
+    function typecheck_resolve_neighbors(Conf $conf) {
+        foreach ($this->args as $i => $a) {
+            if ($a instanceof Constant_Fexpr
+                && $a->format_ === false
+                && ($b = get($this->args, $i ? $i - 1 : $i + 1))) {
+                $a->typecheck_neighbor($conf, $b);
+            }
         }
-        return $fx;
     }
 
     function typecheck_format() {
-        if (in_array($this->op, ["greatest", "least", "?:", "&&", "||"])) {
-            $format = false;
-            for ($i = ($this->op === "?:" ? 1 : 0); $i < count($this->args); ++$i) {
-                $a = $this->args[$i];
-                if ($a instanceof Fexpr && $a->is_null()) {
-                    continue;
-                }
-                $f = $a instanceof Fexpr ? $a->format() : false;
-                if ($f !== false && ($format === false || $format === $f)) {
-                    $format = $f;
-                } else {
-                    $format = null;
-                }
-            }
-            return $format ? : null;
-        } else if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠)\z,', $this->op)) {
-            return self::FBOOL;
-        } else if (($this->op === "-" || $this->op === "+")
-                   && count($this->args) === 2) {
-            return $this->_typecheck_format_pm();
-        } else {
-            return null;
-        }
+        return null;
     }
 
     function typecheck_arguments(Conf $conf) {
@@ -176,138 +144,37 @@ class Fexpr implements JsonSerializable {
     }
 
     function typecheck(Conf $conf) {
-        // comparison operators help us resolve
-        if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠|greatest|least)\z,', $this->op)) {
-            for ($i = 0; $i !== count($this->args); ++$i) {
-                $a = $this->args[$i];
-                if ($a instanceof ConstantFexpr
-                    && $a->format_ === false
-                    && ($b = get($this->args, $i ? $i - 1 : $i + 1))) {
-                    $a->typecheck_neighbor($conf, $b);
-                }
-            }
-        }
-        if (($x = $this->typecheck_arguments($conf))) {
-            return $x;
-        }
-        if (preg_match(',\A(?:[<>][<>=]?|≤|≥|\*\*|[-+*/%&^|]|greatest|least|log|sqrt|exp|round|floor|ceil)\z,', $this->op)) {
-            foreach ($this->args as $a) {
-                if ($a->format_ === self::FREVIEWER)
-                    return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
-            }
-        }
-        return false;
+        return $this->typecheck_arguments($conf);
     }
 
     function view_score(Contact $user) {
-        if ($this->op == "?:") {
-            $t = $this->args[0]->view_score($user);
-            $tt = $this->args[1]->view_score($user);
-            $tf = $this->args[2]->view_score($user);
-            return min($t, max($tt, $tf));
-        } else if ($this->op == "||") {
-            return $this->args[0]->view_score($user);
-        } else {
-            $score = VIEWSCORE_AUTHOR;
-            foreach ($this->args as $e) {
-                if ($e instanceof Fexpr)
-                    $score = min($score, $e->view_score($user));
-            }
-            return $score;
+        $score = VIEWSCORE_AUTHOR;
+        foreach ($this->args as $e) {
+            if ($e instanceof Fexpr)
+                $score = min($score, $e->view_score($user));
         }
+        return $score;
     }
 
     static function cast_bool($t) {
         return "($t !== null ? (bool) $t : null)";
     }
 
-    function compile(FormulaCompiler $state) {
-        $op = $this->op;
-        if ($op === "?:") {
-            $t = $state->_addltemp($this->args[0]->compile($state));
-            $tt = $state->_addltemp($this->args[1]->compile($state));
-            $tf = $state->_addltemp($this->args[2]->compile($state));
-            return "($t ? $tt : $tf)";
-        }
-
-        if (count($this->args) === 1 && isset(Formula::$opprec["u$op"])) {
-            $t = $state->_addltemp($this->args[0]->compile($state));
-            return "$op$t";
-        }
-
-        if (count($this->args) === 2 && isset(Formula::$opprec[$op])) {
-            $t1 = $state->_addltemp($this->args[0]->compile($state));
-            $t2 = $state->_addltemp($this->args[1]->compile($state));
-            if ($op === "&&") {
-                return "($t1 ? $t2 : $t1)";
-            } else if ($op === "||") {
-                return "($t1 ? : $t2)";
-            } else if ($op === "/" || $op === "%") {
-                return "($t1 !== null && $t2 ? $t1 $op $t2 : null)";
-            } else if ($op === "**") {
-                return "($t1 !== null && $t2 !== null ? pow($t1, $t2) : null)";
-            } else if ($op === "+" || $op === "-") {
-                return "($t1 !== null || $t2 !== null ? $t1 $op $t2 : null)";
-            } else {
-                if (Formula::$opprec[$op] === 8)
-                    $op = $this->args[0]->format_comparator($op, $state->conf, $this->args[1]);
-                return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
-            }
-        }
-
-        if ($op === "greatest" || $op === "least") {
-            $cmp = $this->format_comparator($op === "greatest" ? ">" : "<", $state->conf);
-            $t1 = $state->_addltemp($this->args[0]->compile($state), true);
-            for ($i = 1; $i < count($this->args); ++$i) {
-                $t2 = $state->_addltemp($this->args[$i]->compile($state));
-                $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 $cmp $t1) ? $t2 : $t1);";
-            }
-            return $t1;
-        }
-
-        if (count($this->args) >= 1 && $op === "log") {
-            $t1 = $state->_addltemp($this->args[0]->compile($state));
-            if (count($this->args) === 2) {
-                $t2 = $state->_addltemp($this->args[1]->compile($state));
-                return "($t1 !== null && $t2 !== null ? log($t1, $t2) : null)";
-            } else {
-                return "($t1 !== null ? log($t1) : null)";
-            }
-        }
-
-        if (count($this->args) >= 1 && ($op === "sqrt" || $op === "exp")) {
-            $t1 = $state->_addltemp($this->args[0]->compile($state));
-            return "($t1 !== null ? $op($t1) : null)";
-        }
-
-        if (count($this->args) >= 1 && ($op === "round" || $op === "floor" || $op === "ceil")) {
-            $t1 = $state->_addltemp($this->args[0]->compile($state));
-            if (count($this->args) === 1) {
-                return "($t1 !== null ? $op($t1) : null)";
-            } else {
-                $t2 = $state->_addltemp($this->args[1]->compile($state));
-                return "($t1 !== null && $t2 ? $op($t1 / $t2) * $t2 : null)";
-            }
-        }
-
-        return "null";
-    }
-
     function can_combine() {
-        foreach ($this->args as $e)
+        foreach ($this->args as $e) {
             if (!$e->can_combine())
                 return false;
+        }
         return true;
     }
 
     function matches_at_most_once() {
-        if ($this->op === "?:") {
-            return $this->args[0]->matches_at_most_once() && $this->args[2]->is_null();
-        } else if ($this->op === "&&") {
-            return $this->args[0]->matches_at_most_once() || $this->args[1]->matches_at_most_once();
-        } else {
-            return false;
-        }
+        return false;
+    }
+
+    function compile(FormulaCompiler $state) {
+        assert("no compile for $this->op");
+        return "null";
     }
 
     function compile_fragments(FormulaCompiler $state) {
@@ -330,7 +197,7 @@ class Fexpr implements JsonSerializable {
     }
 }
 
-class ConstantFexpr extends Fexpr {
+class Constant_Fexpr extends Fexpr {
     private $x;
     function __construct($x, $format = null) {
         $this->x = $x;
@@ -363,8 +230,9 @@ class ConstantFexpr extends Fexpr {
     function typecheck_neighbor(Conf $conf, $e) {
         if ($this->format_ !== false
             || !($e instanceof Fexpr)
-            || $e->typecheck($conf))
+            || $e->typecheck($conf)) {
             return;
+        }
         $format = $e->format();
         $letter = "";
         if (strlen($this->x) === 1 && ctype_alpha($this->x)) {
@@ -403,20 +271,124 @@ class ConstantFexpr extends Fexpr {
         }
     }
     static function cnull() {
-        return new ConstantFexpr("null");
+        return new Constant_Fexpr("null");
     }
     static function czero() {
-        return new ConstantFexpr("0");
+        return new Constant_Fexpr("0");
     }
     static function cfalse() {
-        return new ConstantFexpr("false", self::FBOOL);
+        return new Constant_Fexpr("false", self::FBOOL);
     }
     static function ctrue() {
-        return new ConstantFexpr("true", self::FBOOL);
+        return new Constant_Fexpr("true", self::FBOOL);
     }
 }
 
-class NegateFexpr extends Fexpr {
+class Ternary_Fexpr extends Fexpr {
+    function __construct($e0, $e1, $e2) {
+        parent::__construct("?!", [$e0, $e1, $e2]);
+    }
+    function typecheck_format() {
+        return Fexpr::common_format([$this->args[1], $this->args[2]]);
+    }
+    function typecheck(Conf $conf) {
+        return $this->typecheck_arguments($conf);
+    }
+    function view_score(Contact $user) {
+        $t = $this->args[0]->view_score($user);
+        $tt = $this->args[1]->view_score($user);
+        $tf = $this->args[2]->view_score($user);
+        return min($t, max($tt, $tf));
+    }
+    function compile(FormulaCompiler $state) {
+        $t = $state->_addltemp($this->args[0]->compile($state));
+        $tt = $state->_addltemp($this->args[1]->compile($state));
+        $tf = $state->_addltemp($this->args[2]->compile($state));
+        return "($t ? $tt : $tf)";
+    }
+    function matches_at_most_once() {
+        return $this->args[0]->matches_at_most_once() && $this->args[2]->is_null();
+    }
+}
+
+class Equality_Fexpr extends Fexpr {
+    function __construct($op, $e0, $e1) {
+        assert($op === "==" || $op === "!=");
+        parent::__construct($op, [$e0, $e1]);
+        $this->format_ = self::FBOOL;
+    }
+    function typecheck(Conf $conf) {
+        $this->typecheck_resolve_neighbors($conf);
+        return $this->typecheck_arguments($conf);
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        return "($t1 !== null && $t2 !== null ? $t1 {$this->op} $t2 : null)";
+    }
+}
+
+class Inequality_Fexpr extends Fexpr {
+    function __construct($op, $e0, $e1) {
+        assert(in_array($op, ["<", ">", "<=", ">="]));
+        parent::__construct($op, [$e0, $e1]);
+        $this->format_ = self::FBOOL;
+    }
+    function typecheck(Conf $conf) {
+        $this->typecheck_resolve_neighbors($conf);
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        $op = $this->args[0]->format_comparator($this->op, $state->conf, $this->args[1]);
+        return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
+    }
+}
+
+class And_Fexpr extends Fexpr {
+    function __construct($e0, $e1) {
+        parent::__construct("&&", [$e0, $e1]);
+    }
+    function typecheck_format() {
+        return self::common_format($this->args);
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        return "($t1 ? $t2 : $t1)";
+    }
+    function matches_at_most_once() {
+        return $this->args[0]->matches_at_most_once() || $this->args[1]->matches_at_most_once();
+    }
+}
+
+class Or_Fexpr extends Fexpr {
+    function __construct($e0, $e1) {
+        parent::__construct("||", [$e0, $e1]);
+    }
+    function typecheck_format() {
+        return self::common_format($this->args);
+    }
+    function view_score(Contact $user) {
+        return $this->args[0]->view_score($user);
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        return "($t1 ? : $t2)";
+    }
+}
+
+class Not_Fexpr extends Fexpr {
     function __construct(Fexpr $e) {
         parent::__construct("!", [$e]);
         $this->format_ = self::FBOOL;
@@ -427,7 +399,172 @@ class NegateFexpr extends Fexpr {
     }
 }
 
-class InFexpr extends Fexpr {
+class Unary_Fexpr extends Fexpr {
+    function __construct($op, Fexpr $e) {
+        assert($op === "+" || $op === "-");
+        parent::__construct($op, [$e]);
+        $this->format_ = null;
+    }
+    function typecheck(Conf $conf) {
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $t = $state->_addltemp($this->args[0]->compile($state));
+        return "{$this->op}$t";
+    }
+}
+
+class Additive_Fexpr extends Fexpr {
+    function __construct($op, $e1, $e2) {
+        assert($op === "+" || $op === "-");
+        parent::__construct($op, [$e1, $e2]);
+    }
+    function typecheck_format() {
+        $a0 = $this->args[0];
+        $f0 = $a0 instanceof Fexpr ? $a0->format() : false;
+        $d0 = is_int($f0) && $f0 >= self::FDATE && $f0 <= self::FTIMEDELTA;
+        $a1 = $this->args[1];
+        $f1 = $a1 instanceof Fexpr ? $a1->format() : false;
+        $d1 = is_int($f1) && $f1 >= self::FDATE && $f1 <= self::FTIMEDELTA;
+        if ((!$d0 && !$d1)
+            || (!$d0 && $f0)
+            || (!$d1 && $f1)) {
+            return null;
+        } else if ($this->op === "-"
+                   && $d0 && !($f0 & self::FDELTABIT)
+                   && $d1 && !($f1 & self::FDELTABIT)) {
+            $fx = self::FDATEDELTA;
+        } else if ($d0 && (!$d1 || ($f1 & self::FDELTABIT))) {
+            $fx = $f0 & ~self::FTIMEBIT;
+        } else if ($d1 && (!$d0 || ($f0 & self::FDELTABIT))) {
+            $fx = $f1 & ~self::FTIMEBIT;
+        } else {
+            return null;
+        }
+        if ((($d0 ? $f0 : 0) | ($d1 ? $f1 : 0)) & self::FTIMEBIT) {
+            $fx |= self::FTIMEBIT;
+        }
+        return $fx;
+    }
+    function typecheck(Conf $conf) {
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        return "($t1 !== null || $t2 !== null ? $t1 {$this->op} $t2 : null)";
+    }
+}
+
+class Multiplicative_Fexpr extends Fexpr {
+    function __construct($op, $e1, $e2) {
+        assert($op === "*" || $op === "/" || $op === "%");
+        parent::__construct($op, [$e1, $e2]);
+    }
+    function typecheck(Conf $conf) {
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        $t2check = $this->op === "*" ? "$t2 !== null" : "$t2";
+        return "($t1 !== null && $t2check ? $t1 {$this->op} $t2 : null)";
+    }
+}
+
+class Shift_Fexpr extends Fexpr {
+    function __construct($op, $e1, $e2) {
+        assert($op === "<<" || $op === ">>");
+        parent::__construct($op, [$e1, $e2]);
+    }
+    function typecheck(Conf $conf) {
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        return "($t1 !== null && $t2 !== null ? $t1 {$this->op} $t2 : null)";
+    }
+}
+
+class Bitwise_Fexpr extends Fexpr {
+    function __construct($op, $e1, $e2) {
+        assert($op === "&" || $op === "|" || $op === "^");
+        parent::__construct($op, [$e1, $e2]);
+    }
+    function typecheck(Conf $conf) {
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        return "($t1 !== null && $t2 !== null ? $t1 {$this->op} $t2 : null)";
+    }
+}
+
+class Pow_Fexpr extends Fexpr {
+    function __construct($e1, $e2) {
+        parent::__construct("**", [$e1, $e2]);
+    }
+    function typecheck(Conf $conf) {
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        $t2 = $state->_addltemp($this->args[1]->compile($state));
+        return "($t1 !== null && $t2 !== null ? pow($t1, $t2) : null)";
+    }
+}
+
+class In_Fexpr extends Fexpr {
     private $values;
     function __construct(Fexpr $e, array $values) {
         parent::__construct("in", [$e]);
@@ -437,6 +574,106 @@ class InFexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
         return "(array_search($t, [" . join(", ", $this->values) . "]) !== false)";
+    }
+}
+
+class Extremum_Fexpr extends Fexpr {
+    function __construct(FormulaCall $ff) {
+        $op = ($ff->name === "least" || $ff->name === "min" ? "least" : "greatest");
+        parent::__construct($op, $ff->args);
+    }
+    function typecheck_format() {
+        return self::common_format($this->args);
+    }
+    function typecheck(Conf $conf) {
+        $this->typecheck_resolve_neighbors($conf);
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $cmp = $this->format_comparator($this->op === "greatest" ? ">" : "<", $state->conf);
+        $t1 = $state->_addltemp($this->args[0]->compile($state), true);
+        for ($i = 1; $i < count($this->args); ++$i) {
+            $t2 = $state->_addltemp($this->args[$i]->compile($state));
+            $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 $cmp $t1) ? $t2 : $t1);";
+        }
+        return $t1;
+    }
+}
+
+class Math_Fexpr extends Fexpr {
+    function __construct($ff) {
+        parent::__construct($ff);
+    }
+    function typecheck(Conf $conf) {
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        if (count($this->args) !== 1 && count($this->args) !== 2)  {
+            return new Fexpr_Error($this, "wrong number of arguments");
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        if (count($this->args) === 2) {
+            $t2 = $state->_addltemp($this->args[1]->compile($state));
+        } else {
+            $t2 = null;
+        }
+        if ($this->op === "log" && $t2) {
+            return "($t1 !== null && $t2 !== null ? log($t1, $t2) : null)";
+        } else if ($this->op === "log10") {
+            return "($t1 !== null ? log10($t1) : null)";
+        } else if ($this->op === "log2" || $this->op === "lg") {
+            return "($t1 !== null ? log($t1, 2.0) : null)";
+        } else if ($this->op === "log" || $this->op === "ln") {
+            return "($t1 !== null ? log($t1) : null)";
+        } else {
+            return "($t1 !== null ? {$this->op}($t1) : null)";
+        }
+    }
+}
+
+class Round_Fexpr extends Fexpr {
+    function __construct($ff) {
+        parent::__construct($ff);
+    }
+    function typecheck(Conf $conf) {
+        if (($x = $this->typecheck_arguments($conf))) {
+            return $x;
+        }
+        foreach ($this->args as $a) {
+            if ($a->format_ === self::FREVIEWER) {
+                return new Fexpr_Error($a, "reviewers can’t be used in math expressions");
+            }
+        }
+        if (count($this->args) !== 1 && count($this->args) !== 2)  {
+            return new Fexpr_Error($this, "wrong number of arguments");
+        }
+        return false;
+    }
+    function compile(FormulaCompiler $state) {
+        $op = $this->op === "trunc" ? "(int) " : $this->op;
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        if (count($this->args) === 1) {
+            return "($t1 !== null ? $op($t1) : null)";
+        } else {
+            $t2 = $state->_addltemp($this->args[1]->compile($state));
+            return "($t1 !== null && $t2 ? $op($t1 / $t2) * $t2 : null)";
+        }
     }
 }
 
@@ -472,7 +709,7 @@ class AggregateFexpr extends Fexpr {
         if (($op === "min" || $op === "max")
             && count($ff->args) > 1) {
             if (!$ff->modifier) {
-                return new Fexpr($op === "min" ? "least" : "greatest", $ff->args);
+                return new Extremum_Fexpr($ff);
             } else {
                 return null;
             }
@@ -748,8 +985,9 @@ class Score_Fexpr extends Sub_Fexpr {
         return $this->field->view_score;
     }
     function compile(FormulaCompiler $state) {
-        if ($this->field->view_score <= $state->user->permissive_view_score_bound())
+        if ($this->field->view_score <= $state->user->permissive_view_score_bound()) {
             return "null";
+        }
         $state->datatype |= Fexpr::ASUBREV;
         $fid = $this->field->id;
         $state->_ensure_rrow_score($fid);
@@ -769,8 +1007,9 @@ class Pref_Fexpr extends Sub_Fexpr {
     function __construct($ff) {
         $this->isexpertise = is_object($ff) ? $ff->kwdef->is_expertise : $ff;
         $this->format_ = $this->isexpertise ? self::FPREFEXPERTISE : null;
-        if (is_object($ff) && $ff->modifier)
+        if (is_object($ff) && $ff->modifier) {
             $this->cids = $ff->modifier;
+        }
     }
     static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
         if ($ff->modifier === false && !str_starts_with($arg, ".")) {
@@ -1670,7 +1909,7 @@ class Formula implements Abbreviator {
             if (($t = ltrim($t)) !== "" && $t[0] === ":") {
                 $t = substr($t, 1);
                 if (($e2 = $this->_parse_ternary($t, $in_qc))) {
-                    $e = new Fexpr("?:", [$e, $e1, $e2]);
+                    $e = new Ternary_Fexpr($e, $e1, $e2);
                     $e->set_landmark($lpos, -strlen($t));
                     return $e;
                 }
@@ -1815,11 +2054,17 @@ class Formula implements Abbreviator {
             $k = $fval[$i];
             $v = $fval[$i + 1];
             $fx = ($k === "outcome" ? new Decision_Fexpr : new TimeField_Fexpr($k));
-            if (is_string($v))
-                $fx = new Fexpr(str_replace("0", "", $v), [$fx, ConstantFexpr::czero()]);
-            else
-                $fx = new InFexpr($fx, $v);
-            $fn = $fn ? new Fexpr("&&", [$fn, $fx]) : $fx;
+            if ($v === "=0" || $v === "!=0") {
+                $fx = new Equality_Fexpr($v === "=0" ? "==" : "!=", $fx, Constant_Fexpr::czero());
+            } else if ($v === ">0" || $v === ">=0" || $v === "<0" || $v === "<=0") {
+                $fx = new Inequality_Fexpr(substr($v, 0, -1), $fx, Constant_Fexpr::czero());
+            } else if (is_string($v)) {
+                error_log("field_search_fexpr given $v");
+                $fx = Constant_Fexpr::cnull();
+            } else {
+                $fx = new In_Fexpr($fx, $v);
+            }
+            $fn = $fn ? new And_Fexpr($fn, $fx) : $fx;
         }
         return $fn;
     }
@@ -1844,17 +2089,20 @@ class Formula implements Abbreviator {
         $rsm = new ReviewSearchMatcher;
         while ($ex !== "") {
             if (!preg_match('/\A:((?:"[^"]*(?:"|\z)|~*[-A-Za-z0-9_.#@]+(?!\s*\())+)(.*)/si', $ex, $m)
-                || preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1]))
+                || preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1])) {
                 break;
+            }
             $ee = null;
             if (preg_match('/\A(?:type|round|reviewer|words|auwords)\z/i', $m[1])) {
-                if ($e0)
+                if ($e0) {
                     break;
+                }
                 $e0 = $this->_reviewer_base($m[1]);
             } else if ($rsm->apply_review_type($m[1])
                        || $rsm->apply_round($m[1], $this->conf)) {
+                // nothing
             } else if ($m[1] === "pc") {
-                $es[] = new Fexpr(">=", [new Revtype_Fexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE)]);
+                $es[] = new Inequality_Fexpr(">=", new Revtype_Fexpr, new Constant_Fexpr(REVIEW_PC, Fexpr::FREVTYPE));
             } else {
                 if (strpos($m[1], "\"") !== false) {
                     $m[1] = str_replace(["\"", "*"], ["", "\\*"], $m[1]);
@@ -1866,19 +2114,19 @@ class Formula implements Abbreviator {
 
         $rsm->finish();
         if ($rsm->review_type()) {
-            $es[] = new Fexpr("==", [new RevType_Fexpr, new ConstantFexpr($rsm->review_type(), Fexpr::FREVTYPE)]);
+            $es[] = new Equality_Fexpr("==", new RevType_Fexpr, new Constant_Fexpr($rsm->review_type(), Fexpr::FREVTYPE));
         }
         if ($rsm->round) {
-            $es[] = new InFexpr(new ReviewRound_Fexpr, $rsm->round);
+            $es[] = new In_Fexpr(new ReviewRound_Fexpr, $rsm->round);
         }
 
         $e1 = empty($es) ? null : $es[0];
         for ($i = 1; $i < count($es); ++$i) {
-            $e1 = new Fexpr("&&", [$e1, $es[$i]]);
+            $e1 = new And_Fexpr($e1, $es[$i]);
         }
 
         if ($e0 && $e1) {
-            return new Fexpr("?:", [$e1, $e0, ConstantFexpr::cnull()]);
+            return new Ternary_Fexpr($e1, $e0, Constant_Fexpr::cnull());
         } else {
             return $e0 ? : $e1;
         }
@@ -1895,19 +2143,25 @@ class Formula implements Abbreviator {
             if ($o->kind) {
                 $this->_error_html[] = "“" . htmlspecialchars($text) . "” can’t be used in formulas.";
             } else if ($o->value === null) {
-                $ex = $o->compar === "=" ? $ex : new NegateFexpr($ex);
+                $ex = $o->compar === "=" ? $ex : new Not_Fexpr($ex);
             } else if (is_array($o->value) && $o->compar === "!=") {
-                $ex = new NegateFexpr(new InFexpr($ex, $o->value));
+                $ex = new Not_Fexpr(new In_Fexpr($ex, $o->value));
             } else if (is_array($o->value)) {
-                $ex = new InFexpr($ex, $o->value);
+                $ex = new In_Fexpr($ex, $o->value);
             } else {
-                $ex = new Fexpr(get(self::$_oprewrite, $o->compar, $o->compar),
-                                [$ex, new ConstantFexpr($o->value, $o->option)]);
+                $op = self::$_oprewrite[$o->compar] ?? $o->compar;
+                assert(in_array($op, ["==", "!=", "<", ">", "<=", ">="]));
+                $ex2 = new Constant_Fexpr($o->value, $o->option);
+                if ($op === "==" || $op === "!=") {
+                    $ex = new Equality_Fexpr($op, $ex, $ex2);
+                } else {
+                    $ex = new Inequality_Fexpr($op, $ex, $ex2);
+                }
             }
-            $e = $e ? new Fexpr("||", [$e, $ex]) : $ex;
+            $e = $e ? new Or_Fexpr($e, $ex) : $ex;
         }
         if ($e && $os->negated) {
-            $e = new NegateFexpr($e);
+            $e = new Not_Fexpr($e);
         }
         return $e;
     }
@@ -1925,8 +2179,9 @@ class Formula implements Abbreviator {
     }
 
     private function _parse_expr(&$t, $level, $in_qc) {
-        if (($t = ltrim($t)) === "")
+        if (($t = ltrim($t)) === "") {
             return null;
+        }
         $lpos = -strlen($t);
 
         $e = null;
@@ -1944,21 +2199,21 @@ class Formula implements Abbreviator {
             if (!($e = $this->_parse_expr($t, self::$opprec["u$op"], $in_qc))) {
                 return null;
             }
-            $e = $op === "!" ? new NegateFexpr($e) : new Fexpr($op, [$e]);
+            $e = $op === "!" ? new Not_Fexpr($e) : new Unary_Fexpr($op, $e);
         } else if (preg_match('/\Anot([\s(].*|)\z/si', $t, $m)) {
             $t = $m[1];
             if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc))) {
                 return null;
             }
-            $e = new NegateFexpr($e);
+            $e = new Not_Fexpr($e);
         } else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
-            $e = new ConstantFexpr($m[1] + 0.0);
+            $e = new Constant_Fexpr($m[1] + 0.0);
             $t = $m[2];
         } else if (preg_match('/\A(false|true)\b(.*)\z/si', $t, $m)) {
-            $e = new ConstantFexpr($m[1], Fexpr::FBOOL);
+            $e = new Constant_Fexpr($m[1], Fexpr::FBOOL);
             $t = $m[2];
         } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
-            $e = ConstantFexpr::cnull();
+            $e = Constant_Fexpr::cnull();
             $t = $m[1];
         } else if (preg_match('/\Aopt(?:ion)?:\s*(.*)\z/s', $t, $m)) {
             $rest = self::_pop_argument($m[1]);
@@ -1972,13 +2227,13 @@ class Formula implements Abbreviator {
             $e = new Decision_Fexpr;
             $t = $m[1];
         } else if (preg_match('/\Ais:?rev?\b(.*)\z/is', $t, $m)) {
-            $e = new Fexpr(">=", [new Revtype_Fexpr, new ConstantFexpr(0, Fexpr::FREVTYPE)]);
+            $e = new Inequality_Fexpr(">=", new Revtype_Fexpr, new Constant_Fexpr(0, Fexpr::FREVTYPE));
             $t = $m[1];
         } else if (preg_match('/\A(?:is:?)?pcrev?\b(.*)\z/is', $t, $m)) {
-            $e = new Fexpr(">=", [new Revtype_Fexpr, new ConstantFexpr(REVIEW_PC, Fexpr::FREVTYPE)]);
+            $e = new Inequality_Fexpr(">=", new Revtype_Fexpr, new Constant_Fexpr(REVIEW_PC, Fexpr::FREVTYPE));
             $t = $m[1];
         } else if (preg_match('/\A(?:is:?)?(meta|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?|optional)\b(.*)\z/is', $t, $m)) {
-            $e = new Fexpr("==", [new Revtype_Fexpr, new ConstantFexpr($m[1], Fexpr::FREVTYPE)]);
+            $e = new Equality_Fexpr("==", new Revtype_Fexpr, new Constant_Fexpr($m[1], Fexpr::FREVTYPE));
             $t = $m[2];
         } else if (preg_match('/\A(?:is|status):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($this->conf, $m[1]));
@@ -2036,7 +2291,7 @@ class Formula implements Abbreviator {
                 }
                 $dash = strrpos($field, "-");
                 if ($dash === false || $dash === 0) {
-                    $e = new ConstantFexpr($field, false);
+                    $e = new Constant_Fexpr($field, false);
                     break;
                 }
                 $m[2] = substr($field, $dash) . $m[2];
@@ -2049,7 +2304,7 @@ class Formula implements Abbreviator {
             if (intval($m[1]) <= count($this->_macro->args)) {
                 $e = $this->_macro->args[intval($m[1]) - 1];
             } else {
-                $e = ConstantFexpr::cnull();
+                $e = Constant_Fexpr::cnull();
             }
             $t = $m[2];
         }
@@ -2059,7 +2314,7 @@ class Formula implements Abbreviator {
         }
         $e->set_landmark($lpos, -strlen($t));
 
-        while (1) {
+        while (true) {
             if (($t = ltrim($t)) === "") {
                 return $e;
             } else if (preg_match(self::BINARY_OPERATOR_REGEX, $t, $m)) {
@@ -2081,16 +2336,36 @@ class Formula implements Abbreviator {
             }
 
             $t = $tn;
-            $opx = get(self::$_oprewrite, $op) ? : $op;
+            $opx = self::$_oprewrite[$op] ?? $op;
             $opassoc = get(self::$_oprassoc, $opx) ? $opprec : $opprec + 1;
             if (!($e2 = $this->_parse_expr($t, $opassoc, $in_qc))) {
                 return null;
             }
-            if ($op === ":" && !($e2 instanceof ConstantFexpr)) {
+            if ($op === ":" && !($e2 instanceof Constant_Fexpr)) {
                 $t = ":" . $tn;
                 return $e;
             }
-            $e = new Fexpr($opx, [$e, $e2]);
+            if ($opx === "<" || $opx === ">" || $opx === "<=" || $opx === ">=") {
+                $e = new Inequality_Fexpr($opx, $e, $e2);
+            } else if ($opx === "==" || $opx === "!=") {
+                $e = new Equality_Fexpr($opx, $e, $e2);
+            } else if ($opx === "&&") {
+                $e = new And_Fexpr($e, $e2);
+            } else if ($opx === "||") {
+                $e = new Or_Fexpr($e, $e2);
+            } else if ($opx === "+" || $opx === "-") {
+                $e = new Additive_Fexpr($opx, $e, $e2);
+            } else if ($opx === "*" || $opx === "/" || $opx === "%") {
+                $e = new Multiplicative_Fexpr($opx, $e, $e2);
+            } else if ($opx === "&" || $opx === "|" || $opx === "^") {
+                $e = new Bitwise_Fexpr($opx, $e, $e2);
+            } else if ($opx === "<<" || $opx === ">>") {
+                $e = new Shift_Fexpr($opx, $e, $e2);
+            } else if ($opx === "**") {
+                $e = new Pow_Fexpr($e, $e2);
+            } else {
+                assert(false);
+            }
             $e->set_landmark($lpos, -strlen($t));
         }
     }
