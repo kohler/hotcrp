@@ -103,12 +103,14 @@ class FormulaGraph extends MessageSet {
             $this->fxs = [];
             while (1) {
                 $rest = $fx->check_prefix($this->user);
-                if ($rest === false)
+                if ($rest === false) {
                     break;
+                }
                 $this->fxs[] = $fx;
                 $rest = preg_replace('/\A\s*;*\s*/', '', $rest);
-                if ($rest === "")
+                if ($rest === "") {
                     break;
+                }
                 $fx = new Formula($rest, true);
             }
         }
