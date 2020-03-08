@@ -667,7 +667,8 @@ class TagMap implements IteratorAggregate {
         foreach (TagInfo::split_unpack($ct) as $ti) {
             $map->add($ti[0])->sitewide = $map->has_sitewide = true;
         }
-        $ppu = $conf->setting("tag_vote_private_peruser");
+        $ppu = $conf->setting("tag_vote_private_peruser")
+            || $conf->opt("secretPC");
         $vt = $conf->setting_data("tag_vote", "");
         foreach (TagInfo::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
