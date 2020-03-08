@@ -2211,6 +2211,10 @@ td.pl_tag, td.pl_edittag, td.pl_tagval, td.pl_edittagval {
 	white-space: nowrap;
 }
 
+td.pl_formula {
+	font-variant-numeric: tabular-nums;
+}
+
 .pl_titleextra {
 	font-weight: normal;
 }
