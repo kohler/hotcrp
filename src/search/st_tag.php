@@ -175,8 +175,9 @@ class Tag_SearchTerm extends SearchTerm {
         $term = $value->make_term()->negate_if($negated);
         if (!$negated && !empty($value->tags)) {
             $term->set_float("tags", $value->tags);
-            if ($sword->kwdef->sorting)
+            if ($sword->kwdef->sorting) {
                 $term->set_float("sort", [($revsort ? "-#" : "#") . $value->tags[0]]);
+            }
         }
         if (!$negated && $sword->kwdef->is_hash && ($tag = $value->single_tag())) {
             $term->tag1 = $tag;
@@ -295,27 +296,31 @@ class Color_SearchTerm {
                 $xword = ":*:";
                 $f = function ($t) { return !empty($t->emoji); };
             } else if (preg_match('{\A' . TAG_REGEX_NOTWIDDLE . '\z}', $word)) {
-                if (!str_starts_with($xword, ":"))
+                if (!str_starts_with($xword, ":")) {
                     $xword = ":$xword";
-                if (!str_ends_with($xword, ":"))
+                }
+                if (!str_ends_with($xword, ":")) {
                     $xword = "$xword:";
+                }
                 $code = get($srch->conf->emoji_code_map(), $xword, false);
                 $codes = [];
-                if ($code !== false)
+                if ($code !== false) {
                     $codes[] = $code;
-                else if (strpos($xword, "*") !== false) {
+                } else if (strpos($xword, "*") !== false) {
                     $re = "{\\A" . str_replace("\\*", ".*", preg_quote($xword)) . "\\z}";
-                    foreach ($srch->conf->emoji_code_map() as $key => $code)
+                    foreach ($srch->conf->emoji_code_map() as $key => $code) {
                         if (preg_match($re, $key))
                             $codes[] = $code;
+                    }
                 }
                 $f = function ($t) use ($codes) {
                     return !empty($t->emoji) && array_intersect($codes, $t->emoji);
                 };
             } else {
-                foreach ($srch->conf->emoji_code_map() as $key => $code)
+                foreach ($srch->conf->emoji_code_map() as $key => $code) {
                     if ($code === $xword)
                         $tm->tags[] = ":$key:";
+                }
                 $f = function ($t) use ($xword) {
                     return !empty($t->emoji) && in_array($xword, $t->emoji);
                 };

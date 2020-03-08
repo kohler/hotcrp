@@ -3701,104 +3701,114 @@ class Contact {
 
     function can_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
         if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-            || $this->is_site_contact)
+            || $this->is_site_contact) {
             return true;
+        }
         $rights = $this->rights($prow);
         $tagmap = $this->conf->tags();
         if (!($rights->allow_pc
               && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false)))) {
             if ($this->privChair && $tagmap->has_sitewide) {
-                if (!$tag)
+                if (!$tag) {
                     return true;
-                else {
+                } else {
                     $dt = $tagmap->check($tag);
                     return $dt && $dt->sitewide && !$dt->autosearch;
                 }
-            } else
+            } else {
                 return false;
+            }
         }
-        if (!$tag)
+        if (!$tag) {
             return true;
+        }
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");
         if ($twiddle === 0 && $tag[1] === "~") {
-            if (!$rights->can_administer)
+            if (!$rights->can_administer) {
                 return false;
-            else if (!$tagmap->has_autosearch)
+            } else if (!$tagmap->has_autosearch) {
                 return true;
-            else {
+            } else {
                 $dt = $tagmap->check($tag);
                 return !$dt || !$dt->autosearch;
             }
         }
         if ($twiddle > 0
             && substr($tag, 0, $twiddle) != $this->contactId
-            && !$rights->can_administer)
+            && !$rights->can_administer) {
             return false;
+        }
         if ($twiddle !== false) {
             $t = $this->conf->tags()->check(substr($tag, $twiddle + 1));
             return !($t && $t->vote && $index < 0);
         } else {
             $t = $this->conf->tags()->check($tag);
-            if (!$t)
+            if (!$t) {
                 return true;
-            else if ($t->vote
-                     || $t->approval
-                     || ($t->track && !$this->privChair)
-                     || ($t->hidden && !$this->can_view_hidden_tags($prow))
-                     || $t->autosearch)
+            } else if ($t->vote
+                       || $t->approval
+                       || ($t->track && !$this->privChair)
+                       || ($t->hidden && !$this->can_view_hidden_tags($prow))
+                       || $t->autosearch) {
                 return false;
-            else
+            } else {
                 return $rights->can_administer
                     || ($this->privChair && $t->sitewide)
                     || (!$t->readonly && !$t->rank);
+            }
         }
     }
 
     function perm_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
-        if ($this->can_change_tag($prow, $tag, $previndex, $index))
+        if ($this->can_change_tag($prow, $tag, $previndex, $index)) {
             return null;
+        }
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         $whyNot["tag"] = $tag;
-        if (!$this->isPC)
+        if (!$this->isPC) {
             $whyNot["permission"] = "change_tag";
-        else if ($rights->conflictType > 0) {
+        } else if ($rights->conflictType > 0) {
             $whyNot["conflict"] = true;
-            if ($rights->allow_administer)
+            if ($rights->allow_administer) {
                 $whyNot["forceShow"] = true;
+            }
         } else if (!$this->conf->timePCViewPaper($prow, false)) {
-            if ($prow->timeWithdrawn > 0)
+            if ($prow->timeWithdrawn > 0) {
                 $whyNot["withdrawn"] = true;
-            else
+            } else {
                 $whyNot["notSubmitted"] = true;
+            }
         } else {
             $tag = TagInfo::base($tag);
             $twiddle = strpos($tag, "~");
-            if ($twiddle === 0 && $tag[1] === "~")
+            if ($twiddle === 0 && $tag[1] === "~") {
                 $whyNot["chairTag"] = true;
-            else if ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId)
+            } else if ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId) {
                 $whyNot["otherTwiddleTag"] = true;
-            else if ($twiddle !== false)
+            } else if ($twiddle !== false) {
                 $whyNot["voteTagNegative"] = true;
-            else {
+            } else {
                 $t = $this->conf->tags()->check($tag);
-                if ($t && $t->vote)
+                if ($t && $t->vote) {
                     $whyNot["voteTag"] = true;
-                else if ($t && $t->autosearch)
+                } else if ($t && $t->autosearch) {
                     $whyNot["autosearchTag"] = true;
-                else
+                } else {
                     $whyNot["chairTag"] = true;
+                }
             }
         }
         return $whyNot;
     }
 
     function can_change_some_tag(PaperInfo $prow = null) {
-        if (!$prow)
+        if (!$prow) {
             return $this->isPC;
-        else
+        } else {
             return $this->can_change_tag($prow, null, null, null);
+        }
     }
 
     function perm_change_some_tag(PaperInfo $prow) {
@@ -3806,8 +3816,9 @@ class Contact {
     }
 
     function can_change_tag_anno($tag) {
-        if ($this->privChair)
+        if ($this->privChair) {
             return true;
+        }
         $twiddle = strpos($tag, "~");
         $t = $this->conf->tags()->check($tag);
         return $this->isPC
