@@ -122,6 +122,7 @@ class SiteLoader {
         "_api.php" => ["api_", "api"],
         "_assigner.php" => ["a_", "assigners"],
         "_assignmentparser.php" => ["a_", "assigners"],
+        "_fexpr.php" =>  ["f_", "formulas"],
         "_helptopic.php" => ["h_", "help"],
         "_listaction.php" => ["la_", "listactions"],
         "_papercolumn.php" => ["pc_", "papercolumns"],
@@ -135,27 +136,32 @@ class SiteLoader {
 
     static function read_main_options() {
         global $ConfSitePATH, $Opt;
-        if (defined("HOTCRP_OPTIONS"))
+        if (defined("HOTCRP_OPTIONS")) {
             $files = [HOTCRP_OPTIONS];
-        else
+        } else  {
             $files = ["$ConfSitePATH/conf/options.php", "$ConfSitePATH/conf/options.inc", "$ConfSitePATH/Code/options.inc"];
-        foreach ($files as $f)
+        }
+        foreach ($files as $f) {
             if ((@include $f) !== false) {
                 $Opt["loaded"][] = $f;
                 break;
             }
+        }
     }
 }
 
 spl_autoload_register(function ($class_name) {
     global $ConfSitePATH;
     $f = null;
-    if (isset(SiteLoader::$map[$class_name]))
+    if (isset(SiteLoader::$map[$class_name])) {
         $f = SiteLoader::$map[$class_name];
-    if (!$f)
+    }
+    if (!$f) {
         $f = strtolower($class_name) . ".php";
-    foreach (expand_includes($f, ["autoload" => true]) as $fx)
+    }
+    foreach (expand_includes($f, ["autoload" => true]) as $fx) {
         require_once($fx);
+    }
 });
 
 require_once("$ConfSitePATH/lib/base.php");
@@ -179,64 +185,72 @@ if (function_exists("libxml_disable_entity_loader"))
 function expand_includes_once($file, $includepath, $globby) {
     foreach ($file[0] === "/" ? [""] : $includepath as $idir) {
         $try = $idir . $file;
-        if (!$globby && is_readable($try))
+        if (!$globby && is_readable($try)) {
             return [$try];
-        else if ($globby && ($m = glob($try, GLOB_BRACE)))
+        } else if ($globby && ($m = glob($try, GLOB_BRACE))) {
             return $m;
+        }
     }
     return [];
 }
 
 function expand_includes($files, $expansions = array()) {
     global $Opt, $ConfSitePATH;
-    if (!is_array($files))
+    if (!is_array($files)) {
         $files = array($files);
-    $confname = get($Opt, "confid") ? : get($Opt, "dbName");
+    }
+    $confname = $Opt["confid"] ?? $Opt["dbName"] ?? null;
     $expansions["confid"] = $expansions["confname"] = $confname;
-    $expansions["siteclass"] = get($Opt, "siteclass");
+    $expansions["siteclass"] = $Opt["siteclass"] ?? null;
 
-    if (isset($expansions["autoload"]) && strpos($files[0], "/") === false)
+    if (isset($expansions["autoload"]) && strpos($files[0], "/") === false) {
         $includepath = [$ConfSitePATH . "/src/", $ConfSitePATH . "/lib/"];
-    else
+    } else {
         $includepath = [$ConfSitePATH . "/"];
+    }
     if (isset($Opt["includepath"]) && is_array($Opt["includepath"])) {
-        foreach ($Opt["includepath"] as $i)
+        foreach ($Opt["includepath"] as $i) {
             if ($i)
                 $includepath[] = str_ends_with($i, "/") ? $i : $i . "/";
+        }
     }
 
     $results = array();
     foreach ($files as $f) {
         if (strpos((string) $f, '$') !== false) {
-            foreach ($expansions as $k => $v)
-                if ($v !== false && $v !== null)
+            foreach ($expansions as $k => $v) {
+                if ($v !== false && $v !== null) {
                     $f = preg_replace(',\$\{' . $k . '\}|\$' . $k . '\b,', $v, $f);
-                else if (preg_match(',\$\{' . $k . '\}|\$' . $k . '\b,', $f)) {
+                } else if (preg_match(',\$\{' . $k . '\}|\$' . $k . '\b,', $f)) {
                     $f = "";
                     break;
                 }
+            }
         }
-        if ((string) $f === "")
+        if ((string) $f === "") {
             continue;
+        }
         $matches = [];
         $ignore_not_found = $globby = false;
         if (str_starts_with($f, "?")) {
             $ignore_not_found = true;
             $f = substr($f, 1);
         }
-        if (preg_match(',[\[\]\*\?\{\}],', $f))
+        if (preg_match(',[\[\]\*\?\{\}],', $f)) {
             $ignore_not_found = $globby = true;
+        }
         $matches = expand_includes_once($f, $includepath, $globby);
         if (empty($matches)
             && isset($expansions["autoload"])
             && ($underscore = strpos($f, "_"))
-            && ($f2 = get(SiteLoader::$suffix_map, substr($f, $underscore)))) {
+            && ($f2 = SiteLoader::$suffix_map[substr($f, $underscore)] ?? null)) {
             $xincludepath = array_merge($f2[1] ? ["{$ConfSitePATH}/src/{$f2[1]}/"] : [], $includepath);
             $matches = expand_includes_once($f2[0] . substr($f, 0, $underscore) . ".php", $xincludepath, $globby);
         }
         $results = array_merge($results, $matches);
-        if (empty($matches) && !$ignore_not_found)
+        if (empty($matches) && !$ignore_not_found) {
             $results[] = $f[0] === "/" ? $f : $includepath[0] . $f;
+        }
     }
     return $results;
 }
@@ -249,8 +263,9 @@ function read_included_options(&$files) {
     for ($i = 0; $i !== count($files); ++$i) {
         foreach (expand_includes($files[$i]) as $f) {
             $key = "missing";
-            if ((@include $f) !== false)
+            if ((@include $f) !== false) {
                 $key = "loaded";
+            }
             $Opt[$key][] = $f;
         }
     }
@@ -307,28 +322,28 @@ global $Opt;
 if (!$Opt) {
     $Opt = array();
 }
-if (!get($Opt, "loaded")) {
+if (!($Opt["loaded"] ?? false)) {
     SiteLoader::read_main_options();
-    if (get($Opt, "multiconference")) {
+    if ($Opt["multiconference"] ?? false) {
         Multiconference::init();
     }
-    if (get($Opt, "include")) {
+    if ($Opt["include"] ?? false) {
         read_included_options($Opt["include"]);
     }
 }
-if (!get($Opt, "loaded") || get($Opt, "missing")) {
+if (!($Opt["loaded"] ?? false) || ($Opt["missing"] ?? false)) {
     Multiconference::fail_bad_options();
 }
-if (get($Opt, "dbLogQueries")) {
-    Dbl::log_queries($Opt["dbLogQueries"], get($Opt, "dbLogQueryFile"));
+if ($Opt["dbLogQueries"] ?? false) {
+    Dbl::log_queries($Opt["dbLogQueries"], $Opt["dbLogQueryFile"] ?? null);
 }
 
 
 // Allow lots of memory
-if (!get($Opt, "memoryLimit") && ini_get_bytes("memory_limit") < (128 << 20)) {
+if (!($Opt["memoryLimit"] ?? false) && ini_get_bytes("memory_limit") < (128 << 20)) {
     $Opt["memoryLimit"] = "128M";
 }
-if (get($Opt, "memoryLimit")) {
+if ($Opt["memoryLimit"] ?? false) {
     ini_set("memory_limit", $Opt["memoryLimit"]);
 }
 
