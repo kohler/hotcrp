@@ -3635,6 +3635,7 @@ class Contact {
         }
     }
 
+
     function can_view_tags(PaperInfo $prow = null) {
         // see also AllTags_API::alltags, PaperInfo::{searchable,viewable}_tags
         if (!$prow) {

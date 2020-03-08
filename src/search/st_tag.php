@@ -142,16 +142,6 @@ class Tag_SearchTerm extends SearchTerm {
             $word = substr($word, 1);
         }
 
-        // allow external reviewers to search their own rank tag
-        if (!$srch->user->isPC) {
-            $ranktag = "~" . $srch->conf->setting_data("tag_rank", "");
-            if (!$srch->conf->setting("tag_rank")
-                || substr($word, 0, strlen($ranktag)) !== $ranktag
-                || (strlen($word) > strlen($ranktag)
-                    && $word[strlen($ranktag)] !== "#"))
-                return;
-        }
-
         $value = new TagSearchMatcher;
         if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-|–|—)(-?(?:\.\d+|\d+\.?\d*))\z/', $word, $m)) {
             $tagword = $m[1];
