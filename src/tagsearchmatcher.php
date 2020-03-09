@@ -132,7 +132,7 @@ class TagSearchMatcher {
                 } else if ($starpos !== false) {
                     $res[] = ' ' . str_replace('\\*', '\\S*', preg_quote($tp)) . "#";
                 } else {
-                    $res[] = ' ' . preg_quote($tm) . "#";
+                    $res[] = ' ' . preg_quote($tp) . "#";
                 }
             }
             if ($this->_mtype < 0) {
