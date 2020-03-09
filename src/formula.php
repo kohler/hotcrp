@@ -1452,7 +1452,7 @@ class Formula implements Abbreviator {
 
         if (get($kwdef, "parse_modifier_callback")) {
             $xt = $name === "#" ? "#" . $t : $t;
-            while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9!@*_:.\/#~]+))(.*)/s', $xt, $m)
+            while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9_.@!*?~:\/#]+))(.*)/s', $xt, $m)
                    && ($has_args || !preg_match('/\A\s*\(/s', $m[2]))) {
                 $ff->pos2 = -strlen($m[2]);
                 if (call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this)) {

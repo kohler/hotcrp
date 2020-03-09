@@ -4,9 +4,11 @@
 
 class Tag_Fexpr extends Sub_Fexpr {
     private $tag;
+    private $tsm;
     private $isvalue;
-    function __construct($tag, $isvalue) {
+    function __construct($tag, TagSearchMatcher $tsm, $isvalue) {
         $this->tag = $tag;
+        $this->tsm = $tsm;
         $this->isvalue = $isvalue;
         $this->format_ = $isvalue ? null : self::FBOOL;
     }
@@ -23,8 +25,11 @@ class Tag_Fexpr extends Sub_Fexpr {
     }
     static function make(FormulaCall $ff) {
         if (count($ff->args) === 1
-            && preg_match('/\A' . TAG_REGEX . '\z/', $ff->args[0])) {
-            return new Tag_Fexpr($ff->args[0], $ff->kwdef->is_value);
+            && preg_match('{\A(?:|~~?|\S+~)' . TAG_REGEX_NOTWIDDLE . '\z}', $ff->args[0])) {
+            $tag = $ff->args[0];
+            $tsm = new TagSearchMatcher($ff->formula->user);
+            $tsm->add_check_tag(str_starts_with($tag, "_~") ? substr($tag, 1) : $tag, true);
+            return new Tag_Fexpr($tag, $tsm, $ff->kwdef->is_value);
         } else {
             return $ff->lerror("Invalid tag.");
         }
@@ -49,26 +54,32 @@ class Tag_Fexpr extends Sub_Fexpr {
         }
     }
     function view_score(Contact $user) {
-        $tagger = new Tagger($user);
-        $e_tag = $tagger->check($this->tag, Tagger::ALLOWSTAR);
-        return $tagger->view_score($e_tag, $user);
-    }
-    function tag() {
-        return $this->tag;
+        return VIEWSCORE_PC;
     }
     function compile(FormulaCompiler $state) {
-        $e_tag = $state->tagger->check($this->tag, Tagger::ALLOWSTAR);
-        if ($e_tag === false) {
-            return "false";
-        } else if (strpos($this->tag, "*") === false) {
-            return "Tag_Fexpr::tag_value(" . $state->_add_tags()
-                . "," . json_encode(" $this->tag#")
-                . "," . json_encode($this->isvalue) . ")";
+        $tags = $state->_add_tags();
+        $jvalue = json_encode($this->isvalue);
+        if (($tag = $this->tsm->single_tag())) {
+            if (str_starts_with($this->tag, "_~")) {
+                return "Tag_Fexpr::tag_value($tags,\" \"."
+                    . $state->loop_cid() . "."
+                    . json_encode(substr($tag, strpos($tag, "~")) . "#")
+                    . ",$jvalue)";
+            } else {
+                return "Tag_Fexpr::tag_value($tags,"
+                    . json_encode(" {$tag}#") . ",$jvalue)";
+            }
         } else {
-            $re = "{ " . str_replace('\*', '[^#\s]*', preg_quote($this->tag)) . '#}i';
-            return "Tag_Fexpr::tag_regex_value(" . $state->_add_tags()
-                . "," . json_encode($re)
-                . "," . json_encode($this->isvalue) . ")";
+            $regex = $this->tsm->regex();
+            if (str_starts_with($this->tag, "_~")) {
+                assert(strpos($regex, "|") === false
+                       && str_starts_with($regex, "{ {$state->user->contactId}~"));
+                $regex = "\"{ \"." . $state->loop_cid()
+                    . json_encode(substr($regex, strlen($state->user->contactId) + 2));
+            } else {
+                $regex = json_encode($regex);
+            }
+            return "Tag_Fexpr::tag_regex_value($tags,$regex,$jvalue)";
         }
     }
 }
