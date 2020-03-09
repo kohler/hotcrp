@@ -259,7 +259,7 @@ class CommentInfo {
 
     function has_tag($tag) {
         return $this->commentTags
-            && stripos("$this->commentTags ", " $tag ") !== false;
+            && stripos($this->commentTags, " {$tag}#") !== false;
     }
 
     function attachments() {
@@ -541,9 +541,11 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $tagger = new Tagger($contact);
             $ts = [];
             foreach ($m[0] as $tt) {
-                if (($tt = $tagger->check($tt, Tagger::NOVALUE))
-                    && !stri_ends_with($tt, "response"))
-                    $ts[strtolower($tt)] = $tt;
+                if (($tt = $tagger->check($tt))
+                    && !stri_ends_with($tt, "response")) {
+                    list($tag, $value) = TagInfo::unpack($tt);
+                    $ts[strtolower($tag)] = $tag . "#" . (float) $value;
+                }
             }
             if (!empty($ts)) {
                 $ctags = " " . join(" ", $this->conf->tags()->sort($ts));

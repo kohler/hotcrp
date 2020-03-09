@@ -3978,12 +3978,21 @@ window.papercomment = (function ($) {
 var vismap = {rev: "hidden from authors",
               pc: "hidden from authors and external reviewers",
               admin: "shown only to administrators"};
-var cmts = {}, newcmt, has_unload = false;
-var resp_rounds = {}, detwiddle;
-if (hotcrp_user && hotcrp_user.cid)
-    detwiddle = new RegExp("^" + hotcrp_user.cid + "~");
-else
-    detwiddle = /^~/;
+var cmts = {}, newcmt, has_unload = false, resp_rounds = {},
+    twiddle_start = hotcrp_user && hotcrp_user.cid ? hotcrp_user.cid + "~" : "###";
+
+function unparse_tag(tag, strip_value) {
+    var pos;
+    if (tag.startsWith(twiddle_start)) {
+        tag = tag.substring(twiddle_start.length - 1);
+    }
+    if (tag.endsWith("#0")) {
+        tag = tag.substring(0, tag.length - 2);
+    } else if (strip_value && (pos = tag.indexOf("#")) > 0) {
+        tag = tag.substring(0, pos);
+    }
+    return tag;
+}
 
 function $cmt(e) {
     var $c = $(e).closest(".cmtg");
@@ -4003,7 +4012,7 @@ function cj_cid(cj) {
 }
 
 function comment_identity_time(cj) {
-    var t = [], res = [], x, i, tag;
+    var t = [], res = [], x, i;
     if (cj.response || cj.is_new) {
     } else if (cj.editable) {
         t.push('<div class="cmtnumid"><a href="#' + cj_cid(cj) +
@@ -4046,8 +4055,7 @@ function comment_identity_time(cj) {
     if (!cj.response && cj.tags) {
         x = [];
         for (i in cj.tags) {
-            tag = cj.tags[i].replace(detwiddle, "~");
-            x.push('<a class="qq" href="' + hoturl_html("search", {q: "cmt:#" + tag}) + '">#' + tag + '</a>');
+            x.push('<a class="qq" href="' + hoturl_html("search", {q: "cmt:#" + unparse_tag(cj.tags[i], true)}) + '">#' + unparse_tag(cj.tags[i]) + '</a>');
         }
         t.push('<div class="cmttags">' + x.join(" ") + '</div>');
     }
@@ -4246,7 +4254,7 @@ function activate_editing($c, cj) {
         .change();
 
     for (i in cj.tags || []) {
-        tags.push(cj.tags[i].replace(detwiddle, "~"));
+        tags.push(unparse_tag(cj.tags[i]));
     }
     if (tags.length) {
         fold($c.find(".cmteditinfo")[0], false, 3);

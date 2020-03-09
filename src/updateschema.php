@@ -426,6 +426,21 @@ function update_schema_set_review_time_displayed($conf) {
     return true;
 }
 
+function update_schema_add_comment_tag_values($conf) {
+    if (!$conf->ql("lock tables PaperComment write")) {
+        return false;
+    }
+    $result = $conf->ql("select distinct commentTags from PaperComment where commentTags is not null");
+    $ok = true;
+    while (($row = $result->fetch_row())) {
+        $rev = preg_replace('/( [^#\s]+)(?= |\z)/', "\$1#0", $row[0]);
+        $ok = $ok && $conf->ql("update PaperComment set commentTags=? where commentTags=?", $rev, $row[0]);
+    }
+    Dbl::free($result);
+    $conf->ql("unlock tables");
+    return $ok;
+}
+
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
@@ -1644,6 +1659,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("update ContactInfo set contactTags=trim(trailing from contactTags) where contactTags is not null")
         && $conf->ql("update PaperComment set commentTags=trim(trailing from commentTags) where commentTags is not null")) {
         $conf->update_schema_version(227);
+    }
+    if ($conf->sversion == 227
+        &&  update_schema_add_comment_tag_values($conf)) {
+        $conf->update_schema_version(228);
     }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
