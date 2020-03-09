@@ -695,7 +695,7 @@ class Contact {
             && isset($user->contactTags)
             && ($this->can_view_user_tags() || $user->contactId == $this->contactId)) {
             $dt = $this->conf->tags();
-            if (($viewable = $dt->strip_nonviewable($user->contactTags, $this, null))) {
+            if (($viewable = $dt->censor(TagMap::CENSOR_VIEW, $user->contactTags, $this, null))) {
                 if (($colors = $dt->color_classes($viewable))) {
                     $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
                 }
@@ -894,7 +894,7 @@ class Contact {
         // see also Contact::calculate_name_for
         if ($viewer->can_view_user_tags() || $viewer->contactId == $this->contactId) {
             $tags = $this->all_contact_tags();
-            return $this->conf->tags()->strip_nonviewable($tags, $viewer, null);
+            return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, null);
         } else {
             return "";
         }
@@ -2243,7 +2243,7 @@ class Contact {
     }
     function can_view_user_tag($tag) {
         return $this->can_view_user_tags()
-            && $this->conf->tags()->strip_nonviewable(" $tag", $this, null) !== "";
+            && $this->conf->tags()->censor(TagMap::CENSOR_VIEW, " {$tag}#0", $this, null) !== "";
     }
 
     function can_view_tracker($tracker_json = null) {

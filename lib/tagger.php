@@ -420,8 +420,7 @@ class TagMap implements IteratorAggregate {
         if ($this->hidden_re === null) {
             $x = [];
             foreach ($this->filter("hidden") as $t) {
-                // XXX go back to plain # when all tag lists have values
-                $x[] = $t->tag_regex() . "(?=[# ]|\z)";
+                $x[] = $t->tag_regex() . "#";
             }
             $this->hidden_re = join("|", $x);
         }
@@ -432,7 +431,7 @@ class TagMap implements IteratorAggregate {
         if ($this->public_peruser_re_part === null) {
             $x = [];
             foreach ($this->filter("public_peruser") as $t) {
-                $x[] = '\d+~' . $t->tag_regex() . '#';
+                $x[] = '\d+~' . $t->tag_regex() . "#";
             }
             $this->public_peruser_re_part = join("|", $x);
         }
@@ -563,10 +562,10 @@ class TagMap implements IteratorAggregate {
         }
     }
 
-    function strip_nonsearchable($tags, Contact $user, PaperInfo $prow) {
+    private function strip_nonsearchable($tags, Contact $user, PaperInfo $prow = null) {
         self::assert_tag_string($tags, true); // XXX remove this
         if ((string) $tags !== ""
-            && !$user->allow_administer($prow)
+            && (!$prow || !$user->allow_administer($prow))
             && ($this->has_hidden || strpos($tags, "~") !== false)) {
             $re = "(?:";
             if ($user->contactId > 0) {
@@ -588,9 +587,9 @@ class TagMap implements IteratorAggregate {
         return $tags;
     }
 
-    function strip_nonviewable($tags, Contact $user, PaperInfo $prow = null) {
+    private function strip_nonviewable($tags, Contact $user, PaperInfo $prow = null) {
         // XXX remove assert_tag_string
-        self::assert_tag_string($tags);
+        self::assert_tag_string($tags, true);
         if ((string) $tags !== ""
             && ($this->has_hidden || strpos($tags, "~") !== false)) {
             $re = "(?:";
@@ -615,23 +614,42 @@ class TagMap implements IteratorAggregate {
     }
 
     function filter_nonviewable($a, Contact $user) {
+        // XXXX
         if (!empty($a)) {
             $s = " " . join("#0 ", $a) . "#0";
             $s = $this->strip_nonviewable($s, $user);
             if ($s !== "") {
-                return explode("#0 ", ltrim($s));
+                return explode("#0 ", substr($s, 1, -2));
             }
         }
         return [];
     }
 
-    function strip_nonviewable_chair_conflict($tags, Contact $user) {
+    private function strip_nonviewable_chair_conflict($tags, Contact $user) {
         // XXX Should only be called on paper tags (i.e., contains `#`).
         // XXX Should called only if `!can_view_most_tags && can_view_tags`.
         self::assert_tag_string($tags, true); // XXX remove this
         $chair = $user->privChair ? "" : "|~";
         return preg_replace('{ (?:(?!' . $user->contactId . '~)\d+~'
             . $chair . '|(?!' . $this->sitewide_regex_part() . '))\S*}', "", $tags);
+    }
+
+    const CENSOR_SEARCH = 0;
+    const CENSOR_VIEW = 1;
+    function censor($ctype, $tags, Contact $user, PaperInfo $prow = null) {
+        if ((string) $tags === "") {
+            return "";
+        } else if ($user->can_view_most_tags($prow)) {
+            if ($ctype) {
+                return $this->strip_nonviewable($tags, $user, $prow);
+            } else {
+                return $this->strip_nonsearchable($tags, $user, $prow);
+            }
+        } else if ($user->privChair && $this->has_sitewide) {
+            return $this->strip_nonviewable_chair_conflict($tags, $user);
+        } else {
+            return "";
+        }
     }
 
     function sort($tags) {

@@ -6888,7 +6888,7 @@ function make_tagmap() {
             else if (p > 0)
                 x.push(t.replace('\\*', '.*'));
             else if (t === "any")
-                x.push('(?:' + (hotcrp_user.cid || 0) + '~.*|~~.*|(?!.*~).*)');
+                x.push('(?:' + (hotcrp_user.cid || 0) + '~.*|~~.*|(?!\\d+~).*)');
             else
                 x.push(t);
         }

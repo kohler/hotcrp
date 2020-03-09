@@ -862,16 +862,8 @@ class PaperInfo {
         }
         $rights = $user->__rights($this);
         if ($rights->searchable_tags === null) {
-            $tags = $this->all_tags_text();
             $dt = $this->conf->tags();
-            if ($user->can_view_most_tags($this)) {
-                $tags = $dt->strip_nonsearchable($tags, $user, $this);
-            } else if ($user->privChair && $dt->has_sitewide) {
-                $tags = $dt->strip_nonviewable_chair_conflict($tags, $user);
-            } else {
-                $tags = "";
-            }
-            $rights->searchable_tags = $tags;
+            $rights->searchable_tags = $dt->censor(TagMap::CENSOR_SEARCH, $this->all_tags_text(), $user, $this);
         }
         return $rights->searchable_tags;
     }
@@ -888,15 +880,8 @@ class PaperInfo {
         }
         $rights = $user->__rights($this);
         if ($rights->viewable_tags === null) {
-            $tags = $this->all_tags_text();
             $dt = $this->conf->tags();
-            if ($user->can_view_most_tags($this)) {
-                $tags = $dt->strip_nonviewable($tags, $user, $this);
-            } else if ($user->privChair && $dt->has_sitewide) {
-                $tags = $dt->strip_nonviewable_chair_conflict($tags, $user);
-            } else {
-                $tags = "";
-            }
+            $tags = $dt->censor(TagMap::CENSOR_VIEW, $this->all_tags_text(), $user, $this);
             $rights->viewable_tags = $dt->sort($tags);
         }
         return $rights->viewable_tags;

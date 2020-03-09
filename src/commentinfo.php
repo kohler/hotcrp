@@ -235,10 +235,19 @@ class CommentInfo {
         return $n;
     }
 
+    function searchable_tags(Contact $viewer) {
+        if ($this->commentTags
+            && $viewer->can_view_comment_tags($this->prow, $this)) {
+            return $this->conf->tags()->censor(TagMap::CENSOR_SEARCH, $this->commentTags, $viewer, $this->prow);
+        } else {
+            return null;
+        }
+    }
+
     function viewable_tags(Contact $viewer) {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
-            return $this->conf->tags()->strip_nonviewable($this->commentTags, $viewer, $this->prow);
+            return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
         } else {
             return null;
         }
@@ -247,7 +256,7 @@ class CommentInfo {
     function viewable_nonresponse_tags(Contact $viewer) {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
-            $tags = $this->conf->tags()->strip_nonviewable($this->commentTags, $viewer, $this->prow);
+            $tags = $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
             if ($this->commentType & COMMENTTYPE_RESPONSE) {
                 $tags = preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", $tags);
             }

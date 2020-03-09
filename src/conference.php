@@ -1964,9 +1964,9 @@ class Conf {
         if ($viewer->privChair) {
             return $this->pc_tags();
         } else if ($viewer->can_view_user_tags()) {
-            $t = " " . join(" ", $this->pc_tags());
-            $t = $this->tags()->strip_nonviewable($t, $viewer, null);
-            return explode(" ", $t);
+            $t = " " . join("#0 ", $this->pc_tags()) . "#0";
+            $t = $this->tags()->censor(TagMap::CENSOR_VIEW, $t, $viewer, null);
+            return explode("#0 ", substr($t, 1, -2));
         } else {
             return [];
         }
