@@ -121,6 +121,23 @@ else
 $s = "";
 xassert_eqq(@$s[0], "");
 
+xassert(str_starts_with("", ""));
+xassert(str_starts_with("a", ""));
+xassert(str_starts_with("a", "a"));
+xassert(!str_starts_with("a", "ab"));
+xassert(str_starts_with("abc", "ab"));
+xassert(str_ends_with("", ""));
+xassert(str_ends_with("a", ""));
+xassert(str_ends_with("a", "a"));
+xassert(!str_ends_with("a", "ab"));
+xassert(str_ends_with("abc", "bc"));
+xassert(stri_ends_with("", ""));
+xassert(stri_ends_with("a", ""));
+xassert(stri_ends_with("a", "A"));
+xassert(!stri_ends_with("a", "Ab"));
+xassert(stri_ends_with("abc", "Bc"));
+
+
 // Json tests
 xassert_eqq(json_encode(Json::decode("{}")), "{}");
 xassert_eqq(json_encode(Json::decode('"\\u0030"')), '"0"');

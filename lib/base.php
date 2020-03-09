@@ -13,17 +13,19 @@ function is_number($x) {
 
 function str_starts_with($haystack, $needle) {
     $nl = strlen($needle);
-    return $nl <= strlen($haystack) && substr($haystack, 0, $nl) === $needle;
+    return $nl === 0 || substr_compare($haystack, $needle, 0, $nl) === 0;
 }
 
 function str_ends_with($haystack, $needle) {
-    $p = strlen($haystack) - strlen($needle);
-    return $p >= 0 && substr($haystack, $p) === $needle;
+    $nl = strlen($needle);
+    $hl = strlen($haystack);
+    return $nl === 0 || ($hl >= $nl && substr_compare($haystack, $needle, -$nl) === 0);
 }
 
 function stri_ends_with($haystack, $needle) {
-    $p = strlen($haystack) - strlen($needle);
-    return $p >= 0 && strcasecmp(substr($haystack, $p), $needle) == 0;
+    $nl = strlen($needle);
+    $hl = strlen($haystack);
+    return $nl === 0 || ($hl >= $nl && substr_compare($haystack, $needle, -$nl, $nl, true) === 0);
 }
 
 function preg_matchpos($pattern, $subject) {
