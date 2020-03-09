@@ -13,7 +13,8 @@ function is_number($x) {
 
 function str_starts_with($haystack, $needle) {
     $nl = strlen($needle);
-    return $nl === 0 || substr_compare($haystack, $needle, 0, $nl) === 0;
+    $hl = strlen($haystack);
+    return $nl === 0 || ($hl >= $nl && substr_compare($haystack, $needle, 0, $nl) === 0);
 }
 
 function str_ends_with($haystack, $needle) {
