@@ -1943,7 +1943,7 @@ class Conf {
 
     function pc_completion_map() {
         $map = $bylevel = [];
-        foreach ($this->pc_members_and_admins() as $pc)
+        foreach ($this->pc_members_and_admins() as $pc) {
             if (!$pc->is_disabled()) {
                 foreach ($pc->completion_items() as $k => $level) {
                     if (!isset($bylevel[$k])
@@ -1951,10 +1951,12 @@ class Conf {
                         || get($map, $k) === $pc) {
                         $map[$k] = $pc;
                         $bylevel[$k] = $level;
-                    } else
+                    } else {
                         unset($map[$k]);
+                    }
                 }
             }
+        }
         return $map;
     }
 

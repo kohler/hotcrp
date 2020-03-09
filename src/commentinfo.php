@@ -639,12 +639,14 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
 
         $result = $this->conf->qe_apply($q, $qv);
-        if (!$result)
+        if (!$result) {
             return false;
+        }
 
         $cmtid = $this->commentId ? : $result->insert_id;
-        if (!$cmtid)
+        if (!$cmtid) {
             return false;
+        }
 
         // log
         $log = $is_response ? "Response $cmtid" : "Comment $cmtid";
@@ -691,8 +693,9 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         if ($text !== false) {
             $comments = $this->prow->fetch_comments("commentId=$cmtid");
             $this->merge($comments[$cmtid], $this->prow);
-            if ($this->timeNotified == $this->timeModified)
+            if ($this->timeNotified == $this->timeModified) {
                 $this->prow->notify_reviews([$this, "watch_callback"], $contact);
+            }
         } else {
             $this->commentId = 0;
             $this->comment = "";

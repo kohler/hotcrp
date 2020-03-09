@@ -293,11 +293,13 @@ class TagMap implements IteratorAggregate {
     function check($tag) {
         $ltag = strtolower($tag);
         $t = get($this->storage, $ltag);
-        if (!$t && $ltag && $ltag[0] === ":" && $this->check_emoji_code($ltag))
+        if (!$t && $ltag && $ltag[0] === ":" && $this->check_emoji_code($ltag)) {
             $t = $this->add($tag);
+        }
         if ($this->has_pattern
-            && (!$t || $t->pattern_version < $this->pattern_version))
+            && (!$t || $t->pattern_version < $this->pattern_version)) {
             $t = $this->update_patterns($tag, $ltag, $t);
+        }
         return $t;
     }
     function check_base($tag) {
@@ -879,14 +881,15 @@ class Tagger {
             }
         }
         if (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false) {
-            return $this->set_error_html("Wildcards aren’t allowed in tag names.");
+            return $this->set_error_html("Wildcards aren’t allowed here.");
         }
         // After this point we know `$tag` contains no HTML specials
         if ($m[1] === "") {
             // OK
         } else if ($m[1] === "~~") {
-            if ($flags & self::NOCHAIR)
+            if ($flags & self::NOCHAIR) {
                 return $this->set_error_html("Tag #{$tag} is exclusively for chairs.");
+            }
         } else {
             if ($flags & self::NOPRIVATE) {
                 return $this->set_error_html("Twiddle tags aren’t allowed here.");
