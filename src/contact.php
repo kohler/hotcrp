@@ -3700,6 +3700,11 @@ class Contact {
         }
     }
 
+    function can_view_some_peruser_tag() {
+        return $this->is_manager()
+            || ($this->isPC && $this->conf->tags()->has_public_peruser);
+    }
+
     function can_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
         if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
             || $this->is_site_contact) {

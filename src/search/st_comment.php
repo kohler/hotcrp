@@ -65,9 +65,10 @@ class Comment_SearchTerm extends SearchTerm {
         $tags = $contacts = null;
         if (str_starts_with($m[0], "#")
             && !$srch->conf->pc_tag_exists(substr($m[0], 1))) {
-            $tags = Tag_SearchTerm::expand(substr($m[0], 1), false, $srch);
-            if (empty($tags)) {
-                return new False_SearchTerm;
+            $tags = new TagSearchMatcher($srch->user);
+            $tags->add_check_tag(substr($m[0], 1), true);
+            foreach ($tags->errors() as $e) {
+                $srch->warn($e);
             }
         } else if ($m[0] !== "") {
             $contacts = $srch->matching_uids($m[0], $sword->quoted, false);
@@ -92,26 +93,12 @@ class Comment_SearchTerm extends SearchTerm {
         if ($this->csm->has_contacts()) {
             $where[] = $this->csm->contact_match_sql("contactId");
         }
-        if ($this->tags && $this->tags[0] !== "none") {
+        if ($this->tags && !$this->tags->test_empty()) {
             $where[] = "commentTags is not null"; // conservative
         }
         $thistab = "Comments_" . count($sqi->tables);
         $sqi->add_table($thistab, ["left join", "(select paperId, count(commentId) count from PaperComment" . ($where ? " where " . join(" and ", $where) : "") . " group by paperId)"]);
         return "coalesce($thistab.count,0)" . $this->csm->conservative_nonnegative_countexpr();
-    }
-    private function _check_tags(CommentInfo $crow, Contact $user) {
-        $tags = $crow->viewable_tags($user);
-        if ($this->tags[0] === "none") {
-            return (string) $tags === "";
-        } else if ($this->tags[0] === "any") {
-            return (string) $tags !== "";
-        } else {
-            foreach (TagInfo::split_unpack($tags) as $ti) {
-                if (in_array($ti[0], $this->tags))
-                    return true;
-            }
-            return false;
-        }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $textless = $this->type_mask === (COMMENTTYPE_DRAFT | COMMENTTYPE_RESPONSE);
@@ -120,7 +107,7 @@ class Comment_SearchTerm extends SearchTerm {
             if ($this->csm->test_contact($crow->contactId)
                 && ($crow->commentType & $this->type_mask) == $this->type_value
                 && (!$this->only_author || $crow->commentType >= COMMENTTYPE_AUTHOR)
-                && (!$this->tags || $this->_check_tags($crow, $srch->user)))
+                && (!$this->tags || $this->tags->test((string) $crow->viewable_tags($srch->user))))
                 ++$n;
         }
         return $this->csm->test($n);
