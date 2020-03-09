@@ -71,9 +71,6 @@ class CountMatcher {
             return $cm->filter($x);
         }
     }
-    function test_explicit_zero() {
-        return $this->value === 0.0 && ($this->allowed & 2);
-    }
     function compar() {
         assert(!!$this->allowed);
         return self::$oparray[$this->allowed];
