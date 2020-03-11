@@ -3908,6 +3908,8 @@ function add_review(rrow) {
             revname = '[' + revname + ']';
         if (rrow.reviewer_email)
             revname = '<span title="' + rrow.reviewer_email + '">' + revname + '</span>';
+    } else {
+        revname = "";
     }
     if (rrow.rtype) {
         revname += (revname ? " " : "") + '<span class="rto rt' + rrow.rtype +
