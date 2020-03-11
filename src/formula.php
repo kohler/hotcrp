@@ -1741,7 +1741,7 @@ class Formula implements Abbreviator {
                 if (count($fs) === 1) {
                     $f = $fs[0];
                     if ($f instanceof PaperOption) {
-                        $e = $this->_parse_option($f->search_keyword());
+                        $e = $this->_parse_option($pos1, -strlen($m[2]), $f->search_keyword());
                     } else if ($f instanceof ReviewField) {
                         if ($f->has_options) {
                             $e = $this->_reviewer_decoration(new Score_Fexpr($f), $m[2]);
