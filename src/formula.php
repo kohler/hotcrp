@@ -907,7 +907,7 @@ class FormulaCompiler {
 
     function _add_pc() {
         if ($this->check_gvar('$pc')) {
-            $this->gstmt[] = "\$pc = \$contact->conf->pc_members();";
+            $this->gstmt[] = "\$pc = \$contact->conf->pc_members_and_admins();";
         }
         return '$pc';
     }
