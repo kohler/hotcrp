@@ -2217,18 +2217,10 @@ class Conf {
             $this->invariant_error($ie, "anonymous_user_enabled", "anonymous user is not disabled");
 
         // check tag strings
-        $result = $this->qe("select distinct contactTags from ContactInfo where contactTags is not null");
+        $result = $this->qe("select distinct contactTags from ContactInfo where contactTags is not null union select distinct commentTags from PaperComment where commentTags is not null");
         while (($row = $result->fetch_row())) {
             if ($row[0] === "" || !TagMap::is_tag_string($row[0], true)) {
-                $this->invariant_error($ie, "user_tags", "user has bad tag string “{$row[0]}”");
-            }
-        }
-        Dbl::free($result);
-
-        $result = $this->qe("select distinct commentTags from PaperComment where commentTags is not null");
-        while (($row = $result->fetch_row())) {
-            if ($row[0] === "" || !TagMap::is_tag_string($row[0])) {
-                $this->invariant_error($ie, "comment_tags", "comment has bad tag string “{$row[0]}”");
+                $this->invariant_error($ie, "tag_strings", "bad tag string “{$row[0]}”");
             }
         }
         Dbl::free($result);
