@@ -32,9 +32,6 @@ class PageCount_PaperColumn extends PaperColumn {
         else
             return $ac == $bc ? 0 : ($ac < $bc ? -1 : 1);
     }
-    function header(PaperList $pl, $is_text) {
-        return "Page count";
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_pdf($row);
     }

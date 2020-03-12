@@ -10,13 +10,14 @@
         "position": 10
     },
     {
-        "name": "id",
-        "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+Id_PaperColumn",
+        "name": "id", "title": "ID",
+        "column": true, "sort": true, "minimal": true, "completion": true,
+        "callback": "+Id_PaperColumn",
         "position": 50
     },
     {   "name": "pid", "alias": "id"   },
     {
-        "name": "title",
+        "name": "title", "title": "Title",
         "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+Title_PaperColumn",
         "position": 120
     },
@@ -38,7 +39,7 @@
         "expand_callback": "TopicScore_PaperColumn::expand"
     },
     {
-        "name": "desirability",
+        "name": "desirability", "title": "Desirability",
         "column": true, "sort": true, "completion": true, "callback": "+Desirability_PaperColumn",
         "position": 410
     },
@@ -65,7 +66,7 @@
         "completion": "pref:<user>"
     },
     {
-        "name": "revdelegation",
+        "name": "revdelegation", "title": "Requested reviews",
         "row": true, "className": "pl_text", "callback": "+ReviewDelegation_PaperColumn",
         "position": 800
     },
@@ -108,22 +109,22 @@
     {   "name": "confdescription", "alias": "confdesc"   },
     {   "name": "conflictdescription", "alias": "confdesc"   },
     {
-        "name": "status",
+        "name": "status", "title": "Status",
         "column": true, "sort": true, "completion": true, "callback": "+StatusPaperColumn",
         "position": 900
     },
     {
-        "name": "statusfull",
+        "name": "statusfull", "title": "Status",
         "column": true, "sort": true, "completion": true, "className": "pl_status", "callback": "+StatusPaperColumn",
         "position": 910
     },
     {
-        "name": "timestamp",
+        "name": "timestamp", "title": "Timestamp",
         "column": true, "sort": true, "completion": true, "callback": "+Timestamp_PaperColumn",
         "position": 920
     },
     {
-        "name": "pagecount",
+        "name": "pagecount", "title": "Page count",
         "column": true, "sort": true, "fold": true, "completion": true, "minimal": true, "className": "plr", "callback": "+PageCount_PaperColumn",
         "position": 1000
     },
@@ -179,14 +180,14 @@
         "position": 1400
     },
     {
-        "name": "abstract",
+        "name": "abstract", "title": "Abstract",
         "row": true, "fold": true, "completion": true, "callback": "+Abstract_PaperColumn",
         "position": 140
     },
     {   "name": "ab", "alias": "abstract"   },
     {   "name": "abstracts", "alias": "abstract"   },
     {
-        "name": "authors",
+        "name": "authors", "title": "Authors",
         "row": true, "fold": 1, "completion": true, "sort": true,
         "callback": "+Authors_PaperColumn",
         "position": 150
@@ -203,19 +204,19 @@
         "expand_callback": "ConflictMatch_PaperColumn::expand"
     },
     {
-        "name": "collab",
+        "name": "collab", "title": "Collaborators",
         "row": true, "fold": true, "completion": true, "callback": "+Collab_PaperColumn",
         "position": 160
     },
     {   "name": "co", "alias": "collab"   },
     {   "name": "collaborators", "alias": "collab"   },
     {
-        "name": "topics",
+        "name": "topics", "title": "Topics",
         "row": true, "fold": true, "completion": true, "callback": "+Topics_PaperColumn",
         "position": 420
     },
     {
-        "name": "pcconflicts",
+        "name": "pcconflicts", "title": "PC conflicts",
         "row": true, "fold": true, "completion": "pcconflicts", "callback": "+PCConflicts_PaperColumn",
         "position": 450
     },
@@ -223,7 +224,7 @@
     {   "name": "pc-conflicts", "alias": "pcconflicts"   },
     {   "name": "pcconf", "alias": "pcconflicts"   },
     {
-        "name": "allpref",
+        "name": "allpref", "title": "Preferences",
         "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
         "position": 550
     },
@@ -232,7 +233,7 @@
     {   "name": "allpreferences", "alias": "allpref"   },
     {   "name": "preferences", "alias": "allpref"   },
     {
-        "name": "alltopicpref",
+        "name": "alltopicpref", "title": "Preferences with topic scores",
         "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
         "topics": true, "position": 550
     },
@@ -240,12 +241,12 @@
     {   "name": "alltopicpreference", "alias": "alltopicpref"   },
     {   "name": "allrevtopicpref", "alias": "alltopicpref"   },
     {
-        "name": "reviewers",
+        "name": "reviewers", "title": "Reviewers",
         "row": true, "fold": true, "completion": true, "callback": "+ReviewerList_PaperColumn",
         "position": 850
     },
     {
-        "name": "tags",
+        "name": "tags", "title": "Tags",
         "row": true, "fold": true, "completion": true, "callback": "+TagList_PaperColumn",
         "position": 1410
     },
@@ -257,7 +258,7 @@
         "position": 1420
     },
     {
-        "name": "administrator",
+        "name": "administrator", "title": "Administrator",
         "row": true, "sort": true, "fold": true,
         "callback": "+Administrator_PaperColumn",
         "position": 1500
@@ -265,19 +266,19 @@
     {   "name": "manager", "alias": "administrator"   },
     {   "name": "admin", "alias": "administrator"   },
     {
-        "name": "lead",
+        "name": "lead", "title": "Discussion lead",
         "row": true, "sort": true, "fold": true, "completion": true,
         "callback": "+Lead_PaperColumn",
         "position": 1600
     },
     {
-        "name": "shepherd",
+        "name": "shepherd", "title": "Shepherd",
         "row": true, "sort": true, "fold": true, "completion": true,
         "callback": "+Shepherd_PaperColumn",
         "position": 1700
     },
     {
-        "name": "commenters",
+        "name": "commenters", "title": "Commenters",
         "row": true, "fold": true, "completion": true, "callback": "+Commenters_PaperColumn",
         "position": 2000
     }

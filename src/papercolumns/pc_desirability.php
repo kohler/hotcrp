@@ -18,9 +18,6 @@ class Desirability_PaperColumn extends PaperColumn {
         $bd = $b->desirability();
         return $bd < $ad ? -1 : ($bd > $ad ? 1 : 0);
     }
-    function header(PaperList $pl, $is_text) {
-        return "Desirability";
-    }
     function content(PaperList $pl, PaperInfo $row) {
         return str_replace("-", "−" /* U+2122 */, (string) $row->desirability());
     }

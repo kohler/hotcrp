@@ -12,10 +12,12 @@ class Formula_SearchTerm extends SearchTerm {
     }
     static private function read_formula($word, $quoted, $is_graph, PaperSearch $srch) {
         $formula = null;
-        if (preg_match('/\A[^(){}\[\]]+\z/', $word))
+        if (preg_match('/\A[^(){}\[\]]+\z/', $word)) {
             $formula = $srch->conf->find_named_formula($word);
-        if (!$formula)
+        }
+        if (!$formula) {
             $formula = new Formula($word, $is_graph);
+        }
         if (!$formula->check($srch->user)) {
             $srch->warn($formula->error_html());
             $formula = null;
@@ -23,13 +25,15 @@ class Formula_SearchTerm extends SearchTerm {
         return $formula;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        if (($formula = self::read_formula($word, $sword->quoted, false, $srch)))
+        if (($formula = self::read_formula($word, $sword->quoted, false, $srch))) {
             return new Formula_SearchTerm($formula);
+        }
         return new False_SearchTerm;
     }
     static function parse_graph($word, SearchWord $sword, PaperSearch $srch) {
-        if (($formula = self::read_formula($word, $sword->quoted, true, $srch)))
+        if (($formula = self::read_formula($word, $sword->quoted, true, $srch))) {
             return SearchTerm::make_float(["view" => [["graph($word)", "show"]]]);
+        }
         return null;
     }
     function sqlexpr(SearchQueryInfo $sqi) {

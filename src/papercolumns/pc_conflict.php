@@ -14,8 +14,8 @@ class Conflict_PaperColumn extends PaperColumn {
         if (($this->show_user = isset($cj->user))) {
             $this->contact = $conf->pc_member_by_email($cj->user);
         }
-        $this->show_description = !!get($cj, "show_description");
-        if (get($cj, "edit")) {
+        $this->show_description = !!($cj->show_description ?? false);
+        if ($cj->edit ?? false) {
             $this->mark_editable();
         }
         $this->editable = !!get($cj, "edit");

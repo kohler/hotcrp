@@ -14,9 +14,6 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         $this->requester = $pl->reviewer_user();
         return true;
     }
-    function header(PaperList $pl, $is_text) {
-        return "Requested reviews";
-    }
     function content(PaperList $pl, PaperInfo $row) {
         global $Now;
         $rx = [];

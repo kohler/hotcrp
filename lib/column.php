@@ -5,6 +5,7 @@
 class Column {
     public $name;
     public $className;
+    public $title;
     public $column = false;
     public $row = false;
     public $fold = false;
@@ -17,9 +18,9 @@ class Column {
     public $__subposition;
 
     static private $keys = [
-        "name" => true, "className" => true, "column" => true, "row" => true,
-        "fold" => true, "sort" => true, "completion" => true, "minimal" => true,
-        "position" => true
+        "name" => true, "className" => true, "title" => true,
+        "column" => true, "row" => true, "fold" => true, "sort" => true,
+        "completion" => true, "minimal" => true, "position" => true
     ];
 
     function __construct($arg) {

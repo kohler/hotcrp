@@ -28,9 +28,6 @@ class PreferenceList_PaperColumn extends PaperColumn {
         }
         return true;
     }
-    function header(PaperList $pl, $is_text) {
-        return "Preferences";
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_administer($row);
     }

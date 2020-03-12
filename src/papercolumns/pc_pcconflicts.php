@@ -13,9 +13,6 @@ class PCConflicts_PaperColumn extends PaperColumn {
             $pl->qopts["allConflictType"] = 1;
         return true;
     }
-    function header(PaperList $pl, $is_text) {
-        return "PC conflicts";
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_conflicts($row);
     }

@@ -960,7 +960,7 @@ class MimeText {
             $space = str_repeat(" ", $this->errorpos);
             return $t . "\n"
                 . $space . '<span class="is-error">' . $arrow . '</span>' . "\n"
-                . $space . '<span class="is-error">' . htmlspecialchars($this->errortext) . '</span></pre>';
+                . $space . '<span class="text-default">' . htmlspecialchars($this->errortext) . '</span></pre>';
         } else {
             return false;
         }

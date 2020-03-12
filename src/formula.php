@@ -614,6 +614,9 @@ class AggregateFexpr extends Fexpr {
                 $ff->name .= "_pop";
             }
             return true;
+        } else if (str_starts_with($arg, ".")) {
+            $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "Unknown aggregate type.");
+            return true;
         } else {
             return false;
         }

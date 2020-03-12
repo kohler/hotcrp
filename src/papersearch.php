@@ -24,6 +24,15 @@ class SearchWord {
         }
         return $text;
     }
+    static function unquote($text) {
+        if ($text !== ""
+            && $text[0] === "\""
+            && strpos($text, "\"", 1) === strlen($text) - 1) {
+            return substr($text, 1, -1);
+        } else {
+            return $text;
+        }
+    }
 }
 
 class SearchSplitter {

@@ -6,9 +6,6 @@ class Commenters_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function header(PaperList $pl, $is_text) {
-        return "Commenters";
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$row->viewable_comments($pl->user);
     }

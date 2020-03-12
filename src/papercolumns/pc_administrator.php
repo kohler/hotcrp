@@ -24,9 +24,6 @@ class Administrator_PaperColumn extends PaperColumn {
         $pl = $sorter->pl;
         return $pl->_compare_pc(self::cid($pl, $a), self::cid($pl, $b), $sorter);
     }
-    function header(PaperList $pl, $is_text) {
-        return "Administrator";
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !self::cid($pl, $row);
     }

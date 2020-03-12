@@ -53,10 +53,6 @@ class Formula_PaperColumn extends PaperColumn {
             return $as == $bs ? 0 : ($as < $bs ? -1 : 1);
         }
     }
-    function header(PaperList $pl, $is_text) {
-        $x = $this->formula->column_header();
-        return $is_text ? $x : htmlspecialchars($x);
-    }
     function analyze(PaperList $pl, &$rows, $fields) {
         if (!$this->is_visible) {
             return;
@@ -158,8 +154,14 @@ class Formula_PaperColumn extends PaperColumn {
 class Formula_PaperColumnFactory {
     static function make(Formula $f, $xfj) {
         $cj = (array) $xfj;
-        $cj["name"] = "formula:" . ($f->formulaId ? $f->abbreviation() : $f->expression);
         $cj["formula"] = $f;
+        if ($f->formulaId) {
+            $cj["name"] = "formula:" . $f->abbreviation();
+            $cj["title"] = $f->name ? : $f->expression;
+        } else {
+            $cj["name"] = "formula:" . $f->expression;
+            $cj["title"] = $f->expression;
+        }
         return new Formula_PaperColumn($f->conf, (object) $cj);
     }
     static function expand($name, $user, $xfj, $m) {
@@ -199,8 +201,9 @@ class Formula_PaperColumnFactory {
         }
 
         if ($ff && $ff->check($user)) {
-            if ($ff->view_score($user) > $vsbound)
+            if ($ff->view_score($user) > $vsbound) {
                 return [Formula_PaperColumnFactory::make($ff, $xfj)];
+            }
         } else if ($ff && $want_error) {
             $user->conf->xt_factory_error($ff->error_html());
         }
@@ -210,8 +213,9 @@ class Formula_PaperColumnFactory {
         $cs = ["(<formula>)"];
         $vsbound = $user->permissive_view_score_bound();
         foreach ($user->conf->named_formulas() as $f) {
-            if ($f->view_score($user) > $vsbound)
+            if ($f->view_score($user) > $vsbound) {
                 $cs[] = preg_match('/\A[-A-Za-z_0-9:]+\z/', $f->name) ? $f->name : "\"{$f->name}\"";
+            }
         }
         return $cs;
     }

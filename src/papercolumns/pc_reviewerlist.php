@@ -34,9 +34,6 @@ class ReviewerList_PaperColumn extends PaperColumn {
         }
         return true;
     }
-    function header(PaperList $pl, $is_text) {
-        return "Reviewers";
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_review_identity($row, null);
     }

@@ -11,9 +11,6 @@ class Timestamp_PaperColumn extends PaperColumn {
         $bt = max($b->timeFinalSubmitted, $b->timeSubmitted, 0);
         return $at > $bt ? -1 : ($at == $bt ? 0 : 1);
     }
-    function header(PaperList $pl, $is_text) {
-        return "Timestamp";
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return max($row->timeFinalSubmitted, $row->timeSubmitted) <= 0;
     }

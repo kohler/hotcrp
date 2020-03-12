@@ -19,9 +19,6 @@ class Topics_PaperColumn extends PaperColumn {
             $this->interest_contact = null;
         return true;
     }
-    function header(PaperList $pl, $is_text) {
-        return "Topics";
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !isset($row->topicIds) || $row->topicIds == "";
     }
