@@ -1327,7 +1327,7 @@ class Formula implements Abbreviator {
                     . $space . '<span class="is-error">' . $arrow . "</span>\n"
                     . $space . '<span class="text-default">' . $e[2] . "</span>\n";
             }
-            return "Formula error:<pre>" . join("", $x) . "</pre>";
+            return "<pre>" . join("", $x) . "</pre>";
         }
     }
 
@@ -2081,7 +2081,7 @@ class Formula implements Abbreviator {
         if ($this->check($this->user ? : $user)) {
             return $this->_parse->view_score($user);
         } else {
-            return VIEWSCORE_EMPTY;
+            return VIEWSCORE_PC;
         }
     }
 

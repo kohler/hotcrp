@@ -9,7 +9,7 @@ html {
 *, *:before, *:after {
 	box-sizing: inherit;
 }
-p {
+p, pre {
 	margin-top: 0;
 }
 table, tr, td, th {

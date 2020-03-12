@@ -116,10 +116,10 @@ class FormulaGraph extends MessageSet {
         }
 
         if ($fx->error_html()) {
-            $this->error_at("fx", "X axis formula: " . $fx->error_html());
+            $this->error_at("fx", "X axis formula error: " . $fx->error_html());
         }
         if ($this->fy->error_html()) {
-            $this->error_at("fy", "Y axis formula: " . $this->fy->error_html());
+            $this->error_at("fy", "Y axis formula error: " . $this->fy->error_html());
         } else if (($this->type & self::BARCHART) && !$this->fy->support_combiner()) {
             $this->error_at("fy", "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.");
             $this->fy = new Formula("sum(0)", true);
@@ -187,7 +187,7 @@ class FormulaGraph extends MessageSet {
             $fxorder = new Formula($xorder, true);
             $fxorder->check($this->user);
             if ($fxorder->error_html()) {
-                $this->error_at("xorder", "X order formula: " . $fxorder->error_html());
+                $this->error_at("xorder", "X order formula error: " . $fxorder->error_html());
             } else if (!$fxorder->support_combiner()) {
                 $this->error_at("xorder", "X order formula “" . htmlspecialchars($xorder) . "” is unsuitable, use an aggregate function.");
             } else {

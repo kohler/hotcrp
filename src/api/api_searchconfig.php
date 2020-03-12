@@ -51,6 +51,9 @@ class SearchConfig_API {
             if ($user->can_edit_formula($f)) {
                 $fj["editable"] = true;
             }
+            if (!$f->check()) {
+                $fj["error_html"] = $f->error_html();
+            }
             $fjs[] = $fj;
         }
         return new JsonResult(["ok" => true, "formulas" => $fjs]);
@@ -142,7 +145,7 @@ class SearchConfig_API {
                     array_push($qv, $name, $expr, $Now, $fdef->formulaId);
                 }
             } else {
-                $msgset->error_at("formulaexpression_$fidx", $pfx . $f->error_html());
+                $msgset->error_at("formulaexpression_$fidx", $pfx . "Formula error: " . $f->error_html());
             }
         }
 

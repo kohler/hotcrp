@@ -19,7 +19,7 @@ class Formula_SearchTerm extends SearchTerm {
             $formula = new Formula($word, $is_graph);
         }
         if (!$formula->check($srch->user)) {
-            $srch->warn($formula->error_html());
+            $srch->warn("Formula error: " . $formula->error_html());
             $formula = null;
         }
         return $formula;
