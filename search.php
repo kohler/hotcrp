@@ -14,10 +14,24 @@ if (isset($Qreq->default) && $Qreq->defaultact) {
 assert(!$Qreq->ajax);
 
 
-// paper group
+// search canonicalization
+if ((isset($Qreq->qa) || isset($Qreq->qo) || isset($Qreq->qx)) && !isset($Qreq->q)) {
+    $Qreq->q = PaperSearch::canonical_query((string) $Qreq->qa, $Qreq->qo, $Qreq->qx, $Qreq->qt, $Conf);
+} else {
+    unset($Qreq->qa, $Qreq->qo, $Qreq->qx);
+}
 if (isset($Qreq->t) && !isset($Qreq->q)) {
     $Qreq->q = "";
 }
+if (isset($Qreq->q)) {
+    $Qreq->q = trim($Qreq->q);
+    if ($Qreq->q === "(All)") {
+        $Qreq->q = "";
+    }
+}
+
+
+// paper group
 $Qreq->t = PaperSearch::canonical_search_type(trim((string) $Qreq->t));
 $tOpt = PaperSearch::search_types($Me, $Qreq->t);
 if (empty($tOpt)) {
@@ -30,19 +44,6 @@ if ($Qreq->t !== "" && !isset($tOpt[$Qreq->t])) {
 }
 if (!isset($tOpt[$Qreq->t])) {
     $Qreq->t = key($tOpt);
-}
-
-// search canonicalization
-if (isset($Qreq->q)) {
-    $Qreq->q = trim($Qreq->q);
-}
-if (isset($Qreq->q) && $Qreq->q === "(All)") {
-    $Qreq->q = "";
-}
-if ((isset($Qreq->qa) || isset($Qreq->qo) || isset($Qreq->qx)) && !isset($Qreq->q)) {
-    $Qreq->q = PaperSearch::canonical_query((string) $Qreq->qa, $Qreq->qo, $Qreq->qx, $Qreq->qt, $Conf);
-} else {
-    unset($Qreq->qa, $Qreq->qo, $Qreq->qx);
 }
 
 
