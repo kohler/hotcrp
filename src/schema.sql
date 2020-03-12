@@ -124,8 +124,6 @@ DROP TABLE IF EXISTS `Formula`;
 CREATE TABLE `Formula` (
   `formulaId` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL,
-  `heading` varchar(200) NOT NULL DEFAULT '',
-  `headingTitle` varbinary(4096) NOT NULL,
   `expression` varbinary(4096) NOT NULL,
   `createdBy` int(11) NOT NULL DEFAULT '0',
   `timeModified` bigint(11) NOT NULL DEFAULT '0',
@@ -514,7 +512,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 228);
+insert into Settings (name, value) values ('allowPaperOption', 229);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

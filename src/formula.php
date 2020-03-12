@@ -1131,8 +1131,6 @@ class Formula implements Abbreviator {
     public $user;
     public $formulaId;
     public $name;
-    public $heading = "";
-    public $headingTitle = "";
     public $expression;
     public $allowReview = false;
     private $needsReview = false;
@@ -2083,7 +2081,7 @@ class Formula implements Abbreviator {
     }
 
     function column_header() {
-        return $this->heading ? : ($this->name ? : $this->expression);
+        return $this->name ? : $this->expression;
     }
 
     function is_indexed() {

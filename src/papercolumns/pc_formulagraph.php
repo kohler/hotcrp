@@ -38,12 +38,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
     function header(PaperList $pl, $is_text) {
         $x = $this->formula->column_header();
-        if ($is_text)
-            return $x;
-        else if ($this->formula->headingTitle && $this->formula->headingTitle != $x)
-            return "<span class=\"need-tooltip\" data-tooltip=\"" . htmlspecialchars($this->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
-        else
-            return htmlspecialchars($x);
+        return $is_text ? $x : htmlspecialchars($x);
     }
 
     static function expand($name, $user, $xfj, $m) {

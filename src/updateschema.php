@@ -1661,8 +1661,13 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->update_schema_version(227);
     }
     if ($conf->sversion == 227
-        &&  update_schema_add_comment_tag_values($conf)) {
+        && update_schema_add_comment_tag_values($conf)) {
         $conf->update_schema_version(228);
+    }
+    if ($conf->sversion == 228
+        && $conf->ql("alter table Formula drop column `heading`")
+        && $conf->ql("alter table Formula drop column `headingTitle`")) {
+        $conf->update_schema_version(229);
     }
 
     $conf->ql("delete from Settings where name='__schema_lock'");

@@ -124,7 +124,7 @@ class SearchConfig_API {
                 if ($exprViewScore <= $user->permissive_view_score_bound()) {
                     $msgset->error_at("formulaexpression_$fidx", "{$pfx}The expression “" . htmlspecialchars($expr) . "” refers to properties that you aren’t allowed to view. Please define a different expression.");
                 } else if (!$fdef) {
-                    $q[] = "insert into Formula set name=?, heading='', headingTitle='', expression=?, createdBy=?, timeModified=?";
+                    $q[] = "insert into Formula set name=?, expression=?, createdBy=?, timeModified=?";
                     array_push($qv, $name, $expr, ($user->privChair ? -1 : 1) * $user->contactId, $Now);
                     $q[] = "insert into Settings set name='formulas', value=1 on duplicate key update value=1";
                 } else if ($name !== $fdef->name || $expr !== $fdef->expression) {
