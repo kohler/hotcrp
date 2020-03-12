@@ -852,6 +852,10 @@ class PaperOption implements Abbreviator {
         return !$this->_editable_search || $this->_editable_search->test($prow);
     }
 
+    function test_required(PaperInfo $prow) {
+        return $this->required && $this->test_exists($prow);
+    }
+
     function has_selector() {
         return false;
     }
@@ -894,9 +898,8 @@ class PaperOption implements Abbreviator {
         }
     }
     function value_messages(PaperValue $ov, MessageSet $ms) {
-        if ($this->required
-            && !$this->value_present($ov)
-            && $this->test_exists($ov->prow)) {
+        if ($this->test_required($ov->prow)
+            && !$this->value_present($ov)) {
             $ms->error_at($this->field_key(), "Entry required.");
         }
     }
@@ -1160,10 +1163,12 @@ class SelectorPaperOption extends PaperOption {
     function selector_abbrev_matcher() {
         if (!$this->_selector_am) {
             $this->_selector_am = new AbbreviationMatcher;
-            foreach ($this->selector as $id => $name)
+            foreach ($this->selector as $id => $name) {
                 $this->_selector_am->add($name, $id + 1);
-            if (!$this->required)
+            }
+            if (!$this->required) {
                 $this->_selector_am->add("none", 0);
+            }
         }
         return $this->_selector_am;
     }

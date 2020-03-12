@@ -476,7 +476,7 @@ class PaperInfo {
             $f["submission"] = true;
         }
         foreach ($this->conf->paper_opts->option_list() as $o) {
-            if ($o->required
+            if ($o->test_required($this)
                 && (!$user || $user->can_view_option($this, $o))
                 && !$o->value_present($this->force_option($o))) {
                 $f[$o->json_key()] = true;
