@@ -80,7 +80,7 @@ class FormulaGraph extends MessageSet {
         $this->fy->check($this->user);
         if (!$this->type) {
             $this->type = self::SCATTER;
-            if (!$this->fy->datatypes() && $this->fy->can_combine())
+            if (!$this->fy->datatypes() && $this->fy->support_combiner())
                 $this->type = self::BARCHART;
         }
 
@@ -120,7 +120,7 @@ class FormulaGraph extends MessageSet {
         }
         if ($this->fy->error_html()) {
             $this->error_at("fy", "Y axis formula: " . $this->fy->error_html());
-        } else if (($this->type & self::BARCHART) && !$this->fy->can_combine()) {
+        } else if (($this->type & self::BARCHART) && !$this->fy->support_combiner()) {
             $this->error_at("fy", "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.");
             $this->fy = new Formula("sum(0)", true);
             $this->fy->check($this->user);
@@ -188,7 +188,7 @@ class FormulaGraph extends MessageSet {
             $fxorder->check($this->user);
             if ($fxorder->error_html()) {
                 $this->error_at("xorder", "X order formula: " . $fxorder->error_html());
-            } else if (!$fxorder->can_combine()) {
+            } else if (!$fxorder->support_combiner()) {
                 $this->error_at("xorder", "X order formula “" . htmlspecialchars($xorder) . "” is unsuitable, use an aggregate function.");
             } else {
                 $this->fxorder = $fxorder;
@@ -367,7 +367,8 @@ class FormulaGraph extends MessageSet {
         }
         $orderf = $order_data = null;
         if ($this->fxorder) {
-            list($orderf, $ordercf) = $this->fxorder->compile_combine_functions();
+            $orderf = $this->fxorder->compile_extractor_function();
+            $ordercf = $this->fxorder->compile_combiner_function();
             $order_data = [];
         }
 
@@ -435,7 +436,8 @@ class FormulaGraph extends MessageSet {
         }
 
         $fxf = $this->fx->compile_json_function();
-        list($fytrack, $fycombine) = $this->fy->compile_combine_functions();
+        $fytrack = $this->fy->compile_extractor_function();
+        $fycombine = $this->fy->compile_combiner_function();
         $reviewf = null;
         if ($this->fx->is_indexed() || $this->fy->datatypes()) {
             $reviewf = Formula::compile_indexes_function($this->user, ($this->fx->is_indexed() ? $this->fx->datatypes() : 0) | $this->fy->datatypes());

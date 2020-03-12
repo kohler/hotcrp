@@ -2,7 +2,7 @@
 // formulas/f_decision.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
-class Decision_Fexpr extends Sub_Fexpr {
+class Decision_Fexpr extends Fexpr {
     function __construct() {
         $this->format_ = self::FDECISION;
     }

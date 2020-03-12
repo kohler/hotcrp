@@ -2,7 +2,7 @@
 // formulas/f_reviewround.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
-class ReviewRound_Fexpr extends Sub_Fexpr {
+class ReviewRound_Fexpr extends Fexpr {
     function __construct() {
         $this->format_ = self::FROUND;
     }

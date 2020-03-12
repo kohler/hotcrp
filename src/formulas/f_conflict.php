@@ -2,7 +2,7 @@
 // formulas/f_conflict.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
-class Conflict_Fexpr extends Sub_Fexpr {
+class Conflict_Fexpr extends Fexpr {
     private $ispc;
     function __construct($ispc) {
         $this->ispc = is_object($ispc) ? $ispc->kwdef->is_pc : $ispc;

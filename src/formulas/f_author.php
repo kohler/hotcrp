@@ -2,7 +2,7 @@
 // formulas/f_author.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
-class Author_Fexpr extends Sub_Fexpr {
+class Author_Fexpr extends Fexpr {
     private $matchtype;
     private $matchidx;
     static private $matchers = [];

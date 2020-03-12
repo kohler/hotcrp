@@ -2,7 +2,7 @@
 // formulas/f_topic.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
-class Topic_Fexpr extends Sub_Fexpr {
+class Topic_Fexpr extends Fexpr {
     private $match;
     function __construct(FormulaCall $ff, Formula $formula) {
         if ($ff->modifier === false || $ff->modifier === true)

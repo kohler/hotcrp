@@ -151,14 +151,6 @@ class Fexpr implements JsonSerializable {
         return "($t !== null ? (bool) $t : null)";
     }
 
-    function can_combine() {
-        foreach ($this->args as $e) {
-            if (!$e->can_combine())
-                return false;
-        }
-        return true;
-    }
-
     function matches_at_most_once() {
         return false;
     }
@@ -168,10 +160,8 @@ class Fexpr implements JsonSerializable {
         return "null";
     }
 
-    function compile_fragments(FormulaCompiler $state) {
-        foreach ($this->args as $e) {
-            $e->compile_fragments($state);
-        }
+    function compile_extractor(FormulaCompiler $state) {
+        return false;
     }
 
     function compiled_comparator($cmp, Conf $conf, $other_expr = null) {
@@ -764,47 +754,34 @@ class AggregateFexpr extends Fexpr {
             return $state->_compile_my($this->args[0]);
         } else if (($li = $this->loop_info($state))) {
             $t = $state->_compile_loop($li[0], $li[1], $this);
-            return get($li, 2) ? str_replace("~x~", $t, $li[2]) : $t;
+            return $li[2] ?? false ? str_replace("~x~", $t, $li[2]) : $t;
         } else {
             return "null";
         }
     }
 
-    function can_combine() {
+    function compile_extractor(FormulaCompiler $state) {
         if ($this->op === "my") {
-            return $this->args[0]->can_combine();
+            return $this->args[0]->compile_extractor($state);
         } else if ($this->op === "quantile") {
-            return $this->args[1]->can_combine();
+            $state->fragments[] = $this->args[0]->compile($state);
+            return $this->args[1]->compile_extractor($state);
         } else {
+            foreach ($this->args as $e) {
+                $state->fragments[] = $e->compile($state);
+            }
             return true;
         }
     }
-
-    function compile_fragments(FormulaCompiler $state) {
-        foreach ($this->args as $i => $e) {
-            if (($i === 0 && $this->op === "my")
-                || ($i === 1 && $this->op === "quantile")) {
-                $e->compile_fragments($state);
-            } else {
-                $state->fragments[] = $e->compile($state);
-            }
-        }
-    }
 }
 
-class Sub_Fexpr extends Fexpr {
-    function can_combine() {
-        return false;
-    }
-}
-
-class Pid_Fexpr extends Sub_Fexpr {
+class Pid_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         return '$prow->paperId';
     }
 }
 
-class Score_Fexpr extends Sub_Fexpr {
+class Score_Fexpr extends Fexpr {
     private $field;
     function __construct(ReviewField $field) {
         parent::__construct("rf");
@@ -830,7 +807,7 @@ class Score_Fexpr extends Sub_Fexpr {
     }
 }
 
-class Review_Fexpr extends Sub_Fexpr {
+class Review_Fexpr extends Fexpr {
     function view_score(Contact $user) {
         if (!$user->conf->setting("rev_blind")) {
             return VIEWSCORE_AUTHOR;
@@ -1171,6 +1148,8 @@ class Formula implements Abbreviator {
     private $_recursion = 0;
     private $_depth = 0;
     private $_macro;
+    private $_extractorf;
+    private $_extractor_nfragments;
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
@@ -1863,7 +1842,7 @@ class Formula implements Abbreviator {
 
 
     private static function compile_body($user, FormulaCompiler $state, $expr,
-                                         $sortable = 0) {
+                                         $sortable) {
         $t = "";
         if ($user) {
             $t .= "assert(\$contact->contactId == $user->contactId);\n  ";
@@ -1922,30 +1901,46 @@ class Formula implements Abbreviator {
         return eval("return function ($args) {\n  $t};");
     }
 
-    function compile_combine_functions() {
-        $this->check();
-        $state = new FormulaCompiler($this->user);
-        $this->_parse && $this->_parse->compile_fragments($state);
-        $t = self::compile_body($this->user, $state, null);
-        if (count($state->fragments) == 1) {
-            $t .= "  return " . $state->fragments[0] . ";\n";
-        } else {
-            $t .= "  return [" . join(", ", $state->fragments) . "];\n";
+    function support_combiner() {
+        if ($this->_extractorf === null) {
+            $this->check();
+            $state = new FormulaCompiler($this->user);
+            if ($this->_parse && $this->_parse->compile_extractor($state)) {
+                $t = self::compile_body($this->user, $state, null, 0);
+                if (count($state->fragments) === 1) {
+                    $t .= "  return " . $state->fragments[0] . ";\n";
+                } else {
+                    $t .= "  return [" . join(",", $state->fragments) . "];\n";
+                }
+                $this->_extractorf = $t;
+                $this->_extractor_nfragments = count($state->fragments);
+            } else {
+                $this->_extractorf = false;
+            }
         }
+        return $this->_extractorf !== false;
+    }
+
+    function compile_extractor_function() {
+        $this->support_combiner();
+        $t = $this->_extractorf ? : "  return null;\n";
         $args = '$prow, $rrow_cid, $contact';
-        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n");
-        $outf = eval("return function ($args) {\n  $t};");
+        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // extractor " . simplify_whitespace($this->expression) . "\n  $t}\n");
+        return eval("return function ($args) {\n  $t};");
+    }
 
-        // regroup function
-        $state->clear();
-        $state->combining = 0;
-        $expr = $this->_parse ? $this->_parse->compile($state) : "0";
-        $t = self::compile_body(null, $state, $expr);
+    function compile_combiner_function() {
+        if ($this->support_combiner()) {
+            $state = new FormulaCompiler($this->user);
+            $state->combining = 0;
+            $state->fragments = array_fill(0, $this->_extractor_nfragments, "0");
+            $t = self::compile_body(null, $state, $this->_parse->compile($state), 0);
+        } else {
+            $t = "return null;\n";
+        }
         $args = '$groups';
-        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n");
-        $inf = eval("return function ($args) {\n  $t};");
-
-        return [$outf, $inf];
+        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combiner " . simplify_whitespace($this->expression) . "\n  $t}\n");
+        return eval("return function ($args) {\n  $t};");
     }
 
 /*    function _unparse_iso_duration($x) {
@@ -2113,9 +2108,6 @@ class Formula implements Abbreviator {
         }
     }
 
-    function can_combine() {
-        return $this->check() && $this->_parse->can_combine();
-    }
 
     function is_sum() {
         return $this->check() && $this->_parse->op === "sum";

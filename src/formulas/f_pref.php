@@ -2,7 +2,7 @@
 // formulas/f_pref.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
-class Pref_Fexpr extends Sub_Fexpr {
+class Pref_Fexpr extends Fexpr {
     private $isexpertise;
     private $cids;
     function __construct($ff) {

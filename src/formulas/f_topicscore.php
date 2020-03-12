@@ -2,7 +2,7 @@
 // formulas/f_topicscore.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
-class TopicScore_Fexpr extends Sub_Fexpr {
+class TopicScore_Fexpr extends Fexpr {
     function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }

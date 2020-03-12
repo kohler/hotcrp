@@ -113,7 +113,6 @@ class SiteLoader {
         "SearchTerm" => "src/papersearch.php",
         "SearchWord" => "src/papersearch.php",
         "SettingParser" => "src/settingvalues.php",
-        "SubFexpr" => "src/formula.php",
         "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",
         "TagMap" => "lib/tagger.php",

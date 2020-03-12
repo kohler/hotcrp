@@ -2,7 +2,7 @@
 // formulas/f_option.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
-class Option_Fexpr extends Sub_Fexpr {
+class Option_Fexpr extends Fexpr {
     private $option;
     function __construct(PaperOption $option) {
         $this->option = $this->format_ = $option;
