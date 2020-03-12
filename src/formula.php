@@ -1386,9 +1386,11 @@ class Formula implements Abbreviator {
             while (true) {
                 $t = substr($t, 1);
                 $e = $this->_parse_ternary($t, false);
-                $ff->args[] = $e;
+                if ($e) {
+                    $ff->args[] = $e;
+                }
                 $t = ltrim($t);
-                while ($t !== "" && $t[0] !== ")" && $t[0] !== ",") {
+                while ($t !== "" && $t[0] !== ")" && (!$e || $t[0] !== ",")) {
                     if (!$warned) {
                         $this->lerror(-strlen($t), -strlen($t), "Expected “,” or “)”.");
                         $warned = true;
@@ -1714,7 +1716,7 @@ class Formula implements Abbreviator {
             if (($quoted = $field[0] === "\"")) {
                 $field = substr($field, 1, strlen($field) - 2);
             }
-            while (1) {
+            while (true) {
                 if ($quoted || strlen($field) > 1) {
                     $fs = $this->conf->find_all_fields($field);
                 } else {
