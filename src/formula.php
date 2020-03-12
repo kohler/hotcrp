@@ -1393,7 +1393,7 @@ class Formula implements Abbreviator {
                         $this->lerror(-strlen($t), -strlen($t), "Expected “,” or “)”.");
                         $warned = true;
                     }
-                    $t = substr($t, SearchSplitter::span_balanced_parens($t));
+                    $t = substr(ltrim($t), SearchSplitter::span_balanced_parens($t));
                 }
                 if ($t === "") {
                     $this->lerror(-strlen($t), -strlen($t), "Missing close parenthesis.");

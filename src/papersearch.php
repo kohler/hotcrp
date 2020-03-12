@@ -2015,18 +2015,20 @@ class PaperSearch {
 
         $qt = [];
         $sword = new SearchWord($word);
-        if ($keyword)
+        if ($keyword) {
             $this->_search_keyword($qt, $sword, $keyword, true);
-        else {
+        } else {
             // Special-case unquoted "*", "ANY", "ALL", "NONE", "".
             if ($word === "*" || $word === "ANY" || $word === "ALL"
-                || $word === "")
+                || $word === "") {
                 return new True_SearchTerm;
-            else if ($word === "NONE")
+            } else if ($word === "NONE") {
                 return new False_SearchTerm;
+            }
             // Otherwise check known keywords.
-            foreach ($this->_qt_fields as $kw)
+            foreach ($this->_qt_fields as $kw) {
                 $this->_search_keyword($qt, $sword, $kw, false);
+            }
         }
         return SearchTerm::make_op("or", $qt);
     }
