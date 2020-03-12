@@ -14,7 +14,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     function prepare(PaperList $pl, $visible) {
         if (!$this->formula->check($pl->user)
             || !($this->formula->result_format() instanceof ReviewField)
-            || !$pl->user->can_view_formula($this->formula, $pl->search->limit_author()))
+            || !$pl->user->can_view_formula($this->formula))
             return false;
         $this->format_field = $this->formula->result_format();
         $this->formula_function = $this->formula->compile_sortable_function();

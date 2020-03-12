@@ -3579,9 +3579,8 @@ class Contact {
         return $this->can_administer(null);
     }
 
-    function can_view_formula(Formula $formula, $as_author = false) {
-        $bound = $this->permissive_view_score_bound($as_author);
-        return $formula->view_score($this) > $bound;
+    function can_view_formula(Formula $formula) {
+        return $formula->view_score($this) > $this->permissive_view_score_bound();
     }
 
     function can_edit_formula(Formula $formula) {

@@ -312,7 +312,7 @@ if ($pl_text) {
     }
 
     // Formulas group
-    $named_formulas = $Conf->viewable_named_formulas($Me, $Qreq->t == "a");
+    $named_formulas = $Conf->viewable_named_formulas($Me);
     foreach ($named_formulas as $formula) {
         $display_options->checkbox_item(40, "formula:" . $formula->abbreviation(), htmlspecialchars($formula->name));
     }

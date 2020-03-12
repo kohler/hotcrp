@@ -5,19 +5,23 @@
 class SearchConfig_API {
     static function viewoptions(Contact $user, Qrequest $qreq) {
         $report = get($qreq, "report", "pl");
-        if ($report !== "pl" && $report !== "pf")
+        if ($report !== "pl" && $report !== "pf") {
             return new JsonResult(400, "Bad request.");
+        }
         if ($qreq->method() !== "GET" && $user->privChair) {
-            if (!isset($qreq->display))
+            if (!isset($qreq->display)) {
                 return new JsonResult(400, "Bad request.");
+            }
             $base_display = "";
-            if ($report === "pl")
+            if ($report === "pl") {
                 $base_display = $user->conf->review_form()->default_display();
+            }
             $display = simplify_whitespace($qreq->display);
-            if ($display === $base_display)
+            if ($display === $base_display) {
                 $user->conf->save_setting("{$report}display_default", null);
-            else
+            } else {
                 $user->conf->save_setting("{$report}display_default", 1, $display);
+            }
             $user->save_session("{$report}display", null);
         }
 
@@ -42,10 +46,11 @@ class SearchConfig_API {
 
     static function namedformula(Contact $user, Qrequest $qreq) {
         $fjs = [];
-        foreach ($user->conf->viewable_named_formulas($user, $qreq->t === "a") as $f) {
+        foreach ($user->conf->viewable_named_formulas($user) as $f) {
             $fj = ["name" => $f->name, "expression" => $f->expression, "id" => $f->formulaId];
-            if ($user->can_edit_formula($f))
+            if ($user->can_edit_formula($f)) {
                 $fj["editable"] = true;
+            }
             $fjs[] = $fj;
         }
         return new JsonResult(["ok" => true, "formulas" => $fjs]);
@@ -54,20 +59,23 @@ class SearchConfig_API {
     static function save_namedformula(Contact $user, Qrequest $qreq) {
         global $Now;
         $formula_by_id = [];
-        foreach ($user->conf->named_formulas() as $f)
+        foreach ($user->conf->named_formulas() as $f) {
             $formula_by_id[$f->formulaId] = $f;
+        }
 
         $ids_used = [];
         for ($fidx = 1; isset($qreq["formulaid_$fidx"]); ++$fidx) {
             $id = $qreq["formulaid_$fidx"];
-            if ($id !== "new" && isset($formula_by_id[$id]))
+            if ($id !== "new" && isset($formula_by_id[$id])) {
                 $ids_used[$id] = true;
+            }
         }
 
         $lnames_used = [];
         foreach ($user->conf->named_formulas() as $f) {
-            if (!isset($ids_used[$f->formulaId]))
+            if (!isset($ids_used[$f->formulaId])) {
                 $lnames_used[strtolower($f->name)] = true;
+            }
         }
 
         $q = $qv = [];
@@ -81,8 +89,9 @@ class SearchConfig_API {
             $pfx = $name === "" ? "" : htmlspecialchars($name) . ": ";
 
             if ($id === "new") {
-                if (($name === "" && $expr === "") || $deleted)
+                if (($name === "" && $expr === "") || $deleted) {
                     continue;
+                }
                 $fdef = null;
             } else if (($fdef = $formula_by_id[$id])) {
                 if (!$user->can_edit_formula($fdef)
@@ -112,8 +121,9 @@ class SearchConfig_API {
                 $msgset->error_at("formulaname_$fidx", "{$pfx}Characters like “" . htmlspecialchars(join("", $m[0])) . "” cannot be used in formula names. Please pick another name.");
             } else if (isset($lnames_used[$lname])) {
                 $msgset->error_at("formulaname_$fidx", "{$pfx}Formula names must be distinct.");
-                if ($lnames_used[$lname] !== true)
+                if ($lnames_used[$lname] !== true) {
                     $msgset->error_at("formulaname_$fidx", null);
+                }
             } else {
                 $lnames_used[$lname] = $fidx;
             }
