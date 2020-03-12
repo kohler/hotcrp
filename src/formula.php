@@ -733,8 +733,9 @@ class AggregateFexpr extends Fexpr {
                 $q = "0.5";
             } else {
                 $q = $state->_addltemp($this->args[1]->compile($state));
-                if ($this->compiled_comparator("<", $state->conf) === ">")
+                if ($this->compiled_comparator("<", $state->conf) === ">") {
                     $q = "1 - $q";
+                }
             }
             return ["[]", "if (~l~ !== null)\n  array_push(~r~, ~l~);",
                     "AggregateFexpr::quantile(~x~, $q)"];
@@ -1077,8 +1078,9 @@ class FormulaCompiler {
         foreach (array_unique($m[1]) as $i) {
             if ($this->combining !== null) {
                 $t = "\$v{$p}";
-                if (count($this->fragments) != 1)
+                if (count($this->fragments) !== 1) {
                     $t .= "[{$this->combining}]";
+                }
                 ++$this->combining;
             } else {
                 $t = $this->_addltemp($e->args[(int) $i]->compile($this));
@@ -1863,8 +1865,9 @@ class Formula implements Abbreviator {
     private static function compile_body($user, FormulaCompiler $state, $expr,
                                          $sortable = 0) {
         $t = "";
-        if ($user)
+        if ($user) {
             $t .= "assert(\$contact->contactId == $user->contactId);\n  ";
+        }
         $t .= $state->statement_text();
         if ($expr !== null) {
             if ($sortable & 3) {
@@ -1888,7 +1891,7 @@ class Formula implements Abbreviator {
             $expr = $this->_parse->compile($state);
             $t = self::compile_body($this->user, $state, $expr, $sortable);
         } else {
-            $t = "return 0;";
+            $t = "return null;";
         }
 
         $args = '$prow, $rrow_cid, $contact';

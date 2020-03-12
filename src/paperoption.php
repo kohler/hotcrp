@@ -596,83 +596,91 @@ class PaperOption implements Abbreviator {
         if ($this->name === null) {
             $this->name = "<Unknown-{$this->id}>";
         }
-        $this->title = get($args, "title");
+        $this->title = $args["title"] ?? null;
         if (!$this->title && $this->id > 0) {
             $this->title = $this->name;
         }
-        $this->type = get($args, "type");
+        $this->type = $args["type"] ?? null;
 
-        $this->_json_key = get($args, "json_key");
-        $this->_search_keyword = get($args, "search_keyword", $this->_json_key);
+        $this->_json_key = $args["json_key"] ?? null;
+        $this->_search_keyword = $args["search_keyword"] ?? $this->_json_key;
         $this->formid = $this->id > 0 ? "opt{$this->id}" : $this->_json_key;
-        $this->_readable_formid = get($args, "readable_formid", $this->_json_key);
+        $this->_readable_formid = $args["readable_formid"] ?? $this->_json_key;
 
-        $this->description = get($args, "description");
-        $this->description_format = get($args, "description_format");
-        $this->required = !!get($args, "required");
-        $this->final = !!get($args, "final");
-        $this->nonpaper = !!get($args, "nonpaper");
+        $this->description = $args["description"] ?? null;
+        $this->description_format = $args["description_format"] ?? null;
+        $this->required = !!($args["required"] ?? false);
+        $this->final = !!($args["final"] ?? false);
+        $this->nonpaper = !!($args["nonpaper"] ?? false);
 
-        $vis = get($args, "visibility") ? : get($args, "view_type");
-        if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin")
+        $vis = $args["visibility"] ?? $args["view_type"] ?? null;
+        if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin") {
             $vis = "rev";
+        }
         $this->visibility = $vis;
 
-        $disp = get($args, "display");
-        if (get($args, "near_submission"))
+        $disp = $args["display"] ?? null;
+        if ($args["near_submission"] ?? false) {
             $disp = "submission";
-        if (get($args, "highlight"))
+        } else if ($args["highlight"] ?? false) {
             $disp = "prominent";
-        if ($disp === null)
+        } else if ($disp === null) {
             $disp = "topics";
-        if ($disp === false)
+        } else if ($disp === false) {
             $disp = "none";
-        $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
-        if ($this->display === self::DISP_DEFAULT)
+        }
+        $this->display = self::$display_map[$disp] ?? self::DISP_DEFAULT;
+        if ($this->display === self::DISP_DEFAULT) {
             $this->display = $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
+        }
 
-        $p = get($args, "position");
+        $p = $args["position"] ?? null;
         if ((is_int($p) || is_float($p))
-            && ($this->id <= 0 || $p > 0))
+            && ($this->id <= 0 || $p > 0)) {
             $this->position = $p;
-        else
+        } else {
             $this->position = 499;
+        }
 
-        $p = get($args, "form_position");
+        $p = $args["form_position"] ?? null;
         if ($p === null) {
-            if ($this->display === self::DISP_SUBMISSION)
+            if ($this->display === self::DISP_SUBMISSION) {
                 $p = 1100 + $this->position;
-            else if ($this->display === self::DISP_PROMINENT)
+            } else if ($this->display === self::DISP_PROMINENT) {
                 $p = 3100 + $this->position;
-            else
+            } else {
                 $p = 3600 + $this->position;
+            }
         }
         $this->form_position = $p;
 
-        if ($this->display < 0)
+        if ($this->display < 0) {
             $p = false;
-        $this->display_position = get($args, "display_position", $p);
-        $this->display_expand = !!get($args, "display_expand");
-        $this->display_group = get($args, "display_group");
+        }
+        $this->display_position = $args["display_position"] ?? $p;
+        $this->display_expand = !!($args["display_expand"] ?? false);
+        $this->display_group = $args["display_group"] ?? null;
         if ($this->display_group === null
             && $this->display_position >= 3500
             && $this->display_position < 4000) {
             $this->display_group = "topics";
         }
 
-        if (($x = get($args, "display_space")))
+        if (($x = $args["display_space"] ?? null)) {
             $this->display_space = (int) $x;
+        }
 
-        if (array_key_exists("exists_if", $args))
+        if (array_key_exists("exists_if", $args)) {
             $x = $args["exists_if"];
-        else
-            $x = get($args, "edit_condition"); // XXX
+        } else {
+            $x = $args["edit_condition"] ?? null; // XXX
+        }
         if ($x !== null && $x !== true) {
             $this->exists_if = $x;
             $this->_exists_search = new PaperSearch($this->conf->site_contact(), $x === false ? "NONE" : $x);
         }
 
-        if (($x = get($args, "editable_if")) !== null && $x !== true) {
+        if (($x = $args["editable_if"] ?? null) !== null && $x !== true) {
             $this->editable_if = $x;
             $this->_editable_search = new PaperSearch($this->conf->site_contact(), $x === false ? "NONE" : $x);
         }
@@ -702,10 +710,11 @@ class PaperOption implements Abbreviator {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->display_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        if ($ap !== $bp)
+        if ($ap !== $bp) {
             return $ap < $bp ? -1 : 1;
-        else
+        } else {
             return Conf::xt_position_compare($a, $b);
+        }
     }
 
     static function form_compare($a, $b) {
@@ -713,10 +722,11 @@ class PaperOption implements Abbreviator {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->form_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        if ($ap !== $bp)
+        if ($ap !== $bp) {
             return $ap < $bp ? -1 : 1;
-        else
+        } else {
             return Conf::xt_position_compare($a, $b);
+        }
     }
 
     static function make_readable_formid($s) {
@@ -724,10 +734,11 @@ class PaperOption implements Abbreviator {
         if ($s[strlen($s) - 1] === "-") {
             $s = substr($s, 0, -1);
         }
-        if (!preg_match('{\A(?:title|paper|submission|final|authors|blind|contacts|abstract|topics|pcconf|collaborators|submit|paperform|htctl.*|fold.*|pcc\d+|body.*|tracker.*|msg.*|header.*|footer.*|quicklink.*|tla.*|-|)\z}', $s))
+        if (!preg_match('{\A(?:title|paper|submission|final|authors|blind|contacts|abstract|topics|pcconf|collaborators|submit|paperform|htctl.*|fold.*|pcc\d+|body.*|tracker.*|msg.*|header.*|footer.*|quicklink.*|tla.*|-|)\z}', $s)) {
             return $s;
-        else
+        } else {
             return "field-" . $s;
+        }
     }
 
     function fixed() {
@@ -735,12 +746,13 @@ class PaperOption implements Abbreviator {
     }
 
     function title($context = null) {
-        if ($this->title)
+        if ($this->title) {
             return $this->title;
-        else if ($context === null)
+        } else if ($context === null) {
             return $this->conf->_ci("field", $this->formid);
-        else
+        } else {
             return $this->conf->_ci("field", $this->formid, null, $context);
+        }
     }
     function title_html($context = null) {
         return htmlspecialchars($this->title($context));
@@ -753,10 +765,11 @@ class PaperOption implements Abbreviator {
     }
 
     private function abbrev_matcher() {
-        if ($this->nonpaper)
+        if ($this->nonpaper) {
             return $this->conf->paper_opts->nonpaper_abbrev_matcher();
-        else
+        } else {
             return $this->conf->abbrev_matcher();
+        }
     }
     function abbreviations_for($name, $data) {
         assert($this === $data);
@@ -771,8 +784,9 @@ class PaperOption implements Abbreviator {
                 $aclass->type = AbbreviationClass::TYPE_LOWERDASH;
                 $this->_search_keyword = $am->unique_abbreviation($this->name, $this, $aclass);
             }
-            if (!$this->_search_keyword)
+            if (!$this->_search_keyword) {
                 $this->_search_keyword = $this->formid;
+            }
         }
         return $this->_search_keyword;
     }
@@ -902,8 +916,9 @@ class PaperOption implements Abbreviator {
     }
 
     function display_name() {
-        if (!self::$display_rmap)
+        if (!self::$display_rmap) {
             self::$display_rmap = array_flip(self::$display_map);
+        }
         return self::$display_rmap[$this->display];
     }
 
@@ -912,23 +927,31 @@ class PaperOption implements Abbreviator {
                             "name" => $this->name,
                             "type" => $this->type,
                             "position" => (int) $this->position);
-        if ($this->description !== null)
+        if ($this->description !== null) {
             $j->description = $this->description;
-        if ($this->description_format !== null)
+        }
+        if ($this->description_format !== null) {
             $j->description_format = $this->description_format;
-        if ($this->final)
+        }
+        if ($this->final) {
             $j->final = true;
+        }
         $j->display = $this->display_name();
-        if ($this->visibility !== "rev")
+        if ($this->visibility !== "rev") {
             $j->visibility = $this->visibility;
-        if ($this->display_space)
+        }
+        if ($this->display_space) {
             $j->display_space = $this->display_space;
-        if ($this->exists_if !== null)
+        }
+        if ($this->exists_if !== null) {
             $j->exists_if = $this->exists_if;
-        if ($this->editable_if !== null)
+        }
+        if ($this->editable_if !== null) {
             $j->editable_if = $this->editable_if;
-        if ($this->required)
+        }
+        if ($this->required) {
             $j->required = true;
+        }
         return $j;
     }
 
