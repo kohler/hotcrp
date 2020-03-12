@@ -101,9 +101,9 @@ class Preference_PaperColumn extends PaperColumn {
         if ($this->contact === $pl->user || $this->row) {
             return "Preference";
         } else if ($is_text) {
-            return $pl->user->name_text_for($this->contact) . " preference";
+            return $pl->user->reviewer_text_for($this->contact) . " preference";
         } else {
-            return $pl->user->name_html_for($this->contact) . "<br>preference";
+            return $pl->user->reviewer_html_for($this->contact) . "<br>preference";
         }
     }
     function content_empty(PaperList $pl, PaperInfo $row) {

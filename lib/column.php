@@ -4,23 +4,25 @@
 
 class Column {
     public $name;
-    public $className;
     public $title;
+    public $title_html;
+    public $className;
     public $column = false;
     public $row = false;
     public $fold = false;
     public $sort = false;
     public $completion = false;
     public $minimal = false;
-    public $is_visible = false;
-    public $has_content = false;
     public $position;
     public $__subposition;
+    public $is_visible = false;
+    public $has_content = false;
 
     static private $keys = [
-        "name" => true, "className" => true, "title" => true,
-        "column" => true, "row" => true, "fold" => true, "sort" => true,
-        "completion" => true, "minimal" => true, "position" => true
+        "name" => true, "title" => true, "title_html" => true,
+        "className" => true, "column" => true, "row" => true, "fold" => true,
+        "sort" => true, "completion" => true, "minimal" => true,
+        "position" => true
     ];
 
     function __construct($arg) {
@@ -34,10 +36,14 @@ class Column {
         if (isset($arg->options)) {
             $row = null;
             foreach ($arg->options as $k) {
-                if ($k === "row")
+                if ($k === "row") {
                     $row = true;
-                else if ($k === "col" || $k === "column")
+                } else if ($k === "col" || $k === "column") {
                     $row = false;
+                } else if (str_starts_with($k, "title:")) {
+                    $this->title = SearchWord::unquote(substr($k, 6));
+                    $this->title_html = null;
+                }
             }
             if ($row !== null) {
                 $this->row = $row;

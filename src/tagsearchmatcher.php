@@ -6,6 +6,7 @@ class TagSearchMatcher {
     public $user;
     private $_re;
     private $_include_twiddles = false;
+    private $_avoid_regex = false;
     private $_mtype = 0;
     private $_tagpat = [];
     private $_tagregex = [];
@@ -17,6 +18,9 @@ class TagSearchMatcher {
     }
     function set_include_twiddles(bool $on) {
         $this->_include_twiddles = $on;
+    }
+    function set_avoid_regex(bool $on) {
+        $this->_avoid_regex = $on;
     }
     function errors() {
         return $this->_errors ?? [];
@@ -41,13 +45,10 @@ class TagSearchMatcher {
             if (ctype_digit($c)) {
                 $cids = [(int) $c];
             } else {
-                if ($c === "*") {
-                    $c = "pc";
-                }
                 $cids = ContactSearch::make_pc($c, $this->user)->ids;
             }
             if (empty($cids)) {
-                $this->_warnings[] = "#" . htmlspecialchars($tag) . " matches no users.";
+                $this->_errors[] = "#" . htmlspecialchars($tag) . " matches no users.";
                 return false;
             }
             if ($this->user->can_view_some_peruser_tag()) {
@@ -55,16 +56,18 @@ class TagSearchMatcher {
             } else if (in_array($this->user->contactId, $cids)) {
                 $xcids = [$this->user->contactId];
             } else {
-                $this->_warnings[] = "You can’t search other users’ twiddle tags.";
+                $this->_errors[] = "You can’t search other users’ twiddle tags.";
                 return false;
             }
             if (count($xcids) > 1 && !$allow_multiple) {
-                $this->_warnings[] = "Wildcard searches like #" . htmlspecialchars($tag) . " aren’t allowed here.";
+                $this->_errors[] = "Wildcard searches like #" . htmlspecialchars($tag) . " aren’t allowed here.";
                 return false;
             }
-            if (count($xcids) === 1) {
-                $this->add_tag(join("", $xcids) . $checktag);
-            } else if ($c === "pc") {
+            if (count($xcids) === 1 || $this->_avoid_regex) {
+                foreach ($xcids as $xcid) {
+                    $this->add_tag($xcid . $checktag);
+                }
+            } else if ($c === "*") {
                 $this->add_tag_regex(" \\d+" . str_replace("\\*", "\\S*", preg_quote($checktag)) . "#");
             } else {
                 $this->add_tag_regex(" (?:" . join("|", $xcids) . ")" . str_replace("\\*", "\\S*", preg_quote($checktag)) . "#");
@@ -208,6 +211,19 @@ class TagSearchMatcher {
                 }
                 ++$pos;
             }
+        }
+    }
+
+    function expand() {
+        if ($this->_mtype > 0) {
+            return $this->_tagpat;
+        } else if ($this->_mtype === -2) {
+            return [];
+        } else {
+            $t0 = array_map(function ($t) { return " {$t}#"; },
+                            (AllTags_API::run($this->user))["tags"]);
+            $t1 = preg_grep($this->regex(), $t0);
+            return array_map(function ($t) { return substr($t, 1, -1); }, $t1);
         }
     }
 }

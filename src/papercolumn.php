@@ -17,10 +17,6 @@ class PaperColumn extends Column {
 
     function __construct(Conf $conf, $cj) {
         parent::__construct($cj);
-        if (isset($cj->options)
-            && ($g = preg_grep('/^title:/', $cj->options))) {
-            $this->title = SearchWord::unquote(substr($g[0], 6));
-        }
     }
 
     static function make(Conf $conf, $cj) {
@@ -79,7 +75,9 @@ class PaperColumn extends Column {
     }
 
     function header(PaperList $pl, $is_text) {
-        if (isset($this->title)) {
+        if (isset($this->title_html) && !$is_text) {
+            return $this->title_html;
+        } else if (isset($this->title)) {
             return $is_text ? $this->title : htmlspecialchars($this->title);
         } else if ($is_text) {
             return "<" . $this->name . ">";
@@ -550,24 +548,29 @@ class ReviewerType_PaperColumn extends PaperColumn {
     const F_SHEPHERD = 4;
     private function analysis(PaperList $pl, PaperInfo $row) {
         $rrow = $row->review_of_user($this->contact);
-        if ($rrow && (!$this->not_me || $pl->user->can_view_review_identity($row, $rrow)))
+        if ($rrow && (!$this->not_me || $pl->user->can_view_review_identity($row, $rrow))) {
             $ranal = $pl->make_review_analysis($rrow, $row);
-        else
+        } else {
             $ranal = null;
+        }
         if ($ranal
             && !$ranal->rrow->reviewSubmitted
-            && !$ranal->rrow->timeApprovalRequested)
+            && !$ranal->rrow->timeApprovalRequested) {
             $pl->mark_has("need_review");
+        }
         $flags = 0;
         if ($row->conflict_type($this->contact)
-            && (!$this->not_me || $pl->user->can_view_conflicts($row)))
+            && (!$this->not_me || $pl->user->can_view_conflicts($row))) {
             $flags |= self::F_CONFLICT;
+        }
         if ($row->leadContactId == $this->contact->contactId
-            && (!$this->not_me || $pl->user->can_view_lead($row)))
+            && (!$this->not_me || $pl->user->can_view_lead($row))) {
             $flags |= self::F_LEAD;
+        }
         if ($row->shepherdContactId == $this->contact->contactId
-            && (!$this->not_me || $pl->user->can_view_shepherd($row)))
+            && (!$this->not_me || $pl->user->can_view_shepherd($row))) {
             $flags |= self::F_SHEPHERD;
+        }
         return [$ranal, $flags];
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
@@ -576,14 +579,18 @@ class ReviewerType_PaperColumn extends PaperColumn {
             list($ranal, $flags) = $this->analysis($pl, $row);
             if ($ranal && $ranal->rrow->reviewType) {
                 $row->$k = 2 * $ranal->rrow->reviewType;
-                if ($ranal->rrow->reviewSubmitted)
+                if ($ranal->rrow->reviewSubmitted) {
                     $row->$k += 1;
-            } else
+                }
+            } else {
                 $row->$k = ($flags & self::F_CONFLICT ? -2 : 0);
-            if ($flags & self::F_LEAD)
+            }
+            if ($flags & self::F_LEAD) {
                 $row->$k += 30;
-            if ($flags & self::F_SHEPHERD)
+            }
+            if ($flags & self::F_SHEPHERD) {
                 $row->$k += 60;
+            }
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -594,23 +601,26 @@ class ReviewerType_PaperColumn extends PaperColumn {
         if (!$this->not_me || $pl->report_id() === "conflictassign") {
             return "Review";
         } else if ($is_text) {
-            return $pl->user->name_text_for($this->contact) . " review";
+            return $pl->user->reviewer_text_for($this->contact) . " review";
         } else {
-            return $pl->user->name_html_for($this->contact) . "<br>review";
+            return $pl->user->reviewer_html_for($this->contact) . "<br>review";
         }
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($ranal, $flags) = $this->analysis($pl, $row);
         $t = "";
-        if ($ranal)
+        if ($ranal) {
             $t = $ranal->icon_html(true);
-        else if ($flags & self::F_CONFLICT)
+        } else if ($flags & self::F_CONFLICT) {
             $t = review_type_icon(-1);
+        }
         $x = null;
-        if ($flags & self::F_LEAD)
+        if ($flags & self::F_LEAD) {
             $x[] = review_lead_icon();
-        if ($flags & self::F_SHEPHERD)
+        }
+        if ($flags & self::F_SHEPHERD) {
             $x[] = review_shepherd_icon();
+        }
         if ($x || ($ranal && $ranal->round)) {
             $c = ["pl_revtype"];
             $t && ($c[] = "hasrev");
@@ -618,20 +628,25 @@ class ReviewerType_PaperColumn extends PaperColumn {
             $ranal && $ranal->round && ($c[] = "hasround");
             $t && ($x[] = $t);
             return '<div class="' . join(" ", $c) . '">' . join('&nbsp;', $x) . '</div>';
-        } else
+        } else {
             return $t;
+        }
     }
     function text(PaperList $pl, PaperInfo $row) {
         list($ranal, $flags) = $this->analysis($pl, $row);
         $t = null;
-        if ($flags & self::F_LEAD)
+        if ($flags & self::F_LEAD) {
             $t[] = "Lead";
-        if ($flags & self::F_SHEPHERD)
+        }
+        if ($flags & self::F_SHEPHERD) {
             $t[] = "Shepherd";
-        if ($ranal)
+        }
+        if ($ranal) {
             $t[] = $ranal->icon_text();
-        if ($flags & self::F_CONFLICT)
+        }
+        if ($flags & self::F_CONFLICT) {
             $t[] = "Conflict";
+        }
         return $t ? join("; ", $t) : "";
     }
 }
@@ -645,9 +660,9 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
     }
     function header(PaperList $pl, $is_text) {
         if ($is_text) {
-            return $pl->user->name_text_for($this->contact) . " assignment";
+            return $pl->user->reviewer_text_for($this->contact) . " assignment";
         } else {
-            return $pl->user->name_html_for($this->contact) . "<br>assignment";
+            return $pl->user->reviewer_html_for($this->contact) . "<br>assignment";
         }
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
@@ -655,17 +670,20 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $ci = $row->contact_info($this->contact);
-        if ($ci->conflictType >= CONFLICT_AUTHOR)
+        if ($ci->conflictType >= CONFLICT_AUTHOR) {
             return '<span class="author">Author</span>';
-        if ($ci->conflictType > 0)
+        }
+        if ($ci->conflictType > 0) {
             $rt = -1;
-        else
+        } else {
             $rt = min(max($ci->reviewType, 0), REVIEW_META);
+        }
         $pl->need_render = true;
         $t = '<span class="need-assignment-selector';
         if (!$this->contact->can_accept_review_assignment_ignore_conflict($row)
-            && $rt <= 0)
+            && $rt <= 0) {
             $t .= " conflict";
+        }
         return $t . '" data-assignment="' . $this->contact->contactId . ' ' . $rt . '"></span>';
     }
 }
@@ -681,12 +699,15 @@ class TagList_PaperColumn extends PaperColumn {
         $this->editable = true;
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->can_view_tags(null))
+        if (!$pl->user->can_view_tags(null)) {
             return false;
-        if ($visible)
+        }
+        if ($visible) {
             $pl->qopts["tags"] = 1;
-        if ($visible && $this->editable)
+        }
+        if ($visible && $this->editable) {
             $pl->has_editable_tags = true;
+        }
         $pl->need_tag_attr = true;
         return true;
     }
@@ -714,180 +735,6 @@ class TagList_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $pl->tagger->unparse_hashed($row->sorted_viewable_tags($pl->user));
-    }
-}
-
-class Tag_PaperColumn extends PaperColumn {
-    private $is_value;
-    private $dtag;
-    private $ltag;
-    private $ctag;
-    private $editable = false;
-    private $emoji = false;
-    private $editsort;
-    function __construct(Conf $conf, $cj) {
-        parent::__construct($conf, $cj);
-        $this->override = PaperColumn::OVERRIDE_IFEMPTY;
-        $this->dtag = $cj->tag;
-        $this->is_value = get($cj, "tagvalue");
-    }
-    function mark_editable() {
-        $this->editable = true;
-        if ($this->is_value === null) {
-            $this->is_value = true;
-        }
-    }
-    function sorts_my_tag($sorter, Contact $user) {
-        return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->ltag) == 0;
-    }
-    function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->can_view_tags(null)) {
-            return false;
-        }
-        $tagger = new Tagger($pl->user);
-        if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID))) {
-            return false;
-        }
-        $this->ltag = strtolower($ctag);
-        $this->ctag = " {$this->ltag}#";
-        if ($visible) {
-            $pl->qopts["tags"] = 1;
-        }
-        if ($this->ltag[0] == ":"
-            && !$this->is_value
-            && ($dt = $pl->user->conf->tags()->check($this->dtag))
-            && $dt->emoji !== null
-            && count($dt->emoji) === 1) {
-            $this->emoji = $dt->emoji[0];
-        }
-        if ($this->editable && $visible > 0 && ($tid = $pl->table_id())) {
-            $sorter = get($pl->sorters, 0);
-            if ($this->sorts_my_tag($sorter, $pl->user)
-                && !$sorter->reverse
-                && (!$pl->search->thenmap || $pl->search->is_order_anno)
-                && $this->is_value) {
-                $this->editsort = true;
-                $pl->table_attr["data-drag-tag"] = $this->dtag;
-            }
-            $pl->has_editable_tags = true;
-        }
-        $this->className = ($this->editable ? "pl_edit" : "pl_")
-            . ($this->is_value ? "tagval" : "tag");
-        $pl->need_tag_attr = true;
-        return true;
-    }
-    function completion_name() {
-        return "#$this->dtag";
-    }
-    function sort_name(PaperList $pl, ListSorter $sorter = null) {
-        return "#$this->dtag";
-    }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
-        $k = $sorter->uid;
-        $unviewable = $empty = TAG_INDEXBOUND * ($sorter->reverse ? -1 : 1);
-        if ($this->editable) {
-            $empty = (TAG_INDEXBOUND - 1) * ($sorter->reverse ? -1 : 1);
-        }
-        foreach ($rows as $row) {
-            if (!$pl->user->can_view_tag($row, $this->ltag)) {
-                $row->$k = $unviewable;
-            } else if (($row->$k = $row->tag_value($this->ltag)) === false) {
-                $row->$k = $empty;
-            }
-        }
-    }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $k = $sorter->uid;
-        return $a->$k < $b->$k ? -1 : ($a->$k == $b->$k ? 0 : 1);
-    }
-    function header(PaperList $pl, $is_text) {
-        if (($twiddle = strpos($this->dtag, "~")) > 0) {
-            $cid = (int) substr($this->dtag, 0, $twiddle);
-            if ($cid == $pl->user->contactId) {
-                return "#" . substr($this->dtag, $twiddle);
-            } else if (($p = $pl->conf->cached_user_by_id($cid))) {
-                if ($is_text) {
-                    return $pl->user->name_text_for($p) . " #" . substr($this->dtag, $twiddle);
-                } else {
-                    return $pl->user->name_html_for($p) . "<br>#" . substr($this->dtag, $twiddle);
-                }
-            }
-        }
-        return "#$this->dtag";
-    }
-    function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_tag($row, $this->ltag);
-    }
-    function content(PaperList $pl, PaperInfo $row) {
-        $v = $row->tag_value($this->ltag);
-        if ($this->editable
-            && ($t = $this->edit_content($pl, $row, $v))) {
-            return $t;
-        } else if ($v === false) {
-            return "";
-        } else if ($v >= 0.0 && $this->emoji) {
-            return Tagger::unparse_emoji_html($this->emoji, $v);
-        } else if ($v === 0.0 && !$this->is_value) {
-            return "✓";
-        } else {
-            return $v;
-        }
-    }
-    private function edit_content($pl, $row, $v) {
-        if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0))
-            return false;
-        if (!$this->is_value) {
-            return "<input type=\"checkbox\" class=\"uic js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\""
-                . ($v !== false ? ' checked="checked"' : '') . " />";
-        }
-        $t = '<input type="text" class="edittagval';
-        if ($this->editsort) {
-            $t .= " need-draghandle";
-            $pl->need_render = true;
-        }
-        return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
-            . ($v !== false ? htmlspecialchars($v) : "") . '" tabindex="2" />';
-    }
-    function text(PaperList $pl, PaperInfo $row) {
-        if (($v = $row->tag_value($this->ltag)) === false) {
-            return "";
-        } else if ($v === 0.0 && !$this->is_value) {
-            return "Y";
-        } else {
-            return $v;
-        }
-    }
-}
-
-class Tag_PaperColumnFactory {
-    static function expand($name, $user, $xfj, $m) {
-        $tagger = new Tagger($user);
-        $ts = [];
-        if (($twiddle = strpos($m[2], "~")) > 0
-            && !ctype_digit(substr($m[2], 0, $twiddle))) {
-            $utext = substr($m[2], 0, $twiddle);
-            foreach (ContactSearch::make_pc($utext, $user)->ids as $cid) {
-                $ts[] = $cid . substr($m[2], $twiddle);
-            }
-            if (!$ts) {
-                $user->conf->xt_factory_error("No PC member matches “" . htmlspecialchars($utext) . "”.");
-            }
-        } else {
-            $ts[] = $m[2];
-        }
-        $flags = Tagger::NOVALUE | ($user->is_manager() ? Tagger::ALLOWCONTACTID : 0);
-        $rs = [];
-        foreach ($ts as $t) {
-            if ($tagger->check($t, $flags)) {
-                $fj = (array) $xfj;
-                $fj["name"] = $m[1] . $t;
-                $fj["tag"] = $t;
-                $rs[] = (object) $fj;
-            } else {
-                $user->conf->xt_factory_error($tagger->error_html);
-            }
-        }
-        return $rs;
     }
 }
 
@@ -992,9 +839,6 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
                 $scores[$rrow->contactId] = $rrow->$fid;
         return $scores;
     }
-    function header(PaperList $pl, $is_text) {
-        return $is_text ? $this->format_field->search_keyword() : $this->format_field->web_abbreviation();
-    }
     function content_empty(PaperList $pl, PaperInfo $row) {
         // Do not use score_values to determine content emptiness, since
         // that would load the scores from the DB -- even for folded score
@@ -1017,6 +861,8 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
             $cj = (array) $xfj;
             $cj["name"] = $f->search_keyword();
             $cj["review_field_id"] = $f->id;
+            $cj["title"] = $f->search_keyword();
+            $cj["title_html"] = $f->web_abbreviation();
             return (object) $cj;
         }, self::user_visible_fields($name, $user));
     }

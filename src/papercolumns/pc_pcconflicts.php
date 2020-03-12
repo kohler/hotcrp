@@ -30,7 +30,7 @@ class PCConflicts_PaperColumn extends PaperColumn {
         $pcm = $row->conf->pc_members();
         foreach ($row->conflicts() as $id => $type)
             if (($pc = get($pcm, $id)))
-                $y[$pc->sort_position] = $pl->user->name_text_for($pc);
+                $y[$pc->sort_position] = $pl->user->reviewer_text_for($pc);
         ksort($y);
         return join("; ", $y);
     }

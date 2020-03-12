@@ -138,7 +138,7 @@ Assignment methods:
 
 
 if ($reviewer)
-    echo "<h2 style=\"margin-top:1em\">Assignments for ", $Me->name_html_for($reviewer), ($reviewer->affiliation ? " (" . htmlspecialchars($reviewer->affiliation) . ")" : ""), "</h2>\n";
+    echo "<h2 style=\"margin-top:1em\">Assignments for ", $Me->reviewer_html_for($reviewer), ($reviewer->affiliation ? " (" . htmlspecialchars($reviewer->affiliation) . ")" : ""), "</h2>\n";
 else
     echo "<h2 style=\"margin-top:1em\">Assignments by PC member</h2>\n";
 

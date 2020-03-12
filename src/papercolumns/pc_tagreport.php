@@ -38,7 +38,7 @@ class TagReport_PaperColumn extends PaperColumn {
             if ($this->viewtype == 2 && $m[2][$i] <= 0) {
                 continue;
             }
-            $n = $pl->user->name_html_for($m[1][$i]);
+            $n = $pl->user->reviewer_html_for($m[1][$i]);
             if ($this->viewtype != 1) {
                 $n .= " (" . $m[2][$i] . ")";
             }

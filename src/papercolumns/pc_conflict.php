@@ -56,9 +56,9 @@ class Conflict_PaperColumn extends PaperColumn {
             || $pl->report_id() === "conflictassign") {
             return "Conflict";
         } else if ($is_text) {
-            return $pl->user->name_text_for($this->contact) . " conflict";
+            return $pl->user->reviewer_text_for($this->contact) . " conflict";
         } else {
-            return $pl->user->name_html_for($this->contact) . "<br>conflict";
+            return $pl->user->reviewer_html_for($this->contact) . "<br>conflict";
         }
     }
     protected function checked(PaperList $pl, PaperInfo $row) {

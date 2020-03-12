@@ -667,6 +667,38 @@ class TagMap implements IteratorAggregate {
         return $tags;
     }
 
+    const UNPARSE_HASH = 1;
+    const UNPARSE_TEXT = 2;
+    function unparse($tag, $value, Contact $viewer, $flags = 0) {
+        $prefix = "";
+        $suffix = $value ? "#$value" : "";
+        $hash = ($flags & self::UNPARSE_HASH ? "#" : "");
+        if (($twiddle = strpos($tag, "~")) > 0) {
+            if (($cid = substr($tag, 0, $twiddle)) == $viewer->contactId) {
+                $tag = substr($tag, $twiddle);
+            } else if (($p = $viewer->conf->cached_user_by_id($cid))) {
+                if ($flags & self::UNPARSE_TEXT) {
+                    return $hash . $p->email . substr($tag, $twiddle) . $suffix;
+                }
+                if (($cc = $p->viewable_color_classes($viewer))) {
+                    $prefix = $hash . "<span class=\"" . $cc
+                        . " taghh\">" . htmlspecialchars($p->email) . "</span>";
+                    $hash = "";
+                } else {
+                    $hash .= htmlspecialchars($p->email);
+                }
+                $tag = substr($tag, $twiddle);
+            }
+        }
+        if (($flags & self::UNPARSE_TEXT)
+            || !($cc = $this->styles($tag))) {
+            return $prefix . $hash . $tag . $suffix;
+        } else {
+            return $prefix . "<span class=\""  . join(" ", $cc)
+                . " taghh\">" . $hash . $tag . $suffix . "</span>";
+        }
+    }
+
 
     static function make(Conf $conf) {
         $map = new TagMap($conf);

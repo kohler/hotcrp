@@ -15,8 +15,9 @@ class Timestamp_PaperColumn extends PaperColumn {
         return max($row->timeFinalSubmitted, $row->timeSubmitted) <= 0;
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if (($t = max($row->timeFinalSubmitted, $row->timeSubmitted, 0)) > 0)
+        if (($t = max($row->timeFinalSubmitted, $row->timeSubmitted, 0)) > 0) {
             return $row->conf->unparse_time($t);
+        }
         return "";
     }
 }

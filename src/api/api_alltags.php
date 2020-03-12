@@ -5,7 +5,7 @@
 class AllTags_API {
     static function run(Contact $user) {
         if (!$user->isPC) {
-            json_exit(403, "Permission error.");
+            return ["ok" => false, "error" => "Permission error.", "tags" => []];
         } else if ($user->conf->check_track_view_sensitivity()
                    || (!$user->conf->tag_seeall
                        && ($user->privChair
@@ -31,27 +31,27 @@ class AllTags_API {
     }
 
     static private function easy_alltags_api(Contact $user) {
+        $dt = $user->conf->tags();
+        $hidden = false;
         $q = "select distinct tag from PaperTag join Paper using (paperId)";
         $qwhere = ["timeSubmitted>0"];
-        $hidden = false;
         if (!$user->privChair) {
             if (!$user->conf->tag_seeall) {
                 $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$user->contactId})";
                 $qwhere[] = "coalesce(conflictType,0)<=0";
             }
-            $tagmap = $user->conf->tags();
-            $hidden = $tagmap->has_hidden;
+            $hidden = $dt->has_hidden;
         }
         $tags = [];
         $result = $user->conf->qe($q . " where " . join(" and ", $qwhere));
         while ($result && ($row = $result->fetch_row())) {
             if (($tag = self::strip($row[0], $user))
-                && (!$hidden || !$tagmap->is_hidden($tag)))
+                && (!$hidden || !$dt->is_hidden($tag))) {
                 $tags[] = $tag;
+            }
         }
         Dbl::free($result);
-        sort($tags);
-        return ["ok" => true, "tags" => $tags];
+        return ["ok" => true, "tags" => $dt->sort($tags)];
     }
 
     static private function hard_alltags_api(Contact $user) {
@@ -62,12 +62,12 @@ class AllTags_API {
                     $lt = strtolower($ti[0]);
                     if (!isset($tags[$lt])
                         && ($tag = self::strip($ti[0], $user, $prow))
-                        && $user->can_view_tag($prow, $tag))
+                        && $user->can_view_tag($prow, $tag)) {
                         $tags[$lt] = $tag;
+                    }
                 }
             }
         }
-        sort($tags);
-        return ["ok" => true, "tags" => array_values($tags)];
+        return ["ok" => true, "tags" => $user->conf->tags()->sort(array_values($tags))];
     }
 }

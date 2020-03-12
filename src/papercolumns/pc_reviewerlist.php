@@ -62,7 +62,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
         $pref = $pl->user->can_view_preference($row);
         foreach ($row->reviews_by_display($pl->user) as $xrow) {
             if ($pl->user->can_view_review_identity($row, $xrow)) {
-                $t = $pl->user->name_text_for($xrow);
+                $t = $pl->user->reviewer_text_for($xrow);
                 if ($pref) {
                     $pf = $row->preference($xrow->contactId, $this->topics);
                     $t .= " P" . unparse_number_pm_text($pf[0]) . unparse_expertise($pf[1]);

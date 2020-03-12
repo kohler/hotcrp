@@ -30,7 +30,7 @@
         "position": 200
     },
     {
-        "name": "topicscore",
+        "name": "topicscore", "title": "Topic score",
         "column": true, "sort": true, "completion": true, "className": "pl_topicscore", "callback": "+TopicScore_PaperColumn",
         "position": 400
     },
@@ -160,7 +160,7 @@
         "tagvalue": false,
         "column": true, "sort": true, "minimal": true,
         "callback": "+Tag_PaperColumn",
-        "expand_callback": "Tag_PaperColumnFactory::expand",
+        "expand_callback": "Tag_PaperColumn::expand",
         "position": 1400
     },
     {
@@ -168,7 +168,7 @@
         "tagvalue": true,
         "column": true, "sort": true, "minimal": true,
         "callback": "+Tag_PaperColumn",
-        "expand_callback": "Tag_PaperColumnFactory::expand",
+        "expand_callback": "Tag_PaperColumn::expand",
         "position": 1400
     },
     {
@@ -176,7 +176,7 @@
         "tagvalue": null,
         "column": true, "sort": true, "completion": "#<tag>", "minimal": true,
         "callback": "+Tag_PaperColumn",
-        "expand_callback": "Tag_PaperColumnFactory::expand",
+        "expand_callback": "Tag_PaperColumn::expand",
         "position": 1400
     },
     {
