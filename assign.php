@@ -366,6 +366,7 @@ foreach ($requests as $req) {
             $reason = "This reviewer appears to have a conflict with the submission authors.";
         }
         echo '</ul></div>';
+        $reason = $rrow->reason;
     } else {
         echo "Declined request: ", $namex,
             '</div><div class="f-h fx"><ul class="x mb-0">';
