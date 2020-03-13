@@ -1385,29 +1385,34 @@ class Formula implements Abbreviator, JsonSerializable {
             $ff->args[] = $arg;
             return true;
         } else if ($t[0] === "(") {
-            $warned = false;
+            $warned = $comma = false;
             ++$this->_depth;
-            while (true) {
-                $t = substr($t, 1);
+            $t = ltrim(substr($t, 1));
+            while ($t !== "" && $t[0] !== ")") {
+                if ($comma && $t[0] === ",") {
+                    $t = ltrim(substr($t, 1));
+                }
+                $pos1 = -strlen($t);
                 $e = $this->_parse_ternary($t, false);
                 if ($e) {
                     $ff->args[] = $e;
+                } else {
+                    $ff->args[] = Constant_Fexpr::cerror($pos1, -strlen($t));
                 }
                 $t = ltrim($t);
-                while ($t !== "" && $t[0] !== ")" && (!$e || $t[0] !== ",")) {
+                while ($t !== "" && $t[0] !== ")" && $t[0] !== ",") {
                     if (!$warned) {
                         $this->lerror(-strlen($t), -strlen($t), "Expected “,” or “)”.");
                         $warned = true;
                     }
                     $t = substr(ltrim($t), SearchSplitter::span_balanced_parens($t));
                 }
-                if ($t === "") {
-                    $this->lerror(-strlen($t), -strlen($t), "Missing close parenthesis.");
-                    break;
-                } else if ($t[0] === ")") {
-                    $t = substr($t, 1);
-                    break;
-                }
+                $comma = true;
+            }
+            if ($t === "") {
+                $this->lerror(0, 0, "Missing close parenthesis.");
+            } else {
+                $t = substr($t, 1);
             }
             --$this->_depth;
             return true;
