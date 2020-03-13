@@ -1133,7 +1133,7 @@ class FormulaCompiler {
     }
 }
 
-class Formula implements Abbreviator {
+class Formula implements Abbreviator, JsonSerializable {
     public $conf;
     public $user;
     public $formulaId;
@@ -2122,5 +2122,18 @@ class Formula implements Abbreviator {
 
     function datatypes() {
         return $this->check() ? $this->datatypes : 0;
+    }
+
+    function jsonSerialize() {
+        $j = [];
+        if ($this->formulaId) {
+            $j["id"] = $this->formulaId;
+        }
+        if ($this->name) {
+            $j["name"] = $this->name;
+        }
+        $j["expression"] = $this->expression;
+        $j["parse"] = $this->_parse;
+        return $j;
     }
 }
