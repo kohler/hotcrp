@@ -426,11 +426,11 @@ function update_schema_set_review_time_displayed($conf) {
     return true;
 }
 
-function update_schema_add_comment_tag_values($conf) {
+function update_schema_add_comment_tag_values($conf, $response_only) {
     if (!$conf->ql("lock tables PaperComment write")) {
         return false;
     }
-    $result = $conf->ql("select distinct commentTags from PaperComment where commentTags is not null");
+    $result = $conf->ql("select distinct commentTags from PaperComment where commentTags is not null" . ($response_only ? " and commentTags like '%response'" : ""));
     $ok = true;
     while (($row = $result->fetch_row())) {
         $rev = preg_replace('/( [^#\s]+)(?= |\z)/', "\$1#0", $row[0]);
@@ -1661,13 +1661,17 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->update_schema_version(227);
     }
     if ($conf->sversion == 227
-        && update_schema_add_comment_tag_values($conf)) {
+        && update_schema_add_comment_tag_values($conf, 0)) {
         $conf->update_schema_version(228);
     }
     if ($conf->sversion == 228
         && $conf->ql("alter table Formula drop column `heading`")
         && $conf->ql("alter table Formula drop column `headingTitle`")) {
         $conf->update_schema_version(229);
+    }
+    if ($conf->sversion == 229
+        && update_schema_add_comment_tag_values($conf, 1)) {
+        $conf->update_schema_version(230);
     }
 
     $conf->ql("delete from Settings where name='__schema_lock'");

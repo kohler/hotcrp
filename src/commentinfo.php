@@ -540,9 +540,9 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         // tags
         if ($is_response) {
-            $ctags = " response";
+            $ctags = " response#0";
             if ($response_name != "1") {
-                $ctags .= " {$response_name}response";
+                $ctags .= " {$response_name}response#0";
             }
         } else if (get($req, "tags")
                    && preg_match_all(',\S+,', $req->tags, $m)
