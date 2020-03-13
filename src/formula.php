@@ -535,10 +535,14 @@ class Extremum_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $cmp = $this->compiled_comparator($this->op === "greatest" ? ">" : "<", $state->conf);
-        $t1 = $state->_addltemp($this->args[0]->compile($state), true);
-        for ($i = 1; $i < count($this->args); ++$i) {
+        $t1 = "null";
+        for ($i = 0; $i < count($this->args); ++$i) {
             $t2 = $state->_addltemp($this->args[$i]->compile($state));
-            $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 $cmp $t1) ? $t2 : $t1);";
+            if ($i === 0) {
+                $t1 = $t2;
+            } else {
+                $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 $cmp $t1) ? $t2 : $t1);";
+            }
         }
         return $t1;
     }
