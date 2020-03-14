@@ -1350,7 +1350,7 @@ class Formula implements Abbreviator, JsonSerializable {
         $e2 = null;
         if (!$e1) {
         } else if (($t = ltrim($t)) === "" || $t[0] !== ":") {
-            $this->lerror(-strlen($t), -strlen($t), "“:” expected.");
+            $this->lerror(-strlen($t), -strlen($t), "Expected “:”.");
         } else {
             $t = substr($t, 1);
             $e2 = $this->_parse_ternary($t, $in_qc);
@@ -1410,7 +1410,7 @@ class Formula implements Abbreviator, JsonSerializable {
                 $comma = true;
             }
             if ($t === "") {
-                $this->lerror(0, 0, "Missing close parenthesis.");
+                $this->lerror(0, 0, "Missing “)”.");
             } else {
                 $t = substr($t, 1);
             }
@@ -1654,7 +1654,7 @@ class Formula implements Abbreviator, JsonSerializable {
             --$this->_depth;
             $t = ltrim($t);
             if ($t === "" || $t[0] !== ")") {
-                $this->lerror(-strlen($t), -strlen($t), "Expression expected.");
+                $this->lerror(-strlen($t), -strlen($t), "Missing “)”.");
                 while ($t !== "" && $t[0] !== ")") {
                     $t = substr($t, SearchSplitter::span_balanced_parens($t));
                 }
@@ -1766,6 +1766,9 @@ class Formula implements Abbreviator, JsonSerializable {
                 $field = substr($field, 0, $dash);
             }
             $t = $m[2];
+            if (!$e) {
+                $e = Constant_Fexpr::cerror($pos1, -strlen($t));
+            }
         } else if (preg_match('/\A\$(\d+)(.*)\z/s', $t, $m)
                    && $this->_macro
                    && intval($m[1]) > 0) {
@@ -1824,7 +1827,7 @@ class Formula implements Abbreviator, JsonSerializable {
 
             if (!$e2) {
                 if (!$e->error_format()) {
-                    $this->lerror(-strlen($t), -strlen($t), "Expression expected.");
+                    $this->lerror(-strlen($t), -strlen($t), "Missing expression.");
                 }
                 $e = Constant_Fexpr::cerror();
             } else if ($opx === "<" || $opx === ">" || $opx === "<=" || $opx === ">=") {
