@@ -826,6 +826,62 @@ class Review_Fexpr extends Fexpr {
     }
 }
 
+class Let_Fexpr extends Fexpr {
+    private $vardef;
+    function __construct(VarDef_Fexpr $vardef, Fexpr $val, Fexpr $body) {
+        parent::__construct("let", [$val, $body]);
+        $this->vardef = $vardef;
+    }
+    function typecheck(Formula $formula) {
+        $ok0 = $this->args[0]->typecheck($formula);
+        $this->vardef->format_ = $ok0 ? $this->args[0]->format() : self::FERROR;
+        $ok1 = $this->args[1]->typecheck($formula);
+        $this->format_ = $ok0 && $ok1 ? $this->args[1]->format() : self::FERROR;
+        return $ok0 && $ok1;
+    }
+    function compile(FormulaCompiler $state) {
+        $this->vardef->ltemp = $state->_addltemp($this->args[0]->compile($state));
+        return $this->args[1]->compile($state);
+    }
+    function jsonSerialize() {
+        return ["op" => "let", "name" => $this->vardef->name(),
+                "value" => $this->args[0], "body" => $this->args[1]];
+    }
+}
+
+class VarDef_Fexpr extends Fexpr {
+    private $name;
+    public $ltemp;
+    function __construct($name) {
+        parent::__construct("vardef");
+        $this->name = $name;
+    }
+    function name() {
+        return $this->name;
+    }
+    function jsonSerialize() {
+        return ["op" => "vardef", "name" => $this->name];
+    }
+}
+
+class VarUse_Fexpr extends Fexpr {
+    private $vardef;
+    function __construct(VarDef_Fexpr $vardef) {
+        parent::__construct("varuse");
+        $this->vardef = $vardef;
+    }
+    function typecheck(Formula $formula) {
+        $this->format_ = $this->vardef->format();
+        return true;
+    }
+    function compile(FormulaCompiler $state) {
+        return $this->vardef->ltemp;
+    }
+    function jsonSerialize() {
+        return ["op" => "varuse", "name" => $this->vardef->name()];
+    }
+}
+
 class FormulaCompiler {
     public $conf;
     public $user;
@@ -1156,6 +1212,7 @@ class Formula implements Abbreviator, JsonSerializable {
     private $_allow_review;
     private $_depth = 0;
     private $_macro;
+    private $_bind;
     private $_lerrors;
 
     private $_parse;
@@ -1180,17 +1237,19 @@ class Formula implements Abbreviator, JsonSerializable {
         "^" => 5,
         "|" => 4,
         ":" => 3,
-        "&&" => 2,
-        "||" => 1,
-        "?:" => 0
+        "&&" => 2, "and" => 2,
+        "||" => 1, "or" => 1,
+        "?:" => 0,
+        "in" => -1
     );
 
-    private static $_oprassoc = array(
+    static private $_oprassoc = array(
         "**" => true
     );
 
-    private static $_oprewrite = array(
-        "=" => "==", ":" => "==", "≤" => "<=", "≥" => ">=", "≠" => "!="
+    static private $_oprewrite = array(
+        "=" => "==", ":" => "==", "≤" => "<=", "≥" => ">=", "≠" => "!=",
+        "and" => "&&", "or" => "||"
     );
 
     const FREVIEW = 1;
@@ -1267,6 +1326,7 @@ class Formula implements Abbreviator, JsonSerializable {
             $this->user = $user;
         }
         $this->_lerrors = [];
+        $this->_bind = [];
         $t = $this->expression;
         if ((string) $t === "") {
             $this->lerror(0, 0, "Empty formula.");
@@ -1309,6 +1369,7 @@ class Formula implements Abbreviator, JsonSerializable {
         }
         $fp->lerrors = $this->_lerrors;
         $this->_lerrors = null;
+        $this->_bind = null;
         return $fp;
     }
 
@@ -1330,32 +1391,6 @@ class Formula implements Abbreviator, JsonSerializable {
             }
             return "<pre>" . join("", $x) . "</pre>";
         }
-    }
-
-    private function _parse_ternary(&$t, $in_qc) {
-        $pos1 = -strlen($t);
-        $e = $this->_parse_expr($t, 0, $in_qc);
-        if (!$e && $this->_depth) {
-            $this->lerror($pos1, $pos1, "Expression expected.");
-            return $e;
-        } else if (!$e || ($t = ltrim($t)) === "" || $t[0] !== "?") {
-            return $e;
-        }
-        $t = substr($t, 1);
-        ++$this->_depth;
-        $e1 = $this->_parse_ternary($t, true);
-        $e2 = null;
-        if (!$e1) {
-        } else if (($t = ltrim($t)) === "" || $t[0] !== ":") {
-            $this->lerror(-strlen($t), -strlen($t), "Expected “:”.");
-        } else {
-            $t = substr($t, 1);
-            $e2 = $this->_parse_ternary($t, $in_qc);
-        }
-        --$this->_depth;
-        $e = $e1 && $e2 ? new Ternary_Fexpr($e, $e1, $e2) : Constant_Fexpr::cerror();
-        $e->set_landmark($pos1, -strlen($t));
-        return $e;
     }
 
     private static function span_parens_until($t, $span) {
@@ -1492,18 +1527,18 @@ class Formula implements Abbreviator, JsonSerializable {
                 }
             }
         } else if (isset($kwdef->macro)) {
-            if ($this->_recursion > 10) {
+            if ($this->_depth > 20) {
                 $this->lerror($pos1, -strlen($t), "Circular macro definition.");
                 $e = null;
             } else {
-                ++$this->_recursion;
+                ++$this->_depth;
                 $old_macro = $this->_macro;
                 $this->_macro = $ff;
                 $tt = $kwdef->macro;
                 $before = count($this->_lerrors);
                 $e = $this->_parse_ternary($tt, false);
                 $this->_macro = $old_macro;
-                --$this->_recursion;
+                --$this->_depth;
                 if (!$e || $tt !== "") {
                     if (count($this->_lerrors) === $before) {
                         $this->lerror($ff->pos1, $ff->pos2, "Parse error in macro.");
@@ -1649,7 +1684,7 @@ class Formula implements Abbreviator, JsonSerializable {
         } else if ($f instanceof Formula) {
             if ($f->_depth === 0) {
                 $fp = $f->parse($this->user);
-                if ($fp->format !== Fexpr::FERROR) {
+                if (!$fp->error_format()) {
                     return $fp->fexpr;
                 } else {
                     $this->lerror($pos1, $pos2, "This formula’s definition contains an error.");
@@ -1692,7 +1727,7 @@ class Formula implements Abbreviator, JsonSerializable {
             }
             $e = $op === "!" ? new Not_Fexpr($e) : new Unary_Fexpr($op, $e);
         } else if ($t[0] === "n"
-                   && preg_match('/\Anot([\s(].*|)\z/si', $t, $m)) {
+                   && preg_match('/\Anot([\s(].*|)\z/s', $t, $m)) {
             $t = $m[1];
             if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc))) {
                 return null;
@@ -1739,9 +1774,34 @@ class Formula implements Abbreviator, JsonSerializable {
                    && preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords|)|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
             $t = ":" . $m[2];
             $e = $this->_reviewer_decoration($t, $this->_reviewer_base($m[1]));
-        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer|re|rev|review)\b\s*(?!\()(.*)\z/is', $t, $m)) {
+        } else if ($t[0] === "r"
+                   && preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer|re|rev|review)\b\s*(?!\()(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
+        } else if ($t[0] === "l"
+                   && preg_match('/\Alet\s+([A-Za-z][A-Za-z0-9_]*)(\s*=\s*)(.*)\z/si', $t, $m)) {
+            $var = $m[1];
+            $varpos = -(strlen($m[1]) + strlen($m[2]) + strlen($m[3]));
+            if (preg_match('/\A(?:null|true|false|let|and|or|not|in)\z/', $var)) {
+                $this->lerror($varpos, $varpos + strlen($m[1]), "Reserved word.");
+            }
+            $vare = new VarDef_Fexpr($m[1]);
+            $vare->set_landmark($varpos, $varpos + strlen($m[1]));
+            $t = $m[3];
+            $e = $this->_parse_ternary($t, false);
+            if ($e && preg_match('/\A\s*in(?=[\s(])(.*)\z/si', $t, $m)) {
+                $t = $m[1];
+                $old_bind = $this->_bind[$var] ?? null;
+                $this->_bind[$var] = $vare;
+                $e2 = $this->_parse_ternary($t, $in_qc);
+                $this->_bind[$var] = $old_bind;
+            } else {
+                $this->lerror(-strlen($t), -strlen($t), "Expected “in”.");
+                $e2 = null;
+            }
+            if ($e && $e2) {
+                $e = new Let_Fexpr($vare, $e, $e2);
+            }
         } else if ($t[0] === "\$"
                    && preg_match('/\A\$(\d+)(.*)\z/s', $t, $m)
                    && $this->_macro
@@ -1761,6 +1821,11 @@ class Formula implements Abbreviator, JsonSerializable {
                 $e = $this->_parse_field($pos1, $m[2], $fs[0]);
             }
             $t = $m[2];
+        } else if (!empty($this->_bind)
+                   && preg_match('/\A([A-Za-z][A-Za-z0-9_]*)/', $t, $m)
+                   && isset($this->_bind[$m[1]])) {
+            $e = new VarUse_Fexpr($this->_bind[$m[1]]);
+            $t = substr($t, strlen($m[1]));
         } else if (preg_match('/\A(#|[A-Za-z][A-Za-z0-9_.@:]*)/is', $t, $m)
                    && ($kwdef = $this->_find_formula_function($m))) {
             $e = $this->_parse_function($t, $m[1], $kwdef);
@@ -1803,8 +1868,8 @@ class Formula implements Abbreviator, JsonSerializable {
             } else if (preg_match(self::BINARY_OPERATOR_REGEX, $t, $m)) {
                 $op = $m[0];
                 $tn = substr($t, strlen($m[0]));
-            } else if (preg_match('/\A(and|or)([\s(].*|)\z/i', $t, $m)) {
-                $op = strlen($m[1]) === 3 ? "&&" : "||";
+            } else if (preg_match('/\A(and|or|in)([\s(].*|)\z/s', $t, $m)) {
+                $op = $m[1];
                 $tn = $m[2];
             } else if (!$in_qc && substr($t, 0, 1) === ":") {
                 $op = ":";
@@ -1859,6 +1924,32 @@ class Formula implements Abbreviator, JsonSerializable {
             }
             $e->set_landmark($pos1, -strlen($t));
         }
+    }
+
+    private function _parse_ternary(&$t, $in_qc) {
+        $pos1 = -strlen($t);
+        $e = $this->_parse_expr($t, 0, $in_qc);
+        if (!$e && $this->_depth) {
+            $this->lerror($pos1, $pos1, "Expression expected.");
+            return $e;
+        } else if (!$e || ($t = ltrim($t)) === "" || $t[0] !== "?") {
+            return $e;
+        }
+        $t = substr($t, 1);
+        ++$this->_depth;
+        $e1 = $this->_parse_ternary($t, true);
+        $e2 = null;
+        if (!$e1) {
+        } else if (($t = ltrim($t)) === "" || $t[0] !== ":") {
+            $this->lerror(-strlen($t), -strlen($t), "Expected “:”.");
+        } else {
+            $t = substr($t, 1);
+            $e2 = $this->_parse_ternary($t, $in_qc);
+        }
+        --$this->_depth;
+        $e = $e1 && $e2 ? new Ternary_Fexpr($e, $e1, $e2) : Constant_Fexpr::cerror();
+        $e->set_landmark($pos1, -strlen($t));
+        return $e;
     }
 
 
