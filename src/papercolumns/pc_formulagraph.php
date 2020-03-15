@@ -42,7 +42,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
 
     static function expand($name, $user, $xfj, $m) {
-        $formula = new Formula($m[1], true);
+        $formula = new Formula($m[1], Formula::FREVIEW);
         if (!$formula->check($user)) {
             $user->conf->xt_factory_error("Formula error: " . $formula->error_html());
             return null;

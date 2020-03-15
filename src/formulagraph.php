@@ -76,7 +76,7 @@ class FormulaGraph extends MessageSet {
             $fy = $fy_gtype;
         }
 
-        $this->fy = new Formula($fy, true);
+        $this->fy = new Formula($fy, Formula::FREVIEW);
         $this->fy->check($this->user);
         if (!$this->type) {
             $this->type = self::SCATTER;
@@ -87,42 +87,36 @@ class FormulaGraph extends MessageSet {
         // X axis expression(s)
         $this->fx_expression = $fx;
         if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
-            $this->fx = new Formula("0", true);
+            $this->fx = new Formula("0", Formula::FREVIEW);
             $this->fx_type = Fexpr::FSEARCH;
         } else if (strcasecmp($fx, "tag") == 0) {
-            $this->fx = new Formula("0", true);
+            $this->fx = new Formula("0", Formula::FREVIEW);
             $this->fx_type = Fexpr::FTAG;
-        } else {
-            $this->fx = new Formula($fx, true);
-        }
-
-        $fx = $this->fx;
-        if (!($this->type & self::CDF)) {
-            $fx->check($this->user);
+        } else if (!($this->type & self::CDF)) {
+            $this->fx = new Formula($fx, Formula::FREVIEW);
+            if (!$this->fx->check($this->user)) {
+                $this->error_at("fx", "X axis formula error: " . $this->fx->error_html());
+            }
         } else {
             $this->fxs = [];
-            while (1) {
-                $rest = $fx->check_prefix($this->user);
-                if ($rest === false) {
+            while (true) {
+                $fx = preg_replace('/\A\s*;*\s*/', '', $fx);
+                if ($fx === "") {
                     break;
                 }
-                $this->fxs[] = $fx;
-                $rest = preg_replace('/\A\s*;*\s*/', '', $rest);
-                if ($rest === "") {
-                    break;
+                $pos = Formula::span_maximal_formula($fx);
+                $this->fxs[] = $f = new Formula(substr($fx, 0, $pos), Formula::FREVIEW);
+                if (!$f->check($this->user)) {
+                    $this->error_at("fx", "X axis formula error: " . $f->error_html());
                 }
-                $fx = new Formula($rest, true);
             }
         }
 
-        if ($fx->error_html()) {
-            $this->error_at("fx", "X axis formula error: " . $fx->error_html());
-        }
         if ($this->fy->error_html()) {
             $this->error_at("fy", "Y axis formula error: " . $this->fy->error_html());
         } else if (($this->type & self::BARCHART) && !$this->fy->support_combiner()) {
             $this->error_at("fy", "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.");
-            $this->fy = new Formula("sum(0)", true);
+            $this->fy = new Formula("sum(0)", Formula::FREVIEW);
             $this->fy->check($this->user);
         } else if (($this->type & self::CDF) && $this->fx_type === Fexpr::FTAG) {
             $this->error_at("fy", "CDFs by tag don’t make sense.");
@@ -184,7 +178,7 @@ class FormulaGraph extends MessageSet {
         $this->fxorder = null;
         $xorder = simplify_whitespace($xorder);
         if ($xorder !== "" && $this->type !== self::SCATTER) {
-            $fxorder = new Formula($xorder, true);
+            $fxorder = new Formula($xorder, Formula::FREVIEW);
             $fxorder->check($this->user);
             if ($fxorder->error_html()) {
                 $this->error_at("xorder", "X order formula error: " . $fxorder->error_html());
