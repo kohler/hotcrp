@@ -91,18 +91,24 @@ class SearchSplitter {
         $this->pos += strlen($this->str) - strlen($next);
         $this->str = $next;
     }
-    static function span_balanced_parens($str, $pos = 0) {
+    static function span_balanced_parens($str, $pos = 0, $endf = null) {
         $pcount = $quote = 0;
         $len = strlen($str);
-        while ($pos < $len
-               && (!ctype_space($str[$pos]) || $pcount || $quote)) {
+        while ($pos < $len) {
             $ch = $str[$pos];
+            // stop when done
+            if (!$pcount
+                && !$quote
+                && ($endf === null ? ctype_space($ch) : call_user_func($endf, $ch))) {
+                break;
+            }
             // translate “” -> "
             if (ord($ch) === 0xE2
                 && $pos + 2 < $len
                 && ord($str[$pos + 1]) === 0x80
                 && (ord($str[$pos + 2]) & 0xFE) === 0x9C) {
                 $ch = "\"";
+                $pos += 2;
             }
             if ($quote) {
                 if ($ch === "\\" && $pos + 1 < strlen($str)) {

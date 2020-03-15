@@ -1166,7 +1166,7 @@ class Formula implements Abbreviator, JsonSerializable {
         "*" => 11, "/" => 11, "%" => 11,
         "+" => 10, "-" => 10,
         "<<" => 9, ">>" => 9,
-        "<" => 8, ">" => 8, "<=" => 8, ">=" => 8, "≤" => 8, "≥" => 8, // XXX value matters
+        "<" => 8, ">" => 8, "<=" => 8, ">=" => 8, "≤" => 8, "≥" => 8,
         "=" => 7, "==" => 7, "!=" => 7, "≠" => 7,
         "&" => 6,
         "^" => 5,
@@ -1209,6 +1209,10 @@ class Formula implements Abbreviator, JsonSerializable {
         }
         assert(!$formula || $formula->datatypes === 0);
         return $formula;
+    }
+
+    static function span_maximal_formula($t) {
+        return self::span_parens_until($t, ",;)]}");
     }
 
 
@@ -1361,6 +1365,18 @@ class Formula implements Abbreviator, JsonSerializable {
         return $e;
     }
 
+    private static function span_parens_until($t, $span) {
+        $pos = 0;
+        $len = strlen($t);
+        while ($pos !== $len && strpos($t[$pos], $span) === false) {
+            $x = SearchSplitter::span_balanced_parens($t, $pos, function ($ch) use ($span) {
+                return strpos($ch, $span) !== false;
+            });
+            $pos = max($pos + 1, $x);
+        }
+        return $pos;
+    }
+
     private function _parse_function_args(FormulaCall $ff, &$t) {
         $argtype = $ff->kwdef->args;
         $t = ltrim($t);
@@ -1368,21 +1384,9 @@ class Formula implements Abbreviator, JsonSerializable {
         if ($t === "") {
             return $argtype === "optional" || !empty($ff->args);
         } else if ($t[0] === "(" && $argtype === "raw") {
-            $arg = "";
-            $t = substr($t, 1);
-            $depth = 1;
-            while ($t !== "") {
-                preg_match('/\A("[^"]+(?:"|\z)|\(|\)|[^()"]+)(.*)\z/s', $t, $m);
-                $t = $m[2];
-                if ($m[1] === ")") {
-                    if (--$depth === 0)
-                        break;
-                } else if ($m[1] === "(") {
-                    ++$depth;
-                }
-                $arg .= $m[1];
-            }
-            $ff->args[] = $arg;
+            $pos = self::span_parens_until($t, ")");
+            $ff->args[] = substr($t, 0, $pos);
+            $t = substr($t, $pos);
             return true;
         } else if ($t[0] === "(") {
             $warned = $comma = false;
@@ -1400,12 +1404,12 @@ class Formula implements Abbreviator, JsonSerializable {
                     $ff->args[] = Constant_Fexpr::cerror($pos1, -strlen($t));
                 }
                 $t = ltrim($t);
-                while ($t !== "" && $t[0] !== ")" && $t[0] !== ",") {
+                if ($t !== "" && $t[0] !== ")" && $t[0] !== ",") {
                     if (!$warned) {
                         $this->lerror(-strlen($t), -strlen($t), "Expected “,” or “)”.");
                         $warned = true;
                     }
-                    $t = substr(ltrim($t), SearchSplitter::span_balanced_parens($t));
+                    $t = substr($t, self::span_parens_until($t, "),"));
                 }
                 $comma = true;
             }
@@ -1655,9 +1659,7 @@ class Formula implements Abbreviator, JsonSerializable {
             $t = ltrim($t);
             if ($t === "" || $t[0] !== ")") {
                 $this->lerror(-strlen($t), -strlen($t), "Missing “)”.");
-                while ($t !== "" && $t[0] !== ")") {
-                    $t = substr($t, SearchSplitter::span_balanced_parens($t));
-                }
+                $t = substr($t, self::span_parens_until($t, ")"));
             }
             if (!$e || $t === "") {
                 return $e;
