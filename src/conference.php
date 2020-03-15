@@ -1087,18 +1087,22 @@ class Conf {
         if ($this->_defined_formulas === null) {
             $this->_defined_formulas = [];
             if ($this->setting("formulas")) {
-                $result = $this->q("select * from Formula order by lower(name)");
+                $result = $this->q("select * from Formula");
                 while ($result && ($f = Formula::fetch($this, $result))) {
                     $this->_defined_formulas[$f->formulaId] = $f;
                 }
                 Dbl::free($result);
+                uksort($this->_defined_formulas, function ($a, $b) {
+                    return strnatcasecmp($a->name, $b->name);
+                });
             }
         }
         return $this->_defined_formulas;
     }
 
-    function invalidate_named_formulas() {
-        $this->_defined_formulas = null;
+    function replace_named_formulas($formula_map) {
+        $this->_defined_formulas = $formula_map;
+        $this->_abbrev_matcher = null;
     }
 
     function find_named_formula($text) {

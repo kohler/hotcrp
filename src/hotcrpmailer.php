@@ -328,10 +328,11 @@ class HotCRPMailer extends Mailer {
         return null;
     }
     function kw_decision($args, $isbool) {
-        if (!$this->row->outcome && $isbool)
+        if (!$this->row->outcome && $isbool) {
             return false;
-        else
+        } else {
             return $this->conf->decision_name($this->row->outcome);
+        }
     }
     function kw_tagvalue($args, $isbool, $uf) {
         $tag = isset($uf->match_data) ? $uf->match_data[1] : $args;
@@ -339,11 +340,11 @@ class HotCRPMailer extends Mailer {
         if (!$tag)
             return null;
         $value = $this->row->tag_value($tag);
-        if ($isbool)
+        if ($isbool) {
             return $value !== false;
-        else if ($value !== false)
+        } else if ($value !== false) {
             return (string) $value;
-        else {
+        } else {
             $this->_tagless[$this->row->paperId] = true;
             return "(none)";
         }
@@ -351,13 +352,14 @@ class HotCRPMailer extends Mailer {
     function kw_paperpc($args, $isbool, $uf) {
         $cid = get($this->row, $uf->pctype . "ContactId");
         if ($cid <= 0 || !($u = $this->conf->cached_user_by_id($cid))) {
-            if ($isbool)
+            if ($isbool)  {
                 return false;
-            else if ($this->expansionType == self::EXPAND_EMAIL
-                     || $uf->userx === "EMAIL")
+            } else if ($this->expansionType == self::EXPAND_EMAIL
+                       || $uf->userx === "EMAIL") {
                 return "<none>";
-            else
+            } else {
                 return "(no $uf->pctype assigned)";
+            }
         }
         return $this->expand_user($u, $uf->userx);
     }

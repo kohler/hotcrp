@@ -132,6 +132,7 @@ class Mailer {
     protected $expansionType;
 
     protected $_unexpanded = [];
+    protected $_errors_reported = [];
 
     static private $eol = null;
 
@@ -207,7 +208,7 @@ class Mailer {
 
         if ($t !== ""
             && $this->expansionType === self::EXPAND_EMAIL
-            && preg_match('#[\000-\037()[\]<>@,;:\\".]#', $t)) {
+            && preg_match('/[\000-\037()[\]<>@,;:\\".\\\\]/', $t)) {
             $t = "\"" . addcslashes($t, '"\\') . "\"";
         }
 
@@ -676,8 +677,12 @@ class Mailer {
                     $prep->headers[$lcfield] = $hdr . $eol;
                 } else {
                     $prep->errors[$lcfield] = $mimetext->unparse_error();
-                    error_log("mailer error on $lcfield: $text");
                     $prep->sendable = false;
+                    $logmsg = "$lcfield: $text";
+                    if (!in_array($logmsg, $this->_errors_reported)) {
+                        error_log("mailer error on $logmsg");
+                        $this->_errors_reported[] = $logmsg;
+                    }
                     if (!get($rest, "no_error_quit")) {
                         Conf::msg_error("Malformed $field field:" . $prep->errors[$lcfield]);
                     }
@@ -865,7 +870,9 @@ class MimeText {
                 if (preg_match('/[\s<>@]/', $str)) {
                     $this->errortext = "Invalid destination (possible quoting problem).";
                 } else {
+                    preg_match('/\A[^\s,;]*/', $str, $m);
                     $this->errortext = "Invalid email address.";
+                    $this->errorlen = strlen($m[0]);
                 }
                 return false;
             }
@@ -944,23 +951,9 @@ class MimeText {
 
     function unparse_error() {
         if ($this->errorpos !== false) {
-            $str = str_replace("\t", " ", $this->in);
-            $t = '<pre>';
-            if ($this->errorlen) {
-                $t .= htmlspecialchars(substr($str, 0, $this->errorpos))
-                    . '<span class="is-error">'
-                    . htmlspecialchars(substr($str, $this->errorpos, $this->errorlen))
-                    . '</span>'
-                    . htmlspecialchars(substr($str, $this->errorpos + $this->errorlen));
-                $arrow = str_repeat("↑", $this->errorlen);
-            } else {
-                $t .= htmlspecialchars($str);
-                $arrow = "↑";
-            }
-            $space = str_repeat(" ", $this->errorpos);
-            return $t . "\n"
-                . $space . '<span class="is-error">' . $arrow . '</span>' . "\n"
-                . $space . '<span class="text-default">' . htmlspecialchars($this->errortext) . '</span></pre>';
+            return '<pre>'
+                . Ht::contextual_diagnostic($this->in, $this->errorpos, $this->errorpos + $this->errorlen, htmlspecialchars($this->errortext))
+                . '</pre>';
         } else {
             return false;
         }

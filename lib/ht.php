@@ -474,6 +474,33 @@ class Ht {
     }
 
 
+    static function contextual_diagnostic($s, $pos1, $pos2, $message, $status = null) {
+        $klass = $status && $status === 1 ? "is-warning" : "is-error";
+        if (is_usascii($s)) {
+            $s = preg_replace('/\s/', " ", $s);
+            $spaces = $pos1;
+            $arrows = max($pos2 - $pos1, 1);
+        } else {
+            $s = preg_replace('/\s/u', " ", $s);
+            $spaces = UnicodeHelper::utf8_glyphlen(substr($s, 0, $pos1));
+            $arrows = max(UnicodeHelper::utf8_glyphlen(substr($s, $pos1, max($pos2 - $pos1, 0))), 1);
+        }
+        if ($pos2 > $pos1) {
+            $t = htmlspecialchars(substr($s, 0, $pos1))
+                . '<span class="' . $klass . '">'
+                . htmlspecialchars(substr($s, $pos1, $pos2 - $pos1))
+                . '</span>'
+                . htmlspecialchars(substr($s, $pos2));
+        } else {
+            $t = htmlspecialchars($s);
+        }
+        $indent = str_repeat(" ", $spaces);
+        return $t . "\n"
+            . $indent . '<span class="' . $klass . '">' . str_repeat("↑", $arrows) . "</span>\n"
+            . $indent . '<span class="text-default ' . $klass . '">' . $message . "</span>\n";
+    }
+
+
     static function msg($msg, $status) {
         if (is_int($status)) {
             $status = $status >= 2 ? "error" : ($status > 0 ? "warning" : "info");

@@ -1150,6 +1150,7 @@ class Formula implements Abbreviator, JsonSerializable {
     public $expression;
     public $createdBy = 0;
     public $timeModified = 0;
+
     private $_abbreviation;
 
     private $_allow_review;
@@ -1307,6 +1308,7 @@ class Formula implements Abbreviator, JsonSerializable {
             }
         }
         $fp->lerrors = $this->_lerrors;
+        $this->_lerrors = null;
         return $fp;
     }
 
@@ -1322,24 +1324,9 @@ class Formula implements Abbreviator, JsonSerializable {
         if ($this->check()) {
             return "";
         } else {
-            $expr = preg_replace('/\s/', " ", $this->expression);
             $x = [];
             foreach ($this->_parse->lerrors as $e) {
-                if ($e[0] !== $e[1]) {
-                    $t = htmlspecialchars(substr($expr, 0, $e[0]))
-                        . '<span class="is-error">'
-                        . htmlspecialchars(substr($expr, $e[0], $e[1] - $e[0]))
-                        . '</span>'
-                        . htmlspecialchars(substr($expr, $e[1]));
-                    $arrow = str_repeat("↑", $e[1] - $e[0]);
-                } else {
-                    $t = htmlspecialchars($expr);
-                    $arrow = "↑";
-                }
-                $space = str_repeat(" ", $e[0]);
-                $x[] = $t . "\n"
-                    . $space . '<span class="is-error">' . $arrow . "</span>\n"
-                    . $space . '<span class="text-default">' . $e[2] . "</span>\n";
+                $x[] = Ht::contextual_diagnostic($this->expression, $e[0], $e[1], $e[2]);
             }
             return "<pre>" . join("", $x) . "</pre>";
         }
@@ -1381,6 +1368,18 @@ class Formula implements Abbreviator, JsonSerializable {
             $pos = max($pos + 1, $x);
         }
         return $pos;
+    }
+
+    private function _find_formula_function(&$m) {
+        while ($m[1] !== "") {
+            if (($kwdef = $this->conf->formula_function($m[1], $this->user))) {
+                return $kwdef;
+            }
+            $pos1 = strrpos($m[1], ":");
+            $pos2 = strrpos($m[1], ".");
+            $m[1] = substr($m[1], 0, max((int) $pos1, (int) $pos2));
+        }
+        return false;
     }
 
     private function _parse_function_args(FormulaCall $ff, &$t) {
@@ -1440,23 +1439,22 @@ class Formula implements Abbreviator, JsonSerializable {
         if (preg_match('/\s*((?:"[^"]*(?:"|\z)|[^\s()]*)*)(.*)\z/s', $t, $m) && $m[1] !== "")
             return $m;
         else
-            return array($t, "", $t);
+            return [$t, "", $t];
     }
 
     const ARGUMENT_REGEX = '((?:"[^"]*"|[-#a-zA-Z0-9_.@!*?~]+|:(?="|[-#a-zA-Z0-9_.@+!*\/?~]+(?![()])))+)';
 
-    private function _parse_function(&$t, $kwdef, $name) {
+    private function _parse_function(&$t, $name, $kwdef) {
         $ff = new FormulaCall($this, $kwdef, $name);
-        $args = get($kwdef, "args");
-        $has_args = $args !== null && $args !== false;
+        $args = $kwdef->args ?? false;
 
         $ff->pos1 = $pos1 = -strlen($t);
         $t = substr($t, strlen($name));
 
-        if (get($kwdef, "parse_modifier_callback")) {
+        if ($kwdef->parse_modifier_callback ?? false) {
             $xt = $name === "#" ? "#" . $t : $t;
             while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9_.@!*?~:\/#]+))(.*)/s', $xt, $m)
-                   && ($has_args || !preg_match('/\A\s*\(/s', $m[2]))) {
+                   && ($args !== false || !preg_match('/\A\s*\(/s', $m[2]))) {
                 $ff->pos2 = -strlen($m[2]);
                 if (call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this)) {
                     $t = $xt = $m[2];
@@ -1466,7 +1464,7 @@ class Formula implements Abbreviator, JsonSerializable {
             }
         }
 
-        if ($has_args) {
+        if ($args !== false) {
             if (!$this->_parse_function_args($ff, $t)) {
                 $this->lerror($pos1, -strlen($t), "Function requires arguments.");
                 return Constant_Fexpr::cerror($pos1, -strlen($t));
@@ -1556,11 +1554,11 @@ class Formula implements Abbreviator, JsonSerializable {
         }
     }
 
-    private function _reviewer_decoration($e0, &$ex) {
+    private function _reviewer_decoration(&$t, $e0) {
         $es = [];
         $rsm = new ReviewSearchMatcher;
-        while ($ex !== "") {
-            if (!preg_match('/\A:((?:"[^"]*(?:"|\z)|~*[-A-Za-z0-9_.#@]+(?!\s*\())+)(.*)/si', $ex, $m)
+        while ($t !== "") {
+            if (!preg_match('/\A:((?:"[^"]*(?:"|\z)|~*[-A-Za-z0-9_.#@]+(?!\s*\())+)(.*)/si', $t, $m)
                 || preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1])) {
                 break;
             }
@@ -1581,7 +1579,7 @@ class Formula implements Abbreviator, JsonSerializable {
                 }
                 $es[] = new ReviewerMatch_Fexpr($this->user, $m[1]);
             }
-            $ex = $m[2];
+            $t = $m[2];
         }
 
         $rsm->finish();
@@ -1638,16 +1636,31 @@ class Formula implements Abbreviator, JsonSerializable {
         return $e;
     }
 
-    private function _find_formula_function(&$m) {
-        while ($m[1] !== "") {
-            if (($kwdef = $this->conf->formula_function($m[1], $this->user))) {
-                return $kwdef;
+    private function _parse_field($pos1, &$t, $f) {
+        $pos2 = -strlen($t);
+        if ($f instanceof PaperOption) {
+            return $this->_parse_option($pos1, $pos2, $f->search_keyword());
+        } else if ($f instanceof ReviewField) {
+            if ($f->has_options) {
+                return $this->_reviewer_decoration($t, new Score_Fexpr($f));
+            } else {
+                $this->lerror($pos1, $pos2, "This review field can’t be used in formulas.");
             }
-            $pos1 = strrpos($m[1], ":");
-            $pos2 = strrpos($m[1], ".");
-            $m[1] = substr($m[1], 0, max((int) $pos1, (int) $pos2));
+        } else if ($f instanceof Formula) {
+            if ($f->_depth === 0) {
+                $fp = $f->parse($this->user);
+                if ($fp->format !== Fexpr::FERROR) {
+                    return $fp->fexpr;
+                } else {
+                    $this->lerror($pos1, $pos2, "This formula’s definition contains an error.");
+                }
+            } else {
+                $this->lerror($pos1, $pos2, "Self-referential formula.");
+            }
+        } else {
+            $this->lerror($pos1, $pos2, "Unknown field.");
         }
-        return false;
+        return Constant_Fexpr::cerror($pos1, $pos2);
     }
 
     private function _parse_expr(&$t, $level, $in_qc) {
@@ -1678,7 +1691,8 @@ class Formula implements Abbreviator, JsonSerializable {
                 return null;
             }
             $e = $op === "!" ? new Not_Fexpr($e) : new Unary_Fexpr($op, $e);
-        } else if (preg_match('/\Anot([\s(].*|)\z/si', $t, $m)) {
+        } else if ($t[0] === "n"
+                   && preg_match('/\Anot([\s(].*|)\z/si', $t, $m)) {
             $t = $m[1];
             if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc))) {
                 return null;
@@ -1690,19 +1704,23 @@ class Formula implements Abbreviator, JsonSerializable {
         } else if (preg_match('/\A(false|true)\b(.*)\z/si', $t, $m)) {
             $e = new Constant_Fexpr($m[1], Fexpr::FBOOL);
             $t = $m[2];
-        } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
+        } else if ($t[0] === "n"
+                   && preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
             $e = Constant_Fexpr::cnull();
             $t = $m[1];
-        } else if (preg_match('/\Aopt(?:ion)?:\s*(.*)\z/s', $t, $m)) {
+        } else if ($t[0] === "o"
+                   && preg_match('/\Aopt(?:ion)?:\s*(.*)\z/s', $t, $m)) {
             $pos1 = -strlen($m[1]);
             $rest = self::_pop_argument($m[1]);
             $t = $rest[2];
             $e = $this->_parse_option($pos1, -strlen($t), $rest[1]);
-        } else if (preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
+        } else if ($t[0] === "d"
+                   && preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $me = PaperSearch::decision_matchexpr($this->conf, $m[1], false);
             $e = $this->field_search_fexpr(["outcome", $me]);
             $t = $m[2];
-        } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
+        } else if ($t[0] === "d"
+                   && preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
             $e = new Decision_Fexpr;
             $t = $m[1];
         } else if (preg_match('/\Ais:?rev?\b(.*)\z/is', $t, $m)) {
@@ -1717,68 +1735,15 @@ class Formula implements Abbreviator, JsonSerializable {
         } else if (preg_match('/\A(?:is|status):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($this->conf, $m[1]));
             $t = $m[2];
-        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords|)|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
+        } else if ($t[0] === "r"
+                   && preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords|)|round|reviewer)(?::|(?=#))\s*(.*)\z/is', $t, $m)) {
             $t = ":" . $m[2];
-            $e = $this->_reviewer_decoration($this->_reviewer_base($m[1]), $t);
+            $e = $this->_reviewer_decoration($t, $this->_reviewer_base($m[1]));
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words|auwords)|round|reviewer|re|rev|review)\b\s*(?!\()(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
-        } else if (preg_match('/\A(#|[A-Za-z][A-Za-z0-9_.@:]*)/is', $t, $m)
-                   && ($kwdef = $this->_find_formula_function($m))) {
-            $e = $this->_parse_function($t, $kwdef, $m[1]);
-        } else if (preg_match('/\A([-A-Za-z0-9_.@]+|\".*?\")(.*)\z/s', $t, $m)
-                   && $m[1] !== "\"\""
-                   && !preg_match('/\A\s*\(/s', $m[2])) {
-            $field = $m[1];
-            if (($quoted = $field[0] === "\"")) {
-                $field = substr($field, 1, strlen($field) - 2);
-            }
-            while (true) {
-                if ($quoted || strlen($field) > 1) {
-                    $fs = $this->conf->find_all_fields($field);
-                } else {
-                    $fs = [];
-                }
-                if (count($fs) === 1) {
-                    $f = $fs[0];
-                    if ($f instanceof PaperOption) {
-                        $e = $this->_parse_option($pos1, -strlen($m[2]), $f->search_keyword());
-                    } else if ($f instanceof ReviewField) {
-                        if ($f->has_options) {
-                            $e = $this->_reviewer_decoration(new Score_Fexpr($f), $m[2]);
-                        } else {
-                            $this->lerror($pos1, -strlen($m[2]), "Textual review field can’t be used in formulas.");
-                        }
-                    } else if ($f instanceof Formula) {
-                        if ($f->_depth === 0) {
-                            $fp = $f->parse($this->user);
-                            if ($fp->format !== Fexpr::FERROR) {
-                                $e = $fp->fexpr;
-                            } else {
-                                $this->lerror($pos1, -strlen($m[2]), "Error in formula.");
-                            }
-                        } else {
-                            $this->lerror($pos1, -strlen($m[2]), "Circular formula reference.");
-                        }
-                    }
-                    break;
-                }
-                if ($quoted) {
-                    return null;
-                }
-                $dash = strrpos($field, "-");
-                if ($dash === false || $dash === 0) {
-                    $e = new Constant_Fexpr($field, false);
-                    break;
-                }
-                $m[2] = substr($field, $dash) . $m[2];
-                $field = substr($field, 0, $dash);
-            }
-            $t = $m[2];
-            if (!$e) {
-                $e = Constant_Fexpr::cerror($pos1, -strlen($t));
-            }
-        } else if (preg_match('/\A\$(\d+)(.*)\z/s', $t, $m)
+        } else if ($t[0] === "\$"
+                   && preg_match('/\A\$(\d+)(.*)\z/s', $t, $m)
                    && $this->_macro
                    && intval($m[1]) > 0) {
             if (intval($m[1]) <= count($this->_macro->args)) {
@@ -1787,12 +1752,44 @@ class Formula implements Abbreviator, JsonSerializable {
                 $e = Constant_Fexpr::cnull();
             }
             $t = $m[2];
+        } else if (($t[0] === "\"" && preg_match('/\A"(.*?)"(.*)\z/s', $t, $m))
+                   || ($t[0] === "\xE2" && preg_match('/\A[“”](.*?)["“”](.*)\z/su', $t, $m))) {
+            $fs = $m[1] === "" ? [] : $this->conf->find_all_fields($m[1]);
+            if (count($fs) !== 1) {
+                $e = new Constant_Fexpr($m[1], false);
+            } else {
+                $e = $this->_parse_field($pos1, $m[2], $fs[0]);
+            }
+            $t = $m[2];
+        } else if (preg_match('/\A(#|[A-Za-z][A-Za-z0-9_.@:]*)/is', $t, $m)
+                   && ($kwdef = $this->_find_formula_function($m))) {
+            $e = $this->_parse_function($t, $m[1], $kwdef);
+        } else if (preg_match('/\A([-A-Za-z0-9_.@]+)(.*)\z/s', $t, $m)
+                   && !preg_match('/\A\s*\(/s', $m[2])) {
+            $field = $m[1];
+            while (true) {
+                if (strlen($field) > 1) {
+                    $fs = $this->conf->find_all_fields($field);
+                    if (count($fs) === 1) {
+                        $e = $this->_parse_field($pos1, $m[2], $fs[0]);
+                        break;
+                    }
+                }
+                $dash = strrpos($field, "-");
+                if ($dash === false) {
+                    break;
+                }
+                $m[2] = substr($field, $dash) . $m[2];
+                $field = substr($field, 0, $dash);
+            }
+            $t = $m[2];
+            $e = $e ? : new Constant_Fexpr($field, false);
         } else if ($this->_depth
                    && preg_match('/\A([A-Za-z][A-Za-z0-9_.@:]*)/is', $t, $m)) {
-            $e = $this->_parse_function($t, (object) [
+            $e = $this->_parse_function($t, $m[1], (object) [
                 "name" => $m[1], "args" => true, "optional" => true,
                 "callback" => "Constant_Fexpr::make_error_call"
-            ], $m[1]);
+            ]);
         }
 
         if (!$e) {
@@ -1823,7 +1820,7 @@ class Formula implements Abbreviator, JsonSerializable {
 
             $t = $tn;
             $opx = self::$_oprewrite[$op] ?? $op;
-            $opassoc = get(self::$_oprassoc, $opx) ? $opprec : $opprec + 1;
+            $opassoc = (self::$_oprassoc[$opx] ?? false) ? $opprec : $opprec + 1;
 
             ++$this->_depth;
             $e2 = $this->_parse_expr($t, $opassoc, $in_qc);

@@ -103,9 +103,9 @@ class SearchSplitter {
                 break;
             }
             // translate “” -> "
-            if (ord($ch) === 0xE2
+            if ($ch === "\xE2"
                 && $pos + 2 < $len
-                && ord($str[$pos + 1]) === 0x80
+                && $str[$pos + 1] === "\x80"
                 && (ord($str[$pos + 2]) & 0xFE) === 0x9C) {
                 $ch = "\"";
                 $pos += 2;
@@ -1778,12 +1778,13 @@ class PaperSearch {
 
     static function decision_matchexpr(Conf $conf, $word, $quoted) {
         if (!$quoted) {
-            if (strcasecmp($word, "yes") === 0)
+            if (strcasecmp($word, "yes") === 0) {
                 return ">0";
-            else if (strcasecmp($word, "no") === 0)
+            } else if (strcasecmp($word, "no") === 0) {
                 return "<0";
-            else if (strcasecmp($word, "any") === 0)
+            } else if (strcasecmp($word, "any") === 0) {
                 return "!=0";
+            }
         }
         return $conf->find_all_decisions($word);
     }

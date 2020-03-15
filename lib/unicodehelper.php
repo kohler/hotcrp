@@ -218,7 +218,7 @@ class UnicodeHelper {
     }
 
     static function utf8_glyphlen($str) {
-        return strlen(preg_replace('/\X/u', '.', $str));
+        return preg_match_all('/\X/u', $str);
     }
 
     static function utf16_strlen($str) {
