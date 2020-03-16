@@ -1902,14 +1902,16 @@ class Conf {
     }
 
     function pc_members_and_admins() {
-        if ($this->_pc_members_and_admins_cache === null)
+        if ($this->_pc_members_and_admins_cache === null) {
             $this->pc_members();
+        }
         return $this->_pc_members_and_admins_cache;
     }
 
     function pc_chairs() {
-        if ($this->_pc_chairs_cache === null)
+        if ($this->_pc_chairs_cache === null) {
             $this->pc_members();
+        }
         return $this->_pc_chairs_cache;
     }
 
@@ -1930,13 +1932,14 @@ class Conf {
     }
 
     function pc_member_by_id($cid) {
-        return get($this->pc_members(), $cid);
+        return ($this->pc_members())[$cid] ?? null;
     }
 
     function pc_member_by_email($email) {
-        foreach ($this->pc_members() as $p)
+        foreach ($this->pc_members() as $p) {
             if (strcasecmp($p->email, $email) == 0)
                 return $p;
+        }
         return null;
     }
 

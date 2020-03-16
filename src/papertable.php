@@ -1862,7 +1862,7 @@ class PaperTable {
         return $s;
     }
 
-    private function papstripRank($tag) {
+    private function papstrip_rank($tag) {
         $id = "rank_" . html_id_encode($tag);
         if (($myval = $this->prow->tag_value($this->user->contactId . "~$tag")) === false) {
             $myval = "";
@@ -1887,7 +1887,7 @@ class PaperTable {
         Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
 
-    private function papstripVote($tag, $allotment) {
+    private function papstrip_allotment($tag, $allotment) {
         $id = "vote_" . html_id_encode($tag);
         if (($myval = $this->prow->tag_value($this->user->contactId . "~$tag")) === false) {
             $myval = "";
@@ -1900,7 +1900,7 @@ class PaperTable {
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         }
         echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} votes", $tag, $myval),
-                         array("type" => "ps", "fold" => $id, "float" => $totmark)),
+                         ["type" => "ps", "fold" => $id, "float" => $totmark]),
             '<div class="psv"><div class="fx">',
             Ht::entry("tagindex", $myval, ["size" => 4, "class" => "is-tag-index want-focus", "data-tag-base" => "~$tag", "inputmode" => "decimal"]),
             " &nbsp;of $allotment",
@@ -1910,7 +1910,7 @@ class PaperTable {
         Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
 
-    private function papstripApproval($tag) {
+    private function papstrip_approval($tag) {
         $id = "approval_" . html_id_encode($tag);
         if (($myval = $this->prow->tag_value($this->user->contactId . "~$tag")) === false) {
             $myval = "";
@@ -2236,11 +2236,11 @@ class PaperTable {
         foreach ($this->conf->tags() as $ltag => $t) {
             if ($this->user->can_change_tag($this->prow, "~$ltag", null, 0)) {
                 if ($t->approval) {
-                    $this->papstripApproval($t->tag);
+                    $this->papstrip_approval($t->tag);
                 } else if ($t->vote) {
-                    $this->papstripVote($t->tag, $t->vote);
+                    $this->papstrip_allotment($t->tag, $t->vote);
                 } else if ($t->rank) {
-                    $this->papstripRank($t->tag);
+                    $this->papstrip_rank($t->tag);
                 }
             }
         }
