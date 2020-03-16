@@ -61,6 +61,7 @@ scores A, B, and D is A. For instance:</p>
         echo $hth->trow("(<em>e</em>)", "Parentheses");
         echo $hth->trow("greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
         echo $hth->trow("least(<em>e</em>, <em>e</em>, ...)", "Minimum");
+        echo $hth->trow("coalesce(<em>e</em>, <em>e</em>, ...)", "Null coalescing: return first of <em>e</em>s that is not null");
         echo $hth->trow("log(<em>e</em>)", "Natural logarithm");
         echo $hth->trow("log(<em>e</em>, <em>b</em>)", "Log to the base <em>b</em>");
         echo $hth->trow("round(<em>e</em>[, <em>m</em>])", "Round to the nearest multiple of <em>m</em>");

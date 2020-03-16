@@ -54,6 +54,7 @@
 
     {"name": "greatest", "args": true, "callback": "+Extremum_Fexpr"},
     {"name": "least", "args": true, "callback": "+Extremum_Fexpr"},
+    {"name": "coalesce", "args": true, "callback": "+Extremum_Fexpr"},
     {"name": "round", "args": [1, 2], "callback": "+Round_Fexpr"},
     {"name": "floor", "args": [1, 2], "callback": "+Round_Fexpr"},
     {"name": "trunc", "args": [1, 2], "callback": "+Round_Fexpr"},

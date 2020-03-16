@@ -526,7 +526,13 @@ class In_Fexpr extends Fexpr {
 
 class Extremum_Fexpr extends Fexpr {
     function __construct(FormulaCall $ff) {
-        $op = ($ff->name === "least" || $ff->name === "min" ? "least" : "greatest");
+        if ($ff->name === "min") {
+            $op = "least";
+        } else if ($ff->name === "max") {
+            $op = "greatest";
+        } else {
+            $op = $ff->name;
+        }
         parent::__construct($op, $ff->args);
     }
     function typecheck(Formula $formula) {
@@ -543,6 +549,8 @@ class Extremum_Fexpr extends Fexpr {
             $t2 = $state->_addltemp($this->args[$i]->compile($state));
             if ($i === 0) {
                 $t1 = $t2;
+            } else if ($this->op === "coalesce") {
+                $state->lstmt[] = "$t1 = $t1 ?? $t2;";
             } else {
                 $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 $cmp $t1) ? $t2 : $t1);";
             }
