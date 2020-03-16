@@ -54,6 +54,13 @@ class Tag_Fexpr extends Fexpr {
             return $isvalue || $value !== (float) 0 ? $value : true;
         }
     }
+    function inferred_index() {
+        if (str_starts_with($this->tag, "_~")) {
+            return Fexpr::IDX_PC;
+        } else {
+            return 0;
+        }
+    }
     function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
@@ -62,20 +69,18 @@ class Tag_Fexpr extends Fexpr {
         $jvalue = json_encode($this->isvalue);
         if (($tag = $this->tsm->single_tag())) {
             if (str_starts_with($this->tag, "_~")) {
-                return "Tag_Fexpr::tag_value($tags,\" \"."
-                    . $state->loop_cid() . "."
-                    . json_encode(substr($tag, strpos($tag, "~")) . "#")
-                    . ",$jvalue)";
+                $str = "\" \"." . $state->loop_cid() . "."
+                    . json_encode(substr($tag, strpos($tag, "~")) . "#");
             } else {
-                return "Tag_Fexpr::tag_value($tags,"
-                    . json_encode(" {$tag}#") . ",$jvalue)";
+                $str = json_encode(" {$tag}#");
             }
+            return "Tag_Fexpr::tag_value($tags,$str,$jvalue)";
         } else {
             $regex = $this->tsm->regex();
             if (str_starts_with($this->tag, "_~")) {
                 assert(strpos($regex, "|") === false
                        && str_starts_with($regex, "{ {$state->user->contactId}~"));
-                $regex = "\"{ \"." . $state->loop_cid()
+                $regex = "\"{ \"." . $state->loop_cid() . "."
                     . json_encode(substr($regex, strlen($state->user->contactId) + 2));
             } else {
                 $regex = json_encode($regex);
