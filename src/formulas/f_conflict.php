@@ -6,7 +6,7 @@ class Conflict_Fexpr extends Fexpr {
     private $ispc;
     function __construct($ispc) {
         $this->ispc = is_object($ispc) ? $ispc->kwdef->is_pc : $ispc;
-        $this->format_ = self::FBOOL;
+        $this->_format = self::FBOOL;
     }
     function compile(FormulaCompiler $state) {
         // XXX the actual search is different

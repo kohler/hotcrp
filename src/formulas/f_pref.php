@@ -7,7 +7,7 @@ class Pref_Fexpr extends Fexpr {
     private $cids;
     function __construct($ff) {
         $this->isexpertise = is_object($ff) ? $ff->kwdef->is_expertise : $ff;
-        $this->format_ = $this->isexpertise ? self::FPREFEXPERTISE : null;
+        $this->_format = $this->isexpertise ? self::FPREFEXPERTISE : null;
         if (is_object($ff) && $ff->modifier) {
             $this->cids = $ff->modifier;
         }

@@ -27,7 +27,7 @@ class Fexpr implements JsonSerializable {
     public $op = "";
     public $args = [];
     public $text;
-    public $format_ = false;
+    public $_format = false;
     public $pos1;
     public $pos2;
 
@@ -80,13 +80,16 @@ class Fexpr implements JsonSerializable {
     }
 
     function format() {
-        return $this->format_;
+        return $this->_format;
     }
     function math_format() {
-        return $this->format_ !== self::FREVIEWER;
+        return $this->_format !== self::FREVIEWER;
     }
     function error_format() {
-        return $this->format_ === self::FERROR;
+        return $this->_format === self::FERROR;
+    }
+    function unknown_format() {
+        return $this->_format === false;
     }
 
     static function common_format($args) {
@@ -107,7 +110,7 @@ class Fexpr implements JsonSerializable {
     function typecheck_resolve_neighbors(Formula $formula) {
         foreach ($this->args as $i => $a) {
             if ($a instanceof Constant_Fexpr
-                && $a->format_ === false
+                && $a->unknown_format()
                 && ($b = get($this->args, $i ? $i - 1 : $i + 1))) {
                 $a->resolve_neighbor($formula, $b);
             }
@@ -125,8 +128,8 @@ class Fexpr implements JsonSerializable {
                 $ok = false;
             }
         }
-        if ($ok && $this->format_ === false) {
-            $this->format_ = $this->typecheck_format();
+        if ($ok && $this->_format === false) {
+            $this->_format = $this->typecheck_format();
         }
         return $ok;
     }
@@ -165,12 +168,12 @@ class Fexpr implements JsonSerializable {
     }
 
     function compiled_comparator($cmp, Conf $conf, $other_expr = null) {
-        if ($this->format_
-            && $this->format_ instanceof ReviewField
-            && $this->format_->option_letter
+        if ($this->_format
+            && $this->_format instanceof ReviewField
+            && $this->_format->option_letter
             && !$conf->opt("smartScoreCompare")
             && (!$other_expr
-                || $other_expr->format() === $this->format_)) {
+                || $other_expr->format() === $this->_format)) {
             if ($cmp[0] == "<") {
                 return ">" . substr($cmp, 1);
             } else if ($cmp[0] == ">") {
@@ -197,7 +200,7 @@ class Constant_Fexpr extends Fexpr {
     private $x;
     function __construct($x, $format = null, $pos1 = null, $pos2 = null) {
         $this->x = $x;
-        $this->format_ = $format;
+        $this->_format = $format;
         $this->set_landmark($pos1, $pos2);
     }
     private function _check_revtype() {
@@ -210,18 +213,18 @@ class Constant_Fexpr extends Fexpr {
         }
     }
     function typecheck(Formula $formula) {
-        if ($this->format_ === self::FREVTYPE
+        if ($this->_format === self::FREVTYPE
             && is_string($this->x)
             && !$this->_check_revtype()) {
             return $formula->fexpr_lerror($this, "Unknown review type.");
-        } else if ($this->format_ === false) {
+        } else if ($this->_format === false) {
             return $formula->fexpr_lerror($this, "Undefined.");
         } else {
             return true;
         }
     }
     function resolve_neighbor(Formula $formula, $e) {
-        if ($this->format_ !== false
+        if ($this->_format !== false
             || !$e->typecheck($formula)) {
             return;
         }
@@ -244,7 +247,7 @@ class Constant_Fexpr extends Fexpr {
         } else {
             return;
         }
-        $this->format_ = $format;
+        $this->_format = $format;
     }
     function compile(FormulaCompiler $state) {
         return $this->x;
@@ -307,7 +310,7 @@ class Ternary_Fexpr extends Fexpr {
     }
     function matches_at_most_once() {
         return $this->args[0]->matches_at_most_once()
-            && $this->args[2]->format_ === self::FNULL;
+            && $this->args[2]->format() === self::FNULL;
     }
 }
 
@@ -315,7 +318,7 @@ class Equality_Fexpr extends Fexpr {
     function __construct($op, $e0, $e1) {
         assert($op === "==" || $op === "!=");
         parent::__construct($op, [$e0, $e1]);
-        $this->format_ = self::FBOOL;
+        $this->_format = self::FBOOL;
     }
     function typecheck(Formula $formula) {
         $this->typecheck_resolve_neighbors($formula);
@@ -332,7 +335,7 @@ class Inequality_Fexpr extends Fexpr {
     function __construct($op, $e0, $e1) {
         assert(in_array($op, ["<", ">", "<=", ">="]));
         parent::__construct($op, [$e0, $e1]);
-        $this->format_ = self::FBOOL;
+        $this->_format = self::FBOOL;
     }
     function typecheck(Formula $formula) {
         $this->typecheck_resolve_neighbors($formula);
@@ -383,7 +386,7 @@ class Or_Fexpr extends Fexpr {
 class Not_Fexpr extends Fexpr {
     function __construct(Fexpr $e) {
         parent::__construct("!", [$e]);
-        $this->format_ = self::FBOOL;
+        $this->_format = self::FBOOL;
     }
     function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
@@ -395,7 +398,7 @@ class Unary_Fexpr extends Fexpr {
     function __construct($op, Fexpr $e) {
         assert($op === "+" || $op === "-");
         parent::__construct($op, [$e]);
-        $this->format_ = null;
+        $this->_format = null;
     }
     function typecheck(Formula $formula) {
         return $this->typecheck_arguments($formula, true);
@@ -513,7 +516,7 @@ class In_Fexpr extends Fexpr {
     function __construct(Fexpr $e, array $values) {
         parent::__construct("in", [$e]);
         $this->values = $values;
-        $this->format_ = self::FBOOL;
+        $this->_format = self::FBOOL;
     }
     function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
@@ -792,7 +795,7 @@ class Score_Fexpr extends Fexpr {
     private $field;
     function __construct(ReviewField $field) {
         parent::__construct("rf");
-        $this->field = $this->format_ = $field;
+        $this->field = $this->_format = $field;
     }
     function view_score(Contact $user) {
         return $this->field->view_score;
@@ -834,9 +837,9 @@ class Let_Fexpr extends Fexpr {
     }
     function typecheck(Formula $formula) {
         $ok0 = $this->args[0]->typecheck($formula);
-        $this->vardef->format_ = $ok0 ? $this->args[0]->format() : self::FERROR;
+        $this->vardef->_format = $ok0 ? $this->args[0]->format() : self::FERROR;
         $ok1 = $this->args[1]->typecheck($formula);
-        $this->format_ = $ok0 && $ok1 ? $this->args[1]->format() : self::FERROR;
+        $this->_format = $ok0 && $ok1 ? $this->args[1]->format() : self::FERROR;
         return $ok0 && $ok1;
     }
     function compile(FormulaCompiler $state) {
@@ -871,7 +874,7 @@ class VarUse_Fexpr extends Fexpr {
         $this->vardef = $vardef;
     }
     function typecheck(Formula $formula) {
-        $this->format_ = $this->vardef->format();
+        $this->_format = $this->vardef->format();
         return true;
     }
     function compile(FormulaCompiler $state) {

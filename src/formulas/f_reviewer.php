@@ -4,7 +4,7 @@
 
 class Reviewer_Fexpr extends Review_Fexpr {
     function __construct() {
-        $this->format_ = Fexpr::FREVIEWER;
+        $this->_format = Fexpr::FREVIEWER;
     }
     function view_score(Contact $user) {
         return VIEWSCORE_PC;

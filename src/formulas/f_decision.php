@@ -4,7 +4,7 @@
 
 class Decision_Fexpr extends Fexpr {
     function __construct() {
-        $this->format_ = self::FDECISION;
+        $this->_format = self::FDECISION;
     }
     function view_score(Contact $user) {
         if ($user->can_view_some_decision_as_author()) {

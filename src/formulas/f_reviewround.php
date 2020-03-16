@@ -4,7 +4,7 @@
 
 class ReviewRound_Fexpr extends Fexpr {
     function __construct() {
-        $this->format_ = self::FROUND;
+        $this->_format = self::FROUND;
     }
     function view_score(Contact $user) {
         return VIEWSCORE_PC;

@@ -57,6 +57,7 @@ scores A, B, and D is A. For instance:</p>
         echo $hth->trow("<em>e1</em> &amp;&amp; <em>e2</em>", "Logical and (returns <em>e1</em> if <em>e1</em> is false, otherwise returns <em>e2</em>)");
         echo $hth->trow("<em>e1</em> || <em>e2</em>", "Logical or (returns <em>e1</em> if <em>e1</em> is true, otherwise returns <em>e2</em>)");
         echo $hth->trow("<em>test</em> ? <em>iftrue</em> : <em>iffalse</em>", "If-then-else operator");
+        echo $hth->trow("let <em>var</em> = <em>val</em> in <em>e</em>", "Local variable definition");
         echo $hth->trow("(<em>e</em>)", "Parentheses");
         echo $hth->trow("greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
         echo $hth->trow("least(<em>e</em>, <em>e</em>, ...)", "Minimum");

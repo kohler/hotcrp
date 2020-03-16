@@ -4,7 +4,7 @@
 
 class Revtype_Fexpr extends Fexpr {
     function __construct() {
-        $this->format_ = self::FREVTYPE;
+        $this->_format = self::FREVTYPE;
     }
     function view_score(Contact $user) {
         return VIEWSCORE_PC;

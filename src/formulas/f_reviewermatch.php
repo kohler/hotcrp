@@ -12,7 +12,7 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
     private static $tagmap_conf = null;
     function __construct(Contact $user, $arg) {
         $this->user = $user;
-        $this->format_ = self::FBOOL;
+        $this->_format = self::FBOOL;
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && $user->conf->pc_tag_exists($arg));
         $flags = ContactSearch::F_USER;

@@ -5,9 +5,9 @@
 class Option_Fexpr extends Fexpr {
     private $option;
     function __construct(PaperOption $option) {
-        $this->option = $this->format_ = $option;
+        $this->option = $this->_format = $option;
         if ($this->option->type === "checkbox") {
-            $this->format_ = self::FBOOL;
+            $this->_format = self::FBOOL;
         }
     }
     function compile(FormulaCompiler $state) {
