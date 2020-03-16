@@ -872,9 +872,6 @@ class Let_Fexpr extends Fexpr {
         $this->_format = $ok0 && $ok1 ? $this->args[1]->format() : self::FERROR;
         return $ok0 && $ok1;
     }
-    function inferred_index() {
-        return $this->args[1]->inferred_index();
-    }
     function compile(FormulaCompiler $state) {
         $this->vardef->ltemp = $state->_addltemp($this->args[0]->compile($state));
         return $this->args[1]->compile($state);
