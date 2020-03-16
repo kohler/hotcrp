@@ -103,7 +103,6 @@ class SiteLoader {
         "PaperInfoSet" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",
         "PaperValue" => "src/paperoption.php",
-        "Review_Fexpr" => "src/formula.php",
         "ReviewField" => "src/review.php",
         "ReviewFieldInfo" => "src/review.php",
         "ReviewForm" => "src/review.php",

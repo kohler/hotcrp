@@ -7,6 +7,7 @@ class Tag_Fexpr extends Fexpr {
     private $tsm;
     private $isvalue;
     function __construct($tag, TagSearchMatcher $tsm, $isvalue) {
+        parent::__construct("tag");
         $this->tag = $tag;
         $this->tsm = $tsm;
         $this->isvalue = $isvalue;

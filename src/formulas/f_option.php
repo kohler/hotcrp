@@ -5,6 +5,7 @@
 class Option_Fexpr extends Fexpr {
     private $option;
     function __construct(PaperOption $option) {
+        parent::__construct("option");
         $this->option = $this->_format = $option;
         if ($this->option->type === "checkbox") {
             $this->_format = self::FBOOL;

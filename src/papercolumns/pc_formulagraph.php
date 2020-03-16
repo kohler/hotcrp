@@ -19,8 +19,8 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         $this->format_field = $this->formula->result_format();
         $this->formula_function = $this->formula->compile_sortable_function();
         $this->indexes_function = null;
-        if ($this->formula->is_indexed())
-            $this->indexes_function = Formula::compile_indexes_function($pl->user, $this->formula->datatypes());
+        if ($this->formula->indexed())
+            $this->indexes_function = Formula::compile_indexes_function($pl->user, $this->formula->index_type());
         if ($visible)
             $this->formula->add_query_options($pl->qopts);
         parent::prepare($pl, $visible);
@@ -42,7 +42,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
 
     static function expand($name, $user, $xfj, $m) {
-        $formula = new Formula($m[1], Formula::FREVIEW);
+        $formula = new Formula($m[1], Formula::ALLOW_INDEXED);
         if (!$formula->check($user)) {
             $user->conf->xt_factory_error("Formula error: " . $formula->error_html());
             return null;

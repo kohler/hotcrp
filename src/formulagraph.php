@@ -76,24 +76,25 @@ class FormulaGraph extends MessageSet {
             $fy = $fy_gtype;
         }
 
-        $this->fy = new Formula($fy, Formula::FREVIEW);
+        $this->fy = new Formula($fy, Formula::ALLOW_INDEXED);
         $this->fy->check($this->user);
         if (!$this->type) {
             $this->type = self::SCATTER;
-            if (!$this->fy->datatypes() && $this->fy->support_combiner())
+            if (!$this->fy->index_type() && $this->fy->support_combiner()) {
                 $this->type = self::BARCHART;
+            }
         }
 
         // X axis expression(s)
         $this->fx_expression = $fx;
         if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
-            $this->fx = new Formula("0", Formula::FREVIEW);
+            $this->fx = new Formula("0", Formula::ALLOW_INDEXED);
             $this->fx_type = Fexpr::FSEARCH;
         } else if (strcasecmp($fx, "tag") == 0) {
-            $this->fx = new Formula("0", Formula::FREVIEW);
+            $this->fx = new Formula("0", Formula::ALLOW_INDEXED);
             $this->fx_type = Fexpr::FTAG;
         } else if (!($this->type & self::CDF)) {
-            $this->fx = new Formula($fx, Formula::FREVIEW);
+            $this->fx = new Formula($fx, Formula::ALLOW_INDEXED);
             if (!$this->fx->check($this->user)) {
                 $this->error_at("fx", "X axis formula error: " . $this->fx->error_html());
             }
@@ -105,7 +106,7 @@ class FormulaGraph extends MessageSet {
                     break;
                 }
                 $pos = Formula::span_maximal_formula($fx);
-                $this->fxs[] = $f = new Formula(substr($fx, 0, $pos), Formula::FREVIEW);
+                $this->fxs[] = $f = new Formula(substr($fx, 0, $pos), Formula::ALLOW_INDEXED);
                 if (!$f->check($this->user)) {
                     $this->error_at("fx", "X axis formula error: " . $f->error_html());
                 }
@@ -116,7 +117,7 @@ class FormulaGraph extends MessageSet {
             $this->error_at("fy", "Y axis formula error: " . $this->fy->error_html());
         } else if (($this->type & self::BARCHART) && !$this->fy->support_combiner()) {
             $this->error_at("fy", "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.");
-            $this->fy = new Formula("sum(0)", Formula::FREVIEW);
+            $this->fy = new Formula("sum(0)", Formula::ALLOW_INDEXED);
             $this->fy->check($this->user);
         } else if (($this->type & self::CDF) && $this->fx_type === Fexpr::FTAG) {
             $this->error_at("fy", "CDFs by tag don’t make sense.");
@@ -178,7 +179,7 @@ class FormulaGraph extends MessageSet {
         $this->fxorder = null;
         $xorder = simplify_whitespace($xorder);
         if ($xorder !== "" && $this->type !== self::SCATTER) {
-            $fxorder = new Formula($xorder, Formula::FREVIEW);
+            $fxorder = new Formula($xorder, Formula::ALLOW_INDEXED);
             $fxorder->check($this->user);
             if ($fxorder->error_html()) {
                 $this->error_at("xorder", "X order formula error: " . $fxorder->error_html());
@@ -219,8 +220,8 @@ class FormulaGraph extends MessageSet {
 
         $fxf = $fx->compile_json_function();
         $reviewf = null;
-        if ($fx->is_indexed()) {
-            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes());
+        if ($fx->indexed()) {
+            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type());
         }
 
         foreach ($rowset->all() as $prow) {
@@ -356,8 +357,8 @@ class FormulaGraph extends MessageSet {
         $fxf = $this->fx->compile_json_function();
         $fyf = $this->fy->compile_json_function();
         $reviewf = null;
-        if ($this->fx->is_indexed() || $this->fy->is_indexed()) {
-            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes() | $this->fy->datatypes());
+        if ($this->fx->indexed() || $this->fy->indexed()) {
+            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type() | $this->fy->index_type());
         }
         $orderf = $order_data = null;
         if ($this->fxorder) {
@@ -433,8 +434,8 @@ class FormulaGraph extends MessageSet {
         $fytrack = $this->fy->compile_extractor_function();
         $fycombine = $this->fy->compile_combiner_function();
         $reviewf = null;
-        if ($this->fx->is_indexed() || $this->fy->datatypes()) {
-            $reviewf = Formula::compile_indexes_function($this->user, ($this->fx->is_indexed() ? $this->fx->datatypes() : 0) | $this->fy->datatypes());
+        if ($this->fx->indexed() || $this->fy->index_type()) {
+            $reviewf = Formula::compile_indexes_function($this->user, ($this->fx->indexed() ? $this->fx->index_type() : 0) | $this->fy->index_type());
         }
 
         foreach ($rowset->all() as $prow) {
@@ -453,7 +454,7 @@ class FormulaGraph extends MessageSet {
                     $s = get($this->reviewer_color, $x) ? : "";
                 }
                 $d = [$x, $fytrack($prow, $rcid, $this->user), $prow->paperId, $s];
-                if ($rrow && $rrow->reviewOrdinal && $this->fx->is_indexed()) {
+                if ($rrow && $rrow->reviewOrdinal && $this->fx->indexed()) {
                     $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
                 }
                 foreach ($queries as $q) {
@@ -491,7 +492,7 @@ class FormulaGraph extends MessageSet {
                 array_pop($d);
                 $d[3] || array_pop($d);
             }
-            if ($reviewf && !$this->fx->is_indexed()) {
+            if ($reviewf && !$this->fx->indexed()) {
                 $d[2] = array_values(array_unique($d[2]));
             }
             $newdata[] = $d;
@@ -660,7 +661,7 @@ class FormulaGraph extends MessageSet {
         $queryOptions = array("paperId" => $paperIds, "tags" => true);
         $this->fx->add_query_options($queryOptions);
         $this->fy->add_query_options($queryOptions);
-        if ($this->fx->is_indexed() || $this->fy->is_indexed())
+        if ($this->fx->indexed() || $this->fy->indexed())
             $queryOptions["reviewSignatures"] = true;
 
         $result = $this->conf->paper_result($queryOptions, $this->user);
@@ -689,7 +690,7 @@ class FormulaGraph extends MessageSet {
         $f = $isx ? $this->fx : $this->fy;
         $j = array();
 
-        $counttype = $this->fx->is_indexed() ? "reviews" : "papers";
+        $counttype = $this->fx->indexed() ? "reviews" : "papers";
         if ($isx) {
             $j["label"] = $this->fx_expression;
         } else if ($this->type === self::FBARCHART) {
@@ -709,11 +710,12 @@ class FormulaGraph extends MessageSet {
 
         $format = $f->result_format();
         if ($isx && $this->fxs && $format) {
-            foreach ($this->fxs as $fx)
+            foreach ($this->fxs as $fx) {
                 if ($fx->result_format() !== $format) {
                     $format = 0;
                     break;
                 }
+            }
         }
         if ($isx && $this->fx_type == Fexpr::FSEARCH) {
             $j["ticks"] = ["named", $this->queries];

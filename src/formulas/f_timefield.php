@@ -5,6 +5,7 @@
 class TimeField_Fexpr extends Fexpr {
     private $field;
     function __construct($field) {
+        parent::__construct($field);
         $this->field = $field;
     }
     function compile(FormulaCompiler $state) {

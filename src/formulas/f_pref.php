@@ -3,11 +3,13 @@
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
 class Pref_Fexpr extends Fexpr {
-    private $isexpertise;
+    private $is_expertise;
     private $cids;
     function __construct($ff) {
-        $this->isexpertise = is_object($ff) ? $ff->kwdef->is_expertise : $ff;
-        $this->_format = $this->isexpertise ? self::FPREFEXPERTISE : null;
+        $is_expertise = is_object($ff) ? $ff->kwdef->is_expertise : $ff;
+        parent::__construct($is_expertise ? "prefexp" : "pref");
+        $this->is_expertise = $is_expertise;
+        $this->_format = $is_expertise ? self::FPREFEXPERTISE : null;
         if (is_object($ff) && $ff->modifier) {
             $this->cids = $ff->modifier;
         }
@@ -25,6 +27,9 @@ class Pref_Fexpr extends Fexpr {
         }
         return false;
     }
+    function inferred_index() {
+        return Fexpr::IDX_PC;
+    }
     function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
@@ -33,9 +38,8 @@ class Pref_Fexpr extends Fexpr {
             return "null";
         }
         $state->queryOptions["allReviewerPreference"] = true;
-        $state->datatype |= self::APREF;
         $e = "((" . $state->_add_preferences() . "[" . $state->loop_cid(true) . "] ?? [])"
-            . "[" . ($this->isexpertise ? 1 : 0) . "] ?? null)";
+            . "[" . ($this->is_expertise ? 1 : 0) . "] ?? null)";
         if ($this->cids) {
             $e = "(in_array(" . $state->loop_cid() . ", [" . join(",", $this->cids) . "]) ? $e : null)";
         }

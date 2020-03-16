@@ -4,14 +4,17 @@
 
 class Revtype_Fexpr extends Fexpr {
     function __construct() {
+        parent::__construct("retype");
         $this->_format = self::FREVTYPE;
+    }
+    function inferred_index() {
+        return Fexpr::IDX_REVIEW;
     }
     function view_score(Contact $user) {
         return VIEWSCORE_PC;
     }
     function compile(FormulaCompiler $state) {
-        $state->datatype |= self::ASUBREV;
-        if ($state->looptype === self::LMY) {
+        if ($state->looptype === Fexpr::IDX_MY) {
             $rt = $state->define_gvar("myrevtype", "\$prow->review_type(\$contact)");
         } else {
             $view_score = $state->user->permissive_view_score_bound();

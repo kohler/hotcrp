@@ -16,7 +16,7 @@ class Formula_SearchTerm extends SearchTerm {
             $formula = $srch->conf->find_named_formula($word);
         }
         if (!$formula) {
-            $formula = new Formula($word, $is_graph ? Formula::FREVIEW : 0);
+            $formula = new Formula($word, $is_graph ? Formula::ALLOW_INDEXED : 0);
         }
         if (!$formula->check($srch->user)) {
             $srch->warn("Formula error: " . $formula->error_html());

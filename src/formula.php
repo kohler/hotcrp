@@ -31,15 +31,10 @@ class Fexpr implements JsonSerializable {
     public $pos1;
     public $pos2;
 
-    const ASUBREV = 1;
-    const APREF = 2;
-    const APCCANREV = 4;
-    const ACONF = 8;
-    const APC = 16;
-
-    const LNONE = 0;
-    const LMY = 1;
-    const LALL = 2;
+    const IDX_NONE = 0;
+    const IDX_PC = 1;
+    const IDX_REVIEW = 2;
+    const IDX_MY = 4;
 
     const FNULL = -1;
     const FERROR = -2;
@@ -140,6 +135,14 @@ class Fexpr implements JsonSerializable {
 
     function typecheck_format() {
         return null;
+    }
+
+    function inferred_index() {
+        $lt = 0;
+        foreach ($this->args as $a) {
+            $lt |= $a->inferred_index();
+        }
+        return $lt;
     }
 
     function view_score(Contact $user) {
@@ -607,10 +610,10 @@ class Round_Fexpr extends Fexpr {
 }
 
 class AggregateFexpr extends Fexpr {
-    public $datatype;
-    function __construct($fn, array $values, $datatype = null) {
+    public $index_type;
+    function __construct($fn, array $values, int $index_type) {
         parent::__construct($fn, $values);
-        $this->datatype = (int) $datatype;
+        $this->index_type = $index_type;
     }
     static function parse_modifier(FormulaCall $ff, $arg) {
         if (!$ff->modifier) {
@@ -618,7 +621,11 @@ class AggregateFexpr extends Fexpr {
         }
         if ($arg === ".pc"
             && !$ff->modifier[0]) {
-            $ff->modifier[0] = Fexpr::APC;
+            $ff->modifier[0] = Fexpr::IDX_PC;
+            return true;
+        } else if ($arg === ".re"
+                   && !$ff->modifier[0]) {
+            $ff->modifier[0] = Fexpr::IDX_REVIEW;
             return true;
         } else if (($ff->name === "variance" || $ff->name === "stddev")
                    && !$ff->modifier[1]
@@ -655,7 +662,7 @@ class AggregateFexpr extends Fexpr {
             || $op === "wavg" || $op === "quantile") {
             $arg_count = 2;
         }
-        if (count($ff->args) != $arg_count) {
+        if (count($ff->args) !== $arg_count) {
             $ff->lerror("Wrong number of arguments (expected $arg_count).");
             return null;
         }
@@ -663,7 +670,14 @@ class AggregateFexpr extends Fexpr {
             $op = "arg" . substr($op, 2, 3);
             $ff->args = [$ff->args[1], $ff->args[0]];
         }
-        return new AggregateFexpr($op, $ff->args, $ff->modifier ? $ff->modifier[0] : null);
+        if ($op === "my") {
+            $index_type = Fexpr::IDX_MY;
+        } else if ($ff->modifier) {
+            $index_type = $ff->modifier[0];
+        } else {
+            $index_type = 0;
+        }
+        return new AggregateFexpr($op, $ff->args, $index_type);
     }
 
     function typecheck(Formula $formula) {
@@ -674,6 +688,15 @@ class AggregateFexpr extends Fexpr {
         }
         if (count($this->args) > 1 && !$this->args[1]->math_format()) {
             $ok = $formula->fexpr_lerror($this->args[1], "Unusable in math expressions.");
+        }
+        if ($ok && !$this->index_type) {
+            $lt = parent::inferred_index();
+            if ($lt === 0 || ($lt & ($lt - 1)) === 0) {
+                $this->index_type = $lt;
+            } else {
+                $formula->fexpr_lerror($this, "Can’t infer index, specify “{$this->op}.pc” or “{$this->op}.re”.");
+                $ok = false;
+            }
         }
         return $ok;
     }
@@ -691,6 +714,10 @@ class AggregateFexpr extends Fexpr {
         } else {
             return null;
         }
+    }
+
+    function inferred_index() {
+        return 0;
     }
 
     static function quantile($a, $p) {
@@ -805,6 +832,9 @@ class Score_Fexpr extends Fexpr {
         parent::__construct("rf");
         $this->field = $this->_format = $field;
     }
+    function inferred_index() {
+        return self::IDX_REVIEW;
+    }
     function view_score(Contact $user) {
         return $this->field->view_score;
     }
@@ -812,7 +842,6 @@ class Score_Fexpr extends Fexpr {
         if ($this->field->view_score <= $state->user->permissive_view_score_bound()) {
             return "null";
         }
-        $state->datatype |= Fexpr::ASUBREV;
         $fid = $this->field->id;
         $state->_ensure_rrow_score($fid);
         $rrow = $state->_rrow();
@@ -825,18 +854,6 @@ class Score_Fexpr extends Fexpr {
     }
 }
 
-class Review_Fexpr extends Fexpr {
-    function view_score(Contact $user) {
-        if (!$user->conf->setting("rev_blind")) {
-            return VIEWSCORE_AUTHOR;
-        } else if ($user->conf->setting("pc_seeblindrev")) {
-            return VIEWSCORE_REVIEWERONLY;
-        } else {
-            return VIEWSCORE_PC;
-        }
-    }
-}
-
 class Let_Fexpr extends Fexpr {
     private $vardef;
     function __construct(VarDef_Fexpr $vardef, Fexpr $val, Fexpr $body) {
@@ -844,15 +861,27 @@ class Let_Fexpr extends Fexpr {
         $this->vardef = $vardef;
     }
     function typecheck(Formula $formula) {
-        $ok0 = $this->args[0]->typecheck($formula);
-        $this->vardef->_format = $ok0 ? $this->args[0]->format() : self::FERROR;
+        if (($ok0 = $this->args[0]->typecheck($formula))) {
+            $this->vardef->_format = $this->args[0]->format();
+            $this->vardef->_index_type = $this->args[0]->inferred_index();
+        } else {
+            $this->vardef->_format = self::FERROR;
+            $this->vardef->_index_type = 0;
+        }
         $ok1 = $this->args[1]->typecheck($formula);
         $this->_format = $ok0 && $ok1 ? $this->args[1]->format() : self::FERROR;
         return $ok0 && $ok1;
     }
+    function inferred_index() {
+        return $this->args[1]->inferred_index();
+    }
     function compile(FormulaCompiler $state) {
         $this->vardef->ltemp = $state->_addltemp($this->args[0]->compile($state));
         return $this->args[1]->compile($state);
+    }
+    function compile_extractor(FormulaCompiler $state) {
+        $this->vardef->ltemp = $state->_addltemp($this->args[0]->compile($state));
+        return $this->args[1]->compile_extractor($state);
     }
     function jsonSerialize() {
         return ["op" => "let", "name" => $this->vardef->name(),
@@ -863,12 +892,17 @@ class Let_Fexpr extends Fexpr {
 class VarDef_Fexpr extends Fexpr {
     private $name;
     public $ltemp;
+    public $_index_type;
     function __construct($name) {
         parent::__construct("vardef");
         $this->name = $name;
     }
     function name() {
         return $this->name;
+    }
+    function inferred_index() {
+        assert($this->_index_type !== null);
+        return $this->_index_type;
     }
     function jsonSerialize() {
         return ["op" => "vardef", "name" => $this->name];
@@ -884,6 +918,9 @@ class VarUse_Fexpr extends Fexpr {
     function typecheck(Formula $formula) {
         $this->_format = $this->vardef->format();
         return true;
+    }
+    function inferred_index() {
+        return $this->vardef->inferred_index();
     }
     function compile(FormulaCompiler $state) {
         return $this->vardef->ltemp;
@@ -903,9 +940,8 @@ class FormulaCompiler {
     public $lstmt;
     public $fragments = array();
     public $combining = null;
-    public $looptype;
-    public $datatype;
-    public $all_datatypes = 0;
+    public $index_type;
+    public $indexed;
     private $_lprefix;
     private $_maxlprefix;
     private $_lflags;
@@ -928,8 +964,8 @@ class FormulaCompiler {
 
     function clear() {
         $this->gvar = $this->g0stmt = $this->gstmt = $this->lstmt = [];
-        $this->looptype = Fexpr::LNONE;
-        $this->datatype = 0;
+        $this->index_type = Fexpr::IDX_NONE;
+        $this->indexed = false;
         $this->_lprefix = 0;
         $this->_maxlprefix = 0;
         $this->_lflags = 0;
@@ -937,7 +973,7 @@ class FormulaCompiler {
     }
 
     function check_gvar($gvar) {
-        if (get($this->gvar, $gvar)) {
+        if ($this->gvar[$gvar] ?? false) {
             return false;
         } else {
             $this->gvar[$gvar] = $gvar;
@@ -959,15 +995,9 @@ class FormulaCompiler {
 
     function _add_pc() {
         if ($this->check_gvar('$pc')) {
-            $this->gstmt[] = "\$pc = \$contact->conf->pc_members_and_admins();";
+            $this->gstmt[] = "\$pc = \$contact->conf->pc_members();";
         }
         return '$pc';
-    }
-    function _add_pc_can_review() {
-        if ($this->check_gvar('$pc_can_review')) {
-            $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer_ignore_conflict();";
-        }
-        return '$pc_can_review';
     }
     function _add_vsreviews() {
         if ($this->check_gvar('$vsreviews')) {
@@ -1010,9 +1040,10 @@ class FormulaCompiler {
     }
 
     function loop_cid($aggregate = false) {
-        if ($this->looptype === Fexpr::LNONE) {
+        $this->indexed = true;
+        if ($this->index_type === Fexpr::IDX_NONE) {
             return '$rrow_cid';
-        } else if ($this->looptype === Fexpr::LMY) {
+        } else if ($this->index_type === Fexpr::IDX_MY) {
             return (string) $this->user->contactId;
         } else {
             if (!$aggregate) {
@@ -1022,9 +1053,10 @@ class FormulaCompiler {
         }
     }
     function _rrow() {
-        if ($this->looptype === Fexpr::LNONE) {
+        $this->indexed = true;
+        if ($this->index_type === Fexpr::IDX_NONE) {
             return $this->define_gvar("rrow", "\$prow->review_of_user(\$rrow_cid)");
-        } else if ($this->looptype === Fexpr::LMY) {
+        } else if ($this->index_type === Fexpr::IDX_MY) {
             return $this->define_gvar("myrrow", "\$prow->review_of_user(" . $this->user->contactId . ")");
         } else {
             $this->_add_vsreviews();
@@ -1034,9 +1066,9 @@ class FormulaCompiler {
     }
     function _rrow_view_score_bound() {
         $rrow = $this->_rrow();
-        if ($this->looptype === Fexpr::LNONE) {
+        if ($this->index_type === Fexpr::IDX_NONE) {
             return $this->define_gvar("rrow_vsb", "({$rrow} ? \$contact->view_score_bound(\$prow, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ")");
-        } else if ($this->looptype === Fexpr::LMY) {
+        } else if ($this->index_type === Fexpr::IDX_MY) {
             return $this->define_gvar("myrrow_vsb", "({$rrow} ? \$contact->view_score_bound(\$prow, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ")");
         } else {
             $this->_lflags |= self::LFLAG_RROW_VSB | self::LFLAG_CID;
@@ -1060,18 +1092,17 @@ class FormulaCompiler {
     }
 
     private function _push() {
-        $this->_stack[] = [$this->_lprefix, $this->lstmt, $this->looptype, $this->datatype, $this->_lflags];
+        $this->_stack[] = [$this->_lprefix, $this->lstmt, $this->index_type, $this->indexed, $this->_lflags];
         $this->_lprefix = ++$this->_maxlprefix;
         $this->lstmt = array();
-        $this->looptype = Fexpr::LNONE;
-        $this->datatype = 0;
+        $this->index_type = Fexpr::IDX_NONE;
+        $this->indexed = false;
         $this->_lflags = 0;
         $this->indent += 2;
         return $this->_lprefix;
     }
     private function _pop() {
-        $this->all_datatypes |= $this->datatype;
-        list($this->_lprefix, $this->lstmt, $this->looptype, $this->datatype, $this->_lflags) = array_pop($this->_stack);
+        list($this->_lprefix, $this->lstmt, $this->index_type, $this->indexed, $this->_lflags) = array_pop($this->_stack);
         $this->indent -= 2;
     }
     function _addltemp($expr = "null", $always_var = false) {
@@ -1091,27 +1122,18 @@ class FormulaCompiler {
         return $t;
     }
 
-    function loop_variable($datatype) {
+    function loop_variable($index_types) {
         $g = array();
-        if ($datatype & Fexpr::ASUBREV) {
-            $g[] = $this->_add_vsreviews();
-        }
-        if ($datatype & Fexpr::APC) {
+        assert($index_types === ($index_types & (Fexpr::IDX_REVIEW | Fexpr::IDX_PC)));
+        if ($index_types & Fexpr::IDX_PC) {
             $g[] = $this->_add_pc();
-        } else {
-            if ($datatype & Fexpr::APCCANREV) {
-                $g[] = $this->_add_pc_can_review();
-            }
-            if ($datatype & Fexpr::APREF) {
-                $g[] = $this->_add_preferences();
-            }
-            if ($datatype & Fexpr::ACONF) {
-                $g[] = $this->_add_conflicts();
-            }
+        }
+        if ($index_types & Fexpr::IDX_REVIEW) {
+            $g[] = $this->_add_vsreviews();
         }
         if (count($g) > 1) {
             return join(" + ", $g);
-        } else if (count($g)) {
+        } else if (!empty($g)) {
             return $g[0];
         } else {
             return $this->define_gvar("trivial_loop", "[0]");
@@ -1121,8 +1143,7 @@ class FormulaCompiler {
         $t_result = $this->_addltemp($initial_value, true);
         $combiner = str_replace("~r~", $t_result, $combiner);
         $p = $this->_push();
-        $this->looptype = Fexpr::LALL;
-        $this->datatype = $e->datatype;
+        $this->index_type = $e->index_type;
         $loopstmt = [];
 
         preg_match_all('/~l(\d*)~/', $combiner, $m);
@@ -1148,7 +1169,7 @@ class FormulaCompiler {
         if ($this->_lflags) {
             $lstmt_pfx = [];
             if ($this->_lflags & self::LFLAG_RROW) {
-                if ($this->datatype === Fexpr::ASUBREV) {
+                if ($this->index_type === Fexpr::IDX_REVIEW) {
                     $v = "\$v$p";
                 } else {
                     $v = "(\$vsreviews[\$i$p] ?? null)";
@@ -1167,9 +1188,9 @@ class FormulaCompiler {
         }
 
         if ($this->combining !== null) {
-            $loop = "foreach (\$groups as \$v$p) " . $this->_join_lstmt(true);
+            $loop = "foreach (\$extractor_results as \$v$p) " . $this->_join_lstmt(true);
         } else {
-            $g = $this->loop_variable($this->datatype);
+            $g = $this->loop_variable($this->index_type);
             $loop = "foreach ($g as \$i$p => \$v$p) "
                 . str_replace("~i~", "\$i$p", $this->_join_lstmt(true));
             $loop = str_replace("({$g}[\$i$p] ?? null)", "\$v$p", $loop);
@@ -1183,7 +1204,7 @@ class FormulaCompiler {
 
     function _compile_my(Fexpr $e) {
         $p = $this->_push();
-        $this->looptype = Fexpr::LMY;
+        $this->index_type = Fexpr::IDX_MY;
         $t = $this->_addltemp($e->compile($this));
         $loop = $this->_join_lstmt(false);
         $this->_pop();
@@ -1202,8 +1223,8 @@ class FormulaCompiler {
 
 class FormulaParse {
     public $fexpr;
-    public $need_review;
-    public $datatypes;
+    public $indexed;
+    public $index_type;
     public $format = Fexpr::FERROR;
     public $tagrefs;
     public $lerrors;
@@ -1212,15 +1233,16 @@ class FormulaParse {
 class Formula implements Abbreviator, JsonSerializable {
     public $conf;
     public $user;
+
     public $formulaId;
     public $name;
     public $expression;
     public $createdBy = 0;
     public $timeModified = 0;
 
+    private $_allow_indexed;
     private $_abbreviation;
 
-    private $_allow_review;
     private $_depth = 0;
     private $_macro;
     private $_bind;
@@ -1263,15 +1285,15 @@ class Formula implements Abbreviator, JsonSerializable {
         "and" => "&&", "or" => "||"
     );
 
-    const FREVIEW = 1;
+    const ALLOW_INDEXED = 1;
     function __construct($expr = null, $flags = 0) {
         if ($flags === true) {
-            $flags = self::FREVIEW; // XXX backward compat
+            $flags = self::ALLOW_INDEXED; // XXX backward compat
         }
         assert(is_int($flags));
         if ($expr !== null) {
             $this->expression = $expr;
-            $this->_allow_review = ($flags & self::FREVIEW) !== 0;
+            $this->_allow_indexed = ($flags & self::ALLOW_INDEXED) !== 0;
         }
         $this->merge();
     }
@@ -1361,19 +1383,24 @@ class Formula implements Abbreviator, JsonSerializable {
         } else {
             $state = new FormulaCompiler($this->user);
             $e->compile($state);
-            if ($state->datatype && !$this->_allow_review
+            if ($state->indexed && !$this->_allow_indexed
                 && $e->matches_at_most_once()) {
                 $e = new AggregateFexpr("some", [$e]);
                 $state = new FormulaCompiler($this->user);
                 $e->compile($state);
             }
-            if ($state->datatype && !$this->_allow_review) {
+            if ($state->indexed && !$this->_allow_indexed) {
                 $this->fexpr_lerror($e, "Need an aggregate function like “sum” or “max”.");
             } else {
-                $e->text = $this->expression;
                 $fp->fexpr = $e;
-                $fp->need_review = !!$state->datatype;
-                $fp->datatypes = $state->all_datatypes | $state->datatype;
+                $fp->indexed = !!$state->indexed;
+                if ($fp->indexed) {
+                    $fp->index_type = $e->inferred_index();
+                } else if ($e instanceof AggregateFexpr) {
+                    $fp->index_type = $e->index_type;
+                } else {
+                    $fp->index_type = 0;
+                }
                 $fp->format = $e->format();
                 $fp->tagrefs = $state->tagrefs;
             }
@@ -1993,7 +2020,7 @@ class Formula implements Abbreviator, JsonSerializable {
             $expr = $this->_parse->fexpr->compile($state);
             $t = self::compile_body($this->user, $state, $expr, $sortable);
         } else {
-            $t = "return null;";
+            $t = "return null;\n";
         }
 
         $args = '$prow, $rrow_cid, $contact';
@@ -2013,9 +2040,9 @@ class Formula implements Abbreviator, JsonSerializable {
         return $this->_compile_function(2);
     }
 
-    static function compile_indexes_function(Contact $user, $datatypes) {
+    static function compile_indexes_function(Contact $user, $index_types) {
         $state = new FormulaCompiler($user);
-        $g = $state->loop_variable($datatypes);
+        $g = $state->loop_variable($index_types);
         $t = "assert(\$contact->contactId == $user->contactId);\n  "
             . join("\n  ", $state->gstmt)
             . "\n  return array_keys($g);\n";
@@ -2061,7 +2088,7 @@ class Formula implements Abbreviator, JsonSerializable {
         } else {
             $t = "return null;\n";
         }
-        $args = '$groups';
+        $args = '$extractor_results';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combiner " . simplify_whitespace($this->expression) . "\n  $t}\n");
         return eval("return function ($args) {\n  $t};");
     }
@@ -2191,8 +2218,8 @@ class Formula implements Abbreviator, JsonSerializable {
             $state = new FormulaCompiler($this->user);
             $state->queryOptions =& $queryOptions;
             $this->_parse->fexpr->compile($state);
-            if ($this->_parse->need_review) {
-                $state->loop_variable($state->all_datatypes);
+            if ($this->_parse->indexed) {
+                $state->loop_variable($this->_parse->index_type);
             }
         }
     }
@@ -2207,10 +2234,6 @@ class Formula implements Abbreviator, JsonSerializable {
 
     function column_header() {
         return $this->name ? : $this->expression;
-    }
-
-    function is_indexed() {
-        return $this->check() && $this->_parse->need_review;
     }
 
     function result_format() {
@@ -2235,8 +2258,11 @@ class Formula implements Abbreviator, JsonSerializable {
         return $this->check() && $this->_parse->fexpr->op === "sum";
     }
 
-    function datatypes() {
-        return $this->check() ? $this->_parse->datatypes : 0;
+    function indexed() {
+        return $this->check() && $this->_parse->indexed;
+    }
+    function index_type() {
+        return $this->check() ? $this->_parse->index_type : 0;
     }
 
     function jsonSerialize() {

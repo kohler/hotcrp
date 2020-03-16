@@ -8,11 +8,13 @@ class Conflict_Fexpr extends Fexpr {
         $this->ispc = is_object($ispc) ? $ispc->kwdef->is_pc : $ispc;
         $this->_format = self::FBOOL;
     }
+    function inferred_index() {
+        return Fexpr::IDX_PC;
+    }
     function compile(FormulaCompiler $state) {
         // XXX the actual search is different
-        $state->datatype |= self::ACONF;
         $idx = $state->loop_cid();
-        if ($state->looptype === self::LMY) {
+        if ($state->looptype === Fexpr::IDX_MY) {
             $rt = "\$prow->has_conflict($idx)";
         } else {
             $rt = "!!(" . $state->_add_conflicts() . "[" . $idx . "] ?? false)";

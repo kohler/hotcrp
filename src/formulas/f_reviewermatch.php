@@ -2,7 +2,7 @@
 // formulas/f_reviewermatch.php -- HotCRP helper class for formula expressions
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
-class ReviewerMatch_Fexpr extends Review_Fexpr {
+class ReviewerMatch_Fexpr extends Fexpr {
     private $user;
     private $arg;
     private $flags;
@@ -11,6 +11,7 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
     private static $tagmap = array();
     private static $tagmap_conf = null;
     function __construct(Contact $user, $arg) {
+        parent::__construct("reviewermatch");
         $this->user = $user;
         $this->_format = self::FBOOL;
         $this->arg = $arg;
@@ -25,8 +26,19 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         }
         $this->csearch = new ContactSearch($flags, $arg, $user);
     }
+    function inferred_index() {
+        return self::IDX_REVIEW;
+    }
     function view_score(Contact $user) {
-        return $this->istag ? VIEWSCORE_PC : parent::view_score($user);
+        if ($this->istag) {
+            return VIEWSCORE_PC;
+        } else if (!$user->conf->setting("rev_blind")) {
+            return VIEWSCORE_AUTHOR;
+        } else if ($user->conf->setting("pc_seeblindrev")) {
+            return VIEWSCORE_REVIEWERONLY;
+        } else {
+            return VIEWSCORE_PC;
+        }
     }
     function compile(FormulaCompiler $state) {
         assert($state->user === $this->user);
@@ -35,7 +47,6 @@ class ReviewerMatch_Fexpr extends Review_Fexpr {
         if (!$this->csearch->ids) {
             return "null";
         }
-        $state->datatype |= self::ASUBREV;
         $state->queryOptions["reviewSignatures"] = true;
         if ($this->istag) {
             assert($state->user->can_view_user_tags());
