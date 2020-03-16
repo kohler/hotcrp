@@ -1092,7 +1092,7 @@ class Conf {
                     $this->_defined_formulas[$f->formulaId] = $f;
                 }
                 Dbl::free($result);
-                uksort($this->_defined_formulas, function ($a, $b) {
+                uasort($this->_defined_formulas, function ($a, $b) {
                     return strnatcasecmp($a->name, $b->name);
                 });
             }
