@@ -299,15 +299,20 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         return true;
     }
     private function account_votes($pid, $vtag, AssignmentState $state) {
-        $res = $state->query(array("type" => "tag", "pid" => $pid));
-        $tag_re = '{\A\d+~' . preg_quote($vtag) . '\z}i';
+        $res = $state->query(["type" => "tag", "pid" => $pid]);
+        $suffix = strtolower("~" . $vtag);
         $is_vote = $state->conf->tags()->is_vote($vtag);
         $total = 0.0;
-        foreach ($res as $x)
-            if (preg_match($tag_re, $x["ltag"]))
+        foreach ($res as $x) {
+            $ltag = $x["ltag"];
+            if (ctype_digit($ltag[0])
+                && str_ends_with($ltag, $suffix)
+                && $state->conf->pc_member_by_id(substr($ltag, 0, -strlen($suffix)))) {
                 $total += $is_vote ? (float) $x["_index"] : 1.0;
-        $state->add(array("type" => "tag", "pid" => $pid, "ltag" => strtolower($vtag),
-                          "_tag" => $vtag, "_index" => $total, "_vote" => true));
+            }
+        }
+        $state->add(["type" => "tag", "pid" => $pid, "ltag" => strtolower($vtag),
+                     "_tag" => $vtag, "_index" => $total, "_vote" => true]);
     }
 }
 
