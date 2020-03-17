@@ -299,7 +299,7 @@ class PaperStatus extends MessageSet {
 
         $options = array();
         foreach ($this->conf->paper_opts->option_list() as $o) {
-            if ($user && !$user->can_view_option($prow, $o)) {
+            if ($user && !$user->can_edit_option($prow, $o)) {
                 continue;
             }
             $ov = $prow->force_option($o);
