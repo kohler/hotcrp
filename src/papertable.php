@@ -319,20 +319,23 @@ class PaperTable {
         }
         if ($this->foldmap[6]) {
             $abstract = $this->entryData("abstract");
-            if ($this->entryMatches || !$this->abstract_foldable($abstract))
+            if ($this->entryMatches || !$this->abstract_foldable($abstract)) {
                 $this->foldmap[6] = false;
+            }
         }
         if ($this->matchPreg && ($this->foldmap[8] || $this->foldmap[9])) {
             $this->entryData("authorInformation"); // check entryMatches
-            if ($this->entryMatches)
+            if ($this->entryMatches) {
                 $this->foldmap[8] = $this->foldmap[9] = false;
+            }
         }
 
         // collect folders
         $folders = ["clearfix", "need-fold-storage"];
         foreach ($this->foldmap as $num => $f) {
-            if ($num !== 8 || $this->user->view_authors_state($this->prow) === 1)
+            if ($num !== 8 || $this->user->view_authors_state($this->prow) === 1) {
                 $folders[] = "fold" . $num . ($f ? "c" : "o");
+            }
         }
 
         // echo div
@@ -349,11 +352,12 @@ class PaperTable {
     private function problem_status_at($f) {
         if ($this->edit_status) {
             if (str_starts_with($f, "au")) {
-                if ($f === "authorInformation")
+                if ($f === "authorInformation") {
                     $f = "authors";
-                else if (preg_match('/\A.*?(\d+)\z/', $f, $m)
-                         && ($ps = $this->edit_status->problem_status_at("author$m[1]")))
+                } else if (preg_match('/\A.*?(\d+)\z/', $f, $m)
+                           && ($ps = $this->edit_status->problem_status_at("author$m[1]"))) {
                     return $ps;
+                }
             }
             return $this->edit_status->problem_status_at($f);
         } else {

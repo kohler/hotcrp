@@ -378,13 +378,14 @@ class PaperOptionList {
     function nonfinal_option_list() {
         if ($this->_olist_nonfinal === null) {
             $this->_olist_nonfinal = [];
-            foreach ($this->option_json_list() as $id => $oj)
+            foreach ($this->option_json_list() as $id => $oj) {
                 if (!get($oj, "nonpaper")
                     && !get($oj, "final")
                     && ($o = $this->get($id))) {
                     assert(!$o->nonpaper && !$o->final);
                     $this->_olist_nonfinal[$id] = $o;
                 }
+            }
             uasort($this->_olist_nonfinal, "PaperOption::compare");
         }
         return $this->_olist_nonfinal;

@@ -124,35 +124,40 @@ class Default_PaperSaver extends PaperSaver {
 
             $authors[] = $au;
         }
-        if ($n !== 1)
+        if ($n !== 1) {
             $pj->authors = $authors;
+        }
 
         // Status
-        if ($action === "submit")
+        if ($action === "submit") {
             $pj->submitted = true;
-        else if ($action === "final")
+        } else if ($action === "final") {
             $pj->final_submitted = $pj->submitted = true;
-        else
+        } else {
             $pj->submitted = false;
+        }
 
         // Paper upload
         if ($qreq->has_file("paperUpload")) {
-            if ($action === "final")
+            if ($action === "final") {
                 $pj->final = DocumentInfo::make_file_upload($pj->pid, DTYPE_FINAL, $qreq->file("paperUpload"), $user->conf);
-            else if ($action === "update" || $action === "submit")
+            } else if ($action === "update" || $action === "submit") {
                 $pj->submission = DocumentInfo::make_file_upload($pj->pid, DTYPE_SUBMISSION, $qreq->file("paperUpload"), $user->conf);
+            }
         }
 
         // Blindness
-        if ($action !== "final" && $user->conf->subBlindOptional())
+        if ($action !== "final" && $user->conf->subBlindOptional()) {
             $pj->nonblind = !$qreq->blind;
+        }
 
         // Topics
         if ($qreq->has_topics) {
             $pj->topics = (object) array();
-            foreach ($user->conf->topic_set() as $tid => $tname)
+            foreach ($user->conf->topic_set() as $tid => $tname) {
                 if (+$qreq["top$tid"] > 0)
                     $pj->topics->$tname = true;
+            }
         }
 
         // Options
