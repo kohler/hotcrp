@@ -1,0 +1,103 @@
+<?php
+// fieldrender.php -- HotCRP helper class for multi-format messages
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+
+class FieldRender {
+    public $table;
+    public $context;
+    public $title;
+    public $value;
+    public $value_format;
+    public $value_long;
+
+    const CFHTML = 1;
+    const CFPAGE = 2;
+    const CFLIST = 4;
+    const CFCOLUMN = 8;
+    const CFCSV = 16;
+    const CFVERBOSE = 32;
+
+    const CTEXT = 0;
+    const CPAGE = 3;
+
+    function __construct($context) {
+        $this->context = $context;
+    }
+    function clear($context = null) {
+        if ($context !== null) {
+            $this->context = $context;
+        }
+        $this->title = null;
+        $this->value = $this->value_format = $this->value_long = null;
+    }
+    function is_empty() {
+        return (string) $this->title === "" && (string) $this->value === "";
+    }
+    function for_page() {
+        return ($this->context & self::CFPAGE) !== 0;
+    }
+    function want_text() {
+        return ($this->context & self::CFHTML) === 0;
+    }
+    function want_html() {
+        return ($this->context & self::CFHTML) !== 0;
+    }
+    function want_list() {
+        return ($this->context & self::CFLIST) !== 0;
+    }
+    function want_list_row() {
+        return ($this->context & (self::CFLIST | self::CFCOLUMN)) === self::CFLIST;
+        }
+    function want_list_column() {
+        return ($this->context & (self::CFLIST | self::CFCOLUMN)) ===
+            (self::CFLIST | self::CFCOLUMN);
+    }
+    function verbose() {
+        return ($this->context & self::CFVERBOSE) !== 0;
+    }
+    function set_text($t) {
+        $this->value = $t;
+        $this->value_format = 0;
+    }
+    function set_html($t) {
+        $this->value = $t;
+        $this->value_format = 5;
+    }
+    function set_bool($b) {
+        $v = $this->verbose();
+        if ($this->context & self::CFHTML) {
+            $this->set_text($b ? "✓" : ($v ? "✗" : ""));
+        } else if ($this->context & self::CFCSV) {
+            $this->set_text($b ? "Y" : ($v ? "N" : ""));
+        } else {
+            $this->set_text($b ? "Yes" : ($v ? "No" : ""));
+        }
+    }
+    function value_html($divclass = null) {
+        $rest = "";
+        if ((string) $this->value === "") {
+            return "";
+        } else if ($this->value_format === 5) {
+            if ($divclass === null) {
+                return $this->value;
+            }
+            $html = $this->value;
+        } else if ($this->value_format === 0) {
+            if ($this->value_long) {
+                $html = Ht::format0($this->value);
+                $divclass = $divclass ? "format0 " . $divclass : "format0";
+            } else {
+                $html = htmlspecialchars($this->value);
+            }
+        } else {
+            $html = htmlspecialchars($this->value);
+            $divclass = $divclass ? "need-format " . $divclass : "need-format";
+            $rest = ' data-format="' . $this->value_format . '"';
+        }
+        if ($divclass || $rest) {
+            $html = '<div' . ($divclass ? ' class="' . $divclass . '"' : "")
+                . $rest . '>' . $html . '</div>';
+        }
+        return $html;
+    }
+}

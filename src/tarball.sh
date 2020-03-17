@@ -201,6 +201,7 @@ src/documentfiletree.php
 src/documentinfo.php
 src/documenthashmatcher.php
 src/documentrequest.php
+src/fieldrender.php
 src/filefilter.php
 src/formatspec.php
 src/formula.php
