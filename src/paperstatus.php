@@ -1174,7 +1174,7 @@ class PaperStatus extends MessageSet {
         return $cflts;
     }
 
-    static private function check_contacts_last(PaperStatus $ps, $pj) {
+    static private function check_contacts(PaperStatus $ps, $pj) {
         $cflts = $ps->conflicts_array($pj);
         if (!array_filter($cflts, function ($cflt) { return $cflt >= CONFLICT_CONTACTAUTHOR; })
             && $ps->prow
@@ -1222,7 +1222,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    static function check_contacts(PaperStatus $ps, $pj) {
+    static function check_contacts_last(PaperStatus $ps, $pj) {
         if (isset($ps->diffs["contacts"]) && !$ps->has_error_at("contacts")) {
             foreach (self::contacts_array($pj) as $c) {
                 $flags = get($c, "contact") ? 0 : Contact::SAVE_IMPORT;
