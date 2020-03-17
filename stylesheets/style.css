@@ -1419,7 +1419,7 @@ label.f-c, .f-i > label {
 .f-c.n, .f-i > label.n {
 	font-weight: normal;
 }
-.f-h, .f-hx {
+.f-h, .f-hx, .papalert {
 	color: #555555;
 	font-size: 92%;
 }
@@ -3105,10 +3105,12 @@ a:hover .t-editor,
 .papev, .revev {
 	margin: 5px 0;
 }
-.paphint, .revhint, .cmthint {
+.paphint, .papalert, .revhint, .cmthint {
 	max-width: 720px;
-	color: #555555;
 	margin-bottom: 0.5rem;
+}
+.paphint, .revhint, .cmthint {
+	color: #555555;
 }
 .paphint > p, .revhint > p, .cmthint > p {
 	margin-bottom: 0.5em;

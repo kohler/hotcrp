@@ -402,16 +402,6 @@ class PaperTable {
         echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => "papfn"]), '</div>';
     }
 
-    function messages_at($field) {
-        $t = "";
-        if ($this->edit_status) {
-            foreach ($this->edit_status->messages_at($field, true) as $mx)
-                $t .= '<p class="' . MessageSet::status_class($mx[2], "settings-ap f-h", "is-")
-                    . '">' . $mx[1] . '</p>';
-        }
-        return $t;
-    }
-
     private function papt($what, $name, $extra = array()) {
         $fold = get($extra, "fold", false);
         $editfolder = get($extra, "editfolder", false);
@@ -496,17 +486,18 @@ class PaperTable {
         return $table_type === "col" ? nl2br($text) : $text;
     }
 
-    function edit_title_html($option) {
-        $t = $option->edit_title();
-        if (str_ends_with($t, ")")
-            && preg_match('{\A([^()]* +)(\([^()]+\))\z}', $t, $m)) {
-            return htmlspecialchars($m[1]) . '<span class="n">' . htmlspecialchars($m[2]) . '</span>';
-        } else {
-            return htmlspecialchars($t);
+    function messages_at($field, $klass = "f-h") {
+        $t = "";
+        if ($this->edit_status) {
+            foreach ($this->edit_status->messages_at($field, true) as $mx) {
+                $t .= '<p class="' . MessageSet::status_class($mx[2], $klass, "is-") . '">' . $mx[1] . '</p>';
+            }
         }
+        return $t;
     }
 
     private function echo_field_hint($opt) {
+        echo $this->messages_at($opt->formid, "papalert");
         $fr = new FieldRender(FieldRender::CFHTML);
         $fr->value_format = 5;
         if ($opt->description_format !== null) {
@@ -516,6 +507,16 @@ class PaperTable {
                                        $opt->formid, $opt->description);
         if (!$fr->is_empty()) {
             echo $fr->value_html("paphint");
+        }
+    }
+
+    function edit_title_html($option) {
+        $t = $option->edit_title();
+        if (str_ends_with($t, ")")
+            && preg_match('{\A([^()]* +)(\([^()]+\))\z}', $t, $m)) {
+            return htmlspecialchars($m[1]) . '<span class="n">' . htmlspecialchars($m[2]) . '</span>';
+        } else {
+            return htmlspecialchars($t);
         }
     }
 
@@ -732,8 +733,7 @@ class PaperTable {
 
         echo '<div class="document-replacer">',
             Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => $inputid]),
-            '</div>',
-            $this->messages_at($field), "</div></div>\n\n";
+            "</div></div></div>\n\n";
     }
 
     function render_abstract(FieldRender $fr, PaperOption $o) {
@@ -873,9 +873,7 @@ class PaperTable {
                 ++$n;
             } while ($n <= $min_authors);
         }
-        echo "</tbody></table>",
-            $this->messages_at("authors"),
-            "</div></div>\n\n";
+        echo "</tbody></table></div></div>\n\n";
     }
 
     private function authorData($table, $type, $viewAs = null) {
@@ -1401,7 +1399,7 @@ class PaperTable {
         }
         echo '</div><div class="ug">',
             Ht::button("Add contact", ["class" => "ui row-order-ui addrow"]),
-            "</div>", $this->messages_at("contacts"), "</div></div>\n\n";
+            "</div></div></div>\n\n";
     }
 
     function echo_editable_anonymity($option) {
@@ -1414,8 +1412,7 @@ class PaperTable {
         $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "</span>" . $this->edit_title_html($option);
         $this->echo_editable_papt("blind", $heading, ["for" => "checkbox"]);
         $this->echo_field_hint($option);
-        echo $this->messages_at("blind"),
-            "</div>\n\n";
+        echo "</div>\n\n";
     }
 
     private function _papstrip_framework() {
@@ -1531,7 +1528,7 @@ class PaperTable {
                 echo '</div></div></div>';
             }
         }
-        echo "</div>", $this->messages_at("topics"), "</div></div>\n\n";
+        echo "</div></div></div>\n\n";
     }
 
     function echo_editable_option_papt(PaperOption $o, $heading = null, $rest = []) {
@@ -1642,7 +1639,7 @@ class PaperTable {
             }
             echo "</div></div>";
         }
-        echo "</div>", $this->messages_at("pcconf"), "</div></div>\n\n";
+        echo "</div></div></div>\n\n";
     }
 
     private function papstripPCConflicts() {

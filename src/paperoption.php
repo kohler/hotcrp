@@ -1023,7 +1023,6 @@ class PaperOption implements Abbreviator {
                 "spellcheck" => get($extra, "no_spellcheck") ? null : "true",
                 "data-default-value" => $default_value
             ]),
-            $pt->messages_at($this->formid),
             "</div></div>\n\n";
     }
 
@@ -1104,7 +1103,7 @@ class CheckboxPaperOption extends PaperOption {
         $pt->echo_editable_option_papt($this,
             '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
             ["for" => "checkbox", "tclass" => "ui js-click-child"]);
-        echo $pt->messages_at($this->formid), "</div>\n\n";
+        echo "</div>\n\n";
     }
 
     function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
@@ -1270,7 +1269,7 @@ class SelectorPaperOption extends PaperOption {
                     '</span>', htmlspecialchars($text), '</label></div>';
             }
         }
-        echo $pt->messages_at($this->formid), "</div></div>\n\n";
+        echo "</div></div>\n\n";
     }
 
     function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
@@ -1539,7 +1538,6 @@ class NumericPaperOption extends PaperOption {
                 "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
                 "data-default-value" => $ov->value, "inputmode" => "numeric"
             ]),
-            $pt->messages_at($this->formid),
             "</div></div>\n\n";
     }
 
@@ -1762,7 +1760,6 @@ class AttachmentsPaperOption extends PaperOption {
                 '</div></div>';
         }
         echo '</div>', Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}_attachments"]),
-            $pt->messages_at($this->formid),
             "</div>\n\n";
     }
 
