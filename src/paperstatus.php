@@ -1174,7 +1174,7 @@ class PaperStatus extends MessageSet {
         return $cflts;
     }
 
-    static private function check_contacts(PaperStatus $ps, $pj) {
+    static private function check_contacts_last(PaperStatus $ps, $pj) {
         $cflts = $ps->conflicts_array($pj);
         if (!array_filter($cflts, function ($cflt) { return $cflt >= CONFLICT_CONTACTAUTHOR; })
             && $ps->prow
@@ -1222,7 +1222,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    static function postcheck_contacts(PaperStatus $ps, $pj) {
+    static function check_contacts(PaperStatus $ps, $pj) {
         if (isset($ps->diffs["contacts"]) && !$ps->has_error_at("contacts")) {
             foreach (self::contacts_array($pj) as $c) {
                 $flags = get($c, "contact") ? 0 : Contact::SAVE_IMPORT;
@@ -1336,7 +1336,7 @@ class PaperStatus extends MessageSet {
         self::check_options($this, $pj);
         self::check_status($this, $pj);
         self::check_final_status($this, $pj);
-        self::postcheck_contacts($this, $pj);
+        self::check_contacts_last($this, $pj);
         return true;
     }
 
@@ -1360,7 +1360,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    static function postcheck_set_default_columns(PaperStatus $ps) {
+    static function preexecute_set_default_columns(PaperStatus $ps) {
         foreach (["title" => "", "abstract" => "", "authorInformation" => "",
                   "collaborators" => "", "paperStorageId" => 1,
                   "finalPaperStorageId" => 0] as $f => $v) {
@@ -1370,9 +1370,9 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    static function postcheck_required_options(PaperStatus $ps) {
+    static function postexecute_check_required_options(PaperStatus $ps) {
         $prow = null;
-        $fail = false;
+        $required_failure = false;
         foreach ($ps->conf->paper_opts->option_list() as $o) {
             if (!$o->required) {
                 continue;
@@ -1384,10 +1384,13 @@ class PaperStatus extends MessageSet {
                 && $o->test_required($prow)
                 && !$o->value_present($prow->force_option($o->id))) {
                 $ps->error_at_option($o, "Entry required.");
-                $fail = true;
+                $required_failure = true;
             }
         }
-        if ($fail && (!$ps->prow || $ps->prow->timeSubmitted == 0)) {
+        if ($required_failure
+            && (!$ps->prow || $ps->prow->timeSubmitted == 0)) {
+            // Some required option was missing and the paper was not submitted
+            // before, so it shouldn't be submitted now.
             $ps->conf->qe("update Paper set timeSubmitted=0 where paperId=?", $ps->paperId);
             $ps->_paper_submitted = false;
         }
@@ -1398,7 +1401,7 @@ class PaperStatus extends MessageSet {
         if (!empty($this->_paper_upd)) {
             $need_insert = $this->paperId <= 0;
             if ($need_insert) {
-                self::postcheck_set_default_columns($this);
+                self::preexecute_set_default_columns($this);
             }
 
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER) {
@@ -1492,11 +1495,13 @@ class PaperStatus extends MessageSet {
         self::execute_conflicts($this);
 
         if ($this->_paper_submitted) {
-            self::postcheck_required_options($this);
+            self::postexecute_check_required_options($this);
         }
 
         // maybe update `papersub` settings
-        $was_submitted = $this->prow && $this->prow->timeWithdrawn <= 0 && $this->prow->timeSubmitted > 0;
+        $was_submitted = $this->prow
+            && $this->prow->timeWithdrawn <= 0
+            && $this->prow->timeSubmitted > 0;
         if ($this->_paper_submitted != $was_submitted) {
             $this->conf->update_papersub_setting($this->_paper_submitted ? 1 : -1);
         }
