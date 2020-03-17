@@ -67,6 +67,7 @@ class IntrinsicValue {
             $ms->warning_at("collaborators", $o->conf->_("Enter the authors’ external conflicts of interest. If none of the authors have external conflicts, enter “None”."));
         }
         if ($o->id === PaperOption::PCCONFID
+            && $o->conf->setting("sub_pcconf")
             && ($ov->prow->outcome <= 0 || ($ms->user && !$ms->user->can_view_decision($ov->prow)))) {
             assert(isset($ov->anno["intrinsic"]));
             $pcs = [];
