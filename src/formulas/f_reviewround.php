@@ -14,7 +14,7 @@ class ReviewRound_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $rrow = $state->_rrow();
-        if ($state->looptype === Fexpr::IDX_MY) {
+        if ($state->index_type === Fexpr::IDX_MY) {
             return $state->define_gvar("myrevround", "{$rrow} ? {$rrow}->reviewRound : null");
         } else {
             $view_score = $state->user->permissive_view_score_bound();

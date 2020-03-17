@@ -14,7 +14,7 @@ class Conflict_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         // XXX the actual search is different
         $idx = $state->loop_cid();
-        if ($state->looptype === Fexpr::IDX_MY) {
+        if ($state->index_type === Fexpr::IDX_MY) {
             $rt = "\$prow->has_conflict($idx)";
         } else {
             $rt = "!!(" . $state->_add_conflicts() . "[" . $idx . "] ?? false)";

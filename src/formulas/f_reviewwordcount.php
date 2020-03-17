@@ -13,7 +13,7 @@ class ReviewWordCount_Fexpr extends Fexpr {
         return VIEWSCORE_PC;
     }
     function compile(FormulaCompiler $state) {
-        if ($state->looptype !== Fexpr::IDX_MY) {
+        if ($state->index_type !== Fexpr::IDX_MY) {
             $view_score = $state->user->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score) {
                 return "null";
