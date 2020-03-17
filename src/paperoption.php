@@ -835,25 +835,26 @@ class PaperOption implements Abbreviator {
         return $this->display_position;
     }
 
-    function exists_condition() {
-        return $this->exists_if;
-    }
     function test_exists(PaperInfo $prow) {
         return !$this->_exists_search || $this->_exists_search->test($prow);
+    }
+    function exists_condition() {
+        return $this->exists_if;
     }
     function compile_exists_condition(PaperInfo $prow) {
         assert($this->_exists_search !== null);
         return $this->_exists_search->term()->compile_condition($prow, $this->_exists_search);
     }
 
-    function editable_condition() {
-        return $this->editable_if;
-    }
     function test_editable(PaperInfo $prow) {
         return !$this->_editable_search || $this->_editable_search->test($prow);
     }
+    function editable_condition() {
+        return $this->editable_if;
+    }
 
     function test_required(PaperInfo $prow) {
+        // Invariant: `$o->test_required($prow)` implies `$o->required`.
         return $this->required && $this->test_exists($prow);
     }
 

@@ -2760,8 +2760,7 @@ class Contact {
             || ($opt->final && !$this->allow_edit_final_paper($prow))
             || ($opt->id === 0 && $this->allow_edit_final_paper($prow))) {
             return 0;
-        }
-        if (!$opt->test_exists($prow)) {
+        } else if (!$opt->test_exists($prow)) {
             return $opt->compile_exists_condition($prow) ? 1 : 0;
         } else {
             return 2;
@@ -2775,19 +2774,21 @@ class Contact {
     }
 
     function user_option_list() {
-        if ($this->conf->has_any_accepted() && $this->can_view_some_decision())
+        if ($this->conf->has_any_accepted() && $this->can_view_some_decision()) {
             return $this->conf->paper_opts->option_list();
-        else
+        } else {
             return $this->conf->paper_opts->nonfinal_option_list();
+        }
     }
 
     function perm_view_option(PaperInfo $prow, $opt) {
-        if ($this->can_view_option($prow, $opt))
+        if ($this->can_view_option($prow, $opt)) {
             return null;
-        if (!is_object($opt) && !($opt = $this->conf->paper_opts->get($opt)))
+        } else if (!is_object($opt) && !($opt = $this->conf->paper_opts->get($opt))) {
             return $prow->make_whynot();
-        if (($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
+        } else if (($whyNot = $this->perm_view_paper($prow, $opt->has_document()))) {
             return $whyNot;
+        }
         $whyNot = $prow->make_whynot();
         $rights = $this->rights($prow);
         $oview = $opt->visibility;
@@ -2817,8 +2818,9 @@ class Contact {
 
     function can_view_some_option(PaperOption $opt) {
         if (($opt->has_document() && !$this->can_view_some_pdf())
-            || ($opt->final && !$this->can_view_some_decision()))
+            || ($opt->final && !$this->can_view_some_decision())) {
             return false;
+        }
         $oview = $opt->visibility;
         return $this->is_author()
             || ($oview == "admin" && $this->is_manager())
@@ -4126,8 +4128,9 @@ class Contact {
             $options = $pids;
         }
         $prows = $this->conf->paper_set($options, $this);
-        if ($ssel)
+        if ($ssel) {
             $prows->sort_by([$pids, "order_compare"]);
+        }
         return $prows;
     }
 
