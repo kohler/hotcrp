@@ -30,6 +30,10 @@ class Signin_Partial {
     static function signin_request(Contact $user, Qrequest $qreq, $gx) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
+            $info["ok"] = false;
+            foreach ($gx->members("signin/request") as $gj) {
+                $info = call_user_func($gj->signin_callback, $user, $qreq, $info, $gj);
+            }
             Navigation::redirect();
         } else if ($user->conf->opt("httpAuthLogin")) {
             LoginHelper::check_http_auth($user, $qreq);
@@ -39,8 +43,7 @@ class Signin_Partial {
             } else if (!$qreq->start) {
                 $info["ok"] = true;
                 foreach ($gx->members("signin/request") as $gj) {
-                    if ($info["ok"])
-                        $info = call_user_func($gj->signin_callback, $user, $qreq, $info, $gj);
+                    $info = call_user_func($gj->signin_callback, $user, $qreq, $info, $gj);
                 }
                 if ($info["ok"] || isset($info["redirect"])) {
                     Navigation::redirect($info["redirect"] ?? "");
@@ -56,7 +59,9 @@ class Signin_Partial {
     }
 
     static function signin_request_basic(Contact $user, Qrequest $qreq, $info) {
-        if ($user->conf->external_login()) {
+        if (!$info["ok"]) {
+            return $info;
+        } else if ($user->conf->external_login()) {
             return LoginHelper::external_login_info($user->conf, $qreq);
         } else {
             return LoginHelper::login_info($user->conf, $qreq);
@@ -64,7 +69,11 @@ class Signin_Partial {
     }
 
     static function signin_request_success(Contact $user, Qrequest $qreq, $info)  {
-        return LoginHelper::login_complete($info, $qreq);
+        if (!$info["ok"]) {
+            return $info;
+        } else {
+            return LoginHelper::login_complete($info, $qreq);
+        }
     }
 
     static private function _check_reset_code(Contact $user, $qreq) {
