@@ -123,6 +123,9 @@ class CsvParser {
     }
 
     function set_header($header) {
+        if ($header && $header instanceof CsvRow) {
+            $header = $header->as_array();
+        }
         $this->header = $header;
 
         // The column map defaults to mapping header field names to field indexes.
