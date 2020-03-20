@@ -37,8 +37,8 @@ class FormulaGraph extends MessageSet {
     private $_xorder_data;
     private $_xorder_map;
     private $_axis_remapped = 0;
-    private $_xbool;
-    private $_ybool;
+    private $_x_tagvalue_bool;
+    private $_y_tagvalue_bool;
 
     function __construct(Contact $user, $gtype, $fx, $fy) {
         $this->conf = $user->conf;
@@ -86,27 +86,27 @@ class FormulaGraph extends MessageSet {
                 $this->type = self::BARCHART;
             }
         }
-        $this->_ybool = $this->fy->result_format() === Fexpr::FTAGVALUE;
+        $this->_y_tagvalue_bool = $this->fy->result_format() === Fexpr::FTAGVALUE;
 
         // X axis expression(s)
         $this->fx_expression = $fx;
         if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
             $this->fx = new Formula("0", Formula::ALLOW_INDEXED);
             $this->fx_type = Fexpr::FSEARCH;
-            $this->_xbool = false;
+            $this->_x_tagvalue_bool = false;
         } else if (strcasecmp($fx, "tag") == 0) {
             $this->fx = new Formula("0", Formula::ALLOW_INDEXED);
             $this->fx_type = Fexpr::FTAG;
-            $this->_xbool = false;
+            $this->_x_tagvalue_bool = false;
         } else if (!($this->type & self::CDF)) {
             $this->fx = new Formula($fx, Formula::ALLOW_INDEXED);
             if (!$this->fx->check($this->user)) {
                 $this->error_at("fx", "X axis formula error: " . $this->fx->error_html());
             }
-            $this->_xbool = $this->fx->result_format() === Fexpr::FTAGVALUE;
+            $this->_x_tagvalue_bool = $this->fx->result_format() === Fexpr::FTAGVALUE;
         } else {
             $this->fxs = [];
-            $this->_xbool = true;
+            $this->_x_tagvalue_bool = true;
             while (true) {
                 $fx = preg_replace('/\A\s*;*\s*/', '', $fx);
                 if ($fx === "") {
@@ -117,7 +117,7 @@ class FormulaGraph extends MessageSet {
                 if (!$f->check($this->user)) {
                     $this->error_at("fx", "X axis formula error: " . $f->error_html());
                 }
-                $this->_xbool = $this->_xbool && $f->result_format() === Fexpr::FTAGVALUE;
+                $this->_x_tagvalue_bool = $this->_x_tagvalue_bool && $f->result_format() === Fexpr::FTAGVALUE;
             }
         }
 
@@ -239,7 +239,7 @@ class FormulaGraph extends MessageSet {
             $queries = $this->papermap[$prow->paperId];
             foreach ($revs as $rcid) {
                 if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
-                    $this->_xbool = $this->_xbool && is_bool($x);
+                    $this->_x_tagvalue_bool = $this->_x_tagvalue_bool && is_bool($x);
                     if ($rcid) {
                         $queries = $this->_filter_queries($prow, $prow->review_of_user($rcid));
                     }
@@ -393,8 +393,8 @@ class FormulaGraph extends MessageSet {
                 if ($d[0] === null || $d[1] === null) {
                     continue;
                 }
-                $this->_xbool = $this->_xbool && is_bool($d[0]);
-                $this->_ybool = $this->_ybool && is_bool($d[1]);
+                $this->_x_tagvalue_bool = $this->_x_tagvalue_bool && is_bool($d[0]);
+                $this->_y_tagvalue_bool = $this->_y_tagvalue_bool && is_bool($d[1]);
                 $d[2] = $prow->paperId;
                 if ($rrow && $rrow->reviewOrdinal) {
                     $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
@@ -755,7 +755,7 @@ class FormulaGraph extends MessageSet {
             }
         } else {
             if ($format === Fexpr::FTAGVALUE
-                && ($isx ? $this->_xbool : $this->_ybool)) {
+                && ($isx ? $this->_x_tagvalue_bool : $this->_y_tagvalue_bool)) {
                 $format = Fexpr::FBOOL;
             }
             if ($format === Fexpr::FREVIEWER) {
