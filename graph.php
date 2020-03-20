@@ -21,15 +21,18 @@ if ($Me->isPC) {
     $Graphs["procrastination"] = "Procrastination";
     $Graphs["formula"] = "Formula";
 }
-if (!count($Graphs))
+if (!count($Graphs)) {
     $Me->escape();
+}
 reset($Graphs);
 
 $GraphSynonym = array("reviewerlameness" => "procrastination");
-if ($Graph && isset($GraphSynonym[$Graph]))
+if ($Graph && isset($GraphSynonym[$Graph])) {
     $Graph = $GraphSynonym[$Graph];
-if (!$Graph || !isset($Graphs[$Graph]))
+}
+if (!$Graph || !isset($Graphs[$Graph])) {
     $Conf->self_redirect($Qreq, ["g" => key($Graphs)]);
+}
 
 // Header and body
 $Conf->header("Graphs", "graphbody");
@@ -39,10 +42,12 @@ echo $Conf->make_script_file("scripts/graph.js");
 
 function echo_graph($searchable, $fg, $h2) {
     echo '<div class="has-hotgraph" style="max-width:960px;margin-bottom:4em">';
-    if ($searchable)
+    if ($searchable) {
         echo Ht::entry("q", "", ["placeholder" => "Highlight", "class" => "uich js-hotgraph-highlight papersearch float-right need-autogrow need-suggest"]);
-    if ($h2)
+    }
+    if ($h2) {
         echo "<h2>", $h2, "</h2>\n";
+    }
     echo "<div class=\"hotgraph c\" id=\"hotgraph\"";
     if ($fg && !($fg->type & FormulaGraph::CDF)) {
         echo " data-graph-fx=\"", htmlspecialchars($fg->fx->expression),
@@ -61,8 +66,9 @@ if ($Graph == "procrastination") {
 
 // Formula experiment
 function formulas_qrow($i, $q, $s, $status) {
-    if ($q === "all")
+    if ($q === "all") {
         $q = "";
+    }
     $klass = MessageSet::status_class($status, "papersearch");
     $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i"));
     $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("default" => "default", "plain" => "plain", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
@@ -79,18 +85,21 @@ if ($Graph == "formula") {
     if (!isset($Qreq->x) || !isset($Qreq->y)) {
         $fields = $Conf->review_form()->example_fields($Me);
         unset($Qreq->x, $Qreq->y);
-        if (count($fields) > 0)
+        if (count($fields) > 0) {
             $Qreq->y = "avg(" . $fields[0]->search_keyword() . ")";
-        if (count($fields) > 1)
+        }
+        if (count($fields) > 1) {
             $Qreq->x = "avg(" . $fields[1]->search_keyword() . ")";
-        else
+        } else {
             $Qreq->x = "pid";
+        }
     }
 
     if ($Qreq->x && ($Qreq->gtype || $Qreq->y)) {
         $fg = $fgm = new FormulaGraph($Me, $Qreq->gtype, $Qreq->x, $Qreq->y);
-        if ($Qreq->xorder)
+        if ($Qreq->xorder) {
             $fg->set_xorder($Qreq->xorder);
+        }
     } else {
         $fg = null;
         $fgm = new MessageSet;
@@ -98,43 +107,49 @@ if ($Graph == "formula") {
 
     list($queries, $styles) = FormulaGraph::parse_queries($Qreq);
     if ($fg) {
-        for ($i = 0; $i < count($queries); ++$i)
+        for ($i = 0; $i < count($queries); ++$i) {
             $fg->add_query($queries[$i], $styles[$i], "q$i");
+        }
 
-        if ($fg->has_messages())
+        if ($fg->has_messages()) {
             echo Ht::msg($fg->messages(), $fg->problem_status());
+        }
 
         $xhtml = htmlspecialchars($fg->fx_expression());
-        if ($fg->fx_format() === Fexpr::FTAG)
+        if ($fg->fx_format() === Fexpr::FTAG) {
             $xhtml = "tag";
+        }
 
-        if ($fg->fx_format() === Fexpr::FSEARCH)
+        if ($fg->fx_format() === Fexpr::FSEARCH) {
             $h2 = "";
-        else if ($fg->type === FormulaGraph::RAWCDF)
+        } else if ($fg->type === FormulaGraph::RAWCDF) {
             $h2 = "Cumulative count of $xhtml";
-        else if ($fg->type & FormulaGraph::CDF)
+        } else if ($fg->type & FormulaGraph::CDF) {
             $h2 = "$xhtml CDF";
-        else if (($fg->type & FormulaGraph::BARCHART)
-                 && $fg->fy->expression === "sum(1)")
+        } else if (($fg->type & FormulaGraph::BARCHART)
+                   && $fg->fy->expression === "sum(1)") {
             $h2 = $xhtml;
-        else if ($fg->type & FormulaGraph::BARCHART)
+        } else if ($fg->type & FormulaGraph::BARCHART) {
             $h2 = htmlspecialchars($fg->fy->expression) . " by $xhtml";
-        else
+        } else {
             $h2 = htmlspecialchars($fg->fy->expression) . " vs. $xhtml";
+        }
         $highlightable = ($fg->type & (FormulaGraph::SCATTER | FormulaGraph::BOXPLOT))
             && $fg->fx_combinable();
         echo_graph($highlightable, $fg, $h2);
 
         $gtype = "scatter";
-        if ($fg->type & FormulaGraph::BARCHART)
+        if ($fg->type & FormulaGraph::BARCHART) {
             $gtype = "barchart";
-        else if ($fg->type & FormulaGraph::CDF)
+        } else if ($fg->type & FormulaGraph::CDF) {
             $gtype = "cdf";
-        else if ($fg->type === FormulaGraph::BOXPLOT)
+        } else if ($fg->type === FormulaGraph::BOXPLOT) {
             $gtype = "boxplot";
+        }
         echo Ht::unstash_script("\$(function () { hotcrp_graph(\"#hotgraph\", " . json_encode_browser($fg->graph_json()) . ") });"), "\n";
-    } else
+    } else {
         echo "<h2>Formulas</h2>\n";
+    }
 
     echo Ht::form(hoturl("graph", "g=formula"), ["method" => "get"]);
     /*echo '<div>',
@@ -164,8 +179,9 @@ if ($Graph == "formula") {
         '<div class="entry">',
         '<table class="js-row-order"><tbody id="qcontainer" data-row-template="',
         htmlspecialchars(formulas_qrow('$', "", "by-tag", 0)), '">';
-    for ($i = 0; $i < count($styles); ++$i)
+    for ($i = 0; $i < count($styles); ++$i) {
         echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fgm->problem_status_at("q$i"));
+    }
     echo "</tbody><tbody><tr><td>",
         Ht::button("Add data set", ["class" => "ui row-order-ui addrow"]),
         "</td></tr></tbody></table></div></div>\n";
@@ -177,8 +193,9 @@ if ($Graph == "formula") {
 
 echo '<div style="margin:2em 0"><strong>More graphs:</strong>&nbsp; ';
 $ghtml = array();
-foreach ($Graphs as $g => $gname)
+foreach ($Graphs as $g => $gname) {
     $ghtml[] = '<a' . ($g == $Graph ? ' class="q"' : '') . ' href="' . hoturl("graph", "g=$g") . '">' . htmlspecialchars($gname) . '</a>';
+}
 echo join(' <span class="barsep">·</span> ', $ghtml), '</div>';
 
 $Conf->footer();

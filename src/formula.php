@@ -38,6 +38,7 @@ class Fexpr implements JsonSerializable {
 
     const FNULL = -1;
     const FERROR = -2;
+    const FDEFAULT = null;
     const FBOOL = 1;
     const FROUND = 2;
     const FREVTYPE = 3;

@@ -4,19 +4,23 @@
 
 class GraphData_API {
     static function graphdata(Contact $user, Qrequest $qreq) {
-        if (!isset($qreq->x))
+        if (!isset($qreq->x)) {
             return new JsonResult(400, "Missing parameter.");
+        }
         $fg = new FormulaGraph($user, $qreq->gtype ? : "scatter", $qreq->x, $qreq->y);
-        if ($qreq->xorder)
+        if ($qreq->xorder) {
             $fg->add_xorder($qreq->xorder);
+        }
 
         list($queries, $styles) = FormulaGraph::parse_queries($qreq);
-        for ($i = 0; $i < count($queries); ++$i)
+        for ($i = 0; $i < count($queries); ++$i) {
             $fg->add_query($queries[$i], $styles[$i], isset($qreq->q1) ? "q$i" : "q");
+        }
 
-        if ($fg->has_error())
+        if (!$fg->has_error()) {
+            return ["ok" => true] + $fg->graph_json();
+        } else {
             return new JsonResult(400, ["ok" => false, "error" => Ht::msg($fg->messages(), 2)]);
-
-        return ["ok" => true] + $fg->graph_json();
+        }
     }
 }
