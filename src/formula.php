@@ -53,6 +53,7 @@ class Fexpr implements JsonSerializable {
     const FTIMEBIT = 1;
     const FDELTABIT = 2;
     const FSEARCH = 12; // used in formulagraph.php
+    const FTAGVALUE = 13;
 
     function __construct($op = null, $args = []) {
         if (is_string($op)) {
@@ -711,7 +712,11 @@ class AggregateFexpr extends Fexpr {
         } else if ($this->op === "avg" || $this->op === "wavg"
                    || $this->op === "median" || $this->op === "quantile") {
             $f = $this->args[0]->format();
-            return $f === self::FBOOL ? null : $f;
+            if ($f === self::FBOOL || $f === self::FTAGVALUE) {
+                return null;
+            } else {
+                return $f;
+            }
         } else {
             return null;
         }

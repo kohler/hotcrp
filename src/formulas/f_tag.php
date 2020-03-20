@@ -11,7 +11,7 @@ class Tag_Fexpr extends Fexpr {
         $this->tag = $tag;
         $this->tsm = $tsm;
         $this->isvalue = $isvalue;
-        $this->_format = $isvalue ? null : self::FBOOL;
+        $this->_format = $isvalue ? null : self::FTAGVALUE;
     }
     static function parse_modifier(FormulaCall $ff, $arg) {
         if (!$ff->args && $arg[0] !== ".") {
