@@ -852,10 +852,10 @@ class SettingValues extends MessageSet {
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, self::strip_group_js($js));
         echo '</span>', $this->label($name, $text, ["for" => $name, "class" => $js["label_class"] ?? null]);
+        $this->echo_messages_at($name);
         if ($hint) {
             echo '<div class="', self::add_class("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
         }
-        $this->echo_messages_at($name);
         if (!($js["group_open"] ?? null))
             echo "</div>\n";
     }
@@ -887,8 +887,9 @@ class SettingValues extends MessageSet {
             echo '<p class="settings-itemheading">', $heading, '</p>';
         }
         foreach ($varr as $k => $item) {
-            if (is_string($item))
+            if (is_string($item)) {
                 $item = ["label" => $item];
+            }
             $label = $item["label"];
             $hint = $item["hint"] ?? "";
             unset($item["label"], $item["hint"]);
@@ -903,8 +904,9 @@ class SettingValues extends MessageSet {
 
             $label1 = "<label>";
             $label2 = "</label>";
-            if (strpos($label, "<label") !== false)
+            if (strpos($label, "<label") !== false) {
                 $label1 = $label2 = "";
+            }
 
             echo '<div class="settings-radioitem checki">',
                 $label1, '<span class="checkc">',
@@ -912,8 +914,9 @@ class SettingValues extends MessageSet {
                 '</span>', $label, $label2, $hint, '</div>';
         }
         $this->echo_messages_at($name);
-        if ($rest && isset($rest["after"]))
+        if ($rest && isset($rest["after"])) {
             echo $rest["after"];
+        }
         echo "</div>\n";
     }
     function render_entry($name, $js = []) {
@@ -956,6 +959,7 @@ class SettingValues extends MessageSet {
         if ($horizontal) {
             echo '<div class="entry">';
         }
+        $this->echo_messages_at($name);
         echo $control, get_s($js, "control_after");
         $thint = $this->type_hint($si->type);
         if ($hint || $thint) {
@@ -967,7 +971,6 @@ class SettingValues extends MessageSet {
             }
             echo '</div>';
         }
-        $this->echo_messages_at($name);
         if ($horizontal) {
             echo "</div>";
         }
