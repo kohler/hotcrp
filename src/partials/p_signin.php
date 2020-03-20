@@ -197,6 +197,8 @@ class Signin_Partial {
         } else if ($qreq->post_ok()) {
             LoginHelper::logout($user, true);
             Navigation::redirect($user->conf->hoturl("index", "signedout=1"));
+        } else if (!isset($_SESSION) || $user->is_empty()) {
+            Navigation::redirect($user->conf->hoturl("index", "signedout=1"));
         } else {
             self::bad_post_error($user, $qreq, "signout");
         }
