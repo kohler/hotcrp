@@ -499,42 +499,43 @@ class PaperOption implements Abbreviator {
     ];
 
     function __construct(Conf $conf, $args) {
-        if (is_object($args)) {
-            $args = get_object_vars($args);
+        assert(is_object($args));
+        if (!is_object($args)) {
+            $args = (object) $args;
         }
         $this->conf = $conf;
-        $this->id = (int) $args["id"];
-        $this->name = $args["name"];
+        $this->id = (int) $args->id;
+        $this->name = $args->name;
         if ($this->name === null) {
             $this->name = "<Unknown-{$this->id}>";
         }
-        $this->title = $args["title"] ?? null;
+        $this->title = $args->title ?? null;
         if (!$this->title && $this->id > 0) {
             $this->title = $this->name;
         }
-        $this->type = $args["type"] ?? null;
+        $this->type = $args->type ?? null;
 
-        $this->_json_key = $args["json_key"] ?? null;
-        $this->_search_keyword = $args["search_keyword"] ?? $this->_json_key;
+        $this->_json_key = $args->json_key ?? null;
+        $this->_search_keyword = $args->search_keyword ?? $this->_json_key;
         $this->formid = $this->id > 0 ? "opt{$this->id}" : $this->_json_key;
-        $this->_readable_formid = $args["readable_formid"] ?? $this->_json_key;
+        $this->_readable_formid = $args->readable_formid ?? $this->_json_key;
 
-        $this->description = $args["description"] ?? null;
-        $this->description_format = $args["description_format"] ?? null;
-        $this->required = !!($args["required"] ?? false);
-        $this->final = !!($args["final"] ?? false);
-        $this->nonpaper = !!($args["nonpaper"] ?? false);
+        $this->description = $args->description ?? null;
+        $this->description_format = $args->description_format ?? null;
+        $this->required = !!($args->required ?? false);
+        $this->final = !!($args->final ?? false);
+        $this->nonpaper = !!($args->nonpaper ?? false);
 
-        $vis = $args["visibility"] ?? $args["view_type"] ?? null;
+        $vis = $args->visibility ?? $args->view_type ?? null;
         if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin") {
             $vis = "rev";
         }
         $this->visibility = $vis;
 
-        $disp = $args["display"] ?? null;
-        if ($args["near_submission"] ?? false) {
+        $disp = $args->display ?? null;
+        if ($args->near_submission ?? false) {
             $disp = "submission";
-        } else if ($args["highlight"] ?? false) {
+        } else if ($args->highlight ?? false) {
             $disp = "prominent";
         } else if ($disp === null) {
             $disp = "topics";
@@ -546,7 +547,7 @@ class PaperOption implements Abbreviator {
             $this->display = $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
         }
 
-        $p = $args["position"] ?? null;
+        $p = $args->position ?? null;
         if ((is_int($p) || is_float($p))
             && ($this->id <= 0 || $p > 0)) {
             $this->position = $p;
@@ -554,7 +555,7 @@ class PaperOption implements Abbreviator {
             $this->position = 499;
         }
 
-        $p = $args["form_position"] ?? null;
+        $p = $args->form_position ?? null;
         if ($p === null) {
             if ($this->display === self::DISP_SUBMISSION) {
                 $p = 1100 + $this->position;
@@ -569,42 +570,41 @@ class PaperOption implements Abbreviator {
         if ($this->display < 0) {
             $p = false;
         }
-        $this->display_position = $args["display_position"] ?? $p;
-        $this->display_expand = !!($args["display_expand"] ?? false);
-        $this->display_group = $args["display_group"] ?? null;
+        $this->display_position = $args->display_position ?? $p;
+        $this->display_expand = !!($args->display_expand ?? false);
+        $this->display_group = $args->display_group ?? null;
         if ($this->display_group === null
             && $this->display_position >= 3500
             && $this->display_position < 4000) {
             $this->display_group = "topics";
         }
 
-        if (($x = $args["display_space"] ?? null)) {
+        if (($x = $args->display_space ?? null)) {
             $this->display_space = (int) $x;
         }
 
-        if (array_key_exists("exists_if", $args)) {
-            $x = $args["exists_if"];
+        if (property_exists($args, "exists_if")) {
+            $x = $args->exists_if;
         } else {
-            $x = $args["edit_condition"] ?? null; // XXX
+            $x = $args->edit_condition ?? null; // XXX
         }
         if ($x !== null && $x !== true) {
             $this->exists_if = $x;
             $this->_exists_search = new PaperSearch($this->conf->site_contact(), $x === false ? "NONE" : $x);
         }
 
-        if (($x = $args["editable_if"] ?? null) !== null && $x !== true) {
+        if (($x = $args->editable_if ?? null) !== null && $x !== true) {
             $this->editable_if = $x;
             $this->_editable_search = new PaperSearch($this->conf->site_contact(), $x === false ? "NONE" : $x);
         }
     }
 
     static function make($args, $conf) {
-        if (is_object($args)) {
-            $args = get_object_vars($args);
-        }
-        $callback = get($args, "callback");
+        assert(is_object($args));
+        Conf::xt_resolve_require($args);
+        $callback = $args->callback ?? null;
         if (!$callback) {
-            $callback = get(self::$callback_map, get($args, "type"));
+            $callback = self::$callback_map[$args->type ?? ""] ?? null;
         }
         if (!$callback) {
             $callback = "+UnknownPaperOption";
@@ -1047,7 +1047,7 @@ class SelectorPaperOption extends PaperOption {
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->selector = get($args, "selector");
+        $this->selector = $args->selector;
     }
 
     function has_selector() {
@@ -1832,8 +1832,8 @@ class IntrinsicPaperOption extends PaperOption {
 
 class UnknownPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
-        $args["type"] = "__unknown" . $args["id"] . "__";
-        $args["form_position"] = $args["display_position"] = false;
+        $args->type = "__unknown" . $args->id . "__";
+        $args->form_position = $args->display_position = false;
         parent::__construct($conf, $args);
     }
 
