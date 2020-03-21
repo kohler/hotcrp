@@ -731,8 +731,9 @@ class PaperOption implements Abbreviator {
             $am = $this->abbrev_matcher();
             $aclass = new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH, 4);
             $this->_json_key = $am->unique_abbreviation($this->name, $this, $aclass);
-            if (!$this->_json_key)
+            if (!$this->_json_key) {
                 $this->_json_key = $this->formid;
+            }
         }
         return $this->_json_key;
     }

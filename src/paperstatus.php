@@ -1314,7 +1314,7 @@ class PaperStatus extends MessageSet {
             return false;
         }
 
-        if (get($pj, "error") || get($pj, "error_html")) {
+        if (($pj->error ?? null) || ($pj->error_html ?? null)) {
             $this->error_at("error", $this->_("Refusing to save submission with error"));
             return false;
         }
