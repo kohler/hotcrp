@@ -700,8 +700,9 @@ class PaperTable {
                     $this->cf = new CheckFormat($this->conf, CheckFormat::RUN_NO);
                 $spec = $this->conf->format_spec($dtype);
                 $has_cf = $spec && !$spec->is_empty();
-                if ($has_cf)
+                if ($has_cf) {
                     $this->cf->check_document($this->prow, $doc);
+                }
             }
 
             echo '<div class="document-file">',
@@ -996,10 +997,11 @@ class PaperTable {
         } else if ($this->user->act_author_view($this->prow)) {
             $sb = $this->conf->submission_blindness();
             if ($sb === Conf::BLIND_ALWAYS
-                || ($sb === Conf::BLIND_OPTIONAL && $this->prow->blind))
+                || ($sb === Conf::BLIND_OPTIONAL && $this->prow->blind)) {
                 $auname .= " (blind)";
-            else if ($sb === Conf::BLIND_UNTILREVIEW)
+            } else if ($sb === Conf::BLIND_UNTILREVIEW) {
                 $auname .= " (blind until review)";
+            }
         }
 
         // header with folding

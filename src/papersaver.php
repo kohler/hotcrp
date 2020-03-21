@@ -8,19 +8,22 @@ class PaperSaver {
     static function register($prio, PaperSaver $saver) {
         self::$list[] = [$prio, count(self::$list), $saver];
         usort(self::$list, function ($a, $b) {
-            if ($a[0] != $b[0])
+            if ($a[0] != $b[0]) {
                 return $a[0] - $b[0];
-            else
+            } else {
                 return $a[1] - $b[1];
+            }
         });
     }
     static function apply_all(Qrequest $qreq, PaperInfo $prow = null, Contact $user, $action) {
         $ps = new PaperStatus($user->conf);
         $pj = (object) $ps->paper_json($prow);
-        if (!isset($pj->pid))
+        if (!isset($pj->pid)) {
             $pj->pid = -1;
-        foreach (self::$list as $fn)
+        }
+        foreach (self::$list as $fn) {
             $fn[2]->apply($pj, $qreq, $prow, $user, $action);
+        }
         return $pj;
     }
 
@@ -30,8 +33,9 @@ class PaperSaver {
     static function replace_contacts($pj, $qreq) {
         $pj->contacts = array();
         for ($i = 1; isset($qreq["contact_email_{$i}"]); ++$i) {
-            if ($qreq["contact_active_{$i}"])
+            if ($qreq["contact_active_{$i}"]) {
                 $pj->contacts[] = (object) ["email" => $qreq["contact_email_{$i}"], "index" => $i];
+            }
         }
         for ($i = 1; isset($qreq["newcontact_email_{$i}"]); ++$i) {
             $email = trim((string) $qreq["newcontact_email_{$i}"]);
@@ -39,8 +43,9 @@ class PaperSaver {
                 && $email !== ""
                 && $email !== "Email") {
                 $name = simplify_whitespace((string) $qreq["newcontact_name_{$i}"]);
-                if ($name === "Name")
+                if ($name === "Name") {
                     $name = "";
+                }
                 $pj->contacts[] = (object) ["email" => $email, "name" => $name, "index" => $i, "is_new" => true];
             }
         }
@@ -73,9 +78,11 @@ class Default_PaperSaver extends PaperSaver {
         }
 
         // Title, abstract, collaborators
-        foreach (array("title", "abstract", "collaborators") as $k)
-            if (isset($qreq[$k]))
+        foreach (["title", "abstract", "collaborators"] as $k) {
+            if (isset($qreq[$k])) {
                 $pj->$k = UnicodeHelper::remove_f_ligatures($qreq[$k]);
+            }
+        }
 
         // Authors
         $aukeys = ["name" => "Name", "email" => "Email", "aff" => "Affiliation"];

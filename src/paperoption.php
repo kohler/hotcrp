@@ -143,12 +143,14 @@ class PaperOptionList {
             error_log("{$this->conf->dbname}: old-style options JSON");
             // XXX backwards compat
             $ok = true;
-            foreach (get_object_vars($oj) as $kk => $vv)
+            foreach (get_object_vars($oj) as $kk => $vv) {
                 if (is_object($vv)) {
-                    if (!isset($vv->id))
+                    if (!isset($vv->id)) {
                         $vv->id = $kk;
+                    }
                     $ok = $this->_add_json($vv, $kk, $landmark) && $ok;
                 }
+            }
             return $ok;
         }
         if (is_string($oj->id) && is_numeric($oj->id)) // XXX backwards compat
@@ -221,21 +223,23 @@ class PaperOptionList {
 
     private function populate_intrinsic($id) {
         if ($id == DTYPE_SUBMISSION) {
-            $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_SUBMISSION_JSON, true));
+            $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_SUBMISSION_JSON));
         } else if ($id == DTYPE_FINAL) {
-            $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_FINAL_JSON, true));
+            $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_FINAL_JSON));
         } else {
             $this->_imap[$id] = null;
             if (($oj = get($this->intrinsic_json_list(), $id))
-                && ($o = PaperOption::make($oj, $this->conf)))
+                && ($o = PaperOption::make($oj, $this->conf))) {
                 $this->_imap[$id] = $o;
+            }
         }
     }
 
     function get($id, $force = false) {
         if ($id <= 0) {
-            if (!array_key_exists($id, $this->_imap))
+            if (!array_key_exists($id, $this->_imap)) {
                 $this->populate_intrinsic($id);
+            }
             return $this->_imap[$id];
         }
         if (!array_key_exists($id, $this->_omap)) {
@@ -243,8 +247,9 @@ class PaperOptionList {
             if (($oj = get($this->option_json_list(), $id))
                 && ($o = PaperOption::make($oj, $this->conf))
                 && $this->conf->xt_allowed($o)
-                && Conf::xt_enabled($o))
+                && Conf::xt_enabled($o)) {
                 $this->_omap[$id] = $o;
+            }
         }
         $o = $this->_omap[$id];
         if (!$o && $force) {
@@ -301,8 +306,9 @@ class PaperOptionList {
     }
 
     function include_empty_option_list() {
-        if ($this->_olist_include_empty === null)
+        if ($this->_olist_include_empty === null) {
             $this->option_json_list();
+        }
         if ($this->_olist_include_empty === true) {
             $this->_olist_include_empty = [];
             foreach ($this->option_json_list() as $id => $oj) {
@@ -362,26 +368,29 @@ class PaperOptionList {
         $iname = strtolower($name);
         if ($iname === (string) DTYPE_SUBMISSION
             || $iname === "paper"
-            || $iname === "submission")
+            || $iname === "submission") {
             return [DTYPE_SUBMISSION => $this->get(DTYPE_SUBMISSION)];
-        else if ($iname === (string) DTYPE_FINAL
-                 || $iname === "final")
+        } else if ($iname === (string) DTYPE_FINAL
+                   || $iname === "final") {
             return [DTYPE_FINAL => $this->get(DTYPE_FINAL)];
-        if ($iname === "" || $iname === "none")
+        } else if ($iname === "" || $iname === "none") {
             return [];
-        if ($iname === "any")
+        } else if ($iname === "any") {
             return $this->option_list();
-        if (substr($iname, 0, 3) === "opt"
-            && ctype_digit(substr($iname, 3))) {
+        } else if (substr($iname, 0, 3) === "opt"
+                   && ctype_digit(substr($iname, 3))) {
             $o = $this->get((int) substr($iname, 3));
             return $o ? [$o->id => $o] : [];
+        } else {
+            if (substr($iname, 0, 4) === "opt-") {
+                $name = substr($name, 4);
+            }
+            $omap = [];
+            foreach ($this->conf->find_all_fields($name, Conf::FSRCH_OPTION) as $o) {
+                $omap[$o->id] = $o;
+            }
+            return $omap;
         }
-        if (substr($iname, 0, 4) === "opt-")
-            $name = substr($name, 4);
-        $omap = [];
-        foreach ($this->conf->find_all_fields($name, Conf::FSRCH_OPTION) as $o)
-            $omap[$o->id] = $o;
-        return $omap;
     }
 
     function find($name, $nonpaper = false) {
@@ -396,21 +405,23 @@ class PaperOptionList {
         // in their own.
         if (!$this->_nonpaper_am) {
             $this->_nonpaper_am = new AbbreviationMatcher;
-            foreach ($this->option_json_list() as $id => $oj)
+            foreach ($this->option_json_list() as $id => $oj) {
                 if (get($oj, "nonpaper")
                     && ($o = $this->get($id))) {
                     assert($o->nonpaper);
                     $this->_nonpaper_am->add($o->name, $o);
                     $this->_nonpaper_am->add($o->formid, $o);
                 }
+            }
         }
         return $this->_nonpaper_am;
     }
 
     function find_all_nonpaper($name) {
         $omap = [];
-        foreach ($this->nonpaper_abbrev_matcher()->find_all($name) as $o)
+        foreach ($this->nonpaper_abbrev_matcher()->find_all($name) as $o) {
             $omap[$o->id] = $o;
+        }
         return $omap;
     }
 
@@ -431,6 +442,7 @@ class PaperOption implements Abbreviator {
     const TOPICSID = -1005;
     const PCCONFID = -1006;
     const COLLABORATORSID = -1007;
+    const SUBMISSION_VERSION_ID = -1008;
 
     public $conf;
     public $id;
@@ -1446,18 +1458,22 @@ class NumericPaperOption extends PaperOption {
             return null;
         } else if (is_numeric($v)) {
             $iv = intval($v);
-            if ((float) $iv === floatval($v))
+            if ((float) $iv === floatval($v)) {
                 return $iv;
+            }
         }
         return $v;
     }
 
     function store_json($pj, PaperStatus $ps) {
-        if (is_int($pj))
+        if (is_int($pj)) {
             return $pj;
-        else if ($pj === null || $pj === false)
+        } else {
+            if ($pj !== null && $pj !== false) {
+                $ps->error_at_option($this, "Option should be an integer.");
+            }
             return null;
-        $ps->error_at_option($this, "Option should be an integer.");
+        }
     }
 
     function list_display($isrow) {
@@ -1500,10 +1516,11 @@ class TextPaperOption extends PaperOption {
     function value_compare($av, $bv) {
         $av = $av ? (string) $av->data() : "";
         $bv = $bv ? (string) $bv->data() : "";
-        if ($av !== "" && $bv !== "")
+        if ($av !== "" && $bv !== "") {
             return strcasecmp($av, $bv);
-        else
+        } else {
             return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
+        }
     }
 
 
@@ -1528,10 +1545,11 @@ class TextPaperOption extends PaperOption {
     }
 
     function store_json($pj, PaperStatus $ps) {
-        if (is_string($pj))
+        if (is_string($pj)) {
             return $pj === "" ? null : [1, convert_to_utf8($pj)];
-        else if ($pj !== null)
+        } else if ($pj !== null) {
             $ps->error_at_option($this, "Option should be a string.");
+        }
     }
 
     function list_display($isrow) {
@@ -1613,9 +1631,10 @@ class AttachmentsPaperOption extends PaperOption {
 
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         $attachments = [];
-        foreach ($ov->documents() as $doc)
+        foreach ($ov->documents() as $doc) {
             if (($doc = $ps->document_to_json($this->id, $doc)))
                 $attachments[] = $doc;
+        }
         return empty($attachments) ? null : $attachments;
     }
 
