@@ -464,7 +464,7 @@ class PaperStatus extends MessageSet {
             $pj->$k = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
         } else if (isset($pj->$k)) {
             $this->format_error_at($k, $pj->$k);
-            unset($pj, $k);
+            unset($pj->$k);
         }
     }
 
@@ -1029,12 +1029,23 @@ class PaperStatus extends MessageSet {
             if ($oj !== null) {
                 $result = $o->store_json($oj, $ps);
             }
+            // Returns null, false, true (= 1), int (value), [value, data],
+            // or [value_or_pair, ...].
             if ($result === null || $result === false) {
                 $result = [];
-            } else if (!is_array($result)) {
-                $result = [[$result]];
-            } else if (count($result) == 2 && !is_int($result[1])) {
-                $result = [$result];
+            } else if ($result === true || is_int($result)) {
+                $result = [[(int) $result]];
+            } else {
+                assert(is_array($result));
+                if (count($result) === 2
+                    && is_int($result[0])
+                    && !is_int($result[1])) {
+                    assert($result[1] === null || is_string($result[1]));
+                    if (!($result[1] === null || is_string($result[1]))) {
+                        error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+                    }
+                    $result = [$result];
+                }
             }
             if (!$ps->has_error_at($o->field_key())) {
                 $parsed_options[$o->id] = $result;
@@ -1053,7 +1064,7 @@ class PaperStatus extends MessageSet {
             $nv = $nd = [];
             foreach ($parsed_vs as $vx) {
                 $nv[] = is_int($vx) ? $vx : $vx[0];
-                $nd[] = is_int($vx) ? null : get($vx, 1);
+                $nd[] = is_int($vx) ? null : ($vx[1] ?? null);
             }
 
             // save difference

@@ -62,7 +62,7 @@ class PaperValue {
             || (count($this->_values) !== 1 && $this->option->takes_multiple())) {
             $this->value = null;
         } else {
-            $this->value = get($this->_values, 0);
+            $this->value = $this->_values[0] ?? null;
         }
         $this->anno = null;
     }
@@ -74,15 +74,16 @@ class PaperValue {
             $this->_documents = [];
             foreach ($this->sorted_values() as $docid) {
                 if ($docid > 1
-                    && ($d = $this->prow->document($this->id, $docid)))
+                    && ($d = $this->prow->document($this->id, $docid))) {
                     $this->_documents[] = $d;
+                }
             }
             DocumentInfo::assign_unique_filenames($this->_documents);
         }
         return $this->_documents;
     }
     function document($index) {
-        return get($this->documents(), $index);
+        return ($this->documents())[$index] ?? null;
     }
     function document_content($index) {
         $doc = $this->document($index);
@@ -108,7 +109,7 @@ class PaperValue {
             $this->load_value_data();
         }
         if ($this->value !== null) {
-            return get($this->_data, 0);
+            return $this->_data[0] ?? null;
         } else {
             return null;
         }
@@ -324,10 +325,12 @@ class PaperOptionList {
     }
 
     private function _get_field($id, $oj, $nonfinal) {
-        if (get($oj, "nonpaper")
-            || ($nonfinal && get($oj, "final")))
+        if (!($oj->nonpaper ?? false)
+            && !($nonfinal && ($oj->final ?? false))) {
+            return $this->get($id);
+        } else {
             return null;
-        return $this->get($id);
+        }
     }
 
     private function unsorted_field_list(PaperInfo $prow = null) {
@@ -642,11 +645,11 @@ class PaperOption implements Abbreviator {
     }
 
     static function make_readable_formid($s) {
-        $s = strtolower(preg_replace('{[^A-Za-z0-9]+}', "-", UnicodeHelper::deaccent($s)));
-        if ($s[strlen($s) - 1] === "-") {
+        $s = strtolower(preg_replace('/[^A-Za-z0-9]+/', "-", UnicodeHelper::deaccent($s)));
+        if (str_ends_with($s, "-")) {
             $s = substr($s, 0, -1);
         }
-        if (!preg_match('{\A(?:title|paper|submission|final|authors|blind|contacts|abstract|topics|pcconf|collaborators|submit|paperform|htctl.*|fold.*|pcc\d+|body.*|tracker.*|msg.*|header.*|footer.*|quicklink.*|tla.*|-|)\z}', $s)) {
+        if (!preg_match('/\A(?:title|paper|submission|final|authors|blind|contacts|abstract|topics|pcconf|collaborators|submit|paperform|htctl.*|fold.*|pcc\d+|body.*|tracker.*|msg.*|header.*|footer.*|quicklink.*|tla.*|[-_].*|)\z/', $s)) {
             return $s;
         } else {
             return "field-" . $s;
@@ -709,8 +712,9 @@ class PaperOption implements Abbreviator {
         if ($this->_readable_formid === null) {
             $used = [];
             foreach ($this->conf->paper_opts->option_list() as $o) {
-                if ($o->_readable_formid !== null)
+                if ($o->_readable_formid !== null) {
                     $used[$o->_readable_formid] = true;
+                }
             }
             foreach ($this->conf->paper_opts->option_list() as $o) {
                 if ($o->_readable_formid === null && $o->id > 0) {
@@ -1022,9 +1026,12 @@ class CheckboxPaperOption extends PaperOption {
     }
 
     function store_json($pj, PaperStatus $ps) {
-        if (is_bool($pj) || $pj === null)
+        if (is_bool($pj) || $pj === null) {
             return $pj ? 1 : null;
-        $ps->error_at_option($this, "Option should be “true” or “false”.");
+        } else {
+            $ps->error_at_option($this, "Option should be “true” or “false”.");
+            return null;
+        }
     }
 
     function list_display($isrow) {
@@ -1185,9 +1192,9 @@ class SelectorPaperOption extends PaperOption {
 
     function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
         $v = trim((string) $qreq[$this->formid]);
-        if ($v === "" || $v === "0")
+        if ($v === "" || $v === "0") {
             return null;
-        else if (ctype_digit($v)) {
+        } else if (ctype_digit($v)) {
             $iv = intval($v);
             if (isset($this->selector[$iv - 1]))
                 return $iv;
@@ -1200,9 +1207,14 @@ class SelectorPaperOption extends PaperOption {
             && ($v = array_search($pj, $this->selector)) !== false) {
             $pj = $v + 1;
         }
-        if ((is_int($pj) && isset($this->selector[$pj - 1])) || $pj === null)
+        if (is_int($pj) && isset($this->selector[$pj - 1])) {
             return $pj;
-        $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
+        } else {
+            if ($pj !== null) {
+                $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
+            }
+            return null;
+        }
     }
 
     function list_display($isrow) {
@@ -1340,9 +1352,10 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function store_json($pj, PaperStatus $ps) {
-        if ($pj !== null) {
-            $xpj = $ps->upload_document($pj, $this);
-            return $xpj ? $xpj->paperStorageId : null;
+        if ($pj !== null && ($xpj = $ps->upload_document($pj, $this))) {
+            return $xpj->paperStorageId;
+        } else {
+            return null;
         }
     }
 
@@ -1546,9 +1559,12 @@ class TextPaperOption extends PaperOption {
 
     function store_json($pj, PaperStatus $ps) {
         if (is_string($pj)) {
-            return $pj === "" ? null : [1, convert_to_utf8($pj)];
-        } else if ($pj !== null) {
-            $ps->error_at_option($this, "Option should be a string.");
+            return $pj === "" ? null : [1, $pj];
+        } else {
+            if ($pj !== null) {
+                $ps->error_at_option($this, "Option should be a string.");
+            }
+            return null;
         }
     }
 
@@ -1584,9 +1600,10 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function attachment(PaperValue $ov, $name) {
-        foreach ($ov->documents() as $xdoc)
+        foreach ($ov->documents() as $xdoc) {
             if ($xdoc->unique_filename == $name)
                 return $xdoc;
+        }
         return null;
     }
 
@@ -1687,35 +1704,39 @@ class AttachmentsPaperOption extends PaperOption {
         for ($i = count($attachments) - 1; $i >= 0; --$i) {
             if (isset($attachments[$i]->docid)) {
                 $pfx = "remove_{$this->formid}_{$attachments[$i]->docid}";
-                if ($qreq["{$pfx}_{$i}"] || $qreq[$pfx] /* XXX backwards compat */)
+                if ($qreq["{$pfx}_{$i}"]) {
                     array_splice($attachments, $i, 1);
+                }
             }
         }
         for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
-            if (($f = $qreq->file("{$this->formid}_new_$i")))
+            if (($f = $qreq->file("{$this->formid}_new_$i"))) {
                 $attachments[] = DocumentInfo::make_file_upload($pid, $this->id, $f, $this->conf);
+            }
         }
         return empty($attachments) ? null : $attachments;
     }
 
     function store_json($pj, PaperStatus $ps) {
-        if (is_object($pj))
+        if (is_object($pj)) {
             $pj = [$pj];
+        }
         $result = [];
         foreach ($pj as $docj) {
-            if (($xdocj = $ps->upload_document($docj, $this)))
+            if (($xdocj = $ps->upload_document($docj, $this))) {
                 $result[] = $xdocj->paperStorageId;
+            }
         }
-        if (count($result) >= 2) {
+        if (count($result) < 2) {
+            return $result;
+        } else {
             // Duplicate the document IDs in the first option’s sort data.
             // This is so (1) the link from option -> PaperStorage is visible
             // directly via PaperOption.value, (2) we can still support
             // duplicate uploads.
-            $uids = array_unique($result, SORT_NUMERIC);
-            $uids[0] = [$uids[0], json_encode(["all_dids" => $result])];
-            return $uids;
-        } else {
-            return $result;
+            $x = array_map(function ($x) { return [$x]; }, array_unique($result, SORT_NUMERIC));
+            $x[0][] = json_encode(["all_dids" => $result]);
+            return $x;
         }
     }
 
