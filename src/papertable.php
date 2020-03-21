@@ -678,8 +678,8 @@ class PaperTable {
         $heading = $this->edit_title_html($docx) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
         $this->echo_editable_papt($field, $heading, ["for" => $doc ? false : $inputid, "id" => $docx->readable_formid()], $docx);
         $this->echo_field_hint($docx);
-
-        echo '<div class="papev has-document" data-dtype="', $dtype,
+        echo Ht::hidden("has_" . $docx->formid, 1),
+            '<div class="papev has-document" data-dtype="', $dtype,
             '" data-document-name="', $docx->field_key(), '"';
         if ($doc) {
             echo ' data-docid="', $doc->paperStorageId, '"';
@@ -688,9 +688,6 @@ class PaperTable {
             echo ' data-document-accept="', htmlspecialchars(join(",", array_map(function ($m) { return $m->mimetype; }, $accepts))), '"';
         }
         echo '>';
-        if ($dtype > 0) {
-            echo Ht::hidden("has_opt" . $dtype, 1);
-        }
 
         // current version, if any
         $has_cf = false;
@@ -837,7 +834,8 @@ class PaperTable {
         }
         $this->echo_editable_papt("authors", $title, ["id" => "authors"]);
         $this->echo_field_hint($option);
-        echo '<div class="papev"><table class="js-row-order">',
+        echo Ht::hidden("has_authors", 1),
+            '<div class="papev"><table class="js-row-order">',
             '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
             'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', null, $max_authors)), '">';
@@ -1414,7 +1412,7 @@ class PaperTable {
         $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "</span>" . $this->edit_title_html($option);
         $this->echo_editable_papt("blind", $heading, ["for" => "checkbox"]);
         $this->echo_field_hint($option);
-        echo "</div>\n\n";
+        echo Ht::hidden("has_blind", 1), "</div>\n\n";
     }
 
     private function _papstrip_framework() {
@@ -1485,9 +1483,8 @@ class PaperTable {
         }
         $this->echo_editable_papt("topics", $this->edit_title_html($option), ["id" => "topics"]);
         $this->echo_field_hint($option);
-        echo '<div class="papev">',
-            Ht::hidden("has_topics", 1),
-            '<div class="ctable">';
+        echo Ht::hidden("has_topics", 1),
+            '<div class="papev"><div class="ctable">';
         $ptopics = $this->prow->topic_map();
         $topics = $this->conf->topic_set();
         foreach ($topics->group_list() as $tg) {
@@ -1576,9 +1573,8 @@ class PaperTable {
 
         $this->echo_editable_papt("pcconf", $this->edit_title_html($option), ["id" => "pcconf"]);
         $this->echo_field_hint($option);
-        echo '<div class="papev">',
-            Ht::hidden("has_pcconf", 1),
-            '<div class="pc-ctable">';
+        echo Ht::hidden("has_pcconf", 1),
+            '<div class="papev"><div class="pc-ctable">';
         foreach ($pcm as $id => $p) {
             $pct = $this->prow->conflict_type($p);
             if ($this->useRequest) {

@@ -154,7 +154,9 @@ class Default_PaperSaver extends PaperSaver {
         }
 
         // Blindness
-        if ($action !== "final" && $user->conf->subBlindOptional()) {
+        if ($action !== "final"
+            && $user->conf->subBlindOptional()
+            && $qreq->has_blind) {
             $pj->nonblind = !$qreq->blind;
         }
 
