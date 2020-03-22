@@ -1341,8 +1341,9 @@ class PaperInfo {
             $dids[] = $this->finalPaperStorageId;
         }
         foreach ($this->options() as $oa) {
-            if ($oa->option->has_document())
-                $dids = array_merge($dids, $oa->unsorted_values());
+            if ($oa->option->has_document()) {
+                $dids = array_merge($dids, $oa->value_array());
+            }
         }
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
     }

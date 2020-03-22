@@ -55,9 +55,6 @@ class PaperValue {
             $this->_documents = null;
         }
         $this->_data = $datas;
-        if (count($this->_values) > 1 && $this->_data !== null) {
-            $this->option->expand_values($this->_values, $this->_data);
-        }
         if (empty($this->_values)
             || (count($this->_values) !== 1 && $this->option->takes_multiple())) {
             $this->value = null;
@@ -66,15 +63,35 @@ class PaperValue {
         }
         $this->anno = null;
     }
+    function data() {
+        if ($this->_data === null) {
+            $this->load_value_data();
+        }
+        if ($this->value !== null) {
+            return $this->_data[0] ?? null;
+        } else {
+            return null;
+        }
+    }
+    function value_count() {
+        return count($this->_values);
+    }
+    function value_array() {
+        return $this->_values;
+    }
+    function data_array() {
+        if ($this->_data === null) {
+            $this->load_value_data();
+        }
+        return $this->_data;
+    }
     function documents() {
         assert($this->prow || empty($this->_values));
         assert($this->option->has_document());
         if ($this->_documents === null) {
-            $this->option->refresh_documents($this);
             $this->_documents = [];
-            foreach ($this->sorted_values() as $docid) {
-                if ($docid > 1
-                    && ($d = $this->prow->document($this->id, $docid))) {
+            foreach ($this->option->value_dids($this) as $did) {
+                if (($d = $this->prow->document($this->id, $did))) {
                     $this->_documents[] = $d;
                 }
             }
@@ -91,28 +108,6 @@ class PaperValue {
     }
     function attachment($name) {
         return $this->option->attachment($this, $name);
-    }
-    function value_count() {
-        return count($this->_values);
-    }
-    function unsorted_values() {
-        return $this->_values;
-    }
-    function sorted_values() {
-        if ($this->_data === null && count($this->_values) > 1) {
-            $this->load_value_data();
-        }
-        return $this->_values;
-    }
-    function data() {
-        if ($this->_data === null) {
-            $this->load_value_data();
-        }
-        if ($this->value !== null) {
-            return $this->_data[0] ?? null;
-        } else {
-            return null;
-        }
     }
     function invalidate() {
         $this->prow->invalidate_options(true);
@@ -195,7 +190,7 @@ class PaperOptionList {
         $am->add_lazy("submission", $cb, [DTYPE_SUBMISSION], Conf::FSRCH_OPTION, 1);
         $am->add_lazy("final", $cb, [DTYPE_FINAL], Conf::FSRCH_OPTION, 1);
         foreach ($this->option_json_list() as $id => $oj) {
-            if (!get($oj, "nonpaper")) {
+            if (!($oj->nonpaper ?? false)) {
                 $am->add_lazy($oj->name, $cb, [$id], Conf::FSRCH_OPTION);
                 $am->add_lazy("opt{$id}", $cb, [$id], Conf::FSRCH_OPTION, 1);
             }
@@ -821,15 +816,13 @@ class PaperOption implements Abbreviator {
             $ms->error_at($this->field_key(), "Entry required.");
         }
     }
+    function value_dids(PaperValue $ov) {
+        return [];
+    }
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         return null;
     }
-
     function assign_force(PaperValue $ov) {
-    }
-    function expand_values(&$values, &$data_array) {
-    }
-    function refresh_documents(PaperValue $ov) {
     }
 
     function attachment(PaperValue $ov, $name) {
@@ -1261,14 +1254,9 @@ class DocumentPaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
     }
-    function assign_force(PaperValue $ov) {
-        if ($this->id == DTYPE_SUBMISSION) {
-            $ov->set_value_data([$ov->prow->paperStorageId], [null]);
-        } else if ($this->id == DTYPE_FINAL) {
-            $ov->set_value_data([$ov->prow->finalPaperStorageId], [null]);
-        }
+    function value_dids(PaperValue $ov) {
+        return $ov->value > 1 ? [$ov->value] : [];
     }
-
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         if ($ov->value === null
             || $ov->value <= ($this->id <= 0 ? 1 : 0)) {
@@ -1277,6 +1265,13 @@ class DocumentPaperOption extends PaperOption {
             return $doc;
         } else {
             return false;
+        }
+    }
+    function assign_force(PaperValue $ov) {
+        if ($this->id == DTYPE_SUBMISSION) {
+            $ov->set_value_data([$ov->prow->paperStorageId], [null]);
+        } else if ($this->id == DTYPE_FINAL) {
+            $ov->set_value_data([$ov->prow->finalPaperStorageId], [null]);
         }
     }
 
@@ -1591,11 +1586,9 @@ class AttachmentsPaperOption extends PaperOption {
     function has_document() {
         return true;
     }
-
     function has_attachments() {
         return true;
     }
-
     function takes_multiple() {
         return true;
     }
@@ -1606,20 +1599,6 @@ class AttachmentsPaperOption extends PaperOption {
                 return $xdoc;
         }
         return null;
-    }
-
-    function expand_values(&$values, &$data_array) {
-        $j = null;
-        foreach ($data_array as $d) {
-            if (str_starts_with($d, "{"))
-                $j = json_decode($d);
-        }
-        if ($j && isset($j->all_dids)) {
-            $values = $j->all_dids;
-            $data_array = array_fill(0, count($values), null);
-        } else {
-            array_multisort($data_array, SORT_NUMERIC, $values);
-        }
     }
 
     function parse_search($oms) {
@@ -1646,7 +1625,21 @@ class AttachmentsPaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return ($av && $av->value_count() ? 1 : 0) - ($bv && $bv->value_count() ? 1 : 0);
     }
-
+    function value_dids(PaperValue $ov) {
+        $j = null;
+        foreach ($ov->data_array() as $d) {
+            if (str_starts_with($d, "{"))
+                $j = json_decode($d);
+        }
+        if ($j && isset($j->all_dids)) {
+            return $j->all_dids;
+        } else {
+            $values = $ov->value_array();
+            $data = $ov->data_array();
+            array_multisort($data, SORT_NUMERIC, $values);
+            return $values;
+        }
+    }
     function unparse_json(PaperValue $ov, PaperStatus $ps) {
         $attachments = [];
         foreach ($ov->documents() as $doc) {
@@ -1658,7 +1651,8 @@ class AttachmentsPaperOption extends PaperOption {
 
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         $dids = $anno = [];
-        foreach ($prow->force_option($this)->sorted_values() as $i => $did) {
+        $ov = $prow->force_option($this);
+        foreach ($this->value_dids($ov) as $i => $did) {
             if (!isset($qreq["remove_{$this->formid}_{$did}_{$i}"]))
                 $dids[] = $did;
         }

@@ -118,10 +118,11 @@ class DocumentInfo implements JsonSerializable {
             $args["content_file"] = $upload["content_file"];
         } else if (isset($upload["tmp_name"]) && is_readable($upload["tmp_name"])) {
             $args["size"] = filesize($upload["tmp_name"]);
-            if ($args["size"] > 0)
+            if ($args["size"] > 0) {
                 $args["content_file"] = $upload["tmp_name"];
-            else
+            } else {
                 $args["error_html"] = "Uploaded file$fnhtml was empty, not saving.";
+            }
         } else {
             $args["error_html"] = "Uploaded file$fnhtml could not be read.";
         }
