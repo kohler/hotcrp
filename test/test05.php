@@ -137,7 +137,7 @@ xassert($ps->prepare_save_paper_json($pj));
 xassert($ps->diffs["title"]);
 xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
-xassert($ps->execute_save_paper_json($pj));
+xassert($ps->execute_save());
 xassert(!$ps->has_error());
 
 $newpaper = $Conf->fetch_paper($ps->paperId, $user_estrin);
@@ -157,7 +157,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_json($pj));
 xassert_eqq(count($ps->diffs), 1);
 xassert($ps->diffs["status"]);
-xassert($ps->execute_save_paper_json($pj));
+xassert($ps->execute_save());
 xassert(!$ps->has_error());
 
 $newpaper = $Conf->fetch_paper($ps->paperId, $user_estrin);
@@ -178,7 +178,7 @@ xassert($ps->prepare_save_paper_json($pj));
 xassert_eqq(count($ps->diffs), 2);
 xassert($ps->diffs["status"]);
 xassert($ps->diffs["calories"]);
-xassert($ps->execute_save_paper_json($pj));
+xassert($ps->execute_save());
 xassert(!$ps->has_error());
 
 $newpaper = $Conf->fetch_paper($ps->paperId, $user_estrin);
@@ -203,7 +203,7 @@ xassert($ps->prepare_save_paper_json($pj));
 xassert($ps->diffs["title"]);
 xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
-xassert($ps->execute_save_paper_json($pj));
+xassert($ps->execute_save());
 xassert(!$ps->has_error());
 
 $newpaper = $Conf->fetch_paper($ps->paperId, $user_estrin);

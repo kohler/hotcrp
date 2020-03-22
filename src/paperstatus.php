@@ -29,7 +29,8 @@ class PaperStatus extends MessageSet {
     private $_conflict_ins;
     private $_created_contacts;
     private $_paper_submitted;
-    private $_document_change;
+    private $_documents_changed;
+    private $_joindocs;
 
     function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
@@ -60,7 +61,8 @@ class PaperStatus extends MessageSet {
         $this->_topic_ins = null;
         $this->_option_delid = $this->_option_ins = [];
         $this->_new_conflicts = $this->_conflict_ins = null;
-        $this->_paper_submitted = $this->_document_change = null;
+        $this->_paper_submitted = $this->_documents_changed = false;
+        $this->_joindocs = [];
     }
 
     function on_document_export($cb) {
@@ -900,20 +902,26 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    static function check_pdfs(PaperStatus $ps, $pj) {
+    static function check_one_pdf(PaperOption $opt, PaperStatus $ps, $pj) {
         // store documents (XXX should attach to paper even if error)
-        foreach (["submission", "final"] as $i => $k) {
-            if (isset($pj->$k) && $pj->$k) {
-                $pj->$k = $ps->upload_document($pj->$k, $ps->conf->paper_opts->get($i ? DTYPE_FINAL : DTYPE_SUBMISSION));
-            }
-            if (isset($pj->$k)
-                && !$ps->has_error_at($i ? "final" : "paper")) {
-                $null_id = $i ? 0 : 1;
-                $new_id = isset($pj->$k) && $pj->$k ? $pj->$k->paperStorageId : $null_id;
-                $prowk = $i ? "finalPaperStorageId" : "paperStorageId";
-                if ($new_id != ($ps->prow ? $ps->prow->$prowk : $null_id)) {
-                    $ps->save_paperf($prowk, $new_id, $k);
-                }
+        $k = $opt->json_key();
+        if ($k === "paper"
+            && !isset($pj->paper)
+            && isset($pj->submission)) {
+            $k = "submission";
+        }
+        $doc = null;
+        if (isset($pj->$k) && $pj->$k) {
+            $doc = $ps->upload_document($pj->$k, $opt);
+        }
+        if (isset($pj->$k) && !$ps->has_error_at($opt->json_key())) {
+            $null_id = $opt->id ? 0 : 1;
+            $new_id = $doc ? $doc->paperStorageId : $null_id;
+            $prowk = $opt->id ? "finalPaperStorageId" : "paperStorageId";
+            if ($new_id != ($ps->prow ? $ps->prow->$prowk : $null_id)) {
+                $ps->save_paperf($prowk, $new_id, $k);
+                $ps->_joindocs[$opt->id] = $doc;
+                $ps->_documents_changed = true;
             }
         }
     }
@@ -1080,7 +1088,7 @@ class PaperStatus extends MessageSet {
                     $ps->_option_ins[] = $qv0;
                 }
                 if ($opt->has_document()) {
-                    $ps->_document_change = true;
+                    $ps->_documents_changed = true;
                 }
             }
         }
@@ -1342,7 +1350,8 @@ class PaperStatus extends MessageSet {
         self::check_collaborators($this, $pj);
         self::check_nonblind($this, $pj);
         self::check_conflicts($this, $pj);
-        self::check_pdfs($this, $pj);
+        self::check_one_pdf($this->conf->paper_opts->get(DTYPE_SUBMISSION), $this, $pj);
+        self::check_one_pdf($this->conf->paper_opts->get(DTYPE_FINAL), $this, $pj);
         self::check_topics($this, $pj);
         self::check_options($this, $pj);
         self::check_status($this, $pj);
@@ -1407,7 +1416,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    function execute_save_paper_json($pj) {
+    function execute_save() {
         global $Now;
         if (!empty($this->_paper_upd)) {
             $need_insert = $this->paperId <= 0;
@@ -1424,21 +1433,15 @@ class PaperStatus extends MessageSet {
             $old_joindoc = $this->prow ? $this->prow->joindoc() : null;
             $old_joinid = $old_joindoc ? $old_joindoc->paperStorageId : 0;
 
-            $new_final_docid = get($this->_paper_upd, "finalPaperStorageId");
-            $new_sub_docid = get($this->_paper_upd, "paperStorageId");
-            if ($new_final_docid !== null || $new_sub_docid !== null) {
-                $this->_document_change = true;
-            }
-
-            if ($new_final_docid > 0) {
-                $new_joindoc = $pj->final;
-            } else if ($new_final_docid === null
+            if ($this->_joindocs[DTYPE_FINAL] ?? null) {
+                $new_joindoc = $this->_joindocs[DTYPE_FINAL];
+            } else if (!isset($this->_joindocs[DTYPE_FINAL])
                        && $this->prow
                        && $this->prow->finalPaperStorageId > 0) {
                 $new_joindoc = $this->prow->document(DTYPE_FINAL);
-            } else if ($new_sub_docid > 1) {
-                $new_joindoc = $pj->submission;
-            } else if ($new_sub_docid === null
+            } else if ($this->_joindocs[DTYPE_SUBMISSION] ?? null) {
+                $new_joindoc = $this->_joindocs[DTYPE_SUBMISSION];
+            } else if (!isset($this->_joindocs[DTYPE_SUBMISSION])
                        && $this->prow
                        && $this->prow->paperStorageId > 1) {
                 $new_joindoc = $this->prow->document(DTYPE_SUBMISSION);
@@ -1494,7 +1497,7 @@ class PaperStatus extends MessageSet {
                 if (!$result || !$result->insert_id) {
                     return $this->error_at(false, $this->_("Could not create paper."));
                 }
-                $pj->pid = $this->paperId = (int) $result->insert_id;
+                $this->paperId = (int) $result->insert_id;
                 if (!empty($this->uploaded_documents)) {
                     $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->uploaded_documents);
                 }
@@ -1521,7 +1524,7 @@ class PaperStatus extends MessageSet {
         $this->conf->update_autosearch_tags($this->paperId);
 
         // update document inactivity
-        if ($this->_document_change) {
+        if ($this->_documents_changed) {
             $pset = $this->conf->paper_set(["paperId" => $this->paperId, "options" => true]);
             foreach ($pset as $prow) {
                 $prow->mark_inactive_documents();
@@ -1533,7 +1536,7 @@ class PaperStatus extends MessageSet {
 
     function save_paper_json($pj) {
         if ($this->prepare_save_paper_json($pj)) {
-            $this->execute_save_paper_json($pj);
+            $this->execute_save();
             return $this->paperId;
         } else {
             return false;

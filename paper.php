@@ -196,14 +196,14 @@ function update_paper(Qrequest $qreq, $action) {
     }
 
     // actually update
-    $ps->execute_save_paper_json($pj);
+    $ps->execute_save();
 
     $webnotes = "";
     if ($ps->has_messages()) {
         $webnotes .= " <ul><li>" . join("</li><li>", $ps->landmarked_messages()) . "</li></ul>";
     }
 
-    $new_prow = $Me->conf->fetch_paper(["paperId" => $pj->pid, "topics" => true, "options" => true], $Me);
+    $new_prow = $Me->conf->fetch_paper(["paperId" => $ps->paperId, "topics" => true, "options" => true], $Me);
     if (!$new_prow) {
         $Conf->msg($Conf->_("Your submission was not saved. Please correct these errors and save again.") . $webnotes, "merror");
         return false;
@@ -211,7 +211,7 @@ function update_paper(Qrequest $qreq, $action) {
     assert($Me->can_view_paper($new_prow));
 
     // submit paper if no error so far
-    $_GET["paperId"] = $_GET["p"] = $qreq->paperId = $qreq->p = $pj->pid;
+    $_GET["paperId"] = $_GET["p"] = $qreq->paperId = $qreq->p = $ps->paperId;
 
     if ($action === "final") {
         $submitkey = "timeFinalSubmitted";
@@ -389,7 +389,7 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
         if ($ps->prepare_save_paper_json($pj)) {
             if (!$ps->diffs) {
                 Conf::msg_warning($Conf->_("No changes to submission #%d.", $prow->paperId));
-            } else if ($ps->execute_save_paper_json($pj)) {
+            } else if ($ps->execute_save()) {
                 Conf::msg_confirm($Conf->_("Updated contacts for submission #%d.", $prow->paperId));
                 $Me->log_activity("Paper edited: contacts", $prow->paperId);
                 $Conf->self_redirect($Qreq);
