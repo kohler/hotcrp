@@ -130,6 +130,13 @@ class DocumentInfo implements JsonSerializable {
         return new DocumentInfo($args, $conf);
     }
 
+    static function check_json_upload($j) {
+        return is_object($j)
+            && (!isset($j->content) || is_string($j->content))
+            && (!isset($j->content_base64) || is_string($j->content_base64))
+            && (!isset($j->content_file) || is_string($j->content_file));
+    }
+
     static function fix_mimetype(&$args) {
         $content = $args["content"] ?? null;
         if ($content === null && isset($args["content_file"])) {

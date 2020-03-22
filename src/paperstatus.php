@@ -1034,13 +1034,17 @@ class PaperStatus extends MessageSet {
         $parsed_options = array();
         foreach ($pj->options as $oid => $oj) {
             $o = $ps->conf->paper_opts->get($oid);
-            $result = null;
-            if ($oj === null) {
+            $ov = $oj;
+            if ($ov !== null && !($ov instanceof PaperValue)) {
+                $ov = $o->parse_json($ps->_nnprow, $oj);
+            }
+            if ($ov === null) {
                 $result = null;
-            } else if ($oj instanceof PaperValue) {
-                $o->value_store($oj, $ps);
-                $result = array_map(null, $oj->value_array(), $oj->data_array());
+            } else if ($ov !== false) {
+                $o->value_store($ov, $ps);
+                $result = array_map(null, $ov->value_array(), $ov->data_array());
             } else {
+                error_log("using old PaperOption::store_json for $oid {$o->title()}");
                 $result = $o->store_json($oj, $ps);
             }
             // Returns null, false, true (= 1), int (value), [value, data],

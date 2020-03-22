@@ -30,7 +30,6 @@ class PaperValue {
         $ov = new PaperValue($prow, $o);
         $ov->set_value_data($values, $datas);
         return $ov;
-
     }
     static function make_error($prow, PaperOption $o, $error_html) {
         $ov = new PaperValue($prow, $o);
@@ -941,9 +940,6 @@ class PaperOption implements Abbreviator {
         return true;
     }
 
-    function store_json($pj, PaperStatus $ps) {
-        return null;
-    }
     function save_document_links($docids, PaperInfo $prow) {
         $qv = [];
         foreach ($docids as $doc) {
@@ -1008,15 +1004,6 @@ class CheckboxPaperOption extends PaperOption {
             '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
             ["for" => "checkbox", "tclass" => "ui js-click-child"]);
         echo "</div>\n\n";
-    }
-
-    function store_json($pj, PaperStatus $ps) {
-        if (is_bool($pj) || $pj === null) {
-            return $pj ? 1 : null;
-        } else {
-            $ps->error_at_option($this, "Option should be “true” or “false”.");
-            return null;
-        }
     }
 
     function list_display($isrow) {
@@ -1175,21 +1162,6 @@ class SelectorPaperOption extends PaperOption {
         echo "</div></div>\n\n";
     }
 
-    function store_json($pj, PaperStatus $ps) {
-        if (is_string($pj)
-            && ($v = array_search($pj, $this->selector)) !== false) {
-            $pj = $v + 1;
-        }
-        if (is_int($pj) && isset($this->selector[$pj - 1])) {
-            return $pj;
-        } else {
-            if ($pj !== null) {
-                $ps->error_at_option($this, "Option doesn’t match any of the selectors.");
-            }
-            return null;
-        }
-    }
-
     function list_display($isrow) {
         return true;
     }
@@ -1277,8 +1249,11 @@ class DocumentPaperOption extends PaperOption {
         }
     }
     function parse_json(PaperInfo $prow, $j) {
-        if ($j !== null) {
-            // XXX validate $j as document
+        if ($j === false) {
+            return PaperValue::make($prow, $this);
+        } else if ($j === null) {
+            return null;
+        } else if (DocumentInfo::check_json_upload($j)) {
             $ov = PaperValue::make($prow, $this, -1);
             $ov->anno["document"] = $j;
             if (isset($j->error_html)) {
@@ -1286,7 +1261,7 @@ class DocumentPaperOption extends PaperOption {
             }
             return $ov;
         } else {
-            return PaperValue::make($prow, $this);
+            return PaperValue::make_error($prow, $this, "Format error.");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1321,14 +1296,6 @@ class DocumentPaperOption extends PaperOption {
             . " and try again.";
         $doc->add_error_html($e);
         return false;
-    }
-
-    function store_json($pj, PaperStatus $ps) {
-        if ($pj !== null && ($xpj = $ps->upload_document($pj, $this))) {
-            return $xpj->paperStorageId;
-        } else {
-            return null;
-        }
     }
 
     function list_display($isrow) {
@@ -1437,17 +1404,6 @@ class NumericPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function store_json($pj, PaperStatus $ps) {
-        if (is_int($pj)) {
-            return $pj;
-        } else {
-            if ($pj !== null && $pj !== false) {
-                $ps->error_at_option($this, "Option should be an integer.");
-            }
-            return null;
-        }
-    }
-
     function list_display($isrow) {
         return $isrow ? true : ["column" => true, "className" => "pl_option plrd"];
     }
@@ -1509,17 +1465,6 @@ class TextPaperOption extends PaperOption {
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         $this->echo_web_edit_text($pt, $ov, $reqov);
-    }
-
-    function store_json($pj, PaperStatus $ps) {
-        if (is_string($pj)) {
-            return $pj === "" ? null : [1, $pj];
-        } else {
-            if ($pj !== null) {
-                $ps->error_at_option($this, "Option should be a string.");
-            }
-            return null;
-        }
     }
 
     function list_display($isrow) {
@@ -1649,7 +1594,25 @@ class AttachmentsPaperOption extends PaperOption {
         return $ov;
     }
     function parse_json(PaperInfo $prow, $j) {
-        throw new Error();
+        if ($j === false) {
+            return PaperValue::make($prow, $this);
+        } else if ($j === null) {
+            return null;
+        } else {
+            if (!is_array($j)) {
+                $j = [$j];
+            }
+            $ov = PaperValue::make($prow, $this, -1);
+            $ov->anno["documents"] = $j;
+            foreach ($j as $docj) {
+                if (is_object($docj) && isset($docj->error_html)) {
+                    $ov->anno["error_html"][] = $docj->error_html;
+                } else if (!DocumentInfo::check_json_upload($docj)) {
+                    $ov->anno["error_html"][] = "Format error.";
+                }
+            }
+            return $ov;
+        }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXX does not consider $reqov
@@ -1670,29 +1633,6 @@ class AttachmentsPaperOption extends PaperOption {
         }
         echo '</div>', Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}_attachments"]),
             "</div>\n\n";
-    }
-
-    function store_json($pj, PaperStatus $ps) {
-        if (is_object($pj)) {
-            $pj = [$pj];
-        }
-        $result = [];
-        foreach ($pj as $docj) {
-            if (($xdocj = $ps->upload_document($docj, $this))) {
-                $result[] = $xdocj->paperStorageId;
-            }
-        }
-        if (count($result) < 2) {
-            return $result;
-        } else {
-            // Duplicate the document IDs in the first option’s sort data.
-            // This is so (1) the link from option -> PaperStorage is visible
-            // directly via PaperOption.value, (2) we can still support
-            // duplicate uploads.
-            $x = array_map(function ($x) { return [$x]; }, array_unique($result, SORT_NUMERIC));
-            $x[0][] = json_encode(["all_dids" => $result]);
-            return $x;
-        }
     }
 
     function list_display($isrow) {
@@ -1775,6 +1715,9 @@ class IntrinsicPaperOption extends PaperOption {
     }
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         return IntrinsicValue::parse_web($this, $prow, $qreq);
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        return IntrinsicValue::parse_json($this, $prow, $j);
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         IntrinsicValue::echo_web_edit($this, $pt, $ov, $reqov);
