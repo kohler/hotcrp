@@ -40,7 +40,7 @@ class PaperValue {
     static function make_force($prow, PaperOption $o) {
         $ov = new PaperValue($prow, $o);
         if ($o->id <= 0) {
-            $o->assign_force($ov);
+            $o->value_load_intrinsic($ov);
             $ov->anno["intrinsic"] = true;
         }
         return $ov;
@@ -819,10 +819,12 @@ class PaperOption implements Abbreviator {
     function value_dids(PaperValue $ov) {
         return [];
     }
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return null;
     }
-    function assign_force(PaperValue $ov) {
+    function value_load_intrinsic(PaperValue $ov) {
+    }
+    function value_store(PaperValue $ov, PaperStatus $ps) {
     }
 
     function attachment(PaperValue $ov, $name) {
@@ -935,13 +937,6 @@ class PaperOption implements Abbreviator {
             "</div></div>\n\n";
     }
 
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
-        return $this->parse_request_display($qreq, $user, $prow);
-    }
-    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
-        return null;
-    }
-
     function validate_document(DocumentInfo $doc) {
         return true;
     }
@@ -991,7 +986,7 @@ class CheckboxPaperOption extends PaperOption {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
     }
 
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return $ov->value ? true : false;
     }
 
@@ -1013,10 +1008,6 @@ class CheckboxPaperOption extends PaperOption {
             '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
             ["for" => "checkbox", "tclass" => "ui js-click-child"]);
         echo "</div>\n\n";
-    }
-
-    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
-        return $qreq[$this->formid] > 0;
     }
 
     function store_json($pj, PaperStatus $ps) {
@@ -1122,7 +1113,7 @@ class SelectorPaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return get($this->selector, $ov->value - 1, null);
     }
 
@@ -1182,18 +1173,6 @@ class SelectorPaperOption extends PaperOption {
             }
         }
         echo "</div></div>\n\n";
-    }
-
-    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
-        $v = trim((string) $qreq[$this->formid]);
-        if ($v === "" || $v === "0") {
-            return null;
-        } else if (ctype_digit($v)) {
-            $iv = intval($v);
-            if (isset($this->selector[$iv - 1]))
-                return $iv;
-        }
-        return $v;
     }
 
     function store_json($pj, PaperStatus $ps) {
@@ -1257,7 +1236,7 @@ class DocumentPaperOption extends PaperOption {
     function value_dids(PaperValue $ov) {
         return $ov->value > 1 ? [$ov->value] : [];
     }
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         if ($ov->value === null
             || $ov->value <= ($this->id <= 0 ? 1 : 0)) {
             return null;
@@ -1267,18 +1246,26 @@ class DocumentPaperOption extends PaperOption {
             return false;
         }
     }
-    function assign_force(PaperValue $ov) {
+    function value_load_intrinsic(PaperValue $ov) {
         if ($this->id == DTYPE_SUBMISSION) {
             $ov->set_value_data([$ov->prow->paperStorageId], [null]);
         } else if ($this->id == DTYPE_FINAL) {
             $ov->set_value_data([$ov->prow->finalPaperStorageId], [null]);
         }
     }
+    function value_store(PaperValue $ov, PaperStatus $ps) {
+        if (isset($ov->anno["document"])
+            && ($doc = $ps->upload_document($ov->anno["document"], $this))) {
+            $ov->set_value_data([$doc->paperStorageId], [null]);
+        } else {
+            $ov->set_value_data([], []);
+        }
+    }
 
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         if ($qreq->has_file($this->formid)) {
             $ov = PaperValue::make($prow, $this, -1);
-            $ov->anno["file_upload"] = $fup = DocumentInfo::make_file_upload($prow->paperId, $this->id, $qreq->file($this->formid), $this->conf);
+            $ov->anno["document"] = $fup = DocumentInfo::make_file_upload($prow->paperId, $this->id, $qreq->file($this->formid), $this->conf);
             if (isset($fup->error_html)) {
                 $ov->anno["error_html"] = $fup->error_html;
             }
@@ -1293,7 +1280,7 @@ class DocumentPaperOption extends PaperOption {
         if ($j !== null) {
             // XXX validate $j as document
             $ov = PaperValue::make($prow, $this, -1);
-            $ov->anno["file_upload"] = $j;
+            $ov->anno["document"] = $j;
             if (isset($j->error_html)) {
                 $ov->anno["error_html"] = $j->error_html;
             }
@@ -1316,17 +1303,6 @@ class DocumentPaperOption extends PaperOption {
             $docid = 0;
         }
         $pt->echo_editable_document($this, $docid);
-    }
-
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
-        if ($qreq->has_file($this->formid)) {
-            $pid = $prow ? $prow->paperId : -1;
-            return DocumentInfo::make_file_upload($pid, $this->id, $qreq->file($this->formid), $this->conf);
-        } else if ($qreq["remove_{$this->formid}"]) {
-            return null;
-        } else {
-            return $opt_pj;
-        }
     }
 
     function validate_document(DocumentInfo $doc) {
@@ -1423,7 +1399,7 @@ class NumericPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return $ov->value;
     }
 
@@ -1459,19 +1435,6 @@ class NumericPaperOption extends PaperOption {
                 "data-default-value" => $ov->value, "inputmode" => "numeric"
             ]),
             "</div></div>\n\n";
-    }
-
-    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
-        $v = trim((string) $qreq[$this->formid]);
-        if ($v === "") {
-            return null;
-        } else if (is_numeric($v)) {
-            $iv = intval($v);
-            if ((float) $iv === floatval($v)) {
-                return $iv;
-            }
-        }
-        return $v;
     }
 
     function store_json($pj, PaperStatus $ps) {
@@ -1533,7 +1496,7 @@ class TextPaperOption extends PaperOption {
     }
 
 
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $x = $ov->data();
         return $x !== "" ? $x : null;
     }
@@ -1546,11 +1509,6 @@ class TextPaperOption extends PaperOption {
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         $this->echo_web_edit_text($pt, $ov, $reqov);
-    }
-
-    function parse_request_display(Qrequest $qreq, Contact $user, $prow) {
-        $x = trim((string) $qreq[$this->formid]);
-        return $x !== "" ? $x : null;
     }
 
     function store_json($pj, PaperStatus $ps) {
@@ -1640,7 +1598,7 @@ class AttachmentsPaperOption extends PaperOption {
             return $values;
         }
     }
-    function unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $attachments = [];
         foreach ($ov->documents() as $doc) {
             if (($doc = $ps->document_to_json($this->id, $doc)))
@@ -1648,32 +1606,53 @@ class AttachmentsPaperOption extends PaperOption {
         }
         return empty($attachments) ? null : $attachments;
     }
+    function value_store(PaperValue $ov, PaperStatus $ps) {
+        $dids = $ov->anno["dids"] ?? [];
+        foreach ($ov->anno["documents"] ?? [] as $fup) {
+            if (($doc = $ps->upload_document($fup, $this))) {
+                $dids[] = $doc->paperStorageId;
+            }
+        }
+        if (empty($dids)) {
+            $ov->set_value_data([], []);
+        } else if (count($dids) == 1) {
+            $ov->set_value_data([$dids[0]], [null]);
+        } else {
+            // Put the ordered document IDs in the first option’s sort data.
+            // This is so (1) the link from option -> PaperStorage is visible
+            // directly via PaperOption.value, (2) we can still support
+            // duplicate uploads.
+            $uniqdids = array_unique($dids, SORT_NUMERIC);
+            $datas = array_fill(0, count($uniqdids), null);
+            $datas[0] = json_encode(["all_dids" => $dids]);
+            $ov->set_value_data($uniqdids, $datas);
+        }
+    }
 
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         $dids = $anno = [];
-        $ov = $prow->force_option($this);
-        foreach ($this->value_dids($ov) as $i => $did) {
-            if (!isset($qreq["remove_{$this->formid}_{$did}_{$i}"]))
-                $dids[] = $did;
+        $ov = PaperValue::make($prow, $this, -1);
+        foreach ($this->value_dids($prow->force_option($this)) as $i => $did) {
+            if (!isset($qreq["remove_{$this->formid}_{$did}_{$i}"])) {
+                $ov->anno["dids"][] = $did;
+            }
         }
         for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
             if (($f = $qreq->file("{$this->formid}_new_$i"))) {
                 $fup = DocumentInfo::make_file_upload($prow->paperId, $this->id, $f, $this->conf);
                 if (isset($fup->error_html)) {
-                    $anno["error_html"][] = $fup->error_html;
+                    $ov->anno["error_html"][] = $fup->error_html;
                 }
-                $anno["document" . count($dids)] = $fup;
-                $dids[] = -1;
+                $ov->anno["documents"][] = $fup;
             }
         }
-        $ov = PaperValue::make_multi($prow, $this, $dids, array_fill(0, count($dids), null));
-        $ov->anno = $anno;
         return $ov;
     }
     function parse_json(PaperInfo $prow, $j) {
         throw new Error();
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        // XXX does not consider $reqov
         $pt->echo_editable_option_papt($this, $this->title_html() . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid(), "for" => false]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" id="', $this->formid, '_attachments">';
         foreach ($ov->documents() as $i => $doc) {
@@ -1691,25 +1670,6 @@ class AttachmentsPaperOption extends PaperOption {
         }
         echo '</div>', Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}_attachments"]),
             "</div>\n\n";
-    }
-
-    function parse_request($opt_pj, Qrequest $qreq, Contact $user, $prow) {
-        $pid = $prow ? $prow->paperId : -1;
-        $attachments = $opt_pj ? : [];
-        for ($i = count($attachments) - 1; $i >= 0; --$i) {
-            if (isset($attachments[$i]->docid)) {
-                $pfx = "remove_{$this->formid}_{$attachments[$i]->docid}";
-                if ($qreq["{$pfx}_{$i}"]) {
-                    array_splice($attachments, $i, 1);
-                }
-            }
-        }
-        for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
-            if (($f = $qreq->file("{$this->formid}_new_$i"))) {
-                $attachments[] = DocumentInfo::make_file_upload($pid, $this->id, $f, $this->conf);
-            }
-        }
-        return empty($attachments) ? null : $attachments;
     }
 
     function store_json($pj, PaperStatus $ps) {
@@ -1797,7 +1757,7 @@ class IntrinsicPaperOption extends PaperOption {
     function value_messages(PaperValue $ov, MessageSet $ms) {
         IntrinsicValue::value_messages($this, $ov, $ms);
     }
-    function assign_force(PaperValue $ov) {
+    function value_load_intrinsic(PaperValue $ov) {
         $s = null;
         if ($this->id === PaperOption::TITLEID) {
             $s = $ov->prow->title;

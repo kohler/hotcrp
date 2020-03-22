@@ -21,6 +21,7 @@ class PaperStatus extends MessageSet {
     private $_cf;
 
     public $diffs;
+    private $_nnprow;
     private $_paper_upd;
     private $_topic_ins;
     private $_option_delid;
@@ -308,7 +309,7 @@ class PaperStatus extends MessageSet {
                 && !$o->value_present($ov)) {
                 $this->error_at_option($o, "Entry required.");
             }
-            $oj = $o->unparse_json($ov, $this, $user);
+            $oj = $o->value_unparse_json($ov, $this, $user);
             if ($oj !== null) {
                 $options[$this->export_ids ? $o->id : $o->json_key()] = $oj;
             }
@@ -1034,7 +1035,12 @@ class PaperStatus extends MessageSet {
         foreach ($pj->options as $oid => $oj) {
             $o = $ps->conf->paper_opts->get($oid);
             $result = null;
-            if ($oj !== null) {
+            if ($oj === null) {
+                $result = null;
+            } else if ($oj instanceof PaperValue) {
+                $o->value_store($oj, $ps);
+                $result = array_map(null, $oj->value_array(), $oj->data_array());
+            } else {
                 $result = $o->store_json($oj, $ps);
             }
             // Returns null, false, true (= 1), int (value), [value, data],
@@ -1332,10 +1338,11 @@ class PaperStatus extends MessageSet {
         if ($paperid) {
             $this->prow = $this->conf->fetch_paper(["paperId" => $paperid, "topics" => true, "options" => true], $this->user);
         }
-        if ($pj && $this->prow && $paperid !== $this->prow->paperId) {
+        if ($this->prow && $paperid !== $this->prow->paperId) {
             $this->error_at("pid", $this->_("Saving submission with different ID"));
             return false;
         }
+        $this->_nnprow = $this->prow ? : PaperInfo::make_new($this->user);
 
         // normalize and check format
         $this->normalize($pj);

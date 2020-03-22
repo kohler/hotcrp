@@ -170,6 +170,7 @@ class Default_PaperSaver extends PaperSaver {
         }
 
         // Options
+        $nnprow = $prow ? : PaperInfo::make_new($user);
         if (!isset($pj->options)) {
             $pj->options = (object) [];
         }
@@ -178,7 +179,12 @@ class Default_PaperSaver extends PaperSaver {
                 && (!$o->final || $action === "final")) {
                 // XXX test_editable
                 $okey = $o->json_key();
-                $pj->options->$okey = $o->parse_request(get($pj->options, $okey), $qreq, $user, $prow);
+                $ov = $o->parse_web($nnprow, $qreq);
+                if ($ov === false) {
+                    error_log("option {$o->id} {$o->title()} should implement parse_web but doesn't");
+                    $ov = $o->parse_request(get($pj->options, $okey), $qreq, $user, $prow);
+                }
+                $pj->options->$okey = $ov;
             }
         }
         if (!count(get_object_vars($pj->options))) {
