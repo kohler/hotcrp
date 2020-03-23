@@ -355,11 +355,14 @@ class PaperStatus extends MessageSet {
         return $o ? htmlspecialchars($o->edit_title()) : false;
     }
 
-    function error_at_option(PaperOption $o, $html) {
-        $this->error_at($o->field_key(), $html);
+    function msg_at_option(PaperOption $o, $msg, $status) {
+        $this->msg($o->field_key(), $msg, $status);
     }
-    function warning_at_option(PaperOption $o, $html) {
-        $this->warning_at($o->field_key(), $html);
+    function error_at_option(PaperOption $o, $msg) {
+        $this->error_at($o->field_key(), $msg);
+    }
+    function warning_at_option(PaperOption $o, $msg) {
+        $this->warning_at($o->field_key(), $msg);
     }
     function landmarked_messages() {
         $ms = [];
@@ -823,6 +826,19 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    function save_paperf($f, $v) {
+        assert(!isset($this->_paper_upd[$f]));
+        $this->_paper_upd[$f] = $v;
+    }
+
+    function update_paperf($f, $v) {
+        $this->_paper_upd[$f] = $v;
+    }
+
+    function mark_diff($diff) {
+        $this->diffs[$diff] = true;
+    }
+
     static function check_title(PaperStatus $ps, $pj) {
         $v = convert_to_utf8(get_s($pj, "title"));
         if ($v === ""
@@ -832,7 +848,8 @@ class PaperStatus extends MessageSet {
         if (!$ps->has_error_at("title")
             && isset($pj->title)
             && $v !== ($ps->prow ? (string) $ps->prow->title : "")) {
-            $ps->save_paperf("title", $v, "title");
+            $ps->save_paperf("title", $v);
+            $ps->mark_diff("title");
         }
     }
 
@@ -846,7 +863,8 @@ class PaperStatus extends MessageSet {
         if (!$ps->has_error_at("abstract")
             && isset($pj->abstract)
             && $v !== ($ps->prow ? (string) $ps->prow->abstract : "")) {
-            $ps->save_paperf("abstract", $v, "abstract");
+            $ps->save_paperf("abstract", $v);
+            $ps->mark_diff("abstract");
         }
     }
 
@@ -881,8 +899,10 @@ class PaperStatus extends MessageSet {
         if (isset($pj->authors)
             && !$ps->has_error_at("authors")) {
             $v = convert_to_utf8(self::author_information($pj));
-            if ($v !== ($ps->prow ? $ps->prow->authorInformation : ""))
-                $ps->save_paperf("authorInformation", $v, "authors");
+            if ($v !== ($ps->prow ? $ps->prow->authorInformation : "")) {
+                $ps->save_paperf("authorInformation", $v);
+                $ps->mark_diff("authors");
+            }
         }
     }
 
@@ -890,7 +910,8 @@ class PaperStatus extends MessageSet {
         $v = convert_to_utf8(get_s($pj, "collaborators"));
         if (isset($pj->collaborators)
             && $v !== ($ps->prow ? (string) $ps->prow->collaborators : "")) {
-            $ps->save_paperf("collaborators", $v, "collaborators");
+            $ps->save_paperf("collaborators", $v);
+            $ps->mark_diff("collaborators");
         }
     }
 
@@ -899,7 +920,8 @@ class PaperStatus extends MessageSet {
             && (!$ps->prow
                 || (isset($pj->nonblind)
                     && !$pj->nonblind !== !!$ps->prow->blind))) {
-            $ps->save_paperf("blind", get($pj, "nonblind") ? 0 : 1, "nonblind");
+            $ps->save_paperf("blind", get($pj, "nonblind") ? 0 : 1);
+            $ps->mark_diff("nonblind");
         }
     }
 
@@ -920,7 +942,8 @@ class PaperStatus extends MessageSet {
             $new_id = $doc ? $doc->paperStorageId : $null_id;
             $prowk = $opt->id ? "finalPaperStorageId" : "paperStorageId";
             if ($new_id != ($ps->prow ? $ps->prow->$prowk : $null_id)) {
-                $ps->save_paperf($prowk, $new_id, $k);
+                $ps->save_paperf($prowk, $new_id);
+                $ps->mark_diff($opt->json_key());
                 $ps->_joindocs[$opt->id] = $doc;
                 $ps->_documents_changed = true;
             }
@@ -958,10 +981,12 @@ class PaperStatus extends MessageSet {
                 $submitted_at = -$submitted_at;
             }
             if (!$ps->prow || $ps->prow->timeWithdrawn <= 0) {
-                $ps->save_paperf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now, "status");
+                $ps->save_paperf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now);
                 $ps->save_paperf("timeSubmitted", $submitted_at);
+                $ps->mark_diff("status");
             } else if (($ps->prow->submitted_at() > 0) !== $pj_submitted) {
-                $ps->save_paperf("timeSubmitted", $submitted_at, "status");
+                $ps->save_paperf("timeSubmitted", $submitted_at);
+                $ps->mark_diff("status");
             }
         } else if ($pj_submitted) {
             if (!$ps->prow || $ps->prow->timeSubmitted <= 0) {
@@ -969,14 +994,17 @@ class PaperStatus extends MessageSet {
                     || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN) {
                     $submitted_at = $Now;
                 }
-                $ps->save_paperf("timeSubmitted", $submitted_at, "status");
+                $ps->save_paperf("timeSubmitted", $submitted_at);
+                $ps->mark_diff("status");
             }
             if ($ps->prow && $ps->prow->timeWithdrawn != 0) {
-                $ps->save_paperf("timeWithdrawn", 0, "status");
+                $ps->save_paperf("timeWithdrawn", 0);
+                $ps->mark_diff("status");
             }
         } else if ($ps->prow && ($ps->prow->timeWithdrawn > 0 || $ps->prow->timeSubmitted > 0)) {
-            $ps->save_paperf("timeSubmitted", 0, "status");
+            $ps->save_paperf("timeSubmitted", 0);
             $ps->save_paperf("timeWithdrawn", 0);
+            $ps->mark_diff("status");
         }
         $ps->_paper_submitted = $pj_submitted && !$pj_withdrawn;
     }
@@ -990,7 +1018,8 @@ class PaperStatus extends MessageSet {
                 $time = 0;
             }
             if (!$ps->prow || $ps->prow->timeFinalSubmitted != $time) {
-                $ps->save_paperf("timeFinalSubmitted", $time, "final_status");
+                $ps->save_paperf("timeFinalSubmitted", $time);
+                $ps->mark_diff("final_status");
             }
         }
     }
@@ -1023,75 +1052,40 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    static function check_options(PaperStatus $ps, $pj) {
-        if (!empty($pj->bad_options)) {
-            $ps->warning_at("options", $ps->_("Unknown options ignored (%2\$s).", count($pj->bad_options), htmlspecialchars(join("; ", array_keys($pj->bad_options)))));
+    static function check_one_option(PaperOption $opt, PaperStatus $ps, $oj) {
+        $ov = $oj;
+        if ($ov !== null && !($ov instanceof PaperValue)) {
+            $ov = $opt->parse_json($ps->_nnprow, $oj);
         }
-        if (!isset($pj->options)) {
+        if ($ov === null) {
             return;
         }
+        assert($ov instanceof PaperValue);
 
-        $parsed_options = array();
-        foreach ($pj->options as $oid => $oj) {
-            $o = $ps->conf->paper_opts->get($oid);
-            $ov = $oj;
-            if ($ov !== null && !($ov instanceof PaperValue)) {
-                $ov = $o->parse_json($ps->_nnprow, $oj);
-            }
-            if ($ov === null) {
-                $result = null;
-            } else if ($ov !== false) {
-                $o->value_store($ov, $ps);
-                $result = array_map(null, $ov->value_array(), $ov->data_array());
-            } else {
-                error_log("using old PaperOption::store_json for $oid {$o->title()}");
-                $result = $o->store_json($oj, $ps);
-            }
-            // Returns null, false, true (= 1), int (value), [value, data],
-            // or [value_or_pair, ...].
-            if ($result === null || $result === false) {
-                $result = [];
-            } else if ($result === true || is_int($result)) {
-                $result = [[(int) $result]];
-            } else {
-                assert(is_array($result));
-                if (count($result) === 2
-                    && is_int($result[0])
-                    && !is_int($result[1])) {
-                    assert($result[1] === null || is_string($result[1]));
-                    if (!($result[1] === null || is_string($result[1]))) {
-                        error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-                    }
-                    $result = [$result];
-                }
-            }
-            if (!$ps->has_error_at($o->field_key())) {
-                $parsed_options[$o->id] = $result;
-            }
+        if (!$ov->has_error()) {
+            $opt->value_store($ov, $ps);
         }
 
-        ksort($parsed_options);
-        foreach ($parsed_options as $id => $parsed_vs) {
-            // old values
-            $ov = $od = [];
-            if ($ps->prow) {
-                list($ov, $od) = $ps->prow->option_value_data($id);
-            }
+        foreach ($ov->messages(true) as $mx) {
+            $ps->msg_at_option($opt, $mx[1], $mx[2]);
+        }
 
-            // new values
-            $nv = $nd = [];
-            foreach ($parsed_vs as $vx) {
-                $nv[] = is_int($vx) ? $vx : $vx[0];
-                $nd[] = is_int($vx) ? null : ($vx[1] ?? null);
+        if (!$ps->has_error_at($opt->field_key())) {
+            $nv = $ov->value_array();
+            $nd = $ov->data_array();
+
+            if ($ps->prow) {
+                list($ov, $od) = $ps->prow->option_value_data($opt->id);
+            } else {
+                $ov = $od = [];
             }
 
             // save difference
             if ($ov !== $nv || $od !== $nd) {
-                $opt = $ps->conf->paper_opts->get($id);
-                $ps->_option_delid[] = $id;
+                $ps->_option_delid[] = $opt->id;
                 $ps->diffs[$opt->json_key()] = true;
                 for ($i = 0; $i < count($nv); ++$i) {
-                    $qv0 = [-1, $id, $nv[$i], null, null];
+                    $qv0 = [-1, $opt->id, $nv[$i], null, null];
                     if ($nd[$i] !== null) {
                         $qv0[strlen($nd[$i]) < 32768 ? 3 : 4] = $nd[$i];
                     }
@@ -1100,6 +1094,18 @@ class PaperStatus extends MessageSet {
                 if ($opt->has_document()) {
                     $ps->_documents_changed = true;
                 }
+            }
+        }
+    }
+
+    static function check_options(PaperStatus $ps, $pj) {
+        if (!empty($pj->bad_options)) {
+            $ps->warning_at("options", $ps->_("Unknown options ignored (%2\$s).", count($pj->bad_options), htmlspecialchars(join("; ", array_keys($pj->bad_options)))));
+        }
+        if (isset($pj->options)) {
+            foreach ($pj->options as $oid => $oj) {
+                $o = $ps->conf->paper_opts->get($oid);
+                self::check_one_option($o, $ps, $oj);
             }
         }
     }
@@ -1310,14 +1316,6 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function save_paperf($f, $v, $diff = null) {
-        assert(!isset($this->_paper_upd[$f]));
-        $this->_paper_upd[$f] = $v;
-        if ($diff) {
-            $this->diffs[$diff] = true;
-        }
-    }
-
     function prepare_save_paper_json($pj) {
         assert(!$this->hide_docids);
         assert(is_object($pj));
@@ -1436,9 +1434,9 @@ class PaperStatus extends MessageSet {
             }
 
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER) {
-                $this->save_paperf("blind", 0);
+                $this->update_paperf("blind", 0);
             } else if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL) {
-                $this->save_paperf("blind", 1);
+                $this->update_paperf("blind", 1);
             }
 
             $old_joindoc = $this->prow ? $this->prow->joindoc() : null;

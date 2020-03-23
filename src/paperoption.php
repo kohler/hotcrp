@@ -11,6 +11,7 @@ class PaperValue {
     private $_values;
     private $_data;
     private $_documents;
+    private $_msg;
 
     function __construct($prow, PaperOption $o) { // XXX should be private
         $this->prow = $prow;
@@ -33,7 +34,7 @@ class PaperValue {
     }
     static function make_error($prow, PaperOption $o, $error_html) {
         $ov = new PaperValue($prow, $o);
-        $ov->anno["error_html"] = $error_html;
+        $ov->error($error_html);
         return $ov;
     }
     static function make_force($prow, PaperOption $o) {
@@ -112,6 +113,43 @@ class PaperValue {
         $this->prow->invalidate_options(true);
         $this->load_value_data();
     }
+
+    function messageset() {
+        if ($this->_msg === null) {
+            $this->_msg = new MessageSet;
+        }
+        return $this->_msg;
+    }
+    function msg($msg, $status) {
+        $this->messageset()->msg(false, $msg, $status);
+    }
+    function error($msg) {
+        $this->messageset()->error_at(false, $msg);
+    }
+    function warning($msg) {
+        $this->messageset()->warning_at(false, $msg);
+    }
+    function has_problem() {
+        return $this->_msg && $this->_msg->has_problem();
+    }
+    function has_error() {
+        return $this->_msg && $this->_msg->has_error();
+    }
+    function has_warning() {
+        return $this->_msg && $this->_msg->has_warning();
+    }
+    function messages($include_fields = false) {
+        return $this->_msg ? $this->_msg->messages($include_fields) : [];
+    }
+    function errors($include_fields = false) {
+        return $this->_msg ? $this->_msg->errors($include_fields) : [];
+    }
+    function warnings($include_fields = false) {
+        return $this->_msg ? $this->_msg->warnings($include_fields) : [];
+    }
+    function problems($include_fields = false) {
+        return $this->_msg ? $this->_msg->problems($include_fields) : [];
+    }
 }
 
 class PaperOptionList {
@@ -148,8 +186,9 @@ class PaperOptionList {
             }
             return $ok;
         }
-        if (is_string($oj->id) && is_numeric($oj->id)) // XXX backwards compat
+        if (is_string($oj->id) && is_numeric($oj->id)) { // XXX backwards compat
             $oj->id = intval($oj->id);
+        }
         if (is_int($oj->id)
             && $oj->id > 0
             && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed) {
@@ -1239,7 +1278,7 @@ class DocumentPaperOption extends PaperOption {
             $ov = PaperValue::make($prow, $this, -1);
             $ov->anno["document"] = $fup = DocumentInfo::make_file_upload($prow->paperId, $this->id, $qreq->file($this->formid), $this->conf);
             if (isset($fup->error_html)) {
-                $ov->anno["error_html"] = $fup->error_html;
+                $ov->error($fup->error_html);
             }
             return $ov;
         } else if ($qreq["remove_{$this->formid}"]) {
@@ -1257,7 +1296,7 @@ class DocumentPaperOption extends PaperOption {
             $ov = PaperValue::make($prow, $this, -1);
             $ov->anno["document"] = $j;
             if (isset($j->error_html)) {
-                $ov->anno["error_html"] = $j->error_html;
+                $ov->error($j->error_html);
             }
             return $ov;
         } else {
@@ -1373,10 +1412,13 @@ class NumericPaperOption extends PaperOption {
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         $v = trim((string) $qreq[$this->formid]);
         $iv = intval($v);
-        if (!is_numeric($v) || (float) $iv !== floatval($v)) {
-            $iv = null;
+        if (is_numeric($v) && (float) $iv === floatval($v)) {
+            $ov = PaperValue::make($prow, $this, $iv);
+        } else if (preg_match('/\A(?:n\/?a|none|)\z/i', $v)) {
+            $ov = PaperValue::make($prow, $this);
+        } else {
+            $ov = PaperValue::make_error($prow, $this, "Integer expected.");
         }
-        $ov = PaperValue::make($prow, $this, $iv);
         $ov->anno["request"] = $v;
         return $ov;
     }
@@ -1386,7 +1428,7 @@ class NumericPaperOption extends PaperOption {
         } else if ($j === null || $j === false) {
             return PaperValue::make($prow, $this);
         } else {
-            return PaperValue::make_error($prow, $this, "Option should be an integer.");
+            return PaperValue::make_error($prow, $this, "Integer expected.");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1586,7 +1628,7 @@ class AttachmentsPaperOption extends PaperOption {
             if (($f = $qreq->file("{$this->formid}_new_$i"))) {
                 $fup = DocumentInfo::make_file_upload($prow->paperId, $this->id, $f, $this->conf);
                 if (isset($fup->error_html)) {
-                    $ov->anno["error_html"][] = $fup->error_html;
+                    $ov->error($fup->error_html);
                 }
                 $ov->anno["documents"][] = $fup;
             }
@@ -1606,9 +1648,9 @@ class AttachmentsPaperOption extends PaperOption {
             $ov->anno["documents"] = $j;
             foreach ($j as $docj) {
                 if (is_object($docj) && isset($docj->error_html)) {
-                    $ov->anno["error_html"][] = $docj->error_html;
+                    $ov->error($docj->error_html);
                 } else if (!DocumentInfo::check_json_upload($docj)) {
-                    $ov->anno["error_html"][] = "Format error.";
+                    $ov->error("Format error.");
                 }
             }
             return $ov;

@@ -181,6 +181,18 @@ xassert($ps->diffs["calories"]);
 xassert($ps->execute_save());
 xassert(!$ps->has_error());
 
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "opt1" => "10xxxxx", "has_opt1" => "1"]), $newpaper, $user_estrin, "update");
+$ps = new PaperStatus($Conf, $user_estrin);
+xassert($ps->prepare_save_paper_json($pj));
+xassert_eqq(count($ps->diffs), 0);
+xassert($ps->has_error_at("opt1"));
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "opt1" => "none", "has_opt1" => "1"]), $newpaper, $user_estrin, "update");
+$ps = new PaperStatus($Conf, $user_estrin);
+xassert($ps->prepare_save_paper_json($pj));
+xassert_eqq(count($ps->diffs), 1);
+xassert($ps->diffs["calories"]);
+
 $newpaper = $Conf->fetch_paper($ps->paperId, $user_estrin);
 xassert($newpaper);
 xassert_eqq($newpaper->title, "New paper");
