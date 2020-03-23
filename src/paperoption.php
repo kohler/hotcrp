@@ -1445,7 +1445,7 @@ class TextPaperOption extends PaperOption {
         $av = $av ? (string) $av->data() : "";
         $bv = $bv ? (string) $bv->data() : "";
         if ($av !== "" && $bv !== "") {
-            return strcasecmp($av, $bv);
+            return strnatcasecmp($av, $bv);
         } else {
             return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
         }
