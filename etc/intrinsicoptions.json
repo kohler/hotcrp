@@ -1,8 +1,10 @@
 [
     {
         "name": "title", "json_key": "title", "id": -1000,
-        "form_position": 1, "display_space": 1, "type": "intrinsic",
-        "required": true
+        "form_position": 1, "display_space": 1,
+        "required": true,
+        "type": "intrinsic2", "require": "src/intrinsicvalue.php",
+        "callback": "+Title_PaperOption"
     },
     {
         "name": "submission_version", "id": -1008,

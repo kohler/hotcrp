@@ -61,7 +61,6 @@ class PaperValue implements JsonSerializable {
         } else {
             $this->value = $this->_values[0] ?? null;
         }
-        $this->anno = null;
     }
     function data() {
         if ($this->_data === null) {
@@ -889,6 +888,9 @@ class PaperOption implements Abbreviator {
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
     }
+    function value_save(PaperValue $ov, PaperStatus $ps) {
+        return false;
+    }
 
     function attachment(PaperValue $ov, $name) {
         return null;
@@ -965,12 +967,27 @@ class PaperOption implements Abbreviator {
     function parse_json(PaperInfo $prow, $j) {
         return false;
     }
-    function parse_json_string(PaperInfo $prow, $j, $empty = false) {
-        if (is_string($j) && ($j !== "" || $empty)) {
-            $j = UnicodeHelper::remove_f_ligatures($j);
-            return PaperValue::make($prow, $this, 1, $j);
-        } else if ($j === "") {
-            return PaperValue::make($prow, $this);
+    const PARSE_STRING_EMPTY = 1;
+    const PARSE_STRING_TRIM = 2;
+    const PARSE_STRING_SIMPLIFY = 4;
+    const PARSE_STRING_CONVERT = 8;
+    function parse_json_string(PaperInfo $prow, $j, $flags = 0) {
+        if (is_string($j)) {
+            if ($flags & self::PARSE_STRING_CONVERT) {
+                $j = convert_to_utf8($j);
+            }
+            if ($flags & self::PARSE_STRING_SIMPLIFY) {
+                $j = simplify_whitespace($j);
+            } else if ($flags & self::PARSE_STRING_TRIM) {
+                $j = trim($j);
+            }
+            if ($j !== "" || ($flags & self::PARSE_STRING_EMPTY)) {
+                return PaperValue::make($prow, $this, 1, $j);
+            } else {
+                return PaperValue::make($prow, $this);
+            }
+        } else if ($j === null) {
+            return null;
         } else {
             return PaperValue::make_error($prow, $this, "Expected string.");
         }
@@ -980,7 +997,7 @@ class PaperOption implements Abbreviator {
     function echo_web_edit_text(PaperTable $pt, $ov, $reqov, $extra = []) {
         $default_value = null;
         if ($ov->data() !== $reqov->data()
-            && trim($ov->data()) !== trim(cleannl($reqov->data()))) {
+            && trim($ov->data()) !== trim(cleannl((string) $reqov->data()))) {
             $default_value = $ov->data();
         }
         $pt->echo_editable_option_papt($this);
@@ -1766,9 +1783,7 @@ class IntrinsicPaperOption extends PaperOption {
     }
     function value_load_intrinsic(PaperValue $ov) {
         $s = null;
-        if ($this->id === PaperOption::TITLEID) {
-            $s = $ov->prow->title;
-        } else if ($this->id === PaperOption::ABSTRACTID) {
+        if ($this->id === PaperOption::ABSTRACTID) {
             $s = $ov->prow->abstract;
         } else if ($this->id === PaperOption::COLLABORATORSID) {
             $s = $ov->prow->collaborators;
@@ -1790,10 +1805,7 @@ class IntrinsicPaperOption extends PaperOption {
         IntrinsicValue::echo_web_edit($this, $pt, $ov, $reqov);
     }
     function render(FieldRender $fr, PaperValue $ov) {
-        if ($this->id === PaperOption::TITLEID) {
-            $fr->value = $ov->prow->title ? : "[No title]";
-            $fr->value_format = $ov->prow->title_format();
-        } if ($this->id === PaperOption::ABSTRACTID) {
+        if ($this->id === PaperOption::ABSTRACTID) {
             if ($fr->for_page()) {
                 $fr->table->render_abstract($fr, $this);
             } else {

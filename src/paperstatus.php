@@ -85,6 +85,10 @@ class PaperStatus extends MessageSet {
         return $this->prow;
     }
 
+    function prow() {
+        return $this->_nnprow;
+    }
+
     function _() {
         return call_user_func_array([$this->conf->ims(), "x"], func_get_args());
     }
@@ -636,7 +640,6 @@ class PaperStatus extends MessageSet {
         global $Now;
 
         // Title, abstract
-        $this->normalize_string($pj, "title", true);
         $this->normalize_string($pj, "abstract", false);
         $this->normalize_string($pj, "collaborators", false);
         if (isset($pj->collaborators)) {
@@ -837,20 +840,6 @@ class PaperStatus extends MessageSet {
 
     function mark_diff($diff) {
         $this->diffs[$diff] = true;
-    }
-
-    static function check_title(PaperStatus $ps, $pj) {
-        $v = convert_to_utf8(get_s($pj, "title"));
-        if ($v === ""
-            && (isset($pj->title) || !$ps->prow || (string) $ps->prow->title === "")) {
-            $ps->error_at("title", $ps->_("Entry required."));
-        }
-        if (!$ps->has_error_at("title")
-            && isset($pj->title)
-            && $v !== ($ps->prow ? (string) $ps->prow->title : "")) {
-            $ps->save_paperf("title", $v);
-            $ps->mark_diff("title");
-        }
     }
 
     static function check_abstract(PaperStatus $ps, $pj) {
@@ -1080,16 +1069,18 @@ class PaperStatus extends MessageSet {
 
     private function validate_fields() {
         $max_status = 0;
-        foreach ($this->_field_values ?? [] as $ov) {
-            if (!$ov->has_error()) {
-                $min_status = MessageSet::ERROR;
-                $ov->option->value_check($ov, $this->user);
-            } else {
-                $min_status = 0;
+        foreach ($this->conf->paper_opts->form_field_list($this->_nnprow) as $opt) {
+            if ($opt->id <= 0 && $opt->type !== "intrinsic2") {
+                continue;
             }
-            foreach ($ov->messages(true) as $m) {
+            $ov = $this->_field_values[$opt->id] ?? $this->_nnprow->force_option($opt->id);
+            $errorindex = count($ov->messages());
+            if (!$ov->has_error()) {
+                $ov->option->value_check($ov, $this->user);
+            }
+            foreach ($ov->messages(true) as $i => $m) {
                 $max_status = max($max_status, $m[2]);
-                if ($m[2] >= $min_status) {
+                if ($i < $errorindex || $m[2] >= MessageSet::ERROR) {
                     $this->msg_at($m[0], $m[1], $m[2]);
                 }
             }
@@ -1102,18 +1093,18 @@ class PaperStatus extends MessageSet {
             $v1 = $ov->value_array();
             $d1 = $ov->data_array();
             $oldv = $this->_nnprow->force_option($ov->id);
-            if ($v1 === $oldv->value_array() && $d1 === $oldv->data_array()) {
-                // no changes
-            } else {
-                // normal option
-                $this->_option_delid[] = $ov->id;
+            if ($v1 !== $oldv->value_array() || $d1 !== $oldv->data_array()) {
                 $this->mark_diff($ov->option->json_key());
-                for ($i = 0; $i < count($v1); ++$i) {
-                    $qv0 = [-1, $ov->id, $v1[$i], null, null];
-                    if ($d1[$i] !== null) {
-                        $qv0[strlen($d1[$i]) < 32768 ? 3 : 4] = $d1[$i];
+                if (!$ov->option->value_save($ov, $this)) {
+                    // normal option
+                    $this->_option_delid[] = $ov->id;
+                    for ($i = 0; $i < count($v1); ++$i) {
+                        $qv0 = [-1, $ov->id, $v1[$i], null, null];
+                        if ($d1[$i] !== null) {
+                            $qv0[strlen($d1[$i]) < 32768 ? 3 : 4] = $d1[$i];
+                        }
+                        $this->_option_ins[] = $qv0;
                     }
-                    $this->_option_ins[] = $qv0;
                 }
                 if ($ov->option->has_document()) {
                     $this->_documents_changed = true;
@@ -1365,14 +1356,15 @@ class PaperStatus extends MessageSet {
         }
 
         // save parts and track diffs
-        self::check_title($this, $pj);
+        $opts = $this->conf->paper_opts;
+        self::check_one_option($opts->get(PaperOption::TITLEID), $this, $pj->title ?? null);
         self::check_abstract($this, $pj);
         self::check_authors($this, $pj);
         self::check_collaborators($this, $pj);
         self::check_nonblind($this, $pj);
         self::check_conflicts($this, $pj);
-        self::check_one_pdf($this->conf->paper_opts->get(DTYPE_SUBMISSION), $this, $pj);
-        self::check_one_pdf($this->conf->paper_opts->get(DTYPE_FINAL), $this, $pj);
+        self::check_one_pdf($opts->get(DTYPE_SUBMISSION), $this, $pj);
+        self::check_one_pdf($opts->get(DTYPE_FINAL), $this, $pj);
         self::check_topics($this, $pj);
         self::check_options($this, $pj);
         self::check_status($this, $pj);

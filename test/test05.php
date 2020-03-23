@@ -194,6 +194,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_json($pj));
 xassert_eqq(count($ps->diffs), 1);
 xassert($ps->diffs["calories"]);
+xassert(!$ps->has_error());
 
 $newpaper = $Conf->fetch_paper($ps->paperId, $user_estrin);
 xassert($newpaper);

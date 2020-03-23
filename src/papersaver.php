@@ -78,7 +78,7 @@ class Default_PaperSaver extends PaperSaver {
         }
 
         // Title, abstract, collaborators
-        foreach (["title", "abstract", "collaborators"] as $k) {
+        foreach (["abstract", "collaborators"] as $k) {
             if (isset($qreq[$k])) {
                 $pj->$k = UnicodeHelper::remove_f_ligatures($qreq[$k]);
             }
@@ -174,8 +174,9 @@ class Default_PaperSaver extends PaperSaver {
         if (!isset($pj->options)) {
             $pj->options = (object) [];
         }
-        foreach ($user->conf->paper_opts->option_list() as $o) {
-            if ($qreq["has_{$o->formid}"]
+        foreach ($user->conf->paper_opts->form_field_list($nnprow) as $o) {
+            if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
+                && ($o->id > 0 || $o->type === "intrinsic2")
                 && (!$o->final || $action === "final")) {
                 // XXX test_editable
                 $okey = $o->json_key();
@@ -184,7 +185,11 @@ class Default_PaperSaver extends PaperSaver {
                     error_log("option {$o->id} {$o->title()} should implement parse_web but doesn't");
                     $ov = $o->parse_request(get($pj->options, $okey), $qreq, $user, $prow);
                 }
-                $pj->options->$okey = $ov;
+                if ($o->id <= 0) {
+                    $pj->$okey = $ov;
+                } else {
+                    $pj->options->$okey = $ov;
+                }
             }
         }
         if (!count(get_object_vars($pj->options))) {

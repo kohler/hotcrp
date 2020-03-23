@@ -2,6 +2,37 @@
 // intrinsicvalue.php -- HotCRP helper class for paper options
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class Title_PaperOption extends PaperOption {
+    function __construct($conf, $args) {
+        parent::__construct($conf, $args);
+    }
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+        return (string) $ov->data();
+    }
+    function value_load_intrinsic(PaperValue $ov) {
+        if ((string) $ov->prow->title !== "") {
+            $ov->set_value_data([1], [$ov->prow->title]);
+        }
+    }
+    function value_save(PaperValue $ov, PaperStatus $ps) {
+        $ps->save_paperf("title", $ov->data());
+        return true;
+    }
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        return $this->parse_json_string($prow, $qreq->title, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_SIMPLIFY);
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        return $this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_SIMPLIFY);
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        $this->echo_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true]);
+    }
+    function render(FieldRender $fr, PaperValue $ov) {
+        $fr->value = $ov->prow->title ? : "[No title]";
+        $fr->value_format = $ov->prow->title_format();
+    }
+}
+
 class IntrinsicValue {
     static function assign_intrinsic(PaperValue $ov) {
         if ($ov->id === DTYPE_SUBMISSION) {
@@ -20,8 +51,7 @@ class IntrinsicValue {
         $ov->anno["intrinsic"] = true;
     }
     static function value_check($o, PaperValue $ov, Contact $user) {
-        if (($o->id === PaperOption::TITLEID
-             || ($o->id === PaperOption::ABSTRACTID && !$o->conf->opt("noAbstract")))
+        if (($o->id === PaperOption::ABSTRACTID && !$o->conf->opt("noAbstract"))
             && !$o->value_present($ov)) {
             $ov->error("Entry required.");
         }
@@ -84,9 +114,7 @@ class IntrinsicValue {
         }
     }
     static function parse_web($o, PaperInfo $prow, Qrequest $qreq) {
-        if ($o->id === PaperOption::TITLEID) {
-            $v = $qreq->title;
-        } else if ($o->id === PaperOption::ABSTRACTID) {
+        if ($o->id === PaperOption::ABSTRACTID) {
             $v = $qreq->abstract;
         } else if ($o->id === PaperOption::COLLABORATORSID) {
             $v = $qreq->collaborators;
@@ -97,9 +125,7 @@ class IntrinsicValue {
         return PaperValue::make($prow, $o, 1, $v);
     }
     static function echo_web_edit($o, PaperTable $pt, $ov, $reqov) {
-        if ($o->id === PaperOption::TITLEID) {
-            $o->echo_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true]);
-        } else if ($o->id === PaperOption::ABSTRACTID) {
+        if ($o->id === PaperOption::ABSTRACTID) {
             if ((int) $o->conf->opt("noAbstract") !== 1) {
                 $o->echo_web_edit_text($pt, $ov, $reqov);
             }
