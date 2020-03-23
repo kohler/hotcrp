@@ -3340,12 +3340,14 @@ class Conf {
     function set_paper_request(Qrequest $qreq, Contact $user) {
         $this->paper = $prow = null;
         if ($qreq->p) {
-            if (ctype_digit($qreq->p))
+            if (ctype_digit($qreq->p)) {
                 $prow = $this->fetch_paper(intval($qreq->p), $user);
-            if (($whynot = $user->perm_view_paper($prow, false, $qreq->p)))
+            }
+            if (($whynot = $user->perm_view_paper($prow, false, $qreq->p))) {
                 $qreq->set_annex("paper_whynot", $whynot);
-            else
+            } else {
                 $this->paper = $prow;
+            }
         }
         return $this->paper;
     }
@@ -3359,10 +3361,12 @@ class Conf {
                 left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
                 where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0
                   and P.timeWithdrawn<=0";
-        if ($type !== "all" && $type !== "act")
+        if ($type !== "all" && $type !== "act") {
             $q .= " and P.timeSubmitted>0";
-        if ($extra)
+        }
+        if ($extra) {
             $q .= " " . $extra;
+        }
         return $this->ql_raw($q);
     }
 
@@ -3374,8 +3378,8 @@ class Conf {
     static function msg_on(Conf $conf = null, $text, $type) {
         if (is_array($type)
             || (is_string($type)
-                && !preg_match('{\Ax?(?:merror|warning|confirm)\z}', $type)
-                && (is_int($text) || preg_match('{\Ax?(?:merror|warning|confirm)\z}', $text)))) {
+                && !preg_match('/\Ax?(?:merror|warning|confirm)\z/', $type)
+                && (is_int($text) || preg_match('/\Ax?(?:merror|warning|confirm)\z/', $text)))) {
             error_log("bad Conf::msg_on " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             $tmp = $text;
             $text = $type;
@@ -3444,8 +3448,9 @@ class Conf {
     }
 
     static function msg_debugt($text) {
-        if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true)
+        if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true) {
             $text = json_encode_browser($text);
+        }
         self::msg_on(self::$g, Ht::pre_text_wrap($text), "merror");
         return false;
     }
@@ -3489,17 +3494,21 @@ class Conf {
 
     function make_css_link($url, $media = null) {
         global $ConfSitePATH;
-        if (str_starts_with($url, "<meta") || str_starts_with($url, "<link"))
+        if (str_starts_with($url, "<meta") || str_starts_with($url, "<link")) {
             return $url;
+        }
         $t = '<link rel="stylesheet" type="text/css" href="';
         $absolute = preg_match(',\A(?:https:?:|/),i', $url);
-        if (!$absolute)
+        if (!$absolute) {
             $t .= $this->opt["assetsUrl"];
+        }
         $t .= htmlspecialchars($url);
-        if (!$absolute && ($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
+        if (!$absolute && ($mtime = @filemtime("$ConfSitePATH/$url")) !== false) {
             $t .= "?mtime=$mtime";
-        if ($media)
+        }
+        if ($media) {
             $t .= '" media="' . $media;
+        }
         return $t . '">';
     }
 
@@ -3526,19 +3535,21 @@ class Conf {
     private function make_jquery_script_file($jqueryVersion) {
         $integrity = null;
         if ($this->opt("jqueryCdn")) {
-            if ($jqueryVersion === "3.4.1")
+            if ($jqueryVersion === "3.4.1") {
                 $integrity = "sha384-vk5WoKIaW/vJyUAd9n/wmopsmNhiy+L2Z+SBxGYnUkunIxVxAv/UtMOhba/xskxh";
-            else if ($jqueryVersion === "3.3.1")
+            } else if ($jqueryVersion === "3.3.1") {
                 $integrity = "sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=";
-            else if ($jqueryVersion === "3.2.1")
+            } else if ($jqueryVersion === "3.2.1") {
                 $integrity = "sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=";
-            else if ($jqueryVersion === "3.1.1")
+            } else if ($jqueryVersion === "3.1.1") {
                 $integrity = "sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=";
-            else if ($jqueryVersion === "1.12.4")
+            } else if ($jqueryVersion === "1.12.4") {
                 $integrity = "sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=";
+            }
             $jquery = "//code.jquery.com/jquery-{$jqueryVersion}.min.js";
-        } else
+        } else {
             $jquery = "scripts/jquery-{$jqueryVersion}.min.js";
+        }
         return $this->make_script_file($jquery, true, $integrity);
     }
 
@@ -3595,53 +3606,60 @@ class Conf {
 <meta name=\"google\" content=\"notranslate\">\n";
 
         if (($font_script = $this->opt("fontScript"))) {
-            if (!str_starts_with($font_script, "<script"))
+            if (!str_starts_with($font_script, "<script")) {
                 $font_script = Ht::script($font_script);
+            }
             echo $font_script, "\n";
         }
 
-        foreach (mkarray($this->opt("prependStylesheets", [])) as $css)
+        foreach (mkarray($this->opt("prependStylesheets", [])) as $css) {
             echo $this->make_css_link($css), "\n";
+        }
         echo $this->make_css_link("stylesheets/style.css"), "\n";
         if ($this->opt("mobileStylesheet")) {
             echo '<meta name="viewport" content="width=device-width, initial-scale=1">', "\n";
             echo $this->make_css_link("stylesheets/mobile.css", "screen and (max-width: 1100px)"), "\n";
         }
-        foreach (mkarray($this->opt("stylesheets", [])) as $css)
+        foreach (mkarray($this->opt("stylesheets", [])) as $css) {
             echo $this->make_css_link($css), "\n";
+        }
 
         // favicon
         $favicon = $this->opt("favicon", "images/review24.png");
         if ($favicon) {
             if (strpos($favicon, "://") === false && $favicon[0] != "/") {
-                if ($this->opt["assetsUrl"] && substr($favicon, 0, 7) === "images/")
+                if ($this->opt["assetsUrl"] && substr($favicon, 0, 7) === "images/") {
                     $favicon = $this->opt["assetsUrl"] . $favicon;
-                else
+                } else {
                     $favicon = Navigation::siteurl() . $favicon;
+                }
             }
-            if (substr($favicon, -4) == ".png")
+            if (substr($favicon, -4) == ".png") {
                 echo "<link rel=\"icon\" type=\"image/png\" href=\"$favicon\">\n";
-            else if (substr($favicon, -4) == ".ico")
+            } else if (substr($favicon, -4) == ".ico") {
                 echo "<link rel=\"shortcut icon\" href=\"$favicon\">\n";
-            else if (substr($favicon, -4) == ".gif")
+            } else if (substr($favicon, -4) == ".gif") {
                 echo "<link rel=\"icon\" type=\"image/gif\" href=\"$favicon\">\n";
-            else
+            } else {
                 echo "<link rel=\"icon\" href=\"$favicon\">\n";
+            }
         }
 
         // title
         echo "<title>";
         if ($title) {
             if (is_array($title)) {
-                if (count($title) === 3 && $title[2])
+                if (count($title) === 3 && $title[2]) {
                     $title = $title[1] . " - " . $title[0];
-                else
+                } else {
                     $title = $title[0];
+                }
             }
             $title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
         }
-        if ($title && $title !== "Home" && $title !== "Sign in")
+        if ($title && $title !== "Home" && $title !== "Sign in") {
             echo $title, " - ";
+        }
         echo htmlspecialchars($this->short_name), "</title>\n</head>\n";
 
         // jQuery
@@ -3935,8 +3953,9 @@ class Conf {
     static function git_status() {
         global $ConfSitePATH;
         $args = array();
-        if (is_dir("$ConfSitePATH/.git"))
+        if (is_dir("$ConfSitePATH/.git")) {
             exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
+        }
         return count($args) == 2 ? $args : null;
     }
 
@@ -3950,8 +3969,9 @@ class Conf {
             if ($Me && $Me->privChair) {
                 echo " v", HOTCRP_VERSION;
                 if (($git_data = self::git_status())
-                    && $git_data[0] !== $git_data[1])
+                    && $git_data[0] !== $git_data[1]) {
                     echo " [", substr($git_data[0], 0, 7), "...]";
+                }
             } else {
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
             }
@@ -4038,8 +4058,10 @@ class Conf {
     }
 
     function stash_hotcrp_pc(Contact $viewer, $always = false) {
-        if (($always || !$this->opt("largePC")) && Ht::mark_stash("hotcrp_pc"))
+        if (($always || !$this->opt("largePC"))
+            && Ht::mark_stash("hotcrp_pc")) {
             Ht::stash_script("demand_load.pc(" . json_encode_browser($this->hotcrp_pc_json($viewer)) . ");");
+        }
     }
 
 
@@ -4632,8 +4654,9 @@ class Conf {
                 }
             }
             expand_json_includes_callback(["etc/mailtemplates.json"], [$this, "_add_mail_template_json"]);
-            if (($mts = $this->opt("mailTemplates")))
+            if (($mts = $this->opt("mailTemplates"))) {
                 expand_json_includes_callback($mts, [$this, "_add_mail_template_json"]);
+            }
         }
         return $this->_mail_template_map;
     }
@@ -4647,10 +4670,12 @@ class Conf {
             if (($s !== false && $s !== $uf->subject)
                 || ($b !== false && $b !== $uf->body)) {
                 $uf = clone $uf;
-                if ($s !== false)
+                if ($s !== false) {
                     $uf->subject = $s;
-                if ($b !== false)
+                }
+                if ($b !== false) {
                     $uf->body = $b;
+                }
             }
         }
         return $uf;
@@ -4702,8 +4727,9 @@ class Conf {
     private function hook_map() {
         if ($this->_hook_map === null) {
             $this->_hook_map = $this->_hook_factories = [];
-            if (($hlist = $this->opt("hooks")))
+            if (($hlist = $this->opt("hooks"))) {
                 expand_json_includes_callback($hlist, [$this, "_add_hook_json"]);
+            }
         }
         return $this->_hook_map;
     }
@@ -4734,8 +4760,9 @@ class Conf {
                         $args[0] = $fj;
                         $x = call_user_func_array($fj->callback, $args);
                         unset($fj->conf, $fj->user);
-                        if ($x === false)
+                        if ($x === false) {
                             return false;
+                        }
                     }
                 }
             }

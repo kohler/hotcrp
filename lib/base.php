@@ -37,14 +37,16 @@ function preg_matchpos($pattern, $subject) {
 }
 
 function cleannl($text) {
-    if (substr($text, 0, 3) === "\xEF\xBB\xBF")
+    if (substr($text, 0, 3) === "\xEF\xBB\xBF") {
         $text = substr($text, 3);
+    }
     if (strpos($text, "\r") !== false) {
         $text = str_replace("\r\n", "\n", $text);
         $text = strtr($text, "\r", "\n");
     }
-    if ($text !== "" && $text[strlen($text) - 1] !== "\n")
+    if ($text !== "" && $text[strlen($text) - 1] !== "\n") {
         $text .= "\n";
+    }
     return $text;
 }
 
@@ -92,15 +94,19 @@ if (!function_exists("mac_os_roman_to_utf8")) {
 }
 
 function convert_to_utf8($str) {
-    if (substr($str, 0, 3) === "\xEF\xBB\xBF")
+    if (substr($str, 0, 3) === "\xEF\xBB\xBF") {
         $str = substr($str, 3);
-    if (is_valid_utf8($str))
+    }
+    if (is_valid_utf8($str)) {
         return $str;
-    $pfx = substr($str, 0, 5000);
-    if (substr_count($pfx, "\r") > 1.5 * substr_count($pfx, "\n"))
-        return mac_os_roman_to_utf8($str);
-    else
-        return windows_1252_to_utf8($str);
+    } else {
+        $pfx = substr($str, 0, 5000);
+        if (substr_count($pfx, "\r") > 1.5 * substr_count($pfx, "\n")) {
+            return mac_os_roman_to_utf8($str);
+        } else {
+            return windows_1252_to_utf8($str);
+        }
+    }
 }
 
 function simplify_whitespace($x) {
