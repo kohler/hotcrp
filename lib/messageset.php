@@ -33,57 +33,68 @@ class MessageSet {
         $this->canonfield[$src] = $this->canonical_field($dst);
     }
     function canonical_field($field) {
-        if ($field && $this->canonfield && isset($this->canonfield[$field]))
+        if ($field && $this->canonfield && isset($this->canonfield[$field])) {
             $field = $this->canonfield[$field];
+        }
         return $field;
     }
     function allow_error_at($field, $set = null) {
         $field = $this->canonical_field($field);
-        if ($set === null)
+        if ($set === null) {
             return $this->allow_error && isset($this->allow_error[$field]);
-        else if ($set)
+        } else if ($set) {
             $this->allow_error[$field] = true;
-        else if ($this->allow_error)
+        } else if ($this->allow_error) {
             unset($this->allow_error[$field]);
+        }
     }
     function werror_at($field, $set = null) {
         $field = $this->canonical_field($field);
-        if ($set === null)
+        if ($set === null) {
             return $this->werror && isset($this->werror[$field]);
-        else if ($set)
+        } else if ($set) {
             $this->werror[$field] = true;
-        else if ($this->werror)
+        } else if ($this->werror) {
             unset($this->werror[$field]);
+        }
     }
 
     function msg($field, $msg, $status) {
-        if ($this->ignore_msgs)
+        if ($this->ignore_msgs) {
             return;
+        }
         $this->canonfield && ($field = $this->canonical_field($field));
         if ($status == self::WARNING
             && $field
             && $this->werror
-            && isset($this->werror[$field]))
+            && isset($this->werror[$field])) {
             $status = self::ERROR;
-        if ($field)
+        }
+        if ($field) {
             $this->errf[$field] = max(get($this->errf, $field, 0), $status);
-        if ($msg === null || $msg === false || $msg === [])
+        }
+        if ($msg === null || $msg === false || $msg === []) {
             $msg = "";
+        }
         if ($this->ignore_duplicates
             && $msg !== ""
             && is_string($msg)
             && (!$field || isset($this->errf[$field]))
-            && in_array([$field, $msg, $status], $this->msgs))
+            && in_array([$field, $msg, $status], $this->msgs)) {
             return;
-        if ($msg !== "") {
-            foreach (is_array($msg) ? $msg : [$msg] as $m)
-                $this->msgs[] = [$field, $m, $status];
         }
-        if ($status == self::WARNING)
+        if ($msg !== "") {
+            foreach (is_array($msg) ? $msg : [$msg] as $m) {
+                $this->msgs[] = [$field, $m, $status];
+            }
+        }
+        if ($status == self::WARNING) {
             ++$this->has_warning;
+        }
         if ($status == self::ERROR
-            && !($field && $this->allow_error && isset($this->allow_error[$field])))
+            && !($field && $this->allow_error && isset($this->allow_error[$field]))) {
             ++$this->has_error;
+        }
     }
     function error_at($field, $msg) {
         $this->msg($field, $msg, self::ERROR);
@@ -96,10 +107,11 @@ class MessageSet {
     }
 
     function problem_status() {
-        if ($this->has_error > 0)
+        if ($this->has_error > 0) {
             return self::ERROR;
-        else
+        } else {
             return $this->has_warning > 0 ? self::WARNING : self::INFO;
+        }
     }
     function has_messages() {
         return !empty($this->msgs);
@@ -125,16 +137,18 @@ class MessageSet {
         if ($this->has_warning > 0 || $this->has_error > 0) {
             $this->canonfield && ($field = $this->canonical_field($field));
             return get($this->errf, $field, 0);
-        } else
+        } else {
             return 0;
+        }
     }
     function has_messages_at($field) {
         if (!empty($this->errf)) {
             $this->canonfield && ($field = $this->canonical_field($field));
             if (isset($this->errf[$field])) {
-                foreach ($this->msgs as $mx)
+                foreach ($this->msgs as $mx) {
                     if ($mx[0] === $field)
                         return true;
+                }
             }
         }
         return false;
@@ -148,8 +162,9 @@ class MessageSet {
 
     static function status_class($status, $rest = "", $prefix = "has-") {
         if ($status >= self::WARNING) {
-            if ((string) $rest !== "")
+            if ((string) $rest !== "") {
                 $rest .= " ";
+            }
             $rest .= $prefix . ($status >= self::ERROR ? "error" : "warning");
         }
         return $rest;
@@ -171,8 +186,9 @@ class MessageSet {
         return array_keys($this->errf);
     }
     function error_fields() {
-        if (!$this->has_error)
+        if (!$this->has_error) {
             return [];
+        }
         return array_keys(array_filter($this->errf, function ($v) { return $v >= self::ERROR; }));
     }
     function warning_fields() {
@@ -185,31 +201,36 @@ class MessageSet {
         return self::filter_msgs($this->msgs, $include_fields);
     }
     function errors($include_fields = false) {
-        if (!$this->has_error)
+        if (!$this->has_error) {
             return [];
+        }
         $ms = array_filter($this->msgs, function ($mx) { return $mx[2] >= self::ERROR; });
         return self::filter_msgs($ms, $include_fields);
     }
     function warnings($include_fields = false) {
-        if (!$this->has_warning)
+        if (!$this->has_warning) {
             return [];
+        }
         $ms = array_filter($this->msgs, function ($mx) { return $mx[2] == self::WARNING; });
         return self::filter_msgs($ms, $include_fields);
     }
     function problems($include_fields = false) {
-        if (!$this->has_error && !$this->has_warning)
+        if (!$this->has_error && !$this->has_warning) {
             return [];
+        }
         $ms = array_filter($this->msgs, function ($mx) { return $mx[2] >= self::WARNING; });
         return self::filter_msgs($ms, $include_fields);
     }
     function messages_at($field, $include_fields = false) {
-        if (!isset($this->errf[$field]))
+        if (!isset($this->errf[$field])) {
             return [];
+        }
         $this->canonfield && ($field = $this->canonical_field($field));
         $ms = array_filter($this->msgs, function ($mx) use ($field) { return $mx[0] === $field; });
-        if ($include_fields)
+        if ($include_fields) {
             return $ms;
-        else
+        } else {
             return array_map(function ($mx) { return $mx[1]; }, $ms);
+        }
     }
 }
