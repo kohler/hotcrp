@@ -62,7 +62,7 @@ function change_email_by_capability($Qreq) {
         if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId) {
             $Me = $Acct->activate($Qreq);
         }
-        if (Contact::session_user_index($capdata->data->oldemail) !== false) {
+        if (Contact::session_user_index($capdata->data->oldemail) >= 0) {
             LoginHelper::change_session_users([
                 $capdata->data->oldemail => -1, $newemail => 1
             ]);

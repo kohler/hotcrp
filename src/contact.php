@@ -390,7 +390,7 @@ class Contact {
                 return $i;
             }
         }
-        return false;
+        return -1;
     }
 
     private function actas_user($x) {
