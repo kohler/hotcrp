@@ -50,14 +50,14 @@ $ps = new PaperStatus($Conf);
 $paper2a = $ps->paper_json(2);
 $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-hello\\n\",\"type\":\"application/pdf\"}}"));
 xassert(!$ps->has_error());
-$Conf->check_document_inactive_invariants();
+xassert($Conf->check_document_inactive_invariants());
 
 $paper2b = $ps->paper_json(2);
 xassert_eqq($paper2b->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"final\":{\"content\":\"%PDF-goodbye\\n\",\"type\":\"application/pdf\"}}"));
 xassert(!$ps->has_error());
-$Conf->check_document_inactive_invariants();
+xassert($Conf->check_document_inactive_invariants());
 
 $paper2 = $ps->paper_json(2);
 xassert_eqq($paper2->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
@@ -65,7 +65,7 @@ xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-again hello\\n\",\"type\":\"application/pdf\"}}"));
 xassert(!$ps->has_error());
-$Conf->check_document_inactive_invariants();
+xassert($Conf->check_document_inactive_invariants());
 
 $paper2 = $ps->paper_json(2);
 xassert_eqq($paper2->submission->hash, "30240fac8417b80709c72156b7f7f7ad95b34a2b");
@@ -81,7 +81,7 @@ $Conf->invalidate_caches("options");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"type\":\"application/pdf\"}]}}"));
 xassert(!$ps->has_error());
-$Conf->check_document_inactive_invariants();
+xassert($Conf->check_document_inactive_invariants());
 
 $paper2 = $Conf->fetch_paper(2, $user_estrin);
 $docs = $paper2->option(2)->documents();
@@ -93,7 +93,7 @@ $d1psid = $docs[1]->paperStorageId;
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"sha1\": \"4c18e2ec1d1e6d9e53f57499a66aeb691d687370\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}]}}"));
 xassert(!$ps->has_error());
-$Conf->check_document_inactive_invariants();
+xassert($Conf->check_document_inactive_invariants());
 
 $paper2 = $Conf->fetch_paper(2, $user_estrin);
 $docs = $paper2->option(2)->documents();
@@ -121,7 +121,7 @@ $Conf->save_setting("opt.contentHashMethod", 1, "sha256");
 
 $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content\":\"%PDF-whatever\\n\",\"type\":\"application/pdf\"}}"));
 xassert(!$ps->has_error());
-$Conf->check_document_inactive_invariants();
+xassert($Conf->check_document_inactive_invariants());
 
 $paper3 = $Conf->fetch_paper(3, $user_estrin);
 xassert_eqq($paper3->sha1, "sha2-" . hex2bin("38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4"));
