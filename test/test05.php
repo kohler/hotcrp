@@ -206,6 +206,7 @@ xassert($newpaper->timeSubmitted <= 0);
 xassert($newpaper->timeWithdrawn <= 0);
 xassert_eqq($newpaper->option(1)->value, 10);
 
+// save a new paper
 $qreq = new Qrequest("POST", ["ready" => 1, "has_opt2" => "1", "has_opt2_new_1" => "1", "title" => "Paper about mantis shrimp", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
 $qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $qreq->set_file("opt2_new_1", ["name" => "attachment1.pdf", "type" => "application/pdf", "content" => "%PDF-whatever\n", "error" => UPLOAD_ERR_OK]);
@@ -217,8 +218,9 @@ xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
 xassert($ps->execute_save());
 xassert(!$ps->has_error());
+$new_paperid_1 = $ps->paperId;
 
-$newpaper = $Conf->fetch_paper($ps->paperId, $user_estrin);
+$newpaper = $Conf->fetch_paper($new_paperid_1, $user_estrin);
 xassert($newpaper);
 xassert_eqq($newpaper->title, "Paper about mantis shrimp");
 xassert_eqq($newpaper->abstract, "They see lots of colors.");
@@ -233,6 +235,46 @@ xassert(!$newpaper->option(1));
 xassert(!!$newpaper->option(2));
 xassert(count($newpaper->option(2)->documents()) == 1);
 xassert_eqq($newpaper->option(2)->document(0)->text_hash(), "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
+
+// some erroneous saves concerning required fields
+$qreq = new Qrequest("POST", ["ready" => 1, "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
+$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->prepare_save_paper_json($pj);
+xassert($ps->has_error_at("title"));
+xassert_eqq(count($ps->error_fields()), 1);
+xassert_eq($ps->errors(), ["Entry required."]);
+
+$qreq = new Qrequest("POST", ["ready" => 1, "title" => "", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
+$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->prepare_save_paper_json($pj);
+xassert($ps->has_error_at("title"));
+xassert_eqq(count($ps->error_fields()), 1);
+xassert_eq($ps->errors(), ["Entry required."]);
+
+$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC"]);
+$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->prepare_save_paper_json($pj);
+xassert($ps->has_error_at("abstract"));
+xassert_eqq(count($ps->error_fields()), 1);
+xassert_eq($ps->errors(), ["Entry required."]);
+
+$Conf->set_opt("noAbstract", 1);
+$Conf->invalidate_caches();
+
+$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC"]);
+$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->prepare_save_paper_json($pj);
+xassert(!$ps->has_error_at("abstract"));
+xassert_eqq(count($ps->error_fields()), 0);
+xassert_eq($ps->errors(), []);
 
 // check some content_text_signature functionality
 $doc = new DocumentInfo(["content" => "ABCdefGHIjklMNO"], $Conf);
