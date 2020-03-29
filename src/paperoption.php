@@ -415,9 +415,9 @@ class PaperOptionList {
     }
 
     function invalidate_option_list() {
-        $this->_jlist = $this->_olist = $this->_olist_nonfinal =
+        $this->_jlist = $this->_ijlist = $this->_olist = $this->_olist_nonfinal =
             $this->_nonpaper_am = $this->_olist_include_empty = null;
-        $this->_omap = [];
+        $this->_omap = $this->_imap = [];
     }
 
     function count_option_list() {
@@ -829,6 +829,9 @@ class PaperOption implements Abbreviator {
     function test_required(PaperInfo $prow) {
         // Invariant: `$o->test_required($prow)` implies `$o->required`.
         return $this->required && $this->test_exists($prow);
+    }
+    protected function set_required($x) {
+        $this->required = $x;
     }
 
     function has_selector() {
@@ -1783,9 +1786,7 @@ class IntrinsicPaperOption extends PaperOption {
     }
     function value_load_intrinsic(PaperValue $ov) {
         $s = null;
-        if ($this->id === PaperOption::ABSTRACTID) {
-            $s = $ov->prow->abstract;
-        } else if ($this->id === PaperOption::COLLABORATORSID) {
+        if ($this->id === PaperOption::COLLABORATORSID) {
             $s = $ov->prow->collaborators;
         } else {
             IntrinsicValue::assign_intrinsic($ov);
@@ -1805,20 +1806,7 @@ class IntrinsicPaperOption extends PaperOption {
         IntrinsicValue::echo_web_edit($this, $pt, $ov, $reqov);
     }
     function render(FieldRender $fr, PaperValue $ov) {
-        if ($this->id === PaperOption::ABSTRACTID) {
-            if ($fr->for_page()) {
-                $fr->table->render_abstract($fr, $this);
-            } else {
-                $text = $ov->prow->abstract;
-                if (trim($text) !== "") {
-                    $fr->value = $text;
-                    $fr->value_format = $ov->prow->abstract_format();
-                } else if (!$this->conf->opt("noAbstract")
-                           && $fr->verbose()) {
-                    $fr->set_text("[No abstract]");
-                }
-            }
-        } else if ($this->id === PaperOption::AUTHORSID) {
+        if ($this->id === PaperOption::AUTHORSID) {
             $fr->table->render_authors($fr, $this);
         } else if ($this->id === PaperOption::TOPICSID) {
             $fr->table->render_topics($fr, $this);

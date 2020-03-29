@@ -15,7 +15,8 @@
     {
         "name": "abstract", "json_key": "abstract", "id": -1004,
         "form_position": 2001, "display_space": 5, "display_expand": true,
-        "type": "intrinsic"
+        "type": "intrinsic2", "require": "src/intrinsicvalue.php",
+        "callback": "+Abstract_PaperOption"
     },
     {
         "name": "authors", "json_key": "authors", "id": -1001,

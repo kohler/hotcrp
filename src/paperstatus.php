@@ -640,7 +640,6 @@ class PaperStatus extends MessageSet {
         global $Now;
 
         // Title, abstract
-        $this->normalize_string($pj, "abstract", false);
         $this->normalize_string($pj, "collaborators", false);
         if (isset($pj->collaborators)) {
             $old_collab = rtrim(cleannl($pj->collaborators));
@@ -840,21 +839,6 @@ class PaperStatus extends MessageSet {
 
     function mark_diff($diff) {
         $this->diffs[$diff] = true;
-    }
-
-    static function check_abstract(PaperStatus $ps, $pj) {
-        $v = convert_to_utf8(get_s($pj, "abstract"));
-        if ($v === ""
-            && (isset($pj->abstract) || !$ps->prow || (string) $ps->prow->abstract === "")
-            && !$ps->conf->opt("noAbstract")) {
-            $ps->error_at("abstract", $ps->_("Entry required."));
-        }
-        if (!$ps->has_error_at("abstract")
-            && isset($pj->abstract)
-            && $v !== ($ps->prow ? (string) $ps->prow->abstract : "")) {
-            $ps->save_paperf("abstract", $v);
-            $ps->mark_diff("abstract");
-        }
     }
 
     static private function author_information($pj) {
@@ -1358,7 +1342,7 @@ class PaperStatus extends MessageSet {
         // save parts and track diffs
         $opts = $this->conf->paper_opts;
         self::check_one_option($opts->get(PaperOption::TITLEID), $this, $pj->title ?? null);
-        self::check_abstract($this, $pj);
+        self::check_one_option($opts->get(PaperOption::ABSTRACTID), $this, $pj->abstract ?? null);
         self::check_authors($this, $pj);
         self::check_collaborators($this, $pj);
         self::check_nonblind($this, $pj);

@@ -2192,9 +2192,11 @@ class Conf {
 
         // no empty text options
         $text_options = array();
-        foreach ($this->paper_opts->option_list() as $ox)
-            if ($ox->type === "text")
+        foreach ($this->paper_opts->option_list() as $ox) {
+            if ($ox->type === "text") {
                 $text_options[] = $ox->id;
+            }
+        }
         if (count($text_options)) {
             $any = $this->invariantq("select paperId from PaperOption where optionId?a and data='' limit 1", [$text_options]);
             if ($any)

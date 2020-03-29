@@ -33,6 +33,50 @@ class Title_PaperOption extends PaperOption {
     }
 }
 
+class Abstract_PaperOption extends PaperOption {
+    function __construct($conf, $args) {
+        parent::__construct($conf, $args);
+        $this->set_required(!$conf->opt("noAbstract"));
+    }
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+        return (string) $ov->data();
+    }
+    function value_load_intrinsic(PaperValue $ov) {
+        if ((string) $ov->prow->abstract !== "") {
+            $ov->set_value_data([1], [$ov->prow->abstract]);
+        }
+    }
+    function value_save(PaperValue $ov, PaperStatus $ps) {
+        $ps->save_paperf("abstract", $ov->data());
+        return true;
+    }
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        return $this->parse_json_string($prow, $qreq->abstract, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_TRIM);
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        return $this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_TRIM);
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        if ((int) $this->conf->opt("noAbstract") !== 1) {
+            $this->echo_web_edit_text($pt, $ov, $reqov);
+        }
+    }
+    function render(FieldRender $fr, PaperValue $ov) {
+        if ($fr->for_page()) {
+            $fr->table->render_abstract($fr, $this);
+        } else {
+            $text = $ov->prow->abstract;
+            if (trim($text) !== "") {
+                $fr->value = $text;
+                $fr->value_format = $ov->prow->abstract_format();
+            } else if (!$this->conf->opt("noAbstract")
+                       && $fr->verbose()) {
+                $fr->set_text("[No abstract]");
+            }
+        }
+    }
+}
+
 class IntrinsicValue {
     static function assign_intrinsic(PaperValue $ov) {
         if ($ov->id === DTYPE_SUBMISSION) {
@@ -51,10 +95,6 @@ class IntrinsicValue {
         $ov->anno["intrinsic"] = true;
     }
     static function value_check($o, PaperValue $ov, Contact $user) {
-        if (($o->id === PaperOption::ABSTRACTID && !$o->conf->opt("noAbstract"))
-            && !$o->value_present($ov)) {
-            $ov->error("Entry required.");
-        }
         if ($o->id === DTYPE_SUBMISSION
             && !$o->conf->opt("noPapers")
             && !$o->value_present($ov)) {
@@ -114,9 +154,7 @@ class IntrinsicValue {
         }
     }
     static function parse_web($o, PaperInfo $prow, Qrequest $qreq) {
-        if ($o->id === PaperOption::ABSTRACTID) {
-            $v = $qreq->abstract;
-        } else if ($o->id === PaperOption::COLLABORATORSID) {
+        if ($o->id === PaperOption::COLLABORATORSID) {
             $v = $qreq->collaborators;
         } else {
             // XXX
@@ -125,11 +163,7 @@ class IntrinsicValue {
         return PaperValue::make($prow, $o, 1, $v);
     }
     static function echo_web_edit($o, PaperTable $pt, $ov, $reqov) {
-        if ($o->id === PaperOption::ABSTRACTID) {
-            if ((int) $o->conf->opt("noAbstract") !== 1) {
-                $o->echo_web_edit_text($pt, $ov, $reqov);
-            }
-        } else if ($o->id === PaperOption::AUTHORSID) {
+        if ($o->id === PaperOption::AUTHORSID) {
             $pt->echo_editable_authors($o);
         } else if ($o->id === PaperOption::ANONYMITYID) {
             $pt->echo_editable_anonymity($o);
