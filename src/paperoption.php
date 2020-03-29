@@ -2,7 +2,7 @@
 // paperoption.php -- HotCRP helper class for paper options
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class PaperValue {
+class PaperValue implements JsonSerializable {
     public $prow;
     public $id;
     public $option;
@@ -161,6 +161,19 @@ class PaperValue {
     }
     function problems($include_fields = false) {
         return $this->_ms ? $this->_ms->problems($include_fields) : [];
+    }
+    function jsonSerialize() {
+        if ($this->_data === null
+            || $this->_data === []
+            || (count($this->_data) === 1 && $this->_data[0] === null)) {
+            $x = $this->value;
+        } else {
+            $x = [];
+            for ($i = 0; $i !== count($this->_values); ++$i) {
+                $x[] = [$this->_values[$i], $this->_data[$i]];
+            }
+        }
+        return [$this->option->json_key() => $x];
     }
 }
 
