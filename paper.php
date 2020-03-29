@@ -467,7 +467,9 @@ if (($ps || $prow) && $paperTable->mode === "edit") {
         $old_overrides = $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
         foreach ($Conf->paper_opts->form_field_list($prow) as $o) {
             if ($Me->can_edit_option($prow, $o)) {
-                $o->value_messages($prow->force_option($o), $ps);
+                $ov = $prow->force_option($o);
+                $ov->set_message_set($ps);
+                $o->value_check($ov, $Me);
             }
         }
         $Me->set_overrides($old_overrides);

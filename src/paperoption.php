@@ -11,7 +11,7 @@ class PaperValue {
     private $_values;
     private $_data;
     private $_documents;
-    private $_msg;
+    private $_ms;
 
     function __construct($prow, PaperOption $o) { // XXX should be private
         $this->prow = $prow;
@@ -114,47 +114,53 @@ class PaperValue {
         $this->load_value_data();
     }
 
-    function messageset() {
-        if ($this->_msg === null) {
-            $this->_msg = new MessageSet;
+    function message_set() {
+        if ($this->_ms === null) {
+            $this->_ms = new MessageSet;
         }
-        return $this->_msg;
+        return $this->_ms;
+    }
+    function set_message_set(MessageSet $ms) {
+        $this->_ms = $ms;
+    }
+    function msg_at($field, $msg, $status) {
+        $this->message_set()->msg_at($field, $msg, $status);
     }
     function msg($msg, $status) {
-        $this->messageset()->msg_at(false, $msg, $status);
+        $this->message_set()->msg_at($this->option->field_key(), $msg, $status);
     }
     function error($msg) {
-        $this->messageset()->error_at(false, $msg);
+        $this->msg($msg, MessageSet::ERROR);
     }
     function error_at($field, $msg) {
-        $this->messageset()->error_at($field, $msg);
+        $this->message_set()->error_at($field, $msg);
     }
     function warning($msg) {
-        $this->messageset()->warning_at(false, $msg);
+        $this->msg($msg, MessageSet::WARNING);
     }
     function warning_at($field, $msg) {
-        $this->messageset()->warning_at($field, $msg);
+        $this->message_set()->warning_at($field, $msg);
     }
     function has_problem() {
-        return $this->_msg && $this->_msg->has_problem();
+        return $this->_ms && $this->_ms->has_problem();
     }
     function has_error() {
-        return $this->_msg && $this->_msg->has_error();
+        return $this->_ms && $this->_ms->has_error();
     }
     function has_warning() {
-        return $this->_msg && $this->_msg->has_warning();
+        return $this->_ms && $this->_ms->has_warning();
     }
     function messages($include_fields = false) {
-        return $this->_msg ? $this->_msg->messages($include_fields) : [];
+        return $this->_ms ? $this->_ms->messages($include_fields) : [];
     }
     function errors($include_fields = false) {
-        return $this->_msg ? $this->_msg->errors($include_fields) : [];
+        return $this->_ms ? $this->_ms->errors($include_fields) : [];
     }
     function warnings($include_fields = false) {
-        return $this->_msg ? $this->_msg->warnings($include_fields) : [];
+        return $this->_ms ? $this->_ms->warnings($include_fields) : [];
     }
     function problems($include_fields = false) {
-        return $this->_msg ? $this->_msg->problems($include_fields) : [];
+        return $this->_ms ? $this->_ms->problems($include_fields) : [];
     }
 }
 
@@ -854,10 +860,10 @@ class PaperOption implements Abbreviator {
             return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
         }
     }
-    function value_messages(PaperValue $ov, MessageSet $ms) {
+    function value_check(PaperValue $ov, Contact $user) {
         if ($this->test_required($ov->prow)
             && !$this->value_present($ov)) {
-            $ms->error_at($this->field_key(), "Entry required.");
+            $ov->error("Entry required.");
         }
     }
     function value_dids(PaperValue $ov) {
@@ -1742,8 +1748,8 @@ class IntrinsicPaperOption extends PaperOption {
             return !!$ov->value;
         }
     }
-    function value_messages(PaperValue $ov, MessageSet $ms) {
-        IntrinsicValue::value_messages($this, $ov, $ms);
+    function value_check(PaperValue $ov, Contact $user) {
+        IntrinsicValue::value_check($this, $ov, $user);
     }
     function value_load_intrinsic(PaperValue $ov) {
         $s = null;

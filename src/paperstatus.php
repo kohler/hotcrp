@@ -24,6 +24,7 @@ class PaperStatus extends MessageSet {
     private $_nnprow;
     private $_paper_upd;
     private $_topic_ins;
+    private $_field_values;
     private $_option_delid;
     private $_option_ins;
     private $_new_conflicts;
@@ -60,7 +61,7 @@ class PaperStatus extends MessageSet {
         $this->diffs = [];
         $this->_paper_upd = [];
         $this->_topic_ins = null;
-        $this->_option_delid = $this->_option_ins = [];
+        $this->_field_values = $this->_option_delid = $this->_option_ins = [];
         $this->_new_conflicts = $this->_conflict_ins = null;
         $this->_paper_submitted = $this->_documents_changed = false;
         $this->_joindocs = [];
@@ -1057,44 +1058,12 @@ class PaperStatus extends MessageSet {
         if ($ov !== null && !($ov instanceof PaperValue)) {
             $ov = $opt->parse_json($ps->_nnprow, $oj);
         }
-        if ($ov === null) {
-            return;
-        }
-        assert($ov instanceof PaperValue);
-
-        if (!$ov->has_error()) {
-            $opt->value_store($ov, $ps);
-        }
-
-        foreach ($ov->messages(true) as $mx) {
-            $ps->msg_at_option($opt, $mx[1], $mx[2]);
-        }
-
-        if (!$ps->has_error_at($opt->field_key())) {
-            $nv = $ov->value_array();
-            $nd = $ov->data_array();
-
-            if ($ps->prow) {
-                list($ov, $od) = $ps->prow->option_value_data($opt->id);
-            } else {
-                $ov = $od = [];
+        if ($ov !== null) {
+            assert($ov instanceof PaperValue);
+            if (!$ov->has_error()) {
+                $opt->value_store($ov, $ps);
             }
-
-            // save difference
-            if ($ov !== $nv || $od !== $nd) {
-                $ps->_option_delid[] = $opt->id;
-                $ps->diffs[$opt->json_key()] = true;
-                for ($i = 0; $i < count($nv); ++$i) {
-                    $qv0 = [-1, $opt->id, $nv[$i], null, null];
-                    if ($nd[$i] !== null) {
-                        $qv0[strlen($nd[$i]) < 32768 ? 3 : 4] = $nd[$i];
-                    }
-                    $ps->_option_ins[] = $qv0;
-                }
-                if ($opt->has_document()) {
-                    $ps->_documents_changed = true;
-                }
-            }
+            $ps->_field_values[$opt->id] = $ov;
         }
     }
 
@@ -1106,6 +1075,50 @@ class PaperStatus extends MessageSet {
             foreach ($pj->options as $oid => $oj) {
                 $o = $ps->conf->paper_opts->get($oid);
                 self::check_one_option($o, $ps, $oj);
+            }
+        }
+    }
+
+    private function validate_fields() {
+        $max_status = 0;
+        foreach ($this->_field_values ?? [] as $ov) {
+            if (!$ov->has_error()) {
+                $min_status = MessageSet::ERROR;
+                $ov->option->value_check($ov, $this->user);
+            } else {
+                $min_status = 0;
+            }
+            foreach ($ov->messages(true) as $m) {
+                $max_status = max($max_status, $m[2]);
+                if ($m[2] >= $min_status) {
+                    $this->msg_at($m[0], $m[1], $m[2]);
+                }
+            }
+        }
+        return $max_status < MessageSet::ERROR;
+    }
+
+    private function execute_fields() {
+        foreach ($this->_field_values ?? [] as $ov) {
+            $v1 = $ov->value_array();
+            $d1 = $ov->data_array();
+            $oldv = $this->_nnprow->force_option($ov->id);
+            if ($v1 === $oldv->value_array() && $d1 === $oldv->data_array()) {
+                // no changes
+            } else {
+                // normal option
+                $this->_option_delid[] = $ov->id;
+                $this->mark_diff($ov->option->json_key());
+                for ($i = 0; $i < count($v1); ++$i) {
+                    $qv0 = [-1, $ov->id, $v1[$i], null, null];
+                    if ($d1[$i] !== null) {
+                        $qv0[strlen($d1[$i]) < 32768 ? 3 : 4] = $d1[$i];
+                    }
+                    $this->_option_ins[] = $qv0;
+                }
+                if ($ov->option->has_document()) {
+                    $this->_documents_changed = true;
+                }
             }
         }
     }
@@ -1365,6 +1378,13 @@ class PaperStatus extends MessageSet {
         self::check_options($this, $pj);
         self::check_status($this, $pj);
         self::check_final_status($this, $pj);
+
+        // don't save if serious error
+        if (!$this->validate_fields()) {
+            return false;
+        }
+
+        $this->execute_fields();
         self::check_contacts_last($this, $pj);
         return true;
     }

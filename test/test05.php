@@ -183,7 +183,7 @@ xassert(!$ps->has_error());
 
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "opt1" => "10xxxxx", "has_opt1" => "1"]), $newpaper, $user_estrin, "update");
 $ps = new PaperStatus($Conf, $user_estrin);
-xassert($ps->prepare_save_paper_json($pj));
+xassert(!$ps->prepare_save_paper_json($pj));
 xassert_eqq(count($ps->diffs), 0);
 xassert($ps->has_error_at("opt1"));
 
