@@ -639,18 +639,6 @@ class PaperStatus extends MessageSet {
         // Errors prevent saving
         global $Now;
 
-        // Title, abstract
-        $this->normalize_string($pj, "collaborators", false);
-        if (isset($pj->collaborators)) {
-            $old_collab = rtrim(cleannl($pj->collaborators));
-            $collab = (string) AuthorMatcher::fix_collaborators($old_collab);
-            if ($collab !== $old_collab) {
-                $name = self::field_title($this->conf, "collaborators");
-                $this->warning_at("collaborators", "$name changed to follow our required format. You may want to look them over.");
-            }
-            $pj->collaborators = $collab;
-        }
-
         // Authors
         $au_by_lemail = [];
         $pj->bad_authors = $pj->bad_email_authors = [];
@@ -876,15 +864,6 @@ class PaperStatus extends MessageSet {
                 $ps->save_paperf("authorInformation", $v);
                 $ps->mark_diff("authors");
             }
-        }
-    }
-
-    static function check_collaborators(PaperStatus $ps, $pj) {
-        $v = convert_to_utf8(get_s($pj, "collaborators"));
-        if (isset($pj->collaborators)
-            && $v !== ($ps->prow ? (string) $ps->prow->collaborators : "")) {
-            $ps->save_paperf("collaborators", $v);
-            $ps->mark_diff("collaborators");
         }
     }
 
@@ -1344,7 +1323,7 @@ class PaperStatus extends MessageSet {
         self::check_one_option($opts->get(PaperOption::TITLEID), $this, $pj->title ?? null);
         self::check_one_option($opts->get(PaperOption::ABSTRACTID), $this, $pj->abstract ?? null);
         self::check_authors($this, $pj);
-        self::check_collaborators($this, $pj);
+        self::check_one_option($opts->get(PaperOption::COLLABORATORSID), $this, $pj->collaborators ?? null);
         self::check_nonblind($this, $pj);
         self::check_conflicts($this, $pj);
         self::check_one_pdf($opts->get(DTYPE_SUBMISSION), $this, $pj);

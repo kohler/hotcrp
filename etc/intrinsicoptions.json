@@ -43,6 +43,8 @@
     },
     {
         "name": "collaborators", "json_key": "collaborators", "id": -1007,
-        "form_position": 5002, "display_space": 5, "type": "intrinsic"
+        "form_position": 5002, "display_space": 5,
+        "type": "intrinsic2", "require": "src/intrinsicvalue.php",
+        "callback": "+Collaborators_PaperOption"
     }
 ]

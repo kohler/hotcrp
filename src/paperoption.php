@@ -644,13 +644,9 @@ class PaperOption implements Abbreviator {
         }
 
         if (property_exists($args, "exists_if")) {
-            $x = $args->exists_if;
-        } else {
-            $x = $args->edit_condition ?? null; // XXX
-        }
-        if ($x !== null && $x !== true) {
-            $this->exists_if = $x;
-            $this->_exists_search = new PaperSearch($this->conf->site_contact(), $x === false ? "NONE" : $x);
+            $this->set_exists_if($args->exists_if);
+        } else if (isset($args->edit_condition)) { // XXX backwards compat
+            $this->set_exists_if($args->edit_condition);
         }
 
         if (($x = $args->editable_if ?? null) !== null && $x !== true) {
@@ -817,6 +813,14 @@ class PaperOption implements Abbreviator {
     function compile_exists_condition(PaperInfo $prow) {
         assert($this->_exists_search !== null);
         return $this->_exists_search->term()->compile_condition($prow, $this->_exists_search);
+    }
+    protected function set_exists_if($x) {
+        if ($x !== null && $x !== true) {
+            $this->exists_if = $x;
+            $this->_exists_search = new PaperSearch($this->conf->site_contact(), $x === false ? "NONE" : $x);
+        } else {
+            $this->exists_if = $this->_exists_search = null;
+        }
     }
 
     function test_editable(PaperInfo $prow) {
@@ -1785,16 +1789,7 @@ class IntrinsicPaperOption extends PaperOption {
         IntrinsicValue::value_check($this, $ov, $user);
     }
     function value_load_intrinsic(PaperValue $ov) {
-        $s = null;
-        if ($this->id === PaperOption::COLLABORATORSID) {
-            $s = $ov->prow->collaborators;
-        } else {
-            IntrinsicValue::assign_intrinsic($ov);
-            return;
-        }
-        if ($s !== null && $s !== "") {
-            $ov->set_value_data([1], [$s]);
-        }
+        IntrinsicValue::assign_intrinsic($ov);
     }
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         return IntrinsicValue::parse_web($this, $prow, $qreq);

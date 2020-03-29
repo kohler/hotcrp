@@ -77,13 +77,6 @@ class Default_PaperSaver extends PaperSaver {
             return;
         }
 
-        // Title, abstract, collaborators
-        foreach (["collaborators"] as $k) {
-            if (isset($qreq[$k])) {
-                $pj->$k = UnicodeHelper::remove_f_ligatures($qreq[$k]);
-            }
-        }
-
         // Authors
         $aukeys = ["name" => "Name", "email" => "Email", "aff" => "Affiliation"];
         $authors = [];
