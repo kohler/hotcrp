@@ -18,36 +18,6 @@ function die_hard($message) {
     exit(1);
 }
 
-// Initialize from an empty database.
-if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql"))) {
-    die_hard("* Can't reinitialize database.\n" . $Conf->dblink->error . "\n");
-}
-do {
-    if (($result = $Conf->dblink->store_result())) {
-        $result->free();
-    } else if ($Conf->dblink->errno) {
-        break;
-    }
-} while ($Conf->dblink->more_results() && $Conf->dblink->next_result());
-if ($Conf->dblink->errno) {
-    die_hard("* Error initializing database.\n" . $Conf->dblink->error . "\n");
-}
-
-// No setup phase.
-$Conf->qe_raw("delete from Settings where name='setupPhase'");
-$Conf->qe_raw("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"position\":1,\"display\":\"default\"}]'");
-$Conf->load_settings();
-// Contactdb.
-if (($cdb = $Conf->contactdb())) {
-    if (!$cdb->multi_query(file_get_contents("$ConfSitePATH/test/cdb-schema.sql"))) {
-        die_hard("* Can't reinitialize contact database.\n" . $cdb->error);
-    }
-    while ($cdb->more_results()) {
-        Dbl::free($cdb->next_result());
-    }
-    $cdb->query("insert into Conferences set dbname='" . $cdb->real_escape_string($Conf->dbname) . "'");
-}
-
 // Record mail in MailChecker.
 class MailChecker {
     static public $print = false;
@@ -182,31 +152,6 @@ class MailChecker {
 MailChecker::add_messagedb(file_get_contents("$ConfSitePATH/test/emails.txt"));
 $Conf->add_hook((object) ["event" => "send_mail", "callback" => "MailChecker::send_hook", "priority" => 1000]);
 
-// Create initial administrator user.
-$Admin = Contact::create($Conf, null, ["email" => "chair@_.com", "name" => "Jane Chair"]);
-$Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
-
-// Load data.
-$json = json_decode(file_get_contents("$ConfSitePATH/test/db.json"));
-if (!$json) {
-    die_hard("* test/testdb.json error: " . json_last_error_msg() . "\n");
-}
-$us = new UserStatus($Conf->site_contact());
-foreach ($json->contacts as $c) {
-    $user = $us->save($c);
-    if ($user) {
-        MailChecker::check_db("create-{$c->email}");
-    } else {
-        die_hard("* failed to create user $c->email\n");
-    }
-}
-foreach ($json->papers as $p) {
-    $ps = new PaperStatus($Conf);
-    if (!$ps->save_paper_json($p)) {
-        die_hard("* failed to create paper $p->title:\n" . htmlspecialchars_decode(join("\n", $ps->messages())) . "\n");
-    }
-}
-
 function setup_assignments($assignments, Contact $user) {
     if (is_array($assignments)) {
         $assignments = join("\n", $assignments);
@@ -217,7 +162,79 @@ function setup_assignments($assignments, Contact $user) {
         die_hard("* failed to run assignments:\n" . join("\n", $assignset->errors_text(true)) . "\n");
     }
 }
-setup_assignments($json->assignments_1, $Admin);
+
+function setup_initialize_database() {
+    global $Conf, $ConfSitePATH, $Admin;
+    // Initialize from an empty database.
+    if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql"))) {
+        die_hard("* Can't reinitialize database.\n" . $Conf->dblink->error . "\n");
+    }
+    do {
+        if (($result = $Conf->dblink->store_result())) {
+            $result->free();
+        } else if ($Conf->dblink->errno) {
+            break;
+        }
+    } while ($Conf->dblink->more_results() && $Conf->dblink->next_result());
+    if ($Conf->dblink->errno) {
+        die_hard("* Error initializing database.\n" . $Conf->dblink->error . "\n");
+    }
+
+    // No setup phase.
+    $Conf->qe_raw("delete from Settings where name='setupPhase'");
+    $Conf->qe_raw("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"position\":1,\"display\":\"default\"}]'");
+    $Conf->load_settings();
+
+    // Contactdb.
+    if (($cdb = $Conf->contactdb())) {
+        if (!$cdb->multi_query(file_get_contents("$ConfSitePATH/test/cdb-schema.sql"))) {
+            die_hard("* Can't reinitialize contact database.\n" . $cdb->error);
+        }
+        while ($cdb->more_results()) {
+            Dbl::free($cdb->next_result());
+        }
+        $cdb->query("insert into Conferences set dbname='" . $cdb->real_escape_string($Conf->dbname) . "'");
+    }
+
+    // Create initial administrator user.
+    $Admin = Contact::create($Conf, null, ["email" => "chair@_.com", "name" => "Jane Chair"]);
+    $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
+
+    // Load data.
+    $json = json_decode(file_get_contents("$ConfSitePATH/test/db.json"));
+    if (!$json) {
+        die_hard("* test/testdb.json error: " . json_last_error_msg() . "\n");
+    }
+    $us = new UserStatus($Conf->site_contact());
+    $ok = true;
+    foreach ($json->contacts as $c) {
+        $user = $us->save($c);
+        if ($user) {
+            MailChecker::check_db("create-{$c->email}");
+        } else {
+            fwrite(STDERR, "* failed to create user $c->email\n");
+            $ok = false;
+        }
+    }
+    foreach ($json->papers as $p) {
+        $ps = new PaperStatus($Conf);
+        if (!$ps->save_paper_json($p)) {
+            $t = join("", array_map(function ($m) {
+                return "    {$m[0]}: {$m[1]}\n";
+            }, $ps->messages(true)));
+            $id = isset($p->_id_) ? "#{$p->_id_} " : "";
+            fwrite(STDERR, "* failed to create paper {$id}{$p->title}:\n" . htmlspecialchars_decode($t) . "\n");
+            $ok = false;
+        }
+    }
+    if (!$ok) {
+        exit(1);
+    }
+
+    setup_assignments($json->assignments_1, $Admin);
+}
+
+setup_initialize_database();
 
 class Xassert {
     static public $n = 0;
