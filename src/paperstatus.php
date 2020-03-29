@@ -151,7 +151,7 @@ class PaperStatus extends MessageSet {
             }
             $this->_cf->check_document($this->prow, $doc);
             if ($this->_cf->has_problem()) {
-                $this->msg($field, false, $this->_cf->problem_status());
+                $this->msg_at($field, false, $this->_cf->problem_status());
             }
         }
 
@@ -356,7 +356,7 @@ class PaperStatus extends MessageSet {
     }
 
     function msg_at_option(PaperOption $o, $msg, $status) {
-        $this->msg($o->field_key(), $msg, $status);
+        $this->msg_at($o->field_key(), $msg, $status);
     }
     function error_at_option(PaperOption $o, $msg) {
         $this->error_at($o->field_key(), $msg);

@@ -121,13 +121,19 @@ class PaperValue {
         return $this->_msg;
     }
     function msg($msg, $status) {
-        $this->messageset()->msg(false, $msg, $status);
+        $this->messageset()->msg_at(false, $msg, $status);
     }
     function error($msg) {
         $this->messageset()->error_at(false, $msg);
     }
+    function error_at($field, $msg) {
+        $this->messageset()->error_at($field, $msg);
+    }
     function warning($msg) {
         $this->messageset()->warning_at(false, $msg);
+    }
+    function warning_at($field, $msg) {
+        $this->messageset()->warning_at($field, $msg);
     }
     function has_problem() {
         return $this->_msg && $this->_msg->has_problem();
@@ -1783,9 +1789,9 @@ class IntrinsicPaperOption extends PaperOption {
             }
         } else if ($this->id === PaperOption::AUTHORSID) {
             $fr->table->render_authors($fr, $this);
-        } else if ($this->id === -1005) {
+        } else if ($this->id === PaperOption::TOPICSID) {
             $fr->table->render_topics($fr, $this);
-        } else if ($this->id === -1008) {
+        } else if ($this->id === PaperOption::SUBMISSION_VERSION_ID) {
             $fr->table->render_submission_version($fr, $this);
         }
     }

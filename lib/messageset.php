@@ -59,7 +59,7 @@ class MessageSet {
         }
     }
 
-    function msg($field, $msg, $status) {
+    function msg_at($field, $msg, $status) {
         if ($this->ignore_msgs) {
             return;
         }
@@ -96,14 +96,17 @@ class MessageSet {
             ++$this->has_error;
         }
     }
+    function msg($field, $msg, $status) {
+        $this->msg_at($field, $msg, $status);
+    }
     function error_at($field, $msg) {
-        $this->msg($field, $msg, self::ERROR);
+        $this->msg_at($field, $msg, self::ERROR);
     }
     function warning_at($field, $msg) {
-        $this->msg($field, $msg, self::WARNING);
+        $this->msg_at($field, $msg, self::WARNING);
     }
     function info_at($field, $msg) {
-        $this->msg($field, $msg, self::INFO);
+        $this->msg_at($field, $msg, self::INFO);
     }
 
     function problem_status() {

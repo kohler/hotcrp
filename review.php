@@ -61,10 +61,12 @@ if (isset($Qreq->uploadForm)
     // parse form, store reviews
     $tf = ReviewValues::make_text($rf, $Qreq->file_contents("uploadedFile"),
             $Qreq->file_filename("uploadedFile"));
-    if ($tf->parse_text($Qreq->override))
+    if ($tf->parse_text($Qreq->override)) {
         $tf->check_and_save($Me, $prow, $paperTable->editrrow);
-    if (!$tf->has_error() && $tf->parse_text($Qreq->override))
-        $tf->msg(null, 'Only the first review form in the file was parsed. <a href="' . hoturl("offline") . '">Upload multiple-review files here.</a>', MessageSet::WARNING);
+    }
+    if (!$tf->has_error() && $tf->parse_text($Qreq->override)) {
+        $tf->msg_at(null, 'Only the first review form in the file was parsed. <a href="' . hoturl("offline") . '">Upload multiple-review files here.</a>', MessageSet::WARNING);
+    }
     $tf->report();
     loadRows();
 } else if (isset($Qreq->uploadForm)) {
@@ -96,11 +98,11 @@ if (isset($Qreq->unsubmitreview)
 if (isset($Qreq->update) && $Qreq->post_ok()) {
     $tf = new ReviewValues($rf);
     $tf->paperId = $prow->paperId;
-    if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
-        $tf->msg(null, whyNotText($whyNot), MessageSet::ERROR);
-    else if ($tf->parse_web($Qreq, $Qreq->override)
-             && $tf->check_and_save($Me, $prow, $paperTable->editrrow)
-             && !$tf->has_problem_at("ready")) {
+    if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow))) {
+        $tf->msg_at(null, whyNotText($whyNot), MessageSet::ERROR);
+    } else if ($tf->parse_web($Qreq, $Qreq->override)
+               && $tf->check_and_save($Me, $prow, $paperTable->editrrow)
+               && !$tf->has_problem_at("ready")) {
         $tf->report();
         $Conf->self_redirect($Qreq); // normally does not return
     }
@@ -120,7 +122,7 @@ if (isset($Qreq->adoptreview) && $Qreq->post_ok()) {
     $tf->paperId = $prow->paperId;
     $my_rrow = $prow->review_of_user($Me);
     if (($whyNot = $Me->perm_submit_review($prow, $my_rrow))) {
-        $tf->msg(null, whyNotText($whyNot), MessageSet::ERROR);
+        $tf->msg_at(null, whyNotText($whyNot), MessageSet::ERROR);
     } else if ($tf->parse_web($Qreq, $Qreq->override)) {
         $tf->set_ready($Qreq->adoptsubmit);
         if ($tf->check_and_save($Me, $prow, $my_rrow)

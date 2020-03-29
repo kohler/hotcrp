@@ -1162,10 +1162,11 @@ $blind\n";
         // administrator?
         $admin = $viewer->allow_administer($prow);
         if ($rrow && !$viewer->is_my_review($rrow)) {
-            if ($viewer->is_owned_review($rrow))
+            if ($viewer->is_owned_review($rrow)) {
                 echo Ht::msg("This isn’t your review, but you can make changes since you requested it.", 0);
-            else if ($admin)
+            } else if ($admin) {
                 echo Ht::msg("This isn’t your review, but as an administrator you can still make changes.", 0);
+            }
         }
 
         // delegate?
@@ -1470,21 +1471,25 @@ class ReviewValues extends MessageSet {
                 if ($field)
                     $e .= ":" . $field;
                 $field = null;
-            } else if ($field && isset($this->fieldLineno[$field]))
+            } else if ($field && isset($this->fieldLineno[$field])) {
                 $e .= ":" . $this->fieldLineno[$field];
-            else
+            } else {
                 $e .= ":" . $this->lineno;
-            if ($this->paperId)
+            }
+            if ($this->paperId) {
                 $e .= " (paper #" . $this->paperId . ")";
+            }
         }
-        if ($e)
+        if ($e) {
             $msg = '<span class="lineno">' . $e . ':</span> ' . $msg;
-        $this->msg($field, $msg, $status);
+        }
+        $this->msg_at($field, $msg, $status);
     }
 
     private function check_garbage() {
-        if ($this->garbage_lineno)
+        if ($this->garbage_lineno) {
             $this->rmsg($this->garbage_lineno, "Review form appears to begin with garbage; ignoring it.", self::WARNING);
+        }
         $this->garbage_lineno = null;
     }
 
@@ -2363,7 +2368,7 @@ class ReviewValues extends MessageSet {
         if (count($pids) > 1) {
             $t = '<span class="has-hotlist" data-hotlist="p/s/' . join("+", $pids) . '">' . $t . '</span>';
         }
-        $this->msg(null, $t, self::INFO);
+        $this->msg_at(null, $t, self::INFO);
     }
 
     private function _single_approval_state() {

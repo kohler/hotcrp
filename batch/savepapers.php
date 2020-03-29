@@ -265,7 +265,7 @@ foreach ($jp as &$j) {
                 $user = Contact::create($Conf, null, $user_req);
                 $tf->check_and_save($site_contact, $prow, null);
             } else {
-                $tf->msg(null, "invalid review @$reviewindex", MessageSet::ERROR);
+                $tf->msg_at(null, "invalid review @$reviewindex", MessageSet::ERROR);
             }
         }
         foreach ($tf->messages() as $te) {
