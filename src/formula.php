@@ -82,9 +82,6 @@ class Fexpr implements JsonSerializable {
     function math_format() {
         return $this->_format !== self::FREVIEWER;
     }
-    function error_format() {
-        return $this->_format === self::FERROR;
-    }
     function unknown_format() {
         return $this->_format === false;
     }
@@ -1725,7 +1722,7 @@ class Formula implements Abbreviator, JsonSerializable {
         } else if ($f instanceof Formula) {
             if ($f->_depth === 0) {
                 $fp = $f->parse($this->user);
-                if (!$fp->error_format()) {
+                if ($fp->format !== Fexpr::FERROR) {
                     return $fp->fexpr;
                 } else {
                     $this->lerror($pos1, $pos2, "This formula’s definition contains an error.");
@@ -1938,7 +1935,7 @@ class Formula implements Abbreviator, JsonSerializable {
             }
 
             if (!$e2) {
-                if (!$e->error_format()) {
+                if ($e->format() !== Fexpr::FERROR) {
                     $this->lerror(-strlen($t), -strlen($t), "Missing expression.");
                 }
                 $e = Constant_Fexpr::cerror();
