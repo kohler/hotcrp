@@ -8021,8 +8021,9 @@ edit_paper_ui.onload = function () {
             }
         }
     });
-    var h = $(".btn-savepaper").first();
-    $(".pslcard").append('<div class="paperform-alert hidden mt-5">'
+    var h = $(".btn-savepaper").first(),
+        k = $("#paperform").hasClass("alert") ? "" : " hidden";
+    $(".pslcard").append('<div class="paperform-alert mt-5' + k + '">'
         + '<button class="ui btn btn-highlight btn-savepaper">'
         + h.html() + '</button></div>')
         .find(".btn-savepaper").click(function () {
