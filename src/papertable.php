@@ -1316,7 +1316,7 @@ class PaperTable {
 
         return '<div class="' . $this->control_class("newcontact_{$num}", "checki")
             . '"><span class="checkc">'
-            . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => 1, "id" => false])
+            . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => true, "id" => false])
             . ' </span>'
             . Ht::entry("newcontact_email_{$num}", $email, ["size" => 30, "placeholder" => "Email", "class" => $this->control_class("newcontact_email_{$num}", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off"])
             . '  '
@@ -1371,7 +1371,7 @@ class PaperTable {
                     . Ht::checkbox(null, null, true, ["disabled" => true, "id" => false]);
             } else if ($au->email && validate_email($au->email)) {
                 $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
-                    . Ht::checkbox("contact_active_{$cidx}", 1, $this->useRequest && $reqidx, ["data-default-checked" => "", "id" => false]);
+                    . Ht::checkbox("contact_active_{$cidx}", 1, $this->useRequest && $reqidx, ["data-default-checked" => false, "id" => false]);
             } else {
                 continue;
             }

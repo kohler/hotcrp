@@ -994,17 +994,19 @@ function input_is_checkboxlike(elt) {
 
 function input_default_value(elt) {
     if (input_is_checkboxlike(elt)) {
-        if (elt.hasAttribute("data-default-checked"))
-            return !!elt.getAttribute("data-default-checked");
-        else if (elt.hasAttribute("data-default-value"))
+        if (elt.hasAttribute("data-default-checked")) {
+            return elt.getAttribute("data-default-checked") !== "false";
+        } else if (elt.hasAttribute("data-default-value")) {
             return elt.value == elt.getAttribute("data-default-value");
-        else
+        } else {
             return elt.defaultChecked;
+        }
     } else {
-        if (elt.hasAttribute("data-default-value"))
+        if (elt.hasAttribute("data-default-value")) {
             return elt.getAttribute("data-default-value");
-        else
+        } else {
             return elt.defaultValue;
+        }
     }
 }
 
@@ -8380,7 +8382,7 @@ handle_ui.on("js-assign-review", function (event) {
             if (self.tagName === "SELECT")
                 self.setAttribute("data-default-value", value);
             else
-                self.setAttribute("data-default-checked", value ? "1" : "");
+                self.setAttribute("data-default-checked", value ? "true" : "false");
             setajaxcheck(self, rv);
             form_highlight(form, self);
         });

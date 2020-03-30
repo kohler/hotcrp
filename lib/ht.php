@@ -20,6 +20,7 @@ class Ht {
                                        "autofocus" => self::ATTR_BOOL,
                                        "checked" => self::ATTR_BOOL,
                                        "class" => self::ATTR_NOEMPTY,
+                                       "data-default-checked" => self::ATTR_BOOLTEXT,
                                        "disabled" => self::ATTR_BOOL,
                                        "enctype" => self::ATTR_SKIP,
                                        "formnovalidate" => self::ATTR_BOOL,
@@ -36,7 +37,7 @@ class Ht {
         $x = "";
         if ($js) {
             foreach ($js as $k => $v) {
-                $t = get(self::$_attr_type, $k);
+                $t = self::$_attr_type[$k] ?? null;
                 if ($v === null
                     || $t === self::ATTR_SKIP
                     || ($v === false && $t !== self::ATTR_BOOLTEXT)
