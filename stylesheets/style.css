@@ -2644,6 +2644,12 @@ a.badge:active {
 .pslitem-intersecting {
 	font-weight: bold;
 }
+.pslitem > .is-error:before, .papalert.is-error:before {
+	content: "×\20DD\0020";
+}
+.pslitem > .is-warning:before, .papalert.is-warning:before {
+	content: "?\20DD\0020";
+}
 .js-tag-editor {
 	font-size: 13px;
 	font-size: 0.8125rem;
