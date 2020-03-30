@@ -153,15 +153,6 @@ class Default_PaperSaver extends PaperSaver {
             $pj->nonblind = !$qreq->blind;
         }
 
-        // Topics
-        if ($qreq->has_topics) {
-            $pj->topics = (object) array();
-            foreach ($user->conf->topic_set() as $tid => $tname) {
-                if (+$qreq["top$tid"] > 0)
-                    $pj->topics->$tname = true;
-            }
-        }
-
         // Options
         $nnprow = $prow ? : PaperInfo::make_new($user);
         if (!isset($pj->options)) {

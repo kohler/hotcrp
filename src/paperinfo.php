@@ -968,12 +968,14 @@ class PaperInfo {
 
     function topic_list() {
         if ($this->_topics_array === null) {
-            if (!property_exists($this, "topicIds"))
+            if (!property_exists($this, "topicIds")) {
                 $this->load_topics();
+            }
             $this->_topics_array = [];
             if ($this->topicIds !== null && $this->topicIds !== "") {
-                foreach (explode(",", $this->topicIds) as $t)
+                foreach (explode(",", $this->topicIds) as $t) {
                     $this->_topics_array[] = (int) $t;
+                }
                 $this->conf->topic_set()->sort($this->_topics_array);
             }
         }

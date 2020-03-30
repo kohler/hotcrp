@@ -35,7 +35,8 @@
     {
         "name": "topics", "json_key": "topics", "id": -1005,
         "form_position": 3501, "display_group": "topics",
-        "type": "intrinsic"
+        "type": "intrinsic2", "require": "src/intrinsicvalue.php",
+        "callback": "+Topics_PaperOption"
     },
     {
         "name": "pcconf", "json_key": "pcconf", "id": -1006,

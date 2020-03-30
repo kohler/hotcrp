@@ -1473,7 +1473,7 @@ class PaperTable {
             "</div></div></div>\n\n";
     }
 
-    function echo_editable_topics($option) {
+    function echo_editable_topics($option, $reqov) {
         if (!$this->conf->has_topics()) {
             return;
         }
@@ -1489,8 +1489,8 @@ class PaperTable {
             $isgroup = count($tg) >= 4;
             if ($isgroup && strcasecmp($tg[0], $topics[$tg[1]]) === 0) {
                 $tid = $tg[1];
-                $arg["data-default-checked"] = $pchecked = isset($ptopics[$tid]);
-                $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
+                $arg["data-default-checked"] = isset($ptopics[$tid]);
+                $checked = in_array($tid, $reqov->value_array());
                 echo '<div class="ctelt cteltg"><div class="ctelti">',
                     '<label class="checki cteltx"><span class="checkc">',
                     Ht::checkbox("top$tid", 1, $checked, $arg),
@@ -1511,8 +1511,8 @@ class PaperTable {
                 } else {
                     $tname = $topics->unparse_name_html($tid);
                 }
-                $arg["data-default-checked"] = $pchecked = isset($ptopics[$tid]);
-                $checked = $this->useRequest ? isset($this->qreq["top$tid"]) : $pchecked;
+                $arg["data-default-checked"] = isset($ptopics[$tid]);
+                $checked = in_array($tid, $reqov->value_array());
                 echo ($isgroup ? '<label class="checki cteltx">' : '<div class="ctelt"><label class="checki ctelti">'),
                     '<span class="checkc">',
                     Ht::checkbox("top$tid", 1, $checked, $arg),

@@ -1195,6 +1195,7 @@ class Conf {
 
     function invalidate_topics() {
         $this->_topic_set = null;
+        $this->paper_opts->invalidate_intrinsic_option(PaperOption::TOPICSID);
     }
 
 

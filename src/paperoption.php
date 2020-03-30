@@ -419,6 +419,9 @@ class PaperOptionList {
             $this->_nonpaper_am = $this->_olist_include_empty = null;
         $this->_omap = $this->_imap = [];
     }
+    function invalidate_intrinsic_option($id) {
+        unset($this->_imap[$id]);
+    }
 
     function count_option_list() {
         return count($this->option_json_list());
@@ -1791,20 +1794,12 @@ class IntrinsicPaperOption extends PaperOption {
     function value_load_intrinsic(PaperValue $ov) {
         IntrinsicValue::assign_intrinsic($ov);
     }
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
-        return IntrinsicValue::parse_web($this, $prow, $qreq);
-    }
-    function parse_json(PaperInfo $prow, $j) {
-        return IntrinsicValue::parse_json($this, $prow, $j);
-    }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         IntrinsicValue::echo_web_edit($this, $pt, $ov, $reqov);
     }
     function render(FieldRender $fr, PaperValue $ov) {
         if ($this->id === PaperOption::AUTHORSID) {
             $fr->table->render_authors($fr, $this);
-        } else if ($this->id === PaperOption::TOPICSID) {
-            $fr->table->render_topics($fr, $this);
         } else if ($this->id === PaperOption::SUBMISSION_VERSION_ID) {
             $fr->table->render_submission_version($fr, $this);
         }

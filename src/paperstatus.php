@@ -23,7 +23,7 @@ class PaperStatus extends MessageSet {
     public $diffs;
     private $_nnprow;
     private $_paper_upd;
-    private $_topic_ins;
+    public $_topic_ins; // set by Topics_PaperOption
     private $_field_values;
     private $_option_delid;
     private $_option_ins;
@@ -80,13 +80,17 @@ class PaperStatus extends MessageSet {
     function user() {
         return $this->user;
     }
-
     function paper_row() {
         return $this->prow;
     }
-
     function prow() {
         return $this->_nnprow;
+    }
+    function export_ids() {
+        return $this->export_ids;
+    }
+    function add_topics() {
+        return $this->add_topics;
     }
 
     function _() {
@@ -520,63 +524,6 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function normalize_topics($pj) {
-        $topics = $pj->topics;
-        unset($pj->topics);
-        if (is_string($topics)) {
-            $topics = explode("\n", cleannl($topics));
-        }
-        if (is_array($topics)) {
-            $new_topics = (object) array();
-            foreach ($topics as $v) {
-                if ($v && (is_int($v) || is_string($v))) {
-                    $new_topics->$v = true;
-                } else if ($v) {
-                    $this->format_error_at("topics", $v);
-                }
-            }
-            $topics = $new_topics;
-        }
-        if (is_object($topics)) {
-            $topicset = $this->conf->topic_set();
-            $pj->topics = (object) array();
-            foreach ($topics as $k => $v) {
-                if (!$v) {
-                    // skip
-                } else if (isset($topicset[$k])) {
-                    $pj->topics->$k = true;
-                } else {
-                    $tid = array_search($k, $topicset->as_array(), true);
-                    if ($tid === false && $k !== "" && !ctype_digit($k)) {
-                        $tmatches = [];
-                        foreach ($topicset as $xtid => $tname) {
-                            if (strcasecmp($k, $tname) == 0)
-                                $tmatches[] = $xtid;
-                        }
-                        if (empty($tmatches) && $this->add_topics) {
-                            $this->conf->qe("insert into TopicArea set topicName=?", $k);
-                            if (!$this->conf->has_topics()) {
-                                $this->conf->save_setting("has_topics", 1);
-                            }
-                            $this->conf->invalidate_topics();
-                            $topicset = $this->conf->topic_set();
-                            $tid = array_search($k, $topicset->as_array(), true);
-                        } else if (count($tmatches) === 1) {
-                            $tid = $tmatches[0];
-                        }
-                    }
-                    if ($tid !== false) {
-                        $pj->topics->$tid = true;
-                    } else {
-                        $pj->bad_topics[] = $k;
-                    }
-                }
-            }
-        } else if ($topics) {
-            $this->format_error_at("topics", $topics);
-        }
-    }
-
     private function normalize_options($pj, $options) {
         // canonicalize option values to use IDs, not abbreviations
         $pj->options = (object) array();
@@ -704,12 +651,6 @@ class PaperStatus extends MessageSet {
                 $this->format_error_at("nonblind", $pj->nonblind);
                 unset($pj->nonblind);
             }
-        }
-
-        // Topics
-        $pj->bad_topics = array();
-        if (isset($pj->topics)) {
-            $this->normalize_topics($pj);
         }
 
         // Options
@@ -972,22 +913,6 @@ class PaperStatus extends MessageSet {
             if (!$ps->prow || $ps->prow->timeFinalSubmitted != $time) {
                 $ps->save_paperf("timeFinalSubmitted", $time);
                 $ps->mark_diff("final_status");
-            }
-        }
-    }
-
-    static function check_topics(PaperStatus $ps, $pj) {
-        if (!empty($pj->bad_topics)) {
-            $ps->warning_at("topics", $ps->_("Unknown topics ignored (%2\$s).", count($pj->bad_topics), htmlspecialchars(join("; ", $pj->bad_topics))));
-        }
-        if (isset($pj->topics)) {
-            $old_topics = $ps->prow ? $ps->prow->topic_list() : [];
-            $new_topics = array_map("intval", array_keys((array) $pj->topics));
-            sort($old_topics);
-            sort($new_topics);
-            if ($old_topics !== $new_topics) {
-                $ps->diffs["topics"] = true;
-                $ps->_topic_ins = $new_topics;
             }
         }
     }
@@ -1328,7 +1253,7 @@ class PaperStatus extends MessageSet {
         self::check_conflicts($this, $pj);
         self::check_one_pdf($opts->get(DTYPE_SUBMISSION), $this, $pj);
         self::check_one_pdf($opts->get(DTYPE_FINAL), $this, $pj);
-        self::check_topics($this, $pj);
+        self::check_one_option($opts->get(PaperOption::TOPICSID), $this, $pj->topics ?? null);
         self::check_options($this, $pj);
         self::check_status($this, $pj);
         self::check_final_status($this, $pj);

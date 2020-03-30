@@ -124,6 +124,122 @@ class Collaborators_PaperOption extends PaperOption {
     // XXX no render because paper strip
 }
 
+class Topics_PaperOption extends PaperOption {
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
+        $this->set_exists_if(!!$this->conf->setting("has_topics"));
+    }
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+        $vs = $ov->value_array();
+        if (!empty($vs) && !$ps->export_ids()) {
+            $tmap = $ps->conf->topic_set();
+            $vs = array_map(function ($t) use ($tmap) { return $tmap[$t]; }, $vs);
+        }
+        return $vs;
+    }
+    function value_load_intrinsic(PaperValue $ov) {
+        $vs = $ov->prow->topic_list();
+        $ov->set_value_data($vs, array_fill(0, count($vs), null));
+    }
+    function value_store(PaperValue $ov, PaperStatus $ps) {
+        $vs = $ov->value_array();
+        if ($ov->anno && $ps->add_topics() && !empty($ov->anno["new_topics"])) {
+            // add new topics to topic list
+            $lctopics = [];
+            foreach ($ov->anno["new_topics"] as $tk) {
+                if (!in_array(strtolower($tk), $lctopics)) {
+                    $lctopics[] = strtolower($tk);
+                    $result = $ps->conf->qe("insert into TopicArea set topicName=?", $tk);
+                    $vs[] = $result->insert_id;
+                }
+            }
+            if (!$this->conf->has_topics()) {
+                $this->conf->save_setting("has_topics", 1);
+            }
+            $this->conf->invalidate_topics();
+            $ov->anno["bad_topics"] = array_diff($ov->anno["bad_topics"], $ov->anno["new_topics"]);
+        }
+        $this->conf->topic_set()->sort($vs);
+        $ov->set_value_data($vs, array_fill(0, count($vs), null));
+        if ($ov->anno && !empty($ov->anno["bad_topics"])) {
+            $ov->warning($ps->_("Unknown topics ignored (%2\$s).", count($ov->anno["bad_topics"]), htmlspecialchars(join("; ", $ov->anno["bad_topics"]))));
+        }
+    }
+    function value_save(PaperValue $ov, PaperStatus $ps) {
+        $ps->_topic_ins = $ov->value_array();
+        return true;
+    }
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        $vs = [];
+        foreach ($prow->conf->topic_set() as $tid => $tname) {
+            if (+$qreq["top$tid"] > 0) {
+                $vs[] = $tid;
+            }
+        }
+        return PaperValue::make_multi($prow, $this, $vs, array_fill(0, count($vs), null));
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        $bad = false;
+        if (is_object($j) || is_associative_array($j)) {
+            $j = array_keys(array_filter((array) $j, function ($x) use (&$bad) {
+                if ($x !== null && $x !== false && $x !== true) {
+                    $bad = true;
+                }
+                return $x === true;
+            }));
+        } else if ($j === false) {
+            $j = [];
+        }
+        if (!is_array($j) || $bad) {
+            return PaperValue::make_error($prow, $this, "Format error.");
+        }
+
+        $topicset = $prow->conf->topic_set();
+        $vs = $bad_topics = $new_topics = [];
+        foreach ($j as $tk) {
+            if (is_int($tk)) {
+                if (isset($topicset[$tk])) {
+                    $vs[] = $tk;
+                } else {
+                    $bad_topics[] = $tk;
+                }
+            } else if (!is_string($tk)) {
+                return PaperValue::make_error($prow, $this, "Format error.");
+            } else if (($tk = trim($tk)) !== "") {
+                $tid = array_search($tk, $topicset->as_array(), true);
+                if ($tid !== false) {
+                    $vs[] = $tid;
+                } else if (!ctype_digit($tk)) {
+                    $tids = [];
+                    foreach ($topicset as $xtid => $tname) {
+                        if (strcasecmp($tk, $tname) == 0)
+                            $tids[] = $xtid;
+                    }
+                    if (count($tids) === 1) {
+                        $vs[] = $tids[0];
+                    } else {
+                        $bad_topics[] = $tk;
+                        if (empty($tids)) {
+                            $new_topics[] = $tk;
+                        }
+                    }
+                }
+            }
+        }
+
+        $ov = PaperValue::make_multi($prow, $this, $vs, array_fill(0, count($vs), null));
+        $ov->anno["bad_topics"] = $bad_topics;
+        $ov->anno["new_topics"] = $new_topics;
+        return $ov;
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        $pt->echo_editable_topics($this, $reqov);
+    }
+    function render(FieldRender $fr, PaperValue $ov) {
+        $fr->table->render_topics($fr, $this);
+    }
+}
+
 class IntrinsicValue {
     static function assign_intrinsic(PaperValue $ov) {
         if ($ov->id === DTYPE_SUBMISSION) {
@@ -194,11 +310,6 @@ class IntrinsicValue {
             }
         }
     }
-    static function parse_web($o, PaperInfo $prow, Qrequest $qreq) {
-        // XXX
-        $v = "";
-        return PaperValue::make($prow, $o, 1, $v);
-    }
     static function echo_web_edit($o, PaperTable $pt, $ov, $reqov) {
         if ($o->id === PaperOption::AUTHORSID) {
             $pt->echo_editable_authors($o);
@@ -206,8 +317,6 @@ class IntrinsicValue {
             $pt->echo_editable_anonymity($o);
         } else if ($o->id === PaperOption::CONTACTSID) {
             $pt->echo_editable_contact_author($o);
-        } else if ($o->id === PaperOption::TOPICSID) {
-            $pt->echo_editable_topics($o);
         } else if ($o->id === PaperOption::PCCONFID) {
             $pt->echo_editable_pc_conflicts($o);
         }

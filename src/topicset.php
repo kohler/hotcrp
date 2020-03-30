@@ -30,10 +30,11 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
             if ($ta[2] !== $tb[2]
                 && ($ta[2] === 2
                     || $tb[2] === 2
-                    || strcasecmp($ta[3], $tb[3]) === 0))
+                    || strcasecmp($ta[3], $tb[3]) === 0)) {
                 return $ta[2] > $tb[2] ? 1 : -1;
-            else
+            } else {
                 return $collator->compare($ta[1], $tb[1]);
+            }
         });
 
         $n = 0;
@@ -60,7 +61,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->_topic_map[$offset];
     }
     function get($tid) {
-        return get($this->_topic_map, $tid);
+        return $this->_topic_map[$tid] ?? null;
     }
     function offsetSet($offset, $value) {
         assert(false);
@@ -78,18 +79,21 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
                 $group = substr($tname, 0, $colon);
                 if ($last_group !== null
                     && strcasecmp($last_group, $group) === 0) {
-                    if ($last_gs[0] === false)
+                    if ($last_gs[0] === false) {
                         $last_gs[0] = $last_group;
+                    }
                     $last_gs[] = $tid;
                 } else {
-                    if ($last_group !== null)
+                    if ($last_group !== null) {
                         $this->_topic_groups[] = $last_gs;
+                    }
                     $last_gs = [false, $tid];
                     $last_group = $group;
                 }
             }
-            if ($last_group !== null)
+            if ($last_group !== null) {
                 $this->_topic_groups[] = $last_gs;
+            }
         }
         return $this->_topic_groups;
     }
@@ -108,11 +112,13 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     function abbrev_matcher() {
         if ($this->_topic_abbrev_matcher === null) {
             $this->_topic_abbrev_matcher = new AbbreviationMatcher;
-            foreach ($this->_topic_map as $tid => $tname)
+            foreach ($this->_topic_map as $tid => $tname) {
                 $this->_topic_abbrev_matcher->add($tname, $tid);
+            }
             foreach ($this->group_list() as $tg) {
-                for ($i = 1; $tg[0] && $i !== count($tg); ++$i)
+                for ($i = 1; $tg[0] && $i !== count($tg); ++$i) {
                     $this->_topic_abbrev_matcher->add($tg[0], $tg[$i], 1);
+                }
             }
         }
         return $this->_topic_abbrev_matcher;
@@ -121,38 +127,42 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     static function max_topici_lenclass($lenclass, $tname) {
         if ($lenclass === "long"
             || (strlen($tname) > 50
-                && UnicodeHelper::utf8_glyphlen($tname) > 50))
+                && UnicodeHelper::utf8_glyphlen($tname) > 50)) {
             return "long";
-        else if ($lenclass === "medium"
-                 || (strlen($tname) > 20
-                     && UnicodeHelper::utf8_glyphlen($tname) > 20))
+        } else if ($lenclass === "medium"
+                   || (strlen($tname) > 20
+                       && UnicodeHelper::utf8_glyphlen($tname) > 20)) {
             return "medium";
-        else
+        } else {
             return "short";
+        }
     }
 
     function subtopic_name($tid) {
-        $n = get($this->_topic_map, $tid);
-        if ($n && ($colon = (int) strpos($n, ":")) !== 0)
+        $n = $this->_topic_map[$tid] ?? null;
+        if ($n && ($colon = (int) strpos($n, ":")) !== 0) {
             return ltrim(substr($n, $colon + 1));
-        else
+        } else {
             return false;
+        }
     }
 
     function unparse_name_html($tid) {
-        if ($this->_topic_html === null)
+        if ($this->_topic_html === null) {
             $this->_topic_html = [];
+        }
         if (!isset($this->_topic_html[$tid])) {
             $t = "";
-            $tname = (string) get($this->_topic_map, $tid);
+            $tname = $this->_topic_map[$tid] ?? "";
             $colon = (int) strpos($tname, ":");
             if ($colon > 0) {
-                foreach ($this->group_list() as $tg)
+                foreach ($this->group_list() as $tg) {
                     if ($tg[0] && in_array($tid, $tg, true)) {
                         $t = '<span class="topicg">' . htmlspecialchars($tg[0]) . ':</span> ';
                         $tname = ltrim(substr($tname, strlen($tg[0]) + 1));
                         break;
                     }
+                }
             }
             $this->_topic_html[$tid] = $t . htmlspecialchars($tname);
         }
@@ -163,7 +173,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         $out = [];
         foreach ($tlist as $tid) {
             $n = $this->unparse_name_html($tid);
-            $i = $interests === null ? null : get($interests, $tid, 0);
+            $i = $interests === null ? null : ($interests[$tid] ?? 0);
             if (empty($out) && $i !== null) {
                 $n = '<span class="topic' . $i . '">' . $n . '</span>';
                 $i = null;
