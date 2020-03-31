@@ -545,9 +545,9 @@ class PaperStatus extends MessageSet {
                     $tid = array_search($k, $topicset->as_array(), true);
                     if ($tid === false && $k !== "" && !ctype_digit($k)) {
                         $tmatches = [];
-                        foreach ($topicset as $tid => $tname) {
+                        foreach ($topicset as $xtid => $tname) {
                             if (strcasecmp($k, $tname) == 0)
-                                $tmatches[] = $tid;
+                                $tmatches[] = $xtid;
                         }
                         if (empty($tmatches) && $this->add_topics) {
                             $this->conf->qe("insert into TopicArea set topicName=?", $k);

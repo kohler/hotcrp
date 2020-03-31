@@ -1027,6 +1027,11 @@ class PaperInfo {
         return $score;
     }
 
+    function invalidate_topics() {
+        unset($this->topicIds);
+        $this->_topics_array = $this->_topic_interest_score_array = null;
+    }
+
 
     function load_conflicts($email) {
         if (!$email && property_exists($this, "allConflictType")) {

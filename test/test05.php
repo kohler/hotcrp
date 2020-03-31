@@ -218,9 +218,9 @@ xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
 xassert($ps->execute_save());
 xassert(!$ps->has_error());
-$new_paperid_1 = $ps->paperId;
+$npid1 = $ps->paperId;
 
-$newpaper = $Conf->fetch_paper($new_paperid_1, $user_estrin);
+$newpaper = $Conf->fetch_paper($npid1, $user_estrin);
 xassert($newpaper);
 xassert_eqq($newpaper->title, "Paper about mantis shrimp");
 xassert_eqq($newpaper->abstract, "They see lots of colors.");
@@ -275,6 +275,80 @@ $ps->prepare_save_paper_json($pj);
 xassert(!$ps->has_error_at("abstract"));
 xassert_eqq(count($ps->error_fields()), 0);
 xassert_eq($ps->errors(), []);
+
+// topic saving
+$Conf->qe("insert into TopicArea (topicName) values ('Cloud computing'), ('Architecture'), ('Security'), ('Cloud networking')");
+$Conf->save_setting("has_topics", 1);
+$Conf->invalidate_topics();
+
+$tset = $Conf->topic_set();
+xassert_eqq($tset[1], "Cloud computing");
+xassert_eqq($tset[2], "Architecture");
+xassert_eqq($tset[3], "Security");
+xassert_eqq($tset[4], "Cloud networking");
+
+$nprow1 = $Conf->fetch_paper($npid1, $user_estrin);
+xassert_eqq($nprow1->topic_list(), []);
+
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->save_paper_json((object) [
+    "id" => $npid1,
+    "topics" => ["Cloud computing"]
+]);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_topics();
+xassert_eqq($nprow1->topic_list(), [1]);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1,
+    "topics" => (object) ["Cloud computing" => true, "Security" => true]
+]);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_topics();
+xassert_eqq($nprow1->topic_list(), [1, 3]);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1,
+    "topics" => [2, 4]
+]);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_topics();
+xassert_eqq($nprow1->topic_list(), [2, 4]);
+
+// extended topic saves
+$ps->save_paper_json((object) [
+    "id" => $npid1,
+    "topics" => ["architecture", "security"]
+]);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_topics();
+xassert_eqq($nprow1->topic_list(), [2, 3]);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1,
+    "topics" => ["fartchitecture"]
+]);
+xassert(!$ps->has_error());
+xassert($ps->has_problem());
+xassert_eqq($ps->messages_at("topics"), ["Unknown topic ignored (fartchitecture)."]);
+$nprow1->invalidate_topics();
+xassert_eqq($nprow1->topic_list(), []); // XXX should be unchanged
+
+$ps = new PaperStatus($Conf, $user_estrin, ["add_topics" => true]);
+$ps->save_paper_json((object) [
+    "id" => $npid1,
+    "topics" => ["fartchitecture", "architecture"]
+]);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_topics();
+xassert_eqq($nprow1->topic_list(), [2, 5]);
+
+$qreq = new Qrequest("POST", ["ready" => 1, "has_topics" => 1, "top1" => 1, "top5" => 1]);
+$pj = PaperSaver::apply_all($qreq, $nprow1, $user_estrin, "submit");
+$ps->save_paper_json($pj);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_topics();
+xassert_eqq($nprow1->topic_list(), [1, 5]);
 
 // check some content_text_signature functionality
 $doc = new DocumentInfo(["content" => "ABCdefGHIjklMNO"], $Conf);
