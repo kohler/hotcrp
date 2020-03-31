@@ -552,7 +552,7 @@ class TagMap implements IteratorAggregate {
 
     static function is_tag_string($s, $strict = false) {
         return (string) $s === ""
-            || preg_match($strict ? '/\A(?: [^#\s]+#[\d.]+)+\z/' : '/\A(?: \S+)+\z/', $s);
+            || preg_match($strict ? '/\A(?: [^#\s]+#-?[\d.]+)+\z/' : '/\A(?: \S+)+\z/', $s);
     }
 
     static function assert_tag_string($tags, $strict = false) {
