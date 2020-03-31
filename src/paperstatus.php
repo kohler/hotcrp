@@ -595,13 +595,11 @@ class PaperStatus extends MessageSet {
 
     private function normalize_pc_conflicts($pj) {
         $confset = $this->conf->conflict_types();
-        $conflicts = get($pj, "pc_conflicts");
+        $conflicts = $pj->pc_conflicts;
         $pj->pc_conflicts = (object) array();
-        if (is_object($conflicts)) {
-            $conflicts = (array) $conflicts;
-        }
-        foreach ($conflicts as $email => $ct) {
-            if (is_int($email) && is_string($ct)) {
+        $is_array = is_array($conflicts) && !is_associative_array($conflicts);
+        foreach ((array) $conflicts as $email => $ct) {
+            if ($is_array) {
                 list($email, $ct) = array($ct, true);
             }
             if (!($pccid = $this->conf->pc_member_by_email($email))) {
@@ -741,14 +739,15 @@ class PaperStatus extends MessageSet {
 
         // PC conflicts
         $pj->bad_pc_conflicts = (object) array();
-        if (get($pj, "pc_conflicts")
-            && (is_object($pj->pc_conflicts) || is_array($pj->pc_conflicts))) {
-            $this->normalize_pc_conflicts($pj);
-        } else if (get($pj, "pc_conflicts") === false) {
-            $pj->pc_conflicts = (object) array();
-        } else if (isset($pj->pc_conflicts)) {
-            $this->format_error_at("pc_conflicts", $pj->pc_conflicts);
-            unset($pj->pc_conflicts);
+        if (isset($pj->pc_conflicts)) {
+            if (is_object($pj->pc_conflicts) || is_array($pj->pc_conflicts)) {
+                $this->normalize_pc_conflicts($pj);
+            } else if ($pj->pc_conflicts === false) {
+                $pj->pc_conflicts = (object) array();
+            } else {
+                $this->format_error_at("pc_conflicts", $pj->pc_conflicts);
+                unset($pj->pc_conflicts);
+            }
         }
 
         // verify emails on authors marked as contacts

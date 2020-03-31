@@ -177,8 +177,9 @@ setlocale(LC_COLLATE, "C");
 setlocale(LC_CTYPE, "C");
 
 // Don't want external entities parsed by default
-if (function_exists("libxml_disable_entity_loader"))
+if (function_exists("libxml_disable_entity_loader")) {
     libxml_disable_entity_loader(true);
+}
 
 
 // Set up conference options

@@ -13,6 +13,8 @@ $Conf->save_setting("opt.contentHashMethod", 1, "sha1");
 
 // load users
 $user_estrin = $Conf->user_by_email("estrin@usc.edu"); // pc
+$user_varghese = $Conf->user_by_email("varghese@ccrc.wustl.edu"); // pc red
+$user_sally = $Conf->user_by_email("floyd@ee.lbl.gov"); // pc red blue
 $user_nobody = new Contact;
 
 $ps = new PaperStatus($Conf, $user_estrin);
@@ -349,6 +351,60 @@ $ps->save_paper_json($pj);
 xassert(!$ps->has_problem());
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), [1, 5]);
+
+// extended pc conflicts
+function pc_conflict_keys($prow) {
+    return array_keys($prow->pc_conflicts());
+}
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId], true);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1, "pc_conflicts" => false
+]);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_conflicts();
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId], true);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1, "pc_conflicts" => [$user_varghese->email => true, $user_sally->email => true]
+]);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_conflicts();
+xassert_eqq(pc_conflict_keys($nprow1),
+    [$user_estrin->contactId, $user_varghese->contactId, $user_sally->contactId],
+    true);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1, "pc_conflicts" => []
+]);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_conflicts();
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId], true);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1, "pc_conflicts" => [$user_varghese->email]
+]);
+xassert(!$ps->has_problem());
+$nprow1->invalidate_conflicts();
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId], true);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1, "pc_conflicts" => [$user_varghese->email, "notpc@no.com"]
+]);
+xassert(!$ps->has_problem()); // XXX should have problem
+$nprow1->invalidate_conflicts();
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId], true);
+xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($user_varghese), CONFLICT_AUTHORMARK);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1, "pc_conflicts" => [$user_varghese->email => "advisor"]
+]);
+xassert(!$ps->has_problem()); // XXX should have problem
+$nprow1->invalidate_conflicts();
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId], true);
+xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($user_varghese), 3);
 
 // check some content_text_signature functionality
 $doc = new DocumentInfo(["content" => "ABCdefGHIjklMNO"], $Conf);

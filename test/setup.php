@@ -337,7 +337,7 @@ function xassert_neq($a, $b) {
     return $ok;
 }
 
-function xassert_array_eqq($a, $b) {
+function xassert_array_eqq($a, $b, $sort = false) {
     ++Xassert::$n;
     $problem = "";
     if ($a === null && $b === null) {
@@ -346,15 +346,21 @@ function xassert_array_eqq($a, $b) {
         if (count($a) !== count($b)) {
             $problem = "size " . count($a) . " !== " . count($b);
         } else {
+            if ($sort) {
+                sort($a);
+                sort($b);
+            }
             $ka = array_keys($a);
             $va = array_values($a);
             $kb = array_keys($b);
             $vb = array_values($b);
-            for ($i = 0; $i < count($ka) && !$problem; ++$i)
-                if ($ka[$i] !== $kb[$i])
+            for ($i = 0; $i < count($ka) && !$problem; ++$i) {
+                if ($ka[$i] !== $kb[$i]) {
                     $problem = "key position $i differs, {$ka[$i]} !== {$kb[$i]}";
-                else if ($va[$i] !== $vb[$i])
+                } else if ($va[$i] !== $vb[$i]) {
                     $problem = "value {$ka[$i]} differs, " . var_export($va[$i], true) . " !== " . var_export($vb[$i], true);
+                }
+            }
         }
     } else {
         $problem = "different types";
@@ -462,8 +468,9 @@ function xassert_assign_fail($who, $what, $override = false) {
 }
 
 function call_api($fn, $user, $qreq, $prow) {
-    if (!($qreq instanceof Qrequest))
+    if (!($qreq instanceof Qrequest)) {
         $qreq = new Qrequest("POST", $qreq);
+    }
     $uf = $user->conf->api($fn);
     xassert($uf);
     Conf::xt_resolve_require($uf);
@@ -484,8 +491,9 @@ function fetch_paper($pid, $contact = null) {
 }
 
 function fetch_review($prow, $contact) {
-    if (is_int($prow))
+    if (is_int($prow)) {
         $prow = fetch_paper($prow, $contact);
+    }
     return $prow->fresh_review_of_user($contact);
 }
 

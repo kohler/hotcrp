@@ -1037,22 +1037,24 @@ class PaperInfo {
         if (!$email && property_exists($this, "allConflictType")) {
             $this->_conflict_array = [];
             $this->_conflict_array_email = $email;
-            if ((string) $this->allConflictType !== "")
+            if ((string) $this->allConflictType !== "") {
                 foreach (explode(",", $this->allConflictType) as $x) {
                     list($cid, $ctype) = explode(" ", $x);
                     $cflt = new PaperInfo_Conflict($cid, $ctype);
                     $this->_conflict_array[$cflt->contactId] = $cflt;
                 }
+            }
         } else {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             foreach ($row_set->all() as $prow) {
                 $prow->_conflict_array = [];
                 $prow->_conflict_array_email = $email;
             }
-            if ($email)
+            if ($email) {
                 $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId?a", $row_set->paper_ids());
-            else
+            } else {
                 $result = $this->conf->qe("select paperId, contactId, conflictType, null from PaperConflict where paperId?a", $row_set->paper_ids());
+            }
             while ($result && ($row = $result->fetch_row())) {
                 $prow = $row_set->get($row[0]);
                 $cflt = new PaperInfo_Conflict($row[1], $row[2], $row[3]);
@@ -1064,8 +1066,9 @@ class PaperInfo {
 
     function conflicts($email = false) {
         if ($this->_conflict_array === null
-            || ($email && !$this->_conflict_array_email))
+            || ($email && !$this->_conflict_array_email)) {
             $this->load_conflicts($email);
+        }
         return $this->_conflict_array;
     }
 
@@ -1073,11 +1076,18 @@ class PaperInfo {
         return array_intersect_key($this->conflicts($email), $this->conf->pc_members());
     }
 
+    function invalidate_conflicts() {
+        unset($this->allConflictType);
+        $this->_conflict_array = $this->_conflict_array_email = null;
+    }
+
+
     function contacts($email = false) {
         $c = array();
-        foreach ($this->conflicts($email) as $id => $cflt)
+        foreach ($this->conflicts($email) as $id => $cflt) {
             if ($cflt->conflictType >= CONFLICT_AUTHOR)
                 $c[$id] = $cflt;
+        }
         return $c;
     }
 
@@ -1090,13 +1100,15 @@ class PaperInfo {
         return $vals;
     }
 
+
     function load_preferences() {
-        if ($this->_row_set && ++$this->_row_set->loaded_allprefs >= 10)
+        if ($this->_row_set && ++$this->_row_set->loaded_allprefs >= 10) {
             $row_set = $this->_row_set->filter(function ($prow) {
                 return !property_exists($prow, "allReviewerPreference");
             });
-        else
+        } else {
             $row_set = new PaperInfoSet($this);
+        }
         foreach ($row_set as $prow) {
             $prow->allReviewerPreference = null;
             $prow->_prefs_array = $prow->_prefs_cid = $prow->_desirability = null;
@@ -1118,8 +1130,8 @@ class PaperInfo {
             if ($this->allReviewerPreference !== null && $this->allReviewerPreference !== "") {
                 $p = preg_split('/[ ,]/', $this->allReviewerPreference);
                 for ($i = 0; $i + 2 < count($p); $i += 3) {
-                    if ($p[$i+1] != "0" || $p[$i+2] != ".")
-                        $x[(int) $p[$i]] = array((int) $p[$i+1], $p[$i+2] == "." ? null : (int) $p[$i+2]);
+                    if ($p[$i+1] !== "0" || $p[$i+2] !== ".")
+                        $x[(int) $p[$i]] = [(int) $p[$i+1], $p[$i+2] === "." ? null : (int) $p[$i+2]];
                 }
             }
             $this->_prefs_array = $x;
@@ -1179,6 +1191,7 @@ class PaperInfo {
         }
         return $this->_desirability;
     }
+
 
     private function load_options($only_me, $need_data) {
         if ($this->_option_values === null
