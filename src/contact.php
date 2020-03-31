@@ -3702,18 +3702,32 @@ class Contact {
         }
     }
 
-    function can_view_tag(PaperInfo $prow, $tag) {
-        if ($this->_overrides & self::OVERRIDE_TAG_CHECKS) {
+    function can_view_tag(PaperInfo $prow = null, $tag) {
+        // basic checks
+        if (!$this->isPC) {
+            return false;
+        } else if ($this->_overrides & self::OVERRIDE_TAG_CHECKS) {
             return true;
         }
-        $rights = $this->rights($prow);
+
+        // conflict checks
         $tag = TagInfo::base($tag);
-        $twiddle = strpos($tag, "~");
         $dt = $this->conf->tags();
-        return ($rights->allow_pc
-                || ($rights->allow_pc_broad && $this->conf->tag_seeall)
-                || ($this->privChair && $dt->is_sitewide($tag)))
-            && ($rights->allow_administer
+        if ($prow) {
+            $rights = $this->rights($prow);
+            if (!($rights->allow_pc
+                  || ($rights->allow_pc_broad && $this->conf->tag_seeall)
+                  || ($this->privChair && $dt->is_sitewide($tag)))) {
+                return false;
+            }
+            $allow_administer = $rights->allow_administer;
+        } else {
+            $allow_administer = $this->privChair;
+        }
+
+        // twiddle and hidden-tag checks
+        $twiddle = strpos($tag, "~");
+        return ($allow_administer
                 || $twiddle === false
                 || ($twiddle === 0 && $tag[1] !== "~")
                 || ($twiddle > 0
