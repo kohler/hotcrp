@@ -2159,23 +2159,21 @@ class Contact {
     }
 
     function can_change_password($acct) {
-        if ($this->privChair
-            && !$this->conf->opt("chairHidePasswords"))
-            return true;
-        else
-            return $acct
+        return ($this->privChair && !$this->conf->opt("chairHidePasswords"))
+            || ($acct
                 && $this->contactId > 0
                 && $this->contactId == $acct->contactId
                 && $this->_activated
-                && !self::$true_user;
+                && !self::$true_user);
     }
 
     function can_administer(PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->can_administer;
-        } else
+        } else {
             return $this->privChair;
+        }
     }
 
     private function _can_administer_for_track(PaperInfo $prow, $rights, $ttype) {
@@ -2272,8 +2270,9 @@ class Contact {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->view_conflict_type;
-        } else
+        } else {
             return 0;
+        }
     }
 
     function act_author(PaperInfo $prow) {
@@ -2289,39 +2288,48 @@ class Contact {
     function act_author_view_sql($table, $only_if_complex = false) {
         $m = [];
         if ($this->_capabilities !== null && !$this->isPC) {
-            foreach ($this->_capabilities as $k => $v)
+            foreach ($this->_capabilities as $k => $v) {
                 if (str_starts_with($k, "@av")
                     && $v
                     && ctype_digit(substr($k, 3)))
                     $m[] = "Paper.paperId=" . substr($k, 3);
+            }
         }
-        if (empty($m) && $this->contactId && $only_if_complex)
+        if (empty($m) && $this->contactId && $only_if_complex) {
             return false;
-        if ($this->contactId)
-            $m[] = "$table.conflictType>=" . CONFLICT_AUTHOR;
-        if (count($m) > 1)
-            return "(" . join(" or ", $m) . ")";
-        else
-            return empty($m) ? "false" : $m[0];
+        } else {
+            if ($this->contactId) {
+                $m[] = "$table.conflictType>=" . CONFLICT_AUTHOR;
+            }
+            if (count($m) > 1) {
+                return "(" . join(" or ", $m) . ")";
+            } else {
+                return empty($m) ? "false" : $m[0];
+            }
+        }
     }
 
     function act_reviewer_sql($table) {
         $m = [];
-        if ($this->contactId > 0)
+        if ($this->contactId > 0) {
             $m[] = "{$table}.contactId={$this->contactId}";
-        if (($rev_tokens = $this->review_tokens()))
+        }
+        if (($rev_tokens = $this->review_tokens())) {
             $m[] = "{$table}.reviewToken in (" . join(",", $rev_tokens) . ")";
+        }
         if ($this->_capabilities !== null) {
-            foreach ($this->_capabilities as $k => $v)
+            foreach ($this->_capabilities as $k => $v) {
                 if (str_starts_with($k, "@ra")
                     && $v
                     && ctype_digit(substr($k, 3)))
                     $m[] = "({$table}.paperId=" . substr($k, 3) . " and {$table}.contactId=" . $v . ")";
+            }
         }
-        if (count($m) > 1)
+        if (count($m) > 1) {
             return "(" . join(" or ", $m) . ")";
-        else
+        } else {
             return empty($m) ? "false" : $m[0];
+        }
     }
 
     function can_start_paper() {
@@ -2331,9 +2339,11 @@ class Contact {
     }
 
     function perm_start_paper() {
-        if ($this->can_start_paper())
+        if ($this->can_start_paper()) {
             return null;
-        return array("deadline" => "sub_reg", "override" => $this->privChair);
+        } else {
+            return ["deadline" => "sub_reg", "override" => $this->privChair];
+        }
     }
 
     function allow_edit_paper(PaperInfo $prow) {
@@ -2622,14 +2632,16 @@ class Contact {
     }
 
     function can_view_manager(PaperInfo $prow = null) {
-        if ($this->privChair)
+        if ($this->privChair) {
             return true;
-        if (!$prow)
+        } else if ($prow) {
+            $rights = $this->rights($prow);
+            return $rights->allow_administer
+                || ($rights->potential_reviewer && !$this->conf->opt("hideManager"));
+        } else {
             return (!$this->conf->opt("hideManager") && $this->is_reviewer())
                 || ($this->isPC && $this->is_explicit_manager());
-        $rights = $this->rights($prow);
-        return $rights->allow_administer
-            || ($rights->potential_reviewer && !$this->conf->opt("hideManager"));
+        }
     }
 
     function can_view_lead(PaperInfo $prow = null) {
@@ -3660,33 +3672,33 @@ class Contact {
 
     function can_view_tags(PaperInfo $prow = null) {
         // see also AllTags_API::alltags, PaperInfo::{searchable,viewable}_tags
-        if (!$prow) {
-            return $this->isPC;
-        } else {
+        if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_pc
                 || ($rights->allow_pc_broad && $this->conf->tag_seeall)
                 || ($this->privChair && $this->conf->tags()->has_sitewide);
+        } else {
+            return $this->isPC;
         }
     }
 
     function can_view_most_tags(PaperInfo $prow = null) {
-        if (!$prow) {
-            return $this->isPC;
-        } else {
+        if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_pc
                 || ($rights->allow_pc_broad && $this->conf->tag_seeall);
+        } else {
+            return $this->isPC;
         }
     }
 
     function can_view_hidden_tags(PaperInfo $prow = null) {
-        if (!$prow) {
-            return $this->privChair;
-        } else {
+        if ($prow) {
             $rights = $this->rights($prow);
             return $rights->can_administer
                 || $this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG);
+        } else {
+            return $this->privChair;
         }
     }
 
