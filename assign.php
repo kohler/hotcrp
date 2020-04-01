@@ -218,7 +218,9 @@ $paperTable->paptabBegin();
 // reviewer information
 $t = review_table($Me, $prow, $paperTable->all_reviews(), null, "assign");
 if ($t !== "") {
-    echo '<hr class="papcard-sep"><h3>Reviews</h3>', $t;
+    echo '<div class="pcard revcard">',
+        '<div class="revcard-head"><h2>Reviews</h2></div>',
+        '<div class="revpcard-body">', $t, '</div></div>';
 }
 
 
@@ -257,7 +259,9 @@ usort($requests, function ($a, $b) {
 });
 
 if ($requests) {
-    echo '<hr class="papcard-sep"><h3>Review requests</h3><div class="ctable-wide">';
+    echo '<div class="pcard revcard">',
+        '<div class="revcard-head"><h2>Review requests</h2></div>',
+        '<div class="revcard-body"><div class="ctable-wide">';
 }
 foreach ($requests as $req) {
     echo '<div class="ctelt"><div class="ctelti has-fold';
@@ -436,7 +440,7 @@ foreach ($requests as $req) {
     echo '</div></div>';
 }
 if ($requests) {
-    echo '</div>';
+    echo '</div></div></div>';
 }
 
 
@@ -456,9 +460,10 @@ if ($Me->can_administer($prow)) {
     }
 
     // PC conflicts row
-    echo '<hr class="papcard-sep"><h3>PC assignments</h3>',
-        Ht::form(hoturl_post("assign", "p=$prow->paperId"), array("id" => "ass", "class" => "need-unload-protection")),
-        '<p>';
+    echo '<div class="pcard revcard">',
+        '<div class="revcard-head"><h2>PC assignments</h2></div>',
+        '<div class="revcard-body">',
+        Ht::form(hoturl_post("assign", "p=$prow->paperId"), array("id" => "ass", "class" => "need-unload-protection"));
     Ht::stash_script('hiliter_children("#ass")');
 
     if ($Conf->has_topics()) {
@@ -556,11 +561,9 @@ if ($Me->can_administer($prow)) {
         '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn-primary"]), '</div>',
         '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
         '<div id="assresult" class="aabut"></div>',
-        '</div></form>';
+        '</div></form></div></div>';
 }
 
-
-echo "</div></div>\n";
 
 // add external reviewers
 $req = "Request an external review";
@@ -570,7 +573,7 @@ if (!$Me->allow_administer($prow) && $Conf->setting("extrev_chairreq")) {
 echo '<div class="pcard revcard">',
     Ht::form(hoturl_post("assign", "p=$prow->paperId"), ["novalidate" => true]),
     '<div class="revcard-head">',
-    "<h3>", $req, "</h3></div><div class=\"revcard-body\">";
+    "<h2>", $req, "</h2></div><div class=\"revcard-body\">";
 
 echo '<p class="papertext">', $Conf->_i("external-review-request-description", null);
 if ($Me->allow_administer($prow)) {
@@ -627,6 +630,6 @@ echo '<div class="aab aabr">',
     '<div class="aabut"><a class="ui x js-request-review-preview-email" href="">Preview request email</a></div>',
     "</div>\n\n";
 
-echo "</div></div></form></div></div>\n";
+echo "</div></div></form></div></article>\n";
 
 $Conf->footer();

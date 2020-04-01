@@ -326,7 +326,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         if ($flags & (self::VALUE_SC | self::VALUE_REV_NUM)) {
             $vc = $this->value_class($value);
             if ($flags & self::VALUE_REV_NUM) {
-                $text = '<span class="rev_num ' . $vc . '">' . $text . '.</span>';
+                $text = '<strong class="rev_num ' . $vc . '">' . $text . '.</strong>';
             } else {
                 $text = '<span class="' . $vc . '">' . $text . '</span>';
             }
@@ -1089,7 +1089,7 @@ $blind\n";
                 "</div>";
         }
 
-        echo '<h3><span class="revcard-header-name">';
+        echo '<h2><span class="revcard-header-name">';
         if ($rrow) {
             echo '<a class="nn" href="',
                 $rrow->conf->hoturl("review", "r=$reviewOrdinal" . $forceShow),
@@ -1100,7 +1100,7 @@ $blind\n";
         } else {
             echo "New Review";
         }
-        echo "</span></h3>\n";
+        echo "</span></h2>\n";
 
         $revname = $revtime = "";
         if ($rrow && $viewer->active_review_token_for($prow, $rrow)) {

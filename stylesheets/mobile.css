@@ -154,11 +154,8 @@ table.pltable {
 }
 .rvl, .rvr {
 	width: 100%;
+	padding-left: 0;
+	padding-right: 0;
 	float: none;
-}
-.rvr {
-	margin-top: 8px;
-	border-top: 1px solid #ffecef;
-	padding: 8px 0 0;
 }
 }

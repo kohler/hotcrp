@@ -109,7 +109,7 @@ class PaperTable {
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
 
-        $t = '<div id="header-page" class="header-page-submission"><div id="header-page-submission-inner"><h1 class="paptitle';
+        $t = '<header id="header-page" class="header-page-submission"><h1 class="paptitle';
 
         if (!$paperTable) {
             if (($pid = $qreq->paperId) && ctype_digit($pid)) {
@@ -161,7 +161,7 @@ class PaperTable {
             }
         }
 
-        $t .= '</h1></div></div>';
+        $t .= '</h1></header>';
         if ($paperTable && $prow->paperId) {
             $t .= $paperTable->_paptabBeginKnown();
         }
@@ -345,10 +345,6 @@ class PaperTable {
         Ht::stash_script("fold_storage()");
     }
 
-    private function echoDivExit() {
-        echo "</div>";
-    }
-
     private function problem_status_at($f) {
         if ($this->edit_status) {
             if (str_starts_with($f, "au")) {
@@ -389,7 +385,7 @@ class PaperTable {
             echo '" data-edit-condition="', htmlspecialchars(json_encode($opt->compile_exists_condition($this->prow)));
             Ht::stash_script('$(edit_paper_ui.edit_condition)', 'edit_condition');
         }
-        echo '"><div class="', $this->control_class($what, "papet");
+        echo '"><h3 class="', $this->control_class($what, "papet");
         if ($for === "checkbox") {
             echo " checki";
         }
@@ -399,7 +395,7 @@ class PaperTable {
         if (($id = get($extra, "id"))) {
             echo '" id="' . $id;
         }
-        echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => "papfn"]), '</div>';
+        echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => "papfn"]), '</h3>';
     }
 
     private function papt($what, $name, $extra = array()) {
@@ -422,7 +418,7 @@ class PaperTable {
         } else {
             $c .= "\">";
         }
-        $c .= "<span class=\"$hdrclass";
+        $c .= "<h3 class=\"$hdrclass";
         if (get($extra, "fnclass")) {
             $c .= " " . $extra["fnclass"];
         }
@@ -457,7 +453,7 @@ class PaperTable {
             }
             $c .= '</a>';
         }
-        $c .= "</span>";
+        $c .= "</h3>";
         if ($editfolder && false) {
             $c .= "<span class=\"pstedit fn\">"
                 . "<a class=\"ui xx need-tooltip js-foldup\" href=\""
@@ -1006,7 +1002,7 @@ class PaperTable {
         $fr->value = '<div class="pg">'
             . '<div class="'
             . $this->control_class("authors", "pavt ui js-aufoldup")
-            . '"><span class="pavfn">';
+            . '"><h3 class="pavfn">';
         if ($vas === 1 || $this->allFolded) {
             $fr->value .= '<a class="q ui js-aufoldup" href="" title="Toggle author display" role="button" aria-expanded="' . ($this->foldmap[8] ? "false" : "true") . '">';
         }
@@ -1025,7 +1021,7 @@ class PaperTable {
         if ($vas === 1 || $this->allFolded) {
             $fr->value .= '</a>';
         }
-        $fr->value .= '</span></div>';
+        $fr->value .= '</h3></div>';
 
         // contents
         $fr->value .= '<div class="pavb">';
@@ -1104,13 +1100,13 @@ class PaperTable {
         if ($fr->title !== "" && $o->display_group && !$fr->value_long) {
             $title = htmlspecialchars($fr->title);
             if ($fr->value === "") {
-                $fr->value = '<span class="pavfn">' . $title . '</span>';
+                $fr->value = '<h3 class="pavfn">' . $title . '</h3>';
             } else if ($fr->value[0] === "<"
                        && preg_match('{\A((?:<(?:div|p).*?>)*)}', $fr->value, $cm)) {
-                $fr->value = $cm[1] . '<span class="pavfn pavfnsp">' . $title
-                    . ':</span> ' . substr($fr->value, strlen($cm[1]));
+                $fr->value = $cm[1] . '<h3 class="pavfn pavfnsp">' . $title
+                    . ':</h3> ' . substr($fr->value, strlen($cm[1]));
             } else {
-                $fr->value = '<span class="pavfn pavfnsp">' . $title . ':</span> ' . $fr->value;
+                $fr->value = '<h3 class="pavfn pavfnsp">' . $title . ':</h3> ' . $fr->value;
             }
             $fr->value_long = false;
             $fr->title = "";
@@ -1243,16 +1239,16 @@ class PaperTable {
                 echo '<div class="', $class, '">';
                 if ($foldnum) {
                     echo '<div class="pavt ui js-foldup" data-fold-target="', $foldnum, '">',
-                        '<span class="pavfn">',
+                        '<h3 class="pavfn">',
                         '<a class="q ui js-foldup" href="" data-fold-target="', $foldnum, '" title="Toggle visibility" role="button" aria-expanded="',
                         $this->foldmap[$foldnum] ? "false" : "true",
                         '">', expander(null, $foldnum),
                         $group_html,
-                        '</a></span></div><div class="pg fx', $foldnum, '">';
+                        '</a></h3></div><div class="pg fx', $foldnum, '">';
                 } else {
-                    echo '<div class="pavt"><span class="pavfn">',
+                    echo '<div class="pavt"><h3 class="pavfn">',
                         $group_html,
-                        '</span></div><div class="pg">';
+                        '</h3></div><div class="pg">';
                 }
             }
 
@@ -1275,9 +1271,9 @@ class PaperTable {
                 } else if ($x[2] === "") {
                     echo '<div class="', $class, '">', $x[3], '</div>';
                 } else if ($x[3] === "") {
-                    echo '<div class="', $class, '"><span class="pavfn">', $x[2], '</span></div>';
+                    echo '<div class="', $class, '"><h3 class="pavfn">', $x[2], '</h3></div>';
                 } else {
-                    echo '<div class="', $class, '"><div class="pavt"><span class="pavfn">', $x[2], '</span></div><div class="pavb">', $x[3], '</div></div>';
+                    echo '<div class="', $class, '"><div class="pavt"><h3 class="pavfn">', $x[2], '</h3></div><div class="pavb">', $x[3], '</div></div>';
                 }
             }
 
@@ -1417,7 +1413,7 @@ class PaperTable {
 
     private function _papstrip_framework() {
         if (!$this->npapstrip) {
-            echo '<div class="pcontainer"><div class="pcard-left',
+            echo '<article class="pcontainer"><div class="pcard-left',
                 '"><div class="pspcard"><div class="ui pspcard-fold">',
                 '<div style="float:right;margin-left:1em;cursor:pointer"><span class="psfn">More ', expander(true), '</span></div>';
 
@@ -2267,11 +2263,11 @@ class PaperTable {
     }
 
     function _paptabTabLink($text, $link, $image, $highlight) {
-        return '<div class="papmode' . ($highlight ? " active" : "")
+        return '<li class="papmode' . ($highlight ? " active" : "")
             . '"><a href="' . $link . '" class="noul">'
             . Ht::img($image, "[$text]", "papmodeimg")
             . "&nbsp;<u" . ($highlight ? ' class="x"' : "") . ">" . $text
-            . "</u></a></div>\n";
+            . "</u></a></li>";
     }
 
     private function _paptabBeginKnown() {
@@ -2286,7 +2282,7 @@ class PaperTable {
 
         // paper tabs
         if ($canEdit || $canReview || $canAssign || $canHome) {
-            $t .= '<div class="submission-modes">';
+            $t .= '<nav class="submission-modes"><ul>';
 
             // home link
             $highlight = ($this->mode !== "assign" && $this->mode !== "edit"
@@ -2305,7 +2301,7 @@ class PaperTable {
                 $t .= $this->_paptabTabLink("Assign", hoturl("assign", "p=$pid"), "assign48.png", $this->mode === "assign");
             }
 
-            $t .= "</div>";
+            $t .= "</ul></nav>";
         }
 
         return $t;
@@ -2323,7 +2319,7 @@ class PaperTable {
     }
 
     static function echo_review_clickthrough() {
-        echo '<div class="pcard revcard js-clickthrough-terms"><div class="revcard-head"><h3>Reviewing terms</h3></div><div class="revcard-body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
+        echo '<div class="pcard revcard js-clickthrough-terms"><div class="revcard-head"><h2>Reviewing terms</h2></div><div class="revcard-body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
         self::_echo_clickthrough("review");
         echo "</div></div>";
     }
@@ -2397,52 +2393,58 @@ class PaperTable {
             $this->_papstrip();
         }
         if ($this->npapstrip) {
-            echo '</div></div><div class="pslcard">';
+            echo '</div></div><nav><ul class="pslcard">';
         } else {
-            echo '<div class="pcontainer"><div class="pcard-left pcard-left-nostrip"><div class="pslcard">';
+            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav><ul class="pslcard">';
         }
-        echo '<div class="pslcard-home">',
+        echo '<li class="pslcard-home">',
             '<a href="#top" class="qq"><span class="header-site-name">',
             htmlspecialchars($this->conf->short_name), '</span> ',
             ($this->prow->paperId > 0 ? "#{$this->prow->paperId}" : " new submission"),
-            '</a></div></div></div>';
+            '</a></li></ul></nav></div>';
         echo '<div class="pcard papcard"><div class="',
             ($this->editable ? "pedcard" : "papcard"), '-body">';
 
         if ($this->editable) {
-            echo '<div id="foldpaper">';
-            if (!$this->user->can_clickthrough("submit")) {
-                echo '<div class="js-clickthrough-container">',
+            $need_clickthrough = !$this->user->can_clickthrough("submit");
+            if ($need_clickthrough) {
+                echo '<div id="foldpaper js-clickthrough-container">',
                     '<div class="js-clickthrough-terms">',
-                    '<h3>Submission terms</h3>',
+                    '<h2>Submission terms</h2>',
                     Ht::msg("You must agree to these terms to register a submission.", 2);
                 self::_echo_clickthrough("submit");
                 echo '</div><div class="need-clickthrough-show hidden">';
-                $this->_echo_editable_body();
-                echo '</div></div>';
             } else {
-                $this->_echo_editable_body();
+                echo '<div id="foldpaper">';
             }
+            $this->_echo_editable_body();
+            echo ($need_clickthrough ? "</div>" : ""), '</div>';
         } else {
             $this->echoDivEnter();
             if ($this->mode === "edit" && ($m = $this->_edit_message())) {
                 echo $m, "<hr class=\"g\">\n";
             }
             $this->_echo_normal_body();
-        }
-        $this->echoDivExit();
+            echo '</div>';
 
-        if (!$this->editable && $this->mode === "edit") {
-            $this->_echo_editable_form();
-            $option = $this->conf->paper_opts->get(-1003);
-            $this->echo_editable_contact_author($option);
-            $this->echo_actions(false);
-            echo "</form>";
-        } else if (!$this->editable
-                   && $this->user->act_author_view($this->prow)
-                   && !$this->user->contactId) {
-            echo '<hr class="papcard-sep">',
-                "To edit this submission, <a href=\"", $this->conf->hoturl("index"), "\">sign in using your email and password</a>.";
+            if ($this->mode === "edit") {
+                $this->_echo_editable_form();
+                $option = $this->conf->paper_opts->get(-1003);
+                $this->echo_editable_contact_author($option);
+                $this->echo_actions(false);
+                echo "</form>";
+            }
+        }
+
+        echo '</div></div>';
+
+        if (!$this->editable
+            && $this->mode !== "edit"
+            && $this->user->act_author_view($this->prow)
+            && !$this->user->contactId) {
+            echo '<div class="pcard papcard">',
+                "To edit this submission, <a href=\"", $this->conf->hoturl("index"), "\">sign in using your email and password</a>.",
+                '</div>';
         }
 
         Ht::stash_script("shortcut().add()");
@@ -2453,7 +2455,7 @@ class PaperTable {
 
     private function _paptabSepContaining($t) {
         if ($t !== "") {
-            echo '<hr class="papcard-sep">', $t;
+            echo '<div class="pcard notcard"><div class="papcard-body">', $t, '</div></div>';
         }
     }
 
@@ -2469,12 +2471,12 @@ class PaperTable {
             $t = $ifempty;
         }
         if ($msgs) {
-            $t .= join("", array_map(function ($t) { return "<p class=\"sd\">{$t}</p>"; }, $msgs));
+            $t .= join("", $msgs);
         }
         if ($t) {
-            echo '<hr class="papcard-sep">', $t;
+            echo '<div class="pcard notecard"><div class="papcard-body">',
+                $t, '</div></div>';
         }
-        echo '</div></div>';
         return $empty;
     }
 
@@ -2657,13 +2659,8 @@ class PaperTable {
             $this->_paptabSepContaining("You are this submission’s administrator.");
         }
 
-        $empty = $this->_review_overview_card(true, null, '<p>There are no reviews or comments for you to view.</p>', []);
-        if ($empty) {
-            return;
-        }
-
         // text format link
-        $viewable = array();
+        $m = $viewable = [];
         foreach ($this->viewable_rrows as $rr) {
             if ($rr->reviewModified > 1) {
                 $viewable[] = "reviews";
@@ -2677,14 +2674,15 @@ class PaperTable {
             }
         }
         if (!empty($viewable)) {
-            echo '<div class="pcard notecard"><div class="notecard-body">',
-                '<a href="', $this->prow->reviewurl(["m" => "r", "text" => 1]), '" class="xx">',
-                Ht::img("txt24.png", "[Text]", "dlimg"),
-                "&nbsp;<u>", ucfirst(join(" and ", $viewable)),
-                " in plain text</u></a></div></div>\n";
+            $m[] = '<p class="sd mt-5"><a href="' . $this->prow->reviewurl(["m" => "r", "text" => 1]) . '" class="xx">'
+                . Ht::img("txt24.png", "[Text]", "dlimg")
+                . "&nbsp;<u>" . ucfirst(join(" and ", $viewable))
+                . " in plain text</u></a></p>";
         }
 
-        $this->render_rc(true, $this->include_comments());
+        if (!$this->_review_overview_card(true, null, '<p>There are no reviews or comments for you to view.</p>', $m)) {
+            $this->render_rc(true, $this->include_comments());
+        }
     }
 
     private function has_response($respround) {
@@ -2777,14 +2775,14 @@ class PaperTable {
         $m = [];
         if ($this->all_rrows
             && ($whyNot = $this->user->perm_view_review($this->prow, null))) {
-            $m[] = "You can’t see the reviews for this submission. " . whyNotText($whyNot);
+            $m[] = "<p class=\"sd\">You can’t see the reviews for this submission. " . whyNotText($whyNot) . "</p>";
         }
         if (!$this->conf->time_review_open()
             && $this->prow->review_type($this->user)) {
             if ($this->rrow) {
-                $m[] = "You can’t edit your review because the site is not open for reviewing.";
+                $m[] = "<p class=\"sd\">You can’t edit your review because the site is not open for reviewing.</p>";
             } else {
-                $m[] = "You can’t begin your assigned review because the site is not open for reviewing.";
+                $m[] = "<p class=\"sd\">You can’t begin your assigned review because the site is not open for reviewing.</p>";
             }
         }
 
@@ -2795,7 +2793,7 @@ class PaperTable {
         $act_pc = $this->user->act_pc($this->prow);
 
         // review messages
-        $msgs = array();
+        $msgs = [];
         if ($this->editrrow && !$this->user->is_signed_in()) {
             $msgs[] = $this->conf->_("You followed a review link to edit this review. You can also <a href=\"%s\">sign in to the site</a>.", $this->conf->hoturl("index", ["signin" => 1, "email" => $this->editrrow->email, "cap" => null]));
         }
@@ -2826,6 +2824,7 @@ class PaperTable {
                 }
             }
         }
+        $msgs = array_map(function ($t) { return "<p class=\"sd\">{$t}</p>"; }, $msgs);
 
         // links
         $this->_review_overview_card(true, $this->editrrow, "", $msgs);

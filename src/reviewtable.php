@@ -160,8 +160,8 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
                     && (!$f->round_mask || $f->is_round_visible($rr))
                     && isset($rr->$fid) && $rr->$fid) {
                     if ($score_header[$fid] === "")
-                        $score_header[$fid] = '<th class="revscore">' . $f->web_abbreviation() . "</th>";
-                    $scores[$fid] = '<td class="revscore need-tooltip" data-rf="' . $f->uid() . '" data-tooltip-info="rf-score">'
+                        $score_header[$fid] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
+                    $scores[$fid] = '<td class="rlscore need-tooltip" data-rf="' . $f->uid() . '" data-tooltip-info="rf-score">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
                 }
@@ -173,12 +173,14 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
 
     // completion
     if (!empty($subrev)) {
-        if ($want_requested_by)
+        if ($want_requested_by) {
             array_unshift($score_header, '<th class="rl"></th>');
+        }
         $score_header_text = join("", $score_header);
         $t = "<div class=\"reviewersdiv\"><table class=\"reviewers";
-        if ($score_header_text)
+        if ($score_header_text) {
             $t .= " has-scores";
+        }
         $t .= "\">";
         $nscores = 0;
         if ($score_header_text) {
@@ -195,11 +197,12 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
         foreach ($subrev as $r) {
             $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
             if (get($r, 2)) {
-                foreach ($score_header as $fid => $header_needed)
+                foreach ($score_header as $fid => $header_needed) {
                     if ($header_needed !== "") {
                         $x = get($r[2], $fid);
-                        $t .= $x ? : "<td class=\"revscore rs_$fid\"></td>";
+                        $t .= $x ? : "<td class=\"rlscore rs_$fid\"></td>";
                     }
+                }
             } else if ($nscores > 0) {
                 $t .= '<td colspan="' . $nscores . '"></td>';
             }

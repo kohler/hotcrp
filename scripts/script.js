@@ -3637,7 +3637,7 @@ return function (id, name, elt) {
             observer && observer.unobserve($$(id));
             $(pslcard).find("a[href='#" + id + "']").remove();
         } else {
-            var $psli = $('<div class="pslitem ui js-click-child"><a href="#' + id + '" class="x hover-child">' + name + '</a></div>');
+            var $psli = $('<li class="pslitem ui js-click-child"><a href="#' + id + '" class="x hover-child">' + name + '</a></li>');
             $psli.appendTo(pslcard);
             elt = elt || $$(id);
             linkmap && linkmap.set(elt, $psli[0]);
@@ -3714,7 +3714,7 @@ tooltip.add_builder("rf-description", function (info) {
                 d += "<div class=\"od\">Choices are:</div>";
                 for (si = 0, vo = fieldj.score_info.value_order();
                      si < vo.length; ++si)
-                    d += "<div class=\"od\"><span class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</span>&nbsp;" + escape_entities(fieldj.options[vo[si] - 1]) + "</div>";
+                    d += "<div class=\"od\"><strong class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</strong>&nbsp;" + escape_entities(fieldj.options[vo[si] - 1]) + "</div>";
             }
             info = $.extend({content: d, dir: "l"}, info);
         }
@@ -3734,44 +3734,45 @@ function render_review_body(rrow) {
         else
             return !!rrow[f.uid];
     });
-    var t = "", i, f, x, nextf, last_display = 0, display;
+    var t = "", i, f, k, x, nextf, last_display = 0, display;
     for (i = 0; i != view_order.length; ++i) {
         f = view_order[i];
         nextf = view_order[i + 1];
         if (last_display != 1 && f.options && nextf && nextf.options) {
             display = 1;
-            t += '<div class="rvg">';
         } else {
             display = last_display == 1 ? 2 : 0;
         }
 
         t += '<div class="rv rv' + "glr".charAt(display) + '" data-rf="' + f.uid +
-            '"><div class="revvt"><div class="revfn">' + f.name_html;
+            '"><div class="revvt"><h3 class="revfn">' + f.name_html;
         x = f.visibility;
         if (x == "audec" && hotcrp_status && hotcrp_status.myperm
-            && hotcrp_status.myperm.some_author_can_view_decision)
+            && hotcrp_status.myperm.some_author_can_view_decision) {
             x = "au";
+        }
         if (x != "au") {
             t += '<div class="revvis">(' +
                 (({secret: "secret", admin: "shown only to chairs",
                    pc: "hidden from authors", audec: "hidden from authors until decision"})[x] || x) +
                 ')</div>';
         }
-        t += '</div></div><div class="revv revv' + "glr".charAt(display);
+        t += '</h3></div>';
+        k = "revv revv" + "glr".charAt(display);
 
         if (!f.options) {
             x = render_text(rrow.format, rrow[f.uid], f.uid);
-            t += ' revtext format' + (x.format || 0) + '">' + x.content;
+            t += '<div class="' + k + ' revtext format' + (x.format || 0) + '">'
+                + x.content + '</div>';
         } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid]))) {
-            t += '"><table><tr><td class="nw">' + f.score_info.unparse_revnum(x) +
-                "&nbsp;</td><td>" + escape_entities(f.options[x - 1]) + "</td></tr></table>";
+            t += '<p class="' + k + ' revscore"><span class="revscorenum">' +
+                f.score_info.unparse_revnum(x) + ' </span><span class="revscoredesc">' +
+                escape_entities(f.options[x - 1]) + '</span></p>';
         } else {
-            t += ' rev_unknown">' + (f.allow_empty ? "No entry" : "Unknown");
+            t += '<p class="' + k + ' rev_unknown">' + (f.allow_empty ? "No entry" : "Unknown") + '</p>';
         }
 
-        t += '</div></div>';
-        if (display == 2)
-            t += '</div>';
+        t += '</div>';
         last_display = display;
     }
     return t;
@@ -3917,13 +3918,13 @@ function add_review(rrow) {
         has_user_rating = false, i, ratekey, selected;
 
     i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
-    hc.push('<div class="pcard revcard has-fold '
+    hc.push('<article id="r' + rid + '" class="pcard revcard has-fold '
             + (rrow.folded ? "fold20c" : "fold20o")
-            + '" id="r' + rid + '" data-pid="' + rrow.pid
-            + '" data-rid="' + rrow.rid + i + '">', '</div>');
+            + '" data-pid="' + rrow.pid
+            + '" data-rid="' + rrow.rid + i + '">', '</article>');
 
     // HEADER
-    hc.push('<div class="revcard-head">', '</div>');
+    hc.push('<header class="revcard-head">', '</header>');
 
     // review description
     var rdesc = rrow.subreview ? "Subreview" : "Review";
@@ -3936,9 +3937,9 @@ function add_review(rrow) {
 
     // edit/text links
     if (rrow.folded) {
-        hc.push('<h3><a class="ui js-foldup nn" href="" data-fold-target="20"><span class="expander"><span class="in0 fx20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L8 15L15 1z" /></svg></span><span class="in1 fn20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span></span>', '</a></h3>');
+        hc.push('<h2><a class="ui js-foldup nn" href="" data-fold-target="20"><span class="expander"><span class="in0 fx20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L8 15L15 1z" /></svg></span><span class="in1 fn20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span></span>', '</a></h2>');
     } else {
-        hc.push('<h3><a class="nn" href="' + hoturl_html("review", rlink) + '">', '</a></h3>');
+        hc.push('<h2><a class="nn" href="' + hoturl_html("review", rlink) + '">', '</a></h2>');
     }
     hc.push('<span class="revcard-header-name">' + rdesc + '</span>');
     if (rrow.editable && rrow.folded) {
@@ -3949,7 +3950,7 @@ function add_review(rrow) {
     hc.pop();
 
     // author info
-    var revname, revtime;
+    var revname = "", revtime;
     if (rrow.review_token) {
         revname = 'Review token ' + rrow.review_token;
     } else if (rrow.reviewer) {
@@ -3958,8 +3959,6 @@ function add_review(rrow) {
             revname = '[' + revname + ']';
         if (rrow.reviewer_email)
             revname = '<span title="' + rrow.reviewer_email + '">' + revname + '</span>';
-    } else {
-        revname = "";
     }
     if (rrow.rtype) {
         revname += (revname ? " " : "") + '<span class="rto rt' + rrow.rtype +
@@ -3971,14 +3970,14 @@ function add_review(rrow) {
             revname += ' <span class="revround" title="Review round">' + escape_entities(rrow.round) + '</span>';
     }
     if (rrow.modified_at) {
-        revtime = rrow.modified_at_text;
+        revtime = '<time class="revtime" datetime="' + (new Date(rrow.modified_at * 1000)).toISOString() + '">' + rrow.modified_at_text + '</time>';
     }
     if (revname || revtime) {
         hc.push('<div class="revthead">');
         if (revname)
-            hc.push('<div class="revname">' + revname + '</div>');
+            hc.push('<address class="revname" itemprop="author">' + revname + '</address>');
         if (revtime)
-            hc.push('<div class="revtime">' + revtime + '</div>');
+            hc.push(revtime);
         hc.push('</div>');
     }
 
@@ -3987,7 +3986,7 @@ function add_review(rrow) {
     hc.push_pop('<hr class="c">');
 
     // body
-    hc.push('<div class="revcard-body fx20">', '</div>');
+    hc.push('<div class="revcard-body revcard-render fx20">', '</div>');
     hc.push_pop(render_review_body(rrow));
 
     // ratings
@@ -4082,10 +4081,10 @@ function comment_identity_time(cj) {
                + cj.ordinal + '</span></a></div>');
     }
     if (cj.author && cj.author_hidden) {
-        t.push('<div class="cmtname fold9c"><span class="fx9' +
+        t.push('<address class="cmtname fold9c" itemprop="author"><span class="fx9' +
                (cj.author_email ? '" title="' + cj.author_email : '') +
                '">' + cj.author + ' </span><a class="ui qq js-foldup" href="" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
-               (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deblinded)</span></a></div>');
+               (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deblinded)</span></a></address>');
     } else if (cj.author) {
         x = cj.author;
         if (cj.blind && cj.visibility === "au") {
@@ -4094,15 +4093,15 @@ function comment_identity_time(cj) {
         if (cj.author_pseudonym) {
             x = cj.author_pseudonym + ' ' + x;
         }
-        t.push('<div class="cmtname' +
+        t.push('<address class="cmtname' +
                (cj.author_email ? '" title="' + cj.author_email : "") +
-               '">' + x + '</div>');
+               '" itemprop="author">' + x + '</address>');
     } else if (cj.author_pseudonym
                && (!cj.response || cj.author_pseudonym !== "Author")) {
-        t.push('<div class="cmtname">' + cj.author_pseudonym + '</div>');
+        t.push('<address class="cmtname" itemprop="author">' + cj.author_pseudonym + '</address>');
     }
     if (cj.modified_at) {
-        t.push('<div class="cmttime">' + cj.modified_at_text + '</div>');
+        t.push('<time class="cmttime" datetime="' + (new Date(cj.modified_at * 1000)).toISOString() + '">' + cj.modified_at_text + '</time>');
     }
     if (!cj.response && cj.tags) {
         x = [];
@@ -4559,16 +4558,16 @@ function render_cmt($c, cj, editing, msg) {
     // header
     t = cj.is_new ? '>' : ' id="cid' + cj.cid + '">';
     if (cj.editable) {
-        hc.push('<div class="cmtt ui js-click-child"' + t, '</div>');
+        hc.push('<header class="cmtt ui js-click-child"' + t, '</header>');
     } else {
-        hc.push('<div class="cmtt"' + t, '</div>');
+        hc.push('<header class="cmtt"' + t, '</header>');
     }
     if (cj.is_new && !cj.response) {
         hc.push('<div class="cmtnumid"><div class="cmtnum">New Comment</div></div>');
     } else if (cj.editable && !editing && cj.response) {
-        var $h3 = $(chead).find("h3");
-        if (!$h3.find("a").length) {
-            $h3.html('<a href="" class="nn ui cmteditor">' + $h3.html() + ' <span class="t-editor">✎</span></a>');
+        var $h2 = $(chead).find("h2");
+        if (!$h2.find("a").length) {
+            $h2.html('<a href="" class="nn ui cmteditor">' + $h2.html() + ' <span class="t-editor">✎</span></a>');
         }
     }
     t = comment_identity_time(cj);
@@ -4676,7 +4675,7 @@ function add(cj, editing) {
         var $c = $(".pcontainer").children().last();
         if (cj.is_new && !editing) {
             if (!$c.hasClass("cmtcard") || $c[0].id !== "ccactions") {
-                $c = $('<div class="pcard cmtcard" id="ccactions"><div class="cmtcard-body"><div class="aab aabig"></div></div></div>').appendTo(".pcontainer");
+                $c = $('<div id="ccactions" class="pcard cmtcard"><div class="cmtcard-body"><div class="aab aabig"></div></div></div>').appendTo(".pcontainer");
             }
             if (!$c.find("a[href='#" + cid + "']").length) {
                 t = '<div class="aabut"><a href="#' + cid + '" class="btn ui js-edit-comment">Add ';
@@ -4693,23 +4692,25 @@ function add(cj, editing) {
             $c = $c.prev();
         }
 
-        var iddiv = '<div id="' + cid + '" class="cmtid' + (cj.editable ? " editable" : "");
+        var idattr = ' id="' + cid + '" class="cmtid' + (cj.editable ? " editable" : "");
         if (!$c.hasClass("cmtcard")
             || cj.response
             || $c.hasClass("response")) {
-            var t;
+            var t, tx;
             if (cj.response) {
-                t = iddiv + ' response pcard cmtcard">';
+                t = '<article' + idattr + ' response pcard cmtcard">';
                 if (cj.text !== false) {
                     cdesc = (cj.response == "1" ? "" : cj.response + " ") + "Response";
-                    t += '<div class="cmtcard-head"><h3><span class="cmtcard-header-name">' +
-                        cdesc + '</span></h3></div>';
+                    t += '<header class="cmtcard-head"><h2><span class="cmtcard-header-name">' +
+                        cdesc + '</span></h2></header>';
                 }
+                tx = '</article>';
             } else {
-                t = '<div class="pcard cmtcard" id="cc' + cid + '">';
+                t = '<div id="cc' + cid + '" class="pcard cmtcard">';
                 cdesc = "Comment";
+                tx = '</div>';
             }
-            $c = $(t + '<div class="cmtcard-body"></div></div>').insertAfter($c);
+            $c = $(t + '<div class="cmtcard-body"></div>' + tx).insertAfter($c);
             if (cdesc) {
                 add_pslitem(cj.response ? cid : "cc" + cid, cdesc);
             }
@@ -4721,7 +4722,7 @@ function add(cj, editing) {
         if (cj.response) {
             j = $('<div class="cmtg"></div>');
         } else {
-            j = $(iddiv + ' cmtg"></div>');
+            j = $('<article' + idattr + ' cmtg"></article>');
         }
         j.appendTo($c.find(".cmtcard-body"));
     }
@@ -5352,8 +5353,8 @@ function suggest() {
         if (!hintdiv) {
             hintdiv = make_bubble({dir: "nw", color: "suggest"});
             hintdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
-                .on("click", "div.suggestion", click)
-                .on("mousemove", "div.suggestion", hover);
+                .on("click", ".suggestion", click)
+                .on("mousemove", ".suggestion", hover);
         }
 
         var i, clist = cinfo.list, same_list = false;
@@ -8940,8 +8941,8 @@ function make_info(n, c, sv) {
         },
         unparse_revnum: function (val) {
             if (val >= 1 && val <= n)
-                return '<span class="rev_num sv ' + sv + fm9(val) + '">' +
-                    unparse(val) + '.</span>';
+                return '<strong class="rev_num sv ' + sv + fm9(val) + '">' +
+                    unparse(val) + '.</strong>';
             else
                 return '(???)';
         },

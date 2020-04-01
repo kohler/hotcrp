@@ -63,6 +63,9 @@ ul.x > li {
 ul.x > li:last-child {
 	margin-bottom: 0;
 }
+address {
+	font-style: inherit;
+}
 
 
 /* page background */
@@ -164,11 +167,11 @@ h1.paptitle {
 }
 #header-page.header-page-submission {
 	float: none;
-	padding: 14px 0 0;
+	padding: 0;
 	position: relative;
+	top: 14px;
+	margin-bottom: 14px;
 	z-index: 1;
-}
-#header-page-submission-inner {
 	background: white;
 	border-top: 1px solid #f33360; /*#b2a584;*/
 	border-bottom: 1px solid #f33360; /*#b2a584;*/
@@ -362,40 +365,40 @@ label.checki {
 	margin-bottom: 0 !important;
 }
 .mb-3 {
-	margin-bottom: 1em;
-	margin-bottom: 1rem;
+	margin-bottom: 1em !important;
+	margin-bottom: 1rem !important;
 }
 .mb-5 {
-	margin-bottom: 2.25em;
-	margin-bottom: 2.25rem;
+	margin-bottom: 2.25em !important;
+	margin-bottom: 2.25rem !important;
 }
 .mt-2 {
-	margin-top: 0.5em;
-	margin-top: 0.5rem;
+	margin-top: 0.5em !important;
+	margin-top: 0.5rem !important;
 }
 .mt-3 {
-	margin-top: 1em;
-	margin-top: 1rem;
+	margin-top: 1em !important;
+	margin-top: 1rem !important;
 }
 .mt-4 {
-	margin-top: 1.5em;
-	margin-top: 1.5rem;
+	margin-top: 1.5em !important;
+	margin-top: 1.5rem !important;
 }
 .mt-5 {
-	margin-top: 2.25em;
-	margin-top: 2.25rem;
+	margin-top: 2.25em !important;
+	margin-top: 2.25rem !important;
 }
 .mt-7 {
 	margin-top: 5em !important;
 	margin-top: 5rem !important;
 }
 .ml-2 {
-	margin-left: 0.5em;
-	margin-left: 0.5rem;
+	margin-left: 0.5em !important;
+	margin-left: 0.5rem !important;
 }
 .ml-3 {
-	margin-left: 1em;
-	margin-left: 1rem;
+	margin-left: 1em !important;
+	margin-left: 1rem !important;
 }
 
 .mb-0-last-child > *:last-child {
@@ -427,7 +430,8 @@ td.g {
 	clear: both;
 }
 .clearfix:after, .pst:after, .pavt:after, .papet:after,
-.revvt:after, .revet:after, .rvg:after, .cmteditinfo:after, .aa:after, .aab:after,
+.revvt:after, .revet:after, .rvl:before, .rvg:before,
+.cmteditinfo:after, .aa:after, .aab:after,
 .entryi:after, .popup-actions:after, .modal-content:after, .f-horizontal:after {
 	clear: both;
 	content: "";
@@ -1473,6 +1477,7 @@ td.padls, th.padls, div.padls {
 .has-error > label,
 .has-error > .settings-itemheading,
 label.has-error,
+h2.has-error,
 h3.has-error,
 .is-error {
 	color: #ee0000;
@@ -1495,6 +1500,7 @@ select.has-error {
 .has-warning > label,
 .has-warning > .settings-itemheading,
 label.has-warning,
+h2.has-warning,
 h3.has-warning,
 .is-warning {
 	color: #c07700;
@@ -1900,7 +1906,7 @@ td.rl {
 tr.reviewers-highlight {
 	background: #f0f0ff;
 }
-th.revscore, th.rl {
+th.rlscore, th.rl {
 	font-size: smaller;
 	padding: 0 0.25em;
 	color: #666666;
@@ -1915,11 +1921,11 @@ span.revround {
 	font-weight: normal;
 	font-variant-numeric: tabular-nums;
 }
-td.revscore {
+td.rlscore {
 	padding-right: 0;
 	text-align: center;
 }
-.rldraft > td.revscore {
+.rldraft > td.rlscore {
 	opacity: 0.5;
 }
 .revlink {
@@ -2565,7 +2571,7 @@ a.badge:active {
 
 /* paper mode tabs */
 .papmode {
-	float: left;
+	display: inline-block;
 	text-align: center;
 	font-size: smaller;
 	padding: 4.5px 5px 4px 5px;
@@ -2600,6 +2606,11 @@ a.badge:active {
 	padding: 12px 0 0 24px;
 	z-index: 5;
 }
+.submission-modes > ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
 
 /* paper strip */
 .pcard-left {
@@ -2630,6 +2641,8 @@ a.badge:active {
 	position: sticky;
 	top: 84px;
 	padding: 20px 16px 20px 24px;
+	margin: 0;
+	list-style-type: none;
 }
 .pslcard-home {
 	position: absolute;
@@ -2941,6 +2954,11 @@ a.badge:active {
 .papfn, .pavfn, .psfn, .revfn {
 	font-weight: bold;
 }
+h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
+	font-size: inherit;
+	display: inline;
+	margin: 0;
+}
 .pavfnsp:after {
 	content: " ";
 }
@@ -2948,6 +2966,7 @@ a.badge:active {
 	float: left;
 }
 .papet {
+	font-size: inherit;
 	color: #313168;
 	margin-bottom: 0.25rem;
 }
@@ -3009,10 +3028,9 @@ a.badge:active {
 	background: #ffffff;
 	padding: 16px 0;
 }
-.papcard-sep {
-	margin: 48px -24px 16px -24px;
-	height: 5px;
-	background-color: #fad5d5;
+.papcard h2, .notecard h2 {
+	font-size: 1.17em;
+	color: #d41743;
 }
 .pedcard-head {
 	padding: 3px 16px 4px;
@@ -3020,8 +3038,9 @@ a.badge:active {
 
 /* paper notes */
 .notecard {
+	border-top: 5px solid #fad5d5;
 	margin-top: 16px;
-	margin-bottom: 48px;
+	margin-bottom: 24px;
 	position: relative;
 }
 
@@ -3035,11 +3054,13 @@ a.badge:active {
 	margin: 16px 7em;
 }
 .revcard-head {
-	margin-top: 12px;
+	margin-top: 32px;
+	margin-top: 2rem;
 }
-.revcard-head h3 {
+.revcard-head h2 {
 	display: inline-block;
 	margin-right: 1.5em;
+	font-size: 1.17em;
 	color: #d41743;
 }
 .revcard-header-name {
@@ -3108,6 +3129,15 @@ a:hover .t-editor,
 	float: none;
 	padding: 0 1em 5px 0;
 }
+.revscore {
+	display: flex;
+	align-items: baseline;
+	margin-bottom: 0;
+}
+.revscorenum {
+	display: block;
+	white-space: pre;
+}
 .papev, .revev {
 	margin: 5px 0;
 }
@@ -3121,13 +3151,22 @@ a:hover .t-editor,
 .paphint > p, .revhint > p, .cmthint > p {
 	margin-bottom: 0.5em;
 }
+.rvg, .rvl, .rvr {
+	margin-bottom: 1.25rem;
+}
 .rvl, .rvr {
 	width: 50%;
 	max-width: 360px;
 	float: left;
 }
-.revvl {
-	padding-right: 1.5em;
+.rvl {
+	padding-right: 0.75rem;
+}
+.rvr {
+	padding-left: 0.75rem;
+}
+.revcard-render {
+	margin-bottom: -1.25rem;
 }
 .papeg, .papegroup {
 	margin-bottom: 2.5rem;
@@ -3155,12 +3194,6 @@ a:hover .t-editor,
 	background: #eae8f2;
 	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%),
 		linear-gradient(to top, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%);
-}
-.rvg {
-	margin-bottom: 1.25rem;
-}
-.rvg:last-child {
-	margin-bottom: 0;
 }
 .eauname, .eauaff, .eauemail {
 	margin: 2px 0.5em 2px 0;
@@ -3255,12 +3288,14 @@ a:hover .t-editor,
 	padding-top: 16px;
 }
 .cmtcard-head {
-	padding-top: 12px;
+	padding-top: 32px;
+	padding-top: 2rem;
 	padding-bottom: 4px;
 }
-.cmtcard h3 {
+.cmtcard-head h2 {
 	display: inline-block;
 	margin-right: 1.5em;
+	font-size: 1.17em;
 	color: #c77634;
 }
 .cmtcard-header-name {

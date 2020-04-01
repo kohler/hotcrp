@@ -327,5 +327,5 @@ if (!$viewAny
     }
 }
 
-echo "</div>\n";
+echo "</article>\n";
 $Conf->footer();

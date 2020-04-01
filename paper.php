@@ -530,5 +530,5 @@ if ($paperTable->mode === "edit") {
     }
 }
 
-echo "</div>\n";
+echo "</article>\n";
 $Conf->footer();
