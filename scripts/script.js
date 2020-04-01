@@ -299,21 +299,24 @@ return function (f) {
 jQuery.fn.extend({
     geometry: function (outer) {
         var g, d;
-        if (this[0] == window)
+        if (this[0] == window) {
             g = {left: this.scrollLeft(), top: this.scrollTop()};
-        else if (this.length == 1 && this[0].getBoundingClientRect) {
+        } else if (this.length == 1 && this[0].getBoundingClientRect) {
             g = jQuery.extend({}, this[0].getBoundingClientRect());
-            if ((d = window.pageXOffset))
+            if ((d = window.pageXOffset)) {
                 g.left += d, g.right += d;
-            if ((d = window.pageYOffset))
+            }
+            if ((d = window.pageYOffset)) {
                 g.top += d, g.bottom += d;
+            }
             if (!("width" in g)) {
                 g.width = g.right - g.left;
                 g.height = g.bottom - g.top;
             }
             return g;
-        } else
+        } else {
             g = this.offset();
+        }
         if (g) {
             g.width = outer ? this.outerWidth() : this.width();
             g.height = outer ? this.outerHeight() : this.height();
@@ -322,16 +325,41 @@ jQuery.fn.extend({
         }
         return g;
     },
-    scrollIntoView: function (bottom) {
-        if (this.length > 0) {
-            var p = this.geometry(), x = this[0].parentNode;
-            while (x && x.tagName && $(x).css("overflow-y") === "visible")
-                x = x.parentNode;
-            var w = jQuery(x && x.tagName ? x : window).geometry();
-            if (p.top < w.top && bottom !== false) {
-                this[0].scrollIntoView();
-            } else if (p.bottom > w.bottom) {
-                this[0].scrollIntoView(false);
+    scrollIntoView: function (opts) {
+        opts = opts || {};
+        for (var i = 0; i !== this.length; ++i) {
+            var tg = $(this[i]).geometry(), p = this[i].parentNode;
+            while (p && p.tagName && $(p).css("overflowY") === "visible") {
+                p = p.parentNode;
+            }
+            p = p && p.tagName ? p : window;
+            var pg = $(p).geometry();
+            if (p !== window) {
+                tg.top += p.scrollTop;
+                tg.bottom += p.scrollTop;
+            }
+            var mt = opts.marginTop || 0, mb = opts.marginBottom || 0;
+            if (mt === "auto") {
+                mt = parseFloat($(this[i]).css("marginTop"));
+            }
+            if (mb === "auto") {
+                mb = parseFloat($(this[i]).css("marginBottom"));
+            }
+            if ((tg.top < pg.top + mt && !opts.atBottom)
+                || opts.atTop) {
+                var pos = Math.max(tg.top - mt, 0);
+                if (p === window) {
+                    p.scrollTo(pg.scrollX, pos);
+                } else {
+                    p.scrollTop = pos;
+                }
+            } else if (tg.bottom > pg.bottom - mb) {
+                var pos = Math.max(tg.bottom + mb - pg.height, 0);
+                if (p === window) {
+                    p.scrollTo(pg.scrollX, pos);
+                } else {
+                    p.scrollTop = pos;
+                }
             }
         }
         return this;
@@ -687,19 +715,20 @@ var key_map = {"Spacebar": " ", "Esc": "Escape"},
     };
 function event_key(evt) {
     var x;
-    if (typeof evt === "string")
+    if (typeof evt === "string") {
         return evt;
-    if ((x = evt.key) != null)
+    } else if ((x = evt.key) != null) {
         return key_map[x] || x;
-    if ((x = evt.charCode))
+    } else if ((x = evt.charCode)) {
         return charCode_map[x] || String.fromCharCode(x);
-    if ((x = evt.keyCode)) {
+    } else if ((x = evt.keyCode)) {
         if (keyCode_map[x])
             return keyCode_map[x];
         else if ((x >= 48 && x <= 57) || (x >= 65 && x <= 90))
             return String.fromCharCode(x);
+    } else {
+        return "";
     }
-    return "";
 }
 event_key.printable = function (evt) {
     return !nonprintable_map[event_key(evt)]
@@ -4842,7 +4871,7 @@ function make_selector_shortcut(type) {
         if (e) {
             e.className += " psfocus";
             foldup.call(e, null, {f: false});
-            jQuery(e).scrollIntoView();
+            $(e).scrollIntoView();
             if ((e = find(e))) {
                 focus_at(e);
                 e.addEventListener("blur", end, false);
@@ -6101,8 +6130,7 @@ handle_ui.on("js-annotate-order", function () {
             add_anno(hc, {});
             var $row = $(hc.render());
             $row.appendTo($d.find(".tagannos"));
-            $d.find(".modal-dialog").scrollIntoView(false);
-            popup_near($d, window);
+            $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
             $row.find("input[name='heading_n" + last_newannoid + "']").focus();
         } else {
             var anno = [];
@@ -8188,7 +8216,7 @@ handle_ui.on("js-edit-formulas", function () {
             $f[0].setAttribute("data-formula-new", "");
             $f.find("textarea").autogrow();
             focus_at($f.find(".editformulas-name"));
-            $d.find(".modal-dialog").scrollIntoView(false);
+            $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
         }
     }
     function ondelete() {
