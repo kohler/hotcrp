@@ -540,12 +540,19 @@ function now_sec() {
     return now_msec() / 1000;
 }
 
+if (!Date.prototype.toISOString) {
+    Date.prototype.toISOString = function () {
+        return strftime("%UY-%Um-%UdT%UH:%UM:%US.%ULZ", this);
+    };
+}
+
 var strftime = (function () {
     function pad(num, str, n) {
         str += num.toString();
         return str.length <= n ? str : str.substring(str.length - n);
     }
     function unparse_q(d, alt, is24) {
+        alt &= 1;
         if (is24 && alt && !d.getSeconds())
             return strftime("%H:%M", d);
         else if (is24)
@@ -562,28 +569,29 @@ var strftime = (function () {
     var unparsers = {
         a: function (d) { return (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])[d.getDay()]; },
         A: function (d) { return (["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])[d.getDay()]; },
-        d: function (d) { return pad(d.getDate(), "0", 2); },
-        e: function (d, alt) { return pad(d.getDate(), alt ? "" : " ", 2); },
+        d: function (d, alt) { return pad(alt & 2 ? d.getUTCDate() : d.getDate(), "0", 2); },
+        e: function (d, alt) { return pad(d.getDate(), alt & 1 ? "" : " ", 2); },
         u: function (d) { return d.getDay() || 7; },
         w: function (d) { return d.getDay(); },
         b: function (d) { return (["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])[d.getMonth()]; },
         B: function (d) { return (["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])[d.getMonth()]; },
         h: function (d) { return unparsers.b(d); },
-        m: function (d) { return pad(d.getMonth() + 1, "0", 2); },
+        m: function (d, alt) { return pad((alt & 2 ? d.getUTCMonth() : d.getMonth()) + 1, "0", 2); },
         y: function (d) { return d.getFullYear() % 100; },
-        Y: function (d) { return d.getFullYear(); },
-        H: function (d) { return pad(d.getHours(), "0", 2); },
-        k: function (d, alt) { return pad(d.getHours(), alt ? "" : " ", 2); },
+        Y: function (d, alt) { return alt & 2 ? d.getUTCFullYear() : d.getFullYear(); },
+        H: function (d, alt) { return pad(alt & 2 ? d.getUTCHours() : d.getHours(), "0", 2); },
+        k: function (d, alt) { return pad(d.getHours(), alt & 1 ? "" : " ", 2); },
         I: function (d) { return pad(d.getHours() % 12 || 12, "0", 2); },
-        l: function (d, alt) { return pad(d.getHours() % 12 || 12, alt ? "" : " ", 2); },
-        M: function (d) { return pad(d.getMinutes(), "0", 2); },
+        l: function (d, alt) { return pad(d.getHours() % 12 || 12, alt & 1 ? "" : " ", 2); },
+        M: function (d, alt) { return pad(alt & 2 ? d.getUTCMinutes() : d.getMinutes(), "0", 2); },
         X: function (d) { return strftime("%#e %b %Y %#q", d); },
         p: function (d) { return d.getHours() < 12 ? "AM" : "PM"; },
         P: function (d) { return d.getHours() < 12 ? "am" : "pm"; },
         q: function (d, alt) { return unparse_q(d, alt, strftime.is24); },
         r: function (d, alt) { return unparse_q(d, alt, false); },
         R: function (d, alt) { return unparse_q(d, alt, true); },
-        S: function (d) { return pad(d.getSeconds(), "0", 2); },
+        S: function (d, alt) { return pad(alt & 2 ? d.getUTCSeconds() : d.getSeconds(), "0", 2); },
+        L: function (d, alt) { return pad(alt & 2 ? d.getUTCMilliseconds() : d.getMilliseconds(), "0", 3); },
         T: function (d) { return strftime("%H:%M:%S", d); },
         /* XXX z Z */
         D: function (d) { return strftime("%m/%d/%y", d); },
@@ -594,16 +602,27 @@ var strftime = (function () {
         "%": function (d) { return "%"; }
     };
     function strftime(fmt, d) {
-        var words = fmt.split(/(%#?\S)/), wordno, word, alt, f, t = "";
+        var words = fmt.split(/(%[#U]*\S)/), wordno, word, alt, pos, f, t = "";
         if (d == null)
             d = new Date;
         else if (typeof d == "number")
             d = new Date(d * 1000);
         for (wordno = 0; wordno != words.length; ++wordno) {
             word = words[wordno];
-            alt = word.charAt(1) == "#";
+            pos = 1;
+            alt = 0;
+            while (true) {
+                if (word.charAt(pos) === "#") {
+                    alt |= 1;
+                } else if (word.charAt(pos) === "U") {
+                    alt |= 2;
+                } else {
+                    break;
+                }
+                ++pos;
+            }
             if (word.charAt(0) == "%"
-                && (f = unparsers[word.charAt(1 + alt)]))
+                && (f = unparsers[word.charAt(pos)]))
                 t += f(d, alt);
             else
                 t += word;
