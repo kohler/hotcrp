@@ -23,9 +23,10 @@
         "form_position": 3001, "type": "intrinsic"
     },
     {
-        "name": "blind", "json_key": "blind", "id": -1002,
+        "name": "nonblind", "json_key": "nonblind", "id": -1002,
         "form_position": 3002, "display_position": false,
-        "type": "intrinsic"
+        "type": "intrinsic2", "require": "src/intrinsicvalue.php",
+        "callback": "+Nonblind_PaperOption"
     },
     {
         "name": "contacts", "json_key": "contacts", "id": -1003,

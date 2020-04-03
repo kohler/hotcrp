@@ -1398,17 +1398,14 @@ class PaperTable {
             "</div></div></div>\n\n";
     }
 
-    function echo_editable_anonymity($option) {
-        if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL
-            || $this->editable !== "f") {
-            return;
+    function echo_editable_anonymity($option, $reqov) {
+        if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
+            && $this->editable !== "f") {
+            $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, !$reqov->value, ["data-default-checked" => !!$this->prow->blind]) . "</span>" . $this->edit_title_html($option);
+            $this->echo_editable_papt("nonblind", $heading, ["for" => "checkbox"]);
+            $this->echo_field_hint($option);
+            echo Ht::hidden("has_nonblind", 1), "</div>\n\n";
         }
-        $pblind = !!$this->prow->blind;
-        $blind = $this->useRequest ? !!$this->qreq->blind : $pblind;
-        $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, $blind, ["data-default-checked" => $pblind]) . "</span>" . $this->edit_title_html($option);
-        $this->echo_editable_papt("blind", $heading, ["for" => "checkbox"]);
-        $this->echo_field_hint($option);
-        echo Ht::hidden("has_blind", 1), "</div>\n\n";
     }
 
     private function _papstrip_framework() {

@@ -643,16 +643,6 @@ class PaperStatus extends MessageSet {
                 }
             }
 
-        // Blindness
-        if (isset($pj->nonblind)) {
-            if (($x = friendly_boolean($pj->nonblind)) !== null) {
-                $pj->nonblind = $x;
-            } else {
-                $this->format_error_at("nonblind", $pj->nonblind);
-                unset($pj->nonblind);
-            }
-        }
-
         // Options
         $pj->bad_options = array();
         if (isset($pj->options)) {
@@ -805,16 +795,6 @@ class PaperStatus extends MessageSet {
                 $ps->save_paperf("authorInformation", $v);
                 $ps->mark_diff("authors");
             }
-        }
-    }
-
-    static function check_nonblind(PaperStatus $ps, $pj) {
-        if ($ps->conf->submission_blindness() == Conf::BLIND_OPTIONAL
-            && (!$ps->prow
-                || (isset($pj->nonblind)
-                    && !$pj->nonblind !== !!$ps->prow->blind))) {
-            $ps->save_paperf("blind", get($pj, "nonblind") ? 0 : 1);
-            $ps->mark_diff("nonblind");
         }
     }
 
@@ -1249,7 +1229,7 @@ class PaperStatus extends MessageSet {
         self::check_one_option($opts->get(PaperOption::ABSTRACTID), $this, $pj->abstract ?? null);
         self::check_authors($this, $pj);
         self::check_one_option($opts->get(PaperOption::COLLABORATORSID), $this, $pj->collaborators ?? null);
-        self::check_nonblind($this, $pj);
+        self::check_one_option($opts->get(PaperOption::ANONYMITYID), $this, $pj->nonblind ?? null);
         self::check_conflicts($this, $pj);
         self::check_one_pdf($opts->get(DTYPE_SUBMISSION), $this, $pj);
         self::check_one_pdf($opts->get(DTYPE_FINAL), $this, $pj);
@@ -1264,6 +1244,15 @@ class PaperStatus extends MessageSet {
         }
 
         $this->execute_fields();
+        if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL) {
+            $want_blind = $this->conf->submission_blindness() != Conf::BLIND_NEVER;
+            if (!$this->prow || (bool) $this->prow->blind !== $want_blind) {
+                $this->save_paperf("blind", $want_blind ? 1 : 0);
+                if ($this->prow) {
+                    $this->mark_diff("blind");
+                }
+            }
+        }
         self::check_contacts_last($this, $pj);
         return true;
     }
@@ -1330,12 +1319,6 @@ class PaperStatus extends MessageSet {
             $need_insert = $this->paperId <= 0;
             if ($need_insert) {
                 self::preexecute_set_default_columns($this);
-            }
-
-            if ($this->conf->submission_blindness() == Conf::BLIND_NEVER) {
-                $this->update_paperf("blind", 0);
-            } else if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL) {
-                $this->update_paperf("blind", 1);
             }
 
             $old_joindoc = $this->prow ? $this->prow->joindoc() : null;

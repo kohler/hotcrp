@@ -124,6 +124,38 @@ class Collaborators_PaperOption extends PaperOption {
     // XXX no render because paper strip
 }
 
+class Nonblind_PaperOption extends PaperOption {
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
+        $this->set_exists_if($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL);
+    }
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+        return !!$ov->value;
+    }
+    function value_load_intrinsic(PaperValue $ov) {
+        if (!$ov->prow->blind) {
+            $ov->set_value_data([1], [null]);
+        }
+    }
+    function value_save(PaperValue $ov, PaperStatus $ps) {
+        $ps->save_paperf("blind", $ov->value ? 0 : 1);
+        return true;
+    }
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        return PaperValue::make($prow, $this, $qreq->blind ? null : 1);
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        if (is_bool($j) || $j === null) {
+            return PaperValue::make($prow, $this, $j ? 1 : null);
+        } else {
+            return PaperValue::make_error($prow, $this, "Option should be “true” or “false”.");
+        }
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        $pt->echo_editable_anonymity($this, $reqov);
+    }
+}
+
 class Topics_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
@@ -246,12 +278,6 @@ class IntrinsicValue {
             $ov->set_value_data([$ov->prow->paperStorageId], [null]);
         } else if ($ov->id === DTYPE_FINAL) {
             $ov->set_value_data([$ov->prow->finalPaperStorageId], [null]);
-        } else if ($ov->id === PaperOption::ANONYMITYID) {
-            if ($ov->prow->blind) {
-                $ov->set_value_data([1], [null]);
-            } else {
-                $ov->set_value_data([], []);
-            }
         } else {
             $ov->set_value_data([], []);
         }
@@ -313,8 +339,6 @@ class IntrinsicValue {
     static function echo_web_edit($o, PaperTable $pt, $ov, $reqov) {
         if ($o->id === PaperOption::AUTHORSID) {
             $pt->echo_editable_authors($o);
-        } else if ($o->id === PaperOption::ANONYMITYID) {
-            $pt->echo_editable_anonymity($o);
         } else if ($o->id === PaperOption::CONTACTSID) {
             $pt->echo_editable_contact_author($o);
         } else if ($o->id === PaperOption::PCCONFID) {
