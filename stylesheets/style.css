@@ -2636,10 +2636,12 @@ a.badge:active {
 .pspcard-fold {
 	display: none;
 }
-.pslcard {
+.pslcard-nav {
 	-webkit-position: sticky;
 	position: sticky;
 	top: 84px;
+}
+.pslcard {
 	padding: 20px 16px 20px 24px;
 	margin: 0;
 	list-style-type: none;

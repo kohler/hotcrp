@@ -2393,9 +2393,9 @@ class PaperTable {
             $this->_papstrip();
         }
         if ($this->npapstrip) {
-            echo '</div></div><nav><ul class="pslcard">';
+            echo '</div></div><nav class="pslcard-nav"><ul class="pslcard">';
         } else {
-            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav><ul class="pslcard">';
+            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav"><ul class="pslcard">';
         }
         echo '<li class="pslcard-home">',
             '<a href="#top" class="qq"><span class="header-site-name">',
