@@ -31,9 +31,10 @@ if (isset($Qreq->pcs) && is_string($Qreq->pcs)) {
 }
 if (isset($Qreq->pcs) && is_array($Qreq->pcs)) {
     $pcsel = array();
-    foreach ($Qreq->pcs as $p)
+    foreach ($Qreq->pcs as $p) {
         if (($p = cvtint($p)) > 0)
             $pcsel[$p] = 1;
+    }
 } else {
     $pcsel = $Conf->pc_members();
 }

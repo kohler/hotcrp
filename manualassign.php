@@ -19,39 +19,48 @@ if (!$Qreq->q || trim($Qreq->q) == "(All)")
     $Qreq->q = "";
 
 $Qreq->allow_a("p", "pap", "papx");
-if (!$Qreq->p && $Qreq->pap)
+if (!$Qreq->p && $Qreq->pap) {
     $Qreq->p = $Qreq->pap;
-if (is_string($Qreq->p))
+}
+if (is_string($Qreq->p)) {
     $Qreq->p = preg_split('/\s+/', $Qreq->p);
-if (is_string($Qreq->papx))
+}
+if (is_string($Qreq->papx)) {
     $Qreq->papx = preg_split('/\s+/', $Qreq->papx);
+}
 
 $reviewer = $Me;
 if (isset($Qreq->reviewer)) {
-    foreach ($Conf->full_pc_members() as $pcm)
+    foreach ($Conf->full_pc_members() as $pcm) {
         if (strcasecmp($pcm->email, $Qreq->reviewer) == 0
             || (string) $pcm->contactId === $Qreq->reviewer) {
             $reviewer = $pcm;
             break;
         }
+    }
 }
-if (!($reviewer->roles & Contact::ROLE_PC))
+if (!($reviewer->roles & Contact::ROLE_PC)) {
     $reviewer = null;
+}
 
 $Qreq->assrev = array();
-foreach ($Qreq as $k => $v)
+foreach ($Qreq as $k => $v) {
     if (str_starts_with($k, "assrev")) {
         $suf = substr($k, 6);
         if (($upos = strpos($suf, "u")) !== false
-            && substr($suf, $upos + 1) == $reviewer->contactId)
+            && substr($suf, $upos + 1) == $reviewer->contactId) {
             $suf = substr($suf, 0, $upos);
-        if (($p = cvtint($suf)) > 0)
+        }
+        if (($p = cvtint($suf)) > 0) {
             $Qreq->assrev[$p] = $v;
+        }
     }
+}
 if (is_array($Qreq->papx)) {
-    foreach ($Qreq->papx as $p)
+    foreach ($Qreq->papx as $p) {
         if (($p = cvtint($p)) > 0 && !isset($Qreq->assrev[$p]))
             $Qreq->assrev[$p] = 0;
+    }
 }
 
 $Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
@@ -61,8 +70,9 @@ function saveAssignments($qreq, $reviewer) {
     global $Conf, $Me, $Now;
     $round_number = null;
 
-    if (empty($qreq->assrev))
+    if (empty($qreq->assrev)) {
         return;
+    }
 
     $lastPaperId = -1;
     $del = $ins = "";
@@ -71,25 +81,29 @@ function saveAssignments($qreq, $reviewer) {
         $ct = $row->conflict_type($reviewer);
         if (!$Me->can_administer($row)
             || $ct >= CONFLICT_AUTHOR
-            || !isset($qreq->assrev[$row->paperId]))
+            || !isset($qreq->assrev[$row->paperId])) {
             continue;
+        }
         $lastPaperId = $row->paperId;
         $newct = (int) $qreq->assrev[$row->paperId];
-        if ($newct >= 0 && $ct > 0 && $ct < CONFLICT_AUTHOR)
+        if ($newct >= 0 && $ct > 0 && $ct < CONFLICT_AUTHOR) {
             $assignments[] = [$row->paperId, $reviewer->email, "conflict", null, "none"];
-        else if ($newct < 0 && $ct < CONFLICT_CHAIRMARK)
-            $assignments[] = [$row->paperId, $reviewer->email, "conflict", null, "confirmed"];
+        } else if ($newct < 0 && $ct < CONFLICT_CHAIRMARK) {
+            $assignments[] = [$row->paperId, $reviewer->email, "conflict", null, "pinned"];
+        }
         $rt = $row->review_type($reviewer);
         $newrt = max($newct, 0);
         if ($rt != $newrt
-            && ($newrt == 0 || $reviewer->can_accept_review_assignment_ignore_conflict($row)))
+            && ($newrt == 0 || $reviewer->can_accept_review_assignment_ignore_conflict($row))) {
             $assignments[] = [$row->paperId, $reviewer->email, ReviewInfo::unparse_assigner_action($newrt), $qreq->rev_round];
+        }
     }
 
     if (!empty($assignments)) {
         $text = "paper,email,action,round,conflicttype\n";
-        foreach ($assignments as $line)
+        foreach ($assignments as $line) {
             $text .= join(",", $line) . "\n";
+        }
         $aset = new AssignmentSet($Me);
         $aset->parse($text);
         $aset->execute(true);
@@ -99,10 +113,11 @@ function saveAssignments($qreq, $reviewer) {
 }
 
 
-if ($Qreq->update && $reviewer && $Qreq->post_ok())
+if ($Qreq->update && $reviewer && $Qreq->post_ok()) {
     saveAssignments($Qreq, $reviewer);
-else if ($Qreq->update)
+} else if ($Qreq->update) {
     Conf::msg_error("You need to select a reviewer.");
+}
 
 
 $Conf->header("Assignments", "assignpc", ["subtitle" => "Manual"]);
@@ -137,10 +152,11 @@ Assignment methods:
 </dl><p>Click a heading to sort.</div></div>';
 
 
-if ($reviewer)
+if ($reviewer) {
     echo "<h2 style=\"margin-top:1em\">Assignments for ", $Me->reviewer_html_for($reviewer), ($reviewer->affiliation ? " (" . htmlspecialchars($reviewer->affiliation) . ")" : ""), "</h2>\n";
-else
+} else {
     echo "<h2 style=\"margin-top:1em\">Assignments by PC member</h2>\n";
+}
 
 
 // Change PC member
@@ -154,16 +170,19 @@ $result = $Conf->qe_raw("select ContactInfo.contactId, count(reviewId)
                 where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0
                 group by ContactInfo.contactId");
 $rev_count = array();
-while (($row = edb_row($result)))
+while (($row = edb_row($result))) {
     $rev_count[$row[0]] = $row[1];
+}
 
 $rev_opt = array();
-if (!$reviewer)
+if (!$reviewer) {
     $rev_opt[0] = "(Select a PC member)";
+}
 $textarg = ["lastFirst" => $Conf->sort_by_last];
-foreach ($Conf->pc_members() as $pc)
+foreach ($Conf->pc_members() as $pc) {
     $rev_opt[$pc->email] = Text::name_html($pc, $textarg) . " ("
         . plural(get($rev_count, $pc->contactId, 0), "assignment") . ")";
+}
 
 echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<td>", Ht::select("reviewer", $rev_opt, $reviewer ? $reviewer->email : 0), "</td></tr>",
@@ -175,10 +194,11 @@ echo "<tr><td>Paper selection: &nbsp;</td><td>",
               ["id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
                "title" => "Paper numbers or search terms"]),
     " &nbsp;in &nbsp;";
-if (count($tOpt) > 1)
+if (count($tOpt) > 1) {
     echo Ht::select("t", $tOpt, $Qreq->t);
-else
+} else {
     echo join("", $tOpt);
+}
 echo "</td></tr>\n",
     "<tr><td colspan=\"2\"><hr class=\"g\">\n";
 
@@ -201,24 +221,28 @@ if ($reviewer) {
 
     // Topic links
     $interest = [[], []];
-    foreach ($reviewer->topic_interest_map() as $topic => $ti)
+    foreach ($reviewer->topic_interest_map() as $topic => $ti) {
         $interest[$ti > 0 ? 1 : 0][$topic] = $ti;
-    if (!empty($interest[1]))
+    }
+    if (!empty($interest[1])) {
         echo '<div class="f-i"><label>High-interest topics</label>',
             $Conf->topic_set()->unparse_list_html(array_keys($interest[1]), $interest[1]),
             "</div>";
-    if (!empty($interest[0]))
+    }
+    if (!empty($interest[0])) {
         echo '<div class="f-i"><label>Low-interest topics</label>',
             $Conf->topic_set()->unparse_list_html(array_keys($interest[0]), $interest[0]),
             "</div>";
+    }
 
     // Conflict information
     if ($reviewer->collaborators()) {
         echo '<div class="f-i"><label>Collaborators</label>';
         $cos = [];
-        foreach (explode("\n", $reviewer->collaborators()) as $co)
+        foreach (explode("\n", $reviewer->collaborators()) as $co) {
             if ($co !== "")
                 $cos[] = htmlspecialchars(trim($co));
+        }
         echo join("; ", $cos), '</div>';
     }
 
@@ -232,8 +256,9 @@ if ($reviewer) {
         "t" => $Qreq->t, "q" => $Qreq->q, "reviewer" => $reviewer,
         "pageurl" => $Conf->hoturl_site_relative_raw("manualassign")
     ]);
-    if (!empty($hlsearch))
+    if (!empty($hlsearch)) {
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
+    }
     $paperList = new PaperList($search, ["sort" => true, "display" => "show:topics show:reviewers"], $Qreq);
     echo '<form class="assignpc ignore-diff" method="post" action="', hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]),
         '" enctype="multipart/form-data" accept-charset="UTF-8"><div>', "\n",
@@ -244,12 +269,13 @@ if ($reviewer) {
         '<div class="aabut aabutsp">', Ht::submit("update", "Save assignments", ["class" => "btn-primary"]), '</div>';
     $rev_rounds = $Conf->round_selector_options(false);
     $expected_round = $Conf->assignment_round_option(false);
-    if (count($rev_rounds) > 1)
+    if (count($rev_rounds) > 1) {
         echo '<div class="aabut aabutsp">Review round: &nbsp;',
             Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : $expected_round, ["id" => "assrevround", "class" => "ignore-diff"]),
             '</div>';
-    else if ($expected_round !== "unnamed")
+    } else if ($expected_round !== "unnamed") {
         echo '<div class="aabut aabutsp">Review round: ', $expected_round, '</div>';
+    }
     $paperList->set_table_id_class("foldpl", "pltable-fullw");
     echo '<div class="aabut aabutsp"><label>',
         Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),

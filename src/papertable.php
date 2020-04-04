@@ -1569,11 +1569,9 @@ class PaperTable {
         echo Ht::hidden("has_pcconf", 1),
             '<div class="papev"><div class="pc-ctable">';
         foreach ($pcm as $id => $p) {
-            $pct = $this->prow->conflict_type($p);
+            $ct = $pct = $this->prow->conflict_type($p);
             if ($this->useRequest) {
-                $ct = Conflict::constrain_editable($this->qreq["pcc$id"], $this->admin);
-            } else {
-                $ct = $pct;
+                $ct = (int) $this->qreq["pcc$id"];
             }
             $pcconfmatch = null;
             if ($this->prow->paperId && $pct < CONFLICT_AUTHOR) {
@@ -1590,7 +1588,7 @@ class PaperTable {
                 echo ' checki';
             }
             echo ' clearfix';
-            if ($pct) {
+            if ($pct > 0) {
                 echo ' boldtag';
             }
             if ($pcconfmatch) {

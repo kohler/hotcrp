@@ -58,23 +58,26 @@ foreach ($Conf->full_pc_members() as $pc) {
     $paperlist->set_table_id_class(null, "pltable-fullw");
     $tr = $paperlist->table_render("conflictassign", ["header_links" => false, "nofooter" => true]);
     if ($paperlist->count > 0) {
-        if (!$any)
+        if (!$any) {
             echo Ht::form(hoturl("conflictassign")),
                 $tr->table_start,
                 Ht::unstash(),
                 ($tr->thead ? : ""),
                 $tr->tbody_start();
-        else
+        } else {
             echo $tr->heading_separator_row();
+        }
         $t = $Me->reviewer_html_for($pc);
-        if ($pc->affiliation)
+        if ($pc->affiliation) {
             $t .= " <span class=\"auaff\">(" . htmlspecialchars($pc->affiliation) . ")</span>";
+        }
         echo $tr->heading_row($t, ["no_titlecol" => true]), $tr->body_rows();
         $any = true;
     }
 }
-if ($any)
+if ($any) {
     echo "  </tbody>\n</table></form>";
+}
 
 echo '<hr class="c" />';
 $Conf->footer();

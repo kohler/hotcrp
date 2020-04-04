@@ -2206,8 +2206,9 @@ class Conf {
 
         // no funky PaperConflict entries
         $any = $this->invariantq("select paperId from PaperConflict where conflictType<=0 limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "PaperConflict_zero", "PaperConflict with zero conflictType");
+        }
 
         // reviewNeedsSubmit is defined correctly
         $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r

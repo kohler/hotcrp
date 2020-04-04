@@ -7,6 +7,9 @@ class Conflict {
     private $_typemap;
     private $_typemap_html;
 
+    const PINNED = 8;
+    const PLACEHOLDER = 1000;
+
     static $typedesc = [3 => "Advisor/advisee",
                         2 => "Recent collaborator",
                         4 => "Institutional",
@@ -24,13 +27,17 @@ class Conflict {
                                CONFLICT_AUTHOR => "author",
                                CONFLICT_CONTACTAUTHOR => "author");
 
-    static function is_author_mark($ct) {
-        return $ct >= CONFLICT_AUTHORMARK && $ct <= CONFLICT_MAXAUTHORMARK;
+    static function is_conflicted($ct) {
+        return $ct > 0;
+    }
+    static function is_author($ct) {
+        return $ct >= CONFLICT_AUTHOR;
+    }
+    static function is_pinned($ct) {
+        return $ct >= self::PINNED && $ct < CONFLICT_AUTHOR;
     }
     static function constrain_editable($ct, $admin) {
-        if (is_string($ct)) {
-            $ct = cvtint($ct, 0);
-        }
+        assert(is_int($ct));
         if ($ct > 0) {
             $max = $admin ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
             return max(min($ct, $max), CONFLICT_AUTHORMARK);
@@ -66,7 +73,7 @@ class Conflict {
             return 5;
         } else if ($text === "other") {
             return 6;
-        } else if ($text === "confirmed" || $text === "chair-confirmed") {
+        } else if ($text === "confirmed" || $text === "chair-confirmed" || $text === "pinned") {
             return CONFLICT_CHAIRMARK;
         } else {
             return false;

@@ -179,7 +179,7 @@ class Default_PaperSaver extends PaperSaver {
             && $qreq->has_pcconf) {
             $pj->pc_conflicts = (object) array();
             foreach ($user->conf->pc_members() as $pcid => $pc) {
-                $ctype = Conflict::constrain_editable($qreq["pcc$pcid"], $admin);
+                $ctype = Conflict::constrain_editable((int) $qreq["pcc$pcid"], $admin);
                 if ($ctype) {
                     $email = $pc->email;
                     $pj->pc_conflicts->$email = $user->conf->conflict_types()->unparse_json($ctype);
