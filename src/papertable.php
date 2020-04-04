@@ -1477,27 +1477,27 @@ class PaperTable {
         $this->echo_editable_papt("topics", $this->edit_title_html($option), ["id" => "topics"]);
         $this->echo_field_hint($option);
         echo Ht::hidden("has_topics", 1),
-            '<div class="papev"><div class="ctable">';
+            '<div class="papev"><ul class="ctable">';
         $ptopics = $this->prow->topic_map();
         $topics = $this->conf->topic_set();
         foreach ($topics->group_list() as $tg) {
             $arg = ["class" => "uic js-range-click topic-entry", "id" => false,
                     "data-range-type" => "topic"];
             $isgroup = count($tg) >= 4;
-            if ($isgroup && strcasecmp($tg[0], $topics[$tg[1]]) === 0) {
-                $tid = $tg[1];
-                $arg["data-default-checked"] = isset($ptopics[$tid]);
-                $checked = in_array($tid, $reqov->value_array());
-                echo '<div class="ctelt cteltg"><div class="ctelti">',
-                    '<label class="checki cteltx"><span class="checkc">',
-                    Ht::checkbox("top$tid", 1, $checked, $arg),
-                    ' </span>', htmlspecialchars($tg[0]), '</label>',
-                    '<div class="checki">';
-            } else if ($isgroup) {
-                echo '<div class="ctelt cteltg"><div class="ctelti">',
-                    '<div class="cteltx"><span class="topicg">',
-                    htmlspecialchars($tg[0]), '</span></div>',
-                    '<div class="checki">';
+            if ($isgroup) {
+                echo '<li class="ctelt cteltg"><div class="ctelti">';
+                if (strcasecmp($tg[0], $topics[$tg[1]]) === 0) {
+                    $tid = $tg[1];
+                    $arg["data-default-checked"] = isset($ptopics[$tid]);
+                    $checked = in_array($tid, $reqov->value_array());
+                    echo '<label class="checki cteltx"><span class="checkc">',
+                        Ht::checkbox("top$tid", 1, $checked, $arg),
+                        ' </span>', htmlspecialchars($tg[0]), '</label>';
+                } else {
+                    echo '<div class="cteltx"><span class="topicg">',
+                        htmlspecialchars($tg[0]), '</span></div>';
+                }
+                echo '<div class="checki">';
             }
             for ($i = 1; $i !== count($tg); ++$i) {
                 $tid = $tg[$i];
@@ -1510,17 +1510,17 @@ class PaperTable {
                 }
                 $arg["data-default-checked"] = isset($ptopics[$tid]);
                 $checked = in_array($tid, $reqov->value_array());
-                echo ($isgroup ? '<label class="checki cteltx">' : '<div class="ctelt"><label class="checki ctelti">'),
+                echo ($isgroup ? '<label class="checki cteltx">' : '<li class="ctelt"><label class="checki ctelti">'),
                     '<span class="checkc">',
                     Ht::checkbox("top$tid", 1, $checked, $arg),
                     ' </span>', htmlspecialchars($tname), '</label>',
-                    ($isgroup ? '' : '</div>');
+                    ($isgroup ? '' : '</li>');
             }
             if ($isgroup) {
-                echo '</div></div></div>';
+                echo '</div></div></li>';
             }
         }
-        echo "</div></div></div>\n\n";
+        echo "</ul></div></div>\n\n";
     }
 
     function echo_editable_option_papt(PaperOption $o, $heading = null, $rest = []) {
@@ -1567,7 +1567,7 @@ class PaperTable {
         $this->echo_editable_papt("pcconf", $this->edit_title_html($option), ["id" => "pcconf"]);
         $this->echo_field_hint($option);
         echo Ht::hidden("has_pcconf", 1),
-            '<div class="papev"><div class="pc-ctable">';
+            '<div class="papev"><ul class="pc-ctable">';
         foreach ($pcm as $id => $p) {
             $ct = $pct = $this->prow->conflict_type($p);
             if ($this->useRequest) {
@@ -1583,7 +1583,7 @@ class PaperTable {
                 $label .= '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</span>';
             }
 
-            echo '<div class="ctelt"><div class="ctelti';
+            echo '<li class="ctelt"><div class="ctelti';
             if (!$selectors) {
                 echo ' checki';
             }
@@ -1597,38 +1597,40 @@ class PaperTable {
             echo '"><label>';
 
             $js = ["id" => "pcc$id"];
-            $disabled = $pct >= CONFLICT_AUTHOR
-                || ($pct > 0 && !$this->admin && !Conflict::is_author_mark($pct));
-            if ($selectors) {
-                echo '<span class="pcconf-editselector">';
-                if ($disabled) {
-                    echo '<strong>',
-                        ($pct >= CONFLICT_AUTHOR ? $author_ctype : "Conflict"),
-                        '</strong>',
-                        Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry"]);
+            if ($pct >= CONFLICT_AUTHOR
+                || (!$this->admin && Conflict::is_pinned($pct))) {
+                if ($selectors) {
+                    echo '<span class="pcconf-editselector"><strong>',
+                        ($pct >= CONFLICT_AUTHOR ? "Author" :
+                         ($pct > 0 ? "Conflict" : "Non-conflict")),
+                        '</strong></span>';
                 } else {
-                    $js["class"] = "conflict-entry";
-                    $js["data-default-value"] = Conflict::constrain_editable($pct, $this->admin);
-                    echo Ht::select("pcc$id", $ctypes, Conflict::constrain_editable($ct, $this->admin), $js);
+                    echo '<span class="checkc">', Ht::checkbox(null, 1, $pct > 0, ["disabled" => true]), '</span>';
                 }
-                echo '</span>', $label;
+                echo Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry"]);
+            } else if ($selectors) {
+                $js["class"] = "conflict-entry";
+                $js["data-default-value"] = Conflict::constrain_editable($pct, $this->admin);
+                echo '<span class="pcconf-editselector">',
+                    Ht::select("pcc$id", $ctypes, $ct, $js),
+                    '</span>';
             } else {
-                $js["disabled"] = $disabled;
                 $js["data-default-checked"] = $pct > 0;
                 $js["data-range-type"] = "pcc";
                 $js["class"] = "uic js-range-click conflict-entry";
                 echo '<span class="checkc">',
                     Ht::checkbox("pcc$id", $ct > 0 ? $ct : CONFLICT_AUTHORMARK,
                                  $ct > 0, $js),
-                    '</span>', $label;
+                    '</span>';
             }
-            echo "</label>";
+
+            echo $label, "</label>";
             if ($pcconfmatch) {
                 echo $pcconfmatch[0];
             }
-            echo "</div></div>";
+            echo "</div></li>";
         }
-        echo "</div></div></div>\n\n";
+        echo "</ul></div></div>\n\n";
     }
 
     private function papstripPCConflicts() {
