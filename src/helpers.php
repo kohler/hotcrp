@@ -104,32 +104,6 @@ class JsonResult {
         }
         return $jr;
     }
-    function take_messages(Contact $user) {
-        if (($msgs = $user->session("msgs", []))
-            && count($msgs) > $user->conf->initial_msg_count()) {
-            $xmsgs = array_splice($msgs, $user->conf->initial_msg_count());
-            $user->save_session("msgs", empty($msgs) ? null : $msgs);
-            foreach ($xmsgs as $msg) {
-                list($text, $type) = $msg;
-                error_log($_SERVER["REQUEST_URI"] . " JsonResult::take_messages " . $type . " " . json_encode($text));
-                if (is_string($text)) {
-                    $text = [$text];
-                }
-                if ($type === "merror" || $type === "xmerror") {
-                    foreach ($text as $t) {
-                        if (!isset($this->content["error"])) {
-                            $this->content["error"] = $t;
-                        } else {
-                            if (is_string($this->content["error"])) {
-                                $this->content["error"] = [$this->content["error"]];
-                            }
-                            $this->content["error"][] = $t;
-                        }
-                    }
-                }
-            }
-        }
-    }
     function export_errors() {
         if (isset($this->content["error"])) {
             Conf::msg_error($this->content["error"]);
@@ -150,11 +124,8 @@ class JsonResultException extends Exception {
 }
 
 function json_exit($json, $arg2 = null) {
-    global $Me, $Qreq;
+    global $Qreq;
     $json = JsonResult::make($json, $arg2);
-    if ($Me && session_id() !== "") {
-        $json->take_messages($Me);
-    }
     if (JsonResultException::$capturing) {
         throw new JsonResultException($json);
     } else {
