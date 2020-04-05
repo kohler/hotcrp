@@ -50,7 +50,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
                 $octs = trim(substr($cts, 0, $colon));
                 if ($octs === "" || $octs === "any" || $octs === "all") {
                     $cm = new CountMatcher("!=0");
-                } else if (($ct = $confset->parse_text($octs, Conflict::PLACEHOLDER)) !== false) {
+                } else if (($ct = $confset->parse_assignment($octs, Conflict::PLACEHOLDER)) !== false) {
                     $cm = new CountMatcher("=" . $ct);
                 } else {
                     $error = true;
@@ -62,7 +62,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             }
             if ($cts === "") {
                 $ct = Conflict::PLACEHOLDER;
-            } else if (($ct = $confset->parse_text($cts, Conflict::PLACEHOLDER)) === false) {
+            } else if (($ct = $confset->parse_assignment($cts, Conflict::PLACEHOLDER)) === false) {
                 $ct = Conflict::PLACEHOLDER;
                 $error = true;
             }
@@ -92,12 +92,17 @@ class Conflict_AssignmentParser extends AssignmentParser {
         $res = $state->remove(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId]);
         $admin = $state->user->can_administer($prow);
         list($matcher, $ct, $error) = $this->conflict_type($req, $state);
-        assert(!$this->iscontact || $ct === 0 || $ct === CONFLICT_CONTACTAUTHOR);
+        assert($this->iscontact
+               ? $ct === 0 || $ct === CONFLICT_CONTACTAUTHOR
+               : $ct === Conflict::PLACEHOLDER || $ct < CONFLICT_AUTHOR);
         if ($error) {
             return "Bad conflict type.";
         }
-        if (!$this->remove && !$this->iscontact && $ct !== Conflict::PLACEHOLDER) {
-            $ct = Conflict::constrain_editable($ct, $admin);
+        if (!$this->remove
+            && !$this->iscontact
+            && $ct !== Conflict::PLACEHOLDER
+            && !$admin) {
+            $ct = Conflict::set_pinned($ct, false);
         }
         if (!empty($res)) {
             $old_ct = $res[0]["_ctype"];
@@ -120,7 +125,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $ct = 0;
         }
         if ($ct === Conflict::PLACEHOLDER) {
-            $ct = $admin ? CONFLICT_CHAIRMARK : CONFLICT_AUTHORMARK;
+            $ct = $admin ? Conflict::PINNED : Conflict::GENERAL;
         }
         if ($ct !== 0) {
             $state->add(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId, "_ctype" => $ct]);

@@ -396,7 +396,7 @@ xassert(!$ps->has_problem()); // XXX should have problem
 $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId], true);
 xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
-xassert_eqq($nprow1->conflict_type($user_varghese), CONFLICT_AUTHORMARK);
+xassert_eqq($nprow1->conflict_type($user_varghese), Conflict::GENERAL);
 
 $ps->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => [$user_varghese->email => "advisor"]

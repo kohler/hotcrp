@@ -561,7 +561,7 @@ class PaperStatus extends MessageSet {
                 $ctn = $confset->parse_json($ct);
                 if ($ctn === false) {
                     $pj->bad_pc_conflicts->$email = $ct;
-                    $ctn = CONFLICT_AUTHORMARK;
+                    $ctn = Conflict::GENERAL;
                 }
                 $pj->pc_conflicts->$email = $ctn;
             }
@@ -1066,11 +1066,11 @@ class PaperStatus extends MessageSet {
         // chair conflicts cannot be overridden
         if ($this->prow) {
             foreach ($this->prow->conflicts(true) as $cflt) {
-                if ($cflt->conflictType == CONFLICT_CHAIRMARK) {
+                if (Conflict::is_pinned($cflt->conflictType)) {
                     $lemail = strtolower($cflt->email);
-                    if (get_i($cflts, $lemail) < CONFLICT_CHAIRMARK
+                    if (!Conflict::is_pinned((int) ($cflts[$lemail] ?? 0))
                         && !$this->user->can_administer($this->prow)) {
-                        $cflts[$lemail] = CONFLICT_CHAIRMARK;
+                        $cflts[$lemail] = $cflt->conflictType;
                     }
                 }
             }

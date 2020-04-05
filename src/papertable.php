@@ -1558,8 +1558,7 @@ class PaperTable {
             $extra = ["class" => "pcconf-selector"];
             if ($this->admin) {
                 $ctypes["xsep"] = null;
-                $ctypes[CONFLICT_CHAIRMARK] = $confset->unparse_text(CONFLICT_CHAIRMARK);
-                $extra["optionstyles"] = [CONFLICT_CHAIRMARK => "font-weight:bold"];
+                $ctypes[Conflict::PINNED] = $confset->unparse_text(Conflict::PINNED);
             }
             $author_ctype = $confset->unparse_html(CONFLICT_AUTHOR);
         }
@@ -1610,7 +1609,7 @@ class PaperTable {
                 echo Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry"]);
             } else if ($selectors) {
                 $js["class"] = "conflict-entry";
-                $js["data-default-value"] = Conflict::constrain_editable($pct, $this->admin);
+                $js["data-default-value"] = $pct;
                 echo '<span class="pcconf-editselector">',
                     Ht::select("pcc$id", $ctypes, $ct, $js),
                     '</span>';
@@ -1619,7 +1618,7 @@ class PaperTable {
                 $js["data-range-type"] = "pcc";
                 $js["class"] = "uic js-range-click conflict-entry";
                 echo '<span class="checkc">',
-                    Ht::checkbox("pcc$id", $ct > 0 ? $ct : CONFLICT_AUTHORMARK,
+                    Ht::checkbox("pcc$id", $ct > 0 ? $ct : Conflict::GENERAL,
                                  $ct > 0, $js),
                     '</span>';
             }

@@ -7,6 +7,7 @@ class Conflict {
     private $_typemap;
     private $_typemap_html;
 
+    const GENERAL = 2;
     const PINNED = 8;
     const PLACEHOLDER = 1000;
 
@@ -23,7 +24,7 @@ class Conflict {
                                5 => "personal",
                                6 => "other",
                                7 => true,
-                               CONFLICT_CHAIRMARK => "confirmed",
+                               8 => "pinned",
                                CONFLICT_AUTHOR => "author",
                                CONFLICT_CONTACTAUTHOR => "author");
 
@@ -36,13 +37,13 @@ class Conflict {
     static function is_pinned($ct) {
         return $ct >= self::PINNED && $ct < CONFLICT_AUTHOR;
     }
-    static function constrain_editable($ct, $admin) {
-        assert(is_int($ct));
-        if ($ct > 0) {
-            $max = $admin ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
-            return max(min($ct, $max), CONFLICT_AUTHORMARK);
+    static function set_pinned($ct, $pinned) {
+        if (self::is_pinned($ct) === !!$pinned) {
+            return $ct;
+        } else if ($pinned) {
+            return self::PINNED;
         } else {
-            return 0;
+            return self::GENERAL;
         }
     }
 
@@ -52,7 +53,8 @@ class Conflict {
     function basic_conflict_types() {
         return array_keys(self::$typedesc);
     }
-    function parse_text($text, $default_yes) {
+    function parse_assignment($text, $default_yes) {
+        // Returns a conflict type; never is_author
         if (is_bool($text)) {
             return $text ? $default_yes : 0;
         }
@@ -64,7 +66,7 @@ class Conflict {
         } else if ($text === "conflict") {
             return $default_yes;
         } else if ($text === "collab" || $text === "collaborator" || $text === "recent collaborator") {
-            return CONFLICT_AUTHORMARK /* 2 */;
+            return self::GENERAL /* 2 */;
         } else if ($text === "advisor" || $text === "student" || $text === "advisor/student" || $text === "advisee") {
             return 3;
         } else if ($text === "institution" || $text === "institutional") {
@@ -74,28 +76,29 @@ class Conflict {
         } else if ($text === "other") {
             return 6;
         } else if ($text === "confirmed" || $text === "chair-confirmed" || $text === "pinned") {
-            return CONFLICT_CHAIRMARK;
+            return self::PINNED;
         } else {
             return false;
         }
     }
     function parse_json($j) {
         if (is_bool($j)) {
-            return $j ? CONFLICT_AUTHORMARK : 0;
+            return $j ? self::GENERAL : 0;
         } else if (is_int($j) && isset(self::$type_names[$j])) {
             return $j;
         } else if (is_string($j)) {
-            return $this->parse_text($j, CONFLICT_AUTHORMARK);
+            return $this->parse_assignment($j, self::GENERAL);
         } else {
             return false;
         }
     }
+
     private function type_map() {
         if ($this->_typemap === null) {
             $this->_typemap = [];
             foreach ([0 => "No conflict",
                       1 => "Conflict",
-                      CONFLICT_CHAIRMARK => "Pinned conflict",
+                      self::PINNED => "Pinned conflict",
                       CONFLICT_AUTHOR => "Author",
                       CONFLICT_CONTACTAUTHOR => "Contact"] as $n => $t) {
                 $this->_typemap[$n] = $this->conf->_c("conflict_type", $t);
@@ -120,5 +123,13 @@ class Conflict {
     }
     function unparse_json($ct) {
         return self::$type_names[$ct];
+    }
+    function unparse_assignment($ct) {
+        $j = self::$type_names[$ct] ?? null;
+        if (is_bool($j)) {
+            return $j ? "yes" : "none";
+        } else {
+            return $j;
+        }
     }
 }

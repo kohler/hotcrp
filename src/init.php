@@ -13,10 +13,6 @@ define("REVIEW_EXTERNAL", 1);
 define("REVIEW_REQUEST", -1);
 define("REVIEW_REFUSAL", -2);
 
-define("CONFLICT_NONE", 0);
-define("CONFLICT_AUTHORMARK", 2);
-define("CONFLICT_MAXAUTHORMARK", 7);
-define("CONFLICT_CHAIRMARK", 8);
 define("CONFLICT_AUTHOR", 64);
 define("CONFLICT_CONTACTAUTHOR", 65);
 

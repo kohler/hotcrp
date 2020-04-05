@@ -18,15 +18,12 @@ if (!$Qreq->t || !isset($tOpt[$Qreq->t])) {
 if (!$Qreq->q || trim($Qreq->q) == "(All)")
     $Qreq->q = "";
 
-$Qreq->allow_a("p", "pap", "papx");
+$Qreq->allow_a("p", "pap");
 if (!$Qreq->p && $Qreq->pap) {
     $Qreq->p = $Qreq->pap;
 }
 if (is_string($Qreq->p)) {
     $Qreq->p = preg_split('/\s+/', $Qreq->p);
-}
-if (is_string($Qreq->papx)) {
-    $Qreq->papx = preg_split('/\s+/', $Qreq->papx);
 }
 
 $reviewer = $Me;
@@ -43,57 +40,49 @@ if (!($reviewer->roles & Contact::ROLE_PC)) {
     $reviewer = null;
 }
 
-$Qreq->assrev = array();
-foreach ($Qreq as $k => $v) {
-    if (str_starts_with($k, "assrev")) {
-        $suf = substr($k, 6);
-        if (($upos = strpos($suf, "u")) !== false
-            && substr($suf, $upos + 1) == $reviewer->contactId) {
-            $suf = substr($suf, 0, $upos);
-        }
-        if (($p = cvtint($suf)) > 0) {
-            $Qreq->assrev[$p] = $v;
-        }
-    }
-}
-if (is_array($Qreq->papx)) {
-    foreach ($Qreq->papx as $p) {
-        if (($p = cvtint($p)) > 0 && !isset($Qreq->assrev[$p]))
-            $Qreq->assrev[$p] = 0;
-    }
-}
-
 $Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
 
 
 function saveAssignments($qreq, $reviewer) {
     global $Conf, $Me, $Now;
     $round_number = null;
+    $rcid = $reviewer->contactId;
 
-    if (empty($qreq->assrev)) {
-        return;
+    $pids = [];
+    foreach ($qreq as $k => $v) {
+        if (str_starts_with($k, "assrev")
+            && str_ends_with($k, "u" . $rcid)) {
+            $pids[] = intval(substr($k, 6));
+        }
     }
 
-    $lastPaperId = -1;
-    $del = $ins = "";
+    $confset = $Conf->conflict_types();
     $assignments = [];
-    foreach ($Me->paper_set(array_keys($qreq->assrev), ["reviewSignatures" => true]) as $row) {
-        $ct = $row->conflict_type($reviewer);
-        if (!$Me->can_administer($row)
-            || $ct >= CONFLICT_AUTHOR
-            || !isset($qreq->assrev[$row->paperId])) {
+    foreach ($Me->paper_set($pids, ["reviewSignatures" => true]) as $row) {
+        $name = "assrev" . $row->paperId . "u" . $rcid;
+        if (!isset($qreq[$name])
+            || ($assrev = cvtint($qreq[$name], null)) === null) {
             continue;
         }
-        $lastPaperId = $row->paperId;
-        $newct = (int) $qreq->assrev[$row->paperId];
-        if ($newct >= 0 && $ct > 0 && $ct < CONFLICT_AUTHOR) {
-            $assignments[] = [$row->paperId, $reviewer->email, "conflict", null, "none"];
-        } else if ($newct < 0 && $ct < CONFLICT_CHAIRMARK) {
-            $assignments[] = [$row->paperId, $reviewer->email, "conflict", null, "pinned"];
-        }
+
+        $ct = $row->conflict_type($reviewer);
         $rt = $row->review_type($reviewer);
-        $newrt = max($newct, 0);
-        if ($rt != $newrt
+        if (!$Me->can_administer($row)
+            || Conflict::is_author($ct)) {
+            continue;
+        }
+
+        if ($assrev < 0) {
+            $newct = $ct > 0 ? $ct : Conflict::PINNED;
+        } else {
+            $newct = $ct <= 0 ? $ct : 0;
+        }
+        if ($ct !== $newct) {
+            $assignments[] = [$row->paperId, $reviewer->email, "conflict", "", $confset->unparse_assignment($newct)];
+        }
+
+        $newrt = max($assrev, 0);
+        if ($rt !== $newrt
             && ($newrt == 0 || $reviewer->can_accept_review_assignment_ignore_conflict($row))) {
             $assignments[] = [$row->paperId, $reviewer->email, ReviewInfo::unparse_assigner_action($newrt), $qreq->rev_round];
         }
@@ -104,6 +93,7 @@ function saveAssignments($qreq, $reviewer) {
         foreach ($assignments as $line) {
             $text .= join(",", $line) . "\n";
         }
+        error_log($text);
         $aset = new AssignmentSet($Me);
         $aset->parse($text);
         $aset->execute(true);
@@ -264,7 +254,6 @@ if ($reviewer) {
         '" enctype="multipart/form-data" accept-charset="UTF-8"><div>', "\n",
         Ht::hidden("t", $Qreq->t),
         Ht::hidden("q", $Qreq->q),
-        Ht::hidden("papx", join(" ", $search->paper_ids())),
         "<div class=\"aab aabr aabig\">",
         '<div class="aabut aabutsp">', Ht::submit("update", "Save assignments", ["class" => "btn-primary"]), '</div>';
     $rev_rounds = $Conf->round_selector_options(false);
