@@ -9,6 +9,7 @@ class PaperColumn extends Column {
     const OVERRIDE_IFEMPTY_LINK = 2;
     const OVERRIDE_BOTH = 3;
     const OVERRIDE_FORCE = 4;
+    const OVERRIDE_NONCONFLICTED = 16;
     public $override = 0;
 
     const PREP_SORT = -1;

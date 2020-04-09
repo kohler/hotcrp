@@ -966,7 +966,12 @@ class PaperList {
 
     private function _row_field_content(PaperColumn $fdef, PaperInfo $row) {
         $content = "";
-        $override = $this->row_overridable ? $fdef->override : 0;
+        $override = $fdef->override;
+        if ($override & PaperColumn::OVERRIDE_NONCONFLICTED) {
+            $override &= ~PaperColumn::OVERRIDE_NONCONFLICTED;
+        } else if (!$this->row_overridable) {
+            $override = 0;
+        }
         if ($override <= 0) {
             $empty = $fdef->content_empty($this, $row);
             if (!$empty && $fdef->is_visible) {
