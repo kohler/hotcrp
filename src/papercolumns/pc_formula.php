@@ -205,7 +205,7 @@ class Formula_PaperColumnFactory {
                 return [Formula_PaperColumnFactory::make($ff, $xfj)];
             }
         } else if ($ff && $want_error) {
-            $user->conf->xt_factory_error("Formula error: " . $ff->error_html());
+            PaperColumn::column_error($user, "Formula error: " . $ff->error_html());
         }
         return null;
     }

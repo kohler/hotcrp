@@ -49,7 +49,7 @@ class TopicScore_PaperColumn extends PaperColumn {
             $rs[] = (object) $fj;
         }
         if (empty($rs)) {
-            $user->conf->xt_factory_error("No PC member matches “" . htmlspecialchars($m[1]) . "”.");
+            PaperColumn::column_error($user, "No PC member matches “" . htmlspecialchars($m[1]) . "”.");
         }
         return $rs;
     }

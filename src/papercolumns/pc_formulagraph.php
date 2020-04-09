@@ -44,10 +44,10 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     static function expand($name, $user, $xfj, $m) {
         $formula = new Formula($m[1], Formula::ALLOW_INDEXED);
         if (!$formula->check($user)) {
-            $user->conf->xt_factory_error("Formula error: " . $formula->error_html());
+            PaperColumn::column_error($user, "Formula error: " . $formula->error_html());
             return null;
         } else if (!($formula->result_format() instanceof ReviewField)) {
-            $user->conf->xt_factory_error("Graphed formulas must return review fields.");
+            PaperColumn::column_error($user, "Graphed formulas must return review fields.");
             return null;
         } else {
             $cj = (array) $xfj;

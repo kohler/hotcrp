@@ -137,7 +137,6 @@ class Conf {
     public $xt_context;
     private $_xt_allow_checkers;
     private $_xt_allow_callback;
-    public $xt_factory_error_handler;
 
     private $_formula_functions;
     private $_search_keyword_base;
@@ -1054,11 +1053,6 @@ class Conf {
             }
         }
         return $xts;
-    }
-    function xt_factory_error($message) {
-        if ($this->xt_factory_error_handler) {
-            call_user_func($this->xt_factory_error_handler, $message);
-        }
     }
 
 

@@ -110,11 +110,12 @@ class Option_PaperColumnFactory {
             reset($opts);
             $opt = current($opts);
             if ($opt->display_position() !== false
-                && $opt->list_display(null))
+                && $opt->list_display(null)) {
                 return self::option_json($xfj, $opt);
-            $user->conf->xt_factory_error("Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
+            }
+            PaperColumn::column_error($user, "Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
         } else if ($ocolon) {
-            $user->conf->xt_factory_error("No such option “" . htmlspecialchars($oname) . "”.");
+            PaperColumn::column_error($user, "No such option “" . htmlspecialchars($oname) . "”.");
         }
         return null;
     }

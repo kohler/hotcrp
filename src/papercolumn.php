@@ -27,6 +27,10 @@ class PaperColumn extends Column {
             return call_user_func($cj->callback, $conf, $cj);
         }
     }
+    static function column_error(Contact $user, $msg) {
+        assert($user->conf->xt_context instanceof PaperList);
+        $user->conf->xt_context->column_error($msg);
+    }
 
 
     function mark_editable() {

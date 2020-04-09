@@ -159,7 +159,7 @@ class Tag_PaperColumn extends PaperColumn {
             $rs[] = (object) $fj;
         }
         foreach ($tsm->errors() as $e) {
-            $user->conf->xt_factory_error($e);
+            PaperColumn::column_error($user, $e);
         }
         return $rs;
     }

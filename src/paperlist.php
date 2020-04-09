@@ -1465,13 +1465,13 @@ class PaperList {
     }
 
     private function _columns($field_list, $table_html, $all) {
-        $this->conf->xt_factory_error_handler = [$this, "column_error"];
+        $old_context = $this->conf->xt_swap_context($this);
         $field_list = $this->_canonicalize_columns($field_list);
         if ($table_html) {
             $field_list = $this->_view_columns($field_list);
         }
         $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
-        $this->conf->xt_factory_error_handler = null;
+        $this->conf->xt_swap_context($old_context);
         return $this->_prepare_columns($field_list, $all);
     }
 
