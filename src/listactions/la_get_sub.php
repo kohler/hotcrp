@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Get_ListAction extends ListAction {
-    static function render(PaperList $pl) {
+    static function render(PaperList $pl, Qrequest $qreq) {
         $actions = array_values($pl->displayable_list_actions("get/"));
         foreach ($pl->user->user_option_list() as $o) {
             if ($pl->user->can_view_some_option($o)
@@ -30,7 +30,7 @@ class Get_ListAction extends ListAction {
             }
         }
         if (!empty($sel_opt)) {
-            return Ht::select("getfn", $sel_opt, $pl->qreq->getfn,
+            return Ht::select("getfn", $sel_opt, $qreq->getfn,
                               ["class" => "want-focus js-submit-action-info-get", "style" => "max-width:10em"])
                 . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "data-default-submit-all" => 1, "class" => "uic js-submit-mark"]);
         } else {

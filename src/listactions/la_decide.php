@@ -6,7 +6,7 @@ class Decide_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_set_some_decision() && $qreq->page() !== "reviewprefs";
     }
-    static function render(PaperList $pl) {
+    static function render(PaperList $pl, Qrequest $qreq) {
         $opts = ["" => "Choose decision..."] + $pl->conf->decision_map();
         return ["Set to &nbsp;"
                 . Ht::select("decision", $opts, "", ["class" => "want-focus js-submit-action-info-decide"])

@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Tag_ListAction extends ListAction {
-    static function render(PaperList $pl) {
+    static function render(PaperList $pl, Qrequest $qreq) {
         // tagtype cell
         $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
         $tagextra = ["class" => "js-submit-action-info-tag"];
@@ -19,22 +19,22 @@ class Tag_ListAction extends ListAction {
                 . expander(null, 0) . "</a></span>";
         }
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
-            . Ht::entry("tag", $pl->qreq->tag,
+            . Ht::entry("tag", $qreq->tag,
                         ["size" => 15, "class" => "want-focus js-autosubmit js-submit-action-info-tag need-suggest tags", "data-autosubmit-type" => "tag"])
             . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-mark"]);
         if ($pl->user->privChair) {
             $t .= '<div class="fx"><div style="margin:2px 0">'
-                . Ht::checkbox("tagcr_gapless", 1, !!$pl->qreq->tagcr_gapless, array("style" => "margin-left:0"))
+                . Ht::checkbox("tagcr_gapless", 1, !!$qreq->tagcr_gapless, array("style" => "margin-left:0"))
                 . "&nbsp;" . Ht::label("Gapless order") . "</div>"
                 . '<div style="margin:2px 0">Using: &nbsp;'
-                . Ht::select("tagcr_method", PaperRank::methods(), $pl->qreq->tagcr_method)
+                . Ht::select("tagcr_method", PaperRank::methods(), $qreq->tagcr_method)
                 . "</div>"
                 . '<div style="margin:2px 0">Source tag: &nbsp;~'
-                . Ht::entry("tagcr_source", $pl->qreq->tagcr_source, array("size" => 15))
+                . Ht::entry("tagcr_source", $qreq->tagcr_source, array("size" => 15))
                 . "</div></div>";
         }
 
-        return [Ht::select("tagfn", $tagopt, $pl->qreq->tagfn, $tagextra) . " &nbsp;",
+        return [Ht::select("tagfn", $tagopt, $qreq->tagfn, $tagextra) . " &nbsp;",
             ["linelink-class" => "has-fold foldc fold99c ui-unfold js-tag-list-action", "content" => $t]];
     }
     function allow(Contact $user, Qrequest $qreq) {

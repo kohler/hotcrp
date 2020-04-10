@@ -111,8 +111,8 @@ class PaperListReviewAnalysis {
 class PaperList {
     public $conf;
     public $user;
-    public $qreq;
     public $search;
+    private $qreq;
     private $_reviewer_user;
     private $_rowset;
 
@@ -738,7 +738,7 @@ class PaperList {
         return $foot . (string) $extra . "<hr class=\"c\" /></td>\n </tr>";
     }
 
-    private function _footer($ncol, $extra) {
+    private function _footer($ncol, $extra, Qrequest $qreq) {
         if ($this->count == 0) {
             return "";
         }
@@ -763,14 +763,14 @@ class PaperList {
         $lllgroups = [];
         $whichlll = -1;
         foreach ($renderers as $rf) {
-            if (($lllg = call_user_func($rf->render_callback, $this, $rf))) {
+            if (($lllg = call_user_func($rf->render_callback, $this, $qreq, $rf))) {
                 if (is_string($lllg)) {
                     $lllg = [$lllg];
                 }
                 array_unshift($lllg, $rf->name, $rf->title);
-                $lllg[0] = $this->conf->selfurl($this->qreq, ["atab" => $lllg[0], "anchor" => "plact"]);
+                $lllg[0] = $this->conf->selfurl($qreq, ["atab" => $lllg[0], "anchor" => "plact"]);
                 $lllgroups[] = $lllg;
-                if ($this->qreq->fn == $rf->name || $this->_atab == $rf->name) {
+                if ($qreq->fn == $rf->name || $this->_atab == $rf->name) {
                     $whichlll = count($lllgroups) - 1;
                 }
             }
@@ -779,7 +779,7 @@ class PaperList {
         $footsel_ncol = $this->_view_columns ? 0 : 1;
         return self::render_footer_row($footsel_ncol, $ncol - $footsel_ncol,
             "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
-            . $this->conf->selfurl($this->qreq, ["selectall" => 1, "anchor" => "plact"])
+            . $this->conf->selfurl($qreq, ["selectall" => 1, "anchor" => "plact"])
             . '">select all ' . $this->count . "</a>), then&nbsp;",
             $lllgroups, $whichlll, $extra);
     }
@@ -1779,7 +1779,7 @@ class PaperList {
         reset($fieldDef);
         if (current($fieldDef) instanceof Selector_PaperColumn
             && !get($options, "nofooter")) {
-            $tfoot .= $this->_footer($ncol, get_s($options, "footer_extra"));
+            $tfoot .= $this->_footer($ncol, get_s($options, "footer_extra"), $this->qreq);
         }
         if ($tfoot) {
             $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable-colored" : "") . '">' . $tfoot . "</tfoot>\n";
