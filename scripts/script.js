@@ -5955,10 +5955,9 @@ $(document).on("collectState", function (event, state) {
 
 function search_sort_url(self, href) {
     var hrefm = /^([^?#]*(?:search|reviewprefs|manualassign)(?:\.php)?)(\?[^#]*)/.exec(href),
-        api = hrefm[2];
-    if (!/&forceShow/.test(api)
-        && document.getElementById("showforce")) {
-        api += "&forceShow=0";
+        api = hrefm[2], e;
+    if ((e = document.getElementById("showforce"))) {
+        api = api.replace(/&forceShow=[^&#;]*/, "") + "&forceShow=" + (e.checked ? 1 : 0);
     }
     if (!/[&?]q=/.test(api)) {
         api += "&q=";
