@@ -102,11 +102,13 @@ class Collaborators_PaperOption extends PaperOption {
     }
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         $ov = $this->parse_json_string($prow, $qreq->collaborators, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_TRIM);
-        return $this->normalize_value($ov);
+        $this->normalize_value($ov);
+        return $ov;
     }
     function parse_json(PaperInfo $prow, $j) {
         $ov = $this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_TRIM);
-        return $this->normalize_value($ov);
+        $this->normalize_value($ov);
+        return $ov;
     }
     private function normalize_value(PaperValue $ov) {
         $s = $ov->value ? rtrim(cleannl($ov->data())) : "";
@@ -115,7 +117,6 @@ class Collaborators_PaperOption extends PaperOption {
             $ov->warning("This field was changed to follow our required format. Please check that the result is what you expect.");
             $ov->set_value_data([1], [$fix]);
         }
-        return $ov;
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         if ($pt->editable !== "f" || $pt->user->can_administer($pt->prow)) {
