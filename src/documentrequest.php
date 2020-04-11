@@ -2,7 +2,7 @@
 // documentrequest.php -- HotCRP document request parsing
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class DocumentRequest {
+class DocumentRequest implements JsonSerializable {
     public $paperId;
     public $prow;
     public $dtype;
@@ -235,5 +235,18 @@ class DocumentRequest {
         } else {
             return null;
         }
+    }
+
+    function jsonSerialize() {
+        $j = ["req_filename" => $this->req_filename, "pid" => $this->paperId, "dtype" => $this->dtype];
+        foreach (["linkid", "attachment", "docid"] as $k) {
+            if ($this->$k !== null) {
+                $j[$k] = $this->$k;
+            }
+        }
+        foreach ($this->filters as $f) {
+            $j["filters"][] = $f->name;
+        }
+        return $j;
     }
 }

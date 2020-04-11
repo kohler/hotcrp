@@ -70,8 +70,9 @@ function document_download($qreq) {
         document_error("404 Not Found", htmlspecialchars($e->getMessage()));
     }
 
-    if (($whyNot = $dr->perm_view_document($Me)))
+    if (($whyNot = $dr->perm_view_document($Me))) {
         document_error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", whyNotText($whyNot));
+    }
     $prow = $dr->prow;
     $want_docid = $request_docid = (int) $dr->docid;
 
