@@ -249,7 +249,7 @@ if ($reviewer) {
     if (!empty($hlsearch)) {
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     }
-    $paperList = new PaperList($search, ["sort" => true, "display" => "show:topics show:reviewers"], $Qreq);
+    $paperList = new PaperList("reviewAssignment", $search, ["sort" => true, "display" => "show:topics show:reviewers"], $Qreq);
     echo '<form class="assignpc ignore-diff" method="post" action="', hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]),
         '" enctype="multipart/form-data" accept-charset="UTF-8"><div>', "\n",
         Ht::hidden("t", $Qreq->t),
@@ -269,8 +269,7 @@ if ($reviewer) {
     echo '<div class="aabut aabutsp"><label>',
         Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),
         "&nbsp;Automatically save assignments</label></div></div>\n",
-        $paperList->table_html("reviewAssignment",
-                               ["header_links" => true, "nofooter" => true, "list" => true]),
+        $paperList->table_html(["header_links" => true, "nofooter" => true, "list" => true]),
         '<div class="aab aabr aabig"><div class="aabut">',
         Ht::submit("update", "Save assignments", ["class" => "btn-primary"]),
         "</div></div></div></form>\n";

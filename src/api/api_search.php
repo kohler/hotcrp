@@ -22,7 +22,7 @@ class Search_API {
         }
 
         $search = new PaperSearch($user, ["t" => $t, "q" => $q, "qt" => $qreq->qt, "urlbase" => $qreq->urlbase, "reviewer" => $qreq->reviewer]);
-        $pl = new PaperList($search, ["report" => $qreq->report ? : "pl", "sort" => true], $qreq);
+        $pl = new PaperList($qreq->report ? : "pl", $search, ["sort" => true], $qreq);
         $ih = $pl->ids_and_groups();
         return ["ok" => true, "ids" => $ih[0], "groups" => $ih[1],
                 "hotlist" => $pl->session_list_object()->info_string()];
@@ -51,7 +51,7 @@ class Search_API {
         if ($qreq->session && str_starts_with($qreq->session, "pf")) {
             $report = "pf";
         }
-        $pl = new PaperList($search, ["report" => $report]);
+        $pl = new PaperList($report, $search);
         $response = $pl->column_json($qreq->f);
         if (!$response) {
             return ["ok" => false];
@@ -85,7 +85,7 @@ class Search_API {
         }
         $search = new PaperSearch($user, $qreq);
 
-        $pl = new PaperList($search, ["report" => "pl"]);
+        $pl = new PaperList("pl", $search);
         return ["ok" => true, "data" => $pl->text_json($qreq->f)];
     }
 }

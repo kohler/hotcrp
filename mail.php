@@ -584,9 +584,9 @@ if (!$Qreq->loadtmpl
 
 
 if (isset($Qreq->monreq)) {
-    $plist = new PaperList(new PaperSearch($Me, ["t" => "req", "q" => ""]), ["foldable" => true]);
+    $plist = new PaperList("reqrevs", new PaperSearch($Me, ["t" => "req", "q" => ""]), ["foldable" => true]);
     $plist->set_table_id_class("foldpl", "pltable-fullw");
-    $ptext = $plist->table_html("reqrevs", ["header_links" => true, "list" => true]);
+    $ptext = $plist->table_html(["header_links" => true, "list" => true]);
     if ($plist->count == 0)
         $Conf->infoMsg('You have not requested any external reviews.  <a href="' . hoturl("index") . '">Return home</a>');
     else {
@@ -659,8 +659,8 @@ echo "</span>";
 if (isset($Qreq->plimit)
     && !isset($Qreq->monreq)
     && (isset($Qreq->loadtmpl) || isset($Qreq->psearch))) {
-    $plist = new PaperList(new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q]));
-    $ptext = $plist->table_html("reviewers", ["noheader" => true, "nofooter" => true]);
+    $plist = new PaperList("reviewers", new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q]));
+    $ptext = $plist->table_html(["noheader" => true, "nofooter" => true]);
     echo "<div class=\"fx8\">";
     if ($plist->count == 0)
         echo "No papers match that search.";

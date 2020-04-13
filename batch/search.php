@@ -31,7 +31,7 @@ if (!isset($searchtypes[$t])) {
 }
 
 $search = new PaperSearch($user, ["q" => join(" ", $arg["_"]), "t" => $t]);
-$paperlist = new PaperList($search, ["report" => "empty"]);
+$paperlist = new PaperList("empty", $search);
 $paperlist->set_view("pid", true);
 $fields = array_merge(mkarray(get($arg, "f", [])),
                       mkarray(get($arg, "field", [])),
@@ -39,7 +39,7 @@ $fields = array_merge(mkarray(get($arg, "f", [])),
 foreach ($fields as $f) {
     $paperlist->set_view($f, true);
 }
-list($header, $body) = $paperlist->text_csv("empty");
+list($header, $body) = $paperlist->text_csv();
 foreach ($search->warnings as $w) {
     fwrite(STDERR, "$w\n");
 }

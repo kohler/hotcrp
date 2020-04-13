@@ -152,7 +152,7 @@ xassert(!$user_mgbaker->can_administer($paper18));
 xassert($user_mgbaker->act_author_view($paper18));
 
 // simple search
-$pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley"));
+$pl = new PaperList("empty", new PaperSearch($user_shenker, "au:berkeley"));
 $j = $pl->text_json("id title");
 xassert_eqq(join(";", array_keys($j)), "1;6;13;15;24");
 
@@ -174,7 +174,7 @@ assert_search_papers($user_shenker, "au:n*@*u", "3 10");
 
 // correct conflict information returned
 $psearch = new PaperSearch($user_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_mgbaker]);
-$pl = new PaperList($psearch);
+$pl = new PaperList("empty", $psearch);
 $j = $pl->text_json("id conf");
 xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 xassert_eqq($j[3]->conf, "Y");
@@ -183,7 +183,7 @@ foreach ([1, 2, 4, 5, 15, 16, 17] as $i)
     xassert_eqq($j[$i]->conf, "N");
 
 $psearch = new PaperSearch($user_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_jon]);
-$pl = new PaperList($psearch);
+$pl = new PaperList("empty", $psearch);
 $j = $pl->text_json("id conf");
 xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 xassert_eqq($j[17]->conf, "Y");

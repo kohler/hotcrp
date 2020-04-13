@@ -42,7 +42,7 @@ class Preference_PaperColumn extends PaperColumn {
         if ($this->row) {
             $this->prefix = $pl->user->reviewer_html_for($this->contact);
         }
-        $this->secondary_sort_topic_score = $pl->report_id() === "editpref";
+        $this->secondary_sort_topic_score = $pl->report_id() === "pf";
         return true;
     }
     private function preference_values($row) {

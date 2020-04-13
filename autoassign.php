@@ -507,14 +507,15 @@ if (isset($Qreq->requery) || isset($Qreq->haspap)) {
         "t" => $Qreq->t, "q" => $Qreq->q,
         "pageurl" => $Conf->hoturl_site_relative_raw("autoassign")
     ]);
-    $plist = new PaperList($search, ["display" => "show:reviewers"]);
+    $plist = new PaperList("reviewersSel", $search, ["display" => "show:reviewers"]);
     $plist->set_selection($SSel);
 
-    if ($search->paper_ids())
+    if ($search->paper_ids()) {
         echo "<br><span class=\"hint\">Assignments will apply to the selected papers.</span>";
+    }
 
     echo '<div class="g"></div>';
-    echo $plist->table_html("reviewersSel", ["nofooter" => true]),
+    echo $plist->table_html(["nofooter" => true]),
         Ht::hidden("prevt", $Qreq->t), Ht::hidden("prevq", $Qreq->q),
         Ht::hidden("haspap", 1);
 }

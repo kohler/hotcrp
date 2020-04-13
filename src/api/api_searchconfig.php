@@ -26,16 +26,16 @@ class SearchConfig_API {
         }
 
         $search = new PaperSearch($user, "NONE");
-        $pl = new PaperList($search, ["sort" => true, "report" => $report, "no_session_display" => true, "display" => ""]);
-        $vb = $pl->viewer_list("s");
+        $pl = new PaperList($report, $search, ["sort" => true, "no_session_display" => true, "display" => ""]);
+        $vb = $pl->viewer_list();
 
         $search = new PaperSearch($user, "NONE");
-        $pl = new PaperList($search, ["sort" => true, "report" => $report, "no_session_display" => true]);
-        $vd = PaperList::viewer_diff($pl->viewer_list("s"), $vb);
+        $pl = new PaperList($report, $search, ["sort" => true, "no_session_display" => true]);
+        $vd = PaperList::viewer_diff($pl->viewer_list(), $vb);
 
         $search = new PaperSearch($user, get($qreq, "q", "NONE"));
-        $pl = new PaperList($search, ["sort" => get($qreq, "sort", true), "report" => $report]);
-        $vr = PaperList::viewer_diff($pl->viewer_list("s"), $vb);
+        $pl = new PaperList($report, $search, ["sort" => get($qreq, "sort", true)]);
+        $vr = PaperList::viewer_diff($pl->viewer_list(), $vb);
 
         return new JsonResult([
             "ok" => true, "report" => $report,

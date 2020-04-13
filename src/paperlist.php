@@ -165,7 +165,7 @@ class PaperList {
 
     static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P, ScoreInfo::COUNT];
 
-    function __construct(PaperSearch $search, $args = [], $qreq = null) {
+    function __construct(string $report, PaperSearch $search, $args = [], $qreq = null) {
         $this->conf = $search->conf;
         $this->user = $search->user;
         if (!$qreq || !($qreq instanceof Qrequest)) {
@@ -197,7 +197,8 @@ class PaperList {
         }
         $this->qopts["scores"] = [];
 
-        if (($report = $args["report"] ?? null)) {
+        $this->_report_id = $report;
+        if ($report === "pl" || $report === "pf") {
             $s = $this->conf->setting_data("{$report}display_default", null);
             if ($s === null && $report === "pl") {
                 $s = $this->conf->review_form()->default_display();
@@ -264,9 +265,6 @@ class PaperList {
 
     function report_id() {
         return $this->_report_id;
-    }
-    function set_report($report) {
-        $this->_report_id = $report;
     }
 
     function set_row_filter($filter) {
@@ -836,6 +834,7 @@ class PaperList {
         case "rout":
             $this->_default_linkto("finishreview");
             /* fallthrough */
+        case "pl":
         case "a":
         case "act":
         case "all":
@@ -857,6 +856,7 @@ class PaperList {
             $this->_default_linkto("assign");
             return "id title authors potentialconflict revtype editconf tags";
         case "editpref":
+        case "pf":
             $this->_default_linkto("paper");
             return "sel id title topicscore revtype editmypref authors tags";
         case "reviewers":
@@ -1288,11 +1288,10 @@ class PaperList {
         return true;
     }
 
-    private function _prepare($report_id = null) {
+    private function _prepare() {
         $this->_has = [];
         $this->count = 0;
         $this->need_render = false;
-        $this->_report_id = $this->_report_id ? : $report_id;
     }
 
     private function _statistics_rows($rstate, $fieldDef) {
@@ -1537,8 +1536,8 @@ class PaperList {
         return $this->search->create_session_list_object($this->paper_ids(), $this->_listDescription(), $this->sortdef());
     }
 
-    private function _table_render($report_id, $options) {
-        $this->_prepare($report_id);
+    private function _table_render($options) {
+        $this->_prepare();
         // need tags for row coloring
         if ($this->user->can_view_tags(null)) {
             $this->qopts["tags"] = true;
@@ -1772,15 +1771,15 @@ class PaperList {
         return $rstate;
     }
 
-    function table_render($report_id, $options = array()) {
+    function table_render($options = []) {
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
-        $rstate = $this->_table_render($report_id, $options);
+        $rstate = $this->_table_render($options);
         $this->user->set_overrides($overrides);
         return $rstate;
     }
 
-    function table_html($report_id, $options = array()) {
-        $render = $this->table_render($report_id, $options);
+    function table_html($options = []) {
+        $render = $this->table_render($options);
         if ($render->error) {
             return $render->error;
         } else {
@@ -1903,9 +1902,9 @@ class PaperList {
         return $grouppos;
     }
 
-    function text_csv($report_id, $options = array()) {
+    function text_csv($options = []) {
         // get column list, check sort
-        $this->_prepare($report_id);
+        $this->_prepare();
         $field_list = $this->_list_columns();
         if ($field_list === false) {
             return null;
@@ -1949,8 +1948,8 @@ class PaperList {
     }
 
 
-    function viewer_list($report_id) {
-        $this->_prepare($report_id);
+    function viewer_list() {
+        $this->_prepare();
         if (!($field_list = $this->_list_columns())) {
             return false;
         }

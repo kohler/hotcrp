@@ -345,9 +345,9 @@ class Home_Partial {
         }
 
         if ($user->has_review()) {
-            $plist = new PaperList(new PaperSearch($user, ["q" => "re:me"]));
+            $plist = new PaperList("reviewerHome", new PaperSearch($user, ["q" => "re:me"]));
             $plist->set_table_id_class(null, "pltable-reviewerhome");
-            $ptext = $plist->table_html("reviewerHome", ["list" => true]);
+            $ptext = $plist->table_html(["list" => true]);
             if ($plist->count > 0)
                 echo "<div class=\"fx\"><hr class=\"g\">", $ptext, "</div>";
         }
@@ -432,8 +432,8 @@ class Home_Partial {
 
         $plist = null;
         if ($user->is_author()) {
-            $plist = new PaperList(new PaperSearch($user, ["t" => "a"]));
-            $ptext = $plist->table_html("authorHome", ["noheader" => true, "list" => true]);
+            $plist = new PaperList("authorHome", new PaperSearch($user, ["t" => "a"]));
+            $ptext = $plist->table_html(["noheader" => true, "list" => true]);
             if ($plist->count > 0)
                 echo '<hr class="g">', $ptext;
         }

@@ -2669,7 +2669,7 @@ class PaperSearch {
     function sorted_paper_ids() {
         $this->_prepare();
         if ($this->_default_sort || $this->_sorters) {
-            $pl = new PaperList($this, ["sort" => $this->_default_sort]);
+            $pl = new PaperList("empty", $this, ["sort" => $this->_default_sort]);
             return $pl->paper_ids();
         } else {
             return $this->paper_ids();
@@ -3172,7 +3172,7 @@ class PaperSearch {
         }
         if (!$category || $category === "show" || $category === "hide") {
             $cats = array();
-            $pl = new PaperList($this);
+            $pl = new PaperList("empty", $this);
             foreach ($this->conf->paper_column_map() as $cname => $cj) {
                 $cj = $this->conf->basic_paper_column($cname, $this->user);
                 if ($cj

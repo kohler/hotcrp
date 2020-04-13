@@ -386,12 +386,12 @@ function xassert_match($a, $b) {
 }
 
 function search_json($user, $text, $cols = "id") {
-    $pl = new PaperList(new PaperSearch($user, $text));
+    $pl = new PaperList("empty", new PaperSearch($user, $text));
     return $pl->text_json($cols);
 }
 
 function search_text_col($user, $text, $col = "id") {
-    $pl = new PaperList(new PaperSearch($user, $text));
+    $pl = new PaperList("empty", new PaperSearch($user, $text));
     $x = array();
     foreach ($pl->text_json($col) as $pid => $p) {
         $x[] = $pid . " " . $p->$col . "\n";

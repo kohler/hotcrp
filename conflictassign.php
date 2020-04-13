@@ -51,12 +51,11 @@ $args = ["display" => "show:authors show:aufull", "rowset" => $rowset];
 
 $any = false;
 foreach ($Conf->full_pc_members() as $pc) {
-    $paperlist = new PaperList($search, $args, $Qreq);
-    $paperlist->set_report("conflictassign");
+    $paperlist = new PaperList("conflictassign", $search, $args, $Qreq);
     $paperlist->set_reviewer_user($pc);
     $paperlist->set_row_filter($filter);
     $paperlist->set_table_id_class(null, "pltable-fullw");
-    $tr = $paperlist->table_render("conflictassign", ["header_links" => false, "nofooter" => true]);
+    $tr = $paperlist->table_render(["header_links" => false, "nofooter" => true]);
     if ($paperlist->count > 0) {
         if (!$any) {
             echo Ht::form(hoturl("conflictassign")),
