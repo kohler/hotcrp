@@ -723,11 +723,11 @@ class PaperList {
         return $field_list;
     }
 
-    private function _columns($field_list, $table_html, $all) {
+    private function _columns($field_list, $expand, $all) {
         // look up columns
         $old_context = $this->conf->xt_swap_context($this);
         $field_list = $this->_canonicalize_columns($field_list);
-        if ($table_html) {
+        if ($expand) {
             $field_list = $this->_view_columns($field_list);
         }
         $this->conf->xt_swap_context($old_context);
@@ -822,6 +822,8 @@ class PaperList {
 
     private function _list_columns() {
         switch ($this->_report_id) {
+        case "empty":
+            return "";
         case "authorHome":
             return "id title status";
         case "reviewerHome":
@@ -846,8 +848,6 @@ class PaperList {
         case "reviewersSel":
             $this->_default_linkto("assign");
             return "sel id title status reviewers";
-        case "empty":
-            return "";
         default:
             error_log($this->conf->dbname . ": No such report {$this->_report_id}");
             return "";
@@ -1525,11 +1525,7 @@ class PaperList {
         }
 
         // get column list
-        $field_list = $this->_list_columns();
-        if ($field_list === false) {
-            return PaperListTableRender::make_error("No matching report");
-        }
-        $field_list = $this->_columns($field_list, true, false);
+        $field_list = $this->_columns($this->_list_columns(), true, false);
         if (empty($field_list)) {
             return null;
         }
@@ -1886,11 +1882,7 @@ class PaperList {
     function text_csv($options = []) {
         // get column list, check sort
         $this->_prepare();
-        $field_list = $this->_list_columns();
-        if ($field_list === false) {
-            return null;
-        }
-        $field_list = $this->_columns($field_list, true, false); /* XXX */
+        $field_list = $this->_columns($this->_list_columns(), true, false); /* XXX */
         if (empty($field_list) || $this->rowset()->is_empty()) {
             return null;
         }
@@ -1931,10 +1923,7 @@ class PaperList {
 
     function viewer_list() {
         $this->_prepare();
-        if (!($field_list = $this->_list_columns())) {
-            return false;
-        }
-        $field_list = $this->_columns($field_list, false, false);
+        $field_list = $this->_columns($this->_list_columns(), false, false);
         $res = [];
         foreach ($this->_viewing as $k => $v) {
             if (!$v) {
