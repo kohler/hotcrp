@@ -780,8 +780,9 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             $scoreinfo = new ScoreInfo($s, true);
             $cid = $this->contact->contactId;
             if ($this->not_me
-                && !$row->can_view_review_identity_of($cid, $pl->user))
+                && !$row->can_view_review_identity_of($cid, $pl->user)) {
                 $cid = 0;
+            }
             $row->$k = $scoreinfo->sort_data($sorter->score, $cid);
             $row->$avgk = $scoreinfo->mean();
         } else {
@@ -803,12 +804,14 @@ class ScoreGraph_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $values = $this->score_values($pl, $row);
-        if (empty($values))
+        if (empty($values)) {
             return "";
+        }
         $pl->need_render = true;
         $cid = $this->contact->contactId;
-        if ($this->not_me && !$row->can_view_review_identity_of($cid, $pl->user))
+        if ($this->not_me && !$row->can_view_review_identity_of($cid, $pl->user)) {
             $cid = 0;
+        }
         return $this->format_field->unparse_graph($values, 1, get($values, $cid));
     }
     function text(PaperList $pl, PaperInfo $row) {
@@ -828,10 +831,12 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $bound = $pl->user->permissive_view_score_bound($pl->search->limit_author());
-        if ($this->format_field->view_score <= $bound)
+        if ($this->format_field->view_score <= $bound) {
             return false;
-        if ($visible)
+        }
+        if ($visible) {
             $pl->qopts["scores"][$this->score] = true;
+        }
         parent::prepare($pl, $visible);
         return true;
     }
@@ -840,11 +845,12 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $row->ensure_review_score($this->format_field);
         $scores = [];
         $vs = $this->format_field->view_score;
-        foreach ($row->viewable_submitted_reviews_by_user($pl->user) as $rrow)
+        foreach ($row->viewable_submitted_reviews_by_user($pl->user) as $rrow) {
             if (isset($rrow->$fid)
                 && $rrow->$fid
                 && ($vs >= VIEWSCORE_PC || $vs > $pl->user->view_score_bound($row, $rrow)))
                 $scores[$rrow->contactId] = $rrow->$fid;
+        }
         return $scores;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
@@ -855,10 +861,11 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     }
 
     static function user_visible_fields($name, Contact $user) {
-        if ($name === "scores")
+        if ($name === "scores") {
             $fs = $user->conf->all_review_fields();
-        else
+        } else {
             $fs = [$user->conf->find_review_field($name)];
+        }
         $vsbound = $user->permissive_view_score_bound();
         return array_filter($fs, function ($f) use ($vsbound) {
             return $f && $f->has_options && $f->displayed && $f->view_score > $vsbound;
@@ -875,16 +882,18 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         }, self::user_visible_fields($name, $user));
     }
     static function completions(Contact $user, $fxt) {
-        if (!$user->can_view_some_review())
+        if (!$user->can_view_some_review()) {
             return [];
+        }
         $vsbound = $user->permissive_view_score_bound();
         $cs = array_map(function ($f) {
             return $f->search_keyword();
         }, array_filter($user->conf->all_review_fields(), function ($f) use ($vsbound) {
             return $f->has_options && $f->displayed && $f->view_score > $vsbound;
         }));
-        if (!empty($cs))
+        if (!empty($cs)) {
             array_unshift($cs, "scores");
+        }
         return $cs;
     }
 }

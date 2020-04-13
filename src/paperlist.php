@@ -38,13 +38,15 @@ class PaperListTableRender {
             return "  <tr class=\"plheading\"><td class=\"plheading-blank\" colspan=\"{$this->ncol}\"></td></tr>\n";
         } else {
             $x = "  <tr class=\"plheading\"";
-            foreach ($attr as $k => $v)
+            foreach ($attr as $k => $v) {
                 if ($k !== "no_titlecol" && $k !== "tdclass")
                     $x .= " $k=\"" . htmlspecialchars($v) . "\"";
+            }
             $x .= ">";
             $titlecol = get($attr, "no_titlecol") ? 0 : $this->titlecol;
-            if ($titlecol)
+            if ($titlecol) {
                 $x .= "<td class=\"plheading-spacer\" colspan=\"{$titlecol}\"></td>";
+            }
             $tdclass = get($attr, "tdclass");
             $x .= "<td class=\"plheading" . ($tdclass ? " $tdclass" : "") . "\" colspan=\"" . ($this->ncol - $titlecol) . "\">";
             return $x . $heading . "</td></tr>\n";
@@ -156,7 +158,6 @@ class PaperList {
 
     // collected during render and exported to caller
     public $count; // also exported to columns access: 1 more than row index
-    public $any;
     private $_has;
     public $error_html = array();
 
@@ -692,7 +693,7 @@ class PaperList {
             $this->_viewing[$k] = $v;
         }
         foreach ($field_list as $fi => $f) {
-            if (get($this->_viewing, $f->name) === "edit") {
+            if (($this->_viewing[$f->name] ?? null) === "edit") {
                 $f->mark_editable();
             }
         }
@@ -710,7 +711,7 @@ class PaperList {
         foreach ($fields as $fid) {
             foreach ($this->find_columns($fid) as $fdef) {
                 $field_list[] = $fdef;
-                $view = get(self::$view_synonym, $fdef->name, $fdef->name);
+                $view = self::$view_synonym[$fdef->name] ?? $fdef->name;
                 if (!isset($this->_viewing[$view])) {
                     $this->_viewing[$view] = !$fdef->fold
                         && ($fdef->minimal || !$this->_view_compact_columns);
@@ -1061,7 +1062,7 @@ class PaperList {
         // row classes
         $trclass = [];
         $cc = "";
-        if (get($row, "paperTags")) {
+        if ($row->paperTags ?? null) {
             if ($this->row_tags_overridable
                 && ($cco = $row->conf->tags()->color_classes($this->row_tags_overridable))) {
                 $ccx = $row->conf->tags()->color_classes($this->row_tags);
@@ -1083,7 +1084,7 @@ class PaperList {
         if (!$cc || !$rstate->hascolors) {
             $trclass[] = "k" . $rstate->colorindex;
         }
-        if (($highlightclass = get($this->search->highlightmap, $row->paperId))) {
+        if (($highlightclass = $this->search->highlightmap[$row->paperId] ?? null)) {
             $trclass[] = $highlightclass[0] . "highlightmark";
         }
         $want_plx = $tt !== "" || $this->table_id();
@@ -1168,7 +1169,7 @@ class PaperList {
         $sort_name = $fdef->sort_name($this, null);
         $sort_url = htmlspecialchars(Navigation::siteurl() . $sort_url)
             . (strpos($sort_url, "?") ? "&amp;" : "?") . "sort=" . urlencode($sort_name);
-        $s0 = get($this->sorters, 0);
+        $s0 = $this->sorters[0] ?? null;
 
         $sort_class = "pl_sort";
         if ($s0
@@ -1610,17 +1611,18 @@ class PaperList {
         if ($this->_table_class) {
             $this->table_attr["class"][] = $this->_table_class;
         }
-        if (get($options, "list")) {
+        if ($options["list"] ?? false) {
             $this->table_attr["class"][] = "has-hotlist has-fold";
         }
         if ($this->_table_id) {
             $this->table_attr["id"] = $this->_table_id;
         }
         if (!empty($options["attributes"])) {
-            foreach ($options["attributes"] as $n => $v)
+            foreach ($options["attributes"] as $n => $v) {
                 $this->table_attr[$n] = $v;
+            }
         }
-        if (get($options, "fold_session_prefix")) {
+        if ($options["fold_session_prefix"] ?? false) {
             $this->table_attr["data-fold-session-prefix"] = $options["fold_session_prefix"];
             $this->table_attr["data-fold-session"] = json_encode_browser([
                 "2" => "anonau", "5" => "force", "6" => "rownum", "7" => "statistics"
@@ -1632,7 +1634,7 @@ class PaperList {
         if ($this->_groups) {
             $this->table_attr["data-groups"] = json_encode_browser($this->_groups);
         }
-        if (get($options, "list")) {
+        if ($options["list"] ?? false) {
             $this->table_attr["data-hotlist"] = $this->session_list_object()->info_string();
         }
         if ($this->sortable && ($url = $this->search->url_site_relative_raw())) {
@@ -1682,7 +1684,7 @@ class PaperList {
 
         // header cells
         $colhead = "";
-        if (!get($options, "noheader")) {
+        if (!($options["noheader"] ?? false)) {
             $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">";
             $titleextra = $this->_make_title_header_extra($rstate, $fieldDef,
                                                           get($options, "header_links"));
@@ -1761,7 +1763,7 @@ class PaperList {
         // footer
         reset($fieldDef);
         if (current($fieldDef) instanceof Selector_PaperColumn
-            && !get($options, "nofooter")) {
+            && !($options["nofooter"] ?? false)) {
             $tfoot .= $this->_footer($ncol, get_s($options, "footer_extra"), $this->qreq);
         }
         if ($tfoot) {

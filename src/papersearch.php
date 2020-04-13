@@ -1680,7 +1680,7 @@ class PaperSearch {
         }
 
         // URL base
-        $this->_urlbase = get($options, "pageurl");
+        $this->_urlbase = $options["pageurl"] ?? null;
         if ($this->_urlbase === null) {
             $this->_urlbase = $this->conf->hoturl_site_relative_raw("search");
         }
@@ -1849,9 +1849,9 @@ class PaperSearch {
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
         $lword = strtolower($word);
         if (($kwdef = $srch->conf->search_keyword($lword, $srch->user))) {
-            if (get($kwdef, "parse_has_callback")) {
+            if ($kwdef->parse_has_callback ?? null) {
                 $qe = call_user_func($kwdef->parse_has_callback, $word, $sword, $srch);
-            } else if (get($kwdef, "has")) {
+            } else if ($kwdef->has ?? null) {
                 $sword2 = new SearchWord($kwdef->has);
                 $sword2->kwexplicit = true;
                 $sword2->keyword = $lword;
@@ -1861,8 +1861,9 @@ class PaperSearch {
                 $qe = null;
             }
             if ($qe && $sword->keyword === "no") {
-                if (is_array($qe))
+                if (is_array($qe)) {
                     $qe = SearchTerm::make_op("or", $qe);
+                }
                 $qe = SearchTerm::make_not($qe);
             }
             if ($qe) {
@@ -1904,7 +1905,7 @@ class PaperSearch {
         for ($i = 0; $i != count($words); ++$i) {
             $w = $words[$i];
             if ($bypos === false || $i > $bypos) {
-                if (($x = get(self::$_sort_keywords, $w)) !== null) {
+                if (($x = self::$_sort_keywords[$w] ?? null) !== null) {
                     if ($x === "up")
                         $sort->reverse = false;
                     else if ($x === "down")
@@ -1970,7 +1971,7 @@ class PaperSearch {
         $sword->keyword = $keyword;
         $sword->kwexplicit = $kwexplicit;
         $sword->kwdef = $this->conf->search_keyword($keyword, $this->user);
-        if ($sword->kwdef && get($sword->kwdef, "parse_callback")) {
+        if ($sword->kwdef && ($sword->kwdef->parse_callback ?? null)) {
             $qx = call_user_func($sword->kwdef->parse_callback, $word, $sword, $this);
             if ($qx && !is_array($qx)) {
                 $qt[] = $qx;
@@ -2098,7 +2099,7 @@ class PaperSearch {
                 $kw = substr($m[1], 0, strlen($m[1]) - 1);
             if (($kwdef = $conf->search_keyword($kw))
                 && $splitter->starts_with("(")
-                && get($kwdef, "allow_parens")) {
+                && ($kwdef->allow_parens ?? false)) {
                 $lspan = $splitter->strspan[0];
                 $x .= $splitter->shift_balanced_parens();
                 $splitter->strspan[0] = $lspan;
@@ -2502,41 +2503,51 @@ class PaperSearch {
             $sqi->add_rights_columns();
         // XXX some of this should be shared with paperQuery
         if (($need_filter && $this->conf->has_track_tags())
-            || get($this->_query_options, "tags")
+            || ($this->_query_options["tags"] ?? false)
             || ($this->user->privChair
                 && $this->conf->has_any_manager()
-                && $this->conf->tags()->has_sitewide))
+                && $this->conf->tags()->has_sitewide)) {
             $sqi->add_column("paperTags", "(select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag where PaperTag.paperId=Paper.paperId)");
-        if (get($this->_query_options, "reviewSignatures"))
+        }
+        if ($this->_query_options["reviewSignatures"] ?? false) {
             $sqi->add_review_signature_columns();
-        foreach (get($this->_query_options, "scores", []) as $f)
+        }
+        foreach ($this->_query_options["scores"] ?? [] as $f) {
             $sqi->add_score_columns($f);
-        if (get($this->_query_options, "reviewWordCounts"))
+        }
+        if ($this->_query_options["reviewWordCounts"] ?? false) {
             $sqi->add_review_word_count_columns();
-        if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
+        }
+        if ($this->conf->submission_blindness() === Conf::BLIND_OPTIONAL) {
             $sqi->add_column("blind", "Paper.blind");
-        if (get($this->_query_options, "authorInformation"))
+        }
+        if ($this->_query_options["authorInformation"] ?? false) {
             $sqi->add_column("authorInformation", "Paper.authorInformation");
-        if (get($this->_query_options, "pdfSize"))
+        }
+        if ($this->_query_options["pdfSize"] ?? false) {
             $sqi->add_column("size", "Paper.size");
+        }
 
         // create query
         $sqi->finish_reviewer_columns();
         $q = "select ";
-        foreach ($sqi->columns as $colname => $value)
+        foreach ($sqi->columns as $colname => $value) {
             $q .= $value . " " . $colname . ", ";
+        }
         $q = substr($q, 0, strlen($q) - 2) . "\n    from ";
-        foreach ($sqi->tables as $tabname => $value)
-            if (!$value)
+        foreach ($sqi->tables as $tabname => $value) {
+            if (!$value) {
                 $q .= $tabname;
-            else {
+            } else {
                 $joiners = array("$tabname.paperId=Paper.paperId");
-                for ($i = 2; $i < count($value); ++$i)
+                for ($i = 2; $i < count($value); ++$i) {
                     if ($value[$i])
                         $joiners[] = "(" . $value[$i] . ")";
+                }
                 $q .= "\n    " . $value[0] . " " . $value[1] . " as " . $tabname
                     . " on (" . join("\n        and ", $joiners) . ")";
             }
+        }
         $q .= "\n    where $filter\n    group by Paper.paperId";
 
         //Conf::msg_debugt($q);
@@ -2570,8 +2581,9 @@ class PaperSearch {
         // correct query, create thenmap, groupmap, highlightmap
         $need_then = $qe->type === "then";
         $this->thenmap = null;
-        if ($need_then && $qe->nthen > 1)
+        if ($need_then && $qe->nthen > 1) {
             $this->thenmap = array();
+        }
         $this->highlightmap = array();
         $this->_matches = array();
         if ($need_filter) {
@@ -2917,9 +2929,10 @@ class PaperSearch {
             $this->_match_preg = [];
             $this->term();
             if (!empty($this->regex)) {
-                foreach (TextMatch_SearchTerm::$map as $k => $v)
+                foreach (TextMatch_SearchTerm::$map as $k => $v) {
                     if (isset($this->regex[$k]) && !empty($this->regex[$k]))
                         $this->_match_preg[$v] = Text::merge_pregexes($this->regex[$k]);
+                }
             }
         }
         return $this->_match_preg;
