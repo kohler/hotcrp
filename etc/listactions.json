@@ -9,14 +9,14 @@
         "name": "assign", "post": true,
         "render_callback": "Assign_ListAction::render", "title": "Assign",
         "position": 700,
-        "allow_if": "manager", "display_if_report": "!editpref",
+        "allow_if": "manager", "display_if_report": "!pf",
         "callback": "+Assign_ListAction"
     },
     {
         "name": "decide", "post": true,
         "render_callback": "Decide_ListAction::render", "title": "Decide",
         "position": 900,
-        "allow_if": "manager", "display_if_report": "!editpref",
+        "allow_if": "manager", "display_if_report": "!pf",
         "callback": "+Decide_ListAction"
     },
     {
@@ -162,7 +162,7 @@
         "name": "get/revpref", "get": true,
         "selector": "Preference file",
         "position": -100,
-        "allow_if": "pc", "display_if_report": "editpref",
+        "allow_if": "pc", "display_if_report": "pf",
         "callback": "+GetRevpref_ListAction",
         "abstracts": false
     },
@@ -170,7 +170,7 @@
         "name": "get/revprefx", "get": true,
         "selector": "Preference file with abstracts",
         "position": -99,
-        "allow_if": "pc", "display_if_report": "editpref",
+        "allow_if": "pc", "display_if_report": "pf",
         "callback": "+GetRevpref_ListAction",
         "abstracts": true
     },
@@ -254,26 +254,26 @@
         "name": "mail", "get": true,
         "render_callback": "Mail_ListAction::render", "title": "Mail",
         "position": 1000,
-        "allow_if": "manager", "display_if_report": "!editpref",
+        "allow_if": "manager", "display_if_report": "!pf",
         "callback": "+Mail_ListAction"
     },
     {
         "name": "tag", "post": true,
         "render_callback": "Tag_ListAction::render", "title": "Tag",
         "position": 500,
-        "allow_if": "pc", "display_if_report": "!editpref",
+        "allow_if": "pc", "display_if_report": "!pf",
         "callback": "+Tag_ListAction"
     },
     {
         "name": "uploadpref",
         "render_callback": "GetRevpref_ListAction::render_upload", "title": "Upload",
-        "allow_if": "pc", "display_if_report": "editpref",
+        "allow_if": "pc", "display_if_report": "pf",
         "position": 100
     },
     {
         "name": "setpref",
         "render_callback": "GetRevpref_ListAction::render_set", "title": "Set preferences",
-        "allow_if": "pc", "display_if_report": "editpref",
+        "allow_if": "pc", "display_if_report": "pf",
         "position": 200
     }
 ]
