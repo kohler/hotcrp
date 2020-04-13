@@ -82,7 +82,7 @@ class Preference_PaperColumn extends PaperColumn {
         }
         return 0;
     }
-    function analyze(PaperList $pl, &$rows, $fields) {
+    function analyze(PaperList $pl, $fields) {
         $pfcol = $rtcol = [];
         foreach ($fields as $fdef) {
             if ($fdef instanceof ReviewerType_PaperColumn
