@@ -827,25 +827,7 @@ class PaperList {
         case "reviewerHome":
             $this->_default_linkto("finishreview");
             return "id title revtype status";
-        case "ar":
-        case "r":
-        case "rable":
-        case "reviewable":
-        case "rout":
-            $this->_default_linkto("finishreview");
-            /* fallthrough */
         case "pl":
-        case "a":
-        case "act":
-        case "all":
-        case "acc":
-        case "lead":
-        case "manager":
-        case "admin":
-        case "alladmin":
-        case "s":
-        case "viewable":
-        case "req":
             return "sel id title revtype revstat status authors tags";
         case "reqrevs":
             return "id title revdelegation revstat status authors tags";
@@ -855,7 +837,6 @@ class PaperList {
         case "conflictassign":
             $this->_default_linkto("assign");
             return "id title authors potentialconflict revtype editconf tags";
-        case "editpref":
         case "pf":
             $this->_default_linkto("paper");
             return "sel id title topicscore revtype editmypref authors tags";
@@ -869,7 +850,7 @@ class PaperList {
             return "";
         default:
             error_log($this->conf->dbname . ": No such report {$this->_report_id}");
-            return false;
+            return "";
         }
     }
 
