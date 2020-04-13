@@ -187,11 +187,9 @@ class Title_PaperColumn extends PaperColumn {
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $cmp = strcasecmp($a->unaccented_title(), $b->unaccented_title());
-        if (!$cmp) {
-            $cmp = strcasecmp($a->title, $b->title);
-        }
-        return $cmp;
+        $collator = $a->conf->collator();
+        return $collator->compare($a->unaccented_title(), $b->unaccented_title())
+            ? : $collator->compare($a->title, $b->title);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $t = '<a href="' . $pl->_paperLink($row) . '" class="ptitle taghl';

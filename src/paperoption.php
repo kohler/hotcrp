@@ -1539,7 +1539,7 @@ class TextPaperOption extends PaperOption {
         $av = $av ? (string) $av->data() : "";
         $bv = $bv ? (string) $bv->data() : "";
         if ($av !== "" && $bv !== "") {
-            return strnatcasecmp($av, $bv);
+            return $this->conf->collator()->compare($av, $bv);
         } else {
             return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
         }
