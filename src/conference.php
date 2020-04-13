@@ -3639,7 +3639,7 @@ class Conf {
         }
 
         // favicon
-        $favicon = $this->opt("favicon", "images/review24.png");
+        $favicon = $this->opt("favicon", "images/review48.png");
         if ($favicon) {
             if (strpos($favicon, "://") === false && $favicon[0] != "/") {
                 if ($this->opt["assetsUrl"] && substr($favicon, 0, 7) === "images/") {
