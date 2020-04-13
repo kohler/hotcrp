@@ -70,13 +70,14 @@ class PaperColumn extends Column {
         return $j;
     }
 
-    function analyze(PaperList $pl, &$rows, $fields) {
-    }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         error_log("unexpected compare " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $a->paperId - $b->paperId;
+    }
+
+    function analyze(PaperList $pl, $fields) {
     }
 
     function header(PaperList $pl, $is_text) {
@@ -242,7 +243,7 @@ class StatusPaperColumn extends PaperColumn {
         $this->is_long = $cj->name === "statusfull";
         $this->override = PaperColumn::OVERRIDE_BOTH;
     }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         foreach ($rows as $row) {
             if ($row->outcome && $pl->user->can_view_decision($row)) {
                 $row->_status_sort_info = $row->outcome;
@@ -306,7 +307,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         }
         return [$done, $started];
     }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         foreach ($rows as $row) {
             if (!$pl->user->can_view_review_assignment($row, null)) {
                 $row->_review_status_sort_info = -2147483647;
@@ -358,7 +359,7 @@ class Authors_PaperColumn extends PaperColumn {
         $this->highlight = $pl->search->field_highlighter("authorInformation");
         return $pl->user->can_view_some_authors();
     }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         $sorter->anno = Contact::parse_sortanno($pl->conf, $sorter->anno, true);
     }
     function sort_name(PaperList $pl, ListSorter $sorter = null) {
@@ -579,7 +580,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
         return [$ranal, $flags];
     }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         $k = $sorter->uid;
         foreach ($rows as $row) {
             list($ranal, $flags) = $this->analysis($pl, $row);
@@ -787,7 +788,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             $row->$k = $row->$avgk = null;
         }
     }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         foreach ($rows as $row) {
             self::set_sort_fields($pl, $row, $sorter);
         }

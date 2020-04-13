@@ -16,7 +16,7 @@ class Lead_PaperColumn extends PaperColumn {
             return $row->leadContactId;
         return 0;
     }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         $sorter->anno = Contact::parse_sortanno($pl->conf, $sorter->anno);
     }
     function sort_name(PaperList $pl, ListSorter $sorter = null) {

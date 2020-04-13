@@ -67,7 +67,7 @@ class Tag_PaperColumn extends PaperColumn {
     function sort_name(PaperList $pl, ListSorter $sorter = null) {
         return "#$this->dtag";
     }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         $k = $sorter->uid;
         $unviewable = $empty = TAG_INDEXBOUND * ($sorter->reverse ? -1 : 1);
         if ($this->editable) {

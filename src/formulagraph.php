@@ -234,7 +234,7 @@ class FormulaGraph extends MessageSet {
             $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type());
         }
 
-        foreach ($rowset->all() as $prow) {
+        foreach ($rowset as $prow) {
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             $queries = $this->papermap[$prow->paperId];
             foreach ($revs as $rcid) {
@@ -288,7 +288,7 @@ class FormulaGraph extends MessageSet {
                 ++$nneed_anal;
             }
         }
-        foreach ($rowset->all() as $prow) {
+        foreach ($rowset as $prow) {
             if ($nneed_anal === 0) {
                 break;
             }
@@ -382,7 +382,7 @@ class FormulaGraph extends MessageSet {
         }
 
         $data = [];
-        foreach ($rowset->all() as $prow) {
+        foreach ($rowset as $prow) {
             $s = $ps = $this->_paper_style($prow);
             $d = [0, 0, 0];
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
@@ -454,7 +454,7 @@ class FormulaGraph extends MessageSet {
             $reviewf = Formula::compile_indexes_function($this->user, ($this->fx->indexed() ? $this->fx->index_type() : 0) | $this->fy->index_type());
         }
 
-        foreach ($rowset->all() as $prow) {
+        foreach ($rowset as $prow) {
             $queries = $this->papermap[$prow->paperId];
             $s = $ps = $this->_paper_style($prow);
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];

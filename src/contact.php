@@ -1761,7 +1761,7 @@ class Contact {
     function authored_papers() {
         $this->check_rights_version();
         if ($this->_authored_papers === null) {
-            $this->_authored_papers = $this->is_author() ? $this->conf->paper_set(["author" => true, "tags" => true], $this)->all() : [];
+            $this->_authored_papers = $this->is_author() ? $this->conf->paper_set(["author" => true, "tags" => true], $this)->as_array() : [];
         }
         return $this->_authored_papers;
     }

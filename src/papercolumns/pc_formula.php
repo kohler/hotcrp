@@ -36,7 +36,7 @@ class Formula_PaperColumn extends PaperColumn {
         }
         return true;
     }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         $formulaf = $this->formula->compile_sortable_function();
         $k = $sorter->uid;
         foreach ($rows as $row) {
@@ -53,7 +53,7 @@ class Formula_PaperColumn extends PaperColumn {
             return $as == $bs ? 0 : ($as < $bs ? -1 : 1);
         }
     }
-    function analyze(PaperList $pl, &$rows, $fields) {
+    function analyze(PaperList $pl, $fields) {
         if (!$this->is_visible) {
             return;
         }
@@ -62,7 +62,7 @@ class Formula_PaperColumn extends PaperColumn {
         $this->real_format = null;
         $isreal = $this->formula->result_format_is_real();
         $override_rows = null;
-        foreach ($rows as $row) {
+        foreach ($pl->rowset() as $row) {
             $v = $formulaf($row, null, $pl->user);
             $this->results[$row->paperId] = $v;
             if ($isreal && !$this->real_format && is_float($v)

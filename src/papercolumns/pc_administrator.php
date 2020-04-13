@@ -14,7 +14,7 @@ class Administrator_PaperColumn extends PaperColumn {
             return $row->managerContactId;
         return 0;
     }
-    function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
+    function analyze_sort(PaperList $pl, ListSorter $sorter) {
         $sorter->anno = Contact::parse_sortanno($pl->conf, $sorter->anno);
     }
     function sort_name(PaperList $pl, ListSorter $sorter = null) {

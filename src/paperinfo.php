@@ -112,7 +112,7 @@ class PaperContactInfo {
                 left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
                 where Paper.paperId?a",
                 $cid, $cid, $cid, $row_set->paper_ids());
-            foreach ($row_set->all() as $row) {
+            foreach ($row_set as $row) {
                 $row->_clear_contact_info($user);
             }
             while ($result && ($local = $result->fetch_row())) {
@@ -186,6 +186,7 @@ class PaperInfo_Conflict {
 class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $prows = [];
     private $by_pid = [];
+    private $_need_pid_sort = false;
     public $loaded_allprefs = 0;
     function __construct(PaperInfo $prow = null) {
         if ($prow)
@@ -208,6 +209,9 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         $set->prows = $set->by_pid = [];
     }
+    function as_array() {
+        return $this->prows;
+    }
     function all() {
         return $this->prows;
     }
@@ -222,9 +226,18 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     function sort_by($compare) {
         usort($this->prows, $compare);
-        uasort($this->by_pid, $compare);
+        $this->_need_pid_sort = true;
     }
     function paper_ids() {
+        if ($this->_need_pid_sort) {
+            $by_pid = [];
+            foreach ($this->prows as $prow) {
+                if (!isset($by_pid[$prow->paperId]))
+                    $by_pid[$prow->paperId] = $this->by_pid[$prow->paperId];
+            }
+            $this->by_pid = $by_pid;
+            $this->_need_pid_sort = false;
+        }
         return array_keys($this->by_pid);
     }
     function get($pid) {
@@ -1052,7 +1065,7 @@ class PaperInfo {
             }
         } else {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            foreach ($row_set->all() as $prow) {
+            foreach ($row_set as $prow) {
                 $prow->_conflict_array = [];
                 $prow->_conflict_array_email = $email;
             }
@@ -1219,7 +1232,7 @@ class PaperInfo {
                 $this->_row_set = null;
             }
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            foreach ($row_set->all() as $prow) {
+            foreach ($row_set as $prow) {
                 $prow->_option_values = $prow->_option_data = [];
             }
             $result = $this->conf->qe("select paperId, optionId, value, data, dataOverflow from PaperOption where paperId?a order by paperId", $row_set->paper_ids());
@@ -1396,7 +1409,7 @@ class PaperInfo {
     private function doclink_array() {
         if ($this->_doclink_array === null) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            foreach ($row_set->all() as $prow) {
+            foreach ($row_set as $prow) {
                 $prow->_doclink_array = [];
             }
             $result = $this->conf->qe("select paperId, linkId, linkType, documentId from DocumentLink where paperId?a order by paperId, linkId, linkType", $row_set->paper_ids());

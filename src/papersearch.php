@@ -2576,7 +2576,7 @@ class PaperSearch {
         $this->_matches = array();
         if ($need_filter) {
             $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-            foreach ($rowset->all() as $row) {
+            foreach ($rowset as $row) {
                 if (!$this->_limit_qe->exec($row, $this)) {
                     $x = false;
                 } else if ($need_then) {
