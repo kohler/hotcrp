@@ -2687,8 +2687,11 @@ a.badge:active {
 	margin-top: -2px;
 }
 .psfocus.psc, .psfocus .psc {
-	padding: 7px 8px;
-	margin: 0 -8px;
+	padding: 4px 6px 8px;
+	margin-left: -6px;
+	margin-right: -6px;
+	margin-top: -4px;
+	margin-bottom: 8px;
 	box-shadow: 0 0 10px #9999cc;
 	-moz-box-shadow: 0 0 10px #9999cc;
 	-webkit-box-shadow: 0 0 10px #9999cc;
