@@ -85,7 +85,7 @@ class Tag_PaperColumn extends PaperColumn {
         $k = $sorter->uid;
         return $a->$k < $b->$k ? -1 : ($a->$k == $b->$k ? 0 : 1);
     }
-    function hexxxxader(PaperList $pl, $is_text) {
+    function header(PaperList $pl, $is_text) {
         if (($twiddle = strpos($this->dtag, "~")) > 0) {
             $cid = (int) substr($this->dtag, 0, $twiddle);
             if ($cid == $pl->user->contactId) {

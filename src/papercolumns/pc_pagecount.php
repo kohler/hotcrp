@@ -21,16 +21,18 @@ class PageCount_PaperColumn extends PaperColumn {
         return $doc ? $doc->npages() : null;
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
-        foreach ($rows as $row)
+        foreach ($rows as $row) {
             $row->_page_count_sort_info = $this->page_count($pl->user, $row);
+        }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $ac = $a->_page_count_sort_info;
         $bc = $b->_page_count_sort_info;
-        if ($ac === null || $bc === null)
+        if ($ac === null || $bc === null) {
             return $ac === $bc ? 0 : ($ac === null ? -1 : 1);
-        else
+        } else {
             return $ac == $bc ? 0 : ($ac < $bc ? -1 : 1);
+        }
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_pdf($row);

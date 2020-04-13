@@ -165,15 +165,16 @@ class PaperList {
 
     static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P, ScoreInfo::COUNT];
 
-    function __construct(PaperSearch $search, $args = array(), $qreq = null) {
+    function __construct(PaperSearch $search, $args = [], $qreq = null) {
         $this->conf = $search->conf;
         $this->user = $search->user;
-        if (!$qreq || !($qreq instanceof Qrequest))
+        if (!$qreq || !($qreq instanceof Qrequest)) {
             $qreq = new Qrequest("GET", $qreq);
+        }
         $this->qreq = $qreq;
         $this->search = $search;
         $this->_reviewer_user = $search->reviewer_user();
-        $this->_rowset = get($args, "rowset");
+        $this->_rowset = $args["rowset"] ?? null;
 
         $this->sortable = isset($args["sort"]) && $args["sort"];
         $this->foldable = $this->sortable || !!get($args, "foldable")
@@ -191,26 +192,25 @@ class PaperList {
         $this->tagger = new Tagger($this->user);
 
         $this->qopts = $this->search->simple_search_options();
-        if ($this->qopts === false)
+        if ($this->qopts === false) {
             $this->qopts = ["paperId" => $this->search->paper_ids()];
+        }
         $this->qopts["scores"] = [];
 
-        $report = get($args, "report");
-        $display = get($args, "display");
-
-        if ($report) {
+        if (($report = $args["report"] ?? null)) {
             $s = $this->conf->setting_data("{$report}display_default", null);
             if ($s === null && $report === "pl") {
                 $s = $this->conf->review_form()->default_display();
             }
             $this->set_view_display($s, 2);
+
+            if (!($args["no_session_display"] ?? false)) {
+                $s = $this->user->session("{$report}display", null);
+                $this->set_view_display($s, 1);
+            }
         }
 
-        if ($report && !get($args, "no_session_display")) {
-            $s = $this->user->session("{$report}display", null);
-            $this->set_view_display($s, 1);
-        }
-
+        $display = $args["display"] ?? null;
         if ($display !== null) {
             $this->_viewing = $this->_view_origin = $this->sorters = [];
         }
@@ -299,13 +299,15 @@ class PaperList {
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
         }
-        $k = get(self::$view_synonym, $k, $k);
+        if (isset(self::$view_synonym[$k])) {
+            $k = self::$view_synonym[$k];
+        }
         if (isset($this->_view_origin[$k])
             && $this->_view_origin[$k] < $origin) {
             return;
         }
 
-        if (in_array($v, ["show", "hide"], true)) {
+        if ($v === "show" || $v === "hide") {
             $v = $v === "show";
         }
         if ($v) {
@@ -328,8 +330,9 @@ class PaperList {
         }
     }
     private function set_view_display($str, $origin) {
-        if ((string) $str === "")
+        if ((string) $str === "") {
             return;
+        }
         $splitter = new SearchSplitter($str);
         $sorters = [];
         while (($w = $splitter->shift()) !== "") {
@@ -361,18 +364,19 @@ class PaperList {
     }
 
     function mark_has($key, $value = true) {
-        if ($value)
+        if ($value) {
             $this->_has[$key] = true;
-        else if (!isset($this->_has[$key]))
+        } else if (!isset($this->_has[$key])) {
             $this->_has[$key] = false;
+        }
     }
     function has($key) {
-        if (!isset($this->_has[$key]))
+        if (!isset($this->_has[$key])) {
             $this->_has[$key] = $this->_compute_has($key);
+        }
         return $this->_has[$key];
     }
     private function _compute_has($key) {
-        // paper options
         if ($key === "paper" || $key === "final") {
             $opt = $this->conf->paper_opts->find($key);
             return $this->user->can_view_some_option($opt)
@@ -380,70 +384,70 @@ class PaperList {
                     return ($opt->id == DTYPE_SUBMISSION ? $row->paperStorageId : $row->finalPaperStorageId) > 1
                         && $this->user->can_view_option($row, $opt);
                 });
-        }
-        if (str_starts_with($key, "opt")
-            && ($opt = $this->conf->paper_opts->find($key))) {
+        } else if (str_starts_with($key, "opt")
+                   && ($opt = $this->conf->paper_opts->find($key))) {
             return $this->user->can_view_some_option($opt)
                 && $this->rowset()->any(function ($row) use ($opt) {
                     return ($ov = $row->option($opt))
                         && (!$opt->has_document() || $ov->value > 1)
                         && $this->user->can_view_option($row, $opt);
                 });
-        }
-        // other features
-        if ($key === "abstract")
+        } else if ($key === "abstract") {
             return $this->rowset()->any(function ($row) {
                 return (string) $row->abstract !== "";
             });
-        if ($key === "openau")
+        } else if ($key === "openau") {
             return $this->has("authors")
                 && (!$this->user->is_manager()
                     || $this->rowset()->any(function ($row) {
                            return $this->user->can_view_authors($row);
                        }));
-        if ($key === "anonau")
+        } else if ($key === "anonau") {
             return $this->has("authors")
                 && $this->user->is_manager()
                 && $this->rowset()->any(function ($row) {
                         return $this->user->allow_view_authors($row)
                            && !$this->user->can_view_authors($row);
                     });
-        if ($key === "lead")
+        } else if ($key === "lead") {
             return $this->conf->has_any_lead_or_shepherd()
                 && $this->rowset()->any(function ($row) {
                         return $row->leadContactId > 0
                             && $this->user->can_view_lead($row);
                     });
-        if ($key === "shepherd")
+        } else if ($key === "shepherd") {
             return $this->conf->has_any_lead_or_shepherd()
                 && $this->rowset()->any(function ($row) {
                         return $row->shepherdContactId > 0
                             && $this->user->can_view_shepherd($row);
                     });
-        if ($key === "collab")
+        } else if ($key === "collab") {
             return $this->rowset()->any(function ($row) {
                 return $row->collaborators != ""
                     && strcasecmp($row->collaborators, "None") !== 0
                     && $this->user->can_view_authors($row);
             });
-        if ($key === "need_submit")
+        } else if ($key === "need_submit") {
             return $this->rowset()->any(function ($row) {
                 return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
             });
-        if ($key === "accepted")
+        } else if ($key === "accepted") {
             return $this->rowset()->any(function ($row) {
                 return $row->outcome > 0 && $this->user->can_view_decision($row);
             });
-        if ($key === "need_final")
+        } else if ($key === "need_final") {
             return $this->has("accepted")
                 && $this->rowset()->any(function ($row) {
                        return $row->outcome > 0
                            && $this->user->can_view_decision($row)
                            && $row->timeFinalSubmitted <= 0;
                    });
-        if (!in_array($key, ["sel", "need_review", "authors", "tags"], true))
-            error_log("unexpected PaperList::_compute_has({$key})");
-        return false;
+        } else {
+            if (!in_array($key, ["sel", "need_review", "authors", "tags"], true)) {
+                error_log("unexpected PaperList::_compute_has({$key})");
+            }
+            return false;
+        }
     }
 
 

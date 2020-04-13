@@ -53,11 +53,11 @@ class ListSorter {
     ];
 
     static function canonical_short_score_sort($x) {
-        return get(self::$score_sort_map, $x, null);
+        return self::$score_sort_map[$x] ?? null;
     }
 
     static function canonical_long_score_sort($x) {
-        $x = get(self::$score_sort_map, $x, null);
+        $x = self::$score_sort_map[$x] ?? null;
         return $x ? self::$score_sort_long_map[$x] : $x;
     }
 

@@ -12,9 +12,11 @@ class Shepherd_PaperColumn extends PaperColumn {
             && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
     static private function cid(PaperList $pl, PaperInfo $row) {
-        if ($row->shepherdContactId && $pl->user->can_view_shepherd($row))
+        if ($row->shepherdContactId && $pl->user->can_view_shepherd($row)) {
             return $row->shepherdContactId;
-        return 0;
+        } else {
+            return 0;
+        }
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
         $sorter->anno = Contact::parse_sortanno($pl->conf, $sorter->anno);

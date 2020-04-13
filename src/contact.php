@@ -1760,15 +1760,17 @@ class Contact {
 
     function authored_papers() {
         $this->check_rights_version();
-        if ($this->_authored_papers === null)
+        if ($this->_authored_papers === null) {
             $this->_authored_papers = $this->is_author() ? $this->conf->paper_set(["author" => true, "tags" => true], $this)->all() : [];
+        }
         return $this->_authored_papers;
     }
 
     function has_review() {
         $this->check_rights_version();
-        if (!isset($this->_active_roles))
+        if (!isset($this->_active_roles)) {
             $this->load_author_reviewer_status();
+        }
         return ($this->_active_roles & self::ROLE_REVIEWER) !== 0;
     }
 

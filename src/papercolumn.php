@@ -259,10 +259,11 @@ class StatusPaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $status_info = $pl->user->paper_status_info($row);
-        if (!$this->is_long && $status_info[0] == "pstat_sub") {
+        if ($this->is_long || $status_info[0] !== "pstat_sub") {
+            return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
+        } else {
             return "";
         }
-        return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
     }
     function text(PaperList $pl, PaperInfo $row) {
         $status_info = $pl->user->paper_status_info($row);
@@ -787,8 +788,9 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         }
     }
     function analyze_sort(PaperList $pl, &$rows, ListSorter $sorter) {
-        foreach ($rows as $row)
+        foreach ($rows as $row) {
             self::set_sort_fields($pl, $row, $sorter);
+        }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $k = $sorter->uid;

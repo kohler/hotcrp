@@ -15,12 +15,13 @@ class PaperStatus_SearchTerm extends SearchTerm {
             $srch->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision or status.");
             $fval[1][] = -10000000;
         }
-        if ($fval[0] === "outcome")
+        if ($fval[0] === "outcome") {
             return new Decision_SearchTerm($fval[1]);
-        else {
+        } else {
             if ($srch->limit_submitted()
-                && ($fval[0] !== "timeSubmitted" || $fval[1] !== ">0"))
+                && ($fval[0] !== "timeSubmitted" || $fval[1] !== ">0")) {
                 $srch->warn("“" . htmlspecialchars("{$sword->keyword}:{$sword->qword}") . "” won’t match because this collection that only contains submitted papers.");
+            }
             return new PaperStatus_SearchTerm($fval);
         }
     }

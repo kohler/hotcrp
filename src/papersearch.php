@@ -458,8 +458,9 @@ class Not_SearchTerm extends Op_SearchTerm {
         $sqi->top = false;
         $ff = $this->child[0]->sqlexpr($sqi);
         if ($sqi->negated
-            && !$this->child[0]->trivial_rights($sqi->user, $sqi->srch))
+            && !$this->child[0]->trivial_rights($sqi->user, $sqi->srch)) {
             $ff = "false";
+        }
         $sqi->negated = !$sqi->negated;
         $sqi->top = $top;
         if ($ff === "false") {
@@ -725,8 +726,9 @@ class Then_SearchTerm extends Op_SearchTerm {
         assert($op->op === "then" || $op->op === "highlight");
         parent::__construct("then");
         $this->is_highlight = $op->op === "highlight";
-        if (isset($op->opinfo))
+        if (isset($op->opinfo)) {
             $this->set_float("opinfo", $op->opinfo);
+        }
     }
     protected function finish() {
         $opinfo = strtolower($this->get_float("opinfo", ""));
@@ -747,14 +749,18 @@ class Then_SearchTerm extends Op_SearchTerm {
                 }
             } else if ($qv && $qv->type === "then") {
                 $pos = count($newvalues);
-                for ($i = 0; $i < $qv->nthen; ++$i)
+                for ($i = 0; $i < $qv->nthen; ++$i) {
                     $newvalues[] = $qv->child[$i];
-                for ($i = $qv->nthen; $i < count($qv->child); ++$i)
+                }
+                for ($i = $qv->nthen; $i < count($qv->child); ++$i) {
                     $newhvalues[] = $qv->child[$i];
-                foreach ($qv->highlights ? : array() as $hlmask)
+                }
+                foreach ($qv->highlights ? : array() as $hlmask) {
                     $newhmasks[] = $hlmask << $pos;
-                foreach ($qv->highlight_types ? : array() as $hltype)
+                }
+                foreach ($qv->highlight_types ? : array() as $hltype) {
                     $newhtypes[] = $hltype;
+                }
             } else if ($qv) {
                 $newvalues[] = $qv;
             }
@@ -811,10 +817,11 @@ class Limit_SearchTerm extends SearchTerm {
         if (!in_array($limit, ["a", "ar", "viewable", "all"], true)) {
             if (in_array($limit, ["r", "act", "unsub"], true)
                 || ($conf->can_pc_see_active_submissions()
-                    && !in_array($limit, ["s", "acc"], true)))
+                    && !in_array($limit, ["s", "acc"], true))) {
                 $this->lflag = self::LFLAG_ACTIVE;
-            else
+            } else {
                 $this->lflag = self::LFLAG_SUBMITTED;
+            }
         }
     }
 
@@ -824,12 +831,14 @@ class Limit_SearchTerm extends SearchTerm {
             $u = $srch->reviewer_user();
             if ($srch->user->privChair || $srch->user === $u) {
                 if ($u->can_accept_review_assignment_ignore_conflict(null)) {
-                    if ($srch->conf->can_pc_see_active_submissions())
+                    if ($srch->conf->can_pc_see_active_submissions()) {
                         $word = "act";
-                    else
+                    } else {
                         $word = "s";
-                } else if (!$u->isPC)
+                    }
+                } else if (!$u->isPC) {
                     $word = "r";
+                }
             }
         }
         return new Limit_SearchTerm($srch->conf, $word);
@@ -851,8 +860,7 @@ class Limit_SearchTerm extends SearchTerm {
         $ff = ["true"];
         if ($this->lflag === self::LFLAG_SUBMITTED) {
             $ff[] = "Paper.timeSubmitted>0";
-        }
-        else if ($this->lflag === self::LFLAG_ACTIVE) {
+        } else if ($this->lflag === self::LFLAG_ACTIVE) {
             $ff[] = "Paper.timeWithdrawn<=0";
         }
 
@@ -861,8 +869,9 @@ class Limit_SearchTerm extends SearchTerm {
         }
         if (in_array($this->limit, ["ar", "r", "rout"], true)) {
             $sqi->add_reviewer_columns();
-            if ($sqi->top)
+            if ($sqi->top) {
                 $sqi->add_table("MyReviews", [$this->limit === "ar" ? "left join" : "join", "PaperReview", $sqi->user->act_reviewer_sql("MyReviews")]);
+            }
         }
 
         switch ($this->limit) {
@@ -876,22 +885,25 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = $sqi->user->act_author_view_sql("PaperConflict");
             break;
         case "ar":
-            if ($sqi->top)
+            if ($sqi->top) {
                 $r = "MyReviews.reviewType is not null";
-            else
+            } else {
                 $r = "exists (select * from PaperReview where paperId=Paper.paperId and " . $sqi->user->act_reviewer_sql("PaperReview") . ")";
+            }
             $ff[] = "(" . $sqi->user->act_author_view_sql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and $r))";
             break;
         case "r":
             // if top, the straight join suffices
-            if (!$sqi->top)
+            if (!$sqi->top) {
                 $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and " . $sqi->user->act_reviewer_sql("PaperReview") . ")";
+            }
             break;
         case "rout":
-            if ($sqi->top)
+            if ($sqi->top) {
                 $ff[] = "MyReviews.reviewNeedsSubmit!=0";
-            else
+            } else {
                 $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and " . $sqi->user->act_reviewer_sql("PaperReview") . " and reviewNeedsSubmit!=0)";
+            }
             break;
         case "acc":
             $ff[] = "Paper.outcome>0";
@@ -907,14 +919,16 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = "Paper.leadContactId=" . $sqi->srch->cid;
             break;
         case "alladmin":
-            if ($sqi->user->privChair)
+            if ($sqi->user->privChair) {
                 break;
+            }
             /* FALLTHRU */
         case "admin":
-            if ($sqi->user->is_track_manager())
+            if ($sqi->user->is_track_manager()) {
                 $ff[] = "(Paper.managerContactId=" . $sqi->srch->cid . " or Paper.managerContactId=0)";
-            else
+            } else {
                 $ff[] = "Paper.managerContactId=" . $sqi->srch->cid;
+            }
             break;
         case "req":
             $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=" . $sqi->srch->cid . ")";
@@ -930,8 +944,9 @@ class Limit_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         if (!$srch->user->can_view_paper($row)
             || ($this->lflag === self::LFLAG_SUBMITTED && $row->timeSubmitted <= 0)
-            || ($this->lflag === self::LFLAG_ACTIVE && $row->timeWithdrawn > 0))
+            || ($this->lflag === self::LFLAG_ACTIVE && $row->timeWithdrawn > 0)) {
             return false;
+        }
         switch ($this->limit) {
         case "all":
         case "viewable":
@@ -2381,11 +2396,13 @@ class PaperSearch {
             $ok = $tag && ($thetag === null || $thetag === $tag);
             $thetag = $ok ? $tag : false;
         }
-        if (!$thetag)
+        if (!$thetag) {
             return false;
+        }
         $dt = $this->conf->tags()->add(TagInfo::base($tag));
-        if ($dt->has_order_anno())
+        if ($dt->has_order_anno()) {
             return $dt;
+        }
         foreach ($qe->get_float("view", []) as $vv) {
             if ($vv[1] === "edit"
                 && ($t = Tagger::check_tag_keyword($vv[0], $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID | Tagger::NOTAGKEYWORD))
@@ -2564,9 +2581,10 @@ class PaperSearch {
                     $x = false;
                 } else if ($need_then) {
                     $x = false;
-                    for ($i = 0; $i < $qe->nthen && $x === false; ++$i)
+                    for ($i = 0; $i < $qe->nthen && $x === false; ++$i) {
                         if ($qe->child[$i]->exec($row, $this))
                             $x = $i;
+                    }
                 } else {
                     $x = !!$qe->exec($row, $this);
                 }

@@ -112,8 +112,9 @@ class PaperContactInfo {
                 left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
                 where Paper.paperId?a",
                 $cid, $cid, $cid, $row_set->paper_ids());
-            foreach ($row_set->all() as $row)
+            foreach ($row_set->all() as $row) {
                 $row->_clear_contact_info($user);
+            }
             while ($result && ($local = $result->fetch_row())) {
                 $row = $row_set->get($local[4]);
                 $ci = $row->_get_contact_info($local[5]);
@@ -192,8 +193,9 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     function add(PaperInfo $prow, $copy = false) {
         $this->prows[] = $prow;
-        if (!isset($this->by_pid[$prow->paperId]))
+        if (!isset($this->by_pid[$prow->paperId])) {
             $this->by_pid[$prow->paperId] = $prow;
+        }
         if (!$copy) {
             assert(!$prow->_row_set);
             $prow->_row_set = $this;
@@ -226,19 +228,21 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return array_keys($this->by_pid);
     }
     function get($pid) {
-        return get($this->by_pid, $pid);
+        return $this->by_pid[$pid] ?? null;
     }
     function filter($func) {
         $next_set = new PaperInfoSet;
-        foreach ($this as $prow)
+        foreach ($this as $prow) {
             if (call_user_func($func, $prow))
                 $next_set->add($prow, true);
+        }
         return $next_set;
     }
     function any($func) {
-        foreach ($this as $prow)
+        foreach ($this as $prow) {
             if (($x = call_user_func($func, $prow)))
                 return $x;
+        }
         return false;
     }
     function getIterator() {
@@ -248,7 +252,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return isset($this->by_pid[$offset]);
     }
     function offsetGet($offset) {
-        return isset($this->by_pid[$offset]) ? $this->by_pid[$offset] : null;
+        return $this->by_pid[$offset] ?? null;
     }
     function offsetSet($offset, $value) {
         assert(false);
@@ -1205,16 +1209,19 @@ class PaperInfo {
                    && !$need_data) {
             $this->_option_values = [];
             preg_match_all('/(\d+)#(-?\d+)/', $this->optionIds, $m);
-            for ($i = 0; $i < count($m[1]); ++$i)
+            for ($i = 0; $i < count($m[1]); ++$i) {
                 $this->_option_values[(int) $m[1][$i]][] = (int) $m[2][$i];
+            }
         } else if ($this->_option_values === null
                    || ($need_data && $this->_option_data === null)) {
             $old_row_set = $this->_row_set;
-            if ($only_me)
+            if ($only_me) {
                 $this->_row_set = null;
+            }
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            foreach ($row_set->all() as $prow)
+            foreach ($row_set->all() as $prow) {
                 $prow->_option_values = $prow->_option_data = [];
+            }
             $result = $this->conf->qe("select paperId, optionId, value, data, dataOverflow from PaperOption where paperId?a order by paperId", $row_set->paper_ids());
             while ($result && ($row = $result->fetch_row())) {
                 $prow = $row_set->get((int) $row[0]);
@@ -1222,8 +1229,9 @@ class PaperInfo {
                 $prow->_option_data[(int) $row[1]][] = $row[3] !== null ? $row[3] : $row[4];
             }
             Dbl::free($result);
-            if ($only_me)
+            if ($only_me) {
                 $this->_row_set = $old_row_set;
+            }
         }
     }
 
@@ -1243,14 +1251,16 @@ class PaperInfo {
     }
 
     private function options() {
-        if ($this->_option_array === null)
+        if ($this->_option_array === null) {
             $this->_option_array = $this->_make_option_array();
+        }
         return $this->_option_array;
     }
 
     function option_value_data($id) {
-        if ($this->_option_data === null)
+        if ($this->_option_data === null) {
             $this->load_options(false, true);
+        }
         return [get($this->_option_values, $id, []),
                 get($this->_option_data, $id, [])];
     }
@@ -1276,8 +1286,9 @@ class PaperInfo {
     function invalidate_options($reload = false) {
         unset($this->optionIds);
         $this->_option_array = $this->_option_values = $this->_option_data = null;
-        if ($reload)
+        if ($reload) {
             $this->load_options(true, true);
+        }
     }
 
     private function _document_sql() {
@@ -1385,14 +1396,16 @@ class PaperInfo {
     private function doclink_array() {
         if ($this->_doclink_array === null) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
-            foreach ($row_set->all() as $prow)
+            foreach ($row_set->all() as $prow) {
                 $prow->_doclink_array = [];
+            }
             $result = $this->conf->qe("select paperId, linkId, linkType, documentId from DocumentLink where paperId?a order by paperId, linkId, linkType", $row_set->paper_ids());
             while ($result && ($row = $result->fetch_row())) {
                 $prow = $row_set->get((int) $row[0]);
                 $linkid = (int) $row[1];
-                if (!isset($prow->_doclink_array[$linkid]))
+                if (!isset($prow->_doclink_array[$linkid])) {
                     $prow->_doclink_array[$linkid] = [];
+                }
                 $prow->_doclink_array[$linkid][(int) $row[2]] = (int) $row[3];
             }
             Dbl::free($result);
@@ -1418,10 +1431,11 @@ class PaperInfo {
     }
 
     private function ratings_query() {
-        if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE)
+        if ($this->conf->setting("rev_ratings") != REV_RATINGS_NONE) {
             return "(select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId)";
-        else
+        } else {
             return "''";
+        }
     }
 
 
