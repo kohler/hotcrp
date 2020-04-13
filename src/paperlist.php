@@ -176,7 +176,7 @@ class PaperList {
         $this->_rowset = $args["rowset"] ?? null;
 
         $this->sortable = isset($args["sort"]) && $args["sort"];
-        $this->foldable = $this->sortable || !!get($args, "foldable")
+        $this->foldable = $this->sortable || ($args["foldable"] ?? false)
             || $this->user->is_manager() /* “Override conflicts” fold */;
 
         $this->_paper_link_page = "";
@@ -247,6 +247,7 @@ class PaperList {
     }
 
     function __get($name) {
+        // XXX remove this
         error_log("PaperList::$name " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $name === "contact" ? $this->user : null;
     }

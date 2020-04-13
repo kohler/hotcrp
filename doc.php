@@ -36,8 +36,7 @@ function document_history_element(DocumentInfo $doc) {
     return (object) $pj;
 }
 
-function document_history(PaperInfo $prow, $dtype) {
-    global $Me;
+function document_history(Contact $user, PaperInfo $prow, $dtype) {
     $docs = $prow->documents($dtype);
 
     $pjs = $actives = [];
@@ -48,7 +47,7 @@ function document_history(PaperInfo $prow, $dtype) {
         $pjs[] = $pj;
     }
 
-    if ($Me->can_view_document_history($prow)
+    if ($user->can_view_document_history($prow)
         && $dtype >= DTYPE_FINAL) {
         $result = $prow->conf->qe("select paperId, paperStorageId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $prow->paperId, $dtype);
         while (($doc = DocumentInfo::fetch($result, $prow->conf, $prow))) {
@@ -61,16 +60,14 @@ function document_history(PaperInfo $prow, $dtype) {
     return $pjs;
 }
 
-function document_download($qreq) {
-    global $Conf, $Me;
-
+function document_download(Contact $user, $qreq) {
     try {
-        $dr = new DocumentRequest($qreq, $qreq->path(), $Conf);
+        $dr = new DocumentRequest($qreq, $qreq->path(), $user->conf);
     } catch (Exception $e) {
         document_error("404 Not Found", htmlspecialchars($e->getMessage()));
     }
 
-    if (($whyNot = $dr->perm_view_document($Me))) {
+    if (($whyNot = $dr->perm_view_document($user))) {
         document_error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", whyNotText($whyNot));
     }
     $prow = $dr->prow;
@@ -78,7 +75,7 @@ function document_download($qreq) {
 
     // history
     if ($qreq->fn === "history") {
-        json_exit(["ok" => true, "result" => document_history($prow, $dr->dtype)]);
+        json_exit(["ok" => true, "result" => document_history($user, $prow, $dr->dtype)]);
     }
 
     if (!isset($qreq->version) && isset($qreq->hash)) {
@@ -89,7 +86,7 @@ function document_download($qreq) {
     if (isset($qreq->at) && !isset($qreq->version) && $dr->dtype >= DTYPE_FINAL) {
         if (ctype_digit($qreq->at)) {
             $time = intval($qreq->at);
-        } else if (!($time = $Conf->parse_time($qreq->at))) {
+        } else if (!($time = $user->conf->parse_time($qreq->at))) {
             $time = $Now;
         }
         $want_pj = null;
@@ -111,8 +108,8 @@ function document_download($qreq) {
         if (!$version_hash) {
             document_error("404 Not Found", "No such version.");
         }
-        $want_docid = $Conf->fetch_ivalue("select max(paperStorageId) from PaperStorage where paperId=? and documentType=? and sha1=? and filterType is null", $dr->paperId, $dr->dtype, $version_hash);
-        if ($want_docid !== null && $Me->can_view_document_history($prow)) {
+        $want_docid = $user->conf->fetch_ivalue("select max(paperStorageId) from PaperStorage where paperId=? and documentType=? and sha1=? and filterType is null", $dr->paperId, $dr->dtype, $version_hash);
+        if ($want_docid !== null && $user->can_view_document_history($prow)) {
             $request_docid = $want_docid;
         }
     }
@@ -169,8 +166,8 @@ function document_download($qreq) {
     if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x)) {
         $opts["cacheable"] = true;
     }
-    if ($Conf->download_documents([$doc], $opts)) {
-        DocumentInfo::log_download_activity([$doc], $Me);
+    if ($user->conf->download_documents([$doc], $opts)) {
+        DocumentInfo::log_download_activity([$doc], $user);
         exit;
     }
 
@@ -178,4 +175,4 @@ function document_download($qreq) {
 }
 
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
-document_download($Qreq);
+document_download($Me, $Qreq);
