@@ -234,12 +234,15 @@ class Title_PaperColumn extends PaperColumn {
     }
 }
 
-class StatusPaperColumn extends PaperColumn {
+class Status_PaperColumn extends PaperColumn {
     private $is_long;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->is_long = $cj->name === "statusfull";
         $this->override = PaperColumn::OVERRIDE_BOTH;
+    }
+    function prepare(PaperList $pl, $visible) {
+        $this->is_long = $pl->search->limit_expect_nonsubmitted();
+        return true;
     }
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         foreach ($rows as $row) {

@@ -110,12 +110,12 @@
     {   "name": "conflictdescription", "alias": "confdesc"   },
     {
         "name": "status", "title": "Status",
-        "column": true, "sort": true, "completion": true, "callback": "+StatusPaperColumn",
+        "column": true, "sort": true, "completion": true, "callback": "+Status_PaperColumn",
         "position": 900
     },
     {
         "name": "statusfull", "title": "Status",
-        "column": true, "sort": true, "completion": true, "className": "pl_status", "callback": "+StatusPaperColumn",
+        "column": true, "sort": true, "completion": false, "className": "pl_status", "callback": "+Status_PaperColumn",
         "position": 910
     },
     {

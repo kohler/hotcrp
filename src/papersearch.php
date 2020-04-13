@@ -1714,6 +1714,10 @@ class PaperSearch {
     function limit_author() {
         return $this->_limit_qe->limit === "a";
     }
+    function limit_expect_nonsubmitted() {
+        return in_array($this->_limit_qe->limit, ["a", "act", "all"])
+            && $this->q !== "re:me";
+    }
 
     function reviewer_user() {
         return $this->_reviewer_user ? : $this->user;

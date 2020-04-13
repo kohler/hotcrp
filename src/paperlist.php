@@ -824,13 +824,8 @@ class PaperList {
 
     private function _list_columns() {
         switch ($this->_report_id) {
-        case "a":
-            return "id title revstat statusfull authors";
         case "authorHome":
-            return "id title statusfull";
-        case "act":
-        case "all":
-            return "sel id title revtype revstat statusfull authors tags";
+            return "id title status";
         case "reviewerHome":
             $this->_default_linkto("finishreview");
             return "id title revtype status";
@@ -841,6 +836,9 @@ class PaperList {
         case "rout":
             $this->_default_linkto("finishreview");
             /* fallthrough */
+        case "a":
+        case "act":
+        case "all":
         case "acc":
         case "lead":
         case "manager":
