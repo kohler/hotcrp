@@ -145,7 +145,7 @@ class Mailer {
         $this->recipient = $recipient;
         foreach (["width", "censor", "reason", "adminupdate", "notes",
                   "capability"] as $k) {
-            $this->$k = get($settings, $k);
+            $this->$k = $settings[$k] ?? null;
         }
         if ($this->width === null) {
             $this->width = 75;
@@ -241,35 +241,39 @@ class Mailer {
 
     function kw_opt($args, $isbool) {
         $hasinner = $this->expandvar("%$args%", true);
-        if ($hasinner && !$isbool)
+        if ($hasinner && !$isbool) {
             return $this->expandvar("%$args%", false);
-        else
+        } else {
             return $hasinner;
+        }
     }
 
     static function kw_urlenc($args, $isbool, $m) {
         $hasinner = $m->expandvar("%$args%", true);
-        if ($hasinner && !$isbool)
+        if ($hasinner && !$isbool) {
             return urlencode($m->expandvar("%$args%", false));
-        else
+        } else {
             return $hasinner;
+        }
     }
 
     static function kw_ims_expand($args, $isbool, $mx) {
         preg_match('/\A\s*(.*?)\s*(?:|,\s*(\d+)\s*)\z/', $args, $m);
         $t = $mx->conf->_c("mail", $m[1]);
-        if ($m[2] && strlen($t) < $m[2])
+        if ($m[2] && strlen($t) < $m[2]) {
             $t = str_repeat(" ", $m[2] - strlen($t)) . $t;
+        }
         return $t;
     }
 
     function kw_confnames($args, $isbool, $uf) {
-        if ($uf->name === "CONFNAME")
+        if ($uf->name === "CONFNAME") {
             return $this->conf->full_name();
-        else if ($uf->name == "CONFSHORTNAME")
+        } else if ($uf->name == "CONFSHORTNAME") {
             return $this->conf->short_name;
-        else
+        } else {
             return $this->conf->long_name;
+        }
     }
 
     function kw_siteuser($args, $isbool, $uf) {
@@ -294,10 +298,11 @@ class Mailer {
             }
             for ($i = 2; isset($a[$i]); ++$i) {
                 if ($a[$i] !== "") {
-                    if ($a[1] !== "")
+                    if ($a[1] !== "") {
                         $a[1] .= "&" . $a[$i];
-                    else
+                    } else {
                         $a[1] = $a[$i];
+                    }
                 }
             }
             return $m->conf->hoturl($a[0], $a[1], Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
@@ -528,17 +533,18 @@ class Mailer {
         }
 
         // leave early on empty string
-        if ($text == "")
+        if ($text == "") {
             return "";
+        }
 
         // width, expansion type based on field
         $oldExpansionType = $this->expansionType;
         $width = 100000;
-        if (isset(self::$email_fields[$field]))
+        if (isset(self::$email_fields[$field])) {
             $this->expansionType = self::EXPAND_EMAIL;
-        else if ($field !== "body" && $field != "")
+        } else if ($field !== "body" && $field != "") {
             $this->expansionType = self::EXPAND_HEADER;
-        else {
+        } else {
             $this->expansionType = self::EXPAND_BODY;
             $width = $this->width;
         }
@@ -549,34 +555,39 @@ class Mailer {
 
         // separate text into lines
         $lines = explode("\n", $text);
-        if (count($lines) && $lines[count($lines) - 1] === "")
+        if (count($lines) && $lines[count($lines) - 1] === "") {
             array_pop($lines);
+        }
 
         $text = "";
         $textstart = 0;
         for ($i = 0; $i < count($lines); ++$i) {
             $line = rtrim($lines[$i]);
-            if ($line == "")
+            if ($line == "") {
                 $text .= "\n";
-            else if (preg_match('/\A%(?:REVIEWS|COMMENTS)(?:[(].*[)])?%\z/s', $line)) {
-                if (($m = $this->expandvar($line, false)) != "")
+            } else if (preg_match('/\A%(?:REVIEWS|COMMENTS)(?:[(].*[)])?%\z/s', $line)) {
+                if (($m = $this->expandvar($line, false)) != "") {
                     $text .= $m . "\n";
-            } else if (strpos($line, "%") === false)
+                }
+            } else if (strpos($line, "%") === false) {
                 $text .= prefix_word_wrap("", $line, 0, $width);
-            else {
+            } else {
                 if ($line[0] === " " || $line[0] === "\t") {
                     if (preg_match('/\A([ \t]*)(%\w+(?:|\([^\)]*\))%)(:.*)\z/s', $line, $m)
-                        && $this->expandvar($m[2], true))
+                        && $this->expandvar($m[2], true)) {
                         $line = $m[1] . $this->expandvar($m[2]) . $m[3];
+                    }
                     if (preg_match('/\A([ \t]*.*?: )(%\w+(?:|\([^\)]*\))%|\S+)\s*\z/s', $line, $m)
                         && ($tl = tabLength($m[1], true)) <= 20) {
                         if (str_starts_with($m[2], "%OPT(")) {
-                            if (($yes = $this->expandvar($m[2], true)))
+                            if (($yes = $this->expandvar($m[2], true))) {
                                 $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), $tl, $width);
-                            else if ($yes === null)
+                            } else if ($yes === null) {
                                 $text .= $line . "\n";
-                        } else
+                            }
+                        } else {
                             $text .= $this->_lineexpand($m[2], $m[1], $tl, $width);
+                        }
                         continue;
                     }
                 }
@@ -585,8 +596,9 @@ class Mailer {
         }
 
         // lose newlines on header expansion
-        if ($this->expansionType != self::EXPAND_BODY)
+        if ($this->expansionType != self::EXPAND_BODY) {
             $text = rtrim(preg_replace('/[\r\n\f\x0B]+/', ' ', $text));
+        }
 
         $this->expansionType = $oldExpansionType;
         return $text;
@@ -636,8 +648,9 @@ class Mailer {
         $prep->body = $mail["body"];
 
         // look up recipient; use preferredEmail if set
-        if (!$this->recipient || !$this->recipient->email)
+        if (!$this->recipient || !$this->recipient->email) {
             return Conf::msg_error("no email in Mailer::send");
+        }
         if ($this->recipient->preferredEmail) {
             $recip = (object) [
                 "firstName" => $this->recipient->firstName,
@@ -672,7 +685,7 @@ class Mailer {
         $prep->headers["subject"] = $subject . $eol;
         $prep->headers["to"] = "";
         foreach (self::$email_fields as $lcfield => $field) {
-            if (($text = get_s($mail, $lcfield)) !== "" && $text !== "<none>") {
+            if (($text = $mail[$lcfield] ?? "") !== "" && $text !== "<none>") {
                 if (($hdr = $mimetext->encode_email_header($field . ": ", $text))) {
                     $prep->headers[$lcfield] = $hdr . $eol;
                 } else {
@@ -683,7 +696,7 @@ class Mailer {
                         error_log("mailer error on $logmsg");
                         $this->_errors_reported[] = $logmsg;
                     }
-                    if (!get($rest, "no_error_quit")) {
+                    if (!($rest["no_error_quit"] ?? false)) {
                         Conf::msg_error("Malformed $field field:" . $prep->errors[$lcfield]);
                     }
                 }
@@ -698,9 +711,9 @@ class Mailer {
     static function send_combined_preparations($preps) {
         $last_p = null;
         foreach ($preps as $p) {
-            if ($last_p && $last_p->can_merge($p))
+            if ($last_p && $last_p->can_merge($p)) {
                 $last_p->merge($p);
-            else {
+            } else {
                 $last_p && $last_p->send();
                 $last_p = $p;
             }

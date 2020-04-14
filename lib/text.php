@@ -176,14 +176,17 @@ class Text {
     static function user_email_to(/* ... */) {
         // was contactEmailTo
         $r = self::analyze_name_args(func_get_args());
-        if (($e = $r->email) === "")
+        if (($e = $r->email) === "") {
             $e = "none";
+        }
         if (($n = $r->orderedName) !== "") {
-            if (preg_match('/[\000-\037()[\]<>@,;:\\".]/', $n))
+            if (preg_match('/[\000-\037()[\]<>@,;:\\".]/', $n)) {
                 $n = "\"" . addcslashes($n, '"\\') . "\"";
+            }
             return "$n <$e>";
-        } else
+        } else {
             return $e;
+        }
     }
 
     static function initial($s) {
