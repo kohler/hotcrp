@@ -3,16 +3,17 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-if (!$Me->is_manager())
+if (!$Me->is_manager()) {
     $Me->escape();
+}
 
 unset($Qreq->forceShow, $_GET["forceShow"], $_POST["forceShow"]);
 $nlinks = 6;
 
 $page = $Qreq->page;
-if ($page === "earliest")
+if ($page === "earliest") {
     $page = false;
-else {
+} else {
     $page = cvtint($page, -1);
     if ($page <= 0)
         $page = 1;
@@ -30,8 +31,9 @@ $count = min($count, 200);
 
 $Qreq->q = trim((string) $Qreq->q);
 $Qreq->p = trim((string) $Qreq->p);
-if (isset($Qreq->acct) && !isset($Qreq->u))
+if (isset($Qreq->acct) && !isset($Qreq->u)) {
     $Qreq->u = $Qreq->acct;
+}
 $Qreq->u = trim((string) $Qreq->u);
 $Qreq->date = trim($Qreq->get("date", "now"));
 
@@ -42,8 +44,9 @@ if ($Qreq->p !== "") {
     $Search = new PaperSearch($Me, ["t" => "all", "q" => $Qreq->p]);
     $Search->set_allow_deleted(true);
     $include_pids = $Search->paper_ids();
-    foreach ($Search->warnings as $w)
+    foreach ($Search->warnings as $w) {
         Ht::warning_at("p", $w);
+    }
     if (!empty($include_pids)) {
         $where = array();
         foreach ($include_pids as $p) {
@@ -70,8 +73,9 @@ if ($Qreq->u !== "") {
             $word = preg_replace(',(?:\A"|"\z),', "", $word);
         }
         $Search = new ContactSearch($flags, $word, $Me);
-        foreach ($Search->ids as $id)
+        foreach ($Search->ids as $id) {
             $ids[$id] = $id;
+        }
     }
     $where = array();
     if (count($ids)) {
@@ -82,9 +86,9 @@ if ($Qreq->u !== "") {
             $where[] = "action like " . Dbl::utf8ci("'% " . sqlq_for_like($row[1]) . "%'");
         }
     }
-    if (count($where))
+    if (count($where)) {
         $wheres[] = "(" . join(" or ", $where) . ")";
-    else {
+    } else {
         Ht::warning_at("u", "No matching users.");
         $wheres[] = "false";
     }

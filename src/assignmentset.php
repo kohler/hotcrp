@@ -1547,7 +1547,7 @@ class AssignmentSet {
         }
 
         // execute assignments
-        $tables = array();
+        $tables = [];
         foreach ($locks as $t => $type) {
             $tables[] = "$t $type";
         }

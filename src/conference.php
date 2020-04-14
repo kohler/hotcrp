@@ -4087,7 +4087,7 @@ class Conf {
 
     function save_logs($on) {
         if ($on && $this->_save_logs === false) {
-            $this->_save_logs = array();
+            $this->_save_logs = [];
         } else if (!$on && $this->_save_logs !== false) {
             $qv = [];
             $last_pids = null;
