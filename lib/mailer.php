@@ -83,6 +83,9 @@ class MailPreparation {
         }
         $to = (new MimeText)->encode_email_header("To: ", $to);
         $headers["to"] = $to . $eol;
+        $headers["content-transfer-encoding"] = "Content-Transfer-Encoding: quoted-printable" . $eol;
+        // XXX following assumes body is text
+        $qpe_body = quoted_printable_encode(preg_replace('/\r?\n/', "\r\n", $this->body));
 
         // set sendmail parameters
         $extra = $this->conf->opt("sendmailParam");
@@ -98,7 +101,7 @@ class MailPreparation {
             && ($sendmail = ini_get("sendmail_path"))) {
             $htext = join("", $headers);
             $f = popen($extra ? "$sendmail $extra" : $sendmail, "wb");
-            fwrite($f, $htext . $eol . $this->body);
+            fwrite($f, $htext . $eol . $qpe_body);
             $status = pclose($f);
             if (pcntl_wifexitedwith($status, 0)) {
                 $sent = true;
@@ -117,11 +120,11 @@ class MailPreparation {
             }
             unset($headers["subject"]);
             $htext = substr(join("", $headers), 0, -2);
-            $sent = mail($to, $this->subject, $this->body, $htext, $extra);
+            $sent = mail($to, $this->subject, $qpe_body, $htext, $extra);
         } else if (!$sent
                    && !$this->conf->opt("sendEmail")
                    && !preg_match('/\Aanonymous\d*\z/', $to)) {
-            unset($headers["mime-version"], $headers["content-type"]);
+            unset($headers["mime-version"], $headers["content-type"], $headers["content-transfer-encoding"]);
             $text = join("", $headers) . $eol . $this->body;
             if (PHP_SAPI != "cli") {
                 $this->conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");
