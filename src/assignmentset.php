@@ -1563,7 +1563,6 @@ class AssignmentSet {
             call_user_func($this->qe_stager, null);
         }
         $this->conf->qe("unlock tables");
-        $this->conf->save_logs(false);
 
         // confirmation message
         if ($verbose && $this->conf->setting("pcrev_assigntime") == $Now) {
@@ -1586,6 +1585,7 @@ class AssignmentSet {
         if (!empty($pids)) {
             $this->conf->update_autosearch_tags(array_keys($pids));
         }
+        $this->conf->save_logs(false);
 
         return true;
     }

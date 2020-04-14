@@ -4084,6 +4084,7 @@ class Conf {
     //
 
     const action_log_query = "insert into ActionLog (ipaddr, contactId, destContactId, trueContactId, paperId, timestamp, action) values ?v";
+    const action_log_query_action_index = 6;
 
     function save_logs($on) {
         if ($on && $this->_save_logs === false) {
@@ -4100,9 +4101,9 @@ class Conf {
                 // Combine `Tag` messages
                 if (substr($what, 0, 4) === "Tag "
                     && ($n = count($qv)) > 0
-                    && substr($qv[$n-1][4], 0, 4) === "Tag "
+                    && substr($qv[$n-1][self::action_log_query_action_index], 0, 4) === "Tag "
                     && $last_pids === $pids) {
-                    $qv[$n-1][4] = $what . substr($qv[$n-1][4], 3);
+                    $qv[$n-1][self::action_log_query_action_index] = $what . substr($qv[$n-1][self::action_log_query_action_index], 3);
                 } else {
                     foreach (self::format_log_values($what, $user, $dest_user, $true_user, $pids) as $x) {
                         $qv[] = $x;
