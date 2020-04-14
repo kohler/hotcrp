@@ -4103,7 +4103,7 @@ class Conf {
                     && ($n = count($qv)) > 0
                     && substr($qv[$n-1][self::action_log_query_action_index], 0, 4) === "Tag "
                     && $last_pids === $pids) {
-                    $qv[$n-1][self::action_log_query_action_index] = $what . substr($qv[$n-1][self::action_log_query_action_index], 3);
+                    $qv[$n-1][self::action_log_query_action_index] .= substr($what, 3);
                 } else {
                     foreach (self::format_log_values($what, $user, $dest_user, $true_user, $pids) as $x) {
                         $qv[] = $x;
@@ -4199,18 +4199,25 @@ class Conf {
             $r = $n;
             while ($l + 1 !== $r) {
                 $t = $text . " (papers ";
-                if ($l === 0 && $r === $n)
+                if ($l === 0 && $r === $n) {
                     $t .= join(", ", $pids);
-                else
+                } else {
                     $t .= join(", ", array_slice($pids, $l, $r - $l, true));
+                }
                 $t .= ")";
                 if (strlen($t) <= 4096) {
                     break;
                 }
                 $r = $l + max(1, ($r - $l) >> 1);
             }
-            $pid = $l + 1 === $r ? $pids[$l] : null;
-            $result[] = [$addr, $user, $dest_user, $true_user, $pid, $Now, substr($t, 0, 4096)];
+            if ($l + 1 === $r) {
+                $pid = $pids[$l];
+                $t = substr($text, 0, 4096);
+            } else {
+                $pid = null;
+                $t = substr($t, 0, 4096);
+            }
+            $result[] = [$addr, $user, $dest_user, $true_user, $pid, $Now, $t];
             $l = $r;
         }
         return $result;
