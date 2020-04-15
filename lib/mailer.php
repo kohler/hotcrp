@@ -7,9 +7,9 @@ class MailPreparation {
     public $subject = "";
     public $body = "";
     public $preparation_owner = "";
-    public $to;
+    public $to = [];
     public $contactIds = [];
-    private $_valid_recipient;
+    private $_valid_recipient = true;
     public $sensitive = false;
     public $headers = [];
     public $errors = [];
@@ -18,16 +18,18 @@ class MailPreparation {
 
     function __construct($conf, $recipient) {
         $this->conf = $conf;
-        if ($recipient->preferredEmail ?? null) {
-            $this->to = [Text::user_email_to($recipient->firstName, $recipient->lastName, $recipient->preferredEmail)];
-            $email = $recipient->preferredEmail;
-        } else {
-            $this->to = [Text::user_email_to($recipient)];
-            $email = $recipient->email;
-        }
-        $this->_valid_recipient = self::valid_email($email);
-        if ($recipient->contactId) {
-            $this->contactIds[] = $recipient->contactId;
+        if ($recipient) {
+            if ($recipient->preferredEmail ?? null) {
+                $this->to[] = Text::user_email_to($recipient->firstName, $recipient->lastName, $recipient->preferredEmail);
+                $email = $recipient->preferredEmail;
+            } else {
+                $this->to[] = Text::user_email_to($recipient);
+                $email = $recipient->email;
+            }
+            $this->_valid_recipient = self::valid_email($email);
+            if ($recipient->contactId) {
+                $this->contactIds[] = $recipient->contactId;
+            }
         }
     }
     static function valid_email($email) {

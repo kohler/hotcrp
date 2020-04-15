@@ -478,7 +478,7 @@ class MailSender {
 
         $mailer = new HotCRPMailer($this->conf);
         $mailer->combination_type = $this->recip->combination_type($paper_sensitive);
-        $fake_prep = new HotCRPMailPreparation($this->conf);
+        $fake_prep = new HotCRPMailPreparation($this->conf, null);
         $fake_prep->fake = true;
         $last_prep = $fake_prep;
         $nrows_done = 0;
