@@ -1631,9 +1631,7 @@ class Contact {
     function send_mail($template, $rest = []) {
         $mailer = new HotCRPMailer($this->conf, $this, $rest);
         $prep = $mailer->make_preparation($template, $rest);
-        if ($prep->sendable
-            || !$prep->sensitive
-            || $this->conf->opt("debugShowSensitiveEmail")) {
+        if ($prep->can_send()) {
             $prep->send();
             return $prep;
         } else {

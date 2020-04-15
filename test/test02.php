@@ -451,22 +451,31 @@ xassert(Contact::is_anonymous_email("anonymous9"));
 xassert(!Contact::is_anonymous_email("anonymous@example.com"));
 xassert(!Contact::is_anonymous_email("example@anonymous"));
 
-// Mailer::allow_send tests
+// MailPreparation::valid_email tests
+xassert(MailPreparation::valid_email("ass@butt.com"));
+xassert(MailPreparation::valid_email("ass@example.edu"));
+xassert(!MailPreparation::valid_email("ass"));
+xassert(!MailPreparation::valid_email("ass@_.com"));
+xassert(!MailPreparation::valid_email("ass@_.co.uk"));
+xassert(!MailPreparation::valid_email("ass@example.com"));
+xassert(!MailPreparation::valid_email("ass@example.org"));
+xassert(!MailPreparation::valid_email("ass@example.net"));
+xassert(!MailPreparation::valid_email("ass@Example.com"));
+xassert(!MailPreparation::valid_email("ass@Example.ORG"));
+xassert(!MailPreparation::valid_email("ass@Example.net"));
+
+$prep1 = new MailPreparation($Conf, (object) ["email" => "ass@butt.com", "contactId" => 0]);
+$prep2 = new MailPreparation($Conf, (object) ["email" => "ass@example.edu", "contactId" => 0]);
+$prep1->sensitive = $prep2->sensitive = true;
+xassert(!$Conf->opt("sendEmail") && $Conf->opt("debugShowSensitiveEmail"));
 $Conf->set_opt("sendEmail", true);
-xassert(Mailer::allow_send("ass@butt.com"));
-xassert(Mailer::allow_send("ass@example.edu"));
-xassert(!Mailer::allow_send("ass"));
-xassert(!Mailer::allow_send("ass@_.com"));
-xassert(!Mailer::allow_send("ass@_.co.uk"));
-xassert(!Mailer::allow_send("ass@example.com"));
-xassert(!Mailer::allow_send("ass@example.org"));
-xassert(!Mailer::allow_send("ass@example.net"));
-xassert(!Mailer::allow_send("ass@Example.com"));
-xassert(!Mailer::allow_send("ass@Example.ORG"));
-xassert(!Mailer::allow_send("ass@Example.net"));
+$Conf->set_opt("debugShowSensitiveEmail", false);
+xassert($prep1->can_send());
+xassert($prep2->can_send());
 $Conf->set_opt("sendEmail", false);
-xassert(!Mailer::allow_send("ass@butt.com"));
-xassert(!Mailer::allow_send("ass@example.edu"));
+xassert(!$prep1->can_send());
+xassert(!$prep2->can_send());
+$Conf->set_opt("debugShowSensitiveEmail", true);
 
 // NavigationState tests
 $ns = new NavigationState(["SERVER_PORT" => 80, "SCRIPT_FILENAME" => __FILE__,

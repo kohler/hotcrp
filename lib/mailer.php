@@ -7,36 +7,65 @@ class MailPreparation {
     public $subject = "";
     public $body = "";
     public $preparation_owner = "";
-    public $to = [];
+    public $to;
     public $contactIds = [];
-    public $sendable = false;
+    private $_valid_recipient;
     public $sensitive = false;
     public $headers = [];
     public $errors = [];
     public $unique_preparation = false;
     public $reset_capability;
 
-    function __construct($conf) {
+    function __construct($conf, $recipient) {
         $this->conf = $conf;
+        if ($recipient->preferredEmail ?? null) {
+            $this->to = [Text::user_email_to($recipient->firstName, $recipient->lastName, $recipient->preferredEmail)];
+            $email = $recipient->preferredEmail;
+        } else {
+            $this->to = [Text::user_email_to($recipient)];
+            $email = $recipient->email;
+        }
+        $this->_valid_recipient = self::valid_email($email);
+        if ($recipient->contactId) {
+            $this->contactIds[] = $recipient->contactId;
+        }
+    }
+    static function valid_email($email) {
+        return ($at = strpos($email, "@")) !== false
+            && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")
+                || !preg_match('/\G(?:_.*|example\.(?:com|net|org))\z/i', $email, $m, 0, $at + 1));
     }
     function can_merge($p) {
-        return $this->subject == $p->subject
-            && $this->body == $p->body
-            && get($this->headers, "cc") == get($p->headers, "cc")
-            && get($this->headers, "reply-to") == get($p->headers, "reply-to")
-            && $this->preparation_owner == $p->preparation_owner
+        return $this->subject === $p->subject
+            && $this->body === $p->body
+            && ($this->headers["cc"] ?? null) == ($p->headers["cc"] ?? null)
+            && ($this->headers["reply-to"] ?? null) == ($p->headers["reply-to"] ?? null)
+            && $this->preparation_owner === $p->preparation_owner
             && !$this->unique_preparation
-            && !$p->unique_preparation;
+            && !$p->unique_preparation
+            && empty($this->errors)
+            && empty($p->errors);
     }
     function merge($p) {
-        foreach ($p->to as $email) {
-            if (!in_array($email, $this->to))
-                $this->to[] = $email;
+        foreach ($p->to as $dest) {
+            if (!in_array($dest, $this->to))
+                $this->to[] = $dest;
         }
         foreach ($p->contactIds as $cid) {
             if (!in_array($cid, $this->contactIds))
                 $this->contactIds[] = $cid;
         }
+        $this->_valid_recipient = $this->_valid_recipient && $p->_valid_recipient;
+    }
+    function can_send_external() {
+        return $this->conf->opt("sendEmail")
+            && empty($this->errors)
+            && $this->_valid_recipient;
+    }
+    function can_send() {
+        return $this->can_send_external()
+            || (empty($this->errors) && !$this->sensitive)
+            || $this->conf->opt("debugShowSensitiveEmail");
     }
     function send() {
         if ($this->conf->call_hooks("send_mail", null, $this) === false) {
@@ -64,7 +93,7 @@ class MailPreparation {
             }
         }
 
-        if ($this->sendable
+        if ($this->can_send_external()
             && $this->conf->opt("internalMailer", strncasecmp(PHP_OS, "WIN", 3) != 0)
             && ($sendmail = ini_get("sendmail_path"))) {
             $htext = join("", $headers);
@@ -79,7 +108,7 @@ class MailPreparation {
             }
         }
 
-        if (!$sent && $this->sendable) {
+        if (!$sent && $this->can_send_external()) {
             if (strpos($to, $eol) === false) {
                 unset($headers["to"]);
                 $to = substr($to, 4); // skip "To: "
@@ -152,7 +181,7 @@ class Mailer {
         } else if (!$this->width) {
             $this->width = 10000000;
         }
-        $this->sensitive = false;
+        $this->sensitive = $settings["sensitive"] ?? false;
     }
 
     static function eol() {
@@ -610,16 +639,9 @@ class Mailer {
     }
 
 
-    static function allow_send($email) {
-        global $Conf;
-        return $Conf->opt("sendEmail")
-            && ($at = strpos($email, "@")) !== false
-            && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")
-                || !preg_match(';\A(?:_.*|example\.(?:com|net|org))\z;i', substr($email, $at + 1)));
-    }
-
     function create_preparation() {
-        return new MailPreparation($this->conf);
+        assert($this->recipient);
+        return new MailPreparation($this->conf, $this->recipient);
     }
 
     function make_preparation($template, $rest = []) {
@@ -636,40 +658,25 @@ class Mailer {
                 $template[$lcfield] = $rest[$lcfield];
         }
 
-        // expand the template
-        $prep = $this->preparation = $this->create_preparation();
-        $mail = $this->expand($template);
-        $this->preparation = null;
-        $mimetext = new MimeText;
-
-        $subject = $mimetext->encode_header("Subject: ", $mail["subject"]);
-        $prep->subject = substr($subject, 9);
-
-        $prep->body = $mail["body"];
-
         // look up recipient; use preferredEmail if set
         if (!$this->recipient || !$this->recipient->email) {
             return Conf::msg_error("no email in Mailer::send");
         }
-        if ($this->recipient->preferredEmail) {
-            $recip = (object) [
-                "firstName" => $this->recipient->firstName,
-                "lastName" => $this->recipient->lastName,
-                "email" => $this->recipient->preferredEmail
-            ];
-        } else {
-            $recip = $this->recipient;
-        }
-        $prep->to = [Text::user_email_to($recip)];
-        $mail["to"] = $prep->to[0];
-        $prep->sendable = self::allow_send($recip->email);
-
         if (!isset($this->recipient->contactId)) {
             error_log("no contactId in recipient: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         }
-        if ($this->recipient->contactId > 0) {
-            $prep->contactIds[] = $this->recipient->contactId;
-        }
+        $prep = $this->create_preparation();
+        $mimetext = new MimeText;
+
+        // expand the template
+        $this->preparation = $prep;
+        $mail = $this->expand($template);
+        $this->preparation = null;
+
+        $mail["to"] = $prep->to[0];
+        $subject = $mimetext->encode_header("Subject: ", $mail["subject"]);
+        $prep->subject = substr($subject, 9);
+        $prep->body = $mail["body"];
 
         // parse headers
         $fromHeader = $this->conf->opt("emailFromHeader");
@@ -690,7 +697,6 @@ class Mailer {
                     $prep->headers[$lcfield] = $hdr . $eol;
                 } else {
                     $prep->errors[$lcfield] = $mimetext->unparse_error();
-                    $prep->sendable = false;
                     $logmsg = "$lcfield: $text";
                     if (!in_array($logmsg, $this->_errors_reported)) {
                         error_log("mailer error on $logmsg");

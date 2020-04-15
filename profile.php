@@ -265,11 +265,10 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
                 "timeExpires" => $Now + 259200,
                 "data" => json_encode_db(["oldemail" => $Acct->email, "uemail" => $cj->email])
             ]);
-            $rest = ["capability" => $capability];
+            $rest = ["capability" => $capability, "sensitive" => true];
             $mailer = new HotCRPMailer($Conf, $Acct, $rest);
             $prep = $mailer->make_preparation("@changeemail", $rest);
-            if ($prep->sendable
-                || $Conf->opt("debugShowSensitiveEmail")) {
+            if ($prep->can_send()) {
                 $prep->send();
                 $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . ". Use the link it contains to confirm your email change request.");
             } else {

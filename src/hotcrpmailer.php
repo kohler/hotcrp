@@ -10,8 +10,8 @@ class HotCRPMailPreparation extends MailPreparation {
     public $fake = false;
     public $censored_preparation; // used in mail tool
 
-    function __construct($conf) {
-        parent::__construct($conf);
+    function __construct($conf, $recipient) {
+        parent::__construct($conf, $recipient);
     }
     function can_merge($p) {
         return parent::can_merge($p)
@@ -451,7 +451,8 @@ class HotCRPMailer extends Mailer {
     }
 
     function create_preparation() {
-        $prep = new HotCRPMailPreparation($this->conf);
+        assert($this->recipient);
+        $prep = new HotCRPMailPreparation($this->conf, $this->recipient);
         if ($this->row && get($this->row, "paperId") > 0) {
             $prep->paperId = $this->row->paperId;
             $prep->conflictType = $this->row->has_author($this->recipient);
