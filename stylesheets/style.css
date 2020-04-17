@@ -2240,10 +2240,6 @@ td.pl_formula {
 	font-variant-numeric: tabular-nums;
 }
 
-.pl_titleextra {
-	font-weight: normal;
-}
-
 .pl_longtext, .pl_shorttext {
 	margin-top: 4px;
 	margin-bottom: 4px;

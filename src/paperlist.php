@@ -1203,37 +1203,6 @@ class PaperList {
         $this->table_attr["data-columns"] = $jscol;
     }
 
-    private function _make_title_header_extra($rstate, $fieldDef, $show_links) {
-        $titleextra = "";
-        if ($show_links && $this->has("authors")) {
-            $titleextra .= '<span class="sep"></span>';
-            if ($this->conf->submission_blindness() == Conf::BLIND_NEVER) {
-                $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="au">'
-                    . '<span class="fn1">Show authors</span><span class="fx1">Hide authors</span></a>';
-            } else if ($this->user->is_manager() && !$this->has("openau")) {
-                $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="au anonau">'
-                    . '<span class="fn1 fn2">Show authors</span><span class="fx1 fx2">Hide authors</span></a>';
-            } else if ($this->user->is_manager() && $this->has("anonau")) {
-                $titleextra .= '<a class="ui js-plinfo fn1" href="#" data-plinfo-field="au">Show authors</a>'
-                    . '<a class="ui js-plinfo fx1 fn2" href="#" data-plinfo-field="anonau">Show all authors</a>'
-                    . '<a class="ui js-plinfo fx1 fx2" href="#" data-plinfo-field="au anonau">Hide authors</a>';
-            } else {
-                $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="au">'
-                    . '<span class="fn1">Show authors</span><span class="fx1">Hide authors</span></a>';
-            }
-        }
-        if ($show_links && $this->has("tags")) {
-            $tagfold = $this->find_column("tags")->fold;
-            $titleextra .= '<span class="sep"></span>';
-            $titleextra .= '<a class="ui js-plinfo" href="#" data-plinfo-field="tags">'
-                . '<span class="fn' . $tagfold . '">Show tags</span><span class="fx' . $tagfold . '">Hide tags</span></a>';
-        }
-        if ($titleextra) {
-            $titleextra = '<span class="pl_titleextra">' . $titleextra . '</span>';
-        }
-        return $titleextra;
-    }
-
     private function _column_split($rstate, $colhead, &$body) {
         if (count($rstate->groupstart) <= 1) {
             return false;
@@ -1660,28 +1629,26 @@ class PaperList {
         $colhead = "";
         if (!($options["noheader"] ?? false)) {
             $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">";
-            $titleextra = $this->_make_title_header_extra($rstate, $fieldDef,
-                                                          get($options, "header_links"));
 
             foreach ($fieldDef as $fdef) {
-                if (!$fdef->viewable_column() || !$fdef->is_visible)
+                if (!$fdef->viewable_column() || !$fdef->is_visible) {
                     continue;
+                }
                 if ($fdef->has_content) {
                     $colhead .= "<th class=\"pl plh " . $fdef->className;
-                    if ($fdef->fold)
+                    if ($fdef->fold) {
                         $colhead .= " fx" . $fdef->fold;
+                    }
                     $colhead .= "\">";
-                    if ($fdef->has_content)
+                    if ($fdef->has_content) {
                         $colhead .= $this->_field_title($fdef);
-                    if ($titleextra && $fdef->className == "pl_title") {
-                        $colhead .= $titleextra;
-                        $titleextra = false;
                     }
                     $colhead .= "</th>";
                 } else {
                     $colhead .= "<th";
-                    if ($fdef->fold)
+                    if ($fdef->fold) {
                         $colhead .= " class=\"fx{$fdef->fold}\"";
+                    }
                     $colhead .= "></th>";
                 }
             }
