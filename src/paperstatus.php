@@ -281,8 +281,8 @@ class PaperStatus extends MessageSet {
             $pj->nonblind = !$prow->blind;
         }
 
-        if ($prow->abstract !== "" || !$this->conf->opt("noAbstract")) {
-            $pj->abstract = $prow->abstract;
+        if ($prow->abstract_text() !== "" || !$this->conf->opt("noAbstract")) {
+            $pj->abstract = $prow->abstract_text();
         }
 
         $topics = array();

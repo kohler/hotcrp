@@ -42,12 +42,19 @@ class Abstract_PaperOption extends PaperOption {
         return (string) $ov->data();
     }
     function value_load_intrinsic(PaperValue $ov) {
-        if ((string) $ov->prow->abstract !== "") {
-            $ov->set_value_data([1], [$ov->prow->abstract]);
+        if (($ab = $ov->prow->abstract_text()) !== "") {
+            $ov->set_value_data([1], [$ab]);
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        $ps->save_paperf("abstract", $ov->data());
+        $ab = $ov->data();
+        if ($ab === null || strlen($ab) < 16383) {
+            $ps->save_paperf("abstract", $ab === "" ? null : $ab);
+            $ps->update_paperf_overflow("abstract", null);
+        } else {
+            $ps->save_paperf("abstract", null);
+            $ps->update_paperf_overflow("abstract", $collab);
+        }
         return true;
     }
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
@@ -65,7 +72,7 @@ class Abstract_PaperOption extends PaperOption {
         if ($fr->for_page()) {
             $fr->table->render_abstract($fr, $this);
         } else {
-            $text = $ov->prow->abstract;
+            $text = $ov->prow->abstract_text();
             if (trim($text) !== "") {
                 $fr->value = $text;
                 $fr->value_format = $ov->prow->abstract_format();

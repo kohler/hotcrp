@@ -491,9 +491,10 @@ class PaperInfo {
         if ((string) $this->authorInformation === "") {
             $f["authors"] = true;
         }
-        if (((string) $this->abstract === ""
-             || (strlen($this->abstract) <= 6
-                 && preg_match('{\A(?:|N/?A|TB[AD])\s*\z}i', $this->abstract)))
+        $ab = $this->abstract_text();
+        if (($ab === ""
+             || (strlen($ab) <= 6
+                 && preg_match('/\A(?:|N\/?A|TB[AD])\s*\z/i', $ab)))
             && !$this->conf->opt("noAbstract")) {
             $f["abstract"] = true;
         }
@@ -537,8 +538,16 @@ class PaperInfo {
         return $this->format_of($this->title, true);
     }
 
+    function abstract_text() {
+        if ($this->dataOverflow && isset($this->dataOverflow["abstract"])) {
+            return $this->dataOverflow["abstract"];
+        } else {
+            return $this->abstract ?? "";
+        }
+    }
+
     function abstract_format() {
-        return $this->format_of($this->abstract, true);
+        return $this->format_of($this->abstract_text(), true);
     }
 
     function edit_format() {

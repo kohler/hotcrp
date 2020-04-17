@@ -89,8 +89,8 @@ class GetCheckFormat_ListAction extends ListAction {
 class GetAbstract_ListAction extends ListAction {
     const WIDTH = 96;
     private static function render_abstract($fr, $prow, $user, $o) {
-        $fr->value = $prow->abstract;
-        $fr->value_format = $prow->format_of($prow->abstract);
+        $fr->value = $prow->abstract_text();
+        $fr->value_format = $prow->abstract_format();
     }
     private static function render_authors($fr, $prow, $user, $o) {
         if ($user->can_view_authors($prow)

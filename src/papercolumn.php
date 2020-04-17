@@ -513,12 +513,13 @@ class Abstract_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $row->abstract == "";
+        return $row->abstract_text() === "";
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $t = Text::highlight($row->abstract, $pl->search->field_highlighter("abstract"), $highlight_count);
+        $ab = $row->abstract_text();
+        $t = Text::highlight($ab, $pl->search->field_highlighter("abstract"), $highlight_count);
         $klass = strlen($t) > 190 ? "pl_longtext" : "pl_shorttext";
-        if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
+        if (!$highlight_count && ($format = $row->abstract_format())) {
             $pl->need_render = true;
             $t = '<div class="' . $klass . ' need-format" data-format="'
                 . $format . '.plx">' . $t . '</div>';
@@ -528,7 +529,7 @@ class Abstract_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $row->abstract;
+        return $row->abstract_text();
     }
 }
 

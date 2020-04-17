@@ -52,9 +52,10 @@ class GetRevpref_ListAction extends ListAction {
             }
             if ($this->extended) {
                 $x = "";
-                if ($Rev->can_view_authors($prow))
+                if ($Rev->can_view_authors($prow)) {
                     $x .= prefix_word_wrap(" Authors: ", $prow->pretty_text_author_list(), "          ");
-                $x .= prefix_word_wrap("Abstract: ", rtrim($prow->abstract), "          ");
+                }
+                $x .= prefix_word_wrap("Abstract: ", rtrim($prow->abstract_text()), "          ");
                 if ($prow->topicIds != "")
                     $x .= prefix_word_wrap("  Topics: ", $prow->unparse_topics_text(), "          ");
                 $item["__postcomment__"] = $x;

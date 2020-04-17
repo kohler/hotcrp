@@ -563,9 +563,10 @@ class PaperList {
                         && $this->user->can_view_option($row, $opt);
                 });
         } else if ($key === "abstract") {
-            return $this->rowset()->any(function ($row) {
-                return (string) $row->abstract !== "";
-            });
+            return $this->conf->opt("noAbstract") !== 1
+                && $this->rowset()->any(function ($row) {
+                    return $row->abstract_text() !== "";
+                });
         } else if ($key === "openau") {
             return $this->has("authors")
                 && (!$this->user->is_manager()
