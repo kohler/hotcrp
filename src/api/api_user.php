@@ -60,9 +60,17 @@ class User_API {
         if ($qreq->accept
             && $qreq->clickthrough_id
             && ($hash = Filer::sha1_hash_as_text($qreq->clickthrough_id))) {
-            $user->activate_database_account();
-            $user->merge_and_save_data(["clickthrough" => [$hash => $Now]]);
-            $user->log_activity("Terms agreed " . substr($hash, 0, 10) . "...");
+            if ($user->has_email()) {
+                $dest_user = $user;
+            } else if (ctype_digit((string) $qreq->p)
+                       && ($ru = $user->reviewer_capability_user($qreq->p))) {
+                $dest_user = $ru;
+            } else {
+                return new JsonResult(400, "No such user.");
+            }
+            $dest_user->activate_database_account();
+            $dest_user->merge_and_save_data(["clickthrough" => [$hash => $Now]]);
+            $user->log_activity_for($dest_user, "Terms agreed " . substr($hash, 0, 10) . "...");
             return ["ok" => true];
         } else if ($qreq->clickthrough_accept) {
             return new JsonResult(400, "Parameter error.");

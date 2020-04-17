@@ -7679,7 +7679,7 @@ handle_ui.on("js-clickthrough", function (event) {
         $container = $(this).closest(".js-clickthrough-container");
     if (!$container.length)
         $container = $(this).closest(".pcontainer");
-    $.post(hoturl_post("api/clickthrough", {accept: 1}),
+    $.post(hoturl_post("api/clickthrough", {accept: 1, p: hotcrp_paperid}),
         $(this).closest("form").serialize(),
         function (data) {
             if (data && data.ok) {
