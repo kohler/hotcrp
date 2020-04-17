@@ -279,6 +279,48 @@ xassert(!$ps->has_error_at("abstract"));
 xassert_eqq(count($ps->error_fields()), 0);
 xassert_eq($ps->errors(), []);
 
+// abstract saving
+$nprow1 = $Conf->fetch_paper($npid1, $user_estrin);
+xassert_eqq($nprow1->abstract, "They see lots of colors.");
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "abstract" => " They\nsee\r\nlots of\n\n\ncolors. \n\n\n"]), $nprow1, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->save_paper_json($pj);
+xassert(!$ps->has_problem());
+$nprow1 = $Conf->fetch_paper($npid1, $user_estrin);
+xassert_eqq($nprow1->abstract, "They\nsee\r\nlots of\n\n\ncolors.");
+
+// collaborators saving
+$nprow1 = $Conf->fetch_paper($npid1, $user_estrin);
+xassert_eqq($nprow1->collaborators, "");
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => "  John Fart\rMIT\n\nButt Man (UCLA)"]), $nprow1, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->save_paper_json($pj);
+xassert(!$ps->has_error());
+$nprow1 = $Conf->fetch_paper($npid1, $user_estrin);
+xassert_eqq($nprow1->collaborators, "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => "Sal Stolfo, Guofei Gu, Manos Antonakakis, Roberto Perdisci, Weidong Cui, Xiapu Luo, Rocky Chang, Kapil Singh, Helen Wang, Zhichun Li, Junjie Zhang, David Dagon, Nick Feamster, Phil Porras."]), $nprow1, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->save_paper_json($pj);
+xassert(!$ps->has_error());
+$nprow1 = $Conf->fetch_paper($npid1, $user_estrin);
+xassert_eqq($nprow1->collaborators, "Sal Stolfo
+Guofei Gu
+Manos Antonakakis
+Roberto Perdisci
+Weidong Cui
+Xiapu Luo
+Rocky Chang
+Kapil Singh
+Helen Wang
+Zhichun Li
+Junjie Zhang
+David Dagon
+Nick Feamster
+Phil Porras.");
+
 // topic saving
 $Conf->qe("insert into TopicArea (topicName) values ('Cloud computing'), ('Architecture'), ('Security'), ('Cloud networking')");
 $Conf->save_setting("has_topics", 1);
