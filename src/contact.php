@@ -984,9 +984,10 @@ class Contact {
 
     function has_author_view_capability() {
         if ($this->_capabilities !== null) {
-            foreach ($this->_capabilities as $k => $v)
+            foreach ($this->_capabilities as $k => $v) {
                 if (str_starts_with($k, "@av"))
                     return true;
+            }
         }
         return false;
     }
@@ -999,10 +1000,11 @@ class Contact {
 
     function reviewer_capability_user($pid) {
         if ($this->_capabilities !== null
-            && ($rcid = get($this->_capabilities, "@ra{$pid}")))
+            && ($rcid = ($this->_capabilities["@ra{$pid}"] ?? null))) {
             return $this->conf->cached_user_by_id($rcid);
-        else
+        } else {
             return null;
+        }
     }
 
     function set_capability($name, $newval) {

@@ -2141,14 +2141,16 @@ class Conf {
             self::$invariant_row = $result->fetch_row();
             $result->close();
             return !!self::$invariant_row;
-        } else
+        } else {
             return null;
+        }
     }
 
     private function invariant_error(&$problems, $abbrev, $text = null) {
         $problems[$abbrev] = true;
-        if ((string) $text === "")
+        if ((string) $text === "") {
             $text = $abbrev;
+        }
         trigger_error("$this->dbname invariant error: $text");
     }
 
@@ -2157,33 +2159,40 @@ class Conf {
 
         // local invariants
         $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 and timeWithdrawn>0 limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "submitted_withdrawn", "paper #" . self::$invariant_row[0] . " is both submitted and withdrawn");
+        }
 
         // settings correctly materialize database facts
         $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 limit 1");
-        if ($any !== !get($this->settings, "no_papersub"))
+        if ($any !== !($this->settings["no_papersub"] ?? false)) {
             $this->invariant_error($ie, "no_papersub");
+        }
 
         $any = $this->invariantq("select paperId from Paper where outcome>0 and timeSubmitted>0 limit 1");
-        if ($any !== !!get($this->settings, "paperacc"))
+        if ($any !== !!($this->settings["paperacc"] ?? false)) {
             $this->invariant_error($ie, "paperacc");
+        }
 
         $any = $this->invariantq("select reviewId from PaperReview where reviewToken!=0 limit 1");
-        if ($any !== !!get($this->settings, "rev_tokens"))
+        if ($any !== !!($this->settings["rev_tokens"] ?? false)) {
             $this->invariant_error($ie, "rev_tokens");
+        }
 
         $any = $this->invariantq("select paperId from Paper where leadContactId>0 or shepherdContactId>0 limit 1");
-        if ($any !== !!get($this->settings, "paperlead"))
+        if ($any !== !!($this->settings["paperlead"] ?? false)) {
             $this->invariant_error($ie, "paperlead");
+        }
 
         $any = $this->invariantq("select paperId from Paper where managerContactId>0 limit 1");
-        if ($any !== !!get($this->settings, "papermanager"))
+        if ($any !== !!($this->settings["papermanager"] ?? false)) {
             $this->invariant_error($ie, "papermanager");
+        }
 
         $any = $this->invariantq("select paperId from PaperReview where reviewType=" . REVIEW_META . " limit 1");
-        if ($any !== !!get($this->settings, "metareviews"))
+        if ($any !== !!($this->settings["metareviews"] ?? false)) {
             $this->invariant_error($ie, "metareviews");
+        }
 
         // no empty text options
         $text_options = array();
@@ -2213,8 +2222,9 @@ class Conf {
             where r.reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null
             and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,0))!=r.reviewNeedsSubmit
             limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "reviewNeedsSubmit", "bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
+        }
 
         // review rounds are defined
         $result = $this->qe("select reviewRound, count(*) from PaperReview group by reviewRound");
@@ -2227,8 +2237,9 @@ class Conf {
 
         // anonymous users are disabled
         $any = $this->invariantq("select email from ContactInfo where email regexp '^anonymous[0-9]*\$' and not disabled limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "anonymous_user_enabled", "anonymous user is not disabled");
+        }
 
         // check tag strings
         $result = $this->qe("select distinct contactTags from ContactInfo where contactTags is not null union select distinct commentTags from PaperComment where commentTags is not null");
@@ -2241,26 +2252,31 @@ class Conf {
 
         // paper denormalizations match
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "paper_denormalization", "bad Paper denormalization, paper #" . self::$invariant_row[0]);
+        }
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.sha1 != ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "paper_final_denormalization", "bad Paper final denormalization, paper #" . self::$invariant_row[0]);
+        }
 
         // filterType is never zero
         $any = $this->invariantq("select paperStorageId from PaperStorage where filterType=0 limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "filterType", "bad PaperStorage filterType, id #" . self::$invariant_row[0]);
+        }
 
         // has_colontag is defined
         $any = $this->invariantq("select tag from PaperTag where tag like '%:' limit 1");
-        if ($any && !$this->setting("has_colontag"))
+        if ($any && !$this->setting("has_colontag")) {
             $this->invariant_error($ie, "has_colontag", "has tag " . self::$invariant_row[0] . " but no has_colontag");
+        }
 
         // has_topics is defined
         $any = $this->invariantq("select topicId from TopicArea limit 1");
-        if (!$any !== !$this->setting("has_topics"))
+        if (!$any !== !$this->setting("has_topics")) {
             $this->invariant_error($ie, "has_topics");
+        }
 
         $this->check_document_inactive_invariants();
 
@@ -2284,18 +2300,21 @@ class Conf {
 
         // comments are nonempty
         $any = $this->invariantq("select paperId, commentId from PaperComment where comment is null and commentOverflow is null and not exists (select * from DocumentLink where paperId=PaperComment.paperId and linkId=PaperComment.commentId and linkType>=0 and linkType<1024) limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "empty comment #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
+        }
 
         // non-draft comments are displayed
         $any = $this->invariantq("select paperId, commentId from PaperComment where timeDisplayed=0 and (commentType&" . COMMENTTYPE_DRAFT . ")=0 limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "submitted comment #" . self::$invariant_row[0] . "/" . self::$invariant_row[1] . " has no timeDisplayed");
+        }
 
         // submitted and ordinaled reviews are displayed
         $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (reviewSubmitted is not null or reviewOrdinal>0) limit 1");
-        if ($any)
+        if ($any) {
             $this->invariant_error($ie, "submitted/ordinal review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1] . " has no timeDisplayed");
+        }
 
         return $ie;
     }

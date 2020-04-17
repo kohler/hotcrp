@@ -8,17 +8,20 @@ class User_API {
     }
 
     static function user(Contact $user, Qrequest $qreq) {
-        if (!$user->can_lookup_user())
+        if (!$user->can_lookup_user()) {
             return new JsonResult(403, "Permission error.");
-        if (!($email = trim($qreq->email)))
+        }
+        if (!($email = trim($qreq->email))) {
             return new JsonResult(400, "Parameter error.");
+        }
 
         $users = [];
         if ($user->privChair || $user->can_view_pc()) {
             $roles = $user->is_manager() ? "" : " and (roles&" . Contact::ROLE_PC . ")!=0";
             $result = $user->conf->qe("select email, firstName, lastName, affiliation from ContactInfo where email>=? and email<? and not disabled$roles order by email asc", $email, $email . "~");
-            while (($u = $result->fetch_object()))
+            while (($u = $result->fetch_object())) {
                 $users[] = $u;
+            }
             Dbl::free($result);
         }
 
@@ -27,8 +30,9 @@ class User_API {
             && ($cdb = $user->conf->contactdb())) {
             $result = Dbl::qe($cdb, "select email, firstName, lastName, affiliation from ContactInfo where email>=? and email<? and not disabled order by email asc", $email, $email . "~");
             $users = [];
-            while (($u = $result->fetch_object()))
+            while (($u = $result->fetch_object())) {
                 $users[] = $u;
+            }
             Dbl::free($result);
         }
 
@@ -44,8 +48,9 @@ class User_API {
             $u = $users[0];
             $ok = strcasecmp($u->email, $email) === 0;
             $rj = ["ok" => $ok, "email" => $u->email, "firstName" => $u->firstName, "lastName" => $u->lastName, "affiliation" => $u->affiliation];
-            if (!$ok)
+            if (!$ok) {
                 $rj["user_error"] = true;
+            }
             return new JsonResult($ok ? 200 : 404, $rj);
         }
     }

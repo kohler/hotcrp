@@ -487,13 +487,12 @@ class Collab_PaperColumn extends PaperColumn {
         return !!$pl->conf->setting("sub_collab") && $pl->user->can_view_some_authors();
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return $row->collaborators == ""
-            || strcasecmp($row->collaborators, "None") === 0
+        return !$row->has_nonempty_collaborators()
             || !$pl->user->allow_view_authors($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $x = "";
-        foreach (explode("\n", $row->collaborators) as $c) {
+        foreach (explode("\n", $row->collaborators()) as $c) {
             if ($c !== "") {
                 $x .= ($x === "" ? "" : "; ") . trim($c);
             }
@@ -502,7 +501,7 @@ class Collab_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         $x = "";
-        foreach (explode("\n", $row->collaborators) as $c) {
+        foreach (explode("\n", $row->collaborators()) as $c) {
             $x .= ($x === "" ? "" : ", ") . trim($c);
         }
         return $x;

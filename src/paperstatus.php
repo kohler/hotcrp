@@ -337,8 +337,8 @@ class PaperStatus extends MessageSet {
             if (!empty($pcconflicts)) {
                 $pj->pc_conflicts = (object) $pcconflicts;
             }
-            if ($prow->collaborators) {
-                $pj->collaborators = $prow->collaborators;
+            if (($collab = $prow->collaborators()) !== "") {
+                $pj->collaborators = $collab;
             }
         }
 

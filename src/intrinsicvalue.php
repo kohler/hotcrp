@@ -86,8 +86,8 @@ class Collaborators_PaperOption extends PaperOption {
         return (string) $ov->data();
     }
     function value_load_intrinsic(PaperValue $ov) {
-        if ((string) $ov->prow->collaborators !== "") {
-            $ov->set_value_data([1], [$ov->prow->collaborators]);
+        if (($collab = $ov->prow->collaborators()) !== "") {
+            $ov->set_value_data([1], [$collab]);
         }
     }
     function value_check(PaperValue $ov, Contact $user) {

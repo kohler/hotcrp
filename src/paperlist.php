@@ -593,8 +593,7 @@ class PaperList {
                     });
         } else if ($key === "collab") {
             return $this->rowset()->any(function ($row) {
-                return $row->collaborators != ""
-                    && strcasecmp($row->collaborators, "None") !== 0
+                return $row->has_nonempty_collaborators()
                     && $this->user->can_view_authors($row);
             });
         } else if ($key === "need_submit") {
