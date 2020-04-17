@@ -3193,6 +3193,12 @@ handle_ui.on("js-assignment-fold", function (event) {
     }
     event.stopPropagation();
 });
+handle_ui.on("js-assignment-autosave", function (event) {
+    var f = this.closest("form");
+    toggleClass(f, "ignore-diff", this.checked);
+    $(f).find(".autosave-hidden").toggleClass("hidden", this.checked);
+    form_highlight(f);
+});
 })($);
 
 (function () {

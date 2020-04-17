@@ -245,12 +245,10 @@ $pl_text = $pl->table_html(["fold_session_prefix" => "pfdisplay.",
 
 
 // DISPLAY OPTIONS
-$showing_au = !$Conf->subBlindAlways() && $pl->showing("au");
-$showing_anonau = (!$Conf->subBlindNever() || $Me->privChair) && $pl->showing("anonau");
-
-echo Ht::form(hoturl("reviewprefs"), ["method" => "get", "id" => "searchform",
-                                      "class" => "has-fold " . ($showing_au || ($showing_anonau && $Conf->subBlindAlways()) ? "fold10o" : "fold10c")]),
-    '<div class="d-inline-block">';
+echo Ht::form($Conf->hoturl("reviewprefs"), [
+    "method" => "get", "id" => "searchform",
+    "class" => "has-fold " . ($pl->showing("au") || $pl->showing("anonau") ? "fold10o" : "fold10c")
+]);
 
 if ($Me->privChair) {
     echo '<div class="entryi"><label for="htctl-prefs-user">User</label>';
@@ -275,47 +273,36 @@ echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="e
     Ht::entry("q", $Qreq->q, ["id" => "htctl-prefs-q", "size" => 32]),
     '  ', Ht::submit("redisplay", "Redisplay"), '</div></div>';
 
-$show_data = array();
+function show_element($pl, $name, $text, $sepclass = "", $id = null, $post = "") {
+    return '<li class="checki' . ($sepclass ? " $sepclass" : "")
+        . '"><span class="checkc">'
+        . Ht::checkbox("show$name", 1, $pl->showing($name), ["class" => "uich js-plinfo ignore-diff", "id" => $id ? : "show$name"])
+        . "</span>" . Ht::label($text) . $post . '</span>';
+}
+$show_data = [];
 if ($pl->has("abstract")) {
-    $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showabstract", 1, $pl->showing("abstract"), ["class" => "uich js-plinfo"])
-        . "&nbsp;" . Ht::label("Abstracts") . '</span>';
+    $show_data[] = show_element($pl, "abstract", "Abstract");
 }
 if (!$Conf->subBlindAlways()) {
-    $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showau", 1, $pl->showing("au"),
-                ["id" => "showau", "class" => "uich js-plinfo"])
-        . "&nbsp;" . Ht::label("Authors") . "</span>";
-} else if ($Me->privChair && $Conf->subBlindAlways()) {
-    $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showanonau", 1, $pl->showing("anonau"),
-                ["id" => "showau", "class" => "uich js-plinfo"])
-        . "&nbsp;" . Ht::label("Authors (deblinded)") . "</span>"
-        . Ht::checkbox("showau", 1, $pl->showing("anonau"),
-                ["id" => "showau_hidden", "class" => "uich js-plinfo hidden"]);
+    $show_data[] = show_element($pl, "au", "Authors");
+} else if ($Me->is_manager() && $Conf->subBlindAlways()) {
+    $show_data[] = show_element($pl, "anonau", "Authors (deblinded)", "", "showau",
+        Ht::checkbox("showau", 1, $pl->showing("anonau"), ["id" => "showau_hidden", "class" => "uich js-plinfo hidden ignore-diff"]));
 }
-if (!$Conf->subBlindAlways() || $Me->privChair) {
-    $show_data[] = '<span class="sep fx10">'
-        . Ht::checkbox("showaufull", 1, $pl->showing("aufull"),
-                ["id" => "showaufull", "class" => "uich js-plinfo"])
-        . "&nbsp;" . Ht::label("Full author info") . "</span>";
+if (!$Conf->subBlindAlways() || $Me->is_manager()) {
+    $show_data[] = show_element($pl, "aufull", "Full author info", "fx10");
 }
-if ($Me->privChair && !$Conf->subBlindAlways() && !$Conf->subBlindNever()) {
-    $show_data[] = '<span class="sep fx10">'
-        . Ht::checkbox("showanonau", 1, $pl->showing("anonau"),
-                ["id" => "showanonau", "class" => "uich js-plinfo"])
-        . "&nbsp;" . Ht::label("Deblinded authors") . "</span>";
+if ($Me->is_manager() && !$Conf->subBlindAlways() && !$Conf->subBlindNever()) {
+    $show_data[] = show_element($pl, "anonau", "Deblinded authors", "fx10");
 }
 if ($Conf->has_topics()) {
-    $show_data[] = '<span class="sep">'
-        . Ht::checkbox("showtopics", 1, $pl->showing("topics"), ["class" => "uich js-plinfo"])
-        . "&nbsp;" . Ht::label("Topics") . '</span>';
+    $show_data[] = show_element($pl, "topics", "Topics");
 }
 if (!empty($show_data) && $pl->count) {
     echo '<div class="entryi"><label>Show</label>',
-        '<div class="entry">', join('', $show_data), '</div></div>';
+        '<ul class="entry inline">', join('', $show_data), '</ul></div>';
 }
-echo "</div></form>";
+echo "</form>";
 Ht::stash_script("$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
 
 

@@ -198,6 +198,37 @@ echo '<tr><td colspan="2"><div class="aab aabr">',
     "</table>\n</form></div></td></tr></table>\n";
 
 
+function show_element($pl, $name, $text, $sepclass = "", $id = null, $post = "") {
+    return '<li class="checki' . ($sepclass ? " $sepclass" : "")
+        . '"><span class="checkc">'
+        . Ht::checkbox("show$name", 1, $pl->showing($name), ["class" => "uich js-plinfo ignore-diff", "id" => $id ? : "show$name"])
+        . "</span>" . Ht::label($text) . $post . '</li>';
+}
+
+function show_elements($pl) {
+    $show_data = array();
+    if ($pl->has("abstract")) {
+        $show_data[] = show_element($pl, "abstract", "Abstract");
+    }
+    if (!$pl->conf->subBlindAlways()) {
+        $show_data[] = show_element($pl, "au", "Authors");
+    } else if ($pl->user->is_manager()) {
+        $show_data[] = show_element($pl, "anonau", "Authors (deblinded)", "", "showau",
+            Ht::checkbox("showau", 1, $pl->showing("anonau"), ["id" => "showau_hidden", "class" => "uich js-plinfo hidden ignore-diff"]));
+    }
+    if (!$pl->conf->subBlindAlways() || $pl->user->is_manager()) {
+        $show_data[] = show_element($pl, "aufull", "Full author info", "fx10");
+    }
+    if ($pl->user->is_manager() && !$pl->conf->subBlindAlways() && !$pl->conf->subBlindNever()) {
+        $show_data[] = show_element($pl, "anonau", "Deblinded authors", "fx10");
+    }
+    if ($pl->conf->has_topics()) {
+        $show_data[] = show_element($pl, "topics", "Topics");
+    }
+    $show_data[] = show_element($pl, "tags", "Tags");
+    return $show_data;
+}
+
 // Current PC member information
 if ($reviewer) {
     // search outline from old CRP, done here in a very different way
@@ -249,32 +280,43 @@ if ($reviewer) {
     if (!empty($hlsearch)) {
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     }
-    $paperList = new PaperList("reviewAssignment", $search, ["sort" => true, "display" => "show:topics show:reviewers"], $Qreq);
-    echo '<form class="assignpc ignore-diff" method="post" action="', hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]),
-        '" enctype="multipart/form-data" accept-charset="UTF-8"><div>', "\n",
+    $pl = new PaperList("reviewAssignment", $search, ["sort" => true, "display" => "show:topics show:reviewers"], $Qreq);
+    echo Ht::form($Conf->hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]), ["class" => "has-fold " . ($pl->showing("au") || $pl->showing("anonau") ? "fold10o" : "fold10c") . " assignpc ignore-diff"]),
         Ht::hidden("t", $Qreq->t),
-        Ht::hidden("q", $Qreq->q),
-        "<div class=\"aab aabr aabig\">",
-        '<div class="aabut aabutsp">', Ht::submit("update", "Save assignments", ["class" => "btn-primary"]), '</div>';
+        Ht::hidden("q", $Qreq->q);
     $rev_rounds = $Conf->round_selector_options(false);
     $expected_round = $Conf->assignment_round_option(false);
+
+    echo '<div id="searchform">';
     if (count($rev_rounds) > 1) {
-        echo '<div class="aabut aabutsp">Review round: &nbsp;',
-            Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : $expected_round, ["id" => "assrevround", "class" => "ignore-diff"]),
-            '</div>';
+        echo '<div class="entryi"><label for="assrevround">Review round</label><div class="entry">',
+            Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : $expected_round, ["id" => "assrevround", "class" => "ignore-diff"]), ' <span class="barsep">·</span> ';
     } else if ($expected_round !== "unnamed") {
-        echo '<div class="aabut aabutsp">Review round: ', $expected_round, '</div>';
+        echo '<div class="entryi"><label>Review round</label><div class="entry">',
+            $expected_round, ' <span class="barsep">·</span> ';
+    } else {
+        echo '<div class="entryi"><label></label><div class="entry">';
     }
-    $paperList->set_table_id_class("foldpl", "pltable-fullw");
-    echo '<div class="aabut aabutsp"><label>',
-        Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff"]),
-        "&nbsp;Automatically save assignments</label></div></div>\n",
-        $paperList->table_html(["header_links" => true, "nofooter" => true, "list" => true]),
-        '<div class="aab aabr aabig"><div class="aabut">',
+    echo '<label class="d-inline-block checki"><span class="checkc">',
+        Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff uich js-assignment-autosave"]),
+        '</span>Automatically save assignments</label></div></div>';
+    $show_data = show_elements($pl);
+    if (!empty($show_data)) {
+        echo '<div class="entryi"><label>Show</label>',
+            '<ul class="entry inline">', join('', $show_data), '</ul></div>';
+    }
+    echo '<div class="entryi autosave-hidden hidden"><label></label><div class="entry">',
+        Ht::submit("update", "Save assignments", ["class" => "btn-primary btn big"]), '</div></div>';
+    echo '</div>';
+
+    $pl->set_table_id_class("foldpl", "pltable-fullw");
+    echo $pl->table_html(["nofooter" => true, "list" => true]);
+
+    echo '<div class="aab aabr aabig"><div class="aabut">',
         Ht::submit("update", "Save assignments", ["class" => "btn-primary"]),
-        "</div></div></div></form>\n";
-    Ht::stash_script('hiliter_children("form.assignpc")');
-    Ht::stash_script('$("#assrevimmediate").on("change", function () { var $f = $(this).closest("form").toggleClass("ignore-diff", this.checked); form_highlight($f); })');
+        "</div></div></form>\n";
+    Ht::stash_script('hiliter_children("form.assignpc");$("#assrevimmediate").trigger("change");'
+        . "$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
 }
 
 echo '<hr class="c" />';

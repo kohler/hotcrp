@@ -55,7 +55,7 @@ foreach ($Conf->full_pc_members() as $pc) {
     $paperlist->set_reviewer_user($pc);
     $paperlist->set_row_filter($filter);
     $paperlist->set_table_id_class(null, "pltable-fullw");
-    $tr = $paperlist->table_render(["header_links" => false, "nofooter" => true]);
+    $tr = $paperlist->table_render(["nofooter" => true]);
     if ($paperlist->count > 0) {
         if (!$any) {
             echo Ht::form(hoturl("conflictassign")),

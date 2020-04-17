@@ -55,13 +55,22 @@ form {
 ul.x {
 	margin: 0 0 1em;
 	padding-left: 0 !important;
+	list-style-type: none;
 }
 ul.x > li {
 	margin: 0 0 0.25em;
-	list-style-type: none;
 }
 ul.x > li:last-child {
 	margin-bottom: 0;
+}
+ul.inline {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+ul.inline > li {
+	display: inline-block;
+	padding-right: 1rem;
 }
 address {
 	font-style: inherit;
@@ -364,6 +373,10 @@ label.checki {
 .mb-0 {
 	margin-bottom: 0 !important;
 }
+.mb-2 {
+	margin-bottom: 0.5em !important;
+	margin-bottom: 0.5rem !important;
+}
 .mb-3 {
 	margin-bottom: 1em !important;
 	margin-bottom: 1rem !important;
@@ -438,10 +451,13 @@ td.g {
 	display: block;
 }
 .d-inline {
-	display: inline;
+	display: inline !important;
 }
 .d-block {
-	display: block;
+	display: block !important;
+}
+.d-inline-block {
+	display: inline-block !important;
 }
 
 
@@ -1058,11 +1074,11 @@ button.btn-link:hover {
 .alert .if-alert {
 	display: block;
 }
-.aabig button, .aabig .btn {
+.aabig button, .aabig .btn, .btn.big {
 	padding: 4px 9px 4px;
 	min-height: 31px;
 }
-.aabig .btn-licon {
+.aabig .btn-licon, .btn-licon.big {
 	padding: 1px 7px 1px;
 }
 .aab {
@@ -3830,7 +3846,7 @@ a.help {
 }
 
 /* scores */
-div.scorechart, .d-inline-block {
+div.scorechart {
 	display: inline-block;
 }
 div.sc {
