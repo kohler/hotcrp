@@ -989,7 +989,10 @@ class PaperOption implements Abbreviator {
             if ($flags & self::PARSE_STRING_SIMPLIFY) {
                 $j = simplify_whitespace($j);
             } else if ($flags & self::PARSE_STRING_TRIM) {
-                $j = trim($j);
+                $j = rtrim($j);
+                if ($j !== "" && ctype_space($j[0])) {
+                    $j = preg_replace('/\A(?: {0,3}[\r\n]*)*/', "", $j);
+                }
             }
             if ($j !== "" || ($flags & self::PARSE_STRING_EMPTY)) {
                 return PaperValue::make($prow, $this, 1, $j);
