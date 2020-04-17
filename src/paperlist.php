@@ -1803,8 +1803,9 @@ class PaperList {
         }
 
         // analyze `has`, including authors
-        foreach ($field_list as $fdef)
+        foreach ($field_list as $fdef) {
             $this->mark_has($fdef->name, $fdef->has_content);
+        }
 
         // output fields and statistics
         $fields = $stats = [];
