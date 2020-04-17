@@ -289,6 +289,7 @@ class PaperInfo {
     public $managerContactId;
     public $paperFormat;
     public $outcome;
+    public $dataOverflow;
     // $paperTags: DO NOT LIST (property_exists() is meaningful)
     // $optionIds: DO NOT LIST (property_exists() is meaningful)
     // $topicIds: DO NOT LIST (property_exists() is meaningful)
@@ -350,6 +351,12 @@ class PaperInfo {
         foreach (["paperTags", "optionIds"] as $k) {
             if (property_exists($this, $k) && $this->$k === null)
                 $this->$k = "";
+        }
+        if (isset($this->dataOverflow) && is_string($this->dataOverflow)) {
+            $this->dataOverflow = json_decode($this->dataOverflow, true);
+            if ($this->dataOverflow === null) {
+                error_log("{$this->conf->dbname}: #{$this->paperId}: bad dataOverflow");
+            }
         }
     }
 
@@ -597,7 +604,11 @@ class PaperInfo {
     }
 
     function collaborators() {
-        return $this->collaborators ?? "";
+        if ($this->dataOverflow && isset($this->dataOverflow["collaborators"])) {
+            return $this->dataOverflow["collaborators"];
+        } else {
+            return $this->collaborators ?? "";
+        }
     }
 
     function collaborator_list() {

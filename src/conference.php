@@ -252,7 +252,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 230) {
+        if ($this->sversion < 231) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2193,6 +2193,14 @@ class Conf {
         if ($any !== !!($this->settings["metareviews"] ?? false)) {
             $this->invariant_error($ie, "metareviews");
         }
+
+        $result = $this->ql("select paperId, dataOverflow from Paper where dataOverflow is not null");
+        while (($row = $result->fetch_row())) {
+            if (json_decode($row[1]) === null) {
+                $this->invariant_error($ie, "#{$row[0]}: invalid dataOverflow");
+            }
+        }
+        Dbl::free($result);
 
         // no empty text options
         $text_options = array();

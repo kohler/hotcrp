@@ -97,7 +97,14 @@ class Collaborators_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        $ps->save_paperf("collaborators", $ov->data());
+        $collab = $ov->data();
+        if ($collab === null || strlen($collab) < 8190) {
+            $ps->save_paperf("collaborators", $collab === "" ? null : $collab);
+            $ps->update_paperf_overflow("collaborators", null);
+        } else {
+            $ps->save_paperf("collaborators", null);
+            $ps->update_paperf_overflow("collaborators", $collab);
+        }
         return true;
     }
     function parse_web(PaperInfo $prow, Qrequest $qreq) {

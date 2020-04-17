@@ -323,6 +323,31 @@ David Dagon
 Nick Feamster
 Phil Porras.");
 
+// the collaborators are too long
+$long_collab = [];
+for ($i = 0; $i !== 1000; ++$i) {
+    $long_collab[] = "Collaborator $i (MIT)";
+}
+$long_collab = join("\n", $long_collab);
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => $long_collab]), $nprow1, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->save_paper_json($pj);
+xassert(!$ps->has_error());
+$nprow1 = $Conf->fetch_paper($npid1, $user_estrin);
+xassert_eqq($nprow1->collaborators, null);
+xassert_eqq(json_encode_db($nprow1->dataOverflow), json_encode_db(["collaborators" => $long_collab]));
+xassert_eqq($nprow1->collaborators(), $long_collab);
+
+// the collaborators are short again
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => "One guy (MIT)"]), $nprow1, $user_estrin, "submit");
+$ps = new PaperStatus($Conf, $user_estrin);
+$ps->save_paper_json($pj);
+xassert(!$ps->has_error());
+$nprow1 = $Conf->fetch_paper($npid1, $user_estrin);
+xassert_eqq($nprow1->collaborators, "One guy (MIT)");
+xassert_eqq($nprow1->dataOverflow, null);
+xassert_eqq($nprow1->collaborators(), "One guy (MIT)");
+
 // topic saving
 $Conf->qe("insert into TopicArea (topicName) values ('Cloud computing'), ('Architecture'), ('Security'), ('Cloud networking')");
 $Conf->save_setting("has_topics", 1);

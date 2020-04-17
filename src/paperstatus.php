@@ -23,6 +23,7 @@ class PaperStatus extends MessageSet {
     public $diffs;
     private $_nnprow;
     private $_paper_upd;
+    private $_paper_overflow_upd;
     public $_topic_ins; // set by Topics_PaperOption
     private $_field_values;
     private $_option_delid;
@@ -59,7 +60,7 @@ class PaperStatus extends MessageSet {
         $this->uploaded_documents = [];
         $this->prow = null;
         $this->diffs = [];
-        $this->_paper_upd = [];
+        $this->_paper_upd = $this->_paper_overflow_upd = [];
         $this->_topic_ins = null;
         $this->_field_values = $this->_option_delid = $this->_option_ins = [];
         $this->_new_conflicts = $this->_conflict_ins = null;
@@ -756,6 +757,10 @@ class PaperStatus extends MessageSet {
         $this->_paper_upd[$f] = $v;
     }
 
+    function update_paperf_overflow($f, $v) {
+        $this->_paper_overflow_upd[$f] = $v;
+    }
+
     function mark_diff($diff) {
         $this->diffs[$diff] = true;
     }
@@ -1279,8 +1284,7 @@ class PaperStatus extends MessageSet {
 
     static function preexecute_set_default_columns(PaperStatus $ps) {
         foreach (["title" => "", "abstract" => "", "authorInformation" => "",
-                  "collaborators" => "", "paperStorageId" => 1,
-                  "finalPaperStorageId" => 0] as $f => $v) {
+                  "paperStorageId" => 1, "finalPaperStorageId" => 0] as $f => $v) {
             if (!isset($ps->_paper_upd[$f])) {
                 $ps->_paper_upd[$f] = $v;
             }
@@ -1315,6 +1319,22 @@ class PaperStatus extends MessageSet {
 
     function execute_save() {
         global $Now;
+        $dataOverflow = $this->prow ? $this->prow->dataOverflow : null;
+        if (!empty($this->_paper_overflow_upd)) {
+            $dataOverflow = $dataOverflow ?? [];
+            $old_value = empty($dataOverflow) ? null : json_encode_db($dataOverflow);
+            foreach ($this->_paper_overflow_upd as $k => $v) {
+                if ($v === null) {
+                    unset($dataOverflow[$k]);
+                } else {
+                    $dataOverflow[$k] = $v;
+                }
+            }
+            $new_value = empty($dataOverflow) ? null : json_encode_db($dataOverflow);
+            if ($new_value !== $old_value) {
+                $this->_paper_upd["dataOverflow"] = $new_value;
+            }
+        }
         if (!empty($this->_paper_upd)) {
             $need_insert = $this->paperId <= 0;
             if ($need_insert) {

@@ -186,6 +186,7 @@ CREATE TABLE `Paper` (
   `pdfFormatStatus` bigint(11) NOT NULL DEFAULT '0',
   `withdrawReason` varbinary(1024) DEFAULT NULL,
   `paperFormat` tinyint(1) DEFAULT NULL,
+  `dataOverflow` longblob,
   PRIMARY KEY (`paperId`),
   KEY `timeSubmitted` (`timeSubmitted`),
   KEY `leadContactId` (`leadContactId`),
@@ -512,7 +513,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 230);
+insert into Settings (name, value) values ('allowPaperOption', 231);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);
