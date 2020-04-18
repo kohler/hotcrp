@@ -2646,7 +2646,7 @@ a.badge:active {
 	z-index: 1;
 	background: #edf3f5;
 	color: #2b2b2b;
-	padding: 16px 16px 20px 24px;
+	padding: 16px 20px 20px 24px;
 }
 .pspcard-fold {
 	display: none;
@@ -2657,7 +2657,7 @@ a.badge:active {
 	top: 84px;
 }
 .pslcard {
-	padding: 20px 16px 20px 24px;
+	padding: 20px 20px 20px 24px;
 	margin: 0;
 	list-style-type: none;
 }
@@ -2667,7 +2667,7 @@ a.badge:active {
 	bottom: 100%;
 	left: 0px;
 	right: 0px;
-	padding: 3rem 16px 2px 24px;
+	padding: 3rem 20px 2px 24px;
 	overflow-wrap: break-word;
 	color: #d41743;
 }
@@ -2982,13 +2982,13 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 .pavfnsp:after {
 	content: " ";
 }
-.papet .papfn {
-	float: left;
-}
 .papet {
 	font-size: inherit;
 	color: #313168;
 	margin-bottom: 0.25rem;
+}
+.papet .papfn {
+	float: left;
 }
 .papfn .n {
 	font-variant: normal;
@@ -3040,6 +3040,23 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 	margin-left: 15.5rem;
 	padding-left: 24px;
 	padding-right: 24px;
+}
+@media screen and (min-width: 1152px) {
+.pcard {
+	padding-left: calc((100vw - 1056px) / 4);
+	padding-right: calc((100vw - 1056px) / 4);
+}
+.paperinfo-c {
+	padding-right: calc((100vw - 1008px) / 6);
+}
+}
+@media screen and (min-width: 1344px) {
+.pcard {
+	padding-left: 72px;
+}
+.paperinfo-c {
+	padding-right: 56px;
+}
 }
 .papcard {
 	position: relative;
@@ -3128,6 +3145,7 @@ a:hover .t-editor,
 	padding-bottom: 2px;
 }
 .revet {
+	font-size: inherit;
 	margin-bottom: 0.25rem;
 }
 .revet > .revfn {

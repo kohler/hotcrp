@@ -646,7 +646,7 @@ class ReviewForm implements JsonSerializable {
                 $rval = $f->normalize_option_value($rval);
             }
 
-            echo '<div class="rv rveg" data-rf="', $f->uid(), '"><div class="',
+            echo '<div class="rv rveg" data-rf="', $f->uid(), '"><h3 class="',
                 $rvalues ? $rvalues->control_class($fid, "revet") : "revet",
                 '"><label class="revfn" for="', $f->id;
             if ($f->has_options) {
@@ -666,7 +666,7 @@ class ReviewForm implements JsonSerializable {
             } else if ($f->view_score < VIEWSCORE_AUTHOR) {
                 echo '<div class="revvis">(hidden from authors until decision)</div>';
             }
-            echo '</div>';
+            echo '</h3>';
 
             if ($f->description) {
                 echo '<div class="revhint">', $f->description, "</div>";
@@ -1044,7 +1044,7 @@ $blind\n";
             $buttons[] = array(Ht::button("Delete review", ["class" => "ui js-delete-review"]), "(admin only)");
         }
 
-        echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
+        echo Ht::actions($buttons, ["class" => "aab aabig"]);
     }
 
     function show(PaperInfo $prow, ReviewInfo $rrow = null, Contact $viewer,
@@ -1205,13 +1205,12 @@ $blind\n";
 
         // blind?
         if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
-            echo '<div class="revet"><span class="revfn">',
+            echo '<div class="rveg"><h3 class="revet checki"><label class="revfn">',
                 Ht::hidden("has_blind", 1),
-                Ht::checkbox("blind", 1, ($rvalues ? !!get($rvalues->req, "blind") : (!$rrow || $rrow->reviewBlind))),
-                "&nbsp;", Ht::label("Anonymous review"),
-                "</span><hr class=\"c\" /></div>\n",
-                '<div class="revhint">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>\n",
-                '<div class="g"></div>', "\n";
+                '<span class="checkc">', Ht::checkbox("blind", 1, ($rvalues ? !!get($rvalues->req, "blind") : (!$rrow || $rrow->reviewBlind))), '</span>',
+                "Anonymous review</span></h3>\n",
+                '<div class="revhint">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>",
+                "</div>\n";
         }
 
         // form body
