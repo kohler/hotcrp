@@ -4030,6 +4030,9 @@ class Conf {
             $j->name = $r->name;
         }
         $j->email = $user->email;
+        if ($j->name === "") {
+            $j->name = $user->email;
+        }
         if ($is_contact
             && ($color_classes = $user->viewable_color_classes($viewer))) {
             $j->color_classes = $color_classes;
