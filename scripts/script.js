@@ -7714,13 +7714,13 @@ handle_ui.on("pspcard-fold", function (event) {
 var edit_paper_ui = (function ($) {
 var edit_conditions = {};
 
-function prepare_psedit(url) {
+function prepare_paper_select() {
     var self = this,
         ctl = $(self).find("select, textarea").first()[0],
         keyed = 0;
-    function cancel() {
+    function cancel(close) {
         $(ctl).val(input_default_value(ctl));
-        foldup.call(self, null, {f: true});
+        close && foldup.call(self, null, {f: true});
     }
     function done(ok, message) {
         $(self).find(".psfn .savesuccess, .psfn .savefailure").remove();
@@ -7754,16 +7754,17 @@ function prepare_psedit(url) {
         if ((keyed && evt.type !== "blur" && now_msec() <= keyed + 1)
             || ctl.disabled) {
         } else if (saveval !== oldval) {
-            $.post(hoturl_post("api", url), $(self).find("form").serialize(),
+            $.post(hoturl_post("api/" + ctl.name, {p: hotcrp_paperid}),
+                   $(self).find("form").serialize(),
                    make_callback(evt.type !== "blur"));
             ctl.disabled = true;
         } else {
-            cancel();
+            cancel(evt.type !== "blur");
         }
     }
     function keyup(evt) {
         if (event_key(evt) === "Escape" && !evt.altKey && !evt.ctrlKey && !evt.metaKey) {
-            cancel();
+            cancel(true);
             evt.preventDefault();
         }
     }
@@ -7808,6 +7809,7 @@ function prepare_pstags() {
     var self = this,
         $f = this.tagName === "FORM" ? $(self) : $(self).find("form"),
         $ta = $f.find("textarea");
+    removeClass(this, "need-tag-form");
     function handle_tag_report(data) {
         if (data.ok && data.tagreport) {
             var tx = reduce_tag_report(data.tagreport, 0);
@@ -7875,13 +7877,6 @@ function save_pstags(evt) {
                 $f.find(".js-tag-editor").prepend(render_xmsg(2, data.error));
             }
         }
-    });
-}
-
-function prepare_pstagindex() {
-    $(".need-tag-index-form").each(function () {
-        $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
-            .find("input").on("change", save_pstagindex);
     });
 }
 
@@ -8044,9 +8039,6 @@ function edit_paper_ui(event) {
     if (event.type === "submit")
         check_still_ready.call(this, event);
 };
-edit_paper_ui.prepare_psedit = prepare_psedit;
-edit_paper_ui.prepare_pstags = prepare_pstags;
-edit_paper_ui.prepare_pstagindex = prepare_pstagindex;
 edit_paper_ui.edit_condition = function () {
     run_edit_conditions();
     $("#paperform").on("change click", "input, select, textarea", run_edit_conditions);
@@ -8079,6 +8071,17 @@ edit_paper_ui.onload = function () {
         .find(".btn-savepaper").click(function () {
             $("#paperform .btn-savepaper").first().click();
         });
+};
+edit_paper_ui.prepare = function () {
+    $(".need-tag-index-form").each(function () {
+        $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
+            .find("input").on("change", save_pstagindex);
+    });
+    $(".need-tag-form").each(prepare_pstags);
+    $(".need-paper-select-api").each(function () {
+        removeClass(this, "need-paper-select-api");
+        prepare_paper_select.call(this);
+    });
 };
 return edit_paper_ui;
 })($);

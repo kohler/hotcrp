@@ -936,7 +936,7 @@ a.closebtn {
 	display: inline-block;
 	position: relative;
 }
-.select > select, .select > select > option {
+.select > select, .select option {
 	-webkit-appearance: none;
 	-moz-appearance: none;
 	appearance: none;

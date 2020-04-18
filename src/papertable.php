@@ -374,7 +374,7 @@ class PaperTable {
         if ($opt && !isset($extra["for"])) {
             $for = $opt->readable_formid();
         } else {
-            $for = get($extra, "for", false);
+            $for = $extra["for"] ?? false;
         }
         echo '<div class="papeg';
         if ($opt && $opt->exists_condition()) {
@@ -389,20 +389,20 @@ class PaperTable {
         if ($for === "checkbox") {
             echo " checki";
         }
-        if (($tclass = get($extra, "tclass"))) {
+        if (($tclass = $extra["tclass"] ?? false)) {
             echo " ", ltrim($tclass);
         }
-        if (($id = get($extra, "id"))) {
+        if (($id = $extra["id"] ?? false)) {
             echo '" id="' . $id;
         }
         echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => "papfn"]), '</h3>';
     }
 
     private function papt($what, $name, $extra = array()) {
-        $fold = get($extra, "fold", false);
-        $editfolder = get($extra, "editfolder", false);
+        $fold = $extra["fold"] ?? false;
+        $editfolder = $extra["editfolder"] ?? false;
         if ($fold || $editfolder) {
-            $foldnum = get($extra, "foldnum", 0);
+            $foldnum = $extra["foldnum"] ?? 0;
             $foldnumclass = $foldnum ? " data-fold-target=\"$foldnum\"" : "";
         }
 
@@ -413,13 +413,13 @@ class PaperTable {
         }
 
         $c = "<div class=\"" . $this->control_class($what, $divclass);
-        if (($fold || $editfolder) && !get($extra, "float")) {
+        if (($fold || $editfolder) && !($extra["float"] ?? false)) {
             $c .= " ui js-foldup\"" . $foldnumclass . ">";
         } else {
             $c .= "\">";
         }
         $c .= "<h3 class=\"$hdrclass";
-        if (get($extra, "fnclass")) {
+        if ($extra["fnclass"] ?? false) {
             $c .= " " . $extra["fnclass"];
         }
         $c .= '">';
@@ -436,7 +436,7 @@ class PaperTable {
             }
         } else {
             $c .= '<a class="q ui js-foldup" href=""' . $foldnumclass;
-            if (($title = get($extra, "foldtitle"))) {
+            if (($title = $extra["foldtitle"] ?? false)) {
                 $c .= ' title="' . $title . '"';
             }
             if (isset($this->foldmap[$foldnum])) {
@@ -1660,7 +1660,7 @@ class PaperTable {
         }
         $value = $this->prow->$field;
 
-        $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector"] : "");
+        $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector need-paper-select-api"] : "");
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv">';
         if (!$value) {
@@ -1681,10 +1681,9 @@ class PaperTable {
             if ($type === "shepherd" && $this->conf->setting("extrev_shepherd")) {
                 $selopt .= " extrev";
             }
-            echo '<form class="ui-submit uin fx"><div>',
+            echo '<form class="ui-submit uin fx">',
                 Ht::select($type, [], 0, ["class" => "psc-select want-focus w-99", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value]),
-                '</div></form>';
-            Ht::stash_script('edit_paper_ui.prepare_psedit.call($$("fold' . $type . '"),{p:' . $this->prow->paperId . ',fn:"' . $type . '"})');
+                '</form>';
         }
 
         echo "</div></div>\n";
@@ -1719,19 +1718,14 @@ class PaperTable {
         $tx = $tagger->unparse_link($viewable);
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
-        $this->_papstripBegin("tags", true);
+        $this->_papstripBegin("tags", true, $is_editable ? ["class" => "need-tag-form"] : []);
 
         if ($is_editable) {
             echo Ht::form($this->prow->hoturl(), ["data-pid" => $this->prow->paperId, "data-no-tag-report" => $unfolded ? 1 : null]);
-            Ht::stash_script('edit_paper_ui.prepare_pstags.call($$("foldtags"))');
         }
 
-        if ($is_editable) {
-            echo $this->papt("tags", 'Tags', ["type" => "ps", "fold" => "tags"]);
-        } else {
-            echo $this->papt("tags", "Tags", ["type" => "ps"]);
-        }
-        echo '<div class="psv">';
+        echo $this->papt("tags", "Tags", ["type" => "ps", "fold" => $is_editable ? "tags" : false]),
+            '<div class="psv">';
         if ($is_editable) {
             // tag report form
             $treport = PaperApi::tagreport($this->user, $this->prow);
@@ -1786,30 +1780,29 @@ class PaperTable {
     }
 
     function papstripOutcomeSelector() {
-        $this->_papstripBegin("decision", $this->qreq->atab !== "decision");
+        $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api"]);
         echo $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
-            '<div class="psv"><form class="ui-submit uin fx"><div>';
+            '<div class="psv"><form class="ui-submit uin fx">';
         if (isset($this->qreq->forceShow)) {
             echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
         }
         echo Ht::select("decision", $this->conf->decision_map(),
                         (string) $this->prow->outcome,
                         ["class" => "want-focus w-99"]),
-            '</div></form><p class="fn odname js-psedit-result">',
+            '</form><p class="fn odname js-psedit-result">',
             htmlspecialchars($this->conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";
-        Ht::stash_script('edit_paper_ui.prepare_psedit.call($$("folddecision"),{p:' . $this->prow->paperId . ',fn:"decision"})');
     }
 
     function papstripReviewPreference() {
         $this->_papstripBegin("revpref");
         echo $this->papt("revpref", "Review preference", array("type" => "ps")),
-            "<div class=\"psv\"><form class=\"ui\"><div>";
+            "<div class=\"psv\"><form class=\"ui\">";
         $rp = unparse_preference($this->prow);
         $rp = ($rp == "0" ? "" : $rp);
         echo "<input id=\"revprefform_d\" type=\"text\" name=\"revpref", $this->prow->paperId,
             "\" size=\"4\" value=\"$rp\" class=\"revpref want-focus want-select\">",
-            "</div></form></div></div>\n";
+            "</form></div></div>\n";
         Ht::stash_script("add_revpref_ajax(\"#revprefform_d\",true);shortcut(\"revprefform_d\").add()");
     }
 
@@ -1875,7 +1868,6 @@ class PaperTable {
             '<a href="', $this->conf->hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
             ' <div class="hint" style="margin-top:4px"><strong>Tip:</strong> <a href="', $this->conf->hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Search “editsort:#~', $tag, '”</a> to drag and drop your ranking, or <a href="', $this->conf->hoturl("offline"), '">use offline reviewing</a> to rank many papers at once.</div>',
             "</div></div></form></div>\n";
-        Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
 
     private function papstrip_allotment($tag, $allotment) {
@@ -1898,7 +1890,6 @@ class PaperTable {
             ' <span class="barsep">·</span> ',
             '<a href="', $this->conf->hoturl("search", "q=" . urlencode("editsort:-#~$tag")), '">Edit all</a>',
             "</div></div></form></div>\n";
-        Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
 
     private function papstrip_approval($tag) {
@@ -1919,7 +1910,6 @@ class PaperTable {
                 . '</span>{{}} vote</label>', $tag, false),
             ["type" => "ps", "fnclass" => "checki", "float" => $totmark]),
             "</form></div>\n";
-        Ht::stash_script('edit_paper_ui.prepare_pstagindex()');
     }
 
     private function papstripWatch() {
@@ -1936,14 +1926,14 @@ class PaperTable {
 
         $this->_papstripBegin();
 
-        echo '<form class="ui-submit uin"><div>',
+        echo '<form class="ui-submit uin">',
             $this->papt("watch",
                 '<label><span class="checkc">'
                 . Ht::checkbox("follow", 1, $this->user->following_reviews($this->prow, $watch), ["class" => "uich js-follow-change"])
                 . '</span>Email notification</label>',
                 ["type" => "ps", "fnclass" => "checki"]),
             '<div class="pshint">Select to receive email on updates to reviews and comments.</div>',
-            "</div></form></div>\n";
+            "</form></div>\n";
     }
 
 
@@ -2389,6 +2379,7 @@ class PaperTable {
             $this->_papstrip();
         }
         if ($this->npapstrip) {
+            Ht::stash_script("edit_paper_ui.prepare()");
             echo '</div></div><nav class="pslcard-nav"><ul class="pslcard">';
         } else {
             echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav"><ul class="pslcard">';
