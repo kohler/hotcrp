@@ -2392,7 +2392,7 @@ hr.g, hr.mg, hr.ug {
 
 .rev_num {
 	font-size: larger;
-	font-weight: bold;
+	font-weight: 800;
 }
 .checki > .rev_num {
 	display: inline-block;
@@ -3850,7 +3850,7 @@ div.sc {
 	padding-bottom: 2px;
 }
 .sv {
-	font-weight: bold;
+	font-weight: 800;
 }
 .sv1, .svr9 { color: #9c3131; }
 .sv2, .svr8 { color: #a04b00; }

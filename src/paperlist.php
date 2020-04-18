@@ -1023,7 +1023,7 @@ class PaperList {
                 $tt .= "\">" . $content . "</div>";
             }
             if ($fdef->is_visible ? $content !== "" : !$empty) {
-                $fdef->has_content = !$empty;
+                $fdef->has_content = true;
             }
         }
 
@@ -1780,8 +1780,9 @@ class PaperList {
             $fields[$fdef->name] = $fdef->field_json($this);
             if ($fdef->has_statistics()) {
                 $stat = [];
-                foreach (self::$stats as $s)
+                foreach (self::$stats as $s) {
                     $stat[ScoreInfo::$stat_keys[$s]] = $fdef->statistic($this, $s);
+                }
                 $stats[$fdef->name] = $stat;
             }
         }
