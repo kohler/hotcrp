@@ -24,7 +24,11 @@ class PaperPC_API {
             $cid = $prow->$k;
         }
         $pcu = $cid ? $user->conf->cached_user_by_id($cid) : null;
-        $j = ["ok" => true, "result" => $pcu ? $user->name_html_for($pcu) : "None"];
+        $j = [
+            "ok" => true,
+            "value" => $pcu ? $user->email : "none",
+            "result" => $pcu ? $user->name_html_for($pcu) : "None"
+        ];
         if ($user->can_view_user_tags()) {
             $j["color_classes"] = $pcu ? $pcu->viewable_color_classes($user) : "";
         }

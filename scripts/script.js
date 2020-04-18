@@ -7717,10 +7717,9 @@ var edit_conditions = {};
 function prepare_psedit(url) {
     var self = this,
         ctl = $(self).find("select, textarea").first()[0],
-        val = $(ctl).val(),
         keyed = 0;
     function cancel() {
-        $(ctl).val(val);
+        $(ctl).val(input_default_value(ctl));
         foldup.call(self, null, {f: true});
     }
     function done(ok, message) {
@@ -7729,17 +7728,15 @@ function prepare_psedit(url) {
         $s.appendTo($(self).find(".psfn"));
         if (ok)
             $s.delay(1000).fadeOut();
-        else
-            $(ctl).val(val);
         if (message)
             make_bubble(message, "errorbubble").dir("l").near($s[0]);
     }
-    function make_callback(saveval) {
+    function make_callback(close) {
         return function (data) {
             if (data.ok) {
-                val = saveval;
                 done(true);
-                foldup.call(self, null, {f: true});
+                ctl.setAttribute("data-default-value", data.value);
+                close && foldup.call(self, null, {f: true});
                 var $p = $(self).find(".js-psedit-result").first();
                 $p.html(data.result || ctl.options[ctl.selectedIndex].innerHTML);
                 if (data.color_classes) {
@@ -7750,15 +7747,15 @@ function prepare_psedit(url) {
                 done(false, data.error);
             }
             ctl.disabled = false;
-        };
+        }
     }
     function change(evt) {
-        var saveval = $(ctl).val();
+        var saveval = $(ctl).val(), oldval = input_default_value(ctl);
         if ((keyed && evt.type !== "blur" && now_msec() <= keyed + 1)
             || ctl.disabled) {
-        } else if (saveval !== val) {
+        } else if (saveval !== oldval) {
             $.post(hoturl_post("api", url), $(self).find("form").serialize(),
-                   make_callback(saveval));
+                   make_callback(evt.type !== "blur"));
             ctl.disabled = true;
         } else {
             cancel();
@@ -8836,6 +8833,7 @@ function populate_pcselector(pcs) {
         }
     }
     this.selectedIndex = selindex;
+    this.setAttribute("data-default-value", this.options[selindex].value);
 }
 
 $(function () {
