@@ -293,7 +293,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
 
     function unparse_value($value, $flags = 0, $real_format = null) {
         if (is_object($value)) {
-            $value = get($value, $this->id);
+            $value = $value->{$this->id} ?? null;
         }
         if (!$this->has_options) {
             if ($flags & self::VALUE_TRIM) {
@@ -2260,8 +2260,12 @@ class ReviewValues extends MessageSet {
             }
             $text = "Review $reviewId " . join(", ", $actions) . ($submit ? "" : " draft");
             if ($diffinfo->fields()) {
-                $text .= ": " . join(", ", array_map(function ($f) {
-                    return $f->search_keyword();
+                $text .= ": " . join(", ", array_map(function ($f) use ($new_rrow) {
+                    if ($f->has_options) {
+                        return $f->search_keyword() . ":" . $f->unparse_value($new_rrow);
+                    } else {
+                        return $f->search_keyword();
+                    }
                 }, $diffinfo->fields()));
             }
             $user->log_activity_for($rrow ? $rrow->contactId : $user->contactId, $text, $prow);
