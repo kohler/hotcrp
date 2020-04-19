@@ -1403,6 +1403,17 @@ th.settings-simplehead {
 	margin-left: 164px;
 	padding-bottom: 16px;
 }
+@media screen and (min-width: 1152px) {
+.leftmenu-content {
+	margin-left: calc((100vw - 496px) / 4);
+	margin-right: calc((100vw - 1152px) / 4);
+}
+}
+@media screen and (min-width: 1344px) {
+.leftmenu-content {
+	margin-left: 212px;
+}
+}
 input.wide {
 	max-width: none;
 	max-width: fill-available;
