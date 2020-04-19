@@ -46,11 +46,17 @@ if ($Qreq->post && $Qreq->post_empty()) {
         $Qreq->uploadForm = 1;
     else
         $Qreq->update = 1;
-} else if (isset($Qreq->submitreview)) {
+} else if ($Qreq->submitreview) {
     $Qreq->update = $Qreq->ready = 1;
-} else if (isset($Qreq->savedraft)) {
+} else if ($Qreq->savedraft) {
     $Qreq->update = 1;
     unset($Qreq->ready);
+}
+
+
+// cancel action
+if ($Qreq->cancel && $Qreq->post_ok()) {
+    $Conf->self_redirect($Qreq);
 }
 
 
