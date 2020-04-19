@@ -493,7 +493,7 @@ class PaperTable {
     }
 
     private function echo_field_hint($opt) {
-        echo $this->messages_at($opt->formid, "papalert");
+        echo $this->messages_at($opt->formid, "feedback");
         $fr = new FieldRender(FieldRender::CFHTML);
         $fr->value_format = 5;
         if ($opt->description_format !== null) {

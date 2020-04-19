@@ -1450,7 +1450,7 @@ label.f-c, .f-i > label {
 .f-c.n, .f-i > label.n {
 	font-weight: normal;
 }
-.f-h, .f-hx, .papalert {
+.f-h, .f-hx, .feedback {
 	color: #555555;
 	font-size: 92%;
 }
@@ -2689,11 +2689,11 @@ a.badge:active {
 .pslitem-intersecting {
 	font-weight: bold;
 }
-.pslitem > .is-error:before, .papalert.is-error:before {
+.pslitem > .is-error:before, .feedback.is-error:before {
 	content: "×\20DD\0020";
 }
-.pslitem > .is-warning:before, .papalert.is-warning:before {
-	content: "?\20DD\0020";
+.pslitem > .is-warning:before, .feedback.is-warning:before {
+	content: "!\20DD\0020";
 }
 .js-tag-editor {
 	font-size: 13px;
@@ -3195,7 +3195,7 @@ a:hover .t-editor,
 .papev, .revev {
 	margin: 5px 0;
 }
-.field-d, .papalert, .cmthint {
+.field-d, .feedback, .cmthint {
 	max-width: 720px;
 	margin-bottom: 0.5rem;
 }

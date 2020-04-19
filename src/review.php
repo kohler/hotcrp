@@ -1226,10 +1226,12 @@ $blind\n";
         // review actions
         if ($viewer->timeReview($prow, $rrow) || $admin) {
             if ($prow->can_author_view_submitted_review()
-                && (!$rrow || $rrow->reviewSubmitted || !$rrow->needs_approval() || !$viewer->is_my_review($rrow)))
-                echo '<div class="is-warning">⚠️ Authors can currently see submitted reviews.</div>';
-            if ($rrow && $rrow->reviewSubmitted && !$admin)
-                echo '<div class="is-warning">⚠️ Only administrators can remove or unsubmit the review at this point.</div>';
+                && (!$rrow || $rrow->reviewSubmitted || !$rrow->needs_approval() || !$viewer->is_my_review($rrow))) {
+                echo '<div class="feedback is-warning">Authors will be notified about submitted reviews.</div>';
+            }
+            if ($rrow && $rrow->reviewSubmitted && !$admin) {
+                echo '<div class="feedback is-warning">Only administrators can remove or unsubmit the review at this point.</div>';
+            }
             $this->_echo_review_actions($prow, $rrow, $viewer, $reviewPostLink);
         }
 
