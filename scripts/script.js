@@ -8067,7 +8067,7 @@ edit_paper_ui.load = function () {
     $(".papet").each(add_pslitem_header);
     var h = $(".btn-savepaper").first(),
         k = $("#paperform").hasClass("alert") ? "" : " hidden";
-    $(".pslcard").append('<div class="paperform-alert mt-5' + k + '">'
+    $(".pslcard-nav").append('<div class="paperform-alert mt-5' + k + '">'
         + '<button class="ui btn btn-highlight btn-savepaper">'
         + h.html() + '</button></div>')
         .find(".btn-savepaper").click(function () {
@@ -8086,11 +8086,19 @@ edit_paper_ui.prepare = function () {
     });
 };
 edit_paper_ui.load_review = function () {
-    hiliter_children(".editrevform");
+    hiliter_children("#reviewform");
     $(".revet").each(add_pslitem_header);
     if ($(".revet").length) {
         $(".pslcard > .pslitem:last-child").addClass("mb-3");
     }
+    var h = $(".btn-savereview").first(),
+        k = $("#reviewform").hasClass("alert") ? "" : " hidden";
+    $(".pslcard-nav").append('<div class="reviewform-alert mt-5' + k + '">'
+        + '<button class="ui btn btn-highlight btn-savereview">'
+        + h.html() + '</button></div>')
+        .find(".btn-savereview").click(function () {
+            $("#reviewform .btn-savereview").first().click();
+        });
 };
 return edit_paper_ui;
 })($);

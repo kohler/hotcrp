@@ -2665,11 +2665,12 @@ a.badge:active {
 .pslcard-nav {
 	-webkit-position: sticky;
 	position: sticky;
-	top: 84px;
+	top: 104px;
+	margin: 20px 20px 0 24px;
 }
 .pslcard {
-	padding: 20px 20px 20px 24px;
-	margin: 0;
+	padding: 0;
+	margin: 0 0 20px;
 	list-style-type: none;
 }
 .pslcard-home {
@@ -2678,7 +2679,10 @@ a.badge:active {
 	bottom: 100%;
 	left: 0px;
 	right: 0px;
-	padding: 3rem 20px 2px 24px;
+	padding: 0;
+	margin: 0 0 1.5rem;
+	font-size: inherit;
+	font-weight: inherit;
 	overflow-wrap: break-word;
 	color: #d41743;
 }
@@ -3530,7 +3534,7 @@ body {
 	-webkit-columns: 200px 2;
 	columns: 200px 2;
 }
-.pslcard {
+.pslcard-nav {
 	display: none;
 }
 #body, .pcard, .pspcard {

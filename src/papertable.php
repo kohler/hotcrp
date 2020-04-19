@@ -2380,11 +2380,11 @@ class PaperTable {
         }
         if ($this->npapstrip) {
             Ht::stash_script("edit_paper_ui.prepare()");
-            echo '</div></div><nav class="pslcard-nav"><ul class="pslcard">';
+            echo '</div></div><nav class="pslcard-nav">';
         } else {
-            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav"><ul class="pslcard">';
+            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav">';
         }
-        echo '<li class="pslcard-home">',
+        echo '<h4 class="pslcard-home">',
             '<a href="#top" class="qq"><span class="header-site-name">',
             htmlspecialchars($this->conf->short_name), '</span> ';
         if ($this->prow->paperId <= 0) {
@@ -2396,7 +2396,7 @@ class PaperTable {
         } else {
             echo "#" . unparseReviewOrdinal($this->editrrow);
         }
-        echo '</a></li></ul></nav></div>';
+        echo '</a></h4><ul class="pslcard"></ul></nav></div>';
         echo '<div class="pcard papcard"><div class="',
             ($this->editable ? "pedcard" : "papcard"), '-body">';
 
