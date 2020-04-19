@@ -2330,7 +2330,7 @@ class PaperTable {
             && !$this->conf->setting("sub_freeze")) {
             Ht::stash_script('$("#paperform").on("submit", edit_paper_ui)');
         }
-        Ht::stash_script('$(edit_paper_ui.onload)');
+        Ht::stash_script('$(edit_paper_ui.load)');
     }
 
     private function _echo_editable_body() {
@@ -2386,9 +2386,17 @@ class PaperTable {
         }
         echo '<li class="pslcard-home">',
             '<a href="#top" class="qq"><span class="header-site-name">',
-            htmlspecialchars($this->conf->short_name), '</span> ',
-            ($this->prow->paperId > 0 ? "#{$this->prow->paperId}" : " new submission"),
-            '</a></li></ul></nav></div>';
+            htmlspecialchars($this->conf->short_name), '</span> ';
+        if ($this->prow->paperId <= 0) {
+            echo "new submission";
+        } else if ($this->mode !== "re") {
+            echo "#{$this->prow->paperId}";
+        } else if (!$this->editrrow || !$this->editrrow->reviewOrdinal) {
+            echo "#{$this->prow->paperId} review";
+        } else {
+            echo "#" . unparseReviewOrdinal($this->editrrow);
+        }
+        echo '</a></li></ul></nav></div>';
         echo '<div class="pcard papcard"><div class="',
             ($this->editable ? "pedcard" : "papcard"), '-body">';
 
@@ -2814,7 +2822,7 @@ class PaperTable {
         $msgs = array_map(function ($t) { return "<p class=\"sd\">{$t}</p>"; }, $msgs);
 
         // links
-        $this->_review_overview_card(true, $this->editrrow, "", $msgs);
+        //$this->_review_overview_card(true, $this->editrrow, "", $msgs);
 
         // review form, possibly with deadline warning
         $opt = array("edit" => $this->mode === "re");

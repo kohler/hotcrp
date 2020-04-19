@@ -647,8 +647,11 @@ class ReviewForm implements JsonSerializable {
             }
 
             echo '<div class="rv rveg" data-rf="', $f->uid(), '"><h3 class="',
-                $rvalues ? $rvalues->control_class($fid, "revet") : "revet",
-                '"><label class="revfn" for="', $f->id;
+                $rvalues ? $rvalues->control_class($fid, "revet") : "revet";
+            if ($f->has_options) {
+                echo '" id="', $f->id;
+            }
+            echo '"><label class="revfn" for="', $f->id;
             if ($f->has_options) {
                 if ($rval || $f->allow_empty) {
                     echo "_", $rval;
@@ -1049,15 +1052,16 @@ $blind\n";
 
     function show(PaperInfo $prow, ReviewInfo $rrow = null, Contact $viewer,
                   $options, ReviewValues $rvalues = null) {
-        $editmode = get($options, "edit", false);
+        $editmode = $options["edit"] ?? false;
 
         $reviewOrdinal = $rrow ? $rrow->unparse_ordinal() : ".";
         self::check_review_author_seen($prow, $rrow, $viewer);
 
         if (!$editmode) {
             $rj = $this->unparse_review_json($viewer, $prow, $rrow);
-            if (get($options, "editmessage"))
+            if ($options["editmessage"] ?? false) {
                 $rj->message_html = $options["editmessage"];
+            }
             echo Ht::unstash_script("review_form.add_review(" . json_encode_browser($rj) . ");\n");
             return;
         }
@@ -1077,7 +1081,7 @@ $blind\n";
             Ht::form($reviewPostLink, ["class" => "editrevform need-unload-protection"]),
             Ht::hidden_default_submit("default", "");
         if ($rrow) {
-            echo Ht::hidden("version", get($rrow, "reviewEditVersion", 0) + 1);
+            echo Ht::hidden("version", ($rrow->reviewEditVersion ?? 0) + 1);
         }
         echo '<div class="revcard-head">';
 
@@ -1140,7 +1144,7 @@ $blind\n";
             echo '</div>';
         }
 
-        if (get($options, "editmessage"))
+        if ($options["editmessage"] ?? false)
             echo '<div class="hint">', $options["editmessage"], "</div>\n";
 
         // download?
@@ -1227,7 +1231,7 @@ $blind\n";
         }
 
         echo "</div></form></div>\n\n";
-        Ht::stash_script('hiliter_children(".editrevform")', "form_revcard");
+        Ht::stash_script('edit_paper_ui.load_review()', "form_revcard");
     }
 
     const RJ_NO_EDITABLE = 2;

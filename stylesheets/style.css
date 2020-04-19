@@ -3060,6 +3060,7 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 }
 .papcard {
 	position: relative;
+	margin-bottom: 16px;
 }
 .papcard-body, .pedcard-body {
 	background: #ffffff;

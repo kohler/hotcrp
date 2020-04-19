@@ -3035,7 +3035,7 @@ function jump_hash(hash, focus) {
     // find destination element
     if (hash
         && (e = document.getElementById(hash))
-        && (p = e.closest(".papeg, .f-i, .form-g, .entryi, .checki"))) {
+        && (p = e.closest(".papeg, .rveg, .f-i, .form-g, .entryi, .checki"))) {
         var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
         if ((eg.width <= 0 && eg.height <= 0)
             || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {
@@ -8034,6 +8034,25 @@ function check_still_ready(event) {
     }
 }
 
+function add_pslitem_header() {
+    var l = this.firstChild, id;
+    if (l.tagName === "LABEL") {
+        id = this.id || l.getAttribute("for") || $(l).find("input").attr("id");
+    }
+    if (id) {
+        var x = l.firstChild;
+        while (x && x.nodeType !== 3) {
+            x = x.nextSibling;
+        }
+        var e = x ? add_pslitem(id, escape_entities(x.data.trim()), this.parentElement) : null;
+        if (e) {
+            hasClass(this, "has-error") && addClass(e.firstChild, "is-error");
+            hasClass(this, "has-warning") && addClass(e.firstChild, "is-warning");
+            hasClass(this.parentElement, "hidden") && addClass(e, "hidden");
+        }
+    }
+}
+
 
 function edit_paper_ui(event) {
     if (event.type === "submit")
@@ -8043,26 +8062,9 @@ edit_paper_ui.edit_condition = function () {
     run_edit_conditions();
     $("#paperform").on("change click", "input, select, textarea", run_edit_conditions);
 };
-edit_paper_ui.onload = function () {
+edit_paper_ui.load = function () {
     $("#paperform input[name=paperUpload]").trigger("change");
-    $(".papet").each(function () {
-        var l = this.firstChild, id;
-        if (l.tagName === "LABEL") {
-            id = this.id || l.getAttribute("for") || $(l).find("input").attr("id");
-        }
-        if (id) {
-            var x = l.firstChild;
-            while (x && x.nodeType !== 3) {
-                x = x.nextSibling;
-            }
-            var e = x ? add_pslitem(id, escape_entities(x.data.trim()), this.parentElement) : null;
-            if (e) {
-                hasClass(this, "has-error") && addClass(e.firstChild, "is-error");
-                hasClass(this, "has-warning") && addClass(e.firstChild, "is-warning");
-                hasClass(this.parentElement, "hidden") && addClass(e, "hidden");
-            }
-        }
-    });
+    $(".papet").each(add_pslitem_header);
     var h = $(".btn-savepaper").first(),
         k = $("#paperform").hasClass("alert") ? "" : " hidden";
     $(".pslcard").append('<div class="paperform-alert mt-5' + k + '">'
@@ -8082,6 +8084,13 @@ edit_paper_ui.prepare = function () {
         removeClass(this, "need-paper-select-api");
         prepare_paper_select.call(this);
     });
+};
+edit_paper_ui.load_review = function () {
+    hiliter_children(".editrevform");
+    $(".revet").each(add_pslitem_header);
+    if ($(".revet").length) {
+        $(".pslcard > .pslitem:last-child").addClass("mb-3");
+    }
 };
 return edit_paper_ui;
 })($);
