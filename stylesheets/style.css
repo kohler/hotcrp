@@ -2686,6 +2686,11 @@ a.badge:active {
 	overflow-wrap: break-word;
 	color: #d41743;
 }
+.pslitem {
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}
 .pslitem-intersecting {
 	font-weight: bold;
 }
