@@ -4165,7 +4165,7 @@ function render_editing(hc, cj) {
         }
     }
     if (msgx.length)
-        hc.push('<div class="cmthint"><p>' + msgx.join('</p><p>') + '</p></div>');
+        hc.push('<div class="field-d"><p>' + msgx.join('</p><p>') + '</p></div>');
 
     hc.push('<form><div style="font-weight:normal;font-style:normal">', '</div></form>');
     if (cj.review_token) {

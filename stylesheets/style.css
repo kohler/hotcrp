@@ -3195,14 +3195,14 @@ a:hover .t-editor,
 .papev, .revev {
 	margin: 5px 0;
 }
-.field-d, .feedback, .cmthint {
+.field-d, .feedback {
 	max-width: 720px;
 	margin-bottom: 0.5rem;
 }
-.field-d, .cmthint {
+.field-d {
 	color: #555555;
 }
-.field-d > p, .cmthint > p {
+.field-d > p {
 	margin-bottom: 0.5em;
 }
 .rvg, .rvl, .rvr {
