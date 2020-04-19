@@ -8060,18 +8060,19 @@ function edit_paper_ui(event) {
 };
 edit_paper_ui.edit_condition = function () {
     run_edit_conditions();
-    $("#paperform").on("change click", "input, select, textarea", run_edit_conditions);
+    $("#form-paper").on("change click", "input, select, textarea", run_edit_conditions);
 };
 edit_paper_ui.load = function () {
-    $("#paperform input[name=paperUpload]").trigger("change");
+    hiliter_children("#form-paper");
+    $("#form-paper input[name=paperUpload]").trigger("change");
     $(".papet").each(add_pslitem_header);
     var h = $(".btn-savepaper").first(),
-        k = $("#paperform").hasClass("alert") ? "" : " hidden";
-    $(".pslcard-nav").append('<div class="paperform-alert mt-5' + k + '">'
+        k = $("#form-paper").hasClass("alert") ? "" : " hidden";
+    $(".pslcard-nav").append('<div class="paper-alert mt-5' + k + '">'
         + '<button class="ui btn btn-highlight btn-savepaper">'
         + h.html() + '</button></div>')
         .find(".btn-savepaper").click(function () {
-            $("#paperform .btn-savepaper").first().click();
+            $("#form-paper .btn-savepaper").first().click();
         });
 };
 edit_paper_ui.prepare = function () {
@@ -8086,18 +8087,18 @@ edit_paper_ui.prepare = function () {
     });
 };
 edit_paper_ui.load_review = function () {
-    hiliter_children("#reviewform");
+    hiliter_children("#form-review");
     $(".revet").each(add_pslitem_header);
     if ($(".revet").length) {
         $(".pslcard > .pslitem:last-child").addClass("mb-3");
     }
     var h = $(".btn-savereview").first(),
-        k = $("#reviewform").hasClass("alert") ? "" : " hidden";
-    $(".pslcard-nav").append('<div class="reviewform-alert mt-5' + k + '">'
+        k = $("#form-review").hasClass("alert") ? "" : " hidden";
+    $(".pslcard-nav").append('<div class="review-alert mt-5' + k + '">'
         + '<button class="ui btn btn-highlight btn-savereview">'
         + h.html() + '</button></div>')
         .find(".btn-savereview").click(function () {
-            $("#reviewform .btn-savereview").first().click();
+            $("#form-review .btn-savereview").first().click();
         });
 };
 return edit_paper_ui;

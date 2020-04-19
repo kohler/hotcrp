@@ -587,7 +587,7 @@ if (isset($Qreq->ls)) {
     $form_params["ls"] = $Qreq->ls;
 }
 echo Ht::form(hoturl_post("profile", $form_params),
-              ["id" => "profile-form", "class" => "need-unload-protection"]);
+              ["id" => "form-profile", "class" => "need-unload-protection"]);
 
 // left menu
 echo '<div class="leftmenu-left"><nav class="leftmenu-menu"><h1 class="leftmenu">Account</h1><div class="leftmenu-list">';
@@ -700,6 +700,6 @@ if ($newProfile === 2) {
 echo "</main></form>";
 
 if (!$newProfile) {
-    Ht::stash_script('hiliter_children("#profile-form")');
+    Ht::stash_script('hiliter_children("#form-profile")');
 }
 $Conf->footer();

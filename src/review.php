@@ -1079,8 +1079,8 @@ $blind\n";
         }
         echo '">',
             Ht::form($reviewPostLink, [
-                "id" => "reviewform", "class" => "need-unload-protection",
-                "data-alert-toggle" => "reviewform-alert"
+                "id" => "form-review", "class" => "need-unload-protection",
+                "data-alert-toggle" => "review-alert"
             ]),
             Ht::hidden_default_submit("default", "");
         if ($rrow) {

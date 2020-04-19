@@ -2312,8 +2312,8 @@ class PaperTable {
 
     private function _echo_editable_form() {
         $form_js = [
-            "id" => "paperform", "class" => "need-unload-protection",
-            "data-alert-toggle" => "paperform-alert"
+            "id" => "form-paper", "class" => "need-unload-protection",
+            "data-alert-toggle" => "paper-alert"
         ];
         if ($this->prow->timeSubmitted > 0) {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;
@@ -2328,7 +2328,7 @@ class PaperTable {
         if ($this->prow->paperStorageId > 1
             && $this->prow->timeSubmitted > 0
             && !$this->conf->setting("sub_freeze")) {
-            Ht::stash_script('$("#paperform").on("submit", edit_paper_ui)');
+            Ht::stash_script('$("#form-paper").on("submit", edit_paper_ui)');
         }
         Ht::stash_script('$(edit_paper_ui.load)');
     }
@@ -2443,9 +2443,6 @@ class PaperTable {
         }
 
         Ht::stash_script("shortcut().add()");
-        if ($this->editable || $this->mode === "edit") {
-            Ht::stash_script('hiliter_children("#paperform")');
-        }
     }
 
     private function _paptabSepContaining($t) {

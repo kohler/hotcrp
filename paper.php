@@ -448,8 +448,9 @@ if ($paperTable->mode == "edit") {
     } else {
         $old_overrides = $Me->remove_overrides(Contact::OVERRIDE_CHECK_TIME);
         $editable = $Me->can_update_paper($prow);
-        if ($Me->can_submit_final_paper($prow))
+        if ($Me->can_submit_final_paper($prow)) {
             $editable = "f";
+        }
         $Me->set_overrides($old_overrides);
     }
 } else {
@@ -513,10 +514,12 @@ if ($paperTable->mode === "edit") {
         }
         if (!$j) {
             $j = (object) ["is_new" => true, "editable" => true];
-            if ($Me->act_author_view($prow))
+            if ($Me->act_author_view($prow)) {
                 $j->by_author = true;
-            if ($preferred_resp_round !== false)
+            }
+            if ($preferred_resp_round !== false) {
                 $j->response = $Conf->resp_round_name($preferred_resp_round);
+            }
         }
         if (($x = $Qreq->text) !== null) {
             $j->text = $x;
