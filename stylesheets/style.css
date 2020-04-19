@@ -3191,14 +3191,14 @@ a:hover .t-editor,
 .papev, .revev {
 	margin: 5px 0;
 }
-.paphint, .papalert, .revhint, .cmthint {
+.field-d, .papalert, .cmthint {
 	max-width: 720px;
 	margin-bottom: 0.5rem;
 }
-.paphint, .revhint, .cmthint {
+.field-d, .cmthint {
 	color: #555555;
 }
-.paphint > p, .revhint > p, .cmthint > p {
+.field-d > p, .cmthint > p {
 	margin-bottom: 0.5em;
 }
 .rvg, .rvl, .rvr {

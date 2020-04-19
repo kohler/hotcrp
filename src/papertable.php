@@ -502,7 +502,7 @@ class PaperTable {
         $this->conf->ims()->render_xci($fr, "field_description/edit",
                                        $opt->formid, $opt->description);
         if (!$fr->is_empty()) {
-            echo $fr->value_html("paphint");
+            echo $fr->value_html("field-d");
         }
     }
 

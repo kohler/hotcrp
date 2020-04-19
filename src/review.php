@@ -672,7 +672,7 @@ class ReviewForm implements JsonSerializable {
             echo '</h3>';
 
             if ($f->description) {
-                echo '<div class="revhint">', $f->description, "</div>";
+                echo '<div class="field-d">', $f->description, "</div>";
             }
 
             echo '<div class="revev">';
@@ -1213,7 +1213,7 @@ $blind\n";
                 Ht::hidden("has_blind", 1),
                 '<span class="checkc">', Ht::checkbox("blind", 1, ($rvalues ? !!get($rvalues->req, "blind") : (!$rrow || $rrow->reviewBlind))), '</span>',
                 "Anonymous review</span></h3>\n",
-                '<div class="revhint">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>",
+                '<div class="field-d">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>",
                 "</div>\n";
         }
 
