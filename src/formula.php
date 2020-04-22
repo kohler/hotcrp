@@ -165,10 +165,6 @@ class Fexpr implements JsonSerializable {
         return "null";
     }
 
-    function compile_extractor(FormulaCompiler $state) {
-        return false;
-    }
-
     function compiled_comparator($cmp, Conf $conf, $other_expr = null) {
         if ($this->_format
             && $this->_format instanceof ReviewField
@@ -608,7 +604,7 @@ class Round_Fexpr extends Fexpr {
     }
 }
 
-class AggregateFexpr extends Fexpr {
+class Aggregate_Fexpr extends Fexpr {
     public $index_type;
     function __construct($fn, array $values, int $index_type) {
         parent::__construct($fn, $values);
@@ -676,7 +672,7 @@ class AggregateFexpr extends Fexpr {
         } else {
             $index_type = 0;
         }
-        return new AggregateFexpr($op, $ff->args, $index_type);
+        return new Aggregate_Fexpr($op, $ff->args, $index_type);
     }
 
     function typecheck(Formula $formula) {
@@ -776,7 +772,7 @@ class AggregateFexpr extends Fexpr {
                 }
             }
             return ["[]", "if (~l~ !== null)\n  array_push(~r~, ~l~);",
-                    "AggregateFexpr::quantile(~x~, $q)"];
+                    "Aggregate_Fexpr::quantile(~x~, $q)"];
         } else if ($this->op === "wavg") {
             return ["[0, 0]", "(~l~ !== null && ~l1~ !== null ? [~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~] : ~r~)",
                     "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
@@ -805,20 +801,6 @@ class AggregateFexpr extends Fexpr {
             return $li[2] ?? false ? str_replace("~x~", $t, $li[2]) : $t;
         } else {
             return "null";
-        }
-    }
-
-    function compile_extractor(FormulaCompiler $state) {
-        if ($this->op === "my") {
-            return $this->args[0]->compile_extractor($state);
-        } else if ($this->op === "quantile") {
-            $state->fragments[] = $this->args[0]->compile($state);
-            return $this->args[1]->compile_extractor($state);
-        } else {
-            foreach ($this->args as $e) {
-                $state->fragments[] = $e->compile($state);
-            }
-            return true;
         }
     }
 }
@@ -879,10 +861,6 @@ class Let_Fexpr extends Fexpr {
         $this->vardef->ltemp = $state->_addltemp($this->args[0]->compile($state));
         return $this->args[1]->compile($state);
     }
-    function compile_extractor(FormulaCompiler $state) {
-        $this->vardef->ltemp = $state->_addltemp($this->args[0]->compile($state));
-        return $this->args[1]->compile_extractor($state);
-    }
     function jsonSerialize() {
         return ["op" => "let", "name" => $this->vardef->name(),
                 "value" => $this->args[0], "body" => $this->args[1]];
@@ -938,8 +916,6 @@ class FormulaCompiler {
     private $g0stmt;
     public $gstmt;
     public $lstmt;
-    public $fragments = array();
-    public $combining = null;
     public $index_type;
     public $indexed;
     private $_lprefix;
@@ -949,6 +925,9 @@ class FormulaCompiler {
     public $queryOptions = array();
     public $tagrefs = null;
     private $_stack;
+    public $term_compiler;
+    public $term_list;
+    public $term_error = false;
 
     const LFLAG_RROW = 1;
     const LFLAG_RROW_VSB = 2;
@@ -961,6 +940,12 @@ class FormulaCompiler {
         $this->tagger = new Tagger($user);
         $this->clear();
     }
+    static function make_combiner(Contact $user) {
+        $fc = new FormulaCompiler($user);
+        $fc->term_compiler = new FormulaCompiler($user);
+        $fc->term_compiler->term_list = [];
+        return $fc;
+    }
 
     function clear() {
         $this->gvar = $this->g0stmt = $this->gstmt = $this->lstmt = [];
@@ -970,6 +955,8 @@ class FormulaCompiler {
         $this->_maxlprefix = 0;
         $this->_lflags = 0;
         $this->_stack = [];
+        $this->term_compiler = $this->term_list = null;
+        $this->term_error = false;
     }
 
     function check_gvar($gvar) {
@@ -1055,6 +1042,9 @@ class FormulaCompiler {
         }
     }
     function _prow() {
+        if ($this->term_compiler) {
+            $this->term_error = true;
+        }
         return '$prow';
     }
     function _rrow() {
@@ -1144,7 +1134,7 @@ class FormulaCompiler {
             return $this->define_gvar("trivial_loop", "[0]");
         }
     }
-    function _compile_loop($initial_value, $combiner, AggregateFexpr $e) {
+    function _compile_loop($initial_value, $combiner, Aggregate_Fexpr $e) {
         $t_result = $this->_addltemp($initial_value, true);
         $combiner = str_replace("~r~", $t_result, $combiner);
         $p = $this->_push();
@@ -1153,12 +1143,14 @@ class FormulaCompiler {
 
         preg_match_all('/~l(\d*)~/', $combiner, $m);
         foreach (array_unique($m[1]) as $i) {
-            if ($this->combining !== null) {
-                $t = "\$v{$p}";
-                if (count($this->fragments) !== 1) {
-                    $t .= "[{$this->combining}]";
-                }
-                ++$this->combining;
+            if ($this->term_compiler !== null) {
+                $n = count($this->term_compiler->term_list);
+                $tx = $this->term_compiler->_addltemp($e->args[(int) $i]->compile($this->term_compiler));
+                $this->term_compiler->term_list[] = $tx;
+                $t = "\$v{$p}[{$n}]";
+            } else if ($this->term_list !== null) {
+                $this->term_error = true;
+                $t = "null";
             } else {
                 $t = $this->_addltemp($e->args[(int) $i]->compile($this));
             }
@@ -1192,7 +1184,7 @@ class FormulaCompiler {
             $this->lstmt = array_merge($lstmt_pfx, $this->lstmt);
         }
 
-        if ($this->combining !== null) {
+        if ($this->term_compiler !== null) {
             $loop = "foreach (\$extractor_results as \$v$p) " . $this->_join_lstmt(true);
         } else {
             $g = $this->loop_variable($this->index_type);
@@ -1257,7 +1249,7 @@ class Formula implements Abbreviator, JsonSerializable {
     private $_format;
 
     private $_extractorf;
-    private $_extractor_nfragments;
+    private $_combinerf;
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
@@ -1390,7 +1382,7 @@ class Formula implements Abbreviator, JsonSerializable {
             $e->compile($state);
             if ($state->indexed && !$this->_allow_indexed
                 && $e->matches_at_most_once()) {
-                $e = new AggregateFexpr("some", [$e]);
+                $e = new Aggregate_Fexpr("some", [$e]);
                 $state = new FormulaCompiler($this->user);
                 $e->compile($state);
             }
@@ -1401,7 +1393,7 @@ class Formula implements Abbreviator, JsonSerializable {
                 $fp->indexed = !!$state->indexed;
                 if ($fp->indexed) {
                     $fp->index_type = $e->inferred_index();
-                } else if ($e instanceof AggregateFexpr) {
+                } else if ($e instanceof Aggregate_Fexpr) {
                     $fp->index_type = $e->index_type;
                 } else {
                     $fp->index_type = 0;
@@ -2059,18 +2051,14 @@ class Formula implements Abbreviator, JsonSerializable {
     function support_combiner() {
         if ($this->_extractorf === null) {
             $this->check();
-            $state = new FormulaCompiler($this->user);
-            if ($this->_parse && $this->_parse->fexpr->compile_extractor($state)) {
-                $t = self::compile_body($this->user, $state, null, 0);
-                if (count($state->fragments) === 1) {
-                    $t .= "  return " . $state->fragments[0] . ";\n";
-                } else {
-                    $t .= "  return [" . join(",", $state->fragments) . "];\n";
+            $this->_extractorf = $this->_combinerf = false;
+            if ($this->_parse) {
+                $state = FormulaCompiler::make_combiner($this->user);
+                $expr = $this->_parse->fexpr->compile($state);
+                if (!$state->term_error && !$state->term_compiler->term_error) {
+                    $this->_extractorf = self::compile_body($this->user, $state->term_compiler, "[" . join(",", $state->term_compiler->term_list) . "]", 0);
+                    $this->_combinerf = self::compile_body(null, $state, $expr, 0);
                 }
-                $this->_extractorf = $t;
-                $this->_extractor_nfragments = count($state->fragments);
-            } else {
-                $this->_extractorf = false;
             }
         }
         return $this->_extractorf !== false;
@@ -2085,14 +2073,8 @@ class Formula implements Abbreviator, JsonSerializable {
     }
 
     function compile_combiner_function() {
-        if ($this->support_combiner()) {
-            $state = new FormulaCompiler($this->user);
-            $state->combining = 0;
-            $state->fragments = array_fill(0, $this->_extractor_nfragments, "0");
-            $t = self::compile_body(null, $state, $this->_parse->fexpr->compile($state), 0);
-        } else {
-            $t = "return null;\n";
-        }
+        $this->support_combiner();
+        $t = $this->_combinerf ? : "  return null;\n";
         $args = '$extractor_results';
         self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combiner " . simplify_whitespace($this->expression) . "\n  $t}\n");
         return eval("return function ($args) {\n  $t};");
