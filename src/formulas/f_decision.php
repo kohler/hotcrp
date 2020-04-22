@@ -17,7 +17,8 @@ class Decision_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         if ($state->check_gvar('$decision')) {
-            $state->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow) ? (int) \$prow->outcome : 0;";
+            $prow = $state->_prow();
+            $state->gstmt[] = "\$decision = \$contact->can_view_decision({$prow}) ? (int) {$prow}->outcome : 0;";
         }
         return '$decision';
     }

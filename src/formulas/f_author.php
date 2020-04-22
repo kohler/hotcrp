@@ -36,18 +36,19 @@ class Author_Fexpr extends Fexpr {
         }
     }
     function compile(FormulaCompiler $state) {
+        $prow = $state->_prow();
         $state->queryOptions["authorInformation"] = true;
         if ($this->matchtype === null) {
-            $v = 'count($prow->author_list())';
+            $v = "count({$prow}->author_list())";
         } else if ($this->matchtype === "none") {
-            $v = '!$prow->author_list()';
+            $v = "!{$prow}->author_list()";
         } else if (is_int($this->matchtype)) {
             // can always see if you are an author
-            return '($prow->has_author(' . $this->matchtype . ') ? 1 : 0)';
+            return "({$prow}->has_author(" . $this->matchtype . ") ? 1 : 0)";
         } else {
-            $v = 'Author_Fexpr::count_matches($prow, ' . $this->matchidx . ')';
+            $v = "Author_Fexpr::count_matches({$prow}, " . $this->matchidx . ')';
         }
-        return '($contact->allow_view_authors($prow) ? ' . $v . ' : null)';
+        return "(\$contact->allow_view_authors({$prow}) ? " . $v . ' : null)';
     }
     static function count_matches(PaperInfo $prow, $matchidx) {
         $mf = self::$matchers[$matchidx];

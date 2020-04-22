@@ -105,7 +105,7 @@ class Fexpr implements JsonSerializable {
         foreach ($this->args as $i => $a) {
             if ($a instanceof Constant_Fexpr
                 && $a->unknown_format()
-                && ($b = get($this->args, $i ? $i - 1 : $i + 1))) {
+                && ($b = $this->args[$i ? $i - 1 : $i + 1] ?? null)) {
                 $a->resolve_neighbor($formula, $b);
             }
         }
@@ -161,7 +161,7 @@ class Fexpr implements JsonSerializable {
     }
 
     function compile(FormulaCompiler $state) {
-        assert("no compile for $this->op");
+        assert("no compile for $this->op" && false);
         return "null";
     }
 
@@ -825,7 +825,7 @@ class AggregateFexpr extends Fexpr {
 
 class Pid_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
-        return '$prow->paperId';
+        return $state->_prow() . '->paperId';
     }
 }
 
@@ -986,7 +986,7 @@ class FormulaCompiler {
         } else {
             $name = $name[0] === "$" ? $name : '$' . $name;
         }
-        if (get($this->gvar, $name) === null) {
+        if (!isset($this->gvar[$name])) {
             $this->gstmt[] = "$name = $expr;";
             $this->gvar[$name] = $name;
         }
@@ -1002,7 +1002,7 @@ class FormulaCompiler {
     function _add_vsreviews() {
         if ($this->check_gvar('$vsreviews')) {
             $this->queryOptions["reviewSignatures"] = true;
-            $this->gstmt[] = "\$vsreviews = \$prow->viewable_submitted_reviews_by_user(\$contact);";
+            $this->gstmt[] = "\$vsreviews = " . $this->_prow() . "->viewable_submitted_reviews_by_user(\$contact);";
         }
         return '$vsreviews';
     }
@@ -1013,7 +1013,8 @@ class FormulaCompiler {
             return "\$preferences_{$this->_lprefix}";
         } else {
             if ($this->check_gvar('$preferences')) {
-                $this->gstmt[] = "\$preferences = \$contact->can_view_preference(\$prow) ? \$prow->preferences() : [];";
+                $prow = $this->_prow();
+                $this->gstmt[] = "\$preferences = \$contact->can_view_preference({$prow}) ? {$prow}->preferences() : [];";
             }
             return '$preferences';
         }
@@ -1021,14 +1022,15 @@ class FormulaCompiler {
     function _add_conflicts() {
         if ($this->check_gvar('$conflicts')) {
             $this->queryOptions["allConflictType"] = true;
-            $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts(\$prow) ? \$prow->conflicts() : [];";
+            $prow = $this->_prow();
+            $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts({$prow}) ? {$prow}->conflicts() : [];";
         }
         return '$conflicts';
     }
     function _add_tags() {
         if ($this->check_gvar('$tags')) {
             $this->queryOptions["tags"] = true;
-            $this->gstmt[] = "\$tags = \$prow->searchable_tags(\$contact);";
+            $this->gstmt[] = "\$tags = " . $this->_prow() . "->searchable_tags(\$contact);";
         }
         return '$tags';
     }
@@ -1052,12 +1054,15 @@ class FormulaCompiler {
             return '~i~';
         }
     }
+    function _prow() {
+        return '$prow';
+    }
     function _rrow() {
         $this->indexed = true;
         if ($this->index_type === Fexpr::IDX_NONE) {
-            return $this->define_gvar("rrow", "\$prow->review_of_user(\$rrow_cid)");
+            return $this->define_gvar("rrow", $this->_prow() . "->review_of_user(\$rrow_cid)");
         } else if ($this->index_type === Fexpr::IDX_MY) {
-            return $this->define_gvar("myrrow", "\$prow->review_of_user(" . $this->user->contactId . ")");
+            return $this->define_gvar("myrrow", $this->_prow() . "->review_of_user(" . $this->user->contactId . ")");
         } else {
             $this->_add_vsreviews();
             $this->_lflags |= self::LFLAG_RROW | self::LFLAG_CID;
@@ -1081,13 +1086,13 @@ class FormulaCompiler {
         }
         $this->queryOptions["scores"][$fid] = $fid;
         if ($this->check_gvar('$ensure_score_' . $fid)) {
-            $this->g0stmt[] = '$prow->ensure_review_score("' . $fid . '");';
+            $this->g0stmt[] = $this->_prow() . '->ensure_review_score("' . $fid . '");';
         }
     }
     function _ensure_review_word_counts() {
         $this->queryOptions["reviewWordCounts"] = true;
         if ($this->check_gvar('$ensure_reviewWordCounts')) {
-            $this->g0stmt[] = '$prow->ensure_review_word_counts();';
+            $this->g0stmt[] = $this->_prow() . '->ensure_review_word_counts();';
         }
     }
 
@@ -2225,7 +2230,7 @@ class Formula implements Abbreviator, JsonSerializable {
     }
 
     function view_score(Contact $user) {
-        if ($this->check($this->user ? : $user)) {
+        if ($this->check($this->user ?? $user)) {
             return $this->_parse->fexpr->view_score($user);
         } else {
             return VIEWSCORE_PC;

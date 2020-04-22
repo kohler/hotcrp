@@ -15,7 +15,7 @@ class Revtype_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         if ($state->index_type === Fexpr::IDX_MY) {
-            $rt = $state->define_gvar("myrevtype", "\$prow->review_type(\$contact)");
+            $rt = $state->define_gvar("myrevtype", $state->_prow() . "->review_type(\$contact)");
         } else {
             $view_score = $state->user->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score) {

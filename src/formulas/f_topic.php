@@ -38,14 +38,15 @@ class Topic_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["topics"] = true;
+        $prow = $state->_prow();
         if ($this->match === true) {
-            return 'count($prow->topic_list())';
+            return "count({$prow}->topic_list())";
         } else if ($this->match === false) {
-            return 'empty($prow->topic_list())';
+            return "empty({$prow}->topic_list())";
         } else if ($this->_format === self::FBOOL) {
-            return 'in_array(' . $this->match[0] . ',$prow->topic_list())';
+            return "in_array({$this->match[0]},{$prow}->topic_list())";
         } else {
-            return 'count(array_intersect($prow->topic_list(),' . json_encode($this->match) . '))';
+            return "count(array_intersect({$prow}->topic_list()," . json_encode($this->match) . '))';
         }
     }
 }

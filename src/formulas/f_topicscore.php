@@ -14,13 +14,14 @@ class TopicScore_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["topics"] = true;
+        $prow = $state->_prow();
         if ($state->index_type === Fexpr::IDX_MY) {
-            return $state->define_gvar("mytopicscore", "\$prow->topic_interest_score(\$contact)");
+            return $state->define_gvar("mytopicscore", "{$prow}->topic_interest_score(\$contact)");
         } else if ($state->user->can_view_pc()) {
-            return "\$prow->topic_interest_score(" . $state->loop_cid(true) . ")";
+            return "{$prow}->topic_interest_score(" . $state->loop_cid(true) . ")";
         } else {
             return "(" . $state->loop_cid() . " == " . $state->user->contactId
-                . " ? \$prow->topic_interest_score(" . $state->loop_cid() . ")"
+                . " ? {$prow}->topic_interest_score(" . $state->loop_cid() . ")"
                 . " : null)";
         }
     }

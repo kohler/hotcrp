@@ -9,6 +9,6 @@ class TimeField_Fexpr extends Fexpr {
         $this->field = $field;
     }
     function compile(FormulaCompiler $state) {
-        return "((int) \$prow->" . $this->field . ")";
+        return "((int) " . $state->_prow() . "->" . $this->field . ")";
     }
 }

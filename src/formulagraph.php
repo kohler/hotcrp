@@ -58,7 +58,7 @@ class FormulaGraph extends MessageSet {
         }
 
         // Y axis expression
-        if (strcasecmp($gtype, "cdf") == 0) {
+        if (strcasecmp($gtype, "cdf") === 0) {
             $this->type = self::CDF;
             $fy = "0";
         } else if (preg_match('/\A(?:raw-?cdf|cdf-?count|count-?cdf|cum-?count|cumulative-?count)\z/i', $gtype)) {
@@ -73,7 +73,7 @@ class FormulaGraph extends MessageSet {
         } else if (preg_match('/\A(?:box|boxplot|candlestick)\z/i', $gtype)) {
             $this->type = self::BOXPLOT;
             $fy = $fy_gtype;
-        } else if (strcasecmp($gtype, "scatter") == 0) {
+        } else if (strcasecmp($gtype, "scatter") === 0) {
             $this->type = self::SCATTER;
             $fy = $fy_gtype;
         }
@@ -263,7 +263,7 @@ class FormulaGraph extends MessageSet {
                 $d->className = $s;
             }
             $dlabel = "";
-            if (get($this->queries, $q) && count($this->queries) > 1) {
+            if (($this->queries[$q] ?? null) && count($this->queries) > 1) {
                 $dlabel = $this->queries[$q];
             }
             if ($dlabel || $fxlabel) {
@@ -400,11 +400,11 @@ class FormulaGraph extends MessageSet {
                     $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
                 }
                 if ($orderf) {
-                    $order_data[$d[0]] = get($order_data, $d[0], []);
+                    $order_data[$d[0]] = $order_data[$d[0]] ?? [];
                     $order_data[$d[0]][] = $orderf($prow, $rcid, $this->user);
                 }
                 if ($ps === self::REVIEWER_COLOR) {
-                    $s = get($this->reviewer_color, $d[0]) ? : "";
+                    $s = $this->reviewer_color[$d[0]] ?? "";
                 }
                 if ($this->fx_type === Fexpr::FSEARCH) {
                     foreach ($this->_filter_queries($prow, $rrow) as $q) {
@@ -467,7 +467,7 @@ class FormulaGraph extends MessageSet {
                     $queries = $this->_filter_queries($prow, $rrow);
                 }
                 if ($ps === self::REVIEWER_COLOR) {
-                    $s = get($this->reviewer_color, $x) ? : "";
+                    $s = $this->reviewer_color[$x] ?? "";
                 }
                 $d = [$x, $fytrack($prow, $rcid, $this->user), $prow->paperId, $s];
                 if ($rrow && $rrow->reviewOrdinal && $this->fx->indexed()) {
@@ -490,11 +490,11 @@ class FormulaGraph extends MessageSet {
         $ndata = count($data);
         for ($i = 0; $i != $ndata; $i = $j) {
             $d = [$data[$i][0], [$data[$i][1]], [$data[$i][2]], $data[$i][3],
-                  get($data[$i], 4)];
+                  $data[$i][4] ?? null];
             for ($j = $i + 1;
                  $j != $ndata
                    && $data[$j][0] == $d[0]
-                   && get($data[$j], 4) == $d[4]
+                   && ($data[$j][4] ?? null) == $d[4]
                    && (!$is_sum || $data[$j][3] == $d[3]);
                  ++$j) {
                 $d[1][] = $data[$j][1];
@@ -612,7 +612,7 @@ class FormulaGraph extends MessageSet {
         $i = 0;
         $m = [];
         foreach ($this->conf->defined_round_list() as $n => $rname)
-            if (get($rs, $n)) {
+            if ($rs[$n] ?? null) {
                 $this->remapped_rounds[++$i] = $rname;
                 $m[$n] = $i;
             }
@@ -654,18 +654,18 @@ class FormulaGraph extends MessageSet {
         if ($this->type & self::CDF) {
             foreach ($this->_data as $dx) {
                 foreach ($dx->d as &$d) {
-                    $d = get($xo, $d);
+                    $d = $xo[$d];
                 }
                 unset($d);
             }
         } else if ($this->type & self::BARCHART) {
             foreach ($this->_data as &$d) {
-                $d[0] = get($xo, $d[0]);
+                $d[0] = $xo[$d[0]];
             }
         } else {
             foreach ($this->_data as &$dx) {
                 foreach ($dx as &$d) {
-                    $d[0] = get($xo, $d[0]);
+                    $d[0] = $xo[$d[0]];
                 }
                 unset($d);
             }
@@ -817,7 +817,7 @@ class FormulaGraph extends MessageSet {
             self::RAWCDF => "cumulative-count", self::BARCHART => "bar",
             self::FBARCHART => "full-stack", self::BOXPLOT => "box"
         ];
-        return get($tj, $this->type);
+        return $tj[$this->type] ?? null;
     }
 
     function graph_json() {

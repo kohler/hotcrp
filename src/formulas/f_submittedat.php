@@ -8,6 +8,6 @@ class SubmittedAt_Fexpr extends Fexpr {
         $this->_format = $ff->kwdef->is_time ? self::FTIME : self::FDATE;
     }
     function compile(FormulaCompiler $state) {
-        return '($prow->submitted_at() ? : null)';
+        return '(' . $state->_prow() . '->submitted_at() ? : null)';
     }
 }

@@ -53,7 +53,7 @@ class ReviewerMatch_Fexpr extends Fexpr {
             $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
             return "ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->loop_cid() . ", " . json_encode($tag) . ")";
         } else {
-            return '($prow->can_view_review_identity_of(' . $state->loop_cid() . ', $contact) ? array_search(' . $state->loop_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
+            return '(' . $state->_prow() . '->can_view_review_identity_of(' . $state->loop_cid() . ', $contact) ? array_search(' . $state->loop_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
         }
     }
     function matches_at_most_once() {
