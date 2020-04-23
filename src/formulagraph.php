@@ -76,16 +76,12 @@ class FormulaGraph extends MessageSet {
         } else if (strcasecmp($gtype, "scatter") === 0) {
             $this->type = self::SCATTER;
             $fy = $fy_gtype;
+        } else {
+            $this->type = self::SCATTER;
         }
 
         $this->fy = new Formula($fy, Formula::ALLOW_INDEXED);
         $this->fy->check($this->user);
-        if (!$this->type) {
-            $this->type = self::SCATTER;
-            if (!$this->fy->index_type() && $this->fy->support_combiner()) {
-                $this->type = self::BARCHART;
-            }
-        }
         $this->_y_tagvalue_bool = $this->fy->result_format() === Fexpr::FTAGVALUE;
 
         // X axis expression(s)
@@ -410,10 +406,6 @@ class FormulaGraph extends MessageSet {
                 if ($rrow && $rrow->reviewOrdinal) {
                     $d[2] .= unparseReviewOrdinal($rrow->reviewOrdinal);
                 }
-                if ($orderf) {
-                    $order_data[$d[0]] = $order_data[$d[0]] ?? [];
-                    $order_data[$d[0]][] = $orderf($prow, $rcid, $this->user);
-                }
                 if ($ps === self::REVIEWER_COLOR) {
                     $s = $this->reviewer_color[$d[0]] ?? "";
                 }
@@ -426,6 +418,9 @@ class FormulaGraph extends MessageSet {
                     $this->_add_tag_data($data[$s], $d, $prow);
                 } else {
                     $data[$s][] = $d;
+                }
+                if ($orderf) {
+                    $order_data[$d[0]][] = $orderf($prow, $rcid, $this->user);
                 }
             }
         }
@@ -460,9 +455,12 @@ class FormulaGraph extends MessageSet {
         $fxf = $this->fx->compile_json_function();
         $fytrack = $this->fy->compile_extractor_function();
         $fycombine = $this->fy->compile_combiner_function();
-        $reviewf = null;
-        if ($this->fx->indexed() || $this->fy->index_type()) {
-            $reviewf = Formula::compile_indexes_function($this->user, ($this->fx->indexed() ? $this->fx->index_type() : 0) | $this->fy->index_type());
+        $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type() | $this->fy->index_type() | ($this->fxorder ? $this->fxorder->index_type() : 0));
+        $orderf = $order_data = null;
+        if ($this->fxorder) {
+            $order_data = [];
+            $orderf = $this->fxorder->compile_extractor_function();
+            $ordercf = $this->fxorder->compile_combiner_function();
         }
 
         foreach ($rowset as $prow) {
@@ -491,6 +489,9 @@ class FormulaGraph extends MessageSet {
                     } else {
                         $data[] = $d;
                     }
+                }
+                if ($orderf) {
+                    $order_data[$d[0]][] = $orderf($prow, $rcid, $this->user);
                 }
             }
         }
@@ -525,6 +526,13 @@ class FormulaGraph extends MessageSet {
             $newdata[] = $d;
         }
         $this->_data = $newdata;
+
+        if ($orderf) {
+            $this->_xorder_data = [];
+            foreach ($order_data as $x => $vs) {
+                $this->_xorder_data[] = [$x, $ordercf($vs)];
+            }
+        }
     }
 
     private function _valuemap_axes($format) {
