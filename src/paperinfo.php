@@ -434,7 +434,7 @@ class PaperInfo {
     }
 
     function _get_contact_info($cid) {
-        return get($this->_contact_info, $cid);
+        return $this->_contact_info[$cid] ?? null;
     }
 
     function _clear_contact_info($user) {
@@ -448,10 +448,12 @@ class PaperInfo {
             if ($this->_review_array
                 || property_exists($this, "reviewSignatures")) {
                 $ci = PaperContactInfo::make_empty($this, $user);
-                if (($c = get($this->conflicts(), $cid)))
+                if (($c = ($this->conflicts())[$cid] ?? null)) {
                     $ci->conflictType = $c->conflictType;
-                foreach ($this->reviews_of_user($cid, $user->review_tokens()) as $rrow)
+                }
+                foreach ($this->reviews_of_user($cid, $user->review_tokens()) as $rrow) {
                     $ci->mark_review($rrow);
+                }
                 $this->_contact_info[$cid] = $ci;
             } else {
                 PaperContactInfo::load_into($this, $user);
@@ -1060,29 +1062,34 @@ class PaperInfo {
 
     function topic_interest_score($contact) {
         $score = 0;
-        if (is_int($contact))
-            $contact = get($this->conf->pc_members(), $contact);
+        if (is_int($contact)) {
+            $contact = ($this->conf->pc_members())[$contact] ?? null;
+        }
         if ($contact) {
-            if ($this->_topic_interest_score_array === null)
+            if ($this->_topic_interest_score_array === null) {
                 $this->_topic_interest_score_array = array();
-            if (isset($this->_topic_interest_score_array[$contact->contactId]))
+            }
+            if (isset($this->_topic_interest_score_array[$contact->contactId])) {
                 $score = $this->_topic_interest_score_array[$contact->contactId];
-            else {
+            } else {
                 $interests = $contact->topic_interest_map();
                 $topics = $this->topic_list();
-                foreach ($topics as $t)
-                    if (($j = get($interests, $t, 0))) {
-                        if ($j >= -2 && $j <= 2)
+                foreach ($topics as $t) {
+                    if (($j = $interests[$t] ?? 0)) {
+                        if ($j >= -2 && $j <= 2) {
                             $score += self::$topic_interest_values[$j + 2];
-                        else if ($j > 2)
+                        } else if ($j > 2) {
                             $score += sqrt($j / 2);
-                        else
+                        } else {
                             $score += -sqrt(-$j / 4);
+                        }
                     }
-                if ($score)
+                }
+                if ($score) {
                     // * Strong interest in the paper's single topic gets
                     //   score 10.
                     $score = (int) ($score / sqrt(count($topics)) * 10 + 0.5);
+                }
                 $this->_topic_interest_score_array[$contact->contactId] = $score;
             }
         }
@@ -1220,7 +1227,7 @@ class PaperInfo {
         if ($this->_prefs_cid !== null && $this->_prefs_cid[0] == $cid) {
             $pref = $this->_prefs_cid[1];
         } else {
-            $pref = get($this->preferences(), $cid);
+            $pref = ($this->preferences())[$cid] ?? null;
         }
         $pref = $pref ? : [0, null];
         if ($include_topic_score) {
@@ -1317,21 +1324,21 @@ class PaperInfo {
         if ($this->_option_data === null) {
             $this->load_options(false, true);
         }
-        return [get($this->_option_values, $id, []),
-                get($this->_option_data, $id, [])];
+        return [$this->_option_values[$id] ?? [],
+                $this->_option_data[$id] ?? []];
     }
 
     function option($o) {
         $id = is_object($o) ? $o->id : $o;
-        return get($this->options(), $id);
+        return ($this->options())[$id] ?? null;
     }
 
     function force_option($o) {
         if (is_object($o)) {
-            $ov = get($this->options(), $o->id);
+            $ov = ($this->options())[$o->id] ?? null;
             return $ov ? : PaperValue::make_force($this, $o);
         } else {
-            $ov = get($this->options(), $o);
+            $ov = ($this->options())[$o] ?? null;
             if (!$ov && ($o = $this->conf->paper_opts->get($o))) {
                 $ov = PaperValue::make_force($this, $o);
             }

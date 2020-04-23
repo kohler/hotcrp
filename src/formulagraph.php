@@ -687,7 +687,7 @@ class FormulaGraph extends MessageSet {
         if ($this->_data === null) {
             // load data
             $paperIds = array_keys($this->papermap);
-            $queryOptions = array("paperId" => $paperIds, "tags" => true);
+            $queryOptions = ["paperId" => $paperIds, "tags" => true];
             $this->fx->add_query_options($queryOptions);
             $this->fy->add_query_options($queryOptions);
             if ($this->fx->indexed() || $this->fy->indexed()) {
