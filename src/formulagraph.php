@@ -90,20 +90,20 @@ class FormulaGraph extends MessageSet {
 
         // X axis expression(s)
         $this->fx_expression = $fx;
-        if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
+        if (preg_match('/\A(sort|order|rorder)\s+(\S.*)\z/i', $fx, $m)) {
+            if (strcasecmp($m[1], "rorder") === 0) {
+                $m[2] = "-($m[2])";
+            }
+            $this->set_xorder($m[2]);
+            $this->fx = new Formula("pid", Formula::ALLOW_INDEXED);
+        } else if (strcasecmp($fx, "query") === 0 || strcasecmp($fx, "search") === 0) {
             $this->fx = new Formula("0", Formula::ALLOW_INDEXED);
             $this->fx_type = Fexpr::FSEARCH;
-            $this->_x_tagvalue_bool = false;
-        } else if (strcasecmp($fx, "tag") == 0) {
+        } else if (strcasecmp($fx, "tag") === 0) {
             $this->fx = new Formula("0", Formula::ALLOW_INDEXED);
             $this->fx_type = Fexpr::FTAG;
-            $this->_x_tagvalue_bool = false;
         } else if (!($this->type & self::CDF)) {
             $this->fx = new Formula($fx, Formula::ALLOW_INDEXED);
-            if (!$this->fx->check($this->user)) {
-                $this->error_at("fx", "X axis formula error: " . $this->fx->error_html());
-            }
-            $this->_x_tagvalue_bool = $this->fx->result_format() === Fexpr::FTAGVALUE;
         } else {
             $this->fxs = [];
             $this->_x_tagvalue_bool = true;
@@ -119,6 +119,12 @@ class FormulaGraph extends MessageSet {
                 }
                 $this->_x_tagvalue_bool = $this->_x_tagvalue_bool && $f->result_format() === Fexpr::FTAGVALUE;
             }
+        }
+        if ($this->fx) {
+            if (!$this->fx->check($this->user)) {
+                $this->error_at("fx", "X axis formula error: " . $this->fx->error_html());
+            }
+            $this->_x_tagvalue_bool = $this->fx->result_format() === Fexpr::FTAGVALUE;
         }
 
         if ($this->fy->error_html()) {
@@ -188,13 +194,11 @@ class FormulaGraph extends MessageSet {
     function set_xorder($xorder) {
         $this->fxorder = null;
         $xorder = simplify_whitespace($xorder);
-        if ($xorder !== "" && $this->type !== self::SCATTER) {
+        if ($xorder !== "") {
             $fxorder = new Formula($xorder, Formula::ALLOW_INDEXED);
             $fxorder->check($this->user);
             if ($fxorder->error_html()) {
                 $this->error_at("xorder", "X order formula error: " . $fxorder->error_html());
-            } else if (!$fxorder->support_combiner()) {
-                $this->error_at("xorder", "X order formula “" . htmlspecialchars($xorder) . "” is unsuitable, use an aggregate function.");
             } else {
                 $this->fxorder = $fxorder;
             }
@@ -371,14 +375,21 @@ class FormulaGraph extends MessageSet {
         $fxf = $this->fx->compile_json_function();
         $fyf = $this->fy->compile_json_function();
         $reviewf = null;
-        if ($this->fx->indexed() || $this->fy->indexed()) {
-            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type() | $this->fy->index_type());
+        if ($this->fx->indexed()
+            || $this->fy->indexed()
+            || ($this->fxorder && $this->fxorder->indexed())) {
+            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type() | $this->fy->index_type() | ($this->fxorder ? $this->fxorder->index_type() : 0));
         }
         $orderf = $order_data = null;
         if ($this->fxorder) {
-            $orderf = $this->fxorder->compile_extractor_function();
-            $ordercf = $this->fxorder->compile_combiner_function();
             $order_data = [];
+            if ($reviewf) {
+                $orderf = $this->fxorder->compile_extractor_function();
+                $ordercf = $this->fxorder->compile_combiner_function();
+            } else {
+                $orderf = $this->fxorder->compile_json_function();
+                $ordercf = function ($x) { return $x[0]; };
+            }
         }
 
         $data = [];

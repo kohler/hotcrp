@@ -834,7 +834,7 @@ class Score_Fexpr extends Fexpr {
         if ($this->field->allow_empty) {
             return "({$this->field->view_score} > $rrow_vsb ? (int) {$rrow}->$fid : null)";
         } else {
-            return "({$this->field->view_score} > $rrow_vsb && isset({$rrow}->$fid) && {$rrow}->$fid ? (int) {$rrow}->$fid : null)";
+            return "({$this->field->view_score} > $rrow_vsb && ({$rrow}->$fid ?? 0) ? (int) {$rrow}->$fid : null)";
         }
     }
 }

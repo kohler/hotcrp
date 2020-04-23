@@ -26,7 +26,7 @@ class Tag_Fexpr extends Fexpr {
     }
     static function make(FormulaCall $ff) {
         if (count($ff->args) === 1
-            && preg_match('{\A(?:|~~?|\S+~)' . TAG_REGEX_NOTWIDDLE . '\z}', $ff->args[0])) {
+            && preg_match('{\A#?(?:|~~?|\S+~)' . TAG_REGEX_NOTWIDDLE . '\z}', $ff->args[0])) {
             $tag = $ff->args[0];
             $tsm = new TagSearchMatcher($ff->formula->user);
             $tsm->add_check_tag(str_starts_with($tag, "_~") ? substr($tag, 1) : $tag, true);
