@@ -2696,9 +2696,11 @@ a.badge:active {
 }
 .pslitem > .is-error:before, .feedback.is-error:before {
 	content: "×\20DD\0020";
+	font-weight: normal;
 }
 .pslitem > .is-warning:before, .feedback.is-warning:before {
 	content: "!\20DD\0020";
+	font-weight: normal;
 }
 .js-tag-editor {
 	font-size: 13px;
