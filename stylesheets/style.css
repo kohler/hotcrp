@@ -443,7 +443,7 @@ td.g {
 	clear: both;
 }
 .clearfix:after, .pst:after, .pavt:after, .papet:after,
-.revvt:after, .revet:after, .rvl:before, .rvg:before,
+.revvt:after, .revet:after,
 .cmteditinfo:after, .aa:after, .aab:after,
 .entryi:after, .popup-actions:after, .modal-content:after, .f-horizontal:after {
 	clear: both;
@@ -1640,7 +1640,7 @@ div.formatdescription {
 }
 
 .revrating {
-	margin-top: 12px;
+	margin-bottom: 1.25rem;
 	font-size: 0.9rem;
 	color: #df4c4c;
 }
@@ -3116,6 +3116,8 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 .revcard-head {
 	margin-top: 32px;
 	margin-top: 2rem;
+	margin-bottom: 12px;
+	margin-bottom: 0.75rem;
 }
 .revcard-head h2 {
 	display: inline-block;
@@ -3126,11 +3128,6 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 .revcard-header-name {
 	display: inline-block;
 	border-bottom: 5px solid #df4c4c;
-}
-.revcard-body {
-	background: #ffffff;
-	padding: 12px 0;
-	border-radius: 2px;
 }
 .t-editor {
 	display: inline-block;
@@ -3212,22 +3209,22 @@ a:hover .t-editor,
 .field-d > p {
 	margin-bottom: 0.5em;
 }
+.revcard-render {
+	display: flex;
+	flex-wrap: wrap;
+}
 .rvg, .rvl, .rvr {
 	margin-bottom: 1.25rem;
 }
 .rvl, .rvr {
 	width: 50%;
 	max-width: 360px;
-	float: left;
 }
 .rvl {
 	padding-right: 0.75rem;
 }
 .rvr {
 	padding-left: 0.75rem;
-}
-.revcard-render {
-	margin-bottom: -1.25rem;
 }
 .papeg, .papegroup {
 	margin-bottom: 2.5rem;

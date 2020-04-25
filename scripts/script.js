@@ -3775,7 +3775,7 @@ function render_review_body(rrow) {
                 f.score_info.unparse_revnum(x) + ' </span><span class="revscoredesc">' +
                 escape_entities(f.options[x - 1]) + '</span></p>';
         } else {
-            t += '<p class="' + k + ' rev_unknown">' + (f.allow_empty ? "No entry" : "Unknown") + '</p>';
+            t += '<p class="' + k + ' revscore">' + (f.allow_empty ? "No entry" : "Unknown") + '</p>';
         }
 
         t += '</div>';
