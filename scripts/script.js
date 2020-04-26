@@ -3764,18 +3764,17 @@ function render_review_body(rrow) {
                 ')</div>';
         }
         t += '</h3></div>';
-        k = "revv revv" + "glr".charAt(display);
 
         if (!f.options) {
             x = render_text(rrow.format, rrow[f.uid], f.uid);
-            t += '<div class="' + k + ' revtext format' + (x.format || 0) + '">'
+            t += '<div class="revv revtext format' + (x.format || 0) + '">'
                 + x.content + '</div>';
         } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid]))) {
-            t += '<p class="' + k + ' revscore"><span class="revscorenum">' +
+            t += '<p class="revv revscore"><span class="revscorenum">' +
                 f.score_info.unparse_revnum(x) + ' </span><span class="revscoredesc">' +
                 escape_entities(f.options[x - 1]) + '</span></p>';
         } else {
-            t += '<p class="' + k + ' revscore">' + (f.allow_empty ? "No entry" : "Unknown") + '</p>';
+            t += '<p class="revv revnoscore">' + (f.allow_empty ? "No entry" : "Unknown") + '</p>';
         }
 
         t += '</div>';

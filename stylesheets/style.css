@@ -3160,9 +3160,11 @@ a:hover .t-editor,
 .rveg {
 	margin-bottom: 36px;
 }
-.rvg .revvt {
-	margin-right: 2em;
-	padding-bottom: 2px;
+.revvt {
+	margin-bottom: 2px;
+}
+.revv.revscore {
+	margin-top: -2px;
 }
 .revet {
 	font-size: inherit;
@@ -3170,9 +3172,6 @@ a:hover .t-editor,
 }
 .revet > .revfn {
 	color: #683131;
-}
-.revfn {
-	float: left;
 }
 .revvis {
 	display: inline-block;
@@ -3187,10 +3186,12 @@ a:hover .t-editor,
 	float: none;
 	padding: 0 1em 5px 0;
 }
+.revscore, .revnoscore {
+	margin-bottom: 0;
+}
 .revscore {
 	display: flex;
 	align-items: baseline;
-	margin-bottom: 0;
 }
 .revscorenum {
 	display: block;
