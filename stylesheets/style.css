@@ -1640,6 +1640,7 @@ div.formatdescription {
 }
 
 .revrating {
+	margin-top: 1.25rem;
 	margin-bottom: 1.25rem;
 	font-size: 0.9rem;
 	color: #df4c4c;
@@ -3211,21 +3212,26 @@ a:hover .t-editor,
 	margin-bottom: 0.5em;
 }
 .revcard-render {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: 1fr minmax(1.5rem, 3.33%) 1fr 0.5fr;
+	grid-template-columns: 1fr minmax(1.5rem, 3.33%) 1fr calc(96.67% - 696px);
+	margin-bottom: -1.25rem;
 }
 .rvg, .rvl, .rvr {
 	margin-bottom: 1.25rem;
+	margin-right: auto;
 }
 .rvl, .rvr {
-	width: 50%;
-	max-width: 360px;
+	max-width: 348px;
+}
+.rvg {
+	grid-column: 1 / 5;
 }
 .rvl {
-	padding-right: 0.75rem;
+	grid-column: 1 / 2;
 }
 .rvr {
-	padding-left: 0.75rem;
+	grid-column: 3 / 4;
 }
 .papeg, .papegroup {
 	margin-bottom: 2.5rem;

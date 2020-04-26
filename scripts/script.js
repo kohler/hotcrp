@@ -3991,7 +3991,7 @@ function add_review(rrow) {
     hc.push_pop('<hr class="c">');
 
     // body
-    hc.push('<div class="revcard-body revcard-render fx20">', '</div>');
+    hc.push('<div class="revcard-render fx20">', '</div>');
     hc.push_pop(render_review_body(rrow));
 
     // ratings

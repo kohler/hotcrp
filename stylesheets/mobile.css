@@ -153,8 +153,12 @@ table.pltable {
 	margin-top: -0.25em;
 }
 .rvl, .rvr {
-	width: 100%;
-	padding-left: 0;
-	padding-right: 0;
+	max-width: none;
+}
+}
+@media screen and (max-width: 640px) {
+.revcard-render {
+	display: block;
+	margin-bottom: 0;
 }
 }
