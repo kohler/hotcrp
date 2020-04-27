@@ -133,6 +133,14 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $d;
     }
+    function subset_as_array($keys) {
+        $d = [];
+        foreach ($keys as $k) {
+            if (substr($k, 0, 4) !== "____" && isset($this->$k))
+                $d[$k] = $this->$k;
+        }
+        return $d;
+    }
     function as_object() {
         return (object) $this->as_array();
     }
