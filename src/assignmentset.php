@@ -286,10 +286,11 @@ class AssignmentState {
     }
     function error($msg) {
         $this->msg($this->lineno, $msg, 2);
+        return false;
     }
     function user_error($msg) {
-        $this->error($msg);
         $this->has_user_error = true;
+        return $this->error($msg);
     }
     function paper_error($msg) {
         $s = $this->paper_exact_match ? 2 : self::ERROR_NONEXACT_MATCH;
@@ -298,6 +299,7 @@ class AssignmentState {
             && $this->first_nonexact_error === null) {
             $this->first_nonexact_error = count($this->msgs) - 1;
         }
+        return false;
     }
 
     function has_messages() {

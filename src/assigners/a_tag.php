@@ -25,7 +25,7 @@ class NextTagAssigner {
         $this->first_index = $this->next_index = ceil($index);
         $this->isseq = $isseq;
     }
-    private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
+    private static $value_increment_map = [1, 1, 1, 1, 1, 2, 2, 2, 3, 4];
     function next_index($isseq) {
         $index = $this->next_index;
         $this->next_index += ($isseq ? 1 : self::$value_increment_map[mt_rand(0, 9)]);
@@ -38,7 +38,7 @@ class NextTagAssigner {
         $ltag = strtolower($this->tag);
         foreach ($this->pidindex as $pid => $index) {
             if ($index >= $this->first_index && $index < $this->next_index) {
-                $x = $state->query_unmodified(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
+                $x = $state->query_unmodified(["type" => "tag", "pid" => $pid, "ltag" => $ltag]);
                 if (!empty($x)) {
                     $item = $state->add(["type" => "tag", "pid" => $pid, "ltag" => $ltag,
                                          "_tag" => $this->tag,
@@ -95,22 +95,25 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // tag argument (can have multiple space-separated tags)
-        if (($tag = trim((string) $req["tag"])) === "") {
-            return "Tag missing.";
+        if (!isset($req["tag"])) {
+            return $state->error("Tag missing.");
         }
-        $tags = preg_split('/\s+/', $tag);
-        while (count($tags) > 1) {
-            $req["tag"] = array_pop($tags);
-            $this->apply($prow, $contact, $req, $state);
+        $ok = true;
+        foreach (preg_split('/[,;\s]+/', (string) $req["tag"]) as $t) {
+            if ($t !== "") {
+                $ok = $this->apply1($t, $prow, $contact, $req, $state) && $ok;
+            }
         }
-        $tag = $tags[0];
-
+        return $ok;
+    }
+    private function apply1($tag, PaperInfo $prow, Contact $contact, $req,
+                            AssignmentState $state) {
         // index argument
         $xindex = $req["tag_value"];
         if ($xindex !== null
             && ($xindex = trim($xindex)) !== "") {
-            $tag = preg_replace(',\A([-+]?#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+(?:\.\d*)?|-?\.\d+|any|all|none|clear)\z,i', '$1', $tag);
-            if (!preg_match(',\A(?:[=!<>]=?|#|≠|≤|≥),i', $xindex)) {
+            $tag = preg_replace('/\A([-+]?#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+(?:\.\d*)?|-?\.\d+|any|all|none|clear)\z/i', '$1', $tag);
+            if (!preg_match('/\A(?:[=!<>]=?|#|≠|≤|≥)/i', $xindex)) {
                 $xindex = "#" . $xindex;
             }
             $tag .= $xindex;
@@ -129,7 +132,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
         $m = array(null, "", "", "", "");
         $xtag = $tag;
-        if (preg_match(',\A(.*?)(#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*?)\z,', $xtag, $xm)) {
+        if (preg_match('/\A(.*?)(#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*?)\z/', $xtag, $xm)) {
             list($xtag, $m[3], $m[4]) = array($xm[1], $xm[2], strtolower($xm[3]));
             if ($m[3] === "#") {
                 $m[3] = "=";
@@ -138,13 +141,13 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             }
         }
         if ($xtag === "") {
-            return "Empty tag.";
-        } else if (!preg_match(',\A(|[^#]*~)([a-zA-Z@*_:.]+[-+a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm)) {
-            return "“" . htmlspecialchars($tag) . "”: Invalid tag.";
+            return $state->error("Empty tag.");
+        } else if (!preg_match('/\A(|[^#]*~)([a-zA-Z@*_:.]+[-+a-zA-Z0-9!@*_:.\/]*)\z/i', $xtag, $xm)) {
+            return $state->error("“" . htmlspecialchars($tag) . "”: Invalid tag.");
         } else if ($m[3] && $m[4] === "") {
-            return "“" . htmlspecialchars($tag) . "”: Tag value missing.";
-        } else if ($m[3] && !preg_match(',\A([-+]?(?:\d+(?:\.\d*)?|\.\d+)|any|all|none|clear)\z,', $m[4])) {
-            return "“" . htmlspecialchars($tag) . "”: Tag value should be a number.";
+            return $state->error("“" . htmlspecialchars($tag) . "”: Tag value missing.");
+        } else if ($m[3] && !preg_match('/\A([-+]?(?:\d+(?:\.\d*)?|\.\d+)|any|all|none|clear)\z/', $m[4])) {
+            return $state->error("“" . htmlspecialchars($tag) . "”: Tag value should be a number.");
         }
         list($m[1], $m[2]) = array($xm[1], $xm[2]);
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0) {
@@ -160,7 +163,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         if ($remove) {
             return $this->apply_remove($prow, $state, $m);
         } else if (strpos($tag, "*") !== false) {
-            return "Tag wildcards aren’t allowed when adding tags.";
+            return $state->error("Tag wildcards aren’t allowed when adding tags.");
         }
 
         // resolve twiddle portion
@@ -168,22 +171,22 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
             $twiddlecids = ContactSearch::make_pc($c, $state->user)->ids;
             if (empty($twiddlecids)) {
-                return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
+                return $state->error("“" . htmlspecialchars($c) . "” doesn’t match a PC member.");
             } else if (count($twiddlecids) > 1) {
-                return "“" . htmlspecialchars($c) . "” matches more than one PC member; be more specific to disambiguate.";
+                return $state->error("“" . htmlspecialchars($c) . "” matches more than one PC member; be more specific to disambiguate.");
             }
             $m[1] = $twiddlecids[0] . "~";
         }
 
         // resolve tag portion
-        if (preg_match(',\A(?:none|any|all)\z,i', $m[2])) {
-            return "Tag “{$tag}” is reserved.";
+        if (preg_match('/\A(?:none|any|all)\z/i', $m[2])) {
+            return $state->error("Tag “{$tag}” is reserved.");
         }
         $tag = $m[1] . $m[2];
 
         // resolve index portion
         if ($m[3] && $m[3] !== "=" && $m[3] !== "==") {
-            return "“" . htmlspecialchars($m[3]) . "” isn’t allowed when adding tags.";
+            return $state->error("“" . htmlspecialchars($m[3]) . "” isn’t allowed when adding tags.");
         } else if ($this->isnext) {
             $index = $this->apply_next_index($prow->paperId, $tag, $state, $m);
         } else {
@@ -234,7 +237,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             } else {
                 $twiddlecids = ContactSearch::make_pc($c, $state->user)->ids;
                 if (empty($twiddlecids)) {
-                    return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
+                    return $state->error("“" . htmlspecialchars($c) . "” doesn’t match a PC member.");
                 } else if (count($twiddlecids) == 1) {
                     $m[1] = $twiddlecids[0] . "~";
                 } else {
