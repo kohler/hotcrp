@@ -92,12 +92,13 @@ class SearchSplitter {
         $this->str = $next;
     }
     static function span_balanced_parens($str, $pos = 0, $endf = null) {
-        $pcount = $quote = 0;
+        $pcount = "";
+        $quote = 0;
         $len = strlen($str);
         while ($pos < $len) {
             $ch = $str[$pos];
             // stop when done
-            if (!$pcount
+            if ($pcount === ""
                 && !$quote
                 && ($endf === null ? ctype_space($ch) : call_user_func($endf, $ch))) {
                 break;
@@ -118,13 +119,14 @@ class SearchSplitter {
                 }
             } else if ($ch === "\"") {
                 $quote = 1;
-            } else if ($ch === "(" || $ch === "[" || $ch === "{") {
-                ++$pcount;
-            } else if ($ch === ")" || $ch === "]" || $ch === "}") {
-                if (!$pcount) {
-                    break;
-                }
-                --$pcount;
+            } else if ($ch === "(") {
+                $pcount .= ")";
+            } else if ($ch === "[") {
+                $pcount .= "]";
+            } else if ($ch === "]") {
+                $pcount .= "}";
+            } else if ($pcount !== "" && $pcount[strlen($pcount) - 1] === $ch) {
+                $pcount = substr($pcount, 0, -1);
             }
             ++$pos;
         }
