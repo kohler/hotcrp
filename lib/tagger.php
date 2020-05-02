@@ -856,11 +856,8 @@ class TagInfo {
 
     private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
 
-    static function value_increment($mode) {
-        if (strlen($mode) == 2)
-            return self::$value_increment_map[mt_rand(0, 9)];
-        else
-            return 1;
+    static function value_increment($sequential) {
+        return $sequential ? 1 : self::$value_increment_map[mt_rand(0, 9)];
     }
 
 

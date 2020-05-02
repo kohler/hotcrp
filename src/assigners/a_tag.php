@@ -20,15 +20,14 @@ class NextTagAssigner {
             $indexes = array_values($this->pidindex);
             sort($indexes);
             $index = count($indexes) ? $indexes[count($indexes) - 1] : 0;
-            $index += ($isseq ? 1 : self::$value_increment_map[mt_rand(0, 9)]);
+            $index += TagInfo::value_increment($isseq);
         }
         $this->first_index = $this->next_index = ceil($index);
         $this->isseq = $isseq;
     }
-    private static $value_increment_map = [1, 1, 1, 1, 1, 2, 2, 2, 3, 4];
     function next_index($isseq) {
         $index = $this->next_index;
-        $this->next_index += ($isseq ? 1 : self::$value_increment_map[mt_rand(0, 9)]);
+        $this->next_index += TagInfo::value_increment($isseq);
         return (float) $index;
     }
     function apply_finisher(AssignmentState $state) {

@@ -6,7 +6,7 @@ class PaperRank {
 
     private $tag;
     private $dest_tag;
-    private $ordertype;
+    private $sequential;
     private $papersel;
     private $userrank;
     private $papershuffle;
@@ -23,11 +23,11 @@ class PaperRank {
     private $header_id;
     private $starttime;
 
-    function __construct($source_tag, $dest_tag, $papersel, $strict,
+    function __construct($source_tag, $dest_tag, $papersel, $sequential,
                          $header_title = null, $header_id = null) {
         global $Conf;
         $this->dest_tag = $dest_tag;
-        $this->ordertype = ($strict ? "aos" : "ao");
+        $this->sequential = $sequential;
         $this->papersel = $papersel;
         $this->userrank = array();
         $this->info_printed = false;
@@ -69,7 +69,7 @@ class PaperRank {
     }
 
     private function _nextRank() {
-        $this->currank += TagInfo::value_increment($this->ordertype);
+        $this->currank += TagInfo::value_increment($this->sequential);
         return $this->currank;
     }
 
