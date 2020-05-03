@@ -43,7 +43,7 @@ class ReviewTimes {
         $rs = $rs_nvis = [];
         foreach ($user->paper_set(["reviewSignatures" => true]) as $prow) {
             if (!$user->can_view_paper($prow)
-                || ($prow->conflict_type($user) > 0
+                || ($prow->has_conflict($user)
                     && (!$user->can_view_review_assignment($prow, null)
                         || !$user->can_view_review_identity($prow, null)))) {
                 continue;

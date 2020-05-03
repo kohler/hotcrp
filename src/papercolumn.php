@@ -289,7 +289,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         }
     }
     private function data(PaperInfo $row, Contact $user) {
-        $want_assigned = !$row->conflict_type($user) || $user->can_administer($row);
+        $want_assigned = !$row->has_conflict($user) || $user->can_administer($row);
         $done = $started = 0;
         foreach ($row->reviews_by_id() as $rrow) {
             if ($user->can_view_review_assignment($row, $rrow)
@@ -567,7 +567,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
             $pl->mark_has("need_review");
         }
         $flags = 0;
-        if ($row->conflict_type($this->contact)
+        if ($row->has_conflict($this->contact)
             && (!$this->not_me || $pl->user->can_view_conflicts($row))) {
             $flags |= self::F_CONFLICT;
         }

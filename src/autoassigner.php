@@ -189,13 +189,14 @@ class Autoassigner {
                 $px = $row->preference($p, true);
                 $rt = $row->review_type($p);
                 $this->prefinfo[$cid][$pid] = $px;
-                if ($rt == $reviewtype)
+                if ($rt == $reviewtype) {
                     $this->eass[$cid][$pid] = self::EOLDASSIGN;
-                else if ($rt)
+                } else if ($rt) {
                     $this->eass[$cid][$pid] = self::EOTHERASSIGN;
-                else if ($row->conflict_type($p)
-                         || !$p->can_accept_review_assignment($row))
+                } else if ($row->has_conflict($p)
+                           || !$p->can_accept_review_assignment($row)) {
                     $this->eass[$cid][$pid] = self::ENOASSIGN;
+                }
                 $this->prefs[$cid][$pid] = max($px[0], -1000) + ($px[2] / 100);
             }
             ++$nmade;

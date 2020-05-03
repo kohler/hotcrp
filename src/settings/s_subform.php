@@ -247,8 +247,9 @@ class SubForm_SettingRenderer {
         $sv->echo_checkbox("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "uich js-foldup"]);
         $cflt = array();
         $confset = $sv->conf->conflict_types();
-        foreach ($confset->basic_conflict_types() as $ct)
+        foreach ($confset->basic_conflict_types() as $ct) {
             $cflt[] = "“" . $confset->unparse_html($ct) . "”";
+        }
         $sv->echo_checkbox("sub_pcconfsel", "Collect PC conflict descriptions (" . commajoin($cflt, "or") . ")", ["group_class" => "fx"]);
         $sv->echo_checkbox("sub_collab", "Collect authors’ other collaborators as text");
         echo "</div>\n";

@@ -1587,7 +1587,7 @@ class PaperTable {
                 echo ' checki';
             }
             echo ' clearfix';
-            if ($pct > 0) {
+            if (Conflict::is_conflicted($pct)) {
                 echo ' boldtag';
             }
             if ($pcconfmatch) {
@@ -1596,15 +1596,20 @@ class PaperTable {
             echo '"><label>';
 
             $js = ["id" => "pcc$id"];
-            if ($pct >= CONFLICT_AUTHOR
+            if (Conflict::is_author($pct)
                 || (!$this->admin && Conflict::is_pinned($pct))) {
                 if ($selectors) {
-                    echo '<span class="pcconf-editselector"><strong>',
-                        ($pct >= CONFLICT_AUTHOR ? "Author" :
-                         ($pct > 0 ? "Conflict" : "Non-conflict")),
-                        '</strong></span>';
+                    echo '<span class="pcconf-editselector"><strong>';
+                    if (Conflict::is_author($pct)) {
+                        echo "Author";
+                    } else if (Conflict::is_conflicted($pct)) {
+                        echo "Conflict"; // XXX conflict type?
+                    } else {
+                        echo "Non-conflict";
+                    }
+                    echo '</strong></span>';
                 } else {
-                    echo '<span class="checkc">', Ht::checkbox(null, 1, $pct > 0, ["disabled" => true]), '</span>';
+                    echo '<span class="checkc">', Ht::checkbox(null, 1, Conflict::is_conflicted($pct), ["disabled" => true]), '</span>';
                 }
                 echo Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry"]);
             } else if ($selectors) {
@@ -1614,12 +1619,13 @@ class PaperTable {
                     Ht::select("pcc$id", $ctypes, $ct, $js),
                     '</span>';
             } else {
-                $js["data-default-checked"] = $pct > 0;
+                $js["data-default-checked"] = Conflict::is_conflicted($pct);
                 $js["data-range-type"] = "pcc";
                 $js["class"] = "uic js-range-click conflict-entry";
+                $checked = Conflict::is_conflicted($ct);
                 echo '<span class="checkc">',
-                    Ht::checkbox("pcc$id", $ct > 0 ? $ct : Conflict::GENERAL,
-                                 $ct > 0, $js),
+                    Ht::checkbox("pcc$id", $checked ? $ct : Conflict::GENERAL,
+                                 $checked, $js),
                     '</span>';
             }
 
@@ -1636,9 +1642,12 @@ class PaperTable {
         assert(!$this->editable && $this->prow->paperId);
         $pcconf = array();
         $pcm = $this->conf->pc_members();
-        foreach ($this->prow->pc_conflicts() as $id => $x) {
-            $p = $pcm[$id];
-            $pcconf[$p->sort_position] = '<li class="odname">' . $this->user->reviewer_html_for($p) . '</li>';
+        foreach ($this->prow->pc_conflicts() as $id => $cflt) {
+            if (Conflict::is_conflicted($cflt->conflictType)) {
+                $p = $pcm[$id];
+                $pcconf[$p->sort_position] = '<li class="odname">'
+                    . $this->user->reviewer_html_for($p) . '</li>';
+            }
         }
         ksort($pcconf);
         if (empty($pcconf)) {
@@ -1913,12 +1922,11 @@ class PaperTable {
     }
 
     private function papstripWatch() {
-        $conflictType = $this->prow->conflict_type($this->user);
-        if (!($this->prow->timeSubmitted > 0
-              && ($conflictType >= CONFLICT_AUTHOR
-                  || $conflictType <= 0
-                  || $this->user->is_admin_force())
-              && $this->user->contactId > 0)) {
+        if ($this->prow->timeSubmitted <= 0
+            || $this->user->contactId <= 0
+            || ($this->prow->has_conflict($this->user)
+                && !$this->prow->has_author($this->user)
+                && !$this->user->is_admin_force())) {
             return;
         }
         // watch note

@@ -73,9 +73,9 @@ function saveAssignments($qreq, $reviewer) {
         }
 
         if ($assrev < 0) {
-            $newct = $ct > 0 ? $ct : Conflict::PINNED;
+            $newct = Conflict::is_conflicted($ct) ? $ct : Conflict::PINNED;
         } else {
-            $newct = $ct <= 0 ? $ct : 0;
+            $newct = Conflict::is_conflicted($ct) ? 0 : $ct;
         }
         if ($ct !== $newct) {
             $assignments[] = [$row->paperId, $reviewer->email, "conflict", "", $confset->unparse_assignment($newct)];

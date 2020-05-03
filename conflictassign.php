@@ -36,13 +36,16 @@ if ($Qreq->neg) {
     $filter = function ($pl, $row) {
         $user = $pl->reviewer_user();
         $ct = $row->conflict_type($user);
-        return $ct > 0 && $ct < CONFLICT_AUTHOR
+        return !Conflict::is_pinned($ct)
+            && Conflict::is_conflicted($ct)
             && !$row->potential_conflict($user);
     };
 } else {
     $filter = function ($pl, $row) {
         $user = $pl->reviewer_user();
-        return $row->conflict_type($user) == 0
+        $ct = $row->conflict_type($user);
+        return !Conflict::is_pinned($ct)
+            && !Conflict::is_conflicted($ct)
             && ($row->preference($user)[0] <= -100
                 || $row->potential_conflict($user));
     };

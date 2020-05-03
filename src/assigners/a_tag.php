@@ -85,7 +85,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
     }
     private function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {
-        if ($prow->conflict_type($state->user)) {
+        if ($prow->has_conflict($state->user)) {
             $state->paper_error("You have a conflict with #{$prow->paperId}.");
         } else {
             $state->paper_error("You can’t view that tag for #{$prow->paperId}.");

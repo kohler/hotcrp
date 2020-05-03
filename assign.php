@@ -486,27 +486,27 @@ if ($Me->can_administer($prow)) {
         }
 
         // first, name and assignment
-        $conflict_type = $prow->conflict_type($pc);
+        $ct = $prow->conflict_type($pc);
         $rrow = $prow->review_of_user($pc);
-        if ($conflict_type >= CONFLICT_AUTHOR) {
+        if (Conflict::is_author($ct)) {
             $revtype = -2;
         } else {
             $revtype = $rrow ? $rrow->reviewType : 0;
         }
         $crevtype = $revtype;
-        if ($crevtype == 0 && $conflict_type > 0) {
+        if ($crevtype == 0 && Conflict::is_conflicted($ct)) {
             $crevtype = -1;
         }
         $pcconfmatch = null;
         if ($show_possible_conflicts && $revtype != -2) {
-            $pcconfmatch = $prow->potential_conflict_html($pc, $conflict_type <= 0);
+            $pcconfmatch = $prow->potential_conflict_html($pc, !Conflict::is_conflicted($ct));
         }
 
         echo '<div class="ctelt">',
             '<div class="ctelti has-assignment has-fold foldc" data-pid="', $prow->paperId,
             '" data-uid="', $pc->contactId,
             '" data-review-type="', $revtype;
-        if ($conflict_type) {
+        if (Conflict::is_conflicted($ct)) {
             echo '" data-conflict-type="1';
         }
         if (!$revtype && $prow->review_refusals_of_user($pc)) {

@@ -104,25 +104,19 @@ class Conflict_AssignmentParser extends AssignmentParser {
             && !$admin) {
             $ct = Conflict::set_pinned($ct, false);
         }
-        if (!empty($res)) {
-            $old_ct = $res[0]["_ctype"];
-            if ((!$this->iscontact
-                 && Conflict::is_author($old_ct))
-                || (!$this->iscontact
-                    && !Conflict::is_pinned($ct)
-                    && Conflict::is_pinned($old_ct)
-                    && !$admin)
-                || ($this->iscontact
-                    && $ct === 0
-                    && !Conflict::is_author($old_ct))
-                || ($ct === Conflict::PLACEHOLDER
-                    && $old_ct > 0)
-                || ($matcher
-                    && !$matcher->test($old_ct))) {
-                $ct = $old_ct;
-            }
-        } else if ($matcher && !$matcher->test(0)) {
-            $ct = 0;
+        $old_ct = empty($res) ? 0 : $res[0]["_ctype"];
+        if ((!$this->iscontact
+             && Conflict::is_pinned($old_ct)
+             && (Conflict::is_author($old_ct)
+                 || (!$admin && !Conflict::is_pinned($ct))))
+            || ($this->iscontact
+                && $ct === 0
+                && !Conflict::is_author($old_ct))
+            || ($ct === Conflict::PLACEHOLDER
+                && Conflict::is_conflicted($old_ct))
+            || ($matcher
+                && !$matcher->test($old_ct))) {
+            $ct = $old_ct;
         }
         if ($ct === Conflict::PLACEHOLDER) {
             $ct = $admin ? Conflict::PINNED : Conflict::GENERAL;
@@ -158,7 +152,7 @@ class Conflict_Assigner extends Assigner {
         $pid = $item["pid"];
         $cid = isset($item["cid"]) ? $item["cid"] : $item["_cid"];
         $cflt = $state->query(["type" => "conflict", "pid" => $pid, "cid" => $cid]);
-        if ($cflt && $cflt[0]["_ctype"] > 0) {
+        if ($cflt && Conflict::is_conflicted($cflt[0]["_ctype"])) {
             $uname = Text::user_html_nolink($state->user_by_id($cid));
             if (isset($item["_override"])
                 && $state->user->can_administer($state->prow($pid))) {
@@ -179,7 +173,7 @@ class Conflict_Assigner extends Assigner {
         $ctype = $this->item->get($before, "_ctype");
         if (Conflict::is_author($ctype)) {
             return review_type_icon(-2);
-        } else if ($ctype > 0) {
+        } else if (Conflict::is_conflicted($ctype)) {
             return review_type_icon(-1);
         } else {
             return "";
@@ -198,8 +192,11 @@ class Conflict_Assigner extends Assigner {
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         return [
-            "pid" => $this->pid, "action" => $this->ctype ? "conflict" : "noconflict",
-            "email" => $this->contact->email, "name" => $this->contact->name()
+            "pid" => $this->pid,
+            "action" => "conflict",
+            "email" => $this->contact->email,
+            "name" => $this->contact->name(),
+            "conflict" => $aset->conf->conflict_types()->unparse_assignment($this->ctype)
         ];
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {

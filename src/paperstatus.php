@@ -1071,7 +1071,8 @@ class PaperStatus extends MessageSet {
         // chair conflicts cannot be overridden
         if ($this->prow) {
             foreach ($this->prow->conflicts(true) as $cflt) {
-                if (Conflict::is_pinned($cflt->conflictType)) {
+                if (!Conflict::is_author($cflt->conflictType)
+                    && Conflict::is_pinned($cflt->conflictType)) {
                     $lemail = strtolower($cflt->email);
                     if (!Conflict::is_pinned((int) ($cflts[$lemail] ?? 0))
                         && !$this->user->can_administer($this->prow)) {

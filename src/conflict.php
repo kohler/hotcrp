@@ -4,6 +4,7 @@
 
 class Conflict {
     private $conf;
+    private $desc;
     private $_typemap;
     private $_typemap_html;
 
@@ -35,20 +36,19 @@ class Conflict {
         return $ct >= CONFLICT_AUTHOR;
     }
     static function is_pinned($ct) {
-        return $ct >= self::PINNED && $ct < CONFLICT_AUTHOR;
+        return $ct >= self::PINNED;
     }
     static function set_pinned($ct, $pinned) {
-        if (self::is_pinned($ct) === !!$pinned) {
+        if (self::is_author($ct) || (self::is_pinned($ct) === !!$pinned)) {
             return $ct;
-        } else if ($pinned) {
-            return self::PINNED;
         } else {
-            return self::GENERAL;
+            return $pinned ? self::PINNED : self::GENERAL;
         }
     }
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+        $this->desc = $conf->setting("sub_pcconfdesc");
     }
     function basic_conflict_types() {
         return array_keys(self::$typedesc);
@@ -120,6 +120,13 @@ class Conflict {
         }
         $ct = min($ct, CONFLICT_CONTACTAUTHOR);
         return $this->_typemap_html[isset($this->_typemap_html[$ct]) ? $ct : 1];
+    }
+    function unparse_csv($ct) {
+        if ($ct <= 0 || $ct === self::PINNED || !$this->desc) {
+            return $ct <= 0 ? "N" : "Y";
+        } else {
+            return $this->unparse_text($ct);
+        }
     }
     function unparse_json($ct) {
         return self::$type_names[$ct];
