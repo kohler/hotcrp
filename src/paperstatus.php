@@ -918,6 +918,7 @@ class PaperStatus extends MessageSet {
             if (!$ov->has_error()) {
                 $opt->value_store($ov, $ps);
             }
+            $ps->_nnprow->set_new_option($ov);
             $ps->_field_values[$opt->id] = $ov;
         }
     }
@@ -940,7 +941,7 @@ class PaperStatus extends MessageSet {
             if ($opt->id <= 0 && $opt->type !== "intrinsic2") {
                 continue;
             }
-            $ov = $this->_field_values[$opt->id] ?? $this->_nnprow->force_option($opt->id);
+            $ov = $this->_nnprow->new_option($opt);
             $errorindex = count($ov->messages());
             if (!$ov->has_error()) {
                 $ov->option->value_check($ov, $this->user);

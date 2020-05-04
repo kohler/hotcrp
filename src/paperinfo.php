@@ -308,6 +308,7 @@ class PaperInfo {
     private $_option_values;
     private $_option_data;
     private $_option_array;
+    private $_new_option_array;
     private $_document_array;
     private $_doclink_array;
     private $_conflict_array;
@@ -1344,6 +1345,23 @@ class PaperInfo {
             }
             return $ov;
         }
+    }
+
+    function new_option($o) {
+        if (is_object($o)) {
+            $ov = $this->_new_option_array[$o->id] ?? null;
+        } else {
+            $ov = $this->_new_option_array[$o] ?? null;
+        }
+        if (!$ov) {
+            $ov = $this->force_option($o);
+            $this->_new_option_array[$ov->id] = $ov;
+        }
+        return $ov;
+    }
+
+    function set_new_option(PaperValue $ov) {
+        $this->_new_option_array[$ov->id] = $ov;
     }
 
     function invalidate_options($reload = false) {
