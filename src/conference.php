@@ -3193,6 +3193,9 @@ class Conf {
 
         if ($options["minimal"] ?? false) {
             $cols = ["Paper.paperId, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.outcome, Paper.leadContactId"];
+            if ($this->submission_blindness() === self::BLIND_OPTIONAL) {
+                $cols[] = "Paper.blind";
+            }
         } else {
             $cols = ["Paper.*"];
         }
