@@ -164,7 +164,7 @@ class Nonblind_PaperOption extends PaperOption {
         if (is_bool($j) || $j === null) {
             return PaperValue::make($prow, $this, $j ? 1 : null);
         } else {
-            return PaperValue::make_error($prow, $this, "Option should be “true” or “false”.");
+            return PaperValue::make_estop($prow, $this, "Option should be “true” or “false”.");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -239,7 +239,7 @@ class Topics_PaperOption extends PaperOption {
             $j = [];
         }
         if (!is_array($j) || $bad) {
-            return PaperValue::make_error($prow, $this, "Format error.");
+            return PaperValue::make_estop($prow, $this, "Format error.");
         }
 
         $topicset = $prow->conf->topic_set();
@@ -252,7 +252,7 @@ class Topics_PaperOption extends PaperOption {
                     $bad_topics[] = $tk;
                 }
             } else if (!is_string($tk)) {
-                return PaperValue::make_error($prow, $this, "Format error.");
+                return PaperValue::make_estop($prow, $this, "Format error.");
             } else if (($tk = trim($tk)) !== "") {
                 $tid = array_search($tk, $topicset->as_array(), true);
                 if ($tid !== false) {
@@ -312,21 +312,21 @@ class IntrinsicValue {
                 if (strpos($au->email, "@") === false
                     && strpos($au->affiliation, "@") !== false) {
                     $msg1 = true;
-                    $ov->warning_at("author" . ($n + 1), false);
+                    $ov->msg_at("author" . ($n + 1), false, MessageSet::WARNING);
                 } else if ($au->firstName === "" && $au->lastName === ""
                            && $au->email === "" && $au->affiliation !== "") {
                     $msg2 = true;
-                    $ov->warning_at("author" . ($n + 1), false);
+                    $ov->msg_at("author" . ($n + 1), false, MessageSet::WARNING);
                 }
             }
             $max_authors = $o->conf->opt("maxAuthors");
             if (!$ov->prow->author_list()) {
-                $ov->error("Entry required.");
-                $ov->error_at("author1", false);
+                $ov->estop("Entry required.");
+                $ov->msg_at("author1", false, MessageSet::ESTOP);
             }
             if ($max_authors > 0
                 && count($ov->prow->author_list()) > $max_authors) {
-                $ov->error($o->conf->_("Each submission can have at most %d authors.", $max_authors));
+                $ov->estop($o->conf->_("Each submission can have at most %d authors.", $max_authors));
             }
             if ($msg1) {
                 $ov->warning("You may have entered an email address in the wrong place. The first author field is for email, the second for name, and the third for affiliation.");

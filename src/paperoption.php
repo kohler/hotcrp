@@ -32,9 +32,9 @@ class PaperValue implements JsonSerializable {
         $ov->set_value_data($values, $datas);
         return $ov;
     }
-    static function make_error($prow, PaperOption $o, $error_html) {
+    static function make_estop($prow, PaperOption $o, $error_html) {
         $ov = new PaperValue($prow, $o);
-        $ov->error($error_html);
+        $ov->estop($error_html);
         return $ov;
     }
     static function make_force($prow, PaperOption $o) {
@@ -128,37 +128,47 @@ class PaperValue implements JsonSerializable {
     function msg($msg, $status) {
         $this->message_set()->msg_at($this->option->field_key(), $msg, $status);
     }
+    function estop($msg) {
+        $this->msg($msg, MessageSet::ESTOP);
+    }
     function error($msg) {
         $this->msg($msg, MessageSet::ERROR);
     }
     function error_at($field, $msg) {
+        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $this->message_set()->error_at($field, $msg);
     }
     function warning($msg) {
         $this->msg($msg, MessageSet::WARNING);
     }
     function warning_at($field, $msg) {
+        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $this->message_set()->warning_at($field, $msg);
     }
     function has_problem() {
+        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms && $this->_ms->has_problem();
     }
     function has_error() {
         return $this->_ms && $this->_ms->has_error();
     }
     function has_warning() {
+        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms && $this->_ms->has_warning();
     }
     function messages($include_fields = false) {
         return $this->_ms ? $this->_ms->messages($include_fields) : [];
     }
     function errors($include_fields = false) {
+        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms ? $this->_ms->errors($include_fields) : [];
     }
     function warnings($include_fields = false) {
+        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms ? $this->_ms->warnings($include_fields) : [];
     }
     function problems($include_fields = false) {
+        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms ? $this->_ms->problems($include_fields) : [];
     }
     function jsonSerialize() {
@@ -885,7 +895,7 @@ class PaperOption implements Abbreviator {
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->test_required($ov->prow)
             && !$this->value_present($ov)) {
-            $ov->error("Entry required.");
+            $ov->estop("Entry required.");
         }
     }
     function value_dids(PaperValue $ov) {
@@ -1002,7 +1012,7 @@ class PaperOption implements Abbreviator {
         } else if ($j === null) {
             return null;
         } else {
-            return PaperValue::make_error($prow, $this, "Expected string.");
+            return PaperValue::make_estop($prow, $this, "Expected string.");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1087,7 +1097,7 @@ class CheckboxPaperOption extends PaperOption {
         if (is_bool($j) || $j === null) {
             return PaperValue::make($prow, $this, $j ? 1 : null);
         } else {
-            return PaperValue::make_error($prow, $this, "Option should be “true” or “false”.");
+            return PaperValue::make_estop($prow, $this, "Option should be “true” or “false”.");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1209,7 +1219,7 @@ class SelectorPaperOption extends PaperOption {
             } else if (($iv = array_search($v, $this->selector)) !== false) {
                 return PaperValue::make($prow, $this, $iv + 1);
             } else {
-                return PaperValue::make_error($prow, $this, "Option doesn’t match any of the selectors.");
+                return PaperValue::make_estop($prow, $this, "Option doesn’t match any of the selectors.");
             }
         }
     }
@@ -1225,7 +1235,7 @@ class SelectorPaperOption extends PaperOption {
         if ($v !== false) {
             return PaperValue::make($prow, $this, $v + 1);
         } else {
-            return PaperValue::make_error($prow, $this, "Option doesn’t match any of the selectors.");
+            return PaperValue::make_estop($prow, $this, "Option doesn’t match any of the selectors.");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1355,7 +1365,7 @@ class DocumentPaperOption extends PaperOption {
             }
             return $ov;
         } else {
-            return PaperValue::make_error($prow, $this, "Format error.");
+            return PaperValue::make_estop($prow, $this, "Format error.");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1472,7 +1482,7 @@ class NumericPaperOption extends PaperOption {
         } else if (preg_match('/\A(?:n\/?a|none|)\z/i', $v)) {
             $ov = PaperValue::make($prow, $this);
         } else {
-            $ov = PaperValue::make_error($prow, $this, "Integer expected.");
+            $ov = PaperValue::make_estop($prow, $this, "Integer expected.");
         }
         $ov->anno["request"] = $v;
         return $ov;
@@ -1483,7 +1493,7 @@ class NumericPaperOption extends PaperOption {
         } else if ($j === null || $j === false) {
             return PaperValue::make($prow, $this);
         } else {
-            return PaperValue::make_error($prow, $this, "Integer expected.");
+            return PaperValue::make_estop($prow, $this, "Integer expected.");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1705,7 +1715,7 @@ class AttachmentsPaperOption extends PaperOption {
                 if (is_object($docj) && isset($docj->error_html)) {
                     $ov->error($docj->error_html);
                 } else if (!DocumentInfo::check_json_upload($docj)) {
-                    $ov->error("Format error.");
+                    $ov->estop("Format error.");
                 }
             }
             return $ov;

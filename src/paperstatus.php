@@ -953,7 +953,7 @@ class PaperStatus extends MessageSet {
                 }
             }
         }
-        return $max_status < MessageSet::ERROR;
+        return $max_status < MessageSet::ESTOP;
     }
 
     private function execute_fields() {

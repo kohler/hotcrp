@@ -16,6 +16,7 @@ class MessageSet {
     const INFO = 0;
     const WARNING = 1;
     const ERROR = 2;
+    const ESTOP = 3;
 
     function __construct() {
         $this->clear_messages();
@@ -87,6 +88,9 @@ class MessageSet {
     }
     function msg($field, $msg, $status) {
         $this->msg_at($field, $msg, $status);
+    }
+    function estop_at($field, $msg) {
+        $this->msg_at($field, $msg, self::ESTOP);
     }
     function error_at($field, $msg) {
         $this->msg_at($field, $msg, self::ERROR);
