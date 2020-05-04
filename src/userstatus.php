@@ -621,7 +621,7 @@ class UserStatus extends MessageSet {
     function save($cj, $old_user = null) {
         global $Now;
         assert(is_object($cj));
-        $nerrors = $this->nerrors();
+        $msgcount = $this->message_count();
 
         // normalize name, including email
         self::normalize_name($cj);
@@ -670,7 +670,7 @@ class UserStatus extends MessageSet {
             return false;
         }
         $this->normalize($cj, $user);
-        if ($this->nerrors() > $nerrors) {
+        if ($this->has_error_since($msgcount)) {
             return false;
         }
         // At this point, we will save a user.

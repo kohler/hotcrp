@@ -1873,7 +1873,7 @@ class ReviewValues extends MessageSet {
 
     private function check(ReviewInfo $rrow = null) {
         $submit = get($this->req, "ready");
-        $before_nerrors = $this->nerrors();
+        $msgcount = $this->message_count();
         $missingfields = null;
         $unready = $anydiff = $anynonempty = false;
 
@@ -1934,7 +1934,7 @@ class ReviewValues extends MessageSet {
             $this->req["ready"] = 0;
         }
 
-        if ($this->nerrors() !== $before_nerrors) {
+        if ($this->has_error_since($msgcount)) {
             return false;
         } else if ($anynonempty || get($this->req, "adoptreview")) {
             return true;
@@ -2440,12 +2440,13 @@ class ReviewValues extends MessageSet {
         if ($this->has_messages()) {
             $m = [];
             if ($this->text !== null) {
-                if ($this->has_error() && $this->has_warning())
+                if ($this->has_error() && $this->has_warning()) {
                     $m[] = $this->conf->_("There were errors and warnings while parsing the uploaded review file.");
-                else if ($this->has_error())
+                } else if ($this->has_error()) {
                     $m[] = $this->conf->_("There were errors while parsing the uploaded review file.");
-                else if ($this->has_warning())
+                } else if ($this->has_warning()) {
                     $m[] = $this->conf->_("There were warnings while parsing the uploaded review file.");
+                }
             }
             $m[] = '<div class="parseerr"><p>' . join("</p>\n<p>", $this->messages()) . '</p></div>';
             if ($this->has_error() || $this->has_problem_at("ready")) {

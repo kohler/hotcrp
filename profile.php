@@ -431,12 +431,14 @@ if (!$Qreq->post_ok()) {
         } else {
             $xcj = [];
             if ($newProfile) {
-                foreach (["roles", "follow", "tags"] as $k)
+                foreach (["roles", "follow", "tags"] as $k) {
                     if (isset($cj->$k))
                         $xcj[$k] = $cj->$k;
+                }
             }
-            if ($UserStatus->has_warning())
+            if ($UserStatus->has_problem()) {
                 $xcj["warning_fields"] = $UserStatus->problem_fields();
+            }
             $Me->save_session("profile_redirect", $xcj);
             $Conf->self_redirect($Qreq);
         }
