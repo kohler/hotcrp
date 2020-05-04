@@ -3191,7 +3191,7 @@ class Conf {
 
         $joins = array("Paper");
 
-        if (get($options, "minimal")) {
+        if ($options["minimal"] ?? false) {
             $cols = ["Paper.paperId, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.outcome, Paper.leadContactId"];
         } else {
             $cols = ["Paper.*"];
@@ -3199,40 +3199,40 @@ class Conf {
 
         if ($user) {
             $aujoinwhere = null;
-            if (get($options, "author")
+            if (($options["author"] ?? false)
                 && ($aujoinwhere = $user->act_author_view_sql("PaperConflict", true))) {
                 $where[] = $aujoinwhere;
             }
-            if (get($options, "author") && !$aujoinwhere) {
+            if (($options["author"] ?? false) && !$aujoinwhere) {
                 $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
             } else {
                 $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)";
             }
             $cols[] = "PaperConflict.conflictType";
-        } else if (get($options, "author")) {
+        } else if ($options["author"] ?? false) {
             $where[] = "false";
         }
 
         // my review
         $no_paperreview = $paperreview_is_my_reviews = false;
         $reviewjoin = "PaperReview.paperId=Paper.paperId and " . ($user ? $user->act_reviewer_sql("PaperReview") : "false");
-        if (get($options, "myReviews")) {
+        if ($options["myReviews"] ?? false) {
             $joins[] = "join PaperReview on ($reviewjoin)";
             $paperreview_is_my_reviews = true;
-        } else if (get($options, "myOutstandingReviews")) {
+        } else if ($options["myOutstandingReviews"] ?? false) {
             $joins[] = "join PaperReview on ($reviewjoin and reviewNeedsSubmit!=0)";
-        } else if (get($options, "myReviewRequests")) {
+        } else if ($options["myReviewRequests"] ?? false) {
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and requestedBy=" . ($contactId ? : -100) . " and reviewType=" . REVIEW_EXTERNAL . ")";
         } else {
             $no_paperreview = true;
         }
 
         // review signatures
-        if (get($options, "reviewSignatures")
-            || get($options, "scores")
-            || get($options, "reviewWordCounts")) {
-            $cols[] = "(select " . ReviewInfo::review_signature_sql($this, get($options, "scores")) . " from PaperReview r where r.paperId=Paper.paperId) reviewSignatures";
-            if (get($options, "reviewWordCounts")) {
+        if (($options["reviewSignatures"] ?? false)
+            || ($options["scores"] ?? false)
+            || ($options["reviewWordCounts"] ?? false)) {
+            $cols[] = "(select " . ReviewInfo::review_signature_sql($this, $options["scores"] ?? false) . " from PaperReview r where r.paperId=Paper.paperId) reviewSignatures";
+            if ($options["reviewWordCounts"] ?? false) {
                 $cols[] = "(select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId) reviewWordCountSignature";
             }
         } else if ($user) {
@@ -3248,48 +3248,48 @@ class Conf {
         }
 
         // fields
-        if (get($options, "topics")) {
+        if ($options["topics"] ?? false) {
             $cols[] = "(select group_concat(topicId) from PaperTopic where PaperTopic.paperId=Paper.paperId) topicIds";
         }
 
-        if (get($options, "options")
+        if (($options["options"] ?? false)
             && (isset($this->settingTexts["options"]) || isset($this->opt["fixedOptions"]))
             && $this->paper_opts->count_option_list()) {
             $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
-        } else if (get($options, "options")) {
+        } else if ($options["options"] ?? false) {
             $cols[] = "'' as optionIds";
         }
 
-        if (get($options, "tags")
+        if (($options["tags"] ?? false)
             || ($user && $user->isPC)
             || $this->has_tracks()) {
             $cols[] = "(select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where PaperTag.paperId=Paper.paperId) paperTags";
         }
-        if (get($options, "tagIndex") && !is_array($options["tagIndex"])) {
+        if (($options["tagIndex"] ?? false) && !is_array($options["tagIndex"])) {
             $options["tagIndex"] = array($options["tagIndex"]);
         }
-        if (get($options, "tagIndex")) {
+        if ($options["tagIndex"] ?? false) {
             foreach ($options["tagIndex"] as $i => $tag) {
                 $cols[] = "(select tagIndex from PaperTag where PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($tag) . "') tagIndex" . ($i ? : "");
             }
         }
 
-        if (get($options, "reviewerPreference")) {
+        if ($options["reviewerPreference"] ?? false) {
             $joins[] = "left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)";
             $cols[] = "coalesce(PaperReviewPreference.preference, 0) as reviewerPreference";
             $cols[] = "PaperReviewPreference.expertise as reviewerExpertise";
         }
 
-        if (get($options, "allReviewerPreference")) {
+        if ($options["allReviewerPreference"] ?? false) {
             $cols[] = "(select " . $this->query_all_reviewer_preference() . " from PaperReviewPreference where PaperReviewPreference.paperId=Paper.paperId) allReviewerPreference";
         }
 
-        if (get($options, "allConflictType")) {
+        if ($options["allConflictType"] ?? false) {
             // See also SearchQueryInfo::add_allConflictType_column
             $cols[] = "(select group_concat(contactId, ' ', conflictType) from PaperConflict where PaperConflict.paperId=Paper.paperId) allConflictType";
         }
 
-        if (get($options, "watch") && $contactId) {
+        if (($options["watch"] ?? false) && $contactId) {
             $joins[] = "left join PaperWatch on (PaperWatch.paperId=Paper.paperId and PaperWatch.contactId=$contactId)";
             $cols[] = "PaperWatch.watch";
         }
@@ -3298,30 +3298,30 @@ class Conf {
         if (!empty($paperset)) {
             $where[] = "Paper.paperId" . sql_in_numeric_set($paperset[0]);
         }
-        if (get($options, "finalized")) {
+        if ($options["finalized"] ?? false) {
             $where[] = "timeSubmitted>0";
-        } else if (get($options, "unsub")) {
+        } else if ($options["unsub"] ?? false) {
             $where[] = "timeSubmitted<=0";
         }
-        if (get($options, "accepted")) {
+        if ($options["accepted"] ?? false) {
             $where[] = "outcome>0";
         }
-        if (get($options, "undecided")) {
+        if ($options["undecided"] ?? false) {
             $where[] = "outcome=0";
         }
-        if (get($options, "active")
-            || get($options, "myReviews")
-            || get($options, "myOutstandingReviews")
-            || get($options, "myReviewRequests")) {
+        if ($options["active"]
+            ?? $options["myReviews"]
+            ?? $options["myOutstandingReviews"]
+            ?? $options["myReviewRequests"] ?? false) {
             $where[] = "timeWithdrawn<=0";
         }
-        if (get($options, "myLead")) {
+        if ($options["myLead"] ?? false) {
             $where[] = "leadContactId=$contactId";
         }
-        if (get($options, "myManaged")) {
+        if ($options["myManaged"] ?? false) {
             $where[] = "managerContactId=$contactId";
         }
-        if (get($options, "myWatching") && $contactId) {
+        if (($options["myWatching"] ?? false) && $contactId) {
             // return the papers with explicit or implicit WATCH_REVIEW
             // (i.e., author/reviewer/commenter); or explicitly managed
             // papers
@@ -3339,7 +3339,7 @@ class Conf {
             }
             $where[] = "(" . join(" or ", $owhere) . ")";
         }
-        if (get($options, "myConflicts")) {
+        if ($options["myConflicts"] ?? false) {
             $where[] = $contactId ? "PaperConflict.conflictType>0" : "false";
         }
 
@@ -3352,10 +3352,10 @@ class Conf {
         $pq .= "\ngroup by Paper.paperId\n";
         // This `having` is probably faster than a `where exists` if most papers
         // have at least one tag.
-        if (get($options, "tags") === "require") {
+        if (($options["tags"] ?? false) === "require") {
             $pq .= "having paperTags!=''\n";
         }
-        $pq .= get($options, "order", "order by Paper.paperId") . "\n";
+        $pq .= ($options["order"] ?? "order by Paper.paperId") . "\n";
 
         //Conf::msg_debugt($pq);
         return $this->qe_raw($pq);
