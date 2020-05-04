@@ -2658,7 +2658,7 @@ a.badge:active {
 	z-index: 1;
 	background: #edf3f5;
 	color: #2b2b2b;
-	padding: 16px 20px 20px 24px;
+	padding: 16px 20px 28px 24px;
 }
 .pspcard-fold {
 	display: none;
@@ -2953,7 +2953,6 @@ a.badge:active {
 	align-items: stretch;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
-	margin-bottom: 1em;
 }
 .paperinfo-c {
 	flex-basis: 0;
@@ -2966,10 +2965,6 @@ a.badge:active {
 .paperinfo-i {
 	flex-basis: 0;
 	flex-grow: 0;
-	margin-bottom: 1em;
-}
-.paperinfo-i:last-child {
-	margin-bottom: 0;
 }
 .paperinfo-i-expand {
 	position: relative;
@@ -2988,6 +2983,16 @@ a.badge:active {
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
+}
+
+.pg, .pgsm, .paperinfo, .fold6c .paperinfo-i-expand {
+	margin-bottom: 1em;
+}
+.paperinfo-c {
+	margin-bottom: -1em;
+}
+.pgsm + .pgsm {
+	margin-top: -0.5em;
 }
 
 .pavt {
@@ -3031,7 +3036,7 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 .longtext-expander {
 	z-index: 2;
 	position: absolute;
-	bottom: 0%;
+	bottom: -2px;
 	width: 100%;
 	text-align: right;
 }
@@ -3039,22 +3044,11 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 	display: inline-block;
 	background: white;
 	padding-left: 8px;
-	border-radius: 4px;
 }
 
-
-.pg, .pgsm {
-	margin-bottom: 1em;
-}
 .outdent {
 	margin-left: 1.5em;
 	text-indent: -1.5em;
-}
-.pgsm + .pgsm {
-	margin-top: -0.5em;
-}
-.pg:last-child, .pgsm:last-child {
-	margin-bottom: 0;
 }
 
 /* papers */
@@ -3087,7 +3081,10 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 }
 .papcard-body, .pedcard-body {
 	background: #ffffff;
-	padding: 16px 0;
+	padding-top: 16px;
+}
+.papcard-body {
+	margin-bottom: 40px;
 }
 .papcard h2, .notecard h2 {
 	font-size: 1.17em;
@@ -3100,7 +3097,6 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 /* paper notes */
 .notecard {
 	border-top: 5px solid #fad5d5;
-	margin-top: 16px;
 	margin-bottom: 24px;
 	position: relative;
 }
