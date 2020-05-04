@@ -2403,8 +2403,14 @@ class PaperTable {
         } else {
             echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav">';
         }
-        echo '<h4 class="pslcard-home">',
-            '<a href="#top" class="qq"><span class="header-site-name">',
+        $viewable_tags = $this->prow->viewable_tags($this->user);
+        $k = "pslcard-home";
+        if ($viewable_tags || $this->user->can_view_tags($this->prow)) {
+            $k .= ' has-tag-classes taghh';
+            if (($color = $this->prow->conf->tags()->color_classes($viewable_tags)))
+                $k .= ' ' . $color;
+        }
+        echo '<h4 class="', $k, '"><a href="#top" class="qq"><span class="header-site-name">',
             htmlspecialchars($this->conf->short_name), '</span> ';
         if ($this->prow->paperId <= 0) {
             echo "new submission";

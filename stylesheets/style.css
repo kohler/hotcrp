@@ -2658,10 +2658,13 @@ a.badge:active {
 	z-index: 1;
 	background: #edf3f5;
 	color: #2b2b2b;
-	padding: 16px 20px 28px 24px;
+	padding: 16px 20px 20px 24px;
 }
 .pspcard-fold {
 	display: none;
+}
+.pspcard-open {
+	margin-bottom: 8px;
 }
 .pslcard-nav {
 	-webkit-position: sticky;
@@ -2686,6 +2689,13 @@ a.badge:active {
 	font-weight: inherit;
 	overflow-wrap: break-word;
 	color: #d41743;
+}
+.pslcard-home.tagbg {
+	margin-top: -2px;
+	margin-left: -4px;
+	margin-right: -4px;
+	padding: 2px 4px;
+	color: inherit;
 }
 .pslitem {
 	text-overflow: ellipsis;
