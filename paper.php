@@ -405,6 +405,10 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
     $useRequest = true;
 }
 
+if ($Qreq->updateoverride && $Qreq->post_ok() && $prow) {
+    $Conf->self_redirect($Qreq, ["p" => $prow->paperId, "m" => "edit", "forceShow" => 1]);
+}
+
 
 // delete action
 if ($Qreq->delete && $Qreq->post_ok()) {

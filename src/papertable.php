@@ -331,7 +331,7 @@ class PaperTable {
         }
 
         // collect folders
-        $folders = ["clearfix", "need-fold-storage"];
+        $folders = ["need-fold-storage"];
         foreach ($this->foldmap as $num => $f) {
             if ($num !== 8 || $this->user->view_authors_state($this->prow) === 1) {
                 $folders[] = "fold" . $num . ($f ? "c" : "o");
@@ -1552,8 +1552,8 @@ class PaperTable {
         if ($selectors) {
             $confset = $this->conf->conflict_types();
             $ctypes = [0 => $confset->unparse_text(0)];
-            foreach ($confset->basic_conflict_types() as $n) {
-                $ctypes[$n] = $confset->unparse_text($n);
+            foreach ($confset->basic_conflict_types() as $ct) {
+                $ctypes[$ct] = $confset->unparse_text($ct);
             }
             $extra = ["class" => "pcconf-selector"];
             if ($this->admin) {
@@ -2133,7 +2133,8 @@ class PaperTable {
             }
         }
 
-        $buttons = array();
+        $buttons = [];
+        $want_override = false;
 
         if ($this->mode === "edit") {
             // check whether we can save
@@ -2164,6 +2165,7 @@ class PaperTable {
                 $buttons[] = Ht::submit("cancel", "Cancel");
                 $buttons[] = "";
             }
+            $want_override = $whyNot && !$this->admin;
         }
 
         // withdraw button
@@ -2185,31 +2187,42 @@ class PaperTable {
         }
         if ($b) {
             if ($this->admin && !$this->user->can_withdraw_paper($this->prow)) {
-                $b = array($b, "(admin only)");
+                $b = [$b, "(admin only)"];
             }
             $buttons[] = $b;
+        }
+
+        // override conflict button
+        if ($want_override && !$this->admin) {
+            if ($this->allow_admin) {
+                $buttons[] = "";
+                $buttons[] = [Ht::submit("updateoverride", "Override conflict"), "(admin only)"];
+            } else if ($this->user->privChair) {
+                $buttons[] = "";
+                $buttons[] = Ht::submit("updateoverride", "Override conflict", ["disabled" => true, "class" => "need-tooltip", "title" => "You cannot override your conflict because this paper has an administrator."]);
+            }
         }
 
         return $buttons;
     }
 
-    private function echo_actions($top) {
-        if ($this->admin && !$top) {
+    private function echo_actions() {
+        if ($this->admin) {
             $v = (string) $this->qreq->emailNote;
             echo '<div class="checki"><label><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), "</span>",
                 "Email authors, including:</label> ",
                 Ht::entry("emailNote", $v, ["size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
                 "</div>";
         }
-        if (!$top && $this->mode === "edit" && $this->canUploadFinal) {
+        if ($this->mode === "edit" && $this->canUploadFinal) {
             echo Ht::hidden("submitfinal", 1);
         }
 
         $buttons = $this->_collect_actions();
         if ($this->admin && $this->prow->paperId) {
-            $buttons[] = array(Ht::button("Delete", ["class" => "ui js-delete-paper"]), "(admin only)");
+            $buttons[] = [Ht::button("Delete", ["class" => "ui js-delete-paper"]), "(admin only)"];
         }
-        echo Ht::actions($buttons, ["class" => "aab aabr aabig"]);
+        echo Ht::actions($buttons, ["class" => "aab aabig"]);
     }
 
 
@@ -2358,8 +2371,6 @@ class PaperTable {
         }
 
         if (!$this->quit) {
-            $this->echo_actions(true);
-
             for ($this->edit_fields_position = 0;
                  $this->edit_fields_position < count($this->edit_fields);
                  ++$this->edit_fields_position) {
@@ -2375,7 +2386,7 @@ class PaperTable {
 
             // Submit button
             $this->echo_editable_complete();
-            $this->echo_actions(false);
+            $this->echo_actions();
         }
 
         echo "</div></form>";
@@ -2424,17 +2435,18 @@ class PaperTable {
             echo ($need_clickthrough ? "</div>" : ""), '</div>';
         } else {
             $this->echoDivEnter();
-            if ($this->mode === "edit" && ($m = $this->_edit_message())) {
-                echo $m, "<hr class=\"g\">\n";
-            }
             $this->_echo_normal_body();
             echo '</div>';
 
             if ($this->mode === "edit") {
+                echo '</div></div><div class="pcard notecard"><div class="papcard-body">';
+                if (($m = $this->_edit_message())) {
+                    echo $m, "<hr class=\"g\">\n";
+                }
                 $this->_echo_editable_form();
                 $option = $this->conf->paper_opts->get(-1003);
                 $this->echo_editable_contact_author($option);
-                $this->echo_actions(false);
+                $this->echo_actions();
                 echo "</form>";
             }
         }
