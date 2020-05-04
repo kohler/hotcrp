@@ -72,7 +72,8 @@ xassert($Conf->check_document_inactive_invariants());
 $paper2 = $ps->paper_json(2);
 xassert_eqq($paper2->submission->hash, "30240fac8417b80709c72156b7f7f7ad95b34a2b");
 xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
-xassert_eqq(bin2hex($ps->paper_row()->sha1), "e04c778a0af702582bb0e9345fab6540acb28e45");
+$paper2 = $Conf->fetch_paper(2, $user_estrin);
+xassert_eqq(bin2hex($paper2->sha1), "e04c778a0af702582bb0e9345fab6540acb28e45");
 
 // test new-style options storage
 $options = $Conf->setting_json("options");

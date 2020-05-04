@@ -5,7 +5,7 @@
 class PaperStatus extends MessageSet {
     public $conf;
     // public $user; -- inherited from MessageSet
-    public $prow;
+    private $prow;
     public $paperId;
     private $uploaded_documents;
     private $no_notify = false;
@@ -80,12 +80,6 @@ class PaperStatus extends MessageSet {
 
     function user() {
         return $this->user;
-    }
-    function paper_row() {
-        return $this->prow;
-    }
-    function prow() {
-        return $this->_nnprow;
     }
     function export_ids() {
         return $this->export_ids;
