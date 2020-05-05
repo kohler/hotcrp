@@ -608,7 +608,7 @@ class PaperInfo {
     }
 
     function has_conflict($contact) {
-        return $this->conflict_type($contact) > 0;
+        return $this->conflict_type($contact) > CONFLICT_MAXUNCONFLICTED;
     }
 
     function has_author($contact) {

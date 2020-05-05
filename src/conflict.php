@@ -4,30 +4,29 @@
 
 class Conflict {
     private $conf;
-    private $desc;
-    private $_typemap;
-    private $_typemap_html;
+    private $_desc;
+    private $_tmap;
 
     const GENERAL = 2;
     const PINNED = 8;
     const PLACEHOLDER = 1000;
 
-    static $typedesc = [3 => "Advisor/advisee",
-                        2 => "Recent collaborator",
-                        4 => "Institutional",
-                        5 => "Personal",
-                        6 => "Other"];
-    static $type_names = array(0 => false,
-                               1 => true,
-                               2 => "collaborator",
-                               3 => "advisor",
-                               4 => "institution",
-                               5 => "personal",
-                               6 => "other",
-                               7 => true,
-                               8 => "pinned",
-                               CONFLICT_AUTHOR => "author",
-                               CONFLICT_CONTACTAUTHOR => "author");
+    static private $desc_map = [2 => "Recent collaborator",
+                                3 => "Advisor/advisee",
+                                4 => "Institutional",
+                                5 => "Personal",
+                                6 => "Other"];
+    static private $json_map = [0 => false,
+                                1 => true,
+                                2 => "collaborator",
+                                3 => "advisor",
+                                4 => "institution",
+                                5 => "personal",
+                                6 => "other",
+                                7 => true,
+                                8 => "pinned",
+                                CONFLICT_AUTHOR => "author",
+                                CONFLICT_CONTACTAUTHOR => "author"];
 
     static function is_conflicted($ct) {
         return $ct > 0;
@@ -45,13 +44,16 @@ class Conflict {
             return $pinned ? self::PINNED : self::GENERAL;
         }
     }
+    static function strip($ct) {
+        return $ct >= CONFLICT_AUTHOR ? $ct & 96 : $ct;
+    }
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->desc = $conf->setting("sub_pcconfdesc");
+        $this->_desc = $conf->setting("sub_pcconfdesc");
     }
     function basic_conflict_types() {
-        return array_keys(self::$typedesc);
+        return array_keys(self::$desc_map);
     }
     function parse_assignment($text, $default_yes) {
         // Returns a conflict type; never is_author
@@ -84,7 +86,7 @@ class Conflict {
     function parse_json($j) {
         if (is_bool($j)) {
             return $j ? self::GENERAL : 0;
-        } else if (is_int($j) && isset(self::$type_names[$j])) {
+        } else if (is_int($j) && isset(self::$json_map[$j])) {
             return $j;
         } else if (is_string($j)) {
             return $this->parse_assignment($j, self::GENERAL);
@@ -93,46 +95,41 @@ class Conflict {
         }
     }
 
-    private function type_map() {
-        if ($this->_typemap === null) {
-            $this->_typemap = [];
+    private function tmap() {
+        if ($this->_tmap === null) {
+            $this->_tmap = [];
             foreach ([0 => "No conflict",
                       1 => "Conflict",
                       self::PINNED => "Pinned conflict",
                       CONFLICT_AUTHOR => "Author",
                       CONFLICT_CONTACTAUTHOR => "Contact"] as $n => $t) {
-                $this->_typemap[$n] = $this->conf->_c("conflict_type", $t);
+                $this->_tmap[$n] = $this->conf->_c("conflict_type", $t);
             }
-            foreach (self::$typedesc as $n => $t) {
-                $this->_typemap[$n] = $this->conf->_c("conflict_type", $t);
+            foreach (self::$desc_map as $n => $t) {
+                $this->_tmap[$n] = $this->conf->_c("conflict_type", $t);
             }
         }
-        return $this->_typemap;
+        return $this->_tmap;
     }
     function unparse_text($ct) {
-        $ct = min($ct, CONFLICT_CONTACTAUTHOR);
-        $tm = $this->type_map();
-        return $tm[isset($tm[$ct]) ? $ct : 1];
+        $tm = $this->tmap();
+        return $tm[self::strip($ct)] ?? $tm[1];
     }
     function unparse_html($ct) {
-        if ($this->_typemap_html === null) {
-            $this->_typemap_html = array_map("htmlspecialchars", $this->type_map());
-        }
-        $ct = min($ct, CONFLICT_CONTACTAUTHOR);
-        return $this->_typemap_html[isset($this->_typemap_html[$ct]) ? $ct : 1];
+        return htmlspecialchars($this->unparse_text($ct));
     }
     function unparse_csv($ct) {
-        if ($ct <= 0 || $ct === self::PINNED || !$this->desc) {
+        if ($ct <= 0 || $ct === self::PINNED || !$this->_desc) {
             return $ct <= 0 ? "N" : "Y";
         } else {
             return $this->unparse_text($ct);
         }
     }
     function unparse_json($ct) {
-        return self::$type_names[$ct];
+        return self::$json_map[self::strip($ct)];
     }
     function unparse_assignment($ct) {
-        $j = self::$type_names[$ct] ?? null;
+        $j = self::$json_map[self::strip($ct)] ?? null;
         if (is_bool($j)) {
             return $j ? "yes" : "none";
         } else {

@@ -252,7 +252,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 231) {
+        if ($this->sversion < 232) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -3343,7 +3343,7 @@ class Conf {
             $where[] = "(" . join(" or ", $owhere) . ")";
         }
         if ($options["myConflicts"] ?? false) {
-            $where[] = $contactId ? "PaperConflict.conflictType>0" : "false";
+            $where[] = $contactId ? "PaperConflict.conflictType>" . CONFLICT_MAXUNCONFLICTED : "false";
         }
 
         $pq = "select " . join(",\n    ", $cols)
@@ -3403,7 +3403,7 @@ class Conf {
                 join ContactInfo c on (c.contactId=PRP.contactId and c.roles!=0 and (c.roles&" . Contact::ROLE_PC . ")!=0)
                 join Paper P on (P.paperId=PRP.paperId)
                 left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
-                where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0
+                where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=" . CONFLICT_MAXUNCONFLICTED . "
                   and P.timeWithdrawn<=0";
         if ($type !== "all" && $type !== "act") {
             $q .= " and P.timeSubmitted>0";

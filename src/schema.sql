@@ -513,7 +513,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 231);
+insert into Settings (name, value) values ('allowPaperOption', 232);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

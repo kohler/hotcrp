@@ -681,7 +681,7 @@ class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
         if ($ci->conflictType >= CONFLICT_AUTHOR) {
             return '<span class="author">Author</span>';
         }
-        if ($ci->conflictType > 0) {
+        if ($ci->conflictType > CONFLICT_MAXUNCONFLICTED) {
             $rt = -1;
         } else {
             $rt = min(max($ci->reviewType, 0), REVIEW_META);

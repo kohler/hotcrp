@@ -674,7 +674,7 @@ class MeetingTracker {
                 $prow = $prows->get($pid);
                 $papers[] = $p = (object) [];
                 if (($track_manager
-                     || $prow->conflictType <= 0
+                     || $prow->conflictType <= CONFLICT_MAXUNCONFLICTED
                      || !$hide_conflicted_papers)
                     && $user->tracker_kiosk_state != 1) {
                     $p->pid = $prow->paperId;
@@ -687,7 +687,7 @@ class MeetingTracker {
                         $p->is_manager = true;
                     if ($prow->has_reviewer($user))
                         $p->is_reviewer = true;
-                    if ($prow->conflictType > 0)
+                    if ($prow->conflictType > CONFLICT_MAXUNCONFLICTED)
                         $p->is_conflict = true;
                     if ($prow->leadContactId == $user->contactId)
                         $p->is_lead = true;

@@ -762,11 +762,13 @@ class Autoassigner {
         $this->mcmf_optimizing_for = "Optimizing assignment";
         // load conflicts
         $cflt = array();
-        foreach ($this->papersel as $pid)
+        foreach ($this->papersel as $pid) {
             $cflt[$pid] = array();
-        $result = $this->conf->qe("select paperId, contactId from PaperConflict where paperId ?a and contactId ?a and conflictType>0", $this->papersel, array_keys($this->pcm));
-        while (($row = edb_row($result)))
+        }
+        $result = $this->conf->qe("select paperId, contactId from PaperConflict where paperId?a and contactId?a and conflictType>" . CONFLICT_MAXUNCONFLICTED, $this->papersel, array_keys($this->pcm));
+        while (($row = edb_row($result))) {
             $cflt[(int) $row[0]][] = (int) $row[1];
+        }
         Dbl::free($result);
         // run max-flow
         $result = $this->papersel;

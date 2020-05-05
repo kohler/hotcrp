@@ -620,7 +620,7 @@ class PaperStatus extends MessageSet {
                 $pj->withdrawn = $this->prow && $this->prow->timeWithdrawn != 0;
             }
         }
-        foreach (["withdrawn_at", "submitted_at", "final_submitted_at"] as $k)
+        foreach (["withdrawn_at", "submitted_at", "final_submitted_at"] as $k) {
             if (isset($pj->$k)) {
                 if (is_numeric($pj->$k)) {
                     $pj->$k = (int) $pj->$k;
@@ -633,6 +633,7 @@ class PaperStatus extends MessageSet {
                     $pj->$k = $Now;
                 }
             }
+        }
 
         // Options
         $pj->bad_options = array();
@@ -664,7 +665,7 @@ class PaperStatus extends MessageSet {
 
         // verify emails on authors marked as contacts
         $pj->bad_contacts = array();
-        foreach (get($pj, "authors") ? : array() as $au) {
+        foreach ($pj->authors ?? [] as $au) {
             if (get($au, "contact")
                 && (!isset($au->email) || !$this->valid_contact($au->email)))
                 $pj->bad_contacts[] = $au;
@@ -991,7 +992,7 @@ class PaperStatus extends MessageSet {
 
     static private function contacts_array($pj) {
         $contacts = array();
-        foreach (get($pj, "authors") ? : [] as $au) {
+        foreach ($pj->authors ?? [] as $au) {
             if (get($au, "email") && validate_email($au->email)) {
                 $c = clone $au;
                 $contacts[strtolower($c->email)] = $c;
@@ -1006,7 +1007,7 @@ class PaperStatus extends MessageSet {
         return $contacts;
     }
 
-    function conflicts_array($pj) {
+    private function conflicts_array($pj) {
         $cflts = [];
 
         // extract PC conflicts
