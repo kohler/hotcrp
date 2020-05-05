@@ -34,28 +34,30 @@ function keep_browser_alive($assignset, $lineno, $line) {
     global $Conf, $csv_lineno, $csv_preparing, $csv_started;
     $time = microtime(true);
     $csv_lineno = $lineno;
-    if (!$csv_started)
+    if (!$csv_started) {
         $csv_started = $time;
-    else if ($time - $csv_started > 1) {
+    } else if ($time - $csv_started > 1) {
         if (!$csv_preparing) {
             echo '<div id="foldmail" class="foldc fold2o">',
                 '<div class="fn fx2 merror">Preparing assignments.<br><span id="mailcount"></span></div>',
                 "</div>";
             $csv_preparing = true;
         }
-        if ($assignset->filename)
+        if ($assignset->filename) {
             $text = '<span class="lineno">'
                 . htmlspecialchars($assignset->filename) . ":$lineno:</span>";
-        else
+        } else {
             $text = "<span class=\"lineno\">line $lineno:</span>";
-        if ($line === false)
+        }
+        if ($line === false) {
             $text .= " processing";
-        else
-            $text .= " <code>" . htmlspecialchars(join(",", $line)) . "</code>";
+        } else {
+            $text .= " <code>" . htmlspecialchars(join(",", $line->as_array())) . "</code>";
+        }
         echo Ht::unstash_script("\$\$('mailcount').innerHTML=" . json_encode_browser($text) . ";");
         flush();
-        while (@ob_end_flush())
-            /* skip */;
+        while (@ob_end_flush()) {
+        }
     }
 }
 

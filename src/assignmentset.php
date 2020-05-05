@@ -1300,9 +1300,9 @@ class AssignmentSet {
         $this->astate->filename = $this->filename = $filename;
         $this->astate->defaults = $defaults ? : [];
 
-        if ($text instanceof CsvParser)
+        if ($text instanceof CsvParser) {
             $csv = $text;
-        else {
+        } else {
             $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
             $csv->set_comment_chars("%#");
             $csv->set_comment_function(array($this, "parse_csv_comment"));
@@ -1331,8 +1331,9 @@ class AssignmentSet {
         foreach ($lines as $i => $linereq) {
             $this->astate->lineno = $linereq[0];
             if ($i % 100 == 0) {
-                if ($alertf)
+                if ($alertf) {
                     call_user_func($alertf, $this, $linereq[0], $linereq[2]);
+                }
                 set_time_limit(30);
             }
             $this->apply($linereq[1], $linereq[2]);
