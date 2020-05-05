@@ -1420,7 +1420,7 @@ class AssignmentSet {
 
     function unparse_paper_assignment(PaperInfo $prow) {
         $assigners = [];
-        for ($index = get($this->assigners_pidhead, $prow->paperId);
+        for ($index = $this->assigners_pidhead[$prow->paperId] ?? null;
              $index !== null;
              $index = $assigner->next_index) {
             $assigners[] = $assigner = $this->assigners[$index];

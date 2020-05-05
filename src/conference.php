@@ -409,7 +409,8 @@ class Conf {
             $this->_round_settings = json_decode($this->settingTexts["round_settings"]);
             $max_rs = [];
             foreach ($this->_round_settings as $rs) {
-                if ($rs && isset($rs->pc_seeallrev)
+                if ($rs
+                    && isset($rs->pc_seeallrev)
                     && self::pcseerev_compare($rs->pc_seeallrev, get($max_rs, "pc_seeallrev", 0)) > 0) {
                     $max_rs["pc_seeallrev"] = $rs->pc_seeallrev;
                 }

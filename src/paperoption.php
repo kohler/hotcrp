@@ -1143,16 +1143,17 @@ class SelectorPaperOption extends PaperOption {
         $this->selector = $selector;
     }
     function selector_option_search($idx) {
-        if ($idx <= 0)
+        if ($idx <= 0) {
             return $this->search_keyword() . ":none";
-        else if ($idx > count($this->selector))
+        } else if ($idx > count($this->selector)) {
             return false;
-        else {
+        } else {
             $am = $this->selector_abbrev_matcher();
-            if (($q = $am->unique_abbreviation($this->selector[$idx - 1], $idx, new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH, 1))))
+            if (($q = $am->unique_abbreviation($this->selector[$idx - 1], $idx, new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH, 1)))) {
                 return $this->search_keyword() . ":" . $q;
-            else
+            } else {
                 return false;
+            }
         }
     }
     function selector_abbrev_matcher() {
@@ -1192,8 +1193,9 @@ class SelectorPaperOption extends PaperOption {
     }
     function example_searches() {
         $x = parent::example_searches();
-        if (($search = $this->selector_option_search(2)))
+        if (($search = $this->selector_option_search(2))) {
             $x["selector"] = [$search, $this, $this->selector[1]];
+        }
         return $x;
     }
 
@@ -1289,14 +1291,15 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function mimetypes() {
-        if ($this->type === "pdf" || $this->id <= 0)
+        if ($this->type === "pdf" || $this->id <= 0) {
             return [Mimetype::lookup(".pdf")];
-        else if ($this->type === "slides")
+        } else if ($this->type === "slides") {
             return [Mimetype::lookup(".pdf"), Mimetype::lookup(".ppt"), Mimetype::lookup(".pptx")];
-        else if ($this->type === "video")
+        } else if ($this->type === "video") {
             return [Mimetype::lookup(".mp4"), Mimetype::lookup(".avi")];
-        else
+        } else {
             return null;
+        }
     }
 
     function change_type(PaperOption $o, $upgrade, $change_values) {

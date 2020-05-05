@@ -39,7 +39,7 @@ class PaperTable {
     private $cf = null;
     private $quit = false;
 
-    function __construct($prow, $qreq, $mode = null) {
+    function __construct(PaperInfo $prow = null, Qrequest $qreq, $mode = null) {
         global $Conf, $Me;
 
         $this->conf = $Conf;

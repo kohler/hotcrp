@@ -1380,7 +1380,8 @@ class Formula implements Abbreviator, JsonSerializable {
         } else {
             $state = new FormulaCompiler($this->user);
             $e->compile($state);
-            if ($state->indexed && !$this->_allow_indexed
+            if ($state->indexed
+                && !$this->_allow_indexed
                 && $e->matches_at_most_once()) {
                 $e = new Aggregate_Fexpr("some", [$e]);
                 $state = new FormulaCompiler($this->user);
