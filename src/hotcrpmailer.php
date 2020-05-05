@@ -201,7 +201,7 @@ class HotCRPMailer extends Mailer {
                 and p.timeSubmitted>0
                 order by r.paperId");
         $text = "";
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $text .= ($text ? "\n#" : "#") . $row[0] . " " . $row[1];
         }
         Dbl::free($result);

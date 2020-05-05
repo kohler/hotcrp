@@ -9,8 +9,9 @@ class Follow_AssignmentParser extends AssignmentParser {
         $this->_default_follow = $aj->default_follow;
     }
     function load_state(AssignmentState $state) {
-        if (!$state->mark_type("follow", ["pid", "cid"], "Follow_Assigner::make"))
+        if (!$state->mark_type("follow", ["pid", "cid"], "Follow_Assigner::make")) {
             return;
+        }
         $result = $state->conf->qe("select paperId, contactId, watch from PaperWatch where watch!=0 and paperId?a", $state->paper_ids());
         while (($row = edb_row($result)))
             $state->load(["type" => "follow", "pid" => +$row[0], "cid" => +$row[1], "_watch" => +$row[2]]);
@@ -21,22 +22,24 @@ class Follow_AssignmentParser extends AssignmentParser {
     }
     static function parse_follow($s) {
         $s = strtolower(trim($s));
-        if (in_array($s, ["yes", "follow", "follows", "true"]))
+        if (in_array($s, ["yes", "follow", "follows", "true"])) {
             return Contact::WATCH_REVIEW_EXPLICIT | Contact::WATCH_REVIEW;
-        else if (in_array($s, ["no", "unfollow", "unfollows", "block", "blocks", "false"]))
+        } else if (in_array($s, ["no", "unfollow", "unfollows", "block", "blocks", "false"])) {
             return Contact::WATCH_REVIEW_EXPLICIT;
-        else if ($s === "default" || $s === "clear")
+        } else if ($s === "default" || $s === "clear") {
             return 0;
-        else
+        } else {
             return false;
+        }
     }
     function make_follow_state($req, AssignmentState $state) {
         $s = trim((string) $req["following"]);
         return [self::parse_follow($s === "" ? $this->_default_follow : $s)];
     }
     function follow_state($req, AssignmentState $state) {
-        if (!isset($req["_follow_state"]) || !is_array($req["_follow_state"]))
+        if (!isset($req["_follow_state"]) || !is_array($req["_follow_state"])) {
             $req["_follow_state"] = $this->make_follow_state($req, $state);
+        }
         return $req["_follow_state"];
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
@@ -45,8 +48,9 @@ class Follow_AssignmentParser extends AssignmentParser {
             $m = $state->query(["type" => "follow", "pid" => $prow->paperId]);
             $cids = array_map(function ($x) { return $x["cid"]; }, $m);
             return $state->users_by_id($cids);
-        } else
+        } else {
             return false;
+        }
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $state->reviewer->contactId > 0 ? [$state->reviewer] : false;
@@ -59,12 +63,14 @@ class Follow_AssignmentParser extends AssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $fs = $this->follow_state($req, $state);
-        if ($fs[0] === false)
+        if ($fs[0] === false) {
             return "Bad follow type.";
+        }
         $res = $state->remove(["type" => "follow", "pid" => $prow->paperId, "cid" => $contact->contactId]);
         $watch = ($res ? $res[0]["_watch"] & ~(Contact::WATCH_REVIEW | Contact::WATCH_REVIEW_EXPLICIT) : 0) | $fs[0];
-        if ($watch !== 0)
+        if ($watch !== 0) {
             $state->add(["type" => "follow", "pid" => $prow->paperId, "cid" => $contact->contactId, "_watch" => $watch]);
+        }
         return true;
     }
 }
@@ -83,27 +89,30 @@ class Follow_Assigner extends Assigner {
     }
     private function text($before) {
         $ctype = $this->item->get($before, "_watch");
-        if ($ctype & Contact::WATCH_REVIEW_EXPLICIT)
+        if ($ctype & Contact::WATCH_REVIEW_EXPLICIT) {
             return $ctype & Contact::WATCH_REVIEW ? "follows" : "unfollows";
-        else
+        } else {
             return "default";
+        }
     }
     function unparse_display(AssignmentSet $aset) {
         $t = $aset->user->reviewer_html_for($this->contact);
-        if ($this->item->deleted())
+        if ($this->item->deleted()) {
             $t = '<del>' . $t . ' ' . $this->text(true) . '</del>';
-        else if (!$this->item->existed())
+        } else if (!$this->item->existed()) {
             $t = '<ins>' . $t . ' ' . $this->text(false) . '</ins>';
-        else
+        } else {
             $t = $t . ' <del>' . $this->text(true) . '</del> <ins>' . $this->text(false) . '</ins>';
+        }
         return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $ctype = $this->item->get(false, "_watch");
-        if ($ctype & Contact::WATCH_REVIEW_EXPLICIT)
+        if ($ctype & Contact::WATCH_REVIEW_EXPLICIT) {
             $ctype = $ctype & Contact::WATCH_REVIEW ? "yes" : "no";
-        else
+        } else {
             $ctype = "default";
+        }
         return [
             "pid" => $this->pid, "action" => "follow",
             "email" => $this->contact->email, "name" => $this->contact->name(),

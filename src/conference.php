@@ -41,28 +41,32 @@ class ResponseRound {
     function relevant(Contact $user, PaperInfo $prow = null) {
         global $Now;
         if ($user->allow_administer($prow)
-            && ($this->done || $this->search || $this->name !== "1"))
+            && ($this->done || $this->search || $this->name !== "1")) {
             return true;
-        else if ($user->isPC)
+        } else if ($user->isPC) {
             return $this->open > 0;
-        else
+        } else {
             return $this->open > 0
                 && $this->open < $Now
                 && (!$this->search || $this->search->filter($prow ? [$prow] : $user->authored_papers()));
+        }
     }
     function time_allowed($with_grace) {
         global $Now;
-        if ($this->open === null || $this->open <= 0 || $this->open > $Now)
+        if ($this->open === null || $this->open <= 0 || $this->open > $Now) {
             return false;
+        }
         $t = $this->done;
-        if ($t !== null && $t > 0 && $with_grace && $this->grace)
+        if ($t !== null && $t > 0 && $with_grace && $this->grace) {
             $t += $this->grace;
+        }
         return $t === null || $t <= 0 || $t >= $Now;
     }
     function instructions(Conf $conf) {
         $m = $conf->_i("resp_instrux_$this->number", false, $this->words);
-        if ($m === false)
+        if ($m === false) {
             $m = $conf->_i("resp_instrux", false, $this->words);
+        }
         return $m;
     }
 }

@@ -230,8 +230,9 @@ class PaperOptionList {
                 && (!isset($this->_jlist[$oj->id])
                     || Conf::xt_priority_compare($oj, $this->_jlist[$oj->id]) <= 0)) {
                 $this->_jlist[$oj->id] = $oj;
-                if (isset($oj->include_empty) && $oj->include_empty)
+                if (isset($oj->include_empty) && $oj->include_empty) {
                     $this->_olist_include_empty = true;
+                }
             }
             return true;
         } else {

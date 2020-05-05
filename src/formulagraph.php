@@ -376,7 +376,7 @@ class FormulaGraph extends MessageSet {
             || ($this->fxorder && $this->fxorder->indexed())) {
             $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type() | $this->fy->index_type() | ($this->fxorder ? $this->fxorder->index_type() : 0));
         }
-        $orderf = $order_data = null;
+        $orderf = $ordercf = $order_data = null;
         if ($this->fxorder) {
             $order_data = [];
             if ($reviewf) {

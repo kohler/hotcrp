@@ -9,8 +9,9 @@ class Author_SearchTerm extends SearchTerm {
     function __construct($countexpr, $contacts, $match, $quoted) {
         parent::__construct("au");
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
-        if (!$contacts && $match)
+        if (!$contacts && $match) {
             $this->regex = Text::star_text_pregexes($match, $quoted);
+        }
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $count = ">0";
@@ -20,13 +21,14 @@ class Author_SearchTerm extends SearchTerm {
         }
         $cids = null;
         if ($sword->kwexplicit && !$sword->quoted) {
-            if ($word === "any")
+            if ($word === "any") {
                 $word = null;
-            else if ($word === "none" && $count === ">0") {
+            } else if ($word === "none" && $count === ">0") {
                 $word = null;
                 $count = "=0";
-            } else if (trim($word) !== "")
+            } else if (trim($word) !== "") {
                 $cids = $srch->matching_special_uids($word, false, false);
+            }
         }
         return new Author_SearchTerm($count, $cids, $word, $sword->quoted);
     }
@@ -59,8 +61,9 @@ class Author_SearchTerm extends SearchTerm {
                 if ($this->regex) {
                     $text = $au->name_email_aff_text();
                     if (!Text::match_pregexes($this->regex, $text,
-                                              UnicodeHelper::deaccent($text)))
+                                              UnicodeHelper::deaccent($text))) {
                         continue;
+                    }
                 }
                 ++$n;
             }
@@ -69,7 +72,8 @@ class Author_SearchTerm extends SearchTerm {
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
-        if ($this->regex)
+        if ($this->regex) {
             $srch->regex["au"][] = $this->regex;
+        }
     }
 }

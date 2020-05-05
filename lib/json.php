@@ -5,14 +5,15 @@
 foreach (["JSON_ERROR_NONE" => 0, "JSON_ERROR_DEPTH" => 1,
           "JSON_ERROR_STATE_MISMATCH" => 2, "JSON_ERROR_CTRL_CHAR" => 3,
           "JSON_ERROR_SYNTAX" => 4, "JSON_ERROR_UTF8" => 5,
-          "JSON_ERROR_EMPTY_KEY" => 100,
           "JSON_FORCE_OBJECT" => 16, "JSON_PRETTY_PRINT" => 128,
           "JSON_UNESCAPED_SLASHES" => 64,
-          "JSON_UNESCAPED_UNICODE" => 256] as $k => $v)
+          "JSON_UNESCAPED_UNICODE" => 256] as $k => $v) {
     if (!defined($k))
         define($k, $v);
+}
 
 define("JSON_HOTCRP", 1);
+define("JSON_ERROR_EMPTY_KEY", 100);
 
 if (!interface_exists("JsonSerializable")) {
     interface JsonSerializable {
@@ -53,7 +54,7 @@ class Json {
             $prefix = substr(self::$error_input, 0,
                              strlen(self::$error_input) - strlen($x));
             self::$error_position = strlen($prefix);
-            self::$error_line = 1 + preg_match_all(',\r\n?|\n,s', $prefix);
+            self::$error_line = 1 + preg_match_all('/\r\n?|\n/s', $prefix);
             self::$error_description = $desc;
         }
         return ($x = null);
@@ -63,37 +64,41 @@ class Json {
         if ($x !== null) {
             $prefix = substr(self::$error_input, 0,
                              strlen(self::$error_input) - strlen($x));
-            return $filename . ":" . (1 + preg_match_all(',\r\n?|\n,s', $prefix)) . ":" . strlen($prefix);
-        } else
+            return $filename . ":" . (1 + preg_match_all('/\r\n?|\n/s', $prefix)) . ":" . strlen($prefix);
+        } else {
             return null;
+        }
     }
 
 
     static function decode_escape($e) {
-        if (is_array($e))
+        if (is_array($e)) {
             $e = $e[0];
+        }
         if ($e[1] === "u") {
             $v = intval(substr($e, 2), 16);
-            if ($v < 0x80)
+            if ($v < 0x80) {
                 return chr($v);
-            else if ($v < 0x800)
+            } else if ($v < 0x800) {
                 return chr(0xC0 + ($v >> 6)) . chr(0x80 + ($v & 0x3F));
-            else if ($v < 0x10000)
+            } else if ($v < 0x10000) {
                 return chr(0xE0 + ($v >> 12)) . chr(0x80 + (($v >> 6) & 0x3F))
                     . chr(0x80 + ($v & 0x3F));
-            else
+            } else {
                 return chr(0xF0 + ($v >> 18)) . chr(0x80 + (($v >> 12) & 0x3F))
                     . chr(0x80 + (($v >> 6) & 0x3F)) . chr(0x80 + ($v & 0x3F));
-        } else
+            }
+        } else {
             return self::$string_unmap[$e];
+        }
     }
 
 
     private static function decode_part(&$x, $assoc, $depth, $options) {
         $x = ltrim($x);
-        if ($x === "")
+        if ($x === "") {
             return self::set_error($x, JSON_ERROR_SYNTAX);
-        else if (substr($x, 0, 4) === "null") {
+        } else if (substr($x, 0, 4) === "null") {
             $x = substr($x, 4);
             return null;
         } else if (substr($x, 0, 5) === "false") {
@@ -112,12 +117,13 @@ class Json {
                 return self::set_error($x, JSON_ERROR_SYNTAX);
             }
         } else if ($x[0] === "{") {
-            if ($depth < 0)
+            if ($depth < 0) {
                 return self::set_error($x, JSON_ERROR_DEPTH);
+            }
             $arr = $assoc ? array() : (object) array();
             $x = substr($x, 1);
             $n = 0;
-            while (1) {
+            while (true) {
                 if (!is_string($x))
                     return self::set_error($x, JSON_ERROR_SYNTAX);
                 $x = ltrim($x);
@@ -131,14 +137,16 @@ class Json {
                 }
 
                 $k = self::decode_part($x, $assoc, $depth - 1, $options);
-                if (!is_string($k) || !is_string($x))
+                if (!is_string($k) || !is_string($x)) {
                     return self::set_error($x, JSON_ERROR_SYNTAX);
-                if ($k === "" && is_object($arr))
+                } else if ($k === "" && is_object($arr)) {
                     return self::set_error($x, JSON_ERROR_EMPTY_KEY);
+                }
 
                 $x = ltrim($x);
-                if ($x[0] !== ":")
+                if ($x[0] !== ":") {
                     return self::set_error($x, JSON_ERROR_SYNTAX);
+                }
                 $x = substr($x, 1);
                 $v = self::decode_part($x, $assoc, $depth - 1, $options);
 
@@ -147,20 +155,23 @@ class Json {
             }
             return $arr;
         } else if ($x[0] === "[") {
-            if ($depth < 0)
+            if ($depth < 0) {
                 return self::set_error($x, JSON_ERROR_DEPTH);
+            }
             $arr = array();
             $x = substr($x, 1);
-            while (1) {
-                if (!is_string($x))
+            while (true) {
+                if (!is_string($x)) {
                     return self::set_error($x, JSON_ERROR_SYNTAX);
+                }
                 $x = ltrim($x);
                 if ($x[0] === "]") {
                     $x = substr($x, 1);
                     break;
                 } else if (count($arr)) {
-                    if ($x[0] !== ",")
+                    if ($x[0] !== ",") {
                         return self::set_error($x, JSON_ERROR_SYNTAX);
+                    }
                     $x = substr($x, 1);
                 }
 
@@ -171,38 +182,42 @@ class Json {
         } else if (preg_match('/\A(-?(?:0|[1-9]\d*))((?:\.\d+)?(?:[Ee][-+]?\d+)?)(.*)\z/s', $x, $m)) {
             $x = $m[3];
             return $m[2] ? floatval($m[1] . $m[2]) : intval($m[1]);
-        } else if ($x[0] === "]" || $x[0] === "}")
+        } else if ($x[0] === "]" || $x[0] === "}") {
             return self::set_error($x, JSON_ERROR_STATE_MISMATCH);
-        else if (ord($x[0]) < 32)
+        } else if (ord($x[0]) < 32) {
             return self::set_error($x, JSON_ERROR_CTRL_CHAR);
-        else
+        } else {
             return self::set_error($x, JSON_ERROR_SYNTAX);
+        }
     }
 
     static function encode_escape($x) {
-        if (is_array($x))
+        if (is_array($x)) {
             $x = $x[0];
+        }
         return self::$string_map[$x];
     }
 
     // XXX not a full emulation of json_encode(); hopefully that won't matter
     // in the fullness of time
     static function encode($x, $options = 0) {
-        if ($x instanceof JsonSerializable)
+        if ($x instanceof JsonSerializable) {
             $x = $x->jsonSerialize();
-        if ($x === null)
+        }
+        if ($x === null) {
             return "null";
-        else if ($x === false)
+        } else if ($x === false) {
             return "false";
-        else if ($x === true)
+        } else if ($x === true) {
             return "true";
-        else if (is_int($x) || is_float($x))
+        } else if (is_int($x) || is_float($x)) {
             return (string) $x;
-        else if (is_string($x)) {
-            if ($options & JSON_UNESCAPED_SLASHES)
+        } else if (is_string($x)) {
+            if ($options & JSON_UNESCAPED_SLASHES) {
                 $pat = "{[\\\"\\x00-\\x1F]|\xE2\x80[\xA8\xA9]}";
-            else
+            } else {
                 $pat = "{[\\\"/\\x00-\\x1F]|\xE2\x80[\xA8\xA9]}";
+            }
             return "\"" . preg_replace_callback($pat, "Json::encode_escape", $x) . "\"";
         } else if (is_object($x) || is_array($x)) {
             $as_object = null;
@@ -210,37 +225,42 @@ class Json {
             $nextkey = 0;
             foreach ($x as $k => $v) {
                 if ((!is_int($k) && !is_string($k))
-                    || ($v = self::encode($v, $options)) === null)
+                    || ($v = self::encode($v, $options)) === null) {
                     continue;
+                }
                 if ($as_array !== null && $k !== $nextkey) {
                     $as_object = array();
-                    foreach ($as_array as $kk => $vv)
+                    foreach ($as_array as $kk => $vv) {
                         $as_object[] = "\"$kk\":$vv";
+                    }
                     $as_array = null;
                 }
-                if ($as_array === null)
+                if ($as_array === null) {
                     $as_object[] = self::encode((string) $k) . ":" . $v;
-                else {
+                } else {
                     $as_array[] = $v;
                     ++$nextkey;
                 }
             }
-            if ($as_array === null)
+            if ($as_array === null) {
                 return "{" . join(",", $as_object) . "}";
-            else if (count($as_array) == 0)
+            } else if (count($as_array) == 0) {
                 return (is_object($x) || ($options & JSON_FORCE_OBJECT)) ? "{}" : "[]";
-            else
+            } else {
                 return "[" . join(",", $as_array) . "]";
-        } else
+            }
+        } else {
             return null;
+        }
     }
 
     static function decode($x, $assoc = false, $depth = 512, $options = 0) {
         self::$error_type = JSON_ERROR_NONE;
         self::$error_input = $x;
         $v = self::decode_part($x, $assoc, $depth, $options);
-        if ($x !== null && $x !== false && $x !== "" && !ctype_space($x))
+        if ($x !== null && $x !== false && $x !== "" && !ctype_space($x)) {
             self::set_error($x, JSON_ERROR_SYNTAX, var_export($x, true));
+        }
         self::$error_input = null;
         return $x === null ? null : $v;
     }
@@ -248,9 +268,9 @@ class Json {
 
     private static function decode_landmarks_part(&$x, $filename, $assoc, $depth) {
         $x = ltrim($x);
-        if ($x === "")
+        if ($x === "") {
             return self::set_error($x, JSON_ERROR_SYNTAX);
-        else if (preg_match('/\A(?:null|false|true|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[Ee][-+]?\d+)?)(.*)\z/s', $x, $m)) {
+        } else if (preg_match('/\A(?:null|false|true|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[Ee][-+]?\d+)?)(.*)\z/s', $x, $m)) {
             $l = self::landmark($x, $filename);
             $x = $m[1];
             return $l;
@@ -266,33 +286,38 @@ class Json {
             }
         } else if ($x[0] === "{") {
             $l = self::landmark($x, $filename);
-            if ($depth < 0)
+            if ($depth < 0) {
                 return self::set_error($x, JSON_ERROR_DEPTH);
+            }
             $arr = $assoc ? array() : (object) array();
             $x = substr($x, 1);
             $n = 0;
-            while (1) {
-                if (!is_string($x))
+            while (true) {
+                if (!is_string($x)) {
                     return self::set_error($x, JSON_ERROR_SYNTAX);
+                }
                 $x = ltrim($x);
                 if ($x[0] === "}") {
                     $x = substr($x, 1);
                     break;
                 } else if ($n) {
-                    if ($x[0] !== ",")
+                    if ($x[0] !== ",") {
                         return self::set_error($x, JSON_ERROR_SYNTAX);
+                    }
                     $x = substr($x, 1);
                 }
 
                 $k = self::decode_part($x, $assoc, $depth - 1, 0);
-                if (!is_string($k) || !is_string($x))
+                if (!is_string($k) || !is_string($x)) {
                     return self::set_error($x, JSON_ERROR_SYNTAX);
-                if ($k === "" && is_object($arr))
+                } else if ($k === "" && is_object($arr)) {
                     return self::set_error($x, JSON_ERROR_EMPTY_KEY);
+                }
 
                 $x = ltrim($x);
-                if ($x[0] !== ":")
+                if ($x[0] !== ":") {
                     return self::set_error($x, JSON_ERROR_SYNTAX);
+                }
                 $x = substr($x, 1);
                 $v = self::decode_landmarks_part($x, $filename, $assoc, $depth - 1);
 
@@ -303,20 +328,23 @@ class Json {
             return $arr;
         } else if ($x[0] === "[") {
             $l = self::landmark($x, $filename);
-            if ($depth < 0)
+            if ($depth < 0) {
                 return self::set_error($x, JSON_ERROR_DEPTH);
+            }
             $arr = array();
             $x = substr($x, 1);
-            while (1) {
-                if (!is_string($x))
+            while (true) {
+                if (!is_string($x)) {
                     return self::set_error($x, JSON_ERROR_SYNTAX);
+                }
                 $x = ltrim($x);
                 if ($x[0] === "]") {
                     $x = substr($x, 1);
                     break;
                 } else if (count($arr)) {
-                    if ($x[0] !== ",")
+                    if ($x[0] !== ",") {
                         return self::set_error($x, JSON_ERROR_SYNTAX);
+                    }
                     $x = substr($x, 1);
                 }
 
@@ -324,20 +352,22 @@ class Json {
                 $arr[] = $v;
             }
             return $arr;
-        } else if ($x[0] === "]" || $x[0] === "}")
+        } else if ($x[0] === "]" || $x[0] === "}") {
             return self::set_error($x, JSON_ERROR_STATE_MISMATCH);
-        else if (ord($x[0]) < 32)
+        } else if (ord($x[0]) < 32) {
             return self::set_error($x, JSON_ERROR_CTRL_CHAR);
-        else
+        } else {
             return self::set_error($x, JSON_ERROR_SYNTAX);
+        }
     }
 
     static function decode_landmarks($x, $filename, $assoc = false, $depth = 512) {
         self::$error_type = JSON_ERROR_NONE;
         self::$error_input = $x;
         $v = self::decode_landmarks_part($x, $filename, $assoc, $depth);
-        if ($x !== null && $x !== false && $x !== "" && !ctype_space($x))
+        if ($x !== null && $x !== false && $x !== "" && !ctype_space($x)) {
             self::set_error($x, JSON_ERROR_SYNTAX, var_export($x, true));
+        }
         self::$error_input = null;
         return $x === null ? null : $v;
     }
@@ -360,10 +390,12 @@ class Json {
         $error = array_key_exists($error, $errors) ? $errors[$error] : "Unknown error ({$error})";
         if ($error) {
             $error .= " at character " . self::$error_position;
-            if (self::$error_line != 1)
+            if (self::$error_line != 1) {
                 $error .= ", line " . self::$error_line;
-            if (self::$error_description)
+            }
+            if (self::$error_description) {
                 $error .= " [" . self::$error_description . "]";
+            }
         }
         return $error;
     }

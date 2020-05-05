@@ -40,8 +40,9 @@ class PaperRank {
             $range = range(0, count($papersel) - 1);
             shuffle($range);
             $this->papershuffle = array_combine($papersel, $range);
-        } else
+        } else {
             $this->papershuffle = array();
+        }
 
         // load current ranks: $userrank maps user => [rank, paper]
         $result = $Conf->qe_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")");
@@ -52,20 +53,22 @@ class PaperRank {
         }
 
         // sort $userrank[$user] by descending rank order
-        foreach ($this->userrank as $user => &$ranks)
+        foreach ($this->userrank as $user => &$ranks) {
             usort($ranks, array($this, "_comparUserrank"));
+        }
 
         $this->rank = array();
         $this->currank = 0;
     }
 
     function _comparUserrank($a, $b) {
-        if ($a[0] != $b[0])
+        if ($a[0] != $b[0]) {
             return ($a[0] < $b[0] ? -1 : 1);
-        else if ($a[1] != $b[1])
+        } else if ($a[1] != $b[1]) {
             return ($this->papershuffle[$a[1]] < $this->papershuffle[$b[1]] ? -1 : 1);
-        else
+        } else {
             return 0;
+        }
     }
 
     private function _nextRank() {
@@ -78,21 +81,25 @@ class PaperRank {
         $n = count($this->rank);
         if (!$this->info_printed
             && (!count($this->papersel) || $n >= count($this->papersel)
-                || time() - $this->starttime <= 4))
+                || time() - $this->starttime <= 4)) {
             return;
+        }
         $pct = round($n / count($this->papersel) * 100);
         if (!$this->info_printed) {
-            if ($this->header_title)
+            if ($this->header_title) {
                 $Conf->header($this->header_title, $this->header_id);
+            }
             echo '<div id="foldrankcalculation" class="foldc"><div class="fn info">Calculating ranks; this can take a while.  <span id="rankpercentage">', $pct, '</span>% of ranks assigned<span id="rankdeletedpref"></span>.</div></div>';
             $this->info_printed = true;
         }
         if ($n < count($this->papersel)) {
             $x = '$("#rankpercentage").html("' . $pct . '")';
-            if ($this->deletedpref > 0)
+            if ($this->deletedpref > 0) {
                 $x .= ';$("#rankdeletedpref").html(", ' . round(($this->totalpref - $this->deletedpref) / $this->totalpref * 100) . '% of preferences remain")';
-        } else
+            }
+        } else {
             $x = '$("#foldrankcalculation").addClass("foldo")';
+        }
         echo Ht::script($x), "\n";
         flush();
     }
@@ -100,33 +107,42 @@ class PaperRank {
 
     // compare two vote sets
     function _comparRankIRV($a, $b) {
-        for ($i = 0; $i < count($a); ++$i)
+        for ($i = 0; $i < count($a); ++$i) {
             if ($a[$i] != $b[$i])
                 return $a[$i] < $b[$i] ? -1 : 1;
+        }
         return 0;
     }
 
     function irv() {
-        if (!count($this->papersel))
+        if (!count($this->papersel)) {
             return;
+        }
 
         // $regrank maps user => papers in rank order;
         //               papers with same rank are shuffled
         foreach ($this->userrank as $user => &$ranks) {
-            foreach ($ranks as $rr)
+            foreach ($ranks as $rr) {
                 $regrank[$user][] = $rr[1];
+            }
         }
+        unset($ranks);
 
         // How many rank each paper?  #1 votes count the most, then #2, and so
         // forth.  Compute in base (# of users).
         $papervotes = array_combine($this->papersel, array_fill(0, count($this->papersel), array_fill(0, count($this->papersel), 0)));
         foreach ($regrank as $user => &$pap) {
-            foreach ($pap as $ordinal => $p)
+            foreach ($pap as $ordinal => $p) {
                 $papervotes[$p][$ordinal]++;
+            }
         }
+        unset($pap);
+
         // Add a random final number of votes, so no papers are equal.
-        foreach ($papervotes as $p => &$votes)
+        foreach ($papervotes as $p => &$votes) {
             $votes[count($this->papersel)] = $this->papershuffle[$p];
+        }
+        unset($votes);
 
         // now calculate ranks
         $reverseorder = array();
@@ -138,7 +154,7 @@ class PaperRank {
             $reverseorder[] = $loser;
             unset($papervotes[$loser]);
             // redistribute votes for the loser
-            foreach ($regrank as $user => &$pap)
+            foreach ($regrank as $user => &$pap) {
                 if (($pos = array_search($loser, $pap)) !== false) {
                     array_splice($pap, $pos, 1);
                     while ($pos < count($pap)) {
@@ -147,11 +163,14 @@ class PaperRank {
                         $pos++;
                     }
                 }
+            }
+            unset($pap);
         }
 
         // assign ranks
-        foreach (array_reverse($reverseorder) as $user)
+        foreach (array_reverse($reverseorder) as $user) {
             $this->rank[$user] = $this->_nextRank();
+        }
     }
 
 
@@ -173,18 +192,21 @@ class PaperRank {
         // map ranks to ranges
         $paperrange = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
         $paperrangecount = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
-        foreach ($this->userrank as $user => &$ranks)
+        foreach ($this->userrank as $user => &$ranks) {
             foreach ($ranks as $rr) {
                 $paperrange[$rr[1]] +=
                     ($maxuserrank[$user] - $rr[0] + 0.5)
                     / ($maxuserrank[$user] - $minuserrank[$user] + 1);
                 $paperrangecount[$rr[1]]++;
             }
+        }
+        unset($ranks);
 
         // ranges to averages
         foreach ($paperrange as $p => $range) {
-            if ($paperrangecount[$p])
+            if ($paperrangecount[$p]) {
                 $range /= $paperrangecount[$p];
+            }
             $this->rank[$p] = (int) max(99 - 99 * $range, 1);
         }
     }
@@ -199,24 +221,29 @@ class PaperRank {
                 if ($rr[0] >= 1)
                     $rr[0] = min($rr[0], 99);
             }
+            unset($rr);
         }
+        unset($ranks);
 
         // map ranks to ranges
         $paperrange = array_fill(0, count($this->papersel), 0);
         $paperrangecount = array_fill(0, count($this->papersel), 0);
-        foreach ($this->userrank as $user => &$ranks)
+        foreach ($this->userrank as $user => &$ranks) {
             foreach ($ranks as $rr) {
                 $paperrange[$rr[1]] += $rr[0];
                 $paperrangecount[$rr[1]]++;
             }
+        }
+        unset($ranks);
 
         // ranges to averages
         foreach ($paperrange as $p => $range) {
             if ($paperrangecount[$p]) {
                 $range = ($range + 0.5) / $paperrangecount[$p];
                 $this->rank[$p] = min((int) $range, 99);
-            } else
+            } else {
                 $this->rank[$p] = 99;
+            }
         }
     }
 
@@ -225,8 +252,9 @@ class PaperRank {
     // random walk
     function randwalk() {
         $paperCount = count($this->papersel);
-        if (!count($this->papersel))
+        if (!count($this->papersel)) {
             return;
+        }
 
         // extract pairwise comparisons from user rankings into sparse 2D array
         $compareCounts = array_combine($this->papersel, array_fill(0, $paperCount, array()));
@@ -237,10 +265,12 @@ class PaperRank {
                 for ($lowerRank = $higherRank + 1; $lowerRank < $numUserRanks; $lowerRank++) {
                     $lowerRankedPaperId = $rankedPapers[$lowerRank][1];
                     // if needed, create elements in sparse array
-                    if (!array_key_exists($lowerRankedPaperId, $compareCounts[$higherRankedPaperId]))
+                    if (!array_key_exists($lowerRankedPaperId, $compareCounts[$higherRankedPaperId])) {
                         $compareCounts[$higherRankedPaperId][$lowerRankedPaperId] = 0;
-                    if (!array_key_exists($higherRankedPaperId, $compareCounts[$lowerRankedPaperId]))
+                    }
+                    if (!array_key_exists($higherRankedPaperId, $compareCounts[$lowerRankedPaperId])) {
                         $compareCounts[$lowerRankedPaperId][$higherRankedPaperId] = 0;
+                    }
                     $compareCounts[$lowerRankedPaperId][$higherRankedPaperId]++;
                 }
             }
@@ -250,11 +280,13 @@ class PaperRank {
         $maxOutrankCount = 0;
         foreach ($compareCounts as $rowPaperId => $compareCountRow) {
             $rowOutrankCount = 0;
-            foreach ($compareCountRow as $colPaperId => $compareCount)
+            foreach ($compareCountRow as $colPaperId => $compareCount) {
                 if ($compareCount > 0)
                     $rowOutrankCount++;
-            if ($rowOutrankCount > $maxOutrankCount)
+            }
+            if ($rowOutrankCount > $maxOutrankCount) {
                 $maxOutrankCount = $rowOutrankCount;
+            }
         }
 
         // build sparse transition probability matrix (this is the transpose of the conventional representation)
@@ -285,8 +317,9 @@ class PaperRank {
             $newStateDist = array();
             foreach ($transitionMatrix as $toPaperId => $transitionVector) {
                 $newStateProb = 0.0;
-                foreach ($transitionVector as $fromPaperId => $transitionProb)
+                foreach ($transitionVector as $fromPaperId => $transitionProb) {
                     $newStateProb += $stateDist[$fromPaperId] * $transitionProb;
+                }
                 $newStateDist[$toPaperId] = $newStateProb;
             }
 
@@ -311,8 +344,9 @@ class PaperRank {
 
         // extract ranks from stationary distribution
         arsort($stateDist);
-        foreach ($stateDist as $paperId => $prob)
+        foreach ($stateDist as $paperId => $prob) {
             $this->rank[$paperId] = $this->_nextRank();
+        }
     }
 
 
@@ -352,13 +386,14 @@ class PaperRank {
             while (count($work)) {
                 $p2 = array_pop($work);
                 $closure[$p1][$p2] = true;
-                if (isset($reachable[$p2]))
+                if (isset($reachable[$p2])) {
                     foreach ($reachable[$p2] as $p3 => $x) {
                         if (!isset($reach[$p3])) {
                             $reach[$p3] = true;
                             array_push($work, $p3);
                         }
                     }
+                }
             }
         }
         return $closure;
@@ -376,10 +411,11 @@ class PaperRank {
                 $p2 = $papersel[$j];
                 $pref12 = $this->pref[$p1][$p2];
                 $pref21 = $this->pref[$p2][$p1];
-                if ($pref12 > $pref21)
+                if ($pref12 > $pref21) {
                     $defeat[$p1][$p2] = true;
-                else if ($pref12 < $pref21)
+                } else if ($pref12 < $pref21) {
                     $defeat[$p2][$p1] = true;
+                }
             }
         }
 
@@ -402,24 +438,27 @@ class PaperRank {
                 $p2 = $papersel[$j];
                 $d12 = isset($defeat[$p1]) && isset($defeat[$p1][$p2]);
                 $d21 = isset($defeat[$p2]) && isset($defeat[$p2][$p1]);
-                if ($d12 && !$d21)
+                if ($d12 && !$d21) {
                     $nonschwartz[$p2] = true;
-                else if ($d21 && !$d12)
+                } else if ($d21 && !$d12) {
                     $nonschwartz[$p1] = true;
+                }
             }
         }
 
         $schwartz = array();
         foreach ($papersel as $p1) {
-            if (!isset($nonschwartz[$p1]))
+            if (!isset($nonschwartz[$p1])) {
                 $schwartz[] = $p1;
+            }
         }
         $nonschwartz = array_keys($nonschwartz);
         //error_log("SCH " . join(",", $schwartz) . " (" . join(",",$papersel) . ")");
         //echo "<p>Schwartz calc ", (microtime(true) - $t0), "</p>"; flush();
         assert(count($schwartz) != 0);
-        if (count($schwartz) == 0)
+        if (count($schwartz) == 0) {
             exit;
+        }
     }
 
     private function _comparWeakness($a, $b) {
@@ -462,19 +501,17 @@ class PaperRank {
         $amargin = $awin_scaled - $alose_scaled;
         $bmargin = $bwin_scaled - $blose_scaled;
 
-        if ($amargin != $bmargin)
+        if ($amargin != $bmargin) {
             return ($amargin < $bmargin ? -1 : 1);
-
-        if ($awin_scaled != $bwin_scaled)
+        } else if ($awin_scaled != $bwin_scaled) {
             return ($awin_scaled < $bwin_scaled ? -1 : 1);
-
-        if ($alose_scaled != $blose_scaled)
+        } else if ($alose_scaled != $blose_scaled) {
             return ($alose_scaled > $blose_scaled ? -1 : 1);
-
-        if ($aminvoters != $bminvoters)
+        } else if ($aminvoters != $bminvoters) {
             return ($aminvoters > $bminvoters ? -1 : 1);
-
-        return 0;
+        } else {
+            return 0;
+        }
     }
 
     private function _schulzeStep(&$stack) {
@@ -492,12 +529,13 @@ class PaperRank {
         //echo "<p>S ", join(" ", $schwartz), "<br />NS ", join(" ", $nonschwartz), "</p>"; flush();
 
         // recurse on the non-Schwartz set second
-        if (count($nonschwartz))
+        if (count($nonschwartz)) {
             $stack[] = array($nonschwartz, $defeat);
+        }
 
         // $weakness measures weaknesses of defeats within the Schwartz set
         $weakness = array();
-        foreach ($schwartz as $p1)
+        foreach ($schwartz as $p1) {
             foreach ($schwartz as $p2) {
                 $pref12 = $this->pref[$p1][$p2];
                 $pref21 = $this->pref[$p2][$p1];
@@ -506,6 +544,7 @@ class PaperRank {
                     $weakness["$p1 $p2"] = array($pref12, $pref21, $minvoters);
                 }
             }
+        }
 
         if (count($weakness) == 0) {
             // if no defeats, end with a tie
@@ -524,8 +563,9 @@ class PaperRank {
             $thisweakness = null;
             while (1) {
                 if ($thisweakness !== null
-                    && $this->_comparWeakness($thisweakness, current($weakness)) != 0)
+                    && $this->_comparWeakness($thisweakness, current($weakness)) != 0) {
                     break;
+                }
                 $thisweakness = current($weakness);
                 list($x, $y) = explode(" ", key($weakness));
                 //error_log("... ${x}d$y " . $this->pref[(int) $x][(int) $y] . "," . $this->pref[(int) $y][(int) $x]);
@@ -557,11 +597,13 @@ class PaperRank {
         // correct output rankings for papers with no input rankings
         // (set them to 999)
         $norank = 999;
-        while ($norank < $this->currank + 5)
+        while ($norank < $this->currank + 5) {
             $norank = $norank * 10 + 9;
-        foreach ($this->papersel as $p)
+        }
+        foreach ($this->papersel as $p) {
             if ($this->anypref[$p] == 0)
                 $this->rank[$p] = $norank;
+        }
         $this->_info();
     }
 
@@ -570,11 +612,13 @@ class PaperRank {
     // global rank calculation by CIVS Ranked Pairs
 
     function _comparStrength($a, $b) {
-        if ($a[0] != $b[0])
+        if ($a[0] != $b[0]) {
             return ($a[0] > $b[0] ? -1 : 1);
-        if ($a[1] != $b[1])
+        } else if ($a[1] != $b[1]) {
             return ($a[1] < $b[1] ? -1 : 1);
-        return 0;
+        } else {
+            return 0;
+        }
     }
 
     private function _reachableClosure2(&$reachable, &$papersel, $pairs) {
@@ -582,27 +626,32 @@ class PaperRank {
             list($p1, $p2) = array_pop($pairs);
             $reachable[$p1][$p2] = true;
             foreach ($papersel as $px) {
-                if (isset($reachable[$px][$p1]) && !isset($reachable[$px][$p2]))
+                if (isset($reachable[$px][$p1]) && !isset($reachable[$px][$p2])) {
                     array_push($pairs, array($px, $p2));
-                if (isset($reachable[$p2][$px]) && !isset($reachable[$p1][$px]))
+                }
+                if (isset($reachable[$p2][$px]) && !isset($reachable[$p1][$px])) {
                     array_push($pairs, array($p1, $px));
+                }
             }
         }
     }
 
     private function _includePairs(&$defeat, &$reachable, &$adddefeat) {
-        foreach ($adddefeat as $x)
+        foreach ($adddefeat as $x) {
             $defeat[$x[0]][$x[1]] = true;
+        }
         $this->_reachableClosure2($reachable, $this->papersel, $adddefeat);
         $adddefeat = array();
     }
 
     private function _comparPreferenceAgainst($a, $b) {
-        if ($a[1] != $b[1])
+        if ($a[1] != $b[1]) {
             return $a[1] < $b[1] ? -1 : 1;
-        if ($a[0] != $b[0])
+        } else if ($a[0] != $b[0]) {
             return $this->papershuffle[$a[0]] < $this->papershuffle[$b[0]] ? 1 : -1;
-        return 0;
+        } else {
+            return 0;
+        }
     }
 
     private function _civsrpStep(&$papersel, &$defeat) {
@@ -621,9 +670,10 @@ class PaperRank {
         $prefagainst = array();
         foreach ($schwartz as $p2) {
             $px = 0;
-            foreach ($schwartz as $p1)
+            foreach ($schwartz as $p1) {
                 if (isset($this->pref[$p1][$p2]))
                     $px = max($px, $this->pref[$p1][$p2]);
+            }
             $prefagainst[] = array($p2, $px);
         }
         usort($prefagainst, array($this, "_comparPreferenceAgainst"));
@@ -667,15 +717,18 @@ class PaperRank {
         $reachable = array();
         $adddefeat = array();
         foreach ($strength as $k => $value) {
-            if (count($adddefeat) && $this->_comparStrength($lastvalue, $value))
+            if (count($adddefeat) && $this->_comparStrength($lastvalue, $value)) {
                 $this->_includePairs($defeat, $reachable, $adddefeat);
+            }
             list($p1, $p2) = explode(" ", $k);
-            if (!isset($reachable[$p2][$p1]))
+            if (!isset($reachable[$p2][$p1])) {
                 $adddefeat[] = array($p1, $p2);
+            }
             $lastvalue = $value;
         }
-        if (count($adddefeat))
+        if (count($adddefeat)) {
             $this->_includePairs($defeat, $reachable, $adddefeat);
+        }
 
         // run CIVS-RP
         $this->_civsrpStep($this->papersel, $defeat);
@@ -683,11 +736,13 @@ class PaperRank {
         // correct output rankings for papers with no input rankings
         // (set them to 999)
         $norank = 999;
-        while ($norank < $this->currank + 5)
+        while ($norank < $this->currank + 5) {
             $norank = $norank * 10 + 9;
-        foreach ($this->papersel as $p)
+        }
+        foreach ($this->papersel as $p) {
             if ($this->anypref[$p] == 0)
                 $this->rank[$p] = $norank;
+        }
         $this->_info();
     }
 
@@ -704,8 +759,9 @@ class PaperRank {
         $mmap = array("schulze" => "schulze", "irv" => "irv",
                       "range" => "rangevote", "rawrange" => "rawrangevote",
                       "civs" => "civsrp", "randwalk" => "randwalk");
-        if (!$m || !isset($mmap[$m]))
+        if (!$m || !isset($mmap[$m])) {
             $m = key($mmap);
+        }
         $m = $mmap[$m];
         $this->$m();
     }
@@ -715,8 +771,9 @@ class PaperRank {
     function unparse_assignment() {
         $t = CsvGenerator::quote($this->dest_tag);
         $a = ["paper,action,tag,index\nall,cleartag,$t\n"];
-        foreach ($this->rank as $p => $rank)
+        foreach ($this->rank as $p => $rank) {
             $a[] = "$p,tag,$t,$rank\n";
+        }
         return join("", $a);
     }
 }

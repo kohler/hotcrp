@@ -1932,14 +1932,14 @@ class Contact {
     function topic_interest_map() {
         global $Me;
         if ($this->_topic_interest_map === null) {
-            if ($this->contactId <= 0 || !$this->conf->has_topics())
+            if ($this->contactId <= 0 || !$this->conf->has_topics()) {
                 $this->_topic_interest_map = [];
-            else if (($this->roles & self::ROLE_PCLIKE)
-                     && $this !== $Me
-                     && ($pcm = $this->conf->pc_members())
-                     && $this === get($pcm, $this->contactId))
+            } else if (($this->roles & self::ROLE_PCLIKE)
+                       && $this !== $Me
+                       && ($pcm = $this->conf->pc_members())
+                       && $this === get($pcm, $this->contactId)) {
                 self::load_topic_interests($pcm);
-            else {
+            } else {
                 $result = $this->conf->qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
                 $this->_topic_interest_map = Dbl::fetch_iimap($result);
                 $this->_sort_topic_interest_map();
@@ -1949,8 +1949,9 @@ class Contact {
     }
 
     static function load_topic_interests($contacts) {
-        if (empty($contacts))
+        if (empty($contacts)) {
             return;
+        }
         $cbyid = [];
         foreach ($contacts as $c) {
             $c->_topic_interest_map = [];
@@ -1959,14 +1960,17 @@ class Contact {
         $result = $c->conf->qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
         $c = null;
         while (($row = $result->fetch_row())) {
-            if (!$c || $c->contactId != $row[0])
+            if (!$c || $c->contactId != $row[0]) {
                 $c = get($cbyid, $row[0]);
-            if ($c)
+            }
+            if ($c) {
                 $c->_topic_interest_map[(int) $row[1]] = (int) $row[2];
+            }
         }
         Dbl::free($result);
-        foreach ($contacts as $c)
+        foreach ($contacts as $c) {
             $c->_sort_topic_interest_map();
+        }
     }
 
     private function _sort_topic_interest_map() {
@@ -1977,8 +1981,9 @@ class Contact {
     // permissions policies
 
     private function dangerous_track_mask() {
-        if ($this->_dangerous_track_mask === null)
+        if ($this->_dangerous_track_mask === null) {
             $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
+        }
         return $this->_dangerous_track_mask;
     }
 
@@ -3512,10 +3517,12 @@ class Contact {
 
     function preferred_resp_round_number(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if ($rights->act_author)
-            foreach ($prow->conf->resp_rounds() as $rrd)
+        if ($rights->act_author) {
+            foreach ($prow->conf->resp_rounds() as $rrd) {
                 if ($rrd->time_allowed())
                     return $rrd->number;
+            }
+        }
         return false;
     }
 

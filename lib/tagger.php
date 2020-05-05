@@ -42,10 +42,11 @@ class TagMapItem {
             $this->basic_color = true;
         }
         if ($tag[0] === "~") {
-            if ($tag[1] !== "~")
+            if ($tag[1] !== "~") {
                 $this->is_private = true;
-            else
+            } else {
                 $this->chair = true;
+            }
         }
     }
     function merge(TagMapItem $t) {
@@ -252,10 +253,11 @@ class TagMap implements IteratorAggregate {
 
         $this->basic_badges = "normal|red|orange|yellow|green|blue|purple|white|pink|gray";
         if (($o = $conf->opt("tagBasicBadges"))) {
-            if (str_starts_with($o, "|"))
+            if (str_starts_with($o, "|")) {
                 $this->basic_badges .= $o;
-            else
+            } else {
                 $this->basic_badges = $o;
+            }
         }
     }
     function check_emoji_code($ltag) {
@@ -267,13 +269,14 @@ class TagMap implements IteratorAggregate {
     private function update_patterns($tag, $ltag, TagMapItem $t = null) {
         if (!$this->pattern_re) {
             $a = [];
-            foreach ($this->pattern_storage as $p)
+            foreach ($this->pattern_storage as $p) {
                 $a[] = strtolower($p->tag_regex());
+            }
             $this->pattern_re = "{\A(?:" . join("|", $a) . ")\z}";
         }
         if (preg_match($this->pattern_re, $ltag)) {
             $version = $t ? $t->pattern_version : 0;
-            foreach ($this->pattern_storage as $i => $p)
+            foreach ($this->pattern_storage as $i => $p) {
                 if ($i >= $version && preg_match($p->pattern, $ltag)) {
                     if (!$t) {
                         $t = clone $p;
@@ -282,12 +285,15 @@ class TagMap implements IteratorAggregate {
                         $t->pattern_instance = true;
                         $this->storage[$ltag] = $t;
                         $this->sorted = false;
-                    } else
+                    } else {
                         $t->merge($p);
+                    }
                 }
+            }
         }
-        if ($t)
+        if ($t) {
             $t->pattern_version = $this->pattern_version;
+        }
         return $t;
     }
     function check($tag) {
@@ -451,9 +457,10 @@ class TagMap implements IteratorAggregate {
     function is_style($tag, $match = self::STYLE_FG_BG) {
         $ltag = strtolower($tag);
         if (($t = $this->check($ltag))) {
-            foreach ($t->colors ? : [] as $k)
+            foreach ($t->colors ? : [] as $k) {
                 if ($this->style_info_lmap[$k] & $match)
                     return true;
+            }
             return false;
         } else
             return (get($this->style_info_lmap, $ltag, 0) & $match) !== 0;
@@ -470,10 +477,14 @@ class TagMap implements IteratorAggregate {
     }
 
     function styles($tags, $match = 0, $no_pattern_fill = false) {
-        if (is_array($tags))
+        if (is_array($tags)) {
             $tags = join(" ", $tags);
-        if (!$tags || $tags === " " || !preg_match_all($this->color_regex(), $tags, $m))
+        }
+        if (!$tags
+            || $tags === " "
+            || !preg_match_all($this->color_regex(), $tags, $m)) {
             return null;
+        }
         $classes = null;
         $info = 0;
         foreach ($m[1] as $tag) {
@@ -487,19 +498,22 @@ class TagMap implements IteratorAggregate {
                 }
             }
         }
-        if (empty($classes))
+        if (empty($classes)) {
             return null;
+        }
         if (count($classes) > 1) {
             sort($classes);
             $classes = array_unique($classes);
         }
-        if ($info & self::STYLE_BG)
+        if ($info & self::STYLE_BG) {
             $classes[] = "tagbg";
+        }
         // This seems out of place---it's redundant if we're going to
         // generate JSON, for example---but it is convenient.
         if (!$no_pattern_fill
-            && count($classes) > ($info & self::STYLE_BG ? 2 : 1))
+            && count($classes) > ($info & self::STYLE_BG ? 2 : 1)) {
             self::mark_pattern_fill($classes);
+        }
         return $classes;
     }
 

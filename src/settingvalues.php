@@ -329,7 +329,7 @@ class Si {
             }
             if ($conf->xt_allowed($j) && !isset($all[$j->name])) {
                 Conf::xt_resolve_require($j);
-                $class = get_s($j, "setting_class", "Si");
+                $class = $j->setting_class ?? "Si";
                 $all[$j->name] = new $class($j);
             }
         }
@@ -1255,9 +1255,10 @@ class SettingValues extends MessageSet {
             }
             /* $err set by CleanHTML::basic_clean */
         } else if ($si->type === "radio") {
-            foreach ($si->values as $allowedv)
+            foreach ($si->values as $allowedv) {
                 if ((string) $allowedv === $v)
                     return $allowedv;
+            }
             $err = "Unexpected value.";
         } else {
             return $v;
@@ -1395,15 +1396,17 @@ class SettingValues extends MessageSet {
         } else if ($si->type === "date"
                    || $si->type === "cdate"
                    || $si->type === "ndate") {
-            if ($v > 0)
+            if ($v > 0) {
                 return $this->conf->parseableTime($v, true);
-            else
+            } else {
                 return false;
+            }
         } else if ($si->type === "grace") {
-            if ($v > 0)
+            if ($v > 0) {
                 return $this->si_render_grace_value($v, $si);
-            else
+            } else {
                 return false;
+            }
         } else if ($si->type === "int") {
             return $v > 0 ? (int) $v : false;
         } else if ($si->type === "zint") {
@@ -1419,10 +1422,11 @@ class SettingValues extends MessageSet {
             return (string) $v !== "" ? $v : false;
         } else if ($si->type === "radio") {
             $pos = array_search($v, $si->values);
-            if ($pos !== false && $si->json_values && isset($si->json_values[$pos]))
+            if ($pos !== false && $si->json_values && isset($si->json_values[$pos])) {
                 return $si->json_values[$pos];
-            else
+            } else {
                 return $v;
+            }
         } else {
             return $v;
         }
@@ -1446,13 +1450,15 @@ class SettingValues extends MessageSet {
     }
 
     function parse_json_value(Si $si, $v) {
-        if ($v === null)
+        if ($v === null) {
             return;
+        }
         if (in_array($si->type, ["cdate", "checkbox"])
             && is_bool($v)) {
             $sv->set_req("has_{$si->name}", "1");
-            if ($v)
+            if ($v) {
                 $sv->set_req($si->name, "1");
+            }
             return;
         } else if ($si->type === "date"
                    || $si->type === "cdate"
@@ -1483,10 +1489,11 @@ class SettingValues extends MessageSet {
         } else if ($si->type === "radio") {
             $jvalues = $si->json_values ? : $si->values;
             $pos = array_search($v, $jvalues);
-            if ($pos === false && ($v === false || $v === true))
+            if ($pos === false && ($v === false || $v === true)) {
                 $pos = array_search($v ? "yes" : "no", $jvalues);
-            else if ($pos === false && ($v === "yes" || $v === "no"))
+            } else if ($pos === false && ($v === "yes" || $v === "no")) {
                 $pos = array_search($v === "yes" ? true : false, $jvalues);
+            }
             if ($pos !== false) {
                 $sv->set_req($si->name, (string) $si->values[$pos]);
                 return;

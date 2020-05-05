@@ -34,12 +34,13 @@ class UnicodeHelper {
         while ($l <= $r) {
             $m = (int) (($l + $r) / 2);
             $c = strcmp(substr($trans, $m * $len, $len), $look);
-            if ($c == 0)
+            if ($c == 0) {
                 return $m;
-            else if ($c < 0)
+            } else if ($c < 0) {
                 $l = $m + 1;
-            else
+            } else {
                 $r = $m - 1;
+            }
         }
         return false;
     }
@@ -49,9 +50,9 @@ class UnicodeHelper {
         for ($i = 0; $i < $l; $i += $step) {
             $in = substr($ins, $i, $step);
             $out = rtrim(substr($outs, $i, $step));
-            if ($out === "")
+            if ($out === "") {
                 self::$deaccent_map[$in] = 0;
-            else {
+            } else {
                 self::$deaccent_map[$in] = (strlen(self::$deaccent_result) << 2) | strlen($out);
                 self::$deaccent_result .= $out;
             }
@@ -67,8 +68,9 @@ class UnicodeHelper {
     }
 
     static function deaccent($x) {
-        if (self::$deaccent_map === null)
+        if (self::$deaccent_map === null) {
             self::make_deaccent_map();
+        }
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
             $len = strlen($x);
@@ -80,8 +82,9 @@ class UnicodeHelper {
                 if (isset(self::$deaccent_map[$ch])) {
                     $out .= substr($x, $first, $i - $first);
                     $m = self::$deaccent_map[$ch];
-                    if ($m)
+                    if ($m) {
                         $out .= substr(self::$deaccent_result, $m >> 2, $m & 3);
+                    }
                     $first = $i + $l;
                 }
             }
@@ -91,8 +94,9 @@ class UnicodeHelper {
     }
 
     static function deaccent_offsets($x) {
-        if (self::$deaccent_map === null)
+        if (self::$deaccent_map === null) {
             self::make_deaccent_map();
+        }
         $offsetmap = [[0, 0]];
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
@@ -105,8 +109,9 @@ class UnicodeHelper {
                 if (isset(self::$deaccent_map[$ch])) {
                     $out .= substr($x, $first, $i - $first);
                     $m = self::$deaccent_map[$ch];
-                    if ($m)
+                    if ($m) {
                         $out .= substr(self::$deaccent_result, $m >> 2, $m & 3);
+                    }
                     $first = $i + $l;
                     $offsetmap[] = [strlen($out), $first];
                 }
@@ -117,8 +122,9 @@ class UnicodeHelper {
     }
 
     static function deaccent_translate_offset($offsetmap, $offset) {
-        for ($i = 1; $i < count($offsetmap) && $offsetmap[$i][0] <= $offset; ++$i)
+        for ($i = 1; $i < count($offsetmap) && $offsetmap[$i][0] <= $offset; ++$i) {
             /* do nothing */;
+        }
         return $offsetmap[$i - 1][1] + ($offset - $offsetmap[$i - 1][0]);
     }
 
@@ -140,11 +146,11 @@ class UnicodeHelper {
 
     static function utf8_ord($str) {
         $n = ord($str[0]);
-        if ($n < 0x80)
+        if ($n < 0x80) {
             return $n;
-        else if ($n < 0xC0)
+        } else if ($n < 0xC0) {
             return false;
-        else if ($n < 0xE0) {
+        } else if ($n < 0xE0) {
             $n &= 0x1F;
             $need = 1;
         } else if ($n < 0xF0) {
@@ -154,12 +160,14 @@ class UnicodeHelper {
             $n &= 0x07;
             $need = 3;
         }
-        if (strlen($str) <= $need)
+        if (strlen($str) <= $need) {
             return false;
+        }
         for ($i = 1; $i <= $need; ++$i) {
             $c = ord($str[$i]);
-            if ($c < 0x80 || $c >= 0xC0)
+            if ($c < 0x80 || $c >= 0xC0) {
                 return false;
+            }
             $n = ($n << 6) | ($c & 0x3F);
         }
         return $n;
@@ -167,50 +175,55 @@ class UnicodeHelper {
 
     static function utf16_ord($str) {
         $n = self::utf8_ord($str);
-        if ($n <= 0xFFFF)
+        if ($n <= 0xFFFF) {
             return [$n];
-        else {
+        } else {
             $n -= 0x10000;
             return [0xD800 | ($n >> 10), 0xDC00 | ($n & 0x3FF)];
         }
     }
 
     static function utf8_chr($n) {
-        if ($n < 0x80)
+        if ($n < 0x80) {
             return chr($n);
-        else if ($n < 0x800)
+        } else if ($n < 0x800) {
             return chr(0xC0 | ($n >> 6)) . chr(0x80 | ($n & 0x3F));
-        else if ($n < 0x10000)
+        } else if ($n < 0x10000) {
             return chr(0xE0 | ($n >> 12)) . chr(0x80 | (($n >> 6) & 0x3F)) . chr(0x80 | ($n & 0x3F));
-        else
+        } else {
             return chr(0xF0 | ($n >> 18)) . chr(0x80 | (($n >> 12) & 0x3F)) . chr(0x80 | (($n >> 6) & 0x3F)) . chr(0x80 | ($n & 0x3F));
+        }
     }
 
     static function utf8_to_html_entities($str, $flag = ENT_NOQUOTES) {
-        if ($flag & ENT_IGNORE)
+        if ($flag & ENT_IGNORE) {
             $start = "";
-        else if (($flag & ENT_QUOTES) == ENT_QUOTES)
+        } else if (($flag & ENT_QUOTES) == ENT_QUOTES) {
             $start = "&<>\"'";
-        else if (($flag & ENT_COMPAT) == ENT_COMPAT)
+        } else if (($flag & ENT_COMPAT) == ENT_COMPAT) {
             $start = "&<>\"";
-        else
+        } else {
             $start = "&<>";
+        }
         $flag = ($flag & (ENT_HTML401 | ENT_XML1 | ENT_XHTML | ENT_HTML5)) | ENT_QUOTES;
         return preg_replace_callback('/[' . $start . '\200-\377][\200-\277]*/',
                                      function ($m) use ($flag) {
-            if (($f = get(UnicodeHelper::$f_ligature_map, $m[0])))
+            if (($f = get(UnicodeHelper::$f_ligature_map, $m[0]))) {
                 return $f;
+            }
             $e = htmlentities($m[0], $flag, "UTF-8");
             if (substr($e, 0, 1) !== "&") {
                 $n = ord($m[0][0]);
-                if ($n < 0xE0)
+                if ($n < 0xE0) {
                     $n &= 0x1F;
-                else if ($n < 0xF0)
+                } else if ($n < 0xF0) {
                     $n &= 0x0F;
-                else
+                } else {
                     $n &= 0x07;
-                for ($i = 1; $i < strlen($m[0]); ++$i)
+                }
+                for ($i = 1; $i < strlen($m[0]); ++$i) {
                     $n = ($n << 6) | (ord($m[0][$i]) & 0x3F);
+                }
                 $e = "&#" . $n . ";";
             }
             return $e;
@@ -244,8 +257,9 @@ class UnicodeHelper {
     }
 
     static function utf8_line_break(&$str, $len) {
-        if ($str === "")
+        if ($str === "") {
             return false;
+        }
         $line = self::utf8_word_prefix($str, $len, $str);
         if (($nl = strpos($line, "\n")) !== false) {
             $str = substr($line, $nl) . $str;
@@ -257,10 +271,11 @@ class UnicodeHelper {
 
     static function utf8_abbreviate($str, $len) {
         $pfx = self::utf8_word_prefix($str, $len);
-        if (strlen($pfx) < strlen($str))
+        if (strlen($pfx) < strlen($str)) {
             return "$pfx...";
-        else
+        } else {
             return $pfx;
+        }
     }
 
     static function demojibake($str) {
@@ -278,23 +293,24 @@ class UnicodeHelper {
     static function utf8_truncate_invalid($str) {
         $len = strlen($str);
         $c = $len ? ord($str[$len - 1]) : 0;
-        if ($c < 0x80)
+        if ($c < 0x80) {
             return $str;
-        else if ($c >= 0xC0 || $len == 1
-                 || ($d = ord($str[$len - 2])) < 0x80)
+        } else if ($c >= 0xC0 || $len == 1
+                   || ($d = ord($str[$len - 2])) < 0x80) {
             return substr($str, 0, $len - 1);
-        else if ($d >= 0xC0 && $d < 0xE0)
+        } else if ($d >= 0xC0 && $d < 0xE0) {
             return $str;
-        else if ($d >= 0xC0 || $len == 2
-                 || ($e = ord($str[$len - 3])) < 0x80)
+        } else if ($d >= 0xC0 || $len == 2
+                   || ($e = ord($str[$len - 3])) < 0x80) {
             return substr($str, 0, $len - 2);
-        else if ($e >= 0xE0 && $e < 0xF0)
+        } else if ($e >= 0xE0 && $e < 0xF0) {
             return $str;
-        else if ($e >= 0xC0 || $len == 3
-                 || ($f = ord($str[$len - 4])) < 0xF0)
+        } else if ($e >= 0xC0 || $len == 3
+                   || ($f = ord($str[$len - 4])) < 0xF0) {
             return substr($str, 0, $len - 3);
-        else
+        } else {
             return $str;
+        }
     }
 
     static function utf8_replace_invalid($str) {
@@ -305,8 +321,9 @@ class UnicodeHelper {
                 $t .= $m[0];
                 $str = substr($str, strlen($m[0]));
             } else {
-                if (substr($str, 0, 1) !== "\x00")
+                if (substr($str, 0, 1) !== "\x00") {
                     $t .= chr(0x7f);
+                }
                 $str = substr($str, 1);
             }
         }

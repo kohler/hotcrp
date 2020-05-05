@@ -270,17 +270,20 @@ class Home_Partial {
             sort($missing_rounds, SORT_NUMERIC);
             foreach ($missing_rounds as $round) {
                 if (($rname = $conf->round_name($round))) {
-                    if (strlen($rname) == 1)
+                    if (strlen($rname) == 1) {
                         $rname = "“{$rname}”";
+                    }
                     $rname .= " ";
                 }
                 if ($conf->time_review($round, $user->isPC, false)) {
                     $dn = $conf->review_deadline($round, $user->isPC, false);
                     $d = $conf->printableTimeSetting($dn, "span");
-                    if ($d == "N/A")
+                    if ($d == "N/A") {
                         $d = $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, true), "span");
-                    if ($d != "N/A")
+                    }
+                    if ($d != "N/A") {
                         echo ' <em class="deadline">Please submit your ', $rname, ($this->_my_rinfo->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</em><br>\n";
+                    }
                 } else if ($conf->time_review($round, $user->isPC, true)) {
                     echo ' <em class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, false), "span"), ".</em><br>\n";
                 } else {
@@ -289,8 +292,9 @@ class Home_Partial {
             }
         } else if ($user->isPC && $user->can_review_any()) {
             $d = $conf->printableTimeSetting($conf->review_deadline(null, $user->isPC, false), "span");
-            if ($d != "N/A")
+            if ($d != "N/A") {
                 echo " <em class=\"deadline\">The review deadline is $d.</em><br>\n";
+            }
         }
         if ($user->isPC && $user->can_review_any()) {
             echo '  <span class="hint">As a PC member, you may review <a href="', $conf->hoturl("search", "q=&amp;t=s"), "\">any submitted paper</a>.</span><br>\n";
@@ -336,24 +340,29 @@ class Home_Partial {
             Dbl::free($result);
 
             $a = [];
-            if ($row[0])
+            if ($row[0]) {
                 $a[] = Ht::link(plural($row[0], "positive rating"), $conf->hoturl("search", "q=re:me+rate:good"));
-            if ($row[1])
+            }
+            if ($row[1]) {
                 $a[] = Ht::link(plural($row[1], "negative rating"), $conf->hoturl("search", "q=re:me+rate:bad"));
-            if (!empty($a))
+            }
+            if (!empty($a)) {
                 echo '<div class="hint g">Your reviews have received ', commajoin($a), '.</div>';
+            }
         }
 
         if ($user->has_review()) {
             $plist = new PaperList("reviewerHome", new PaperSearch($user, ["q" => "re:me"]));
             $plist->set_table_id_class(null, "pltable-reviewerhome");
             $ptext = $plist->table_html(["list" => true]);
-            if ($plist->count > 0)
+            if ($plist->count > 0) {
                 echo "<div class=\"fx\"><hr class=\"g\">", $ptext, "</div>";
+            }
         }
 
-        if ($this->_my_rinfo)
+        if ($this->_my_rinfo) {
             echo "</div>";
+        }
 
         if ($user->is_reviewer()) {
             echo "<div class=\"homesubgrp has-fold fold20c ui-unfold js-open-activity need-fold-storage\" id=\"homeactivity\" data-fold-storage=\"homeactivity\">",

@@ -9,31 +9,37 @@ function update_schema_create_review_form($conf) {
     while (($row = edb_orow($result))) {
         $field = (object) array();
         $field->name = $row->shortName;
-        if (trim($row->description) != "")
+        if (trim($row->description) != "") {
             $field->description = trim($row->description);
-        if ($row->sortOrder >= 0)
+        }
+        if ($row->sortOrder >= 0) {
             $field->position = $row->sortOrder + 1;
-        if ($row->rows > 3)
+        }
+        if ($row->rows > 3) {
             $field->display_space = (int) $row->rows;
+        }
         $field->view_score = (int) $row->authorView;
         if (in_array($row->fieldName, ["overAllMerit", "technicalMerit", "novelty",
                                 "grammar", "reviewerQualification", "potential",
                                 "fixability", "interestToCommunity", "longevity",
                                 "likelyPresentation", "suitableForShort"])) {
             $field->options = array();
-            if ((int) $row->levelChar > 1)
+            if ((int) $row->levelChar > 1) {
                 $field->option_letter = (int) $row->levelChar;
+            }
         }
         $fname = $row->fieldName;
         $rfj->$fname = $field;
     }
 
-    if (!($result = $conf->ql("select * from ReviewFormOptions where fieldName!='outcome' order by level asc")))
+    if (!($result = $conf->ql("select * from ReviewFormOptions where fieldName!='outcome' order by level asc"))) {
         return false;
+    }
     while (($row = edb_orow($result))) {
         $fname = $row->fieldName;
-        if (isset($rfj->$fname) && isset($rfj->$fname->options))
+        if (isset($rfj->$fname) && isset($rfj->$fname->options)) {
             $rfj->$fname->options[$row->level - 1] = $row->description;
+        }
     }
 
     $conf->save_setting("review_form", 1, $rfj);
@@ -41,36 +47,42 @@ function update_schema_create_review_form($conf) {
 }
 
 function update_schema_create_options($conf) {
-    if (!($result = $conf->ql("select * from OptionType")))
+    if (!($result = $conf->ql("select * from OptionType"))) {
         return false;
+    }
     $opsj = (object) array();
     $byabbr = array();
     while (($row = edb_orow($result))) {
         // backward compatibility with old schema versions
-        if (!isset($row->optionValues))
+        if (!isset($row->optionValues)) {
             $row->optionValues = "";
-        if (!isset($row->type) && $row->optionValues == "\x7Fi")
+        }
+        if (!isset($row->type) && $row->optionValues == "\x7Fi") {
             $row->type = 2;
-        else if (!isset($row->type))
+        } else if (!isset($row->type)) {
             $row->type = ($row->optionValues ? 1 : 0);
+        }
 
         $opj = (object) array();
         $opj->id = $row->optionId;
         $opj->name = $row->optionName;
 
-        if (trim($row->description) != "")
+        if (trim($row->description) != "") {
             $opj->description = trim($row->description);
+        }
 
-        if ($row->pcView == 2)
+        if ($row->pcView == 2) {
             $opj->view_type = "nonblind";
-        else if ($row->pcView == 0)
+        } else if ($row->pcView == 0) {
             $opj->view_type = "admin";
+        }
 
         $opj->position = (int) $row->sortOrder;
-        if ($row->displayType == 1)
+        if ($row->displayType == 1) {
             $opj->highlight = true;
-        else if ($row->displayType == 2)
+        } else if ($row->displayType == 2) {
             $opj->near_submission = true;
+        }
 
         switch ($row->type) {
         case 0:
@@ -131,26 +143,31 @@ function update_schema_create_options($conf) {
 
 function update_schema_transfer_address($conf) {
     $result = $conf->ql("select * from ContactAddress");
-    while (($row = edb_orow($result)))
+    while (($row = edb_orow($result))) {
         if (($c = $conf->user_by_id($row->contactId))) {
             $x = (object) array();
-            if ($row->addressLine1 || $row->addressLine2)
+            if ($row->addressLine1 || $row->addressLine2) {
                 $x->address = array();
-            foreach (array("addressLine1", "addressLine2") as $k)
+            }
+            foreach (["addressLine1", "addressLine2"] as $k) {
                 if ($row->$k)
                     $x->address[] = $row->$k;
-            foreach (array("city" => "city", "state" => "state",
-                           "zipCode" => "zip", "country" => "country") as $k => $v)
+            }
+            foreach (["city" => "city", "state" => "state",
+                      "zipCode" => "zip", "country" => "country"] as $k => $v) {
                 if ($row->$k)
                     $x->$v = $row->$k;
+            }
             $c->merge_and_save_data($x);
         }
+    }
     return true;
 }
 
 function update_schema_unaccented_name($conf) {
-    if (!$conf->ql("alter table ContactInfo add `unaccentedName` varchar(120) NOT NULL DEFAULT ''"))
+    if (!$conf->ql("alter table ContactInfo add `unaccentedName` varchar(120) NOT NULL DEFAULT ''")) {
         return false;
+    }
 
     $result = $conf->ql("select contactId, firstName, lastName from ContactInfo");
     if (!$result)
@@ -164,11 +181,13 @@ function update_schema_unaccented_name($conf) {
     Dbl::free($result);
 
     $q = Dbl::format_query_apply($conf->dblink, join(";", $qs), $qv);
-    if (!$conf->dblink->multi_query($q))
+    if (!$conf->dblink->multi_query($q)) {
         return false;
+    }
     do {
-        if (($result = $conf->dblink->store_result()))
+        if (($result = $conf->dblink->store_result())) {
             $result->free();
+        }
     } while ($conf->dblink->more_results() && $conf->dblink->next_result());
     return true;
 }
@@ -176,8 +195,9 @@ function update_schema_unaccented_name($conf) {
 function update_schema_transfer_country($conf) {
     $result = $conf->ql("select * from ContactInfo where `data` is not null and `data`!='{}'");
     while ($result && ($c = Contact::fetch($result, $conf))) {
-        if (($country = $c->data("country")))
+        if (($country = $c->data("country"))) {
             $conf->ql("update ContactInfo set country=? where contactId=?", $country, $c->contactId);
+        }
     }
     return true;
 }
@@ -187,13 +207,15 @@ function update_schema_review_word_counts($conf) {
     do {
         $q = array();
         $result = $conf->ql("select * from PaperReview where reviewWordCount is null limit 32");
-        while (($rrow = edb_orow($result)))
+        while (($rrow = edb_orow($result))) {
             $q[] = "update PaperReview set reviewWordCount="
                 . $rf->word_count($rrow) . " where reviewId=" . $rrow->reviewId;
+        }
         Dbl::free($result);
         $conf->dblink->multi_query(join(";", $q));
-        while ($conf->dblink->more_results())
+        while ($conf->dblink->more_results()) {
             Dbl::free($conf->dblink->next_result());
+        }
     } while (count($q) == 32);
 }
 
@@ -205,13 +227,15 @@ function update_schema_bad_comment_timeDisplayed($conf) {
 function update_schema_drop_keys_if_exist($conf, $table, $key) {
     $indexes = Dbl::fetch_first_columns($conf->dblink, "select distinct index_name from information_schema.statistics where table_schema=database() and `table_name`='$table'");
     $drops = [];
-    foreach (is_array($key) ? $key : [$key] as $k)
+    foreach (is_array($key) ? $key : [$key] as $k) {
         if (in_array($k, $indexes))
             $drops[] = ($k === "PRIMARY" ? "drop primary key" : "drop key `$k`");
-    if (count($drops))
+    }
+    if (count($drops)) {
         return $conf->ql("alter table `$table` " . join(", ", $drops));
-    else
+    } else {
         return true;
+    }
 }
 
 function update_schema_check_column_exists($conf, $table, $column) {
@@ -219,26 +243,30 @@ function update_schema_check_column_exists($conf, $table, $column) {
 }
 
 function update_schema_mimetype_extensions($conf) {
-    if (!($result = $conf->ql("select * from Mimetype where extension is null")))
+    if (!($result = $conf->ql("select * from Mimetype where extension is null"))) {
         return false;
+    }
     $qv = [];
-    while (($row = $result->fetch_object()))
+    while (($row = $result->fetch_object())) {
         if (($extension = Mimetype::extension($row->mimetype)))
             $qv[] = [$row->mimetypeid, $row->mimetype, $extension];
+    }
     Dbl::free($result);
     return empty($qv) || $conf->ql("insert into Mimetype (mimetypeid, mimetype, extension) values ?v on duplicate key update extension=values(extension)", $qv);
 }
 
 function update_schema_paper_review_tfields(Conf $conf) {
     if (!$conf->ql("alter table PaperReview add `tfields` longblob")
-        || !$conf->ql("alter table PaperReview add `sfields` varbinary(2048) DEFAULT NULL"))
+        || !$conf->ql("alter table PaperReview add `sfields` varbinary(2048) DEFAULT NULL")) {
         return false;
+    }
     $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
     $result = $conf->ql("select * from PaperReview");
     while (($row = ReviewInfo::fetch($result, $conf))) {
         $data = $row->unparse_tfields();
-        if ($data !== null)
+        if ($data !== null) {
             $cleanf("update PaperReview set `tfields`=? where paperId=? and reviewId=?", [$data, $row->paperId, $row->reviewId]);
+        }
     }
     Dbl::free($result);
     $cleanf(true);
@@ -272,8 +300,9 @@ function update_schema_paper_review_null_main_fields(Conf $conf) {
 function update_schema_paper_review_drop_main_fields(Conf $conf) {
     $rid = [];
     $kf = array_map(function ($k) { return "$k is not null"; }, array_keys(ReviewInfo::$text_field_map));
-    if (!$conf->ql("lock tables PaperReview write"))
+    if (!$conf->ql("lock tables PaperReview write")) {
         return false;
+    }
     $result = $conf->ql("select * from PaperReview where " . join(" or ", $kf));
     $rrow = ReviewInfo::fetch($result, $conf);
     Dbl::free($result);
@@ -282,8 +311,9 @@ function update_schema_paper_review_drop_main_fields(Conf $conf) {
         $ok = false;
     } else {
         $ok = true;
-        foreach (ReviewInfo::$text_field_map as $kmain => $kjson)
+        foreach (ReviewInfo::$text_field_map as $kmain => $kjson) {
             $ok = $ok && $conf->ql("alter table PaperReview drop column `$kmain`");
+        }
     }
     $conf->ql("unlock tables");
     return $ok;
@@ -292,8 +322,9 @@ function update_schema_paper_review_drop_main_fields(Conf $conf) {
 function update_schema_split_review_request_name(Conf $conf) {
     if (!$conf->ql("alter table ReviewRequest add `firstName` varbinary(120) DEFAULT NULL")
         || !$conf->ql("alter table ReviewRequest add `lastName` varbinary(120) DEFAULT NULL")
-        || !$conf->ql("lock tables ReviewRequest write"))
+        || !$conf->ql("lock tables ReviewRequest write")) {
         return false;
+    }
     $result = $conf->ql("select * from ReviewRequest");
     $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
     while ($result && ($row = $result->fetch_object())) {
@@ -314,10 +345,11 @@ function update_schema_missing_sha1($conf) {
     while (($doc = DocumentInfo::fetch($result, $conf))) {
         $hash = $doc->content_binary_hash();
         $cleanf("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", [$hash, $doc->paperId, $doc->paperStorageId]);
-        if ($doc->documentType == DTYPE_SUBMISSION)
+        if ($doc->documentType == DTYPE_SUBMISSION) {
             $cleanf("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", [$hash, $doc->paperId, $doc->paperStorageId]);
-        else if ($doc->documentType == DTYPE_FINAL)
+        } else if ($doc->documentType == DTYPE_FINAL) {
             $cleanf("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", [$hash, $doc->paperId, $doc->paperStorageId]);
+        }
     }
     Dbl::free($result);
     $cleanf(true);
@@ -326,8 +358,9 @@ function update_schema_missing_sha1($conf) {
 function update_schema_selector_options($conf) {
     $oids = [];
     foreach ($conf->paper_opts->full_option_list() as $opt) {
-        if ($opt instanceof SelectorPaperOption)
+        if ($opt instanceof SelectorPaperOption) {
             $oids[] = $opt->id;
+        }
     }
     return empty($oids)
         || $conf->ql("update PaperOption set value=value+1 where optionId?a", $oids);
@@ -335,8 +368,9 @@ function update_schema_selector_options($conf) {
 
 function update_schema_missing_review_ordinals($conf) {
     $pids = Dbl::fetch_first_columns($conf->dblink, "select distinct paperId from PaperReview where reviewSubmitted>0 and reviewAuthorModified>0 and reviewOrdinal=0");
-    if (empty($pids))
+    if (empty($pids)) {
         return true;
+    }
     $rf = $conf->review_form();
     foreach ($conf->paper_set(["paperId" => $pids, "tags" => true]) as $prow) {
         $prow->ensure_full_reviews();
@@ -344,13 +378,15 @@ function update_schema_missing_review_ordinals($conf) {
         $update_rrows = [];
         foreach ($prow->reviews_by_id() as $rrow) {
             $next_ordinal = max($next_ordinal, $rrow->reviewOrdinal);
-            if ($rrow->reviewOrdinal > 0)
+            if ($rrow->reviewOrdinal > 0) {
                 $next_displayed = max($next_displayed, $rrow->timeDisplayed);
+            }
             if ($rrow->reviewSubmitted > 0
                 && $rrow->reviewModified > 0
                 && $rrow->reviewOrdinal == 0
-                && $rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC)
+                && $rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC) {
                 $update_rrows[] = $rrow;
+            }
         }
         assert(count($update_rrows) <= 1);
         if ($update_rrows) {
@@ -371,10 +407,11 @@ function update_schema_clean_options_json($conf) {
                 $vv->id = (int) $kk;
             $ol[] = $vv;
         }
-        if (empty($ol))
+        if (empty($ol)) {
             $conf->save_setting("options", null);
-        else
+        } else {
             $conf->save_setting("options", 1, json_encode($ol));
+        }
     }
     return true;
 }
@@ -448,8 +485,9 @@ function updateSchema($conf) {
     if (function_exists("date_default_timezone_set") && $conf->opt("timezone"))
         date_default_timezone_set($conf->opt("timezone"));
     while (($result = $conf->ql("insert into Settings set name='__schema_lock', value=1 on duplicate key update value=1"))
-           && $result->affected_rows == 0)
+           && $result->affected_rows == 0) {
         time_nanosleep(0, 200000000);
+    }
     $conf->update_schema_version(null);
     $old_conf_g = Conf::$g;
     Conf::$g = $conf;

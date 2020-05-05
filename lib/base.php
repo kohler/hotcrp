@@ -30,10 +30,11 @@ function stri_ends_with($haystack, $needle) {
 }
 
 function preg_matchpos($pattern, $subject) {
-    if (preg_match($pattern, $subject, $m, PREG_OFFSET_CAPTURE))
+    if (preg_match($pattern, $subject, $m, PREG_OFFSET_CAPTURE)) {
         return $m[0][1];
-    else
+    } else {
         return false;
+    }
 }
 
 function cleannl($text) {
@@ -52,13 +53,16 @@ function cleannl($text) {
 
 function space_join(/* $str_or_array, ... */) {
     $t = "";
-    foreach (func_get_args() as $arg)
+    foreach (func_get_args() as $arg) {
         if (is_array($arg)) {
-            foreach ($arg as $x)
+            foreach ($arg as $x) {
                 if ($x !== "" && $x !== false && $x !== null)
                     $t .= ($t === "" ? "" : " ") . $x;
-        } else if ($arg !== "" && $arg !== false && $arg !== null)
+            }
+        } else if ($arg !== "" && $arg !== false && $arg !== null) {
             $t .= ($t === "" ? "" : " ") . $arg;
+        }
+    }
     return $t;
 }
 
@@ -119,8 +123,9 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
     if (is_int($indent)) {
         $indentlen = $indent;
         $indent = str_pad("", $indent);
-    } else
+    } else {
         $indentlen = strlen($indent);
+    }
 
     $out = "";
     if ($prefix !== false) {
@@ -128,28 +133,33 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
             $out .= $text[0];
             $text = substr($text, 1);
         }
-    } else if (($line = UnicodeHelper::utf8_line_break($text, $totWidth)) !== false)
+    } else if (($line = UnicodeHelper::utf8_line_break($text, $totWidth)) !== false) {
         $out .= $line . "\n";
+    }
 
-    while (($line = UnicodeHelper::utf8_line_break($text, $totWidth - $indentlen)) !== false)
+    while (($line = UnicodeHelper::utf8_line_break($text, $totWidth - $indentlen)) !== false) {
         $out .= $indent . preg_replace('/^\pZ+/u', '', $line) . "\n";
+    }
 
-    if ($prefix === false)
+    if ($prefix === false) {
         /* skip */;
-    else if (strlen($prefix) <= $indentlen) {
+    } else if (strlen($prefix) <= $indentlen) {
         $prefix = str_pad($prefix, $indentlen, " ", STR_PAD_LEFT);
         $out = $prefix . substr($out, $indentlen);
-    } else
+    } else {
         $out = $prefix . "\n" . $out;
+    }
 
-    if (!str_ends_with($out, "\n"))
+    if (!str_ends_with($out, "\n")) {
         $out .= "\n";
+    }
     return $out;
 }
 
 function center_word_wrap($text, $totWidth = 75, $multi_center = false) {
-    if (strlen($text) <= $totWidth && !preg_match('/[\200-\377]/', $text))
+    if (strlen($text) <= $totWidth && !preg_match('/[\200-\377]/', $text)) {
         return str_pad($text, (int) (($totWidth + strlen($text)) / 2), " ", STR_PAD_LEFT) . "\n";
+    }
     $out = "";
     while (($line = UnicodeHelper::utf8_line_break($text, $totWidth)) !== false) {
         $linelen = UnicodeHelper::utf8_glyphlen($line);
@@ -163,12 +173,13 @@ function count_words($text) {
 }
 
 function friendly_boolean($x) {
-    if (is_bool($x))
+    if (is_bool($x)) {
         return $x;
-    else if (is_string($x) || is_int($x))
+    } else if (is_string($x) || is_int($x)) {
         return filter_var($x, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-    else
+    } else {
         return null;
+    }
 }
 
 interface Abbreviator {
@@ -180,12 +191,13 @@ interface Abbreviator {
 
 function validate_email($email) {
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
-    if (!preg_match(':\A[-!#$%&\'*+./0-9=?A-Z^_`a-z{|}~]+@(.+)\z:', $email, $m))
+    if (!preg_match(':\A[-!#$%&\'*+./0-9=?A-Z^_`a-z{|}~]+@(.+)\z:', $email, $m)) {
         return false;
-    if ($m[1][0] === "_")
+    } else if ($m[1][0] === "_") {
         return preg_match(':\A_\.[0-9A-Za-z]+\z:', $m[1]);
-    else
+    } else {
         return preg_match(':\A([-0-9A-Za-z]+\.)+[0-9A-Za-z]+\z:', $m[1]);
+    }
 }
 
 function mime_quote_string($word) {
@@ -193,17 +205,19 @@ function mime_quote_string($word) {
 }
 
 function mime_token_quote($word) {
-    if (preg_match('_\A[^][\x00-\x20\x80-\xFF()<>@,;:\\"/?=]+\z_', $word))
+    if (preg_match('_\A[^][\x00-\x20\x80-\xFF()<>@,;:\\"/?=]+\z_', $word)) {
         return $word;
-    else
+    } else {
         return mime_quote_string($word);
+    }
 }
 
 function rfc2822_words_quote($words) {
-    if (preg_match(':\A[-A-Za-z0-9!#$%&\'*+/=?^_`{|}~ \t]*\z:', $words))
+    if (preg_match(':\A[-A-Za-z0-9!#$%&\'*+/=?^_`{|}~ \t]*\z:', $words)) {
         return $words;
-    else
+    } else {
         return mime_quote_string($words);
+    }
 }
 
 
@@ -211,15 +225,17 @@ function rfc2822_words_quote($words) {
 
 function html_id_encode($text) {
     $x = preg_split('_([^-a-zA-Z0-9])_', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
-    for ($i = 1; $i < count($x); $i += 2)
+    for ($i = 1; $i < count($x); $i += 2) {
         $x[$i] = "_" . dechex(ord($x[$i]));
+    }
     return join("", $x);
 }
 
 function html_id_decode($text) {
     $x = preg_split(',(_[0-9A-Fa-f][0-9A-Fa-f]),', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
-    for ($i = 1; $i < count($x); $i += 2)
+    for ($i = 1; $i < count($x); $i += 2) {
         $x[$i] = chr(hexdec(substr($x[$i], 1)));
+    }
     return join("", $x);
 }
 
@@ -234,8 +250,9 @@ function base64url_decode($data) {
 
 // JSON encoding helpers
 
-if (!function_exists("json_encode") || !function_exists("json_decode"))
+if (!function_exists("json_encode") || !function_exists("json_decode")) {
     require_once("$ConfSitePATH/lib/json.php");
+}
 if (!function_exists("json_last_error_msg")) {
     function json_last_error_msg() {
         return false;
@@ -287,14 +304,15 @@ function get_f($var, $idx, $default = null) {
 function uploaded_file_error($finfo) {
     $e = $finfo["error"];
     $name = get($finfo, "name") ? "<span class=\"lineno\">" . htmlspecialchars($finfo["name"]) . ":</span> " : "";
-    if ($e == UPLOAD_ERR_INI_SIZE || $e == UPLOAD_ERR_FORM_SIZE)
+    if ($e == UPLOAD_ERR_INI_SIZE || $e == UPLOAD_ERR_FORM_SIZE) {
         return $name . "Uploaded file too big. The maximum upload size is " . ini_get("upload_max_filesize") . "B.";
-    else if ($e == UPLOAD_ERR_PARTIAL)
+    } else if ($e == UPLOAD_ERR_PARTIAL) {
         return $name . "Upload process interrupted.";
-    else if ($e != UPLOAD_ERR_NO_FILE)
+    } else if ($e != UPLOAD_ERR_NO_FILE) {
         return $name . "Unknown upload error.";
-    else
+    } else {
         return false;
+    }
 }
 
 function make_qreq() {
@@ -345,44 +363,52 @@ function is_associative_array($a) {
 function array_to_object_recursive($a) {
     if (is_associative_array($a)) {
         $o = (object) array();
-        foreach ($a as $k => $v)
+        foreach ($a as $k => $v) {
             if ($k !== "")
                 $o->$k = array_to_object_recursive($v);
+        }
         return $o;
-    } else
+    } else {
         return $a;
+    }
 }
 
 function object_replace($a, $b) {
-    foreach (is_object($b) ? get_object_vars($b) : $b as $k => $v)
-        if ($v === null)
+    foreach (is_object($b) ? get_object_vars($b) : $b as $k => $v) {
+        if ($v === null) {
             unset($a->$k);
-        else
+        } else {
             $a->$k = $v;
+        }
+    }
 }
 
 function object_replace_recursive($a, $b) {
-    foreach (is_object($b) ? get_object_vars($b) : $b as $k => $v)
-        if ($v === null)
+    foreach (is_object($b) ? get_object_vars($b) : $b as $k => $v) {
+        if ($v === null) {
             unset($a->$k);
-        else if (!property_exists($a, $k)
-                 || !is_object($a->$k)
-                 || !is_object($v))
+        } else if (!property_exists($a, $k)
+                   || !is_object($a->$k)
+                   || !is_object($v)) {
             $a->$k = $v;
-        else
+        } else {
             object_replace_recursive($a->$k, $v);
+        }
+    }
 }
 
 function json_object_replace($j, $updates, $nullable = false) {
-    if ($j === null)
+    if ($j === null) {
         $j = (object) [];
-    else if (is_array($j))
+    } else if (is_array($j)) {
         $j = (object) $j;
+    }
     object_replace($j, $updates);
     if ($nullable) {
         $x = get_object_vars($j);
-        if (empty($x))
+        if (empty($x)) {
             $j = null;
+        }
     }
     return $j;
 }
@@ -391,22 +417,26 @@ function json_object_replace($j, $updates, $nullable = false) {
 // debug helpers
 
 function caller_landmark($position = 1, $skipfunction_re = null) {
-    if (is_string($position))
+    if (is_string($position)) {
         list($position, $skipfunction_re) = array(1, $position);
+    }
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
     $fname = null;
     for (++$position; isset($trace[$position]); ++$position) {
         $fname = get_s($trace[$position], "class");
         $fname .= ($fname ? "::" : "") . $trace[$position]["function"];
         if ((!$skipfunction_re || !preg_match($skipfunction_re, $fname))
-            && ($fname !== "call_user_func" || get($trace[$position - 1], "file")))
+            && ($fname !== "call_user_func" || get($trace[$position - 1], "file"))) {
             break;
+        }
     }
     $t = "";
-    if ($position > 0 && ($pi = $trace[$position - 1]) && isset($pi["file"]))
+    if ($position > 0 && ($pi = $trace[$position - 1]) && isset($pi["file"])) {
         $t = $pi["file"] . ":" . $pi["line"];
-    if ($fname)
+    }
+    if ($fname) {
         $t .= ($t ? ":" : "") . $fname;
+    }
     return $t ? : "<unknown>";
 }
 

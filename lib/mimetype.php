@@ -53,39 +53,48 @@ class Mimetype {
 
     static function lookup($type, $nocreate = false) {
         global $ConfSitePATH;
-        if (!$type)
+        if (!$type) {
             return null;
-        if (is_object($type))
+        }
+        if (is_object($type)) {
             return $type;
-        if (empty(self::$tmap))
+        }
+        if (empty(self::$tmap)) {
             foreach (self::$tinfo as $xtype => $data) {
                 $m = new Mimetype($xtype, $data[0], $data[1], $data[2]);
                 self::$tmap[$xtype] = self::$tmap[$m->extension] = $m;
-                for ($i = 3; $i < count($data); ++$i)
+                for ($i = 3; $i < count($data); ++$i) {
                     self::$tmap[$data[$i]] = $m;
+                }
             }
-        if (array_key_exists($type, self::$tmap))
+        }
+        if (array_key_exists($type, self::$tmap)) {
             return self::$tmap[$type];
+        }
         if (self::$mime_types === null) {
             self::$mime_types = true;
             $t = (string) @file_get_contents("$ConfSitePATH/lib/mime.types");
             preg_match_all('{^(|#!!\s+)([-a-z0-9]+/\S+)[ \t]*(.*)}m', $t, $ms, PREG_SET_ORDER);
             foreach ($ms as $mm) {
-                if (isset(self::$tmap[$mm[2]]))
+                if (isset(self::$tmap[$mm[2]])) {
                     continue;
+                }
                 if ($mm[1] === "") {
                     $exts = [null];
-                    if ($mm[3])
+                    if ($mm[3]) {
                         $exts = array_map(function ($x) { return ".$x"; }, preg_split('/\s+/', $mm[3]));
+                    }
                     $m = new Mimetype($mm[2], $exts[0]);
                     self::$tmap[$m->mimetype] = $m;
-                    foreach ($exts as $ext)
+                    foreach ($exts as $ext) {
                         if ($ext && !isset(self::$tmap[$ext]))
                             self::$tmap[$ext] = $m;
+                    }
                 } else {
                     $m = get(self::$tmap, trim($mm[3]) ? : self::BIN_TYPE);
-                    if ($m)
+                    if ($m) {
                         self::$tmap[$mm[2]] = $m;
+                    }
                 }
             }
         }
@@ -94,20 +103,23 @@ class Mimetype {
 
 
     static function type($type) {
-        if (($x = self::lookup($type, true)))
+        if (($x = self::lookup($type, true))) {
             return $x->mimetype;
-        else
+        } else {
             return $type;
+        }
     }
 
     static function type_with_charset($type) {
         if (($x = self::lookup($type, true))) {
-            if ($x->flags & self::FLAG_UTF8)
+            if ($x->flags & self::FLAG_UTF8) {
                 return $x->mimetype . "; charset=utf-8";
-            else
+            } else {
                 return $x->mimetype;
-        } else
+            }
+        } else {
             return $type;
+        }
     }
 
     static function type_equals($typea, $typeb) {
@@ -122,20 +134,22 @@ class Mimetype {
     static function description($type) {
         if (is_array($type)) {
             $a = array();
-            foreach ($type as $x)
+            foreach ($type as $x) {
                 if (($x = self::description($x)))
                     $a[$x] = $x;
+            }
             return commajoin($a, "or");
         } else {
             $x = self::lookup($type);
-            if ($x && $x->description)
+            if ($x && $x->description) {
                 return $x->description;
-            else if ($x && $x->extension)
+            } else if ($x && $x->extension) {
                 return $x->extension;
-            else if ($x)
+            } else if ($x) {
                 return $x->mimetype;
-            else
+            } else {
                 return $type;
+            }
         }
     }
 
@@ -158,45 +172,50 @@ class Mimetype {
         $content_exists = (string) $content !== "";
         // reliable sniffs
         if ($content_exists) {
-            if (strncmp("%PDF-", $content, 5) == 0)
+            if (strncmp("%PDF-", $content, 5) == 0) {
                 return self::PDF_TYPE;
-            if (substr($content, 512, 4) === "\x00\x6E\x1E\xF0")
+            } else if (substr($content, 512, 4) === "\x00\x6E\x1E\xF0") {
                 return self::PPT_TYPE;
-            if (strncmp($content, "\xFF\xD8\xFF\xD8", 4) == 0
-                || (strncmp($content, "\xFF\xD8\xFF\xE0", 4) == 0 && substr($content, 6, 6) == "JFIF\x00\x01")
-                || (strncmp($content, "\xFF\xD8\xFF\xE1", 4) == 0 && substr($content, 6, 6) == "Exif\x00\x00"))
+            } else if (strncmp($content, "\xFF\xD8\xFF\xD8", 4) == 0
+                       || (strncmp($content, "\xFF\xD8\xFF\xE0", 4) == 0 && substr($content, 6, 6) == "JFIF\x00\x01")
+                       || (strncmp($content, "\xFF\xD8\xFF\xE1", 4) == 0 && substr($content, 6, 6) == "Exif\x00\x00")) {
                 return self::JPG_TYPE;
-            if (strncmp($content, "\x89PNG\r\n\x1A\x0A", 8) == 0)
+            } else if (strncmp($content, "\x89PNG\r\n\x1A\x0A", 8) == 0) {
                 return self::PNG_TYPE;
-            if ((strncmp($content, "GIF87a", 6) == 0
-                 || strncmp($content, "GIF89a", 6) == 0)
-                && str_ends_with($content, "\x00;"))
+            } else if ((strncmp($content, "GIF87a", 6) == 0
+                        || strncmp($content, "GIF89a", 6) == 0)
+                       && str_ends_with($content, "\x00;")) {
                 return self::GIF_TYPE;
-            if (strncmp($content, "Rar!\x1A\x07\x00", 7) == 0
-                || strncmp($content, "Rar!\x1A\x07\x01\x00", 8) == 0)
+            } else if (strncmp($content, "Rar!\x1A\x07\x00", 7) == 0
+                       || strncmp($content, "Rar!\x1A\x07\x01\x00", 8) == 0) {
                 return self::RAR_TYPE;
+            }
         }
         // eliminate invalid types, canonicalize
         if ($type
             && !isset(self::$tinfo[$type])
-            && ($tx = self::type($type)))
+            && ($tx = self::type($type))) {
             $type = $tx;
+        }
         // unreliable sniffs
         if ($content_exists
             && (!$type || $type === self::BIN_TYPE)) {
-            if (strncmp("%!PS-", $content, 5) == 0)
+            if (strncmp("%!PS-", $content, 5) == 0) {
                 return self::PS_TYPE;
-            if (strncmp($content, "ustar\x0000", 8) == 0
-                || strncmp($content, "ustar  \x00", 8) == 0)
+            } else if (strncmp($content, "ustar\x0000", 8) == 0
+                       || strncmp($content, "ustar  \x00", 8) == 0) {
                 return self::TAR_TYPE;
-            if (!self::$finfo)
+            }
+            if (!self::$finfo) {
                 self::$finfo = new finfo(FILEINFO_MIME_TYPE);
+            }
             $type = self::$finfo->buffer($content);
             // canonicalize
             if ($type
                 && !isset(self::$tinfo[$type])
-                && ($tx = self::type($type)))
+                && ($tx = self::type($type))) {
                 $type = $tx;
+            }
         }
         // type obtained, or octet-stream if nothing else works
         return self::type($type ? : self::BIN_TYPE);

@@ -73,9 +73,9 @@ class SessionList {
 
             $include = true;
             $n = $skip = 0;
-            if ($ch >= "a" && $ch <= "h")
+            if ($ch >= "a" && $ch <= "h") {
                 $n = ord($ch) - 96;
-            else if ($ch >= "i" && $ch <= "p") {
+            } else if ($ch >= "i" && $ch <= "p") {
                 $n = ord($ch) - 104;
                 $include = false;
             } else if ($ch === "q" || $ch === "r") {
@@ -114,8 +114,9 @@ class SessionList {
     }
 
     static function encode_ids($ids) {
-        if (empty($ids))
+        if (empty($ids)) {
             return "";
+        }
         // a-h: range of 1-8 sequential present papers
         // i-p: range of 1-8 sequential missing papers
         // q<N>: range of <N> sequential present papers
@@ -143,8 +144,9 @@ class SessionList {
             } else if ($delta >= 9) {
                 $a[] = "r" . $delta;
             } else if ($delta !== 0) {
-                if (self::encoding_ends_numerically($a))
+                if (self::encoding_ends_numerically($a)) {
                     $a[] = "s";
+                }
                 $a[] = $ids[$i];
                 $sign = 1;
                 $next = $ids[$i] + 1;
@@ -201,9 +203,9 @@ class SessionList {
     }
     function full_site_relative_url() {
         $args = Conf::$hoturl_defaults ? : [];
-        if ($this->url)
+        if ($this->url) {
             $url = $this->url;
-        else if ($this->urlbase) {
+        } else if ($this->urlbase) {
             $url = $this->urlbase;
             if (preg_match(',\Ap/[^/]*/([^/]*)(?:|/([^/]*))\z,', $this->listid, $m)) {
                 if ($m[1] !== "" || str_starts_with($url, "search")) {
@@ -270,8 +272,9 @@ class SessionList {
     function neighbor_id($delta) {
         if ($this->id_position !== false) {
             $pos = $this->id_position + $delta;
-            if ($pos >= 0 && isset($this->ids[$pos]))
+            if ($pos >= 0 && isset($this->ids[$pos])) {
                 return $this->ids[$pos];
+            }
         } else if ($delta === -1 && $this->previd !== null) {
             return $this->previd;
         } else if ($delta === 1 && $this->nextid !== null) {

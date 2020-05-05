@@ -181,9 +181,10 @@ function initialize_user() {
             || $_SESSION["addrs"][0] !== $_SERVER["REMOTE_ADDR"])) {
         $as = [$_SERVER["REMOTE_ADDR"]];
         if (isset($_SESSION["addrs"]) && is_array($_SESSION["addrs"])) {
-            foreach ($_SESSION["addrs"] as $a)
+            foreach ($_SESSION["addrs"] as $a) {
                 if ($a !== $_SERVER["REMOTE_ADDR"] && count($as) < 5)
                     $as[] = $a;
+            }
         }
         $_SESSION["addrs"] = $as;
     }

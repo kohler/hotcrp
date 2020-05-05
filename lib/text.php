@@ -64,38 +64,43 @@ class Text {
         // collect arguments
         $delta = 0;
         if (count($args) == 1) {
-            if (is_string($args[0]))
+            if (is_string($args[0])) {
                 $args = self::split_name($args[0], true);
-            else if (is_object($args[0]) && isset($args[0]->name_analysis))
+            } else if (is_object($args[0]) && isset($args[0]->name_analysis)) {
                 return $args[0]->name_analysis;
+            }
         }
         foreach ($args as $i => $v) {
             if (is_string($v) || is_bool($v)) {
                 if ($i + $delta < 4) {
                     $k = self::$argkeys[$i + $delta];
-                    if (!isset($ret->$k))
+                    if (!isset($ret->$k)) {
                         $ret->$k = $v;
+                    }
                 }
             } else if (is_array($v) && isset($v[0])) {
                 for ($j = 0; $j < 3 && $j < count($v); ++$j) {
                     $k = self::$argkeys[$j];
-                    if (!isset($ret->$k))
+                    if (!isset($ret->$k)) {
                         $ret->$k = $v[$j];
+                    }
                 }
             } else if (is_array($v)) {
-                foreach ($v as $k => $x)
+                foreach ($v as $k => $x) {
                     if (($mk = get(self::$mapkeys, $k))
                         && !isset($ret->$mk))
                         $ret->$mk = $x;
+                }
                 $delta = 3;
             } else if (is_object($v)) {
-                foreach (self::$mapkeys as $k => $mk)
+                foreach (self::$mapkeys as $k => $mk) {
                     if (!isset($ret->$mk)
                         && isset($v->$k)
                         && (isset(self::$boolkeys[$mk])
                             ? is_bool($v->$k)
                             : is_string($v->$k)))
                         $ret->$mk = $v->$k;
+                }
             }
         }
         // set defaults
@@ -106,18 +111,22 @@ class Text {
         if ($ret->name !== "" && $ret->firstName === "" && $ret->lastName === "") {
             list($ret->firstName, $ret->lastName) = self::split_name($ret->name);
             $ret->nameAutosplit = true;
-        } else if ((string) $ret->middleName !== "")
+        } else if ((string) $ret->middleName !== "") {
             $ret->firstName .= ($ret->firstName === "" ? "" : " ") . $ret->middleName;
-        if ($ret->firstName === "" || $ret->lastName === "")
+        }
+        if ($ret->firstName === "" || $ret->lastName === "") {
             $ret->name = $ret->firstName . $ret->lastName;
-        else
+        } else {
             $ret->name = $ret->firstName . " " . $ret->lastName;
+        }
         $ret->unaccentedName = $ret->orderedName = $ret->name;
         $ret->nameAscii = is_usascii($ret->name);
-        if (!$ret->nameAscii)
+        if (!$ret->nameAscii) {
             $ret->unaccentedName = UnicodeHelper::deaccent($ret->name);
-        if ($ret->lastFirst && $ret->firstName !== "" && $ret->lastName !== "")
+        }
+        if ($ret->lastFirst && $ret->firstName !== "" && $ret->lastName !== "") {
             $ret->orderedName = $ret->lastName . ", " . $ret->firstName;
+        }
         return $ret;
     }
 
@@ -128,43 +137,49 @@ class Text {
     static function user_text(/* ... */) {
         // was contactText
         $r = self::analyze_name_args(func_get_args());
-        if ($r->orderedName !== "" && $r->email !== "")
+        if ($r->orderedName !== "" && $r->email !== "") {
             return "$r->orderedName <$r->email>";
-        else
+        } else {
             return $r->orderedName ? : $r->email;
+        }
     }
 
     static function user_html(/* ... */) {
         // was contactHtml
         $r = self::analyze_name_args(func_get_args());
         $e = htmlspecialchars($r->email);
-        if ($e !== "" && strpos($e, "@") !== false)
+        if ($e !== "" && strpos($e, "@") !== false) {
             $e = "&lt;<a href=\"mailto:$e\" class=\"mailto\">$e</a>&gt;";
-        else if ($e !== "")
+        } else if ($e !== "") {
             $e = "&lt;$e&gt;";
-        if ($r->orderedName !== "")
+        }
+        if ($r->orderedName !== "") {
             return htmlspecialchars($r->orderedName) . ($e ? " " . $e : "");
-        else
+        } else {
             return $e ? : "[No name]";
+        }
     }
 
     static function user_html_nolink(/* ... */) {
         $r = self::analyze_name_args(func_get_args());
-        if (($e = $r->email) !== "")
+        if (($e = $r->email) !== "") {
             $e = "&lt;" . htmlspecialchars($e) . "&gt;";
-        if ($r->orderedName !== "")
+        }
+        if ($r->orderedName !== "") {
             return htmlspecialchars($r->orderedName) . ($e ? " " . $e : "");
-        else
+        } else {
             return $e ? : "[No name]";
+        }
     }
 
     static function name_text(/* ... */) {
         // was contactNameText
         $r = self::analyze_name_args(func_get_args());
-        if ($r->nameAmbiguous && $r->orderedName !== "" && $r->email !== "")
+        if ($r->nameAmbiguous && $r->orderedName !== "" && $r->email !== "") {
             return "$r->orderedName <$r->email>";
-        else
+        } else {
             return $r->orderedName ? : $r->email;
+        }
     }
 
     static function name_html(/* ... */) {
@@ -192,13 +207,15 @@ class Text {
     static function initial($s) {
         $x = "";
         if ((string) $s !== "") {
-            if (ctype_alpha($s[0]))
+            if (ctype_alpha($s[0])) {
                 $x = $s[0];
-            else if (preg_match("/^(\\pL)/us", $s, $m))
+            } else if (preg_match("/^(\\pL)/us", $s, $m)) {
                 $x = $m[1];
+            }
             // Don't add a period if first name is a single letter
-            if ($x != "" && $x != $s && !str_starts_with($s, "$x "))
+            if ($x != "" && $x != $s && !str_starts_with($s, "$x ")) {
                 $x .= ".";
+            }
         }
         return $x;
     }
@@ -208,12 +225,14 @@ class Text {
         $u = "";
         if ($r->lastName !== "") {
             $t = $r->lastName;
-            if ($r->firstName !== "" && ($u = self::initial($r->firstName)) !== "")
+            if ($r->firstName !== "" && ($u = self::initial($r->firstName)) !== "") {
                 $u .= " "; // non-breaking space
-        } else if ($r->firstName !== "")
+            }
+        } else if ($r->firstName !== "") {
             $t = $r->firstName;
-        else
+        } else {
             $t = $r->email ? $r->email : "???";
+        }
         return $u . $t;
     }
 
@@ -231,22 +250,23 @@ class Text {
         $ret = ["", ""];
         if ($with_email) {
             $email = "";
-            if ($name === "")
+            if ($name === "") {
                 /* do nothing */;
-            else if ($name[strlen($name) - 1] === ">"
-                     && preg_match('{\A\"?(.*?)\"?\s*<([^<>]+)>\z}', $name, $m))
+            } else if ($name[strlen($name) - 1] === ">"
+                       && preg_match('{\A\"?(.*?)\"?\s*<([^<>]+)>\z}', $name, $m)) {
                 list($name, $email) = [$m[1], $m[2]];
-            else if ($name[0] === "\""
-                     && preg_match('{\A\s*\"(.*)\"\s+(\S+)\z}', $name, $m))
+            } else if ($name[0] === "\""
+                       && preg_match('{\A\s*\"(.*)\"\s+(\S+)\z}', $name, $m)) {
                 list($name, $email) = [$m[1], $m[2]];
-            else if (strpos($name, "@") === false)
+            } else if (strpos($name, "@") === false) {
                 /* skip */;
-            else if (!preg_match('{\A(.*?)\s+(\S+)\z}', $name, $m))
+            } else if (!preg_match('{\A(.*?)\s+(\S+)\z}', $name, $m)) {
                 return ["", "", trim($name)];
-            else if (strpos($m[2], "@") !== false)
+            } else if (strpos($m[2], "@") !== false) {
                 list($name, $email) = array($m[1], $m[2]);
-            else
+            } else {
                 list($name, $email) = array($m[2], $m[1]);
+            }
             $ret[2] = $email;
         }
 
@@ -262,48 +282,55 @@ class Text {
         if (($comma = strrpos($m[1], ",")) !== false) {
             $ret[0] = ltrim(substr($m[1], $comma + 1));
             $ret[1] = rtrim(substr($m[1], 0, $comma)) . $m[2];
-            if ($paren !== "")
+            if ($paren !== "") {
                 $ret[$m[2] === "" ? 0 : 1] .= $paren;
+            }
         } else if (($space = strrpos($m[1], " ")) !== false) {
             $ret[0] = substr($m[1], 0, $space);
             $ret[1] = substr($m[1], $space + 1) . $m[2] . $paren;
             // see also split_von
             if (strpos($ret[0], " ") !== false
-                && preg_match('{\A(\S.*?)((?: (?:v[ao]n|d[aeiu]|de[nr]|l[ae]))+)\z}i', $ret[0], $m))
+                && preg_match('{\A(\S.*?)((?: (?:v[ao]n|d[aeiu]|de[nr]|l[ae]))+)\z}i', $ret[0], $m)) {
                 list($ret[0], $ret[1]) = [$m[1], ltrim($m[2]) . " " . $ret[1]];
+            }
         } else if ($m[1] !== ""
                    && $m[2] !== ""
                    && preg_match('{\A((?: Junior| Senior| Esquire)*)(.*)\z}i', $m[2], $mm)) {
             $ret[0] = $m[1];
             $ret[1] = ltrim($m[2]) . $paren;
-        } else
+        } else {
             $ret[1] = $name . $paren;
+        }
 
         return $ret;
     }
 
     static function split_first_prefix($first) {
-        if (preg_match('%\A((?:dr\.?|mr\.?|mrs\.?|ms\.?|prof\.?)\s+)(?=\S)%i', $first, $m))
+        if (preg_match('/\A((?:dr\.?|mr\.?|mrs\.?|ms\.?|prof\.?)\s+)(?=\S)/i', $first, $m)) {
             return [$m[2], $m[1]];
-        else
+        } else {
             return [$first, ""];
+        }
     }
 
     static function split_first_middle($first) {
-        if (preg_match('%\A((?:\pL\.\s*)*\pL[^\s.]\S*)\s+(.*)\z%', $first, $m)
-            || preg_match('%\A(\pL[^\s.]\S*)\s*(.*)\z%', $first, $m))
+        if (preg_match('/\A((?:\pL\.\s*)*\pL[^\s.]\S*)\s+(.*)\z/', $first, $m)
+            || preg_match('/\A(\pL[^\s.]\S*)\s*(.*)\z/', $first, $m)) {
             return [$m[1], $m[2]];
-        else
+        } else {
             return [$first, ""];
+        }
     }
 
     static function split_last_suffix($last) {
         if (preg_match('{\A(.*?)[\s,]+(' . self::SUFFIX_REGEX . ')\z}i', $last, $m)) {
-            if (preg_match('{\A(?:jr|sr|esq)\z}i', $m[2]))
+            if (preg_match('{\A(?:jr|sr|esq)\z}i', $m[2])) {
                 $m[2] .= ".";
+            }
             return [$m[1], $m[2]];
-        } else
+        } else {
             return [$last, ""];
+        }
     }
 
     static function unaccented_name(/* ... */) {
@@ -312,8 +339,9 @@ class Text {
     }
 
     static function word_regex($word) {
-        if ($word === "")
+        if ($word === "") {
             return "";
+        }
         list($aw, $zw) = array(ctype_alnum($word[0]),
                                ctype_alnum($word[strlen($word) - 1]));
         return ($aw ? '\b' : '')
@@ -327,32 +355,37 @@ class Text {
     const UTF8_FINAL_NONLETTER = '(?:\z|(?!\pL)(?=\PM))';
 
     static function utf8_word_regex($word) {
-        if ($word === "")
+        if ($word === "") {
             return "";
+        }
         list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
                                preg_match('{(?:\pL|\pN)\z}u', $word));
         // Maybe `$word` is not valid UTF-8. Avoid warnings later.
-        if (!$aw && !$zw && !is_valid_utf8($word))
+        if (!$aw && !$zw && !is_valid_utf8($word)) {
             return self::utf8_word_regex(convert_to_utf8($word));
+        }
         return ($aw ? self::UTF8_INITIAL_NONLETTERDIGIT : '')
             . str_replace(" ", '(?:\s|\p{Zs})+', preg_quote($word))
             . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
     }
 
     static function star_text_pregexes($word, $literal_star = false) {
-        if (is_object($word))
+        if (is_object($word)) {
             $reg = $word;
-        else
+        } else {
             $reg = (object) ["value" => $word];
+        }
 
         $word = preg_replace('/\s+/', " ", $reg->value);
-        if (is_usascii($word))
+        if (is_usascii($word)) {
             $reg->preg_raw = Text::word_regex($word);
+        }
         $reg->preg_utf8 = Text::utf8_word_regex($word);
 
         if (!$literal_star && strpos($word, "*") !== false) {
-            if ($reg->preg_raw)
+            if ($reg->preg_raw) {
                 $reg->preg_raw = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_raw));
+            }
             $reg->preg_utf8 = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_utf8));
         }
 
@@ -360,37 +393,43 @@ class Text {
     }
 
     static function merge_pregexes($regex) {
-        if (empty($regex))
+        if (empty($regex)) {
             return false;
+        }
         $a = $b = [];
-        foreach ($regex as $x)
+        foreach ($regex as $x) {
             if ($x) {
                 $a[] = $x->preg_utf8;
-                if (isset($x->preg_raw))
+                if (isset($x->preg_raw)) {
                     $b[] = $x->preg_raw;
+                }
             }
+        }
         $x = (object) ["preg_utf8" => join("|", $a)];
-        if (count($a) == count($b))
+        if (count($a) == count($b)) {
             $x->preg_raw = join("|", $b);
+        }
         return $x;
     }
 
     static function match_pregexes($reg, $text, $deaccented_text) {
-        if (!$reg)
+        if (!$reg) {
             return false;
-        else if (!isset($reg->preg_raw))
+        } else if (!isset($reg->preg_raw)) {
             return !!preg_match('{' . $reg->preg_utf8 . '}ui', $text);
-        else if ($deaccented_text && $deaccented_text !== $text)
+        } else if ($deaccented_text && $deaccented_text !== $text) {
             return !!preg_match('{' . $reg->preg_utf8 . '}ui', $deaccented_text);
-        else
+        } else {
             return !!preg_match('{' . $reg->preg_raw . '}i', $text);
+        }
     }
 
 
     static function highlight($text, $match, &$n = null) {
         $n = 0;
-        if ($match === null || $match === false || $match === "" || $text == "")
+        if ($match === null || $match === false || $match === "" || $text == "") {
             return htmlspecialchars($text);
+        }
 
         $mtext = $text;
         $offsetmap = null;

@@ -506,10 +506,11 @@ class And_SearchTerm extends Op_SearchTerm {
             } else if ($qv->type === "revadj") {
                 $revadj = $qv->apply($revadj, false);
             } else if ($qv->type === "pn" && $this->type === "space") {
-                if (!$pn)
+                if (!$pn) {
                     $newchild[] = $pn = $qv;
-                else
+                } else {
                     $pn->merge($qv);
+                }
             } else {
                 $newchild[] = $qv;
             }
@@ -605,10 +606,11 @@ class Or_SearchTerm extends Op_SearchTerm {
             } else if ($qv->type === "revadj") {
                 $revadj = $qv->apply($revadj, true);
             } else if ($qv->type === "pn") {
-                if (!$pn)
+                if (!$pn) {
                     $newchild[] = $pn = $qv;
-                else
+                } else {
                     $pn->merge($qv);
+                }
             } else {
                 $newchild[] = $qv;
             }
@@ -678,10 +680,11 @@ class Xor_SearchTerm extends Op_SearchTerm {
             } else if ($qv->type === "revadj") {
                 $revadj = $qv->apply($revadj, true);
             } else if ($qv->type === "pn") {
-                if (!$pn)
+                if (!$pn) {
                     $newchild[] = $pn = $qv;
-                else
+                } else {
                     $pn->merge($qv);
+                }
             } else {
                 $newchild[] = $qv;
             }
@@ -1072,32 +1075,34 @@ class ReviewRating_SearchAdjustment {
         $this->arg = $arg;
     }
     function must_exist() {
-        if ($this->type === "and")
+        if ($this->type === "and") {
             return $this->arg[0]->must_exist() || $this->arg[1]->must_exist();
-        else if ($this->type === "or")
+        } else if ($this->type === "or") {
             return $this->arg[0]->must_exist() && $this->arg[1]->must_exist();
-        else if ($this->type === "not")
+        } else if ($this->type === "not") {
             return false;
-        else
+        } else {
             return !$this->arg->test(0);
+        }
     }
     private function _test($ratings) {
-        if ($this->type === "and")
+        if ($this->type === "and") {
             return $this->arg[0]->_test($ratings) && $this->arg[1]->_test($ratings);
-        else if ($this->type === "or")
+        } else if ($this->type === "or") {
             return $this->arg[0]->_test($ratings) || $this->arg[1]->_test($ratings);
-        else if ($this->type === "not")
+        } else if ($this->type === "not") {
             return !$this->arg->_test($ratings);
-        else {
+        } else {
             $n = count(array_filter($ratings, function ($r) { return ($r & $this->type) !== 0; }));
             return $this->arg->test($n);
         }
     }
     function test(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
-        if ($user->can_view_review_ratings($prow, $rrow, $user->privChair))
+        if ($user->can_view_review_ratings($prow, $rrow, $user->privChair)) {
             $ratings = $rrow->ratings();
-        else
+        } else {
             $ratings = [];
+        }
         return $this->_test($ratings);
     }
 }
@@ -1115,13 +1120,13 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
     static function parse_round($word, SearchWord $sword, PaperSearch $srch) {
         $srch->_has_review_adjustment = true;
-        if (!$srch->user->isPC)
+        if (!$srch->user->isPC) {
             $rounds = null;
-        else if (strcasecmp($word, "none") == 0 || strcasecmp($word, "unnamed") == 0)
+        } else if (strcasecmp($word, "none") == 0 || strcasecmp($word, "unnamed") == 0) {
             $rounds = [0];
-        else if (strcasecmp($word, "any") == 0)
+        } else if (strcasecmp($word, "any") == 0) {
             $rounds = range(1, count($srch->conf->round_list()) - 1);
-        else {
+        } else {
             $x = simplify_whitespace($word);
             $rounds = array_keys(Text::simple_search($x, $srch->conf->round_list()));
             if (empty($rounds)) {
@@ -1135,8 +1140,9 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
     static function parse_rate($word, SearchWord $sword, PaperSearch $srch) {
         if (!$srch->user->can_view_some_review_ratings()) {
-            if ($srch->user->isPC && $srch->conf->setting("rev_ratings") == REV_RATINGS_NONE)
+            if ($srch->user->isPC && $srch->conf->setting("rev_ratings") == REV_RATINGS_NONE) {
                 $srch->warn("Review ratings are disabled.");
+            }
             return new False_SearchTerm;
         }
         $rate = null;
@@ -1145,12 +1151,13 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
             $compar = "=0";
         } else if (preg_match('/\A(.+?)\s*(:?|[=!<>]=?|≠|≤|≥)\s*(\d*)\z/', $word, $m)
                    && ($m[3] !== "" || $m[2] === "")) {
-            if ($m[3] === "")
+            if ($m[3] === "") {
                 $compar = ">0";
-            else if ($m[2] === "" || $m[2] === ":")
+            } else if ($m[2] === "" || $m[2] === ":") {
                 $compar = ($m[3] == 0 ? "=0" : ">=" . $m[3]);
-            else
+            } else {
                 $compar = $m[2] . $m[3];
+            }
             $rate = self::parse_rate_name($m[1]);
         }
         if ($rate === null) {
@@ -1164,13 +1171,14 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         }
     }
     static private function parse_rate_name($s) {
-        if (strcasecmp($s, "any") == 0)
+        if (strcasecmp($s, "any") == 0) {
             return ReviewInfo::RATING_GOODMASK | ReviewInfo::RATING_BADMASK;
-        if ($s === "+" || strcasecmp($s, "good") == 0 || strcasecmp($s, "yes") == 0)
+        } else if ($s === "+" || strcasecmp($s, "good") == 0 || strcasecmp($s, "yes") == 0) {
             return ReviewInfo::RATING_GOODMASK;
-        if ($s === "-" || strcasecmp($s, "bad") == 0 || strcasecmp($s, "no") == 0
-            || $s === "\xE2\x88\x92" /* unicode MINUS */)
+        } else if ($s === "-" || strcasecmp($s, "bad") == 0 || strcasecmp($s, "no") == 0
+                   || $s === "\xE2\x88\x92" /* unicode MINUS */) {
             return ReviewInfo::RATING_BADMASK;
+        }
         foreach (ReviewInfo::$rating_bits as $bit => $name) {
             if (strcasecmp($s, $name) === 0)
                 return $bit;
@@ -1180,23 +1188,28 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         if (count($x) == 1) {
             reset($x);
             return key($x);
-        } else
+        } else {
             return null;
+        }
     }
 
     function merge(ReviewAdjustment_SearchTerm $x = null) {
-        $changed = null;
-        if ($x && $this->round === null && $x->round !== null)
-            $changed = $this->round = $x->round;
-        if ($x && $this->ratings === null && $x->ratings !== null)
-            $changed = $this->ratings = $x->ratings;
-        return $changed !== null;
+        $changed = false;
+        if ($x && $this->round === null && $x->round !== null) {
+            $this->round = $x->round;
+            $changed = true;
+        }
+        if ($x && $this->ratings === null && $x->ratings !== null) {
+            $this->ratings = $x->ratings;
+            $changed = true;
+        }
+        return $changed;
     }
     function promote(PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher(">0");
-        if (in_array($srch->limit(), ["r", "rout", "reviewable"], true))
+        if (in_array($srch->limit(), ["r", "rout", "reviewable"], true)) {
             $rsm->add_contact($srch->cid);
-        else if ($srch->limit() === "req") {
+        } else if ($srch->limit() === "req") {
             $rsm->apply_requester($srch->cid);
             $rsm->apply_review_type("external"); // XXX optional PC reviews?
         }
@@ -1205,51 +1218,61 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         return $term->negate_if($this->negated);
     }
     function promote_matcher(ReviewSearchMatcher $rsm) {
-        if ($this->round !== null)
+        if ($this->round !== null) {
             $rsm->adjust_round_list($this->round);
-        if ($this->ratings !== null)
+        }
+        if ($this->ratings !== null) {
             $rsm->adjust_ratings($this->ratings);
+        }
         $this->used_revadj = true;
     }
     function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
-        if ($revadj || $this->get_float("used_revadj"))
+        if ($revadj || $this->get_float("used_revadj")) {
             return $this;
-        else
+        } else {
             return $this->promote($srch);
+        }
     }
     function apply_negation() {
         if ($this->negated) {
-            if ($this->round !== null)
+            if ($this->round !== null) {
                 $this->round = array_diff(array_keys($this->conf->round_list()), $this->round);
-            if ($this->ratings !== null)
+            }
+            if ($this->ratings !== null) {
                 $this->ratings = new ReviewRating_SearchAdjustment("not", $this->ratings);
+            }
             $this->negated = false;
         }
     }
     function apply(ReviewAdjustment_SearchTerm $revadj = null, $is_or = false) {
         // XXX this is probably not right in fully general cases
-        if (!$revadj)
+        if (!$revadj) {
             return $this;
+        }
         if ($revadj->negated !== $this->negated || ($revadj->negated && $is_or)) {
             $revadj->apply_negation();
             $this->apply_negation();
         }
         if ($is_or || $revadj->negated) {
-            if ($this->round !== null)
+            if ($this->round !== null) {
                 $revadj->round = array_unique(array_merge($revadj->round, $this->round));
-            if ($this->ratings !== null && $revadj->ratings !== null)
+            }
+            if ($this->ratings !== null && $revadj->ratings !== null) {
                 $revadj->ratings = new ReviewRating_SearchAdjustment("or", [$this->ratings, $revadj->ratings]);
-            else if ($this->ratings !== null)
+            } else if ($this->ratings !== null) {
                 $revadj->ratings = $this->ratings;
+            }
         } else {
-            if ($revadj->round !== null && $this->round !== null)
+            if ($revadj->round !== null && $this->round !== null) {
                 $revadj->round = array_intersect($revadj->round, $this->round);
-            else if ($this->round !== null)
+            } else if ($this->round !== null) {
                 $revadj->round = $this->round;
-            if ($this->ratings !== null && $revadj->ratings !== null)
+            }
+            if ($this->ratings !== null && $revadj->ratings !== null) {
                 $revadj->ratings = new ReviewRating_SearchAdjustment("and", [$this->ratings, $revadj->ratings]);
-            else
+            } else {
                 $revadj->ratings = $this->ratings;
+            }
         }
         return $revadj;
     }
@@ -1301,12 +1324,13 @@ class PaperID_SearchTerm extends SearchTerm {
         while ($l < $r) {
             $m = $l + (($r - $l) >> 1);
             $x = $this->r[$m];
-            if ($p < $x[0])
+            if ($p < $x[0]) {
                 $r = $m;
-            else if ($p >= $x[1])
+            } else if ($p >= $x[1]) {
                 $l = $m + 1;
-            else
+            } else {
                 $l = $r = $m;
+            }
         }
         return $l;
     }
@@ -2072,16 +2096,18 @@ class PaperSearch {
     }
 
     static private function _shift_keyword($splitter, $curqe) {
-        if (!$splitter->match('/\A(?:[-+!()]|(?:AND|and|OR|or|NOT|not|XOR|xor|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $m))
+        if (!$splitter->match('/\A(?:[-+!()]|(?:AND|and|OR|or|NOT|not|XOR|xor|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $m)) {
             return null;
+        }
         $op = SearchOperator::get(strtoupper($m[0]));
         if (!$op) {
             $colon = strpos($m[0], ":");
             $op = clone SearchOperator::get(strtoupper(substr($m[0], 0, $colon)));
             $op->opinfo = substr($m[0], $colon + 1);
         }
-        if ($curqe && $op->unary)
+        if ($curqe && $op->unary) {
             return null;
+        }
         $splitter->shift_past($m[0]);
         return $op;
     }

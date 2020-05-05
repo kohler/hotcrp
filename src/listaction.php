@@ -32,7 +32,7 @@ class ListAction {
         if (is_array($selection)) {
             $selection = new SearchSelection($selection);
         }
-        if (get($uf, "paper") && $selection->is_empty()) {
+        if (($uf->paper ?? false) && $selection->is_empty()) {
             return new JsonResult(400, "No papers selected.");
         }
         if (!is_string($uf->callback)) {
@@ -91,8 +91,9 @@ class ListAction {
                                  "title" => $prow->title);
                 foreach ($rrows as $rrow) {
                     if ($rrow->reviewToken) {
-                        if (!array_key_exists($rrow->contactId, $token_users))
+                        if (!array_key_exists($rrow->contactId, $token_users)) {
                             $token_users[$rrow->contactId] = $user->conf->user_by_id($rrow->contactId);
+                        }
                         $u = $token_users[$rrow->contactId];
                     } else if ($rrow->reviewType >= REVIEW_PC) {
                         $u = get($pcm, $rrow->contactId);

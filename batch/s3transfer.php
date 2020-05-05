@@ -10,12 +10,14 @@ $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 
 $active = false;
-if (isset($arg["a"]) || isset($arg["active"]))
+if (isset($arg["a"]) || isset($arg["active"])) {
     $active = DocumentInfo::active_document_map($Conf);
+}
 $kill = isset($arg["k"]) || isset($arg["kill"]);
 $match = false;
-if (isset($arg["m"]) || isset($arg["match"]))
+if (isset($arg["m"]) || isset($arg["match"])) {
     $match = new DocumentHashMatcher(isset($arg["m"]) ? $arg["m"] : $arg["match"]);
+}
 
 if (!$Conf->setting_data("s3_bucket")) {
     fwrite(STDERR, "* S3 is not configured for this conference\n");
@@ -33,16 +35,18 @@ Dbl::free($result);
 Filer::$no_touch = true;
 $failures = 0;
 foreach ($sids as $sid) {
-    if ($active !== false && !isset($active[$sid]))
+    if ($active !== false && !isset($active[$sid])) {
         continue;
+    }
 
     $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
         compression, sha1, documentType, filename, infoJson, paper
         from PaperStorage where paperStorageId=$sid");
     $doc = DocumentInfo::fetch($result, $Conf);
     Dbl::free($result);
-    if ($doc->content === null && !$doc->load_docstore())
+    if ($doc->content === null && !$doc->load_docstore()) {
         continue;
+    }
     $front = "[" . $Conf->unparse_time_log($doc->timestamp) . "] "
         . $doc->export_filename() . " ($sid)";
 
@@ -53,24 +57,26 @@ foreach ($sids as $sid) {
                   . ", has checksum " . Filer::hash_as_text($chash));
     } else {
         $saved = $checked = $doc->check_s3();
-        if (!$saved)
+        if (!$saved) {
             $saved = $doc->store_s3();
+        }
         if (!$saved) {
             sleep(0.5);
             $saved = $doc->store_s3();
         }
     }
 
-    if ($checked)
+    if ($checked) {
         fwrite(STDOUT, "$front: " . $doc->s3_key() . " exists\n");
-    else if ($saved)
+    } else if ($saved) {
         fwrite(STDOUT, "$front: " . $doc->s3_key() . " saved\n");
-    else {
+    } else {
         fwrite(STDOUT, "$front: SAVE FAILED\n");
         ++$failures;
     }
-    if ($saved && $kill)
+    if ($saved && $kill) {
         $Conf->qe_raw("update PaperStorage set paper=null where paperStorageId=$sid");
+    }
 }
 if ($failures) {
     fwrite(STDERR, "Failed to save " . plural($failures, "document") . ".\n");

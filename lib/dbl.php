@@ -405,8 +405,9 @@ class Dbl {
             && !($flags & self::F_ALLOWERROR)
             && $dblink->warning_count) {
             $wresult = $dblink->query("show warnings");
-            while ($wresult && ($wrow = $wresult->fetch_row()))
+            while ($wresult && ($wrow = $wresult->fetch_row())) {
                 error_log(self::landmark() . ": database warning: $wrow[0] ($wrow[1]) $wrow[2]");
+            }
             $wresult && $wresult->close();
         }
         return $result;
@@ -414,8 +415,9 @@ class Dbl {
 
     static private function do_multi_query($args, $flags) {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
-        if (!($flags & self::F_RAW))
+        if (!($flags & self::F_RAW)) {
             $qstr = self::format_query_args($dblink, $qstr, $argv);
+        }
         return new Dbl_MultiResult($dblink, $flags, $qstr, self::call_query($dblink, $flags, "multi_query", $qstr));
     }
 
@@ -540,16 +542,18 @@ class Dbl {
     }
 
     static function free($result) {
-        if ($result && $result instanceof mysqli_result)
+        if ($result && $result instanceof mysqli_result) {
             $result->close();
+        }
     }
 
     // array of all first columns
     static private function do_make_result($args, $flags = self::F_ERROR) {
-        if (count($args) == 1 && !is_string($args[0]))
+        if (count($args) == 1 && !is_string($args[0])) {
             return $args[0];
-        else
+        } else {
             return self::do_query($args, $flags);
+        }
     }
 
     static function fetch_value(/* $result | [$dblink,] $query, ... */) {
@@ -569,8 +573,9 @@ class Dbl {
     static function fetch_rows(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = [];
-        while (($row = ($result ? $result->fetch_row() : null)))
+        while (($row = ($result ? $result->fetch_row() : null))) {
             $x[] = $row;
+        }
         $result && $result->close();
         return $x;
     }
@@ -578,8 +583,9 @@ class Dbl {
     static function fetch_objects(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = [];
-        while (($row = ($result ? $result->fetch_object() : null)))
+        while (($row = ($result ? $result->fetch_object() : null))) {
             $x[] = $row;
+        }
         $result && $result->close();
         return $x;
     }
@@ -677,10 +683,11 @@ class Dbl {
                 $t[1] += $what[1];
             }
             $qlog .= "query_log: total: " . json_encode($t) . "\n";
-            if (self::$query_log_file)
+            if (self::$query_log_file) {
                 @file_put_contents(self::$query_log_file, $qlog, FILE_APPEND);
-            else
+            } else {
                 error_log($qlog);
+            }
         }
         self::$query_log = false;
     }

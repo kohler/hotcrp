@@ -105,16 +105,19 @@ class ReviewInfo {
             $this->$k = (int) $this->$k;
         }
         foreach (["reviewModified", "reviewSubmitted", "reviewAuthorSeen"] as $k) {
-            if (isset($this->$k))
+            if (isset($this->$k)) {
                 $this->$k = (int) $this->$k;
+            }
         }
         if (isset($this->tfields) && ($x = json_decode($this->tfields, true))) {
-            foreach ($x as $k => $v)
+            foreach ($x as $k => $v) {
                 $this->$k = $v;
+            }
         }
         if (isset($this->sfields) && ($x = json_decode($this->sfields, true))) {
-            foreach ($x as $k => $v)
+            foreach ($x as $k => $v) {
                 $this->$k = $v;
+            }
         }
         if (!$recomputing_view_scores && $this->reviewViewScore == self::VIEWSCORE_RECOMPUTE) {
             assert($this->reviewViewScore != self::VIEWSCORE_RECOMPUTE);

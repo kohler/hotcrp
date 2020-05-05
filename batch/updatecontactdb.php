@@ -14,8 +14,9 @@ if (isset($arg["h"]) || isset($arg["help"])
 $users = isset($arg["u"]) || isset($arg["users"]);
 $papers = isset($arg["p"]) || isset($arg["papers"]);
 $collaborators = isset($arg["collaborators"]);
-if (!$users && !$papers && !$collaborators)
+if (!$users && !$papers && !$collaborators) {
     $users = $papers = true;
+}
 
 require_once("$ConfSitePATH/src/init.php");
 if (!$Conf->opt("contactdb_dsn")) {
@@ -43,8 +44,9 @@ if ($users) {
         join ContactInfo using (contactDbId)
         where confid=?", $confid);
     $cdb_users = [];
-    while ($result && ($user = $result->fetch_object()))
+    while ($result && ($user = $result->fetch_object())) {
         $cdb_users[$user->email] = $user;
+    }
     Dbl::free($result);
 
     // read current db roles
@@ -104,8 +106,9 @@ if ($papers) {
         Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title) values ?v on duplicate key update title=values(title)", $qv);
     }
     Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?A", $confid, $pids);
-    if ($confrow->last_submission_at != $max_submitted)
+    if ($confrow->last_submission_at != $max_submitted) {
         Dbl::ql($cdb, "update Conferences set last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $max_submitted, $confid);
+    }
 }
 
 if ($collaborators) {

@@ -18,7 +18,7 @@ class FileFilter {
 
     static function find_by_name(Conf $conf, $name) {
         self::load($conf);
-        return get($conf->_file_filters, $name);
+        return $conf->_file_filters[$name] ?? null;
     }
     static function all_by_name(Conf $conf) {
         self::load($conf);
@@ -26,9 +26,11 @@ class FileFilter {
     }
     static function apply_named($doc, PaperInfo $prow, $name) {
         if (($filter = self::find_by_name($prow->conf, $name))
-            && ($xdoc = $filter->apply($doc, $prow)))
+            && ($xdoc = $filter->apply($doc, $prow))) {
             return $xdoc;
-        return $doc;
+        } else {
+            return $doc;
+        }
     }
 
     function find_filtered($doc) {
@@ -36,8 +38,9 @@ class FileFilter {
             $result = $doc->conf->qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
             $fdoc = DocumentInfo::fetch($result, $doc->conf);
             Dbl::free($result);
-        } else
+        } else {
             $fdoc = null;
+        }
         if ($fdoc) {
             $fdoc->filters_applied = $doc->filters_applied;
             $fdoc->filters_applied[] = $this;
