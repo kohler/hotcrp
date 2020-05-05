@@ -2825,15 +2825,16 @@ class Contact {
                   || ($oview == "nonblind"
                       && !$this->can_view_authors($prow)))) {
             $whyNot["permission"] = "view_option";
-            $whyNot["optionPermission"] = $opt;
+            $whyNot["option"] = $opt;
         } else if ($opt->final
                    && ($prow->outcome <= 0
                        || $prow->timeSubmitted <= 0
                        || !$rights->can_view_decision)) {
-            $whyNot["optionNotAccepted"] = $opt;
+            $whyNot["optionNotAccepted"] = true;
+            $whyNot["option"] = $opt;
         } else {
             $whyNot["permission"] = "view_option";
-            $whyNot["optionPermission"] = $opt;
+            $whyNot["option"] = $opt;
         }
         return $whyNot;
     }

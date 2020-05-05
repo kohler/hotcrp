@@ -632,6 +632,7 @@ class SettingValues extends MessageSet {
         return $x;
     }
 
+    /** @return Si */
     function si($name) {
         $si = Si::get($this->conf, $name);
         if (!$si) {
@@ -682,6 +683,7 @@ class SettingValues extends MessageSet {
         $xname = str_replace(".", "_", $name);
         return $this->req[$xname] ?? $default_value;
     }
+    /** @return list<Si> */
     private function req_sis(Si $si) {
         $xsis = [];
         $xname = str_replace(".", "_", $si->name);

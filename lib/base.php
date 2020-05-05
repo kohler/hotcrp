@@ -243,7 +243,7 @@ function base64url_encode($text) {
     return rtrim(strtr(base64_encode($text), '+/', '-_'), '=');
 }
 
-function base64url_decode($data) {
+function base64url_decode($text) {
     return base64_decode(strtr($text, '-_', '+/'));
 }
 
