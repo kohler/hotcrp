@@ -236,6 +236,7 @@ src/help/h_search.php
 src/help/h_tags.php
 src/help/h_votetags.php
 src/helpers.php
+src/helprenderer.php
 src/hotcrpmailer.php
 src/init.php
 src/initweb.php

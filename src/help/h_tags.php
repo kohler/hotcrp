@@ -3,11 +3,14 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Tags_HelpTopic {
+    /** @var Conf */
     private $conf;
+    /** @var Contact */
     private $user;
+    /** @var HelpRenderer */
     private $hth;
 
-    function __construct($hth) {
+    function __construct(HelpRenderer $hth) {
         $this->conf = $hth->conf;
         $this->user = $hth->user;
         $this->hth = $hth;
@@ -15,8 +18,9 @@ class Tags_HelpTopic {
 
     function render_intro() {
         $conflictmsg = "";
-        if ($this->user->isPC && !$this->conf->tag_seeall)
+        if ($this->user->isPC && !$this->conf->tag_seeall) {
             $conflictmsg = " and conflicted PC members";
+        }
 
         echo "<p>PC members and administrators can attach tag names to papers.
 It’s easy to change tags and to list all papers with a given tag,
@@ -57,10 +61,11 @@ as a column.</p>
 
 <p>Tags are only shown to PC members and administrators. ";
         if ($this->user->isPC) {
-            if ($this->conf->tag_seeall)
+            if ($this->conf->tag_seeall) {
                 echo "Currently PC members can see tags for any paper, including conflicts.";
-            else
+            } else {
                 echo "They are hidden from conflicted PC members; for instance, if a PC member searches for a tag, the result will never include their conflicts.";
+            }
             echo $this->hth->setting_link("tag_seeall"), " ";
         }
         echo "Additionally, twiddle tags, which have names like “#~tag”, are
@@ -208,8 +213,9 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
 Publishing the order lets PC members prepare to discuss upcoming papers.
 Define an ordered tag such as “#discuss”, then ask the PC to ", $this->hth->search_link("search for “order:discuss”", "order:discuss"), ".
 The PC can now see the order and use quick links to go from paper to paper.";
-        if ($this->user->isPC && !$this->conf->tag_seeall)
+        if ($this->user->isPC && !$this->conf->tag_seeall) {
             echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->hth->setting_link("tag_seeall");
+        }
         echo "</p>\n";
     }
 

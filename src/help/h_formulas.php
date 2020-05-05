@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Formulas_HelpTopic {
-    static function render($hth) {
+    static function render(HelpRenderer $hth) {
         echo "<p>Program committee members and administrators can search and display <em>formulas</em>
 that calculate properties of paper scores&mdash;for instance, the
 standard deviation of papers’ Overall merit scores, or average Overall
@@ -92,8 +92,9 @@ scores A, B, and D is A. For instance:</p>
         echo $hth->trow("re:external", "True for external reviews");
         echo $hth->trow("re:pc", "True for PC reviews");
         echo $hth->trow("re:sylvia", "True if reviewer matches “sylvia”");
-        if (($retag = meaningful_pc_tag($hth->user)))
+        if (($retag = $hth->meaningful_pc_tag())) {
             echo $hth->trow("re:#$retag", "True if reviewer has tag “#{$retag}”");
+        }
         echo $hth->tgroup("Review preferences");
         echo $hth->trow("pref", "Review preference");
         echo $hth->trow("prefexp", "Predicted expertise");

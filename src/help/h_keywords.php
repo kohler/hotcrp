@@ -3,17 +3,18 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Keywords_HelpTopic {
-    static function render($hth) {
+    static function render(HelpRenderer $hth) {
         // how to report author searches?
-        if ($hth->conf->subBlindNever())
+        if ($hth->conf->subBlindNever()) {
             $aunote = "";
-        else if (!$hth->conf->subBlindAlways())
+        } else if (!$hth->conf->subBlindAlways()) {
             $aunote = "<br /><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</span>";
-        else
+        } else {
             $aunote = "<br /><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
+        }
 
         // does a reviewer tag exist?
-        $retag = meaningful_pc_tag($hth->user) ? : "";
+        $retag = $hth->meaningful_pc_tag() ? : "";
 
         echo $hth->table(true);
         echo $hth->tgroup("Basics");
@@ -92,18 +93,19 @@ class Keywords_HelpTopic {
 
         $cx = null;
         $cm = array();
-        foreach ($hth->conf->tags() as $t)
+        foreach ($hth->conf->tags() as $t) {
             foreach ($t->colors ? : array() as $c) {
                 $cx = $cx ? : $c;
                 if ($cx === $c)
                     $cm[] = "“{$t->tag}”";
             }
+        }
         if (!empty($cm)) {
             array_unshift($cm, "“{$cx}”");
             echo $hth->search_trow("style:$cx", "tagged to appear $cx (tagged " . commajoin($cm, "or") . ")");
         }
 
-        $roundname = meaningful_round_name($hth->user);
+        $roundname = $hth->meaningful_review_round_name();
 
         echo $hth->tgroup("Reviews");
         echo $hth->search_trow("re:me", "you are a reviewer");
@@ -111,8 +113,9 @@ class Keywords_HelpTopic {
         if ($retag)
             echo $hth->search_trow("re:#$retag", "has a reviewer tagged “#" . $retag . "”");
         echo $hth->search_trow("re:4", "four reviewers (assigned and/or completed)");
-        if ($retag)
+        if ($retag) {
             echo $hth->search_trow("re:#$retag>1", "at least two reviewers (assigned and/or completed) tagged “#" . $retag . "”");
+        }
         echo $hth->search_trow("re:complete<3", "less than three completed reviews<br /><span class=\"hint\">Use “cre:<3” for short.</span>");
         echo $hth->search_trow("re:incomplete>0", "at least one incomplete review");
         echo $hth->search_trow("re:inprogress", "at least one in-progress review (started, but not completed)");
@@ -123,10 +126,12 @@ class Keywords_HelpTopic {
         if ($roundname)
             echo $hth->search_trow("re:$roundname", "review in round “" . htmlspecialchars($roundname) . "”");
         echo $hth->search_trow("re:auwords<100", "has a review with less than 100 words in author-visible fields");
-        if ($hth->conf->setting("rev_tokens"))
+        if ($hth->conf->setting("rev_tokens")) {
             echo $hth->search_trow("retoken:J88ADNAB", "has a review with token J88ADNAB");
-        if ($hth->conf->setting("rev_ratings") != REV_RATINGS_NONE)
+        }
+        if ($hth->conf->setting("rev_ratings") != REV_RATINGS_NONE) {
             echo $hth->search_trow("rate:+", "review was rated positively (“rate:-” and “rate:boring” also work; can combine with “re:”)");
+        }
 
         echo $hth->tgroup("Comments");
         echo $hth->search_trow("has:cmt", "at least one visible reviewer comment (not including authors’ response)");
@@ -137,8 +142,9 @@ class Keywords_HelpTopic {
         if (count($rrds) > 1) {
             echo $hth->search_trow("has:response", "has an author’s response");
             echo $hth->search_trow("has:{$rrds[1]->name}response", "has {$rrds[1]->name} response");
-        } else
+        } else {
             echo $hth->search_trow("has:response", "has author’s response");
+        }
         echo $hth->search_trow("anycmt:>1", "at least two visible comments, possibly <em>including</em> author’s response");
 
         echo $hth->tgroup("Leads");
@@ -163,12 +169,14 @@ class Keywords_HelpTopic {
         echo $hth->search_trow(["q" => "status:withdrawn", "t" => "all"], "submission has been withdrawn");
         echo $hth->search_trow("has:final", "final version uploaded");
 
-        foreach ($hth->conf->decision_map() as $dnum => $dname)
+        foreach ($hth->conf->decision_map() as $dnum => $dname) {
             if ($dnum)
                 break;
+        }
         $qdname = strtolower($dname);
-        if (strpos($qdname, " ") !== false)
+        if (strpos($qdname, " ") !== false) {
             $qdname = "\"$qdname\"";
+        }
         echo $hth->tgroup("Decisions");
         echo $hth->search_trow("dec:$qdname", "decision is “" . htmlspecialchars($dname) . "” (partial matches OK)");
         echo $hth->search_trow("dec:yes", "one of the accept decisions");
@@ -181,8 +189,9 @@ class Keywords_HelpTopic {
         foreach ($hth->conf->review_form()->user_visible_fields($hth->user) as $f) {
             $farr[$f->has_options ? 0 : 1][] = $f;
         }
-        if (!empty($farr[0]) || !empty($farr[1]))
+        if (!empty($farr[0]) || !empty($farr[1])) {
             echo $hth->tgroup("Review fields");
+        }
         if (count($farr[0])) {
             $r = $farr[0][0];
             echo $hth->search_trow("{$r->abbreviation1()}:{$r->typical_score()}", "at least one completed review has $r->name_html score {$r->typical_score()}");
@@ -216,8 +225,9 @@ class Keywords_HelpTopic {
             echo $hth->search_trow("{$r->search_keyword()}:>{$r->typical_score()}", "at least one completed review has $r->name_html score $gt_typical" . $hint);
             echo $hth->search_trow("{$r->search_keyword()}:2<={$r->typical_score()}", "at least two completed reviews have $r->name_html score $le_typical");
             echo $hth->search_trow("{$r->search_keyword()}:=2<={$r->typical_score()}", "<em>exactly</em> two completed reviews have $r->name_html score $le_typical");
-            if ($roundname)
+            if ($roundname) {
                 echo $hth->search_trow("{$r->search_keyword()}:$roundname>{$r->typical_score()}", "at least one completed review in round " . htmlspecialchars($roundname) . " has $r->name_html score $gt_typical");
+            }
             echo $hth->search_trow("{$r->search_keyword()}:ext>{$r->typical_score()}", "at least one completed external review has $r->name_html score $gt_typical");
             echo $hth->search_trow("{$r->search_keyword()}:pc:2>{$r->typical_score()}", "at least two completed PC reviews have $r->name_html score $gt_typical");
             echo $hth->search_trow("{$r->search_keyword()}:sylvia={$r->typical_score()}", "“sylvia” (reviewer name/email) gave $r->name_html score {$r->typical_score()}");
