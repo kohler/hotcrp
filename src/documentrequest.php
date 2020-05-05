@@ -152,10 +152,11 @@ class DocumentRequest implements JsonSerializable {
         if (isset($req["filter"])) {
             foreach (explode(" ", $req["filter"]) as $filtername) {
                 if ($filtername !== "") {
-                    if (($filter = FileFilter::find_by_name($filtername)))
+                    if (($filter = FileFilter::find_by_name($conf, $filtername))) {
                         $this->filters[] = $filter;
-                    else
+                    } else {
                         throw new Exception("Document filter “{$filter}” not found.");
+                    }
                 }
             }
         }

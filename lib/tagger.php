@@ -791,7 +791,7 @@ class TagMap implements IteratorAggregate {
                     }
                     if (($x = get($data, "color"))) {
                         foreach (is_string($x) ? [$x] : $x as $c) {
-                            if (($kk = $this->known_style($c))) {
+                            if (($kk = $map->known_style($c))) {
                                 $t->colors[] = $kk;
                                 $map->has_colors = true;
                             }

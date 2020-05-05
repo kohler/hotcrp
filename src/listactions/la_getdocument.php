@@ -8,7 +8,10 @@ class GetDocument_ListAction extends ListAction {
         $this->dt = $fj->dtype;
     }
     static function make_list_action(PaperOption $opt) {
-        $fj = (object) [
+        return new GetDocument_ListAction($opt->conf, self::list_action_json($opt));
+    }
+    static function list_action_json(PaperOption $opt) {
+        return (object) [
             "name" => "get/" . $opt->dtype_name(),
             "dtype" => $opt->id,
             "selector" => "Documents/" . $opt->plural_title(),
@@ -16,12 +19,11 @@ class GetDocument_ListAction extends ListAction {
             "display_if_list_has" => $opt->field_key(),
             "callback" => "+GetDocument_ListAction"
         ];
-        return $fj;
     }
     static function expand($name, $user, $fj) {
         if (($o = $user->conf->paper_opts->find(substr($name, 4)))
             && $o->is_document()) {
-            return [self::make_list_action($o)];
+            return [self::list_action_json($o)];
         } else {
             return null;
         }

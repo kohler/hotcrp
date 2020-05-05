@@ -9,7 +9,7 @@ class Get_ListAction extends ListAction {
             if ($pl->user->can_view_some_option($o)
                 && $o->is_document()
                 && $pl->has($o->field_key()))
-                $actions[] = GetDocument_ListAction::make_list_action($o);
+                $actions[] = GetDocument_ListAction::list_action_json($o);
         }
         usort($actions, "Conf::xt_position_compare");
         $last_group = null;
@@ -42,7 +42,7 @@ class Get_ListAction extends ListAction {
             && count($opts) == 1
             && ($o = current($opts))
             && $user->can_view_some_option($o)) {
-            $ga = new GetDocument_ListAction($o->id);
+            $ga = GetDocument_ListAction::make_list_action($o);
             return $ga->run($user, $qreq, $ssel);
         } else {
             return self::ENOENT;

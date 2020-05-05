@@ -819,8 +819,9 @@ class DocumentInfo implements JsonSerializable {
         }
         if ($filters) {
             foreach (is_array($filters) ? $filters : [$filters] as $filter) {
-                if (is_string($filter))
-                    $filter = FileFilter::find_by_name($filter);
+                if (is_string($filter)) {
+                    $filter = FileFilter::find_by_name($this->conf, $filter);
+                }
                 if ($filter instanceof FileFilter) {
                     $fn .= "-" . $filter->name;
                     $mimetype = $filter->mimetype($this, $mimetype);

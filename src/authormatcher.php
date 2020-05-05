@@ -165,16 +165,6 @@ class AuthorMatcher extends Author {
         return $this->highlight_pregexes_ ? : $this->general_pregexes_;
     }
 
-    static function make($x, $nonauthor) {
-        if ($x !== "") {
-            $m = new AuthorMatcher($x);
-            if (!$m->is_empty()) {
-                $m->nonauthor = $nonauthor;
-                return $m;
-            }
-        }
-        return null;
-    }
     static function make_string_guess($x) {
         $m = new AuthorMatcher;
         $m->assign_string_guess($x);

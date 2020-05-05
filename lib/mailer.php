@@ -378,7 +378,7 @@ class Mailer {
 
     static function kw_capability($args, $isbool, $m, $uf) {
         if ($m->capability) {
-            $this->sensitive = true;
+            $m->sensitive = true;
         }
         return $isbool || $m->capability ? $m->capability : "";
     }

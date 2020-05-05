@@ -409,8 +409,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function check_document(PaperInfo $prow, $doc) {
         $this->clear();
         if (!$doc) {
-            if (!isset($this->errf["error"]))
+            if (!$this->has_problem_at("error")) {
                 $this->msg_fail("No such document.");
+            }
             return;
         } else if ($doc->mimetype !== "application/pdf") {
             return $this->msg_fail("The format checker only works for PDF files.");

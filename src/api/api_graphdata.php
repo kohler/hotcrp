@@ -9,7 +9,7 @@ class GraphData_API {
         }
         $fg = new FormulaGraph($user, $qreq->gtype ? : "scatter", $qreq->x, $qreq->y);
         if ($qreq->xorder) {
-            $fg->add_xorder($qreq->xorder);
+            $fg->set_xorder($qreq->xorder);
         }
 
         list($queries, $styles) = FormulaGraph::parse_queries($qreq);

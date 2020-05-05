@@ -492,7 +492,7 @@ class PaperList {
                 && $first_rowpos === 0) {
                 continue;
             }
-            $ginfo = $ginfo ? clone $ginfo : TagInfo::make_empty();
+            $ginfo = $ginfo ? clone $ginfo : TagAnno::make_empty();
             $ginfo->pos = $first_rowpos;
             $ginfo->count = $rowpos - $first_rowpos;
             // leave off an empty “Untagged” section unless editing

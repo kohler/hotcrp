@@ -794,8 +794,8 @@ class FormulaGraph extends MessageSet {
                 $j["ticks"] = ["named", $this->conf->decision_map()];
             } else if ($format === Fexpr::FBOOL) {
                 $j["ticks"] = ["named", ["no", "yes"]];
-            } else if ($format instanceof PaperOption && $format->has_selector()) {
-                $j["ticks"] = ["named", $format->selector];
+            } else if ($format instanceof SelectorPaperOption) {
+                $j["ticks"] = ["named", $format->selector_options()];
             } else if ($format === Fexpr::FROUND) {
                 $j["ticks"] = ["named", $this->remapped_rounds];
             } else if ($format === Fexpr::FREVTYPE) {
