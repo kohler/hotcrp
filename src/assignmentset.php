@@ -628,10 +628,15 @@ class UserlessAssignmentParser extends AssignmentParser {
 }
 
 class Assigner {
+    /** @var AssignmentItem */
     public $item;
+    /** @var string */
     public $type;
+    /** @var int */
     public $pid;
+    /** @var ?int */
     public $cid;
+    /** @var ?Contact */
     public $contact;
     public $next_index;
     function __construct(AssignmentItem $item, AssignmentState $state) {
@@ -749,9 +754,12 @@ class ReviewAssigner_Data {
 
 
 class AssignmentSet {
+    /** @var Conf */
     public $conf;
+    /** @var Contact */
     public $user;
     public $filename;
+    /** @var list<Assigner> */
     private $assigners = [];
     private $assigners_pidhead = [];
     private $enabled_pids = null;

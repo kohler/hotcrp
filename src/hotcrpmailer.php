@@ -30,6 +30,7 @@ class HotCRPMailPreparation extends MailPreparation {
 class HotCRPMailer extends Mailer {
     protected $contacts = array();
 
+    /** @var ?PaperInfo */
     protected $row;
     protected $rrow;
     protected $rrow_unsubmitted = false;

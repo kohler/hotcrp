@@ -325,9 +325,10 @@ function update_schema_missing_sha1($conf) {
 
 function update_schema_selector_options($conf) {
     $oids = [];
-    foreach ($conf->paper_opts->full_option_list() as $opt)
-        if ($opt->has_selector())
+    foreach ($conf->paper_opts->full_option_list() as $opt) {
+        if ($opt instanceof SelectorPaperOption)
             $oids[] = $opt->id;
+    }
     return empty($oids)
         || $conf->ql("update PaperOption set value=value+1 where optionId?a", $oids);
 }

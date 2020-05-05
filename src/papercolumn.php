@@ -125,6 +125,9 @@ class PaperColumn extends Column {
     function has_statistics() {
         return false;
     }
+    function statistic(PaperList $pl, $stat) {
+        return false;
+    }
 }
 
 class Id_PaperColumn extends PaperColumn {

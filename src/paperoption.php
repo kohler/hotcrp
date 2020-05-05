@@ -851,10 +851,6 @@ class PaperOption implements Abbreviator {
         $this->required = $x;
     }
 
-    function has_selector() {
-        return false;
-    }
-
     function is_document() {
         return false;
     }
@@ -1133,9 +1129,6 @@ class SelectorPaperOption extends PaperOption {
         $this->selector = $args->selector;
     }
 
-    function has_selector() {
-        return true;
-    }
     function selector_options() {
         return $this->selector;
     }

@@ -136,7 +136,7 @@ class Formula_PaperColumn extends PaperColumn {
             return is_int($x) ? $x : sprintf("%.2f", $x);
         }
     }
-    function statistic($pl, $stat) {
+    function statistic(PaperList $pl, $stat) {
         if ($stat === ScoreInfo::SUM
             && !$this->formula->result_format_is_real()) {
             return "—";

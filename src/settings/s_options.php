@@ -21,7 +21,7 @@ class Options_SettingRenderer {
         if ($optvt === "text" && $o->display_space > 3)
             $optvt .= ":ds_" . $o->display_space;
 
-        $self->add_option_class("fold4" . ($o->has_selector() ? "o" : "c"));
+        $self->add_option_class("fold4" . ($o instanceof SelectorPaperOption ? "o" : "c"));
 
         $jtypes = $sv->conf->option_type_map();
         if (!isset($jtypes[$optvt])
@@ -46,7 +46,7 @@ class Options_SettingRenderer {
 
         $rows = 3;
         $value = "";
-        if ($o->has_selector() && count($o->selector_options())) {
+        if ($o instanceof SelectorPaperOption && count($o->selector_options())) {
             $value = join("\n", $o->selector_options()) . "\n";
             $rows = max(count($o->selector_options()), 3);
         }
@@ -137,8 +137,9 @@ class Options_SettingRenderer {
                 else if ($sv->reqv("optec_$oxpos") === "search")
                     $args["exists_if"] = $sv->reqv("optecs_$oxpos");
                 $o = PaperOption::make((object) $args, $sv->conf);
-                if ($o->has_selector())
+                if ($o instanceof SelectorPaperOption) {
                     $o->set_selector_options(explode("\n", rtrim($sv->reqv("optv_$oxpos", ""))));
+                }
             }
         }
 
