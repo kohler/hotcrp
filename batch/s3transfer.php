@@ -26,7 +26,7 @@ if (!$Conf->setting_data("s3_bucket")) {
 
 $result = $Conf->qe_raw("select paperStorageId, sha1 from PaperStorage where paperStorageId>1");
 $sids = array();
-while (($row = edb_row($result))) {
+while (($row = $result->fetch_row())) {
     if (!$match || $match->test_hash(Filer::hash_as_text($row[1])))
         $sids[] = (int) $row[0];
 }

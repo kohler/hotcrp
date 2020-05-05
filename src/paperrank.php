@@ -47,7 +47,7 @@ class PaperRank {
         // load current ranks: $userrank maps user => [rank, paper]
         $result = $Conf->qe_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")");
         $len = strlen($source_tag) + 1;
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $l = (int) substr($row[1], 0, strlen($row[1]) - $len);
             $this->userrank[$l][] = array((int) $row[2], (int) $row[0]);
         }

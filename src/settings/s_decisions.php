@@ -35,7 +35,7 @@ class Decisions_SettingParser extends SettingParser {
         // count papers per decision
         $decs_pcount = array();
         $result = $sv->conf->qe_raw("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $decs_pcount[$row[0]] = $row[1];
         }
 

@@ -110,7 +110,7 @@ class Autoassigner {
         $papers = array_fill_keys($this->papersel, 1);
         $result = $this->conf->preference_conflict_result($papertype, "");
         $this->ass = ["paper,action,email"];
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             if (!isset($papers[$row[0]]) || !isset($this->pcm[$row[1]])) {
                 continue;
             }
@@ -139,7 +139,7 @@ class Autoassigner {
         }
         $this->ass = ["paper,action,email"];
         $result = $this->conf->qe_raw($q);
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             if (isset($papers[$row[0]]) && isset($this->pcm[$row[1]])) {
                 $this->ass[] = "$row[0],$action," . $this->pcm[$row[1]]->email;
             }
@@ -154,7 +154,7 @@ class Autoassigner {
             $q .= " and reviewType={$reviewtype}";
         }
         $result = $this->conf->qe($q . " group by contactId", array_keys($this->pcm));
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $this->load[(int) $row[0]] = (int) $row[1];
         }
         Dbl::free($result);
@@ -163,7 +163,7 @@ class Autoassigner {
     private function balance_paperpc($action) {
         $q = "select {$action}ContactId, count(paperId) from Paper where paperId ?A group by {$action}ContactId";
         $result = $this->conf->qe($q, $this->papersel);
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $this->load[(int) $row[0]] = (int) $row[1];
         }
         Dbl::free($result);
@@ -186,7 +186,7 @@ class Autoassigner {
 
         // first load refusals
         $result = $this->conf->qe("select paperId, contactId from PaperReviewRefused where paperId ?a", $this->papersel);
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $this->eass[(int) $row[1]][(int) $row[0]] = self::ENOASSIGN;
         }
 
@@ -221,7 +221,7 @@ class Autoassigner {
         $missing_pcm = array_diff(array_keys($this->badpairs), array_keys($this->pcm));
         if ($missing_pcm) {
             $result = $this->conf->qe("select contactId, paperId from PaperReview where paperId?a and contactId?a", $this->papersel, array_values($missing_pcm));
-            while (($row = edb_row($result))) {
+            while (($row = $result->fetch_row())) {
                 $this->eass[$row[0]][$row[1]] = max($this->eass[$row[0]][$row[1]], self::ENOASSIGN);
             }
             Dbl::free($result);
@@ -703,7 +703,7 @@ class Autoassigner {
         $this->preferences_paperpc($preference);
         $papers = array_fill_keys($this->papersel, 0);
         $result = $this->conf->qe("select paperId from Paper where {$action}ContactId=0");
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             if (isset($papers[$row[0]]))
                 $papers[$row[0]] = 1;
         }
@@ -743,7 +743,7 @@ class Autoassigner {
         $this->preferences_review($reviewtype);
         $papers = array_fill_keys($this->papersel, $nass);
         $result = $this->conf->qe("select paperId, count(reviewId) from PaperReview where reviewType={$reviewtype} group by paperId");
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             if (isset($papers[$row[0]]))
                 $papers[$row[0]] = max($nass - $row[1], 0);
         }
@@ -833,7 +833,7 @@ class Autoassigner {
             $cflt[$pid] = array();
         }
         $result = $this->conf->qe("select paperId, contactId from PaperConflict where paperId?a and contactId?a and conflictType>" . CONFLICT_MAXUNCONFLICTED, $this->papersel, array_keys($this->pcm));
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $cflt[(int) $row[0]][] = (int) $row[1];
         }
         Dbl::free($result);

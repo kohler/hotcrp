@@ -183,7 +183,7 @@ class Tags_SettingParser extends SettingParser {
                 $pvals = array();
                 $cvals = array();
                 $negative = false;
-                while (($row = edb_row($result))) {
+                while (($row = $result->fetch_row())) {
                     $who = substr($row[1], 0, strpos($row[1], "~"));
                     if ($row[2] < 0) {
                         $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for #$row[0].");
@@ -221,7 +221,7 @@ class Tags_SettingParser extends SettingParser {
                 $result = $sv->conf->q_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
                 $pvals = array();
                 $negative = false;
-                while (($row = edb_row($result))) {
+                while (($row = $result->fetch_row())) {
                     $who = substr($row[1], 0, strpos($row[1], "~"));
                     if ($row[2] < 0) {
                         $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for #$row[0].");

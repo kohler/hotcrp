@@ -17,7 +17,7 @@ if (isset($Qreq->fromlog)
     && ctype_digit($Qreq->fromlog)
     && $Me->privChair) {
     $result = $Conf->qe_raw("select * from MailLog where mailId=" . $Qreq->fromlog);
-    if (($row = edb_orow($result))) {
+    if (($row = $result->fetch_object())) {
         foreach (["recipients", "q", "t", "cc", "replyto", "subject", "emailBody"] as $field) {
             if (isset($row->$field) && !isset($Qreq[$field]))
                 $Qreq[$field] = $row->$field;
@@ -482,7 +482,7 @@ class MailSender {
         $fake_prep->fake = true;
         $last_prep = $fake_prep;
         $nrows_done = 0;
-        $nrows_total = edb_nrows($result);
+        $nrows_total = $result->num_rows;
         $nwarnings = 0;
         $preperrors = array();
         $revinform = ($this->recipients == "newpcrev" ? array() : null);
@@ -722,11 +722,11 @@ echo "  <tr><td class=\"mhnp nw\"><label for=\"subject\">Subject:</label></td><t
 
 if ($Me->privChair) {
     $result = $Conf->qe_raw("select mailId, subject, emailBody from MailLog where fromNonChair=0 and status>=0 order by mailId desc limit 200");
-    if (edb_nrows($result)) {
+    if ($result->num_rows) {
         echo '<div style="padding-top:12px;max-height:24em;overflow-y:auto">',
             "<strong>Recent mails:</strong>\n";
         $i = 1;
-        while (($row = edb_orow($result))) {
+        while (($row = $result->fetch_object())) {
             echo '<div class="mhdd"><div style="position:relative;overflow:hidden">',
                 '<div style="position:absolute;white-space:nowrap"><span style="min-width:2em;text-align:right;display:inline-block" class="dim">', $i, '.</span> <a class="q" href="', hoturl("mail", "fromlog=" . $row->mailId), '">', htmlspecialchars($row->subject), ' &ndash; <span class="dim">', htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)), "</span></a></div>",
                 "<br></div></div>\n";

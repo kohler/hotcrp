@@ -286,7 +286,7 @@ class DocumentInfo implements JsonSerializable {
             $content = $this->content();
             for ($p = 0; $p < strlen($content); $p += 400000) {
                 $result = $this->conf->qe("update PaperStorage set paper=concat(coalesce(paper,''),?) where paperId=? and paperStorageId=?", substr($content, $p, 400000), $this->paperId, $this->paperStorageId);
-                if (!$result) {
+                if (Dbl::is_error($result)) {
                     break;
                 }
                 Dbl::free($result);

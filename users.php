@@ -116,7 +116,10 @@ if ((isset($Qreq->pap) && is_array($Qreq->pap))
 
 if ($getaction == "nameemail" && isset($papersel) && $Viewer->isPC) {
     $result = $Conf->qe_raw("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
-    $people = edb_orows($result);
+    $people = [];
+    while (($row = $result->fetch_object())) {
+        $people[] = $row;
+    }
     csv_exit($Conf->make_csvg("users")
              ->select(["first", "last", "email", "affiliation"])
              ->add($people));

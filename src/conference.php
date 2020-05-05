@@ -1779,7 +1779,7 @@ class Conf {
 
     function user_id_by_email($email) {
         $result = $this->qe("select contactId from ContactInfo where email=?", trim($email));
-        $row = edb_row($result);
+        $row = $result->fetch_row();
         Dbl::free($result);
         return $row ? (int) $row[0] : false;
     }
@@ -2820,7 +2820,7 @@ class Conf {
         $dlt = max($this->setting("sub_sub"), $this->setting("sub_close"));
         $result = $this->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
         $n = $nyes = 0;
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $n += $row[1];
             if ($row[0] > 0) {
                 $nyes += $row[1];

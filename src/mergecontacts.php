@@ -19,16 +19,20 @@ class MergeContacts extends MessageSet {
         $this->error_at("merge", $msg);
     }
     private function merge1($table, $idfield) {
-        if (!$this->conf->q("update $table set $idfield=? where $idfield=?",
-                            $this->newu->contactId, $this->oldu->contactId))
+        $result = $this->conf->q("update $table set $idfield=? where $idfield=?",
+                                 $this->newu->contactId, $this->oldu->contactId);
+        if ($result->errno) {
             $this->add_error($this->conf->db_error_html(true));
+        }
     }
     private function merge1_ignore($table, $idfield) {
-        if (!$this->conf->q("update ignore $table set $idfield=? where $idfield=?",
-                            $this->newu->contactId, $this->oldu->contactId)
-            && !$this->conf->q("delete from $table where $idfield=?",
-                               $this->oldu->contactId))
+        $result1 = $this->conf->q("update ignore $table set $idfield=? where $idfield=?",
+                                  $this->newu->contactId, $this->oldu->contactId);
+        $result2 = $this->conf->q("delete from $table where $idfield=?",
+                                  $this->oldu->contactId);
+        if ($result2->errno) {
             $this->add_error($this->conf->db_error_html(true));
+        }
     }
     private function replace_contact_string($k) {
         return (string) $this->oldu->$k !== "" && (string) $this->newu->$k === "";
@@ -79,7 +83,7 @@ class MergeContacts extends MessageSet {
         // ensure uniqueness in PaperConflict
         $result = $this->conf->qe("select paperId, conflictType from PaperConflict where contactId=?", $this->oldu->contactId);
         $qv = [];
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $qv[] = [$row[0], $this->newu->contactId, $row[1]];
         }
         if ($qv) {

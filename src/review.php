@@ -2194,8 +2194,8 @@ class ReviewValues extends MessageSet {
                 $table_suffix = ", PaperTag read";
             }
             $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
-            if (!$result) {
-                return $result;
+            if (Dbl::is_error($result)) {
+                return false;
             }
             Dbl::free($result);
             $locked = true;
@@ -2235,7 +2235,7 @@ class ReviewValues extends MessageSet {
         if ($locked) {
             $this->conf->qe_raw("unlock tables");
         }
-        if (!$result) {
+        if (Dbl::is_error($result)) {
             return false;
         }
 

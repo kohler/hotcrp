@@ -28,7 +28,7 @@ class AdminHome_Partial {
         }
         $result = Dbl::qx($conf->dblink, "show variables like 'max_allowed_packet'");
         $max_file_size = ini_get_bytes("upload_max_filesize");
-        if (($row = edb_row($result))
+        if (($row = $result->fetch_row())
             && $row[1] < $max_file_size
             && !$conf->opt("dbNoPapers")) {
             $m[] = $errmarker . "MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.";
@@ -66,7 +66,7 @@ class AdminHome_Partial {
         }
         // Any -100 preferences around?
         $result = $conf->preference_conflict_result("s", "limit 1");
-        if (($row = edb_row($result))) {
+        if (($row = $result->fetch_row())) {
             $m[] = 'PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. <a href="' . hoturl_post("conflictassign") . '" class="nw">Confirm these conflicts</a>';
         }
         // Weird URLs?
@@ -79,7 +79,7 @@ class AdminHome_Partial {
         if ($conf->setting("pcrev_assigntime", 0) > $conf->setting("pcrev_informtime", 0)) {
             $assigntime = $conf->setting("pcrev_assigntime");
             $result = $conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1");
-            if (edb_nrows($result))
+            if ($result->num_rows)
                 $m[] = "PC review assignments have changed.&nbsp; <a href=\"" . hoturl("mail", "template=newpcrev") . "\">Send review assignment notifications</a> <span class=\"barsep\">·</span> <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">Clear this message</a>";
             else
                 $conf->save_setting("pcrev_informtime", $assigntime);

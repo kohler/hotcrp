@@ -3,14 +3,36 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Dbl_Result {
+    public $num_rows = 0;
     public $affected_rows;
     public $insert_id;
     public $warning_count;
+    public $errno;
+    public $query_string;
 
-    function __construct(mysqli $dblink) {
-        $this->affected_rows = $dblink->affected_rows;
-        $this->insert_id = $dblink->insert_id;
-        $this->warning_count = $dblink->warning_count;
+    static function make(mysqli $dblink, $qstr = null) {
+        $r = new Dbl_Result;
+        $r->affected_rows = $dblink->affected_rows;
+        $r->insert_id = $dblink->insert_id;
+        $r->warning_count = $dblink->warning_count;
+        $r->errno = $dblink->errno;
+        $r->query_string = $qstr;
+        return $r;
+    }
+    static function make_empty() {
+        $r = new Dbl_Result;
+        $r->affected_rows = $r->warning_count = 0;
+        $r->insert_id = null;
+        $r->errno = 1002;
+        return $r;
+    }
+    function fetch_row() {
+        return null;
+    }
+    function fetch_object() {
+        return null;
+    }
+    function close() {
     }
 }
 
@@ -349,6 +371,7 @@ class Dbl {
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
+    /** @return mysqli_result|bool|null */
     static private function call_query($dblink, $flags, $qfunc, $qstr) {
         if ($flags & self::F_ECHO) {
             error_log($qstr);
@@ -367,27 +390,27 @@ class Dbl {
         return $result;
     }
 
+    /** @return mysqli_result|Dbl_Result */
     static private function do_query_with($dblink, $qstr, $argv, $flags) {
         if (!($flags & self::F_RAW)) {
             $qstr = self::format_query_args($dblink, $qstr, $argv);
         }
-        if (!$qstr) {
-            error_log(self::landmark() . ": empty query");
-            return false;
-        }
         return self::do_result($dblink, $flags, $qstr, self::call_query($dblink, $flags, "query", $qstr));
     }
 
+    /** @return mysqli_result|Dbl_Result */
     static private function do_query($args, $flags) {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         return self::do_query_with($dblink, $qstr, $argv, $flags);
     }
 
+    /** @return mysqli_result|Dbl_Result */
     static function do_query_on($dblink, $args, $flags) {
         list($ignored_dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         return self::do_query_with($dblink, $qstr, $argv, $flags);
     }
 
+    /** @return mysqli_result|Dbl_Result */
     static public function do_result($dblink, $flags, $qstr, $result) {
         if ($result === false && $dblink->errno) {
             if (!($flags & self::F_ALLOWERROR)) {
@@ -398,8 +421,11 @@ class Dbl {
             } else if ($flags & self::F_LOG) {
                 error_log(self::landmark() . ": database error: " . $dblink->error . " in $qstr");
             }
+            $result = Dbl_Result::make($dblink, $qstr);
         } else if ($result === false || $result === true) {
-            $result = new Dbl_Result($dblink);
+            $result = Dbl_Result::make($dblink);
+        } else if ($result === null) {
+            $result = Dbl_Result::make_empty($dblink);
         }
         if (self::$check_warnings
             && !($flags & self::F_ALLOWERROR)
@@ -545,6 +571,11 @@ class Dbl {
         if ($result && $result instanceof mysqli_result) {
             $result->close();
         }
+    }
+
+    static function is_error($result) {
+        return !$result
+            || ($result instanceof Dbl_Result && $result->errno);
     }
 
     // array of all first columns

@@ -13,8 +13,9 @@ class Follow_AssignmentParser extends AssignmentParser {
             return;
         }
         $result = $state->conf->qe("select paperId, contactId, watch from PaperWatch where watch!=0 and paperId?a", $state->paper_ids());
-        while (($row = edb_row($result)))
+        while (($row = $result->fetch_row())) {
             $state->load(["type" => "follow", "pid" => +$row[0], "cid" => +$row[1], "_watch" => +$row[2]]);
+        }
         Dbl::free($result);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {

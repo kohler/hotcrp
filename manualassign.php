@@ -159,8 +159,8 @@ $result = $Conf->qe_raw("select ContactInfo.contactId, count(reviewId)
                 left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
                 where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0
                 group by ContactInfo.contactId");
-$rev_count = array();
-while (($row = edb_row($result))) {
+$rev_count = [];
+while (($row = $result->fetch_row())) {
     $rev_count[$row[0]] = $row[1];
 }
 

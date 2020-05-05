@@ -227,7 +227,7 @@ class Home_Partial {
         left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
             where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0
         group by ContactInfo.contactId");
-            while (($row = edb_row($result))) {
+            while (($row = $result->fetch_row())) {
                 ++$npc;
                 if ($row[0]) {
                     $sumpcSubmit += $row[0];
@@ -336,7 +336,7 @@ class Home_Partial {
             $badratings = PaperSearch::unusableRatings($user);
             $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
             $result = $conf->qe_raw("select sum((rating&" . ReviewInfo::RATING_GOODMASK . ")!=0), sum((rating&" . ReviewInfo::RATING_BADMASK . ")!=0) from PaperReview join ReviewRating using (reviewId) where PaperReview.contactId={$user->contactId} $qx");
-            $row = edb_row($result);
+            $row = $result->fetch_row();
             Dbl::free($result);
 
             $a = [];

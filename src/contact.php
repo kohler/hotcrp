@@ -275,7 +275,7 @@ class Contact {
             assert($this->contactId > 0);
             $need = $this->conf->sliced_users($this);
             $result = $this->conf->qe("select * from ContactInfo where contactId?a", array_keys($need));
-            while ($result && ($m = $result->fetch_object())) {
+            while (($m = $result->fetch_object())) {
                 $need[$m->contactId]->unslice_using($m);
             }
             $this->_slice = false;
@@ -1268,9 +1268,11 @@ class Contact {
                 }
             }
         }
-        if (($ok = !!$result)) {
-            foreach ($updater as $k => $v)
+        $ok = !Dbl::is_error($result);
+        if ($ok) {
+            foreach ($updater as $k => $v) {
                 $this->$k = $v;
+            }
         }
         Dbl::free($result);
         return $ok;
@@ -4239,7 +4241,7 @@ class Contact {
     function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
         global $Now;
         $result = $this->conf->qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy, reviewSubmitted from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
-        $rrow = edb_orow($result);
+        $rrow = $result->fetch_object();
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
         $type = max((int) $type, 0);
@@ -4287,7 +4289,8 @@ class Contact {
             return $reviewId;
         }
 
-        if (!($result = $this->conf->qe_raw($q))) {
+        $result = $this->conf->qe_raw($q);
+        if (Dbl::is_error($result)) {
             return false;
         }
 
@@ -4364,7 +4367,7 @@ class Contact {
             }
         }
         $result = $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=?, timeApprovalRequested=0 where paperId=? and reviewId=?", $needsSubmit, $rrow->paperId, $rrow->reviewId);
-        if ($result && $result->affected_rows && $rrow->reviewType < REVIEW_SECONDARY) {
+        if ($result->affected_rows && $rrow->reviewType < REVIEW_SECONDARY) {
             $this->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
         }
         if (!$extra || !get($extra, "no_autosearch")) {

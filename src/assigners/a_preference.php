@@ -11,7 +11,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             return;
         }
         $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference where paperId?a", $state->paper_ids());
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $state->load(["type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])]);
         }
         Dbl::free($result);

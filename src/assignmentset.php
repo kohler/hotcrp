@@ -513,7 +513,7 @@ class AssignmentCountSet {
                 where p.timeWithdrawn<=0 and p.timeSubmitted>0
                 and u.roles!=0 and (u.roles&" . Contact::ROLE_PC . ")!=0
                 group by u.contactId");
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $ct = $this->ensure($row[0]);
             $ct->rev = strlen($row[1]);
             $ct->meta = substr_count($row[1], REVIEW_META);
@@ -526,7 +526,7 @@ class AssignmentCountSet {
         $result = $this->conf->qe("select {$type}ContactId, count(paperId)
                 from Paper where timeWithdrawn<=0 and timeSubmitted>0
                 group by {$type}ContactId");
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $ct = $this->ensure($row[0]);
             $ct->$type = +$row[1];
         }

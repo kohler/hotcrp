@@ -35,7 +35,7 @@ function fix_one_delegation() {
 
     $result = Dbl::qe("select l.* from ActionLog l where paperId=? order by logId asc", $pid);
     $proposals = $confirmations = [];
-    while (($row = edb_orow($result))) {
+    while (($row = $result->fetch_object())) {
         if ($row->contactId == $req_cid
             && preg_match('/\ALogged proposal for (\S+) to review/', $row->action, $m)
             && ($xid = $Conf->user_id_by_email($m[1]))) {

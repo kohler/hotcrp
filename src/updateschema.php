@@ -3,10 +3,12 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 function update_schema_create_review_form($conf) {
-    if (!($result = $conf->ql("select * from ReviewFormField where fieldName!='outcome'")))
+    $result = $conf->ql("select * from ReviewFormField where fieldName!='outcome'");
+    if (Dbl::is_error($result)) {
         return false;
+    }
     $rfj = (object) array();
-    while (($row = edb_orow($result))) {
+    while (($row = $result->fetch_object())) {
         $field = (object) array();
         $field->name = $row->shortName;
         if (trim($row->description) != "") {
@@ -32,10 +34,11 @@ function update_schema_create_review_form($conf) {
         $rfj->$fname = $field;
     }
 
-    if (!($result = $conf->ql("select * from ReviewFormOptions where fieldName!='outcome' order by level asc"))) {
+    $result = $conf->ql("select * from ReviewFormOptions where fieldName!='outcome' order by level asc");
+    if (Dbl::is_error($result)) {
         return false;
     }
-    while (($row = edb_orow($result))) {
+    while (($row = $result->fetch_object())) {
         $fname = $row->fieldName;
         if (isset($rfj->$fname) && isset($rfj->$fname->options)) {
             $rfj->$fname->options[$row->level - 1] = $row->description;
@@ -47,12 +50,13 @@ function update_schema_create_review_form($conf) {
 }
 
 function update_schema_create_options($conf) {
-    if (!($result = $conf->ql("select * from OptionType"))) {
+    $result = $conf->ql("select * from OptionType");
+    if (Dbl::is_error($result)) {
         return false;
     }
     $opsj = (object) array();
     $byabbr = array();
-    while (($row = edb_orow($result))) {
+    while (($row = $result->fetch_object())) {
         // backward compatibility with old schema versions
         if (!isset($row->optionValues)) {
             $row->optionValues = "";
@@ -143,7 +147,7 @@ function update_schema_create_options($conf) {
 
 function update_schema_transfer_address($conf) {
     $result = $conf->ql("select * from ContactAddress");
-    while (($row = edb_orow($result))) {
+    while (($row = $result->fetch_object())) {
         if (($c = $conf->user_by_id($row->contactId))) {
             $x = (object) array();
             if ($row->addressLine1 || $row->addressLine2) {
@@ -170,11 +174,12 @@ function update_schema_unaccented_name($conf) {
     }
 
     $result = $conf->ql("select contactId, firstName, lastName from ContactInfo");
-    if (!$result)
+    if (Dbl::is_error($result)) {
         return false;
+    }
 
     $qs = $qv = array();
-    while ($result && ($x = $result->fetch_row())) {
+    while (($x = $result->fetch_row())) {
         $qs[] = "update ContactInfo set unaccentedName=? where contactId=$x[0]";
         $qv[] = Text::unaccented_name($x[1], $x[2]);
     }
@@ -194,7 +199,7 @@ function update_schema_unaccented_name($conf) {
 
 function update_schema_transfer_country($conf) {
     $result = $conf->ql("select * from ContactInfo where `data` is not null and `data`!='{}'");
-    while ($result && ($c = Contact::fetch($result, $conf))) {
+    while (($c = Contact::fetch($result, $conf))) {
         if (($country = $c->data("country"))) {
             $conf->ql("update ContactInfo set country=? where contactId=?", $country, $c->contactId);
         }
@@ -207,7 +212,7 @@ function update_schema_review_word_counts($conf) {
     do {
         $q = array();
         $result = $conf->ql("select * from PaperReview where reviewWordCount is null limit 32");
-        while (($rrow = edb_orow($result))) {
+        while (($rrow = $result->fetch_object())) {
             $q[] = "update PaperReview set reviewWordCount="
                 . $rf->word_count($rrow) . " where reviewId=" . $rrow->reviewId;
         }
@@ -243,7 +248,8 @@ function update_schema_check_column_exists($conf, $table, $column) {
 }
 
 function update_schema_mimetype_extensions($conf) {
-    if (!($result = $conf->ql("select * from Mimetype where extension is null"))) {
+    $result = $conf->ql("select * from Mimetype where extension is null");
+    if (Dbl::is_error($result)) {
         return false;
     }
     $qv = [];
@@ -327,7 +333,7 @@ function update_schema_split_review_request_name(Conf $conf) {
     }
     $result = $conf->ql("select * from ReviewRequest");
     $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
-    while ($result && ($row = $result->fetch_object())) {
+    while (($row = $result->fetch_object())) {
         list($first, $last) = Text::split_name($row->name);
         $cleanf("update ReviewRequest set firstName=?, lastName=? where paperId=? and email=?", [(string) $first === "" ? null : $first,
                    (string) $last === "" ? null : $last,
@@ -520,7 +526,7 @@ function updateSchema($conf) {
             // update review rounds (XXX locking)
             $result = $conf->ql("select paperId, tag from PaperTag where tag like '%~%'");
             $rrs = array();
-            while (($row = edb_row($result))) {
+            while (($row = $result->fetch_row())) {
                 list($contact, $round) = explode("~", $row[1]);
                 if (($round = array_search($round, $conf->round_list()))) {
                     if (!isset($rrs[$round]))
@@ -691,7 +697,7 @@ function updateSchema($conf) {
         $conf->update_schema_version(43);
     if ($conf->sversion == 42
         && ($result = $conf->ql("describe PaperComment `ordinal`"))
-        && ($o = edb_orow($result))
+        && ($o = $result->fetch_object())
         && substr($o->Type, 0, 3) == "int"
         && (!$o->Null || $o->Null == "NO")
         && (!$o->Default || $o->Default == "0"))
@@ -737,13 +743,14 @@ function updateSchema($conf) {
     if (($conf->sversion == 52
          || ($conf->sversion >= 53
              && ($result = $conf->ql("show columns from PaperComment like 'commentType'"))
-             && edb_nrows($result) == 0))
+             && !Dbl::is_error($result)
+             && $result->num_rows == 0))
         && $conf->ql("lock tables PaperComment write, Settings write")
         && $conf->ql("alter table PaperComment add `commentType` int(11) NOT NULL DEFAULT '0'")) {
         $new_sversion = max($conf->sversion, 53);
         $result = $conf->ql("show columns from PaperComment like 'forAuthors'");
-        if (!$result
-            || edb_nrows($result) == 0
+        if (Dbl::is_error($result)
+            || $result->num_rows == 0
             || ($conf->ql("update PaperComment set commentType=" . (COMMENTTYPE_AUTHOR | COMMENTTYPE_RESPONSE) . " where forAuthors=2")
                 && $conf->ql("update PaperComment set commentType=commentType|" . COMMENTTYPE_DRAFT . " where forAuthors=2 and forReviewers=0")
                 && $conf->ql("update PaperComment set commentType=" . COMMENTTYPE_ADMINONLY . " where forAuthors=0 and forReviewers=2")
@@ -848,8 +855,9 @@ function updateSchema($conf) {
     if (!isset($conf->settings["outcome_map"])) {
         $ojson = array();
         $result = $conf->ql("select * from ReviewFormOptions where fieldName='outcome'");
-        while (($row = edb_orow($result)))
+        while (($row = $result->fetch_object())) {
             $ojson[$row->level] = $row->description;
+        }
         $conf->save_setting("outcome_map", 1, $ojson);
     }
     if ($conf->sversion == 62
@@ -1086,7 +1094,7 @@ function updateSchema($conf) {
     // author-visible comments
     if ($conf->sversion == 107) {
         $result = $conf->ql("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " order by commentId");
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $conf->ql("update PaperComment,
 (select coalesce(count(commentId),0) commentCount from Paper
     left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
@@ -1095,7 +1103,7 @@ set ordinal=(t.commentCount+1) where commentId=$row[1]");
         }
 
         $result = $conf->ql("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $conf->ql("update PaperComment,
 (select coalesce(count(commentId),0) commentCount from Paper
     left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
@@ -1104,7 +1112,7 @@ set authorOrdinal=(t.commentCount+1) where commentId=$row[1]");
         }
 
         $result = $conf->ql("select paperId, commentId from PaperComment where ordinal=authorOrdinal and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $conf->ql("update PaperComment,
 (select coalesce(max(ordinal),0) maxOrdinal from Paper
     left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])

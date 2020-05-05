@@ -69,7 +69,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             return;
         }
         $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag where paperId?a", $state->paper_ids());
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => (float) $row[2]]);
         }
         Dbl::free($result);

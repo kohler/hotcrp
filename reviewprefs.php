@@ -277,7 +277,7 @@ if ($Me->privChair) {
 
     $prefcount = [];
     $result = $Conf->qe_raw("select contactId, count(*) from PaperReviewPreference where preference!=0 or expertise is not null group by contactId");
-    while (($row = edb_row($result))) {
+    while (($row = $result->fetch_row())) {
         $prefcount[$row[0]] = $row[1];
     }
 

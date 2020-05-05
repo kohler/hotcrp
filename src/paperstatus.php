@@ -1155,7 +1155,7 @@ class PaperStatus extends MessageSet {
             $ps->_conflict_ins = [];
             if (!empty($ps->_new_conflicts)) {
                 $result = $ps->conf->qe("select contactId, email from ContactInfo where email?a", array_keys($ps->_new_conflicts));
-                while (($row = edb_row($result))) {
+                while (($row = $result->fetch_row())) {
                     $ps->_conflict_ins[] = [-1, $row[0], $ps->_new_conflicts[strtolower($row[1])]];
                 }
                 Dbl::free($result);
@@ -1264,7 +1264,7 @@ class PaperStatus extends MessageSet {
             }
 
             $result = $this->conf->qe("select paperId from Paper where paperId?a", $pids);
-            while ($result && ($row = $result->fetch_row())) {
+            while (($row = $result->fetch_row())) {
                 $pids = array_values(array_diff($pids, [(int) $row[0]]));
             }
             Dbl::free($result);
@@ -1398,7 +1398,7 @@ class PaperStatus extends MessageSet {
                 if ($random_pids) {
                     $this->conf->qe("unlock tables");
                 }
-                if (!$result || !$result->insert_id) {
+                if (Dbl::is_error($result) || !$result->insert_id) {
                     return $this->error_at(false, $this->_("Could not create paper."));
                 }
                 $this->paperId = (int) $result->insert_id;

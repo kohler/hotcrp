@@ -454,8 +454,8 @@ if ($Me->can_administer($prow)) {
             where reviewType>=" . REVIEW_PC . " and timeSubmitted>=0
             group by contactId) A using (contactId)
         where ContactInfo.roles!=0 and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0");
-    $pcx = array();
-    while (($row = edb_orow($result))) {
+    $pcx = [];
+    while (($row = $result->fetch_object())) {
         $pcx[$row->contactId] = $row;
     }
 

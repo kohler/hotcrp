@@ -80,7 +80,7 @@ if ($Qreq->u !== "") {
     $where = array();
     if (count($ids)) {
         $result = $Conf->qe("select contactId, email from ContactInfo where contactId?a union select contactId, email from DeletedContactInfo where contactId?a", $ids, $ids);
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             $where[] = "contactId=$row[0]";
             $where[] = "destContactId=$row[0]";
             $where[] = "action like " . Dbl::utf8ci("'% " . sqlq_for_like($row[1]) . "%'");

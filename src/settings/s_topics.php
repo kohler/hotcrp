@@ -8,7 +8,7 @@ class Topics_SettingRenderer {
         // load topic interests
         $result = $sv->conf->q_raw("select topicId, interest from TopicInterest where interest!=0");
         $interests = [];
-        while (($row = edb_row($result))) {
+        while (($row = $result->fetch_row())) {
             if (!isset($interests[$row[0]])) {
                 $interests[$row[0]] = [0, 0];
             }

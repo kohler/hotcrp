@@ -1327,7 +1327,7 @@ class SettingValues extends MessageSet {
             // load db settings, pre-crosscheck
             $dbsettings = array();
             $result = $this->conf->qe("select name, value, data from Settings");
-            while (($row = edb_row($result))) {
+            while (($row = $result->fetch_row())) {
                 $dbsettings[$row[0]] = $row;
             }
             Dbl::free($result);

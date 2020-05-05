@@ -654,7 +654,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
 
         $result = $this->conf->qe_apply($q, $qv);
-        if (!$result) {
+        if (Dbl::is_error($result)) {
             return false;
         }
 

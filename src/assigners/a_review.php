@@ -15,7 +15,7 @@ class Review_AssignmentParser extends AssignmentParser {
     static function load_review_state(AssignmentState $state) {
         if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make")) {
             $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted, timeApprovalRequested from PaperReview where paperId?a", $state->paper_ids());
-            while (($row = edb_row($result))) {
+            while (($row = $result->fetch_row())) {
                 $round = $state->conf->round_name($row[3]);
                 $state->load([
                     "type" => "review", "pid" => +$row[0], "cid" => +$row[1],

@@ -95,7 +95,7 @@ if ($papers) {
     $max_submitted = 0;
     $pids = [];
     $qv = [];
-    while (($row = edb_row($result))) {
+    while (($row = $result->fetch_row())) {
         $qv[] = [$confid, $row[0], $row[1]];
         $pids[] = $row[0];
         $max_submitted = max($max_submitted, (int) $row[2]);
@@ -113,7 +113,7 @@ if ($papers) {
 
 if ($collaborators) {
     $result = Dbl::ql($Conf->dblink, "select email, collaborators, updateTime, lastLogin from ContactInfo where collaborators is not null and collaborators!=''");
-    while (($row = edb_row($result))) {
+    while (($row = $result->fetch_row())) {
         $time = (int) $row[2] ? : (int) $row[3];
         if ($time > 0) {
             Dbl::ql($cdb, "update ContactInfo set collaborators=?, updateTime=? where email=? and (collaborators is null or collaborators='' or updateTime<?)", $row[1], $time, $row[0], $time);

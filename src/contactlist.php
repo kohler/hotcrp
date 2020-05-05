@@ -631,8 +631,8 @@ class ContactList {
 
         // make query
         $result = $this->conf->qe_raw($pq);
-        if (!$result)  {
-            return NULL;
+        if (Dbl::is_error($result)) {
+            return null;
         }
 
         // fetch data
