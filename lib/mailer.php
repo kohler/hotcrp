@@ -644,11 +644,13 @@ class Mailer {
     }
 
 
+    /** @return MailPreparation */
     function create_preparation() {
         assert($this->recipient);
         return new MailPreparation($this->conf, $this->recipient);
     }
 
+    /** @return MailPreparation */
     function make_preparation($template, $rest = []) {
         // look up template
         if (is_string($template) && $template[0] === "@") {

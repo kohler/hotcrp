@@ -3,11 +3,16 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class ReviewInfo {
+    /** @var Conf */
     public $conf;
+    /** @var int */
     public $paperId;
+    /** @var int */
     public $reviewId;
+    /** @var int */
     public $contactId;
     public $reviewToken;
+    /** @var int */
     public $reviewType;
     public $reviewRound;
     public $requestedBy;
@@ -126,8 +131,10 @@ class ReviewInfo {
             $conf->review_form()->compute_view_scores();
         }
     }
+    /** @return ?ReviewInfo */
     static function fetch($result, Conf $conf, $recomputing_view_scores = false) {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
+        '@phan-var ?ReviewInfo $rrow';
         if ($rrow) {
             $rrow->merge($conf, $recomputing_view_scores);
         }
@@ -145,12 +152,21 @@ class ReviewInfo {
         $rrow = new ReviewInfo;
         $rrow->paperId = $prow->paperId;
         $vals = explode(" ", $signature);
-        list($rrow->reviewId, $rrow->contactId, $rrow->reviewToken,
-             $rrow->reviewType, $rrow->reviewRound, $rrow->requestedBy,
-             $rrow->reviewBlind, $rrow->reviewModified, $rrow->reviewSubmitted,
-             $rrow->reviewAuthorSeen, $rrow->reviewOrdinal,
-             $rrow->timeDisplayed, $rrow->timeApprovalRequested,
-             $rrow->reviewNeedsSubmit, $rrow->reviewViewScore) = $vals;
+        $rrow->reviewId = (int) $vals[0];
+        $rrow->contactId = (int) $vals[1];
+        $rrow->reviewToken = $vals[2];
+        $rrow->reviewType = (int) $vals[3];
+        $rrow->reviewRound = (int) $vals[4];
+        $rrow->requestedBy = (int) $vals[5];
+        $rrow->reviewBlind = (int) $vals[6];
+        $rrow->reviewModified = (int) $vals[7];
+        $rrow->reviewSubmitted = (int) $vals[8];
+        $rrow->reviewAuthorSeen = (int) $vals[9];
+        $rrow->reviewOrdinal = (int) $vals[10];
+        $rrow->timeDisplayed = (int) $vals[11];
+        $rrow->timeApprovalRequested = (int) $vals[12];
+        $rrow->reviewNeedsSubmit = (int) $vals[13];
+        $rrow->reviewViewScore = (int) $vals[14];
         for ($i = 15; isset($vals[$i]); ++$i) {
             $eq = strpos($vals[$i], "=");
             $f = self::field_info(substr($vals[$i], 0, $eq), $prow->conf);

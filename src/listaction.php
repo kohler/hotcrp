@@ -96,7 +96,7 @@ class ListAction {
                         }
                         $u = $token_users[$rrow->contactId];
                     } else if ($rrow->reviewType >= REVIEW_PC) {
-                        $u = get($pcm, $rrow->contactId);
+                        $u = $pcm[$rrow->contactId] ?? null;
                     } else {
                         $u = null;
                     }

@@ -1299,8 +1299,10 @@ class Formula implements Abbreviator, JsonSerializable {
         $this->formulaId = (int) $this->formulaId;
     }
 
+    /** @return ?Formula */
     static function fetch(Conf $conf, $result) {
         $formula = $result ? $result->fetch_object("Formula") : null;
+        '@phan-var ?Formula $formula';
         if ($formula) {
             $formula->conf = $conf;
             if (!is_int($formula->formulaId)) {

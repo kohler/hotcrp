@@ -20,6 +20,7 @@ class PaperValue implements JsonSerializable {
         $this->_values = [];
         $this->_data = [];
     }
+    /** @return PaperValue */
     static function make($prow, PaperOption $o, $value = null, $data = null) {
         $ov = new PaperValue($prow, $o);
         if ($value !== null) {
@@ -27,16 +28,19 @@ class PaperValue implements JsonSerializable {
         }
         return $ov;
     }
+    /** @return PaperValue */
     static function make_multi($prow, PaperOption $o, $values, $datas) {
         $ov = new PaperValue($prow, $o);
         $ov->set_value_data($values, $datas);
         return $ov;
     }
+    /** @return PaperValue */
     static function make_estop($prow, PaperOption $o, $error_html) {
         $ov = new PaperValue($prow, $o);
         $ov->estop($error_html);
         return $ov;
     }
+    /** @return PaperValue */
     static function make_force($prow, PaperOption $o) {
         $ov = new PaperValue($prow, $o);
         if ($o->id <= 0) {
@@ -62,6 +66,7 @@ class PaperValue implements JsonSerializable {
             $this->value = $this->_values[0] ?? null;
         }
     }
+    /** @return ?string */
     function data() {
         if ($this->_data === null) {
             $this->load_value_data();
@@ -72,18 +77,22 @@ class PaperValue implements JsonSerializable {
             return null;
         }
     }
+    /** @return int */
     function value_count() {
         return count($this->_values);
     }
+    /** @return list<int> */
     function value_array() {
         return $this->_values;
     }
+    /** @return list<string> */
     function data_array() {
         if ($this->_data === null) {
             $this->load_value_data();
         }
         return $this->_data;
     }
+    /** @return list<DocumentInfo> */
     function documents() {
         assert($this->prow || empty($this->_values));
         assert($this->option->has_document());
@@ -98,9 +107,13 @@ class PaperValue implements JsonSerializable {
         }
         return $this->_documents;
     }
+    /** @param int $index
+     * @return ?DocumentInfo */
     function document($index) {
         return ($this->documents())[$index] ?? null;
     }
+    /** @param int $index
+     * @return string|false */
     function document_content($index) {
         $doc = $this->document($index);
         return $doc ? $doc->content() : false;
@@ -187,10 +200,13 @@ class PaperValue implements JsonSerializable {
 }
 
 class PaperOptionList {
+    /** @var Conf */
     private $conf;
     private $_jlist;
+    /** @var array<int,PaperOption> */
     private $_omap = [];
     private $_ijlist;
+    /** @var array<int,PaperOption> */
     private $_imap = [];
     private $_olist;
     private $_olist_nonfinal;
@@ -1635,7 +1651,7 @@ class AttachmentsPaperOption extends PaperOption {
     function value_dids(PaperValue $ov) {
         $j = null;
         foreach ($ov->data_array() as $d) {
-            if (str_starts_with($d, "{"))
+            if ($d !== null && str_starts_with($d, "{"))
                 $j = json_decode($d);
         }
         if ($j && isset($j->all_dids)) {

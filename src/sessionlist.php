@@ -26,6 +26,8 @@ class SessionList {
         return $pos > 0 ? substr($this->listid, 0, $pos) : false;
     }
 
+    /** @param string $s
+     * @return list<int> */
     static function decode_ids($s) {
         if (str_starts_with($s, "[")
             && ($a = json_decode($s)) !== null) {
@@ -103,11 +105,13 @@ class SessionList {
         return $a;
     }
 
+    /** @param list<string> $a */
     static private function encoding_ends_numerically($a) {
         $w = $a[count($a) - 1];
         return is_int($w) || ctype_digit($w[strlen($w) - 1]);
     }
 
+    /** @param list<string> $a */
     static private function encoding_ends_with_r($a) {
         $w = $a[count($a) - 1];
         return !is_int($w) && $w[0] === "r";

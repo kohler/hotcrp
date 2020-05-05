@@ -163,6 +163,7 @@ function initialize_user() {
         if ($lb[0] == $Conf->dsn
             && $lb[2] !== "index"
             && $lb[2] == Navigation::page()) {
+            assert($Qreq instanceof Qrequest);
             foreach ($lb[3] as $k => $v) {
                 if (!isset($Qreq[$k]))
                     $Qreq[$k] = $v;

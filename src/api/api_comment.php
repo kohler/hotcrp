@@ -9,14 +9,7 @@ class Comment_API {
         return empty($cmts) ? null : current($cmts);
     }
     static private function find_response($round, $prow) {
-        if (is_string($round)) {
-            $round = $prow->conf->resp_round_number($round);
-        }
-        if ($round !== false) {
-            return self::find_comment("(commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=" . (int) $round, $prow);
-        } else {
-            return new JsonResult(404, "No such response rouund.");
-        }
+        return $round === false ? null : self::find_comment("(commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=" . (int) $round, $prow);
     }
     static private function save_success_message($xcrow) {
         $what = $xcrow->commentId ? "saved" : "deleted";
@@ -71,7 +64,7 @@ class Comment_API {
         // check if response changed
         $changed = true;
         if ($response
-            && $req["text"] === rtrim(cleannl($xcrow->commentOverflow ? : $xcrow->comment))) {
+            && $req["text"] === rtrim(cleannl((string) ($xcrow->commentOverflow ? : $xcrow->comment)))) {
             $changed = false;
         }
 
@@ -142,10 +135,10 @@ class Comment_API {
             $ok = $xcrow->save($req, $suser);
 
             // check for response simultaneity
-            if (!$ok && $xcrow->is_response()) {
-                $ocrow = self::find_response((int) $xcrow->commentRound, $prow);
-                if ($ocrow
-                    && $ocrow->comment === $req["text"]
+            if (!$ok
+                && $xcrow->is_response()
+                && ($ocrow = self::find_response((int) $xcrow->commentRound, $prow))) {
+                if ($ocrow->comment === $req["text"]
                     && $ocrow->attachment_ids() == $xcrow->attachment_ids()) {
                     $xcrow = $ocrow;
                     $ok = true;
@@ -163,6 +156,21 @@ class Comment_API {
         return [$xcrow, $ok, $msg];
     }
 
+    static private function lookup(Qrequest $qreq, $prow) {
+        if (ctype_digit($qreq->c)) {
+            $crow = self::find_comment("commentId=" . intval($qreq->c), $prow);
+            return [$crow, "No such comment."];
+        } else if (str_ends_with($qreq->c, "response")) {
+            $rname = substr($qreq->c, 0, -8);
+        } else if (str_starts_with($qreq->c, "response")) {
+            $rname = substr($qreq->c, 8);
+        } else {
+            return [null, "No such comment."];
+        }
+        $round = $prow->conf->resp_round_number($response_name);
+        return [self::find_response($round, $prow), "No such response."];
+    }
+
     static function run(Contact $user, Qrequest $qreq, $prow) {
         // check parameters
         if ((!isset($qreq->text) && !isset($qreq->delete) && $qreq->is_post())
@@ -171,22 +179,14 @@ class Comment_API {
         }
 
         // find comment
-        $crow = $msg = null;
+        $crow = $msg = $response_name = null;
         if (!$qreq->c && $qreq->response && $qreq->is_get()) {
             $qreq->c = ($qreq->response === "1" ? "" : $qreq->response) . "response";
         }
         if ($qreq->c && $qreq->c !== "new") {
-            if (ctype_digit($qreq->c)) {
-                $crow = self::find_comment("commentId=" . intval($qreq->c), $prow);
-            } else if (str_ends_with($qreq->c, "response")) {
-                $crow = self::find_response(substr($qreq->c, 0, -8), $prow);
-            } else if (str_starts_with($qreq->c, "response")) {
-                $crow = self::find_response(substr($qreq->c, 8), $prow);
-            }
-            if ($crow === null) {
-                return new JsonResult(404, "No such comment.");
-            } else if ($crow instanceof JsonResult) {
-                return $crow;
+            list($crow, $msg) = self::lookup($qreq, $prow);
+            if (!$crow) {
+                return new JsonResult(404, $msg);
             }
         }
 

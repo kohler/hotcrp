@@ -177,7 +177,7 @@ class Si {
         }
 
         // defaults for size, placeholder
-        if (str_ends_with($this->type, "date")) {
+        if ($this->type && str_ends_with($this->type, "date")) {
             if ($this->size === null) {
                 $this->size = 32;
             }

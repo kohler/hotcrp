@@ -26,6 +26,7 @@ class Mimetype {
 
     private static $tmap = [];
 
+    /** @var array<string,array{0:string,1:?string,2:int,3?:string,4?:string,5?:string}> */
     private static $tinfo = [
         self::TXT_TYPE =>     [".txt", "text", self::FLAG_INLINE],
         self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE],
@@ -51,6 +52,8 @@ class Mimetype {
         $this->flags = $flags;
     }
 
+    /** @param string|Mimetype $type
+     * @return ?Mimetype */
     static function lookup($type, $nocreate = false) {
         global $ConfSitePATH;
         if (!$type) {
@@ -102,6 +105,7 @@ class Mimetype {
     }
 
 
+    /** @param string|Mimetype $type */
     static function type($type) {
         if (($x = self::lookup($type, true))) {
             return $x->mimetype;
@@ -110,6 +114,7 @@ class Mimetype {
         }
     }
 
+    /** @param string|Mimetype $type */
     static function type_with_charset($type) {
         if (($x = self::lookup($type, true))) {
             if ($x->flags & self::FLAG_UTF8) {
@@ -122,15 +127,18 @@ class Mimetype {
         }
     }
 
+    /** @param string|Mimetype $type */
     static function type_equals($typea, $typeb) {
-        return self::type($typea) == self::type($typeb);
+        return self::type($typea) === self::type($typeb);
     }
 
+    /** @param string|Mimetype $type */
     static function extension($type) {
         $x = self::lookup($type);
         return $x && $x->extension ? $x->extension : "";
     }
 
+    /** @param string|Mimetype $type */
     static function description($type) {
         if (is_array($type)) {
             $a = array();
@@ -153,6 +161,7 @@ class Mimetype {
         }
     }
 
+    /** @param string|Mimetype $type */
     static function disposition_inline($type) {
         $x = self::lookup($type, true);
         return $x && ($x->flags & self::FLAG_INLINE) !== 0;

@@ -1147,9 +1147,10 @@ class PaperTable {
         echo '<p class="pgsm"><span class="pstat ', $status_info[0], '">',
             htmlspecialchars($status_info[1]), "</span></p>";
 
+        $renders = [];
+        '@phan-var list<array{PaperOption,int,string,mixed,bool}> $renders';
         $fr = new FieldRender(FieldRender::CPAGE);
         $fr->table = $this;
-        $renders = [];
         foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
             if ($o->display_position() === false
                 || $o->display_position() < 1000

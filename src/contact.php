@@ -116,8 +116,10 @@ class Contact {
         }
     }
 
+    /** @return ?Contact */
     static function fetch($result, Conf $conf) {
         $user = $result ? $result->fetch_object("Contact", [null, $conf]) : null;
+        '@phan-var ?Contact $user';
         if ($user && !is_int($user->contactId)) {
             $user->conf = $conf;
             $user->db_load();

@@ -11,24 +11,32 @@ function is_number($x) {
 
 // string helpers
 
+/** @param string $haystack
+ * @param string $needle */
 function str_starts_with($haystack, $needle) {
     $nl = strlen($needle);
     $hl = strlen($haystack);
     return $nl === 0 || ($hl >= $nl && substr_compare($haystack, $needle, 0, $nl) === 0);
 }
 
+/** @param string $haystack
+ * @param string $needle */
 function str_ends_with($haystack, $needle) {
     $nl = strlen($needle);
     $hl = strlen($haystack);
     return $nl === 0 || ($hl >= $nl && substr_compare($haystack, $needle, -$nl) === 0);
 }
 
+/** @param string $haystack
+ * @param string $needle */
 function stri_ends_with($haystack, $needle) {
     $nl = strlen($needle);
     $hl = strlen($haystack);
     return $nl === 0 || ($hl >= $nl && substr_compare($haystack, $needle, -$nl, $nl, true) === 0);
 }
 
+/** @param string $pattern
+ * @param string $subject */
 function preg_matchpos($pattern, $subject) {
     if (preg_match($pattern, $subject, $m, PREG_OFFSET_CAPTURE)) {
         return $m[0][1];
@@ -37,6 +45,7 @@ function preg_matchpos($pattern, $subject) {
     }
 }
 
+/** @param string $text */
 function cleannl($text) {
     if (substr($text, 0, 3) === "\xEF\xBB\xBF") {
         $text = substr($text, 3);
@@ -66,37 +75,40 @@ function space_join(/* $str_or_array, ... */) {
     return $t;
 }
 
+/** @param string $str */
 function is_usascii($str) {
     return !preg_match('/[\x80-\xFF]/', $str);
 }
 
+/** @param string $str */
 function is_valid_utf8($str) {
     return !!preg_match('//u', $str);
 }
 
 if (function_exists("iconv")) {
-    function windows_1252_to_utf8($str) {
+    function windows_1252_to_utf8(string $str) {
         return iconv("Windows-1252", "UTF-8//IGNORE", $str);
     }
-    function mac_os_roman_to_utf8($str) {
+    function mac_os_roman_to_utf8(string $str) {
         return iconv("Mac", "UTF-8//IGNORE", $str);
     }
 } else if (function_exists("mb_convert_encoding")) {
-    function windows_1252_to_utf8($str) {
+    function windows_1252_to_utf8(string $str) {
         return mb_convert_encoding($str, "UTF-8", "Windows-1252");
     }
 }
 if (!function_exists("windows_1252_to_utf8")) {
-    function windows_1252_to_utf8($str) {
+    function windows_1252_to_utf8(string $str) {
         return UnicodeHelper::windows_1252_to_utf8($str);
     }
 }
 if (!function_exists("mac_os_roman_to_utf8")) {
-    function mac_os_roman_to_utf8($str) {
+    function mac_os_roman_to_utf8(string $str) {
         return UnicodeHelper::mac_os_roman_to_utf8($str);
     }
 }
 
+/** @param string $str */
 function convert_to_utf8($str) {
     if (substr($str, 0, 3) === "\xEF\xBB\xBF") {
         $str = substr($str, 3);
@@ -113,16 +125,21 @@ function convert_to_utf8($str) {
     }
 }
 
-function simplify_whitespace($x) {
+/** @param string $str */
+function simplify_whitespace($str) {
     // Replace invisible Unicode space-type characters with true spaces,
     // including control characters and DEL.
-    return trim(preg_replace('/(?:[\x00-\x20\x7F]|\xC2[\x80-\xA0]|\xE2\x80[\x80-\x8A\xA8\xA9\xAF]|\xE2\x81\x9F|\xE3\x80\x80)+/', " ", $x));
+    return trim(preg_replace('/(?:[\x00-\x20\x7F]|\xC2[\x80-\xA0]|\xE2\x80[\x80-\x8A\xA8\xA9\xAF]|\xE2\x81\x9F|\xE3\x80\x80)+/', " ", $str));
 }
 
+/** @param string $prefix
+ * @param string $text
+ * @param int|string $indent
+ * @param int $totWidth */
 function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
     if (is_int($indent)) {
         $indentlen = $indent;
-        $indent = str_pad("", $indent);
+        $indent = str_repeat(" ", $indent);
     } else {
         $indentlen = strlen($indent);
     }
@@ -156,6 +173,9 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
     return $out;
 }
 
+/** @param string $text
+ * @param int $totWidth
+ * @param bool $multi_center */
 function center_word_wrap($text, $totWidth = 75, $multi_center = false) {
     if (strlen($text) <= $totWidth && !preg_match('/[\200-\377]/', $text)) {
         return str_pad($text, (int) (($totWidth + strlen($text)) / 2), " ", STR_PAD_LEFT) . "\n";
@@ -168,6 +188,7 @@ function center_word_wrap($text, $totWidth = 75, $multi_center = false) {
     return $out;
 }
 
+/** @param string $text */
 function count_words($text) {
     return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text);
 }
@@ -189,6 +210,7 @@ interface Abbreviator {
 
 // email and MIME helpers
 
+/** @param string $email */
 function validate_email($email) {
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
     if (!preg_match(':\A[-!#$%&\'*+./0-9=?A-Z^_`a-z{|}~]+@(.+)\z:', $email, $m)) {
@@ -200,10 +222,12 @@ function validate_email($email) {
     }
 }
 
+/** @param string $word */
 function mime_quote_string($word) {
     return '"' . preg_replace('_(?=[\x00-\x1F\\"])_', '\\', $word) . '"';
 }
 
+/** @param string $word */
 function mime_token_quote($word) {
     if (preg_match('_\A[^][\x00-\x20\x80-\xFF()<>@,;:\\"/?=]+\z_', $word)) {
         return $word;
@@ -212,6 +236,7 @@ function mime_token_quote($word) {
     }
 }
 
+/** @param string $words */
 function rfc2822_words_quote($words) {
     if (preg_match(':\A[-A-Za-z0-9!#$%&\'*+/=?^_`{|}~ \t]*\z:', $words)) {
         return $words;
@@ -223,6 +248,7 @@ function rfc2822_words_quote($words) {
 
 // encoders and decoders
 
+/** @param string $text */
 function html_id_encode($text) {
     $x = preg_split('_([^-a-zA-Z0-9])_', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
     for ($i = 1; $i < count($x); $i += 2) {
@@ -231,6 +257,7 @@ function html_id_encode($text) {
     return join("", $x);
 }
 
+/** @param string $text */
 function html_id_decode($text) {
     $x = preg_split(',(_[0-9A-Fa-f][0-9A-Fa-f]),', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
     for ($i = 1; $i < count($x); $i += 2) {
@@ -239,10 +266,12 @@ function html_id_decode($text) {
     return join("", $x);
 }
 
+/** @param string $text */
 function base64url_encode($text) {
     return rtrim(strtr(base64_encode($text), '+/', '-_'), '=');
 }
 
+/** @param string $text */
 function base64url_decode($text) {
     return base64_decode(strtr($text, '-_', '+/'));
 }
@@ -268,6 +297,9 @@ function json_encode_db($x, $flags = 0) {
 
 // array and object helpers
 
+/** @param object|array|null $var
+ * @param string|int $idx
+ * @return mixed */
 function get($var, $idx, $default = null) {
     if (is_array($var)) {
         return array_key_exists($idx, $var) ? $var[$idx] : $default;
@@ -281,14 +313,23 @@ function get($var, $idx, $default = null) {
     }
 }
 
+/** @param object|array|null $var
+ * @param string|int $idx
+ * @return string */
 function get_s($var, $idx, $default = null) {
     return (string) get($var, $idx, $default);
 }
 
+/** @param object|array|null $var
+ * @param string|int $idx
+ * @return int */
 function get_i($var, $idx, $default = null) {
     return (int) get($var, $idx, $default);
 }
 
+/** @param object|array|null $var
+ * @param string|int $idx
+ * @return float */
 function get_f($var, $idx, $default = null) {
     return (float) get($var, $idx, $default);
 }
@@ -307,7 +348,7 @@ function uploaded_file_error($finfo) {
     }
 }
 
-function make_qreq() {
+function make_qreq() : Qrequest {
     $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
     $qreq->set_page_path(Navigation::page(), Navigation::path());
     foreach ($_GET as $k => $v) {

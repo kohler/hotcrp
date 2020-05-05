@@ -137,8 +137,10 @@ class TagAnno implements JsonSerializable {
     function is_fencepost() {
         return $this->tagIndex >= (float) TAG_INDEXBOUND;
     }
+    /** @return ?TagAnno */
     static function fetch($result, Conf $conf) {
         $ta = $result ? $result->fetch_object("TagAnno") : null;
+        '@phan-var ?TagAnno $ta';
         if ($ta) {
             $ta->annoId = (int) $ta->annoId;
             $ta->tagIndex = (float) $ta->tagIndex;

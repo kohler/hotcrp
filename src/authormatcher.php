@@ -6,7 +6,7 @@ class AuthorMatcher extends Author {
     private $firstName_matcher;
     private $lastName_matcher;
     private $affiliation_matcher;
-    private $general_pregexes_;
+    private $general_pregexes_ = false;
     private $highlight_pregexes_;
 
     private static $wordinfo;
@@ -137,7 +137,7 @@ class AuthorMatcher extends Author {
                 "preg_utf8" => Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
             ];
         } else {
-            $this->general_pregexes_ = false;
+            $this->general_pregexes_ = null;
         }
         if ($highlight_any !== false && $highlight_any !== $any[count($any) - 1]) {
             $any[count($any) - 1] = $highlight_any;
@@ -147,22 +147,22 @@ class AuthorMatcher extends Author {
                 "preg_utf8" => Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
             ];
         } else {
-            $this->highlight_pregexes_ = false;
+            $this->highlight_pregexes_ = null;
         }
     }
 
     function general_pregexes() {
-        if ($this->general_pregexes_ === null) {
+        if ($this->general_pregexes_ === false) {
             $this->prepare();
         }
         return $this->general_pregexes_;
     }
 
     function highlight_pregexes() {
-        if ($this->general_pregexes_ === null) {
+        if ($this->general_pregexes_ === false) {
             $this->prepare();
         }
-        return $this->highlight_pregexes_ ? : $this->general_pregexes_;
+        return $this->highlight_pregexes_ ?? $this->general_pregexes_;
     }
 
     static function make_string_guess($x) {
@@ -189,7 +189,7 @@ class AuthorMatcher extends Author {
     const MATCH_NAME = 1;
     const MATCH_AFFILIATION = 2;
     function test($au, $prefer_name = false) {
-        if ($this->general_pregexes_ === null) {
+        if ($this->general_pregexes_ === false) {
             $this->prepare();
         }
         if (!$this->general_pregexes_) {
@@ -229,8 +229,11 @@ class AuthorMatcher extends Author {
             }
         }
         $pregexes = [];
+        '@phan-var list<object> $pregexes';
         foreach ($matchers as $matcher) {
-            $pregexes[] = $matcher->highlight_pregexes();
+            if (($preg = $matcher->highlight_pregexes())) {
+                $pregexes[] = $preg;
+            }
         }
         if (count($pregexes) > 1) {
             $pregexes = [Text::merge_pregexes($pregexes)];

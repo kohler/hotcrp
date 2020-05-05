@@ -1482,6 +1482,8 @@ class AssignmentSet {
         usort($assigners, function ($assigner1, $assigner2) {
             $c1 = $assigner1->contact;
             $c2 = $assigner2->contact;
+            '@phan-var ?Contact $c1';
+            '@phan-var ?Contact $c2';
             if ($c1 && $c2) {
                 return strnatcasecmp($c1->sorter, $c2->sorter);
             } else if ($c1 || $c2) {

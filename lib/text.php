@@ -22,6 +22,12 @@ class NameInfo {
     }
 }
 
+class TextPregexes {
+    public $value;
+    public $preg_raw;
+    public $preg_utf8;
+}
+
 class Text {
     static private $argkeys = array("firstName", "lastName", "email",
                                     "middleName", "lastFirst", "nameAmbiguous", "name");
@@ -108,7 +114,9 @@ class Text {
         $ret->lastName = (string) $ret->lastName;
         $ret->email = (string) $ret->email;
         // compute names
-        if ($ret->name !== "" && $ret->firstName === "" && $ret->lastName === "") {
+        if ((string) $ret->name !== ""
+            && $ret->firstName === ""
+            && $ret->lastName === "") {
             list($ret->firstName, $ret->lastName) = self::split_name($ret->name);
             $ret->nameAutosplit = true;
         } else if ((string) $ret->middleName !== "") {
@@ -369,11 +377,14 @@ class Text {
             . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
     }
 
+    /** @param string $word
+     * @return TextPregexes */
     static function star_text_pregexes($word, $literal_star = false) {
         if (is_object($word)) {
             $reg = $word;
         } else {
-            $reg = (object) ["value" => $word];
+            $reg = new TextPregexes;
+            $reg->value = $word;
         }
 
         $word = preg_replace('/\s+/', " ", $reg->value);
@@ -392,6 +403,7 @@ class Text {
         return $reg;
     }
 
+    /** @param list<TextPregexes> $regex */
     static function merge_pregexes($regex) {
         if (empty($regex)) {
             return false;
@@ -405,13 +417,15 @@ class Text {
                 }
             }
         }
-        $x = (object) ["preg_utf8" => join("|", $a)];
+        $x = new TextPregexes;
+        $x->preg_utf8 = join("|", $a);
         if (count($a) == count($b)) {
             $x->preg_raw = join("|", $b);
         }
         return $x;
     }
 
+    /** @param ?TextPregexes $reg */
     static function match_pregexes($reg, $text, $deaccented_text) {
         if (!$reg) {
             return false;

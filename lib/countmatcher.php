@@ -31,12 +31,16 @@ class CountMatcher {
     function ok() {
         return $this->allowed !== 0;
     }
+    /** @param int|float $n */
     function test($n) {
         return self::compare($n, $this->allowed, $this->value);
     }
     function filter($x) {
         return array_filter($x, [$this, "test"]);
     }
+    /** @param int|float $x
+     * @param int|string $compar
+     * @param int|float $y */
     static function compare($x, $compar, $y) {
         if (!is_int($compar)) {
             $compar = self::$opmap[$compar];

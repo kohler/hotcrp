@@ -54,7 +54,9 @@ class MinCostMaxFlow_Node {
 };
 
 class MinCostMaxFlow_Edge {
+    /** @var MinCostMaxFlow_Node */
     public $src;
+    /** @var MinCostMaxFlow_Node */
     public $dst;
     public $cap;
     public $mincap;

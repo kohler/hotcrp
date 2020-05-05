@@ -86,8 +86,10 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
+    /** @return ?DocumentInfo */
     static function fetch($result, Conf $conf, PaperInfo $prow = null) {
         $di = $result ? $result->fetch_object("DocumentInfo", [null, $conf, $prow]) : null;
+        '@phan-var ?DocumentInfo $di';
         if ($di && !is_int($di->paperStorageId)) {
             $di->merge(null, $conf, $prow);
         }

@@ -171,6 +171,7 @@ class FormatSpec {
         }
     }
 
+    /** @param array{int|float, int|float, int|float|null} $r */
     static private function unparse_range($r) {
         if ($r[1] && $r[2]) {
             return "$r[0]-$r[1]±$r[2]";

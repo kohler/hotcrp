@@ -157,6 +157,7 @@ class Conf {
     private $_capability_factories;
     private $_hook_map;
     private $_hook_factories;
+    /** @var array<string,FileFilter> */
     public $_file_filters; // maintained externally
     public $_setting_info; // maintained externally
     public $_setting_groups; // maintained externally
@@ -537,14 +538,16 @@ class Conf {
         }
 
         // set assetsUrl and scriptAssetsUrl
-        if (!isset($this->opt["scriptAssetsUrl"]) && isset($_SERVER["HTTP_USER_AGENT"])
+        if (!isset($this->opt["scriptAssetsUrl"])
+            && isset($_SERVER["HTTP_USER_AGENT"])
             && strpos($_SERVER["HTTP_USER_AGENT"], "MSIE") !== false) {
             $this->opt["scriptAssetsUrl"] = Navigation::siteurl();
         }
         if (!isset($this->opt["assetsUrl"])) {
-            $this->opt["assetsUrl"] = Navigation::siteurl();
+            $this->opt["assetsUrl"] = (string) Navigation::siteurl();
         }
-        if ($this->opt["assetsUrl"] !== "" && !str_ends_with($this->opt["assetsUrl"], "/")) {
+        if ($this->opt["assetsUrl"] !== ""
+            && !str_ends_with($this->opt["assetsUrl"], "/")) {
             $this->opt["assetsUrl"] .= "/";
         }
         if (!isset($this->opt["scriptAssetsUrl"])) {
@@ -1695,11 +1698,13 @@ class Conf {
             && !$this->opt("disableNonPC");
     }
 
+    /** @return Contact */
     function default_site_contact() {
         $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
         return Dbl::fetch_first_object($result);
     }
 
+    /** @return Contact */
     function site_contact() {
         if (!$this->_site_contact) {
             $args = [
@@ -1721,6 +1726,7 @@ class Conf {
         return $this->_site_contact;
     }
 
+    /** @return ?Contact */
     function user_by_id($id) {
         $result = $this->qe("select * from ContactInfo where contactId=?", $id);
         $acct = Contact::fetch($result, $this);
@@ -1728,6 +1734,7 @@ class Conf {
         return $acct;
     }
 
+    /** @return array<int,Contact> */
     function sliced_users(Contact $u) {
         $a = [$u->contactId => $u];
         if (!$this->_unslice) {
@@ -1744,6 +1751,7 @@ class Conf {
         return $a;
     }
 
+    /** @return ?Contact */
     function cached_user_by_id($id, $missing = false) {
         global $Me;
         $id = (int) $id;
@@ -1767,6 +1775,7 @@ class Conf {
         }
     }
 
+    /** @return ?Contact */
     function user_by_email($email) {
         $acct = null;
         if (($email = trim((string) $email)) !== "") {
@@ -1777,6 +1786,7 @@ class Conf {
         return $acct;
     }
 
+    /** @return false|int */
     function user_id_by_email($email) {
         $result = $this->qe("select contactId from ContactInfo where email=?", trim($email));
         $row = $result->fetch_row();
@@ -1784,6 +1794,7 @@ class Conf {
         return $row ? (int) $row[0] : false;
     }
 
+    /** @return ?Contact */
     function cached_user_by_email($email, $missing = false) {
         global $Me;
         $email = strtolower($email);
@@ -1847,6 +1858,7 @@ class Conf {
     }
 
 
+    /** @return array<int,Contact> */
     function pc_members() {
         if ($this->_pc_members_cache === null) {
             $result = $this->q("select " . $this->_cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
@@ -1907,6 +1919,7 @@ class Conf {
         return $this->_pc_members_cache;
     }
 
+    /** @return array<int,Contact> */
     function pc_members_and_admins() {
         if ($this->_pc_members_and_admins_cache === null) {
             $this->pc_members();
@@ -1914,6 +1927,7 @@ class Conf {
         return $this->_pc_members_and_admins_cache;
     }
 
+    /** @return array<int,Contact> */
     function pc_chairs() {
         if ($this->_pc_chairs_cache === null) {
             $this->pc_members();
@@ -1921,6 +1935,7 @@ class Conf {
         return $this->_pc_chairs_cache;
     }
 
+    /** @return array<int,Contact> */
     function full_pc_members() {
         if (!$this->_pc_members_fully_loaded) {
             if ($this->_pc_members_cache !== null) {
@@ -1937,10 +1952,12 @@ class Conf {
         return $this->pc_members();
     }
 
+    /** @return ?Contact */
     function pc_member_by_id($cid) {
         return ($this->pc_members())[$cid] ?? null;
     }
 
+    /** @return ?Contact */
     function pc_member_by_email($email) {
         foreach ($this->pc_members() as $p) {
             if (strcasecmp($p->email, $email) == 0)
@@ -1949,6 +1966,7 @@ class Conf {
         return null;
     }
 
+    /** @return list<string> */
     function pc_tags() {
         if ($this->_pc_tags_cache === null) {
             $this->pc_members();
@@ -1956,6 +1974,7 @@ class Conf {
         return array_values($this->_pc_tags_cache);
     }
 
+    /** @return bool */
     function pc_tag_exists($tag) {
         if ($this->_pc_tags_cache === null) {
             $this->pc_members();
@@ -1982,6 +2001,7 @@ class Conf {
         return $map;
     }
 
+    /** @return list<string> */
     function viewable_user_tags(Contact $viewer) {
         if ($viewer->privChair) {
             return $this->pc_tags();

@@ -361,8 +361,10 @@ class PaperInfo {
         }
     }
 
+    /** @return ?PaperInfo */
     static function fetch($result, $contact, Conf $conf = null) {
         $prow = $result ? $result->fetch_object("PaperInfo", [null, $contact, $conf]) : null;
+        '@phan-var ?PaperInfo $prow';
         if ($prow && !is_int($prow->paperId)) {
             $prow->merge(null, $contact, $conf);
         }
@@ -1376,6 +1378,7 @@ class PaperInfo {
         return "paperId, paperStorageId, timestamp, mimetype, sha1, documentType, filename, infoJson, size, filterType, originalStorageId, inactive";
     }
 
+    /** @return ?DocumentInfo */
     function document($dtype, $did = 0, $full = false) {
         if ($did <= 0) {
             if ($dtype == DTYPE_SUBMISSION) {
@@ -1422,9 +1425,11 @@ class PaperInfo {
         }
         return $this->_document_array[$did];
     }
+    /** @return ?DocumentInfo */
     function joindoc() {
         return $this->document($this->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION);
     }
+    /** @return bool */
     function is_joindoc(DocumentInfo $doc) {
         return $doc->paperStorageId > 1
             && (($doc->paperStorageId == $this->paperStorageId
@@ -1433,6 +1438,8 @@ class PaperInfo {
                 || ($doc->paperStorageId == $this->finalPaperStorageId
                     && $doc->documentType == DTYPE_FINAL));
     }
+    /** @param int $dtype
+     * @return list<DocumentInfo> */
     function documents($dtype) {
         if ($dtype <= 0) {
             $doc = $this->document($dtype, 0, true);
@@ -1465,11 +1472,14 @@ class PaperInfo {
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType<=? and paperStorageId not in (select documentId from DocumentLink where paperId=?)", $this->paperId, DTYPE_COMMENT, $this->paperId);
     }
 
+    /** @param int $dtype
+     * @return ?DocumentInfo */
     function attachment($dtype, $name) {
         $ov = $this->option($dtype);
         return $ov ? $ov->attachment($name) : null;
     }
 
+    /** @return int */
     function npages() {
         $doc = $this->document($this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL);
         return $doc ? $doc->npages() : 0;
@@ -1494,6 +1504,7 @@ class PaperInfo {
         }
         return $this->_doclink_array;
     }
+    /** @return list<DocumentInfo> */
     function linked_documents($linkid, $min, $max, $owner = null) {
         $docs = [];
         foreach (get($this->doclink_array(), $linkid, []) as $lt => $docid) {
@@ -1583,6 +1594,7 @@ class PaperInfo {
         }
     }
 
+    /** @return array<int,ReviewInfo> */
     function reviews_by_id() {
         if ($this->_review_array === null) {
             $this->load_reviews();
@@ -1590,10 +1602,12 @@ class PaperInfo {
         return $this->_review_array;
     }
 
+    /** @return list<ReviewInfo> */
     function reviews_by_id_order() {
         return array_values($this->reviews_by_id());
     }
 
+    /** @return list<ReviewInfo> */
     function reviews_by_display(Contact $user) {
         $srs = $urs = $ers = [];
 
@@ -1640,10 +1654,12 @@ class PaperInfo {
         return $srs;
     }
 
+    /** @return ?ReviewInfo */
     function review_of_id($id) {
-        return get($this->reviews_by_id(), $id);
+        return ($this->reviews_by_id())[$id] ?? null;
     }
 
+    /** @return ?ReviewInfo */
     function review_of_user($contact) {
         $cid = self::contact_to_cid($contact);
         foreach ($this->reviews_by_id() as $rrow) {
@@ -1654,6 +1670,7 @@ class PaperInfo {
         return null;
     }
 
+    /** @return list<ReviewInfo> */
     function reviews_of_user($contact, $rev_tokens = null) {
         $cid = self::contact_to_cid($contact);
         $rrows = [];
@@ -1668,6 +1685,8 @@ class PaperInfo {
         return $rrows;
     }
 
+    /** @param int $ordinal
+     * @return ?ReviewInfo */
     function review_of_ordinal($ordinal) {
         foreach ($this->reviews_by_id() as $rrow) {
             if ($rrow->reviewOrdinal == $ordinal) {
@@ -1677,6 +1696,8 @@ class PaperInfo {
         return null;
     }
 
+    /** @param int|string $token
+     * @return ?ReviewInfo */
     function review_of_token($token) {
         if (!is_int($token)) {
             $token = decode_token($token, "V");
@@ -1689,6 +1710,8 @@ class PaperInfo {
         return null;
     }
 
+    /** @param string $textid
+     * @return false|?ReviewInfo */
     function review_of_textual_id($textid) {
         if (($n = $this->parse_textual_id($textid)) === false) {
             return false;
@@ -1709,6 +1732,7 @@ class PaperInfo {
         }
     }
 
+    /** @return ?ReviewInfo */
     function full_review_of_id($id) {
         if ($this->_full_review_key === null
             && !isset($this->_reviews_have["full"])) {
@@ -1725,6 +1749,7 @@ class PaperInfo {
         return $this->review_of_id($id);
     }
 
+    /** @return list<ReviewInfo> */
     function full_reviews_of_user($contact) {
         $cid = self::contact_to_cid($contact);
         if ($this->_full_review_key === null
@@ -1749,6 +1774,7 @@ class PaperInfo {
         return $this->reviews_of_user($contact);
     }
 
+    /** @return ?ReviewInfo */
     function full_review_of_ordinal($ordinal) {
         if ($this->_full_review_key === null
             && !isset($this->_reviews_have["full"])) {
@@ -1765,6 +1791,7 @@ class PaperInfo {
         return $this->review_of_ordinal($ordinal);
     }
 
+    /** @return false|?ReviewInfo */
     function full_review_of_textual_id($textid) {
         if (($n = $this->parse_textual_id($textid)) === false) {
             return false;
@@ -1782,14 +1809,17 @@ class PaperInfo {
         return $rrow;
     }
 
+    /** @return ?ReviewInfo */
     function fresh_review_of_id($id) {
         return $this->fresh_review_of("reviewId", $id);
     }
 
+    /** @return ?ReviewInfo */
     function fresh_review_of_user($contact) {
         return $this->fresh_review_of("contactId", self::contact_to_cid($contact));
     }
 
+    /** @return list<ReviewInfo> */
     function viewable_submitted_reviews_by_display(Contact $user) {
         $cinfo = $user->__rights($this);
         if ($cinfo->vsreviews_array === null
@@ -1806,6 +1836,7 @@ class PaperInfo {
         return $cinfo->vsreviews_array;
     }
 
+    /** @return array<int,ReviewInfo> */
     function viewable_submitted_reviews_by_user(Contact $user) {
         $rrows = [];
         foreach ($this->viewable_submitted_reviews_by_display($user) as $rrow) {
