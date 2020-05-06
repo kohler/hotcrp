@@ -18,7 +18,7 @@ class ContactSearch {
     private $user;
     private $cset = null;
     /** @var list<int> */
-    public $ids;
+    private $ids;
     /** @var bool */
     private $ok;
     private $only_pc = false;
