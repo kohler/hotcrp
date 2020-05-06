@@ -2267,6 +2267,9 @@ class Conf {
         if ((string) $text === "") {
             $text = $abbrev;
         }
+        foreach (self::$invariant_row ?? [] as $i => $v) {
+            $text = str_replace("{{$i}}", $v, $text);
+        }
         trigger_error("$this->dbname invariant error: $text");
     }
 
@@ -2276,7 +2279,7 @@ class Conf {
         // local invariants
         $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 and timeWithdrawn>0 limit 1");
         if ($any) {
-            $this->invariant_error($ie, "submitted_withdrawn", "paper #" . self::$invariant_row[0] . " is both submitted and withdrawn");
+            $this->invariant_error($ie, "submitted_withdrawn", "paper #{0} is both submitted and withdrawn");
         }
 
         // settings correctly materialize database facts
@@ -2347,7 +2350,7 @@ class Conf {
             and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,0))!=r.reviewNeedsSubmit
             limit 1");
         if ($any) {
-            $this->invariant_error($ie, "reviewNeedsSubmit", "bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
+            $this->invariant_error($ie, "reviewNeedsSubmit", "bad reviewNeedsSubmit for review #{0}/{1}");
         }
 
         // review rounds are defined
@@ -2377,23 +2380,23 @@ class Conf {
         // paper denormalizations match
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any) {
-            $this->invariant_error($ie, "paper_denormalization", "bad Paper denormalization, paper #" . self::$invariant_row[0]);
+            $this->invariant_error($ie, "paper_denormalization", "bad Paper denormalization, paper #{0}");
         }
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.sha1 != ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any) {
-            $this->invariant_error($ie, "paper_final_denormalization", "bad Paper final denormalization, paper #" . self::$invariant_row[0]);
+            $this->invariant_error($ie, "paper_final_denormalization", "bad Paper final denormalization, paper #{0}");
         }
 
         // filterType is never zero
         $any = $this->invariantq("select paperStorageId from PaperStorage where filterType=0 limit 1");
         if ($any) {
-            $this->invariant_error($ie, "filterType", "bad PaperStorage filterType, id #" . self::$invariant_row[0]);
+            $this->invariant_error($ie, "filterType", "bad PaperStorage filterType, id #{0}");
         }
 
         // has_colontag is defined
         $any = $this->invariantq("select tag from PaperTag where tag like '%:' limit 1");
         if ($any && !$this->setting("has_colontag")) {
-            $this->invariant_error($ie, "has_colontag", "has tag " . self::$invariant_row[0] . " but no has_colontag");
+            $this->invariant_error($ie, "has_colontag", "has tag {0} but no has_colontag");
         }
 
         // has_topics is defined
@@ -2425,26 +2428,26 @@ class Conf {
         // comments are nonempty
         $any = $this->invariantq("select paperId, commentId from PaperComment where comment is null and commentOverflow is null and not exists (select * from DocumentLink where paperId=PaperComment.paperId and linkId=PaperComment.commentId and linkType>=0 and linkType<1024) limit 1");
         if ($any) {
-            $this->invariant_error($ie, "empty comment #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
+            $this->invariant_error($ie, "empty comment #{0}/{1}");
         }
 
         // non-draft comments are displayed
         $any = $this->invariantq("select paperId, commentId from PaperComment where timeDisplayed=0 and (commentType&" . COMMENTTYPE_DRAFT . ")=0 limit 1");
         if ($any) {
-            $this->invariant_error($ie, "submitted comment #" . self::$invariant_row[0] . "/" . self::$invariant_row[1] . " has no timeDisplayed");
+            $this->invariant_error($ie, "submitted comment #{0}/{1} has no timeDisplayed");
         }
 
         // submitted and ordinaled reviews are displayed
         $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (reviewSubmitted is not null or reviewOrdinal>0) limit 1");
         if ($any) {
-            $this->invariant_error($ie, "submitted/ordinal review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1] . " has no timeDisplayed");
+            $this->invariant_error($ie, "submitted/ordinal review #{0}/{1} has no timeDisplayed");
         }
 
         return $ie;
     }
 
     function check_document_inactive_invariants() {
-        $ok = true;
+        $ie = [];
         $result = $this->ql("select paperStorageId, finalPaperStorageId from Paper");
         $pids = [];
         while ($result && ($row = $result->fetch_row())) {
@@ -2459,8 +2462,7 @@ class Conf {
         sort($pids);
         $any = $this->invariantq("select s.paperId, s.paperStorageId from PaperStorage s where s.paperStorageId?a and s.inactive limit 1", [$pids]);
         if ($any) {
-            trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " document " . self::$invariant_row[1] . " is inappropriately inactive");
-            $ok = false;
+            $this->invariant_error($ie, "paper {0} document {1} is inappropriately inactive");
         }
 
         $oids = $nonempty_oids = [];
@@ -2475,32 +2477,28 @@ class Conf {
         if (!empty($oids)) {
             $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.inactive and s.paperStorageId>1) where o.optionId?a limit 1", [$oids]);
             if ($any) {
-                trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " option " . self::$invariant_row[1] . " document " . self::$invariant_row[2] . " is inappropriately inactive");
-                $ok = false;
+                $this->invariant_error($ie, "paper {0} option {1} document {2} is inappropriately inactive");
             }
 
             $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId, s.paperId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.paperStorageId>1 and s.paperId!=o.paperId) where o.optionId?a limit 1", [$oids]);
             if ($any) {
-                trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " option " . self::$invariant_row[1] . " document " . self::$invariant_row[2] . " belongs to different paper " . self::$invariant_row[3]);
-                $ok = false;
+                $this->invariant_error($ie, "paper {0} option {1} document {2} belongs to different paper {3}");
             }
         }
 
         if (!empty($nonempty_oids)) {
             $any = $this->invariantq("select o.paperId, o.optionId from PaperOption o where o.optionId?a and o.value<=1 limit 1", [$nonempty_oids]);
             if ($any) {
-                trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " option " . self::$invariant_row[1] . " links to empty document");
-                $ok = false;
+                $this->invariant_error($ie, "paper {0} option {1} links to empty document");
             }
         }
 
         $any = $this->invariantq("select l.paperId, l.linkId, s.paperStorageId from DocumentLink l join PaperStorage s on (l.documentId=s.paperStorageId and s.inactive) limit 1");
         if ($any) {
-            trigger_error("$this->dbname invariant error: paper " . self::$invariant_row[0] . " link " . self::$invariant_row[1] . " document " . self::$invariant_row[2] . " is inappropriately inactive");
-            $ok = false;
+            $this->invariant_error($ie, "paper {0} link {1} document {2} is inappropriately inactive");
         }
 
-        return $ok;
+        return empty($ie);
     }
 
 
