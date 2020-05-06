@@ -625,7 +625,7 @@ class Conf {
         return $this->settings[$name] ?? $defval;
     }
 
-    function setting_data($name, $defval = false) {
+    function setting_data($name, $defval = null) {
         return $this->settingTexts[$name] ?? $defval;
     }
 
@@ -797,10 +797,11 @@ class Conf {
     // name
 
     function full_name() {
-        if ($this->short_name && $this->short_name != $this->long_name)
+        if ($this->short_name && $this->short_name != $this->long_name) {
             return $this->long_name . " (" . $this->short_name . ")";
-        else
+        } else {
             return $this->long_name;
+        }
     }
 
 
@@ -4759,15 +4760,17 @@ class Conf {
         if (!$uf || !Conf::xt_resolve_require($uf))
             return null;
         if (!$default_only) {
-            $s = $this->setting_data("mailsubj_$name", false);
-            $b = $this->setting_data("mailbody_$name", false);
-            if (($s !== false && $s !== $uf->subject)
-                || ($b !== false && $b !== $uf->body)) {
+            $se = $this->has_setting("mailsubj_$name");
+            $s = $se ? $this->setting_data("mailsubj_$name") : null;
+            $be = $this->has_setting("mailbody_$name");
+            $b = $be ? $this->setting_data("mailbody_$name") : null;
+            if (($se && $s !== $uf->subject)
+                || ($be && $b !== $uf->body)) {
                 $uf = clone $uf;
-                if ($s !== false) {
+                if ($se) {
                     $uf->subject = $s;
                 }
-                if ($b !== false) {
+                if ($be) {
                     $uf->body = $b;
                 }
             }

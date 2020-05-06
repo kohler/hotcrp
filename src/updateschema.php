@@ -843,7 +843,7 @@ function updateSchema($conf) {
         $conf->update_schema_version(60);
     if ($conf->sversion == 60) {
         foreach (["conflictdef", "home"] as $k)
-            if ($conf->setting_data("{$k}msg", false) !== false) {
+            if ($conf->has_setting("{$k}msg")) {
                 $conf->save_setting("msg.$k", 1, $conf->setting_data("{$k}msg"));
                 $conf->save_setting("{$k}msg", null);
             }
