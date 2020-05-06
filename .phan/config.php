@@ -49,8 +49,57 @@ return [
     // Thus, both first-party and third-party code being used by
     // your application should be included in this list.
     "directory_list" => [
-        Config::projectPath("lib"), Config::projectPath("src")
+        Config::projectPath("lib"),
+        Config::projectPath("src"),
+        Config::projectPath("batch"),
+        Config::projectPath("test")
     ],
 
-    "exclude_file_list" => [Config::projectPath("lib/polyfills.php")]
+    "file_list" => [
+        Config::projectPath("api.php"),
+        Config::projectPath("assign.php"),
+        Config::projectPath("autoassign.php"),
+        Config::projectPath("bulkassign.php"),
+        Config::projectPath("buzzer.php"),
+        Config::projectPath("cacheable.php"),
+        Config::projectPath("checkupdates.php"),
+        Config::projectPath("conflictassign.php"),
+        Config::projectPath("deadlines.php"),
+        Config::projectPath("doc.php"),
+        Config::projectPath("graph.php"),
+        Config::projectPath("help.php"),
+        Config::projectPath("index.php"),
+        Config::projectPath("log.php"),
+        Config::projectPath("mail.php"),
+        Config::projectPath("manualassign.php"),
+        Config::projectPath("mergeaccounts.php"),
+        Config::projectPath("newaccount.php"),
+        Config::projectPath("offline.php"),
+        Config::projectPath("paper.php"),
+        Config::projectPath("profile.php"),
+        Config::projectPath("resetpassword.php"),
+        Config::projectPath("review.php"),
+        Config::projectPath("reviewprefs.php"),
+        Config::projectPath("scorechart.php"),
+        Config::projectPath("search.php"),
+        Config::projectPath("settings.php"),
+        Config::projectPath("users.php")
+    ],
+
+    "exclude_file_list" => [
+        Config::projectPath(".phan/config.php"),
+        Config::projectPath("lib/collatorshim.php"),
+        Config::projectPath("lib/polyfills.php")
+    ],
+
+    "globals_type_map" => [
+        "Conf" => '\Conf',
+        "Me" => '\Contact',
+        "Qreq" => '\Qrequest',
+        "Now" => 'int',
+        "ConfSitePATH" => '?string',
+        "prow" => '?PaperInfo',
+        "paperTable" => 'PaperTable',
+        "Admin" => '\Contact' // test
+    ]
 ];
