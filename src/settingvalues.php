@@ -248,10 +248,12 @@ class Si {
         }
     }
 
-    static function get($conf, $name, $k = null) {
+    /** @param string name
+     * @return ?Si */
+    static function get(Conf $conf, $name) {
         if (isset($conf->_setting_info[$name])) {
-            $si = $conf->_setting_info[$name];
-        } else if (!preg_match('{\A(.*)(_(?:[^_\s]+))\z}', $name, $m)
+            return $conf->_setting_info[$name];
+        } else if (!preg_match('/\A(.*)(_(?:[^_\s]+))\z/', $name, $m)
                    || !isset($conf->_setting_info[$m[1]])) {
             return null;
         } else {
@@ -277,8 +279,8 @@ class Si {
                 $si->message_context_setting .= $m[2];
             }
             $conf->_setting_info[$name] = $si;
+            return $si;
         }
-        return $k ? $si->$k : $si;
     }
 
 
@@ -295,45 +297,44 @@ class Si {
 
     static function initialize(Conf $conf) {
         $last_problem = 0;
-        $hook = function ($v, $k, $landmark) use ($conf, &$last_problem) {
+        $sis = [];
+        $hook = function ($v, $k, $landmark) use (&$sis, &$last_problem) {
             if (is_object($v) && isset($v->name) && is_string($v->name)) {
-                $conf->_setting_info[] = $v;
+                $sis[] = $v;
                 return true;
             } else {
                 return false;
             }
         };
 
-        $conf->_setting_info = [];
         expand_json_includes_callback(["etc/settinginfo.json"], $hook);
         if (($olist = $conf->opt("settingInfo"))) {
             expand_json_includes_callback($olist, $hook);
         }
-        usort($conf->_setting_info, function ($a, $b) {
+        usort($sis, function ($a, $b) {
             return strcmp($a->name, $b->name) ? : Conf::xt_priority_compare($a, $b);
         });
 
-        $all = [];
-        $nall = count($conf->_setting_info);
+        $conf->_setting_info = [];
+        $nall = count($sis);
         for ($i = 0; $i < $nall; ++$i) {
-            $j = $conf->_setting_info[$i];
+            $j = $sis[$i];
             while ($i + 1 < $nall
                    && isset($j->merge)
                    && $j->merge
-                   && $j->name === $conf->_setting_info[$i + 1]->name) {
+                   && $j->name === $sis[$i + 1]->name) {
                 $overlay = $j;
                 unset($overlay->merge);
-                $j = $conf->_setting_info[$i + 1];
+                $j = $sis[$i + 1];
                 object_replace_recursive($j, $overlay);
                 ++$i;
             }
             if ($conf->xt_allowed($j) && !isset($all[$j->name])) {
                 Conf::xt_resolve_require($j);
                 $class = $j->setting_class ?? "Si";
-                $all[$j->name] = new $class($j);
+                $conf->_setting_info[$j->name] = new $class($j);
             }
         }
-        $conf->_setting_info = $all;
         uasort($conf->_setting_info, "Conf::xt_position_compare");
     }
 }
