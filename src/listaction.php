@@ -39,6 +39,7 @@ class ListAction {
             return new JsonResult(400, "Function not found.");
         } else if ($uf->callback[0] === "+") {
             $class = substr($uf->callback, 1);
+            /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
             $action = new $class($user->conf, $uf);
         } else {
             $action = call_user_func($uf->callback, $user->conf, $uf);

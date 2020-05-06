@@ -8,12 +8,24 @@
 //         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
 
 class ReviewFieldInfo {
+    /** @var non-empty-string */
     public $id;
+    /** @var non-empty-string */
     public $short_id;
+    /** @var bool */
     public $has_options;
+    /** @var ?non-empty-string */
     public $main_storage;
+    /** @var ?non-empty-string */
     public $json_storage;
 
+    /** @param string $id
+     * @param string $short_id
+     * @param bool $has_options
+     * @param ?non-empty-string $main_storage
+     * @param ?non-empty-string $json_storage
+     * @phan-assert non-empty-string $id
+     * @phan-assert non-empty-string $short_id */
     function __construct($id, $short_id, $has_options, $main_storage, $json_storage) {
         $this->id = $id;
         $this->short_id = $short_id;
@@ -30,7 +42,9 @@ class ReviewField implements Abbreviator, JsonSerializable {
     const VALUE_STRING = 4;
     const VALUE_TRIM = 8;
 
+    /** @var non-empty-string */
     public $id;
+    /** @var non-empty-string */
     public $short_id;
     /** @var Conf */
     public $conf;
@@ -50,7 +64,9 @@ class ReviewField implements Abbreviator, JsonSerializable {
     public $option_class_prefix = "sv";
     public $round_mask = 0;
     public $allow_empty = false;
+    /** @var ?non-empty-string */
     public $main_storage;
+    /** @var ?non-empty-string */
     public $json_storage;
     private $_typical_score = false;
 
@@ -901,6 +917,7 @@ $blind\n";
                 $x .= "==-== Choices:\n";
                 foreach ($f->options as $num => $value) {
                     $y = "==-==    $num. ";
+                    /** @phan-suppress-next-line PhanParamSuspiciousOrder */
                     $x .= prefix_word_wrap($y, $value, str_pad("==-==", strlen($y)));
                 }
                 if ($f->allow_empty) {
@@ -2038,16 +2055,18 @@ class ReviewValues extends MessageSet {
                 }
                 if ($f->json_storage) {
                     if ($f->has_options) {
-                        if ($fval != 0)
+                        if ($fval != 0) {
                             $sfields[$f->json_storage] = $fval;
-                        else
+                        } else {
                             unset($sfields[$f->json_storage]);
+                        }
                         $set_sfields[$fid] = true;
                     } else {
-                        if ($fval !== "")
+                        if ($fval !== "") {
                             $tfields[$f->json_storage] = $fval;
-                        else
+                        } else {
                             unset($tfields[$f->json_storage]);
+                        }
                         $set_tfields[$fid] = true;
                     }
                 }

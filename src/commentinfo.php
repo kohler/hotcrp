@@ -163,8 +163,14 @@ class CommentInfo {
         }
     }
 
+    /** @param list<CommentInfo> $crows
+     * @param bool $separateColors
+     * @return list<array{CommentInfo,int,string}> */
     static function group_by_identity($crows, Contact $viewer, $separateColors) {
-        $known_cids = $result = [];
+        $known_cids = [];
+        '@phan-var array<int,int> $known_cids';
+        $result = [];
+        '@phan-var list<array{CommentInfo,int,string}> $result';
         foreach ($crows as $cr) {
             $cid = 0;
             if ($viewer->can_view_comment_identity($cr->prow, $cr)

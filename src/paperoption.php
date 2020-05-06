@@ -3,16 +3,25 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperValue implements JsonSerializable {
+    /** @var ?PaperInfo */
     public $prow;
+    /** @var int */
     public $id;
+    /** @var PaperOption */
     public $option;
+    /** @var ?int */
     public $value;
+    /** @var ?array<string,mixed> */
     public $anno;
+    /** @var list<int> */
     private $_values;
+    /** @var list<?string> */
     private $_data;
+    /** @var list<?DocumentInfo> */
     private $_documents;
     private $_ms;
 
+    /** @param ?PaperInfo $prow */
     function __construct($prow, PaperOption $o) { // XXX should be private
         $this->prow = $prow;
         $this->id = $o->id;
@@ -20,7 +29,10 @@ class PaperValue implements JsonSerializable {
         $this->_values = [];
         $this->_data = [];
     }
-    /** @return PaperValue */
+    /** @param ?PaperInfo $prow
+     * @param ?int $value
+     * @param ?string $data
+     * @return PaperValue */
     static function make($prow, PaperOption $o, $value = null, $data = null) {
         $ov = new PaperValue($prow, $o);
         if ($value !== null) {
@@ -28,19 +40,25 @@ class PaperValue implements JsonSerializable {
         }
         return $ov;
     }
-    /** @return PaperValue */
+    /** @param PaperInfo $prow
+     * @param list<int> $values
+     * @param list<?string> $datas
+     * @return PaperValue */
     static function make_multi($prow, PaperOption $o, $values, $datas) {
         $ov = new PaperValue($prow, $o);
         $ov->set_value_data($values, $datas);
         return $ov;
     }
-    /** @return PaperValue */
+    /** @param PaperInfo $prow
+     * @param string $error_html
+     * @return PaperValue */
     static function make_estop($prow, PaperOption $o, $error_html) {
         $ov = new PaperValue($prow, $o);
         $ov->estop($error_html);
         return $ov;
     }
-    /** @return PaperValue */
+    /** @param PaperInfo $prow
+     * @return PaperValue */
     static function make_force($prow, PaperOption $o) {
         $ov = new PaperValue($prow, $o);
         if ($o->id <= 0) {
@@ -53,6 +71,8 @@ class PaperValue implements JsonSerializable {
         $ovd = $this->prow->option_value_data($this->id);
         $this->set_value_data($ovd[0], $ovd[1]);
     }
+    /** @param list<int> $values
+     * @param list<?string> $datas */
     function set_value_data($values, $datas) {
         if ($this->_values != $values) {
             $this->_values = $values;
@@ -306,6 +326,7 @@ class PaperOptionList {
         return $this->_ijlist;
     }
 
+    /** @param int $id */
     private function populate_intrinsic($id) {
         if ($id == DTYPE_SUBMISSION) {
             $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_SUBMISSION_JSON));
@@ -343,6 +364,7 @@ class PaperOptionList {
         return $o;
     }
 
+    /** @return array<int,PaperOption> */
     function option_list() {
         if ($this->_olist === null) {
             $this->_olist = [];
@@ -358,12 +380,14 @@ class PaperOptionList {
         return $this->_olist;
     }
 
+    /** @return array<int,PaperOption> */
     function nonfixed_option_list() {
         return array_filter($this->option_list(), function ($o) {
             return $o->id < PaperOption::MINFIXEDID;
         });
     }
 
+    /** @return array<int,PaperOption> */
     function nonfinal_option_list() {
         if ($this->_olist_nonfinal === null) {
             $this->_olist_nonfinal = [];
@@ -380,6 +404,7 @@ class PaperOptionList {
         return $this->_olist_nonfinal;
     }
 
+    /** @return array<int,PaperOption> */
     function full_option_list() {
         $list = [];
         foreach ($this->option_json_list() as $id => $oj) {
@@ -390,6 +415,7 @@ class PaperOptionList {
         return $list;
     }
 
+    /** @return array<int,PaperOption> */
     function include_empty_option_list() {
         if ($this->_olist_include_empty === null) {
             $this->option_json_list();
@@ -430,11 +456,15 @@ class PaperOptionList {
         }
         return $olist;
     }
+
+    /** @return array<int,PaperOption> */
     function field_list(PaperInfo $prow = null) {
         $olist = $this->unsorted_field_list($prow);
         uasort($olist, "PaperOption::compare");
         return $olist;
     }
+
+    /** @return array<int,PaperOption> */
     function form_field_list(PaperInfo $prow = null) {
         $olist = $this->unsorted_field_list($prow);
         uasort($olist, "PaperOption::form_compare");
@@ -446,14 +476,18 @@ class PaperOptionList {
             $this->_nonpaper_am = $this->_olist_include_empty = null;
         $this->_omap = $this->_imap = [];
     }
+
+    /** @param int $id */
     function invalidate_intrinsic_option($id) {
         unset($this->_imap[$id]);
     }
 
+    /** @return int */
     function count_option_list() {
         return count($this->option_json_list());
     }
 
+    /** @return array<int,PaperOption> */
     function find_all($name) {
         $iname = strtolower($name);
         if ($iname === (string) DTYPE_SUBMISSION
@@ -483,6 +517,7 @@ class PaperOptionList {
         }
     }
 
+    /** @return ?PaperOption */
     function find($name, $nonpaper = false) {
         assert(!$nonpaper);
         $omap = $this->find_all($name);
@@ -490,6 +525,7 @@ class PaperOptionList {
         return count($omap) == 1 ? current($omap) : null;
     }
 
+    /** @return AbbreviationMatcher */
     function nonpaper_abbrev_matcher() {
         // Nonpaper options aren't stored in the main abbrevmatcher; put them
         // in their own.
@@ -507,6 +543,7 @@ class PaperOptionList {
         return $this->_nonpaper_am;
     }
 
+    /** @return array<int,PaperOption> */
     function find_all_nonpaper($name) {
         $omap = [];
         foreach ($this->nonpaper_abbrev_matcher()->find_all($name) as $o) {
@@ -515,6 +552,7 @@ class PaperOptionList {
         return $omap;
     }
 
+    /** @return ?PaperOption */
     function find_nonpaper($name) {
         $omap = $this->find_all_nonpaper($name);
         reset($omap);
@@ -685,7 +723,9 @@ class PaperOption implements Abbreviator {
         }
     }
 
-    static function make($args, $conf) {
+    /** @param object $args
+     * @return PaperOption */
+    static function make($args, Conf $conf) {
         assert(is_object($args));
         Conf::xt_resolve_require($args);
         $callback = $args->callback ?? null;
@@ -703,6 +743,8 @@ class PaperOption implements Abbreviator {
         }
     }
 
+    /** @param PaperOption $a
+     * @param PaperOption $b */
     static function compare($a, $b) {
         $ap = $a->display_position();
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
@@ -715,6 +757,8 @@ class PaperOption implements Abbreviator {
         }
     }
 
+    /** @param PaperOption $a
+     * @param PaperOption $b */
     static function form_compare($a, $b) {
         $ap = $a->form_position();
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
@@ -739,10 +783,12 @@ class PaperOption implements Abbreviator {
         }
     }
 
+    /** @return bool */
     function fixed() {
         return $this->id >= self::MINFIXEDID;
     }
 
+    /** @return string */
     function title($context = null) {
         if ($this->title) {
             return $this->title;
@@ -752,12 +798,15 @@ class PaperOption implements Abbreviator {
             return $this->conf->_ci("field", $this->formid, null, $context);
         }
     }
+    /** @return string */
     function title_html($context = null) {
         return htmlspecialchars($this->title($context));
     }
+    /** @return string */
     function plural_title() {
         return $this->title ? : $this->conf->_ci("field/plural", $this->formid);
     }
+    /** @return string */
     function edit_title() {
         return $this->title ? : $this->conf->_ci("field/edit", $this->formid);
     }
@@ -769,10 +818,12 @@ class PaperOption implements Abbreviator {
             return $this->conf->abbrev_matcher();
         }
     }
+    /** @return string */
     function abbreviations_for($name, $data) {
         assert($this === $data);
         return $this->search_keyword();
     }
+    /** @return string */
     function search_keyword() {
         if ($this->_search_keyword === null) {
             $am = $this->abbrev_matcher();
@@ -788,9 +839,11 @@ class PaperOption implements Abbreviator {
         }
         return $this->_search_keyword;
     }
+    /** @return string */
     function field_key() {
         return $this->formid;
     }
+    /** @return string */
     function readable_formid() {
         if ($this->_readable_formid === null) {
             $used = [];
@@ -809,6 +862,7 @@ class PaperOption implements Abbreviator {
         }
         return $this->_readable_formid;
     }
+    /** @return string */
     function json_key() {
         if ($this->_json_key === null) {
             $am = $this->abbrev_matcher();
@@ -820,6 +874,7 @@ class PaperOption implements Abbreviator {
         }
         return $this->_json_key;
     }
+    /** @return string */
     function dtype_name() {
         return $this->json_key();
     }
@@ -834,9 +889,11 @@ class PaperOption implements Abbreviator {
         return $this->display_position;
     }
 
+    /** @return bool */
     function test_exists(PaperInfo $prow) {
         return !$this->_exists_search || $this->_exists_search->test($prow);
     }
+    /** @return ?string */
     function exists_condition() {
         return $this->exists_if;
     }
@@ -853,13 +910,16 @@ class PaperOption implements Abbreviator {
         }
     }
 
+    /** @return bool */
     function test_editable(PaperInfo $prow) {
         return !$this->_editable_search || $this->_editable_search->test($prow);
     }
+    /** @return ?string */
     function editable_condition() {
         return $this->editable_if;
     }
 
+    /** @return bool */
     function test_required(PaperInfo $prow) {
         // Invariant: `$o->test_required($prow)` implies `$o->required`.
         return $this->required && $this->test_exists($prow);
@@ -868,32 +928,43 @@ class PaperOption implements Abbreviator {
         $this->required = $x;
     }
 
+    /** @return bool */
     function is_document() {
         return false;
     }
+    /** @return bool */
     function has_document() {
         return false;
     }
+    /** @return bool */
     function allow_empty_document() {
         return false;
     }
+    /** @return ?list<Mimetype|string> */
     function mimetypes() {
         return null;
     }
+    /** @return bool */
     function has_attachments() {
         return false;
     }
 
+    /** @return bool */
     function takes_multiple() {
         return false;
     }
 
+    /** @return bool */
     function value_present(PaperValue $ov) {
         return !!$ov->value;
     }
+    /** @param PaperValue $av
+     * @param PaperValue $bv */
     function value_compare($av, $bv) {
         return 0;
     }
+    /** @param PaperValue $av
+     * @param PaperValue $bv */
     static function basic_value_compare($av, $bv) {
         $av = $av ? $av->value : null;
         $bv = $bv ? $bv->value : null;
@@ -911,6 +982,7 @@ class PaperOption implements Abbreviator {
             $ov->estop("Entry required.");
         }
     }
+    /** @return list<int> */
     function value_dids(PaperValue $ov) {
         return [];
     }
@@ -921,10 +993,12 @@ class PaperOption implements Abbreviator {
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
     }
+    /** @return bool */
     function value_save(PaperValue $ov, PaperStatus $ps) {
         return false;
     }
 
+    /** @return ?DocumentInfo */
     function attachment(PaperValue $ov, $name) {
         return null;
     }

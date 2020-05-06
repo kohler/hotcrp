@@ -118,6 +118,7 @@ class IntlMsgSet {
         return $x;
     }
 
+    /** @param array{string,string}|array{string,string,int}|object|array<string,mixed> $m */
     function addj($m) {
         if (is_associative_array($m)) {
             $m = (object) $m;

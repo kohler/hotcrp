@@ -3,14 +3,23 @@
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
 class FormulaCall {
+    /** @var Formula */
     public $formula;
+    /** @var string */
     public $name;
+    /** @var string */
     public $text;
+    /** @var list<Fexpr> */
     public $args = [];
+    /** @var list<string> */
     public $rawargs = [];
+    /** @var mixed */
     public $modifier = false;
+    /** @var object */
     public $kwdef;
+    /** @var int */
     public $pos1;
+    /** @var int */
     public $pos2;
 
     function __construct(Formula $formula, $kwdef, $name) {
@@ -196,6 +205,7 @@ class Fexpr implements JsonSerializable {
 }
 
 class Constant_Fexpr extends Fexpr {
+    /** @var int|float|string */
     private $x;
     function __construct($x, $format = null, $pos1 = null, $pos2 = null) {
         $this->x = $x;
@@ -1559,6 +1569,7 @@ class Formula implements Abbreviator, JsonSerializable {
         if (isset($kwdef->callback)) {
             if ($kwdef->callback[0] === "+") {
                 $class = substr($kwdef->callback, 1);
+                /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
                 $e = new $class($ff, $this);
             } else {
                 $before = count($this->_lerrors);

@@ -4,6 +4,7 @@
 
 class FormatSpec {
     public $papersize = []; // [DIMEN, ...]
+    /** @var ?array{int,int} */
     public $pagelimit;      // [MIN, MAX]
     public $unlimitedref;
     public $columns;        // NCOLUMNS

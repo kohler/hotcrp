@@ -36,9 +36,13 @@ class SearchWord {
 }
 
 class SearchSplitter {
+    /** @var string */
     private $str;
+    /** @var bool */
     private $utf8q;
+    /** @var int */
     public $pos;
+    /** @var array{int, int} */
     public $strspan;
     function __construct($str) {
         $this->str = $str;
@@ -46,9 +50,11 @@ class SearchSplitter {
         $this->pos = 0;
         $this->set_span_and_pos("");
     }
+    /** @return bool */
     function is_empty() {
         return $this->str === "";
     }
+    /** @return string */
     function shift() {
         if ($this->utf8q
             && preg_match('/\A([-_.a-zA-Z0-9]+:|["“”][^"“”]+["“”]:|)\s*((?:["“”][^"“”]*(?:["“”]|\z)|[^"“”\s()]*)*)/su', $this->str, $m)) {
@@ -65,18 +71,23 @@ class SearchSplitter {
         $this->set_span_and_pos($m[0]);
         return $result;
     }
+    /** @param string $str */
     function shift_past($str) {
         assert(str_starts_with($this->str, $str));
         $this->set_span_and_pos($str);
     }
+    /** @return string */
     function shift_balanced_parens() {
         $result = substr($this->str, 0, self::span_balanced_parens($this->str));
         $this->set_span_and_pos($result);
         return $result;
     }
+    /** @param string $re
+     * @param list<string> &$m @phan-output-reference */
     function match($re, &$m = null) {
         return preg_match($re, $this->str, $m);
     }
+    /** @param string $substr */
     function starts_with($substr) {
         return str_starts_with($this->str, $substr);
     }
@@ -91,6 +102,8 @@ class SearchSplitter {
         $this->pos += strlen($this->str) - strlen($next);
         $this->str = $next;
     }
+    /** @param string $str
+     * @return int */
     static function span_balanced_parens($str, $pos = 0, $endf = null) {
         $pcount = "";
         $quote = 0;
@@ -135,8 +148,11 @@ class SearchSplitter {
 }
 
 class SearchOperator {
+    /** @var string */
     public $op;
+    /** @var bool */
     public $unary;
+    /** @var int */
     public $precedence;
     public $opinfo;
 
@@ -174,12 +190,15 @@ class SearchOperator {
 }
 
 class SearchTerm {
+    /** @var string */
     public $type;
+    /** @var array<string,mixed> */
     public $float = [];
 
     function __construct($type) {
         $this->type = $type;
     }
+    /** @return SearchTerm */
     static function make_op($op, $terms) {
         $opstr = is_object($op) ? $op->op : $op;
         if ($opstr === "not") {
@@ -198,34 +217,43 @@ class SearchTerm {
         }
         return $qr->finish();
     }
+    /** @return SearchTerm */
     static function make_not(SearchTerm $term) {
         $qr = new Not_SearchTerm;
         return $qr->append($term)->finish();
     }
+    /** @return SearchTerm */
     function negate_if($negate) {
         return $negate ? self::make_not($this) : $this;
     }
+    /** @return True_SearchTerm */
     static function make_float($float) {
         $qe = new True_SearchTerm;
         $qe->float = $float;
         return $qe;
     }
 
+    /** @return bool */
     function is_false() {
         return false;
     }
+    /** @return bool */
     function is_true() {
         return false;
     }
+    /** @return bool */
     function is_uninteresting() {
         return false;
     }
+    /** @param string $k */
     function set_float($k, $v) {
         $this->float[$k] = $v;
     }
+    /** @param string $k */
     function get_float($k, $defval = null) {
         return $this->float[$k] ?? $defval;
     }
+    /** @param array{int,int} $span */
     function apply_strspan($span) {
         $span1 = $this->float["strspan"] ?? null;
         if ($span && $span1) {
@@ -233,6 +261,7 @@ class SearchTerm {
         }
         $this->set_float("strspan", $span ? : $span1);
     }
+    /** @param string $str */
     function set_strspan_owner($str) {
         if (!isset($this->float["strspan_owner"])) {
             $this->set_float("strspan_owner", $str);
@@ -352,6 +381,7 @@ class True_SearchTerm extends SearchTerm {
 }
 
 class Op_SearchTerm extends SearchTerm {
+    /** @var list<SearchTerm> */
     public $child = [];
 
     function __construct($type) {
@@ -389,6 +419,8 @@ class Op_SearchTerm extends SearchTerm {
         }
         return $qvs;
     }
+    /** @param list<SearchTerm> $newchild
+     * @param bool $any */
     protected function _finish_combine($newchild, $any) {
         $qr = null;
         if (!$newchild) {
@@ -735,6 +767,7 @@ class Xor_SearchTerm extends Op_SearchTerm {
 class Then_SearchTerm extends Op_SearchTerm {
     private $is_highlight;
     public $nthen;
+    /** @var ?list<int> */
     public $highlights;
     public $highlight_types;
 
@@ -1621,12 +1654,14 @@ class PaperSearch {
     private $_allow_deleted = false;
     public $thenmap;
     public $groupmap;
+    /** @var false|non-empty-string */
     public $is_order_anno = false;
     public $highlightmap;
     private $_sorters = [];
     private $_default_sort; // XXX should be used more often
     private $_highlight_tags;
 
+    /** @var list<int> */
     private $_matches; // list of ints
 
     static private $_sort_keywords = ["by" => "by", "up" => "up", "down" => "down",
@@ -2112,7 +2147,7 @@ class PaperSearch {
         }
     }
 
-    static private function _shift_keyword($splitter, $curqe) {
+    static private function _shift_keyword(SearchSplitter $splitter, $curqe) {
         if (!$splitter->match('/\A(?:[-+!()]|(?:AND|and|OR|or|NOT|not|XOR|xor|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $m)) {
             return null;
         }
@@ -2129,7 +2164,7 @@ class PaperSearch {
         return $op;
     }
 
-    static private function _shift_word($splitter, Conf $conf) {
+    static private function _shift_word(SearchSplitter $splitter, Conf $conf) {
         if (($x = $splitter->shift()) === "")
             return $x;
         // `HEADING x` parsed as `HEADING:x`
@@ -2158,6 +2193,8 @@ class PaperSearch {
         return $x;
     }
 
+    /** @param ?SearchTerm $curqe
+     * @return SearchTerm */
     static private function _pop_expression_stack($curqe, &$stack) {
         $x = array_pop($stack);
         if (!$curqe) {
@@ -2260,6 +2297,8 @@ class PaperSearch {
         }
     }
 
+    /** @param string $curqe
+     * @return ?string */
     static private function _pop_canonicalize_stack($curqe, &$stack) {
         $x = array_pop($stack);
         if ($curqe) {
@@ -2292,7 +2331,7 @@ class PaperSearch {
             return "";
         }
 
-        $stack = array();
+        $stack = [];
         $parens = 0;
         $defaultop = $type === "all" ? "SPACE" : "SPACEOR";
         $curqe = null;
@@ -2714,11 +2753,13 @@ class PaperSearch {
         }
     }
 
+    /** @return list<int> */
     function paper_ids() {
         $this->_prepare();
         return $this->_matches ? : [];
     }
 
+    /** @return list<int> */
     function sorted_paper_ids() {
         $this->_prepare();
         if ($this->_default_sort || $this->_sorters) {
@@ -2729,6 +2770,7 @@ class PaperSearch {
         }
     }
 
+    /** @return list<array{string,string}> */
     function view_list() {
         return $this->term()->get_float("view", []);
     }

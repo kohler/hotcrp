@@ -337,6 +337,9 @@ function xassert_neq($a, $b) {
     return $ok;
 }
 
+/** @param ?array<mixed> $a
+ * @param ?array<mixed> $b
+ * @param bool $sort */
 function xassert_array_eqq($a, $b, $sort = false) {
     ++Xassert::$n;
     $problem = "";

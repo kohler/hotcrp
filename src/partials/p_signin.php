@@ -5,6 +5,7 @@
 class Signin_Partial {
     public $_reset_cap;
     public $_reset_capdata;
+    /** @var ?Contact */
     public $_reset_user;
 
     static private function bad_post_error(Contact $user, Qrequest $qreq, $action) {
@@ -401,6 +402,8 @@ class Signin_Partial {
 
         // set $this->_reset_cap
         $resetcap = trim((string) $qreq->resetcap);
+        $capmgr = null;
+        '@phan-var ?CapabilityManager $capmgr';
         if (preg_match('/\A\/?(U?1[-\w]+)\/?\z/', $resetcap, $m)) {
             $this->_reset_cap = $m[1];
         } else if (strpos($resetcap, "@") !== false) {

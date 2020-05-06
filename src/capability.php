@@ -3,8 +3,11 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CapabilityManager {
+    /** @var Conf */
     private $conf;
+    /** @var bool */
     private $cdb;
+    /** @var mysqli */
     private $dblink;
 
     function __construct(Conf $conf, $cdb) {

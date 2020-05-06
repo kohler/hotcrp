@@ -294,6 +294,8 @@ class PaperList {
         "ccol" => -2, "columns" => -2, "force" => -3, "rownum" => -1, "statistics" => -1
     ];
 
+    /** @param string $k
+     * @param 'show'|'hide'|'edit'|bool $v */
     function set_view($k, $v, $origin = 0, $opts = null) {
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
@@ -1379,6 +1381,7 @@ class PaperList {
                 . $lllg[0] . "\">" . $lllg[1] . "</a></td>\n";
             for ($j = 2; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
+                '@phan-var array{content:string} $cell';
                 $attr = [];
                 foreach ($cell as $k => $v) {
                     if ($k !== "content" && !str_starts_with($k, "linelink-")) {
@@ -1715,6 +1718,7 @@ class PaperList {
         return $rstate;
     }
 
+    /** @return PaperListTableRender */
     function table_render($options = []) {
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
         $rstate = $this->_table_render($options);
@@ -1722,6 +1726,7 @@ class PaperList {
         return $rstate;
     }
 
+    /** @return string */
     function table_html($options = []) {
         $render = $this->table_render($options);
         if ($render->error) {
@@ -1738,6 +1743,7 @@ class PaperList {
         }
     }
 
+    /** @return ?array{fields:array<string,object>,data:array<int,array{id:int}>,attr?:array,stat?:array} */
     function column_json($fields) {
         // get column list, check sort
         $this->_prepare();
@@ -1801,6 +1807,7 @@ class PaperList {
         return $result;
     }
 
+    /** @return array<int,object> */
     function text_json($fields) {
         // get column list, check sort
         $this->_prepare();

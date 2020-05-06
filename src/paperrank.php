@@ -3,7 +3,6 @@
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
 class PaperRank {
-
     private $tag;
     private $dest_tag;
     private $sequential;

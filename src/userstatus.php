@@ -278,6 +278,7 @@ class UserStatus extends MessageSet {
         return (object) $res;
     }
 
+    /** @param object $cj */
     static function normalize_name($cj) {
         $cj_user = isset($cj->user) ? Text::split_name($cj->user, true) : null;
         $cj_name = Text::analyze_name($cj);

@@ -4,16 +4,23 @@
 
 class MinCostMaxFlow_Node {
     public $name;
+    /** @var int */
     public $vindex;
     public $klass;
     public $flow = 0;
     public $link = null;
     public $xlink = null;
+    /** @var int */
     public $npos = 0;
+    /** @var int|float */
     public $distance = 0;
+    /** @var int|float */
     public $excess = 0;
+    /** @var int|float */
     public $price = 0;
+    /** @var int */
     public $n_outgoing_admissible = 0;
+    /** @var list<MinCostMaxFlow_Edge> */
     public $e = array();
     public $xe;
     function __construct($name, $klass) {
@@ -29,6 +36,7 @@ class MinCostMaxFlow_Node {
         }
         assert($expected == $this->excess);
     }
+    /** @return int */
     function count_outgoing_price_admissible() {
         $n = 0;
         foreach ($this->e as $e) {
@@ -37,6 +45,7 @@ class MinCostMaxFlow_Node {
         }
         return $n;
     }
+    /** @param int|float $p */
     function set_price_fix_admissible($p) {
         $old_price = $this->price;
         $this->price = $p;
@@ -64,9 +73,13 @@ class MinCostMaxFlow_Edge {
     public $src;
     /** @var MinCostMaxFlow_Node */
     public $dst;
+    /** @var int|float */
     public $cap;
+    /** @var int|float */
     public $mincap;
+    /** @var int|float */
     public $cost;
+    /** @var int|float */
     public $flow = 0;
     function __construct($src, $dst, $cap, $cost, $mincap = 0) {
         $this->src = $src;
@@ -75,28 +88,44 @@ class MinCostMaxFlow_Edge {
         $this->mincap = $mincap;
         $this->cost = $cost;
     }
+    /** @param MinCostMaxFlow_Node $v
+     * @return MinCostMaxFlow_Node */
     function other($v) {
         return $v === $this->src ? $this->dst : $this->src;
     }
+    /** @param MinCostMaxFlow_Node $v
+     * @return int|float */
     function flow_to($v) {
         return $v === $this->dst ? $this->flow : -$this->flow;
     }
+    /** @param bool $isrev
+     * @return int|float */
     function residual_cap($isrev) {
         return $isrev ? $this->flow - $this->mincap : $this->cap - $this->flow;
     }
+    /** @param MinCostMaxFlow_Node $v
+     * @return int|float */
     function residual_cap_from($v) {
         return $v === $this->src ? $this->cap - $this->flow : $this->flow - $this->mincap;
     }
+    /** @param MinCostMaxFlow_Node $v
+     * @return int|float */
     function residual_cap_to($v) {
         return $v === $this->src ? $this->flow - $this->mincap : $this->cap - $this->flow;
     }
+    /** @param bool $isrev
+     * @return int|float */
     function reduced_cost($isrev) {
         $c = $this->cost + $this->src->price - $this->dst->price;
         return $isrev ? -$c : $c;
     }
+    /** @param MinCostMaxFlow_Node $v
+     * @return int|float */
     function reduced_cost_from($v) {
         return $this->reduced_cost($v === $this->dst);
     }
+    /** @param MinCostMaxFlow_Node $v
+     * @return bool */
     function is_distance_admissible_from($v) {
         if ($v === $this->src) {
             return $this->flow < $this->cap && $v->distance == $this->dst->distance + 1;
@@ -104,6 +133,8 @@ class MinCostMaxFlow_Edge {
             return $this->flow > $this->mincap && $v->distance == $this->src->distance + 1;
         }
     }
+    /** @param MinCostMaxFlow_Node $v
+     * @return bool */
     function is_price_admissible_from($v) {
         $c = $this->cost + $this->src->price - $this->dst->price;
         if ($v === $this->src) {
@@ -112,6 +143,7 @@ class MinCostMaxFlow_Edge {
             return $this->flow > $this->mincap && $c > 0;
         }
     }
+    /** @param int|float $delta */
     function update_flow($delta) {
         $this->flow += $delta;
         $this->src->excess -= $delta;
@@ -379,6 +411,7 @@ class MinCostMaxFlow {
         $n = 0;
         $l = $lhead;
         $lprev = null;
+        '@phan-var ?MinCostMaxFlow_Node $lprev';
         $max_distance = 2 * count($this->v) - 1;
         $this->nrelabel = 0;
         while ($l) {
@@ -461,6 +494,7 @@ class MinCostMaxFlow {
     private function cspushrelabel_relabel($v) {
         // calculate new price
         $p = -INF;
+        $ex = 0;
         foreach ($v->e as $epos => $e) {
             if ($e->src === $v && $e->flow < $e->cap) {
                 $px = $e->dst->price - $e->cost;

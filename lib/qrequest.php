@@ -4,13 +4,18 @@
 
 class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
     // NB see also count()
+    /** @var string */
     private $____method;
     private $____a = [];
     private $____files = [];
     private $____x = [];
+    /** @var bool */
     private $____post_ok = false;
+    /** @var bool */
     private $____post_empty = false;
+    /** @var false|string */
     private $____page = false;
+    /** @var false|string */
     private $____path = false;
     function __construct($method, $data = null) {
         $this->____method = $method;
@@ -20,25 +25,34 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             }
         }
     }
+    /** @param string $page
+     * @param string $path */
     function set_page_path($page, $path) {
         $this->____page = $page;
         $this->____path = $path;
     }
+    /** @return string */
     function method() {
         return $this->____method;
     }
+    /** @return bool */
     function is_get() {
         return $this->____method === "GET";
     }
+    /** @return bool */
     function is_post() {
         return $this->____method === "POST";
     }
+    /** @return false|string */
     function page() {
         return $this->____page;
     }
+    /** @return false|string */
     function path() {
         return $this->____path;
     }
+    /** @param int $n
+     * @return false|string */
     function path_component($n, $decoded = false) {
         if ((string) $this->____path !== "") {
             $p = explode("/", substr($this->____path, 1));
@@ -210,12 +224,14 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function approve_post() {
         $this->____post_ok = true;
     }
+    /** @return bool */
     function post_ok() {
         return $this->____post_ok;
     }
     function set_post_empty() {
         $this->____post_empty = true;
     }
+    /** @return bool */
     function post_empty() {
         return $this->____post_empty;
     }

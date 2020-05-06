@@ -500,6 +500,7 @@ if ($paperTable->mode === "edit") {
     }
     // restore comment across logout bounce
     if ($Qreq->editcomment) {
+        '@phan-var-force PaperInfo $prow';
         $cid = $Qreq->c;
         $preferred_resp_round = false;
         if (($x = $Qreq->response)) {

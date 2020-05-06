@@ -3,31 +3,48 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class PaperStatus extends MessageSet {
+    /** @var Conf */
     public $conf;
     // public $user; -- inherited from MessageSet
+    /** @var ?PaperInfo */
     private $prow;
+    /** @var int */
     public $paperId;
     private $uploaded_documents;
+    /** @var bool */
     private $no_notify = false;
+    /** @var bool */
     private $export_ids = false;
+    /** @var bool */
     private $hide_docids = false;
+    /** @var bool */
     private $export_content = false;
+    /** @var bool */
     private $disable_users = false;
+    /** @var bool */
     private $allow_any_content_file = false;
+    /** @var string|false */
     private $content_file_prefix = false;
+    /** @var bool */
     private $add_topics = false;
+    /** @var list<callable> */
     private $_on_document_export = [];
+    /** @var list<callable> */
     private $_on_document_import = [];
+    /** @var ?CheckFormat */
     private $_cf;
 
     public $diffs;
+    /** @var PaperInfo */
     private $_nnprow;
     private $_paper_upd;
     private $_paper_overflow_upd;
     public $_topic_ins; // set by Topics_PaperOption
+    /** @var array<int,PaperValue> */
     private $_field_values;
     private $_option_delid;
     private $_option_ins;
+    /** @var array<string,int> */
     private $_new_conflicts;
     private $_conflict_ins;
     private $_created_contacts;
@@ -395,6 +412,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    /** @return ?DocumentInfo */
     function upload_document($docj, PaperOption $o) {
         // $docj can be a DocumentInfo or a JSON.
         // If it is a JSON, its format is set by document_to_json.

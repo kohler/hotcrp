@@ -137,6 +137,9 @@ class AbbreviationMatchTracker {
             return 0;
         }
     }
+    /** @param string $subject
+     * @param ?bool $sisu
+     * @return int|float */
     private function mclass($subject, $sisu = null) {
         if ($sisu === null) {
             $sisu = !is_usascii($subject);
@@ -259,16 +262,21 @@ class AbbreviationClass {
 }
 
 class AbbreviationMatcher {
+    /** @var list<array{string,?string,mixed,int,?string,?array}> */
     private $data = [];
     private $nanal = 0;
     private $matches = [];
     private $abbreviators = [];
     private $prio = [];
 
+    /** @param string $name */
     function add($name, $data, int $tflags = 0) {
         $this->data[] = [$name, null, $data, $tflags];
         $this->matches = [];
     }
+    /** @param string $name
+     * @param callable $callback
+     * @param array $args */
     function add_lazy($name, $callback, $args, int $tflags = 0) {
         $this->data[] = [$name, null, $this, $tflags, $callback, $args];
         $this->matches = [];

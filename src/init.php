@@ -194,6 +194,7 @@ function expand_includes_once($file, $includepath, $globby) {
     return [];
 }
 
+/** @param string|list<string> $files */
 function expand_includes($files, $expansions = array()) {
     global $Opt, $ConfSitePATH;
     if (!is_array($files)) {

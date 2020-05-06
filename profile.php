@@ -306,7 +306,7 @@ function parseBulkFile($text, $filename) {
     $csv = new CsvParser($text);
     $csv->set_comment_chars("#%");
     if (($line = $csv->next_array())) {
-        if (preg_grep('{\A(?:email|user)\z}i', $line)) {
+        if (preg_grep('/\A(?:email|user)\z/i', $line)) {
             $csv->set_header($line);
         } else if (count($line) == 1) {
             $csv->set_header(["user"]);

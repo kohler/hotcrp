@@ -3,11 +3,15 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class DocumentRequest implements JsonSerializable {
+    /** @var int */
     public $paperId;
+    /** @var PaperInfo */
     public $prow;
     public $dtype;
+    /** @var ?PaperOption */
     public $opt;
     public $linkid;
+    /** @var ?string */
     public $attachment;
     public $docid;
     public $filters = [];

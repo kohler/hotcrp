@@ -23,6 +23,7 @@ class PaperColumn extends Column {
     static function make(Conf $conf, $cj) {
         if ($cj->callback[0] === "+") {
             $class = substr($cj->callback, 1);
+            /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
             return new $class($conf, $cj);
         } else {
             return call_user_func($cj->callback, $conf, $cj);
@@ -396,6 +397,7 @@ class Authors_PaperColumn extends PaperColumn {
     private function affiliation_map($row) {
         $nonempty_count = 0;
         $aff = [];
+        '@phan-var list<string> $aff';
         foreach ($row->author_list() as $i => $au) {
             if ($i != 0 && $au->affiliation === $aff[$i - 1]) {
                 $aff[$i - 1] = null;

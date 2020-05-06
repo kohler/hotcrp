@@ -1,6 +1,7 @@
 <?php
 // base.php -- HotCRP base helper functions
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+/** @phan-file-suppress PhanRedefineFunction */
 
 // type helpers
 
@@ -388,11 +389,13 @@ function make_qreq() : Qrequest {
     return $qreq;
 }
 
+/** @param mixed $a */
 function is_associative_array($a) {
     // this method is suprisingly fast
     return is_array($a) && array_values($a) !== $a;
 }
 
+/** @param mixed $a */
 function array_to_object_recursive($a) {
     if (is_associative_array($a)) {
         $o = (object) array();

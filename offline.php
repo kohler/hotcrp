@@ -107,6 +107,7 @@ function setTagIndexes($qreq) {
             $csvp->unshift($l);
             $line = $csvp->next_array();
             if ($line && check_tag_index_line($line)) {
+                '@phan-var array{string,string,?string} $line';
                 if (isset($settings[$line[1]])) {
                     $errors[$lineno] = "Paper #$line[1] already given on line " . $linenos[$line[1]];
                 }

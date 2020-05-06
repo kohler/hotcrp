@@ -38,17 +38,20 @@ class ReviewInfo {
 
     const VIEWSCORE_RECOMPUTE = -100;
 
+    /** @var array<non-empty-string,non-empty-string> */
     static public $text_field_map = [
         "paperSummary" => "t01", "commentsToAuthor" => "t02",
         "commentsToPC" => "t03", "commentsToAddress" => "t04",
         "weaknessOfPaper" => "t05", "strengthOfPaper" => "t06",
         "textField7" => "t07", "textField8" => "t08"
     ];
+    /** @var list<?non-empty-string> */
     static private $new_text_fields = [
         null, "paperSummary", "commentsToAuthor", "commentsToPC",
         "commentsToAddress", "weaknessOfPaper", "strengthOfPaper",
         "textField7", "textField8"
     ];
+    /** @var array<non-empty-string,non-empty-string> */
     static private $score_field_map = [
         "overAllMerit" => "s01", "reviewerQualification" => "s02",
         "novelty" => "s03", "technicalMerit" => "s04",
@@ -56,6 +59,7 @@ class ReviewInfo {
         "likelyPresentation" => "s08", "suitableForShort" => "s09",
         "potential" => "s10", "fixability" => "s11"
     ];
+    /** @var list<?non-empty-string> */
     static private $new_score_fields = [
         null, "overAllMerit", "reviewerQualification", "novelty",
         "technicalMerit", "interestToCommunity", "longevity", "grammar",
@@ -254,6 +258,8 @@ class ReviewInfo {
         $this->sorter = $c->sorter;
     }
 
+    /** @param string $id
+     * @return ?ReviewFieldInfo */
     static function field_info($id, Conf $conf) {
         if (strlen($id) === 3 && ctype_digit(substr($id, 1))) {
             $n = intval(substr($id, 1), 10);

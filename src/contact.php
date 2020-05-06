@@ -526,6 +526,7 @@ class Contact {
     function overrides() {
         return $this->_overrides;
     }
+    /** @param int $overrides */
     function set_overrides($overrides) {
         $old_overrides = $this->_overrides;
         if (($overrides & self::OVERRIDE_CONFLICT) && !$this->is_manager()) {
@@ -534,12 +535,16 @@ class Contact {
         $this->_overrides = $overrides;
         return $old_overrides;
     }
+    /** @param int $overrides */
     function add_overrides($overrides) {
         return $this->set_overrides($this->_overrides | $overrides);
     }
+    /** @param int $overrides */
     function remove_overrides($overrides) {
         return $this->set_overrides($this->_overrides & ~$overrides);
     }
+    /** @param int $overrides
+     * @param string $method */
     function call_with_overrides($overrides, $method /* , arguments... */) {
         $old_overrides = $this->set_overrides($overrides);
         $result = call_user_func_array([$this, $method], array_slice(func_get_args(), 2));
@@ -1094,6 +1099,8 @@ class Contact {
         "gender" => true
     ];
 
+    /** @param string $k
+     * @param string|int|null $v */
     function save_assign_field($k, $v, Contact_Update $cu) {
         if ($k === "contactTags") {
             if ($v !== null && trim($v) === "") {
@@ -1192,6 +1199,7 @@ class Contact {
         }
     }
 
+    /** @param int $new_roles */
     function save_roles($new_roles, $actor) {
         $old_roles = $this->roles;
         // ensure there's at least one system administrator
@@ -4168,8 +4176,9 @@ class Contact {
 
     // papers
 
-    function paper_set($pids, $options = null) {
-        $ssel = false;
+    /** @return PaperInfoSet */
+    function paper_set($pids, $options = []) {
+        $ssel = null;
         if (is_int($pids)) {
             $options["paperId"] = $pids;
         } else if (is_array($pids)
@@ -4177,14 +4186,15 @@ class Contact {
                    && (!empty($pids) || $options !== null)) {
             $options["paperId"] = $pids;
         } else if (is_object($pids) && $pids instanceof SearchSelection) {
-            $ssel = true;
+            $ssel = $pids;
             $options["paperId"] = $pids->selection();
         } else {
+            assert($options === []);
             $options = $pids;
         }
         $prows = $this->conf->paper_set($options, $this);
         if ($ssel) {
-            $prows->sort_by([$pids, "order_compare"]);
+            $prows->sort_by([$ssel, "order_compare"]);
         }
         return $prows;
     }
@@ -4243,6 +4253,8 @@ class Contact {
         }
     }
 
+    /** @param int $type
+     * @param int $round */
     private function assign_review_explanation($type, $round) {
         $t = ReviewForm::$revtype_names_lc[$type] . " review";
         if ($round && ($rname = $this->conf->round_name($round))) {
@@ -4356,6 +4368,9 @@ class Contact {
         return $reviewId;
     }
 
+    /** @param int $pid
+     * @param int $cid
+     * @param 1|0|-1 $direction */
     function update_review_delegation($pid, $cid, $direction) {
         if ($direction > 0) {
             $this->conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null and reviewNeedsSubmit=1", $pid, $cid);

@@ -390,6 +390,7 @@ function tabLength($text, $all) {
 function ini_get_bytes($varname, $value = null) {
     $val = trim($value !== null ? $value : ini_get($varname));
     $last = strlen($val) ? strtolower($val[strlen($val) - 1]) : ".";
+    /** @phan-suppress-next-line PhanParamSuspiciousOrder */
     return (int) ceil(floatval($val) * (1 << (+strpos(".kmg", $last) * 10)));
 }
 
@@ -650,6 +651,8 @@ function parseReviewOrdinal($t) {
     return $ord;
 }
 
+/** @param null|ReviewInfo|int $ord
+ * @return string */
 function unparseReviewOrdinal($ord) {
     if (!$ord) {
         return ".";

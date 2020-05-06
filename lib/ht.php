@@ -214,6 +214,7 @@ class Ht {
         if (!array_key_exists("id", $js) || $js["id"] === true) {
             $js["id"] = "htctl" . ++self::$_controlid;
         }
+        '@phan-var array{id:string|false|null} $js';
         if ($js["id"]) {
             self::$_lastcontrolid = $js["id"];
         }

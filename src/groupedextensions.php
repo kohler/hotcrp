@@ -5,11 +5,14 @@
 class GroupedExtensions {
     private $_jall = [];
     private $_potential_members = [];
+    /** @var Conf */
     private $conf;
+    /** @var Contact */
     private $viewer;
     public $root;
     private $_raw = [];
     private $_callables;
+    /** @var array{?list<mixed>,?string,?string,?string} */
     private $_render_state;
     private $_render_stack;
     private $_annexes = [];
@@ -78,6 +81,7 @@ class GroupedExtensions {
         $this->_callables = ["Conf" => $this->conf];
         $this->_render_state = [null, null, "h3", null];
     }
+    /** @return Contact */
     function viewer() {
         return $this->viewer;
     }
@@ -102,6 +106,7 @@ class GroupedExtensions {
         }
         return $gj;
     }
+    /** @return string|false */
     function canonical_group($name) {
         if (($gj = $this->get($name))) {
             $pos = strpos($gj->group, "/");
@@ -110,6 +115,7 @@ class GroupedExtensions {
             return false;
         }
     }
+    /** @return list<object> */
     function members($name, $require_key = false) {
         if (($gj = $this->get($name))) {
             $name = $gj->name;
@@ -138,6 +144,7 @@ class GroupedExtensions {
             return $r;
         }
     }
+    /** @return list<object> */
     function groups() {
         return $this->members("");
     }
@@ -155,6 +162,7 @@ class GroupedExtensions {
     function callable($name) {
         if (!isset($this->_callables[$name])
             && ($args = $this->_render_state[0]) !== null) {
+            /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
             $this->_callables[$name] = new $name(...$args);
         }
         return $this->_callables[$name] ?? null;

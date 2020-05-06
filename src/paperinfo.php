@@ -115,7 +115,7 @@ class PaperContactInfo {
             foreach ($row_set as $row) {
                 $row->_clear_contact_info($user);
             }
-            while ($result && ($local = $result->fetch_row())) {
+            while (($local = $result->fetch_row())) {
                 $row = $row_set->get($local[4]);
                 $ci = $row->_get_contact_info($local[5]);
                 $ci->mark_conflict((int) $local[0]);
@@ -186,7 +186,9 @@ class PaperInfo_Conflict {
 }
 
 class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
+    /** @var list<PaperInfo> */
     private $prows = [];
+    /** @var array<int,PaperInfo> */
     private $by_pid = [];
     private $_need_pid_sort = false;
     public $loaded_allprefs = 0;
@@ -212,18 +214,23 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         $set->prows = $set->by_pid = [];
     }
+    /** @return list<PaperInfo> */
     function as_array() {
         return $this->prows;
     }
+    /** @return list<PaperInfo> */
     function all() {
         return $this->prows;
     }
+    /** @return int */
     function size() {
         return count($this->prows);
     }
+    /** @return int */
     function count() {
         return count($this->prows);
     }
+    /** @return bool */
     function is_empty() {
         return empty($this->prows);
     }
@@ -231,6 +238,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         usort($this->prows, $compare);
         $this->_need_pid_sort = true;
     }
+    /** @return list<int> */
     function paper_ids() {
         if ($this->_need_pid_sort) {
             $by_pid = [];
@@ -243,6 +251,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return array_keys($this->by_pid);
     }
+    /** @return ?PaperInfo */
     function get($pid) {
         return $this->by_pid[$pid] ?? null;
     }
@@ -261,12 +270,14 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return false;
     }
+    /** @return ArrayIterator<PaperInfo> */
     function getIterator() {
         return new ArrayIterator($this->prows);
     }
     function offsetExists($offset) {
         return isset($this->by_pid[$offset]);
     }
+    /** @return ?PaperInfo */
     function offsetGet($offset) {
         return $this->by_pid[$offset] ?? null;
     }
@@ -299,6 +310,7 @@ class PaperInfo {
     // $allConflictType: DO NOT LIST (property_exists() is meaningful)
     // $reviewSignatures: DO NOT LIST (property_exists() is meaningful)
 
+    /** @var array<int,PaperContactInfo> */
     private $_contact_info = [];
     private $_rights_version = 0;
     private $_author_array;
@@ -308,10 +320,15 @@ class PaperInfo {
     private $_desirability;
     private $_topics_array;
     private $_topic_interest_score_array;
+    /** @var ?array<int,list<int>> */
     private $_option_values;
+    /** @var ?array<int,list<?string>> */
     private $_option_data;
+    /** @var array<int,PaperValue> */
     private $_option_array;
+    /** @var array<int,PaperValue> */
     private $_new_option_array;
+    /** @var array<int,DocumentInfo> */
     private $_document_array;
     private $_doclink_array;
     private $_conflict_array;
@@ -328,6 +345,7 @@ class PaperInfo {
     private $_request_array;
     private $_refusal_array;
     private $_author_view_user;
+    /** @var ?PaperInfoSet */
     public $_row_set;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
@@ -439,14 +457,18 @@ class PaperInfo {
         }
     }
 
+    /** @param int $cid
+     * @return PaperContactInfo */
     function _get_contact_info($cid) {
-        return $this->_contact_info[$cid] ?? null;
+        return $this->_contact_info[$cid];
     }
 
+    /** @param Contact $user */
     function _clear_contact_info($user) {
         $this->_contact_info[$user->contactXid] = PaperContactInfo::make_empty($this, $user);
     }
 
+    /** @return PaperContactInfo */
     function contact_info(Contact $user) {
         $this->check_rights_version();
         $cid = $user->contactXid;
@@ -468,6 +490,7 @@ class PaperInfo {
         return $this->_contact_info[$cid];
     }
 
+    /** @param array<int,PaperContactInfo> $cimap */
     function replace_contact_info_map($cimap) {
         $old_cimap = $this->_contact_info;
         $this->_contact_info = $cimap;
@@ -522,6 +545,7 @@ class PaperInfo {
     }
 
 
+    /** @return string */
     function unaccented_title() {
         return $this->field_deaccent("title");
     }
@@ -601,6 +625,8 @@ class PaperInfo {
         return $info;
     }
 
+    /** @param Contact|int $contact
+     * @return int */
     function conflict_type($contact) {
         $cid = self::contact_to_cid($contact);
         if (array_key_exists($cid, $this->_contact_info)) {
@@ -612,14 +638,19 @@ class PaperInfo {
         }
     }
 
+    /** @param Contact|int $contact
+     * @return bool */
     function has_conflict($contact) {
         return $this->conflict_type($contact) > CONFLICT_MAXUNCONFLICTED;
     }
 
+    /** @param Contact|int $contact
+     * @return bool */
     function has_author($contact) {
         return $this->conflict_type($contact) >= CONFLICT_AUTHOR;
     }
 
+    /** @return string */
     function collaborators() {
         if ($this->dataOverflow && isset($this->dataOverflow["collaborators"])) {
             return $this->dataOverflow["collaborators"];
@@ -1079,6 +1110,8 @@ class PaperInfo {
 
     private static $topic_interest_values = [-0.7071, -0.5, 0, 0.7071, 1];
 
+    /** @param int|Contact $contact
+     * @return int */
     function topic_interest_score($contact) {
         $score = 0;
         if (is_int($contact)) {
@@ -1209,6 +1242,7 @@ class PaperInfo {
         Dbl::free($result);
     }
 
+    /** @return array<int,array{int,?int}> */
     function preferences() {
         if (!property_exists($this, "allReviewerPreference")) {
             $this->load_preferences();
@@ -1227,6 +1261,8 @@ class PaperInfo {
         return $this->_prefs_array;
     }
 
+    /** @param int|Contact $contact
+     * @return array{int,?int,?int}> */
     function preference($contact, $include_topic_score = false) {
         $cid = is_int($contact) ? $contact : $contact->contactId;
         if ($this->_prefs_cid === null
@@ -1339,6 +1375,7 @@ class PaperInfo {
         return $this->_option_array;
     }
 
+    /** @return array{list<int>,list<?string>} */
     function option_value_data($id) {
         if ($this->_option_data === null) {
             $this->load_options(false, true);
@@ -1347,11 +1384,14 @@ class PaperInfo {
                 $this->_option_data[$id] ?? []];
     }
 
+    /** @return ?PaperValue */
     function option($o) {
         $id = is_object($o) ? $o->id : $o;
         return ($this->options())[$id] ?? null;
     }
 
+    /** @param int|PaperOption $o
+     * @return PaperValue */
     function force_option($o) {
         if (is_object($o)) {
             $ov = ($this->options())[$o->id] ?? null;
@@ -1365,6 +1405,8 @@ class PaperInfo {
         }
     }
 
+    /** @param int|PaperOption $o
+     * @return PaperValue */
     function new_option($o) {
         if (is_object($o)) {
             $ov = $this->_new_option_array[$o->id] ?? null;
@@ -1670,12 +1712,14 @@ class PaperInfo {
         return $srs;
     }
 
-    /** @return ?ReviewInfo */
+    /** @param int $id
+     * @return ?ReviewInfo */
     function review_of_id($id) {
         return ($this->reviews_by_id())[$id] ?? null;
     }
 
-    /** @return ?ReviewInfo */
+    /** @param int|Contact $contact
+     * @return ?ReviewInfo */
     function review_of_user($contact) {
         $cid = self::contact_to_cid($contact);
         foreach ($this->reviews_by_id() as $rrow) {
@@ -1686,7 +1730,8 @@ class PaperInfo {
         return null;
     }
 
-    /** @return list<ReviewInfo> */
+    /** @param int|Contact $contact
+     * @return list<ReviewInfo> */
     function reviews_of_user($contact, $rev_tokens = null) {
         $cid = self::contact_to_cid($contact);
         $rrows = [];

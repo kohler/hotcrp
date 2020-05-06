@@ -302,6 +302,8 @@ class TagMap implements IteratorAggregate {
         }
         return $t;
     }
+    /** @param string $tag
+     * @return ?TagMapItem */
     function check($tag) {
         $ltag = strtolower($tag);
         $t = $this->storage[$ltag] ?? null;
@@ -314,9 +316,13 @@ class TagMap implements IteratorAggregate {
         }
         return $t;
     }
+    /** @param string $tag
+     * @return ?TagMapItem */
     function check_base($tag) {
         return $this->check(TagInfo::base($tag));
     }
+    /** @param string $tag
+     * @return TagMapItem */
     function add($tag) {
         $ltag = strtolower($tag);
         $t = $this->storage[$ltag] ?? false;
@@ -354,6 +360,8 @@ class TagMap implements IteratorAggregate {
         $this->sorted || $this->sort_storage();
         return new ArrayIterator($this->storage);
     }
+    /** @param string $property
+     * @return array<string,TagMapItem> */
     function filter($property) {
         $k = "has_{$property}";
         if (!$this->$k) {
@@ -362,10 +370,15 @@ class TagMap implements IteratorAggregate {
         $this->sorted || $this->sort_storage();
         return array_filter($this->storage, function ($t) use ($property) { return $t->$property; });
     }
+    /** @param callable $f
+     * @return array<string,TagMapItem> */
     function filter_by($f) {
         $this->sorted || $this->sort_storage();
         return array_filter($this->storage, $f);
     }
+    /** @param string $tag
+     * @param string $property
+     * @return ?TagMapItem */
     function check_property($tag, $property) {
         $k = "has_{$property}";
         return $this->$k
@@ -859,6 +872,8 @@ class TagMap implements IteratorAggregate {
 }
 
 class TagInfo {
+    /** @param string $tag
+     * @return string */
     static function base($tag) {
         if ($tag && (($pos = strpos($tag, "#")) > 0
                      || ($pos = strpos($tag, "=")) > 0)) {
@@ -868,6 +883,8 @@ class TagInfo {
         }
     }
 
+    /** @param string $tag
+     * @return array{false|string,false|float} */
     static function unpack($tag) {
         if (!$tag) {
             return [false, false];
@@ -880,15 +897,21 @@ class TagInfo {
         }
     }
 
+    /** @param string $taglist
+     * @return list<string> */
     static function split($taglist) {
         preg_match_all('/\S+/', $taglist, $m);
         return $m[0];
     }
 
+    /** @param string $taglist
+     * @return list<array{false|string,false|float}> */
     static function split_unpack($taglist) {
         return array_map("TagInfo::unpack", self::split($taglist));
     }
 
+    /** @param string $tag
+     * @return bool */
     static function basic_check($tag) {
         return $tag !== "" && strlen($tag) <= TAG_MAXLEN
             && preg_match('{\A' . TAG_REGEX . '\z}', $tag);
@@ -897,6 +920,7 @@ class TagInfo {
 
     private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
 
+    /** @param bool $sequential */
     static function value_increment($sequential) {
         return $sequential ? 1 : self::$value_increment_map[mt_rand(0, 9)];
     }

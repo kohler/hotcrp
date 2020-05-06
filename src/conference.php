@@ -93,6 +93,7 @@ class Conf {
     public $tag_seeall;
     public $ext_subreviews;
     public $sort_by_last;
+    /** @var array<string,mixed> */
     public $opt;
     public $opt_override = null;
     private $_opt_timestamp = null;
@@ -104,11 +105,14 @@ class Conf {
     private $_initial_msg_count;
 
     private $_collator;
-    private $rounds = null;
-    private $_defined_rounds = null;
-    private $_round_settings = null;
-    private $_resp_rounds = null;
+    /** @var list<string> */
+    private $rounds;
+    /** @var array<int,string> */
+    private $_defined_rounds;
+    private $_round_settings;
+    private $_resp_rounds;
     private $_tracks;
+    /** @var ?TagMap */
     private $_taginfo;
     private $_track_tags;
     private $_track_sensitivity = 0;
@@ -142,16 +146,27 @@ class Conf {
     private $_xt_allow_checkers;
     private $_xt_allow_callback;
 
+    /** @var ?array<string,list<object>> */
     private $_formula_functions;
+    /** @var ?array<string,list<object>> */
     private $_search_keyword_base;
+    /** @var ?list<object> */
     private $_search_keyword_factories;
+    /** @var ?array<string,list<object>> */
     private $_assignment_parsers;
+    /** @var ?array<string,list<object>> */
     private $_api_map;
+    /** @var ?array<string,list<object>> */
     private $_list_action_map;
+    /** @var ?array<string,list<object>> */
     private $_list_action_renderers;
+    /** @var ?list<object> */
     private $_list_action_factories;
+    /** @var ?array<string,list<object>> */
     private $_paper_column_map;
+    /** @var ?list<object> */
     private $_paper_column_factories;
+    /** @var ?array<string,list<object>> */
     private $_option_type_map;
     private $_option_type_factories;
     private $_capability_factories;
@@ -159,14 +174,17 @@ class Conf {
     private $_hook_factories;
     /** @var array<string,FileFilter> */
     public $_file_filters; // maintained externally
+    /** @var array<string,Si> */
     public $_setting_info; // maintained externally
+    /** @var ?GroupedExtensions */
     public $_setting_groups; // maintained externally
     private $_mail_keyword_map;
     private $_mail_keyword_factories;
     private $_mail_template_map;
     private $_page_partials;
 
-    public $paper = null; // current paper row
+    /** @var ?PaperInfo */
+    public $paper; // current paper row
     private $_active_list = false;
 
     static public $g;
@@ -722,32 +740,41 @@ class Conf {
 
     // database
 
+    /** @return mysqli_result|Dbl_Result */
     function q(/* $qstr, ... */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), 0);
     }
+    /** @return mysqli_result|Dbl_Result */
     function q_raw(/* $qstr */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW);
     }
+    /** @return mysqli_result|Dbl_Result */
     function q_apply(/* $qstr, $args */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY);
     }
 
+    /** @return mysqli_result|Dbl_Result */
     function ql(/* $qstr, ... */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG);
     }
+    /** @return mysqli_result|Dbl_Result */
     function ql_raw(/* $qstr */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW | Dbl::F_LOG);
     }
+    /** @return mysqli_result|Dbl_Result */
     function ql_apply(/* $qstr, $args */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_LOG);
     }
 
+    /** @return mysqli_result|Dbl_Result */
     function qe(/* $qstr, ... */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR);
     }
+    /** @return mysqli_result|Dbl_Result */
     function qe_raw(/* $qstr */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW | Dbl::F_ERROR);
     }
+    /** @return mysqli_result|Dbl_Result */
     function qe_apply(/* $qstr, $args */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_ERROR);
     }
@@ -827,6 +854,7 @@ class Conf {
         return $this->_formatspec_cache[$dtype];
     }
 
+    /** @return false|string */
     function docstore() {
         return $this->_docstore;
     }
@@ -880,6 +908,8 @@ class Conf {
         }
         return $ap < $bp ? -1 : ($ap == $bp ? 0 : 1);
     }
+    /** @param array<string,list<object>> &$a
+     * @param object $xt */
     static function xt_add(&$a, $name, $xt) {
         if (is_string($name)) {
             $a[$name][] = $xt;
@@ -1003,6 +1033,9 @@ class Conf {
                 || $this->xt_check($xt->allow_if, $xt, $user);
         }
     }
+    /** @param array<string,list<object>> $map
+     * @param string $name
+     * @return ?object */
     function xt_search_name($map, $name, $user, $found = null, $noalias = false) {
         for ($aliases = 0;
              $aliases < 5 && $name !== null && isset($map[$name]);
@@ -1037,6 +1070,9 @@ class Conf {
         }
         return $found;
     }
+    /** @param list<object> $factories
+     * @param string $name
+     * @return list<object> */
     function xt_search_factories($factories, $name, $user, $found = null, $reflags = "", $options = null) {
         $xts = [$found];
         foreach ($factories as $fxt) {
@@ -1467,6 +1503,7 @@ class Conf {
         return count($this->rounds) > 1;
     }
 
+    /** @return list<string> */
     function round_list() {
         return $this->rounds;
     }
@@ -1476,6 +1513,7 @@ class Conf {
         return isset($this->defined_round_list()[0]);
     }
 
+    /** @return array<int,string> */
     function defined_round_list() {
         if ($this->_defined_rounds === null) {
             $dl = [];
@@ -2213,7 +2251,7 @@ class Conf {
     }
 
 
-    /** @var list<?string> */
+    /** @var ?list<string> */
     static private $invariant_row = null;
 
     private function invariantq($q, $args = []) {
@@ -3528,44 +3566,54 @@ class Conf {
         }
     }
 
+    /** @param string|list<string> $text */
     function msg($text, $type) {
         self::msg_on($this, $text, $type);
     }
 
+    /** @param string|list<string> $text */
     function infoMsg($text, $minimal = false) {
         self::msg_on($this, $text, $minimal ? "xinfo" : "info");
     }
 
+    /** @param string|list<string> $text */
     static function msg_info($text, $minimal = false) {
         self::msg_on(self::$g, $text, $minimal ? "xinfo" : "info");
     }
 
+    /** @param string|list<string> $text */
     function warnMsg($text, $minimal = false) {
         self::msg_on($this, $text, $minimal ? "xwarning" : "warning");
     }
 
+    /** @param string|list<string> $text */
     static function msg_warning($text, $minimal = false) {
         self::msg_on(self::$g, $text, $minimal ? "xwarning" : "warning");
     }
 
+    /** @param string|list<string> $text */
     function confirmMsg($text, $minimal = false) {
         self::msg_on($this, $text, $minimal ? "xconfirm" : "confirm");
     }
 
+    /** @param string|list<string> $text */
     static function msg_confirm($text, $minimal = false) {
         self::msg_on(self::$g, $text, $minimal ? "xconfirm" : "confirm");
     }
 
+    /** @param string|list<string> $text */
     function errorMsg($text, $minimal = false) {
         self::msg_on($this, $text, $minimal ? "xmerror" : "merror");
         return false;
     }
 
+    /** @param string|list<string> $text */
     static function msg_error($text, $minimal = false) {
         self::msg_on(self::$g, $text, $minimal ? "xmerror" : "merror");
         return false;
     }
 
+    /** @param mixed $text */
     static function msg_debugt($text) {
         if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true) {
             $text = json_encode_browser($text);
@@ -3595,6 +3643,7 @@ class Conf {
     // Conference header, footer
     //
 
+    /** @return bool */
     function has_active_list() {
         return !!$this->_active_list;
     }
@@ -4200,6 +4249,7 @@ class Conf {
             $this->_save_logs = [];
         } else if (!$on && $this->_save_logs !== false) {
             $qv = [];
+            '@phan-var-force list<list<string>> $qv';
             $last_pids = null;
             foreach ($this->_save_logs as $cid_text => $pids) {
                 $pos = strpos($cid_text, "|");
@@ -4245,6 +4295,10 @@ class Conf {
         }
     }
 
+    /** @param null|int|Contact $user
+     * @param null|int|Contact $dest_user
+     * @param string $text
+     * @param null|int|PaperInfo|list<PaperInfo|int> $pids */
     function log_for($user, $dest_user, $text, $pids = null) {
         if (is_object($pids)) {
             $pids = [$pids->paperId];
@@ -4258,6 +4312,7 @@ class Conf {
         } else {
             $pids = [$pids];
         }
+        '@phan-var-force list<int> $pids';
 
         $true_user = 0;
         if ($user && is_object($user)) {
@@ -4285,6 +4340,7 @@ class Conf {
         }
     }
 
+    /** @return list<list<string>> */
     private static function format_log_values($text, $user, $dest_user, $true_user, $pids) {
         global $Now;
         if (empty($pids)) {
@@ -4335,6 +4391,7 @@ class Conf {
 
     // capabilities
 
+    /** @return CapabilityManager */
     function capability_manager($for = null) {
         return new CapabilityManager($this, $for && substr($for, 0, 1) === "U");
     }
@@ -4342,6 +4399,7 @@ class Conf {
 
     // messages
 
+    /** @return IntlMsgSet */
     function ims() {
         if (!$this->_ims) {
             $this->_ims = new IntlMsgSet;
@@ -4428,6 +4486,7 @@ class Conf {
     function _add_assignment_parser_json($uf) {
         return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
     }
+    /** @return ?AssignmentParser */
     function assignment_parser($keyword, Contact $user = null) {
         require_once("assignmentset.php");
         if ($this->_assignment_parsers === null) {

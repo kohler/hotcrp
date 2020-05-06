@@ -252,6 +252,7 @@ class Text {
 
     const SUFFIX_REGEX = 'Jr\.?|Sr\.?|Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Junior|Senior|Esquire|I+|IV|V|VI*|IX|XI*|2n?d|3r?d|[4-9]th|1\dth';
 
+    /** @param string $name */
     static function split_name($name, $with_email = false) {
         $name = simplify_whitespace($name);
 

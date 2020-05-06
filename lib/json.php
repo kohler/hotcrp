@@ -28,11 +28,17 @@ class Json {
               "\\f" => "\014", "\\r" => "\015");
 
     static private $error_type;
+    /** @var ?string */
     static private $error_input;
+    /** @var ?int */
     static private $error_position;
+    /** @var ?int */
     static private $error_line;
+    /** @var ?string */
     static private $error_description;
 
+    /** @param ?string|false &$x
+     * @param int $etype */
     private static function set_error(&$x, $etype, $desc = null) {
         if ($x !== null && !self::$error_type) {
             self::$error_type = $etype;
@@ -45,7 +51,8 @@ class Json {
         return ($x = null);
     }
 
-    private static function landmark(&$x, $filename) {
+    /** @param ?string|false $x */
+    private static function landmark($x, $filename) {
         if ($x !== null) {
             $prefix = substr(self::$error_input, 0,
                              strlen(self::$error_input) - strlen($x));
@@ -187,6 +194,9 @@ class Json {
 
     // XXX not a full emulation of json_encode(); hopefully that won't matter
     // in the fullness of time
+    /** @param mixed $x
+     * @param int $options
+     * @return ?string */
     static function encode($x, $options = 0) {
         if ($x instanceof JsonSerializable) {
             $x = $x->jsonSerialize();
@@ -241,6 +251,11 @@ class Json {
         }
     }
 
+    /** @param string $x
+     * @param bool $assoc
+     * @param int $depth
+     * @param int $options
+     * @return ?mixed */
     static function decode($x, $assoc = false, $depth = 512, $options = 0) {
         self::$error_type = JSON_ERROR_NONE;
         self::$error_input = $x;
@@ -348,6 +363,11 @@ class Json {
         }
     }
 
+    /** @param $x string
+     * @param $filename string
+     * @param $assoc bool
+     * @param $depth int
+     * @return ?mixed */
     static function decode_landmarks($x, $filename, $assoc = false, $depth = 512) {
         self::$error_type = JSON_ERROR_NONE;
         self::$error_input = $x;
@@ -360,10 +380,12 @@ class Json {
     }
 
 
+    /** @return int */
     static function last_error() {
         return self::$error_type;
     }
 
+    /** @return string */
     static function last_error_msg() {
         static $errors =
             array(JSON_ERROR_NONE => null,

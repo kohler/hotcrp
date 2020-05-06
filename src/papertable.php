@@ -435,6 +435,8 @@ class PaperTable {
                 $c .= $n;
             }
         } else {
+            '@phan-var-force int $foldnum';
+            '@phan-var-force string $foldnumclass';
             $c .= '<a class="q ui js-foldup" href=""' . $foldnumclass;
             if (($title = $extra["foldtitle"] ?? false)) {
                 $c .= ' title="' . $title . '"';
@@ -1148,7 +1150,7 @@ class PaperTable {
             htmlspecialchars($status_info[1]), "</span></p>";
 
         $renders = [];
-        '@phan-var list<array{PaperOption,int,string,mixed,bool}> $renders';
+        '@phan-var-force list<array{PaperOption,int,string,mixed,bool}> $renders';
         $fr = new FieldRender(FieldRender::CPAGE);
         $fr->table = $this;
         foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
@@ -1257,6 +1259,7 @@ class PaperTable {
             // echo contents
             for ($i = $first; $i !== $last; ++$i) {
                 $x = $renders[$i];
+                '@phan-var-force array{PaperOption,int,string,mixed,bool} $x';
                 if ($x[4] === false || (!$x[4] && $x[2] === "")) {
                     $class = "pgsm";
                 } else {

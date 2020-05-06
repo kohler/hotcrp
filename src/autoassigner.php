@@ -753,6 +753,7 @@ class Autoassigner {
         $this->check_missing_assignments($papers, "rev");
     }
 
+    /** @param array<int,list<int>> $cflt */
     private function run_discussion_order_once($cflt, $plist) {
         $m = new MinCostMaxFlow;
         $m->add_progressf(array($this, "mcmf_progress"));

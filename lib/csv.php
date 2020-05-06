@@ -4,11 +4,13 @@
 
 if (!function_exists("gmp_init")) {
     global $ConfSitePATH;
-    require_once("$ConfSitePATH/lib/gmpshim.php");
+    require_once("$ConfSitePATH/lib/polyfills.php");
 }
 
 class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
+    /** @var list<string> */
     private $a;
+    /** @var CsvParser */
     private $csvp;
 
     function __construct(CsvParser $csvp, $a) {
@@ -47,26 +49,33 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
     function getIterator() {
         return new ArrayIterator($this->as_map());
     }
+    /** @return int */
     function count() {
         return count($this->a);
     }
     function jsonSerialize() {
         return $this->as_map();
     }
+    /** @return list<string> */
     function as_array() {
         return $this->a;
     }
+    /** @return array<int|string,string> */
     function as_map() {
         return $this->csvp->as_map($this->a);
     }
 }
 
 class CsvParser {
+    /** @var list<string|list<string>> */
     private $lines;
+    /** @var int */
     private $lpos = 0;
     private $type;
     private $typefn;
+    /** @var false|list<string> */
     private $header = false;
+    /** @var array<string,int> */
     private $hmap = [];
     private $comment_chars = false;
     private $comment_function;
@@ -80,6 +89,8 @@ class CsvParser {
     const TYPE_DOUBLEBAR = 8;
     const TYPE_GUESS = 7;
 
+    /** @param string $str
+     * @return list<string> */
     static public function split_lines($str) {
         $b = array();
         foreach (preg_split('/([^\r\n]*(?:\z|\r\n?|\n))/', $str, 0, PREG_SPLIT_DELIM_CAPTURE) as $line) {
@@ -89,6 +100,8 @@ class CsvParser {
         return $b;
     }
 
+    /** @param string|list<string> $str
+     * @param int $type */
     function __construct($str, $type = self::TYPE_COMMA) {
         $this->lines = is_array($str) ? $str : self::split_lines($str);
         $this->set_type($type);
@@ -122,6 +135,7 @@ class CsvParser {
         return $this->header;
     }
 
+    /** @param list<string>|CsvRow $header */
     function set_header($header) {
         if ($header && $header instanceof CsvRow) {
             $header = $header->as_array();
@@ -179,6 +193,8 @@ class CsvParser {
         }
     }
 
+    /** @param string $dst
+     * @param string $src */
     function add_synonym($dst, $src) {
         if (!isset($this->hmap[$dst]) && isset($this->hmap[$src])) {
             $this->hmap[$dst] = $this->hmap[$src];
@@ -188,6 +204,8 @@ class CsvParser {
         }
     }
 
+    /** @param int|string $offset
+     * @return int */
     function column($offset, $mark_use = false) {
         if (isset($this->hmap[$offset])) {
             $offset = $this->hmap[$offset];
@@ -200,16 +218,22 @@ class CsvParser {
         return $offset;
     }
 
+    /** @param int|string $offset
+     * @return bool */
     function has_column($offset) {
         $c = $this->column($offset);
         return $c >= 0 && $c < count($this->header);
     }
 
+    /** @param int|string $offset
+     * @return bool */
     function column_used($offset) {
         $c = $this->column($offset);
         return $c >= 0 && gmp_testbit($this->used, $c);
     }
 
+    /** @param int|string $offset
+     * @return int|string */
     function column_name($offset) {
         $c = $this->column($offset);
         if ($c >= 0 && $c < count($this->header)) {
@@ -224,6 +248,7 @@ class CsvParser {
         }
     }
 
+    /** @return int */
     function column_count() {
         return $this->nused;
     }
@@ -241,6 +266,8 @@ class CsvParser {
         }
     }
 
+    /** @param string $line
+     * @return int */
     static function linelen($line) {
         $len = strlen($line);
         if ($len > 0 && $line[$len - 1] === "\n") {
@@ -252,6 +279,7 @@ class CsvParser {
         return $len;
     }
 
+    /** @return int */
     function lineno() {
         return $this->lpos;
     }
@@ -260,6 +288,7 @@ class CsvParser {
         return $this->next_map();
     }
 
+    /** @return false|list<string> */
     function next_array() {
         while ($this->lpos < count($this->lines)) {
             $line = $this->lines[$this->lpos];
@@ -284,6 +313,7 @@ class CsvParser {
         return false;
     }
 
+    /** @return false|CsvRow */
     function next_row() {
         $a = $this->next_array();
         return $a === false ? false : new CsvRow($this, $a);
@@ -293,13 +323,15 @@ class CsvParser {
         return $this->as_map($this->next_array());
     }
 
+    /** @param null|false|string|list<string> $line */
     function unshift($line) {
         if ($line !== null && $line !== false) {
             if ($this->lpos > 0) {
                 $this->lines[$this->lpos - 1] = $line;
                 --$this->lpos;
-            } else
+            } else {
                 array_unshift($this->lines, $line);
+            }
         }
     }
 

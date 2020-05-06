@@ -508,7 +508,9 @@ class SettingValues extends MessageSet {
     function use_req() {
         return $this->has_error();
     }
-    function error_at($field, $html = false) {
+    /** @param Si|string|list<Si|string> $field
+     * @param string|null|false $html */
+    function error_at($field, $html = null) {
         if (is_array($field)) {
             foreach ($field as $f) {
                 $this->error_at($f, $html);
@@ -518,7 +520,9 @@ class SettingValues extends MessageSet {
             parent::error_at($fname, $html);
         }
     }
-    function warning_at($field, $html = false) {
+    /** @param Si|string|list<Si|string> $field
+     * @param string|null|false $html */
+    function warning_at($field, $html = null) {
         if (is_array($field)) {
             foreach ($field as $f) {
                 $this->warning_at($f, $html);

@@ -74,6 +74,7 @@ function initialize_user() {
     // set up session
     if (isset($Conf->opt["sessionHandler"])) {
         $sh = $Conf->opt["sessionHandler"];
+        /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName, PhanNonClassMethodCall */
         $Conf->_session_handler = new $sh($Conf);
         session_set_save_handler($Conf->_session_handler, true);
     }
