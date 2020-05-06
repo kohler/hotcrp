@@ -842,21 +842,23 @@ class TagMap implements IteratorAggregate {
 class TagInfo {
     static function base($tag) {
         if ($tag && (($pos = strpos($tag, "#")) > 0
-                     || ($pos = strpos($tag, "=")) > 0))
+                     || ($pos = strpos($tag, "=")) > 0)) {
             return substr($tag, 0, $pos);
-        else
+        } else {
             return $tag;
+        }
     }
 
     static function unpack($tag) {
-        if (!$tag)
+        if (!$tag) {
             return [false, false];
-        else if (!($pos = strpos($tag, "#")) && !($pos = strpos($tag, "=")))
+        } else if (!($pos = strpos($tag, "#")) && !($pos = strpos($tag, "="))) {
             return [$tag, false];
-        else if ($pos == strlen($tag) - 1)
+        } else if ($pos == strlen($tag) - 1) {
             return [substr($tag, 0, $pos), false];
-        else
+        } else {
             return [substr($tag, 0, $pos), (float) substr($tag, $pos + 1)];
+        }
     }
 
     static function split($taglist) {
@@ -882,10 +884,11 @@ class TagInfo {
 
 
     static function id_index_compar($a, $b) {
-        if ($a[1] != $b[1])
+        if ($a[1] != $b[1]) {
             return $a[1] < $b[1] ? -1 : 1;
-        else
+        } else {
             return $a[0] - $b[0];
+        }
     }
 }
 

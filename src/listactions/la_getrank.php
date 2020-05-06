@@ -8,25 +8,29 @@ class GetRank_ListAction extends ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         $settingrank = $user->conf->setting("tag_rank") && $qreq->tag == "~" . $user->conf->setting_data("tag_rank");
-        if (!$user->isPC && !($user->is_reviewer() && $settingrank))
+        if (!$user->isPC && !($user->is_reviewer() && $settingrank)) {
             return self::EPERM;
+        }
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
             $real = "";
             $null = "\n";
-            foreach ($user->paper_set($ssel, ["tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"]) as $prow)
+            $lastIndex = null;
+            foreach ($user->paper_set($ssel, ["tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"]) as $prow) {
                 if ($user->can_change_tag($prow, $tag, null, 1)) {
                     $csvt = CsvGenerator::quote($prow->title);
-                    if ($prow->tagIndex === null)
+                    if ($prow->tagIndex === null) {
                         $null .= "X,$prow->paperId,$csvt\n";
-                    else if ($real === "" || $lastIndex == $prow->tagIndex - 1)
+                    } else if ($real === "" || $lastIndex == $prow->tagIndex - 1) {
                         $real .= ",$prow->paperId,$csvt\n";
-                    else if ($lastIndex == $prow->tagIndex)
+                    } else if ($lastIndex == $prow->tagIndex) {
                         $real .= "=,$prow->paperId,$csvt\n";
-                    else
-                        $real .= str_pad("", min($prow->tagIndex - $lastIndex, 5), ">") . ",$prow->paperId,$csvt\n";
+                    } else {
+                        $real .= str_repeat(">", min($prow->tagIndex - $lastIndex, 5)) . ",$prow->paperId,$csvt\n";
+                    }
                     $lastIndex = $prow->tagIndex;
                 }
+            }
             $text = "# Edit the rank order by rearranging this file's lines.
 
 # The first line has the highest rank. Lines starting with \"#\" are
@@ -41,7 +45,8 @@ class GetRank_ListAction extends ListAction {
                 . "\n"
                 . $real . $null;
             downloadText($text, "rank");
-        } else
+        } else {
             Conf::msg_error($tagger->error_html);
+        }
     }
 }

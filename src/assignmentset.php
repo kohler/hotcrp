@@ -15,7 +15,7 @@ class AssignmentItem implements ArrayAccess {
     }
     function offsetGet($offset) {
         $x = $this->after ? : $this->before;
-        return isset($x[$offset]) ? $x[$offset] : null;
+        return $x[$offset] ?? null;
     }
     function offsetSet($offset, $value) {
     }
@@ -31,13 +31,15 @@ class AssignmentItem implements ArrayAccess {
         return $this->after !== null;
     }
     function get($before, $offset = null) {
-        if ($offset === null)
+        if ($offset === null) {
             return $this->offsetGet($before);
-        if ($before || $this->after === null)
+        }
+        if ($before || $this->after === null) {
             $x = $this->before;
-        else
+        } else {
             $x = $this->after;
-        return $x && isset($x[$offset]) ? $x[$offset] : null;
+        }
+        return $x ? $x[$offset] ?? null : null;
     }
     function get_before($offset) {
         return $this->get(true, $offset);
@@ -94,7 +96,7 @@ class AssignmentState {
     }
     private function pidstate($pid) {
         if (!isset($this->st[$pid])) {
-            $this->st[$pid] = (object) array("items" => array());
+            $this->st[$pid] = (object) ["items" => []];
         }
         return $this->st[$pid];
     }
@@ -130,7 +132,7 @@ class AssignmentState {
     }
     static private function match($x, $q) {
         foreach ($q as $k => $v) {
-            if ($v !== null && get($x, $k) !== $v)
+            if ($v !== null && ($x[$k] ?? null) !== $v)
                 return false;
         }
         return true;
@@ -140,8 +142,9 @@ class AssignmentState {
         foreach ($this->pid_keys($q) as $pid) {
             $st = $this->pidstate($pid);
             $k = $this->extract_key($q, $pid);
-            foreach ($k ? [get($st->items, $k)] : $st->items as $item) {
-                if ($item && !$item->deleted()
+            foreach ($k ? [$st->items[$k] ?? null] : $st->items as $item) {
+                if ($item
+                    && !$item->deleted()
                     && self::match($item->after ? : $item->before, $q)) {
                     $res[] = $item;
                 }
@@ -197,7 +200,7 @@ class AssignmentState {
         $k = $this->extract_key($x);
         assert(!!$k);
         $st = $this->pidstate($x["pid"]);
-        if (!($item = get($st->items, $k))) {
+        if (!($item = $st->items[$k] ?? null)) {
             $item = $st->items[$k] = new AssignmentItem(false);
         }
         $item->after = $x;
@@ -222,10 +225,10 @@ class AssignmentState {
         return array_keys($this->prows);
     }
     function prow($pid) {
-        $p = get($this->prows, $pid);
+        $p = $this->prows[$pid] ?? null;
         if (!$p && !isset($this->pid_attempts[$pid])) {
             $this->fetch_prows($pid);
-            $p = get($this->prows, $pid);
+            $p = $this->prows[$pid] ?? null;
         }
         return $p;
     }
@@ -713,7 +716,7 @@ class ReviewAssigner_Data {
         $a0 = $a1 = trim((string) $req[$key]);
         $require_match = $rtype ? false : $a0 !== "";
         if ($a0 === "" && $rtype != 0) {
-            $a0 = $a1 = get($state->defaults, $key);
+            $a0 = $a1 = $state->defaults[$key] ?? null;
         }
         if ($a0 !== null && ($colon = strpos($a0, ":")) !== false) {
             $a1 = (string) substr($a0, $colon + 1);
@@ -944,7 +947,7 @@ class AssignmentSet {
 
     private static function apply_user_parts($req, $a) {
         foreach (array("firstName", "lastName", "email") as $i => $k) {
-            if (!$req[$k] && get($a, $i)) {
+            if (!$req[$k] && ($a[$i] ?? null)) {
                 $req[$k] = $a[$i];
             }
         }
@@ -1128,7 +1131,7 @@ class AssignmentSet {
             }
         }
 
-        if (!$has_action && !get($this->astate->defaults, "action")) {
+        if (!$has_action && !($this->astate->defaults["action"] ?? null)) {
             return $this->error_at($csv->lineno(), "“action” column missing");
         } else if (!$csv->has_column("paper")) {
             return $this->error_at($csv->lineno(), "“paper” column missing");
@@ -1269,7 +1272,7 @@ class AssignmentSet {
             && ($pf = $aparser->paper_filter($contacts[0], $req, $this->astate))) {
             $npids = [];
             foreach ($pids as $p) {
-                if (get($pf, $p))
+                if ($pf[$p] ?? null)
                     $npids[] = $p;
             }
             $pids = $npids;

@@ -22,7 +22,7 @@ class IntlMsg {
         if ($argname[0] === "\$") {
             $which = substr($argname, 1);
             if (ctype_digit($which)) {
-                $val = get($args, +$which);
+                $val = $args[+$which] ?? null;
             } else {
                 return false;
             }
@@ -32,8 +32,10 @@ class IntlMsg {
             return false;
         }
         if ($component !== false) {
-            if (is_array($val) || is_object($val)) {
-                $val = get($val, $component);
+            if (is_array($val)) {
+                $val = $val[$component] ?? null;
+            } else if (is_object($val)) {
+                $val = $val->$component ?? null;
             } else {
                 return false;
             }
@@ -198,13 +200,13 @@ class IntlMsgSet {
         if ($this->_ctx) {
             $im->context = $this->_ctx . ($im->context ? "/" . $im->context : "");
         }
-        $im->next = get($this->ims, $itext);
+        $im->next = $this->ims[$itext] ?? null;
         $this->ims[$itext] = $im;
         return true;
     }
 
     function add_override($id, $otext) {
-        $im = get($this->ims, $id);
+        $im = $this->ims[$id] ?? null;
         return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true, "template" => $im && $im->template]);
     }
 
@@ -234,7 +236,7 @@ class IntlMsgSet {
         if ($context === "") {
             $context = null;
         }
-        for ($im = get($this->ims, $itext); $im; $im = $im->next) {
+        for ($im = $this->ims[$itext] ?? null; $im; $im = $im->next) {
             $ctxlen = $nreq = 0;
             if ($context !== null && $im->context !== null) {
                 if ($context === $im->context) {
@@ -294,7 +296,8 @@ class IntlMsgSet {
                 if (isset($args[$argi])) {
                     $val = $args[$argi];
                     if ($m[2]) {
-                        $val = get($val, substr($m[2], 1, strlen($m[2]) - 2));
+                        assert(is_array($val));
+                        $val = $val[substr($m[2], 1, -1)] ?? null;
                     }
                     $conv = $m[3] . ($m[4] === "H" || $m[4] === "U" ? "s" : $m[4]);
                     $x = sprintf("%$conv", $val);

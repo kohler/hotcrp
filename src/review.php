@@ -81,16 +81,16 @@ class ReviewField implements Abbreviator, JsonSerializable {
     }
 
     function assign($j) {
-        $this->name = (get($j, "name") ? : "Field name");
+        $this->name = $j->name ?? "Field name";
         $this->name_html = htmlspecialchars($this->name);
-        $this->description = (get($j, "description") ? : "");
-        $this->display_space = get_i($j, "display_space");
+        $this->description = $j->description ?? "";
+        $this->display_space = $j->display_space ?? 0;
         if (!$this->has_options && $this->display_space < 3) {
             $this->display_space = 3;
         }
-        $vis = get($j, "visibility");
+        $vis = $j->visibility ?? null;
         if ($vis === null) {
-            $vis = get($j, "view_score");
+            $vis = $j->view_score ?? null;
             if (is_int($vis)) {
                 $vis = self::$view_score_upgrade_map[$vis];
             }
@@ -99,7 +99,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         if (is_string($vis) && isset(self::$view_score_map[$vis])) {
             $this->view_score = self::$view_score_map[$vis];
         }
-        if (get($j, "position")) {
+        if ($j->position ?? null) {
             $this->displayed = true;
             $this->display_order = $j->position;
         } else {
@@ -107,8 +107,8 @@ class ReviewField implements Abbreviator, JsonSerializable {
         }
         $this->round_mask = get_i($j, "round_mask");
         if ($this->has_options) {
-            $options = get($j, "options") ? : array();
-            $ol = get($j, "option_letter");
+            $options = $j->options ?? [];
+            $ol = $j->option_letter ?? 0;
             if ($ol && ctype_alpha($ol) && strlen($ol) == 1) {
                 $this->option_letter = ord($ol) + count($options);
             } else if ($ol && (is_int($ol) || ctype_digit($ol))) {
@@ -126,10 +126,10 @@ class ReviewField implements Abbreviator, JsonSerializable {
                     $this->options[$i + 1] = $n;
                 }
             }
-            if (($p = get($j, "option_class_prefix"))) {
+            if (($p = $j->option_class_prefix ?? null)) {
                 $this->option_class_prefix = $p;
             }
-            $this->allow_empty = !!get($j, "allow_empty");
+            $this->allow_empty = !!($j->allow_empty ?? false);
         }
         $this->_typical_score = false;
     }
@@ -523,7 +523,7 @@ class ReviewForm implements JsonSerializable {
     }
 
     function field($fid) {
-        return get($this->forder, $fid, null);
+        return $this->forder[$fid] ?? null;
     }
     function all_fields() {
         return $this->forder;
@@ -569,7 +569,7 @@ class ReviewForm implements JsonSerializable {
                     continue;
                 }
                 foreach ($words as $w) {
-                    $bits[$w] = get($bits, $w, 0) | $bit;
+                    $bits[$w] = ($bits[$w] ?? 0) | $bit;
                 }
                 $bit <<= 1;
             }
@@ -636,7 +636,7 @@ class ReviewForm implements JsonSerializable {
         foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f) {
             $rval = "";
             if ($rrow) {
-                $rval = $f->unparse_value(get($rrow, $fid), ReviewField::VALUE_STRING);
+                $rval = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_STRING);
             }
             $fval = $rval;
             if ($rvalues && isset($rvalues->req[$fid])) {
@@ -813,7 +813,7 @@ class ReviewForm implements JsonSerializable {
                 $x .= unparseReviewOrdinal($rrow->reviewOrdinal);
         }
         $x .= "\n";
-        if ($rrow && get($rrow, "reviewEditVersion") && $viewable_identity)
+        if ($rrow && ($rrow->reviewEditVersion ?? null) && $viewable_identity)
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
         if (!$prow || $viewable_identity) {
             if ($rrow && isset($rrow->reviewEmail))
@@ -959,7 +959,7 @@ $blind\n";
             $x .= $f->name . "\n" . str_repeat("-", strlen($f->name)) . "\n";
 
             if ($f->has_options) {
-                $y = get($f->options, $fval, "");
+                $y = $f->options[$fval] ?? "";
                 $x .= prefix_word_wrap($fval . ". ", $y, strlen($fval) + 2);
             } else {
                 $x .= $fval . "\n";
@@ -1214,7 +1214,7 @@ $blind\n";
         if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
             echo '<div class="rveg"><h3 class="revet checki"><label class="revfn">',
                 Ht::hidden("has_blind", 1),
-                '<span class="checkc">', Ht::checkbox("blind", 1, ($rvalues ? !!get($rvalues->req, "blind") : (!$rrow || $rrow->reviewBlind))), '</span>',
+                '<span class="checkc">', Ht::checkbox("blind", 1, ($rvalues ? !!($rvalues->req["blind"] ?? null) : (!$rrow || $rrow->reviewBlind))), '</span>',
                 "Anonymous review</span></h3>\n",
                 '<div class="field-d">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>",
                 "</div>\n";
@@ -1334,7 +1334,7 @@ $blind\n";
         foreach ($this->paper_visible_fields($viewer, $prow, $rrow) as $fid => $f) {
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
-                $fval = get($rrow, $fid);
+                $fval = $rrow->$fid ?? null;
                 if ($f->has_options) {
                     $fval = $f->unparse_value((int) $fval);
                 }
@@ -1565,7 +1565,7 @@ class ReviewValues extends MessageSet {
                 } else if (preg_match('/^==\+== Open Review\s*$/i', $line)) {
                     $this->req["blind"] = 0;
                 } else if (preg_match('/^==\+== Version\s*(\d+)$/i', $line, $match)) {
-                    if (get($this->req, "version", 0) < intval($match[1]))
+                    if (($this->req["version"] ?? 0) < intval($match[1]))
                         $this->req["version"] = intval($match[1]);
                 } else if (preg_match('/^==\+== Review Readiness\s*/i', $line)) {
                     $field = "readiness";
@@ -1584,10 +1584,10 @@ class ReviewValues extends MessageSet {
                             $match[1] .= " " . $xmatch[1];
                         $line .= $xline;
                     }
-                    $field = get($this->rf->fieldName, strtolower($match[1]));
+                    $field = $this->rf->fieldName[strtolower($match[1])] ?? null;
                     if (!$field) {
                         $fname = preg_replace('/\s*\((?:hidden from authors(?: until decision)?|PC only|shown only to chairs|secret)\)\z/i', "", $match[1]);
-                        $field = get($this->rf->fieldName, strtolower($fname));
+                        $field = $this->rf->fieldName[strtolower($fname)] ?? null;
                     }
                     if ($field) {
                         $this->fieldLineno[$field] = $this->lineno;
@@ -1609,7 +1609,7 @@ class ReviewValues extends MessageSet {
                     $field = null;
                 }
                 if ($field != null) {
-                    $this->req[$field] = get($this->req, $field, "") . $line;
+                    $this->req[$field] = ($this->req[$field] ?? "") . $line;
                 }
                 $mode = 2;
             }
@@ -1872,7 +1872,7 @@ class ReviewValues extends MessageSet {
     }
 
     private function check(ReviewInfo $rrow = null) {
-        $submit = get($this->req, "ready");
+        $submit = $this->req["ready"] ?? null;
         $msgcount = $this->message_count();
         $missingfields = null;
         $unready = $anydiff = $anynonempty = false;
@@ -1920,10 +1920,10 @@ class ReviewValues extends MessageSet {
                 || !isset($this->req["reviewerLast"])
                 || strcasecmp($this->req["reviewerFirst"], $rrow->firstName) != 0
                 || strcasecmp($this->req["reviewerLast"], $rrow->lastName) != 0)) {
-            $msg = $this->conf->_("The review form was meant for %s, but this review belongs to %s. If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", Text::user_html(["firstName" => get($this->req, "reviewerFirst"), "lastName" => get($this->req, "reviewerLast"), "email" => $this->req["reviewerEmail"]]), Text::user_html($rrow));
+            $msg = $this->conf->_("The review form was meant for %s, but this review belongs to %s. If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", Text::user_html(["firstName" => $this->req["reviewerFirst"] ?? null, "lastName" => $this->req["reviewerLast"] ?? null, "email" => $this->req["reviewerEmail"]]), Text::user_html($rrow));
             $this->rmsg("reviewerEmail", $msg, self::ERROR);
         } else if ($rrow
-                   && $rrow->reviewEditVersion > get($this->req, "version", 0)
+                   && $rrow->reviewEditVersion > ($this->req["version"] ?? 0)
                    && $anydiff
                    && $this->text !== null) {
             $this->rmsg($this->firstLineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
@@ -1936,7 +1936,7 @@ class ReviewValues extends MessageSet {
 
         if ($this->has_error_since($msgcount)) {
             return false;
-        } else if ($anynonempty || get($this->req, "adoptreview")) {
+        } else if ($anynonempty || ($this->req["adoptreview"] ?? null)) {
             return true;
         } else {
             $this->blank[] = "#" . $this->paperId;
@@ -1970,14 +1970,15 @@ class ReviewValues extends MessageSet {
 
         $newsubmit = $newapproval = false;
         $approvalstate = 0;
-        if (get($this->req, "ready")
+        if (($this->req["ready"] ?? null)
             && (!$rrow || !$rrow->reviewSubmitted)) {
             if ($rrow && $rrow->needs_approval()) {
                 if ($user->isPC) {
                     $approvalstate = 3;
                     if ($this->conf->ext_subreviews < 3
-                        && !get($this->req, "adoptreview"))
+                        && !($this->req["adoptreview"] ?? null)) {
                         $newsubmit = true;
+                    }
                 } else {
                     $approvalstate = $rrow->timeApprovalRequested == 0 ? 2 : 1;
                 }
@@ -2090,7 +2091,7 @@ class ReviewValues extends MessageSet {
         $usedReviewToken = $user->active_review_token_for($prow, $rrow);
 
         // blind? reviewer type? edit version?
-        $reviewBlind = $this->conf->is_review_blind(!!get($this->req, "blind"));
+        $reviewBlind = $this->conf->is_review_blind(!!($this->req["blind"] ?? null));
         if (!$rrow
             || $reviewBlind != $rrow->reviewBlind) {
             $diffinfo->add_view_score(VIEWSCORE_ADMINONLY);
@@ -2109,7 +2110,7 @@ class ReviewValues extends MessageSet {
             && $diffinfo->nonempty()
             && isset($this->req["version"])
             && ctype_digit($this->req["version"])
-            && $this->req["version"] > get($rrow, "reviewEditVersion")) {
+            && $this->req["version"] > ($rrow->reviewEditVersion ?? 0)) {
             $qf[] = "reviewEditVersion=?";
             $qv[] = $this->req["version"] + 0;
         }
@@ -2121,7 +2122,7 @@ class ReviewValues extends MessageSet {
             && $this->conf->opt("formatInfo")) {
             $fmt = null;
             foreach ($this->conf->opt("formatInfo") as $k => $f) {
-                if (get($f, "name")
+                if (($f["name"] ?? null)
                     && strcasecmp($f["name"], $this->req["reviewFormat"]) == 0)
                     $fmt = (int) $k;
             }
