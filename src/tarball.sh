@@ -142,6 +142,7 @@ lib/mime.types
 lib/mimetype.php
 lib/mincostmaxflow.php
 lib/navigation.php
+lib/polyfills.php
 lib/qrequest.php
 lib/redirect.php
 lib/restoredb.sh

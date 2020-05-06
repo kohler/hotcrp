@@ -754,22 +754,6 @@ function review_shepherd_icon() {
 }
 
 
-if (!function_exists("random_bytes")) {
-    // PHP 5.6
-    function random_bytes($length) {
-        $x = @file_get_contents("/dev/urandom", false, null, 0, $length);
-        if (($x === false || $x === "")
-            && function_exists("openssl_random_pseudo_bytes")) {
-            $x = openssl_random_pseudo_bytes($length, $strong);
-            $x = $strong ? $x : false;
-        }
-        if ($x === false || $x === "") {
-            throw new Exception("Cannot obtain $length random bytes");
-        }
-        return $x;
-    }
-}
-
 // Aims to return a random password string with at least
 // `$length * 5` bits of entropy.
 function hotcrp_random_password($length = 14) {

@@ -250,14 +250,6 @@ function base64url_decode($data) {
 
 // JSON encoding helpers
 
-if (!function_exists("json_encode") || !function_exists("json_decode")) {
-    require_once("$ConfSitePATH/lib/json.php");
-}
-if (!function_exists("json_last_error_msg")) {
-    function json_last_error_msg() {
-        return false;
-    }
-}
 if (defined("JSON_UNESCAPED_LINE_TERMINATORS")) {
     // JSON_UNESCAPED_UNICODE is only safe to send to the browser if
     // JSON_UNESCAPED_LINE_TERMINATORS is defined.

@@ -1,25 +1,10 @@
 <?php
 // json.php -- HotCRP JSON function replacements (if PHP JSON not available)
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
-
-foreach (["JSON_ERROR_NONE" => 0, "JSON_ERROR_DEPTH" => 1,
-          "JSON_ERROR_STATE_MISMATCH" => 2, "JSON_ERROR_CTRL_CHAR" => 3,
-          "JSON_ERROR_SYNTAX" => 4, "JSON_ERROR_UTF8" => 5,
-          "JSON_FORCE_OBJECT" => 16, "JSON_PRETTY_PRINT" => 128,
-          "JSON_UNESCAPED_SLASHES" => 64,
-          "JSON_UNESCAPED_UNICODE" => 256] as $k => $v) {
-    if (!defined($k))
-        define($k, $v);
-}
+/** @phan-file-suppress PhanRedefineFunction, PhanRedefineFunctionInternal, PhanRedefineClassInternal */
 
 define("JSON_HOTCRP", 1);
 define("JSON_ERROR_EMPTY_KEY", 100);
-
-if (!interface_exists("JsonSerializable")) {
-    interface JsonSerializable {
-        public function jsonSerialize();
-    }
-}
 
 class Json {
     static $string_map =
@@ -398,32 +383,5 @@ class Json {
             }
         }
         return $error;
-    }
-}
-
-if (!function_exists("json_encode")) {
-    function json_encode($x, $options = 0) {
-        return Json::encode($x, $options);
-    }
-}
-if (!function_exists("json_decode")) {
-    function json_decode($x, $assoc = false, $depth = 512, $options = 0) {
-        return Json::decode($x, $assoc, $depth, $options);
-    }
-    function json_last_error() {
-        return Json::last_error();
-    }
-    function json_last_error_msg() {
-        return Json::last_error_msg();
-    }
-}
-if (!function_exists("json_last_error")) {
-    function json_last_error() {
-        return false;
-    }
-}
-if (!function_exists("json_last_error_msg")) {
-    function json_last_error_msg() {
-        return false;
     }
 }

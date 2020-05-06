@@ -52,7 +52,9 @@ return [
     //
     // Thus, both first-party and third-party code being used by
     // your application should be included in this list.
-    'directory_list' => [
+    "directory_list" => [
         "lib", "src"
-    ]
+    ],
+
+    "exclude_file_list" => ["lib/polyfills.php"]
 ];

@@ -160,6 +160,7 @@ spl_autoload_register(function ($class_name) {
     }
 });
 
+require_once("$ConfSitePATH/lib/polyfills.php");
 require_once("$ConfSitePATH/lib/base.php");
 require_once("$ConfSitePATH/lib/redirect.php");
 require_once("$ConfSitePATH/lib/dbl.php");
