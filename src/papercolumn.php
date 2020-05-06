@@ -16,11 +16,11 @@ class PaperColumn extends Column {
     const PREP_FOLDED = 0; // value matters
     const PREP_VISIBLE = 1; // value matters
 
-    function __construct(Conf $conf, stdClass $cj) {
+    function __construct(Conf $conf, $cj) {
         parent::__construct($cj);
     }
 
-    static function make(Conf $conf, stdClass $cj) {
+    static function make(Conf $conf, $cj) {
         if ($cj->callback[0] === "+") {
             $class = substr($cj->callback, 1);
             return new $class($conf, $cj);

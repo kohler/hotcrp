@@ -25,7 +25,7 @@ class Column {
         "position" => true
     ];
 
-    function __construct(stdClass $arg) {
+    function __construct($arg) {
         foreach ((array) $arg as $k => $v) {
             if (isset(self::$keys[$k]))
                 $this->$k = $v;
