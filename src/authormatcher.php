@@ -31,10 +31,10 @@ class AuthorMatcher extends Author {
                 }
             }
             if (!empty($rr)) {
-                $this->firstName_matcher = (object) [
-                    "preg_raw" => '\b(?:' . join("|", $rr) . ')\b',
-                    "preg_utf8" => Text::UTF8_INITIAL_NONLETTERDIGIT . '(?:' . join("|", $rr) . ')' . Text::UTF8_FINAL_NONLETTERDIGIT
-                ];
+                $this->firstName_matcher = Text::make_pregexes(
+                    '\b(?:' . join("|", $rr) . ')\b',
+                    Text::UTF8_INITIAL_NONLETTERDIGIT . '(?:' . join("|", $rr) . ')' . Text::UTF8_FINAL_NONLETTERDIGIT
+                );
             }
         }
         if ($this->lastName !== "") {
@@ -46,11 +46,8 @@ class AuthorMatcher extends Author {
                 $ur[] = '(?=.*' . Text::UTF8_INITIAL_NONLETTERDIGIT . $w . Text::UTF8_FINAL_NONLETTERDIGIT . ')';
             }
             if (!empty($rr)) {
-                $this->lastName_matcher = (object) [
-                    "preg_raw" => '\A' . join("", $rr),
-                    "preg_utf8" => '\A' . join("", $ur),
-                    "simple" => count($m[0]) === 1 && strlen($m[0][0]) === strlen($this->lastName) ? $m[0][0] : false
-                ];
+                $this->lastName_matcher = Text::make_pregexes('\A' . join("", $rr), '\A' . join("", $ur));
+                $this->lastName_matcher->simple = count($m[0]) === 1 && strlen($m[0][0]) === strlen($this->lastName) ? $m[0][0] : false;
             }
         }
         $highlight_any = false;
@@ -132,20 +129,20 @@ class AuthorMatcher extends Author {
 
         $content = join("|", $any);
         if ($content !== "" && $content !== "none") {
-            $this->general_pregexes_ = (object) [
-                "preg_raw" => '\b(?:' . $content . ')\b',
-                "preg_utf8" => Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
-            ];
+            $this->general_pregexes_ = Text::make_pregexes(
+                '\b(?:' . $content . ')\b',
+                Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
+            );
         } else {
             $this->general_pregexes_ = null;
         }
         if ($highlight_any !== false && $highlight_any !== $any[count($any) - 1]) {
             $any[count($any) - 1] = $highlight_any;
             $content = join("|", $any);
-            $this->highlight_pregexes_ = (object) [
-                "preg_raw" => '\b(?:' . $content . ')\b',
-                "preg_utf8" => Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
-            ];
+            $this->highlight_pregexes_ = Text::make_pregexes(
+                '\b(?:' . $content . ')\b',
+                Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
+            );
         } else {
             $this->highlight_pregexes_ = null;
         }

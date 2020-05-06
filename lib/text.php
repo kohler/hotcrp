@@ -26,6 +26,7 @@ class TextPregexes {
     public $value;
     public $preg_raw;
     public $preg_utf8;
+    public $simple;
 }
 
 class Text {
@@ -401,6 +402,16 @@ class Text {
             $reg->preg_utf8 = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_utf8));
         }
 
+        return $reg;
+    }
+
+    /** @param ?string $raw
+     * @param string $utf8
+     * @return TextPregexes */
+    static function make_pregexes($raw, $utf8) {
+        $reg = new TextPregexes;
+        $reg->preg_raw = $raw;
+        $reg->preg_utf8 = $utf8;
         return $reg;
     }
 
