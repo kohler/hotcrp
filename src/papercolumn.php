@@ -905,7 +905,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
 class NumericOrderPaperColumn extends PaperColumn {
     private $order;
     function __construct(Conf $conf, $order) {
-        parent::__construct($conf, ["name" => "numericorder", "sort" => true]);
+        parent::__construct($conf, (object) ["name" => "numericorder", "sort" => true]);
         $this->order = $order;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {

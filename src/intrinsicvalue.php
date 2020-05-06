@@ -53,7 +53,7 @@ class Abstract_PaperOption extends PaperOption {
             $ps->update_paperf_overflow("abstract", null);
         } else {
             $ps->save_paperf("abstract", null);
-            $ps->update_paperf_overflow("abstract", $collab);
+            $ps->update_paperf_overflow("abstract", $ab);
         }
         return true;
     }

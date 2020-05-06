@@ -166,13 +166,13 @@ class DocumentRequest implements JsonSerializable {
                 $dtname = $this->opt->dtype_name();
             }
             if ($this->paperId < 0) {
-                $this->req_filename = "[$dtype_name";
+                $this->req_filename = "[$dtname";
             } else if ($this->dtype === DTYPE_SUBMISSION) {
                 $this->req_filename = "[submission #{$this->paperId}";
             } else if ($this->dtype === DTYPE_FINAL) {
                 $this->req_filename = "[submission #{$this->paperId} final version";
             } else {
-                $this->req_filename = "[#{$this->paperId} $dtype_name";
+                $this->req_filename = "[#{$this->paperId} $dtname";
             }
             if ($this->attachment) {
                 $this->req_filename .= " attachment " . $this->attachment;

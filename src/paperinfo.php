@@ -1437,7 +1437,8 @@ class PaperInfo {
         if ($dtype <= 0) {
             $doc = $this->document($dtype, 0, true);
             return $doc ? [$doc] : [];
-        } else if (($ov = $this->option($dtype)) && $ov->has_document()) {
+        } else if (($ov = $this->option($dtype))
+                   && $ov->option->has_document()) {
             return $ov->documents();
         } else {
             return [];

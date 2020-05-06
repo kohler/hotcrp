@@ -195,7 +195,7 @@ class ZipDocument {
             // maybe zipfile with that signature already exists
             if (file_exists($this->filestore)) {
                 if (@filemtime($this->filestore) < $Now - 21600) {
-                    @touch($zfn);
+                    @touch($this->filestore);
                 }
                 return $this->_make_document();
             }

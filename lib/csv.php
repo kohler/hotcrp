@@ -673,7 +673,7 @@ class CsvGenerator {
         return $this;
     }
 
-    function sort($flags = SORT_NORMAL) {
+    function sort($flags = SORT_REGULAR) {
         assert(!($this->flags & self::FLAG_FLUSHED));
         sort($this->lines, $flags);
         return $this;

@@ -87,7 +87,7 @@ class Topics_SettingParser extends SettingParser {
             if (($x = $sv->reqv("top$tid")) !== null) {
                 $t = $this->check_topic($x);
                 if ($t === false) {
-                    $sv->error_at($k, "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
+                    $sv->error_at("top$tid", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
                 } else if ($t === "") {
                     $this->deleted_topics[] = $tid;
                 } else if ($tname !== $t) {

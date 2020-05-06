@@ -322,7 +322,7 @@ class PaperOptionList {
         }
         $o = $this->_omap[$id];
         if (!$o && $force) {
-            $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, ["id" => $id]);
+            $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, (object) ["id" => $id]);
         }
         return $o;
     }

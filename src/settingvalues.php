@@ -1457,9 +1457,9 @@ class SettingValues extends MessageSet {
         }
         if (in_array($si->type, ["cdate", "checkbox"])
             && is_bool($v)) {
-            $sv->set_req("has_{$si->name}", "1");
+            $this->set_req("has_{$si->name}", "1");
             if ($v) {
-                $sv->set_req($si->name, "1");
+                $this->set_req($si->name, "1");
             }
             return;
         } else if ($si->type === "date"
@@ -1467,13 +1467,13 @@ class SettingValues extends MessageSet {
                    || $si->type === "ndate"
                    || $si->type === "grace") {
             if (is_string($v) || $v === false) {
-                $sv->set_req($si->name, $v === false ? "none" : $v);
+                $this->set_req($si->name, $v === false ? "none" : $v);
                 return;
             }
         } else if ($si->type === "int"
                    || $si->type === "zint") {
             if (is_int($v) || ($si->type === "int" && $v === false)) {
-                $sv->set_req($si->name, (string) $v);
+                $this->set_req($si->name, (string) $v);
                 return;
             }
         } else if ($si->type === "string"
@@ -1485,7 +1485,7 @@ class SettingValues extends MessageSet {
                    || $si->type === "urlstring"
                    || $si->type === "htmlstring") {
             if (is_string($v) || $v === false) {
-                $sv->set_req($si->name, (string) $v);
+                $this->set_req($si->name, (string) $v);
                 return;
             }
         } else if ($si->type === "radio") {
@@ -1497,7 +1497,7 @@ class SettingValues extends MessageSet {
                 $pos = array_search($v === "yes" ? true : false, $jvalues);
             }
             if ($pos !== false) {
-                $sv->set_req($si->name, (string) $si->values[$pos]);
+                $this->set_req($si->name, (string) $si->values[$pos]);
                 return;
             }
         }

@@ -4566,8 +4566,10 @@ class Conf {
         if (isset($fj->name)) {
             $ok = self::xt_add($this->_paper_column_map, $fj->name, $fj);
         }
-        if (isset($fj->match) && is_string($fj->match)
-            && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
+        if (isset($fj->match)
+            && is_string($fj->match)
+            && isset($fj->expand_callback)
+            && is_string($fj->expand_callback)) {
             $this->_paper_column_factories[] = $fj;
             $ok = true;
         }
@@ -4806,7 +4808,7 @@ class Conf {
         $hs = ($this->hook_map())[$name] ?? null;
         foreach ($this->_hook_factories as $fj) {
             if ($fj->match === ".*"
-                || preg_match("\1\\A(?:{$fxt->match})\\z\1", $name, $m)) {
+                || preg_match("\1\\A(?:{$fj->match})\\z\1", $name, $m)) {
                 $xfj = clone $fj;
                 $xfj->event = $name;
                 $xfj->match_data = $m;

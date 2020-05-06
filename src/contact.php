@@ -3522,7 +3522,7 @@ class Contact {
         $rights = $this->rights($prow);
         if ($rights->act_author) {
             foreach ($prow->conf->resp_rounds() as $rrd) {
-                if ($rrd->time_allowed())
+                if ($rrd->time_allowed(true))
                     return $rrd->number;
             }
         }

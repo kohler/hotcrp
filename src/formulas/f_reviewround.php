@@ -25,6 +25,5 @@ class ReviewRound_Fexpr extends Fexpr {
             $rrow_vsb = $state->_rrow_view_score_bound();
             return "(" . VIEWSCORE_PC . " > $rrow_vsb ? {$rrow}->reviewRound : null)";
         }
-        return $rt;
     }
 }

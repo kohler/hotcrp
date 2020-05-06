@@ -126,10 +126,10 @@ class Pages_SearchTerm extends SearchTerm {
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $cm = new CountMatcher($word);
-        if ($cm->ok())
+        if ($cm->ok()) {
             return new Pages_SearchTerm(new CountMatcher($word), $srch->conf);
-        else {
-            $srch->warn("“{$keyword}:” expects a page number comparison.");
+        } else {
+            $srch->warn("“{$sword->keyword}:” expects a page number comparison.");
             return null;
         }
     }

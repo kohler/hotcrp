@@ -1487,7 +1487,7 @@ class AssignmentSet {
             } else if ($c1 || $c2) {
                 return $c1 ? -1 : 1;
             } else {
-                return strcmp($c1->type, $c2->type);
+                return strcmp($assigner1->type, $assigner2->type);
             }
         });
         $t = [];
@@ -1723,7 +1723,7 @@ class AssignmentSet {
 class AutoassignmentPaperColumn extends PaperColumn {
     private $aset;
     function __construct(AssignmentSet $aset) {
-        parent::__construct($aset->conf, ["name" => "autoassignment", "row" => true, "className" => "pl_autoassignment"]);
+        parent::__construct($aset->conf, (object) ["name" => "autoassignment", "row" => true, "className" => "pl_autoassignment"]);
         $this->aset = $aset;
         $this->override = PaperColumn::OVERRIDE_IFEMPTY_LINK;
     }
