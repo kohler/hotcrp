@@ -168,7 +168,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->user)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->user)->user_ids();
             if (empty($twiddlecids)) {
                 return $state->error("“" . htmlspecialchars($c) . "” doesn’t match a PC member.");
             } else if (count($twiddlecids) > 1) {
@@ -234,7 +234,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             if (strcasecmp($c, "any") == 0 || strcasecmp($c, "all") == 0 || $c === "*") {
                 $m[1] = "(?:\\d+)~";
             } else {
-                $twiddlecids = ContactSearch::make_pc($c, $state->user)->ids;
+                $twiddlecids = ContactSearch::make_pc($c, $state->user)->user_ids();
                 if (empty($twiddlecids)) {
                     return $state->error("“" . htmlspecialchars($c) . "” doesn’t match a PC member.");
                 } else if (count($twiddlecids) == 1) {

@@ -117,7 +117,7 @@ class Conflict_PaperColumn extends PaperColumn {
         }
         $rs = [];
         $cs = new ContactSearch(ContactSearch::F_PC | ContactSearch::F_TAG | ContactSearch::F_USER, $m[2], $user);
-        foreach ($cs->ids as $cid) {
+        foreach ($cs->user_ids() as $cid) {
             if (($u = $user->conf->pc_member_by_id($cid))) {
                 $fj["name"] = $m[1] . ":" . $u->email;
                 $fj["user"] = $u->email;

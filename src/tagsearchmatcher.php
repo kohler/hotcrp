@@ -45,7 +45,7 @@ class TagSearchMatcher {
             if (ctype_digit($c)) {
                 $cids = [(int) $c];
             } else {
-                $cids = ContactSearch::make_pc($c, $this->user)->ids;
+                $cids = ContactSearch::make_pc($c, $this->user)->user_ids();
             }
             if (empty($cids)) {
                 $this->_errors[] = "#" . htmlspecialchars($tag) . " matches no users.";

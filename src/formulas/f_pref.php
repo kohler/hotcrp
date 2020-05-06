@@ -20,8 +20,8 @@ class Pref_Fexpr extends Fexpr {
                 $arg = substr($arg, 1);
             }
             $csm = ContactSearch::make_pc($arg, $formula->user);
-            if ($csm->ids !== false) {
-                $ff->modifier = $csm->ids;
+            if (!$csm->has_error()) {
+                $ff->modifier = $csm->user_ids();
                 return true;
             }
         }

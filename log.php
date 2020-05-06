@@ -73,7 +73,7 @@ if ($Qreq->u !== "") {
             $word = preg_replace(',(?:\A"|"\z),', "", $word);
         }
         $Search = new ContactSearch($flags, $word, $Me);
-        foreach ($Search->ids as $id) {
+        foreach ($Search->user_ids() as $id) {
             $ids[$id] = $id;
         }
     }

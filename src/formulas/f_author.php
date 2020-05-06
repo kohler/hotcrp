@@ -23,8 +23,8 @@ class Author_Fexpr extends Fexpr {
                 $arg = substr($arg, 1);
             }
             $csm = new ContactSearch(ContactSearch::F_TAG, $arg, $formula->user);
-            if ($csm->ids !== false) {
-                $ff->modifier = $csm->ids;
+            if (!$csm->has_error()) {
+                $ff->modifier = $csm->user_ids();
             } else if (!str_starts_with($arg, "#")) {
                 $ff->modifier = Text::star_text_pregexes($arg);
             } else {

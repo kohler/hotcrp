@@ -999,13 +999,13 @@ class AssignmentSet {
         }
         if ($special && !$first && (!$lemail || !$last)) {
             $ret = ContactSearch::make_special($special, $this->astate->user);
-            if ($ret->ids !== false) {
-                return $ret->contacts();
+            if (!$ret->has_error()) {
+                return $ret->users();
             }
         }
         if (($special === "ext" || $special === "external")
             && $users === "reviewers") {
-            $ret = array();
+            $ret = [];
             foreach ($this->astate->reviewer_users() as $u) {
                 if (!$u->is_pc_member())
                     $ret[] = $u;
@@ -1015,7 +1015,7 @@ class AssignmentSet {
 
         // check for precise email match on existing contact (common case)
         if ($lemail && ($contact = $this->astate->user_by_email($email, false))) {
-            return array($contact);
+            return [$contact];
         }
 
         // check PC list
@@ -1044,12 +1044,12 @@ class AssignmentSet {
                 $text .= " <$email>";
             }
             $ret = ContactSearch::make_cset($text, $this->astate->user, $cset);
-            if (count($ret->ids) === 1) {
-                return $ret->contacts();
-            } else if (empty($ret->ids)) {
-                return $this->error_here("No $cset_text matches “" . self::req_user_html($req) . "”.");
-            } else {
+            if (count($ret->user_ids()) === 1) {
+                return $ret->users();
+            } else if (count($ret->user_ids()) > 1) {
                 return $this->error_here("“" . self::req_user_html($req) . "” matches more than one $cset_text, use a full email address to disambiguate.");
+            } else {
+                return $this->error_here("No $cset_text matches “" . self::req_user_html($req) . "”.");
             }
         } else {
             // create contact

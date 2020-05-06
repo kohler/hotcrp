@@ -44,7 +44,7 @@ class ReviewerMatch_Fexpr extends Fexpr {
         assert($state->user === $this->user);
         // NB the following case also catches attempts to view a non-viewable
         // user tag (the csearch will return nothing).
-        if (!$this->csearch->ids) {
+        if ($this->csearch->is_empty()) {
             return "null";
         }
         $state->queryOptions["reviewSignatures"] = true;
@@ -53,11 +53,11 @@ class ReviewerMatch_Fexpr extends Fexpr {
             $tag = $this->arg[0] === "#" ? substr($this->arg, 1) : $this->arg;
             return "ReviewerMatch_Fexpr::check_tagmap(\$contact->conf, " . $state->loop_cid() . ", " . json_encode($tag) . ")";
         } else {
-            return '(' . $state->_prow() . '->can_view_review_identity_of(' . $state->loop_cid() . ', $contact) ? array_search(' . $state->loop_cid() . ", [" . join(", ", $this->csearch->ids) . "]) !== false : null)";
+            return '(' . $state->_prow() . '->can_view_review_identity_of(' . $state->loop_cid() . ', $contact) ? array_search(' . $state->loop_cid() . ", [" . join(", ", $this->csearch->user_ids()) . "]) !== false : null)";
         }
     }
     function matches_at_most_once() {
-        return count($this->csearch->ids) <= 1;
+        return count($this->csearch->user_ids()) <= 1;
     }
     static function check_tagmap(Conf $conf, $cid, $tag) {
         if ($conf !== self::$tagmap_conf) {

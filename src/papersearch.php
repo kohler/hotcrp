@@ -1818,18 +1818,15 @@ class PaperSearch {
     }
     function matching_uids($word, $quoted, $pc_only) {
         $scm = $this->matching_contacts_base(ContactSearch::F_USER, $word, $quoted, $pc_only);
-        return empty($scm->ids) ? [] : $scm->ids;
+        return $scm->user_ids();
     }
     function matching_contacts($word, $quoted, $pc_only) {
         $scm = $this->matching_contacts_base(ContactSearch::F_USER, $word, $quoted, $pc_only);
-        return $scm->contacts();
+        return $scm->users();
     }
     function matching_special_uids($word, $quoted, $pc_only) {
         $scm = $this->matching_contacts_base(0, $word, $quoted, $pc_only);
-        if ($scm->ids === false)
-            return null;
-        else
-            return empty($scm->ids) ? [] : $scm->ids;
+        return $scm->has_error() ? null : $scm->user_ids();
     }
 
     static function decision_matchexpr(Conf $conf, $word, $quoted) {
