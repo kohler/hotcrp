@@ -45,7 +45,7 @@ function gx_call_requests($conf, $user, $qreq, $group, $gx) {
 if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "stylesheets") {
     $_GET["file"] = $nav->page . $nav->path;
     include("cacheable.php");
-} else if ($nav->page === "api" || $nav->page === "cacheable") {
+} else if ($nav->page === "api" || $nav->page === "cacheable" || $nav->page === "scorechart") {
     include("{$nav->page}.php");
 } else {
     require_once("src/initweb.php");
