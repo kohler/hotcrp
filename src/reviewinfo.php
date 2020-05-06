@@ -86,14 +86,16 @@ class ReviewInfo {
 
     static function parse_type($str) {
         $str = strtolower($str);
-        if ($str === "review" || $str === "" || $str === "all" || $str === "any")
+        if ($str === "review" || $str === "" || $str === "all" || $str === "any") {
             return null;
-        if (str_ends_with($str, "review"))
+        }
+        if (str_ends_with($str, "review")) {
             $str = substr($str, 0, -6);
-        return get(self::$type_map, $str, false);
+        }
+        return self::$type_map[$str] ?? false;
     }
     static function unparse_assigner_action($type) {
-        return get(self::$type_revmap, $type, "clearreview");
+        return self::$type_revmap[$type] ?? "clearreview";
     }
 
     private function merge(Conf $conf, $recomputing_view_scores) {

@@ -99,7 +99,7 @@ class TagMapItem {
         return $this->_order_anno_list;
     }
     function order_anno_entry($i) {
-        return get($this->order_anno_list(), $i);
+        return ($this->order_anno_list())[$i] ?? null;
     }
     function order_anno_search($tagIndex) {
         $ol = $this->order_anno_list();
@@ -262,9 +262,12 @@ class TagMap implements IteratorAggregate {
     }
     function check_emoji_code($ltag) {
         $len = strlen($ltag);
-        if ($len < 3 || $ltag[0] !== ":" || $ltag[$len - 1] !== ":")
+        if ($len >= 3 && $ltag[0] === ":" && $ltag[$len - 1] === ":") {
+            $m = $this->conf->emoji_code_map();
+            return $m[substr($ltag, 1, $len - 2)] ?? false;
+        } else {
             return false;
-        return get($this->conf->emoji_code_map(), substr($ltag, 1, $len - 2), false);
+        }
     }
     private function update_patterns($tag, $ltag, TagMapItem $t = null) {
         if (!$this->pattern_re) {
@@ -298,7 +301,7 @@ class TagMap implements IteratorAggregate {
     }
     function check($tag) {
         $ltag = strtolower($tag);
-        $t = get($this->storage, $ltag);
+        $t = $this->storage[$ltag] ?? null;
         if (!$t && $ltag && $ltag[0] === ":" && $this->check_emoji_code($ltag)) {
             $t = $this->add($tag);
         }
@@ -313,7 +316,7 @@ class TagMap implements IteratorAggregate {
     }
     function add($tag) {
         $ltag = strtolower($tag);
-        $t = get($this->storage, $ltag);
+        $t = $this->storage[$ltag] ?? false;
         if (!$t) {
             $t = new TagMapItem($tag, $this);
             if (!TagInfo::basic_check($ltag))
@@ -449,10 +452,10 @@ class TagMap implements IteratorAggregate {
         return array_keys($this->style_info_lmap);
     }
     function known_style($tag) {
-        return get($this->canonical_style_lmap, strtolower($tag), false);
+        return $this->canonical_style_lmap[strtolower($tag)] ?? false;
     }
     function is_known_style($tag, $match = self::STYLE_FG_BG) {
-        return (get($this->style_info_lmap, strtolower($tag), 0) & $match) !== 0;
+        return (($this->style_info_lmap[strtolower($tag)] ?? 0) & $match) !== 0;
     }
     function is_style($tag, $match = self::STYLE_FG_BG) {
         $ltag = strtolower($tag);
@@ -462,8 +465,9 @@ class TagMap implements IteratorAggregate {
                     return true;
             }
             return false;
-        } else
-            return (get($this->style_info_lmap, $ltag, 0) & $match) !== 0;
+        } else {
+            return (($this->style_info_lmap[$ltag] ?? 0) & $match) !== 0;
+        }
     }
 
     function color_regex() {
@@ -787,23 +791,23 @@ class TagMap implements IteratorAggregate {
             foreach (is_string($od) ? [$od] : $od as $ods) {
                 foreach (json_decode($ods) as $tag => $data) {
                     $t = $map->add($tag);
-                    if (get($data, "chair")) {
+                    if ($data->chair ?? false) {
                         $t->chair = $t->readonly = true;
                     }
-                    if (get($data, "readonly")) {
+                    if ($data->readonly ?? false) {
                         $t->readonly = true;
                     }
-                    if (get($data, "hidden")) {
+                    if ($data->hidden ?? false) {
                         $t->hidden = $map->has_hidden = true;
                     }
-                    if (get($data, "sitewide")) {
+                    if ($data->sitewide ?? false) {
                         $t->sitewide = $map->has_sitewide = true;
                     }
-                    if (($x = get($data, "autosearch"))) {
+                    if (($x = $data->autosearch ?? null)) {
                         $t->autosearch = $x;
                         $map->has_autosearch = true;
                     }
-                    if (($x = get($data, "color"))) {
+                    if (($x = $data->color ?? null)) {
                         foreach (is_string($x) ? [$x] : $x as $c) {
                             if (($kk = $map->known_style($c))) {
                                 $t->colors[] = $kk;
@@ -811,13 +815,13 @@ class TagMap implements IteratorAggregate {
                             }
                         }
                     }
-                    if (($x = get($data, "badge"))) {
+                    if (($x = $data->badge ?? null)) {
                         foreach (is_string($x) ? [$x] : $x as $c) {
                             $t->badges[] = $c;
                             $map->has_badges = true;
                         }
                     }
-                    if (($x = get($data, "emoji"))) {
+                    if (($x = $data->emoji ?? null)) {
                         foreach (is_string($x) ? [$x] : $x as $c) {
                             $t->emoji[] = $c;
                             $map->has_emoji = true;

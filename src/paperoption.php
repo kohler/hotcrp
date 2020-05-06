@@ -297,7 +297,7 @@ class PaperOptionList {
             $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_FINAL_JSON));
         } else {
             $this->_imap[$id] = null;
-            if (($oj = get($this->intrinsic_json_list(), $id))
+            if (($oj = ($this->intrinsic_json_list())[$id] ?? null)
                 && ($o = PaperOption::make($oj, $this->conf))) {
                 $this->_imap[$id] = $o;
             }
@@ -313,7 +313,7 @@ class PaperOptionList {
         }
         if (!array_key_exists($id, $this->_omap)) {
             $this->_omap[$id] = null;
-            if (($oj = get($this->option_json_list(), $id))
+            if (($oj = ($this->option_json_list())[$id] ?? null)
                 && ($o = PaperOption::make($oj, $this->conf))
                 && $this->conf->xt_allowed($o)
                 && Conf::xt_enabled($o)) {
@@ -331,7 +331,7 @@ class PaperOptionList {
         if ($this->_olist === null) {
             $this->_olist = [];
             foreach ($this->option_json_list() as $id => $oj) {
-                if (!get($oj, "nonpaper")
+                if (!($oj->nonpaper ?? false)
                     && ($o = $this->get($id))) {
                     assert(!$o->nonpaper);
                     $this->_olist[$id] = $o;
@@ -352,8 +352,8 @@ class PaperOptionList {
         if ($this->_olist_nonfinal === null) {
             $this->_olist_nonfinal = [];
             foreach ($this->option_json_list() as $id => $oj) {
-                if (!get($oj, "nonpaper")
-                    && !get($oj, "final")
+                if (!($oj->nonpaper ?? false)
+                    && !($oj->final ?? false)
                     && ($o = $this->get($id))) {
                     assert(!$o->nonpaper && !$o->final);
                     $this->_olist_nonfinal[$id] = $o;
@@ -381,8 +381,8 @@ class PaperOptionList {
         if ($this->_olist_include_empty === true) {
             $this->_olist_include_empty = [];
             foreach ($this->option_json_list() as $id => $oj) {
-                if (get($oj, "include_empty")
-                    && !get($oj, "nonpaper")
+                if (($oj->include_empty ?? false)
+                    && !($oj->nonpaper ?? false)
                     && ($o = $this->get($id))) {
                     $this->_olist_include_empty[$id] = $o;
                 }
@@ -480,7 +480,7 @@ class PaperOptionList {
         if (!$this->_nonpaper_am) {
             $this->_nonpaper_am = new AbbreviationMatcher;
             foreach ($this->option_json_list() as $id => $oj) {
-                if (get($oj, "nonpaper")
+                if (($oj->nonpaper ?? false)
                     && ($o = $this->get($id))) {
                     assert($o->nonpaper);
                     $this->_nonpaper_am->add($o->name, $o);
@@ -1023,7 +1023,7 @@ class PaperOption implements Abbreviator {
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">';
         if (($fi = $ov->prow->edit_format())
-            && !get($extra, "no_format_description")) {
+            && !($extra["no_format_description"] ?? false)) {
             echo $fi->description_preview_html();
         }
         echo Ht::textarea($this->formid, $reqov->data(), [
@@ -1031,7 +1031,7 @@ class PaperOption implements Abbreviator {
                 "class" => $pt->control_class($this->formid, "papertext need-autogrow"),
                 "rows" => max($this->display_space, 1),
                 "cols" => 60,
-                "spellcheck" => get($extra, "no_spellcheck") ? null : "true",
+                "spellcheck" => ($extra["no_spellcheck"] ?? null ? null : "true"),
                 "data-default-value" => $default_value
             ]),
             "</div></div>\n\n";
@@ -1201,7 +1201,7 @@ class SelectorPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
-        return get($this->selector, $ov->value - 1, null);
+        return $this->selector[$ov->value - 1] ?? null;
     }
 
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
@@ -1267,7 +1267,7 @@ class SelectorPaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        $fr->set_text(get($this->selector, $ov->value - 1, ""));
+        $fr->set_text($this->selector[$ov->value - 1] ?? "");
     }
 }
 

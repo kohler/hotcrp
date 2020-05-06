@@ -137,7 +137,11 @@ class CommentInfo {
 
     private function commenter() {
         if (isset($this->reviewEmail)) {
-            return (object) ["firstName" => get($this, "reviewFirstName"), "lastName" => get($this, "reviewLastName"), "email" => $this->reviewEmail];
+            return (object) [
+                "firstName" => $this->reviewFirstName ?? null,
+                "lastName" => $this->reviewLastName ?? null,
+                "email" => $this->reviewEmail
+            ];
         } else {
             return $this;
         }
@@ -505,7 +509,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             return false;
         }
 
-        $req_visibility = get(self::$visibility_revmap, get($req, "visibility", ""));
+        $req_visibility = self::$visibility_revmap[$req->visibility ?? ""] ?? null;
         if ($req_visibility === null && $this->commentId) {
             $req_visibility = $this->commentType & COMMENTTYPE_VISIBILITY;
         }
@@ -514,7 +518,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $response_name = null;
         if ($is_response) {
             $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR;
-            if (!get($req, "submit")) {
+            if (!($req->submit ?? null)) {
                 $ctype |= COMMENTTYPE_DRAFT;
             }
             $response_name = $this->conf->resp_round_name($this->commentRound);
@@ -529,7 +533,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
         if ($is_response
             ? $this->prow->blind
-            : $this->conf->is_review_blind(!!get($req, "blind"))) {
+            : $this->conf->is_review_blind(!!($req->blind ?? null))) {
             $ctype |= COMMENTTYPE_BLIND;
         }
         if ($this->commentId
@@ -544,7 +548,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             if ($response_name != "1") {
                 $ctags .= " {$response_name}response#0";
             }
-        } else if (get($req, "tags")
+        } else if (($req->tags ?? null)
                    && preg_match_all(',\S+,', $req->tags, $m)
                    && !$contact->act_author_view($this->prow)) {
             $tagger = new Tagger($contact);
@@ -567,7 +571,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         // attachments
         $docids = $old_docids = [];
-        if (($docs = get($req, "docs"))) {
+        if (($docs = ($req->docs ?? null))) {
             $ctype |= COMMENTTYPE_HASDOC;
             $docids = array_map(function ($doc) { return $doc->paperStorageId; }, $docs);
         }
@@ -579,7 +583,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $displayed = !($ctype & COMMENTTYPE_DRAFT);
 
         // query
-        if (($text = get($req, "text")) !== false) {
+        if (($text = $req->text ?? null) !== false) {
             $text = (string) $text;
         }
         $q = "";

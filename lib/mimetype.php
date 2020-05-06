@@ -91,14 +91,14 @@ class Mimetype {
                             self::$tmap[$ext] = $m;
                     }
                 } else {
-                    $m = get(self::$tmap, trim($mm[3]) ? : self::BIN_TYPE);
+                    $m = self::$tmap[trim($mm[3]) ? : self::BIN_TYPE] ?? null;
                     if ($m) {
                         self::$tmap[$mm[2]] = $m;
                     }
                 }
             }
         }
-        return get(self::$tmap, $type);
+        return self::$tmap[$type] ?? null;
     }
 
 
