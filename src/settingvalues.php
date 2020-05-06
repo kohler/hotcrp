@@ -350,6 +350,8 @@ class SettingParser {
     function save(SettingValues $sv, Si $si) {
     }
 
+    /** @param string $v
+     * @return -1|float|false */
     static function parse_interval($v) {
         $t = 0;
         $v = trim($v);
@@ -358,39 +360,37 @@ class SettingParser {
             || strtoupper($v) === "NONE"
             || $v === "0") {
             return -1;
-        }
-        if (ctype_digit($v)) {
-            return $v * 60;
-        }
-        if (preg_match('/\A\s*([\d]+):(\d+\.?\d*|\.\d+)\s*\z/', $v, $m)) {
-            return $m[1] * 60 + $m[2];
+        } else if (ctype_digit($v)) {
+            return ((float) $v) * 60;
+        } else if (preg_match('/\A\s*([\d]+):(\d+\.?\d*|\.\d+)\s*\z/', $v, $m)) {
+            return ((float) $m[1]) * 60 + (float) $m[2];
         }
         if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*y(?:ears?|rs?|)(?![a-z])/i', $v, $m)) {
-            $t += $m[1] * 3600 * 24 * 365;
+            $t += ((float) $m[1]) * 3600 * 24 * 365;
             $v = substr($v, strlen($m[0]));
         }
         if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*mo(?:nths?|ns?|s|)(?![a-z])/i', $v, $m)) {
-            $t += $m[1] * 3600 * 24 * 30;
+            $t += ((float) $m[1]) * 3600 * 24 * 30;
             $v = substr($v, strlen($m[0]));
         }
         if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*w(?:eeks?|ks?|)(?![a-z])/i', $v, $m)) {
-            $t += $m[1] * 3600 * 24 * 7;
+            $t += ((float) $m[1]) * 3600 * 24 * 7;
             $v = substr($v, strlen($m[0]));
         }
         if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*d(?:ays?|)(?![a-z])/i', $v, $m)) {
-            $t += $m[1] * 3600 * 24;
+            $t += ((float) $m[1]) * 3600 * 24;
             $v = substr($v, strlen($m[0]));
         }
         if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*h(?:rs?|ours?|)(?![a-z])/i', $v, $m)) {
-            $t += $m[1] * 3600;
+            $t += ((float) $m[1]) * 3600;
             $v = substr($v, strlen($m[0]));
         }
         if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*m(?:inutes?|ins?|)(?![a-z])/i', $v, $m)) {
-            $t += $m[1] * 60;
+            $t += ((float) $m[1]) * 60;
             $v = substr($v, strlen($m[0]));
         }
         if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*s(?:econds?|ecs?|)(?![a-z])/i', $v, $m)) {
-            $t += $m[1];
+            $t += (float) $m[1];
             $v = substr($v, strlen($m[0]));
         }
         if (trim($v) == "") {

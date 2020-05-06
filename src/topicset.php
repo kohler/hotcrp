@@ -73,25 +73,21 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     function group_list() {
         if ($this->_topic_groups === null) {
             $this->_topic_groups = [];
-            $last_group = $last_gs = null;
+            $last_gs = null;
             foreach ($this->_topic_map as $tid => $tname) {
-                $colon = (int) strpos($tname, ":") ? : strlen($tname);
-                $group = substr($tname, 0, $colon);
-                if ($last_group !== null
-                    && strcasecmp($last_group, $group) === 0) {
-                    if ($last_gs[0] === false) {
-                        $last_gs[0] = $last_group;
-                    }
+                $colon = (int) strpos($tname, ":");
+                $group = $colon ? substr($tname, 0, $colon) : $tname;
+                if ($last_gs !== null
+                    && strcasecmp($last_gs[0], $group) === 0) {
                     $last_gs[] = $tid;
                 } else {
-                    if ($last_group !== null) {
+                    if ($last_gs !== null) {
                         $this->_topic_groups[] = $last_gs;
                     }
-                    $last_gs = [false, $tid];
-                    $last_group = $group;
+                    $last_gs = [$group, $tid];
                 }
             }
-            if ($last_group !== null) {
+            if ($last_gs !== null) {
                 $this->_topic_groups[] = $last_gs;
             }
         }
@@ -116,7 +112,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
                 $this->_topic_abbrev_matcher->add($tname, $tid);
             }
             foreach ($this->group_list() as $tg) {
-                for ($i = 1; $tg[0] && $i !== count($tg); ++$i) {
+                for ($i = 1; count($tg) > 2 && $i !== count($tg); ++$i) {
                     $this->_topic_abbrev_matcher->add($tg[0], $tg[$i], 1);
                 }
             }
@@ -157,7 +153,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
             $colon = (int) strpos($tname, ":");
             if ($colon > 0) {
                 foreach ($this->group_list() as $tg) {
-                    if ($tg[0] && in_array($tid, $tg, true)) {
+                    if (count($tg) > 2 && in_array($tid, $tg, true)) {
                         $t = '<span class="topicg">' . htmlspecialchars($tg[0]) . ':</span> ';
                         $tname = ltrim(substr($tname, strlen($tg[0]) + 1));
                         break;

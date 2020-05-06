@@ -2164,6 +2164,7 @@ class Conf {
     }
 
 
+    /** @var list<?string> */
     static private $invariant_row = null;
 
     private function invariantq($q, $args = []) {
@@ -4057,9 +4058,11 @@ class Conf {
 
     private function pc_json_item($viewer, $user, $is_contact) {
         $j = (object) [];
-        $r = null;
+        $contact = $r = null;
+        '@phan-var ?Contact $contact';
         if ($is_contact) {
-            $j->name = $viewer->name_text_for($user);
+            $contact = $user;
+            $j->name = $viewer->name_text_for($contact);
         } else {
             $r = Text::analyze_name($user);
             $j->name = $r->name;
@@ -4069,7 +4072,7 @@ class Conf {
             $j->name = $user->email;
         }
         if ($is_contact
-            && ($color_classes = $user->viewable_color_classes($viewer))) {
+            && ($color_classes = $contact->viewable_color_classes($viewer))) {
             $j->color_classes = $color_classes;
         }
         if ($this->sort_by_last && $user->lastName) {

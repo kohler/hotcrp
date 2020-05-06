@@ -263,10 +263,10 @@ class Review_Assigner extends Assigner {
             $ct = $deltarev->ensure($this->cid);
             ++$ct->ass;
             $oldtype = $this->item->get(true, "_rtype") ? : 0;
-            $ct->rev += ($this->rtype != 0) - ($oldtype != 0);
-            $ct->meta += ($this->rtype == REVIEW_META) - ($oldtype == REVIEW_META);
-            $ct->pri += ($this->rtype == REVIEW_PRIMARY) - ($oldtype == REVIEW_PRIMARY);
-            $ct->sec += ($this->rtype == REVIEW_SECONDARY) - ($oldtype == REVIEW_SECONDARY);
+            $ct->rev += ($this->rtype != 0 ? 1 : 0) - ($oldtype != 0 ? 1 : 0);
+            $ct->meta += ($this->rtype == REVIEW_META ? 1 : 0) - ($oldtype == REVIEW_META ? 1 : 0);
+            $ct->pri += ($this->rtype == REVIEW_PRIMARY ? 1 : 0) - ($oldtype == REVIEW_PRIMARY ? 1 : 0);
+            $ct->sec += ($this->rtype == REVIEW_SECONDARY ? 1 : 0) - ($oldtype == REVIEW_SECONDARY ? 1 : 0);
         }
     }
     function add_locks(AssignmentSet $aset, &$locks) {

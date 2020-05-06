@@ -69,7 +69,7 @@ class CountMatcher {
         if (is_array($compar_y)) {
             return in_array($x, $compar_y);
         } else if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?(?:\.\d+|\d+\.?\d*))\z/', $compar_y, $m)) {
-            return self::compare($x, $m[1], $m[2]);
+            return self::compare($x, $m[1], (float) $m[2]);
         } else {
             return false;
         }

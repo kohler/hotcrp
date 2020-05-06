@@ -254,9 +254,9 @@ foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
 }
 
 // interval tests
-xassert_eqq(SettingParser::parse_interval("2y"), 86400 * 365 * 2);
-xassert_eqq(SettingParser::parse_interval("15m"), 60 * 15);
-xassert_eqq(SettingParser::parse_interval("1h15m"), 60 * 75);
+xassert_eqq(SettingParser::parse_interval("2y"), 86400 * 365 * 2.0);
+xassert_eqq(SettingParser::parse_interval("15m"), 60 * 15.0);
+xassert_eqq(SettingParser::parse_interval("1h15m"), 60 * 75.0);
 xassert_eqq(SettingParser::parse_interval("1h15mo"), false);
 
 // preference tests

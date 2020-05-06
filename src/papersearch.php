@@ -504,6 +504,7 @@ class And_SearchTerm extends Op_SearchTerm {
             } else if ($qv->is_true()) {
                 $any = true;
             } else if ($qv->type === "revadj") {
+                assert($qv instanceof ReviewAdjustment_SearchTerm);
                 $revadj = $qv->apply($revadj, false);
             } else if ($qv->type === "pn" && $this->type === "space") {
                 if (!$pn) {
@@ -604,6 +605,7 @@ class Or_SearchTerm extends Op_SearchTerm {
             } else if ($qv->is_false()) {
                 // skip
             } else if ($qv->type === "revadj") {
+                assert($qv instanceof ReviewAdjustment_SearchTerm);
                 $revadj = $qv->apply($revadj, true);
             } else if ($qv->type === "pn") {
                 if (!$pn) {
@@ -678,6 +680,7 @@ class Xor_SearchTerm extends Op_SearchTerm {
             if ($qv->is_false()) {
                 // skip
             } else if ($qv->type === "revadj") {
+                assert($qv instanceof ReviewAdjustment_SearchTerm);
                 $revadj = $qv->apply($revadj, true);
             } else if ($qv->type === "pn") {
                 if (!$pn) {
@@ -1067,34 +1070,42 @@ class TextMatch_SearchTerm extends SearchTerm {
 }
 
 class ReviewRating_SearchAdjustment {
+    /** @var int|string */
     private $type;
-    private $arg;
+    /** @var list<ReviewRating_SearchAdjustment> */
+    private $child;
+    /** @var CountMatcher */
+    private $matcher;
 
     function __construct($type, $arg) {
         $this->type = $type;
-        $this->arg = $arg;
+        if ($type === "and" || $type === "or" || $type === "not") {
+            $this->child = $arg;
+        } else {
+            $this->matcher = $arg;
+        }
     }
     function must_exist() {
         if ($this->type === "and") {
-            return $this->arg[0]->must_exist() || $this->arg[1]->must_exist();
+            return $this->child[0]->must_exist() || $this->child[1]->must_exist();
         } else if ($this->type === "or") {
-            return $this->arg[0]->must_exist() && $this->arg[1]->must_exist();
+            return $this->child[0]->must_exist() && $this->child[1]->must_exist();
         } else if ($this->type === "not") {
             return false;
         } else {
-            return !$this->arg->test(0);
+            return !$this->matcher->test(0);
         }
     }
     private function _test($ratings) {
         if ($this->type === "and") {
-            return $this->arg[0]->_test($ratings) && $this->arg[1]->_test($ratings);
+            return $this->child[0]->_test($ratings) && $this->child[1]->_test($ratings);
         } else if ($this->type === "or") {
-            return $this->arg[0]->_test($ratings) || $this->arg[1]->_test($ratings);
+            return $this->child[0]->_test($ratings) || $this->child[1]->_test($ratings);
         } else if ($this->type === "not") {
-            return !$this->arg->_test($ratings);
+            return !$this->child[0]->_test($ratings);
         } else {
             $n = count(array_filter($ratings, function ($r) { return ($r & $this->type) !== 0; }));
-            return $this->arg->test($n);
+            return $this->matcher->test($n);
         }
     }
     function test(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
@@ -1239,7 +1250,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
                 $this->round = array_diff(array_keys($this->conf->round_list()), $this->round);
             }
             if ($this->ratings !== null) {
-                $this->ratings = new ReviewRating_SearchAdjustment("not", $this->ratings);
+                $this->ratings = new ReviewRating_SearchAdjustment("not", [$this->ratings]);
             }
             $this->negated = false;
         }

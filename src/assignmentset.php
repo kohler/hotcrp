@@ -516,9 +516,9 @@ class AssignmentCountSet {
         while (($row = $result->fetch_row())) {
             $ct = $this->ensure($row[0]);
             $ct->rev = strlen($row[1]);
-            $ct->meta = substr_count($row[1], REVIEW_META);
-            $ct->pri = substr_count($row[1], REVIEW_PRIMARY);
-            $ct->sec = substr_count($row[1], REVIEW_SECONDARY);
+            $ct->meta = substr_count($row[1], (string) REVIEW_META);
+            $ct->pri = substr_count($row[1], (string) REVIEW_PRIMARY);
+            $ct->sec = substr_count($row[1], (string) REVIEW_SECONDARY);
         }
         Dbl::free($result);
     }

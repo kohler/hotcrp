@@ -667,7 +667,7 @@ class Mailer {
 
         // look up recipient; use preferredEmail if set
         if (!$this->recipient || !$this->recipient->email) {
-            return Conf::msg_error("no email in Mailer::send");
+            throw new Exception("No email in Mailer::send");
         }
         if (!isset($this->recipient->contactId)) {
             error_log("no contactId in recipient: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
