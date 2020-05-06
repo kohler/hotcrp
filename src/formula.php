@@ -7,6 +7,7 @@ class FormulaCall {
     public $name;
     public $text;
     public $args = [];
+    public $rawargs = [];
     public $modifier = false;
     public $kwdef;
     public $pos1;
@@ -1457,13 +1458,15 @@ class Formula implements Abbreviator, JsonSerializable {
 
     private function _parse_function_args(FormulaCall $ff, &$t) {
         $argtype = $ff->kwdef->args;
+        $needargs = $argtype !== "optional"
+            && ($argtype === "raw" ? empty($ff->rawargs) : empty($ff->args));
         $t = ltrim($t);
         // collect arguments
         if ($t === "") {
-            return $argtype === "optional" || !empty($ff->args);
+            return !$needargs;
         } else if ($t[0] === "(" && $argtype === "raw") {
             $pos = self::span_parens_until($t, ")");
-            $ff->args[] = substr($t, 0, $pos);
+            $ff->rawargs[] = substr($t, 0, $pos);
             $t = substr($t, $pos);
             return true;
         } else if ($t[0] === "(") {
@@ -1498,7 +1501,7 @@ class Formula implements Abbreviator, JsonSerializable {
             }
             --$this->_depth;
             return true;
-        } else if ($argtype === "optional" || !empty($ff->args)) {
+        } else if (!$needargs) {
             return true;
         } else if (($e = $this->_parse_expr($t, self::$opprec["u+"], false))) {
             $ff->args[] = $e;
