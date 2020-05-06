@@ -37,10 +37,6 @@ return [
     // Backwards Compatibility Checking
     "backward_compatibility_checks" => false,
 
-    // Run a quick version of checks that takes less
-    // time
-    "quick_mode" => true,
-
     // Only emit critical issues to start with
     // (0 is low severity, 5 is normal severity, 10 is critical)
     "minimum_severity" => 10,
@@ -53,8 +49,8 @@ return [
     // Thus, both first-party and third-party code being used by
     // your application should be included in this list.
     "directory_list" => [
-        "lib", "src"
+        Config::projectPath("lib"), Config::projectPath("src")
     ],
 
-    "exclude_file_list" => ["lib/polyfills.php"]
+    "exclude_file_list" => [Config::projectPath("lib/polyfills.php")]
 ];
