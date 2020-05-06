@@ -1399,12 +1399,14 @@ class DocumentPaperOption extends PaperOption {
 
     function validate_document(DocumentInfo $doc) {
         $mimetypes = $this->mimetypes();
-        if (empty($mimetypes))
+        if (empty($mimetypes)) {
             return true;
-        for ($i = 0; $i < count($mimetypes); ++$i)
+        }
+        for ($i = 0; $i < count($mimetypes); ++$i) {
             if ($mimetypes[$i]->mimetype === $doc->mimetype)
                 return true;
-        $desc = htmlspecialchars(Mimetype::description($mimetypes));
+        }
+        $desc = htmlspecialchars(commajoin(array_map("Mimetype::description", $mimetypes), "or"));
         $e = "I only accept $desc files."
             . " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and "
             . htmlspecialchars($doc->content_text_signature())

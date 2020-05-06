@@ -292,7 +292,8 @@ function prefix_commajoin($what, $prefix, $joinword = "and") {
 
 function numrangejoin($range) {
     $a = [];
-    $format = null;
+    $format = $first = $last = null;
+    $intval = $plen = 0;
     foreach ($range as $current) {
         if ($format !== null) {
             if (sprintf($format, $intval + 1) === (string) $current) {
@@ -306,7 +307,7 @@ function numrangejoin($range) {
             }
         }
         if ($current !== "" && ctype_digit($current)) {
-            $format = "%0" . strlen($current) . "d";
+            $format = "%0" . strlen((string) $current) . "d";
             $plen = 0;
             $first = $last = $current;
             $intval = intval($current);

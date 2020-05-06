@@ -261,9 +261,9 @@ class Status_PaperColumn extends PaperColumn {
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $x = $b->_status_sort_info - $a->_status_sort_info;
-        $x = $x ? : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
-        $x = $x ? : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
-        return $x ? : ($b->paperStorageId > 1) - ($a->paperStorageId > 1);
+        $x = $x ? : ($a->timeWithdrawn > 0 ? 1 : 0) - ($b->timeWithdrawn > 0 ? 1 : 0);
+        $x = $x ? : ($b->timeSubmitted > 0 ? 1 : 0) - ($a->timeSubmitted > 0 ? 1 : 0);
+        return $x ? : ($b->paperStorageId > 1 ? 1 : 0) - ($a->paperStorageId > 1 ? 1 : 0);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $status_info = $pl->user->paper_status_info($row);

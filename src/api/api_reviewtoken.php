@@ -13,8 +13,7 @@ class ReviewToken_API {
                 $ttexts = preg_split('/[\s,;]+/', $qreq->token);
             }
 
-            $err = [];
-            $tval = [];
+            $err = $confirm = $tval = [];
             foreach ($ttexts as $t) {
                 if ($t === "") {
                 } else if (!($token = decode_token($t, "V"))) {

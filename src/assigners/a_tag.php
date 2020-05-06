@@ -309,7 +309,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $ltag = $x["ltag"];
             if (ctype_digit($ltag[0])
                 && str_ends_with($ltag, $suffix)
-                && $state->conf->pc_member_by_id(substr($ltag, 0, -strlen($suffix)))) {
+                && $state->conf->pc_member_by_id(intval(substr($ltag, 0, -strlen($suffix))))) {
                 $total += $is_vote ? (float) $x["_index"] : 1.0;
             }
         }

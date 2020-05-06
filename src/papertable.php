@@ -3035,7 +3035,7 @@ class PaperTable {
             if (ctype_digit($rtext)) {
                 $want_rid = intval($rtext);
             } else if (str_starts_with($rtext, (string) $this->prow->paperId)
-                       && ($x = substr($rtext, strlen($this->prow->paperId))) !== ""
+                       && ($x = substr($rtext, strlen((string) $this->prow->paperId))) !== ""
                        && ctype_alpha($x)) {
                 $want_rordinal = parseReviewOrdinal(strtoupper($x));
             }

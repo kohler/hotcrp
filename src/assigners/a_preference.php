@@ -52,6 +52,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         if ($str === "" || strcasecmp($str, "none") == 0) {
             return [0, null];
         } else if (is_numeric($str)) {
+            $str = (float) $str;
             if ($str <= 1000000) {
                 return [(int) round($str), null];
             } else {
@@ -69,8 +70,8 @@ class Preference_AssignmentParser extends AssignmentParser {
         } else if (preg_match('{\A(?:--?(?=-[\d.])|\+(?=\+?[\d.])|)([-+]?(?:\d+(?:\.\d*)?|\.\d+)|)([xyz]?)(?:[-+]|)\z}i', $str, $m)) {
             if ($m[1] === "") {
                 $p = 0;
-            } else if ($m[1] <= 1000000) {
-                $p = (int) round($m[1]);
+            } else if ((float) $m[1] <= 1000000) {
+                $p = (int) round((float) $m[1]);
             } else {
                 return null;
             }

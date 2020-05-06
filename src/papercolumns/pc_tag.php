@@ -115,7 +115,7 @@ class Tag_PaperColumn extends PaperColumn {
         } else if ($v === 0.0 && !$this->is_value) {
             return "✓";
         } else {
-            return $v;
+            return (string) $v;
         }
     }
     private function edit_content($pl, $row, $v) {
@@ -140,7 +140,7 @@ class Tag_PaperColumn extends PaperColumn {
         } else if ($v === 0.0 && !$this->is_value) {
             return "Y";
         } else {
-            return $v;
+            return (string) $v;
         }
     }
 

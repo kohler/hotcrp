@@ -3195,12 +3195,14 @@ class Conf {
 
     /** @return list<int> */
     static private function _cvt_numeric_set($optarr) {
-        $ids = array();
-        if (is_object($optarr))
+        $ids = [];
+        if (is_object($optarr)) {
             $optarr = $optarr->selection();
-        foreach (mkarray($optarr) as $x)
+        }
+        foreach (mkarray($optarr) as $x) {
             if (($x = cvtint($x)) > 0)
                 $ids[] = $x;
+        }
         return $ids;
     }
 
@@ -3352,11 +3354,8 @@ class Conf {
             || $this->has_tracks()) {
             $cols[] = "(select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where PaperTag.paperId=Paper.paperId) paperTags";
         }
-        if (($options["tagIndex"] ?? false) && !is_array($options["tagIndex"])) {
-            $options["tagIndex"] = array($options["tagIndex"]);
-        }
-        if ($options["tagIndex"] ?? false) {
-            foreach ($options["tagIndex"] as $i => $tag) {
+        if (($tagindexes = $options["tagIndex"] ?? false)) {
+            foreach (mkarray($tagindexes) as $i => $tag) {
                 $cols[] = "(select tagIndex from PaperTag where PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($tag) . "') tagIndex" . ($i ? : "");
             }
         }
@@ -3904,7 +3903,7 @@ class Conf {
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
-        Ht::stash_script("hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
+        Ht::stash_script("hotcrp_load.time(" . (-(int) date("Z", $Now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
 
         // deadlines settings
         $my_deadlines = null;

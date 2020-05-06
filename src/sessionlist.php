@@ -132,7 +132,8 @@ class SessionList {
         // A-H: like a-h + i
         // I-P: like a-h + j
         $n = count($ids);
-        $a = [$ids[0]];
+        $a = [(string) $ids[0]];
+        '@phan-var list<string> $a';
         $sign = 1;
         $next = $ids[0] + 1;
         for ($i = 1; $i < $n; ) {
@@ -152,7 +153,7 @@ class SessionList {
                 if (self::encoding_ends_numerically($a)) {
                     $a[] = "s";
                 }
-                $a[] = $ids[$i];
+                $a[] = (string) $ids[$i];
                 $sign = 1;
                 $next = $ids[$i] + 1;
                 ++$i;
@@ -177,7 +178,7 @@ class SessionList {
                 if (self::encoding_ends_numerically($a)) {
                     $a[] = "s";
                 }
-                $a[] = $ids[$i];
+                $a[] = (string) $ids[$i];
                 $sign = 1;
             } else if ($d >= 1 && $d <= 8) {
                 $a[] = chr(96 + $d);

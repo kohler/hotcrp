@@ -491,7 +491,7 @@ class TagMap implements IteratorAggregate {
             || !preg_match_all($this->color_regex(), $tags, $m)) {
             return null;
         }
-        $classes = null;
+        $classes = [];
         $info = 0;
         foreach ($m[1] as $tag) {
             $ltag = strtolower($tag);
@@ -1044,7 +1044,7 @@ class Tagger {
         } else {
             $f = floor($count + 0.0625);
             $d = round(max($count - $f, 0) * 8);
-            $b .= str_repeat($e, $f);
+            $b .= str_repeat($e, (int) $f);
             if ($d) {
                 $b .= '<span style="display:inline-block;overflow-x:hidden;vertical-align:bottom;position:relative;bottom:0;width:' . ($d / 8) . 'em">' . $e . '</span>';
             }
@@ -1114,7 +1114,7 @@ class Tagger {
 
     function link_base($tag) {
         if (ctype_digit($tag[0])) {
-            $p = strlen($this->_contactId);
+            $p = strlen((string) $this->_contactId);
             if (substr($tag, 0, $p) != $this->_contactId || $tag[$p] !== "~") {
                 return false;
             }
@@ -1125,7 +1125,7 @@ class Tagger {
 
     function link($tag) {
         if (ctype_digit($tag[0])) {
-            $p = strlen($this->_contactId);
+            $p = strlen((string) $this->_contactId);
             if (substr($tag, 0, $p) != $this->_contactId || $tag[$p] !== "~") {
                 return false;
             }

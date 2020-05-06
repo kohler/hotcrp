@@ -122,7 +122,7 @@ class AssignmentState {
     }
     private function extract_key($x, $pid = null) {
         $tkeys = $this->types[$x["type"]];
-        assert($tkeys);
+        assert(!!$tkeys);
         $t = $x["type"];
         foreach ($tkeys as $k) {
             if (isset($x[$k])) {

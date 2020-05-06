@@ -951,7 +951,7 @@ class Contact {
         $cdb = $this->contactDbId && !$this->contactId;
         $key = $cdb ? "contactDbId" : "contactId";
         $cid = $cdb ? $this->contactDbId : $this->contactId;
-        assert($cid);
+        assert($cid > 0);
         Dbl::compare_and_swap(
             $cdb ? $this->conf->contactdb() : $this->conf->dblink,
             "select `data` from ContactInfo where $key=?", [$cid],

@@ -40,8 +40,9 @@ class ReviewField implements Abbreviator, JsonSerializable {
     private $_search_keyword;
     /** @var bool */
     public $has_options;
-    public $options = array();
-    public $option_letter = false;
+    public $options = [];
+    /** @var int */
+    public $option_letter = 0;
     public $display_space;
     public $view_score;
     public $displayed = false;
@@ -116,7 +117,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
             } else if ($ol && (is_int($ol) || ctype_digit($ol))) {
                 $this->option_letter = (int) $ol;
             } else {
-                $this->option_letter = false;
+                $this->option_letter = 0;
             }
             $this->options = array();
             if ($this->option_letter) {
@@ -233,9 +234,9 @@ class ReviewField implements Abbreviator, JsonSerializable {
         }
         $n = count($this->options);
         if ($this->option_letter) {
-            return [$this->unparse_value($n - ($n > 2)), $this->unparse_value($n - 1 - ($n > 2) - ($n > 3))];
+            return [$this->unparse_value($n - ($n > 2 ? 1 : 0)), $this->unparse_value($n - 1 - ($n > 2 ? 1 : 0) - ($n > 3 ? 1 : 0))];
         } else {
-            return [$this->unparse_value(1 + ($n > 2)), $this->unparse_value(2 + ($n > 2) + ($n > 3))];
+            return [$this->unparse_value(1 + ($n > 2 ? 1 : 0)), $this->unparse_value(2 + ($n > 2 ? 1 : 0) + ($n > 3 ? 1 : 0))];
         }
     }
 
@@ -1001,7 +1002,7 @@ $blind\n";
         $my_review = !$rrow || $user->is_my_review($rrow);
         $pc_deadline = $user->act_pc($prow) || $user->allow_administer($prow);
         if (!$this->conf->time_review($rrow, $pc_deadline, true)) {
-            $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
+            $whyNot = ["conf" => $this->conf, "deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard")];
             $override_text = whyNotText($whyNot) . " Are you sure you want to override the deadline?";
             if (!$submitted) {
                 $buttons[] = array(Ht::button("Submit review", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");

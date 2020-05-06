@@ -1077,13 +1077,14 @@ class ReviewRating_SearchAdjustment {
     /** @var ?CountMatcher */
     private $matcher;
 
-    function __construct($type, $arg) {
+    function __construct($type, $child = []) {
         $this->type = $type;
-        if ($type === "and" || $type === "or" || $type === "not") {
-            $this->child = $arg;
-        } else {
-            $this->matcher = $arg;
-        }
+        $this->child = $child;
+    }
+    static function make_atom($type, CountMatcher $matcher) {
+        $self = new ReviewRating_SearchAdjustment($type);
+        $self->matcher = $matcher;
+        return $self;
     }
     function must_exist() {
         if ($this->type === "and") {
@@ -1177,7 +1178,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         } else {
             $srch->_has_review_adjustment = true;
             $qv = new ReviewAdjustment_SearchTerm($srch->conf);
-            $qv->ratings = new ReviewRating_SearchAdjustment($rate, new CountMatcher($compar));
+            $qv->ratings = ReviewRating_SearchAdjustment::make_atom($rate, new CountMatcher($compar));
             return $qv;
         }
     }
@@ -2222,7 +2223,7 @@ class PaperSearch {
                 $stack[] = $stkelem;
                 ++$parens;
             } else if ($op->unary || $curqe) {
-                $end_precedence = $op->precedence - ($op->precedence <= 1);
+                $end_precedence = $op->precedence - ($op->precedence <= 1 ? 1 : 0);
                 while (!empty($stack)
                        && $stack[count($stack) - 1]->op->precedence > $end_precedence) {
                     $curqe = self::_pop_expression_stack($curqe, $stack);
@@ -2311,7 +2312,7 @@ class PaperSearch {
                 $stack[] = (object) ["op" => $op, "qe" => []];
                 ++$parens;
             } else {
-                $end_precedence = $op->precedence - ($op->precedence <= 1);
+                $end_precedence = $op->precedence - ($op->precedence <= 1 ? 1 : 0);
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->precedence > $end_precedence) {
                     $curqe = self::_pop_canonicalize_stack($curqe, $stack);
