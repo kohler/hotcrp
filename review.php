@@ -10,14 +10,14 @@ $Me->add_overrides(Contact::OVERRIDE_CHECK_TIME);
 
 
 // header
-function confHeader() {
+function review_header() {
     global $paperTable, $Qreq;
     PaperTable::do_header($paperTable, "review", $Qreq->mode, $Qreq);
 }
 
-function errorMsgExit($msg) {
+function review_error($msg) {
     global $Conf;
-    confHeader();
+    review_header();
     Ht::stash_script("shortcut().add()");
     $msg && Conf::msg_error($msg);
     Conf::$g->footer();
@@ -74,7 +74,7 @@ if (isset($Qreq->uploadForm)
         $tf->msg_at(null, 'Only the first review form in the file was parsed. <a href="' . hoturl("offline") . '">Upload multiple-review files here.</a>', MessageSet::WARNING);
     }
     $tf->report();
-    loadRows();
+    review_load();
 } else if (isset($Qreq->uploadForm)) {
     Conf::msg_error("Select a review form to upload.");
 }
@@ -92,7 +92,7 @@ if (isset($Qreq->unsubmitreview)
         $Conf->confirmMsg("Unsubmitted review.");
     }
     $Conf->self_redirect($Qreq);             // normally does not return
-    loadRows();
+    review_load();
 } else if (isset($Qreq->update)
            && $paperTable->editrrow
            && $paperTable->editrrow->reviewSubmitted) {
@@ -112,7 +112,7 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
         $tf->report();
         $Conf->self_redirect($Qreq); // normally does not return
     }
-    loadRows();
+    review_load();
     $tf->report();
     $paperTable->set_review_values($tf);
 } else if ($Qreq->has_annex("after_login")) {
@@ -178,7 +178,7 @@ if (isset($Qreq->deletereview)
             go(hoturl("paper", ["p" => $Qreq->paperId]));
         }
         $Conf->self_redirect($Qreq);         // normally does not return
-        loadRows();
+        review_load();
     }
 }
 
@@ -271,7 +271,7 @@ if ((isset($Qreq->refuse) || isset($Qreq->decline))
         }
     } else {
         $result->export_errors();
-        loadRows();
+        review_load();
     }
 }
 
@@ -292,7 +292,7 @@ if (isset($Qreq->accept)
         }
         $Conf->confirmMsg("Thank you for confirming your intention to finish this review. You can download the paper and review form below.");
         $Conf->self_redirect($Qreq);
-        loadRows();
+        review_load();
     }
 }
 
@@ -304,8 +304,9 @@ $editAny = $Me->can_review($prow, null);
 
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
-    if (($whyNotPaper = $Me->perm_view_paper($prow)))
-        errorMsgExit(whyNotText($whyNotPaper + ["listViewable" => true]));
+    if (($whyNotPaper = $Me->perm_view_paper($prow))) {
+        review_error(whyNotText($whyNotPaper + ["listViewable" => true]));
+    }
     if (isset($Qreq->reviewId)) {
         Conf::msg_error("You can’t see the reviews for this paper. "
                         . whyNotText($Me->perm_view_review($prow, null)));
@@ -322,7 +323,7 @@ if ($paperTable->mode == "edit") {
 
 
 // paper table
-confHeader();
+review_header();
 
 $paperTable->initialize(false, false);
 $paperTable->paptabBegin();

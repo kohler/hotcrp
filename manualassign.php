@@ -200,34 +200,34 @@ echo '<tr><td colspan="2"><div class="aab aabr">',
     "</table>\n</form></div></td></tr></table>\n";
 
 
-function show_element($pl, $name, $text, $sepclass = "", $id = null, $post = "") {
+function show_ass_element($pl, $name, $text, $sepclass = "", $id = null, $post = "") {
     return '<li class="checki' . ($sepclass ? " $sepclass" : "")
         . '"><span class="checkc">'
         . Ht::checkbox("show$name", 1, $pl->showing($name), ["class" => "uich js-plinfo ignore-diff", "id" => $id ? : "show$name"])
         . "</span>" . Ht::label($text) . $post . '</li>';
 }
 
-function show_elements($pl) {
+function show_ass_elements($pl) {
     $show_data = array();
     if ($pl->has("abstract")) {
-        $show_data[] = show_element($pl, "abstract", "Abstract");
+        $show_data[] = show_ass_element($pl, "abstract", "Abstract");
     }
     if (!$pl->conf->subBlindAlways()) {
-        $show_data[] = show_element($pl, "au", "Authors");
+        $show_data[] = show_ass_element($pl, "au", "Authors");
     } else if ($pl->user->is_manager()) {
-        $show_data[] = show_element($pl, "anonau", "Authors (deblinded)", "", "showau",
+        $show_data[] = show_ass_element($pl, "anonau", "Authors (deblinded)", "", "showau",
             Ht::checkbox("showau", 1, $pl->showing("anonau"), ["id" => "showau_hidden", "class" => "uich js-plinfo hidden ignore-diff"]));
     }
     if (!$pl->conf->subBlindAlways() || $pl->user->is_manager()) {
-        $show_data[] = show_element($pl, "aufull", "Full author info", "fx10");
+        $show_data[] = show_ass_element($pl, "aufull", "Full author info", "fx10");
     }
     if ($pl->user->is_manager() && !$pl->conf->subBlindAlways() && !$pl->conf->subBlindNever()) {
-        $show_data[] = show_element($pl, "anonau", "Deblinded authors", "fx10");
+        $show_data[] = show_ass_element($pl, "anonau", "Deblinded authors", "fx10");
     }
     if ($pl->conf->has_topics()) {
-        $show_data[] = show_element($pl, "topics", "Topics");
+        $show_data[] = show_ass_element($pl, "topics", "Topics");
     }
-    $show_data[] = show_element($pl, "tags", "Tags");
+    $show_data[] = show_ass_element($pl, "tags", "Tags");
     return $show_data;
 }
 
@@ -302,7 +302,7 @@ if ($reviewer) {
     echo '<label class="d-inline-block checki"><span class="checkc">',
         Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff uich js-assignment-autosave"]),
         '</span>Automatically save assignments</label></div></div>';
-    $show_data = show_elements($pl);
+    $show_data = show_ass_elements($pl);
     if (!empty($show_data)) {
         echo '<div class="entryi"><label>Show</label>',
             '<ul class="entry inline">', join('', $show_data), '</ul></div>';

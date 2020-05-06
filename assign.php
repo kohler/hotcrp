@@ -12,13 +12,13 @@ $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 $Conf->site_contact();
 
 // header
-function confHeader() {
+function assign_show_header() {
     global $paperTable, $Qreq;
     PaperTable::do_header($paperTable, "assign", "assign", $Qreq);
 }
 
-function errorMsgExit($msg) {
-    confHeader();
+function assign_error($msg) {
+    assign_show_header();
     $msg && Conf::msg_error($msg);
     Conf::$g->footer();
     exit;
@@ -26,18 +26,16 @@ function errorMsgExit($msg) {
 
 
 // grab paper row
-function loadRows() {
+function assign_load() {
     global $prow, $Conf, $Me, $Qreq;
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
-        errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
+        assign_error(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
     }
     if (($whynot = $Me->perm_request_review($prow, null, false))) {
         error_go($prow->hoturl(), whyNotText($whynot));
     }
 }
-
-
-loadRows();
+assign_load();
 
 
 // change PC assignments
@@ -108,7 +106,7 @@ function pcAssignments($qreq) {
             $Conf->confirmMsg("Assignments saved." . $aset->errors_div_html());
             $Conf->self_redirect($qreq);
             // NB normally does not return
-            loadRows();
+            assign_load();
         }
     } else {
         if ($qreq->ajax) {
@@ -147,7 +145,7 @@ if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
             $result->content["error"] .= "<p>To request a review anyway, either retract the refusal or submit again with “Override” checked.</p>";
         }
         $result->export_errors();
-        loadRows();
+        assign_load();
     }
 }
 
@@ -162,7 +160,7 @@ if ((isset($Qreq->deny) || isset($Qreq->denyreview))
         $Conf->self_redirect($Qreq);
     } else {
         $result->export_errors();
-        loadRows();
+        assign_load();
     }
 }
 
@@ -181,7 +179,7 @@ if (isset($Qreq->retractreview)
         $Conf->self_redirect($Qreq);
     } else {
         $result->export_errors();
-        loadRows();
+        assign_load();
     }
 }
 
@@ -197,7 +195,7 @@ if (isset($Qreq->undeclinereview)
         $Conf->self_redirect($Qreq);
     } else {
         $result->export_errors();
-        loadRows();
+        assign_load();
     }
 }
 
@@ -208,7 +206,7 @@ $paperTable = new PaperTable($prow, $Qreq, "assign");
 $paperTable->initialize(false, false);
 $paperTable->resolveReview(false);
 
-confHeader();
+assign_show_header();
 
 
 // begin form and table

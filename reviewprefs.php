@@ -298,7 +298,7 @@ echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="e
     Ht::entry("q", $Qreq->q, ["id" => "htctl-prefs-q", "size" => 32]),
     '  ', Ht::submit("redisplay", "Redisplay"), '</div></div>';
 
-function show_element($pl, $name, $text, $sepclass = "", $id = null, $post = "") {
+function show_pref_element($pl, $name, $text, $sepclass = "", $id = null, $post = "") {
     return '<li class="checki' . ($sepclass ? " $sepclass" : "")
         . '"><span class="checkc">'
         . Ht::checkbox("show$name", 1, $pl->showing($name), ["class" => "uich js-plinfo ignore-diff", "id" => $id ? : "show$name"])
@@ -306,22 +306,22 @@ function show_element($pl, $name, $text, $sepclass = "", $id = null, $post = "")
 }
 $show_data = [];
 if ($pl->has("abstract")) {
-    $show_data[] = show_element($pl, "abstract", "Abstract");
+    $show_data[] = show_pref_element($pl, "abstract", "Abstract");
 }
 if (!$Conf->subBlindAlways()) {
-    $show_data[] = show_element($pl, "au", "Authors");
+    $show_data[] = show_pref_element($pl, "au", "Authors");
 } else if ($Me->is_manager() && $Conf->subBlindAlways()) {
-    $show_data[] = show_element($pl, "anonau", "Authors (deblinded)", "", "showau",
+    $show_data[] = show_pref_element($pl, "anonau", "Authors (deblinded)", "", "showau",
         Ht::checkbox("showau", 1, $pl->showing("anonau"), ["id" => "showau_hidden", "class" => "uich js-plinfo hidden ignore-diff"]));
 }
 if (!$Conf->subBlindAlways() || $Me->is_manager()) {
-    $show_data[] = show_element($pl, "aufull", "Full author info", "fx10");
+    $show_data[] = show_pref_element($pl, "aufull", "Full author info", "fx10");
 }
 if ($Me->is_manager() && !$Conf->subBlindAlways() && !$Conf->subBlindNever()) {
-    $show_data[] = show_element($pl, "anonau", "Deblinded authors", "fx10");
+    $show_data[] = show_pref_element($pl, "anonau", "Deblinded authors", "fx10");
 }
 if ($Conf->has_topics()) {
-    $show_data[] = show_element($pl, "topics", "Topics");
+    $show_data[] = show_pref_element($pl, "topics", "Topics");
 }
 if (!empty($show_data) && $pl->count) {
     echo '<div class="entryi"><label>Show</label>',
