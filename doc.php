@@ -63,7 +63,7 @@ function document_history(Contact $user, PaperInfo $prow, $dtype) {
 function document_download(Contact $user, $qreq) {
     global $Now;
     try {
-        $dr = new DocumentRequest($qreq, $qreq->path(), $user->conf);
+        $dr = new DocumentRequest($qreq, $qreq->path(), $user);
     } catch (Exception $e) {
         document_error("404 Not Found", htmlspecialchars($e->getMessage()));
     }

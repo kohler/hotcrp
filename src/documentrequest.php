@@ -25,7 +25,8 @@ class DocumentRequest implements JsonSerializable {
         }
     }
 
-    function __construct($req, $path, Conf $conf) {
+    function __construct($req, $path, Contact $user) {
+        $conf = $user->conf;
         $want_path = false;
         if (isset($req["p"])) {
             $this->set_paperid($req["p"]);
@@ -188,21 +189,24 @@ class DocumentRequest implements JsonSerializable {
             || ($this->opt && $this->opt->nonpaper) !== ($this->paperId < 0)) {
             throw new Exception("Document “{$this->req_filename}” not found.");
         }
+
+        // look up paper
+        if ($this->paperId < 0) {
+            $this->prow = new PaperInfo(["paperId" => -2], null, $user->conf);
+        } else {
+            $this->prow = $user->conf->fetch_paper($this->paperId, $user);
+        }
     }
 
     function perm_view_document(Contact $user) {
         if ($this->paperId < 0) {
-            $this->prow = new PaperInfo(["paperId" => -2], null, $user->conf);
             if (($this->opt->visibility === "admin" && !$user->privChair)
                 || ($this->opt->visibility !== "all" && !$user->isPC)) {
                 return $this->prow->make_whynot(["permission" => "view_option", "optionPermission" => $this->opt]);
             } else {
                 return null;
             }
-        }
-
-        $this->prow = $user->conf->fetch_paper($this->paperId, $user);
-        if (($whynot = $user->perm_view_paper($this->prow, false, $this->paperId))) {
+        } else if (($whynot = $user->perm_view_paper($this->prow, false, $this->paperId))) {
             return $whynot;
         } else if ($this->dtype === DTYPE_COMMENT) {
             return $this->perm_view_comment_document($user);

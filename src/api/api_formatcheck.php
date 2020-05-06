@@ -5,7 +5,7 @@
 class FormatCheck_API {
     static function run(Contact $user, $qreq) {
         try {
-            $docreq = new DocumentRequest($qreq, $qreq->doc, $user->conf);
+            $docreq = new DocumentRequest($qreq, $qreq->doc, $user);
         } catch (Exception $e) {
             json_exit(404, "No such document");
         }
