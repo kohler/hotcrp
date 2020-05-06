@@ -117,6 +117,7 @@ class SessionList {
         return !is_int($w) && $w[0] === "r";
     }
 
+    /** @param list<int> $ids */
     static function encode_ids($ids) {
         if (empty($ids)) {
             return "";

@@ -118,6 +118,7 @@ class Review_AssignmentParser extends AssignmentParser {
         $res = $state->remove($revmatch);
         assert(count($res) <= 1);
         $rev = empty($res) ? null : $res[0];
+        '@phan-var ?array{type:string,pid:int,cid:int,_rtype:int,_round:int,_rsubmitted:int,_rnondraft:int} $rev';
 
         if ($rev !== null
             && (($rdata->oldtype !== null && $rdata->oldtype !== $rev["_rtype"])

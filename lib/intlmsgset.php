@@ -43,8 +43,9 @@ class IntlMsg {
         return true;
     }
     function check_require(IntlMsgSet $ms, $args) {
-        if (!$this->require)
+        if (!$this->require) {
             return 0;
+        }
         $nreq = 0;
         foreach ($this->require as $req) {
             if (preg_match('/\A\s*(!*)\s*(\S+?)\s*(\z|[=!<>]=?|≠|≤|≥|!?\^=)\s*(\S*)\s*\z/', $req, $m)

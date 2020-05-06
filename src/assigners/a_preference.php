@@ -47,6 +47,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;
     }
+    /** @return ?array{int,?int} */
     static function parse($str) {
         if ($str === "" || strcasecmp($str, "none") == 0) {
             return [0, null];

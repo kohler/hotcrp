@@ -878,6 +878,7 @@ class PaperInfo {
         Dbl::free($result);
     }
 
+    /** @return bool */
     function has_tag($tag) {
         if (!property_exists($this, "paperTags")) {
             $this->load_tags();
@@ -886,6 +887,7 @@ class PaperInfo {
             && stripos($this->paperTags, " $tag#") !== false;
     }
 
+    /** @return bool */
     function has_any_tag($tags) {
         if (!property_exists($this, "paperTags")) {
             $this->load_tags();
@@ -897,11 +899,13 @@ class PaperInfo {
         return false;
     }
 
+    /** @return bool */
     function has_viewable_tag($tag, Contact $user) {
         $tags = $this->viewable_tags($user);
         return $tags !== "" && stripos(" " . $tags, " $tag#") !== false;
     }
 
+    /** @return false|float */
     function tag_value($tag) {
         if (!property_exists($this, "paperTags")) {
             $this->load_tags();
@@ -914,6 +918,7 @@ class PaperInfo {
         }
     }
 
+    /** @return ?string */
     function all_tags_text() {
         if (!property_exists($this, "paperTags")) {
             $this->load_tags();
@@ -921,6 +926,7 @@ class PaperInfo {
         return $this->paperTags;
     }
 
+    /** @return string */
     function searchable_tags(Contact $user) {
         if (!$user->isPC || (string) $this->all_tags_text() === "") {
             return "";
@@ -933,11 +939,13 @@ class PaperInfo {
         return $rights->searchable_tags;
     }
 
+    /** @return string */
     function sorted_searchable_tags(Contact $user) {
         $tags = $this->searchable_tags($user);
         return $tags === "" ? "" : $this->conf->tags()->sort($tags);
     }
 
+    /** @return string */
     function viewable_tags(Contact $user) {
         // see also Contact::can_view_tag()
         if (!$user->isPC || (string) $this->all_tags_text() === "") {
@@ -952,11 +960,13 @@ class PaperInfo {
         return $rights->viewable_tags;
     }
 
+    /** @return string */
     function sorted_viewable_tags(Contact $user) {
         // XXX don't sort until required
         return $this->viewable_tags($user);
     }
 
+    /** @return string */
     function sorted_editable_tags(Contact $user) {
         $tags = $this->all_tags_text();
         if ($tags !== "") {
@@ -2158,7 +2168,7 @@ class PaperInfo {
             preg_match_all('/(\d+);(\d+);(\d+);(\d+);([^|]*)/',
                            $this->commentSkeletonInfo, $ms, PREG_SET_ORDER);
             foreach ($ms as $m) {
-                $c = new CommentInfo((object) [
+                $c = new CommentInfo([
                         "commentId" => $m[1], "contactId" => $m[2],
                         "commentType" => $m[3], "commentRound" => $m[4],
                         "commentTags" => $m[5]

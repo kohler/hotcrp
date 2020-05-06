@@ -18,6 +18,7 @@ class UnicodeHelper {
         "ﬀ" => "ff", "ﬁ" => "fi", "ﬂ" => "fl", "ﬃ" => "ffi", "ﬄ" => "ffl"
     ];
 
+    /** @var array<string,int> */
     private static $deaccent_map;
     private static $deaccent_result;
 

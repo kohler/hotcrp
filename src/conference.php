@@ -617,14 +617,19 @@ class Conf {
     }
 
 
+    /** @return bool */
     function has_setting($name) {
         return isset($this->settings[$name]);
     }
 
+    /** @param string $name
+     * @return ?int */
     function setting($name, $defval = null) {
         return $this->settings[$name] ?? $defval;
     }
 
+    /** @param string $name
+     * @return ?string */
     function setting_data($name, $defval = null) {
         return $this->settingTexts[$name] ?? $defval;
     }
@@ -634,6 +639,8 @@ class Conf {
         return is_string($x) ? json_decode($x) : $x;
     }
 
+    /** @param string $name
+     * @param ?int $value */
     function __save_setting($name, $value, $data = null) {
         $change = false;
         if ($value === null && $data === null) {
@@ -664,6 +671,8 @@ class Conf {
         return $change;
     }
 
+    /** @param string $name
+     * @param ?int $value */
     function save_setting($name, $value, $data = null) {
         $change = $this->__save_setting($name, $value, $data);
         if ($change) {
@@ -785,6 +794,7 @@ class Conf {
     }
 
 
+    /** @return Collator */
     function collator() {
         if (!$this->_collator) {
             $this->_collator = new Collator("en_US.utf8");
@@ -796,6 +806,7 @@ class Conf {
 
     // name
 
+    /** @return string */
     function full_name() {
         if ($this->short_name && $this->short_name != $this->long_name) {
             return $this->long_name . " (" . $this->short_name . ")";
@@ -805,6 +816,7 @@ class Conf {
     }
 
 
+    /** @return FormatSpec */
     function format_spec($dtype) {
         if (!isset($this->_formatspec_cache[$dtype])) {
             $o = $this->paper_opts->get($dtype);
@@ -818,6 +830,7 @@ class Conf {
         return $this->_docstore;
     }
 
+    /** @return ?S3Document */
     function s3_docstore() {
         global $Now;
         if ($this->_s3_document === false) {
@@ -1276,19 +1289,22 @@ class Conf {
     }
 
 
-
+    /** @return bool */
     function has_tracks() {
         return $this->_tracks !== null;
     }
 
+    /** @return bool */
     function has_track_tags() {
         return $this->_track_tags !== null;
     }
 
+    /** @return list<string> */
     function track_tags() {
-        return $this->_track_tags ? $this->_track_tags : array();
+        return $this->_track_tags ?? [];
     }
 
+    /** @return ?string */
     function permissive_track_tag_for(Contact $user, $perm) {
         foreach ($this->_tracks ? : [] as $t => $tr) {
             if ($user->has_permission($tr[$perm])) {
@@ -1298,6 +1314,7 @@ class Conf {
         return null;
     }
 
+    /** @return bool */
     function check_tracks(PaperInfo $prow, Contact $user, $ttype) {
         $unmatched = true;
         if ($this->_tracks) {
@@ -1313,6 +1330,7 @@ class Conf {
         return $unmatched;
     }
 
+    /** @return bool */
     function check_required_tracks(PaperInfo $prow, Contact $user, $ttype) {
         if ($this->_track_sensitivity & (1 << $ttype)) {
             $unmatched = true;
@@ -1328,15 +1346,18 @@ class Conf {
         return false;
     }
 
+    /** @return bool */
     function check_admin_tracks(PaperInfo $prow, Contact $user) {
         return $this->check_required_tracks($prow, $user, Track::ADMIN);
     }
 
+    /** @return bool */
     function check_default_track(Contact $user, $ttype) {
         return !$this->_tracks
             || $user->has_permission($this->_tracks["_"][$ttype]);
     }
 
+    /** @return bool */
     function check_any_tracks(Contact $user, $ttype) {
         if ($this->_tracks) {
             foreach ($this->_tracks as $t => $tr) {
@@ -1350,6 +1371,7 @@ class Conf {
         return !$this->_tracks;
     }
 
+    /** @return bool */
     function check_any_admin_tracks(Contact $user) {
         if ($this->_track_sensitivity & Track::BITS_ADMIN) {
             foreach ($this->_tracks as $t => $tr) {
@@ -1362,6 +1384,7 @@ class Conf {
         return false;
     }
 
+    /** @return bool */
     function check_all_tracks(Contact $user, $ttype) {
         if ($this->_tracks) {
             foreach ($this->_tracks as $t => $tr) {
@@ -1375,19 +1398,24 @@ class Conf {
         return true;
     }
 
+    /** @return bool */
     function check_track_sensitivity($ttype) {
         return ($this->_track_sensitivity & (1 << $ttype)) !== 0;
     }
+    /** @return bool */
     function check_track_view_sensitivity() {
         return ($this->_track_sensitivity & Track::BITS_VIEW) !== 0;
     }
+    /** @return bool */
     function check_track_review_sensitivity() {
         return ($this->_track_sensitivity & Track::BITS_REVIEW) !== 0;
     }
+    /** @return bool */
     function check_track_admin_sensitivity() {
         return ($this->_track_sensitivity & Track::BITS_ADMIN) !== 0;
     }
 
+    /** @return bool */
     function check_paper_track_sensitivity(PaperInfo $prow, $ttype) {
         if ($this->_track_sensitivity & (1 << $ttype)) {
             $unmatched = true;
@@ -1403,6 +1431,7 @@ class Conf {
         return false;
     }
 
+    /** @return ?string */
     function track_permission($tag, $ttype) {
         if ($this->_tracks) {
             foreach ($this->_tracks as $t => $tr) {
@@ -1414,6 +1443,7 @@ class Conf {
         return null;
     }
 
+    /** @return int */
     function dangerous_track_mask(Contact $user) {
         $m = 0;
         if ($this->_tracks && $user->contactTags) {
@@ -1431,6 +1461,7 @@ class Conf {
     }
 
 
+    /** @return bool */
     function has_rounds() {
         return count($this->rounds) > 1;
     }
@@ -1439,6 +1470,7 @@ class Conf {
         return $this->rounds;
     }
 
+    /** @return bool */
     function round0_defined() {
         return isset($this->defined_round_list()[0]);
     }
@@ -1480,6 +1512,7 @@ class Conf {
         return $this->_defined_rounds;
     }
 
+    /** @return string */
     function round_name($roundno) {
         if ($roundno > 0) {
             if (($rname = $this->rounds[$roundno] ?? null) && $rname !== ";") {
@@ -1490,6 +1523,7 @@ class Conf {
         return "";
     }
 
+    /** @return string */
     function round_suffix($roundno) {
         if ($roundno > 0
             && ($rname = $this->rounds[$roundno] ?? null)
@@ -1499,6 +1533,7 @@ class Conf {
         return "";
     }
 
+    /** @param string $rname */
     static function round_name_error($rname) {
         if ((string) $rname === "") {
             return "Empty round name.";
@@ -1511,6 +1546,8 @@ class Conf {
         }
     }
 
+    /** @param ?string $rname
+     * @return string|false */
     function sanitize_round_name($rname) {
         if ($rname === null) {
             return (string) ($this->settingTexts["rev_roundtag"] ?? null);
@@ -1526,6 +1563,7 @@ class Conf {
         }
     }
 
+    /** @return string */
     function assignment_round_option($external) {
         if (!$external
             || ($x = $this->settingTexts["extrev_roundtag"] ?? null) === null) {
@@ -1534,10 +1572,14 @@ class Conf {
         return $x === "" ? "unnamed" : $x;
     }
 
+    /** @return int */
     function assignment_round($external) {
         return $this->round_number($this->assignment_round_option($external), false);
     }
 
+    /** @param string $rname
+     * @param bool $add
+     * @return int|false */
     function round_number($rname, $add) {
         if (!$rname || !strcasecmp($rname, "none") || !strcasecmp($rname, "unnamed")) {
             return 0;
@@ -1558,6 +1600,7 @@ class Conf {
         }
     }
 
+    /** @return array<string,string> */
     function round_selector_options($isexternal) {
         $opt = [];
         foreach ($this->defined_round_list() as $rname) {
@@ -1576,6 +1619,8 @@ class Conf {
         return $opt;
     }
 
+    /** @param string $name
+     * @param ?int $round */
     function round_setting($name, $round, $defval = null) {
         if ($this->_round_settings !== null
             && $round !== null
@@ -1953,12 +1998,14 @@ class Conf {
         return $this->pc_members();
     }
 
-    /** @return ?Contact */
+    /** @param int $cid
+     * @return ?Contact */
     function pc_member_by_id($cid) {
         return ($this->pc_members())[$cid] ?? null;
     }
 
-    /** @return ?Contact */
+    /** @param string $email
+     * @return ?Contact */
     function pc_member_by_email($email) {
         foreach ($this->pc_members() as $p) {
             if (strcasecmp($p->email, $email) == 0)
@@ -3146,6 +3193,7 @@ class Conf {
     // Paper search
     //
 
+    /** @return list<int> */
     static private function _cvt_numeric_set($optarr) {
         $ids = array();
         if (is_object($optarr))
@@ -3192,7 +3240,8 @@ class Conf {
         }
 
         // paper selection
-        $paperset = array();
+        $paperset = [];
+        '@phan-var list<list<int>> $paperset';
         if (isset($options["paperId"])) {
             $paperset[] = self::_cvt_numeric_set($options["paperId"]);
         }
@@ -3204,7 +3253,7 @@ class Conf {
                 $result = $this->qe("select paperId from PaperReview where paperId=? and reviewOrdinal=?", $m[1], parseReviewOrdinal($m[2]));
                 $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
             } else {
-                $paperset[] = array();
+                $paperset[] = [];
             }
         }
         if (isset($options["commentId"])) {
@@ -3454,6 +3503,8 @@ class Conf {
     // Message routines
     //
 
+    /** @param string|list<string> $text
+     * @param int|string $type */
     static function msg_on(Conf $conf = null, $text, $type) {
         if (is_array($type)
             || (is_string($type)

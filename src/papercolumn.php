@@ -111,17 +111,20 @@ class PaperColumn extends Column {
         }
     }
 
+    /** @return bool */
     function content_empty(PaperList $pl, PaperInfo $row) {
         return false;
     }
-
+    /** @return string */
     function content(PaperList $pl, PaperInfo $row) {
         return "";
     }
+    /** @return string */
     function text(PaperList $pl, PaperInfo $row) {
         return "";
     }
 
+    /** @return bool */
     function has_statistics() {
         return false;
     }

@@ -902,8 +902,11 @@ class Tagger {
     const NOTAGKEYWORD = 64;
 
     public $error_html = false;
+    /** @var Conf */
     private $conf;
+    /** @var Contact */
     private $contact;
+    /** @var int */
     private $_contactId = 0;
 
     function __construct($contact) {

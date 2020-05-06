@@ -3,33 +3,46 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class AssignmentItem implements ArrayAccess {
+    /** @var false|array */
     public $before;
+    /** @var false|null|array */
     public $after = null;
     public $lineno = null;
+    /** @param false|array $before */
     function __construct($before) {
         $this->before = $before;
     }
+    /** @param string $offset
+     * @return bool */
     function offsetExists($offset) {
         $x = $this->after ? : $this->before;
         return isset($x[$offset]);
     }
+    /** @param string $offset */
     function offsetGet($offset) {
         $x = $this->after ? : $this->before;
         return $x[$offset] ?? null;
     }
     function offsetSet($offset, $value) {
+        assert(false);
     }
     function offsetUnset($offset) {
+        assert(false);
     }
+    /** @return bool */
     function existed() {
         return !!$this->before;
     }
+    /** @return bool */
     function deleted() {
         return $this->after === false;
     }
+    /** @return bool */
     function modified() {
         return $this->after !== null;
     }
+    /** @param bool|string $before
+     * @param ?string $offset  */
     function get($before, $offset = null) {
         if ($offset === null) {
             return $this->offsetGet($before);
@@ -41,9 +54,12 @@ class AssignmentItem implements ArrayAccess {
         }
         return $x ? $x[$offset] ?? null : null;
     }
+    /** @param string $offset */
     function get_before($offset) {
         return $this->get(true, $offset);
     }
+    /** @param string $offset
+     * @return bool */
     function differs($offset) {
         return $this->get(true, $offset) !== $this->get(false, $offset);
     }
@@ -53,21 +69,25 @@ class AssignmentItem implements ArrayAccess {
 }
 
 class AssignmentState {
-    private $st = array();
-    private $types = array();
+    private $st = [];
+    private $types = [];
     private $realizers = [];
+    /** @var Conf */
     public $conf;
+    /** @var Contact */
     public $user;     // executor
+    /** @var Contact */
     public $reviewer; // default contact
     public $overrides = 0;
+    /** @var AssignerContacts */
     private $cmap;
     private $reviewer_users = null;
     public $filename;
     public $lineno;
-    public $defaults = array();
-    private $prows = array();
-    private $pid_attempts = array();
-    public $finishers = array();
+    public $defaults = [];
+    private $prows = [];
+    private $pid_attempts = [];
+    public $finishers = [];
     public $paper_exact_match = true;
     private $msgs = [];
     private $first_nonexact_error;
@@ -152,6 +172,7 @@ class AssignmentState {
         }
         return $res;
     }
+    /** @return list<array> */
     function query($q) {
         $res = [];
         foreach ($this->query_items($q) as $item) {
@@ -159,6 +180,7 @@ class AssignmentState {
         }
         return $res;
     }
+    /** @return list<array> */
     function query_unmodified($q) {
         $res = [];
         foreach ($this->query_items($q) as $item) {
@@ -196,6 +218,7 @@ class AssignmentState {
         }
         return $res;
     }
+    /** @return AssignmentItem */
     function add($x) {
         $k = $this->extract_key($x);
         assert(!!$k);
@@ -221,9 +244,11 @@ class AssignmentState {
         return $diff;
     }
 
+    /** @return list<int> */
     function paper_ids() {
         return array_keys($this->prows);
     }
+    /** @return ?PaperInfo */
     function prow($pid) {
         $p = $this->prows[$pid] ?? null;
         if (!$p && !isset($this->pid_attempts[$pid])) {
@@ -235,6 +260,7 @@ class AssignmentState {
     function add_prow(PaperInfo $prow) {
         $this->prows[$prow->paperId] = $prow;
     }
+    /** @return array<int,PaperInfo> */
     function prows() {
         return $this->prows;
     }
@@ -257,15 +283,20 @@ class AssignmentState {
         }
     }
 
+    /** @return Contact */
     function user_by_id($cid) {
         return $this->cmap->user_by_id($cid);
     }
+    /** @param list<int> $cids
+     * @return list<Contact> */
     function users_by_id($cids) {
         return array_map(function ($cid) { return $this->user_by_id($cid); }, $cids);
     }
+    /** @return ?Contact */
     function user_by_email($email, $create = false, $req = null) {
         return $this->cmap->user_by_email($email, $create, $req);
     }
+    /** @return Contact */
     function none_user() {
         return $this->cmap->none_user();
     }
@@ -383,12 +414,15 @@ class AssignerContacts {
             $this->has_pc = true;
         }
     }
+    /** @return Contact */
     function none_user() {
         if (!$this->none_user) {
             $this->none_user = new Contact(["contactId" => 0, "roles" => 0, "email" => "", "sorter" => ""], $this->conf);
         }
         return $this->none_user;
     }
+    /** @param int $cid
+     * @return Contact */
     function user_by_id($cid) {
         if (!$cid) {
             return $this->none_user();
@@ -408,6 +442,8 @@ class AssignerContacts {
         Dbl::free($result);
         return $this->store($c);
     }
+    /** @param string $email
+     * @return ?Contact */
     function user_by_email($email, $create = false, $req = null) {
         if (!$email) {
             return $this->none_user();
@@ -454,9 +490,11 @@ class AssignerContacts {
         Dbl::free($result);
         return $rset;
     }
+    /** @return Contact */
     function register_user(Contact $c) {
-        if ($c->contactId >= 0)
+        if ($c->contactId >= 0) {
             return $c;
+        }
         assert($this->by_id[$c->contactId] === $c);
         $cx = $this->by_lemail[strtolower($c->email)];
         if ($cx === $c) {
@@ -499,9 +537,11 @@ class AssignmentCountSet {
     function __construct(Conf $conf) {
         $this->conf = $conf;
     }
+    /** @return AssignmentCount */
     function get($offset) {
         return $this->bypc[$offset] ?? new AssignmentCount;
     }
+    /** @return AssignmentCount */
     function ensure($offset) {
         if (!isset($this->bypc[$offset])) {
             $this->bypc[$offset] = new AssignmentCount;
@@ -797,14 +837,16 @@ class AssignmentSet {
     public $filename;
     /** @var list<Assigner> */
     private $assigners = [];
+    /** @var array<int,int> */
     private $assigners_pidhead = [];
     private $enabled_pids = null;
     private $enabled_actions = null;
+    /** @var AssignmentState */
     private $astate;
-    private $searches = array();
+    private $searches = [];
     private $search_type = "s";
     private $unparse_search = false;
-    private $unparse_columns = array();
+    private $unparse_columns = [];
     private $assignment_type;
     private $cleanup_callbacks;
     private $cleanup_notify_tracker;
@@ -846,6 +888,7 @@ class AssignmentSet {
         }
     }
 
+    /** @param int|PaperInfo|list<int|PaperInfo> $paper */
     function enable_papers($paper) {
         assert(empty($this->assigners));
         if ($this->enabled_pids === null) {
@@ -861,17 +904,21 @@ class AssignmentSet {
         }
     }
 
+    /** @return bool */
     function is_empty() {
         return empty($this->assigners);
     }
 
+    /** @return bool */
     function has_error() {
         return $this->astate->has_error;
     }
+    /** @return false */
     function error_at($lineno, $message) {
         $this->astate->msg($lineno, $message, 2);
         return false;
     }
+    /** @return false */
     function error_here($message) {
         $this->astate->msg($this->astate->lineno, $message, 2);
         return false;
@@ -953,9 +1000,10 @@ class AssignmentSet {
         }
     }
 
-    private function lookup_users($req, $assigner) {
+    /** @return string|false|list<Contact> */
+    private function lookup_users($req, AssignmentParser $aparser) {
         // check user universe
-        $users = $assigner->user_universe($req, $this->astate);
+        $users = $aparser->user_universe($req, $this->astate);
         if ($users === "none") {
             return [$this->astate->none_user()];
         }
@@ -1232,7 +1280,7 @@ class AssignmentSet {
         return $u;
     }
 
-    private function apply($aparser, $req) {
+    private function apply(AssignmentParser $aparser = null, $req) {
         // parse paper
         $pids = [];
         $x = $this->collect_papers((string) $req["paper"], $pids, true);
@@ -1361,8 +1409,9 @@ class AssignmentSet {
             $csv->set_comment_chars("%#");
             $csv->set_comment_function(array($this, "parse_csv_comment"));
         }
-        if (!$this->install_csv_header($csv))
+        if (!$this->install_csv_header($csv)) {
             return false;
+        }
 
         $old_overrides = $this->user->set_overrides($this->astate->overrides);
 
@@ -1463,10 +1512,11 @@ class AssignmentSet {
             foreach ($this->assigners as $assigner) {
                 $desc = $assigner->unparse_description();
                 if ($this->assignment_type === null
-                    || $this->assignment_type === $desc)
+                    || $this->assignment_type === $desc) {
                     $this->assignment_type = $desc;
-                else
+                } else {
                     $this->assignment_type = "";
+                }
             }
         }
         return $this->assignment_type;
@@ -1572,6 +1622,7 @@ class AssignmentSet {
         return $acsv;
     }
 
+    /** @return ?PaperInfo */
     function prow($pid) {
         return $this->astate->prow($pid);
     }

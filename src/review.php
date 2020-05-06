@@ -32,11 +32,13 @@ class ReviewField implements Abbreviator, JsonSerializable {
 
     public $id;
     public $short_id;
+    /** @var Conf */
     public $conf;
     public $name;
     public $name_html;
     public $description;
     private $_search_keyword;
+    /** @var bool */
     public $has_options;
     public $options = array();
     public $option_letter = false;

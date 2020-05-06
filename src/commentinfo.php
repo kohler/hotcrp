@@ -33,8 +33,9 @@ class CommentInfo {
     ];
 
 
+    /** @param ?array $x */
     function __construct($x, PaperInfo $prow = null, Conf $conf = null) {
-        $this->merge(is_object($x) ? $x : null, $prow, $conf);
+        $this->merge($x, $prow, $conf);
     }
 
     private function merge($x, PaperInfo $prow = null, Conf $conf = null) {
@@ -42,8 +43,9 @@ class CommentInfo {
         $this->conf = $prow ? $prow->conf : $conf;
         $this->prow = $prow;
         if ($x) {
-            foreach ($x as $k => $v)
+            foreach ($x as $k => $v) {
                 $this->$k = $v;
+            }
         }
         $this->commentId = (int) $this->commentId;
         $this->paperId = (int) $this->paperId;
@@ -65,7 +67,7 @@ class CommentInfo {
     }
 
     static function make_response_template($round, PaperInfo $prow) {
-        return new CommentInfo((object) ["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $round], $prow);
+        return new CommentInfo(["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $round], $prow);
     }
 
     function set_prow(PaperInfo $prow) {
@@ -709,7 +711,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         // reload
         if ($text !== false) {
             $comments = $this->prow->fetch_comments("commentId=$cmtid");
-            $this->merge($comments[$cmtid], $this->prow);
+            $this->merge(get_object_vars($comments[$cmtid]), $this->prow);
             if ($this->timeNotified == $this->timeModified) {
                 $this->prow->notify_reviews([$this, "watch_callback"], $contact);
             }

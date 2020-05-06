@@ -1074,7 +1074,7 @@ class ReviewRating_SearchAdjustment {
     private $type;
     /** @var list<ReviewRating_SearchAdjustment> */
     private $child;
-    /** @var CountMatcher */
+    /** @var ?CountMatcher */
     private $matcher;
 
     function __construct($type, $arg) {

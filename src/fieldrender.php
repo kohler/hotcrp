@@ -6,7 +6,9 @@ class FieldRender {
     public $table;
     public $context;
     public $title;
+    /** @var ?string */
     public $value;
+    /** @var ?int */
     public $value_format;
     public $value_long;
 
@@ -55,14 +57,17 @@ class FieldRender {
     function verbose() {
         return ($this->context & self::CFVERBOSE) !== 0;
     }
+    /** @param string $t */
     function set_text($t) {
         $this->value = $t;
         $this->value_format = 0;
     }
+    /** @param string $t */
     function set_html($t) {
         $this->value = $t;
         $this->value_format = 5;
     }
+    /** @param bool $b */
     function set_bool($b) {
         $v = $this->verbose();
         if ($this->context & self::CFHTML) {
@@ -73,6 +78,7 @@ class FieldRender {
             $this->set_text($b ? "Yes" : ($v ? "No" : ""));
         }
     }
+    /** @return string */
     function value_html($divclass = null) {
         $rest = "";
         if ((string) $this->value === "") {
