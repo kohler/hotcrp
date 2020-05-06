@@ -144,8 +144,9 @@ class CleanHTML {
     }
 
     static function basic() {
-        if (!self::$g)
+        if (!self::$g) {
             self::$g = new CleanHTML;
+        }
         return self::$g;
     }
 

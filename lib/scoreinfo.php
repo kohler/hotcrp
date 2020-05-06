@@ -24,25 +24,28 @@ class ScoreInfo {
     function __construct($data = null, $positive = false) {
         $this->_positive = $positive;
         if (is_array($data)) {
-            foreach ($data as $key => $x)
+            foreach ($data as $key => $x) {
                 $this->add($x, $key);
+            }
         } else if (is_string($data) && $data !== "") {
-            foreach (preg_split('/[\s,]+/', $data) as $x)
+            foreach (preg_split('/[\s,]+/', $data) as $x) {
                 if (is_numeric($x))
                     $this->add(+$x);
+            }
         }
     }
 
     static function mean_of($data, $positive = false) {
         $n = $sum = 0;
         if (is_array($data)) {
-            foreach ($data as $x)
+            foreach ($data as $x) {
                 if ($x !== null && (!$positive || $x > 0)) {
                     ++$n;
                     $sum += +$x;
                 }
+            }
         } else if (is_string($data) && $data !== "") {
-            foreach (preg_split('/[\s,]+/', $data) as $x)
+            foreach (preg_split('/[\s,]+/', $data) as $x) {
                 if ($x !== "" && is_numeric($x)) {
                     $x = +$x;
                     if (!$positive || $x > 0) {
@@ -50,20 +53,24 @@ class ScoreInfo {
                         $sum += +$x;
                     }
                 }
+            }
         }
         return $n ? $sum / $n : null;
     }
 
     function add($x, $key = null) {
-        if (is_bool($x))
+        if (is_bool($x)) {
             $x = +$x;
+        }
         if ($x !== null && (!$this->_positive || $x > 0)) {
-            if ($this->_keyed && $key === null)
+            if ($this->_keyed && $key === null) {
                 $this->_keyed = false;
-            if ($this->_keyed)
+            }
+            if ($this->_keyed) {
                 $this->_scores[$key] = $x;
-            else
+            } else {
                 $this->_scores[] = $x;
+            }
             $this->_sum += $x;
             $this->_sumsq += $x * $x;
             ++$this->_n;
@@ -102,10 +109,12 @@ class ScoreInfo {
     function counts($max = 0) {
         $counts = $max ? array_fill(0, $max, 0) : array();
         foreach ($this->_scores as $i) {
-            while ($i > count($counts))
+            while ($i > count($counts)) {
                 $counts[] = 0;
-            if ($i > 0)
+            }
+            if ($i > 0) {
                 ++$counts[$i - 1];
+            }
         }
         return $counts;
     }
@@ -120,12 +129,13 @@ class ScoreInfo {
     function median() {
         $this->sort();
         $a = $this->_keyed ? array_values($this->_scores) : $this->_scores;
-        if ($this->_n % 2)
+        if ($this->_n % 2) {
             return $a[($this->_n - 1) >> 1];
-        else if ($this->_n)
+        } else if ($this->_n) {
             return ($a[($this->_n - 2) >> 1] + $a[$this->_n >> 1]) / 2;
-        else
+        } else {
             return 0;
+        }
     }
 
     function max() {
@@ -137,18 +147,19 @@ class ScoreInfo {
     }
 
     function statistic($stat) {
-        if ($stat == self::COUNT)
+        if ($stat == self::COUNT) {
             return $this->_n;
-        else if ($stat == self::MEAN)
+        } else if ($stat == self::MEAN) {
             return $this->mean();
-        else if ($stat == self::MEDIAN)
+        } else if ($stat == self::MEDIAN) {
             return $this->median();
-        else if ($stat == self::SUM)
+        } else if ($stat == self::SUM) {
             return $this->_sum;
-        else if ($stat == self::VARIANCE_P)
+        } else if ($stat == self::VARIANCE_P) {
             return $this->variance_p();
-        else if ($stat == self::STDDEV_P)
+        } else if ($stat == self::STDDEV_P) {
             return $this->stddev_p();
+        }
     }
 
     function sort_data($sorter, $key = null) {

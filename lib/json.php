@@ -109,15 +109,17 @@ class Json {
             $x = substr($x, 1);
             $n = 0;
             while (true) {
-                if (!is_string($x))
+                if (!is_string($x)) {
                     return self::set_error($x, JSON_ERROR_SYNTAX);
+                }
                 $x = ltrim($x);
                 if ($x[0] === "}") {
                     $x = substr($x, 1);
                     break;
                 } else if ($n) {
-                    if ($x[0] !== ",")
+                    if ($x[0] !== ",") {
                         return self::set_error($x, JSON_ERROR_SYNTAX);
+                    }
                     $x = substr($x, 1);
                 }
 

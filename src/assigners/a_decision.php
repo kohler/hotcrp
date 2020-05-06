@@ -34,12 +34,13 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
                 } else {
                     $dec = $matchexpr;
                 }
-                if (count($dec) === 1)
+                if (count($dec) === 1) {
                     $dec = $dec[0];
-                else if (empty($dec))
+                } else if (empty($dec)) {
                     return "No decisions match “" . htmlspecialchars($req["decision"]) . "”.";
-                else
+                } else {
                     return "More than one decision matches “" . htmlspecialchars($req["decision"]) . "”.";
+                }
             } else {
                 $removepred = function ($item) use ($matchexpr) {
                     return CountMatcher::compare_using($item["_decision"], $matchexpr);
@@ -57,11 +58,13 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
                 Status_AssignmentParser::load_status_state($state);
                 $sm = $state->remove(["type" => "status", "pid" => $prow->paperId]);
                 $sres = $sm[0];
-                if ($sres["_submitted"] === 0)
+                if ($sres["_submitted"] === 0) {
                     $sres["_submitted"] = ($sres["_withdrawn"] > 0 ? -$Now : $Now);
+                }
                 $state->add($sres);
-                if ($sres["_submitted"] > 0)
+                if ($sres["_submitted"] > 0) {
                     $decyes = 1;
+                }
             }
             $state->add(["type" => "decision", "pid" => $prow->paperId,
                          "_decision" => +$dec, "_decyes" => $decyes]);

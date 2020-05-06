@@ -159,13 +159,16 @@ class Contact {
 
         if (isset($user->roles) || isset($user->isPC)
             || isset($user->isAssistant) || isset($user->isChair)) {
-            $roles = (int) get($user, "roles");
-            if (get($user, "isPC"))
+            $roles = (int) ($user->roles ?? 0);
+            if ($user->isPC ?? null) {
                 $roles |= self::ROLE_PC;
-            if (get($user, "isAssistant"))
+            }
+            if ($user->isAssistant ?? null) {
                 $roles |= self::ROLE_ADMIN;
-            if (get($user, "isChair"))
+            }
+            if ($user->isChair ?? null) {
                 $roles |= self::ROLE_CHAIR;
+            }
             $this->assign_roles($roles);
         }
         if (property_exists($user, "contactTags")) {
@@ -525,8 +528,9 @@ class Contact {
     }
     function set_overrides($overrides) {
         $old_overrides = $this->_overrides;
-        if (($overrides & self::OVERRIDE_CONFLICT) && !$this->is_manager())
+        if (($overrides & self::OVERRIDE_CONFLICT) && !$this->is_manager()) {
             $overrides &= ~self::OVERRIDE_CONFLICT;
+        }
         $this->_overrides = $overrides;
         return $old_overrides;
     }
@@ -1092,12 +1096,14 @@ class Contact {
 
     function save_assign_field($k, $v, Contact_Update $cu) {
         if ($k === "contactTags") {
-            if ($v !== null && trim($v) === "")
+            if ($v !== null && trim($v) === "") {
                 $v = null;
+            }
         } else if ($k !== "collaborators" && $k !== "defaultWatch") {
             $v = simplify_whitespace($v);
-            if ($k === "birthday" && !$v)
+            if ($k === "birthday" && !$v) {
                 $v = null;
+            }
         }
         // change contactdb
         if (isset(self::$cdb_fields[$k])
@@ -1197,10 +1203,11 @@ class Contact {
         // log role change
         foreach ([self::ROLE_PC => "pc", self::ROLE_ADMIN => "sysadmin", self::ROLE_CHAIR => "chair"]
                  as $role => $type) {
-            if (($new_roles & $role) && !($old_roles & $role))
+            if (($new_roles & $role) && !($old_roles & $role)) {
                 $this->conf->log_for($actor ? : $this, $this, "Added as $type");
-            else if (!($new_roles & $role) && ($old_roles & $role))
+            } else if (!($new_roles & $role) && ($old_roles & $role)) {
                 $this->conf->log_for($actor ? : $this, $this, "Removed as $type");
+            }
         }
         // save the roles bits
         if ($old_roles != $new_roles) {
@@ -1213,10 +1220,12 @@ class Contact {
     private function _make_create_updater($reg, $is_cdb) {
         $cj = [];
         if ($this->firstName === "" && $this->lastName === "") {
-            if (get_s($reg, "firstName") !== "")
+            if (($reg->firstName ?? "") !== "") {
                 $cj["firstName"] = (string) $reg->firstName;
-            if (get_s($reg, "lastName") !== "")
+            }
+            if (($reg->lastName ?? "") !== "") {
                 $cj["lastName"] = (string) $reg->lastName;
+            }
         }
         foreach (["affiliation", "country", "gender", "birthday",
                   "preferredEmail", "phone"] as $k) {
@@ -4197,7 +4206,7 @@ class Contact {
 
     function paper_status_info(PaperInfo $row) {
         if ($row->timeWithdrawn > 0) {
-            return array("pstat_with", "Withdrawn");
+            return ["pstat_with", "Withdrawn"];
         } else if ($row->outcome && $this->can_view_decision($row)) {
             $data = get(self::$status_info_cache, $row->outcome);
             if (!$data) {
@@ -4212,15 +4221,15 @@ class Contact {
                 } else
                     $decname = "Unknown decision #" . $row->outcome;
 
-                $data = self::$status_info_cache[$row->outcome] = array($decclass, $decname);
+                $data = self::$status_info_cache[$row->outcome] = [$decclass, $decname];
             }
             return $data;
         } else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1) {
-            return array("pstat_noup", "No submission");
+            return ["pstat_noup", "No submission"];
         } else if ($row->timeSubmitted > 0) {
-            return array("pstat_sub", "Submitted");
+            return ["pstat_sub", "Submitted"];
         } else {
-            return array("pstat_prog", "Not ready");
+            return ["pstat_prog", "Not ready"];
         }
     }
 
@@ -4228,15 +4237,17 @@ class Contact {
     private function unassigned_review_token() {
         while (true) {
             $token = mt_rand(1, 2000000000);
-            if (!$this->conf->fetch_ivalue("select reviewId from PaperReview where reviewToken=$token"))
+            if (!$this->conf->fetch_ivalue("select reviewId from PaperReview where reviewToken=$token")) {
                 return ", reviewToken=$token";
+            }
         }
     }
 
     private function assign_review_explanation($type, $round) {
         $t = ReviewForm::$revtype_names_lc[$type] . " review";
-        if ($round && ($rname = $this->conf->round_name($round)))
+        if ($round && ($rname = $this->conf->round_name($round))) {
             $t .= " (round $rname)";
+        }
         return $t;
     }
 
@@ -4310,7 +4321,7 @@ class Contact {
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
         if ($type && !$oldtype) {
             $this->conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
-            if (($req_email = get($extra, "requested_email"))) {
+            if (($req_email = $extra["requested_email"] ?? null)) {
                 $this->conf->qe("delete from ReviewRequest where paperId=$pid and email=?", $req_email);
             }
             if ($type < REVIEW_SECONDARY) {
@@ -4325,7 +4336,7 @@ class Contact {
                 $this->update_review_delegation($pid, $rrow->requestedBy, -1);
             }
             // Mark rev_tokens setting for future update by update_rev_tokens_setting
-            if (get($rrow, "reviewToken")) {
+            if ($rrow->reviewToken ?? null) {
                 $this->conf->settings["rev_tokens"] = -1;
             }
         } else {
@@ -4339,7 +4350,7 @@ class Contact {
         }
 
         self::update_rights();
-        if (!get($extra, "no_autosearch")) {
+        if (!($extra["no_autosearch"] ?? false)) {
             $this->conf->update_autosearch_tags($pid);
         }
         return $reviewId;
@@ -4372,7 +4383,7 @@ class Contact {
         if ($result->affected_rows && $rrow->reviewType < REVIEW_SECONDARY) {
             $this->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
         }
-        if (!$extra || !get($extra, "no_autosearch")) {
+        if (!$extra || !($extra["no_autosearch"] ?? false)) {
             $this->conf->update_autosearch_tags($rrow->paperId);
         }
         return $result;

@@ -527,12 +527,14 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             }
             $response_name = $this->conf->resp_round_name($this->commentRound);
         } else if ($contact->act_author_view($this->prow)) {
-            if ($req_visibility === null)
+            if ($req_visibility === null) {
                 $req_visibility = COMMENTTYPE_AUTHOR;
+            }
             $ctype = $req_visibility | COMMENTTYPE_BYAUTHOR;
         } else {
-            if ($req_visibility === null)
+            if ($req_visibility === null) {
                 $req_visibility = COMMENTTYPE_REVIEWER;
+            }
             $ctype = $req_visibility;
         }
         if ($is_response
@@ -553,7 +555,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $ctags .= " {$response_name}response#0";
             }
         } else if (($req->tags ?? null)
-                   && preg_match_all(',\S+,', $req->tags, $m)
+                   && preg_match_all('/\S+/', $req->tags, $m)
                    && !$contact->act_author_view($this->prow)) {
             $tagger = new Tagger($contact);
             $ts = [];

@@ -9,7 +9,8 @@ class Author_Fexpr extends Fexpr {
     function __construct(FormulaCall $ff, Formula $formula) {
         if ($ff->modifier === "none") {
             $this->matchtype = $ff->modifier;
-        } else if (is_array($ff->modifier) && $ff->modifier[0] == $formula->user->contactId) {
+        } else if (is_array($ff->modifier)
+                   && $ff->modifier[0] == $formula->user->contactId) {
             $this->matchtype = $formula->user->contactId;
         } else if (is_array($ff->modifier) || is_object($ff->modifier)) {
             self::$matchers[] = $ff->modifier;

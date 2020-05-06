@@ -130,8 +130,9 @@ class PaperContactInfo {
                          && ($Me->privChair || $Me->contactId == $prow->managerContactId)))
             && ($pcm = $conf->pc_members())
             && isset($pcm[$cid])) {
-            foreach ($pcm as $u)
+            foreach ($pcm as $u) {
                 $prow->_clear_contact_info($u);
+            }
             $result = $conf->qe("$q, ContactInfo.contactId
                 from ContactInfo
                 left join PaperConflict on (PaperConflict.paperId=? and PaperConflict.contactId=ContactInfo.contactId)
@@ -151,8 +152,9 @@ class PaperContactInfo {
                     $qv[] = $rev_tokens;
                 }
                 $result = $conf->qe_apply("$q))", $qv);
-            } else
+            } else {
                 $result = null;
+            }
         }
         while ($result && ($local = $result->fetch_row())) {
             $ci = $prow->_get_contact_info($local[4]);
@@ -189,8 +191,9 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_need_pid_sort = false;
     public $loaded_allprefs = 0;
     function __construct(PaperInfo $prow = null) {
-        if ($prow)
+        if ($prow) {
             $this->add($prow, true);
+        }
     }
     function add(PaperInfo $prow, $copy = false) {
         $this->prows[] = $prow;
@@ -1023,8 +1026,9 @@ class PaperInfo {
 
     private function load_topics() {
         $row_set = $this->_row_set ? : new PaperInfoSet($this);
-        foreach ($row_set as $prow)
+        foreach ($row_set as $prow) {
             $prow->topicIds = null;
+        }
         if ($this->conf->has_topics()) {
             $result = $this->conf->qe("select paperId, group_concat(topicId) from PaperTopic where paperId?a group by paperId", $row_set->paper_ids());
             while ($result && ($row = $result->fetch_row())) {
@@ -1036,8 +1040,9 @@ class PaperInfo {
     }
 
     function has_topics() {
-        if (!property_exists($this, "topicIds"))
+        if (!property_exists($this, "topicIds")) {
             $this->load_topics();
+        }
         return $this->topicIds !== null && $this->topicIds !== "";
     }
 
@@ -1060,8 +1065,9 @@ class PaperInfo {
     function topic_map() {
         $t = [];
         foreach ($this->topic_list() as $tid) {
-            if (empty($t))
+            if (empty($t)) {
                 $tset = $this->conf->topic_set();
+            }
             $t[$tid] = $tset[$tid];
         }
         return $t;

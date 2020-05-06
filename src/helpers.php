@@ -665,8 +665,9 @@ function unparseReviewOrdinal($ord) {
         $t = "";
         while (true) {
             $t = chr((($ord - 1) % 26) + 65) . $t;
-            if ($ord <= 26)
+            if ($ord <= 26) {
                 return $t;
+            }
             $ord = intval(($ord - 1) / 26);
         }
     }

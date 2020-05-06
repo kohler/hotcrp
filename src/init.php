@@ -63,10 +63,12 @@ function set_path_variables() {
     global $ConfSitePATH;
     if (!isset($ConfSitePATH)) {
         $ConfSitePATH = substr(__FILE__, 0, strrpos(__FILE__, "/"));
-        while ($ConfSitePATH !== "" && !file_exists("$ConfSitePATH/src/init.php"))
+        while ($ConfSitePATH !== "" && !file_exists("$ConfSitePATH/src/init.php")) {
             $ConfSitePATH = substr($ConfSitePATH, 0, strrpos($ConfSitePATH, "/"));
-        if ($ConfSitePATH === "")
+        }
+        if ($ConfSitePATH === "") {
             $ConfSitePATH = "/var/www/html";
+        }
     }
     require_once("$ConfSitePATH/lib/navigation.php");
 }

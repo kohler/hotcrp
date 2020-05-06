@@ -100,28 +100,32 @@ function setTagIndexes($qreq) {
     $csvp = new CsvParser("", CsvParser::TYPE_GUESS);
     foreach (explode("\n", rtrim(cleannl($text))) as $l) {
         if (substr($l, 0, 4) == "Tag:" || substr($l, 0, 6) == "# Tag:") {
-            if (!$tag)
+            if (!$tag) {
                 $tag = $tagger->check(trim(substr($l, ($l[0] == "#" ? 6 : 4))), Tagger::NOVALUE);
+            }
         } else if (trim($l) !== "" && $l[0] !== "#") {
             $csvp->unshift($l);
             $line = $csvp->next_array();
             if ($line && check_tag_index_line($line)) {
-                if (isset($settings[$line[1]]))
+                if (isset($settings[$line[1]])) {
                     $errors[$lineno] = "Paper #$line[1] already given on line " . $linenos[$line[1]];
-                if ($line[0] === "X" || $line[0] === "x")
+                }
+                if ($line[0] === "X" || $line[0] === "x") {
                     $settings[$line[1]] = null;
-                else if ($line[0] === "" || $line[0] === ">")
+                } else if ($line[0] === "" || $line[0] === ">") {
                     $settings[$line[1]] = $curIndex = $curIndex + 1;
-                else if (is_numeric($line[0]))
+                } else if (is_numeric($line[0])) {
                     $settings[$line[1]] = $curIndex = intval($line[0]);
-                else if ($line[0] === "=")
+                } else if ($line[0] === "=") {
                     $settings[$line[1]] = $curIndex;
-                else
+                } else {
                     $settings[$line[1]] = $curIndex = $curIndex + strlen($line[0]);
-                $titles[$line[1]] = trim(get($line, 2, ""));
+                }
+                $titles[$line[1]] = trim($line[2] ?? "");
                 $linenos[$line[1]] = $lineno;
-            } else
+            } else {
                 $errors[$lineno] = "Syntax error";
+            }
         }
         ++$lineno;
     }

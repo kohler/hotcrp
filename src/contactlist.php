@@ -548,8 +548,8 @@ class ContactList {
         if (isset($queryOptions["shepherds"])) {
             $pq .= ",\n    (select count(paperId) from Paper where shepherdContactId=u.contactId" . $this->_pid_restriction() . ") numShepherds";
         }
-        if (isset($queryOptions['scores'])) {
-            foreach ($queryOptions['scores'] as $score) {
+        if (isset($queryOptions["scores"])) {
+            foreach ($queryOptions["scores"] as $score) {
                 $rf[] = "group_concat(if(reviewSubmitted>0 or timeApprovalRequested<0,$score,null)) $score";
                 $pq .= ", $score";
             }

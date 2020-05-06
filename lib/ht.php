@@ -68,7 +68,9 @@ class Ht {
     }
 
     static function script_file($src, $js = null) {
-        if ($js && get($js, "crossorigin") && !preg_match(',\A([a-z]+:)?//,', $src)) {
+        if ($js
+            && ($js["crossorigin"] ?? false)
+            && !preg_match('/\A([a-z]+:)?\/\//', $src)) {
             unset($js["crossorigin"]);
         }
         return self::$_script_open . ' src="' . htmlspecialchars($src) . '"' . self::extra($js) . '></script>';
@@ -79,16 +81,16 @@ class Ht {
             . htmlspecialchars($src) . "\" />";
     }
 
-    static function form($action, $extra = null) {
+    static function form($action, $extra = []) {
         if (is_array($action)) {
             $extra = $action;
-            $action = get($extra, "action", "");
+            $action = $extra["action"] ?? "";
         }
 
         // GET method requires special handling: extract params from URL
         // and render as hidden inputs
         $suffix = ">";
-        $method = get($extra, "method") ? : "post";
+        $method = $extra["method"] ?? "post";
         if ($method === "get"
             && ($qpos = strpos($action, "?")) !== false) {
             $pos = $qpos + 1;
@@ -108,7 +110,7 @@ class Ht {
         if ((string) $action !== "") {
             $x .= ' method="' . $method . '" action="' . $action . '"';
         }
-        $enctype = get($extra, "enctype");
+        $enctype = $extra["enctype"] ?? null;
         if (!$enctype && $method !== "get") {
             $enctype = "multipart/form-data";
         }
@@ -128,17 +130,17 @@ class Ht {
         if (is_array($selected) && $js === null) {
             list($js, $selected) = array($selected, null);
         }
-        $disabled = get($js, "disabled");
+        $disabled = $js["disabled"] ?? null;
         if (is_array($disabled)) {
             unset($js["disabled"]);
         }
 
-        $optionstyles = get($js, "optionstyles", null);
+        $optionstyles = $js["optionstyles"] ?? null;
         $x = $optgroup = "";
         $first_value = $has_selected = false;
         foreach ($opt as $value => $info) {
             if (is_array($info) && isset($info[0]) && $info[0] === "optgroup") {
-                $info = (object) array("type" => "optgroup", "label" => get($info, 1));
+                $info = (object) ["type" => "optgroup", "label" => $info[1] ?? null];
             } else if (is_array($info)) {
                 $info = (object) $info;
             } else if (is_scalar($info)) {
@@ -166,7 +168,7 @@ class Ht {
                 }
             } else {
                 $x .= '<option';
-                if (get($info, "id")) {
+                if ($info->id ?? null) {
                     $x .= ' id="' . $info->id . '"';
                 }
                 $x .= ' value="' . htmlspecialchars($value) . '"';
@@ -177,13 +179,13 @@ class Ht {
                     $x .= ' selected';
                     $has_selected = true;
                 }
-                if (get($info, "disabled")) {
+                if ($info->disabled ?? false) {
                     $x .= ' disabled';
                 }
-                if (get($info, "class")) {
+                if ($info->class ?? false) {
                     $x .= ' class="' . $info->class . '"';
                 }
-                if (get($info, "style")) {
+                if ($info->style ?? false) {
                     $x .= ' style="' . htmlspecialchars($info->style) . '"';
                 }
                 $x .= '>' . $info->label . '</option>';
@@ -208,7 +210,7 @@ class Ht {
             $js = $checked;
             $checked = false;
         }
-        $js = $js ? : array();
+        $js = $js ? : [];
         if (!array_key_exists("id", $js) || $js["id"] === true) {
             $js["id"] = "htctl" . ++self::$_controlid;
         }
@@ -283,19 +285,19 @@ class Ht {
     }
 
     private static function apply_placeholder(&$value, &$js) {
-        if ($value === null || $value === get($js, "placeholder")) {
+        if ($value === null || $value === ($js["placeholder"] ?? null)) {
             $value = "";
         }
-        if (($default = get($js, "data-default-value")) !== null
+        if (($default = $js["data-default-value"] ?? null) !== null
             && $value === $default) {
             unset($js["data-default-value"]);
         }
     }
 
     static function entry($name, $value, $js = null) {
-        $js = $js ? $js : array();
+        $js = $js ? : array();
         self::apply_placeholder($value, $js);
-        $type = get($js, "type") ? : "text";
+        $type = $js["type"] ?? "text";
         return '<input type="' . $type . '" name="' . $name . '" value="'
             . htmlspecialchars($value) . '"' . self::extra($js) . ' />';
     }
@@ -420,11 +422,11 @@ class Ht {
     }
 
     static function check_stash($uniqueid) {
-        return get(self::$_stash_map, $uniqueid, false);
+        return self::$_stash_map[$uniqueid] ?? false;
     }
 
     static function mark_stash($uniqueid) {
-        $marked = get(self::$_stash_map, $uniqueid);
+        $marked = self::$_stash_map[$uniqueid] ?? false;
         self::$_stash_map[$uniqueid] = true;
         return !$marked;
     }

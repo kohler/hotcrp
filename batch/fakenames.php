@@ -138,18 +138,20 @@ $mresult->free_all();
 // process papers
 $result = $Conf->qe("select * from Paper");
 $papers = [];
-while (($p = PaperInfo::fetch($result, null, $Conf)))
+while (($p = PaperInfo::fetch($result, null, $Conf))) {
     $papers[] = $p;
+}
 Dbl::free($result);
 
 $q = $qv = [];
 foreach ($papers as $p) {
     $ax = [];
     foreach ($p->author_list() as $a) {
-        if ($a->email && isset($email_map[strtolower($a->email)]))
+        if ($a->email && isset($email_map[strtolower($a->email)])) {
             $aa = $email_map[strtolower($a->email)];
-        else
+        } else {
             $aa = [$fakes->first(), $fakes->last(), new_fake_email(), $fakes->affiliation()];
+        }
         $ax[] = join("\t", $aa) . "\n";
     }
     $q[] = "update Paper set authorInformation=? where paperId={$p->paperId}";
@@ -167,9 +169,9 @@ while (($x = $result->fetch_object())) {
     $nl = "";
     while (preg_match('/\A(.*?)([^\s\(\)\<\>@\/]+@[^\s\(\)\]\>\/]+\.[A-Za-z]+)(.*)\z/', $l, $m)) {
         $nl .= $m[1];
-        if (isset($email_map[strtolower($m[2])]))
+        if (isset($email_map[strtolower($m[2])])) {
             $nl .= $email_map[strtolower($m[2])][2];
-        else {
+        } else {
             $ne = new_fake_email();
             $email_map[strtolower($m[2])] = [$fakes->first(), $fakes->last(), $ne, $fakes->affiliation()];
             $nl .= $ne;

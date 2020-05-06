@@ -6,9 +6,10 @@ class MeetingTracker {
     static function lookup(Conf $conf) {
         global $Now;
         $tracker = $conf->setting_json("tracker");
-        if ($tracker && (!$tracker->trackerid || $tracker->update_at >= $Now - 150))
+        if ($tracker
+            && (!$tracker->trackerid || $tracker->update_at >= $Now - 150)) {
             return $tracker;
-        else {
+        } else {
             $when = $tracker ? $tracker->update_at + 0.1 : 0;
             return (object) ["trackerid" => false, "position_at" => $when, "update_at" => $when];
         }
@@ -18,9 +19,10 @@ class MeetingTracker {
         global $Now;
         if (isset($tracker->ts)) {
             $ts = [];
-            foreach ($tracker->ts as $tr)
+            foreach ($tracker->ts as $tr) {
                 if ($tr->update_at >= $Now - 150)
                     $ts[] = $tr;
+            }
             return $ts;
         } else if ($tracker->trackerid) {
             return [$tracker];
@@ -67,8 +69,9 @@ class MeetingTracker {
 
         $comet_dir = $conf->opt("trackerCometUpdateDirectory");
         $comet_url = $conf->opt("trackerCometSite");
-        if (!$comet_dir && !$comet_url)
+        if (!$comet_dir && !$comet_url) {
             return;
+        }
 
         // calculate status
         $url = Navigation::base_absolute();
@@ -76,9 +79,9 @@ class MeetingTracker {
 
         // first drop notification json in trackerCometUpdateDirectory
         if ($comet_dir) {
-            $j = array("ok" => true, "conference" => $url,
-                       "tracker_status" => self::tracker_status($tracker),
-                       "tracker_status_at" => $tracker->position_at);
+            $j = ["ok" => true, "conference" => $url,
+                  "tracker_status" => self::tracker_status($tracker),
+                  "tracker_status_at" => $tracker->position_at];
             if ($pids) {
                 $j["pulse"] = true;
             }
@@ -207,7 +210,7 @@ class MeetingTracker {
     }
 
     static private function compute_default_visibility(Contact $user, $admin_perm) {
-        foreach ($user->conf->track_tags() as $tag)
+        foreach ($user->conf->track_tags() as $tag) {
             if (in_array($user->conf->track_permission($tag, Track::ADMIN), $admin_perm)) {
                 foreach ([Track::VIEW, Track::VIEWREV, Track::ASSREV] as $p) {
                     if (($perm = $user->conf->track_permission($tag, $p))
@@ -216,6 +219,7 @@ class MeetingTracker {
                         return $perm;
                 }
             }
+        }
         return "";
     }
 
@@ -325,14 +329,14 @@ class MeetingTracker {
         // check admin perms
         if (!$user->privChair
             && $match !== false
-            && !self::check_tracker_admin_perm($user, get($trs[$match], "admin_perm"))) {
+            && !self::check_tracker_admin_perm($user, $trs[$match]->admin_perm ?? null)) {
             json_exit(403, "Permission error: You can’t administer that tracker.");
         }
 
         $admin_perm = null;
         if ($user->conf->check_track_admin_sensitivity()) {
             if ($match !== false && $xlist->ids == $trs[$match]->ids) {
-                $admin_perm = get($trs[$match], "admin_perm");
+                $admin_perm = $trs[$match]->admin_perm ?? null;
             } else {
                 $admin_perm = self::compute_xlist_admin_perm($user->conf, $xlist->ids);
                 if (!$user->privChair
@@ -532,31 +536,32 @@ class MeetingTracker {
             } else if (($match = self::tracker_search($trackerid, $trs)) !== false) {
                 $tr = $trs[$match];
                 if (!isset($qreq["tr{$i}-name"])) {
-                    $name = (string) get($tr, "name");
+                    $name = $tr->name ?? "";
                 }
                 if (!isset($qreq["tr{$i}-vis"])) {
-                    $vis = (string) get($tr, "visibility");
+                    $vis = $tr->visibility ?? "";
                 }
                 if (!isset($qreq["tr{$i}-logo"])) {
-                    $logo = (string) get($tr, "logo");
+                    $logo = $tr->logo ?? "";
                 }
-                if ($name === (string) get($tr, "name")
-                    && $vis === (string) get($tr, "visibility")
-                    && $logo === (string) get($tr, "logo")
+                if ($name === ($tr->name ?? "")
+                    && $vis === ($tr->visibility ?? "")
+                    && $logo === ($tr->logo ?? "")
                     && !$stop) {
                     /* do nothing */
                 } else if (!$user->privChair
-                           && !self::check_tracker_admin_perm($user, get($tr, "admin_perm"))) {
+                           && !self::check_tracker_admin_perm($user, $tr->admin_perm ?? null)) {
                     if ($qreq["tr{$i}-changed"]) {
                         $errf["tr{$i}-name"] = true;
                         $error[] = "You can’t administer that tracker.";
                     }
                 } else {
                     foreach (["name" => $name, "visibility" => $vis, "logo" => $logo] as $k => $v) {
-                        if ($v !== "")
+                        if ($v !== "") {
                             $tr->$k = $v;
-                        else
+                        } else {
                             unset($tr->$k);
+                        }
                     }
 
                     if ($stop) {
@@ -574,11 +579,13 @@ class MeetingTracker {
         }
 
         if (empty($errf)) {
-            if ($changed)
+            if ($changed) {
                 self::tracker_save($user->conf, $trs, $tracker, $position_at);
+            }
             $j = (object) ["ok" => true];
-            if ($new_trackerid !== false)
+            if ($new_trackerid !== false) {
                 $j->new_trackerid = $new_trackerid;
+            }
             self::my_deadlines($j, $user);
             return $j;
         } else {
@@ -606,7 +613,7 @@ class MeetingTracker {
         ];
         if ($user->privChair
             || ($user->is_track_manager()
-                && self::check_tracker_admin_perm($user, get($tr, "admin_perm")))) {
+                && self::check_tracker_admin_perm($user, $tr->admin_perm ?? null))) {
             $ti->allow_administer = true;
         }
         if ($user->conf->opt("trackerHideConflicts")) {
@@ -679,34 +686,41 @@ class MeetingTracker {
                     && $user->tracker_kiosk_state != 1) {
                     $p->pid = $prow->paperId;
                     $p->title = $prow->title;
-                    if (($format = $prow->title_format()))
+                    if (($format = $prow->title_format())) {
                         $p->format = $format;
+                    }
                 }
                 if ($user->contactId > 0) {
-                    if ($prow->managerContactId == $user->contactId)
+                    if ($prow->managerContactId == $user->contactId) {
                         $p->is_manager = true;
-                    if ($prow->has_reviewer($user))
+                    }
+                    if ($prow->has_reviewer($user)) {
                         $p->is_reviewer = true;
-                    if ($prow->conflictType > CONFLICT_MAXUNCONFLICTED)
+                    }
+                    if ($prow->conflictType > CONFLICT_MAXUNCONFLICTED) {
                         $p->is_conflict = true;
-                    if ($prow->leadContactId == $user->contactId)
+                    }
+                    if ($prow->leadContactId == $user->contactId) {
                         $p->is_lead = true;
+                    }
                 }
                 if ($show_pc_conflicts) {
                     $pcc = [];
                     $more = false;
                     foreach (explode(",", (string) $prow->conflictIds) as $cid) {
-                        if (($pc = get($pcm, $cid))) {
-                            if ($pc->include_tracker_conflict($trs[$ti_index]))
+                        if (($pc = $pcm[$cid] ?? null)) {
+                            if ($pc->include_tracker_conflict($trs[$ti_index])) {
                                 $pcc[$pc->sort_position] = $pc->contactId;
-                            else
+                            } else {
                                 $more = true;
+                            }
                         }
                     }
                     ksort($pcc);
                     $p->pc_conflicts = array_values($pcc);
-                    if ($more)
+                    if ($more) {
                         $p->other_pc_conflicts = $more;
+                    }
                 }
             }
             if (isset($ti->papers)) {
@@ -726,8 +740,9 @@ class MeetingTracker {
                     $tis[] = self::trinfo($tr, $user);
                 }
             }
-            if (!empty($tis))
+            if (!empty($tis)) {
                 self::trinfo_papers($tis, $trs, $user);
+            }
 
             if (count($tis) === 1
                 && $tis[0]->trackerid === $tracker->trackerid) {
@@ -739,8 +754,9 @@ class MeetingTracker {
                     "ts" => $tis
                 ];
             }
-            if (($perm = $user->conf->track_permission("_", Track::VIEWTRACKER)))
+            if (($perm = $user->conf->track_permission("_", Track::VIEWTRACKER))) {
                 $dl->tracker->global_visibility = $perm;
+            }
             $dl->tracker_status = self::tracker_status($tracker);
             $dl->now = microtime(true);
         }

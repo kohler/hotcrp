@@ -3,22 +3,26 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-if (!$Me->is_manager())
+if (!$Me->is_manager()) {
     $Me->escape();
+}
 
 // clean request
 
 // paper selection
-if (!isset($Qreq->q) || trim($Qreq->q) === "(All)")
+if (!isset($Qreq->q) || trim($Qreq->q) === "(All)") {
     $Qreq->q = "";
-if ($Qreq->post_ok())
+}
+if ($Qreq->post_ok()) {
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
+}
 
 $tOpt = PaperSearch::manager_search_types($Me);
 if ($Me->privChair && !isset($Qreq->t)
     && $Qreq->a === "prefconflict"
-    && $Conf->can_pc_see_active_submissions())
+    && $Conf->can_pc_see_active_submissions()) {
     $Qreq->t = "all";
+}
 if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {
     reset($tOpt);
     $Qreq->t = key($tOpt);
@@ -50,26 +54,31 @@ if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POS
     $x = preg_split('/\s+/', $Conf->setting_data("autoassign_badpairs", ""), null, PREG_SPLIT_NO_EMPTY);
     $pcm = $Conf->pc_members();
     $bpnum = 1;
-    for ($i = 0; $i < count($x) - 1; $i += 2)
-        if (isset($pcm[$x[$i]]) && isset($pcm[$x[$i+1]])) {
+    for ($i = 0; $i < count($x) - 1; $i += 2) {
+        if (isset($pcm[(int) $x[$i]]) && isset($pcm[(int) $x[$i+1]])) {
             $Qreq["bpa$bpnum"] = $pcm[$x[$i]]->email;
             $Qreq["bpb$bpnum"] = $pcm[$x[$i+1]]->email;
             ++$bpnum;
         }
-    if ($Conf->setting("autoassign_badpairs"))
+    }
+    if ($Conf->setting("autoassign_badpairs")) {
         $Qreq->badpairs = 1;
+    }
 } else if ($Me->privChair && isset($Qreq->assign) && $Qreq->post_ok()) {
     $x = array();
-    for ($i = 1; isset($Qreq["bpa$i"]); ++$i)
+    for ($i = 1; isset($Qreq["bpa$i"]); ++$i) {
         if ($Qreq["bpa$i"] && $Qreq["bpb$i"]
             && ($pca = $Conf->pc_member_by_email($Qreq["bpa$i"]))
             && ($pcb = $Conf->pc_member_by_email($Qreq["bpb$i"]))) {
             $x[] = $pca->contactId;
             $x[] = $pcb->contactId;
         }
-    if (count($x) || $Conf->setting_data("autoassign_badpairs")
-        || (!isset($Qreq->badpairs) != !$Conf->setting("autoassign_badpairs")))
+    }
+    if (count($x)
+        || $Conf->setting_data("autoassign_badpairs")
+        || (!isset($Qreq->badpairs) != !$Conf->setting("autoassign_badpairs"))) {
         $Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', ?, ?) on duplicate key update data=values(data), value=values(value)", isset($Qreq->badpairs) ? 1 : 0, join(" ", $x));
+    }
 }
 // set $badpairs array
 $badpairs = array();
@@ -108,18 +117,21 @@ if (isset($Qreq->saveassignment)) {
 $SSel->sort_selection();
 
 // rev_round
-if (($x = $Conf->sanitize_round_name($Qreq->rev_round)) !== false)
+if (($x = $Conf->sanitize_round_name($Qreq->rev_round)) !== false) {
     $Qreq->rev_round = $x;
+}
 
 // score selector
 $scoreselector = array("+overAllMerit" => "", "-overAllMerit" => "");
-foreach ($Conf->all_review_fields() as $f)
+foreach ($Conf->all_review_fields() as $f) {
     if ($f->has_options) {
         $scoreselector["+" . $f->id] = "high $f->name_html scores";
         $scoreselector["-" . $f->id] = "low $f->name_html scores";
     }
-if ($scoreselector["+overAllMerit"] === "")
+}
+if ($scoreselector["+overAllMerit"] === "") {
     unset($scoreselector["+overAllMerit"], $scoreselector["-overAllMerit"]);
+}
 $scoreselector["__break"] = null;
 $scoreselector["x"] = "random submitted reviews";
 $scoreselector["xa"] = "random reviews";

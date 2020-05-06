@@ -189,50 +189,59 @@ class DocumentInfo implements JsonSerializable {
     }
 
     function ensure_content() {
-        if ($this->content_available())
+        if ($this->content_available()) {
             return true;
+        }
         // 1. check docstore
-        if ($this->load_docstore())
+        if ($this->load_docstore()) {
             return true;
+        }
         // 2. check db
         $dbNoPapers = $this->conf->opt("dbNoPapers");
-        if (!$dbNoPapers && $this->load_database())
+        if (!$dbNoPapers && $this->load_database()) {
             return true;
+        }
         // 3. check S3
-        if ($this->load_s3())
+        if ($this->load_s3()) {
             return true;
+        }
         // 4. check db as last resort
-        if ($dbNoPapers && $this->load_database())
+        if ($dbNoPapers && $this->load_database()) {
             return true;
+        }
         return $this->add_error_html("Cannot load document.");
     }
 
     function ensure_size() {
         if ($this->size == 0 && $this->paperStorageId != 1) {
-            if (!$this->ensure_content())
+            if (!$this->ensure_content()) {
                 return false;
-            else if ($this->content !== null)
+            } else if ($this->content !== null) {
                 $this->size = strlen($this->content);
-            else if ($this->content_file !== null)
+            } else if ($this->content_file !== null) {
                 $this->size = (int) filesize($this->content_file);
-            else if ($this->filestore !== null)
+            } else if ($this->filestore !== null) {
                 $this->size = (int) filesize($this->filestore);
+            }
         }
         return $this->size != 0 || $this->paperStorageId == 1;
     }
 
     function load_database() {
-        if ($this->paperStorageId <= 1)
+        if ($this->paperStorageId <= 1) {
             return false;
+        }
         $row = $this->conf->fetch_first_row("select paper, compression from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
-        if ($row === null)
+        if ($row === null) {
             $row = $this->conf->fetch_first_row("select paper, compression from PaperStorage where paperStorageId=?", $this->paperStorageId);
+        }
         if ($row !== null && $row[0] !== null) {
             $this->content = $row[1] == 1 ? gzinflate($row[0]) : $row[0];
             $this->size = strlen($this->content);
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     function load_docstore() {
@@ -240,8 +249,9 @@ class DocumentInfo implements JsonSerializable {
             $this->filestore = $dspath;
             $this->size = 0;
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     function store_skeleton() {
@@ -574,14 +584,16 @@ class DocumentInfo implements JsonSerializable {
             $t = substr($s, 0, 8);
             if (!is_valid_utf8($s)) {
                 $t = UnicodeHelper::utf8_prefix(UnicodeHelper::utf8_truncate_invalid($s), 8);
-                if (strlen($t) < 7)
+                if (strlen($t) < 7) {
                     $t = join("", array_map(function ($ch) {
                         $c = ord($ch);
-                        if ($c >= 0x20 && $c <= 0x7E)
+                        if ($c >= 0x20 && $c <= 0x7E) {
                             return $ch;
-                        else
+                        } else {
                             return sprintf("\\x%02X", $c);
+                        }
                     }, str_split(substr($s, 0, 8))));
+                }
             }
             return "starts with “{$t}”";
         }

@@ -21,16 +21,18 @@ if ($Me->is_track_manager()) {
         reset($kiosks);
     }
     // look for new kiosks
-    $kiosk_keys = array(null, null);
-    foreach ($kiosks as $k => $kj)
+    $kiosk_keys = [null, null];
+    foreach ($kiosks as $k => $kj) {
         if ($kj->update_at >= $Now - 7200)
             $kiosk_keys[$kj->show_papers ? 1 : 0] = $k;
-    for ($i = 0; $i <= 1; ++$i)
+    }
+    for ($i = 0; $i <= 1; ++$i) {
         if (!$kiosk_keys[$i]) {
             $key = hotcrp_random_password();
-            $kiosks[$key] = (object) array("update_at" => $Now, "show_papers" => !!$i);
+            $kiosks[$key] = (object) ["update_at" => $Now, "show_papers" => !!$i];
             $kiosk_keys[$i] = $kchange = $key;
         }
+    }
     // save kiosks
     if ($kchange)
         $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
@@ -45,28 +47,33 @@ if ($Me->is_track_manager() && $Qreq->signout_to_kiosk && $Qreq->post_ok()) {
 
 function kiosk_lookup($key) {
     global $Conf, $Now;
-    $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : array());
-    if (isset($kiosks[$key]) && $kiosks[$key]->update_at >= $Now - 604800)
+    $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : []);
+    if (isset($kiosks[$key]) && $kiosks[$key]->update_at >= $Now - 604800) {
         return $kiosks[$key];
-    return null;
+    } else {
+        return null;
+    }
 }
 
 $kiosk = null;
 if (!$Me->has_email()
     && ($key = $Qreq->path_component(0))
-    && ($kiosk = kiosk_lookup($key)))
+    && ($kiosk = kiosk_lookup($key))) {
     $Me->set_capability("tracker_kiosk", $key);
-else if (($key = $Me->capability("tracker_kiosk")))
+} else if (($key = $Me->capability("tracker_kiosk"))) {
     $kiosk = kiosk_lookup($key);
-
+}
 if ($kiosk) {
     $Me->tracker_kiosk_state = $kiosk->show_papers ? 2 : 1;
     $show_papers = $kiosk->show_papers;
+} else {
+    $show_papers = true;
 }
 
 // user
-if (!$Me->isPC && !$Me->tracker_kiosk_state)
+if (!$Me->isPC && !$Me->tracker_kiosk_state) {
     $Me->escape();
+}
 
 
 $Conf->header("Discussion status", "buzzer", ["action_bar" => false, "body_class" => "hide-tracker"]);
@@ -115,8 +122,9 @@ if ($Me->is_track_manager()) {
         $Conf->hoturl_absolute("buzzer", ["__PATH__" => $kiosk_keys[0]], Conf::HOTURL_RAW),
         $Conf->hoturl_absolute("buzzer", ["__PATH__" => $kiosk_keys[1]], Conf::HOTURL_RAW)
     ];
-} else if ($kiosk)
+} else if ($kiosk) {
     $buzzer_status["is_kiosk"] = true;
+}
 $buzzer_status["no_discussion"] = $no_discussion . '</div>';
 echo Ht::unstash();
 echo $Conf->make_script_file("scripts/buzzer.js");

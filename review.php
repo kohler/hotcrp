@@ -26,26 +26,26 @@ function errorMsgExit($msg) {
 
 
 // collect paper ID
-function loadRows() {
+function review_load() {
     global $Conf, $Me, $Qreq, $prow, $paperTable;
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
-        errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
+        review_error(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
     }
     $paperTable = new PaperTable($prow, $Qreq);
     $paperTable->resolveReview(true);
 }
-
-loadRows();
+review_load();
 
 
 // general error messages
 if ($Qreq->post && $Qreq->post_empty()) {
     $Conf->post_missing_msg();
 } else if ($Qreq->post && $Qreq->default) {
-    if ($Qreq->has_file("uploadedFile"))
+    if ($Qreq->has_file("uploadedFile")) {
         $Qreq->uploadForm = 1;
-    else
+    } else {
         $Qreq->update = 1;
+    }
 } else if ($Qreq->submitreview) {
     $Qreq->update = $Qreq->ready = 1;
 } else if ($Qreq->savedraft) {
@@ -141,8 +141,9 @@ if (isset($Qreq->adoptreview) && $Qreq->post_ok()) {
             $tfx->check_and_save($Me, $prow, $paperTable->editrrow);
         }
     }
-    if (($my_rrow = $prow->fresh_review_of_user($Me)))
+    if (($my_rrow = $prow->fresh_review_of_user($Me))) {
         $Qreq->r = $my_rrow->reviewId;
+    }
     $Conf->self_redirect($Qreq); // normally does not return
 }
 
@@ -151,22 +152,26 @@ if (isset($Qreq->adoptreview) && $Qreq->post_ok()) {
 if (isset($Qreq->deletereview)
     && $Qreq->post_ok()
     && $Me->can_administer($prow)) {
-    if (!$paperTable->editrrow)
+    if (!$paperTable->editrrow) {
         Conf::msg_error("No review to delete.");
-    else {
+    } else {
         $result = $Conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
         if ($result) {
             $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
             $Conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
-            if ($paperTable->editrrow->reviewToken != 0)
+            if ($paperTable->editrrow->reviewToken != 0) {
                 $Conf->update_rev_tokens_setting(-1);
-            if ($paperTable->editrrow->reviewType == REVIEW_META)
+            }
+            if ($paperTable->editrrow->reviewType == REVIEW_META) {
                 $Conf->update_metareviews_setting(-1);
+            }
 
             // perhaps a delegatee needs to redelegate
-            if ($paperTable->editrrow->reviewType < REVIEW_SECONDARY && $paperTable->editrrow->requestedBy > 0)
+            if ($paperTable->editrrow->reviewType < REVIEW_SECONDARY
+                && $paperTable->editrrow->requestedBy > 0) {
                 $Me->update_review_delegation($paperTable->editrrow->paperId, $paperTable->editrrow->requestedBy, -1);
+            }
 
             unset($Qreq->r, $Qreq->reviewId);
             $Qreq->paperId = $Qreq->p = $paperTable->editrrow->paperId;
@@ -186,13 +191,15 @@ function downloadForm($qreq) {
         && $prow->review_type($Me) > 0;
     $text = $rf->textFormHeader(false) . $rf->textForm($prow, $rrow, $Me, $use_request ? $qreq : null);
     $filename = "review-{$prow->paperId}";
-    if ($rrow && $rrow->reviewOrdinal)
+    if ($rrow && $rrow->reviewOrdinal) {
         $filename .= unparseReviewOrdinal($rrow->reviewOrdinal);
+    }
     downloadText($text, $filename, false);
 }
 
-if (isset($Qreq->downloadForm))
+if (isset($Qreq->downloadForm)) {
     downloadForm($Qreq);
+}
 
 
 function download_all_text_reviews() {
@@ -227,10 +234,11 @@ function download_one_text_review(ReviewInfo $rrow) {
 }
 
 if (isset($Qreq->text)) {
-    if ($paperTable->rrow)
+    if ($paperTable->rrow) {
         download_one_text_review($paperTable->rrow);
-    else
+    } else {
         download_all_text_reviews();
+    }
 }
 
 
@@ -308,8 +316,9 @@ if (!$viewAny && !$editAny) {
 
 // mode
 $paperTable->fixReviewMode();
-if ($paperTable->mode == "edit")
+if ($paperTable->mode == "edit") {
     go(hoturl("paper", ["p" => $prow->paperId]));
+}
 
 
 // paper table

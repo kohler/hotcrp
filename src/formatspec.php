@@ -22,20 +22,21 @@ class FormatSpec {
     }
 
     function merge($x, $timestamp = 0) {
-        if (is_string($x) && substr($x, 0, 1) === "{")
+        if (is_string($x) && substr($x, 0, 1) === "{") {
             $x = json_decode($x);
+        }
         if ($x && is_string($x)) {
             if (($gt = strpos($x, ">")) !== false) {
                 $x = substr($x, 0, $gt);
             }
             $x = explode(";", $x);
-            $this->merge1("papersize", get($x, 0, ""));
-            $this->merge1("pagelimit", get($x, 1, ""));
-            $this->merge1("columns", get($x, 2));
-            $this->merge1("textblock", get($x, 3));
-            $this->merge1("bodyfontsize", get($x, 4));
-            $this->merge1("bodylineheight", get($x, 5));
-            $this->merge1("unlimitedref", get($x, 6));
+            $this->merge1("papersize", $x[0] ?? "");
+            $this->merge1("pagelimit", $x[1] ?? "");
+            $this->merge1("columns", $x[2] ?? null);
+            $this->merge1("textblock", $x[3] ?? null);
+            $this->merge1("bodyfontsize", $x[4] ?? null);
+            $this->merge1("bodylineheight", $x[5] ?? null);
+            $this->merge1("unlimitedref", $x[6] ?? null);
         } else if ($x && (is_object($x) || is_array($x))) {
             foreach ($x as $k => $v) {
                 $this->merge1($k, $v);

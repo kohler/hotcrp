@@ -1225,8 +1225,9 @@ class PaperTable {
                 }
 
                 $class = "pg";
-                if ($nvos1 === $last - $first)
+                if ($nvos1 === $last - $first) {
                     $class .= " fx8";
+                }
                 $foldnum = get($this->foldnumber, $o1->display_group, 0);
                 if ($foldnum && $renders[$first][2] !== "") {
                     $group_html = '<span class="fn' . $foldnum . '">'

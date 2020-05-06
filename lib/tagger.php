@@ -232,10 +232,11 @@ class TagMap implements IteratorAggregate {
 
         $basic_colors = "red&|orange&|yellow&|green&|blue&|purple&|violet=purple|gray&|grey=gray|white&|bold|italic|underline|strikethrough|big|small|dim";
         if (($o = $conf->opt("tagBasicColors"))) {
-            if (str_starts_with($o, "|"))
+            if (str_starts_with($o, "|")) {
                 $basic_colors .= $o;
-            else
+            } else {
                 $basic_colors = $o;
+            }
         }
         preg_match_all('/([a-z@_.][-a-z0-9!@_:.\/]*)(\&?)(?:=([a-z@_.][-a-z0-9!@_:.\/]*))?/', strtolower($basic_colors), $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
@@ -321,8 +322,9 @@ class TagMap implements IteratorAggregate {
         $t = $this->storage[$ltag] ?? false;
         if (!$t) {
             $t = new TagMapItem($tag, $this);
-            if (!TagInfo::basic_check($ltag))
+            if (!TagInfo::basic_check($ltag)) {
                 return $t;
+            }
             $this->storage[$ltag] = $t;
             $this->sorted = false;
             if ($ltag[0] === ":" && ($e = $this->check_emoji_code($ltag))) {
@@ -337,9 +339,11 @@ class TagMap implements IteratorAggregate {
                 ++$this->pattern_version;
             }
         }
-        if ($this->has_pattern && !$t->pattern
-            && $t->pattern_version < $this->pattern_version)
+        if ($this->has_pattern
+            && !$t->pattern
+            && $t->pattern_version < $this->pattern_version) {
             $t = $this->update_patterns($tag, $ltag, $t);
+        }
         return $t;
     }
     private function sort_storage() {
@@ -352,8 +356,9 @@ class TagMap implements IteratorAggregate {
     }
     function filter($property) {
         $k = "has_{$property}";
-        if (!$this->$k)
+        if (!$this->$k) {
             return [];
+        }
         $this->sorted || $this->sort_storage();
         return array_filter($this->storage, function ($t) use ($property) { return $t->$property; });
     }
@@ -371,10 +376,11 @@ class TagMap implements IteratorAggregate {
 
 
     function is_chair($tag) {
-        if ($tag[0] === "~")
+        if ($tag[0] === "~") {
             return $tag[1] === "~";
-        else
+        } else {
             return !!$this->check_property($tag, "chair");
+        }
     }
     function is_readonly($tag) {
         return !!$this->check_property($tag, "readonly");
@@ -399,8 +405,9 @@ class TagMap implements IteratorAggregate {
     }
     function votish_base($tag) {
         if (!$this->has_votish
-            || ($twiddle = strpos($tag, "~")) === false)
+            || ($twiddle = strpos($tag, "~")) === false) {
             return false;
+        }
         $tbase = substr(TagInfo::base($tag), $twiddle + 1);
         $t = $this->check($tbase);
         return $t && $t->votish ? $tbase : false;
@@ -538,9 +545,10 @@ class TagMap implements IteratorAggregate {
 
     function canonical_colors() {
         $colors = [];
-        foreach ($this->canonical_style_lmap as $ltag => $canon_ltag)
+        foreach ($this->canonical_style_lmap as $ltag => $canon_ltag) {
             if ($ltag === $canon_ltag)
                 $colors[] = $ltag;
+        }
         return $colors;
     }
 
@@ -562,8 +570,9 @@ class TagMap implements IteratorAggregate {
     function emoji_regex() {
         if (!$this->badge_re) {
             $re = "{(?:\\A| )(?:\\d*~|~~|)(:\\S+:";
-            foreach ($this->filter("emoji") as $t)
+            foreach ($this->filter("emoji") as $t) {
                 $re .= "|" . $t->tag_regex();
+            }
             $this->emoji_re = $re . ")(?:#[\\d.]+)?(?=\\z| )}i";
         }
         return $this->emoji_re;
@@ -872,7 +881,7 @@ class TagInfo {
     }
 
     static function split($taglist) {
-        preg_match_all(',\S+,', $taglist, $m);
+        preg_match_all('/\S+/', $taglist, $m);
         return $m[0];
     }
 

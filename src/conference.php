@@ -242,7 +242,7 @@ class Conf {
         $this->opt_override = [];
 
         $result = $this->q_raw("select name, value, data from Settings");
-        while ($result && ($row = $result->fetch_row())) {
+        while (($row = $result->fetch_row())) {
             $this->settings[$row[0]] = (int) $row[1];
             if ($row[2] !== null) {
                 $this->settingTexts[$row[0]] = $row[2];
@@ -406,9 +406,10 @@ class Conf {
     private function crosscheck_round_settings() {
         $this->rounds = [""];
         if (isset($this->settingTexts["tag_rounds"])) {
-            foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r)
+            foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r) {
                 if ($r != "")
                     $this->rounds[] = $r;
+            }
         }
         $this->_round_settings = null;
         if (isset($this->settingTexts["round_settings"])) {
@@ -2469,13 +2470,15 @@ class Conf {
 
 
     function update_schema_version($n) {
-        if (!$n)
+        if (!$n) {
             $n = $this->fetch_ivalue("select value from Settings where name='allowPaperOption'");
+        }
         if ($n && $this->ql("update Settings set value=? where name='allowPaperOption'", $n)) {
             $this->sversion = $this->settings["allowPaperOption"] = $n;
             return true;
-        } else
+        } else {
             return false;
+        }
     }
 
     function invalidate_caches($caches = null) {
@@ -3264,10 +3267,6 @@ class Conf {
         }
         if (count($paperset) > 1) {
             $paperset = array(call_user_func_array("array_intersect", $paperset));
-        }
-        $papersel = "";
-        if (!empty($paperset)) {
-            $papersel = "paperId" . sql_in_numeric_set($paperset[0]) . " and ";
         }
 
         // prepare query: basic tables

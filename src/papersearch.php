@@ -169,7 +169,7 @@ class SearchOperator {
             self::$list["THEN"] = new SearchOperator("then", false, 2);
             self::$list["HIGHLIGHT"] = new SearchOperator("highlight", false, 1, "");
         }
-        return get(self::$list, $name);
+        return self::$list[$name] ?? null;
     }
 }
 
@@ -224,10 +224,10 @@ class SearchTerm {
         $this->float[$k] = $v;
     }
     function get_float($k, $defval = null) {
-        return get($this->float, $k, $defval);
+        return $this->float[$k] ?? $defval;
     }
     function apply_strspan($span) {
-        $span1 = get($this->float, "strspan");
+        $span1 = $this->float["strspan"] ?? null;
         if ($span && $span1) {
             $span = [min($span[0], $span1[0]), max($span[1], $span1[1])];
         }
@@ -360,7 +360,7 @@ class Op_SearchTerm extends SearchTerm {
     protected function append($term) {
         if ($term) {
             foreach ($term->float as $k => $v) {
-                $v1 = get($this->float, $k);
+                $v1 = $this->float[$k] ?? null;
                 if (($k === "sort" || $k === "view" || $k === "tags") && $v1) {
                     array_splice($this->float[$k], count($v1), 0, $v);
                 } else if ($k === "strspan" && $v1) {
@@ -380,19 +380,22 @@ class Op_SearchTerm extends SearchTerm {
     }
     protected function _flatten_children() {
         $qvs = array();
-        foreach ($this->child ? : array() as $qv)
-            if ($qv->type === $this->type)
+        foreach ($this->child ? : array() as $qv) {
+            if ($qv->type === $this->type) {
                 $qvs = array_merge($qvs, $qv->child);
-            else
+            } else {
                 $qvs[] = $qv;
+            }
+        }
         return $qvs;
     }
     protected function _finish_combine($newchild, $any) {
         $qr = null;
-        if (!$newchild)
+        if (!$newchild) {
             $qr = $any ? new True_SearchTerm : new False_SearchTerm;
-        else if (count($newchild) == 1)
+        } else if (count($newchild) == 1) {
             $qr = clone $newchild[0];
+        }
         if ($qr) {
             $qr->float = $this->float;
             return $qr;
@@ -405,25 +408,29 @@ class Op_SearchTerm extends SearchTerm {
     function set_strspan_owner($str) {
         if (!isset($this->float["strspan_owner"])) {
             parent::set_strspan_owner($str);
-            foreach ($this->child as $qv)
+            foreach ($this->child as $qv) {
                 $qv->set_strspan_owner($str);
+            }
         }
     }
     function debug_json() {
         $a = [$this->type];
-        foreach ($this->child as $qv)
+        foreach ($this->child as $qv) {
             $a[] = $qv->debug_json();
+        }
         return $a;
     }
     function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
-        foreach ($this->child as &$qv)
+        foreach ($this->child as &$qv) {
             $qv = $qv->adjust_reviews($revadj, $srch);
+        }
         return $this;
     }
     function trivial_rights(Contact $user, PaperSearch $srch) {
-        foreach ($this->child as $ch)
+        foreach ($this->child as $ch) {
             if (!$ch->trivial_rights($user, $srch))
                 return false;
+        }
         return true;
     }
 }
@@ -533,8 +540,9 @@ class And_SearchTerm extends Op_SearchTerm {
         }
         if ($myrevadj && !$myrevadj->used_revadj) {
             $this->child[0] = $myrevadj->promote($srch);
-            if ($used_revadj)
+            if ($used_revadj) {
                 $revadj->used_revadj = true;
+            }
         }
         return $this;
     }
@@ -1660,7 +1668,7 @@ class PaperSearch {
         // NB: If a complex query field, e.g., "re", "tag", or "option", is
         // default, then it must be the only default or query construction
         // will break.
-        $this->_qt = self::_canonical_qt(get($options, "qt"));
+        $this->_qt = self::_canonical_qt($options["qt"] ?? null);
         if ($this->_qt === "n") {
             $this->_qt_fields = ["ti", "ab"];
             if ($this->user->can_view_some_authors())
@@ -1670,11 +1678,11 @@ class PaperSearch {
         }
 
         // the query itself
-        $this->q = trim(get_s($options, "q"));
-        $this->_default_sort = get($options, "sort");
+        $this->q = trim($options["q"] ?? "");
+        $this->_default_sort = $options["sort"] ?? null;
 
         // reviewer
-        if (($reviewer = get($options, "reviewer"))) {
+        if (($reviewer = $options["reviewer"] ?? null)) {
             if (is_string($reviewer)) {
                 if (strcasecmp($reviewer, $user->email) == 0) {
                     $reviewer = $user;
@@ -1692,7 +1700,7 @@ class PaperSearch {
         }
 
         // paper selection
-        $limit = self::canonical_search_type((string) get($options, "t"));
+        $limit = self::canonical_search_type($options["t"] ?? "");
         if (in_array($limit, ["a", "r", "ar", "rout", "viewable"], true)
             || ($user->privChair && in_array($limit, ["all", "unsub", "alladmin"], true))
             || ($user->isPC && in_array($limit, ["acc", "req", "lead", "reviewable",
@@ -2134,10 +2142,11 @@ class PaperSearch {
         // some keywords may be followed by parentheses
         if (strpos($x, ":")
             && preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":)(?=[^"]|\z)/', $x, $m)) {
-            if ($m[1][0] === "\"")
+            if ($m[1][0] === "\"") {
                 $kw = substr($m[1], 1, strlen($m[1]) - 2);
-            else
+            } else {
                 $kw = substr($m[1], 0, strlen($m[1]) - 1);
+            }
             if (($kwdef = $conf->search_keyword($kw))
                 && $splitter->starts_with("(")
                 && ($kwdef->allow_parens ?? false)) {
@@ -2151,12 +2160,14 @@ class PaperSearch {
 
     static private function _pop_expression_stack($curqe, &$stack) {
         $x = array_pop($stack);
-        if (!$curqe)
+        if (!$curqe) {
             return $x->leftqe;
-        if ($x->leftqe)
+        }
+        if ($x->leftqe) {
             $curqe = SearchTerm::make_op($x->op, [$x->leftqe, $curqe]);
-        else if ($x->op->op !== "+" && $x->op->op !== "(")
+        } else if ($x->op->op !== "+" && $x->op->op !== "(") {
             $curqe = SearchTerm::make_op($x->op, [$curqe]);
+        }
         $curqe->apply_strspan($x->strspan);
         return $curqe;
     }
@@ -2197,8 +2208,9 @@ class PaperSearch {
                 } else {
                     // The heart of the matter.
                     $curqe = $this->_search_word($word, $defkw);
-                    if (!$curqe->is_uninteresting())
+                    if (!$curqe->is_uninteresting()) {
                         $curqe->set_float("strspan", $splitter->strspan);
+                    }
                 }
             } else if ($op->op === ")") {
                 while (!empty($stack)
@@ -2241,25 +2253,28 @@ class PaperSearch {
 
 
     static private function _canonical_qt($qt) {
-        if (in_array($qt, ["ti", "ab", "au", "ac", "co", "re", "tag"]))
+        if (in_array($qt, ["ti", "ab", "au", "ac", "co", "re", "tag"])) {
             return $qt;
-        else
+        } else {
             return "n";
+        }
     }
 
     static private function _pop_canonicalize_stack($curqe, &$stack) {
         $x = array_pop($stack);
-        if ($curqe)
+        if ($curqe) {
             $x->qe[] = $curqe;
+        }
         if (empty($x->qe)) {
             return null;
         } else if ($x->op->unary) {
             $qe = $x->qe[0];
             if ($x->op->op === "not") {
-                if (preg_match('/\A(?:[(-]|NOT )/i', $qe))
+                if (preg_match('/\A(?:[(-]|NOT )/i', $qe)) {
                     $qe = "NOT $qe";
-                else
+                } else {
                     $qe = "-$qe";
+                }
             }
             return $qe;
         } else if (count($x->qe) === 1) {
@@ -2273,8 +2288,9 @@ class PaperSearch {
 
     static private function _canonical_expression($str, $type, $qt, Conf $conf) {
         $str = trim((string) $str);
-        if ($str === "")
+        if ($str === "") {
             return "";
+        }
 
         $stack = array();
         $parens = 0;
@@ -2948,7 +2964,7 @@ class PaperSearch {
     function highlight_tags() {
         if ($this->_highlight_tags === null) {
             $this->_prepare();
-            $this->_highlight_tags = get($this->term()->float, "tags", []);
+            $this->_highlight_tags = $this->term()->float["tags"] ?? [];
             foreach ($this->_sorters as $s) {
                 if ($s->type[0] === "#")
                     $this->_highlight_tags[] = substr($s->type, 1);
@@ -2980,12 +2996,12 @@ class PaperSearch {
     }
 
     function field_highlighter($field) {
-        return get($this->field_highlighters(), $field, "");
+        return ($this->field_highlighters())[$field] ?? "";
     }
 
 
     static function search_type_description(Conf $conf, $t) {
-        return $conf->_c("search_type", get(self::$search_type_names, $t, "Submissions"));
+        return $conf->_c("search_type", self::$search_type_names[$t] ?? "Submissions");
     }
 
     static function canonical_search_type($reqtype) {

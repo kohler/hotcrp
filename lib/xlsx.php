@@ -35,9 +35,9 @@ class XlsxGenerator {
         foreach ($data as $x) {
             if ($x !== null && $x !== "") {
                 $t .= "<c r=\"" . self::colname($col) . $row . "\"" . $style;
-                if (is_int($x) || is_float($x))
+                if (is_int($x) || is_float($x)) {
                     $t .= "><v>$x</v></c>";
-                else {
+                } else {
                     if (!isset($this->sst[$x])) {
                         $this->sst[$x] = $this->nsst;
                         ++$this->nsst;

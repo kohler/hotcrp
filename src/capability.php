@@ -19,9 +19,9 @@ class CapabilityManager {
 
     function create(Contact $user, $capabilityType, $options = []) {
         $contactId = $this->cdb ? $user->contactdb_user()->contactDbId : $user->contactId;
-        $paperId = get($options, "paperId", 0);
-        $timeExpires = get($options, "timeExpires", time() + 259200);
-        $data = get($options, "data");
+        $paperId = $options["paperId"] ?? 0;
+        $timeExpires = $options["timeExpires"] ?? time() + 259200;
+        $data = $options["data"] ?? null;
         $ok = false;
 
         for ($tries = 0; !$ok && $tries < 4; ++$tries) {
@@ -110,7 +110,7 @@ class CapabilityManager {
         if (Conf::$hoturl_defaults === null) {
             Conf::$hoturl_defaults = [];
         }
-        $cap = urldecode(get(Conf::$hoturl_defaults, "cap", ""));
+        $cap = urldecode(Conf::$hoturl_defaults["cap"] ?? "");
         $a = array_diff(explode(" ", $cap), [$name, ""]);
         if ($isadd) {
             $a[] = $name;

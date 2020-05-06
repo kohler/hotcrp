@@ -423,8 +423,9 @@ if (!$Qreq->post_ok()) {
             $Conf->msg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.", "xconfirm");
         } else {
             $Conf->msg("Profile updated.", "xconfirm");
-            if ($Acct->contactId != $Me->contactId)
+            if ($Acct->contactId != $Me->contactId) {
                 $Qreq->u = $Acct->email;
+            }
         }
         if (isset($Qreq->redirect)) {
             go(hoturl("index"));
