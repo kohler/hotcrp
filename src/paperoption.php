@@ -1788,7 +1788,7 @@ class AttachmentsPaperOption extends PaperOption {
             // This is so (1) the link from option -> PaperStorage is visible
             // directly via PaperOption.value, (2) we can still support
             // duplicate uploads.
-            $uniqdids = array_unique($dids, SORT_NUMERIC);
+            $uniqdids = array_values(array_unique($dids, SORT_NUMERIC));
             $datas = array_fill(0, count($uniqdids), null);
             $datas[0] = json_encode(["all_dids" => $dids]);
             $ov->set_value_data($uniqdids, $datas);

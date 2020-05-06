@@ -387,7 +387,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
             $width = 5 * $max + 3;
             $height = 5 * max(3, max($counts)) + 3;
             $retstr = "<div class=\"need-scorechart\" style=\"width:${width}px;height:${height}px\" data-scorechart=\"$args&amp;s=1\" title=\"$avgtext\"></div>";
-        } else if ($style == 2) {
+        } else {
             $retstr = "<div class=\"sc\">"
                 . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"$args&amp;s=2\" title=\"$avgtext\"></div>"
                 . "<br>";

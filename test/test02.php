@@ -1257,9 +1257,9 @@ xassert_eqq(CleanHTML::basic_clean('<a href =\'https:"""//hello\' butt><B>Hello<
 
 // tag sorting
 $dt = $Conf->tags();
-xassert_eqq($dt->sort(""), "");
-xassert_eqq($dt->sort(" a"), " a");
-xassert_eqq($dt->sort(" a1 a10 a100 a2"), " a1 a2 a10 a100");
+xassert_eqq($dt->sort_string(""), "");
+xassert_eqq($dt->sort_string(" a"), " a");
+xassert_eqq($dt->sort_string(" a1 a10 a100 a2"), " a1 a2 a10 a100");
 
 // GMP shim
 $a = GMPShim::init("0");

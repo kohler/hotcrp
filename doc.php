@@ -61,6 +61,7 @@ function document_history(Contact $user, PaperInfo $prow, $dtype) {
 }
 
 function document_download(Contact $user, $qreq) {
+    global $Now;
     try {
         $dr = new DocumentRequest($qreq, $qreq->path(), $user->conf);
     } catch (Exception $e) {
@@ -90,7 +91,7 @@ function document_download(Contact $user, $qreq) {
             $time = $Now;
         }
         $want_pj = null;
-        foreach (document_history($prow, $dr->dtype) as $pj) {
+        foreach (document_history($user, $prow, $dr->dtype) as $pj) {
             if ($want_pj && $want_pj->at <= $time && $pj->at < $want_pj->at) {
                 break;
             } else {

@@ -419,7 +419,7 @@ if (!$Qreq->post_ok()) {
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if (!$UserStatus->has_error()) {
         if ($UserStatus->has_messages()) {
-            $Conf->msg($UserStatus->messages(), $UserStatus->problem_status());
+            $Conf->msg($UserStatus->message_texts(), $UserStatus->problem_status());
         }
         if ($newProfile) {
             $Conf->msg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.", "xconfirm");

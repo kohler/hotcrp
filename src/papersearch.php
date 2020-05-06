@@ -2499,7 +2499,7 @@ class PaperSearch {
         if (!$thetag) {
             return false;
         }
-        $dt = $this->conf->tags()->add(TagInfo::base($tag));
+        $dt = $this->conf->tags()->add(TagInfo::base($thetag));
         if ($dt->has_order_anno()) {
             return $dt;
         }

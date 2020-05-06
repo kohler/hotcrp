@@ -61,7 +61,7 @@ foreach ($sids as $sid) {
             $saved = $doc->store_s3();
         }
         if (!$saved) {
-            sleep(0.5);
+            usleep(500000);
             $saved = $doc->store_s3();
         }
     }

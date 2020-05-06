@@ -396,7 +396,7 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
                 $Conf->self_redirect($Qreq);
             }
         } else {
-            Conf::msg_error("<ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>");
+            Conf::msg_error("<ul><li>" . join("</li><li>", $ps->message_texts()) . "</li></ul>");
         }
     } else {
         Conf::msg_error(whyNotText($prow->make_whynot(["permission" => "edit_contacts"])));

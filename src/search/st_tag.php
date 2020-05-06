@@ -164,7 +164,7 @@ class Color_SearchTerm {
                 $f = function ($t) { return false; };
             }
             foreach ($srch->conf->tags()->filter_by($f) as $tag => $tinfo) {
-                $dt->add_tag($tag);
+                $tm->add_tag($tag);
             }
         }
         return (new Tag_SearchTerm($tm))->negate_if($word === "none");
