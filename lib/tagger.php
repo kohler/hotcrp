@@ -919,11 +919,12 @@ class Tagger {
     /** @var int */
     private $_contactId = 0;
 
-    function __construct($contact) {
+    function __construct(Contact $contact) {
         $this->conf = $contact->conf;
         $this->contact = $contact;
-        if ($this->contact && $this->contact->contactId > 0)
-            $this->_contactId = $this->contact->contactId;
+        if ($contact->contactId > 0) {
+            $this->_contactId = $contact->contactId;
+        }
     }
 
     private function set_error_html($e) {
@@ -932,7 +933,7 @@ class Tagger {
     }
 
     function check($tag, $flags = 0) {
-        if (!($this->contact && $this->contact->privChair)) {
+        if (!$this->contact->privChair) {
             $flags |= self::NOCHAIR;
         }
         if ($tag !== "" && $tag[0] === "#") {
