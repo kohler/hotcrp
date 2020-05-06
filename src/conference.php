@@ -3505,15 +3505,6 @@ class Conf {
     /** @param string|list<string> $text
      * @param int|string $type */
     static function msg_on(Conf $conf = null, $text, $type) {
-        if (is_array($type)
-            || (is_string($type)
-                && !preg_match('/\Ax?(?:merror|warning|confirm)\z/', $type)
-                && (is_int($text) || preg_match('/\Ax?(?:merror|warning|confirm)\z/', $text)))) {
-            error_log("bad Conf::msg_on " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            $tmp = $text;
-            $text = $type;
-            $type = $tmp;
-        }
         if (PHP_SAPI === "cli") {
             if (is_array($text)) {
                 $text = join("\n", $text);
