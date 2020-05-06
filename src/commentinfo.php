@@ -565,7 +565,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 }
             }
             if (!empty($ts)) {
-                $ctags = " " . join(" ", $this->conf->tags()->sort($ts));
+                $ctags = " " . join(" ", $this->conf->tags()->sort_array($ts));
             } else {
                 $ctags = null;
             }

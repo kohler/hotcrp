@@ -658,17 +658,27 @@ class TagMap implements IteratorAggregate {
         }
     }
 
+    /** @deprecated */
     function sort($tags) {
-        if ($tags !== "" && $tags !== null && $tags !== []) {
-            if (is_array($tags)) {
-                $this->conf->collator()->sort($tags);
-            } else {
-                // XXX remove assert_tag_string
-                self::assert_tag_string($tags);
-                $tags = explode(" ", $tags);
-                $this->conf->collator()->sort($tags);
-                $tags = join(" ", $tags);
-            }
+        return is_array($tags) ? $this->sort_array($tags) : $this->sort_string($tags);
+    }
+
+    /** @param list<string> $tags
+     * @return list<string> */
+    function sort_array($tags) {
+        if (count($tags) > 1) {
+            $this->conf->collator()->sort($tags);
+        }
+        return $tags;
+    }
+
+    /** @param string $tags
+     * @return string */
+    function sort_string($tags) {
+        if ($tags !== null && $tags !== "") {
+            // XXX remove assert_tag_string
+            self::assert_tag_string($tags);
+            $tags = join(" ", $this->sort_array(explode(" ", $tags)));
         }
         return $tags;
     }

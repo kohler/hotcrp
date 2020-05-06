@@ -942,7 +942,7 @@ class PaperInfo {
     /** @return string */
     function sorted_searchable_tags(Contact $user) {
         $tags = $this->searchable_tags($user);
-        return $tags === "" ? "" : $this->conf->tags()->sort($tags);
+        return $tags === "" ? "" : $this->conf->tags()->sort_string($tags);
     }
 
     /** @return string */
@@ -955,7 +955,7 @@ class PaperInfo {
         if ($rights->viewable_tags === null) {
             $dt = $this->conf->tags();
             $tags = $dt->censor(TagMap::CENSOR_VIEW, $this->all_tags_text(), $user, $this);
-            $rights->viewable_tags = $dt->sort($tags);
+            $rights->viewable_tags = $dt->sort_string($tags);
         }
         return $rights->viewable_tags;
     }

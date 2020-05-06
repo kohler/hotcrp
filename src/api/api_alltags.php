@@ -51,7 +51,7 @@ class AllTags_API {
             }
         }
         Dbl::free($result);
-        return ["ok" => true, "tags" => $dt->sort($tags)];
+        return ["ok" => true, "tags" => $dt->sort_array($tags)];
     }
 
     static private function hard_alltags_api(Contact $user) {
@@ -68,6 +68,6 @@ class AllTags_API {
                 }
             }
         }
-        return ["ok" => true, "tags" => $user->conf->tags()->sort(array_values($tags))];
+        return ["ok" => true, "tags" => $user->conf->tags()->sort_array(array_values($tags))];
     }
 }
