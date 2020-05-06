@@ -532,6 +532,7 @@ class SettingValues extends MessageSet {
             parent::warning_at($fname, $html);
         }
     }
+    /** @param array{?string,string,int} $mx */
     private function report_mx(&$msgs, &$lastmsg, $mx) {
         $t = $mx[1];
         if ($mx[2] === MessageSet::WARNING) {
@@ -560,7 +561,7 @@ class SettingValues extends MessageSet {
             $msgs[] = "Your changes were not saved. Please fix these errors and try again.";
         }
         $lastmsg = null;
-        foreach ($this->messages(true) as $mx) {
+        foreach ($this->message_list() as $mx) {
             $this->report_mx($msgs, $lastmsg, $mx);
         }
         if (!empty($msgs)) {
@@ -825,7 +826,7 @@ class SettingValues extends MessageSet {
     function render_messages_at($field) {
         $t = "";
         $fname = $field instanceof Si ? $field->name : $field;
-        foreach ($this->messages_at($fname, true) as $mx) {
+        foreach ($this->message_list_at($fname) as $mx) {
             $t .= '<div class="' . MessageSet::status_class($mx[2], "settings-ap f-h", "is-") . '">' . $mx[1] . "</div>";
         }
         return $t;

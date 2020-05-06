@@ -58,7 +58,7 @@ class Tag_SearchTerm extends SearchTerm {
             $term->tag1 = $value->single_tag();
             $term->tag1nz = false;
         }
-        foreach ($value->errors() as $e) {
+        foreach ($value->error_texts() as $e) {
             $srch->warn($e);
         }
         return $term;

@@ -381,9 +381,9 @@ class PaperStatus extends MessageSet {
     function warning_at_option(PaperOption $o, $msg) {
         $this->warning_at($o->field_key(), $msg);
     }
-    function landmarked_messages() {
+    function landmarked_message_texts() {
         $ms = [];
-        foreach ($this->messages(true) as $mx) {
+        foreach ($this->message_list() as $mx) {
             if ($mx[1]) {
                 $t = $mx[0] ? (string) self::field_title($this->conf, $mx[0]) : "";
                 $ms[] = $t ? "{$t}: {$mx[1]}" : $mx[1];
@@ -957,11 +957,11 @@ class PaperStatus extends MessageSet {
                 continue;
             }
             $ov = $this->_nnprow->new_option($opt);
-            $errorindex = count($ov->messages());
+            $errorindex = count($ov->message_list());
             if (!$ov->has_error()) {
                 $ov->option->value_check($ov, $this->user);
             }
-            foreach ($ov->messages(true) as $i => $m) {
+            foreach ($ov->message_list() as $i => $m) {
                 $max_status = max($max_status, $m[2]);
                 if ($i < $errorindex || $m[2] >= MessageSet::ERROR) {
                     $this->msg_at($m[0], $m[1], $m[2]);

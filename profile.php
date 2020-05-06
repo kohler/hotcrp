@@ -356,12 +356,14 @@ function parseBulkFile($text, $filename) {
             continue;
         }
 
-        if (isset($cj->email) && $cj->email !== "")
+        if (isset($cj->email) && $cj->email !== "") {
             $saved_users[strtolower($cj->email)] = $csv->lineno();
-        if (($saved_user = save_user($cj, $ustatus, null, true)))
+        }
+        if (($saved_user = save_user($cj, $ustatus, null, true))) {
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";
-        foreach ($ustatus->problems() as $e) {
+        }
+        foreach ($ustatus->problem_texts() as $e) {
             $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> " . $e;
         }
     }
@@ -641,7 +643,7 @@ echo '</nav></div>',
 if ($UserStatus->has_messages()) {
     $status = 0;
     $msgs = [];
-    foreach ($UserStatus->messages(true) as $m) {
+    foreach ($UserStatus->message_list() as $m) {
         $status = max($m[2], $status);
         $msgs[] = $m[1];
     }

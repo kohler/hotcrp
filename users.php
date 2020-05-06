@@ -313,7 +313,7 @@ function do_tags($qreq) {
         unset($qreq->tagact, $qreq->tag);
         $Conf->self_redirect($qreq);
     } else {
-        Conf::msg_error($us->errors());
+        Conf::msg_error($us->error_texts());
     }
 }
 

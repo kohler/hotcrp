@@ -422,26 +422,26 @@ class HotCRPMailer extends Mailer {
     }
 
 
-    protected function unexpanded_warning() {
-        $m = parent::unexpanded_warning();
+    protected function unexpanded_warning_html() {
+        $h = parent::unexpanded_warning_html();
         foreach ($this->_unexpanded as $t => $x) {
-            if (preg_match(',\A%(?:NUMBER|TITLE|PAPER|AUTHOR|REVIEW|COMMENT),', $t))
-                $m .= " Paper-specific keywords like <code>" . htmlspecialchars($t) . "</code> weren’t recognized because this set of recipients is not linked to a paper collection.";
+            if (preg_match('/\A%(?:NUMBER|TITLE|PAPER|AUTHOR|REVIEW|COMMENT)/', $t))
+                $h .= " Paper-specific keywords like <code>" . htmlspecialchars($t) . "</code> weren’t recognized because this set of recipients is not linked to a paper collection.";
         }
         if (isset($this->_unexpanded["%AUTHORVIEWCAPABILITY%"])) {
-            $m .= " Author view capabilities weren’t recognized because this mail isn’t meant for paper authors.";
+            $h .= " Author view capabilities weren’t recognized because this mail isn’t meant for paper authors.";
         }
-        return $m;
+        return $h;
     }
 
-    function nwarnings() {
+    function warning_count() {
         return count($this->_unexpanded) + count($this->_tagless);
     }
 
-    function warnings() {
+    function warning_htmls() {
         $e = array();
         if (count($this->_unexpanded)) {
-            $e[] = $this->unexpanded_warning();
+            $e[] = $this->unexpanded_warning_html();
         }
         if (count($this->_tagless)) {
             $a = array_keys($this->_tagless);

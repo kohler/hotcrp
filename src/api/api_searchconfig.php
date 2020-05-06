@@ -178,7 +178,7 @@ class SearchConfig_API {
             $user->conf->replace_named_formulas(null);
             return self::namedformula($user, $qreq);
         } else {
-            return ["ok" => false, "error" => $msgset->errors(), "errf" => $msgset->message_field_map()];
+            return ["ok" => false, "error" => $msgset->error_texts(), "errf" => $msgset->message_field_map()];
         }
     }
 }

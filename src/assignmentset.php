@@ -351,10 +351,16 @@ class AssignmentState {
         return false;
     }
 
+    /** @return bool */
     function has_messages() {
         return !empty($this->msgs);
     }
+    /** @deprecated */
     function messages() {
+        return $this->msgs;
+    }
+    /** @return list<array{int,string,int}> */
+    function message_list() {
         return $this->msgs;
     }
     function resolve_nonexact_errors($status) {
@@ -929,7 +935,7 @@ class AssignmentSet {
 
     function errors_html($linenos = false) {
         $es = array();
-        foreach ($this->astate->messages() as $e) {
+        foreach ($this->astate->message_list() as $e) {
             $t = $e[1];
             if ($linenos && $e[0]) {
                 $t = '<span class="lineno">' . htmlspecialchars((string) $e[0]) . ':</span> ' . $t;
@@ -952,9 +958,9 @@ class AssignmentSet {
             return '<div><div class="mmm">' . join('</div><div class="mmm">', $es) . '</div></div>';
         }
     }
-    function errors_text($linenos = false) {
+    function error_texts($linenos = false) {
         $es = array();
-        foreach ($this->astate->messages() as $e) {
+        foreach ($this->astate->message_list() as $e) {
             $t = htmlspecialchars_decode(preg_replace(',<(?:[^\'">]|\'[^\']*\'|"[^"]*")*>,', "", $e[1]));
             if ($linenos && $e[0]) {
                 $t = $e[0] . ': ' . $t;

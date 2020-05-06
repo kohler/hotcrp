@@ -517,13 +517,13 @@ class MailSender {
                 }
             }
 
-            if ($nwarnings !== $mailer->nwarnings() || $nrows_done % 5 == 0) {
+            if ($nwarnings !== $mailer->warning_count() || $nrows_done % 5 == 0) {
                 $this->echo_mailinfo($nrows_done, $nrows_total);
             }
-            if ($nwarnings !== $mailer->nwarnings()) {
+            if ($nwarnings !== $mailer->warning_count()) {
                 $this->echo_prologue();
-                $nwarnings = $mailer->nwarnings();
-                echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"warning\">", join("<br>", $mailer->warnings()), "</div></div>";
+                $nwarnings = $mailer->warning_count();
+                echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"warning\">", join("<br>", $mailer->warning_htmls()), "</div></div>";
                 echo Ht::unstash_script("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
             }
 

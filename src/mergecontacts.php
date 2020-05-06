@@ -154,7 +154,7 @@ class MergeContacts extends MessageSet {
                 // old user in contactdb, new user in database
                 $user_status->save($this->basic_user_json(), $this->newu);
             }
-            foreach ($user_status->errors() as $e) {
+            foreach ($user_status->error_texts() as $e) {
                 $this->add_error($e);
             }
         }

@@ -10,6 +10,7 @@ class Ht {
     private static $_stash = "";
     private static $_stash_inscript = false;
     private static $_stash_map = [];
+    /** @var ?MessageSet */
     private static $_msgset = null;
     const ATTR_SKIP = 1;
     const ATTR_BOOL = 2;
@@ -556,12 +557,18 @@ class Ht {
     static function problem_status_at($field) {
         return self::$_msgset ? self::$_msgset->problem_status_at($field) : 0;
     }
+    /** @deprecated */
     static function messages_at($field, $full = false) {
         return self::$_msgset ? self::$_msgset->messages_at($field, $full) : [];
     }
+    /** @return iterable<array{?string,string,int}> */
+    static function message_list_at($field) {
+        return self::$_msgset ? self::$_msgset->message_list_at($field) : [];
+    }
+    /** @return string */
     static function render_messages_at($field) {
         $t = "";
-        foreach (self::messages_at($field, true) as $mx) {
+        foreach (self::message_list_at($field) as $mx) {
             $t .= '<p class="' . MessageSet::status_class($mx[2], "f-h", "is-") . '">' . $mx[1] . '</p>';
         }
         return $t;

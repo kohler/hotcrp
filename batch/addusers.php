@@ -34,7 +34,7 @@ function save_contact($ustatus, $key, $cj, $arg) {
     if ($acct) {
         fwrite(STDOUT, "Saved account {$acct->email}.\n");
     } else {
-        foreach ($ustatus->errors() as $msg) {
+        foreach ($ustatus->error_texts() as $msg) {
             fwrite(STDERR, $msg . "\n");
             if (!isset($arg["m"]) && $ustatus->has_error_at("email_inuse")) {
                 fwrite(STDERR, "(Use --modify to modify existing users.)\n");

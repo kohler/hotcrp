@@ -40,7 +40,7 @@ function crpmerge($qreq, $MiniMe) {
         $merger->newu->log_activity("Account merged " . $merger->oldu->email . " with errors");
         $MergeError = '<div class="multimessage">'
             . join("\n", array_map(function ($m) { return '<div class="mmm">' . $m . '</div>'; },
-                                   $merger->errors()))
+                                   $merger->error_texts()))
             . '</div>';
     }
 }

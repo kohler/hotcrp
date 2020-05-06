@@ -735,25 +735,28 @@ class Mailer {
     }
 
 
-    protected function unexpanded_warning() {
+    protected function unexpanded_warning_html() {
         $a = array_keys($this->_unexpanded);
         natcasesort($a);
-        for ($i = 0; $i < count($a); ++$i)
+        for ($i = 0; $i < count($a); ++$i) {
             $a[$i] = "<code>" . htmlspecialchars($a[$i]) . "</code>";
-        if (count($a) == 1)
+        }
+        if (count($a) == 1) {
             return "Keyword-like string " . commajoin($a) . " was not recognized.";
-        else
+        } else {
             return "Keyword-like strings " . commajoin($a) . " were not recognized.";
+        }
     }
 
-    function nwarnings() {
+    function warning_count() {
         return count($this->_unexpanded);
     }
 
-    function warnings() {
-        $e = array();
-        if (count($this->_unexpanded))
-            $e[] = $this->unexpanded_warning();
+    function warning_htmls() {
+        $e = [];
+        if (!empty($this->_unexpanded)) {
+            $e[] = $this->unexpanded_warning_html();
+        }
         return $e;
     }
 }

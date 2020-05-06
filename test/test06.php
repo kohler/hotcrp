@@ -137,8 +137,8 @@ xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_mgbaker));
 xassert_eqq(join(" ", $tf->unchanged), "#1A");
 xassert($tf->has_problem_at("overAllMerit"));
-xassert(strpos(join("\n", $tf->messages_at("overAllMerit")), "must provide") !== false);
-//error_log(var_export($tf->messages(true), true));
+xassert(strpos(join("\n", $tf->message_texts_at("overAllMerit")), "must provide") !== false);
+//error_log(var_export($tf->message_list(), true));
 
 // Different reviewer
 $tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: butt@butt.com', $review1A), "review1A-4.txt");
@@ -157,7 +157,7 @@ $tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Reviewer: .*/
 xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_mgbaker, $paper1, fetch_review($paper1, $user_mgbaker)));
 xassert(!$tf->has_problem_at("reviewerEmail"));
-//error_log(var_export($tf->messages(true), true));
+//error_log(var_export($tf->message_list(), true));
 
 
 // Settings changes
@@ -177,7 +177,7 @@ xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_mgbaker));
 xassert_eqq(join(" ", $tf->updated), "#1A");
 xassert(!$tf->has_problem_at("overAllMerit"));
-//error_log(var_export($tf->messages(true), true));
+//error_log(var_export($tf->message_list(), true));
 
 assert_search_papers($user_chair, "has:ovemer", "");
 
@@ -187,7 +187,7 @@ xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_mgbaker));
 xassert_eqq(join(" ", $tf->updated), "#1A");
 xassert(!$tf->has_problem_at("overAllMerit"));
-//error_log(var_export($tf->messages(true), true));
+//error_log(var_export($tf->message_list(), true));
 
 assert_search_papers($user_chair, "ovemer:4", "1");
 

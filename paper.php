@@ -173,7 +173,7 @@ function update_paper(Qrequest $qreq, $action) {
         if (!$prow && $qreq->has_files()) {
             $ps->error_at(null, "<strong>Your uploaded files were ignored.</strong>");
         }
-        $emsg = $ps->landmarked_messages();
+        $emsg = $ps->landmarked_message_texts();
         Conf::msg_error(space_join($Conf->_("Your changes were not saved. Please fix these errors and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
         return false;
     }
@@ -201,7 +201,7 @@ function update_paper(Qrequest $qreq, $action) {
 
     $webnotes = "";
     if ($ps->has_messages()) {
-        $webnotes .= " <ul><li>" . join("</li><li>", $ps->landmarked_messages()) . "</li></ul>";
+        $webnotes .= " <ul><li>" . join("</li><li>", $ps->landmarked_message_texts()) . "</li></ul>";
     }
 
     $new_prow = $Me->conf->fetch_paper(["paperId" => $ps->paperId, "topics" => true, "options" => true], $Me);

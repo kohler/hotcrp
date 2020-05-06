@@ -159,7 +159,7 @@ function setup_assignments($assignments, Contact $user) {
     $assignset = new AssignmentSet($user, true);
     $assignset->parse($assignments, null, null);
     if (!$assignset->execute()) {
-        die_hard("* failed to run assignments:\n" . join("\n", $assignset->errors_text(true)) . "\n");
+        die_hard("* failed to run assignments:\n" . join("\n", $assignset->error_texts(true)) . "\n");
     }
 }
 
@@ -221,7 +221,7 @@ function setup_initialize_database() {
         if (!$ps->save_paper_json($p)) {
             $t = join("", array_map(function ($m) {
                 return "    {$m[0]}: {$m[1]}\n";
-            }, $ps->messages(true)));
+            }, $ps->message_list()));
             $id = isset($p->_id_) ? "#{$p->_id_} " : "";
             fwrite(STDERR, "* failed to create paper {$id}{$p->title}:\n" . htmlspecialchars_decode($t) . "\n");
             $ok = false;
@@ -458,8 +458,9 @@ function xassert_assign($who, $what, $override = false) {
     $ok = $assignset->execute();
     xassert($ok);
     if (!$ok) {
-        foreach ($assignset->errors_text() as $line)
+        foreach ($assignset->error_texts() as $line) {
             fwrite(STDERR, "  $line\n");
+        }
     }
     return $ok;
 }

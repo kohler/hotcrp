@@ -19,6 +19,7 @@ class PaperValue implements JsonSerializable {
     private $_data;
     /** @var list<?DocumentInfo> */
     private $_documents;
+    /** @var ?MessageSet */
     private $_ms;
 
     /** @param ?PaperInfo $prow */
@@ -146,6 +147,7 @@ class PaperValue implements JsonSerializable {
         $this->load_value_data();
     }
 
+    /** @return MessageSet */
     function message_set() {
         if ($this->_ms === null) {
             $this->_ms = new MessageSet;
@@ -167,39 +169,48 @@ class PaperValue implements JsonSerializable {
     function error($msg) {
         $this->msg($msg, MessageSet::ERROR);
     }
+    /** @deprecated */
     function error_at($field, $msg) {
-        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $this->message_set()->error_at($field, $msg);
     }
     function warning($msg) {
         $this->msg($msg, MessageSet::WARNING);
     }
+    /** @deprecated */
     function warning_at($field, $msg) {
-        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $this->message_set()->warning_at($field, $msg);
     }
+    /** @deprecated */
     function has_problem() {
-        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms && $this->_ms->has_problem();
     }
+    /** @return bool */
     function has_error() {
         return $this->_ms && $this->_ms->has_error();
     }
+    /** @deprecated */
     function has_warning() {
-        error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms && $this->_ms->has_warning();
     }
+    /** @return list<array{?string,string,int}> */
+    function message_list() {
+        return $this->_ms ? $this->_ms->message_list() : [];
+    }
+    /** @deprecated */
     function messages($include_fields = false) {
         return $this->_ms ? $this->_ms->messages($include_fields) : [];
     }
+    /** @deprecated */
     function errors($include_fields = false) {
         error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms ? $this->_ms->errors($include_fields) : [];
     }
+    /** @deprecated */
     function warnings($include_fields = false) {
         error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms ? $this->_ms->warnings($include_fields) : [];
     }
+    /** @deprecated */
     function problems($include_fields = false) {
         error_log("bogus " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $this->_ms ? $this->_ms->problems($include_fields) : [];

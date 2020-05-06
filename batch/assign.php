@@ -32,7 +32,7 @@ $user = $Conf->site_contact();
 $assignset = new AssignmentSet($user, true);
 $assignset->parse($text, $filename);
 if ($assignset->has_error()) {
-    foreach ($assignset->errors_text(true) as $e) {
+    foreach ($assignset->error_texts(true) as $e) {
         fwrite(STDERR, "$e\n");
     }
 } else if ($assignset->is_empty()) {

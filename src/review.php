@@ -2471,7 +2471,7 @@ class ReviewValues extends MessageSet {
                     $m[] = $this->conf->_("There were warnings while parsing the uploaded review file.");
                 }
             }
-            $m[] = '<div class="parseerr"><p>' . join("</p>\n<p>", $this->messages()) . '</p></div>';
+            $m[] = '<div class="parseerr"><p>' . join("</p>\n<p>", $this->message_texts()) . '</p></div>';
             if ($this->has_error() || $this->has_problem_at("ready")) {
                 return [$m, 2];
             } else if ($this->has_warning() || $this->finished == 1) {

@@ -67,7 +67,7 @@ class Comment_SearchTerm extends SearchTerm {
             && !$srch->conf->pc_tag_exists(substr($m[0], 1))) {
             $tags = new TagSearchMatcher($srch->user);
             $tags->add_check_tag(substr($m[0], 1), true);
-            foreach ($tags->errors() as $e) {
+            foreach ($tags->error_texts() as $e) {
                 $srch->warn($e);
             }
         } else if ($m[0] !== "") {

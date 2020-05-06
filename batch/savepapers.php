@@ -239,7 +239,7 @@ foreach ($jp as &$j) {
         fwrite(STDERR, $pid ? "saved\n" : "failed\n");
     }
     $prefix = $pidtext . ": ";
-    foreach ($ps->landmarked_messages() as $msg) {
+    foreach ($ps->landmarked_message_texts() as $msg) {
         fwrite(STDERR, $prefix . htmlspecialchars_decode($msg) . "\n");
     }
     if ($pid) {
@@ -268,7 +268,7 @@ foreach ($jp as &$j) {
                 $tf->msg_at(null, "invalid review @$reviewindex", MessageSet::ERROR);
             }
         }
-        foreach ($tf->messages() as $te) {
+        foreach ($tf->message_texts() as $te) {
             fwrite(STDERR, $prefix . htmlspecialchars_decode($te) . "\n");
         }
     }

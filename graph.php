@@ -112,7 +112,7 @@ if ($Graph == "formula") {
         }
 
         if ($fg->has_messages()) {
-            echo Ht::msg($fg->messages(), $fg->problem_status());
+            echo Ht::msg($fg->message_texts(), $fg->problem_status());
         }
 
         $xhtml = htmlspecialchars($fg->fx_expression());

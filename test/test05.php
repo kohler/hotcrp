@@ -41,7 +41,7 @@ xassert_eqq($doc->content_text_signature(), "starts with “%PDF-1.2”");
 $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
 xassert(!$ps->has_error());
 if ($ps->has_error()) {
-    error_log(join("\n", $ps->errors()));
+    error_log(join("\n", $ps->error_texts()));
 }
 
 $paper1c = $ps->paper_json(1);
@@ -252,7 +252,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
 xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
-xassert_eq($ps->errors(), ["Entry required."]);
+xassert_eq($ps->error_texts(), ["Entry required."]);
 
 $qreq = new Qrequest("POST", ["ready" => 1, "title" => "", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
 $qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
@@ -261,7 +261,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
 xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
-xassert_eq($ps->errors(), ["Entry required."]);
+xassert_eq($ps->error_texts(), ["Entry required."]);
 
 $qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC"]);
 $qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
@@ -270,7 +270,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
 xassert($ps->has_error_at("abstract"));
 xassert_eqq(count($ps->error_fields()), 1);
-xassert_eq($ps->errors(), ["Entry required."]);
+xassert_eq($ps->error_texts(), ["Entry required."]);
 
 $Conf->set_opt("noAbstract", 1);
 $Conf->invalidate_caches();
@@ -282,7 +282,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
 xassert(!$ps->has_error_at("abstract"));
 xassert_eqq(count($ps->error_fields()), 0);
-xassert_eq($ps->errors(), []);
+xassert_eq($ps->error_texts(), []);
 
 // abstract saving
 $nprow1 = $Conf->fetch_paper($npid1, $user_estrin);
@@ -407,7 +407,7 @@ $ps->save_paper_json((object) [
 ]);
 xassert(!$ps->has_error());
 xassert($ps->has_problem());
-xassert_eqq($ps->messages_at("topics"), ["Unknown topic ignored (fartchitecture)."]);
+xassert_eqq($ps->message_texts_at("topics"), ["Unknown topic ignored (fartchitecture)."]);
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), []); // XXX should be unchanged
 

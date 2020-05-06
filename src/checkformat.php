@@ -323,7 +323,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $bj = clone $bj;
         $bj->npages = count($bj->pages);
         $bj->pages = array_slice($bj->pages, 0, 30);
-        $bj->cfmsg = $this->messages(true);
+        $bj->cfmsg = $this->message_list();
         return $bj;
     }
 
@@ -446,9 +446,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
         $t = "";
         if ($this->failed) {
-            $t .= Ht::msg($this->messages_at("error"), 2);
+            $t .= Ht::msg($this->message_texts_at("error"), 2);
         }
-        $msgs = array_filter($this->messages(true), function ($mx) { return $mx[0] != "error" && $mx[2] > MessageSet::INFO; });
+        $msgs = array_filter($this->message_list(), function ($mx) { return $mx[0] != "error" && $mx[2] > MessageSet::INFO; });
         if ($msgs) {
             $msgs = array_map(function ($m) {
                 return $m[2] > MessageSet::WARNING ? "<strong>$m[1]</strong>" : $m[1];

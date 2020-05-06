@@ -486,10 +486,8 @@ class PaperTable {
 
     function messages_at($field, $klass = "f-h") {
         $t = "";
-        if ($this->edit_status) {
-            foreach ($this->edit_status->messages_at($field, true) as $mx) {
-                $t .= '<p class="' . MessageSet::status_class($mx[2], $klass, "is-") . '">' . $mx[1] . '</p>';
-            }
+        foreach ($this->edit_status ? $this->edit_status->message_list_at($field) : [] as $mx) {
+            $t .= '<p class="' . MessageSet::status_class($mx[2], $klass, "is-") . '">' . $mx[1] . '</p>';
         }
         return $t;
     }

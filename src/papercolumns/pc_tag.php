@@ -158,7 +158,7 @@ class Tag_PaperColumn extends PaperColumn {
             $fj["title_html"] = $dt->unparse($t, 0, $user, TagMap::UNPARSE_HASH);
             $rs[] = (object) $fj;
         }
-        foreach ($tsm->errors() as $e) {
+        foreach ($tsm->error_texts() as $e) {
             PaperColumn::column_error($user, $e);
         }
         return $rs;

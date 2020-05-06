@@ -22,7 +22,7 @@ class TagSearchMatcher {
     function set_avoid_regex(bool $on) {
         $this->_avoid_regex = $on;
     }
-    function errors() {
+    function error_texts() {
         return $this->_errors ?? [];
     }
 
