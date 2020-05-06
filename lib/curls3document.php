@@ -88,7 +88,7 @@ class CurlS3Document extends S3Result {
             }
             $timeout = 0.005 * (1 << $this->runindex);
             S3Document::$retry_timeout_allowance -= $timeout;
-            usleep(1000000 * $timeout);
+            usleep((int) (1000000 * $timeout));
         }
     }
 

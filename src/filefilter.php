@@ -71,6 +71,7 @@ class FileFilterJsonExpander {
             $ff = null;
             if ($fj->callback[0] === "+") {
                 $class = substr($fj->callback, 1);
+                /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
                 $ff = new $class($this->conf, $fj);
             } else {
                 $ff = call_user_func($fj->callback, $this->conf, $fj);

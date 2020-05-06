@@ -270,7 +270,7 @@ class ReviewInfo {
             } else if ($id[0] === "s" || $id[0] === "t") {
                 return new ReviewFieldInfo($id, $id, $id[0] === "s", null, $id);
             } else {
-                return false;
+                return null;
             }
         } else if (isset(self::$text_field_map[$id])) {
             $short_id = self::$text_field_map[$id];
@@ -279,7 +279,7 @@ class ReviewInfo {
             $short_id = self::$score_field_map[$id];
             return new ReviewFieldInfo($id, $short_id, true, $id, null);
         } else {
-            return false;
+            return null;
         }
     }
 
@@ -297,7 +297,7 @@ class ReviewInfo {
     }
 
     function unparse_sfields() {
-        $data = null;
+        $data = [];
         foreach (get_object_vars($this) as $k => $v) {
             if (strlen($k) === 3
                 && $k[0] === "s"
@@ -305,11 +305,11 @@ class ReviewInfo {
                 && ($n = cvtint(substr($k, 1))) >= self::MIN_SFIELD)
                 $data[$k] = (int) $v;
         }
-        return $data === null ? null : json_encode_db($data);
+        return empty($data) ? null : json_encode_db($data);
     }
     function unparse_tfields() {
         global $Conf;
-        $data = null;
+        $data = [];
         foreach (get_object_vars($this) as $k => $v) {
             if (strlen($k) === 3
                 && $k[0] === "t"
@@ -317,14 +317,15 @@ class ReviewInfo {
                 && $v !== "")
                 $data[$k] = $v;
         }
-        if ($data === null) {
+        if (empty($data)) {
             return null;
+        } else {
+            $json = json_encode_db($data);
+            if ($json === null) {
+                error_log(($Conf ? "{$Conf->dbname}: " : "") . "review #{$this->paperId}/{$this->reviewId}: text fields cannot be converted to JSON");
+            }
+            return $json;
         }
-        $json = json_encode_db($data);
-        if ($json === null) {
-            error_log(($Conf ? "{$Conf->dbname}: " : "") . "review #{$this->paperId}/{$this->reviewId}: text fields cannot be converted to JSON");
-        }
-        return $json;
     }
 
     static function compare_id($a, $b) {

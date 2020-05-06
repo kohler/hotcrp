@@ -69,6 +69,7 @@ if (isset($arg["max-usage"])) {
 
 
 $ftrees = [];
+'@phan-var-force list<?DocumentFileTree> $ftrees';
 foreach (array_merge([$confdp], get($arg, "_", [])) as $i => $dp) {
     if (!str_starts_with($dp, "/") || strpos($dp, "%") === false) {
         fwrite(STDERR, "batch/cleandocstore.php: Bad docstore pattern.\n");
@@ -84,6 +85,7 @@ foreach (array_merge([$confdp], get($arg, "_", [])) as $i => $dp) {
 
 function fparts_random_match() {
     global $ftrees, $Now;
+    '@phan-var-force list<?DocumentFileTree> $ftrees';
     $fmatches = [];
     for ($i = 0; $i !== count($ftrees); ++$i) {
         if (!($ftree = $ftrees[$i])) {

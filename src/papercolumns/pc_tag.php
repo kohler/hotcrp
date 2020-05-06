@@ -132,7 +132,7 @@ class Tag_PaperColumn extends PaperColumn {
             $pl->need_render = true;
         }
         return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
-            . ($v !== false ? htmlspecialchars($v) : "") . '" tabindex="2" />';
+            . ($v !== false ? htmlspecialchars((string) $v) : "") . '" tabindex="2" />';
     }
     function text(PaperList $pl, PaperInfo $row) {
         if (($v = $row->tag_value($this->ltag)) === false) {

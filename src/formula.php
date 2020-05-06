@@ -239,7 +239,9 @@ class Constant_Fexpr extends Fexpr {
         }
         $format = $e->format();
         $letter = "";
-        if (strlen($this->x) === 1 && ctype_alpha($this->x)) {
+        if (is_string($this->x)
+            && strlen($this->x) === 1
+            && ctype_alpha($this->x)) {
             $letter = strtoupper($this->x);
         }
         if ($format === self::FPREFEXPERTISE && $letter >= "X" && $letter <= "Z") {
@@ -1119,7 +1121,7 @@ class FormulaCompiler {
         return $tname;
     }
     private function _join_lstmt($isblock) {
-        $indent = "\n" . str_pad("", $this->indent);
+        $indent = "\n" . str_repeat(" ", $this->indent);
         $t = $isblock ? "{" . $indent : "";
         $t .= join($indent, $this->lstmt);
         if ($isblock) {
@@ -1169,7 +1171,7 @@ class FormulaCompiler {
         }
 
         if (preg_match('/[;}]\s*\z/', $combiner)) {
-            $this->lstmt[] = str_replace("\n", str_pad("\n", $this->indent + 1), $combiner);
+            $this->lstmt[] = str_replace("\n", "\n" . str_repeat(" ", $this->indent), $combiner);
         } else {
             $this->lstmt[] = "$t_result = $combiner;";
         }
@@ -1786,7 +1788,7 @@ class Formula implements Abbreviator, JsonSerializable {
             }
             $e = new Not_Fexpr($e);
         } else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
-            $e = new Constant_Fexpr($m[1] + 0.0);
+            $e = new Constant_Fexpr((float) $m[1]);
             $t = $m[2];
         } else if (preg_match('/\A(false|true)\b(.*)\z/si', $t, $m)) {
             $e = new Constant_Fexpr($m[1], Fexpr::FBOOL);

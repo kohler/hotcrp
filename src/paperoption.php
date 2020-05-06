@@ -341,7 +341,11 @@ class PaperOptionList {
         }
     }
 
+    /** @param int $id
+     * @param bool $force
+     * @return ?PaperOption */
     function get($id, $force = false) {
+        assert(!$force); // XXX
         if ($id <= 0) {
             if (!array_key_exists($id, $this->_imap)) {
                 $this->populate_intrinsic($id);
@@ -357,8 +361,14 @@ class PaperOptionList {
                 $this->_omap[$id] = $o;
             }
         }
-        $o = $this->_omap[$id];
-        if (!$o && $force) {
+        return $this->_omap[$id];
+    }
+
+    /** @param int $id
+     * @return PaperOption */
+    function get_force($id) {
+        $o = $this->get($id);
+        if (!$o) {
             $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, (object) ["id" => $id]);
         }
         return $o;
@@ -737,6 +747,7 @@ class PaperOption implements Abbreviator {
         }
         if ($callback[0] === "+") {
             $class = substr($callback, 1);
+            /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
             return new $class($conf, $args);
         } else {
             return call_user_func($callback, $conf, $args);
@@ -1417,8 +1428,8 @@ class DocumentPaperOption extends PaperOption {
         }
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
-        if (isset($ov->anno["document"])
-            && ($doc = $ps->upload_document($ov->anno["document"], $this))) {
+        $fup = $ov->anno["document"] ?? null;
+        if ($fup && ($doc = $ps->upload_document($fup, $this))) {
             $ov->set_value_data([$doc->paperStorageId], [null]);
         } else {
             $ov->set_value_data([], []);
@@ -1749,7 +1760,10 @@ class AttachmentsPaperOption extends PaperOption {
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
         $dids = $ov->anno["dids"] ?? [];
-        foreach ($ov->anno["documents"] ?? [] as $fup) {
+        '@phan-var list<int> $dids';
+        $fups = $ov->anno["documents"] ?? [];
+        '@phan-var list<object> $fups';
+        foreach ($fups as $fup) {
             if (($doc = $ps->upload_document($fup, $this))) {
                 $dids[] = $doc->paperStorageId;
             }
@@ -1795,12 +1809,10 @@ class AttachmentsPaperOption extends PaperOption {
         } else if ($j === null) {
             return null;
         } else {
-            if (!is_array($j)) {
-                $j = [$j];
-            }
+            $ja = is_array($j) ? $j : [$j];
             $ov = PaperValue::make($prow, $this, -1);
-            $ov->anno["documents"] = $j;
-            foreach ($j as $docj) {
+            $ov->anno["documents"] = $ja;
+            foreach ($ja as $docj) {
                 if (is_object($docj) && isset($docj->error_html)) {
                     $ov->error($docj->error_html);
                 } else if (!DocumentInfo::check_json_upload($docj)) {

@@ -60,7 +60,11 @@ class FormatSpec {
             }
         } else if ($k === "pagelimit" && (is_string($v) || is_numeric($v))) {
             if (preg_match('/\A(\d+)(?:\s*(?:-|–)\s*(\d+))?\z/', $v, $m)) {
-                $this->pagelimit = isset($m[2]) && $m[2] !== "" ? [$m[1], $m[2]] : [0, $m[1]];
+                if (isset($m[2]) && $m[2] !== "") {
+                    $this->pagelimit = [(int) $m[1], (int) $m[2]];
+                } else {
+                    $this->pagelimit = [0, (int) $m[1]];
+                }
             }
         } else if ($k === "unlimitedref" && (is_string($v) || is_bool($v))) {
             $this->unlimitedref = !!$v;

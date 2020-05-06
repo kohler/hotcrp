@@ -143,9 +143,10 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        $au_seerev = $user->conf->au_seerev;
         if ($this->author_view && $user->privChair) {
-            $au_seerev = $user->conf->au_seerev;
             $user->conf->au_seerev = Conf::AUSEEREV_YES;
+            Contact::update_rights();
         }
         $errors = $texts = $pids = [];
         foreach ($user->paper_set($ssel) as $prow) {

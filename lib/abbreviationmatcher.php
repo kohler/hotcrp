@@ -148,58 +148,58 @@ class AbbreviationMatchTracker {
         if ($this->isu && $sisu) {
             if ($this->pattern === $subject) {
                 return 9;
+            } else if ($this->mclass >= 9) {
+                return 0;
             }
 
-            if ($this->mclass < 9) {
-                $dsubject = AbbreviationMatcher::dedash($subject);
-                if ($this->dpattern === $dsubject) {
-                    return 8;
-                }
+            $dsubject = AbbreviationMatcher::dedash($subject);
+            if ($this->dpattern === $dsubject) {
+                return 8;
+            } else if ($this->mclass >= 7) {
+                return 0;
             }
 
-            if ($this->mclass < 7) {
-                if (!$this->imatchre) {
-                    $this->imatchre = '{\A' . preg_quote($this->dpattern) . '\z}iu';
-                }
-                if (preg_match($this->imatchre, $dsubject)) {
-                    return 7;
-                }
+            if (!$this->imatchre) {
+                $this->imatchre = '{\A' . preg_quote($this->dpattern) . '\z}iu';
             }
-
-            if ($this->mclass < 7
-                && ($s = $this->wmatch_score($this->dpattern, $dsubject, "iu"))) {
+            if (preg_match($this->imatchre, $dsubject)) {
+                return 7;
+            } else if (($s = $this->wmatch_score($this->dpattern, $dsubject, "iu"))) {
                 return 6 + $s;
             }
         }
 
-        if ($this->mclass < 6) {
-            $usubject = $sisu ? UnicodeHelper::deaccent($subject) : $subject;
-            if ($this->upattern === $usubject) {
-                return 5;
-            }
+        if ($this->mclass >= 6) {
+            return 0;
         }
 
-        if ($this->mclass < 5) {
-            $dusubject = AbbreviationMatcher::dedash($usubject);
-            if ($this->dupattern === $dusubject) {
-                return 4;
-            }
+        $usubject = $sisu ? UnicodeHelper::deaccent($subject) : $subject;
+        if ($this->upattern === $usubject) {
+            return 5;
+        } else if ($this->mclass >= 5) {
+            return 0;
         }
 
-        if ($this->mclass < 4
-            && strcasecmp($this->dupattern, $dusubject) === 0) {
+        $dusubject = AbbreviationMatcher::dedash($usubject);
+        if ($this->dupattern === $dusubject) {
+            return 4;
+        } else if ($this->mclass >= 4) {
+            return 0;
+        }
+
+        if (strcasecmp($this->dupattern, $dusubject) === 0) {
             return 3;
+        } else if ($this->mclass >= 3) {
+            return 0;
         }
 
-        if ($this->mclass < 3) {
-            $s1 = $this->wmatch_score($this->dupattern, $dusubject, "i");
-            $s2 = $this->is_camel_word ? $this->camel_wmatch_score($dusubject) : 0;
-            if ($s1 || $s2) {
-                return 1 + max($s1, $s2);
-            }
+        $s1 = $this->wmatch_score($this->dupattern, $dusubject, "i");
+        $s2 = $this->is_camel_word ? $this->camel_wmatch_score($dusubject) : 0;
+        if ($s1 || $s2) {
+            return 1 + max($s1, $s2);
+        } else {
+            return 0;
         }
-
-        return 0;
     }
 
     function check($subject, $data, $sisu = null) {

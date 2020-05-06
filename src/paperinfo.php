@@ -547,7 +547,7 @@ class PaperInfo {
 
     /** @return string */
     function unaccented_title() {
-        return $this->field_deaccent("title");
+        return $this->unaccented_field("title");
     }
 
     function pretty_text_title_indent($width = 75) {
@@ -713,29 +713,29 @@ class PaperInfo {
     }
 
     function _potential_conflict_html_callback($user, $matcher, $conflict, $aunum, $why) {
-        if ($why === AuthorMatcher::MATCH_AFFILIATION) {
-            $afftext = "affiliation";
+        if ($aunum && $matcher->nonauthor) {
+            $matchdesc = "collaborator";
+        } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
+            $matchdesc = "affiliation";
             if (!($this->_potential_conflict_flags & 1)) {
-                $afftext .= " (" . htmlspecialchars($user->affiliation) . ")";
+                $matchdesc .= " (" . htmlspecialchars($user->affiliation) . ")";
                 $this->_potential_conflict_flags |= 1;
             }
+        } else {
+            $matchdesc = "name";
         }
         if ($aunum) {
             if ($matcher->nonauthor) {
                 $aumatcher = new AuthorMatcher($conflict);
-                $what = "collaborator " . $aumatcher->highlight($matcher) . "<br>matches author #$aunum " . $matcher->highlight($conflict);
+                $what = "$matchdesc " . $aumatcher->highlight($matcher) . "<br>matches author #$aunum " . $matcher->highlight($conflict);
             } else if ($why == AuthorMatcher::MATCH_AFFILIATION) {
-                $what = "$afftext matches author #$aunum affiliation " . $matcher->highlight($conflict->affiliation);
+                $what = "$matchdesc matches author #$aunum affiliation " . $matcher->highlight($conflict->affiliation);
             } else {
-                $what = "name matches author #$aunum name " . $matcher->highlight($conflict->name());
+                $what = "$matchdesc matches author #$aunum name " . $matcher->highlight($conflict->name());
             }
             $this->_potential_conflicts[] = ["#$aunum", $what];
         } else {
-            if ($why == AuthorMatcher::MATCH_AFFILIATION) {
-                $what = "$afftext matches paper collaborator ";
-            } else {
-                $what = "name matches paper collaborator ";
-            }
+            $what = "$matchdesc matches paper collaborator ";
             $this->_potential_conflicts[] = ["other conflicts", $what . $matcher->highlight($conflict)];
         }
     }
@@ -803,7 +803,8 @@ class PaperInfo {
     }
 
 
-    function field_deaccent($field, $want_false = false) {
+    /** @return string|false */
+    function deaccented_field($field) {
         $data = $this->$field;
         if ((string) $data !== "") {
             $field_deaccent = $field . "_deaccent";
@@ -814,17 +815,20 @@ class PaperInfo {
                     $this->$field_deaccent = UnicodeHelper::deaccent($data);
                 }
             }
-            if ($want_false || $this->$field_deaccent !== false) {
-                $data = $this->$field_deaccent;
-            }
-        } else if ($want_false) {
-            $data = false;
+            return $this->$field_deaccent;
+        } else {
+            return false;
         }
-        return $data;
+    }
+
+    /** @return string */
+    function unaccented_field($field) {
+        $s = $this->deaccented_field($field);
+        return $s === false ? $this->$field : $s;
     }
 
     function field_match_pregexes($reg, $field) {
-        return Text::match_pregexes($reg, $this->$field, $this->field_deaccent($field, true));
+        return Text::match_pregexes($reg, $this->$field, $this->deaccented_field($field));
     }
 
 
@@ -1021,6 +1025,7 @@ class PaperInfo {
 
     function add_tag_info_json($pj, Contact $user) {
         $tagger = new Tagger($user);
+        $overrides = 0;
         if (($can_override = $user->has_overridable_conflict($this))) {
             $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
@@ -1394,8 +1399,7 @@ class PaperInfo {
      * @return PaperValue */
     function force_option($o) {
         if (is_object($o)) {
-            $ov = ($this->options())[$o->id] ?? null;
-            return $ov ? : PaperValue::make_force($this, $o);
+            return ($this->options())[$o->id] ?? PaperValue::make_force($this, $o);
         } else {
             $ov = ($this->options())[$o] ?? null;
             if (!$ov && ($o = $this->conf->paper_opts->get($o))) {
@@ -1641,7 +1645,7 @@ class PaperInfo {
             return intval($textid);
         }
         if (str_starts_with($textid, (string) $this->paperId)) {
-            $textid = (string) substr($textid, strlen($this->paperId));
+            $textid = (string) substr($textid, strlen((string) $this->paperId));
         }
         if ($textid !== ""
             && ctype_upper($textid)

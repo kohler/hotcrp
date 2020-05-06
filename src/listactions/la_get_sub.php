@@ -145,17 +145,18 @@ class GetAbstract_ListAction extends ListAction {
         return $text . "\n";
     }
     function run(Contact $user, $qreq, $ssel) {
-        $texts = array();
+        $texts = [];
+        $lastpid = null;
         foreach ($user->paper_set($ssel, ["topics" => 1]) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
                 Conf::msg_error(whyNotText($whyNot));
             } else {
                 $texts[] = $this->render($prow, $user);
-                $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
+                $lastpid = $prow->paperId;
             }
         }
         if (!empty($texts)) {
-            downloadText(join("", $texts), "abstract$rfSuffix");
+            downloadText(join("", $texts), "abstract" . (count($texts) === 1 ? $lastpid : "s"));
         }
     }
 }

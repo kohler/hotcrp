@@ -932,7 +932,7 @@ class AssignmentSet {
         foreach ($this->astate->messages() as $e) {
             $t = $e[1];
             if ($linenos && $e[0]) {
-                $t = '<span class="lineno">' . htmlspecialchars($e[0]) . ':</span> ' . $t;
+                $t = '<span class="lineno">' . htmlspecialchars((string) $e[0]) . ':</span> ' . $t;
             }
             if (empty($es) || $es[count($es) - 1] !== $t) {
                 $es[] = $t;

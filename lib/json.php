@@ -41,9 +41,10 @@ class Json {
      * @param int $etype */
     private static function set_error(&$x, $etype, $desc = null) {
         if ($x !== null && !self::$error_type) {
+            $xs = is_string($x) ? $x : "";
             self::$error_type = $etype;
             $prefix = substr(self::$error_input, 0,
-                             strlen(self::$error_input) - strlen($x));
+                             strlen(self::$error_input) - strlen($xs));
             self::$error_position = strlen($prefix);
             self::$error_line = 1 + preg_match_all('/\r\n?|\n/s', $prefix);
             self::$error_description = $desc;
@@ -54,8 +55,9 @@ class Json {
     /** @param ?string|false $x */
     private static function landmark($x, $filename) {
         if ($x !== null) {
+            $xs = is_string($x) ? $x : "";
             $prefix = substr(self::$error_input, 0,
-                             strlen(self::$error_input) - strlen($x));
+                             strlen(self::$error_input) - strlen($xs));
             return $filename . ":" . (1 + preg_match_all('/\r\n?|\n/s', $prefix)) . ":" . strlen($prefix);
         } else {
             return null;

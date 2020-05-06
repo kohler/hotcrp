@@ -257,11 +257,13 @@ class S3Document extends S3Result {
         if (!$this->check_skey($skey)) {
             return;
         }
-        if (isset($args["content"])
-            && strlen($args["content"]) > 10000000
-            && strlen($args["content"]) * 2.5 > ini_get_bytes("memory_limit")
-            && strlen($args["content"]) < 800000000) {
-            @ini_set("memory_limit", (int) (strlen($args["content"]) * 2.5));
+        if (isset($args["content"])) {
+            $content_len = floor(strlen($args["content"]) * 2.5);
+            if ($content_len > 25000000.0
+                && $content_len < 2000000000.0
+                && $content_len > ini_get_bytes("memory_limit")) {
+                @ini_set("memory_limit", (string) ((int) $content_len));
+            }
         }
         for ($i = 1; true; ++$i) {
             $this->clear_result();
@@ -278,7 +280,7 @@ class S3Document extends S3Result {
             }
             $timeout = 0.005 * (1 << $i);
             self::$retry_timeout_allowance -= $timeout;
-            usleep(1000000 * $timeout);
+            usleep((int) (1000000 * $timeout));
         }
     }
 

@@ -923,7 +923,7 @@ class DocumentInfo implements JsonSerializable {
                     $fn = $d->filename;
                     while (in_array($fn, $used)) {
                         if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $fn, $m)) {
-                            $fn = $m[1] . ($m[2] + 1) . $m[3];
+                            $fn = $m[1] . ((int) $m[2] + 1) . $m[3];
                         } else if (preg_match('/\A(.*?)(\.\w+|)\z/', $fn, $m) && $m[1] !== "") {
                             $fn = $m[1] . " (1)" . $m[2];
                         } else {

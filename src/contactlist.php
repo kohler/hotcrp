@@ -390,7 +390,7 @@ class ContactList {
             $m = array();
             for ($i = 0; $i != count($pids); ++$i) {
                 if ($ords[$i])
-                    $url = hoturl("paper", "p=" . $pids[$i] . "#r" . $pids[$i] . unparseReviewOrdinal($ords[$i]));
+                    $url = hoturl("paper", "p=" . $pids[$i] . "#r" . $pids[$i] . unparseReviewOrdinal((int) $ords[$i]));
                 else
                     $url = hoturl("review", "p=" . $pids[$i] . "&amp;r=" . $rids[$i]);
                 $m[$pids[$i]] = "<a href=\"$url\">" . $pids[$i] . "</a>";

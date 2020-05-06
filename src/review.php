@@ -1894,7 +1894,7 @@ class ReviewValues extends MessageSet {
     private function check(ReviewInfo $rrow = null) {
         $submit = $this->req["ready"] ?? null;
         $msgcount = $this->message_count();
-        $missingfields = null;
+        $missingfields = [];
         $unready = $anydiff = $anynonempty = false;
 
         foreach ($this->rf->forder as $fid => $f) {
@@ -2016,7 +2016,7 @@ class ReviewValues extends MessageSet {
         }
 
         $qf = $qv = [];
-        $tfields = $sfields = $set_sfields = $set_tfields = null;
+        $tfields = $sfields = $set_sfields = $set_tfields = [];
         $view_score = VIEWSCORE_EMPTY;
         $diffinfo = new ReviewDiffInfo($prow, $rrow);
         $wc = 0;
@@ -2078,11 +2078,11 @@ class ReviewValues extends MessageSet {
                 $view_score = max($view_score, $f->view_score);
             }
         }
-        if ($set_sfields !== null) {
+        if (!empty($set_sfields)) {
             $qf[] = "sfields=?";
             $qv[] = $sfields ? json_encode_db($sfields) : null;
         }
-        if ($set_tfields !== null) {
+        if (!empty($set_tfields)) {
             $qf[] = "tfields=?";
             $qv[] = $tfields ? json_encode_db($tfields) : null;
         }

@@ -55,9 +55,11 @@ if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POS
     $pcm = $Conf->pc_members();
     $bpnum = 1;
     for ($i = 0; $i < count($x) - 1; $i += 2) {
-        if (isset($pcm[(int) $x[$i]]) && isset($pcm[(int) $x[$i+1]])) {
-            $Qreq["bpa$bpnum"] = $pcm[$x[$i]]->email;
-            $Qreq["bpb$bpnum"] = $pcm[$x[$i+1]]->email;
+        $xa = cvtint($x[$i]);
+        $xb = cvtint($x[$i + 1]);
+        if (isset($pcm[$xa]) && isset($pcm[$xb])) {
+            $Qreq["bpa$bpnum"] = $pcm[$xa]->email;
+            $Qreq["bpb$bpnum"] = $pcm[$xb]->email;
             ++$bpnum;
         }
     }
@@ -67,7 +69,8 @@ if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POS
 } else if ($Me->privChair && isset($Qreq->assign) && $Qreq->post_ok()) {
     $x = array();
     for ($i = 1; isset($Qreq["bpa$i"]); ++$i) {
-        if ($Qreq["bpa$i"] && $Qreq["bpb$i"]
+        if ($Qreq["bpa$i"]
+            && $Qreq["bpb$i"]
             && ($pca = $Conf->pc_member_by_email($Qreq["bpa$i"]))
             && ($pcb = $Conf->pc_member_by_email($Qreq["bpb$i"]))) {
             $x[] = $pca->contactId;

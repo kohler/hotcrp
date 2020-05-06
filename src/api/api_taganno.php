@@ -26,16 +26,16 @@ class TagAnno_API {
         if (!$user->can_change_tag_anno($tag)) {
             json_exit(["ok" => false, "error" => "Permission error."]);
         }
-        if (!isset($qreq->anno)
-            || ($reqanno = json_decode($qreq->anno)) === false
-            || (!is_object($reqanno) && !is_array($reqanno))) {
+        $reqanno = json_decode($qreq->anno ?? "");
+        if (!is_object($reqanno) && !is_array($reqanno)) {
             json_exit(["ok" => false, "error" => "Bad request."]);
         }
         $q = $qv = $errors = $errf = $inserts = [];
         $next_annoid = $user->conf->fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
         // parse updates
         foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $anno) {
-            if (!isset($anno->annoid)
+            if (!is_object($anno)
+                || !isset($anno->annoid)
                 || (!is_int($anno->annoid) && !preg_match('/^n/', $anno->annoid))) {
                 json_exit(["ok" => false, "error" => "Bad request."]);
             }

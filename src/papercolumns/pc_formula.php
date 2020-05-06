@@ -61,7 +61,7 @@ class Formula_PaperColumn extends PaperColumn {
         $this->results = $this->override_results = [];
         $this->real_format = null;
         $isreal = $this->formula->result_format_is_real();
-        $override_rows = null;
+        $override_rows = [];
         foreach ($pl->rowset() as $row) {
             $v = $formulaf($row, null, $pl->user);
             $this->results[$row->paperId] = $v;
@@ -74,7 +74,7 @@ class Formula_PaperColumn extends PaperColumn {
                 $override_rows[] = $row;
             }
         }
-        if ($override_rows) {
+        if (!empty($override_rows)) {
             $overrides = $pl->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             foreach ($override_rows as $row) {
                 $vv = $formulaf($row, null, $pl->user);

@@ -60,7 +60,7 @@ class ScoreInfo {
 
     function add($x, $key = null) {
         if (is_bool($x)) {
-            $x = +$x;
+            $x = $x ? 1 : 0;
         }
         if ($x !== null && (!$this->_positive || $x > 0)) {
             if ($this->_keyed && $key === null) {

@@ -280,7 +280,11 @@ class UserStatus extends MessageSet {
 
     /** @param object $cj */
     static function normalize_name($cj) {
-        $cj_user = isset($cj->user) ? Text::split_name($cj->user, true) : null;
+        if (isset($cj->user) && is_string($cj->user)) {
+            $cj_user = Text::split_name($cj->user, true);
+        } else {
+            $cj_user = null;
+        }
         $cj_name = Text::analyze_name($cj);
         foreach (array("firstName", "lastName", "email") as $i => $k) {
             if ($cj_name->$k !== "" && $cj_name->$k !== false) {
@@ -434,29 +438,27 @@ class UserStatus extends MessageSet {
         }
 
         // Collaborators
-        if (is_array(get($cj, "collaborators"))) {
-            foreach ($cj->collaborators as $c) {
+        $collaborators = $cj->collaborators ?? null;
+        if (is_array($collaborators)) {
+            foreach ($collaborators as $c) {
                 if (!is_string($c)) {
                     $this->error_at("collaborators", "Format error [collaborators]");
                 }
             }
-            if (!$this->has_problem_at("collaborators")) {
-                $cj->collaborators = join("\n", $cj->collaborators);
-            }
+            $collaborators = $this->has_problem_at("collaborators") ? null : join("\n", $collaborators);
         }
-        if (get($cj, "collaborators")
-            && !$this->has_problem_at("collaborators")
-            && !is_string($cj->collaborators)) {
-            $this->error_at("collaborators", "Format error [collaborators]");
-        }
-        if (get($cj, "collaborators")
-            && !$this->has_problem_at("collaborators")) {
-            $old_collab = rtrim(cleannl($cj->collaborators));
-            $collab = AuthorMatcher::fix_collaborators($old_collab);
-            if ($collab !== $old_collab) {
+        if (is_string($collaborators)) {
+            $old_collab = rtrim(cleannl($collaborators));
+            $new_collab = AuthorMatcher::fix_collaborators($old_collab);
+            if ($old_collab !== $new_collab) {
                 $this->warning_at("collaborators", "Collaborators changed to follow our required format. You may want to look them over.");
             }
-            $cj->collaborators = $collab;
+            $collaborators = $new_collab;
+        } else if ($collaborators !== null) {
+            $this->error_at("collaborators", "Format error [collaborators]");
+        }
+        if (isset($cj->collaborators)) {
+            $cj->collaborators = $collaborators;
         }
 
         // Disabled

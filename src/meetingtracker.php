@@ -708,7 +708,7 @@ class MeetingTracker {
                     $pcc = [];
                     $more = false;
                     foreach (explode(",", (string) $prow->conflictIds) as $cid) {
-                        if (($pc = $pcm[$cid] ?? null)) {
+                        if (($pc = $pcm[(int) $cid] ?? null)) {
                             if ($pc->include_tracker_conflict($trs[$ti_index])) {
                                 $pcc[$pc->sort_position] = $pc->contactId;
                             } else {

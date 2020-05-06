@@ -4263,7 +4263,7 @@ class Contact {
         return $t;
     }
 
-    function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
+    function assign_review($pid, $reviewer_cid, $type, $extra = []) {
         global $Now;
         $result = $this->conf->qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy, reviewSubmitted from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
         $rrow = $result->fetch_object();
@@ -4271,6 +4271,8 @@ class Contact {
         $reviewId = $rrow ? $rrow->reviewId : 0;
         $type = max((int) $type, 0);
         $oldtype = $rrow ? (int) $rrow->reviewType : 0;
+        $round = $extra["round_number"] ?? null;
+        $new_requester_cid = $this->contactId;
 
         // can't delete a review that's in progress
         if ($type <= 0 && $oldtype && $rrow->reviewModified > 1) {
@@ -4287,19 +4289,18 @@ class Contact {
         }
 
         // change database
-        if ($type && ($round = get($extra, "round_number")) === null) {
+        if ($type && $round === null) {
             $round = $this->conf->assignment_round($type == REVIEW_EXTERNAL);
         }
         if ($type && !$oldtype) {
             $qa = "";
-            if (get($extra, "mark_notify")) {
+            if ($extra["mark_notify"] ?? null) {
                 $qa .= ", timeRequestNotified=$Now";
             }
-            if (get($extra, "token")) {
+            if ($extra["token"] ?? null) {
                 $qa .= $this->unassigned_review_token();
             }
-            $new_requester_cid = $this->contactId;
-            if (($new_requester = get($extra, "requester_contact"))) {
+            if (($new_requester = $extra["requester_contact"] ?? null)) {
                 $new_requester_cid = $new_requester->contactId;
             }
             $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, reviewRound=$round, timeRequested=$Now$qa, requestedBy=$new_requester_cid";

@@ -479,7 +479,7 @@ class PaperStatus extends MessageSet {
         } else {
             error_log($doc->error_html);
             $this->error_at_option($o, $doc->error_html);
-            return false;
+            return null;
         }
     }
 

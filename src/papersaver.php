@@ -159,8 +159,7 @@ class Default_PaperSaver extends PaperSaver {
                 $okey = $o->json_key();
                 $ov = $o->parse_web($nnprow, $qreq);
                 if ($ov === false) {
-                    error_log("option {$o->id} {$o->title()} should implement parse_web but doesn't");
-                    $ov = $o->parse_request(get($pj->options, $okey), $qreq, $user, $prow);
+                    throw new Error("option {$o->id} {$o->title()} should implement parse_web but doesn't");
                 }
                 if ($o->id <= 0) {
                     $pj->$okey = $ov;

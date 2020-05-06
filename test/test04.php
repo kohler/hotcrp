@@ -18,7 +18,7 @@ function password($email, $iscdb = false) {
     $dblink = $iscdb ? $Conf->contactdb() : $Conf->dblink;
     $result = Dbl::qe($dblink, "select password from ContactInfo where email=?", $email);
     $row = Dbl::fetch_first_row($result);
-    return $row[0];
+    return $row[0] ?? null;
 }
 
 function save_password($email, $encoded_password, $iscdb = false) {

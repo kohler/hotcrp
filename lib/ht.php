@@ -171,11 +171,11 @@ class Ht {
                 if ($info->id ?? null) {
                     $x .= ' id="' . $info->id . '"';
                 }
-                $x .= ' value="' . htmlspecialchars($value) . '"';
+                $x .= ' value="' . htmlspecialchars((string) $value) . '"';
                 if ($first_value === false) {
                     $first_value = $value;
                 }
-                if (!strcmp($value, $selected) && !$has_selected) {
+                if (strcmp((string) $value, $selected) === 0 && !$has_selected) {
                     $x .= ' selected';
                     $has_selected = true;
                 }
@@ -220,7 +220,7 @@ class Ht {
         }
         $t = '<input type="checkbox"'; /* NB see Ht::radio */
         if ($name) {
-            $t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
+            $t .= " name=\"$name\" value=\"" . htmlspecialchars((string) $value) . "\"";
         }
         if ($checked) {
             $t .= " checked";

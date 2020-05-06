@@ -63,7 +63,8 @@ if ($dl->resps ?? false) {
 }
 
 if (($dl->rev ?? false) && ($dl->rev->open ?? false)) {
-    $dlbyround = array();
+    $dlbyround = [];
+    $last_dlbyround = null;
     foreach ($Conf->defined_round_list() as $i => $round_name) {
         $isuf = $i ? "_$i" : "";
         $es = +$Conf->setting("extrev_soft$isuf");

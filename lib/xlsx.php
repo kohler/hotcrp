@@ -44,7 +44,7 @@ class XlsxGenerator {
                     }
                     $t .= " t=\"s\"><v>" . $this->sst[$x] . "</v></c>";
                 }
-                $this->widths[$col] = max(strlen($x), (int) get($this->widths, $col));
+                $this->widths[$col] = max(strlen((string) $x), $this->widths[$col] ?? 0);
             }
             ++$col;
         }

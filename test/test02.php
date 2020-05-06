@@ -114,12 +114,11 @@ xassert_eqq(numrangejoin([1, 2, 3, 4, 6, 8]), "1–4, 6, and 8");
 xassert_eqq(numrangejoin(["#1", "#2", "#3", 4, "xx6", "xx7", 8]), "#1–3, 4, xx6–7, and 8");
 
 // random PHP behavior tests
-if (PHP_MAJOR_VERSION >= 7)
+if (PHP_MAJOR_VERSION >= 7) {
     xassert_eqq(substr("", 0, 1), ""); // UGH
-else
+} else {
     xassert_eqq(substr("", 0, 1), false);
-$s = "";
-xassert_eqq(@$s[0], "");
+}
 
 xassert(str_starts_with("", ""));
 xassert(str_starts_with("a", ""));

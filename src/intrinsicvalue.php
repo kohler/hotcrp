@@ -191,10 +191,12 @@ class Topics_PaperOption extends PaperOption {
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
         $vs = $ov->value_array();
-        if ($ov->anno && $ps->add_topics() && !empty($ov->anno["new_topics"])) {
+        $bad_topics = $ov->anno ? $ov->anno["bad_topics"] ?? null : null;
+        $new_topics = $ov->anno ? $ov->anno["new_topics"] ?? null : null;
+        if ($ps->add_topics() && !empty($new_topics)) {
             // add new topics to topic list
             $lctopics = [];
-            foreach ($ov->anno["new_topics"] as $tk) {
+            foreach ($new_topics as $tk) {
                 if (!in_array(strtolower($tk), $lctopics)) {
                     $lctopics[] = strtolower($tk);
                     $result = $ps->conf->qe("insert into TopicArea set topicName=?", $tk);
@@ -205,12 +207,12 @@ class Topics_PaperOption extends PaperOption {
                 $this->conf->save_setting("has_topics", 1);
             }
             $this->conf->invalidate_topics();
-            $ov->anno["bad_topics"] = array_diff($ov->anno["bad_topics"], $ov->anno["new_topics"]);
+            $bad_topics = array_diff($bad_topics, $new_topics);
         }
         $this->conf->topic_set()->sort($vs);
         $ov->set_value_data($vs, array_fill(0, count($vs), null));
-        if ($ov->anno && !empty($ov->anno["bad_topics"])) {
-            $ov->warning($ps->_("Unknown topics ignored (%2\$s).", count($ov->anno["bad_topics"]), htmlspecialchars(join("; ", $ov->anno["bad_topics"]))));
+        if (!empty($bad_topics)) {
+            $ov->warning($ps->_("Unknown topics ignored (%2\$s).", count($bad_topics), htmlspecialchars(join("; ", $bad_topics))));
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {

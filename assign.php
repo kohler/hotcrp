@@ -540,7 +540,7 @@ if ($Me->can_administer($prow)) {
         // then, number of reviews
         echo '<div class="pctbnrev">';
         $numReviews = strlen($p->allReviews);
-        $numPrimary = substr_count($p->allReviews, REVIEW_PRIMARY);
+        $numPrimary = substr_count($p->allReviews, (string) REVIEW_PRIMARY);
         if (!$numReviews) {
             echo "0 reviews";
         } else {

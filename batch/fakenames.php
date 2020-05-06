@@ -121,13 +121,9 @@ foreach ($users as $c) {
 
     $qv[] = $a = $fakes->affiliation();
     $qv[] = $fakes->country();
+    $qv[] = " nologin";
 
     $email_map[$c->email] = [$f, $l, $e, $a];
-
-    if ($c->password === "" || $c->password === null)
-        $qv[] = $c->password;
-    else
-        $qv[] = hotcrp_random_password(12);
 
     // XXX collaborators
 }

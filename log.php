@@ -643,6 +643,7 @@ function set_user_html($user, $qreq_n) {
     if ($user->disabled === "deleted") {
         $t = '<del>' . $t . ' &lt;' . htmlspecialchars($user->email) . '&gt;</del>';
     }
+    $dt = null;
     if (($viewable = $user->viewable_tags($Me))) {
         $dt = $Conf->tags();
         if (($colors = $dt->color_classes($viewable))) {
@@ -650,7 +651,7 @@ function set_user_html($user, $qreq_n) {
         }
     }
     $t = '<a href="' . $Conf->hoturl("log", ["q" => "", "u" => $user->email, "n" => $qreq_n]) . '">' . $t . '</a>';
-    if ($viewable && $dt->has_decoration) {
+    if ($dt && $dt->has_decoration) {
         $tagger = new Tagger($Me);
         $t .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
     }

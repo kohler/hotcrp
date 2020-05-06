@@ -120,6 +120,7 @@ class PaperRank {
 
         // $regrank maps user => papers in rank order;
         //               papers with same rank are shuffled
+        $regrank = [];
         foreach ($this->userrank as $user => &$ranks) {
             foreach ($ranks as $rr) {
                 $regrank[$user][] = $rr[1];
@@ -679,6 +680,7 @@ class PaperRank {
 
         // rank the Schwartz set
         $px = -1;
+        $grouprank = 0;
         foreach ($prefagainst as $pa) {
             $nextrank = $this->_nextRank();
             if ($pa[1] != $px) {

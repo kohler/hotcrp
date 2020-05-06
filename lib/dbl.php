@@ -126,7 +126,7 @@ class Dbl {
         return preg_replace('{\A(\w+://[^/:]*:)[^\@/]+([\@/])}', '$1PASSWORD$2', $dsn);
     }
 
-    static function connect_dsn($dsn) {
+    static function connect_dsn($dsn, $noconnect = false) {
         global $Opt;
 
         $dbhost = $dbuser = $dbpass = $dbname = $dbport = null;
@@ -145,11 +145,13 @@ class Dbl {
         }
         if (!$dbname || $dbname === "mysql" || substr($dbname, -7) === "_schema") {
             return [null, null];
+        } else if ($noconnect) {
+            return [null, $dbname];
         }
 
         $dbsock = $Opt["dbSocket"] ?? null;
         if ($dbsock && $dbport === null) {
-            $dbport = ini_get("mysqli.default_port");
+            $dbport = (int) ini_get("mysqli.default_port");
         }
         if ($dbpass === null) {
             $dbpass = ini_get("mysqli.default_pw");
@@ -388,7 +390,7 @@ class Dbl {
         if ($flags & self::F_NOEXEC) {
             return null;
         }
-        if (self::$query_log_key) {
+        if (self::$query_log_key !== false) {
             $time = microtime(true);
             $result = $dblink->$qfunc($qstr);
             self::$query_log[self::$query_log_key][0] += microtime(true) - $time;

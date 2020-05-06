@@ -590,16 +590,15 @@ class SettingValues extends MessageSet {
         }
     }
 
-    function label($name, $html, $label_js = null) {
+    function label($name, $html, $label_js = []) {
         $name1 = is_array($name) ? $name[0] : $name;
-        if ($label_js
-            && (($label_js["class"] ?? null) === false
-                || ($label_js["no_control_class"] ?? false))) {
+        if (($label_js["class"] ?? null) === false
+            || ($label_js["no_control_class"] ?? false)) {
             unset($label_js["no_control_class"]);
         } else {
             foreach (is_array($name) ? $name : array($name) as $n) {
                 if (($sc = $this->control_class($n))) {
-                    $label_js["class"] = self::add_class($sc, get_s($label_js, "class"));
+                    $label_js["class"] = self::add_class($sc, $label_js["class"] ?? null);
                     break;
                 }
             }

@@ -181,7 +181,7 @@ class MailRecipients {
                 if (is_string($d)) {
                     $d = ["label" => $d];
                 }
-                $k = null;
+                $k = [];
                 if ($flags & self::F_NOPAPERS) {
                     $k[] = "mail-want-no-papers";
                 }

@@ -1566,6 +1566,8 @@ class PaperTable {
                 $ctypes[Conflict::PINNED] = $confset->unparse_text(Conflict::PINNED);
             }
             $author_ctype = $confset->unparse_html(CONFLICT_AUTHOR);
+        } else {
+            $ctypes = []; // typechecker
         }
 
         $this->echo_editable_papt("pcconf", $this->edit_title_html($option), ["id" => "pcconf"]);
@@ -2529,7 +2531,12 @@ class PaperTable {
             && !$editrrow
             && $this->mode !== "edit") {
             $tagger = new Tagger($this->user);
-            $viewable_crows = array_filter($this->mycrows, function ($cr) { return $this->user->can_view_comment($cr->prow, $cr); });
+            $viewable_crows = [];
+            foreach ($this->mycrows as $cr) {
+                if ($this->user->can_view_comment($cr->prow, $cr)) {
+                    $viewable_crows[] = $cr;
+                }
+            }
             $cxs = CommentInfo::group_by_identity($viewable_crows, $this->user, true);
             if (!empty($cxs)) {
                 $count = array_reduce($cxs, function ($n, $cx) { return $n + $cx[1]; }, 0);

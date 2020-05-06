@@ -352,13 +352,14 @@ class Autoassigner {
         while (count($pcm)) {
             // choose a pc member at random, equalizing load
             $pc = null;
+            $numminpc = 0;
             foreach ($pcm as $pcx => $p) {
                 if ($pc === null
                     || $this->load[$pcx] < $this->load[$pc]) {
                     $numminpc = 0;
                     $pc = $pcx;
                 } else if ($this->load[$pcx] == $this->load[$pc]) {
-                    $numminpc++;
+                    ++$numminpc;
                     if (mt_rand(0, $numminpc) == 0) {
                         $pc = $pcx;
                     }
@@ -400,6 +401,7 @@ class Autoassigner {
         while (count($pcm)) {
             // choose a pc member at random, equalizing load
             $pc = null;
+            $numminpc = 0;
             foreach ($pcm as $pcx => $p) {
                 if ($pc === null
                     || $this->load[$pcx] < $this->load[$pc]
@@ -409,7 +411,7 @@ class Autoassigner {
                     $pc = $pcx;
                 } else if ($this->load[$pcx] == $this->load[$pc]
                            && $pref_unhappiness[$pcx] == $pref_unhappiness[$pc]) {
-                    $numminpc++;
+                    ++$numminpc;
                     if (mt_rand(0, $numminpc) == 0) {
                         $pc = $pcx;
                     }
@@ -547,16 +549,14 @@ class Autoassigner {
         // figure out badpairs class for each user
         $bpclass = $bpmembers = [];
         if ($this->action_takes_badpairs($action)) {
+            $bpgraph = [];
             foreach ($this->badpairs as $cid1 => $bp) {
                 foreach ($bp as $cid2 => $x) {
                     if (isset($this->pcm[$cid1]) && isset($this->pcm[$cid2]))
-                        $bpclass[$cid1][$cid2] = $bpclass[$cid1][$cid1] = true;
+                        $bpgraph[$cid1][$cid2] = $bpgraph[$cid1][$cid1] = true;
                 }
             }
-            foreach ($bpclass as $cid => &$x) {
-                $x = min(array_keys($x));
-            }
-            unset($x);
+            $bpclass = array_map(function ($x) { return min(array_keys($x)); }, $bpgraph);
             foreach ($bpclass as $cid => $class) {
                 $bpmembers[$class][] = $cid;
             }
@@ -840,11 +840,11 @@ class Autoassigner {
         Dbl::free($result);
         // run max-flow
         $result = $this->papersel;
+        $groupmap = [];
         for ($roundno = 0; !$roundno || count($result) > 1; ++$roundno) {
             $this->mcmf_round_descriptor = $roundno ? ", round " . ($roundno + 1) : "";
             $result = $this->run_discussion_order_once($cflt, $result);
             if (!$roundno) {
-                $groupmap = array();
                 foreach ($result as $i => $pids) {
                     foreach ($pids as $pid) {
                         $groupmap[$pid] = $i;

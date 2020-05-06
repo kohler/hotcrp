@@ -246,25 +246,27 @@ class SearchTerm {
         return false;
     }
     /** @param string $k */
-    function set_float($k, $v) {
+    final function set_float($k, $v) {
         $this->float[$k] = $v;
     }
     /** @param string $k */
     function get_float($k, $defval = null) {
         return $this->float[$k] ?? $defval;
     }
-    /** @param array{int,int} $span */
+    /** @param ?array{int,int} $span */
     function apply_strspan($span) {
         $span1 = $this->float["strspan"] ?? null;
         if ($span && $span1) {
-            $span = [min($span[0], $span1[0]), max($span[1], $span1[1])];
+            $spanx = [min($span[0], $span1[0]), max($span[1], $span1[1])];
+        } else {
+            $spanx = $span ?? $span1;
         }
-        $this->set_float("strspan", $span ? : $span1);
+        $this->float["strspan"] = $spanx;
     }
     /** @param string $str */
     function set_strspan_owner($str) {
         if (!isset($this->float["strspan_owner"])) {
-            $this->set_float("strspan_owner", $str);
+            $this->float["strspan_owner"] = $str;
         }
     }
 
@@ -561,7 +563,7 @@ class And_SearchTerm extends Op_SearchTerm {
     }
 
     function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
-        $myrevadj = null;
+        $myrevadj = $used_revadj = null;
         if ($this->child[0] instanceof ReviewAdjustment_SearchTerm) {
             $myrevadj = $this->child[0];
             $used_revadj = $myrevadj->merge($revadj);
@@ -797,6 +799,7 @@ class Then_SearchTerm extends Op_SearchTerm {
                     $newhtypes[] = $opinfo;
                 }
             } else if ($qv && $qv->type === "then") {
+                assert($qv instanceof Then_SearchTerm);
                 $pos = count($newvalues);
                 for ($i = 0; $i < $qv->nthen; ++$i) {
                     $newvalues[] = $qv->child[$i];
@@ -1199,9 +1202,9 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
             return new False_SearchTerm;
         }
         $rate = null;
+        $compar = "=0";
         if (strcasecmp($word, "none") == 0) {
             $rate = "any";
-            $compar = "=0";
         } else if (preg_match('/\A(.+?)\s*(:?|[=!<>]=?|≠|≤|≥)\s*(\d*)\z/', $word, $m)
                    && ($m[3] !== "" || $m[2] === "")) {
             if ($m[3] === "") {

@@ -660,7 +660,7 @@ function unparseReviewOrdinal($ord) {
         if ($ord->reviewOrdinal) {
             return $ord->paperId . unparseReviewOrdinal($ord->reviewOrdinal);
         } else {
-            return $ord->reviewId;
+            return (string) $ord->reviewId;
         }
     } else if ($ord <= 26) {
         return chr($ord + 64);

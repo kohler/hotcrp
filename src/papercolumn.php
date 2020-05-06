@@ -399,7 +399,7 @@ class Authors_PaperColumn extends PaperColumn {
         $aff = [];
         '@phan-var list<string> $aff';
         foreach ($row->author_list() as $i => $au) {
-            if ($i != 0 && $au->affiliation === $aff[$i - 1]) {
+            if ($i !== 0 && $au->affiliation === $aff[$i - 1]) {
                 $aff[$i - 1] = null;
             }
             $aff[] = $au->affiliation;
@@ -630,14 +630,14 @@ class ReviewerType_PaperColumn extends PaperColumn {
         } else if ($flags & self::F_CONFLICT) {
             $t = review_type_icon(-1);
         }
-        $x = null;
+        $x = [];
         if ($flags & self::F_LEAD) {
             $x[] = review_lead_icon();
         }
         if ($flags & self::F_SHEPHERD) {
             $x[] = review_shepherd_icon();
         }
-        if ($x || ($ranal && $ranal->round)) {
+        if (!empty($x) || ($ranal && $ranal->round)) {
             $c = ["pl_revtype"];
             $t && ($c[] = "hasrev");
             ($flags & (self::F_LEAD | self::F_SHEPHERD)) && ($c[] = "haslead");
@@ -650,7 +650,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         list($ranal, $flags) = $this->analysis($pl, $row);
-        $t = null;
+        $t = [];
         if ($flags & self::F_LEAD) {
             $t[] = "Lead";
         }
@@ -663,7 +663,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         if ($flags & self::F_CONFLICT) {
             $t[] = "Conflict";
         }
-        return $t ? join("; ", $t) : "";
+        return empty($t) ? "" : join("; ", $t);
     }
 }
 

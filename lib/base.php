@@ -397,7 +397,7 @@ function is_associative_array($a) {
 
 /** @param mixed $a */
 function array_to_object_recursive($a) {
-    if (is_associative_array($a)) {
+    if (is_array($a) && is_associative_array($a)) {
         $o = (object) array();
         foreach ($a as $k => $v) {
             if ($k !== "")

@@ -4,6 +4,7 @@
 
 require_once("src/initweb.php");
 require_once("src/papertable.php");
+'@phan-var-force PaperInfo $prow';
 
 // prepare request
 $useRequest = isset($Qreq->title) && $Qreq->has_annex("after_login");
@@ -20,7 +21,7 @@ if (isset($Qreq->p)
 if (!isset($Qreq->p)
     && !isset($Qreq->paperId)
     && ($x = $Qreq->path_component(0)) !== false) {
-    if (preg_match(',\A(?:new|\d+)\z,i', $x)) {
+    if (preg_match('/\A(?:new|\d+)\z/i', $x)) {
         $Qreq->p = $x;
         if (!isset($Qreq->m) && ($x = $Qreq->path_component(1))) {
             $Qreq->m = $x;
@@ -339,7 +340,7 @@ function update_paper(Qrequest $qreq, $action) {
                 }
             }
             if ($notes !== "") {
-                $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
+                $options["notes"] = preg_replace('/<\/?(?:span.*?|strong)>/', "", $notes) . "\n\n";
             }
             HotCRPMailer::send_contacts($template, $new_prow, $options);
         }

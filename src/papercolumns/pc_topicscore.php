@@ -29,10 +29,10 @@ class TopicScore_PaperColumn extends PaperColumn {
         return $at < $bt ? 1 : ($at == $bt ? 0 : -1);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return htmlspecialchars($row->topic_interest_score($this->contact));
+        return htmlspecialchars((string) $row->topic_interest_score($this->contact));
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $row->topic_interest_score($this->contact);
+        return (string) $row->topic_interest_score($this->contact);
     }
 
     static function expand($name, $user, $xfj, $m) {

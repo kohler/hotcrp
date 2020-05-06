@@ -218,7 +218,7 @@ class PaperList {
         $view_list = $this->search->view_list();
         for ($i = 0; $i !== count($view_list); ++$i) {
             list($field, $action) = $view_list[$i];
-            $options = null;
+            $options = [];
             while ($action === "show"
                    && $i + 1 !== count($view_list)
                    && $view_list[$i + 1][1] === "as") {
@@ -320,7 +320,7 @@ class PaperList {
         }
         $this->_viewing[$k] = $v;
         $this->_view_origin[$k] = $origin;
-        $this->_view_field_options[$k] = $opts;
+        $this->_view_field_options[$k] = empty($opts) ? null : $opts;
 
         if ($k === "force") {
             $this->_view_force = $v;
@@ -1078,7 +1078,7 @@ class PaperList {
 
         $t = "  <tr";
         if ($this->_row_id_pattern) {
-            $t .= " id=\"" . str_replace("#", $row->paperId, $this->_row_id_pattern) . "\"";
+            $t .= " id=\"" . str_replace("#", (string) $row->paperId, $this->_row_id_pattern) . "\"";
         }
         $t .= " class=\"pl $trclass\" data-pid=\"$row->paperId";
         foreach ($this->row_attr as $k => $v) {
@@ -1224,7 +1224,7 @@ class PaperList {
                 $x = $body[$j];
                 if (($pos = strpos($x, $rownum_marker)) !== false) {
                     $pos += strlen($rownum_marker);
-                    $x = substr($x, 0, $pos) . preg_replace('/\A\d+/', $number, substr($x, $pos));
+                    $x = substr($x, 0, $pos) . preg_replace('/\A\d+/', (string) $number, substr($x, $pos));
                     ++$number;
                 } else if (strpos($x, "<td class=\"plheading-blank") !== false) {
                     $x = "";

@@ -4,11 +4,10 @@
 // First buzzer version by Nickolai B. Zeldovich
 
 require_once("src/initweb.php");
-$show_papers = true;
 
-// kiosk mode
-if ($Me->is_track_manager()) {
-    $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : array());
+function kiosk_manager(Contact $user, Qrequest $qreq) {
+    global $Now;
+    $kiosks = (array) ($user->conf->setting_json("__tracker_kiosk") ? : array());
     uasort($kiosks, function ($a, $b) {
         return $a->update_at - $b->update_at;
     });
@@ -34,15 +33,20 @@ if ($Me->is_track_manager()) {
         }
     }
     // save kiosks
-    if ($kchange)
-        $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
+    if ($kchange) {
+        $user->conf->save_setting("__tracker_kiosk", 1, $kiosks);
+    }
+    // maybe sign out to kiosk
+    if ($qreq->signout_to_kiosk && $qreq->post_ok()) {
+        $user = LoginHelper::logout($user, false);
+        ensure_session(ENSURE_SESSION_REGENERATE_ID);
+        $user->set_capability("tracker_kiosk", $kiosk_keys[$qreq->buzzer_showpapers ? 1 : 0]);
+        $user->conf->self_redirect($qreq);
+    }
+    return $kiosk_keys;
 }
-
-if ($Me->is_track_manager() && $Qreq->signout_to_kiosk && $Qreq->post_ok()) {
-    $Me = LoginHelper::logout($Me, false);
-    ensure_session(ENSURE_SESSION_REGENERATE_ID);
-    $Me->set_capability("tracker_kiosk", $kiosk_keys[$Qreq->buzzer_showpapers ? 1 : 0]);
-    $Conf->self_redirect($Qreq);
+if ($Me->is_track_manager()) {
+    $kiosk_keys = kiosk_manager($Me, $Qreq);
 }
 
 function kiosk_lookup($key) {

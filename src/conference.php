@@ -218,14 +218,11 @@ class Conf {
 
     function __construct($options, $make_dsn) {
         // unpack dsn, connect to database, load current settings
-        if ($make_dsn && ($this->dsn = Dbl::make_dsn($options))) {
-            list($this->dblink, $options["dbName"]) = Dbl::connect_dsn($this->dsn);
-        }
-        if (!isset($options["confid"])) {
-            $options["confid"] = $options["dbName"] ?? null;
-        }
+        $this->dsn = Dbl::make_dsn($options);
+        list($this->dblink, $this->dbname) = Dbl::connect_dsn($this->dsn, !$make_dsn);
         $this->opt = $options;
-        $this->dbname = $options["dbName"];
+        $this->opt["dbName"] = $this->dbname;
+        $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
         $this->paper_opts = new PaperOptionList($this);
         if ($this->dblink && !Dbl::$default_dblink) {
             Dbl::set_default_dblink($this->dblink);
