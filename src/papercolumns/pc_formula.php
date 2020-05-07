@@ -144,8 +144,9 @@ class Formula_PaperColumn extends PaperColumn {
         $t = $this->unparse_statistic($this->statistics, $stat);
         if ($this->override_statistics) {
             $tt = $this->unparse_statistic($this->override_statistics, $stat);
-            if ($t !== $tt)
+            if ($t !== $tt) {
                 $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
+            }
         }
         return $t;
     }

@@ -95,12 +95,12 @@ class BanalSettings {
         $cfs->pagelimit = null;
         if (($s = trim($sv->reqv("sub_banal_pagelimit$suffix", ""))) !== ""
             && strcasecmp($s, "N/A") !== 0) {
-            if (($sx = cvtint($s, -1)) > 0)
+            if (($sx = cvtint($s, -1)) > 0) {
                 $cfs->pagelimit = [0, $sx];
-            else if (preg_match('/\A(\d+)\s*(?:-|–)\s*(\d+)\z/', $s, $m)
-                     && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
+            } else if (preg_match('/\A(\d+)\s*(?:-|–)\s*(\d+)\z/', $s, $m)
+                       && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2]) {
                 $cfs->pagelimit = [+$m[1], +$m[2]];
-            else {
+            } else {
                 $sv->error_at("sub_banal_pagelimit$suffix", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
                 $problem = true;
             }
@@ -139,20 +139,23 @@ class BanalSettings {
                     if (strpos($s, "x") === false) {
                         $s = preg_replace('/\s+(?=[\d.])/', 'x', trim($s));
                         $css = 1;
-                    } else
+                    } else {
                         $css = 0;
-                    if (!($m = FormatSpec::parse_dimen($s)) || (is_array($m) && count($m) > 4)) {
+                    }
+                    if (!($m = FormatSpec::parse_dimen($s))
+                        || (is_array($m) && count($m) > 4)) {
                         $sv->error_at("sub_banal_textblock$suffix", "Invalid margin definition.");
                         $problem = true;
                         $s = "";
-                    } else if (!is_array($m))
-                        $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
-                    else if (count($m) == 2)
-                        $s = array($ps[0] - 2 * $m[$css], $ps[1] - 2 * $m[1 - $css]);
-                    else if (count($m) == 3)
-                        $s = array($ps[0] - $m[$css] - $m[2 - $css], $ps[1] - $m[1 - $css] - $m[1 + $css]);
-                    else
-                        $s = array($ps[0] - $m[$css] - $m[2 + $css], $ps[1] - $m[1 - $css] - $m[3 - $css]);
+                    } else if (!is_array($m)) {
+                        $s = [$ps[0] - 2 * $m, $ps[1] - 2 * $m];
+                    } else if (count($m) == 2) {
+                        $s = [$ps[0] - 2 * $m[$css], $ps[1] - 2 * $m[1 - $css]];
+                    } else if (count($m) == 3) {
+                        $s = [$ps[0] - $m[$css] - $m[2 - $css], $ps[1] - $m[1 - $css] - $m[1 + $css]];
+                    } else {
+                        $s = [$ps[0] - $m[$css] - $m[2 + $css], $ps[1] - $m[1 - $css] - $m[3 - $css]];
+                    }
                 }
                 $s = (is_array($s) ? FormatSpec::unparse_dimen($s) : "");
             }
@@ -187,10 +190,12 @@ class BanalSettings {
             }
         }
 
-        if ($problem)
+        if ($problem) {
             return false;
-        if ($check)
+        }
+        if ($check) {
             self::check_banal($sv);
+        }
 
         $opt_spec = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
         $opt_unparse = $opt_spec->unparse_banal();

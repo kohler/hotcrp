@@ -149,10 +149,11 @@ class FormatSpec {
     function unparse() {
         if ($this->checkers) {
             $a = [];
-            foreach (get_object_vars($this) as $k => $v)
+            foreach (get_object_vars($this) as $k => $v) {
                 if (substr($k, 0, 1) !== "_"
                     && $v !== null && $v !== "" && (!empty($v) || $k !== "papersize"))
                     $a[$k] = $v;
+            }
             return empty($a) ? "" : json_encode($a);
         } else {
             return $this->unparse_banal();

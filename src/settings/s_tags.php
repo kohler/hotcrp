@@ -70,7 +70,7 @@ class Tags_SettingRenderer {
                 continue;
             }
             preg_match_all("{(?:\\A|\\s)(\\S+)=$k(?=\\s|\\z)}", $tag_color_data, $m);
-            $sv->set_oldv("tag_color_$k", join(" ", get($m, 1, [])));
+            $sv->set_oldv("tag_color_$k", join(" ", $m[1] ?? []));
             $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
                 . "<td class=\"pad taghl\">$k</td>"
                 . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-suggest tags"]) . "</td>"
@@ -180,8 +180,8 @@ class Tags_SettingParser extends SettingParser {
                 $sqlbase = sqlq_for_like($base);
 
                 $result = $sv->conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~{$sqlbase}'");
-                $pvals = array();
-                $cvals = array();
+                $pvals = [];
+                $cvals = [];
                 $negative = false;
                 while (($row = $result->fetch_row())) {
                     $who = substr($row[1], 0, strpos($row[1], "~"));
@@ -189,8 +189,8 @@ class Tags_SettingParser extends SettingParser {
                         $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for #$row[0].");
                         $negative = true;
                     } else {
-                        $pvals[$row[0]] = get($pvals, $row[0], 0) + $row[2];
-                        $cvals[$who] = get($cvals, $who, 0) + $row[2];
+                        $pvals[$row[0]] = ($pvals[$row[0]] ?? 0) + $row[2];
+                        $cvals[$who] = ($cvals[$who] ?? 0) + $row[2];
                     }
                 }
 

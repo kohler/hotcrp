@@ -16,8 +16,9 @@ class Get_ListAction extends ListAction {
         foreach ($actions as $fj) {
             $as = strpos($fj->selector, "/");
             if ($as === false) {
-                if ($last_group)
+                if ($last_group) {
                     $sel_opt[] = ["optgroup", false];
+                }
                 $last_group = null;
                 $sel_opt[] = ["value" => substr($fj->name, 4), "label" => $fj->selector];
             } else {
@@ -107,8 +108,9 @@ class GetAbstract_ListAction extends ListAction {
         if (($tlist = $prow->topic_map())) {
             $fr->title = $o->title(count($tlist));
             $fr->set_text("");
-            foreach ($tlist as $t)
+            foreach ($tlist as $t) {
                 $fr->value .= prefix_word_wrap("* ", $t, 2, self::WIDTH);
+            }
         }
     }
     static function render(PaperInfo $prow, Contact $user) {

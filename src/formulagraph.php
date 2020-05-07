@@ -181,8 +181,9 @@ class FormulaGraph extends MessageSet {
             $this->_qstyles_bytag[] = false;
         }
         if ($style === "") {
-            if (($n = $this->_qstyle_index % 4))
+            if (($n = $this->_qstyle_index % 4)) {
                 $style = "color" . $n;
+            }
             ++$this->_qstyle_index;
         }
         $this->_qstyles[] = $style;

@@ -87,12 +87,13 @@ class TagMapItem {
             Dbl::free($result);
             $this->_order_anno_list[] = TagAnno::make_tag_fencepost($this->tag);
             usort($this->_order_anno_list, function ($a, $b) {
-                if ($a->tagIndex != $b->tagIndex)
+                if ($a->tagIndex != $b->tagIndex) {
                     return $a->tagIndex < $b->tagIndex ? -1 : 1;
-                else if (($x = strcasecmp($a->heading, $b->heading)) != 0)
+                } else if (($x = strcasecmp($a->heading, $b->heading)) != 0) {
                     return $x;
-                else
+                } else {
                     return $a->annoId < $b->annoId ? -1 : 1;
+                }
             });
             $last_la = null;
             foreach ($this->_order_anno_list as $i => $la) {
@@ -179,21 +180,27 @@ class TagAnno implements JsonSerializable {
     function jsonSerialize() {
         global $Conf;
         $j = [];
-        if ($this->pos !== null)
+        if ($this->pos !== null) {
             $j["pos"] = $this->pos;
+        }
         $j["annoid"] = $this->annoId;
-        if ($this->tag)
+        if ($this->tag) {
             $j["tag"] = $this->tag;
-        if ($this->tagIndex !== null)
+        }
+        if ($this->tagIndex !== null) {
             $j["tagval"] = $this->tagIndex;
-        if ($this->is_empty())
+        }
+        if ($this->is_empty()) {
             $j["empty"] = true;
-        if ($this->heading !== null)
+        }
+        if ($this->heading !== null) {
             $j["heading"] = $this->heading;
+        }
         if ($this->heading !== null
             && $this->heading !== ""
-            && ($format = $Conf->check_format($this->annoFormat, $this->heading)))
+            && ($format = $Conf->check_format($this->annoFormat, $this->heading))) {
             $j["format"] = +$format;
+        }
         return $j;
     }
 }

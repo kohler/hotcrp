@@ -1178,20 +1178,22 @@ class Conf {
     /** @return array<int,string> */
     function decision_map() {
         if ($this->_decisions === null) {
-            $dmap = array();
+            $dmap = [];
             if (($j = $this->settingTexts["outcome_map"] ?? null)
                 && ($j = json_decode($j, true))
-                && is_array($j))
+                && is_array($j)) {
                 $dmap = $j;
+            }
             $dmap[0] = "Unspecified";
             $this->_decisions = $dmap;
             uksort($this->_decisions, function ($ka, $kb) use ($dmap) {
-                if ($ka == 0 || $kb == 0)
+                if ($ka == 0 || $kb == 0) {
                     return $ka == 0 ? -1 : 1;
-                else if (($ka > 0) !== ($kb > 0))
+                } else if (($ka > 0) !== ($kb > 0)) {
                     return $ka > 0 ? 1 : -1;
-                else
+                } else {
                     return strcasecmp($dmap[$ka], $dmap[$kb]);
+                }
             });
         }
         return $this->_decisions;

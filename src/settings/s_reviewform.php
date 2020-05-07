@@ -418,8 +418,9 @@ are better). For example:</p>
 submitted. Add a “<code>No entry</code>” line to make the score optional.</p></div>');
 
     $rfj = [];
-    foreach ($rf->fmap as $f)
+    foreach ($rf->fmap as $f) {
         $rfj[$f->short_id] = $f->unparse_json();
+    }
 
     // track whether fields have any nonempty values
     $where = ["false", "false"];
@@ -428,15 +429,17 @@ submitted. Add a “<code>No entry</code>” line to make the score optional.</p
         $fj->internal_id = $f->id;
         $fj->has_any_nonempty = false;
         if ($f->json_storage) {
-            if ($f->has_options)
+            if ($f->has_options) {
                 $where[0] = "sfields is not null";
-            else
+            } else {
                 $where[1] = "tfields is not null";
+            }
         } else {
-            if ($f->has_options)
+            if ($f->has_options) {
                 $where[] = "{$f->main_storage}!=0";
-            else
+            } else {
                 $where[] = "coalesce({$f->main_storage},'')!=''";
+            }
         }
     }
 
@@ -453,14 +456,16 @@ submitted. Add a “<code>No entry</code>” line to make the score optional.</p
                     && (isset($fj->options) ? (int) $rrow->$fid !== 0 : $rrow->$fid !== "")) {
                     $fj->has_any_nonempty = true;
                     array_splice($unknown_nonempty, $i, 1);
-                } else
+                } else {
                     ++$i;
+                }
             }
             ++$limit;
         }
         Dbl::free($result);
-        if ($limit !== $expect_limit) // ran out of reviews
+        if ($limit !== $expect_limit) { // ran out of reviews
             break;
+        }
     }
 
     // output settings json

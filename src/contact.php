@@ -871,27 +871,31 @@ class Contact {
         if (($this->roles & Contact::ROLE_PCLIKE)
             && $viewer->can_view_pc()) {
             $roles = $this->roles & Contact::ROLE_PCLIKE;
-            if (!$viewer->isPC)
+            if (!$viewer->isPC) {
                 $roles &= ~Contact::ROLE_ADMIN;
+            }
             return $roles;
-        } else
+        } else {
             return 0;
+        }
     }
 
     /** @param int $roles
      * @return string */
     static function role_html_for($roles) {
         if ($roles & (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN | Contact::ROLE_PC)) {
-            if ($roles & Contact::ROLE_CHAIR)
+            if ($roles & Contact::ROLE_CHAIR) {
                 return '<span class="pcrole">chair</span>';
-            else if (($roles & (Contact::ROLE_ADMIN | Contact::ROLE_PC)) === (Contact::ROLE_ADMIN | Contact::ROLE_PC))
+            } else if (($roles & (Contact::ROLE_ADMIN | Contact::ROLE_PC)) === (Contact::ROLE_ADMIN | Contact::ROLE_PC)) {
                 return '<span class="pcrole">PC, sysadmin</span>';
-            else if ($roles & Contact::ROLE_ADMIN)
+            } else if ($roles & Contact::ROLE_ADMIN) {
                 return '<span class="pcrole">sysadmin</span>';
-            else
+            } else {
                 return '<span class="pcrole">PC</span>';
-        } else
+            }
+        } else {
             return "";
+        }
     }
 
     /** @param string $t

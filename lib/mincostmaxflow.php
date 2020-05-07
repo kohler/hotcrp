@@ -461,8 +461,9 @@ class MinCostMaxFlow {
                 }
                 // global relabeling heuristic is quite useful
                 ++$this->nrelabel;
-                if ($this->nrelabel % count($this->v) == 0)
+                if ($this->nrelabel % count($this->v) == 0) {
                     $this->pushrelabel_make_distance();
+                }
                 // if relabeled, put back on front
                 if ($l !== $lhead) {
                     $lprev->link = $l->link;

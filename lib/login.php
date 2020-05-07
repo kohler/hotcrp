@@ -171,7 +171,9 @@ class LoginHelper {
         } else {
             unset($_SESSION["us"]);
         }
-        if (!isset($_SESSION["u"]) || $us[0] !== $_SESSION["u"]) {
+        if (empty($us)) {
+            unset($_SESSION["u"]);
+        } else if (!isset($_SESSION["u"]) || $us[0] !== $_SESSION["u"]) {
             $_SESSION["u"] = $us[0];
         }
     }

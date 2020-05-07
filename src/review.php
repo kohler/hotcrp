@@ -846,32 +846,36 @@ class ReviewForm implements JsonSerializable {
         $x .= "==+== Begin Review";
         if ($prow) {
             $x .= " #" . $prow->paperId;
-            if ($req && isset($req["reviewOrdinal"]) && $req["reviewOrdinal"])
+            if ($req && isset($req["reviewOrdinal"]) && $req["reviewOrdinal"]) {
                 $x .= unparseReviewOrdinal($req["reviewOrdinal"]);
-            else if ($rrow && isset($rrow->reviewOrdinal) && $rrow->reviewOrdinal)
+            } else if ($rrow && isset($rrow->reviewOrdinal) && $rrow->reviewOrdinal) {
                 $x .= unparseReviewOrdinal($rrow->reviewOrdinal);
+            }
         }
         $x .= "\n";
         if ($rrow && ($rrow->reviewEditVersion ?? null) && $viewable_identity)
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
         if (!$prow || $viewable_identity) {
-            if ($rrow && isset($rrow->reviewEmail))
+            if ($rrow && isset($rrow->reviewEmail)) {
                 $x .= "==+== Reviewer: " . Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
-            else if ($rrow && isset($rrow->email))
+            } else if ($rrow && isset($rrow->email)) {
                 $x .= "==+== Reviewer: " . Text::user_text($rrow) . "\n";
-            else
+            } else {
                 $x .= "==+== Reviewer: " . Text::user_text($contact) . "\n";
+            }
         }
         $time = self::rrow_modified_time($contact, $prow, $rrow);
-        if ($time > 1)
+        if ($time > 1) {
             $x .= "==-== Updated " . $this->conf->unparse_time($time) . "\n";
+        }
 
-        if ($prow)
+        if ($prow) {
             $x .= "\n==+== Paper #$prow->paperId\n"
                 . prefix_word_wrap("==-== Title: ", $prow->title, "==-==        ")
                 . "\n";
-        else
+        } else {
             $x .= "\n==+== Paper Number\n\n(Enter paper number here)\n\n";
+        }
 
         if ($viewable_identity) {
             $x .= "==+== Review Readiness
@@ -880,8 +884,9 @@ class ReviewForm implements JsonSerializable {
 Ready\n";
             if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
                 $blind = "Anonymous";
-                if ($rrow && !$rrow->reviewBlind)
+                if ($rrow && !$rrow->reviewBlind) {
                     $blind = "Open";
+                }
                 $x .= "\n==+== Review Anonymity
 ==-== " . $this->conf->short_name . " allows either anonymous or open review.
 ==-== Enter \"Open\" if you want to expose your name to authors:
@@ -1141,8 +1146,9 @@ $blind\n";
             echo '<a class="nn" href="',
                 $rrow->conf->hoturl("review", "r=$reviewOrdinal" . $forceShow),
                 '">Edit ', ($rrow->is_subreview() ? "Subreview" : "Review");
-            if ($rrow->reviewOrdinal)
+            if ($rrow->reviewOrdinal) {
                 echo "&nbsp;#", $reviewOrdinal;
+            }
             echo "</a>";
         } else {
             echo "New Review";
@@ -1180,15 +1186,18 @@ $blind\n";
         }
         if ($revname || $revtime) {
             echo '<div class="revthead">';
-            if ($revname)
+            if ($revname) {
                 echo '<div class="revname">', $revname, '</div>';
-            if ($revtime)
+            }
+            if ($revtime) {
                 echo '<div class="revtime">', $revtime, '</div>';
+            }
             echo '</div>';
         }
 
-        if ($options["editmessage"] ?? false)
+        if ($options["editmessage"] ?? false) {
             echo '<div class="hint">', $options["editmessage"], "</div>\n";
+        }
 
         // download?
         echo '<hr class="c">';
@@ -1498,9 +1507,10 @@ class ReviewValues extends MessageSet {
     function __construct(ReviewForm $rf, $options = []) {
         $this->rf = $rf;
         $this->conf = $rf->conf;
-        foreach (["no_notify"] as $k)
+        foreach (["no_notify"] as $k) {
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
+        }
     }
 
     /** @return ReviewValues */
@@ -1551,8 +1561,9 @@ class ReviewValues extends MessageSet {
         $this->garbage_lineno = null;
         $this->req = [];
         $this->paperId = false;
-        if ($override !== null)
+        if ($override !== null) {
             $this->req["override"] = $override;
+        }
 
         $mode = 0;
         $nfields = 0;
