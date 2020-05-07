@@ -103,8 +103,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
             return null;
         }
         $rs = [];
-        foreach (ContactSearch::make_pc($m[1], $user)->ids as $cid) {
-            $u = $user->conf->cached_user_by_id($cid);
+        foreach (ContactSearch::make_pc($m[1], $user)->users() as $u) {
             $fj["name"] = "potentialconflict:" . $u->email;
             $fj["user"] = $u->email;
             $rs[] = (object) $fj;

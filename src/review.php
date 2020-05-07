@@ -1937,7 +1937,7 @@ class ReviewValues extends MessageSet {
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if ($fval === false) {
-                $this->rmsg($fid, $this->conf->_("Bad %s value “%s”.", $f->name_html, htmlspecialchars(UnicodeHelper::utf8_abbreviate($fval, 100))), self::WARNING);
+                $this->rmsg($fid, $this->conf->_("Bad %s value “%s”.", $f->name_html, htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->req[$fid], 100))), self::WARNING);
                 unset($this->req[$fid]);
                 $unready = true;
             } else {
