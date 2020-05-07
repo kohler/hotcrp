@@ -13,10 +13,13 @@ class AutoassignerCosts implements JsonSerializable {
 }
 
 class Autoassigner {
+    /** @var Conf */
     public $conf;
+    /** @var array<int,Contact> */
     private $pcm;
     private $badpairs = array();
     private $papersel;
+    /** @var ?list<string> */
     private $ass;
     private $load;
     private $prefs;

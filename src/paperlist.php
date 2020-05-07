@@ -111,10 +111,14 @@ class PaperListReviewAnalysis {
 }
 
 class PaperList {
+    /** @var Conf */
     public $conf;
+    /** @var Contact */
     public $user;
+    /** @var PaperSearch */
     public $search;
     private $qreq;
+    /** @var Contact */
     private $_reviewer_user;
     private $_rowset;
     private $_groups;
@@ -778,6 +782,7 @@ class PaperList {
     }
 
     // content downloaders
+    /** @return Contact */
     function reviewer_user() {
         return $this->_reviewer_user;
     }
@@ -785,16 +790,22 @@ class PaperList {
         $this->_reviewer_user = $user;
     }
 
+    /** @param int $contactId
+     * @return string */
     function _content_pc($contactId) {
         $pc = $this->conf->pc_member_by_id($contactId);
         return $pc ? $this->user->reviewer_html_for($pc) : "";
     }
 
+    /** @param int $contactId
+     * @return string */
     function _text_pc($contactId) {
         $pc = $this->conf->pc_member_by_id($contactId);
         return $pc ? $this->user->reviewer_text_for($pc) : "";
     }
 
+    /** @param int $contactId1
+     * @param int $contactId2 */
     function _compare_pc($contactId1, $contactId2, $sorter) {
         $pc1 = $this->conf->pc_member_by_id($contactId1);
         $pc2 = $this->conf->pc_member_by_id($contactId2);

@@ -3,6 +3,7 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class PaperApi {
+    /** @param ?PaperInfo $prow */
     static function tagreport(Contact $user, $prow) {
         $ret = (object) ["ok" => $user->can_view_tags($prow)];
         if ($prow) {
@@ -36,10 +37,12 @@ class PaperApi {
         return $ret;
     }
 
+    /** @param ?PaperInfo $prow */
     static function tagreport_api(Contact $user, $qreq, $prow) {
         return new JsonResult((array) self::tagreport($user, $prow));
     }
 
+    /** @param ?PaperInfo $prow */
     static function settags_api(Contact $user, $qreq, $prow) {
         if ($qreq->cancel) {
             return ["ok" => true];

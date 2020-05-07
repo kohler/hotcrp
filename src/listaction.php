@@ -13,6 +13,8 @@ class ListAction {
         return "Unsupported.";
     }
 
+    /** @param string $name
+     * @param SearchSelection|array<int> $selection */
     static private function do_call($name, Contact $user, Qrequest $qreq, $selection) {
         if ($qreq->method() !== "GET"
             && $qreq->method() !== "HEAD"
@@ -51,6 +53,8 @@ class ListAction {
         }
     }
 
+    /** @param string $name
+     * @param SearchSelection|array<int> $selection */
     static function call($name, Contact $user, Qrequest $qreq, $selection) {
         $res = self::do_call($name, $user, $qreq, $selection);
         if (is_string($res)) {

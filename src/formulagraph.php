@@ -14,16 +14,22 @@ class FormulaGraph extends MessageSet {
 
     const REVIEWER_COLOR = 1;
 
+    /** @var Conf */
     public $conf;
+    /** @var Contact */
     public $user;
     public $type = 0;
+    /** @var Formula */
     public $fx;
     private $fxs;
     private $fx_expression;
+    /** @var Formula */
     public $fy;
     private $fx_type = 0;
     private $queries = [];
+    /** @var list<string> */
     private $_qstyles = [];
+    /** @var list<bool> */
     private $_qstyles_bytag = [];
     private $_qstyle_index = 0;
     private $searches = [];
@@ -32,7 +38,9 @@ class FormulaGraph extends MessageSet {
     private $reviewer_color = false;
     private $remapped_rounds = [];
     private $tags = [];
+    /** @var ?Formula */
     private $fxorder;
+    /** @var array */
     private $_data;
     private $_xorder_data;
     private $_xorder_map;
@@ -159,6 +167,7 @@ class FormulaGraph extends MessageSet {
         return [$queries, $styles];
     }
 
+    /** @param string $style */
     function add_query($q, $style, $fieldname = false) {
         $qn = count($this->queries);
         $this->queries[] = $q;
@@ -336,6 +345,7 @@ class FormulaGraph extends MessageSet {
         }
     }
 
+    /** @return 1|string */
     private function _paper_style(PaperInfo $prow) {
         $qnum = $this->papermap[$prow->paperId][0];
         if ($this->_qstyles_bytag[$qnum]) {

@@ -465,7 +465,7 @@ class DocumentInfo implements JsonSerializable {
                 || ($this->s3_upgrade_extension($s3, $s3k) && $s3->check($s3k)));
     }
 
-    /** @return bool */
+    /** @return ?bool */
     function store_s3() {
         if (($s3 = $this->conf->s3_docstore())
             && ($s3k = $this->s3_key())) {

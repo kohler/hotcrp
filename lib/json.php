@@ -387,7 +387,7 @@ class Json {
         return self::$error_type;
     }
 
-    /** @return string */
+    /** @return ?string */
     static function last_error_msg() {
         static $errors =
             array(JSON_ERROR_NONE => null,

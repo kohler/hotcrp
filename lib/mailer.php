@@ -32,6 +32,7 @@ class MailPreparation {
             }
         }
     }
+    /** @param string $email */
     static function valid_email($email) {
         return ($at = strpos($email, "@")) !== false
             && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")

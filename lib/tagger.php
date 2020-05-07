@@ -7,8 +7,11 @@
 // check for uses of eval().
 
 class TagMapItem {
+    /** @var string */
     public $tag;
+    /** @var Conf */
     public $conf;
+    /** @var false|string */
     public $pattern = false;
     public $pattern_instance = false;
     public $pattern_version = 0;
@@ -24,6 +27,7 @@ class TagMapItem {
     public $rank = false;
     public $public_peruser = false;
     public $order_anno = false;
+    /** @var ?list<TagAnno> */
     private $_order_anno_list;
     private $_order_anno_search;
     public $colors;
@@ -31,10 +35,12 @@ class TagMapItem {
     public $badges;
     public $emoji;
     public $autosearch;
+    /** @param string $tag */
     function __construct($tag, TagMap $tagmap) {
         $this->conf = $tagmap->conf;
         $this->set_tag($tag, $tagmap);
     }
+    /** @param string $tag */
     function set_tag($tag, TagMap $tagmap) {
         $this->tag = $tag;
         if (($color = $tagmap->known_style($tag))) {
@@ -69,6 +75,7 @@ class TagMapItem {
         }
         return $t;
     }
+    /** @return list<TagAnno> */
     function order_anno_list() {
         if ($this->_order_anno_list === null) {
             $this->_order_anno_list = [];
@@ -98,9 +105,13 @@ class TagMapItem {
         }
         return $this->_order_anno_list;
     }
+    /** @param int $i
+     * @return ?TagAnno */
     function order_anno_entry($i) {
         return ($this->order_anno_list())[$i] ?? null;
     }
+    /** @param int|float $tagIndex
+     * @return ?TagInfo */
     function order_anno_search($tagIndex) {
         $ol = $this->order_anno_list();
         $i = $this->_order_anno_search;
@@ -113,6 +124,7 @@ class TagMapItem {
         $this->_order_anno_search = $i;
         return $i ? $ol[$i - 1] : null;
     }
+    /** @return bool */
     function has_order_anno() {
         return count($this->order_anno_list()) > 1;
     }
@@ -187,6 +199,7 @@ class TagAnno implements JsonSerializable {
 }
 
 class TagMap implements IteratorAggregate {
+    /** @var Conf */
     public $conf;
     public $has_pattern = false;
     public $has_chair = true;
@@ -204,9 +217,11 @@ class TagMap implements IteratorAggregate {
     public $has_decoration = false;
     public $has_order_anno = false;
     public $has_autosearch = false;
+    /** @var array<string,TagMapItem> */
     private $storage = array();
     private $sorted = false;
     private $pattern_re;
+    /** @var list<TagMapItem> */
     private $pattern_storage = [];
     private $pattern_version = 0; // = count($pattern_storage)
     private $color_re;
@@ -377,7 +392,7 @@ class TagMap implements IteratorAggregate {
         return array_filter($this->storage, $f);
     }
     /** @param string $tag
-     * @param string $property
+     * @param non-empty-string $property
      * @return ?TagMapItem */
     function check_property($tag, $property) {
         $k = "has_{$property}";
@@ -388,6 +403,7 @@ class TagMap implements IteratorAggregate {
     }
 
 
+    /** @param string $tag */
     function is_chair($tag) {
         if ($tag[0] === "~") {
             return $tag[1] === "~";
@@ -395,27 +411,35 @@ class TagMap implements IteratorAggregate {
             return !!$this->check_property($tag, "chair");
         }
     }
+    /** @param string $tag */
     function is_readonly($tag) {
         return !!$this->check_property($tag, "readonly");
     }
+    /** @param string $tag */
     function is_hidden($tag) {
         return !!$this->check_property($tag, "hidden");
     }
+    /** @param string $tag */
     function is_sitewide($tag) {
         return !!$this->check_property($tag, "sitewide");
     }
+    /** @param string $tag */
     function is_public_peruser($tag) {
         return !!$this->check_property($tag, "public_peruser");
     }
+    /** @param string $tag */
     function is_votish($tag) {
         return !!$this->check_property($tag, "votish");
     }
+    /** @param string $tag */
     function is_vote($tag) {
         return !!$this->check_property($tag, "vote");
     }
+    /** @param string $tag */
     function is_approval($tag) {
         return !!$this->check_property($tag, "approval");
     }
+    /** @param string $tag */
     function votish_base($tag) {
         if (!$this->has_votish
             || ($twiddle = strpos($tag, "~")) === false) {
@@ -425,12 +449,15 @@ class TagMap implements IteratorAggregate {
         $t = $this->check($tbase);
         return $t && $t->votish ? $tbase : false;
     }
+    /** @param string $tag */
     function is_rank($tag) {
         return !!$this->check_property($tag, "rank");
     }
+    /** @param string $tag */
     function is_emoji($tag) {
         return !!$this->check_property($tag, "emoji");
     }
+    /** @param string $tag */
     function is_autosearch($tag) {
         return !!$this->check_property($tag, "autosearch");
     }
@@ -604,6 +631,7 @@ class TagMap implements IteratorAggregate {
         }
     }
 
+    /** @param ?string $tags */
     private function strip_nonsearchable($tags, Contact $user, PaperInfo $prow = null) {
         // Prerequisite: self::assert_tag_string($tags, true);
         if ((string) $tags !== ""
@@ -629,6 +657,7 @@ class TagMap implements IteratorAggregate {
         return $tags;
     }
 
+    /** @param ?string $tags */
     private function strip_nonviewable($tags, Contact $user, PaperInfo $prow = null) {
         // Prerequisite: self::assert_tag_string($tags, true);
         if ((string) $tags !== ""
@@ -694,8 +723,8 @@ class TagMap implements IteratorAggregate {
         return $tags;
     }
 
-    /** @param string $tags
-     * @return string */
+    /** @param ?string $tags
+     * @return ?string */
     function sort_string($tags) {
         if ($tags !== null && $tags !== "") {
             // XXX remove assert_tag_string
@@ -960,11 +989,15 @@ class Tagger {
         }
     }
 
+    /** @return false */
     private function set_error_html($e) {
         $this->error_html = $e;
         return false;
     }
 
+    /** @param ?string $tag
+     * @param int $flags
+     * @return string|false */
     function check($tag, $flags = 0) {
         if (!$this->contact->privChair) {
             $flags |= self::NOCHAIR;

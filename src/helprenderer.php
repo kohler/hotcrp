@@ -3,15 +3,18 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class HelpRenderer extends Ht {
+    /** @var Conf */
     public $conf;
+    /** @var Contact */
     public $user;
     private $_tabletype;
     private $_rowidx;
+    /** @var GroupedExtensions */
     private $_help_topics;
     private $_renderers = [];
     private $_sv;
     private $_h3ids;
-    function __construct($help_topics, Contact $user) {
+    function __construct(GroupedExtensions $help_topics, Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_help_topics = $help_topics;
@@ -140,6 +143,7 @@ class HelpRenderer extends Ht {
             return '';
         }
     }
+    /** @param string|array<string,string> $q */
     function search_form($q, $size = 20) {
         if (is_string($q)) {
             $q = ["q" => $q];

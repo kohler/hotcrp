@@ -3,13 +3,19 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class FormatSpec {
+    /** @var list<array{float,float}> */
     public $papersize = []; // [DIMEN, ...]
     /** @var ?array{int,int} */
     public $pagelimit;      // [MIN, MAX]
+    /** @var ?bool */
     public $unlimitedref;
+    /** @var ?int */
     public $columns;        // NCOLUMNS
+    /** @var ?array{int,int} */
     public $textblock;      // [WIDTH, HEIGHT]
+    /** @var ?array{int|float,int|float|null,int|float|null} */
     public $bodyfontsize;   // [MIN, MAX, GRACE]
+    /** @var ?array{int|float,int|float|null,int|float|null} */
     public $bodylineheight; // [MIN, MAX, GRACE]
     public $quietpages;     // {ERRORTYPE => IGNOREARRAY}
     public $checkers;
@@ -165,6 +171,8 @@ class FormatSpec {
     }
 
 
+    /** @param string $s
+     * @return ?array{int|float,int|float|null,int|float|null} */
     static function parse_range($s) {
         $x1 = $x2 = 0;
         if (preg_match(',\A([\d.]+)(?:\s*(?:-|–)\s*([\d.]+))?(?:\s*(?:[dD]|Δ|\+\/?-|±)\s*([\d.]+))?\z,', $s, $m)
@@ -177,7 +185,7 @@ class FormatSpec {
         }
     }
 
-    /** @param array{int|float, int|float, int|float|null} $r */
+    /** @param array{int|float,int|float|null,int|float|null} $r */
     static private function unparse_range($r) {
         if ($r[1] && $r[2]) {
             return "$r[0]-$r[1]±$r[2]";

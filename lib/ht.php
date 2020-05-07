@@ -506,6 +506,8 @@ class Ht {
     }
 
 
+    /** @param list<string>|string $msg
+     * @param int|string $status */
     static function msg($msg, $status) {
         if (is_int($status)) {
             $status = $status >= 2 ? "error" : ($status > 0 ? "warning" : "info");
@@ -534,11 +536,13 @@ class Ht {
         return '<div class="msg msg-' . $status . '">' . $msg . '</div>';
     }
 
+    /** @deprecated */
     static function xmsg($status, $msg) {
         return self::msg($msg, $status);
     }
 
 
+    /** @param string $field */
     static function control_class($field, $rest = "") {
         if (self::$_msgset) {
             return self::$_msgset->control_class($field, $rest);
@@ -546,14 +550,17 @@ class Ht {
             return $rest;
         }
     }
+    /** @param string $field */
     static function error_at($field, $msg = "") {
         self::$_msgset || (self::$_msgset = new MessageSet);
         self::$_msgset->error_at($field, $msg);
     }
+    /** @param string $field */
     static function warning_at($field, $msg = "") {
         self::$_msgset || (self::$_msgset = new MessageSet);
         self::$_msgset->warning_at($field, $msg);
     }
+    /** @param string $field */
     static function problem_status_at($field) {
         return self::$_msgset ? self::$_msgset->problem_status_at($field) : 0;
     }

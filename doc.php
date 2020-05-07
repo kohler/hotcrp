@@ -4,6 +4,8 @@
 
 require_once("src/initweb.php");
 
+/** @param string $status
+ * @param string $msg */
 function document_error($status, $msg) {
     global $Conf, $Me, $Qreq;
     if (str_starts_with($status, "403") && $Me->is_empty()) {

@@ -645,6 +645,7 @@ class MeetingTracker {
         if (empty($pids)) {
             return;
         }
+        '@phan-var list<int> $pids';
 
         $track_manager = $user->is_track_manager();
         $show_pc_conflicts = $track_manager

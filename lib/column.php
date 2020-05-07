@@ -4,18 +4,28 @@
 
 class Column {
     public $name;
+    /** @var ?string */
     public $title;
+    /** @var ?string */
     public $title_html;
     public $className;
+    /** @var bool */
     public $column = false;
+    /** @var bool */
     public $row = false;
+    /** @var bool|int */
     public $fold = false;
+    /** @var bool */
     public $sort = false;
+    /** @var bool */
     public $completion = false;
+    /** @var bool */
     public $minimal = false;
     public $position;
     public $__subposition;
+    /** @var bool */
     public $is_visible = false;
+    /** @var bool */
     public $has_content = false;
 
     static private $keys = [
@@ -53,12 +63,15 @@ class Column {
         assert(!$this->row || !$this->column);
     }
 
+    /** @return bool */
     function viewable() {
         return $this->column || $this->row;
     }
+    /** @return bool */
     function viewable_column() {
         return $this->column;
     }
+    /** @return bool */
     function viewable_row() {
         return $this->row;
     }

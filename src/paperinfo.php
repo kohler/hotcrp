@@ -270,7 +270,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return false;
     }
-    /** @return ArrayIterator<PaperInfo> */
+    /** @return Iterator<PaperInfo> */
     function getIterator() {
         return new ArrayIterator($this->prows);
     }

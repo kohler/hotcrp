@@ -19,9 +19,7 @@ class ReviewFieldInfo {
     /** @var ?non-empty-string */
     public $json_storage;
 
-    /** @param string $id
-     * @param string $short_id
-     * @param bool $has_options
+    /** @param bool $has_options
      * @param ?non-empty-string $main_storage
      * @param ?non-empty-string $json_storage
      * @phan-assert non-empty-string $id
@@ -207,12 +205,14 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return self::unparse_visibility_value($this->view_score);
     }
 
+    /** @return bool */
     function value_empty($value) {
         return $value === null
             || $value === ""
             || ($this->has_options && (int) $value === 0);
     }
 
+    /** @return bool */
     function is_round_visible(ReviewInfo $rrow = null) {
         if (!$this->round_mask) {
             return true;
@@ -224,6 +224,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         }
     }
 
+    /** @return bool */
     function include_word_count() {
         return $this->displayed
             && !$this->has_options
@@ -310,6 +311,10 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return "sv " . $this->option_class_prefix . $n;
     }
 
+    /** @param int|string $value
+     * @param int $flags
+     * @param ?string $real_format
+     * @return ?$string */
     function unparse_value($value, $flags = 0, $real_format = null) {
         if (is_object($value)) {
             $value = $value->{$this->id} ?? null;
@@ -438,6 +443,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         }
     }
 
+    /** @return bool */
     function parse_is_explicit_empty($text) {
         return $this->has_options
             && ($text === "0" || strcasecmp($text, "No entry") === 0);
@@ -471,10 +477,14 @@ class ReviewField implements Abbreviator, JsonSerializable {
 class ReviewForm implements JsonSerializable {
     const NOTIFICATION_DELAY = 10800;
 
+    /** @var Conf */
     public $conf;
+    /** @var array<string,ReviewField> */
     public $fmap;      // all fields, whether or not displayed, key id
+    /** @var array<string,ReviewField> */
     public $forder;    // displayed fields in display order, key id
     public $fieldName;
+    /** @var ?string */
     private $_stopwords;
 
     static public $revtype_names = [
@@ -541,18 +551,23 @@ class ReviewForm implements JsonSerializable {
         }
     }
 
+    /** @param string $fid
+     * @return ?ReviewField */
     function field($fid) {
         return $this->forder[$fid] ?? null;
     }
+    /** @return array<string,ReviewField> */
     function all_fields() {
         return $this->forder;
     }
+    /** @return array<string,ReviewField> */
     function user_visible_fields(Contact $user) {
         $bound = $user->permissive_view_score_bound();
         return array_filter($this->forder, function ($f) use ($bound) {
             return $f->view_score > $bound;
         });
     }
+    /** @return array<string,ReviewField> */
     function paper_visible_fields(Contact $user, PaperInfo $prow, ReviewInfo $rrow = null) {
         $bound = $user->view_score_bound($prow, $rrow);
         return array_filter($this->forder, function ($f) use ($bound, $rrow) {
@@ -560,6 +575,7 @@ class ReviewForm implements JsonSerializable {
                 && (!$f->round_mask || $f->is_round_visible($rrow));
         });
     }
+    /** @return list<ReviewField> */
     function example_fields(Contact $user) {
         $fs = [];
         foreach ($this->user_visible_fields($user) as $f) {
@@ -574,6 +590,7 @@ class ReviewForm implements JsonSerializable {
         return $fs;
     }
 
+    /** @return string */
     function stopwords() {
         // Produce a list of common words in review field names that should be
         // avoided in abbreviations.
@@ -603,6 +620,7 @@ class ReviewForm implements JsonSerializable {
         return $this->_stopwords;
     }
 
+    /** @return string */
     function default_display() {
         $f = $this->fmap["overAllMerit"];
         if (!$f->displayed || !$f->search_keyword()) {
@@ -720,6 +738,7 @@ class ReviewForm implements JsonSerializable {
         echo "</div>\n";
     }
 
+    /** @return int */
     function nonempty_view_score(ReviewInfo $rrow) {
         $view_score = VIEWSCORE_EMPTY;
         foreach ($this->forder as $fid => $f) {
@@ -732,6 +751,7 @@ class ReviewForm implements JsonSerializable {
         return $view_score;
     }
 
+    /** @return int */
     function word_count(ReviewInfo $rrow) {
         $wc = 0;
         foreach ($this->forder as $fid => $f) {
@@ -1483,6 +1503,7 @@ class ReviewValues extends MessageSet {
                 $this->$k = $options[$k];
     }
 
+    /** @return ReviewValues */
     static function make_text(ReviewForm $rf, $text, $filename = null) {
         $rv = new ReviewValues($rf);
         $rv->text = $text;

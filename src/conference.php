@@ -72,9 +72,12 @@ class ResponseRound {
 }
 
 class Conf {
+    /** @var ?mysqli */
     public $dblink = null;
 
+    /** @var array<string,int> */
     public $settings;
+    /** @var array<string,?string> */
     private $settingTexts;
     public $sversion;
     private $_pc_seeall_cache = null;
@@ -107,7 +110,7 @@ class Conf {
     private $_collator;
     /** @var list<string> */
     private $rounds;
-    /** @var array<int,string> */
+    /** @var ?array<int,string> */
     private $_defined_rounds;
     private $_round_settings;
     private $_resp_rounds;
@@ -116,7 +119,9 @@ class Conf {
     private $_taginfo;
     private $_track_tags;
     private $_track_sensitivity = 0;
+    /** @var ?array<int,string> */
     private $_decisions;
+    /** @var ?AbbreviationMatcher */
     private $_decision_matcher;
     private $_topic_set;
     private $_conflict_types;
@@ -172,9 +177,9 @@ class Conf {
     private $_capability_factories;
     private $_hook_map;
     private $_hook_factories;
-    /** @var array<string,FileFilter> */
+    /** @var ?array<string,FileFilter> */
     public $_file_filters; // maintained externally
-    /** @var array<string,Si> */
+    /** @var ?array<string,Si> */
     public $_setting_info; // maintained externally
     /** @var ?GroupedExtensions */
     public $_setting_groups; // maintained externally
@@ -1170,6 +1175,7 @@ class Conf {
     }
 
 
+    /** @return array<int,string> */
     function decision_map() {
         if ($this->_decisions === null) {
             $dmap = array();
@@ -1191,6 +1197,8 @@ class Conf {
         return $this->_decisions;
     }
 
+    /** @param int $dnum
+     * @return string|false */
     function decision_name($dnum) {
         if ($this->_decisions === null) {
             $this->decision_map();
@@ -1202,6 +1210,8 @@ class Conf {
         }
     }
 
+    /** @param string $dname
+     * @return string|false */
     static function decision_name_error($dname) {
         $dname = simplify_whitespace($dname);
         if ((string) $dname === "") {
@@ -1213,6 +1223,7 @@ class Conf {
         }
     }
 
+    /** @return AbbreviationMatcher */
     function decision_matcher() {
         if ($this->_decision_matcher === null) {
             $this->_decision_matcher = new AbbreviationMatcher;
@@ -1232,10 +1243,12 @@ class Conf {
 
 
 
+    /** @return bool */
     function has_topics() {
         return ($this->settings["has_topics"] ?? 0) !== 0;
     }
 
+    /** @return TopicSet */
     function topic_set() {
         if ($this->_topic_set === null) {
             $this->_topic_set = new TopicSet($this);
@@ -1243,6 +1256,7 @@ class Conf {
         return $this->_topic_set;
     }
 
+    /** @return AbbreviationMatcher */
     function topic_abbrev_matcher() {
         return $this->topic_set()->abbrev_matcher();
     }
@@ -1253,6 +1267,7 @@ class Conf {
     }
 
 
+    /** @return Conflict */
     function conflict_types() {
         if ($this->_conflict_types === null) {
             $this->_conflict_types = new Conflict($this);
@@ -1265,6 +1280,7 @@ class Conf {
     const FSRCH_REVIEW = 2;
     const FSRCH_FORMULA = 4;
 
+    /** @return AbbreviationMatcher */
     function abbrev_matcher() {
         if (!$this->_abbrev_matcher) {
             $this->_abbrev_matcher = new AbbreviationMatcher;
@@ -1296,6 +1312,7 @@ class Conf {
         return is_object($x) ? $x : null;
     }
 
+    /** @return ReviewForm */
     function review_form() {
         if (!$this->_review_form_cache) {
             $this->_review_form_cache = new ReviewForm($this->review_form_json(), $this);
@@ -1303,18 +1320,23 @@ class Conf {
         return $this->_review_form_cache;
     }
 
+    /** @return array<string,ReviewField> */
     function all_review_fields() {
         return $this->review_form()->all_fields();
     }
+    /** @param string $fid
+     * @return ?ReviewField */
     function review_field($fid) {
         return $this->review_form()->field($fid);
     }
+    /** @param string $text
+     * @return ?ReviewField */
     function find_review_field($text) {
         return $this->abbrev_matcher()->find1($text, self::FSRCH_REVIEW);
     }
 
 
-
+    /** @return TagMap */
     function tags() {
         if (!$this->_taginfo) {
             $this->_taginfo = TagMap::make($this);
@@ -1670,6 +1692,7 @@ class Conf {
 
 
 
+    /** @return list<ResponseRound> */
     function resp_rounds() {
         if ($this->_resp_rounds === null) {
             $this->_resp_rounds = [];
@@ -1692,20 +1715,28 @@ class Conf {
         return $this->_resp_rounds;
     }
 
+    /** @param int $rnum
+     * @return string */
     function resp_round_name($rnum) {
         $rrd = ($this->resp_rounds())[$rnum] ?? null;
         return $rrd ? $rrd->name : "1";
     }
 
+    /** @param int $rnum
+     * @return string */
     function resp_round_text($rnum) {
         $rname = $this->resp_round_name($rnum);
         return $rname == "1" ? "" : $rname;
     }
 
+    /** @param string $rname
+     * @return string|bool */
     static function resp_round_name_error($rname) {
         return self::round_name_error($rname);
     }
 
+    /** @param string $rname
+     * @return int|false */
     function resp_round_number($rname) {
         if (!$rname
             || $rname === 1
@@ -1771,9 +1802,12 @@ class Conf {
 
     // users
 
+    /** @return bool */
     function external_login() {
         return isset($this->opt["ldapLogin"]) || isset($this->opt["httpAuthLogin"]);
     }
+
+    /** @return bool */
     function allow_user_self_register() {
         return !$this->external_login()
             && !$this->opt("disableNewUsers")
@@ -2101,6 +2135,7 @@ class Conf {
 
     // contactdb
 
+    /** @return ?mysqli */
     function contactdb() {
         if ($this->_cdb === false) {
             $this->_cdb = null;

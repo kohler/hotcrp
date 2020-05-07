@@ -204,7 +204,7 @@ class Si {
             return "";
         }
     }
-    function canonical_group($conf) {
+    function canonical_group(Conf $conf) {
         if (!$this->group) {
             trigger_error("setting {$this->name}.group missing");
         }
@@ -213,6 +213,7 @@ class Si {
         }
         return $conf->_setting_groups->canonical_group($this->group);
     }
+    /** @return bool */
     function is_interesting(SettingValues $sv) {
         return !$this->group || $sv->group_is_interesting($this->group);
     }
@@ -248,7 +249,7 @@ class Si {
         }
     }
 
-    /** @param string name
+    /** @param string $name
      * @return ?Si */
     static function get(Conf $conf, $name) {
         if (isset($conf->_setting_info[$name])) {
@@ -403,13 +404,17 @@ class SettingParser {
 }
 
 class SettingValues extends MessageSet {
+    /** @var Conf */
     public $conf;
+    /** @var Contact */
     public $user;
     public $interesting_groups = [];
     public $all_interesting;
 
     private $parsers = [];
+    /** @var list<Si> */
     private $validate_si = [];
+    /** @var list<Si> */
     private $saved_si = [];
     private $cleanup_callbacks = [];
     public $need_lock = [];
@@ -466,6 +471,7 @@ class SettingValues extends MessageSet {
     }
 
 
+    /** @return GroupedExtensions */
     private function gxt() {
         if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->user, ["etc/settinggroups.json"], $this->conf->opt("settingGroups"));
@@ -473,20 +479,25 @@ class SettingValues extends MessageSet {
         }
         return $this->_gxt;
     }
+    /** @param string $g */
     function canonical_group($g) {
         return $this->gxt()->canonical_group(strtolower($g));
     }
+    /** @param string $g */
     function group_title($g) {
         $gj = $this->gxt()->get($g);
         return $gj && $gj->name === $gj->group ? $gj->title : null;
     }
+    /** @param string $g */
     function group_anchorid($g) {
         $gj = $this->gxt()->get($g);
         return $gj && isset($gj->anchorid) ? $gj->anchorid : null;
     }
+    /** @param string $g */
     function group_members($g) {
         return $this->gxt()->members(strtolower($g));
     }
+    /** @param string $g */
     function mark_interesting_group($g) {
         $this->interesting_groups[$this->canonical_group($g)] = true;
         foreach ($this->group_members($g) as $gj) {
@@ -506,10 +517,11 @@ class SettingValues extends MessageSet {
     }
 
 
+    /** @return bool */
     function use_req() {
         return $this->has_error();
     }
-    /** @param Si|string|list<Si|string> $field
+    /** @param Si|string|null|list<Si|string> $field
      * @param string|null|false $html */
     function error_at($field, $html = null) {
         if (is_array($field)) {
@@ -521,7 +533,7 @@ class SettingValues extends MessageSet {
             parent::error_at($fname, $html);
         }
     }
-    /** @param Si|string|list<Si|string> $field
+    /** @param Si|string|null|list<Si|string> $field
      * @param string|null|false $html */
     function warning_at($field, $html = null) {
         if (is_array($field)) {
@@ -584,6 +596,9 @@ class SettingValues extends MessageSet {
         return $g && isset($this->interesting_groups[$g]);
     }
 
+    /** @param ?string $c1
+     * @param ?string $c2
+     * @return ?string */
     static function add_class($c1, $c2) {
         if ((string) $c1 !== "" && (string) $c2 !== "") {
             return $c1 . " " . $c2;

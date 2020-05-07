@@ -3,12 +3,16 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class MinCostMaxFlow_Node {
+    /** @var string */
     public $name;
     /** @var int */
     public $vindex;
     public $klass;
+    /** @var int|float */
     public $flow = 0;
+    /** @var ?MinCostMaxFlow_Node|false */
     public $link = null;
+    /** @var ?MinCostMaxFlow_Node */
     public $xlink = null;
     /** @var int */
     public $npos = 0;
@@ -23,6 +27,7 @@ class MinCostMaxFlow_Node {
     /** @var list<MinCostMaxFlow_Edge> */
     public $e = array();
     public $xe;
+    /** @param string $name */
     function __construct($name, $klass) {
         $this->name = $name;
         $this->klass = $klass;
@@ -81,6 +86,11 @@ class MinCostMaxFlow_Edge {
     public $cost;
     /** @var int|float */
     public $flow = 0;
+    /** @param MinCostMaxFlow_Node $src
+     * @param MinCostMaxFlow_Node $dst
+     * @param int|float $cap
+     * @param int|float $cost
+     * @param int|float $mincap */
     function __construct($src, $dst, $cap, $cost, $mincap = 0) {
         $this->src = $src;
         $this->dst = $dst;
@@ -224,6 +234,8 @@ class MinCostMaxFlow {
 
     // extract information
 
+    /** @param string $name
+     * @return bool */
     function node_exists($name) {
         return isset($this->vmap[$name]);
     }
@@ -237,6 +249,7 @@ class MinCostMaxFlow {
         return $a;
     }
 
+    /** @return int|float */
     function current_flow() {
         if ($this->maxflow !== null) {
             return $this->maxflow;
@@ -245,6 +258,7 @@ class MinCostMaxFlow {
         }
     }
 
+    /** @return int|float */
     function current_cost() {
         $cost = 0;
         foreach ($this->e as $e) {
@@ -254,6 +268,8 @@ class MinCostMaxFlow {
         return $cost;
     }
 
+    /** @param MinCostMaxFlow_Node $v
+     * @param list<MinCostMaxFlow_Node> &$a */
     private function add_reachable($v, $klass, &$a) {
         if ($v->klass === $klass) {
             $a[] = $v;
@@ -265,6 +281,8 @@ class MinCostMaxFlow {
         }
     }
 
+    /** @param MinCostMaxFlow_Node|string $v
+     * @return list<MinCostMaxFlow_Node> */
     function reachable($v, $klass) {
         if (is_string($v)) {
             $v = $this->vmap[$v];
@@ -274,6 +292,8 @@ class MinCostMaxFlow {
         return $a;
     }
 
+    /** @param MinCostMaxFlow_Node $v
+     * @param list<MinCostMaxFlow_Node> &$a */
     private function topological_sort_visit($v, $klass, &$a) {
         if ($v !== $this->sink && !$v->npos) {
             $v->npos = 1;
@@ -287,6 +307,8 @@ class MinCostMaxFlow {
         }
     }
 
+    /** @param MinCostMaxFlow_Node|string $v
+     * @return list<MinCostMaxFlow_Node> */
     function topological_sort($v, $klass) {
         if (is_string($v)) {
             $v = $this->vmap[$v];
@@ -315,6 +337,9 @@ class MinCostMaxFlow {
 
     // push-relabel: maximum flow only, ignores costs
 
+    /** @param MinCostMaxFlow_Node $qtail
+     * @param MinCostMaxFlow_Node $v
+     * @param int|float $dist */
     private static function pushrelabel_bfs_setdistance($qtail, $v, $dist) {
         if ($v->distance !== $dist) {
             $v->distance = $dist;
@@ -343,6 +368,8 @@ class MinCostMaxFlow {
         }
     }
 
+    /** @param MinCostMaxFlow_Edge $e
+     * @param MinCostMaxFlow_Node $src */
     private function pushrelabel_push_from($e, $src) {
         $amt = min($src->excess, $e->residual_cap_from($src));
         $amt = ($src == $e->dst ? -$amt : $amt);
@@ -350,6 +377,7 @@ class MinCostMaxFlow {
         $e->update_flow($amt);
     }
 
+    /** @param MinCostMaxFlow_Node $v */
     private function pushrelabel_relabel($v) {
         $d = INF;
         foreach ($v->e as $e) {
@@ -361,6 +389,7 @@ class MinCostMaxFlow {
         $v->npos = 0;
     }
 
+    /** @param MinCostMaxFlow_Node $v */
     private function pushrelabel_discharge($v) {
         $ne = count($v->e);
         $relabeled = false;
@@ -467,6 +496,8 @@ class MinCostMaxFlow {
 
     // cost-scaling push-relabel
 
+    /** @param MinCostMaxFlow_Edge $e
+     * @param MinCostMaxFlow_Node $v */
     private function cspushrelabel_push_from($e, $src) {
         $dst = $e->other($src);
         // push lookahead heuristic
@@ -491,6 +522,7 @@ class MinCostMaxFlow {
         ++$this->npush;
     }
 
+    /** @param MinCostMaxFlow_Node $v */
     private function cspushrelabel_relabel($v) {
         // calculate new price
         $p = -INF;
@@ -520,6 +552,7 @@ class MinCostMaxFlow {
         ++$this->nrelabel;
     }
 
+    /** @param MinCostMaxFlow_Node $v */
     private function cspushrelabel_discharge($v) {
         $ne = count($v->e);
         while ($v->excess > 0) {

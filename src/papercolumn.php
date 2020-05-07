@@ -10,6 +10,7 @@ class PaperColumn extends Column {
     const OVERRIDE_BOTH = 3;
     const OVERRIDE_FORCE = 4;
     const OVERRIDE_NONCONFLICTED = 16;
+    /** @var int */
     public $override = 0;
 
     const PREP_SORT = -1;
@@ -81,6 +82,7 @@ class PaperColumn extends Column {
     function analyze(PaperList $pl, $fields) {
     }
 
+    /** @return string */
     function header(PaperList $pl, $is_text) {
         if (isset($this->title_html) && !$is_text) {
             return $this->title_html;
@@ -92,6 +94,7 @@ class PaperColumn extends Column {
             return "&lt;" . htmlspecialchars($this->name) . "&gt;";
         }
     }
+    /** @return string|false */
     function completion_name() {
         if (!$this->completion) {
             return false;
@@ -129,6 +132,7 @@ class PaperColumn extends Column {
     function has_statistics() {
         return false;
     }
+    /** @return false|string */
     function statistic(PaperList $pl, $stat) {
         return false;
     }

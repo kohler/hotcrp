@@ -1025,6 +1025,7 @@ class PaperStatus extends MessageSet {
         return $contacts;
     }
 
+    /** @return array<string,int> */
     private function conflicts_array($pj) {
         $cflts = [];
 

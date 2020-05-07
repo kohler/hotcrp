@@ -127,7 +127,8 @@ class Mimetype {
         }
     }
 
-    /** @param string|Mimetype $type */
+    /** @param string|Mimetype $typea
+     * @param string|Mimetype $typeb */
     static function type_equals($typea, $typeb) {
         return self::type($typea) === self::type($typeb);
     }
@@ -167,16 +168,19 @@ class Mimetype {
         return $x && ($x->flags & self::FLAG_INLINE) !== 0;
     }
 
+    /** @return list<Mimetype> */
     static function builtins() {
         return array_map(function ($t) { return Mimetype::lookup($t); },
                          array_keys(self::$tinfo));
     }
 
 
+    /** @return bool */
     static function pdf_content($content) {
         return $content && strncmp("%PDF-", $content, 5) == 0;
     }
 
+    /** @return string */
     static function content_type($content, $type = null) {
         $content_exists = (string) $content !== "";
         // reliable sniffs

@@ -280,7 +280,6 @@ class SearchTerm {
     function get_float($k, $defval = null) {
         return $this->float[$k] ?? $defval;
     }
-    /** @param ?array{int,int} $span */
     function apply_strspan($span) {
         $span1 = $this->float["strspan"] ?? null;
         if ($span && $span1) {
@@ -1659,6 +1658,7 @@ class PaperSearch {
     public $user;
     public $cid;
 
+    /** @var Contact|null|false */
     private $_reviewer_user = false;
     private $_named_limit;
     private $_limit_qe;
@@ -1684,7 +1684,7 @@ class PaperSearch {
     private $_allow_deleted = false;
     public $thenmap;
     public $groupmap;
-    /** @var false|non-empty-string */
+    /** @var false|string */
     public $is_order_anno = false;
     public $highlightmap;
     private $_sorters = [];
@@ -1830,6 +1830,7 @@ class PaperSearch {
             && $this->q !== "re:me";
     }
 
+    /** @return Contact */
     function reviewer_user() {
         return $this->_reviewer_user ? : $this->user;
     }

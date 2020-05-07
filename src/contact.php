@@ -379,6 +379,7 @@ class Contact {
 
     // initialization
 
+    /** @return list<string> */
     static function session_users() {
         if (isset($_SESSION["us"])) {
             return $_SESSION["us"];
@@ -389,6 +390,7 @@ class Contact {
         }
     }
 
+    /** @return int */
     static function session_user_index($email) {
         foreach (self::session_users() as $i => $u) {
             if (strcasecmp($u, $email) == 0) {
@@ -398,6 +400,7 @@ class Contact {
         return -1;
     }
 
+    /** @return Contact */
     private function actas_user($x) {
         assert(!self::$true_user || self::$true_user === $this);
 
@@ -440,6 +443,7 @@ class Contact {
         return $u;
     }
 
+    /** @return Contact */
     function activate($qreq, $signin = false) {
         global $Now;
         $this->_activated = true;
@@ -526,7 +530,8 @@ class Contact {
     function overrides() {
         return $this->_overrides;
     }
-    /** @param int $overrides */
+    /** @param int $overrides
+     * @return int */
     function set_overrides($overrides) {
         $old_overrides = $this->_overrides;
         if (($overrides & self::OVERRIDE_CONFLICT) && !$this->is_manager()) {
@@ -535,11 +540,13 @@ class Contact {
         $this->_overrides = $overrides;
         return $old_overrides;
     }
-    /** @param int $overrides */
+    /** @param int $overrides
+     * @return int */
     function add_overrides($overrides) {
         return $this->set_overrides($this->_overrides | $overrides);
     }
-    /** @param int $overrides */
+    /** @param int $overrides
+     * @return int */
     function remove_overrides($overrides) {
         return $this->set_overrides($this->_overrides & ~$overrides);
     }
@@ -563,6 +570,7 @@ class Contact {
         }
     }
 
+    /** @return ?Contact */
     function contactdb_user($refresh = false) {
         if ($this->contactDbId && !$this->contactId) {
             return $this;
@@ -633,22 +641,27 @@ class Contact {
     }
 
 
+    /** @return bool */
     function is_activated() {
         return $this->_activated;
     }
 
+    /** @return bool */
     function is_actas_user() {
         return $this->_activated && self::$true_user;
     }
 
+    /** @return bool */
     function is_empty() {
         return $this->contactId <= 0 && !$this->email && !$this->_capabilities;
     }
 
+    /** @return bool */
     function owns_email($email) {
         return (string) $email !== "" && strcasecmp($email, $this->email) === 0;
     }
 
+    /** @return bool */
     function is_disabled() {
         if ($this->_disabled === null) {
             $this->_disabled = $this->disabled
@@ -657,11 +670,13 @@ class Contact {
         return $this->_disabled;
     }
 
+    /** @return bool */
     function contactdb_disabled() {
         $cdbu = $this->contactdb_user();
         return $cdbu && $cdbu->disabled;
     }
 
+    /** @return string */
     function name() {
         if ($this->firstName !== "" && $this->lastName !== "") {
             return $this->firstName . " " . $this->lastName;
@@ -719,6 +734,8 @@ class Contact {
         return $n;
     }
 
+    /** @param Contact|ReviewInfo|int $x
+     * @return mixed */
     private function name_for($pfx, $x) {
         $cid = is_object($x) ? $x->contactId : $x;
         $key = $pfx . $cid;
@@ -746,22 +763,32 @@ class Contact {
         return ($this->_name_for_map[$key] = $this->calculate_name_for($pfx, $x));
     }
 
+    /** @param Contact|ReviewInfo|int $x
+     * @return string */
     function name_html_for($x) {
         return $this->name_for("", $x);
     }
 
+    /** @param Contact|ReviewInfo|int $x
+     * @return string */
     function name_text_for($x) {
         return $this->name_for("t", $x);
     }
 
+    /** @param Contact|ReviewInfo|int $x
+     * @return Contact|NameInfo */
     function name_object_for($x) {
         return $this->name_for("u", $x);
     }
 
+    /** @param Contact|ReviewInfo|int $x
+     * @return string */
     function reviewer_html_for($x) {
         return $this->name_for($this->isPC ? "r" : "", $x);
     }
 
+    /** @param Contact|ReviewInfo|int $x
+     * @return string */
     function reviewer_text_for($x) {
         return $this->name_for("t", $x);
     }
@@ -792,49 +819,54 @@ class Contact {
         });
     }
 
+    /** @return bool */
     function has_email() {
         return !!$this->email;
     }
 
+    /** @return bool */
     static function is_anonymous_email($email) {
         // see also PaperSearch, Mailer
         return substr($email, 0, 9) === "anonymous"
             && (strlen($email) === 9 || ctype_digit(substr($email, 9)));
     }
 
+    /** @return bool */
     function is_anonymous_user() {
         return $this->email && self::is_anonymous_email($this->email);
     }
 
+    /** @return bool */
     function is_signed_in() {
         return $this->email && $this->_activated;
     }
 
-    function has_database_account() { // XXX obsolete 16-08-2019
-        error_log("call to obsolete Contact::has_database_account");
-        return $this->contactId > 0;
-    }
-
+    /** @return bool */
     function has_account_here() {
         return $this->contactId > 0;
     }
 
+    /** @return bool */
     function is_admin() {
         return $this->privChair;
     }
 
+    /** @return bool */
     function is_admin_force() {
         return ($this->_overrides & self::OVERRIDE_CONFLICT) !== 0;
     }
 
+    /** @return bool */
     function is_pc_member() {
         return $this->roles & self::ROLE_PC;
     }
 
+    /** @return bool */
     function is_pclike() {
         return $this->roles & self::ROLE_PCLIKE;
     }
 
+    /** @return int */
     function viewable_pc_roles(Contact $viewer) {
         if (($this->roles & Contact::ROLE_PCLIKE)
             && $viewer->can_view_pc()) {
@@ -846,6 +878,8 @@ class Contact {
             return 0;
     }
 
+    /** @param int $roles
+     * @return string */
     static function role_html_for($roles) {
         if ($roles & (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN | Contact::ROLE_PC)) {
             if ($roles & Contact::ROLE_CHAIR)
@@ -860,6 +894,8 @@ class Contact {
             return "";
     }
 
+    /** @param string $t
+     * @return bool */
     function has_tag($t) {
         if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0) {
             return true;
@@ -874,10 +910,14 @@ class Contact {
         return false;
     }
 
+    /** @param string $perm
+     * @return bool */
     function has_permission($perm) {
         return !$perm || $this->has_tag(substr($perm, 1)) === ($perm[0] === "+");
     }
 
+    /** @param string $t
+     * @return float|false */
     function tag_value($t) {
         if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0) {
             return 0.0;
@@ -889,6 +929,9 @@ class Contact {
         }
     }
 
+    /** @param int $roles
+     * @param string $tags
+     * @return string */
     static function roles_all_contact_tags($roles, $tags) {
         if ($roles & self::ROLE_PC) {
             return " pc#0" . $tags;
@@ -1413,10 +1456,13 @@ class Contact {
     // * Contactdb password generally takes preference. On successful signin
     //   using contactdb password, local password is reset to "".
 
+    /** @param string $input
+     * @return bool */
     static function valid_password($input) {
         return strlen($input) > 5 && trim($input) === $input;
     }
 
+    /** @return bool */
     function password_unset() {
         $cdbu = $this->contactdb_user();
         return (!$cdbu
@@ -1427,6 +1473,7 @@ class Contact {
                 || ($cdbu && (string) $cdbu->password !== "" && $cdbu->passwordTime >= $this->passwordTime));
     }
 
+    /** @return bool */
     function can_reset_password() {
         $cdbu = $this->contactdb_user();
         return !$this->conf->external_login()
@@ -1454,6 +1501,9 @@ class Contact {
         return $key;
     }
 
+    /** @param string $input
+     * @param string $pwhash
+     * @return bool */
     private function check_hashed_password($input, $pwhash) {
         if ($input == ""
             || $input === "*"
@@ -1478,11 +1528,14 @@ class Contact {
         }
     }
 
+    /** @return int|string */
     private function password_hash_method() {
         $m = $this->conf->opt("passwordHashMethod");
         return is_int($m) ? $m : PASSWORD_DEFAULT;
     }
 
+    /** @param string $hash
+     * @return bool */
     private function password_needs_rehash($hash) {
         return $hash === ""
             || $hash[0] !== " "
@@ -1490,10 +1543,14 @@ class Contact {
             || password_needs_rehash(substr($hash, 2), $this->password_hash_method());
     }
 
+    /** @param string $input
+     * @return string */
     private function hash_password($input) {
         return " \$" . password_hash($input, $this->password_hash_method());
     }
 
+    /** @param string $input
+     * @return array{ok:bool} */
     function check_password_info($input, $options = []) {
         global $Now;
         assert(!$this->conf->external_login());
@@ -1620,6 +1677,8 @@ class Contact {
         return ["ok" => true];
     }
 
+    /** @param string $input
+     * @return bool */
     function check_password($input) {
         $x = $this->check_password_info($input);
         return $x["ok"];
@@ -4176,7 +4235,7 @@ class Contact {
 
     // papers
 
-    /** @return PaperInfoSet */
+    /** @return PaperInfoSet|Iterable<PaperInfo> */
     function paper_set($pids, $options = []) {
         $ssel = null;
         if (is_int($pids)) {
@@ -4214,6 +4273,7 @@ class Contact {
         return $pids;
     }
 
+    /** @return array{string,string} */
     function paper_status_info(PaperInfo $row) {
         if ($row->timeWithdrawn > 0) {
             return ["pstat_with", "Withdrawn"];

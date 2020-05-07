@@ -217,6 +217,8 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_account_here())
 }
 
 
+/** @param UserStatus $user_status
+ * @param ?Contact $Acct */
 function save_user($cj, $user_status, $Acct, $allow_modification) {
     global $Conf, $Me, $Now, $newProfile;
     if ($newProfile) {
