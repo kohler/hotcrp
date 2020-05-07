@@ -171,8 +171,8 @@ class SearchOperator {
 
     static function get($name) {
         if (!self::$list) {
-            self::$list["("] = new SearchOperator("(", true, null);
-            self::$list[")"] = new SearchOperator(")", true, null);
+            self::$list["("] = new SearchOperator("(", true, 0);
+            self::$list[")"] = new SearchOperator(")", true, 0);
             self::$list["NOT"] = new SearchOperator("not", true, 8);
             self::$list["-"] = new SearchOperator("not", true, 8);
             self::$list["!"] = new SearchOperator("not", true, 8);
@@ -186,6 +186,33 @@ class SearchOperator {
             self::$list["HIGHLIGHT"] = new SearchOperator("highlight", false, 1, "");
         }
         return self::$list[$name] ?? null;
+    }
+}
+
+class SearchScope {
+    /** @var SearchOperator */
+    public $op;
+    /** @var SearchTerm */
+    public $leftqe;
+    /** @var array{int,int} */
+    public $strspan;
+
+    function __construct($op, $leftqe, $strspan) {
+        $this->op = $op;
+        $this->leftqe = $leftqe;
+        $this->strspan = $strspan;
+    }
+}
+
+class CanonicalizeScope {
+    /** @var SearchOperator */
+    public $op;
+    /** @var list<string> */
+    public $qe;
+
+    function __construct($op, $qe) {
+        $this->op = $op;
+        $this->qe = $qe;
     }
 }
 
@@ -2197,6 +2224,7 @@ class PaperSearch {
     }
 
     /** @param ?SearchTerm $curqe
+     * @param list<SearchScope> &$stack
      * @return SearchTerm */
     static private function _pop_expression_stack($curqe, &$stack) {
         $x = array_pop($stack);
@@ -2214,6 +2242,7 @@ class PaperSearch {
 
     private function _search_expression($str) {
         $stack = array();
+        '@phan-var list<SearchScope> $stack';
         $defkwstack = array();
         $defkw = $next_defkw = null;
         $parens = 0;
@@ -2265,7 +2294,7 @@ class PaperSearch {
                 }
             } else if ($op->op === "(") {
                 assert(!$curqe);
-                $stkelem = (object) ["op" => $op, "leftqe" => null, "strspan" => $splitter->strspan];
+                $stkelem = new SearchScope($op, null, $splitter->strspan);
                 $defkwstack[] = $defkw;
                 if ($next_defkw) {
                     $defkw = $next_defkw[0];
@@ -2280,7 +2309,7 @@ class PaperSearch {
                        && $stack[count($stack) - 1]->op->precedence > $end_precedence) {
                     $curqe = self::_pop_expression_stack($curqe, $stack);
                 }
-                $stack[] = (object) ["op" => $op, "leftqe" => $curqe, "strspan" => $splitter->strspan];
+                $stack[] = new SearchScope($op, $curqe, $splitter->strspan);
                 $curqe = null;
             }
         }
@@ -2301,6 +2330,7 @@ class PaperSearch {
     }
 
     /** @param string $curqe
+     * @param list<CanonicalizeScope> &$stack
      * @return ?string */
     static private function _pop_canonicalize_stack($curqe, &$stack) {
         $x = array_pop($stack);
@@ -2335,6 +2365,7 @@ class PaperSearch {
         }
 
         $stack = [];
+        '@phan-var list<CanonicalizeScope> $stack';
         $parens = 0;
         $defaultop = $type === "all" ? "SPACE" : "SPACEOR";
         $curqe = null;
@@ -2367,7 +2398,7 @@ class PaperSearch {
                 }
             } else if ($op->op === "(") {
                 assert(!$curqe);
-                $stack[] = (object) ["op" => $op, "qe" => []];
+                $stack[] = new CanonicalizeScope($op, []);
                 ++$parens;
             } else {
                 $end_precedence = $op->precedence - ($op->precedence <= 1 ? 1 : 0);
@@ -2379,14 +2410,14 @@ class PaperSearch {
                 if ($top && !$op->unary && $top->op->op === $op->op) {
                     $top->qe[] = $curqe;
                 } else {
-                    $stack[] = (object) ["op" => $op, "qe" => [$curqe]];
+                    $stack[] = new CanonicalizeScope($op, [$curqe]);
                 }
                 $curqe = null;
             }
         }
 
         if ($type === "none") {
-            array_unshift($stack, (object) array("op" => SearchOperator::get("NOT"), "qe" => array()));
+            array_unshift($stack, new CanonicalizeScope(SearchOperator::get("NOT"), []));
         }
         while (!empty($stack)) {
             $curqe = self::_pop_canonicalize_stack($curqe, $stack);
