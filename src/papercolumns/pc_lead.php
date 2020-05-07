@@ -12,9 +12,11 @@ class Lead_PaperColumn extends PaperColumn {
             && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
     static private function cid(PaperList $pl, PaperInfo $row) {
-        if ($row->leadContactId && $pl->user->can_view_lead($row))
-            return $row->leadContactId;
-        return 0;
+        if ($row->leadContactId && $pl->user->can_view_lead($row)) {
+            return (int) $row->leadContactId;
+        } else {
+            return 0;
+        }
     }
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         $sorter->anno = Contact::parse_sortanno($pl->conf, $sorter->anno);
@@ -30,9 +32,9 @@ class Lead_PaperColumn extends PaperColumn {
         return !self::cid($pl, $row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $pl->_content_pc($row->leadContactId);
+        return $pl->_content_pc((int) $row->leadContactId);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $pl->_text_pc($row->leadContactId);
+        return $pl->_text_pc((int) $row->leadContactId);
     }
 }

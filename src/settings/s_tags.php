@@ -184,7 +184,7 @@ class Tags_SettingParser extends SettingParser {
                 $cvals = [];
                 $negative = false;
                 while (($row = $result->fetch_row())) {
-                    $who = substr($row[1], 0, strpos($row[1], "~"));
+                    $who = (int) substr($row[1], 0, strpos($row[1], "~"));
                     if ($row[2] < 0) {
                         $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for #$row[0].");
                         $negative = true;
@@ -202,12 +202,12 @@ class Tags_SettingParser extends SettingParser {
                 $q = ($negative ? " or (tag like '%~{$sqlbase}' and tagIndex<0)" : "");
                 $sv->conf->qe_raw("delete from PaperTag where tag='" . sqlq($base) . "'$q");
 
-                $q = array();
+                $qv = [];
                 foreach ($pvals as $pid => $what) {
-                    $q[] = "($pid, '" . sqlq($base) . "', $what)";
+                    $qv[] = [$pid, $base, $what];
                 }
-                if (count($q) > 0) {
-                    $sv->conf->qe_raw("insert into PaperTag values " . join(", ", $q));
+                if (count($qv) > 0) {
+                    $sv->conf->qe("insert into PaperTag values ?v", $qv);
                 }
             }
         }
@@ -227,19 +227,19 @@ class Tags_SettingParser extends SettingParser {
                         $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for #$row[0].");
                         $negative = true;
                     } else {
-                        $pvals[$row[0]] = get($pvals, $row[0], 0) + 1;
+                        $pvals[$row[0]] = ($pvals[$row[0]] ?? 0) + 1;
                     }
                 }
 
                 $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
                 $sv->conf->qe_raw("delete from PaperTag where tag='" . sqlq($t) . "'$q");
 
-                $q = array();
+                $qv = [];
                 foreach ($pvals as $pid => $what) {
-                    $q[] = "($pid, '" . sqlq($t) . "', $what)";
+                    $qv[] = [$pid, $t, $what];
                 }
-                if (count($q) > 0) {
-                    $sv->conf->qe_raw("insert into PaperTag values " . join(", ", $q));
+                if (count($qv) > 0) {
+                    $sv->conf->qe("insert into PaperTag values ?v", $qv);
                 }
             }
         }

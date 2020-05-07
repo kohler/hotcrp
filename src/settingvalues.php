@@ -600,10 +600,12 @@ class SettingValues extends MessageSet {
      * @param ?string $c2
      * @return ?string */
     static function add_class($c1, $c2) {
-        if ((string) $c1 !== "" && (string) $c2 !== "") {
-            return $c1 . " " . $c2;
+        if ($c1 === null || $c1 === "") {
+            return $c2;
+        } else if ($c2 === null || $c2 === "") {
+            return $c1;
         } else {
-            return (string) $c1 !== "" ? $c1 : $c2;
+            return $c1 . " " . $c2;
         }
     }
 

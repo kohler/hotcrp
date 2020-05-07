@@ -587,7 +587,8 @@ class Conf {
             }
             $this->opt["docstoreSubdir"] = $this->opt["filestoreSubdir"] ?? null;
         }
-        if (($this->opt["docstore"] ?? null)
+        if (isset($this->opt["docstore"])
+            && $this->opt["docstore"]
             && $this->opt["docstore"][0] !== "/") {
             $this->opt["docstore"] = $ConfSitePATH . "/" . $this->opt["docstore"];
         }
@@ -4178,49 +4179,58 @@ class Conf {
         echo '</div>', Ht::unstash(), "</body>\n</html>\n";
     }
 
-    private function pc_json_item($viewer, $user, $is_contact) {
-        $j = (object) [];
-        $contact = $r = null;
-        '@phan-var ?Contact $contact';
-        if ($is_contact) {
-            $contact = $user;
-            $j->name = $viewer->name_text_for($contact);
-        } else {
-            $r = Text::analyze_name($user);
-            $j->name = $r->name;
-        }
-        $j->email = $user->email;
-        if ($j->name === "") {
-            $j->name = $user->email;
-        }
-        if ($is_contact
-            && ($color_classes = $contact->viewable_color_classes($viewer))) {
+    /** @param Contact $viewer
+     * @param Contact $user */
+    private function pc_json_item($viewer, $user) {
+        $name = $viewer->name_text_for($user);
+        $j = (object) [
+            "name" => $name !== "" ? $name : $user->email,
+            "email" => $user->email
+        ];
+        if (($color_classes = $user->viewable_color_classes($viewer))) {
             $j->color_classes = $color_classes;
         }
         if ($this->sort_by_last && $user->lastName) {
-            $r = $r ? : Text::analyze_name($user);
-            if (strlen($r->lastName) !== strlen($j->name)) {
-                if ($r->nameAscii) {
-                    $j->lastpos = strlen($r->firstName) + 1;
-                } else {
-                    $j->lastpos = UnicodeHelper::utf16_strlen($r->firstName) + 1;
-                }
-            }
-            if ($r->nameAmbiguous && $r->name !== "" && $r->email !== "") {
-                if ($r->nameAscii) {
-                    $j->emailpos = strlen($r->name) + 1;
-                } else {
-                    $j->emailpos = UnicodeHelper::utf16_strlen($r->name) + 1;
-                }
-            }
+            self::pc_json_sort_by_last($j, Text::analyze_name($user));
         }
         return $j;
+    }
+
+    /** @param Contact $viewer */
+    private function pc_json_reviewer_item($viewer, $user) {
+        $r = Text::analyze_name($user);
+        $j = (object) [
+            "name" => $r->name !== "" ? $r->name : $user->email,
+            "email" => $user->email
+        ];
+        if ($this->sort_by_last && $r->lastName) {
+            self::pc_json_sort_by_last($j, $r);
+        }
+        return $j;
+    }
+
+    /** @param NameInfo $r */
+    static private function pc_json_sort_by_last($j, $r) {
+        if (strlen($r->lastName) !== strlen($j->name)) {
+            if ($r->nameAscii) {
+                $j->lastpos = strlen($r->firstName) + 1;
+            } else {
+                $j->lastpos = UnicodeHelper::utf16_strlen($r->firstName) + 1;
+            }
+        }
+        if ($r->nameAmbiguous && $r->name !== "" && $r->email !== "") {
+            if ($r->nameAscii) {
+                $j->emailpos = strlen($r->name) + 1;
+            } else {
+                $j->emailpos = UnicodeHelper::utf16_strlen($r->name) + 1;
+            }
+        }
     }
 
     function hotcrp_pc_json(Contact $viewer) {
         $hpcj = $list = $otherj = [];
         foreach ($this->pc_members() as $pcm) {
-            $hpcj[$pcm->contactId] = $this->pc_json_item($viewer, $pcm, true);
+            $hpcj[$pcm->contactId] = $this->pc_json_item($viewer, $pcm);
             $list[] = $pcm->contactId;
         }
         $hpcj["__order__"] = $list;
@@ -4246,7 +4256,7 @@ class Conf {
                     if ($rrow->reviewType == REVIEW_EXTERNAL
                         && !$rrow->reviewToken
                         && !in_array($rrow->contactId, $erlist)) {
-                        $otherj[$rrow->contactId] = $this->pc_json_item($viewer, $rrow, false);
+                        $otherj[$rrow->contactId] = $this->pc_json_reviewer_item($viewer, $rrow);
                         $erlist[] = $rrow->contactId;
                     }
                 }

@@ -224,6 +224,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
     if ($newProfile) {
         $Acct = null;
     }
+    assert(!$Acct === !!$newProfile);
 
     // check for missing fields
     UserStatus::normalize_name($cj);
@@ -233,7 +234,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
     }
 
     // check email
-    if ($newProfile || strcasecmp($cj->email, $Acct->email)) {
+    if (!$Acct || strcasecmp($cj->email, $Acct->email)) {
         if ($Acct && $Acct->data("locked")) {
             return $user_status->error_at("email", "This account is locked, so you can’t change its email address.");
         } else if (($new_acct = $Conf->user_by_email($cj->email))) {
@@ -373,19 +374,21 @@ function parseBulkFile($text, $filename) {
     if (!empty($ustatus->unknown_topics)) {
         $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin(array_keys($ustatus->unknown_topics))) . ").";
     }
+    $successMsg = "";
     if (count($success) == 1) {
         $successMsg = "Saved account " . $success[0] . ".";
     } else if (count($success)) {
         $successMsg = "Saved " . plural($success, "account") . ": " . commajoin($success) . ".";
     }
+    $errorMsg = "";
     if (count($errors)) {
         $errorMsg = '<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . "</p></div>";
     }
-    if (count($success) && count($errors)) {
+    if ($successMsg !== "" && $errorMsg !== "") {
         $Conf->confirmMsg($successMsg . "<br />$errorMsg");
-    } else if (count($success)) {
+    } else if ($successMsg !== "") {
         $Conf->confirmMsg($successMsg);
-    } else if (count($errors)) {
+    } else if ($errorMsg !== "") {
         Conf::msg_error($errorMsg);
     } else {
         $Conf->warnMsg("Nothing to do.");

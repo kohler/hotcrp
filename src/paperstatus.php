@@ -1175,7 +1175,8 @@ class PaperStatus extends MessageSet {
             if (!empty($ps->_new_conflicts)) {
                 $result = $ps->conf->qe("select contactId, email from ContactInfo where email?a", array_keys($ps->_new_conflicts));
                 while (($row = $result->fetch_row())) {
-                    $ps->_conflict_ins[] = [-1, $row[0], $ps->_new_conflicts[strtolower($row[1])]];
+                    $ct = $ps->_new_conflicts[strtolower($row[1])];
+                    $ps->_conflict_ins[] = [-1, $row[0], $ct];
                 }
                 Dbl::free($result);
             }

@@ -279,7 +279,7 @@ class MeetingTracker {
 
         // track="IDENTIFIER POSITION" or track="IDENTIFIER stop" or track=stop
         if (!$user->is_track_manager() || !$qreq->post_ok()) {
-            json_exit(403, "Permission error.");
+            return json_exit(403, "Permission error.");
         }
 
         if ($qreq->track === "stop") {
@@ -297,7 +297,7 @@ class MeetingTracker {
             || !$qreq["hotlist-info"]
             || !($xlist = SessionList::decode_info_string($qreq["hotlist-info"]))
             || !str_starts_with($xlist->listid, "p/")) {
-            json_exit(400, "Parameter error.");
+            return json_exit(400, "Parameter error.");
         }
 
         // look up trackers
@@ -330,7 +330,7 @@ class MeetingTracker {
         if (!$user->privChair
             && $match !== false
             && !self::check_tracker_admin_perm($user, $trs[$match]->admin_perm ?? null)) {
-            json_exit(403, "Permission error: You can’t administer that tracker.");
+            return json_exit(403, "Permission error: You can’t administer that tracker.");
         }
 
         $admin_perm = null;
@@ -417,7 +417,7 @@ class MeetingTracker {
         global $Now;
 
         if (!$user->is_track_manager() || !$qreq->post_ok()) {
-            json_exit(403, "Permission error.");
+            return json_exit(403, "Permission error.");
         }
 
         $tracker = self::lookup($user->conf);
@@ -589,7 +589,7 @@ class MeetingTracker {
             self::my_deadlines($j, $user);
             return $j;
         } else {
-            json_exit(400, ["ok" => false, "errf" => $errf, "error" => $error]);
+            return json_exit(400, ["ok" => false, "errf" => $errf, "error" => $error]);
         }
     }
 

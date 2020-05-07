@@ -29,7 +29,8 @@ class TagMapItem {
     public $order_anno = false;
     /** @var ?list<TagAnno> */
     private $_order_anno_list;
-    private $_order_anno_search;
+    /** @var int */
+    private $_order_anno_search = 0;
     public $colors;
     public $basic_color = false;
     public $badges;
@@ -347,7 +348,7 @@ class TagMap implements IteratorAggregate {
      * @return TagMapItem */
     function add($tag) {
         $ltag = strtolower($tag);
-        $t = $this->storage[$ltag] ?? false;
+        $t = $this->storage[$ltag] ?? null;
         if (!$t) {
             $t = new TagMapItem($tag, $this);
             if (!TagInfo::basic_check($ltag)) {
@@ -371,6 +372,7 @@ class TagMap implements IteratorAggregate {
             && !$t->pattern
             && $t->pattern_version < $this->pattern_version) {
             $t = $this->update_patterns($tag, $ltag, $t);
+            '@phan-var TagMapItem $t';
         }
         return $t;
     }
@@ -641,7 +643,8 @@ class TagMap implements IteratorAggregate {
     /** @param ?string $tags */
     private function strip_nonsearchable($tags, Contact $user, PaperInfo $prow = null) {
         // Prerequisite: self::assert_tag_string($tags, true);
-        if ((string) $tags !== ""
+        if ($tags !== null
+            && $tags !== ""
             && (!$prow || !$user->allow_administer($prow))
             && ($this->has_hidden || strpos($tags, "~") !== false)) {
             $re = "(?:";
@@ -667,7 +670,8 @@ class TagMap implements IteratorAggregate {
     /** @param ?string $tags */
     private function strip_nonviewable($tags, Contact $user, PaperInfo $prow = null) {
         // Prerequisite: self::assert_tag_string($tags, true);
-        if ((string) $tags !== ""
+        if ($tags !== null
+            && $tags !== ""
             && ($this->has_hidden || strpos($tags, "~") !== false)) {
             $re = "(?:";
             if ($user->contactId > 0) {
@@ -1006,14 +1010,14 @@ class Tagger {
      * @param int $flags
      * @return string|false */
     function check($tag, $flags = 0) {
+        if ($tag === null || $tag === "" || $tag === "#") {
+            return $this->set_error_html("Tag missing.");
+        }
         if (!$this->contact->privChair) {
             $flags |= self::NOCHAIR;
         }
-        if ($tag !== "" && $tag[0] === "#") {
+        if ($tag[0] === "#") {
             $tag = substr($tag, 1);
-        }
-        if ((string) $tag === "") {
-            return $this->set_error_html("Tag missing.");
         }
         if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m)) {
             if (preg_match('/\A([-a-zA-Z0-9!@*_:.\/#=]+)[\s,]+\S+/', $tag, $m)

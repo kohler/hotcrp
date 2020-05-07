@@ -858,12 +858,12 @@ class Contact {
 
     /** @return bool */
     function is_pc_member() {
-        return $this->roles & self::ROLE_PC;
+        return ($this->roles & self::ROLE_PC) !== 0;
     }
 
     /** @return bool */
     function is_pclike() {
-        return $this->roles & self::ROLE_PCLIKE;
+        return ($this->roles & self::ROLE_PCLIKE) !== 0;
     }
 
     /** @return int */

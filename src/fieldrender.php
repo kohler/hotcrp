@@ -81,7 +81,7 @@ class FieldRender {
     /** @return string */
     function value_html($divclass = null) {
         $rest = "";
-        if ((string) $this->value === "") {
+        if ($this->value === null || $this->value === "") {
             return "";
         } else if ($this->value_format === 5) {
             if ($divclass === null) {

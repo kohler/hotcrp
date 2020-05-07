@@ -91,9 +91,9 @@ class PaperApi {
         } else if ($ok) {
             $p = [];
             if ($pids) {
-                foreach ($user->paper_set(array_keys($pids)) as $prow) {
-                    $p[$prow->paperId] = (object) [];
-                    $prow->add_tag_info_json($p[$prow->paperId], $user);
+                foreach ($user->paper_set(array_keys($pids)) as $pr) {
+                    $p[$pr->paperId] = (object) [];
+                    $pr->add_tag_info_json($p[$pr->paperId], $user);
                 }
             }
             $jr = new JsonResult(["ok" => true, "p" => (object) $p]);
@@ -115,9 +115,10 @@ class PaperApi {
         preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\S+)/i', $prow->all_tags_text(), $m);
         $is_approval = $user->conf->tags()->is_approval($tag);
         $min_vote = $is_approval ? 0 : 0.001;
-        for ($i = 0; $i != count($m[0]); ++$i)
+        for ($i = 0; $i != count($m[0]); ++$i) {
             if ($m[2][$i] >= $min_vote)
-                $votemap[$m[1][$i]] = $m[2][$i];
+                $votemap[(int) $m[1][$i]] = $m[2][$i];
+        }
         $user->ksort_cid_array($votemap);
         $result = [];
         foreach ($votemap as $k => $v) {

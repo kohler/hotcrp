@@ -141,25 +141,21 @@ class Mimetype {
 
     /** @param string|Mimetype $type */
     static function description($type) {
-        if (is_array($type)) {
-            $a = array();
-            foreach ($type as $x) {
-                if (($x = self::description($x)))
-                    $a[$x] = $x;
-            }
-            return commajoin($a, "or");
+        $x = self::lookup($type);
+        if ($x && $x->description) {
+            return $x->description;
+        } else if ($x && $x->extension) {
+            return $x->extension;
+        } else if ($x) {
+            return $x->mimetype;
         } else {
-            $x = self::lookup($type);
-            if ($x && $x->description) {
-                return $x->description;
-            } else if ($x && $x->extension) {
-                return $x->extension;
-            } else if ($x) {
-                return $x->mimetype;
-            } else {
-                return $type;
-            }
+            return $type;
         }
+    }
+
+    /** @param list<string|Mimetype> $types */
+    static function list_description($types) {
+        return commajoin(array_map("Mimetype::description", $types), "or");
     }
 
     /** @param string|Mimetype $type */
@@ -182,9 +178,8 @@ class Mimetype {
 
     /** @return string */
     static function content_type($content, $type = null) {
-        $content_exists = (string) $content !== "";
         // reliable sniffs
-        if ($content_exists) {
+        if ($content !== null && $content !== "") {
             if (strncmp("%PDF-", $content, 5) == 0) {
                 return self::PDF_TYPE;
             } else if (substr($content, 512, 4) === "\x00\x6E\x1E\xF0") {
@@ -211,7 +206,7 @@ class Mimetype {
             $type = $tx;
         }
         // unreliable sniffs
-        if ($content_exists
+        if ($content !== null && $content !== ""
             && (!$type || $type === self::BIN_TYPE)) {
             if (strncmp("%!PS-", $content, 5) == 0) {
                 return self::PS_TYPE;

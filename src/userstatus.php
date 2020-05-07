@@ -396,7 +396,7 @@ class UserStatus extends MessageSet {
         }
 
         // Preferred email
-        if (get($cj, "preferred_email")
+        if (($cj->preferred_email ?? false)
             && !$this->has_problem_at("preferred_email")
             && !validate_email($cj->preferred_email)
             && (!$old_user || $old_user->preferredEmail !== $cj->preferred_email)) {
@@ -405,21 +405,19 @@ class UserStatus extends MessageSet {
 
         // Address
         $address = null;
-        if (is_array(get($cj, "address"))) {
+        if (is_array($cj->address ?? null)) {
             $address = $cj->address;
-        } else {
-            if (is_string(get($cj, "address"))) {
-                $address[] = $cj->address;
-            } else if (get($cj, "address")) {
-                $this->error_at("address", "Format error [address]");
-            }
-            if (is_string(get($cj, "address2"))) {
+        } else if (is_string($cj->address ?? null)) {
+            $address = [$cj->address];
+            if (is_string($cj->address2 ?? null)) {
                 $address[] = $cj->address2;
-            } else if (is_string(get($cj, "addressLine2"))) {
+            } else if (is_string($cj->addressLine2 ?? null)) {
                 $address[] = $cj->addressLine2;
-            } else if (get($cj, "address2") || get($cj, "addressLine2")) {
+            } else if (($cj->address2 ?? null) || ($cj->addressLine2 ?? null)) {
                 $this->error_at("address2", "Format error [address2]");
             }
+        } else if ($cj->address ?? null) {
+            $this->error_at("address", "Format error [address]");
         }
         if ($address !== null) {
             foreach ($address as &$a) {

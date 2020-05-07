@@ -708,15 +708,14 @@ class PaperRank {
             foreach ($p1pref as $p2 => $pref12) {
                 $pref21 = $this->pref[$p2][$p1];
                 if ($pref12 > $pref21)
-                    $strength["$p1 $p2"] = array($pref12, $pref21);
+                    $strength["$p1 $p2"] = [$pref12, $pref21];
             }
         }
         uasort($strength, array($this, "_comparStrength"));
 
         // add them to the graph
-        $defeat = array();
-        $reachable = array();
-        $adddefeat = array();
+        $defeat = $reachable = $adddefeat = [];
+        $lastvalue = [0, 0];
         foreach ($strength as $k => $value) {
             if (count($adddefeat) && $this->_comparStrength($lastvalue, $value)) {
                 $this->_includePairs($defeat, $reachable, $adddefeat);

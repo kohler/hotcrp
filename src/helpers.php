@@ -412,6 +412,7 @@ function whyNotText($whyNot, $text_only = false) {
     $conf = $whyNot["conf"] ?? $Conf;
     $paperId = $whyNot["paperId"] ?? -1;
     $reviewId = $whyNot["reviewId"] ?? -1;
+    $option = $whyNot["option"] ?? null;
     $ms = [];
     $quote = $text_only ? function ($x) { return $x; } : "htmlspecialchars";
     if (isset($whyNot["invalidId"])) {
@@ -433,13 +434,13 @@ function whyNotText($whyNot, $text_only = false) {
     }
     if (isset($whyNot["permission"])) {
         if ($whyNot["permission"] === "view_option") {
-            $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId, $quote($whyNot["option"]->title()));
+            $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId, $quote($option->title()));
         } else {
             $ms[] = $conf->_c("eperm", "Permission error.", $whyNot["permission"], $paperId);
         }
     }
     if (isset($whyNot["optionNotAccepted"])) {
-        $ms[] = $conf->_("The %2\$s field is reserved for accepted submissions.", $paperId, $quote($whyNot["option"]->title()));
+        $ms[] = $conf->_("The %2\$s field is reserved for accepted submissions.", $paperId, $quote($option->title()));
     }
     if (isset($whyNot["documentNotFound"])) {
         $ms[] = $conf->_("No such document “%s”.", $quote($whyNot["documentNotFound"]));

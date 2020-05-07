@@ -81,7 +81,7 @@ class Tag_Fexpr extends Fexpr {
                 assert(strpos($regex, "|") === false
                        && str_starts_with($regex, "{ {$state->user->contactId}~"));
                 $regex = "\"{ \"." . $state->loop_cid() . "."
-                    . json_encode(substr($regex, strlen($state->user->contactId) + 2));
+                    . json_encode(substr($regex, strlen((string) $state->user->contactId) + 2));
             } else {
                 $regex = json_encode($regex);
             }

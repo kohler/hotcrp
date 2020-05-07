@@ -401,6 +401,7 @@ class PaperTable {
     private function papt($what, $name, $extra = array()) {
         $fold = $extra["fold"] ?? false;
         $editfolder = $extra["editfolder"] ?? false;
+        $foldnum = $foldnumclass = false;
         if ($fold || $editfolder) {
             $foldnum = $extra["foldnum"] ?? 0;
             $foldnumclass = $foldnum ? " data-fold-target=\"$foldnum\"" : "";
@@ -668,7 +669,7 @@ class PaperTable {
 
         $msgs = [];
         if ($accepts) {
-            $msgs[] = htmlspecialchars(Mimetype::description($accepts));
+            $msgs[] = htmlspecialchars(Mimetype::list_description($accepts));
         }
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
         $heading = $this->edit_title_html($docx) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";

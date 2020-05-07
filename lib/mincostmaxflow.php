@@ -841,10 +841,8 @@ class MinCostMaxFlow {
     function clear() {
         // break circular references
         foreach ($this->v as $v) {
-            $v->link = $v->xlink = $v->e = null;
-        }
-        foreach ($this->e as $e) {
-            $e->src = $e->dst = null;
+            $v->link = $v->xlink = null;
+            $v->e = [];
         }
         $this->v = array();
         $this->e = array();

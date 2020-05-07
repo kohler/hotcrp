@@ -174,7 +174,7 @@ function document_download(Contact $user, $qreq) {
         exit;
     }
 
-    document_error("500 Server Error", null);
+    document_error("500 Server Error", "");
 }
 
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);

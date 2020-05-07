@@ -1502,7 +1502,7 @@ class DocumentPaperOption extends PaperOption {
             if ($mimetypes[$i]->mimetype === $doc->mimetype)
                 return true;
         }
-        $desc = htmlspecialchars(commajoin(array_map("Mimetype::description", $mimetypes), "or"));
+        $desc = htmlspecialchars(Mimetype::list_description($mimetypes));
         $e = "I only accept $desc files."
             . " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and "
             . htmlspecialchars($doc->content_text_signature())

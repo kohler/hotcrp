@@ -100,23 +100,24 @@ function initialize_user() {
     }
 
     // determine user
-    $trueemail = isset($_SESSION["u"]) ? $_SESSION["u"] : null;
-    $numusers = isset($_SESSION["us"]) ? count($_SESSION["us"]) : ($trueemail ? 1 : 0);
+    $trueemail = $_SESSION["u"] ?? null;
+    $userset = $_SESSION["us"] ?? ($trueemail ? [$trueemail] : []);
+    '@phan-var list<string> $userset';
 
     $uindex = 0;
     if ($nav->shifted_path === "") {
         if (isset($_GET["i"]) && $_SERVER["REQUEST_METHOD"] === "GET") {
             $uindex = Contact::session_user_index($_GET["i"]);
-        } else if ($numusers > 1 && $_SERVER["REQUEST_METHOD"] === "GET") {
+        } else if (count($userset) > 1 && $_SERVER["REQUEST_METHOD"] === "GET") {
             $uindex = -1;
         }
     } else if (substr($nav->shifted_path, 0, 2) === "u/") {
-        $uindex = $numusers ? (int) substr($nav->shifted_path, 2) : -1;
+        $uindex = empty($userset) ? -1 : (int) substr($nav->shifted_path, 2);
     }
-    if ($uindex > 0 && $uindex < $numusers) {
-        $trueemail = $_SESSION["us"][$uindex];
+    if ($uindex > 0 && $uindex < count($userset)) {
+        $trueemail = $userset[$uindex];
     } else if ($uindex !== 0) {
-        initialize_user_redirect($nav, 0, $numusers);
+        initialize_user_redirect($nav, 0, count($userset));
     }
 
     if (isset($_GET["i"])

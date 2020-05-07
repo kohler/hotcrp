@@ -193,6 +193,7 @@ class Topics_PaperOption extends PaperOption {
         $vs = $ov->value_array();
         $bad_topics = $ov->anno ? $ov->anno["bad_topics"] ?? null : null;
         $new_topics = $ov->anno ? $ov->anno["new_topics"] ?? null : null;
+        '@phan-var ?list<string> $new_topics';
         if ($ps->add_topics() && !empty($new_topics)) {
             // add new topics to topic list
             $lctopics = [];
