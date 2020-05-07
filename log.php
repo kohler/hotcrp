@@ -122,6 +122,30 @@ if ($Qreq->date !== "now" && isset($Qreq->q)) {
     }
 }
 
+class LogRow {
+    /** @var non-empty-string */
+    public $logId;
+    /** @var non-empty-string */
+    public $timestamp;
+    /** @var non-empty-string */
+    public $contactId;
+    /** @var ?non-empty-string */
+    public $destContactId;
+    /** @var ?non-empty-string */
+    public $trueContactId;
+    /** @var string */
+    public $action;
+    /** @var ?non-empty-string */
+    public $paperId;
+    public $data;
+
+    public $cleanedAction;
+    /** @var ?list<int> */
+    public $paperIdArray;
+    /** @var ?list<int> */
+    public $destContactIdArray;
+}
+
 class LogRowGenerator {
     private $conf;
     private $wheres;
@@ -131,13 +155,16 @@ class LogRowGenerator {
     private $upper_offset_bound;
     private $rows_offset;
     private $rows_max_offset;
-    private $rows;
+    /** @var list<LogRow> */
+    private $rows = [];
     private $filter;
     private $page_to_offset;
     private $log_url_base;
     private $explode_mail = false;
     private $mail_stash;
+    /** @var array<int,Contact> */
     private $users;
+    /** @var array<int,true> */
     private $need_users;
 
     function __construct(Conf $conf, $wheres, $page_size) {
@@ -151,7 +178,7 @@ class LogRowGenerator {
 
     function set_filter($filter) {
         $this->filter = $filter;
-        $this->rows = null;
+        $this->rows = [];
         $this->lower_offset_bound = 0;
         $this->upper_offset_bound = INF;
         $this->page_to_offset = [];
@@ -222,16 +249,19 @@ class LogRowGenerator {
         while ($n < $limit && !$exhausted) {
             $result = $this->conf->qe_raw($q . " limit $db_offset,$limit");
             $first_db_offset = $db_offset;
-            while ($result && ($row = $result->fetch_object())) {
-                $destuid = $row->destContactId ? : $row->contactId;
-                $this->need_users[$row->contactId] = $this->need_users[$destuid] = true;
+            while (($row = $result->fetch_object("LogRow"))) {
+                '@phan-var LogRow $row';
+                $this->need_users[(int) $row->contactId] = true;
+                $destuid = (int) ($row->destContactId ? : $row->contactId);
+                $this->need_users[$destuid] = true;
                 ++$db_offset;
                 if (!$this->explode_mail
                     && $this->mail_stash
                     && $this->mail_stash->action === $row->action) {
                     $this->mail_stash->destContactIdArray[] = $destuid;
-                    if ($row->paperId)
-                        $this->mail_stash->paperIdArray[] = $row->paperId;
+                    if ($row->paperId) {
+                        $this->mail_stash->paperIdArray[] = (int) $row->paperId;
+                    }
                     continue;
                 }
                 if (!$this->filter || call_user_func($this->filter, $row)) {
@@ -247,7 +277,7 @@ class LogRowGenerator {
                             $row->destContactId = null;
                             $row->paperIdArray = [];
                             if ($row->paperId) {
-                                $row->paperIdArray[] = $row->paperId;
+                                $row->paperIdArray[] = (int) $row->paperId;
                                 $row->paperId = null;
                             }
                         } else {
@@ -269,11 +299,14 @@ class LogRowGenerator {
         $this->rows_max_offset = $exhausted ? INF : $this->rows_offset + $n;
     }
 
+    /** @param int $pageno
+     * @return bool */
     function has_page($pageno, $load_npages = null) {
         global $nlinks;
         assert(is_int($pageno) && $pageno >= 1);
         $offset = $this->page_offset($pageno);
-        if ($offset >= $this->lower_offset_bound && $offset < $this->upper_offset_bound) {
+        if ($offset >= $this->lower_offset_bound
+            && $offset < $this->upper_offset_bound) {
             if ($load_npages) {
                 $limit = $load_npages * $this->page_size;
             } else {
@@ -287,11 +320,16 @@ class LogRowGenerator {
         return $offset < $this->lower_offset_bound;
     }
 
+    /** @param int $pageno
+     * @param int $timestamp
+     * @return bool */
     function page_after($pageno, $timestamp, $load_npages = null) {
         $rows = $this->page_rows($pageno, $load_npages);
         return !empty($rows) && $rows[count($rows) - 1]->timestamp > $timestamp;
     }
 
+    /** @param int $pageno
+     * @return list<LogRow> */
     function page_rows($pageno, $load_npages = null) {
         assert(is_int($pageno) && $pageno >= 1);
         if (!$this->has_page($pageno, $load_npages)) {
@@ -343,6 +381,8 @@ class LogRowGenerator {
         $this->need_users = [];
     }
 
+    /** @param LogRow $row
+     * @param 'contactId'|'destContactId'|'trueContactId' $key */
     function users_for($row, $key) {
         if (!empty($this->need_users)) {
             $this->_make_users();
@@ -360,6 +400,8 @@ class LogRowGenerator {
         return $u;
     }
 
+    /** @param LogRow $row
+     * @return list<int> */
     function paper_ids($row) {
         if (!isset($row->cleanedAction)) {
             if (!isset($row->paperIdArray)) {
@@ -377,7 +419,7 @@ class LogRowGenerator {
             if ($row->paperId) {
                 $row->paperIdArray[] = (int) $row->paperId;
             }
-            $row->paperIdArray = array_unique($row->paperIdArray);
+            $row->paperIdArray = array_values(array_unique($row->paperIdArray));
         }
         return $row->paperIdArray;
     }
@@ -472,7 +514,7 @@ if ($Qreq->download) {
     $csvg->select(["date", "email", "affected_email", "via",
                    $narrow ? "paper" : "papers", "action"]);
     foreach ($lrg->page_rows(1) as $row) {
-        $date = strftime("%Y-%m-%d %H:%M:%S %z", $row->timestamp);
+        $date = strftime("%Y-%m-%d %H:%M:%S %z", (int) $row->timestamp);
         $xusers = $xdest_users = [];
         foreach ($lrg->users_for($row, "contactId") as $u) {
             $xusers[] = $u->email;
