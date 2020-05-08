@@ -249,9 +249,66 @@ class Si {
         }
     }
 
+
+    /** @return array<string,Si> */
+    static function make_si_map(Conf $conf) {
+        $last_problem = 0;
+        $sis = [];
+        $hook = function ($v, $k, $landmark) use (&$sis, &$last_problem) {
+            if (is_object($v) && isset($v->name) && is_string($v->name)) {
+                $sis[] = $v;
+                return true;
+            } else {
+                return false;
+            }
+        };
+
+        expand_json_includes_callback(["etc/settinginfo.json"], $hook);
+        if (($olist = $conf->opt("settingInfo"))) {
+            expand_json_includes_callback($olist, $hook);
+        }
+        usort($sis, function ($a, $b) {
+            return strcmp($a->name, $b->name) ? : Conf::xt_priority_compare($a, $b);
+        });
+
+        $sim = [];
+        $nall = count($sis);
+        for ($i = 0; $i < $nall; ++$i) {
+            $j = $sis[$i];
+            while ($i + 1 < $nall
+                   && isset($j->merge)
+                   && $j->merge
+                   && $j->name === $sis[$i + 1]->name) {
+                $overlay = $j;
+                unset($overlay->merge);
+                $j = $sis[$i + 1];
+                object_replace_recursive($j, $overlay);
+                ++$i;
+            }
+            if ($conf->xt_allowed($j) && !isset($all[$j->name])) {
+                Conf::xt_resolve_require($j);
+                $class = $j->setting_class ?? "Si";
+                $sim[$j->name] = new $class($j);
+            }
+        }
+        uasort($sim, "Conf::xt_position_compare");
+        return $sim;
+    }
+
+    /** @return array<string,Si> */
+    static function si_map(Conf $conf) {
+        if ($conf->_setting_info === null) {
+            $conf->_setting_info = self::make_si_map($conf);
+        }
+        return $conf->_setting_info;
+    }
+
     /** @param string $name
      * @return ?Si */
     static function get(Conf $conf, $name) {
+        if ($conf->_setting_info === null) {
+            $conf->_setting_info = self::make_si_map($conf);
+        }
         if (isset($conf->_setting_info[$name])) {
             return $conf->_setting_info[$name];
         } else if (!preg_match('/\A(.*)(_(?:[^_\s]+))\z/', $name, $m)
@@ -282,61 +339,6 @@ class Si {
             $conf->_setting_info[$name] = $si;
             return $si;
         }
-    }
-
-
-    static private function read($info, $text, $fname) {
-        $j = json_decode($text, true);
-        if (is_array($j)) {
-            $info = array_replace_recursive($info, $j);
-        } else if (json_last_error() !== JSON_ERROR_NONE) {
-            Json::decode($text); // our JSON decoder provides error positions
-            trigger_error("$fname: Invalid JSON, " . Json::last_error_msg());
-        }
-        return $info;
-    }
-
-    static function initialize(Conf $conf) {
-        $last_problem = 0;
-        $sis = [];
-        $hook = function ($v, $k, $landmark) use (&$sis, &$last_problem) {
-            if (is_object($v) && isset($v->name) && is_string($v->name)) {
-                $sis[] = $v;
-                return true;
-            } else {
-                return false;
-            }
-        };
-
-        expand_json_includes_callback(["etc/settinginfo.json"], $hook);
-        if (($olist = $conf->opt("settingInfo"))) {
-            expand_json_includes_callback($olist, $hook);
-        }
-        usort($sis, function ($a, $b) {
-            return strcmp($a->name, $b->name) ? : Conf::xt_priority_compare($a, $b);
-        });
-
-        $conf->_setting_info = [];
-        $nall = count($sis);
-        for ($i = 0; $i < $nall; ++$i) {
-            $j = $sis[$i];
-            while ($i + 1 < $nall
-                   && isset($j->merge)
-                   && $j->merge
-                   && $j->name === $sis[$i + 1]->name) {
-                $overlay = $j;
-                unset($overlay->merge);
-                $j = $sis[$i + 1];
-                object_replace_recursive($j, $overlay);
-                ++$i;
-            }
-            if ($conf->xt_allowed($j) && !isset($all[$j->name])) {
-                Conf::xt_resolve_require($j);
-                $class = $j->setting_class ?? "Si";
-                $conf->_setting_info[$j->name] = new $class($j);
-            }
-        }
-        uasort($conf->_setting_info, "Conf::xt_position_compare");
     }
 }
 
@@ -434,10 +436,6 @@ class SettingValues extends MessageSet {
         parent::__construct();
         $this->conf = $user->conf;
         $this->user = $user;
-        // maybe initialize _setting_info
-        if ($this->conf->_setting_info === null) {
-            Si::initialize($this->conf);
-        }
     }
     static function make_request(Contact $user, $qreq) {
         $sv = new SettingValues($user);
@@ -1326,7 +1324,7 @@ class SettingValues extends MessageSet {
         global $Now;
 
         // parse and validate settings
-        foreach ($this->conf->_setting_info as $si) {
+        foreach (Si::si_map($this->conf) as $si) {
             $this->account($si);
         }
         foreach ($this->validate_si as $si) {
@@ -1458,7 +1456,7 @@ class SettingValues extends MessageSet {
     function unparse_json() {
         assert(!$this->use_req());
         $j = (object) [];
-        foreach ($this->conf->_setting_info as $si) {
+        foreach (Si::si_map($this->conf) as $si) {
             if ($this->si_has_interest($si)
                 && $si->active_value()
                 && $si->json_name) {
