@@ -81,15 +81,16 @@ class BanalSettings {
             && strcasecmp($s, "any") !== 0
             && strcasecmp($s, "N/A") !== 0) {
             $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
-            foreach ($ses as $ss)
-                if ($ss !== "" && ($d = FormatSpec::parse_dimen($ss, 2)))
+            foreach ($ses as $ss) {
+                if ($ss !== "" && ($d = FormatSpec::parse_dimen2($ss))) {
                     $cfs->papersize[] = $d;
-                else if ($ss !== "") {
+                } else if ($ss !== "") {
                     $sv->error_at("sub_banal_papersize$suffix", "Invalid paper size.");
                     $problem = true;
                     $sout = null;
                     break;
                 }
+            }
         }
 
         $cfs->pagelimit = null;
@@ -160,9 +161,9 @@ class BanalSettings {
                 $s = (is_array($s) ? FormatSpec::unparse_dimen($s) : "");
             }
             // check text block measurements
-            if ($s && ($s = FormatSpec::parse_dimen($s, 2)))
+            if ($s && ($s = FormatSpec::parse_dimen2($s))) {
                 $cfs->textblock = $s;
-            else {
+            } else {
                 $sv->error_at("sub_banal_textblock$suffix", "Invalid text block definition.");
                 $problem = true;
             }

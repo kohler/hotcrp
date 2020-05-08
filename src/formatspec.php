@@ -61,8 +61,9 @@ class FormatSpec {
         if ($k === "papersize" && (is_string($v) || is_numeric($v))) {
             $this->papersize = [];
             foreach (explode(" OR ", $v) as $d) {
-                if (($dx = self::parse_dimen($d, 2)))
+                if (($dx = self::parse_dimen2($d))) {
                     $this->papersize[] = $dx;
+                }
             }
         } else if ($k === "pagelimit" && (is_string($v) || is_numeric($v))) {
             if (preg_match('/\A(\d+)(?:\s*(?:-|–)\s*(\d+))?\z/', $v, $m)) {
@@ -77,7 +78,9 @@ class FormatSpec {
         } else if ($k === "columns" && is_string($v)) {
             $this->columns = cvtint($v, null);
         } else if ($k === "textblock" && is_string($v)) {
-            $this->textblock = self::parse_dimen($v, 2);
+            if (($dx = self::parse_dimen2($v))) {
+                $this->textblock = $dx;
+            }
         } else if (($k === "bodyfontsize" || $k === "bodylineheight")
                    && (is_string($v) || is_numeric($v))) {
             $this->$k = self::parse_range($v);
@@ -199,7 +202,9 @@ class FormatSpec {
         }
     }
 
-    static function parse_dimen($text, $ndimen = -1) {
+    /** @param string $text
+     * @return false|float|list<float> */
+    static function parse_dimen($text) {
         // replace \xC2\xA0 (utf-8 for U+00A0 NONBREAKING SPACE) with ' '
         $text = trim(str_replace("\xC2\xA0", " ", strtolower($text)));
         $n = $text;
@@ -219,11 +224,6 @@ class FormatSpec {
                 $unit[] = 0;
             }
             if ($m[3] === "") {  // end of string
-                // fail on bad number of dimensions
-                if ($ndimen > 0 && count($a) != $ndimen) {
-                    return false;
-                }
-
                 // spread known units to unknown positions, using two passes
                 $unitrep = 0;
                 for ($i = count($unit) - 1; $i >= 0; --$i) {
@@ -254,14 +254,23 @@ class FormatSpec {
             }
         }
         if ($text === "letter") {
-            return self::parse_dimen("8.5in x 11in", $ndimen);
+            return self::parse_dimen("8.5in x 11in");
         } else if ($text === "a4") {
-            return self::parse_dimen("210mm x 297mm", $ndimen);
+            return self::parse_dimen("210mm x 297mm");
         } else {
             return false;
         }
     }
 
+    /** @param string $text
+     * @return false|list<float,float> */
+    static function parse_dimen2($text) {
+        $a = self::parse_dimen($text);
+        return is_array($a) && count($a) === 2 ? $a : false;
+    }
+
+    /** @param int|float|list<int|float> $n
+     * @param ?string $to */
     static function unparse_dimen($n, $to = null) {
         if (is_array($n) && count($n) == 2 && ($to == "basic" || $to == "paper")) {
             if (abs($n[0] - 612) <= 5 && abs($n[1] - 792) <= 5) {
