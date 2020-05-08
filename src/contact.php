@@ -103,8 +103,6 @@ class Contact {
     public $myReviewPermissions;
     public $watch;
 
-    static private $status_info_cache = array();
-
 
     function __construct($user = null, Conf $conf = null) {
         global $Conf;
@@ -4282,22 +4280,7 @@ class Contact {
         if ($row->timeWithdrawn > 0) {
             return ["pstat_with", "Withdrawn"];
         } else if ($row->outcome && $this->can_view_decision($row)) {
-            $data = get(self::$status_info_cache, $row->outcome);
-            if (!$data) {
-                $decclass = ($row->outcome > 0 ? "pstat_decyes" : "pstat_decno");
-
-                $decs = $this->conf->decision_map();
-                $decname = get($decs, $row->outcome);
-                if ($decname) {
-                    $trdecname = preg_replace('/[^-.\w]/', '', $decname);
-                    if ($trdecname != "")
-                        $decclass .= " pstat_" . strtolower($trdecname);
-                } else
-                    $decname = "Unknown decision #" . $row->outcome;
-
-                $data = self::$status_info_cache[$row->outcome] = [$decclass, $decname];
-            }
-            return $data;
+            return $this->conf->decision_status_info($row->outcome);
         } else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1) {
             return ["pstat_noup", "No submission"];
         } else if ($row->timeSubmitted > 0) {

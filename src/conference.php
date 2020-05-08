@@ -123,6 +123,8 @@ class Conf {
     private $_decisions;
     /** @var ?AbbreviationMatcher */
     private $_decision_matcher;
+    /** @var ?array<int,array{string,string}> */
+    private $_decision_status_info;
     private $_topic_set;
     private $_conflict_types;
     private $_pc_members_cache;
@@ -385,6 +387,7 @@ class Conf {
 
         // clear caches
         $this->_decisions = $this->_decision_matcher = null;
+        $this->_decision_status_info = null;
         $this->_pc_seeall_cache = null;
         $this->_defined_rounds = null;
         $this->_resp_rounds = null;
@@ -1203,14 +1206,7 @@ class Conf {
     /** @param int $dnum
      * @return string|false */
     function decision_name($dnum) {
-        if ($this->_decisions === null) {
-            $this->decision_map();
-        }
-        if (($dname = $this->_decisions[$dnum] ?? null)) {
-            return $dname;
-        } else {
-            return false;
-        }
+        return ($this->decision_map())[$dnum] ?? false;
     }
 
     /** @param string $dname
@@ -1244,6 +1240,26 @@ class Conf {
         return $this->decision_matcher()->find_all($dname);
     }
 
+    /** @param int $dnum
+     * @return array{string,string} */
+    function decision_status_info($dnum) {
+        if ($this->_decision_status_info === null) {
+            $this->_decision_status_info = [];
+        }
+        $s = $this->_decision_status_info[$dnum] ?? null;
+        if (!$s) {
+            $decclass = $dnum > 0 ? "pstat_decyes" : "pstat_decno";
+            if (($decname = $this->decision_name($dnum))) {
+                if (($trdecname = preg_replace('/[^-.\w]/', '', $decname)) !== "") {
+                    $decclass .= " pstat_" . strtolower($trdecname);
+                }
+            } else {
+                $decname = "Unknown decision #" . $dnum;
+            }
+            $s = $this->_decision_status_info[$dnum] = [$decclass, $decname];
+        }
+        return $s;
+    }
 
 
     /** @return bool */
