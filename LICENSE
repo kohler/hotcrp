@@ -1,7 +1,3 @@
-The majority of this software is subject to the license below.
-HotCRP was originally derived from Dirk Grunwald's CRP (Copyright (c)
-2002-2005 Dirk Grunwald et al., distributed under an "MIT license").
-
 Copyright (c) 2006-2020 Eddie Kohler
 Copyright (c) 2006-2008 Regents of the University of California
 
@@ -27,3 +23,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+
+HotCRP was originally derived from Dirk Grunwald's CRP (Copyright (c)
+2002-2005 Dirk Grunwald et al., distributed under an "MIT license").
