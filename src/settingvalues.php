@@ -297,7 +297,7 @@ class Si {
 
     /** @return array<string,Si> */
     static function si_map(Conf $conf) {
-        if ($conf->_setting_info === null) {
+        if (empty($conf->_setting_info)) {
             $conf->_setting_info = self::make_si_map($conf);
         }
         return $conf->_setting_info;
@@ -306,15 +306,13 @@ class Si {
     /** @param string $name
      * @return ?Si */
     static function get(Conf $conf, $name) {
-        if ($conf->_setting_info === null) {
+        if (empty($conf->_setting_info)) {
             $conf->_setting_info = self::make_si_map($conf);
         }
         if (isset($conf->_setting_info[$name])) {
             return $conf->_setting_info[$name];
-        } else if (!preg_match('/\A(.*)(_(?:[^_\s]+))\z/', $name, $m)
-                   || !isset($conf->_setting_info[$m[1]])) {
-            return null;
-        } else {
+        } else if (preg_match('/\A(.*)(_(?:[^_\s]+))\z/', $name, $m)
+                   && isset($conf->_setting_info[$m[1]])) {
             $base_si = $conf->_setting_info[$m[1]];
             if (!$base_si->extensible
                 || ($base_si->extensible === self::X_SIMPLE
@@ -338,6 +336,8 @@ class Si {
             }
             $conf->_setting_info[$name] = $si;
             return $si;
+        } else {
+            return null;
         }
     }
 }

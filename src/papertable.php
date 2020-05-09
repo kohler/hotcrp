@@ -137,7 +137,7 @@ class PaperTable {
             $highlight_text = null;
             $title_matches = 0;
             if ($paperTable->matchPreg
-                && ($highlight = get($paperTable->matchPreg, "title"))) {
+                && ($highlight = $paperTable->matchPreg["title"] ?? null)) {
                 $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
             }
 
@@ -398,7 +398,8 @@ class PaperTable {
         echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => "papfn"]), '</h3>';
     }
 
-    private function papt($what, $name, $extra = array()) {
+    /** @param array<string,int|string> $extra */
+    private function papt($what, $name, $extra = []) {
         $fold = $extra["fold"] ?? false;
         $editfolder = $extra["editfolder"] ?? false;
         $foldnum = $foldnumclass = false;
@@ -407,7 +408,7 @@ class PaperTable {
             $foldnumclass = $foldnum ? " data-fold-target=\"$foldnum\"" : "";
         }
 
-        if (get($extra, "type") === "ps") {
+        if (($extra["type"] ?? null) === "ps") {
             list($divclass, $hdrclass) = ["pst", "psfn"];
         } else {
             list($divclass, $hdrclass) = ["pavt", "pavfn"];
@@ -420,7 +421,7 @@ class PaperTable {
             $c .= "\">";
         }
         $c .= "<h3 class=\"$hdrclass";
-        if ($extra["fnclass"] ?? false) {
+        if (isset($extra["fnclass"])) {
             $c .= " " . $extra["fnclass"];
         }
         $c .= '">';
@@ -493,6 +494,7 @@ class PaperTable {
         return $t;
     }
 
+    /** @param PaperOption $opt */
     private function echo_field_hint($opt) {
         echo $this->messages_at($opt->formid, "feedback");
         $fr = new FieldRender(FieldRender::CFHTML);
@@ -507,8 +509,9 @@ class PaperTable {
         }
     }
 
-    function edit_title_html($option) {
-        $t = $option->edit_title();
+    /** @param PaperOption $opt */
+    function edit_title_html($opt) {
+        $t = $opt->edit_title();
         if (str_ends_with($t, ")")
             && preg_match('{\A([^()]* +)(\([^()]+\))\z}', $t, $m)) {
             return htmlspecialchars($m[1]) . '<span class="n">' . htmlspecialchars($m[2]) . '</span>';
@@ -554,6 +557,7 @@ class PaperTable {
         }
     }
 
+    /** @param PaperOption $o */
     function render_submission(FieldRender $fr, $o) {
         assert(!$this->editable);
         $fr->title = false;
@@ -589,6 +593,7 @@ class PaperTable {
         }
     }
 
+    /** @param PaperOption $o */
     function render_submission_version(FieldRender $fr, $o) {
         if ($this->user->can_view_pdf($this->prow)
             && $this->prow->finalPaperStorageId > 1
@@ -818,6 +823,7 @@ class PaperTable {
             . '</td></tr>';
     }
 
+    /** @param PaperOption $option */
     function echo_editable_authors($option) {
         $max_authors = (int) $this->conf->opt("maxAuthors");
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
@@ -861,7 +867,7 @@ class PaperTable {
 
         $tr_maxau = $max_authors <= 0 ? 0 : max(count($aulist), $max_authors);
         for ($n = 1; $n <= count($aulist); ++$n) {
-            echo $this->editable_authors_tr($n, get($aulist, $n - 1), $tr_maxau);
+            echo $this->editable_authors_tr($n, $aulist[$n - 1] ?? null, $tr_maxau);
         }
         if ($max_authors <= 0 || $n <= $max_authors) {
             do {
@@ -1060,6 +1066,7 @@ class PaperTable {
         }
     }
 
+    /** @param PaperOption $o */
     function render_topics(FieldRender $fr, $o) {
         if (!($tmap = $this->prow->topic_map())) {
             return;
@@ -1071,7 +1078,7 @@ class PaperTable {
         foreach ($tmap as $tid => $tname) {
             $t = '<li class="topicti';
             if ($interests) {
-                $t .= ' topic' . get($interests, $tid, 0);
+                $t .= ' topic' . ($interests[$tid] ?? 0);
             }
             $x = $topics->unparse_name_html($tid);
             if ($this->user->isPC) {
@@ -1085,7 +1092,10 @@ class PaperTable {
         $fr->value_long = true;
     }
 
-    private function clean_render($fr, $o, $vos) {
+    /** @param PaperOption $o
+     * @param int $vos
+     * @param FieldRender $fr */
+    private function clean_render($o, $vos, $fr) {
         if ($fr->title === false) {
             assert($fr->value_format === 5);
             return;
@@ -1114,12 +1124,16 @@ class PaperTable {
         }
     }
 
+    /** @param list<PaperTableFieldRender> $renders
+     * @param int $first
+     * @param int $last
+     * @param int $vos */
     private function _group_name_html($renders, $first, $last, $vos) {
         $group_names = [];
         $group_flags = 0;
         for ($i = $first; $i !== $last; ++$i) {
-            if ($renders[$i][1] >= $vos) {
-                $o = $renders[$i][0];
+            if ($renders[$i]->view_state >= $vos) {
+                $o = $renders[$i]->option;
                 $group_names[] = $o->title();
                 if ($o->id === -1005) {
                     $group_flags |= 1;
@@ -1140,7 +1154,7 @@ class PaperTable {
         if ($group_flags & 4) {
             $group_types[] = "Options";
         }
-        return htmlspecialchars($this->conf->_c("field_group", $renders[$first][0]->display_group, commajoin($group_names), commajoin($group_types)));
+        return htmlspecialchars($this->conf->_c("field_group", $renders[$first]->option->display_group, commajoin($group_names), commajoin($group_types)));
     }
 
     private function _echo_normal_body() {
@@ -1149,7 +1163,6 @@ class PaperTable {
             htmlspecialchars($status_info[1]), "</span></p>";
 
         $renders = [];
-        '@phan-var-force list<array{PaperOption,int,string,mixed,bool}> $renders';
         $fr = new FieldRender(FieldRender::CPAGE);
         $fr->table = $this;
         foreach ($this->conf->paper_opts->field_list($this->prow) as $o) {
@@ -1162,30 +1175,28 @@ class PaperTable {
 
             $fr->clear();
             $o->render($fr, $this->prow->force_option($o->id));
-            if ($fr->is_empty()) {
-                continue;
+            if (!$fr->is_empty()) {
+                $this->clean_render($o, $vos, $fr);
+                $renders[] = new PaperTableFieldRender($o, $vos, $fr);
             }
-
-            $this->clean_render($fr, $o, $vos);
-            $renders[] = [$o, $vos, $fr->title, $fr->value, $fr->value_long];
         }
 
         $lasto1 = null;
         $in_paperinfo_i = false;
         for ($first = 0; $first !== count($renders); $first = $last) {
             // compute size of group
-            $o1 = $renders[$first][0];
+            $o1 = $renders[$first]->option;
             $last = $first + 1;
             if ($o1->display_group !== null && $this->allFolded) {
                 while ($last !== count($renders)
-                       && $renders[$last][0]->display_group === $o1->display_group) {
+                       && $renders[$last]->option->display_group === $o1->display_group) {
                     ++$last;
                 }
             }
 
             $nvos1 = 0;
             for ($i = $first; $i !== $last; ++$i) {
-                if ($renders[$i][1] === 1) {
+                if ($renders[$i]->view_state === 1) {
                     ++$nvos1;
                 }
             }
@@ -1221,23 +1232,24 @@ class PaperTable {
                 } else {
                     $group_html = $this->_group_name_html($renders, $first, $last, 2);
                     $gn1 = $this->_group_name_html($renders, $first, $last, 1);
-                    if ($group_html !== $gn1)
+                    if ($group_html !== $gn1) {
                         $group_html = '<span class="fn8">' . $group_html . '</span><span class="fx8">' . $gn1 . '</span>';
+                    }
                 }
 
                 $class = "pg";
                 if ($nvos1 === $last - $first) {
                     $class .= " fx8";
                 }
-                $foldnum = get($this->foldnumber, $o1->display_group, 0);
-                if ($foldnum && $renders[$first][2] !== "") {
+                $foldnum = $this->foldnumber[$o1->display_group] ?? 0;
+                if ($foldnum && $renders[$first]->title !== "") {
                     $group_html = '<span class="fn' . $foldnum . '">'
                         . $group_html . '</span><span class="fx' . $foldnum
-                        . '">' . $renders[$first][2] . '</span>';
-                    $renders[$first][2] = false;
-                    $renders[$first][3] = '<div class="'
-                        . ($renders[$first][4] ? "pg" : "pgsm")
-                        . ' pavb">' . $renders[$first][3] . '</div>';
+                        . '">' . $renders[$first]->title . '</span>';
+                    $renders[$first]->title = false;
+                    $renders[$first]->value = '<div class="'
+                        . ($renders[$first]->value_long ? "pg" : "pgsm")
+                        . ' pavb">' . $renders[$first]->value . '</div>';
                 }
                 echo '<div class="', $class, '">';
                 if ($foldnum) {
@@ -1258,26 +1270,27 @@ class PaperTable {
             // echo contents
             for ($i = $first; $i !== $last; ++$i) {
                 $x = $renders[$i];
-                '@phan-var-force array{PaperOption,int,string,mixed,bool} $x';
-                if ($x[4] === false || (!$x[4] && $x[2] === "")) {
+                if ($x->value_long === false
+                    || (!$x->value_long && $x->title === "")) {
                     $class = "pgsm";
                 } else {
                     $class = "pg";
                 }
-                if ($x[3] === "" || ($x[2] === "" && preg_match('{\A(?:[^<]|<a|<span)}', $x[3]))) {
+                if ($x->value === ""
+                    || ($x->title === "" && preg_match('{\A(?:[^<]|<a|<span)}', $x->value))) {
                     $class .= " outdent";
                 }
-                if ($x[1] === 1) {
+                if ($x->view_state === 1) {
                     $class .= " fx8";
                 }
-                if ($x[2] === false) {
-                    echo $x[3];
-                } else if ($x[2] === "") {
-                    echo '<div class="', $class, '">', $x[3], '</div>';
-                } else if ($x[3] === "") {
-                    echo '<div class="', $class, '"><h3 class="pavfn">', $x[2], '</h3></div>';
+                if ($x->title === false) {
+                    echo $x->value;
+                } else if ($x->title === "") {
+                    echo '<div class="', $class, '">', $x->value, '</div>';
+                } else if ($x->value === "") {
+                    echo '<div class="', $class, '"><h3 class="pavfn">', $x->title, '</h3></div>';
                 } else {
-                    echo '<div class="', $class, '"><div class="pavt"><h3 class="pavfn">', $x[2], '</h3></div><div class="pavb">', $x[3], '</div></div>';
+                    echo '<div class="', $class, '"><div class="pavt"><h3 class="pavfn">', $x->title, '</h3></div><div class="pavb">', $x->value, '</div></div>';
                 }
             }
 
@@ -1536,6 +1549,7 @@ class PaperTable {
         echo Ht::hidden("has_{$o->formid}", 1);
     }
 
+    /** @param PaperOption $option */
     function echo_editable_pc_conflicts($option) {
         if (!$this->conf->setting("sub_pcconf")) {
             return;
@@ -1578,7 +1592,8 @@ class PaperTable {
             if ($this->useRequest) {
                 $ct = (int) $this->qreq["pcc$id"];
             }
-            $pcconfmatch = null;
+            $pcconfmatch = false;
+            '@phan-var false|array{string,list<string>} $pcconfmatch';
             if ($this->prow->paperId && $pct < CONFLICT_AUTHOR) {
                 $pcconfmatch = $this->prow->potential_conflict_html($p, $pct <= 0);
             }
@@ -3132,5 +3147,25 @@ class PaperTable {
             && ($this->conf->timeFinalizePaper($this->prow) || $this->prow->timeSubmitted <= 0)) {
             $this->mode = "edit";
         }
+    }
+}
+
+class PaperTableFieldRender {
+    /** @var PaperOption */
+    public $option;
+    /** @var int */
+    public $view_state;
+    public $title;
+    public $value;
+    /** @var ?bool */
+    public $value_long;
+
+    /** @param PaperOption $option */
+    function __construct($option, $view_state, FieldRender $fr) {
+        $this->option = $option;
+        $this->view_state = $view_state;
+        $this->title = $fr->title;
+        $this->value = $fr->value;
+        $this->value_long = $fr->value_long;
     }
 }

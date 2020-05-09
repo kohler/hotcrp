@@ -10,6 +10,7 @@ class FieldRender {
     public $value;
     /** @var ?int */
     public $value_format;
+    /** @var ?bool */
     public $value_long;
 
     const CFHTML = 1;

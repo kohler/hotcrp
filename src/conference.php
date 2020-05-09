@@ -181,8 +181,8 @@ class Conf {
     private $_hook_factories;
     /** @var ?array<string,FileFilter> */
     public $_file_filters; // maintained externally
-    /** @var ?array<string,Si> */
-    public $_setting_info; // maintained externally
+    /** @var array<string,Si> */
+    public $_setting_info = []; // maintained externally
     /** @var ?GroupedExtensions */
     public $_setting_groups; // maintained externally
     private $_mail_keyword_map;

@@ -242,7 +242,8 @@ class FormulaGraph extends MessageSet {
         return $queries;
     }
 
-    /** @param Formula $fx */
+    /** @param Formula $fx
+     * @return list<object> */
     private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
         $data = [];
 

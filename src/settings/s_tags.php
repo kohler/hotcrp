@@ -222,7 +222,7 @@ class Tags_SettingParser extends SettingParser {
                 $pvals = array();
                 $negative = false;
                 while (($row = $result->fetch_row())) {
-                    $who = substr($row[1], 0, strpos($row[1], "~"));
+                    $who = (int) substr($row[1], 0, strpos($row[1], "~"));
                     if ($row[2] < 0) {
                         $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for #$row[0].");
                         $negative = true;

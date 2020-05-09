@@ -340,6 +340,7 @@ class PaperInfo {
     private $_full_review_key;
     private $_comment_array;
     private $_comment_skeleton_array;
+    /** @var ?list<array{string,string}> */
     private $_potential_conflicts;
     private $_potential_conflict_flags;
     private $_request_array;
@@ -740,6 +741,7 @@ class PaperInfo {
         }
     }
 
+    /** @return false|array{string,list<string>} */
     function potential_conflict_html(Contact $user, $highlight = false) {
         $this->_potential_conflicts = [];
         $this->_potential_conflict_flags = 0;
