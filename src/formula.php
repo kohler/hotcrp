@@ -1447,9 +1447,9 @@ class Formula implements Abbreviator, JsonSerializable {
     private static function span_parens_until($t, $span) {
         $pos = 0;
         $len = strlen($t);
-        while ($pos !== $len && strpos($t[$pos], $span) === false) {
+        while ($pos !== $len && strpos($span, $t[$pos]) === false) {
             $x = SearchSplitter::span_balanced_parens($t, $pos, function ($ch) use ($span) {
-                return strpos($ch, $span) !== false;
+                return strpos($span, $ch) !== false;
             });
             $pos = max($pos + 1, $x);
         }
