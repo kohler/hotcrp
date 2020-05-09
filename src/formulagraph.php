@@ -100,42 +100,44 @@ class FormulaGraph extends MessageSet {
 
         // X axis expression(s)
         $this->fx_expression = $fx;
+        $this->fxs = [];
         if (preg_match('/\A(sort|order|rorder)\s+(\S.*)\z/i', $fx, $m)) {
             if (strcasecmp($m[1], "rorder") === 0) {
                 $m[2] = "-($m[2])";
             }
             $this->set_xorder($m[2]);
-            $this->fx = new Formula("pid", Formula::ALLOW_INDEXED);
+            $this->fxs[] = new Formula("pid", Formula::ALLOW_INDEXED);
         } else if (strcasecmp($fx, "query") === 0 || strcasecmp($fx, "search") === 0) {
-            $this->fx = new Formula("0", Formula::ALLOW_INDEXED);
+            $this->fxs[] = new Formula("0", Formula::ALLOW_INDEXED);
             $this->fx_type = Fexpr::FSEARCH;
         } else if (strcasecmp($fx, "tag") === 0) {
-            $this->fx = new Formula("0", Formula::ALLOW_INDEXED);
+            $this->fxs[] = new Formula("0", Formula::ALLOW_INDEXED);
             $this->fx_type = Fexpr::FTAG;
         } else if (!($this->type & self::CDF)) {
-            $this->fx = new Formula($fx, Formula::ALLOW_INDEXED);
+            $this->fxs[] = new Formula($fx, Formula::ALLOW_INDEXED);
         } else {
-            $this->fxs = [];
-            $this->_x_tagvalue_bool = true;
             while (true) {
                 $fx = preg_replace('/\A\s*;*\s*/', '', $fx);
                 if ($fx === "") {
                     break;
                 }
                 $pos = Formula::span_maximal_formula($fx);
-                $this->fxs[] = $f = new Formula(substr($fx, 0, $pos), Formula::ALLOW_INDEXED);
-                if (!$f->check($this->user)) {
-                    $this->error_at("fx", "X axis formula error: " . $f->error_html());
-                }
-                $this->_x_tagvalue_bool = $this->_x_tagvalue_bool && $f->result_format() === Fexpr::FTAGVALUE;
+                $this->fxs[] = new Formula(substr($fx, 0, $pos), Formula::ALLOW_INDEXED);
+                $fx = substr($fx, $pos);
             }
         }
-        if ($this->fx) {
-            if (!$this->fx->check($this->user)) {
-                $this->error_at("fx", "X axis formula error: " . $this->fx->error_html());
+        foreach ($this->fxs as $i => $f) {
+            if (!$f->check($this->user)) {
+                $this->error_at("fx", "X axis formula error: " . $f->error_html());
+            } else if ($i === 0) {
+                $this->fx_type = $this->fx_type ? : $f->result_format();
+                $this->_x_tagvalue_bool = $this->fx_type === Fexpr::FTAGVALUE;
+            } else if ($f->result_format() !== $this->fx_type) {
+                $this->error_at("fx", "X axis error: Different formulas use different units");
+                $this->fx_type = 0;
             }
-            $this->_x_tagvalue_bool = $this->fx->result_format() === Fexpr::FTAGVALUE;
         }
+        $this->fx = count($this->fxs) === 1 ? $this->fxs[0] : null;
 
         if ($this->fy->error_html()) {
             $this->error_at("fy", "Y axis formula error: " . $this->fy->error_html());
@@ -222,11 +224,10 @@ class FormulaGraph extends MessageSet {
     }
 
     function fx_format() {
-        return $this->fx_type ? : $this->fx->result_format();
+        return $this->fx_type;
     }
 
     function fx_combinable() {
-        $format = $this->fx->result_format();
         return !$this->fx_type;
     }
 
@@ -745,9 +746,11 @@ class FormulaGraph extends MessageSet {
             // load data
             $paperIds = array_keys($this->papermap);
             $queryOptions = ["paperId" => $paperIds, "tags" => true];
-            $this->fx->add_query_options($queryOptions);
+            foreach ($this->fxs as $f) {
+                $f->add_query_options($queryOptions);
+            }
             $this->fy->add_query_options($queryOptions);
-            if ($this->fx->indexed() || $this->fy->indexed()) {
+            if (($this->fx && $this->fx->indexed()) || $this->fy->indexed()) {
                 $queryOptions["reviewSignatures"] = true;
             }
 
@@ -781,19 +784,19 @@ class FormulaGraph extends MessageSet {
         }
     }
 
+    /** @param 'x'|'y' $axis */
     function axis_json($axis) {
         $isx = $axis === "x";
-        $f = $isx ? $this->fx : $this->fy;
         $j = [];
 
-        $counttype = $this->fx->indexed() ? "reviews" : "papers";
+        $counttype = $this->fx && $this->fx->indexed() ? "reviews" : "papers";
         if ($isx) {
             $j["label"] = $this->fx_expression;
         } else if ($this->type === self::FBARCHART) {
             $j["label"] = "fraction of $counttype";
             $j["fraction"] = true;
         } else if ($this->type === self::BARCHART
-                   && $f->expression === "sum(1)") {
+                   && $this->fy->expression === "sum(1)") {
             $j["label"] = "# $counttype";
         } else if ($this->type === self::RAWCDF) {
             $j["label"] = "Cumulative count of $counttype";
@@ -801,29 +804,22 @@ class FormulaGraph extends MessageSet {
         } else if ($this->type & self::CDF) {
             $j["label"] = "CDF of $counttype";
         } else if (!$this->fx_type) {
-            $j["label"] = $f->expression;
+            $j["label"] = $this->fy->expression;
         }
 
-        $format = $f->result_format();
-        if ($isx && $this->fxs && $format) {
-            foreach ($this->fxs as $fx) {
-                if ($fx->result_format() !== $format) {
-                    $format = 0;
-                    break;
-                }
-            }
-        }
-        if ($isx && $this->fx_type == Fexpr::FSEARCH) {
-            $j["ticks"] = ["named", $this->queries];
-        } else if ($isx && $this->fx_type == Fexpr::FTAG) {
+        $format = $isx ? $this->fx_type : $this->fy->result_format();
+        $ticks = $named_ticks = null;
+        if ($isx && $this->fx_type === Fexpr::FSEARCH) {
+            $named_ticks = $this->queries;
+        } else if ($isx && $this->fx_type === Fexpr::FTAG) {
             $tagger = new Tagger($this->user);
-            $j["ticks"] = ["named", array_map(function ($t) use ($tagger) {
+            $named_ticks = array_map(function ($t) use ($tagger) {
                 return $tagger->unparse($t);
-            }, array_keys($this->tags))];
+            }, array_keys($this->tags));
         } else if ($format instanceof ReviewField) {
             $n = count($format->options);
             $ol = $format->option_letter ? chr($format->option_letter - $n) : null;
-            $j["ticks"] = ["score", $n, $ol, $format->option_class_prefix];
+            $ticks = ["score", $n, $ol, $format->option_class_prefix];
             if ($format->option_letter && $isx) {
                 $j["flip"] = true;
             }
@@ -844,19 +840,19 @@ class FormulaGraph extends MessageSet {
                     $rd["id"] = $r->contactId;
                     $x[$r->sort_position] = $rd;
                 }
-                $j["ticks"] = ["named", $x];
+                $named_ticks = $x;
             } else if ($format === Fexpr::FDECISION) {
-                $j["ticks"] = ["named", $this->conf->decision_map()];
+                $named_ticks = $this->conf->decision_map();
             } else if ($format === Fexpr::FBOOL) {
-                $j["ticks"] = ["named", ["no", "yes"]];
+                $named_ticks = ["no", "yes"];
             } else if ($format instanceof SelectorPaperOption) {
-                $j["ticks"] = ["named", $format->selector_options()];
+                $named_ticks = $format->selector_options();
             } else if ($format === Fexpr::FROUND) {
-                $j["ticks"] = ["named", $this->remapped_rounds];
+                $named_ticks = $this->remapped_rounds;
             } else if ($format === Fexpr::FREVTYPE) {
-                $j["ticks"] = ["named", ReviewForm::$revtype_names];
+                $named_ticks = ReviewForm::$revtype_names;
             } else if (is_int($format) && $format >= Fexpr::FDATE && $format <= Fexpr::FTIMEDELTA) {
-                $j["ticks"] = ["time"];
+                $ticks = ["time"];
             } else if ($isx && $this->_xorder_map) {
                 if (isset($j["label"])) {
                     $j["label"] .= " order";
@@ -864,19 +860,24 @@ class FormulaGraph extends MessageSet {
                     $j["label"] = "order";
                 }
             }
-            if (!$isx && isset($j["ticks"])) {
+            if (!$isx && ($ticks !== null || $named_ticks !== null)) {
                 $j["rotate_ticks"] = -90;
             }
         }
 
-        if ($isx && $this->_xorder_map && isset($j["ticks"])
-            && $j["ticks"][0] === "named") {
+        if ($isx && $this->_xorder_map && $named_ticks !== null) {
             $newticks = [];
-            foreach ($j["ticks"][1] as $n => $x) {
+            foreach ($named_ticks as $n => $x) {
                 if (isset($this->_xorder_map[$n]))
-                    $newticks[$this->_xorder_map[$n]] = $x;
+                    $named_ticks[$this->_xorder_map[$n]] = $x;
             }
-            $j["ticks"][1] = $newticks;
+            $named_ticks = $newticks;
+        }
+
+        if ($ticks !== null) {
+            $j["ticks"] = $ticks;
+        } else if ($named_ticks !== null) {
+            $j["ticks"] = ["named", $named_ticks];
         }
 
         if ($this->_axis_remapped & ($isx ? 1 : 2)) {
