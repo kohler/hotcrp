@@ -6,8 +6,9 @@ class AssignmentItem implements ArrayAccess {
     /** @var false|array */
     public $before;
     /** @var false|null|array */
-    public $after = null;
-    public $lineno = null;
+    public $after;
+    /** @var null|int */
+    public $landmark;
     /** @param false|array $before */
     function __construct($before) {
         $this->before = $before;
@@ -68,7 +69,13 @@ class AssignmentItem implements ArrayAccess {
     }
 }
 
+class AssignmentItemSet {
+    /** @var array<int|string,AssignmentItem> */
+    public $items = [];
+}
+
 class AssignmentState {
+    /** @var array<int,AssignmentItemSet> */
     private $st = [];
     private $types = [];
     private $realizers = [];
@@ -78,13 +85,17 @@ class AssignmentState {
     public $user;     // executor
     /** @var Contact */
     public $reviewer; // default contact
+    /** @var int */
     public $overrides = 0;
     /** @var AssignerContacts */
     private $cmap;
+    /** @var ?array<int,Contact> */
     private $reviewer_users = null;
     public $filename;
-    public $lineno;
+    /** @var null|int */
+    public $landmark;
     public $defaults = [];
+    /** @var array<int,PaperInfo> */
     private $prows = [];
     private $pid_attempts = [];
     public $finishers = [];
@@ -114,9 +125,11 @@ class AssignmentState {
     function realizer($type) {
         return $this->realizers[$type];
     }
+    /** @param int $pid
+     * @return AssignmentItemSet */
     private function pidstate($pid) {
         if (!isset($this->st[$pid])) {
-            $this->st[$pid] = (object) ["items" => []];
+            $this->st[$pid] = new AssignmentItemSet;
         }
         return $this->st[$pid];
     }
@@ -140,9 +153,10 @@ class AssignmentState {
         $k = $this->extract_key($x);
         assert($k && !isset($st->items[$k]));
         $st->items[$k] = new AssignmentItem($x);
-        $st->sorted = false;
     }
 
+    /** @param array{pid?:int}
+     * @return list<int> */
     private function pid_keys($q) {
         if (isset($q["pid"])) {
             return array($q["pid"]);
@@ -202,7 +216,7 @@ class AssignmentState {
         foreach ($this->query_items($q) as $item) {
             $res[] = $item->after ? : $item->before;
             $item->after = false;
-            $item->lineno = $this->lineno;
+            $item->landmark = $this->landmark;
         }
         return $res;
     }
@@ -213,7 +227,7 @@ class AssignmentState {
                 || call_user_func($predicate, $item->after ? : $item->before)) {
                 $res[] = $item->after ? : $item->before;
                 $item->after = false;
-                $item->lineno = $this->lineno;
+                $item->landmark = $this->landmark;
             }
         }
         return $res;
@@ -227,12 +241,13 @@ class AssignmentState {
             $item = $st->items[$k] = new AssignmentItem(false);
         }
         $item->after = $x;
-        $item->lineno = $this->lineno;
+        $item->landmark = $this->landmark;
         return $item;
     }
 
+    /** @return array<int,list<AssignmentItem>> */
     function diff() {
-        $diff = array();
+        $diff = [];
         foreach ($this->st as $pid => $st) {
             foreach ($st->items as $item) {
                 if ((!$item->before && $item->after)
@@ -300,9 +315,11 @@ class AssignmentState {
     function none_user() {
         return $this->cmap->none_user();
     }
+    /** @return array<int,Contact> */
     function pc_users() {
         return $this->cmap->pc_users();
     }
+    /** @return array<int,Contact> */
     function reviewer_users() {
         if ($this->reviewer_users === null) {
             $this->reviewer_users = $this->cmap->reviewer_users($this->paper_ids());
@@ -313,10 +330,13 @@ class AssignmentState {
         return $this->cmap->register_user($c);
     }
 
-    function msg($lineno, $msg, $status) {
+    /** @param null|int $landmark
+     * @param string $msg
+     * @param 0|1|2|4 $status */
+    function msg($landmark, $msg, $status) {
         $l = $this->filename ? : "";
-        if ($lineno) {
-            $l .= ($l === "" ? "line " : ":") . $lineno;
+        if ($landmark) {
+            $l .= ($l === "" ? "line " : ":") . $landmark;
         }
         $n = count($this->msgs) - 1;
         if ($n >= 0
@@ -330,20 +350,27 @@ class AssignmentState {
             $this->has_error = true;
         }
     }
+    /** @param string $msg */
     function warning($msg) {
-        $this->msg($this->lineno, $msg, 1);
+        $this->msg($this->landmark, $msg, 1);
     }
+    /** @param string $msg
+     * @return false */
     function error($msg) {
-        $this->msg($this->lineno, $msg, 2);
+        $this->msg($this->landmark, $msg, 2);
         return false;
     }
+    /** @param string $msg
+     * @return false */
     function user_error($msg) {
         $this->has_user_error = true;
         return $this->error($msg);
     }
+    /** @param string $msg
+     * @return false */
     function paper_error($msg) {
         $s = $this->paper_exact_match ? 2 : self::ERROR_NONEXACT_MATCH;
-        $this->msg($this->lineno, $msg, $s);
+        $this->msg($this->landmark, $msg, $s);
         if ($s === self::ERROR_NONEXACT_MATCH
             && $this->first_nonexact_error === null) {
             $this->first_nonexact_error = count($this->msgs) - 1;
@@ -363,6 +390,7 @@ class AssignmentState {
     function message_list() {
         return $this->msgs;
     }
+    /** @param 0|1|2 $status */
     function resolve_nonexact_errors($status) {
         if ($this->first_nonexact_error !== null) {
             for ($i = $this->first_nonexact_error; $i < count($this->msgs); ++$i) {
@@ -384,11 +412,17 @@ class AssignmentState {
 }
 
 class AssignerContacts {
+    /** @var Conf */
     private $conf;
+    /** @var Contact */
     private $viewer;
+    /** @var array<int,Contact> */
     private $by_id = [];
+    /** @var array<string,Contact> */
     private $by_lemail = [];
+    /** @var bool */
     private $has_pc = false;
+    /** @var ?Contact */
     private $none_user;
     static private $next_fake_id = -10;
     static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, roles, contactTags";
@@ -483,10 +517,12 @@ class AssignerContacts {
         }
         return $c ? $this->store($c) : null;
     }
+    /** @return array<int,Contact> */
     function pc_users() {
         $this->ensure_pc();
         return $this->conf->pc_members();
     }
+    /** @return array<int,Contact> */
     function reviewer_users($pids) {
         $rset = $this->pc_users();
         $result = $this->conf->qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a group by ContactInfo.contactId", $pids);
@@ -871,6 +907,7 @@ class AssignmentSet {
     function set_reviewer(Contact $reviewer) {
         $this->astate->reviewer = $reviewer;
     }
+    /** @param ?int|true $overrides */
     function set_overrides($overrides) {
         if ($overrides === null) {
             $overrides = $this->user->overrides();
@@ -919,25 +956,29 @@ class AssignmentSet {
     function has_error() {
         return $this->astate->has_error;
     }
-    /** @return false */
-    function error_at($lineno, $message) {
-        $this->astate->msg($lineno, $message, 2);
+    /** @param null|int $landmark
+     * @param string $msg
+     * @return false */
+    function error_at($landmark, $msg) {
+        $this->astate->msg($landmark, $msg, 2);
         return false;
     }
-    /** @return false */
-    function error_here($message) {
-        $this->astate->msg($this->astate->lineno, $message, 2);
+    /** @param string $msg
+     * @return false */
+    function error_here($msg) {
+        $this->astate->msg($this->astate->landmark, $msg, 2);
         return false;
     }
     function clear_errors() {
         $this->astate->clear_messages();
     }
 
-    function errors_html($linenos = false) {
-        $es = array();
+    /** @return list<string> */
+    function errors_html($landmarks = false) {
+        $es = [];
         foreach ($this->astate->message_list() as $e) {
             $t = $e[1];
-            if ($linenos && $e[0]) {
+            if ($landmarks && $e[0]) {
                 $t = '<span class="lineno">' . htmlspecialchars((string) $e[0]) . ':</span> ' . $t;
             }
             if (empty($es) || $es[count($es) - 1] !== $t) {
@@ -946,11 +987,12 @@ class AssignmentSet {
         }
         return $es;
     }
-    function errors_div_html($linenos = false) {
-        $es = $this->errors_html($linenos);
+    /** @return string */
+    function errors_div_html($landmarks = false) {
+        $es = $this->errors_html($landmarks);
         if (empty($es)) {
             return "";
-        } else if ($linenos) {
+        } else if ($landmarks) {
             return '<div class="parseerr"><p>' . join("</p>\n<p>", $es) . '</p></div>';
         } else if (count($es) == 1) {
             return $es[0];
@@ -958,11 +1000,12 @@ class AssignmentSet {
             return '<div><div class="mmm">' . join('</div><div class="mmm">', $es) . '</div></div>';
         }
     }
-    function error_texts($linenos = false) {
+    /** @return list<string> */
+    function error_texts($landmarks = false) {
         $es = array();
         foreach ($this->astate->message_list() as $e) {
             $t = htmlspecialchars_decode(preg_replace(',<(?:[^\'">]|\'[^\']*\'|"[^"]*")*>,', "", $e[1]));
-            if ($linenos && $e[0]) {
+            if ($landmarks && $e[0]) {
                 $t = $e[0] . ': ' . $t;
             }
             if (empty($es) || $es[count($es) - 1] !== $t) {
@@ -978,17 +1021,17 @@ class AssignmentSet {
             Conf::msg_warning('Assignment warnings: ' . $this->errors_div_html(true));
         }
     }
-
-    function json_result($linenos = false) {
+    /** @return JsonResult */
+    function json_result($landmarks = false) {
         if ($this->has_error()) {
-            $jr = new JsonResult(403, ["ok" => false, "error" => $this->errors_div_html($linenos)]);
+            $jr = new JsonResult(403, ["ok" => false, "error" => $this->errors_div_html($landmarks)]);
             if ($this->astate->has_user_error) {
                 $jr->status = 422;
                 $jr->content["user_error"] = true;
             }
             return $jr;
         } else if ($this->astate->has_messages()) {
-            return new JsonResult(["ok" => true, "response" => $this->errors_div_html($linenos)]);
+            return new JsonResult(["ok" => true, "response" => $this->errors_div_html($landmarks)]);
         } else {
             return new JsonResult(["ok" => true]);
         }
@@ -1433,13 +1476,13 @@ class AssignmentSet {
             $lines[] = [$csv->lineno(), $aparser, $req];
         }
         if (!empty($pids)) {
-            $this->astate->lineno = $csv->lineno();
+            $this->astate->landmark = $csv->lineno();
             $this->astate->fetch_prows(array_keys($pids), true);
         }
 
         // now parse assignment
         foreach ($lines as $i => $linereq) {
-            $this->astate->lineno = $linereq[0];
+            $this->astate->landmark = $linereq[0];
             if ($i % 100 == 0) {
                 if ($alertf) {
                     call_user_func($alertf, $this, $linereq[0], $linereq[2]);
@@ -1462,7 +1505,7 @@ class AssignmentSet {
         foreach ($this->astate->diff() as $pid => $difflist) {
             foreach ($difflist as $item) {
                 try {
-                    $this->astate->lineno = $item->lineno;
+                    $this->astate->landmark = $item->landmark;
                     if (($a = $item->realize($this->astate))) {
                         if ($a->pid > 0) {
                             $index = count($this->assigners);
@@ -1785,6 +1828,7 @@ class AssignmentSet {
 
 
 class AutoassignmentPaperColumn extends PaperColumn {
+    /** @var AssignmentSet */
     private $aset;
     function __construct(AssignmentSet $aset) {
         parent::__construct($aset->conf, (object) ["name" => "autoassignment", "row" => true, "className" => "pl_autoassignment"]);
