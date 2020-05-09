@@ -8,22 +8,35 @@ class Contact_Update {
 }
 
 class Contact {
+    /** @var int */
     static public $rights_version = 1;
+    /** @var ?Contact */
     static public $true_user;
     static public $allow_nonexistent_properties = false;
+    /** @var int */
     static public $next_xid = -1;
 
+    /** @var int */
     public $contactId = 0;
+    /** @var int */
     public $contactDbId = 0;
+    /** @var int */
     public $contactXid = 0;
+    /** @var Conf */
     public $conf;
     public $confid;
 
+    /** @var string */
     public $firstName = "";
+    /** @var string */
     public $lastName = "";
+    /** @var string */
     public $unaccentedName = "";
+    /** @var string */
     public $affiliation = "";
+    /** @var string */
     public $email = "";
+    /** @var int */
     public $roles = 0;
     public $contactTags;
     public $disabled = false;
@@ -70,18 +83,30 @@ class Contact {
     const ROLE_AUTHOR = 16;
     const ROLE_REVIEWER = 32;
     const ROLE_REQUESTER = 64;
+    /** @var ?int */
     private $_db_roles;
+    /** @var ?int */
     private $_active_roles;
+    /** @var ?bool */
     private $_has_outstanding_review;
+    /** @var ?bool */
     private $_is_metareviewer;
+    /** @var ?bool */
     private $_is_lead;
+    /** @var ?bool */
     private $_is_explicit_manager;
+    /** @var ?int */
     private $_dangerous_track_mask;
+    /** @var ?int */
     private $_has_approvable;
+    /** @var ?int */
     private $_can_view_pc;
     public $is_site_contact = false;
+    /** @var int */
     private $_rights_version = 0;
+    /** @var bool */
     public $isPC = false;
+    /** @var bool */
     public $privChair = false;
     public $tracker_kiosk_state = 0;
     private $_capabilities;
@@ -92,6 +117,7 @@ class Contact {
     const OVERRIDE_CHECK_TIME = 4;
     const OVERRIDE_TAG_CHECKS = 8;
     const OVERRIDE_EDIT_CONDITIONS = 16;
+    /** @var int */
     private $_overrides = 0;
     public $hidden_papers;
     private $_aucollab_matchers;

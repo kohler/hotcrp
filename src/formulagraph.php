@@ -21,6 +21,7 @@ class FormulaGraph extends MessageSet {
     public $type = 0;
     /** @var Formula */
     public $fx;
+    /** @var list<Formula> */
     private $fxs;
     private $fx_expression;
     /** @var Formula */
