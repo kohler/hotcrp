@@ -269,6 +269,7 @@ class Home_Partial {
             $missing_rounds = explode(",", $this->_my_rinfo->unsubmitted_rounds);
             sort($missing_rounds, SORT_NUMERIC);
             foreach ($missing_rounds as $round) {
+                $round = (int) $round;
                 if (($rname = $conf->round_name($round))) {
                     if (strlen($rname) == 1) {
                         $rname = "“{$rname}”";

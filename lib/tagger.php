@@ -113,7 +113,7 @@ class TagMapItem {
         return ($this->order_anno_list())[$i] ?? null;
     }
     /** @param int|float $tagIndex
-     * @return ?TagInfo */
+     * @return ?TagAnno */
     function order_anno_search($tagIndex) {
         $ol = $this->order_anno_list();
         $i = $this->_order_anno_search;
@@ -145,9 +145,11 @@ class TagAnno implements JsonSerializable {
     public $pos;
     public $count;
 
+    /** @return bool */
     function is_empty() {
         return $this->heading === null || strcasecmp($this->heading, "none") === 0;
     }
+    /** @return bool */
     function is_fencepost() {
         return $this->tagIndex >= (float) TAG_INDEXBOUND;
     }
@@ -163,14 +165,17 @@ class TagAnno implements JsonSerializable {
         }
         return $ta;
     }
+    /** @return TagAnno */
     static function make_empty() {
         return new TagAnno;
     }
+    /** @return TagAnno */
     static function make_heading($h) {
         $ta = new TagAnno;
         $ta->heading = $h;
         return $ta;
     }
+    /** @return TagAnno */
     static function make_tag_fencepost($tag) {
         $ta = new TagAnno;
         $ta->tag = $tag;

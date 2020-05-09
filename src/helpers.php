@@ -114,7 +114,7 @@ class JsonResult {
         }
         if (isset($this->content["errf"])) {
             foreach ($this->content["errf"] as $f => $x) {
-                Ht::error_at($f);
+                Ht::error_at((string) $f);
             }
         }
     }

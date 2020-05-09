@@ -447,7 +447,7 @@ class Contact {
         $u = $this->conf->user_by_email($email);
         if (!$u
             && validate_email($email)
-            && get($this->conf->opt, "debugShowSensitiveEmail")) {
+            && $this->conf->opt("debugShowSensitiveEmail")) {
             $u = Contact::create($this->conf, null, ["email" => $email]);
         }
         if (!$u) {
@@ -1061,7 +1061,7 @@ class Contact {
     }
 
     function capability($name) {
-        return $this->_capabilities ? get($this->_capabilities, $name) : null;
+        return $this->_capabilities ? $this->_capabilities[$name] ?? null : null;
     }
 
     function has_author_view_capability() {
@@ -2045,7 +2045,7 @@ class Contact {
             } else if (($this->roles & self::ROLE_PCLIKE)
                        && $this !== $Me
                        && ($pcm = $this->conf->pc_members())
-                       && $this === get($pcm, $this->contactId)) {
+                       && $this === ($pcm[$this->contactId] ?? null)) {
                 self::load_topic_interests($pcm);
             } else {
                 $result = $this->conf->qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
@@ -2192,7 +2192,7 @@ class Contact {
                 $ci->view_conflict_type = 0;
             }
             if ($this->_capabilities !== null
-                && get($this->_capabilities, "@av{$prow->paperId}")
+                && ($this->_capabilities["@av{$prow->paperId}"] ?? null)
                 && !$isPC
                 && $ci->review_status == 0) {
                 $ci->view_conflict_type = CONFLICT_AUTHOR;
@@ -2966,7 +2966,7 @@ class Contact {
                     && $rrow->reviewToken
                     && in_array($rrow->reviewToken, $this->_review_tokens))
                 || ($this->_capabilities !== null
-                    && get($this->_capabilities, "@ra" . $rrow->paperId) == $rrow->contactId));
+                    && ($this->_capabilities["@ra" . $rrow->paperId] ?? null) == $rrow->contactId));
     }
 
     function is_owned_review($rbase = null) { // review/request/refusal
@@ -2980,7 +2980,7 @@ class Contact {
                     && $rbase->reviewType == REVIEW_EXTERNAL
                     && $this->conf->ext_subreviews)
                 || ($this->_capabilities !== null
-                    && get($this->_capabilities, "@ra" . $rbase->paperId) == $rbase->contactId));
+                    && ($this->_capabilities["@ra" . $rbase->paperId] ?? null) == $rbase->contactId));
     }
 
     function can_view_review_assignment(PaperInfo $prow, $rrow) {
@@ -4064,12 +4064,14 @@ class Contact {
         // Return cleaned deadline-relevant settings that this user can see.
         global $Now;
         $dl = (object) ["now" => $Now, "email" => $this->email ? : null];
-        if ($this->privChair)
+        if ($this->privChair) {
             $dl->is_admin = true;
-        else if ($this->is_track_manager())
+        } else if ($this->is_track_manager()) {
             $dl->is_track_admin = true;
-        if ($this->is_author())
+        }
+        if ($this->is_author()) {
             $dl->is_author = true;
+        }
         $dl->sub = (object) [];
         $graces = [];
 
@@ -4097,12 +4099,13 @@ class Contact {
         }
 
         $sb = $this->conf->submission_blindness();
-        if ($sb === Conf::BLIND_ALWAYS)
+        if ($sb === Conf::BLIND_ALWAYS) {
             $dl->sub->blind = true;
-        else if ($sb === Conf::BLIND_OPTIONAL)
+        } else if ($sb === Conf::BLIND_OPTIONAL) {
             $dl->sub->blind = "optional";
-        else if ($sb === Conf::BLIND_UNTILREVIEW)
+        } else if ($sb === Conf::BLIND_UNTILREVIEW) {
             $dl->sub->blind = "until-review";
+        }
 
         // responses
         if ($this->conf->setting("resp_active") > 0
@@ -4111,36 +4114,40 @@ class Contact {
             foreach ($this->relevant_resp_rounds() as $rrd) {
                 $dlresp = (object) ["open" => $rrd->open, "done" => +$rrd->done];
                 $dlresps[$rrd->name] = $dlresp;
-                if ($rrd->grace)
+                if ($rrd->grace) {
                     array_push($graces, $dlresp, $rrd->grace, ["done"]);
+                }
             }
-            if (!empty($dlresps))
+            if (!empty($dlresps)) {
                 $dl->resps = $dlresps;
+            }
         }
 
         // final copy deadlines
         if ($this->conf->setting("final_open") > 0) {
             $dl->final = (object) array("open" => true);
             $final_soft = +$this->conf->setting("final_soft");
-            if ($final_soft > $Now)
+            if ($final_soft > $Now) {
                 $dl->final->done = $final_soft;
-            else {
+            } else {
                 $dl->final->done = +$this->conf->setting("final_done");
                 $dl->final->ishard = true;
             }
-            if (($g = $this->conf->setting("final_grace")))
+            if (($g = $this->conf->setting("final_grace"))) {
                 array_push($graces, $dl->final, $g, ["done"]);
+            }
         }
 
         // reviewer deadlines
         $revtypes = array();
         $rev_open = +$this->conf->setting("rev_open");
         $rev_open = $rev_open > 0 && $rev_open <= $Now;
-        if ($this->is_reviewer() && $rev_open)
+        if ($this->is_reviewer() && $rev_open) {
             $dl->rev = (object) ["open" => true];
-        else if ($this->privChair)
+        } else if ($this->privChair) {
             $dl->rev = (object) [];
-        if (get($dl, "rev")) {
+        }
+        if (isset($dl->rev)) {
             $dl->revs = [];
             $k = $this->isPC ? "pcrev" : "extrev";
             foreach ($this->conf->defined_round_list() as $i => $round_name) {
@@ -4148,20 +4155,23 @@ class Contact {
                 $s = +$this->conf->setting("{$k}_soft$isuf");
                 $h = +$this->conf->setting("{$k}_hard$isuf");
                 $dl->revs[$round_name] = $dlround = (object) [];
-                if ($rev_open)
+                if ($rev_open) {
                     $dlround->open = true;
+                }
                 if ($h && ($h < $Now || $s < $Now)) {
                     $dlround->done = $h;
                     $dlround->ishard = true;
-                } else if ($s)
+                } else if ($s) {
                     $dlround->done = $s;
+                }
             }
             // blindness
             $rb = $this->conf->review_blindness();
-            if ($rb === Conf::BLIND_ALWAYS)
+            if ($rb === Conf::BLIND_ALWAYS) {
                 $dl->rev->blind = true;
-            else if ($rb === Conf::BLIND_OPTIONAL)
+            } else if ($rb === Conf::BLIND_OPTIONAL) {
                 $dl->rev->blind = "optional";
+            }
         }
 
         // grace periods: give a minute's notice of an impending grace
@@ -4189,52 +4199,65 @@ class Contact {
                 $prows = array($prows);
             $dl->perm = array();
             foreach ($prows as $prow) {
-                if (!$this->can_view_paper($prow))
+                if (!$this->can_view_paper($prow)) {
                     continue;
+                }
                 $perm = $dl->perm[$prow->paperId] = (object) array();
                 $rights = $this->rights($prow);
                 $admin = $rights->allow_administer;
-                if ($admin)
+                if ($admin) {
                     $perm->allow_administer = true;
-                if ($rights->act_author)
+                }
+                if ($rights->act_author) {
                     $perm->act_author = true;
-                if ($rights->act_author_view)
+                }
+                if ($rights->act_author_view) {
                     $perm->act_author_view = true;
-                if ($this->can_review($prow, null, false))
+                }
+                if ($this->can_review($prow, null, false)) {
                     $perm->can_review = true;
-                if ($this->can_comment($prow, null, true))
+                }
+                if ($this->can_comment($prow, null, true)) {
                     $perm->can_comment = true;
-                else if ($admin && $this->can_comment($prow, null, false))
+                } else if ($admin && $this->can_comment($prow, null, false)) {
                     $perm->can_comment = "override";
-                if (get($dl, "resps")) {
+                }
+                if (isset($dl->resps)) {
                     foreach ($this->conf->resp_rounds() as $rrd) {
                         $crow = CommentInfo::make_response_template($rrd->number, $prow);
                         $v = false;
-                        if ($this->can_respond($prow, $crow, true))
+                        if ($this->can_respond($prow, $crow, true)) {
                             $v = true;
-                        else if ($admin && $this->can_respond($prow, $crow, false))
+                        } else if ($admin && $this->can_respond($prow, $crow, false)) {
                             $v = "override";
-                        if ($v && !isset($perm->can_responds))
+                        }
+                        if ($v && !isset($perm->can_responds)) {
                             $perm->can_responds = [];
-                        if ($v)
+                        }
+                        if ($v) {
                             $perm->can_responds[$rrd->name] = $v;
+                        }
                     }
                 }
-                if ($prow->can_author_view_submitted_review())
+                if ($prow->can_author_view_submitted_review()) {
                     $perm->some_author_can_view_review = true;
-                if ($prow->can_author_view_decision())
+                }
+                if ($prow->can_author_view_decision()) {
                     $perm->some_author_can_view_decision = true;
+                }
                 if ($this->isPC
-                    && !$this->conf->can_some_external_reviewer_view_comment())
+                    && !$this->conf->can_some_external_reviewer_view_comment()) {
                     $perm->default_comment_visibility = "pc";
+                }
                 if ($this->_review_tokens) {
                     $tokens = [];
                     foreach ($prow->reviews_by_id() as $rrow) {
                         if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->_review_tokens))
                             $tokens[$rrow->reviewToken] = true;
                     }
-                    if (!empty($tokens))
+                    if (!empty($tokens)) {
                         $perm->review_tokens = array_map("encode_token", array_keys($tokens));
+                    }
                 }
             }
         }
@@ -4245,18 +4268,21 @@ class Contact {
     function has_reportable_deadline() {
         global $Now;
         $dl = $this->my_deadlines();
-        if (get($dl->sub, "reg") || get($dl->sub, "update") || get($dl->sub, "sub"))
+        if (isset($dl->sub->reg) || isset($dl->sub->update) || isset($dl->sub->sub)) {
             return true;
-        if (get($dl, "resps"))
+        }
+        if (isset($dl->resps)) {
             foreach ($dl->resps as $dlr) {
-                if (get($dlr, "open") && $dlr->open < $Now && get($dlr, "done"))
+                if (isset($dlr->open) && $dlr->open < $Now && ($dlr->done ?? null))
                     return true;
             }
-        if (get($dl, "rev") && get($dl->rev, "open") && $dl->rev->open < $Now)
+        }
+        if (isset($dl->rev) && isset($dl->rev->open) && $dl->rev->open < $Now) {
             foreach ($dl->revs as $dlr) {
-                if (get($dlr, "done"))
+                if ($dlr->done ?? null)
                     return true;
             }
+        }
         return false;
     }
 

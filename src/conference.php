@@ -194,6 +194,7 @@ class Conf {
     public $paper; // current paper row
     private $_active_list = false;
 
+    /** @var Conf */
     static public $g;
     static public $no_invalidate_caches = false;
     static public $next_xt_subposition = 0;
@@ -1589,7 +1590,8 @@ class Conf {
         return $this->_defined_rounds;
     }
 
-    /** @return string */
+    /** @param int $roundno
+     * @return string */
     function round_name($roundno) {
         if ($roundno > 0) {
             if (($rname = $this->rounds[$roundno] ?? null) && $rname !== ";") {
@@ -1600,7 +1602,8 @@ class Conf {
         return "";
     }
 
-    /** @return string */
+    /** @param int $roundno
+     * @return string */
     function round_suffix($roundno) {
         if ($roundno > 0
             && ($rname = $this->rounds[$roundno] ?? null)
@@ -1610,7 +1613,8 @@ class Conf {
         return "";
     }
 
-    /** @param string $rname */
+    /** @param string $rname
+     * @return string|false */
     static function round_name_error($rname) {
         if ((string) $rname === "") {
             return "Empty round name.";
@@ -1640,7 +1644,8 @@ class Conf {
         }
     }
 
-    /** @return string */
+    /** @param bool $external
+     * @return string */
     function assignment_round_option($external) {
         if (!$external
             || ($x = $this->settingTexts["extrev_roundtag"] ?? null) === null) {
@@ -1649,7 +1654,8 @@ class Conf {
         return $x === "" ? "unnamed" : $x;
     }
 
-    /** @return int */
+    /** @param bool $external
+     * @return int */
     function assignment_round($external) {
         return $this->round_number($this->assignment_round_option($external), false);
     }

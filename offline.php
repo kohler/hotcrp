@@ -31,8 +31,9 @@ if (isset($Qreq->uploadForm)
     $tf->report();
     // Uploading forms may have completed the reviewer's task; recheck roles.
     Contact::update_rights();
-} else if (isset($Qreq->uploadForm))
+} else if (isset($Qreq->uploadForm)) {
     Conf::msg_error("Choose a file first.");
+}
 
 
 // upload tag indexes action
@@ -153,8 +154,9 @@ function setTagIndexes($qreq) {
 }
 if ((isset($Qreq->setvote) || isset($Qreq->setrank))
     && $Me->is_reviewer()
-    && $Qreq->post_ok())
+    && $Qreq->post_ok()) {
     setTagIndexes($Qreq);
+}
 
 
 $pastDeadline = !$Conf->time_review(null, $Me->isPC, true);

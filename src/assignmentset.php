@@ -1427,8 +1427,9 @@ class AssignmentSet {
             $aparser = $this->collect_parser($req);
             $this->collect_papers((string) $req["paper"], $pids, false);
             if ($aparser
-                && ($pfield = $aparser->expand_papers($req, $this->astate)))
+                && ($pfield = $aparser->expand_papers($req, $this->astate))) {
                 $this->collect_papers($pfield, $pids, false);
+            }
             $lines[] = [$csv->lineno(), $aparser, $req];
         }
         if (!empty($pids)) {
@@ -1465,10 +1466,11 @@ class AssignmentSet {
                     if (($a = $item->realize($this->astate))) {
                         if ($a->pid > 0) {
                             $index = count($this->assigners);
-                            if (isset($pidtail[$a->pid]))
+                            if (isset($pidtail[$a->pid])) {
                                 $pidtail[$a->pid]->next_index = $index;
-                            else
+                            } else {
                                 $this->assigners_pidhead[$a->pid] = $index;
+                            }
                             $pidtail[$a->pid] = $a;
                         }
                         $this->assigners[] = $a;

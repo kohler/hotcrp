@@ -162,17 +162,27 @@ class MinCostMaxFlow_Edge {
 };
 
 class MinCostMaxFlow {
-    private $v = array();
+    /** @var list<MinCostMaxFlow_Node> */
+    private $v = [];
+    /** @var array<string,MinCostMaxFlow_Node> */
     private $vmap;
+    /** @var MinCostMaxFlow_Node */
     private $source;
+    /** @var MinCostMaxFlow_Node */
     private $sink;
-    private $e = array();
+    /** @var list<MinCostMaxFlow_Edge> */
+    private $e;
+    /** @var null|int|float */
     private $maxflow;
+    /** @var int|float */
     private $maxcap;
+    /** @var int|float */
     private $mincost;
+    /** @var int|float */
     private $maxcost;
     private $progressf = array();
     private $hasrun;
+    /** @var bool */
     private $debug;
     // times
     public $maxflow_start_at;
@@ -181,9 +191,13 @@ class MinCostMaxFlow {
     public $mincost_end_at;
     // pushrelabel/cspushrelabel state
     private $epsilon;
+    /** @var ?MinCostMaxFlow_Node */
     private $ltail;
+    /** @var int */
     public $npush;
+    /** @var int */
     public $nrelabel;
+    /** @var bool */
     public $infeasible;
 
     const PMAXFLOW = 0;
@@ -196,9 +210,9 @@ class MinCostMaxFlow {
 
     const DEBUG = 1;
 
-    function __construct($flags = false) {
+    function __construct($flags = 0) {
         $this->clear();
-        $this->debug = ($flags & self::DEBUG) != 0;
+        $this->debug = ($flags & self::DEBUG) !== 0;
     }
 
     function add_node($name, $klass = "") {
@@ -796,7 +810,6 @@ class MinCostMaxFlow {
     }
 
     function run() {
-        global $Conf, $Now;
         assert(!$this->hasrun);
         $this->hasrun = true;
         $this->infeasible = false;
@@ -844,9 +857,9 @@ class MinCostMaxFlow {
             $v->link = $v->xlink = null;
             $v->e = [];
         }
-        $this->v = array();
-        $this->e = array();
-        $this->vmap = array();
+        $this->v = [];
+        $this->e = [];
+        $this->vmap = [];
         $this->maxflow = null;
         $this->maxcap = $this->mincost = $this->maxcost = 0;
         $this->source = $this->add_node(".source", ".internal");
@@ -865,16 +878,16 @@ class MinCostMaxFlow {
                 $cost += $e->flow * $e->cost;
             }
         }
-        usort($ex, "strnatcmp");
+        natsort($ex);
         $vx = array();
         foreach ($this->v as $v) {
             if ($v->excess)
                 $vx[] = "E {$v->name} {$v->excess}\n";
         }
-        usort($vx, "strnatcmp");
+        natsort($vx);
         $x = "";
         if ($this->hasrun) {
-            $x = "total {$e->flow} $cost\n";
+            $x = "total {$this->maxflow} $cost\n";
         }
         return $x . join("", $ex) . join("", $vx);
     }

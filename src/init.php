@@ -323,28 +323,28 @@ global $Opt;
 if (!$Opt) {
     $Opt = array();
 }
-if (!($Opt["loaded"] ?? false)) {
+if (!($Opt["loaded"] ?? null)) {
     SiteLoader::read_main_options();
-    if ($Opt["multiconference"] ?? false) {
+    if ($Opt["multiconference"] ?? null) {
         Multiconference::init();
     }
-    if ($Opt["include"] ?? false) {
+    if (isset($Opt["include"]) && $Opt["include"]) {
         read_included_options($Opt["include"]);
     }
 }
-if (!($Opt["loaded"] ?? false) || ($Opt["missing"] ?? false)) {
+if (!($Opt["loaded"] ?? null) || ($Opt["missing"] ?? null)) {
     Multiconference::fail_bad_options();
 }
-if ($Opt["dbLogQueries"] ?? false) {
+if (isset($Opt["dbLogQueries"]) && $Opt["dbLogQueries"]) {
     Dbl::log_queries($Opt["dbLogQueries"], $Opt["dbLogQueryFile"] ?? null);
 }
 
 
 // Allow lots of memory
-if (!($Opt["memoryLimit"] ?? false) && ini_get_bytes("memory_limit") < (128 << 20)) {
+if (!($Opt["memoryLimit"] ?? null) && ini_get_bytes("memory_limit") < (128 << 20)) {
     $Opt["memoryLimit"] = "128M";
 }
-if ($Opt["memoryLimit"] ?? false) {
+if (isset($Opt["memoryLimit"]) && $Opt["memoryLimit"]) {
     ini_set("memory_limit", $Opt["memoryLimit"]);
 }
 

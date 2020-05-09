@@ -415,8 +415,8 @@ class HotCRPMailer extends Mailer {
         } else {
             $t = $this->conf->_c("mail", $m[1]);
         }
-        if ($m[2] && strlen($t) < $m[2]) {
-            $t = str_repeat(" ", $m[2] - strlen($t)) . $t;
+        if (($n = (int) $m[2]) && strlen($t) < $n) {
+            $t = str_repeat(" ", $n - strlen($t)) . $t;
         }
         return $t;
     }
