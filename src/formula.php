@@ -1177,24 +1177,22 @@ class FormulaCompiler {
         }
 
         if ($this->_lflags) {
-            $lstmt_pfx = [];
+            if ($this->_lflags & self::LFLAG_RROW_VSB) {
+                array_unshift($this->lstmt, "\$rrow_vsb_{$p} = \$rrow_{$p} ? \$contact->view_score_bound(\$prow, \$rrow_{$p}) : " . VIEWSCORE_EMPTYBOUND . ";");
+            }
             if ($this->_lflags & self::LFLAG_RROW) {
                 if ($this->index_type === Fexpr::IDX_REVIEW) {
                     $v = "\$v$p";
                 } else {
                     $v = "(\$vsreviews[\$i$p] ?? null)";
                 }
-                $lstmt_pfx[] = "\$rrow_{$p} = $v;";
-            }
-            if ($this->_lflags & self::LFLAG_RROW_VSB) {
-                $lstmt_pfx[] = "\$rrow_vsb_{$p} = \$rrow_{$p} ? \$contact->view_score_bound(\$prow, \$rrow_{$p}) : " . VIEWSCORE_EMPTYBOUND . ";";
+                array_unshift($this->lstmt, "\$rrow_{$p} = $v;");
             }
             if ($this->_lflags & self::LFLAG_PREFERENCES) {
                 $loopstmt[] = "\$preferences_{$p} = \$prow->viewable_preferences(\$contact"
                     . ($this->_lflags & self::LFLAG_CID ? "" : ", true")
                     . ");";
             }
-            $this->lstmt = array_merge($lstmt_pfx, $this->lstmt);
         }
 
         if ($this->term_compiler !== null) {

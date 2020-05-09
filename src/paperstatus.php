@@ -1172,7 +1172,7 @@ class PaperStatus extends MessageSet {
             && !$ps->has_error_at("contacts")
             && !$ps->has_error_at("pc_conflicts")) {
             $ps->_conflict_ins = [];
-            if (!empty($ps->_new_conflicts)) {
+            if ($ps->_new_conflicts !== null) {
                 $result = $ps->conf->qe("select contactId, email from ContactInfo where email?a", array_keys($ps->_new_conflicts));
                 while (($row = $result->fetch_row())) {
                     $ct = $ps->_new_conflicts[strtolower($row[1])];
