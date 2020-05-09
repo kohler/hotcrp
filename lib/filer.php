@@ -104,21 +104,17 @@ class Filer {
 
     // download
     static function download_file($filename, $no_accel = false) {
-        global $Conf, $zlib_output_compression;
+        global $zlib_output_compression;
         // if docstoreAccelRedirect, output X-Accel-Redirect header
-        if (($dar = $Conf->opt("docstoreAccelRedirect"))
-            && ($ds = $Conf->opt("docstore"))
+        if (($dar = Conf::$g->opt("docstoreAccelRedirect"))
+            && ($dsp = self::docstore_fixed_prefix(Conf::$g->docstore()))
             && !$no_accel) {
-            if (!str_ends_with($ds, "/")) {
-                $ds .= "/";
-            }
-            if (str_starts_with($filename, $ds)
-                && ($tail = substr($filename, strlen($ds)))
-                && preg_match('/\A[^\/]+/', $tail)) {
-                if (!str_ends_with($dar, "/")) {
-                    $dar .= "/";
-                }
-                header("X-Accel-Redirect: $dar$tail");
+            assert(str_ends_with($dsp, "/"));
+            if (str_starts_with($filename, $dsp)
+                && strlen($filename) > strlen($dsp)
+                && $filename[strlen($dsp)] !== "/") {
+                error_log("X-Accel-Redirect: $dar" . substr($filename, strlen($dsp)));
+                header("X-Accel-Redirect: $dar" . substr($filename, strlen($dsp)));
                 return;
             }
         }
@@ -242,9 +238,11 @@ class Filer {
         }
     }
 
+    /** @param ?string $pattern
+     * @return ?string */
     static function docstore_fixed_prefix($pattern) {
-        if ($pattern == "") {
-            return $pattern;
+        if ($pattern === null || $pattern === "") {
+            return null;
         }
         $prefix = "";
         while (($pos = strpos($pattern, "%")) !== false) {
@@ -258,7 +256,7 @@ class Filer {
                 if (($rslash = strrpos($prefix, "/")) !== false) {
                     return substr($prefix, 0, $rslash + 1);
                 } else {
-                    return "";
+                    return null;
                 }
             }
         }
@@ -269,9 +267,12 @@ class Filer {
         return $prefix;
     }
 
+    /** @param string $parent
+     * @param string $path */
     static private function prepare_docstore($parent, $path) {
-        if (!self::_make_fpath_parents($parent, $path))
+        if (!self::_make_fpath_parents($parent, $path)) {
             return false;
+        }
         // Ensure an .htaccess file exists, even if someone else made the
         // filestore directory
         $htaccess = "$parent/.htaccess";
@@ -283,18 +284,17 @@ class Filer {
         return true;
     }
 
-    static function docstore_tmpdir($pattern) {
-        if (is_object($pattern)) {
-            $pattern = $pattern->opt("docstore");
-        }
-        if ($pattern
-            && ($prefix = self::docstore_fixed_prefix($pattern))) {
+    /** @return ?non-empty-string */
+    static function docstore_tmpdir(Conf $conf = null) {
+        $conf = $conf ?? Conf::$g;
+        if (($prefix = self::docstore_fixed_prefix($conf->docstore()))) {
             $tmpdir = $prefix . "tmp/";
+            '@phan-var non-empty-string $tmpdir';
             if (self::prepare_docstore($tmpdir, $tmpdir)) {
                 return $tmpdir;
             }
         }
-        return false;
+        return null;
     }
 
     static private function _expand_docstore($pattern, DocumentInfo $doc, $extension) {

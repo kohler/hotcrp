@@ -140,7 +140,8 @@ class Conf {
     private $_abbrev_matcher = null;
     private $_date_format_initialized = false;
     private $_formatspec_cache = [];
-    private $_docstore = false;
+    /** @var ?non-empty-string */
+    private $_docstore;
     private $_defined_formulas = null;
     private $_emoji_codes = null;
     private $_s3_document = false;
@@ -581,35 +582,35 @@ class Conf {
         Ht::$img_base = $this->opt["assetsUrl"] . "images/";
 
         // set docstore
-        if (($this->opt["docstore"] ?? null) === true) {
-            $this->opt["docstore"] = "docs";
-        } else if (!($this->opt["docstore"] ?? null)
-                   && ($this->opt["filestore"] ?? null)) { // backwards compat
-            $this->opt["docstore"] = $this->opt["filestore"];
-            if ($this->opt["docstore"] === true) {
-                $this->opt["docstore"] = "filestore";
+        $docstore = $this->opt["docstore"] ?? null;
+        $dpath = "";
+        $dpsubdir = $this->opt["docstoreSubdir"] ?? null;
+        if (is_string($docstore)) {
+            $dpath = $docstore;
+        } else if ($docstore === true) {
+            $dpath = "docs";
+        } else if ($docstore === null && isset($this->opt["filestore"])) {
+            if (is_string($this->opt["filestore"])) {
+                $dpath = $this->opt["filestore"];
+            } else if ($this->opt["filestore"] === true) {
+                $dpath = "filestore";
             }
-            $this->opt["docstoreSubdir"] = $this->opt["filestoreSubdir"] ?? null;
+            $dpsubdir = $this->opt["filestoreSubdir"] ?? null;
         }
-        if (isset($this->opt["docstore"])
-            && $this->opt["docstore"]
-            && $this->opt["docstore"][0] !== "/") {
-            $this->opt["docstore"] = $ConfSitePATH . "/" . $this->opt["docstore"];
-        }
-        $this->_docstore = false;
-        if (($dpath = $this->opt["docstore"] ?? null)) {
-            if (strpos($dpath, "%") !== false) {
-                $this->_docstore = $dpath;
-            } else {
-                if ($dpath[strlen($dpath) - 1] === "/") {
-                    $dpath = substr($dpath, 0, strlen($dpath) - 1);
-                }
-                $use_subdir = $this->opt["docstoreSubdir"] ?? null;
-                if ($use_subdir && ($use_subdir === true || $use_subdir > 0)) {
-                    $dpath .= "/%" . ($use_subdir === true ? 2 : $use_subdir) . "h";
-                }
-                $this->_docstore = $dpath . "/%h%x";
+        if ($dpath !== "") {
+            if ($dpath[0] !== "/") {
+                $dpath = $ConfSitePATH . "/" . $dpath;
             }
+            if (strpos($dpath, "%") === false) {
+                $dpath .= ($dpath[strlen($dpath) - 1] === "/" ? "" : "/");
+                if ($dpsubdir && ($dpsubdir === true || $dpsubdir > 0)) {
+                    $dpath .= "%" . ($dpsubdir === true ? 2 : $dpsubdir) . "h/";
+                }
+                $dpath .= "%h%x";
+            }
+            $this->_docstore = $dpath;
+        } else {
+            $this->_docstore = null;
         }
 
         // handle timezone
@@ -861,7 +862,7 @@ class Conf {
         return $this->_formatspec_cache[$dtype];
     }
 
-    /** @return false|string */
+    /** @return ?non-empty-string */
     function docstore() {
         return $this->_docstore;
     }

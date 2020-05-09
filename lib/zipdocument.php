@@ -181,7 +181,7 @@ class ZipDocument {
             $this->add_as(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         }
 
-        if (($dstore_tmp = Filer::docstore_tmpdir($this->conf->opt("docstore")))) {
+        if (($dstore_tmp = Filer::docstore_tmpdir($this->conf))) {
             // calculate hash for zipfile contents
             $xdocs = $this->_docs;
             usort($xdocs, function ($a, $b) {

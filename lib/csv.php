@@ -620,7 +620,7 @@ class CsvGenerator {
         global $Conf, $Now;
         if ($this->stream === null) {
             $this->stream = false;
-            if (($dir = Filer::docstore_tmpdir($Conf) ? : tempdir())) {
+            if (($dir = Filer::docstore_tmpdir() ?? tempdir())) {
                 if (!str_ends_with($dir, "/")) {
                     $dir .= "/";
                 }

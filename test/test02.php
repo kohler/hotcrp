@@ -887,8 +887,7 @@ xassert_eqq($am->find_all("paper-is-co-authored-with-at-least-one-pc-member"), [
 
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
-xassert_eqq(Filer::docstore_fixed_prefix(false), false);
-xassert_eqq(Filer::docstore_fixed_prefix(""), "");
+xassert_eqq(Filer::docstore_fixed_prefix(""), null);
 xassert_eqq(Filer::docstore_fixed_prefix("/"), "/");
 xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e"), "/a/b/c/d/e/");
 xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e///"), "/a/b/c/d/e///");
@@ -896,7 +895,7 @@ xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e/%%/a/b"), "/a/b/c/d/e/%/a/b
 xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e/%%/a/b%"), "/a/b/c/d/e/%/a/b%/");
 xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e/%%/a/b%h%x"), "/a/b/c/d/e/%/a/");
 xassert_eqq(Filer::docstore_fixed_prefix("/%02h%x"), "/");
-xassert_eqq(Filer::docstore_fixed_prefix("%02h%x"), "");
+xassert_eqq(Filer::docstore_fixed_prefix("%02h%x"), null);
 
 // Document::content_binary_hash
 $Conf->save_setting("opt.contentHashMethod", 1, "sha1");
