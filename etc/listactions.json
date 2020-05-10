@@ -25,7 +25,7 @@
     },
     {
         "name": "get/json", "get": true,
-        "selector": "Paper information/JSON",
+        "title": "Paper information/JSON",
         "position": 1090,
         "allow_if": "manager",
         "callback": "+GetJson_ListAction",
@@ -33,7 +33,7 @@
     },
     {
         "name": "get/jsonattach", "get": true,
-        "selector": "Paper information/JSON with attachments",
+        "title": "Paper information/JSON with attachments",
         "position": 1091,
         "allow_if": "manager",
         "callback": "+GetJson_ListAction",
@@ -41,14 +41,14 @@
     },
     {
         "name": "get/jsonrqc", "get": true,
-        "selector": "Paper information/JSON for reviewqualitycollector.org",
+        "title": "Paper information/JSON for reviewqualitycollector.org",
         "position": 1092,
         "allow_if": "manager",
         "callback": "+GetJsonRQC_ListAction"
     },
     {
         "name": "get/pcassignments", "get": true,
-        "selector": "Review assignments/PC assignments",
+        "title": "Review assignments/PC assignments",
         "position": 2099,
         "allow_if": "manager",
         "require": "src/listactions/la_get_rev.php",
@@ -56,7 +56,7 @@
     },
     {
         "name": "get/revform", "get": true, "paper_optional": true,
-        "selector": "Review assignments/Review forms",
+        "title": "Review assignments/Review forms",
         "position": 2000,
         "allow_if": "reviewer",
         "require": "src/listactions/la_get_rev.php",
@@ -65,7 +65,7 @@
     },
     {
         "name": "get/revformz", "get": true, "paper_optional": true,
-        "selector": "Review assignments/Review forms (zip)",
+        "title": "Review assignments/Review forms (zip)",
         "position": 2001,
         "allow_if": "reviewer",
         "require": "src/listactions/la_get_rev.php",
@@ -74,7 +74,7 @@
     },
     {
         "name": "get/revt", "get": true,
-        "selector": "Reviews/Reviews with paper info",
+        "title": "Reviews/Reviews with paper info",
         "position": 3050,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
@@ -83,7 +83,7 @@
     },
     {
         "name": "get/rev", "get": true,
-        "selector": "Reviews/Reviews (text)",
+        "title": "Reviews/Reviews (text)",
         "position": 3100,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
@@ -92,7 +92,7 @@
     },
     {
         "name": "get/revz", "get": true,
-        "selector": "Reviews/Reviews (zip)",
+        "title": "Reviews/Reviews (zip)",
         "position": 3105,
         "allow_if": "view_review",
         "require": "src/listactions/la_get_rev.php",
@@ -101,7 +101,7 @@
     },
     {
         "name": "get/revau", "get": true,
-        "selector": "Reviews/Reviews (text, author view)",
+        "title": "Reviews/Reviews (text, author view)",
         "position": 3200,
         "allow_if": ["view_review", "admin"],
         "require": "src/listactions/la_get_rev.php",
@@ -110,7 +110,7 @@
     },
     {
         "name": "get/revauz", "get": true,
-        "selector": "Reviews/Reviews (zip, author view)",
+        "title": "Reviews/Reviews (zip, author view)",
         "position": 3205,
         "allow_if": ["view_review", "admin"],
         "require": "src/listactions/la_get_rev.php",
@@ -119,14 +119,14 @@
     },
     {
         "name": "get/revcsv", "get": true,
-        "selector": "Reviews/Reviews (CSV)",
+        "title": "Reviews/Reviews (CSV)",
         "position": 3110,
         "allow_if": "view_review",
         "callback": "+GetReviewCSV_ListAction"
     },
     {
         "name": "get/revaucsv", "get": true,
-        "selector": "Reviews/Reviews (CSV, author view)",
+        "title": "Reviews/Reviews (CSV, author view)",
         "position": 3210,
         "allow_if": ["view_review", "admin"],
         "callback": "+GetReviewCSV_ListAction",
@@ -134,7 +134,7 @@
     },
     {
         "name": "get/scores", "get": true,
-        "selector": "Reviews/Scores (CSV)",
+        "title": "Reviews/Scores (CSV)",
         "position": 3400,
         "allow_if": "view_review",
         "callback": "+GetScores_ListAction"
@@ -146,21 +146,21 @@
     },
     {
         "name": "get/lead", "get": true,
-        "selector": "Reviews/Discussion leads (CSV)", "position": 3600,
+        "title": "Reviews/Discussion leads (CSV)", "position": 3600,
         "allow_if": "pc", "display_if": "lead",
         "callback": "+GetLead_ListAction",
         "type": "lead"
     },
     {
         "name": "get/shepherd", "get": true,
-        "selector": "Reviews/Shepherds (CSV)", "position": 3650,
+        "title": "Reviews/Shepherds (CSV)", "position": 3650,
         "allow_if": "pc", "display_if": "shepherd",
         "callback": "+GetLead_ListAction",
         "type": "shepherd"
     },
     {
         "name": "get/revpref", "get": true,
-        "selector": "Preference file",
+        "title": "Preference file",
         "position": -100,
         "allow_if": "pc", "display_if_report": "pf",
         "callback": "+GetRevpref_ListAction",
@@ -168,7 +168,7 @@
     },
     {
         "name": "get/revprefx", "get": true,
-        "selector": "Preference file with abstracts",
+        "title": "Preference file with abstracts",
         "position": -99,
         "allow_if": "pc", "display_if_report": "pf",
         "callback": "+GetRevpref_ListAction",
@@ -176,28 +176,28 @@
     },
     {
         "name": "get/allrevpref", "get": true,
-        "selector": "Review assignments/PC review preferences",
+        "title": "Review assignments/PC review preferences",
         "position": 2060,
         "allow_if": "manager",
         "callback": "+GetAllRevpref_ListAction"
     },
     {
         "name": "get/paper", "get": true,
-        "selector": "Documents/Submissions",
+        "title": "Documents/Submissions",
         "position": 100, "display_if_list_has": "paper",
         "callback": "+GetDocument_ListAction",
         "dtype": 0
     },
     {
         "name": "get/final", "get": true,
-        "selector": "Documents/Final versions",
+        "title": "Documents/Final versions",
         "position": 0, "display_if_list_has": "final",
         "callback": "+GetDocument_ListAction",
         "dtype": -1
     },
     {
         "name": "get/checkformat", "get": true,
-        "selector": "Documents/Format check",
+        "title": "Documents/Format check",
         "position": 999, "display_if_list_has": "paper",
         "allow_if": "manager",
         "require": "src/listactions/la_get_sub.php",
@@ -205,21 +205,21 @@
     },
     {
         "name": "get/abstract", "get": true,
-        "selector": "Paper information/Text with abstracts", "display_if_list_has": "abstract",
+        "title": "Paper information/Text with abstracts", "display_if_list_has": "abstract",
         "position": 1000,
         "require": "src/listactions/la_get_sub.php",
         "callback": "+GetAbstract_ListAction"
     },
     {
         "name": "get/abstract", "get": true,
-        "selector": "Paper information/Text", "display_if_list_has": "!abstract",
+        "title": "Paper information/Text", "display_if_list_has": "!abstract",
         "position": 1000,
         "require": "src/listactions/la_get_sub.php",
         "callback": "+GetAbstract_ListAction"
     },
     {
         "name": "get/authors", "get": true,
-        "selector": "Paper information/Authors",
+        "title": "Paper information/Authors",
         "position": 1001, "display_if_list_has": "authors",
         "require": "src/listactions/la_get_sub.php",
         "callback": "+GetAuthors_ListAction"
@@ -231,21 +231,21 @@
     },
     {
         "name": "get/topics", "get": true,
-        "selector": "Paper information/Topics", "display_if": "conf.has_topics",
+        "title": "Paper information/Topics", "display_if": "conf.has_topics",
         "position": 1050,
         "require": "src/listactions/la_get_sub.php",
         "callback": "+GetTopics_ListAction"
     },
     {
         "name": "get/pcconf", "get": true,
-        "selector": "Paper information/PC conflicts",
+        "title": "Paper information/PC conflicts",
         "position": 1060,
         "require": "src/listactions/la_get_sub.php",
         "callback": "+GetPcconflicts_ListAction"
     },
     {
         "name": "get/csv", "get": true,
-        "selector": "Paper information/CSV",
+        "title": "Paper information/CSV",
         "position": 1089,
         "require": "src/listactions/la_get_sub.php",
         "callback": "+GetCSV_ListAction"

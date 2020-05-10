@@ -14,20 +14,20 @@ class Get_ListAction extends ListAction {
         usort($actions, "Conf::xt_position_compare");
         $last_group = null;
         foreach ($actions as $fj) {
-            $as = strpos($fj->selector, "/");
+            $as = strpos($fj->title, "/");
             if ($as === false) {
                 if ($last_group) {
                     $sel_opt[] = ["optgroup", false];
                 }
                 $last_group = null;
-                $sel_opt[] = ["value" => substr($fj->name, 4), "label" => $fj->selector];
+                $sel_opt[] = ["value" => substr($fj->name, 4), "label" => $fj->title];
             } else {
-                $group = substr($fj->selector, 0, $as);
+                $group = substr($fj->title, 0, $as);
                 if ($group !== $last_group) {
                     $sel_opt[] = ["optgroup", $group];
                     $last_group = $group;
                 }
-                $sel_opt[] = ["value" => substr($fj->name, 4), "label" => substr($fj->selector, $as + 1)];
+                $sel_opt[] = ["value" => substr($fj->name, 4), "label" => substr($fj->title, $as + 1)];
             }
         }
         if (!empty($sel_opt)) {

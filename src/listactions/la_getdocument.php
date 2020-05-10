@@ -14,7 +14,7 @@ class GetDocument_ListAction extends ListAction {
         return (object) [
             "name" => "get/" . $opt->dtype_name(),
             "dtype" => $opt->id,
-            "selector" => "Documents/" . $opt->plural_title(),
+            "title" => "Documents/" . $opt->plural_title(),
             "position" => $opt->position + ($opt->final ? 0 : 100),
             "display_if_list_has" => $opt->field_key(),
             "callback" => "+GetDocument_ListAction"
