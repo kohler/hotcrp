@@ -5,6 +5,12 @@
     },
     {   "name": "null", "alias": "none"   },
     {
+        "name": "error", "parser_class": "Error_AssignmentParser"
+    },
+    {
+        "name": "warning", "parser_class": "Error_AssignmentParser"
+    },
+    {
         "name": "review", "parser_class": "Review_AssignmentParser",
         "review_type": null,
         "parameters": ["user", "review type", "[review round]"],

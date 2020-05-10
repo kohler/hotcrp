@@ -375,6 +375,26 @@ $assignset->parse("paper,action,email,landmark\n1,pri,estrin@usc.edu,butt.txt:74
 xassert_eqq(join("\n", $assignset->error_texts(true)), "butt.txt:740: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
 xassert(!$assignset->execute());
 
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,action,email,landmark,message\n1,pri,estrin@usc.edu,butt.txt:740\n1,error,none,butt.txt/10,GODDAMNIT", "fart.txt");
+xassert_eqq(join("\n", $assignset->error_texts(true)), "butt.txt/10: GODDAMNIT\nbutt.txt:740: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
+xassert(!$assignset->execute());
+
+assert_search_papers($user_chair, "#testo", "");
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,action,tag,message,landmark\n1,tag,testo,,butt.txt:740\n1,error,,GODDAMNIT,butt.txt/10", "fart.txt");
+xassert_eqq(join("\n", $assignset->error_texts(true)), "butt.txt/10: GODDAMNIT");
+xassert(!$assignset->execute());
+
+assert_search_papers($user_chair, "#testo", "");
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,action,tag,message,landmark\n1,tag,testo,,butt.txt:740\n1,warning,,GODDAMNIT,butt.txt/10", "fart.txt");
+xassert_eqq(join("\n", $assignset->error_texts(true)), "butt.txt/10: GODDAMNIT");
+xassert($assignset->execute());
+
+assert_search_papers($user_chair, "#testo", "1");
+xassert_assign($Admin, "paper,tag\n1,testo#clear");
+
 // more AssignmentSet conflict checking
 assert_search_papers($user_chair, "#fart", "");
 $assignset = new AssignmentSet($user_estrin, false);
