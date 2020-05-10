@@ -87,6 +87,8 @@ class AssignmentState {
     public $reviewer; // default contact
     /** @var int */
     public $overrides = 0;
+    /** @var int */
+    public $flags = 0;
     /** @var AssignerContacts */
     private $cmap;
     /** @var ?array<int,Contact> */
@@ -106,6 +108,8 @@ class AssignmentState {
     public $has_user_error = false;
 
     const ERROR_NONEXACT_MATCH = 4;
+
+    const FLAG_CSV_CONTEXT = 1;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -901,6 +905,7 @@ class AssignmentSet {
         $this->set_overrides($overrides);
     }
 
+    /** @param string $search_type */
     function set_search_type($search_type) {
         $this->search_type = $search_type;
     }
@@ -918,6 +923,10 @@ class AssignmentSet {
             $overrides &= ~Contact::OVERRIDE_CONFLICT;
         }
         $this->astate->overrides = (int) $overrides;
+    }
+    /** @param int $flags */
+    function set_flags($flags) {
+        $this->astate->flags = $flags;
     }
 
     function enable_actions($action) {
@@ -1223,8 +1232,9 @@ class AssignmentSet {
             }
             if (count($defaults) == 1) {
                 $this->astate->defaults["action"] = $defaults[0];
-                if (in_array($defaults[0], ["lead", "shepherd", "manager"]))
+                if (in_array($defaults[0], ["lead", "shepherd", "manager"])) {
                     $csv->add_synonym("user", $defaults[0]);
+                }
             }
         }
 
@@ -1233,8 +1243,9 @@ class AssignmentSet {
         } else if (!$csv->has_column("paper")) {
             return $this->error_at($csv->lineno(), "“paper” column missing");
         } else {
-            if (!isset($this->astate->defaults["action"]))
+            if (!isset($this->astate->defaults["action"])) {
                 $this->astate->defaults["action"] = "<missing>";
+            }
             return true;
         }
     }

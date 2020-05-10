@@ -12,18 +12,21 @@ $null_mailer = new HotCRPMailer($Conf, null, [
 ]);
 
 $Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
-if ($Qreq->post_ok())
+if ($Qreq->post_ok()) {
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
+}
 
 
 function assignment_defaults($qreq) {
     $defaults = [];
-    if (($action = $qreq->default_action) && $action !== "guess")
+    if (($action = $qreq->default_action) && $action !== "guess") {
         $defaults["action"] = $action;
+    }
     $defaults["round"] = $qreq->rev_round;
-    if ($qreq->requestreview_notify && $qreq->requestreview_body)
+    if ($qreq->requestreview_notify && $qreq->requestreview_body) {
         $defaults["extrev_notify"] = ["subject" => $qreq->requestreview_subject,
                                       "body" => $qreq->requestreview_body];
+    }
     return $defaults;
 }
 
@@ -142,6 +145,7 @@ if (isset($Qreq->upload)
         Conf::msg_error("Internal error: cannot read file.");
     } else {
         $assignset = new AssignmentSet($Me, true);
+        $assignset->set_flags(AssignmentState::FLAG_CSV_CONTEXT);
         $defaults = assignment_defaults($Qreq);
         $text = convert_to_utf8($text);
         $assignset->parse($text, $filename, $defaults, "keep_browser_alive");
