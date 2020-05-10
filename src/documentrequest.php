@@ -129,7 +129,7 @@ class DocumentRequest implements JsonSerializable {
                 break;
             }
             array_unshift($this->filters, $filter);
-            $dtname = substr($dtname, 0, strlen($dtname) - strlen($ff->name));
+            $dtname = substr($dtname, 0, strlen($dtname) - strlen($filter->name));
             if (str_ends_with($dtname, "-")) {
                 $dtname = substr($dtname, 0, strlen($dtname) - 1);
             }
