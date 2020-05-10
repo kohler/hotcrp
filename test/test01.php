@@ -359,12 +359,23 @@ assert_search_papers($user_chair, "#any~vote", "1");
 
 // check AssignmentSet conflict checking
 $assignset = new AssignmentSet($Admin, false);
-$assignset->parse("paper,action,email
-1,pri,estrin@usc.edu\n");
+$assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n");
 xassert_eqq(join("\n", $assignset->error_texts()), "Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
 $assignset->execute();
 assert_query("select email from PaperReview r join ContactInfo c on (c.contactId=r.contactId) where paperId=1 order by email", "mgbaker@cs.stanford.edu\nmjh@isi.edu\nvarghese@ccrc.wustl.edu");
 
+// check AssignmentSet error messages and landmarks
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n", "fart.txt");
+xassert_eqq(join("\n", $assignset->error_texts(true)), "fart.txt:2: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
+xassert(!$assignset->execute());
+
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,action,email,landmark\n1,pri,estrin@usc.edu,butt.txt:740\n", "fart.txt");
+xassert_eqq(join("\n", $assignset->error_texts(true)), "butt.txt:740: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
+xassert(!$assignset->execute());
+
+// more AssignmentSet conflict checking
 assert_search_papers($user_chair, "#fart", "");
 $assignset = new AssignmentSet($user_estrin, false);
 $assignset->parse("paper,tag

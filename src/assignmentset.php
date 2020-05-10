@@ -7,7 +7,7 @@ class AssignmentItem implements ArrayAccess {
     public $before;
     /** @var false|null|array */
     public $after;
-    /** @var null|int */
+    /** @var null|int|string */
     public $landmark;
     /** @param false|array $before */
     function __construct($before) {
@@ -93,8 +93,9 @@ class AssignmentState {
     private $cmap;
     /** @var ?array<int,Contact> */
     private $reviewer_users = null;
-    public $filename;
-    /** @var null|int */
+    /** @var string */
+    public $filename = "";
+    /** @var null|int|string */
     public $landmark;
     public $defaults = [];
     /** @var array<int,PaperInfo> */
@@ -334,13 +335,18 @@ class AssignmentState {
         return $this->cmap->register_user($c);
     }
 
-    /** @param null|int $landmark
+    /** @param null|int|string $landmark
      * @param string $msg
      * @param 0|1|2|4 $status */
     function msg($landmark, $msg, $status) {
-        $l = $this->filename ? : "";
-        if ($landmark) {
-            $l .= ($l === "" ? "line " : ":") . $landmark;
+        if (is_string($landmark)) {
+            $l = $landmark;
+        } else if ($landmark === false) {
+            $l = "";
+        } else if ($landmark) {
+            $l = ($this->filename === "" ? "line " : $this->filename . ":") . $landmark;
+        } else {
+            $l = $this->filename;
         }
         $n = count($this->msgs) - 1;
         if ($n >= 0
@@ -880,7 +886,8 @@ class AssignmentSet {
     public $conf;
     /** @var Contact */
     public $user;
-    public $filename;
+    /** @var string */
+    public $filename = "";
     /** @var list<Assigner> */
     private $assigners = [];
     /** @var array<int,int> */
@@ -1457,9 +1464,11 @@ class AssignmentSet {
         return $any_success;
     }
 
+    /** @param CsvParser|string|list<string> $text
+     * @param ?string $filename */
     function parse($text, $filename = null, $defaults = null, $alertf = null) {
         assert(empty($this->assigners));
-        $this->astate->filename = $this->filename = $filename;
+        $this->astate->filename = $this->filename = $filename ?? "";
         $this->astate->defaults = $defaults ? : [];
 
         if ($text instanceof CsvParser) {
@@ -1472,6 +1481,7 @@ class AssignmentSet {
         if (!$this->install_csv_header($csv)) {
             return false;
         }
+        $has_landmark = $csv->has_column("landmark");
 
         $old_overrides = $this->user->set_overrides($this->astate->overrides);
 
@@ -1484,7 +1494,12 @@ class AssignmentSet {
                 && ($pfield = $aparser->expand_papers($req, $this->astate))) {
                 $this->collect_papers($pfield, $pids, false);
             }
-            $lines[] = [$csv->lineno(), $aparser, $req];
+            if ($has_landmark) {
+                $landmark = $req["landmark"] ?? $csv->lineno();
+            } else {
+                $landmark = $csv->lineno();
+            }
+            $lines[] = [$landmark, $aparser, $req];
         }
         if (!empty($pids)) {
             $this->astate->landmark = $csv->lineno();
