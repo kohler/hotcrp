@@ -48,15 +48,17 @@ class Keywords_HelpTopic {
 
         $opts = array_filter($hth->conf->paper_opts->option_list(), function ($o) { return $o->form_position() !== false; });
         usort($opts, function ($a, $b) {
-            if ($a->final !== $b->final)
+            if ($a->final !== $b->final) {
                 return $a->final ? 1 : -1;
-            else
+            } else {
                 return PaperOption::compare($a, $b);
+            }
         });
 
         $oex = [];
-        foreach ($opts as $o)
+        foreach ($opts as $o) {
             $oex = array_merge($o->example_searches(), $oex);
+        }
 
         if (!empty($oex)) {
             echo $hth->tgroup("Submission fields");
@@ -64,23 +66,26 @@ class Keywords_HelpTopic {
                 if ($extype === "has") {
                     $desc = "submission has “" . $oex[1]->title_html() . "” set";
                     $oabbr = array();
-                    foreach ($opts as $ox)
+                    foreach ($opts as $ox) {
                         if ($ox !== $oex[1] && get($ox->example_searches(), "has"))
                             $oabbr[] = "“has:" . htmlspecialchars($ox->search_keyword()) . "”";
-                    if (!empty($oabbr))
+                    }
+                    if (!empty($oabbr)) {
                         $desc .= '<div class="hint">Other field ' . pluralx(count($oabbr), "search") . ': ' . join(", ", $oabbr) . '</div>';
-                } else if ($extype === "yes")
+                    }
+                } else if ($extype === "yes") {
                     $desc = "submission has “" . $oex[1]->title_html() . "” set";
-                else if ($extype === "numeric")
+                } else if ($extype === "numeric") {
                     $desc = "submission’s “" . $oex[1]->title_html() . "” field has value &gt; 100";
-                else if ($extype === "selector")
+                } else if ($extype === "selector") {
                     $desc = "submission’s “" . $oex[1]->title_html() . "” field has value “" . htmlspecialchars($oex[2]) . "”";
-                else if ($extype === "attachment-count")
+                } else if ($extype === "attachment-count") {
                     $desc = "submission has more than 2 “" . $oex[1]->title_html() . "” attachments";
-                else if ($extype === "attachment-filename")
+                } else if ($extype === "attachment-filename") {
                     $desc = "submission has an “" . $oex[1]->title_html() . "” attachment with a .gif extension";
-                else
+                } else {
                     continue;
+                }
                 echo $hth->search_trow($oex[0], $desc);
             }
         }
@@ -169,16 +174,17 @@ class Keywords_HelpTopic {
         echo $hth->search_trow(["q" => "status:withdrawn", "t" => "all"], "submission has been withdrawn");
         echo $hth->search_trow("has:final", "final version uploaded");
 
-        foreach ($hth->conf->decision_map() as $dnum => $dname) {
-            if ($dnum)
-                break;
-        }
-        $qdname = strtolower($dname);
-        if (strpos($qdname, " ") !== false) {
-            $qdname = "\"$qdname\"";
-        }
         echo $hth->tgroup("Decisions");
-        echo $hth->search_trow("dec:$qdname", "decision is “" . htmlspecialchars($dname) . "” (partial matches OK)");
+        foreach ($hth->conf->decision_map() as $dnum => $dname) {
+            if ($dnum) {
+                $qdname = strtolower($dname);
+                if (strpos($qdname, " ") !== false) {
+                    $qdname = "\"$qdname\"";
+                }
+                echo $hth->search_trow("dec:$qdname", "decision is “" . htmlspecialchars($dname) . "” (partial matches OK)");
+                break;
+            }
+        }
         echo $hth->search_trow("dec:yes", "one of the accept decisions");
         echo $hth->search_trow("dec:no", "one of the reject decisions");
         echo $hth->search_trow("dec:any", "decision specified");
