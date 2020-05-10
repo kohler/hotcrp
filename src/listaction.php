@@ -80,33 +80,39 @@ class ListAction {
         $round_list = $user->conf->round_list();
         $any_round = $any_token = false;
 
-        $texts = array();
+        $texts = [];
         foreach ($user->paper_set($selection, ["reviewSignatures" => true]) as $prow) {
             if (!$user->allow_administer($prow)) {
-                $texts[] = array();
-                $texts[] = array("paper" => $prow->paperId,
-                                 "action" => "none",
-                                 "title" => "You cannot override your conflict with this paper");
-            } else if (($rrows = $prow->reviews_by_display($user))) {
-                $texts[] = array();
-                $texts[] = array("paper" => $prow->paperId,
-                                 "action" => "clearreview",
-                                 "email" => "#pc",
-                                 "round" => "any",
-                                 "title" => $prow->title);
-                foreach ($rrows as $rrow) {
+                $texts[] = [];
+                $texts[] = ["paper" => $prow->paperId,
+                            "action" => "none",
+                            "title" => "You cannot override your conflict with this paper"];
+            } else {
+                $any_this_paper = false;
+                foreach ($prow->reviews_by_display($user) as $rrow) {
+                    $cid = $rrow->contactId;
                     if ($rrow->reviewToken) {
-                        if (!array_key_exists($rrow->contactId, $token_users)) {
-                            $token_users[$rrow->contactId] = $user->conf->user_by_id($rrow->contactId);
+                        if (!array_key_exists($cid, $token_users)) {
+                            $token_users[$cid] = $user->conf->user_by_id($cid);
                         }
-                        $u = $token_users[$rrow->contactId];
+                        $u = $token_users[$cid];
                     } else if ($rrow->reviewType >= REVIEW_PC) {
-                        $u = $pcm[$rrow->contactId] ?? null;
+                        $u = $pcm[$cid] ?? null;
                     } else {
                         $u = null;
                     }
                     if (!$u) {
                         continue;
+                    }
+
+                    if (!$any_this_paper) {
+                        $texts[] = [];
+                        $texts[] = ["paper" => $prow->paperId,
+                                    "action" => "clearreview",
+                                    "email" => "#pc",
+                                    "round" => "any",
+                                    "title" => $prow->title];
+                        $any_this_paper = true;
                     }
 
                     $round = $rrow->reviewRound;
@@ -122,7 +128,8 @@ class ListAction {
                 }
             }
         }
-        $header = array("paper", "action", "email");
+
+        $header = ["paper", "action", "email"];
         if ($any_round) {
             $header[] = "round";
         }

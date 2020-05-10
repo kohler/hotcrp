@@ -118,52 +118,22 @@ class IntlMsgSet {
         return $x;
     }
 
-    /** @param array{string,string}|array{string,string,int}|object|array<string,mixed> $m */
-    function addj($m) {
-        if (is_associative_array($m)) {
-            $m = (object) $m;
-        }
-        if (is_object($m) && isset($m->members) && is_array($m->members)) {
+    /** @param object $m
+     * @return bool */
+    private function _addj_object($m) {
+        if (isset($m->members) && is_array($m->members)) {
             $octx = $this->_ctx;
             if (isset($m->context) && is_string($m->context)) {
                 $this->_ctx = ((string) $this->_ctx === "" ? "" : $this->_ctx . "/") . $m->context;
             }
+            $ret = true;
             foreach ($m->members as $mm) {
-                $this->addj($mm);
+                $ret = $this->addj($mm) && $ret;
             }
             $this->_ctx = $octx;
-            return true;
-        }
-        $im = new IntlMsg;
-        if ($this->_default_priority !== null) {
-            $im->priority = $this->_default_priority;
-        }
-        if (is_array($m)) {
-            $n = count($m);
-            $p = false;
-            while ($n > 0 && !is_string($m[$n - 1])) {
-                if ((is_int($m[$n - 1]) || is_float($m[$n - 1])) && $p === false) {
-                    $p = $im->priority = (float) $m[$n - 1];
-                } else if (is_array($m[$n - 1]) && $im->require === null) {
-                    $im->require = $m[$n - 1];
-                } else {
-                    return false;
-                }
-                --$n;
-            }
-            if ($n < 2 || $n > 3 || !is_string($m[0]) || !is_string($m[1])
-                || ($n === 3 && !is_string($m[2]))) {
-                return false;
-            }
-            if ($n === 3) {
-                $im->context = $m[0];
-                $itext = $m[1];
-                $im->otext = $m[2];
-            } else {
-                $itext = $m[0];
-                $im->otext = $m[1];
-            }
-        } else if (is_object($m)) {
+            return $ret;
+        } else {
+            $im = new IntlMsg;
             if (isset($m->context) && is_string($m->context)) {
                 $im->context = $m->context;
             }
@@ -196,17 +166,70 @@ class IntlMsgSet {
             if (isset($m->template) && is_bool($m->template)) {
                 $im->template = $m->template;
             }
-        } else {
+            $this->_addj_finish($itext, $im);
+            return true;
+        }
+    }
+
+    /** @param array{string,string} $m */
+    private function _addj_list($m) {
+        $im = new IntlMsg;
+        $n = count($m);
+        $p = false;
+        while ($n > 0 && !is_string($m[$n - 1])) {
+            if ((is_int($m[$n - 1]) || is_float($m[$n - 1])) && $p === false) {
+                $p = $im->priority = (float) $m[$n - 1];
+            } else if (is_array($m[$n - 1]) && $im->require === null) {
+                $im->require = $m[$n - 1];
+            } else {
+                return false;
+            }
+            --$n;
+        }
+        if ($n < 2 || $n > 3 || !is_string($m[0]) || !is_string($m[1])
+            || ($n === 3 && !is_string($m[2]))) {
             return false;
         }
-        if ($this->_ctx) {
-            $im->context = $this->_ctx . ($im->context ? "/" . $im->context : "");
+        if ($n === 3) {
+            $im->context = $m[0];
+            $itext = $m[1];
+            $im->otext = $m[2];
+        } else {
+            $itext = $m[0];
+            $im->otext = $m[1];
         }
-        $im->next = $this->ims[$itext] ?? null;
-        $this->ims[$itext] = $im;
+        $this->_addj_finish($itext, $im);
         return true;
     }
 
+    /** @param string $itext
+     * @param IntlMsg $im */
+    private function _addj_finish($itext, $im) {
+        if ($this->_ctx) {
+            $im->context = $this->_ctx . ($im->context ? "/" . $im->context : "");
+        }
+        if ($im->priority === null && $this->_default_priority !== null) {
+            $im->priority = $this->_default_priority;
+        }
+        $im->next = $this->ims[$itext] ?? null;
+        $this->ims[$itext] = $im;
+    }
+
+    /** @param array{string,string}|array{string,string,int}|object|array<string,mixed> $m */
+    function addj($m) {
+        if (is_associative_array($m)) {
+            return $this->_addj_object((object) $m);
+        } else if (is_array($m)) {
+            return $this->_addj_list($m);
+        } else if (is_object($m)) {
+            return $this->_addj_object($m);
+        } else  {
+            return false;
+        }
+    }
+
+    /** @param string $id
+     * @param string $otext */
     function add_override($id, $otext) {
         $im = $this->ims[$id] ?? null;
         return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true, "template" => $im && $im->template]);

@@ -2177,12 +2177,12 @@ class ReviewValues extends MessageSet {
             $fmt = null;
             foreach ($this->conf->opt("formatInfo") as $k => $f) {
                 if (($f["name"] ?? null)
-                    && strcasecmp($f["name"], $this->req["reviewFormat"]) == 0)
+                    && strcasecmp($f["name"], $this->req["reviewFormat"]) === 0)
                     $fmt = (int) $k;
             }
             if (!$fmt
                 && $this->req["reviewFormat"]
-                && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $f["reviewFormat"])) {
+                && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $this->req["reviewFormat"])) {
                 $fmt = 0;
             }
             $qf[] = "reviewFormat=?";

@@ -11,11 +11,13 @@ function change_email_by_capability($Qreq) {
     ensure_session();
     $capmgr = $Conf->capability_manager();
     $capdata = $capmgr->check(trim($Qreq->changeemail));
+    $capcontent = null;
     if (!$capdata
         || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
         || !$capdata->contactId
-        || !($capdata->data = json_decode($capdata->data))
-        || !get($capdata->data, "uemail")) {
+        || !($capcontent = json_decode($capdata->data))
+        || !is_object($capcontent)
+        || !($capcontent->uemail ?? null)) {
         if (trim($Qreq->changeemail) !== "1") {
             Ht::error_at("changeemail", "That email change code has expired, or you didn’t enter it correctly.");
         }
@@ -26,12 +28,12 @@ function change_email_by_capability($Qreq) {
     if ($capdata && !($Acct = $Conf->user_by_id($capdata->contactId))) {
         Ht::error_at("changeemail", "The account associated with that email change code no longer exists.");
     }
-    if ($Acct && strcasecmp($Acct->email, $capdata->data->oldemail) !== 0) {
+    if ($Acct && strcasecmp($Acct->email, $capcontent->oldemail) !== 0) {
         Ht::error_at("changeemail", "You have changed your email address since creating that email change code.");
         $Acct = null;
     }
 
-    $newemail = $Acct ? $capdata->data->uemail : null;
+    $newemail = $Acct ? $capcontent->uemail : null;
     if ($Acct && $Conf->user_id_by_email($newemail)) {
         Conf::msg_error("The email address you requested, " . htmlspecialchars($newemail) . ", is already in use on this site. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         return false;
@@ -62,9 +64,9 @@ function change_email_by_capability($Qreq) {
         if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId) {
             $Me = $Acct->activate($Qreq);
         }
-        if (Contact::session_user_index($capdata->data->oldemail) >= 0) {
+        if (Contact::session_user_index($capcontent->oldemail) >= 0) {
             LoginHelper::change_session_users([
-                $capdata->data->oldemail => -1, $newemail => 1
+                $capcontent->oldemail => -1, $newemail => 1
             ]);
         }
         Navigation::redirect($Conf->hoturl("profile"));

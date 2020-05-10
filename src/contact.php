@@ -2056,26 +2056,26 @@ class Contact {
         return $this->_topic_interest_map;
     }
 
+    /** @param Contact[] $contacts */
     static function load_topic_interests($contacts) {
-        if (empty($contacts)) {
-            return;
-        }
         $cbyid = [];
         foreach ($contacts as $c) {
             $c->_topic_interest_map = [];
             $cbyid[$c->contactId] = $c;
         }
-        $result = $c->conf->qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
-        $c = null;
-        while (($row = $result->fetch_row())) {
-            if (!$c || $c->contactId != $row[0]) {
-                $c = get($cbyid, $row[0]);
+        if (!empty($cbyid)) {
+            $result = current($cbyid)->conf->qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
+            $c = null;
+            while (($row = $result->fetch_row())) {
+                if (!$c || $c->contactId != $row[0]) {
+                    $c = $cbyid[(int) $row[0]];
+                }
+                if ($c) {
+                    $c->_topic_interest_map[(int) $row[1]] = (int) $row[2];
+                }
             }
-            if ($c) {
-                $c->_topic_interest_map[(int) $row[1]] = (int) $row[2];
-            }
+            Dbl::free($result);
         }
-        Dbl::free($result);
         foreach ($contacts as $c) {
             $c->_sort_topic_interest_map();
         }
