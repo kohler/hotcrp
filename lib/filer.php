@@ -113,7 +113,6 @@ class Filer {
             if (str_starts_with($filename, $dsp)
                 && strlen($filename) > strlen($dsp)
                 && $filename[strlen($dsp)] !== "/") {
-                error_log("X-Accel-Redirect: $dar" . substr($filename, strlen($dsp)));
                 header("X-Accel-Redirect: $dar" . substr($filename, strlen($dsp)));
                 return;
             }
