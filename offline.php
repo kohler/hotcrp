@@ -36,49 +36,7 @@ if (isset($Qreq->uploadForm)
 }
 
 
-// upload tag indexes action
-function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$errors) {
-    global $Conf, $Me;
-
-    foreach ($Me->paper_set(array_keys($settings)) as $row) {
-        if ($settings[$row->paperId] !== null
-            && !$Me->can_change_tag($row, $tag, null, 1)) {
-            $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId.";
-            unset($settings[$row->paperId]);
-        } else if ($titles[$row->paperId] !== ""
-                   && strcmp($row->title, $titles[$row->paperId]) != 0
-                   && strcasecmp($row->title, simplify_whitespace($titles[$row->paperId])) != 0)
-            $errors[$linenos[$row->paperId]] = "Warning: Title doesn’t match.";
-    }
-
-    if (!$tag)
-        $errors["0tag"] = "Tag missing.";
-    else if (count($settings)) {
-        $x = array("paper,tag,lineno");
-        foreach ($settings as $pid => $value)
-            $x[] = "$pid,$tag#" . ($value === null ? "clear" : $value) . "," . $linenos[$pid];
-        $assigner = new AssignmentSet($Me);
-        $assigner->parse(join("\n", $x) . "\n", $filename);
-        $assigner->report_errors();
-        $assigner->execute();
-    }
-
-    $settings = $titles = $linenos = array();
-}
-
-function check_tag_index_line(&$line) {
-    if ($line && count($line) >= 2
-        && preg_match('/\A\s*(|[Xx=]|>*|\(?([-+]?\d+)\)?)\s*\z/', $line[0], $m1)
-        && preg_match('/\A\s*(\d+)\s*\z/', $line[1], $m2)) {
-        $line[0] = isset($m1[2]) && $m1[2] !== "" ? $m1[2] : $m1[1];
-        $line[1] = $m2[1];
-        return true;
-    } else
-        return false;
-}
-
-function setTagIndexes($qreq) {
-    global $Conf, $Me;
+function setTagIndexes(Contact $user, $qreq) {
     $filename = null;
     if (isset($qreq->upload) && $qreq->has_file("file")) {
         if (($text = $qreq->file_contents("file")) === false) {
@@ -86,76 +44,29 @@ function setTagIndexes($qreq) {
             return;
         }
         $filename = $qreq->file_filename("file");
-    } else if (!($text = $qreq->data)) {
+    } else if (($text = $qreq->data)) {
+        $filename = "";
+    } else {
         Conf::msg_error("Choose a file first.");
         return;
     }
 
-    $RealMe = $Me;
-    $tagger = new Tagger($Me);
-    if (($tag = $qreq->tag))
-        $tag = $tagger->check($tag, Tagger::NOVALUE);
-    $curIndex = 0;
-    $lineno = 1;
-    $settings = $titles = $linenos = $errors = array();
-    $csvp = new CsvParser("", CsvParser::TYPE_GUESS);
-    foreach (explode("\n", rtrim(cleannl($text))) as $l) {
-        if (substr($l, 0, 4) == "Tag:" || substr($l, 0, 6) == "# Tag:") {
-            if (!$tag) {
-                $tag = $tagger->check(trim(substr($l, ($l[0] == "#" ? 6 : 4))), Tagger::NOVALUE);
-            }
-        } else if (trim($l) !== "" && $l[0] !== "#") {
-            $csvp->unshift($l);
-            $line = $csvp->next_array();
-            if ($line && check_tag_index_line($line)) {
-                '@phan-var array{string,string,?string} $line';
-                if (isset($settings[$line[1]])) {
-                    $errors[$lineno] = "Paper #$line[1] already given on line " . $linenos[$line[1]];
-                }
-                if ($line[0] === "X" || $line[0] === "x") {
-                    $settings[$line[1]] = null;
-                } else if ($line[0] === "" || $line[0] === ">") {
-                    $settings[$line[1]] = $curIndex = $curIndex + 1;
-                } else if (is_numeric($line[0])) {
-                    $settings[$line[1]] = $curIndex = intval($line[0]);
-                } else if ($line[0] === "=") {
-                    $settings[$line[1]] = $curIndex;
-                } else {
-                    $settings[$line[1]] = $curIndex = $curIndex + strlen($line[0]);
-                }
-                $titles[$line[1]] = trim($line[2] ?? "");
-                $linenos[$line[1]] = $lineno;
-            } else {
-                $errors[$lineno] = "Syntax error";
-            }
-        }
-        ++$lineno;
+    $trp = new TagRankParser($user);
+    $tagger = new Tagger($user);
+    if ($qreq->tag && ($tag = $tagger->check(trim($qreq->tag), Tagger::NOVALUE))) {
+        $trp->set_tag($tag);
     }
-
-    if (count($settings) && $Me)
-        saveTagIndexes($tag, $filename, $settings, $titles, $linenos, $errors);
-    $Me = $RealMe;
-
-    if (count($errors)) {
-        ksort($errors);
-        foreach ($errors as $lineno => &$error) {
-            if ($filename && $lineno)
-                $error = '<span class="lineno">' . htmlspecialchars($filename) . ':' . $lineno . ':</span> ' . $error;
-            else if ($filename)
-                $error = '<span class="lineno">' . htmlspecialchars($filename) . ':</span> ' . $error;
-        }
-        Conf::msg_error('<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . '</p></div>');
-    } else if (isset($qreq->setvote)) {
-        $Conf->confirmMsg("Votes saved.");
+    $aset = $trp->parse_assignment_set($text, $filename);
+    if (!$aset->execute()) {
+        Conf::msg_error("Changes not saved. Please fix these errors and try again." . $aset->messages_div_html(true));
     } else {
-        $dtag = $tagger->unparse($tag);
-        $Conf->confirmMsg('Ranking saved. To view it, <a href="' . hoturl("search", "q=" . urlencode("editsort:#{$dtag}")) . '">search for “editsort:#' . $dtag . '”</a>.');
+        Conf::msg_confirm("Tags saved." . $aset->messages_div_html(true));
     }
 }
 if ((isset($Qreq->setvote) || isset($Qreq->setrank))
     && $Me->is_reviewer()
     && $Qreq->post_ok()) {
-    setTagIndexes($Qreq);
+    setTagIndexes($Me, $Qreq);
 }
 
 

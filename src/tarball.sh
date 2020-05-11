@@ -342,6 +342,7 @@ src/settings/s_topics.php
 src/settings/s_tracks.php
 src/settings/s_users.php
 src/settingvalues.php
+src/tagrankparser.php
 src/tagsearchmatcher.php
 src/textformat.php
 src/topicset.php

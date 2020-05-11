@@ -16,7 +16,7 @@ class GetRank_ListAction extends ListAction {
             $real = "";
             $null = "\n";
             $lastIndex = null;
-            foreach ($user->paper_set($ssel, ["tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"]) as $prow) {
+            foreach ($user->paper_set($ssel, ["tagIndex" => $tag, "order" => "order by tagIndex, Paper.paperId"]) as $prow) {
                 if ($user->can_change_tag($prow, $tag, null, 1)) {
                     $csvt = CsvGenerator::quote($prow->title);
                     if ($prow->tagIndex === null) {
@@ -31,7 +31,10 @@ class GetRank_ListAction extends ListAction {
                     $lastIndex = $prow->tagIndex;
                 }
             }
-            $text = "# Edit the rank order by rearranging this file's lines.
+            $text = "action,paper,title
+tag," . CsvGenerator::quote(trim($qreq->tag)) . "
+
+# Edit the rank order by rearranging the following lines.
 
 # The first line has the highest rank. Lines starting with \"#\" are
 # ignored. Unranked papers appear at the end in lines starting with
@@ -41,8 +44,6 @@ class GetRank_ListAction extends ListAction {
 # and so forth indicate rank gaps between papers. When you are done,
 # upload the file at\n"
                 . "#   " . $user->conf->hoturl_absolute("offline", null, Conf::HOTURL_RAW) . "\n\n"
-                . "Tag: " . trim($qreq->tag) . "\n"
-                . "\n"
                 . $real . $null;
             downloadText($text, "rank");
         } else {
