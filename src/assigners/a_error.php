@@ -8,6 +8,9 @@ class Error_AssignmentParser extends UserlessAssignmentParser {
         parent::__construct("error");
         $this->iswarning = $aj->name === "warning";
     }
+    function paper_universe($req, AssignmentState $state) {
+        return "none";
+    }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         return true;
     }

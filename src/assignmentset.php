@@ -101,6 +101,8 @@ class AssignmentState {
     /** @var array<int,PaperInfo> */
     private $prows = [];
     private $pid_attempts = [];
+    /** @var ?PaperInfo */
+    private $placeholder_prow;
     public $finishers = [];
     public $paper_exact_match = true;
     private $msgs = [];
@@ -301,6 +303,13 @@ class AssignmentState {
                     $this->pid_attempts[$pid] = true;
             }
         }
+    }
+    /** @return PaperInfo */
+    function placeholder_prow() {
+        if ($this->placeholder_prow === null) {
+            $this->placeholder_prow = new PaperInfo(["paperId" => -1], null, $this->conf);
+        }
+        return $this->placeholder_prow;
     }
 
     /** @return Contact */
@@ -655,6 +664,11 @@ class AssignmentParser {
     public $type;
     function __construct($type) {
         $this->type = $type;
+    }
+    // Return a descriptor of the set of papers relevant for this action.
+    // Returns `""` or `"none"`.
+    function paper_universe($req, AssignmentState $state) {
+        return "";
     }
     // Optionally expand the set of interesting papers. Returns a search
     // expression, such as "ALL", or false.
@@ -1388,13 +1402,19 @@ class AssignmentSet {
         }
 
         // parse paper
-        $pidmap = [];
-        $x = $this->collect_papers((string) $req["paper"], $pidmap, true);
-        if (empty($pidmap)) {
-            return false;
+        $paper_universe = $aparser->paper_universe($req, $this->astate);
+        if ($paper_universe === "none") {
+            $pids = [];
+            $pfield_straight = false;
+        } else {
+            $pidmap = [];
+            $x = $this->collect_papers((string) $req["paper"], $pidmap, true);
+            if (empty($pidmap)) {
+                return false;
+            }
+            $pfield_straight = $x === 2;
+            $pids = array_keys($pidmap);
         }
-        $pfield_straight = $x === 2;
-        $pids = array_keys($pidmap);
 
         // load state
         $aparser->load_state($this->astate);
@@ -1424,17 +1444,22 @@ class AssignmentSet {
         $this->astate->paper_exact_match = $pfield_straight;
 
         // check conflicts and perform assignment
-        $any_success = false;
-        foreach ($pids as $p) {
-            $prow = $this->astate->prow($p);
-            if (!$prow) {
-                $this->error_here(whyNotText($this->user->no_paper_whynot($p)));
-            } else {
-                $ret = $this->apply_paper($prow, $contacts, $aparser, $req);
-                if ($ret === 1) {
-                    $any_success = true;
-                } else if ($ret < 0) {
-                    break;
+        if ($paper_universe === "none") {
+            $prow = $this->astate->placeholder_prow();
+            $any_success = $this->apply_paper($prow, $contacts, $aparser, $req) === 1;
+        } else {
+            $any_success = false;
+            foreach ($pids as $p) {
+                $prow = $this->astate->prow($p);
+                if (!$prow) {
+                    $this->error_here(whyNotText($this->user->no_paper_whynot($p)));
+                } else {
+                    $ret = $this->apply_paper($prow, $contacts, $aparser, $req);
+                    if ($ret === 1) {
+                        $any_success = true;
+                    } else if ($ret < 0) {
+                        break;
+                    }
                 }
             }
         }
@@ -1524,7 +1549,11 @@ class AssignmentSet {
         $lines = $pids = [];
         while (($req = $csv->next_row()) !== false) {
             if (($aparser = $this->collect_parser($req))) {
-                $paper = $aparser->expand_papers($req, $this->astate);
+                if ($aparser->paper_universe($req, $this->astate) === "none") {
+                    $paper = "NONE";
+                } else {
+                    $paper = $aparser->expand_papers($req, $this->astate);
+                }
             } else {
                 $paper = (string) $req["paper"];
             }

@@ -395,6 +395,11 @@ xassert($assignset->execute());
 assert_search_papers($user_chair, "#testo", "1");
 xassert_assign($Admin, "paper,tag\n1,testo#clear");
 
+$assignset = new AssignmentSet($Admin, false);
+$assignset->parse("paper,action,email,landmark,message\n,error,none,butt.txt/10,GODDAMNIT", "fart.txt");
+xassert_eqq(join("\n", $assignset->message_texts(true)), "butt.txt/10: GODDAMNIT");
+xassert(!$assignset->execute());
+
 // more AssignmentSet conflict checking
 assert_search_papers($user_chair, "#fart", "");
 $assignset = new AssignmentSet($user_estrin, false);
