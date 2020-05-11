@@ -162,7 +162,7 @@ class RequestReview_API {
             assert(count($aset_csv->data) === 1);
             return new JsonResult(["ok" => true, "action" => "token", "review_token" => $aset_csv->data[0]["review_token"]]);
         } else {
-            return new JsonResult(400, ["ok" => false, "error" => $aset->errors_div_html()]);
+            return new JsonResult(400, ["ok" => false, "error" => $aset->messages_div_html()]);
         }
     }
 

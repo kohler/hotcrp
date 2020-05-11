@@ -15,12 +15,14 @@ class Decide_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $aset = new AssignmentSet($user, true);
         $decision = $qreq->decision;
-        if (is_numeric($decision))
+        if (is_numeric($decision)) {
             $decision = get($user->conf->decision_map(), +$decision);
+        }
         $aset->parse("paper,action,decision\n" . join(" ", $ssel->selection()) . ",decision," . CsvGenerator::quote($decision));
-        if ($aset->execute())
+        if ($aset->execute()) {
             $user->conf->self_redirect($qreq, ["atab" => "decide", "decision" => $qreq->decision]);
-        else
-            Conf::msg_error($aset->errors_div_html());
+        } else {
+            Conf::msg_error($aset->messages_div_html());
+        }
     }
 }

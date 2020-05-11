@@ -108,7 +108,7 @@ function savePreferences($Qreq, $reset_p) {
         }
         $Conf->self_redirect($Qreq);
     } else {
-        Conf::msg_error(join("<br />", $aset->errors_html()));
+        Conf::msg_error(join("<br />", $aset->messages_html()));
     }
 }
 if ($Qreq->fn === "saveprefs" && $Qreq->post_ok()) {
@@ -180,9 +180,9 @@ function parseUploadedPreferences($text, $filename, $apply) {
     $assignset->parse($csv, $filename);
     if ($assignset->is_empty()) {
         if ($assignset->has_error()) {
-            pref_xmsgc("Preferences unchanged, but you may want to fix these errors and try again:\n" . $assignset->errors_div_html(true));
+            pref_xmsgc("Preferences unchanged, but you may want to fix these errors and try again:\n" . $assignset->messages_div_html(true));
         } else {
-            pref_xmsgc("Preferences unchanged.\n" . $assignset->errors_div_html(true));
+            pref_xmsgc("Preferences unchanged.\n" . $assignset->messages_div_html(true));
         }
     } else if ($apply) {
         if ($assignset->execute(true)) {
@@ -191,7 +191,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
     } else {
         $Conf->header("Review preferences", "revpref");
         if ($assignset->has_error()) {
-            pref_xmsgc($assignset->errors_div_html(true));
+            pref_xmsgc($assignset->messages_div_html(true));
         }
 
         echo Ht::form(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]), ["class" => "alert need-unload-protection"]);

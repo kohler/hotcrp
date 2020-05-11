@@ -62,7 +62,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
     }
     function expand_papers($req, AssignmentState $state) {
-        return $this->isnext ? "ALL" : false;
+        return $this->isnext ? "ALL" : (string) $req["paper"];
     }
     static function load_tag_state(AssignmentState $state) {
         if (!$state->mark_type("tag", ["pid", "ltag"], "Tag_Assigner::make")) {

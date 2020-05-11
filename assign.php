@@ -103,16 +103,16 @@ function pcAssignments($qreq) {
         if ($qreq->ajax) {
             json_exit(["ok" => true]);
         } else {
-            $Conf->confirmMsg("Assignments saved." . $aset->errors_div_html());
+            $Conf->confirmMsg("Assignments saved." . $aset->messages_div_html());
             $Conf->self_redirect($qreq);
             // NB normally does not return
             assign_load();
         }
     } else {
         if ($qreq->ajax) {
-            json_exit(["ok" => false, "error" => join("<br />", $aset->errors_html())]);
+            json_exit(["ok" => false, "error" => join("<br />", $aset->messages_html())]);
         } else {
-            $Conf->errorMsg(join("<br />", $aset->errors_html()));
+            $Conf->errorMsg(join("<br />", $aset->messages_html()));
         }
     }
 }

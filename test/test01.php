@@ -353,43 +353,43 @@ $assignset = new AssignmentSet($Admin, true);
 $assignset->parse("paper,action,tag,index
 1,tag,~vote,clear
 2,tag,marina~vote,clear\n");
-xassert_eqq(join("\n", $assignset->error_texts()), "");
+xassert_eqq(join("\n", $assignset->message_texts()), "");
 $assignset->execute();
 assert_search_papers($user_chair, "#any~vote", "1");
 
 // check AssignmentSet conflict checking
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n");
-xassert_eqq(join("\n", $assignset->error_texts()), "Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
+xassert_eqq(join("\n", $assignset->message_texts()), "Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
 $assignset->execute();
 assert_query("select email from PaperReview r join ContactInfo c on (c.contactId=r.contactId) where paperId=1 order by email", "mgbaker@cs.stanford.edu\nmjh@isi.edu\nvarghese@ccrc.wustl.edu");
 
 // check AssignmentSet error messages and landmarks
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n", "fart.txt");
-xassert_eqq(join("\n", $assignset->error_texts(true)), "fart.txt:2: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
+xassert_eqq(join("\n", $assignset->message_texts(true)), "fart.txt:2: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
 xassert(!$assignset->execute());
 
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,action,email,landmark\n1,pri,estrin@usc.edu,butt.txt:740\n", "fart.txt");
-xassert_eqq(join("\n", $assignset->error_texts(true)), "butt.txt:740: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
+xassert_eqq(join("\n", $assignset->message_texts(true)), "butt.txt:740: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
 xassert(!$assignset->execute());
 
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,action,email,landmark,message\n1,pri,estrin@usc.edu,butt.txt:740\n1,error,none,butt.txt/10,GODDAMNIT", "fart.txt");
-xassert_eqq(join("\n", $assignset->error_texts(true)), "butt.txt/10: GODDAMNIT\nbutt.txt:740: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
+xassert_eqq(join("\n", $assignset->message_texts(true)), "butt.txt/10: GODDAMNIT\nbutt.txt:740: Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
 xassert(!$assignset->execute());
 
 assert_search_papers($user_chair, "#testo", "");
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,action,tag,message,landmark\n1,tag,testo,,butt.txt:740\n1,error,,GODDAMNIT,butt.txt/10", "fart.txt");
-xassert_eqq(join("\n", $assignset->error_texts(true)), "butt.txt/10: GODDAMNIT");
+xassert_eqq(join("\n", $assignset->message_texts(true)), "butt.txt/10: GODDAMNIT");
 xassert(!$assignset->execute());
 
 assert_search_papers($user_chair, "#testo", "");
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,action,tag,message,landmark\n1,tag,testo,,butt.txt:740\n1,warning,,GODDAMNIT,butt.txt/10", "fart.txt");
-xassert_eqq(join("\n", $assignset->error_texts(true)), "butt.txt/10: GODDAMNIT");
+xassert_eqq(join("\n", $assignset->message_texts(true)), "butt.txt/10: GODDAMNIT");
 xassert($assignset->execute());
 
 assert_search_papers($user_chair, "#testo", "1");
@@ -401,7 +401,7 @@ $assignset = new AssignmentSet($user_estrin, false);
 $assignset->parse("paper,tag
 1,fart
 2,fart\n");
-xassert_eqq(join("\n", $assignset->error_texts()), "You have a conflict with #1.");
+xassert_eqq(join("\n", $assignset->message_texts()), "You have a conflict with #1.");
 
 xassert_assign($user_estrin, "paper,tag\n2,fart\n");
 assert_search_papers($user_chair, "#fart", "2");
@@ -659,7 +659,7 @@ assert_search_papers($user_chair, "re:pri:mgbaker", "1 13 17");
 
 $assignset = new AssignmentSet($user_chair, null);
 $assignset->parse("action,paper,email,reviewtype\nreview,all,mgbaker@cs.stanford.edu,secondary:primary\n");
-xassert_eqq(join("\n", $assignset->error_texts()), "");
+xassert_eqq(join("\n", $assignset->message_texts()), "");
 xassert($assignset->execute());
 
 xassert_assign($user_chair, "action,paper,email,reviewtype\nreview,all,mgbaker@cs.stanford.edu,secondary:primary\n");

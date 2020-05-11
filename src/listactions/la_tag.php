@@ -103,7 +103,7 @@ class Tag_ListAction extends ListAction {
                 $assignset->error_here($tagger->error_html);
             }
         }
-        if (($errors = $assignset->errors_div_html())) {
+        if (($errors = $assignset->messages_div_html())) {
             if ($assignset->is_empty()) {
                 Conf::msg_error($errors);
             } else {
