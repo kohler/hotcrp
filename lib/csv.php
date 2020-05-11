@@ -13,6 +13,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
     /** @var CsvParser */
     private $csvp;
 
+    /** @param list<string> $a */
     function __construct(CsvParser $csvp, $a) {
         $this->a = $a;
         $this->csvp = $csvp;
@@ -100,7 +101,7 @@ class CsvParser {
         return $b;
     }
 
-    /** @param string|list<string> $str
+    /** @param string|list<string>|list<list<string>> $str
      * @param int $type */
     function __construct($str, $type = self::TYPE_COMMA) {
         $this->lines = is_array($str) ? $str : self::split_lines($str);
@@ -253,6 +254,7 @@ class CsvParser {
         return $this->nused;
     }
 
+    /** @return array|false */
     function as_map($a) {
         if ($this->header && is_array($a)) {
             $b = [];
@@ -284,11 +286,12 @@ class CsvParser {
         return $this->lpos;
     }
 
+    /** @return array|false */
     function next() {
         return $this->next_map();
     }
 
-    /** @return false|list<string> */
+    /** @return list<string>|false */
     function next_array() {
         while ($this->lpos < count($this->lines)) {
             $line = $this->lines[$this->lpos];
@@ -313,12 +316,13 @@ class CsvParser {
         return false;
     }
 
-    /** @return false|CsvRow */
+    /** @return CsvRow|false */
     function next_row() {
         $a = $this->next_array();
         return $a === false ? false : new CsvRow($this, $a);
     }
 
+    /** @return array|false */
     function next_map() {
         return $this->as_map($this->next_array());
     }

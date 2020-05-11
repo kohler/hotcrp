@@ -16,6 +16,7 @@ class Dbl_Result {
     /** @var ?string */
     public $query_string;
 
+    /** @return Dbl_Result */
     static function make(mysqli $dblink, $qstr = null) {
         $r = new Dbl_Result;
         $r->affected_rows = $dblink->affected_rows;
@@ -25,6 +26,7 @@ class Dbl_Result {
         $r->query_string = $qstr;
         return $r;
     }
+    /** @return Dbl_Result */
     static function make_empty() {
         $r = new Dbl_Result;
         $r->affected_rows = $r->warning_count = 0;
@@ -32,9 +34,11 @@ class Dbl_Result {
         $r->errno = 1002;
         return $r;
     }
+    /** @return null */
     function fetch_row() {
         return null;
     }
+    /** @return null */
     function fetch_object() {
         return null;
     }

@@ -2,6 +2,33 @@
 // capability.php -- HotCRP capability management
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class CapabilityInfo {
+    /** @var int */
+    public $capabilityType;
+    /** @var int */
+    public $contactId;
+    /** @var int */
+    public $paperId;
+    /** @var int */
+    public $timeExpires;
+    /** @var string */
+    public $salt;
+    /** @var string */
+    public $data;
+
+    /** @param mysqli_result|Dbl_Result $result
+     * @return ?CapabilityInfo */
+    static function fetch($result) {
+        if (($capdata = $result->fetch_object("CapabilityInfo"))) {
+            $capdata->capabilityType = (int) $capdata->capabilityType;
+            $capdata->contactId = (int) $capdata->contactId;
+            $capdata->paperId = (int) $capdata->paperId;
+            $capdata->timeExpires = (int) $capdata->timeExpires;
+        }
+        return $capdata;
+    }
+}
+
 class CapabilityManager {
     /** @var Conf */
     private $conf;
@@ -35,22 +62,25 @@ class CapabilityManager {
         return false;
     }
 
+    /** @param string $capabilityText
+     * @return ?CapabilityInfo */
     function check($capabilityText) {
         if (!str_starts_with($capabilityText, $this->prefix())) {
-            return false;
+            return null;
         }
         $value = base64_decode(str_replace(["-a", "-b"], ["+", "/"],
                                            substr($capabilityText, strlen($this->prefix()))));
         if (strlen($value) >= 2
             && ($result = Dbl::ql($this->dblink, "select * from Capability where salt=?", $value))
-            && ($row = Dbl::fetch_first_object($result))
-            && ($row->timeExpires == 0 || $row->timeExpires >= time())) {
-            return $row;
+            && ($capdata = CapabilityInfo::fetch($result))
+            && ($capdata->timeExpires == 0 || $capdata->timeExpires >= time())) {
+            return $capdata;
         } else {
-            return false;
+            return null;
         }
     }
 
+    /* @param ?CapabilityInfo $capdata */
     function delete($capdata) {
         assert(!$capdata || is_string($capdata->salt));
         if ($capdata) {
@@ -58,16 +88,22 @@ class CapabilityManager {
         }
     }
 
+    /* @param ?CapabilityInfo $capdata */
     function user_by_capability_data($capdata) {
         if ($capdata && isset($capdata->contactId) && $capdata->contactId) {
-            $method = $this->cdb ? "contactdb_user_by_id" : "user_by_id";
-            return $this->conf->$method($capdata->contactId);
+            if ($this->cdb) {
+                return $this->conf->contactdb_user_by_id($capdata->contactId);
+            } else {
+                return $this->conf->user_by_id($capdata->contactId);
+            }
         } else {
             return null;
         }
     }
 
 
+    /** @param PaperInfo $prow
+     * @return string|false */
     static function capability_text($prow, $capType) {
         // A capability has the following representation (. is concatenation):
         //    capFormat . paperId . capType . hashPrefix
@@ -93,8 +129,9 @@ class CapabilityManager {
         $key = $prow->conf->setting_data("cap_key");
         if (!$key) {
             $key = base64_encode(random_bytes(16));
-            if (!$key || !$prow->conf->save_setting("cap_key", 1, $key))
+            if (!$key || !$prow->conf->save_setting("cap_key", 1, $key)) {
                 return false;
+            }
         }
         $start = "0" . $prow->paperId . $capType;
         $hash = sha1($start . $prow->capVersion . $key, true);
