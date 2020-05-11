@@ -536,11 +536,6 @@ class Ht {
         return '<div class="msg msg-' . $status . '">' . $msg . '</div>';
     }
 
-    /** @deprecated */
-    static function xmsg($status, $msg) {
-        return self::msg($msg, $status);
-    }
-
 
     /** @param string $field */
     static function control_class($field, $rest = "") {
@@ -563,10 +558,6 @@ class Ht {
     /** @param string $field */
     static function problem_status_at($field) {
         return self::$_msgset ? self::$_msgset->problem_status_at($field) : 0;
-    }
-    /** @deprecated */
-    static function messages_at($field, $full = false) {
-        return self::$_msgset ? self::$_msgset->messages_at($field, $full) : [];
     }
     /** @return iterable<array{?string,string,int}> */
     static function message_list_at($field) {

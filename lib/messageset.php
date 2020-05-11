@@ -255,10 +255,6 @@ class MessageSet {
     function problem_fields() {
         return array_keys(array_filter($this->errf, function ($v) { return $v >= self::WARNING; }));
     }
-    /** @deprecated */
-    function messages($include_fields = false) {
-        return self::filter_msgs($this->msgs, $include_fields);
-    }
     /** @return list<array{?string,string,int}> */
     function message_list() {
         return $this->msgs;
@@ -266,15 +262,6 @@ class MessageSet {
     /** @return list<string> */
     function message_texts() {
         return self::list_texts($this->msgs);
-    }
-    /** @deprecated */
-    function errors($include_fields = false) {
-        if ($this->problem_status >= self::ERROR) {
-            $ms = array_filter($this->msgs, function ($mx) { return $mx[2] >= self::ERROR; });
-            return self::filter_msgs($ms, $include_fields);
-        } else {
-            return [];
-        }
     }
     /** @return iterable<array{?string,string,int}> */
     function error_list() {
@@ -288,15 +275,6 @@ class MessageSet {
     function error_texts() {
         return self::list_texts($this->error_list());
     }
-    /** @deprecated */
-    function warnings($include_fields = false) {
-        if ($this->problem_status >= self::WARNING) {
-            $ms = array_filter($this->msgs, function ($mx) { return $mx[2] == self::WARNING; });
-            return self::filter_msgs($ms, $include_fields);
-        } else {
-            return [];
-        }
-    }
     /** @return iterable<array{?string,string,int}> */
     function warning_list() {
         if ($this->problem_status >= self::WARNING) {
@@ -309,15 +287,6 @@ class MessageSet {
     function warning_texts() {
         return self::list_texts($this->warning_list());
     }
-    /** @deprecated */
-    function problems($include_fields = false) {
-        if ($this->problem_status >= self::WARNING) {
-            $ms = array_filter($this->msgs, function ($mx) { return $mx[2] >= self::WARNING; });
-            return self::filter_msgs($ms, $include_fields);
-        } else {
-            return [];
-        }
-    }
     /** @return iterable<array{?string,string,int}> */
     function problem_list() {
         if ($this->problem_status >= self::WARNING) {
@@ -329,16 +298,6 @@ class MessageSet {
     /** @return list<string> */
     function problem_texts() {
         return self::list_texts($this->problem_list());
-    }
-    /** @deprecated */
-    function messages_at($field, $include_fields = false) {
-        if (isset($this->errf[$field])) {
-            $field = $this->canonfield[$field] ?? $field;
-            $ms = array_filter($this->msgs, function ($mx) use ($field) { return $mx[0] === $field; });
-            return self::filter_msgs($ms, $include_fields);
-        } else {
-            return [];
-        }
     }
     /** @param string $field
      * @return iterable<array{?string,string,int}> */

@@ -52,7 +52,8 @@ return [
         Config::projectPath("lib"),
         Config::projectPath("src"),
         Config::projectPath("batch"),
-        Config::projectPath("test")
+        Config::projectPath("test"),
+        Config::projectPath("../hotcrpcom/plugins")
     ],
 
     "file_list" => [
