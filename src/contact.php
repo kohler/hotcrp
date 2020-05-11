@@ -2068,7 +2068,7 @@ class Contact {
             $c = null;
             while (($row = $result->fetch_row())) {
                 if (!$c || $c->contactId != $row[0]) {
-                    $c = $cbyid[(int) $row[0]];
+                    $c = $cbyid[(int) $row[0]] ?? null;
                 }
                 if ($c) {
                     $c->_topic_interest_map[(int) $row[1]] = (int) $row[2];
