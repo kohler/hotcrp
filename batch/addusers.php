@@ -22,12 +22,14 @@ if (isset($arg["expr"])) {
 
 require_once("$ConfSitePATH/src/init.php");
 
-function save_contact($ustatus, $key, $cj, $arg) {
+function save_contact(UserStatus $ustatus, $key, $cj, $arg) {
     global $status;
     if (!isset($cj->id) && !isset($arg["m"])) {
         $cj->id = "new";
     }
-    if (!isset($cj->email) && validate_email($key)) {
+    if (!isset($cj->email)
+        && is_string($key)
+        && validate_email($key)) {
         $cj->email = $key;
     }
     $acct = $ustatus->save($cj);

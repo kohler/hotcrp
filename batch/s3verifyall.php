@@ -3,12 +3,15 @@ $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 
 $arg = getopt("hn:c:Vm:", ["help", "name:", "count:", "verbose", "match:"]);
-if (isset($arg["c"]) && !isset($arg["count"]))
+if (isset($arg["c"]) && !isset($arg["count"])) {
     $arg["count"] = $arg["c"];
-if (isset($arg["V"]) && !isset($arg["verbose"]))
+}
+if (isset($arg["V"]) && !isset($arg["verbose"])) {
     $arg["verbose"] = $arg["V"];
-if (isset($arg["m"]) && !isset($arg["match"]))
+}
+if (isset($arg["m"]) && !isset($arg["match"])) {
     $arg["match"] = $arg["m"];
+}
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/s3verifyall.php [-c COUNT] [-V] [-m MATCH]\n");
     exit(0);
