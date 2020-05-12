@@ -121,17 +121,24 @@
         "visibility": "au"
     },
     {
+        "selector": "Paper summary (2)",
+        "name": "Paper summary",
+        "preferred_id": "t01",
+        "description": "Please summarize the paper’s main results in your own words. This will frame the review and show that you have understood the paper’s intent.",
+        "visibility": "au"
+    },
+    {
         "selector": "Strengths",
         "name": "Strengths",
         "preferred_id": "t06",
-        "description": "What are the paper’s strengths? Just a couple sentences, please.",
+        "description": "What are the paper’s important strengths? Just a couple sentences, please.",
         "visibility": "au"
     },
     {
         "selector": "Weaknesses",
         "name": "Weaknesses",
         "preferred_id": "t05",
-        "description": "What are the paper’s weaknesses? Just a couple sentences, please.",
+        "description": "What are the paper’s important weaknesses? Just a couple sentences, please.",
         "visibility": "au"
     },
     {
