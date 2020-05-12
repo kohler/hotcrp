@@ -1083,7 +1083,7 @@ class UserStatus extends MessageSet {
 
     function add_csv_synonyms($csv) {
         foreach (self::$csv_keys as $ks) {
-            for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i) {
+            for ($i = 1; !$csv->has_column($ks[0]) && isset($ks[$i]); ++$i) {
                 $csv->add_synonym($ks[0], $ks[$i]);
             }
         }

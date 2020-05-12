@@ -192,7 +192,7 @@ class CapabilityManager {
 
         $result = $user->conf->qe("select * from PaperReviewRefused where `data` is not null and timeRefused>=?", $Now - 604800);
         while (($refusal = $result->fetch_object())) {
-            $data = json_decode($refusal->data);
+            $data = json_decode((string) $refusal->data);
             if ($data
                 && isset($data->acceptor)
                 && isset($data->acceptor->text)

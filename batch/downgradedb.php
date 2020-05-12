@@ -41,7 +41,7 @@ $result = $Conf->qe("select contactId, country, data from ContactInfo where coun
 $qp = $qv = [];
 while (($x = $result->fetch_object())) {
     $qp[] = "($x->contactId,?,?,?,?,?,?)";
-    $data = $x->data ? json_decode($x->data) : (object) [];
+    $data = $x->data ? json_decode((string) $x->data) : (object) [];
     $qv[] = isset($data->address) && isset($data->address[0]) ? $data->address[0] : "";
     $qv[] = isset($data->address) && isset($data->address[1]) ? $data->address[1] : "";
     $qv[] = isset($data->city) ? $data->city : "";

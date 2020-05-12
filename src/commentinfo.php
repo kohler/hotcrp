@@ -561,7 +561,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $ctags .= " {$response_name}response#0";
             }
         } else if (($req->tags ?? null)
-                   && preg_match_all('/\S+/', $req->tags, $m)
+                   && preg_match_all('/\S+/', (string) $req->tags, $m)
                    && !$contact->act_author_view($this->prow)) {
             $tagger = new Tagger($contact);
             $ts = [];

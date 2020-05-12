@@ -107,17 +107,17 @@ class Tag_SearchTerm extends SearchTerm {
             return (object) ["type" => "or", "child" => $child];
         }
     }
-    function default_sorter($top, $thenmap, PaperSearch $srch) {
+    function default_sorter($top, $thenval, PaperSearch $srch) {
         if ($top && $this->tag1) {
             $dt = $srch->conf->tags()->check(TagInfo::base($this->tag1));
             if (($dt && $dt->order_anno) || $this->tag1nz) {
                 $s = new ListSorter("#{$this->tag1}");
                 $s->reverse = $dt && $dt->votish;
-                $s->thenmap = $thenmap;
+                $s->thenval = $thenval;
                 return $s;
             }
         }
-        return false;
+        return null;
     }
 }
 

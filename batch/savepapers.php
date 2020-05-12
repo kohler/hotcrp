@@ -38,7 +38,7 @@ $tf = new ReviewValues($Conf->review_form(), ["no_notify" => true]);
 
 // allow uploading a whole zip archive
 global $ziparchive, $content_file_prefix;
-$ziparchive = $content_file_prefix = null;
+$zipfile = $ziparchive = $content_file_prefix = null;
 
 if ($file === "-") {
     $content = stream_get_contents(STDIN);

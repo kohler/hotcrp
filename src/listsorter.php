@@ -4,11 +4,14 @@
 
 class ListSorter {
     public $type;
+    /** @var bool */
     public $reverse = false;
     public $score;
     public $anno;
+    /** @var bool */
     public $empty = false;
-    public $thenmap;
+    /** @var int */
+    public $thenval;
     public $field;
     public $uid;
     public $pl;
@@ -19,6 +22,7 @@ class ListSorter {
         $this->type = $type;
     }
 
+    /** @return ListSorter */
     static function make_empty($truly_empty) {
         $l = new ListSorter(null);
         $l->reverse = null;
@@ -26,6 +30,7 @@ class ListSorter {
         return $l;
     }
 
+    /** @return ListSorter */
     static function make_field($field) {
         $l = new ListSorter(null);
         $l->field = $field;
@@ -68,10 +73,11 @@ class ListSorter {
     }
 
     static function default_score_sort(Contact $user, $nosession = false) {
-        if (!$nosession && ($x = $user->session("scoresort")))
+        if (!$nosession && ($x = $user->session("scoresort"))) {
             return $x;
-        else
+        } else {
             return $user->conf->opt("defaultScoreSort", "C");
+        }
     }
 
     static function compress($sorters) {
@@ -80,7 +86,7 @@ class ListSorter {
         foreach ($sorters as $s) {
             if ($cur
                 && ((!$cur->type && !$cur->field) || (!$s->type && !$s->field))
-                && $cur->thenmap === $s->thenmap) {
+                && $cur->thenval === $s->thenval) {
                 foreach (["type", "reverse", "score", "field"] as $k) {
                     if ($cur->$k === null && $s->$k !== null) {
                         $cur->$k = $s->$k;
@@ -91,35 +97,15 @@ class ListSorter {
                     $cur->anno[] = $anno;
                 }
             } else {
-                if ($cur)
+                if ($cur) {
                     $output[] = $cur;
+                }
                 $cur = $s;
             }
         }
-        if ($cur)
+        if ($cur) {
             $output[] = $cur;
+        }
         return $output;
-    }
-    static function append(&$output, $sinput) {
-        $cur = null;
-        foreach ($sinput as $s) {
-            if ($cur
-                && ((!$cur->type && !$cur->field) || (!$s->type && !$s->field))
-                && $cur->thenmap === $s->thenmap) {
-                foreach (["type", "reverse", "score", "field"] as $k)
-                    if ($cur->$k === null && $s->$k !== null) {
-                        $cur->$k = $s->$k;
-                        $cur->empty = false;
-                    }
-                foreach ($s->anno ? : [] as $anno)
-                    $cur->anno[] = $anno;
-            } else {
-                if ($cur)
-                    $output[] = $cur;
-                $cur = $s;
-            }
-        }
-        if ($cur)
-            $output[] = $cur;
     }
 }

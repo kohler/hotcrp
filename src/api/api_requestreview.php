@@ -159,8 +159,8 @@ class RequestReview_API {
         $aset->parse("paper,action,user\n{$prow->paperId},review,newanonymous\n");
         if ($aset->execute()) {
             $aset_csv = $aset->unparse_csv();
-            assert(count($aset_csv->data) === 1);
-            return new JsonResult(["ok" => true, "action" => "token", "review_token" => $aset_csv->data[0]["review_token"]]);
+            assert(count($aset_csv->rows) === 1);
+            return new JsonResult(["ok" => true, "action" => "token", "review_token" => $aset_csv->rows[0]["review_token"]]);
         } else {
             return new JsonResult(400, ["ok" => false, "error" => $aset->messages_div_html()]);
         }

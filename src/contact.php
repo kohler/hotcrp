@@ -64,7 +64,9 @@ class Contact {
     private $lastLogin;
     public $creationTime = 0;
     private $updateTime = 0;
-    private $data = null;
+    private $data;
+    /** @var ?object */
+    private $_jdata;
     private $_topic_interest_map;
     private $_name_for_map = [];
     private $_contact_sorter_map = [];
@@ -228,11 +230,9 @@ class Contact {
             $this->birthday = (int) $user->birthday;
         }
         if (isset($user->data) && $user->data) {
-            // this works even if $user->data is a JSON string
-            // (array_to_object_recursive($str) === $str)
-            $this->data = array_to_object_recursive($user->data);
+            $this->data = $user->data;
         }
-
+        $this->_jdata = null;
         if (isset($user->is_site_contact)) {
             $this->is_site_contact = $user->is_site_contact;
         }
@@ -268,11 +268,7 @@ class Contact {
         if (isset($this->birthday)) {
             $this->birthday = (int) $this->birthday;
         }
-        if ($this->data) {
-            // this works even if $user->data is a JSON string
-            // (array_to_object_recursive($str) === $str)
-            $this->data = array_to_object_recursive($this->data);
-        }
+        $this->_jdata = null;
         if (isset($this->__isAuthor__)) {
             $this->_db_roles = ((int) $this->__isAuthor__ > 0 ? self::ROLE_AUTHOR : 0)
                 | ((int) $this->__hasReview__ > 0 ? self::ROLE_REVIEWER : 0);
@@ -293,9 +289,8 @@ class Contact {
             $this->$k = (int) $x->$k;
         }
         $this->activity_at = $this->lastLogin = (int) $x->lastLogin;
-        if ($x->data) {
-            $this->data = array_to_object_recursive($x->data);
-        }
+        $this->data = $x->data;
+        $this->_jdata = null;
         $this->_slice = false;
     }
 
@@ -991,68 +986,77 @@ class Contact {
     }
 
 
+    /** @return object */
     private function make_data() {
         $this->_slice && $this->unslice();
-        if (is_string($this->data)) {
-            $this->data = json_decode($this->data);
+        if ($this->_jdata === null) {
+            if (is_string($this->data)) {
+                $x = json_decode($this->data);
+            } else if (is_array($this->data)) {
+                $x = array_to_object_recursive($this->data);
+            } else {
+                $x = null;
+            }
+            $this->_jdata = is_object($x) ? $x : (object) [];
         }
-        if (!$this->data) {
-            $this->data = (object) [];
-        }
+        return $this->_jdata;
     }
 
     function data($key = null) {
-        $this->make_data();
+        $d = $this->make_data();
         if ($key) {
-            return $this->data->$key ?? null;
+            return $d->$key ?? null;
         } else {
-            return $this->data;
+            return $d;
         }
     }
 
+    /** @return ?string */
     private function encode_data() {
-        if ($this->data && ($t = json_encode_db($this->data)) !== "{}") {
-            return $t;
-        } else {
-            return null;
-        }
+        $t = json_encode_db($this->make_data());
+        return $t !== "{}" ? $t : null;
     }
 
+    /** @param string $key
+     * @param mixed $value */
     function save_data($key, $value) {
-        $this->merge_and_save_data((object) array($key => array_to_object_recursive($value)));
+        $this->merge_and_save_data((object) [$key => array_to_object_recursive($value)]);
     }
 
+    /** @param object|array $data */
     function merge_data($data) {
-        $this->make_data();
-        object_replace_recursive($this->data, array_to_object_recursive($data));
+        object_replace_recursive($this->make_data(), array_to_object_recursive($data));
     }
 
+    /** @param object|array $data */
     function merge_and_save_data($data) {
         $cdb = $this->contactDbId && !$this->contactId;
         $key = $cdb ? "contactDbId" : "contactId";
         $cid = $cdb ? $this->contactDbId : $this->contactId;
+        $change = array_to_object_recursive($data);
         assert($cid > 0);
         Dbl::compare_and_swap(
             $cdb ? $this->conf->contactdb() : $this->conf->dblink,
             "select `data` from ContactInfo where $key=?", [$cid],
-            function ($old) use ($key, $cid, $data) {
-                $this->data = $old ? json_decode($old) : (object) [];
-                object_replace_recursive($this->data, array_to_object_recursive($data));
+            function ($old) use ($change) {
+                $this->data = $old;
+                $this->_jdata = null;
+                object_replace_recursive($this->make_data(), $change);
                 return $this->encode_data();
             },
             "update ContactInfo set data=?{desired} where $key=? and data?{expected}e", [$cid]
         );
     }
 
+    /** @return ?string */
     function data_str() {
         $this->_slice && $this->unslice();
-        $d = null;
-        if (is_string($this->data)) {
-            $d = $this->data;
-        } else if (is_object($this->data)) {
-            $d = json_encode($this->data);
+        if ($this->_jdata === null
+            && ($this->data === null || is_string($this->data))) {
+            return $this->data === "{}" ? null : $this->data;
+        } else {
+            return $this->encode_data();
         }
-        return $d === "{}" ? null : $d;
     }
 
 

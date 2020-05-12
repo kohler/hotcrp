@@ -596,9 +596,9 @@ function searchbar(LogRowGenerator $lrg, $page) {
     } else if ($page === 1) {
         $dplaceholder = "now";
     } else if (($rows = $lrg->page_rows($page))) {
-        $dplaceholder = $Conf->unparse_time($rows[0]->timestamp);
+        $dplaceholder = $Conf->unparse_time((int) $rows[0]->timestamp);
     } else if ($first_timestamp) {
-        $dplaceholder = $Conf->unparse_time($first_timestamp);
+        $dplaceholder = $Conf->unparse_time((int) $first_timestamp);
     }
 
     echo Ht::form(hoturl("log"), ["method" => "get", "id" => "searchform"]);
@@ -761,7 +761,7 @@ $Conf->header("Log", "actionlog");
 $trs = [];
 $has_dest_user = false;
 foreach ($lrg->page_rows($page) as $row) {
-    $t = ['<td class="pl pl_logtime">' . $Conf->unparse_time($row->timestamp) . '</td>'];
+    $t = ['<td class="pl pl_logtime">' . $Conf->unparse_time((int) $row->timestamp) . '</td>'];
 
     $xusers = $lrg->users_for($row, "contactId");
     $xdest_users = $lrg->users_for($row, "destContactId");

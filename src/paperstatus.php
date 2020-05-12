@@ -535,7 +535,7 @@ class PaperStatus extends MessageSet {
 
     private function normalize_options($pj, $options) {
         // canonicalize option values to use IDs, not abbreviations
-        $pj->options = (object) array();
+        $new_options = [];
         foreach ($options as $id => $oj) {
             $omatches = $this->conf->paper_opts->find_all($id);
             if (count($omatches) != 1) {
@@ -547,10 +547,10 @@ class PaperStatus extends MessageSet {
                     || $o->id <= 0) {
                     continue;
                 }
-                $oid = $o->id;
-                $pj->options->$oid = $oj;
+                $new_options[(string) $o->id] = $oj;
             }
         }
+        $pj->options = (object) $new_options;
     }
 
     private function normalize_pc_conflicts($pj) {
@@ -1175,7 +1175,7 @@ class PaperStatus extends MessageSet {
             if ($ps->_new_conflicts !== null) {
                 $result = $ps->conf->qe("select contactId, email from ContactInfo where email?a", array_keys($ps->_new_conflicts));
                 while (($row = $result->fetch_row())) {
-                    $ct = $ps->_new_conflicts[strtolower($row[1])];
+                    $ct = $ps->_new_conflicts[strtolower($row[1])] ?? 0;
                     $ps->_conflict_ins[] = [-1, $row[0], $ct];
                 }
                 Dbl::free($result);

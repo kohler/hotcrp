@@ -91,6 +91,7 @@ class NavigationState {
         // (This is generally already done for us but just to be safe.)
         $uri_suffix = preg_replace_callback('/%[2-7][0-9a-f]/i', function ($m) {
             $x = urldecode($m[0]);
+            /** @phan-suppress-next-line PhanParamSuspiciousOrder */
             if (ctype_alnum($x) || strpos("._,-=@~", $x) !== false) {
                 return $x;
             } else {

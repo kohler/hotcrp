@@ -2477,7 +2477,7 @@ class Conf {
             $search = new PaperSearch($this->site_contact(), ["q" => $q, "t" => "all"]);
             $p = [];
             foreach ($search->paper_ids() as $pid) {
-                $then = $search->thenmap ? $search->thenmap[$pid] : 0;
+                $then = $search->thenmap[$pid] ?? 0;
                 if (!isset($p[$then])) {
                     $dt = $autosearch_dts[$then];
                     $this->invariant_error($ie, "autosearch", "autosearch #" . $dt->tag . " disagrees with search " . $dt->autosearch . " on #" . $pid);
@@ -2721,15 +2721,16 @@ class Conf {
         }
     }
 
-    private function _unparse_time($value, $type, $useradjust, $preadjust = null) {
-        if ($value <= 0) {
+    /** @param int $timestamp */
+    private function _unparse_time($timestamp, $type, $useradjust, $preadjust = null) {
+        if ($timestamp <= 0) {
             return "N/A";
         }
-        $t = date($this->_dateFormat($type), $value);
+        $t = date($this->_dateFormat($type), $timestamp);
         if ($this->opt["dateFormatSimplifier"]) {
             $t = preg_replace($this->opt["dateFormatSimplifier"], "", $t);
         }
-        if ($type !== "obscure" && ($z = $this->_unparse_timezone($value))) {
+        if ($type !== "obscure" && ($z = $this->_unparse_timezone($timestamp))) {
             $t .= " $z";
         }
         if ($preadjust) {
@@ -2737,10 +2738,11 @@ class Conf {
         }
         if ($useradjust) {
             $sp = strpos($useradjust, " ");
-            $t .= "<$useradjust class=\"usertime hidden need-usertime\" data-time=\"$value\"></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
+            $t .= "<$useradjust class=\"usertime hidden need-usertime\" data-time=\"$timestamp\"></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
         }
         return $t;
     }
+    /** @param int|float|null $timestamp */
     function obscure_time($timestamp) {
         if ($timestamp !== null) {
             $timestamp = (int) ($timestamp + 0.5);
@@ -2754,27 +2756,34 @@ class Conf {
         }
         return $timestamp;
     }
-    function unparse_time_long($value, $useradjust = false, $preadjust = null) {
-        return $this->_unparse_time($value, "long", $useradjust, $preadjust);
+    /** @param int $timestamp */
+    function unparse_time_long($timestamp, $useradjust = false, $preadjust = null) {
+        return $this->_unparse_time($timestamp, "long", $useradjust, $preadjust);
     }
-    function unparse_time($value) {
-        return $this->_unparse_time($value, "timestamp", false, null);
+    /** @param int $timestamp */
+    function unparse_time($timestamp) {
+        return $this->_unparse_time($timestamp, "timestamp", false, null);
     }
-    function unparse_time_obscure($value) {
-        return $this->_unparse_time($value, "obscure", false, null);
+    /** @param int $timestamp */
+    function unparse_time_obscure($timestamp) {
+        return $this->_unparse_time($timestamp, "obscure", false, null);
     }
-    function unparse_time_point($value) {
-        return date("j M Y", $value);
+    /** @param int $timestamp */
+    function unparse_time_point($timestamp) {
+        return date("j M Y", $timestamp);
     }
-    function unparse_time_log($value) {
-        return date("d/M/Y:H:i:s O", $value);
+    /** @param int $timestamp */
+    function unparse_time_log($timestamp) {
+        return date("d/M/Y:H:i:s O", $timestamp);
     }
-    function unparse_time_relative($when, $now = 0, $format = 0) {
+    /** @param int $timestamp
+     * @param int $now */
+    function unparse_time_relative($timestamp, $now = 0, $format = 0) {
         global $Now;
-        $d = abs($when - ($now ? : $Now));
+        $d = abs($timestamp - ($now ? : $Now));
         if ($d >= 5227200) {
             if (!($format & 1)) {
-                return ($format & 8 ? "on " : "") . date($this->_dateFormat("obscure"), $when);
+                return ($format & 8 ? "on " : "") . date($this->_dateFormat("obscure"), $timestamp);
             }
             $unit = 5;
         } else if ($d >= 259200) {
@@ -2805,7 +2814,7 @@ class Conf {
         if ($format & 2) {
             return $d;
         } else {
-            return $when < ($now ? : $Now) ? $d . " ago" : "in " . $d;
+            return $timestamp < ($now ? : $Now) ? $d . " ago" : "in " . $d;
         }
     }
 
@@ -5005,6 +5014,7 @@ class Conf {
                 $xfj = clone $fj;
                 $xfj->event = $name;
                 $xfj->match_data = $m;
+                $hs = $hs ?? [];
                 $hs[] = $xfj;
             }
         }

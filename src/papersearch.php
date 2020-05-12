@@ -358,8 +358,10 @@ class SearchTerm {
         if ($top && ($x = $this->get_float("contradiction_warning")))
             $srch->contradictions[$x] = true;
     }
-    function default_sorter($top, $thenmap, PaperSearch $srch) {
-        return false;
+    /** @param ?int $thenval
+     * @return ?ListSorter */
+    function default_sorter($top, $thenval, PaperSearch $srch) {
+        return null;
     }
 }
 
@@ -647,14 +649,14 @@ class And_SearchTerm extends Op_SearchTerm {
             $qv->extract_metadata($top, $srch);
         }
     }
-    function default_sorter($top, $thenmap, PaperSearch $srch) {
-        $s = false;
+    function default_sorter($top, $thenval, PaperSearch $srch) {
+        $s = null;
         foreach ($this->child as $qv) {
-            $s1 = $qv->default_sorter($top, $thenmap, $srch);
+            $s1 = $qv->default_sorter($top, $thenval, $srch);
             if ($s && $s1) {
-                return false;
+                return null;
             }
-            $s = $s ? : $s1;
+            $s = $s ?? $s1;
         }
         return $s;
     }
@@ -1503,13 +1505,13 @@ class PaperID_SearchTerm extends SearchTerm {
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
         return $this->exec($row, $srch);
     }
-    function default_sorter($top, $thenmap, PaperSearch $srch) {
+    function default_sorter($top, $thenval, PaperSearch $srch) {
         if ($top && !$this->in_order) {
             $s = ListSorter::make_field(new NumericOrderPaperColumn($srch->conf, $this));
-            $s->thenmap = $thenmap;
+            $s->thenval = $thenval;
             return $s;
         } else {
-            return false;
+            return null;
         }
     }
 }
@@ -1661,6 +1663,7 @@ class PaperSearch {
     /** @var Contact|null|false */
     private $_reviewer_user = false;
     private $_named_limit;
+    /** @var SearchTerm */
     private $_limit_qe;
     private $_urlbase;
     public $warnings = array();
@@ -1669,6 +1672,7 @@ class PaperSearch {
     public $q;
     private $_qt;
     private $_qt_fields;
+    /** @var ?SearchTerm */
     private $_qe;
     public $test_review;
 
@@ -1682,10 +1686,13 @@ class PaperSearch {
     public $_has_review_adjustment = false;
     private $_ssRecursion = array();
     private $_allow_deleted = false;
+    /** @var ?array<int,int> */
     public $thenmap;
+    /** @var ?array<int,TagAnno> */
     public $groupmap;
     /** @var false|string */
     public $is_order_anno = false;
+    /** @var ?array<int,list<string>> */
     public $highlightmap;
     private $_sorters = [];
     private $_default_sort; // XXX should be used more often
@@ -1987,6 +1994,7 @@ class PaperSearch {
         return new False_SearchTerm;
     }
 
+    /** @return ListSorter */
     static function parse_sorter($text) {
         $text = str_replace("\"", "", simplify_whitespace($text));
         $sort = ListSorter::make_empty($text === "");
@@ -1996,12 +2004,13 @@ class PaperSearch {
         }
 
         // separate text into words
-        $words = array();
+        $words = [];
         $bypos = false;
         while (true) {
             preg_match('{\A[,\s]*([^\s\(,]*)(.*)\z}s', $text, $m);
-            if ($m[1] === "" && $m[2] === "")
+            if ($m[1] === "" && $m[2] === "") {
                 break;
+            }
             if (substr($m[2], 0, 1) === "(") {
                 $pos = SearchSplitter::span_balanced_parens($m[2]);
                 $m[1] .= substr($m[2], 0, $pos);
@@ -2009,8 +2018,9 @@ class PaperSearch {
             }
             $words[] = $m[1];
             $text = ltrim($m[2]);
-            if ($m[1] === "by" && $bypos === false)
+            if ($m[1] === "by" && $bypos === false) {
                 $bypos = count($words) - 1;
+            }
         }
 
         // go over words
@@ -2019,10 +2029,11 @@ class PaperSearch {
             $w = $words[$i];
             if ($bypos === false || $i > $bypos) {
                 if (($x = self::$_sort_keywords[$w] ?? null) !== null) {
-                    if ($x === "up")
+                    if ($x === "up") {
                         $sort->reverse = false;
-                    else if ($x === "down")
+                    } else if ($x === "down") {
                         $sort->reverse = true;
+                    }
                     continue;
                 } else if (($x = ListSorter::canonical_short_score_sort($w))) {
                     $sort->score = $x;
@@ -2032,24 +2043,28 @@ class PaperSearch {
                     continue;
                 }
             }
-            if ($bypos === false || $i < $bypos)
+            if ($bypos === false || $i < $bypos) {
                 $next_words[] = $w;
+            }
         }
 
-        if (!empty($next_words))
+        if (!empty($next_words)) {
             $sort->type = join(" ", $next_words);
+        }
         return $sort;
     }
 
     private function _expand_saved_search($word, $recursion) {
-        if (isset($recursion[$word]))
+        if (isset($recursion[$word])) {
             return false;
+        }
         $t = $this->conf->setting_data("ss:" . $word, "");
         $search = json_decode($t);
-        if ($search && is_object($search) && isset($search->q))
+        if ($search && is_object($search) && isset($search->q)) {
             return $search->q;
-        else
+        } else {
             return null;
+        }
     }
 
     static function parse_saved_search($word, SearchWord $sword, PaperSearch $srch) {
@@ -2483,33 +2498,40 @@ class PaperSearch {
     // Check the results of the query, reducing the possibly conservative
     // overestimate produced by the database to a precise result.
 
+    /** @param SearchTerm $qe */
     private function _add_deleted_papers($qe) {
         if ($qe->type === "or" || $qe->type === "then") {
-            foreach ($qe->child as $subt)
+            foreach ($qe->child as $subt) {
                 $this->_add_deleted_papers($subt);
+            }
         } else if ($qe->type === "pn") {
-            foreach ($qe->paper_ids() ? : [] as $p)
+            assert($qe instanceof PaperID_SearchTerm);
+            foreach ($qe->paper_ids() ? : [] as $p) {
                 if (array_search($p, $this->_matches) === false)
                     $this->_matches[] = (int) $p;
+            }
         }
     }
 
 
     // BASIC QUERY FUNCTION
 
-    private function _add_sorters($qe, $thenmap) {
+    /** @param SearchTerm $qe
+     * @param int $thenval */
+    private function _add_sorters($qe, $thenval) {
         if (($sorters = $qe->get_float("sort"))) {
             foreach ($sorters as $s) {
-                if (($s = self::parse_sorter($s))) {
-                    $s->thenmap = $thenmap;
-                    $this->_sorters[] = $s;
+                if (($sx = self::parse_sorter($s))) {
+                    $sx->thenval = $thenval;
+                    $this->_sorters[] = $sx;
                 }
             }
-        } else if (($s = $qe->default_sorter(true, $thenmap, $this))) {
-            $this->_sorters[] = $s;
+        } else if (($sx = $qe->default_sorter(true, $thenval, $this))) {
+            $this->_sorters[] = $sx;
         }
     }
 
+    /** @param TagMapItem $dt */
     private function _assign_order_anno_group($g, $dt, $anno_index) {
         if (($ta = $dt->order_anno_entry($anno_index))) {
             $this->groupmap[$g] = $ta;
@@ -2521,6 +2543,8 @@ class PaperSearch {
         }
     }
 
+    /** @param SearchTerm $qe
+     * @return ?TagMapItem */
     private function _find_order_anno_tag($qe) {
         $thetag = null;
         foreach ($this->_sorters as $sorter) {
@@ -2529,7 +2553,7 @@ class PaperSearch {
             $thetag = $ok ? $tag : false;
         }
         if (!$thetag) {
-            return false;
+            return null;
         }
         $dt = $this->conf->tags()->add(TagInfo::base($thetag));
         if ($dt->has_order_anno()) {
@@ -2541,12 +2565,15 @@ class PaperSearch {
                 && strcasecmp($t, $dt->tag) == 0)
                 return $dt;
         }
-        return false;
+        return null;
     }
 
+    /** @param SearchTerm $qe
+     * @param PaperInfoSet $rowset */
     private function _check_order_anno($qe, $rowset) {
-        if (!($dt = $this->_find_order_anno_tag($qe)))
+        if (!($dt = $this->_find_order_anno_tag($qe))) {
             return false;
+        }
         $this->is_order_anno = $dt->tag;
         assert(!$this->is_order_anno || $this->is_order_anno[0] !== "~" || $this->is_order_anno[1] === "~");
 
@@ -2571,8 +2598,9 @@ class PaperSearch {
         while ($aidx < count($alist) || $tidx < count($tag_order)) {
             if ($tidx == count($tag_order)
                 || ($aidx < count($alist) && $alist[$aidx]->tagIndex <= $tag_order[$tidx][1])) {
-                if ($cur_then != 0 || $tidx != 0 || $aidx != 0)
+                if ($cur_then != 0 || $tidx != 0 || $aidx != 0) {
                     ++$cur_then;
+                }
                 $this->_assign_order_anno_group($cur_then, $dt, $aidx);
                 ++$aidx;
             } else {
@@ -2713,10 +2741,10 @@ class PaperSearch {
         $need_then = $qe->type === "then";
         $this->thenmap = null;
         if ($need_then && $qe->nthen > 1) {
-            $this->thenmap = array();
+            $this->thenmap = [];
         }
-        $this->highlightmap = array();
-        $this->_matches = array();
+        $this->highlightmap = [];
+        $this->_matches = [];
         if ($need_filter) {
             $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             foreach ($rowset as $row) {
@@ -2736,6 +2764,7 @@ class PaperSearch {
                 }
                 $this->_matches[] = $row->paperId;
                 if ($this->thenmap !== null) {
+                    assert(is_int($x));
                     $this->thenmap[$row->paperId] = $x;
                 }
                 if ($need_then) {

@@ -399,7 +399,7 @@ class PaperList {
             return $x < 0 ? -1 : 1;
         }
         foreach ($this->sorters as $s) {
-            if (($s->thenmap === null || $s->thenmap === $a->_then_sort_info)
+            if (($s->thenval === null || $s->thenval === $a->_then_sort_info)
                 && ($x = $s->field->compare($a, $b, $s))) {
                 return ($x < 0) === $s->reverse ? 1 : -1;
             }
@@ -514,7 +514,7 @@ class PaperList {
     function sortdef($always = false) {
         if (!empty($this->sorters)
             && $this->sorters[0]->type
-            && $this->sorters[0]->thenmap === null
+            && $this->sorters[0]->thenval === null
             && ($always || (string) $this->qreq->sort != "")
             && ($this->sorters[0]->type != "id" || $this->sorters[0]->reverse)) {
             if (($fdef = $this->find_column($this->sorters[0]->type))) {
@@ -1165,7 +1165,7 @@ class PaperList {
 
         $sort_class = "pl_sort";
         if ($s0
-            && $s0->thenmap === null
+            && $s0->thenval === null
             && $sort_name === $s0->field->sort_name($this, $s0)) {
             $sort_class = "pl_sort pl_sorting" . ($s0->reverse ? "_rev" : "_fwd");
             $sort_url .= $s0->reverse ? "" : urlencode(" reverse");

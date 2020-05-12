@@ -646,17 +646,17 @@ class AssignmentCountSet {
 
 class AssignmentCsv {
     public $header = [];
-    public $data = [];
+    public $rows = [];
     function add($row) {
         foreach ($row as $k => $v) {
             if ($v !== null)
                 $this->header[$k] = true;
         }
-        $this->data[] = $row;
+        $this->rows[] = $row;
     }
     function unparse() {
         $csvg = new CsvGenerator;
-        return $csvg->select($this->header)->add($this->data)->unparse();
+        return $csvg->select($this->header)->add($this->rows)->unparse();
     }
 }
 

@@ -60,7 +60,7 @@ function list_duplicate_codes() {
 
 function emoji_to_preferred_code($emoji) {
     $codes = [];
-    $pref = get($emoji, "preferred_codes", []);
+    $pref = $emoji->preferred_codes ?? [];
     foreach ((array) $emoji->emoji as $code => $text) {
         if (!isset($codes[$text])
             || (!in_array($codes[$text], $pref)
@@ -70,15 +70,17 @@ function emoji_to_preferred_code($emoji) {
     return $codes;
 }
 
+/** @return array<string,list<string>> */
 function emoji_to_code_set($emoji) {
     $codes = [];
-    $pref = get($emoji, "preferred_codes", []);
+    $pref = $emoji->preferred_codes ?? [];
     foreach ((array) $emoji->emoji as $code => $text) {
         if (!isset($codes[$text])
-            || in_array($code, $pref))
+            || in_array($code, $pref)) {
             $codes[$text] = [$code];
-        else if (!in_array($codes[$text][0], $pref))
+        } else if (!in_array($codes[$text][0], $pref)) {
             $codes[$text][] = $code;
+        }
     }
     return $codes;
 }
@@ -97,11 +99,13 @@ function list_common_emoji() {
     $fcodes = $fscores = [];
     $slice_score = 0;
     foreach ($rankings as $j) {
-        foreach (get($back, $j->char, []) as $code) {
+        foreach ($back[$j->char] ?? [] as $code) {
             $ch = $code[0];
             if (!isset($fcodes[$ch])
+                || !isset($fscores[$ch])
                 || $j->score >= 0.001 * $total_score
-                || ($j->score >= 0.0001 * $total_score && $fscores[$ch] < 0.001 * $total_score)) {
+                || ($j->score >= 0.0001 * $total_score
+                    && $fscores[$ch] < 0.001 * $total_score)) {
                 if (!isset($fcodes[$ch])) {
                     $fcodes[$ch] = [];
                     $fscores[$ch] = 0;

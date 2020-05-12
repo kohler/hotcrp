@@ -67,7 +67,7 @@ function set_session_name(Conf $conf) {
     if ($secure !== null) {
         $params["secure"] = !!$secure;
     }
-    if ($domain !== null) {
+    if ($domain !== null || !isset($params["domain"])) {
         $params["domain"] = $domain;
     }
     $params["httponly"] = true;

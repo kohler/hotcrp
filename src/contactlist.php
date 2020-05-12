@@ -65,6 +65,7 @@ class ContactList {
         $this->contactLinkArgs = "";
     }
 
+    /** @param int|string $fieldId */
     function selector($fieldId, &$queryOptions) {
         if (!$this->user->isPC
             && $fieldId != self::FIELD_NAME
@@ -99,8 +100,9 @@ class ContactList {
             if ($f->view_score <= $revViewScore || !$f->has_options)
                 return false;
             $queryOptions["reviews"] = true;
-            if (!isset($queryOptions["scores"]))
+            if (!isset($queryOptions["scores"])) {
                 $queryOptions["scores"] = array();
+            }
             $queryOptions["scores"][] = $f->id;
             $this->scoreMax[$f->id] = count($f->options);
         }
@@ -549,6 +551,7 @@ class ContactList {
             $pq .= ",\n    (select count(paperId) from Paper where shepherdContactId=u.contactId" . $this->_pid_restriction() . ") numShepherds";
         }
         if (isset($queryOptions["scores"])) {
+            assert(is_array($queryOptions["scores"]));
             foreach ($queryOptions["scores"] as $score) {
                 $rf[] = "group_concat(if(reviewSubmitted>0 or timeApprovalRequested<0,$score,null)) $score";
                 $pq .= ", $score";
@@ -672,13 +675,16 @@ class ContactList {
         $this->any = (object) array("sel" => false);
         $ncol = 0;
         foreach ($baseFieldId as $fid) {
-            if ($this->selector($fid, $queryOptions) === false)
+            if ($this->selector($fid, $queryOptions) === false) {
                 continue;
-            if (!($fieldDef[$fid] = get($contactListFields, $fid)))
+            }
+            if (!($fieldDef[$fid] = $contactListFields[$fid] ?? null)) {
                 $fieldDef[$fid] = $contactListFields[self::FIELD_SCORE];
+            }
             $acceptable_fields[$fid] = true;
-            if ($fieldDef[$fid][1] == 1)
+            if ($fieldDef[$fid][1] == 1) {
                 $ncol++;
+            }
         }
 
         // run query

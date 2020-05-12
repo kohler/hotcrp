@@ -337,8 +337,8 @@ function xassert_neq($a, $b) {
     return $ok;
 }
 
-/** @param ?array<mixed> $a
- * @param ?array<mixed> $b
+/** @param ?list<mixed> $a
+ * @param ?list<mixed> $b
  * @param bool $sort */
 function xassert_array_eqq($a, $b, $sort = false) {
     ++Xassert::$n;
@@ -348,20 +348,16 @@ function xassert_array_eqq($a, $b, $sort = false) {
     } else if (is_array($a) && is_array($b)) {
         if (count($a) !== count($b)) {
             $problem = "size " . count($a) . " !== " . count($b);
+        } else if (is_associative_array($a) || is_associative_array($b)) {
+            $problem = "associative arrays";
         } else {
             if ($sort) {
                 sort($a);
                 sort($b);
             }
-            $ka = array_keys($a);
-            $va = array_values($a);
-            $kb = array_keys($b);
-            $vb = array_values($b);
-            for ($i = 0; $i < count($ka) && !$problem; ++$i) {
-                if ($ka[$i] !== $kb[$i]) {
-                    $problem = "key position $i differs, {$ka[$i]} !== {$kb[$i]}";
-                } else if ($va[$i] !== $vb[$i]) {
-                    $problem = "value {$ka[$i]} differs, " . var_export($va[$i], true) . " !== " . var_export($vb[$i], true);
+            for ($i = 0; $i < count($a) && !$problem; ++$i) {
+                if ($a[$i] !== $b[$i]) {
+                    $problem = "value {$i} differs, " . var_export($a[$i], true) . " !== " . var_export($b[$i], true);
                 }
             }
         }

@@ -30,17 +30,23 @@ if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {
 
 // PC selection
 $Qreq->allow_a("pcs", "pap", "p");
-if (isset($Qreq->pcs) && is_string($Qreq->pcs)) {
-    $Qreq->pcs = preg_split('/\s+/', $Qreq->pcs);
-}
-if (isset($Qreq->pcs) && is_array($Qreq->pcs)) {
-    $pcsel = array();
-    foreach ($Qreq->pcs as $p) {
-        if (($p = cvtint($p)) > 0)
-            $pcsel[$p] = 1;
+$pcsel = [];
+if (isset($Qreq->pcs)) {
+    if (is_array($Qreq->pcs)) {
+        $pclist = $Qreq->pcs;
+    } else {
+        assert(is_string($Qreq->pcs));
+        $pclist = preg_split('/\s+/', $Qreq->pcs);
+    }
+    foreach ($pclist as $p) {
+        if (($p = cvtint($p)) > 0) {
+            $pcsel[$p] = true;
+        }
     }
 } else {
-    $pcsel = $Conf->pc_members();
+    foreach ($Conf->pc_members() as $cid => $p) {
+        $pcsel[$cid] = true;
+    }
 }
 
 if (!isset($Qreq->pctyp)
@@ -147,7 +153,7 @@ if (isset($Qreq->saveassignment)
     $assignset->parse($Qreq->assignment);
     $x = $assignset->unparse_csv();
     csv_exit($Conf->make_csvg("assignments")->select($x->header)
-             ->add($x->data)->sort(SORT_NATURAL));
+             ->add($x->rows)->sort(SORT_NATURAL));
 }
 
 // execute assignment

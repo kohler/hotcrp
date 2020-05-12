@@ -1,6 +1,5 @@
 <?php
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
 
 $arg = getopt("hn:c:Vm:", ["help", "name:", "count:", "verbose", "match:"]);
 if (isset($arg["c"]) && !isset($arg["count"])) {
@@ -16,6 +15,9 @@ if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/s3verifyall.php [-c COUNT] [-V] [-m MATCH]\n");
     exit(0);
 }
+
+require_once("$ConfSitePATH/src/init.php");
+
 $count = isset($arg["count"]) ? intval($arg["count"]) : null;
 $verbose = isset($arg["verbose"]);
 $match = isset($arg["match"]) ? $arg["match"] : "";
@@ -49,6 +51,7 @@ $args = ["max-keys" => 100];
 $doc = new DocumentInfo([], $Conf);
 $xml = null;
 $xmlpos = 0;
+$key_re = '/.*/';
 while (true) {
     if ($count !== null) {
         if ($count === 0)
@@ -62,29 +65,34 @@ while (true) {
         if ($last_key === null
             || ($match_pfx != "" && strcmp($last_key, $algo_pfx . $match_pfx) > 0)
             || ($algo_pfx == "" && strcmp($last_key, "f") > 0)
-            || $continuation_token === false)
+            || $continuation_token === false) {
             $next_algo = true;
+        }
         if ($next_algo) {
             ++$algo_pos;
-            if ($algo_pos >= count($match_algos))
+            if ($algo_pos >= count($match_algos)) {
                 break;
+            }
             $algo_pfx = $match_algos[$algo_pos];
             $key_re = $algo_key_re_map[$algo_pfx];
             $continuation_token = null;
         }
 
-        if ($continuation_token !== null)
+        if ($continuation_token !== null) {
             $content = $s3doc->ls("doc/", ["max-keys" => 500, "continuation-token" => $continuation_token]);
-        else
+        } else {
             $content = $s3doc->ls("doc/" . $match_pfx, ["max-keys" => 500]);
+        }
 
         $xml = new SimpleXMLElement($content);
         $xmlpos = 0;
-        if (!isset($xml->Contents) || $xmlpos >= count($xml->Contents))
+        if (!isset($xml->Contents) || $xmlpos >= count($xml->Contents)) {
             break;
+        }
         $continuation_token = false;
-        if (isset($xml->IsTruncated) && (string) $xml->IsTruncated === "true")
+        if (isset($xml->IsTruncated) && (string) $xml->IsTruncated === "true") {
             $continuation_token = (string) $xml->NextContinuationToken;
+        }
     }
 
     $node = $xml->Contents[$xmlpos];
@@ -94,16 +102,19 @@ while (true) {
     if ((!$match_re || preg_match($match_re, $last_key))
         && preg_match($key_re, $last_key, $m)
         && ($khash = Filer::hash_as_binary($m[1])) !== false) {
-        if ($verbose)
+        if ($verbose) {
             fwrite(STDOUT, "$last_key: ");
+        }
         $content = $s3doc->load($last_key);
         $doc->set_content($content);
         $chash = $doc->content_binary_hash($khash);
         if ($chash !== $khash) {
-            if (!$verbose)
+            if (!$verbose) {
                 fwrite(STDOUT, "$last_key: ");
+            }
             fwrite(STDOUT, "bad checksum " . Filer::hash_as_text($chash) . " (" . Filer::hash_as_text($khash) . ")\n");
-        } else if ($verbose)
+        } else if ($verbose) {
             fwrite(STDOUT, "ok\n");
+        }
     }
 }
