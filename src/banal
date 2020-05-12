@@ -469,7 +469,7 @@ sub calc_page_headings ($$$$) {
     TPOS: for (my $tpos = 0; $tpos < @$texts; ) {
         my ($tpos1) = $tpos;
         my ($text) = $texts->[$tpos];
-        if ($text->{sz} < $bodyfontsize) {
+        if ($text->{sz} < $bodyfontsize || $text->{sz} < $slack) {
             ++$tpos;
             next;
         }
