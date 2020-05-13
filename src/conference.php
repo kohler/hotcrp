@@ -3337,8 +3337,6 @@ class Conf {
         //   "commenterName"    Include commenter names
         //   "tags"             Include paperTags
         //   "minimal"          Only include minimal paper fields
-        //   "tagIndex" => $tag Include tagIndex of named tag
-        //   "tagIndex" => tag array -- include tagIndex, tagIndex1, ...
         //   "topics"
         //   "options"
         //   "scores" => array(fields to score)
@@ -3462,11 +3460,6 @@ class Conf {
             || ($user && $user->isPC)
             || $this->has_tracks()) {
             $cols[] = "(select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where PaperTag.paperId=Paper.paperId) paperTags";
-        }
-        if (($tagindexes = $options["tagIndex"] ?? false)) {
-            foreach (mkarray($tagindexes) as $i => $tag) {
-                $cols[] = "(select tagIndex from PaperTag where PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($tag) . "') tagIndex" . ($i ? : "");
-            }
         }
 
         if ($options["reviewerPreference"] ?? false) {
