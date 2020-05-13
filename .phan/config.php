@@ -24,11 +24,12 @@ use Phan\Config;
  * of the phan executable or a path passed in via the CLI
  * '-d' flag.
  */
-return [
+return (function () {
+$config = [
     // If true, missing properties will be created when
     // they are first seen. If false, we'll report an
     // error message.
-    "allow_missing_properties" => true,
+    "allow_missing_properties" => false,
 
     // Allow null to be cast as any type and for any
     // type to be cast to null.
@@ -52,8 +53,7 @@ return [
         Config::projectPath("lib"),
         Config::projectPath("src"),
         Config::projectPath("batch"),
-        Config::projectPath("test"),
-        Config::projectPath("../hotcrpcom/plugins")
+        Config::projectPath("test")
     ],
 
     "file_list" => [
@@ -104,3 +104,10 @@ return [
         "Admin" => '\Contact' // test
     ]
 ];
+
+if (file_exists("hotcrp-config.php")) {
+    include("hotcrp-config.php");
+}
+
+return $config;
+})();
