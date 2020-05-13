@@ -29,7 +29,7 @@ $config = [
     // If true, missing properties will be created when
     // they are first seen. If false, we'll report an
     // error message.
-    "allow_missing_properties" => false,
+    "allow_missing_properties" => true,
 
     // Allow null to be cast as any type and for any
     // type to be cast to null.
@@ -105,8 +105,8 @@ $config = [
     ]
 ];
 
-if (file_exists("hotcrp-config.php")) {
-    include("hotcrp-config.php");
+if (file_exists(Config::projectPath(".phan/hotcrp-config.php"))) {
+    include(Config::projectPath(".phan/hotcrp-config.php"));
 }
 
 return $config;
