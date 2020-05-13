@@ -655,7 +655,7 @@ class MeetingTracker {
 
         $col = "";
         if ($show_pc_conflicts) {
-            $col = ", (select group_concat(contactId) conflictIds from PaperConflict where paperId=p.paperId) conflictIds";
+            $col = ", (select group_concat(contactId, ' ', conflictType) from PaperConflict where paperId=p.paperId) allConflictType";
             $pcm = $user->conf->pc_members();
         }
         if ($user->contactId) {
@@ -708,8 +708,9 @@ class MeetingTracker {
                 if ($show_pc_conflicts) {
                     $pcc = [];
                     $more = false;
-                    foreach (explode(",", (string) $prow->conflictIds) as $cid) {
-                        if (($pc = $pcm[(int) $cid] ?? null)) {
+                    foreach ($prow->conflicts() as $cflt) {
+                        if (($pc = $pcm[$cflt->contactId] ?? null)
+                            && $cflt->is_conflicted()) {
                             if ($pc->include_tracker_conflict($trs[$ti_index])) {
                                 $pcc[$pc->sort_position] = $pc->contactId;
                             } else {

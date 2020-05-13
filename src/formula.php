@@ -1019,13 +1019,13 @@ class FormulaCompiler {
             return '$preferences';
         }
     }
-    function _add_conflicts() {
-        if ($this->check_gvar('$conflicts')) {
+    function _add_conflict_types() {
+        if ($this->check_gvar('$conflict_types')) {
             $this->queryOptions["allConflictType"] = true;
             $prow = $this->_prow();
-            $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts({$prow}) ? {$prow}->conflicts() : [];";
+            $this->gstmt[] = "\$conflict_types = \$contact->can_view_conflicts({$prow}) ? {$prow}->conflict_types() : [];";
         }
-        return '$conflicts';
+        return '$conflict_types';
     }
     function _add_tags() {
         if ($this->check_gvar('$tags')) {

@@ -251,10 +251,9 @@ class GetPcconflicts_ListAction extends ListAction {
         foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow) {
             if ($user->can_view_conflicts($prow)) {
                 $m = [];
-                foreach ($prow->conflicts() as $cid => $c) {
-                    if (isset($pcm[$cid])) {
-                        $pc = $pcm[$cid];
-                        $m[$pc->sort_position] = [$prow->paperId, $prow->title, $pc->firstName, $pc->lastName, $pc->email, $confset->unparse_text($c->conflictType)];
+                foreach ($prow->conflicts() as $cid => $cflt) {
+                    if (($pc = $pcm[$cid] ?? null) && $cflt->is_conflicted()) {
+                        $m[$pc->sort_position] = [$prow->paperId, $prow->title, $pc->firstName, $pc->lastName, $pc->email, $confset->unparse_text($cflt->conflictType)];
                     }
                 }
                 if ($m) {

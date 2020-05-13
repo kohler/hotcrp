@@ -17,7 +17,8 @@ class Conflict_Fexpr extends Fexpr {
         if ($state->index_type === Fexpr::IDX_MY) {
             $rt = $state->_prow() . "->has_conflict($idx)";
         } else {
-            $rt = "!!(" . $state->_add_conflicts() . "[" . $idx . "] ?? false)";
+            $rt = "((" . $state->_add_conflict_types() . "[" . $idx . "] ?? 0) > "
+                . CONFLICT_MAXUNCONFLICTED . ")";
             if ($this->ispc) {
                 $rt = "(" . $state->_add_pc() . "[" . $idx . "] ?? false ? $rt : null)";
             }

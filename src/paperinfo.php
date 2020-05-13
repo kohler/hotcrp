@@ -192,6 +192,10 @@ class PaperInfo_Conflict {
         $this->conflictType = (int) $ctype;
         $this->email = $email;
     }
+    /** @return bool */
+    function is_conflicted() {
+        return $this->conflictType > CONFLICT_MAXUNCONFLICTED;
+    }
 }
 
 class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
@@ -1241,6 +1245,15 @@ class PaperInfo {
      * @return array<int,PaperInfo_Conflict> */
     function pc_conflicts($email = false) {
         return array_intersect_key($this->conflicts($email), $this->conf->pc_members());
+    }
+
+    /** @return array<int,int> */
+    function conflict_types() {
+        $ct = [];
+        foreach ($this->conflicts() as $cflt) {
+            $ct[$cflt->contactId] = $cflt->conflictType;
+        }
+        return $ct;
     }
 
     function invalidate_conflicts() {
