@@ -188,7 +188,7 @@ class PaperStatus extends MessageSet {
         }
 
         $original_user = $user = $this->user;
-        if (get($args, "forceShow")) {
+        if ($args["forceShow"] ?? false) {
             $user = $this->conf->site_contact();
         }
         if (!$prow || !$user->can_view_paper($prow)) {
@@ -202,7 +202,7 @@ class PaperStatus extends MessageSet {
         $this->prow = $prow;
         $this->paperId = $prow->paperId;
 
-        $pj = (object) array();
+        $pj = (object) [];
         $pj->pid = (int) $prow->paperId;
         $pj->title = $prow->title;
 
@@ -221,7 +221,7 @@ class PaperStatus extends MessageSet {
             $pj->status = "withdrawn";
             $pj->withdrawn = true;
             $pj->withdrawn_at = (int) $prow->timeWithdrawn;
-            if (get($prow, "withdrawReason")) {
+            if ($prow->withdrawReason) {
                 $pj->withdraw_reason = $prow->withdrawReason;
             }
         } else if ($prow->timeSubmitted > 0) {

@@ -2,6 +2,7 @@
 // documentinfo.php -- HotCRP document objects
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+/** @property ?string $paper */
 class DocumentInfo implements JsonSerializable {
     /** @var Conf */
     public $conf;

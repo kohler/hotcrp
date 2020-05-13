@@ -64,13 +64,13 @@ Dbl::qe("insert into Settings set name='cmpxchg', value=1");
 xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 1);
 xassert_eqq(Dbl::compare_and_swap(Dbl::$default_dblink,
                                   "select value from Settings where name=?", ["cmpxchg"],
-                                  function ($x) { return $x + 1; },
+                                  function ($x) { return (int) $x + 1; },
                                   "update Settings set value=?{desired} where name=? and value=?{expected}", ["cmpxchg"]),
             2);
 xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 2);
 xassert_eqq(Dbl::compare_and_swap(Dbl::$default_dblink,
                                   "select value from Settings where name=?", ["cmpxchg"],
-                                  function ($x) { return $x + 1; },
+                                  function ($x) { return (int) $x + 1; },
                                   "update Settings set value?{desired}e where name=? and value?{expected}e", ["cmpxchg"]),
             3);
 xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 3);

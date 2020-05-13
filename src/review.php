@@ -808,17 +808,24 @@ class ReviewForm implements JsonSerializable {
         }
     }
 
+    /** @param Contact $user
+     * @param ?PaperInfo $prow
+     * @param ?ReviewInfo $rrow
+     * @return int */
     static private function rrow_modified_time($user, $prow, $rrow) {
         if (!$prow || !$rrow || !$user->can_view_review_time($prow, $rrow)) {
             return 0;
         } else if ($user->view_score_bound($prow, $rrow) >= VIEWSCORE_AUTHORDEC - 1) {
-            if ($rrow->reviewAuthorModified !== null) {
-                return $rrow->reviewAuthorModified;
-            } else if (!$rrow->reviewAuthorNotified
-                       || $rrow->reviewModified - $rrow->reviewAuthorNotified <= self::NOTIFICATION_DELAY) {
-                return $rrow->reviewModified;
+            if (isset($rrow->reviewAuthorModified)) {
+                return (int) $rrow->reviewAuthorModified;
             } else {
-                return $rrow->reviewAuthorNotified;
+                $ran = (int) $rrow->reviewAuthorNotified;
+                $rm = (int) $rrow->reviewModified;
+                if (!$ran || $rm - $ran <= self::NOTIFICATION_DELAY) {
+                    return $rm;
+                } else {
+                    return $ran;
+                }
             }
         } else {
             return $rrow->reviewModified;

@@ -18,6 +18,7 @@ class Autoassigner {
     /** @var array<int,Contact> */
     private $pcm;
     private $badpairs = array();
+    /** @var list<int> */
     private $papersel;
     /** @var ?list<string> */
     private $ass;
@@ -53,6 +54,7 @@ class Autoassigner {
     const EOLDASSIGN = 3;
     const ENEWASSIGN = 4;
 
+    /** @param list<int> $papersel */
     function __construct(Conf $conf, $papersel) {
         $this->conf = $conf;
         $this->select_pc(array_keys($this->conf->pc_members()));
@@ -60,6 +62,7 @@ class Autoassigner {
         $this->costs = new AutoassignerCosts;
     }
 
+    /** @param list<int> $pcids */
     function select_pc($pcids) {
         $this->pcm = $this->load = [];
         $pcids = array_flip($pcids);

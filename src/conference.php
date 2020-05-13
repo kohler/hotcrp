@@ -3720,6 +3720,7 @@ class Conf {
         return !!$this->_active_list;
     }
 
+    /** @return ?SessionList */
     function active_list() {
         if ($this->_active_list === false) {
             $this->_active_list = null;

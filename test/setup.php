@@ -267,6 +267,7 @@ function assert_location() {
     return caller_landmark("{^(?:x?assert|MailChecker::check)}");
 }
 
+/** @return bool */
 function xassert($x, $description = "") {
     ++Xassert::$n;
     if ($x) {
@@ -289,6 +290,7 @@ function xassert_exit() {
     exit($ok ? 0 : 1);
 }
 
+/** @return bool */
 function xassert_eqq($a, $b) {
     ++Xassert::$n;
     $ok = $a === $b;
@@ -301,6 +303,7 @@ function xassert_eqq($a, $b) {
     return $ok;
 }
 
+/** @return bool */
 function xassert_neqq($a, $b) {
     ++Xassert::$n;
     $ok = $a !== $b;
@@ -313,6 +316,7 @@ function xassert_neqq($a, $b) {
     return $ok;
 }
 
+/** @return bool */
 function xassert_eq($a, $b) {
     ++Xassert::$n;
     $ok = $a == $b;
@@ -325,6 +329,7 @@ function xassert_eq($a, $b) {
     return $ok;
 }
 
+/** @return bool */
 function xassert_neq($a, $b) {
     ++Xassert::$n;
     $ok = $a != $b;
@@ -339,7 +344,8 @@ function xassert_neq($a, $b) {
 
 /** @param ?list<mixed> $a
  * @param ?list<mixed> $b
- * @param bool $sort */
+ * @param bool $sort
+ * @return bool */
 function xassert_array_eqq($a, $b, $sort = false) {
     ++Xassert::$n;
     $problem = "";
@@ -384,11 +390,15 @@ function xassert_match($a, $b) {
     return $ok;
 }
 
+/** @param Contact $user
+ * @return array<int,object> */
 function search_json($user, $text, $cols = "id") {
     $pl = new PaperList("empty", new PaperSearch($user, $text));
     return $pl->text_json($cols);
 }
 
+/** @param Contact $user
+ * @return string */
 function search_text_col($user, $text, $col = "id") {
     $pl = new PaperList("empty", new PaperSearch($user, $text));
     $x = array();
@@ -398,6 +408,8 @@ function search_text_col($user, $text, $col = "id") {
     return join("", $x);
 }
 
+/** @param Contact $user
+ * @return bool */
 function assert_search_papers($user, $text, $result) {
     if (is_array($result)) {
         $result = join(" ", $result);
@@ -408,6 +420,7 @@ function assert_search_papers($user, $text, $result) {
     return xassert_eqq(join(" ", array_keys(search_json($user, $text))), $result);
 }
 
+/** @return bool */
 function assert_query($q, $b) {
     $result = Dbl::qe_raw($q);
     return xassert_eqq(join("\n", edb_first_columns($result)), $b);
@@ -428,6 +441,8 @@ function tag_normalize_compare($a, $b) {
     return $cmp;
 }
 
+/** @param PaperInfo $prow
+ * @return list<string> */
 function paper_tag_normalize($prow) {
     $t = array();
     $pcm = $prow->conf->pc_members();
@@ -448,6 +463,7 @@ function paper_tag_normalize($prow) {
     return $t;
 }
 
+/** @param Contact $who */
 function xassert_assign($who, $what, $override = false) {
     $assignset = new AssignmentSet($who, $override);
     $assignset->parse($what);
@@ -461,12 +477,16 @@ function xassert_assign($who, $what, $override = false) {
     return $ok;
 }
 
+/** @param Contact $who */
 function xassert_assign_fail($who, $what, $override = false) {
     $assignset = new AssignmentSet($who, $override);
     $assignset->parse($what);
     return xassert(!$assignset->execute());
 }
 
+/** @param Contact $user
+ * @param ?PaperInfo $prow
+ * @return object */
 function call_api($fn, $user, $qreq, $prow) {
     if (!($qreq instanceof Qrequest)) {
         $qreq = new Qrequest("POST", $qreq);
@@ -485,29 +505,34 @@ function call_api($fn, $user, $qreq, $prow) {
     return $result;
 }
 
-function fetch_paper($pid, $contact = null) {
+/** @param ?Contact $user */
+function fetch_paper($pid, $user = null) {
     global $Conf;
-    return $Conf->fetch_paper($pid, $contact);
+    return $Conf->fetch_paper($pid, $user);
 }
 
-function fetch_review($prow, $contact) {
+/** @param int|PaperInfo $prow
+ * @param Contact $user */
+function fetch_review($prow, $user) {
     if (is_int($prow)) {
-        $prow = fetch_paper($prow, $contact);
+        $prow = fetch_paper($prow, $user);
     }
-    return $prow->fresh_review_of_user($contact);
+    return $prow->fresh_review_of_user($user);
 }
 
-function save_review($paper, $contact, $revreq, $rrow = null) {
+/** @param Contact $user */
+function save_review($paper, $user, $revreq, $rrow = null) {
     global $Conf;
     $pid = is_object($paper) ? $paper->paperId : $paper;
-    $prow = fetch_paper($pid, $contact);
+    $prow = fetch_paper($pid, $user);
     $rf = $Conf->review_form();
     $tf = new ReviewValues($rf);
     $tf->parse_web(new Qrequest("POST", $revreq), false);
-    $tf->check_and_save($contact, $prow, $rrow ? : fetch_review($prow, $contact));
-    return fetch_review($prow, $contact);
+    $tf->check_and_save($user, $prow, $rrow ? : fetch_review($prow, $user));
+    return fetch_review($prow, $user);
 }
 
+/** @return ?Contact */
 function user($email) {
     global $Conf;
     return $Conf->user_by_email($email);

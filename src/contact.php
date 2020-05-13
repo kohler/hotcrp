@@ -7,6 +7,15 @@ class Contact_Update {
     public $cdb_qf = [];
 }
 
+/** @property ?string $numReviews
+ * @property ?string $numReviewsSubmitted
+ * @property ?string $numLeads
+ * @property ?string $numShepherds
+ * @property ?string $numBadRatings
+ * @property ?string $numGoodRatings
+ * @property ?string $paperIds
+ * @property ?string $reviewIds
+ * @property ?string $reviewOrdinals */
 class Contact {
     /** @var int */
     static public $rights_version = 1;

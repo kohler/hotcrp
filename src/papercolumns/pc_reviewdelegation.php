@@ -8,8 +8,9 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->isPC)
+        if (!$pl->user->isPC) {
             return false;
+        }
         $pl->qopts["reviewSignatures"] = true;
         $this->requester = $pl->reviewer_user();
         return true;
@@ -22,12 +23,14 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         foreach ($row->reviews_by_display($pl->user) as $rrow) {
             if ($rrow->reviewType == REVIEW_EXTERNAL
                 && $rrow->requestedBy == $this->requester->contactId) {
-                if (!$pl->user->can_view_review_assignment($row, $rrow))
+                if (!$pl->user->can_view_review_assignment($row, $rrow)) {
                     continue;
-                if ($pl->user->can_view_review_identity($row, $rrow))
+                }
+                if ($pl->user->can_view_review_identity($row, $rrow)) {
                     $t = $pl->user->reviewer_html_for($rrow);
-                else
+                } else {
                     $t = "review";
+                }
                 $ranal = $pl->make_review_analysis($rrow, $row);
                 $d = $rrow->status_description();
                 if ($rrow->reviewOrdinal) {

@@ -3,15 +3,21 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class SearchSelection {
-    private $sel = array();
-    private $selmap = null;
+    /** @var list<int> */
+    private $sel = [];
+    /** @var array<int,int> */
+    private $selmap = [];
 
     function __construct($papers = null) {
         if ($papers) {
-            $selmap = [];
-            foreach ($papers as $pid)
-                if (($pid = cvtint($pid)) > 0 && !isset($selmap[$pid]))
-                    $this->sel[] = $selmap[$pid] = $pid;
+            $n = 1;
+            foreach ($papers as $pid) {
+                if (($pid = cvtint($pid)) > 0 && !isset($this->selmap[$pid])) {
+                    $this->sel[] = $pid;
+                    $this->selmap[$pid] = $n;
+                    ++$n;
+                }
+            }
         }
     }
 
@@ -22,12 +28,12 @@ class SearchSelection {
         } else {
             $ps = $qreq->get_a(isset($qreq["p"]) ? "p" : "pap");
         }
-        if ($user && $ps === "all") {
-            $ps = (new PaperSearch($user, $qreq))->sorted_paper_ids();
-        } else if ($ps === "all")
-            $ps = null;
-        if (is_string($ps))
+        if ($ps === "all") {
+            $ps = $user ? (new PaperSearch($user, $qreq))->sorted_paper_ids() : null;
+        }
+        if (is_string($ps)) {
             $ps = preg_split('/\s+/', $ps);
+        }
         return new SearchSelection($ps);
     }
 
@@ -35,39 +41,45 @@ class SearchSelection {
         unset($qreq->p, $qreq->pap, $_GET["p"], $_GET["pap"], $_POST["p"], $_POST["pap"]);
     }
 
+    /** @return bool */
     function is_empty() {
         return empty($this->sel);
     }
 
+    /** @return int */
     function count() {
         return count($this->sel);
     }
 
+    /** @return list<int> */
     function selection() {
         return $this->sel;
     }
 
+    /** @return ?int */
     function selection_at($i) {
-        return get($this->sel, $i);
+        return $this->sel[$i] ?? null;
     }
 
+    /** @return array<int,int> */
     function selection_map() {
         if ($this->selmap === null) {
-            $this->selmap = array();
-            foreach ($this->sel as $i => $pid)
+            $this->selmap = [];
+            foreach ($this->sel as $i => $pid) {
                 $this->selmap[$pid] = $i + 1;
+            }
         }
         return $this->selmap;
     }
 
+    /** @return bool */
     function is_selected($pid) {
-        if ($this->selmap === null)
-            $this->selection_map();
-        return isset($this->selmap[$pid]);
+        return (($this->selection_map())[$pid] ?? null) !== null;
     }
 
+    /** @return int */
     function selection_index($pid) {
-        return get($this->selection_map(), $pid, 0) - 1;
+        return (($this->selection_map())[$pid] ?? 0) - 1;
     }
 
     function sort_selection() {
@@ -76,14 +88,15 @@ class SearchSelection {
     }
 
     function order_compare($a, $b) {
-        if ($a instanceof PaperInfo)
+        if ($a instanceof PaperInfo) {
             $a = $a->paperId;
-        if ($b instanceof PaperInfo)
+        }
+        if ($b instanceof PaperInfo) {
             $b = $b->paperId;
-        if ($this->selmap === null)
-            $this->selection_map();
-        $as = isset($this->selmap[$a]) ? $this->selmap[$a] : PHP_INT_MAX;
-        $bs = isset($this->selmap[$b]) ? $this->selmap[$b] : PHP_INT_MAX;
+        }
+        $sm = $this->selection_map();
+        $as = $sm[$a] ?? PHP_INT_MAX;
+        $bs = $sm[$b] ?? PHP_INT_MAX;
         if ($as === $bs) {
             return $a < $b ? -1 : ($a == $b ? 0 : 1);
         } else {
@@ -91,21 +104,26 @@ class SearchSelection {
         }
     }
 
+    /** @return bool */
     function equals_search($search) {
-        if ($search instanceof PaperSearch)
+        if ($search instanceof PaperSearch) {
             $search = $search->paper_ids();
-        if (count($search) !== count($this->sel))
+        }
+        if (count($search) !== count($this->sel)) {
             return false;
+        }
         sort($search);
         $sel = $this->sel;
         sort($sel);
         return join(" ", $search) === join(" ", $sel);
     }
 
+    /** @return string */
     function sql_predicate() {
         return sql_in_numeric_set($this->sel);
     }
 
+    /** @return string */
     function request_value() {
         return join(" ", $this->sel);
     }

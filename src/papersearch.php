@@ -360,8 +360,9 @@ class SearchTerm {
 
 
     function extract_metadata($top, PaperSearch $srch) {
-        if ($top && ($x = $this->get_float("contradiction_warning")))
+        if ($top && ($x = $this->get_float("contradiction_warning"))) {
             $srch->contradictions[$x] = true;
+        }
     }
     /** @param ?int $thenval
      * @return ?ListSorter */
@@ -447,6 +448,7 @@ class Op_SearchTerm extends SearchTerm {
         $qvs = array();
         foreach ($this->child ? : array() as $qv) {
             if ($qv->type === $this->type) {
+                assert($qv instanceof Op_SearchTerm);
                 $qvs = array_merge($qvs, $qv->child);
             } else {
                 $qvs[] = $qv;
@@ -514,9 +516,9 @@ class Not_SearchTerm extends Op_SearchTerm {
             $qr = new True_SearchTerm;
         } else if ($qv->is_true()) {
             $qr = new False_SearchTerm;
-        } else if ($qv->type === "not") {
+        } else if ($qv instanceof Not_SearchTerm) {
             $qr = clone $qv->child[0];
-        } else if ($qv->type === "revadj") {
+        } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
             $qr = clone $qv;
             $qr->negated = !$qr->negated;
         }
@@ -577,8 +579,7 @@ class And_SearchTerm extends Op_SearchTerm {
                 return $qr;
             } else if ($qv->is_true()) {
                 $any = true;
-            } else if ($qv->type === "revadj") {
-                assert($qv instanceof ReviewAdjustment_SearchTerm);
+            } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
                 $revadj = $qv->apply($revadj, false);
             } else if ($qv->type === "pn" && $this->type === "space") {
                 if (!$pn) {
@@ -679,8 +680,7 @@ class Or_SearchTerm extends Op_SearchTerm {
                 return self::make_float($this->float);
             } else if ($qv->is_false()) {
                 // skip
-            } else if ($qv->type === "revadj") {
-                assert($qv instanceof ReviewAdjustment_SearchTerm);
+            } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
                 $revadj = $qv->apply($revadj, true);
             } else if ($qv->type === "pn") {
                 if (!$pn) {
@@ -692,8 +692,9 @@ class Or_SearchTerm extends Op_SearchTerm {
                 $newchild[] = $qv;
             }
         }
-        if ($revadj)
+        if ($revadj) {
             array_unshift($newchild, $revadj);
+        }
         return $this->_finish_combine($newchild, false);
     }
 
@@ -754,8 +755,7 @@ class Xor_SearchTerm extends Op_SearchTerm {
         foreach ($this->_flatten_children() as $qv) {
             if ($qv->is_false()) {
                 // skip
-            } else if ($qv->type === "revadj") {
-                assert($qv instanceof ReviewAdjustment_SearchTerm);
+            } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
                 $revadj = $qv->apply($revadj, true);
             } else if ($qv->type === "pn") {
                 if (!$pn) {
@@ -800,11 +800,14 @@ class Xor_SearchTerm extends Op_SearchTerm {
 }
 
 class Then_SearchTerm extends Op_SearchTerm {
+    /** @var bool */
     private $is_highlight;
-    public $nthen;
-    /** @var ?list<int> */
-    public $highlights;
-    public $highlight_types;
+    /** @var int */
+    public $nthen = 0;
+    /** @var list<int> */
+    public $highlights = [];
+    /** @var list<string> */
+    public $highlight_types = [];
 
     function __construct(SearchOperator $op) {
         assert($op->op === "then" || $op->op === "highlight");
@@ -820,7 +823,7 @@ class Then_SearchTerm extends Op_SearchTerm {
 
         foreach ($this->child as $qvidx => $qv) {
             if ($qv && $qvidx && $this->is_highlight) {
-                if ($qv->type === "then") {
+                if ($qv instanceof Then_SearchTerm) {
                     for ($i = 0; $i < $qv->nthen; ++$i) {
                         $newhvalues[] = $qv->child[$i];
                         $newhmasks[] = (1 << count($newvalues)) - 1;
@@ -831,8 +834,7 @@ class Then_SearchTerm extends Op_SearchTerm {
                     $newhmasks[] = (1 << count($newvalues)) - 1;
                     $newhtypes[] = $opinfo;
                 }
-            } else if ($qv && $qv->type === "then") {
-                assert($qv instanceof Then_SearchTerm);
+            } else if ($qv && $qv instanceof Then_SearchTerm) {
                 $pos = count($newvalues);
                 for ($i = 0; $i < $qv->nthen; ++$i) {
                     $newvalues[] = $qv->child[$i];
@@ -840,10 +842,10 @@ class Then_SearchTerm extends Op_SearchTerm {
                 for ($i = $qv->nthen; $i < count($qv->child); ++$i) {
                     $newhvalues[] = $qv->child[$i];
                 }
-                foreach ($qv->highlights ? : array() as $hlmask) {
+                foreach ($qv->highlights as $hlmask) {
                     $newhmasks[] = $hlmask << $pos;
                 }
-                foreach ($qv->highlight_types ? : array() as $hltype) {
+                foreach ($qv->highlight_types as $hltype) {
                     $newhtypes[] = $hltype;
                 }
             } else if ($qv) {
@@ -2511,6 +2513,7 @@ class PaperSearch {
     /** @param SearchTerm $qe */
     private function _add_deleted_papers($qe) {
         if ($qe->type === "or" || $qe->type === "then") {
+            assert($qe instanceof Op_SearchTerm);
             foreach ($qe->child as $subt) {
                 $this->_add_deleted_papers($subt);
             }
@@ -2631,14 +2634,16 @@ class PaperSearch {
             //Conf::msg_debugt(json_encode($this->_qe->debug_json()));
 
             // apply review rounds (top down, needs separate step)
-            if ($this->_has_review_adjustment)
+            if ($this->_has_review_adjustment) {
                 $this->_qe = $this->_qe->adjust_reviews(null, $this);
+            }
 
             // extract regular expressions and set _reviewer if the query is
             // about exactly one reviewer, and warn about contradictions
             $this->_qe->extract_metadata(true, $this);
-            foreach ($this->contradictions as $contradiction => $garbage)
+            foreach ($this->contradictions as $contradiction => $garbage) {
                 $this->warn($contradiction);
+            }
         }
         return $this->_qe;
     }
@@ -2651,15 +2656,17 @@ class PaperSearch {
         $sqi->add_column("timeSubmitted", "Paper.timeSubmitted");
         $sqi->add_column("timeWithdrawn", "Paper.timeWithdrawn");
         $sqi->add_column("outcome", "Paper.outcome");
-        if ($this->conf->has_any_lead_or_shepherd())
+        if ($this->conf->has_any_lead_or_shepherd()) {
             $sqi->add_column("leadContactId", "Paper.leadContactId");
+        }
 
         $filter = SearchTerm::andjoin_sqlexpr([
             $this->_limit_qe->sqlexpr($sqi), $qe->sqlexpr($sqi)
         ]);
         //Conf::msg_debugt($filter);
-        if ($filter === "false")
+        if ($filter === "false") {
             return [null, false];
+        }
 
         // add permissions tables if we will filter the results
         $need_filter = !$qe->trivial_rights($this->user, $this)
@@ -2668,8 +2675,9 @@ class PaperSearch {
             || $qe->type === "then"
             || $qe->get_float("heading");
 
-        if ($need_filter)
+        if ($need_filter) {
             $sqi->add_rights_columns();
+        }
         // XXX some of this should be shared with paperQuery
         if (($need_filter && $this->conf->has_track_tags())
             || ($this->_query_options["tags"] ?? false)
@@ -2748,11 +2756,11 @@ class PaperSearch {
         Dbl::free($result);
 
         // correct query, create thenmap, groupmap, highlightmap
-        $need_then = $qe->type === "then";
-        $this->thenmap = null;
-        if ($need_then && $qe->nthen > 1) {
-            $this->thenmap = [];
+        $thqe = null;
+        if ($qe instanceof Then_SearchTerm) {
+            $thqe = $qe;
         }
+        $this->thenmap = $thqe && $thqe->nthen > 1 ? [] : null;
         $this->highlightmap = [];
         $this->_matches = [];
         if ($need_filter) {
@@ -2760,10 +2768,10 @@ class PaperSearch {
             foreach ($rowset as $row) {
                 if (!$this->_limit_qe->exec($row, $this)) {
                     $x = false;
-                } else if ($need_then) {
+                } else if ($thqe) {
                     $x = false;
-                    for ($i = 0; $i < $qe->nthen && $x === false; ++$i) {
-                        if ($qe->child[$i]->exec($row, $this))
+                    for ($i = 0; $i < $thqe->nthen && $x === false; ++$i) {
+                        if ($thqe->child[$i]->exec($row, $this))
                             $x = $i;
                     }
                 } else {
@@ -2777,11 +2785,11 @@ class PaperSearch {
                     assert(is_int($x));
                     $this->thenmap[$row->paperId] = $x;
                 }
-                if ($need_then) {
-                    for ($j = $qe->nthen; $j < count($qe->child); ++$j) {
-                        if ($qe->child[$j]->exec($row, $this)
-                            && ($qe->highlights[$j - $qe->nthen] & (1 << $x))) {
-                            $this->highlightmap[$row->paperId][] = $qe->highlight_types[$j - $qe->nthen];
+                if ($thqe) {
+                    for ($j = $thqe->nthen; $j < count($thqe->child); ++$j) {
+                        if ($thqe->child[$j]->exec($row, $this)
+                            && ($thqe->highlights[$j - $thqe->nthen] & (1 << $x))) {
+                            $this->highlightmap[$row->paperId][] = $thqe->highlight_types[$j - $thqe->nthen];
                         }
                     }
                 }
@@ -2798,24 +2806,24 @@ class PaperSearch {
 
         // sort information
         $this->_add_sorters($qe, null);
-        if ($qe->type === "then") {
-            for ($i = 0; $i < $qe->nthen; ++$i) {
-                $this->_add_sorters($qe->child[$i], $this->thenmap ? $i : null);
+        if ($thqe) {
+            for ($i = 0; $i < $thqe->nthen; ++$i) {
+                $this->_add_sorters($thqe->child[$i], $this->thenmap ? $i : null);
             }
         }
 
         // group information
         $this->groupmap = [];
         $sole_qe = $qe;
-        if ($qe->type === "then") {
-            $sole_qe = $qe->nthen == 1 ? $qe->child[0] : null;
+        if ($thqe) {
+            $sole_qe = $thqe->nthen == 1 ? $thqe->child[0] : null;
         }
-        if (!$sole_qe) {
-            for ($i = 0; $i < $qe->nthen; ++$i) {
-                $h = $qe->child[$i]->get_float("heading");
+        if ($thqe && !$sole_qe) {
+            for ($i = 0; $i < $thqe->nthen; ++$i) {
+                $h = $thqe->child[$i]->get_float("heading");
                 if ($h === null) {
-                    $span = $qe->child[$i]->get_float("strspan");
-                    $spanstr = $qe->child[$i]->get_float("strspan_owner", $this->q);
+                    $span = $thqe->child[$i]->get_float("strspan") ?? [0, 0];
+                    $spanstr = $thqe->child[$i]->get_float("strspan_owner", $this->q);
                     $h = rtrim(substr($spanstr, $span[0], $span[1] - $span[0]));
                 }
                 $this->groupmap[$i] = TagAnno::make_heading($h);

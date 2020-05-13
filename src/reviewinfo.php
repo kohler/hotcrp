@@ -13,9 +13,16 @@
  * @property ?string $data
  * @property ?string $sfields
  * @property ?string $tfields
- * @property ?string $reviewViewScore
  *
- * @property ?string $allRatings */
+ * @property ?string $allRatings
+ * @property ?string $firstName
+ * @property ?string $lastName
+ * @property ?string $email
+ * @property ?string $reviewFirstName
+ * @property ?string $reviewLastName
+ * @property ?string $reviewEmail
+ * @property ?string $contactTags
+ * @property ?string $sorter */
 class ReviewInfo {
     /** @var Conf */
     public $conf;
@@ -33,17 +40,22 @@ class ReviewInfo {
     //public $timeRequested;
     //public $timeRequestNotified;
     public $reviewBlind;
+    /** @var int */
     public $reviewModified;
     //public $reviewAuthorModified;
+    /** @var ?int */
     public $reviewSubmitted;
     //public $reviewNotified;
     //public $reviewAuthorNotified;
+    /** @var ?int */
     public $reviewAuthorSeen;
     public $reviewOrdinal;
     public $timeDisplayed;
     public $timeApprovalRequested;
     //public $reviewEditVersion;
     public $reviewNeedsSubmit;
+    /** @var int */
+    public $reviewViewScore;
     // ... scores ...
     //public $reviewWordCount;
     //public $reviewFormat;
@@ -125,11 +137,12 @@ class ReviewInfo {
         $this->conf = $conf;
         foreach (["paperId", "reviewId", "contactId", "reviewType",
                   "reviewRound", "requestedBy", "reviewBlind",
-                  "reviewOrdinal", "reviewNeedsSubmit", "reviewViewScore"] as $k) {
+                  "reviewOrdinal", "reviewNeedsSubmit", "reviewViewScore",
+                  "reviewModified"] as $k) {
             assert($this->$k !== null, "null $k");
             $this->$k = (int) $this->$k;
         }
-        foreach (["reviewModified", "reviewSubmitted", "reviewAuthorSeen"] as $k) {
+        foreach (["reviewSubmitted", "reviewAuthorSeen"] as $k) {
             if (isset($this->$k)) {
                 $this->$k = (int) $this->$k;
             }

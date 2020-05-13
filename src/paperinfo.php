@@ -3,11 +3,17 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperContactInfo {
+    /** @var int */
     public $paperId;
+    /** @var int */
     public $contactId;
+    /** @var int */
     public $conflictType = 0;
+    /** @var int */
     public $reviewType = 0;
+    /** @var int */
     public $reviewSubmitted = 0;
+    /** @var int */
     public $review_status = 0;    // 0 means no review
     const RS_DECLINED = 1;        // declined assigned review
     const RS_UNSUBMITTED = 2;     // review not submitted, needs submit
@@ -174,8 +180,11 @@ class PaperContactInfo {
 }
 
 class PaperInfo_Conflict {
+    /** @var int */
     public $contactId;
+    /** @var int */
     public $conflictType;
+    /** @var string */
     public $email;
 
     function __construct($cid, $ctype, $email = null) {
@@ -302,10 +311,15 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
  * @property ?string $paperTags
  * @property ?string $optionIds
  * @property ?string $topicIds
+ * @property ?string $conflictType
+ * @property ?string $watch
  * @property ?string $allConflictType
  * @property ?string $reviewSignatures
+ * @property ?string $reviewWordCountSignature
+ * @property ?string $commentSkeletonInfo
  * @property ?string $myReviewPermissions
- * @property ?string $allReviewerPreference  */
+ * @property ?string $allReviewerPreference
+ */
 class PaperInfo {
     public $paperId;
     /** @var Conf */
@@ -349,7 +363,9 @@ class PaperInfo {
     /** @var array<int,DocumentInfo> */
     private $_document_array;
     private $_doclink_array;
+    /** @var ?array<int,PaperInfo_Conflict> */
     private $_conflict_array;
+    /** @var bool */
     private $_conflict_array_email;
     private $_review_array;
     private $_review_array_version = 0;
@@ -1179,6 +1195,7 @@ class PaperInfo {
     }
 
 
+    /** @param bool $email */
     function load_conflicts($email) {
         if (!$email && property_exists($this, "allConflictType")) {
             $this->_conflict_array = [];
@@ -1210,6 +1227,8 @@ class PaperInfo {
         }
     }
 
+    /** @param bool $email
+     * @return array<int,PaperInfo_Conflict> */
     function conflicts($email = false) {
         if ($this->_conflict_array === null
             || ($email && !$this->_conflict_array_email)) {
@@ -1218,6 +1237,8 @@ class PaperInfo {
         return $this->_conflict_array;
     }
 
+    /** @param bool $email
+     * @return array<int,PaperInfo_Conflict> */
     function pc_conflicts($email = false) {
         return array_intersect_key($this->conflicts($email), $this->conf->pc_members());
     }

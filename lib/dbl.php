@@ -626,6 +626,7 @@ class Dbl {
         }
     }
 
+    /** @return ?string */
     static function fetch_value(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = $result ? $result->fetch_row() : null;
@@ -633,6 +634,7 @@ class Dbl {
         return $x ? $x[0] : null;
     }
 
+    /** @return ?int */
     static function fetch_ivalue(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = $result ? $result->fetch_row() : null;
@@ -640,6 +642,7 @@ class Dbl {
         return $x ? (int) $x[0] : null;
     }
 
+    /** @return list<list<?string>> */
     static function fetch_rows(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = [];
@@ -650,6 +653,7 @@ class Dbl {
         return $x;
     }
 
+    /** @return list<object> */
     static function fetch_objects(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = [];
@@ -660,6 +664,7 @@ class Dbl {
         return $x;
     }
 
+    /** @return ?list<?string> */
     static function fetch_first_row(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = $result ? $result->fetch_row() : null;
@@ -667,6 +672,7 @@ class Dbl {
         return $x;
     }
 
+    /** @return ?object */
     static function fetch_first_object(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = $result ? $result->fetch_object() : null;
@@ -674,6 +680,7 @@ class Dbl {
         return $x;
     }
 
+    /** @return list<mixed> */
     static function fetch_first_columns(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = array();
@@ -683,6 +690,7 @@ class Dbl {
         return $x;
     }
 
+    /** @return array<string,mixed> */
     static function fetch_map(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = array();
@@ -693,6 +701,7 @@ class Dbl {
         return $x;
     }
 
+    /** @return array<int,?int> */
     static function fetch_iimap(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = array();
@@ -704,6 +713,13 @@ class Dbl {
         return $x;
     }
 
+    /** @param mysqli $dblink
+     * @param string $value_query
+     * @param array $value_query_args
+     * @param callable(?string):(null|int|string) $callback
+     * @param string $update_query
+     * @param array $update_query_args
+     * @return null|int|string */
     static function compare_and_swap($dblink, $value_query, $value_query_args,
                                      $callback, $update_query, $update_query_args) {
         while (true) {
@@ -762,6 +778,7 @@ class Dbl {
         self::$query_log = false;
     }
 
+    /** @return string */
     static function utf8(/* [$dblink,] $qstr */) {
         $args = func_get_args();
         $dblink = count($args) > 1 ? $args[0] : self::$default_dblink;
@@ -770,6 +787,7 @@ class Dbl {
         return "_" . $utf8 . $qstr;
     }
 
+    /** @return string */
     static function utf8ci(/* [$dblink,] $qstr */) {
         $args = func_get_args();
         $dblink = count($args) > 1 ? $args[0] : self::$default_dblink;

@@ -437,7 +437,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             && $spec->timestamp) {
             $x = $this->has_error() ? -$spec->timestamp : $spec->timestamp;
             if ($x != $prow->pdfFormatStatus) {
-                $prow->pdfFormatStatus = $x;
+                $prow->pdfFormatStatus = (string) $x;
                 $prow->conf->qe("update Paper set pdfFormatStatus=? where paperId=?", $prow->pdfFormatStatus, $prow->paperId);
             }
         }

@@ -1,6 +1,7 @@
 <?php
 // test06.php -- HotCRP review and some setting tests
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+/** @phan-file-suppress PhanUndeclaredProperty */
 
 global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);

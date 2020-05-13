@@ -2151,9 +2151,6 @@ class Formula implements Abbreviator, JsonSerializable {
                 return ReviewField::unparse_letter(91, $x + 2);
             } else if ($this->_format === Fexpr::FREVIEWER) {
                 return $this->user->reviewer_html_for($x);
-            } else if ($this->_format === Fexpr::FTAG) {
-                $tagger = new Tagger($this->user);
-                return $tagger->unparse_link($this->_tagrefs[$x]);
             } else if ($this->_format === Fexpr::FDATE
                        || $this->_format === Fexpr::FTIME) {
                 $f = $this->_format === Fexpr::FTIME ? "%Y-%m-%dT%T" : "%Y-%m-%d";
@@ -2184,9 +2181,6 @@ class Formula implements Abbreviator, JsonSerializable {
                 return ReviewField::unparse_letter(91, $x + 2);
             } else if ($this->_format === Fexpr::FREVIEWER) {
                 return $this->user->name_text_for($x);
-            } else if ($this->_format === Fexpr::FTAG) {
-                $tagger = new Tagger($this->user);
-                return $tagger->unparse_hashed($this->_tagrefs[$x]);
             } else if ($this->_format === Fexpr::FDATE
                        || $this->_format === Fexpr::FTIME) {
                 $f = $this->_format === Fexpr::FTIME ? "%Y-%m-%dT%T" : "%Y-%m-%d";

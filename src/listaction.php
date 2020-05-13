@@ -9,7 +9,8 @@ class ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return true;
     }
-    function run(Contact $user, $qreq, $selection) {
+    /** @param SearchSelection $ssel */
+    function run(Contact $user, $qreq, $ssel) {
         return "Unsupported.";
     }
 
