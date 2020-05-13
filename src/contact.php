@@ -3506,12 +3506,16 @@ class Contact {
         return $this->is_reviewer() && ($rs == REV_RATINGS_PC || $rs == REV_RATINGS_PC_EXTERNAL);
     }
 
+    /** @param ?ReviewInfo $rrow
+     * @return bool */
     function can_rate_review(PaperInfo $prow, $rrow) {
         return $this->can_view_review_ratings($prow, $rrow, true)
             && !$this->is_my_review($rrow);
     }
 
 
+    /** @param ?CommentInfo $crow
+     * @return bool */
     function is_my_comment(PaperInfo $prow, $crow) {
         if ($this->contactId == $crow->contactId
             || (!$this->contactId
@@ -3527,6 +3531,8 @@ class Contact {
         return false;
     }
 
+    /** @param ?CommentInfo $crow
+     * @return bool */
     function can_comment(PaperInfo $prow, $crow, $submit = false) {
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE)) {
             return $this->can_respond($prow, $crow, $submit);

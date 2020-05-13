@@ -2778,8 +2778,8 @@ class PaperTable {
         if ($comments) {
             $cs = [];
             if ($this->user->can_comment($this->prow, null)) {
-                $ct = $this->prow->has_author($this->user) ? COMMENTTYPE_BYAUTHOR : 0;
-                $cs[] = new CommentInfo(["commentType" => $ct], $this->prow);
+                $commentType = $this->prow->has_author($this->user) ? COMMENTTYPE_BYAUTHOR : 0;
+                $cs[] = new CommentInfo(["commentType" => $commentType], $this->prow);
             }
             if ($this->admin || $this->prow->has_author($this->user)) {
                 foreach ($this->conf->resp_rounds() as $rrd) {

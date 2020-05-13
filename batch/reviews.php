@@ -76,12 +76,12 @@ foreach ($search->sorted_paper_ids() as $pid) {
     $prow = $pset[$pid];
     $prow->ensure_full_reviews();
     $prow->ensure_reviewer_names();
-    foreach ($comments ? $prow->viewable_reviews_and_comments($user) : $prow->reviews_by_display($user) as $rrow) {
-        $iscomment = isset($rrow->commentId);
-        if ($iscomment
-            ? !$all && ($rrow->commentType & COMMENTTYPE_DRAFT)
-            : $rrow->reviewModified <= 1
-              || (!$all && $rrow->reviewSubmitted <= 0)) {
+    foreach ($comments ? $prow->viewable_reviews_and_comments($user) : $prow->reviews_by_display($user) as $xrow) {
+        $crow = $xrow instanceof CommentInfo ? $xrow : null;
+        $rrow = $xrow instanceof ReviewInfo ? $xrow : null;
+        if (($crow && !$all && ($crow->commentType & COMMENTTYPE_DRAFT))
+            || ($rrow && ($rrow->reviewModified <= 1
+                          || (!$all && $rrow->reviewSubmitted <= 0)))) {
             continue;
         }
         $x = [
@@ -89,26 +89,26 @@ foreach ($search->sorted_paper_ids() as $pid) {
             "siteclass" => $Conf->opt("siteclass"),
             "pid" => $prow->paperId
         ];
-        if ($iscomment) {
-            $x["review"] = $rrow->unparse_html_id();
-            $x["email"] = $rrow->reviewEmail;
-            if ($rrow->commentType & COMMENTTYPE_RESPONSE) {
-                $x["round"] = $Conf->resp_round_text($rrow->commentType);
+        if ($crow) {
+            $x["review"] = $crow->unparse_html_id();
+            $x["email"] = $crow->reviewEmail;
+            if ($crow->commentType & COMMENTTYPE_RESPONSE) {
+                $x["round"] = $Conf->resp_round_text($crow->commentRound);
             }
-            $rs = $rrow->commentType & COMMENTTYPE_DRAFT ? "draft " : "";
-            if ($rrow->commentType & COMMENTTYPE_RESPONSE) {
+            $rs = $crow->commentType & COMMENTTYPE_DRAFT ? "draft " : "";
+            if ($crow->commentType & COMMENTTYPE_RESPONSE) {
                 $rs .= "response";
-            } else if ($rrow->commentType & COMMENTTYPE_BYAUTHOR) {
+            } else if ($crow->commentType & COMMENTTYPE_BYAUTHOR) {
                 $rs .= "author comment";
             } else {
                 $rs .= "comment";
             }
             $x["status"] = $rs;
             $x["field"] = "comment";
-            $x["format"] = $rrow->commentFormat;
-            $x["data"] = $rrow->commentOverflow ? : $rrow->comment;
+            $x["format"] = $crow->commentFormat;
+            $x["data"] = $crow->commentOverflow ? : $crow->comment;
             add_row($x);
-        } else {
+        } else if ($rrow) {
             $x["review"] = $rrow->unparse_ordinal();
             $x["email"] = $rrow->email;
             $x["round"] = $Conf->round_name($rrow->reviewRound);

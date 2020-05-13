@@ -21,7 +21,7 @@ class CommentInfo {
     public $timeDisplayed;
     public $comment;
     /** @var int */
-    public $commentType = COMMENTTYPE_REVIEWER;
+    public $commentType;
     public $replyTo;
     public $ordinal;
     public $authorOrdinal;
@@ -36,10 +36,10 @@ class CommentInfo {
         COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au"
     ];
     static private $visibility_revmap = [
-        "admin" => COMMENTTYPE_ADMINONLY, "pc" => COMMENTTYPE_PCONLY,
-        "p" => COMMENTTYPE_PCONLY, "rev" => COMMENTTYPE_REVIEWER,
-        "r" => COMMENTTYPE_REVIEWER, "au" => COMMENTTYPE_AUTHOR,
-        "a" => COMMENTTYPE_AUTHOR
+        "admin" => COMMENTTYPE_ADMINONLY,
+        "pc" => COMMENTTYPE_PCONLY, "p" => COMMENTTYPE_PCONLY,
+        "rev" => COMMENTTYPE_REVIEWER, "r" => COMMENTTYPE_REVIEWER,
+        "au" => COMMENTTYPE_AUTHOR, "a" => COMMENTTYPE_AUTHOR
     ];
 
 
@@ -60,7 +60,11 @@ class CommentInfo {
         $this->commentId = (int) $this->commentId;
         $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
-        $this->commentType = (int) $this->commentType;
+        if ($this->commentType === null) {
+            $this->commentType = COMMENTTYPE_REVIEWER;
+        } else {
+            $this->commentType = (int) $this->commentType;
+        }
         $this->commentRound = (int) $this->commentRound;
     }
 

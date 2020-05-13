@@ -751,14 +751,15 @@ function updateSchema($conf) {
         $result = $conf->ql("show columns from PaperComment like 'forAuthors'");
         if (Dbl::is_error($result)
             || $result->num_rows == 0
-            || ($conf->ql("update PaperComment set commentType=" . (COMMENTTYPE_AUTHOR | COMMENTTYPE_RESPONSE) . " where forAuthors=2")
-                && $conf->ql("update PaperComment set commentType=commentType|" . COMMENTTYPE_DRAFT . " where forAuthors=2 and forReviewers=0")
-                && $conf->ql("update PaperComment set commentType=" . COMMENTTYPE_ADMINONLY . " where forAuthors=0 and forReviewers=2")
-                && $conf->ql("update PaperComment set commentType=" . COMMENTTYPE_PCONLY . " where forAuthors=0 and forReviewers=0")
-                && $conf->ql("update PaperComment set commentType=" . COMMENTTYPE_REVIEWER . " where forAuthors=0 and forReviewers=1")
-                && $conf->ql("update PaperComment set commentType=" . COMMENTTYPE_AUTHOR . " where forAuthors!=0 and forAuthors!=2")
-                && $conf->ql("update PaperComment set commentType=commentType|" . COMMENTTYPE_BLIND . " where blind=1")))
+            || ($conf->ql("update PaperComment set commentType=0x30004 where forAuthors=2") /* CT_AUTHOR|CT_RESPONSE */
+                && $conf->ql("update PaperComment set commentType=commentType|1 where forAuthors=2 and forReviewers=0") /* CT_DRAFT */
+                && $conf->ql("update PaperComment set commentType=0 where forAuthors=0 and forReviewers=2") /* CT_ADMINONLY */
+                && $conf->ql("update PaperComment set commentType=0x10000 where forAuthors=0 and forReviewers=0") /* CT_PC */
+                && $conf->ql("update PaperComment set commentType=0x20000 where forAuthors=0 and forReviewers=1") /* CT_REVIEWER */
+                && $conf->ql("update PaperComment set commentType=0x30000 where forAuthors!=0 and forAuthors!=2") /* CT_AUTHOR */
+                && $conf->ql("update PaperComment set commentType=commentType|2 where blind=1") /* CT_BLIND */)) {
             $conf->update_schema_version($new_sversion);
+        }
     }
     if ($conf->sversion < 53)
         Dbl::qx_raw($conf->dblink, "alter table PaperComment drop column `commentType`");
