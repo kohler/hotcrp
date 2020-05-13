@@ -308,10 +308,7 @@ class Options_SettingParser extends SettingParser {
         $oarg["display"] = $sv->reqv("optdt_$xpos");
         $oarg["required"] = !!$sv->reqv("optreq_$xpos");
 
-        $o = PaperOption::make((object) $oarg, $sv->conf);
-        $o->req_xpos = $xpos;
-        $o->is_new = $is_new;
-        return $o;
+        return PaperOption::make((object) $oarg, $sv->conf);
     }
 
     function parse(SettingValues $sv, Si $si) {

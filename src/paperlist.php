@@ -13,6 +13,7 @@ class PaperListTableRender {
 
     public $ncol;
     public $titlecol;
+    public $split_ncol = 0;
 
     public $colorindex = 0;
     public $hascolors = false;
@@ -426,7 +427,7 @@ class PaperList {
                 if ($field->prepare($this, PaperColumn::PREP_SORT)
                     && $field->sort) {
                     $sorter->field = $field;
-                    $sorter->name = $field->name;
+                    $sorter->type = $field->name;
                     $sorters[] = $sorter;
                 }
             } else if ($sorter->type) {

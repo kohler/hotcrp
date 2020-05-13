@@ -60,7 +60,6 @@ class ContactList {
             $this->sortField = $s;
         $this->sortable = $sortable;
 
-        $this->contact = $user;
         $this->tagger = new Tagger($this->user);
         $this->contactLinkArgs = "";
     }

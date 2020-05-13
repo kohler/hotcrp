@@ -14,7 +14,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     public $metadata_updates = [];
     public $failed = false;
     public $banal_stdout;
-    public $banal_sterr;
+    public $banal_stderr;
     public $banal_status;
     public $allow_run = self::RUN_YES;
     public $need_run = 0;

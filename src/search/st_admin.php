@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Admin_SearchTerm extends SearchTerm {
-    private $users;
+    private $match;
     private $flags;
     const ALLOW_NONE = 1;
 

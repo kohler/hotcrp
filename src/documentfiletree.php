@@ -20,7 +20,6 @@ class DocumentFileTree implements JsonSerializable {
     function __construct($dp, DocumentHashMatcher $matcher, $treeid = 0) {
         assert(is_string($dp) && $dp[0] === "/");
         $this->treeid = $treeid;
-        $this->_matcher = $matcher;
 
         foreach (preg_split("/\/+/", $dp) as $fdir) {
             if ($fdir !== "") {

@@ -1481,8 +1481,6 @@ class AssignmentSet {
             return 0;
         }
 
-        $this->encounter_order[$prow->paperId] = $prow->paperId;
-
         // expand “all” and “missing”
         $pusers = $contacts;
         if (!is_array($pusers)) {
