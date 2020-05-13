@@ -73,7 +73,8 @@ class ListAction {
     }
 
 
-    static function pcassignments_csv_data(Contact $user, $selection) {
+    /** @param list<int> $pids */
+    static function pcassignments_csv_data(Contact $user, $pids) {
         require_once("assignmentset.php");
         $pcm = $user->conf->pc_members();
         $token_users = [];
@@ -82,7 +83,7 @@ class ListAction {
         $any_round = $any_token = false;
 
         $texts = [];
-        foreach ($user->paper_set($selection, ["reviewSignatures" => true]) as $prow) {
+        foreach ($user->paper_set(["paperId" => $pids, "reviewSignatures" => true]) as $prow) {
             if (!$user->allow_administer($prow)) {
                 $texts[] = [];
                 $texts[] = ["paper" => $prow->paperId,

@@ -25,7 +25,7 @@ class GetJson_ListAction extends ListAction {
             $this->zipdoc = new ZipDocument($user->conf->download_prefix . "data.zip");
             $ps->on_document_export([$this, "document_callback"]);
         }
-        foreach ($user->paper_set($ssel, ["topics" => true, "options" => true]) as $prow) {
+        foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {
             $pj1 = $ps->paper_json($prow);
             if ($pj1)
                 $pj[] = $pj1;

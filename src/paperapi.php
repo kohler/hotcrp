@@ -91,7 +91,7 @@ class PaperApi {
         } else if ($ok) {
             $p = [];
             if ($pids) {
-                foreach ($user->paper_set(array_keys($pids)) as $pr) {
+                foreach ($user->paper_set(["paperId" => array_keys($pids)]) as $pr) {
                     $p[$pr->paperId] = (object) [];
                     $pr->add_tag_info_json($p[$pr->paperId], $user);
                 }

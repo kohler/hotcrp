@@ -204,7 +204,7 @@ function update_paper(Qrequest $qreq, $action) {
         $webnotes .= " <ul><li>" . join("</li><li>", $ps->landmarked_message_texts()) . "</li></ul>";
     }
 
-    $new_prow = $Me->conf->fetch_paper(["paperId" => $ps->paperId, "topics" => true, "options" => true], $Me);
+    $new_prow = $Me->conf->fetch_paper($ps->paperId, $Me, ["topics" => true, "options" => true]);
     if (!$new_prow) {
         $Conf->msg($Conf->_("Your submission was not saved. Please correct these errors and save again.") . $webnotes, "merror");
         return false;

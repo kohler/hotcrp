@@ -3303,23 +3303,31 @@ class Conf {
     // Paper search
     //
 
-    /** @return list<int> */
-    static private function _cvt_numeric_set($optarr) {
-        $ids = [];
-        if (is_object($optarr)) {
-            $optarr = $optarr->selection();
+    /** @param ?list<int> $paperset
+     * @param list<int>|mysqli_result|Dbl_Result $arg
+     * @return list<int> */
+    static private function _merge_paperset($paperset, $arg) {
+        if (is_object($arg)) {
+            $ids = [];
+            while (($row = $arg->fetch_row())) {
+                $ids[] = (int) $row[0];
+            }
+        } else {
+            $ids = $arg;
         }
-        foreach (mkarray($optarr) as $x) {
-            if (($x = cvtint($x)) > 0)
-                $ids[] = $x;
+        if ($paperset === null) {
+            return $ids;
+        } else {
+            return array_values(array_intersect($paperset, $ids));
         }
-        return $ids;
     }
 
     function query_all_reviewer_preference() {
         return "group_concat(contactId,' ',preference,' ',coalesce(expertise,'.'))";
     }
 
+    /** @param array{paperId?:list<int>} $options
+     * @return mysqli_result|Dbl_Result */
     function paper_result($options, Contact $user = null) {
         // Options:
         //   "paperId" => $pid  Only paperId $pid (if array, any of those)
@@ -3350,28 +3358,32 @@ class Conf {
         }
 
         // paper selection
-        $paperset = [];
-        '@phan-var list<list<int>> $paperset';
+        $paperset = null;
+        '@phan-var ?list<int> $paperset';
+        assert(!isset($options["paperId"]) || is_array($options["paperId"]));
+        assert(!isset($options["reviewId"]));
+        assert(!isset($options["commentId"]));
         if (isset($options["paperId"])) {
-            $paperset[] = self::_cvt_numeric_set($options["paperId"]);
+            if (is_array($options["paperId"])) {
+                // XXX this is the only valid expected signature
+                $paperset = self::_merge_paperset($paperset, $options["paperId"]);
+            } else if (is_int($options["paperId"]) || is_string($options["paperId"])) {
+                $paperset = self::_merge_paperset($paperset, [cvtint($options["paperId"])]);
+            } else {
+                $paperset = self::_merge_paperset($paperset, $options["paperId"]->selection());
+            }
         }
         if (isset($options["reviewId"])) {
             if (is_numeric($options["reviewId"])) {
-                $result = $this->qe("select paperId from PaperReview where reviewId=?", $options["reviewId"]);
-                $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
+                $paperset = self::_merge_paperset($paperset, $this->qe("select paperId from PaperReview where reviewId=?", $options["reviewId"]));
             } else if (preg_match('/^(\d+)([A-Z][A-Z]?)$/i', $options["reviewId"], $m)) {
-                $result = $this->qe("select paperId from PaperReview where paperId=? and reviewOrdinal=?", $m[1], parseReviewOrdinal($m[2]));
-                $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
+                $paperset = self::_merge_paperset($paperset, $this->qe("select paperId from PaperReview where paperId=? and reviewOrdinal=?", $m[1], parseReviewOrdinal($m[2])));
             } else {
-                $paperset[] = [];
+                $paperset = [];
             }
         }
         if (isset($options["commentId"])) {
-            $result = $this->qe("select paperId from PaperComment where commentId?a", self::_cvt_numeric_set($options["commentId"]));
-            $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
-        }
-        if (count($paperset) > 1) {
-            $paperset = array(call_user_func_array("array_intersect", $paperset));
+            $paperset = self::_merge_paperset($paperset, $this->qe("select paperId from PaperComment where commentId?a", mkarray($options["commentId"])));
         }
 
         // prepare query: basic tables
@@ -3483,8 +3495,8 @@ class Conf {
         }
 
         // conditions
-        if (!empty($paperset)) {
-            $where[] = "Paper.paperId" . sql_in_numeric_set($paperset[0]);
+        if ($paperset !== null) {
+            $where[] = "Paper.paperId" . sql_in_numeric_set($paperset);
         }
         if ($options["finalized"] ?? false) {
             $where[] = "timeSubmitted>0";
@@ -3549,6 +3561,8 @@ class Conf {
         return $this->qe_raw($pq);
     }
 
+    /** @param array{paperId?:list<int>} $options
+     * @return PaperInfoSet */
     function paper_set($options, Contact $user = null) {
         $rowset = new PaperInfoSet;
         $result = $this->paper_result($options, $user);
@@ -3559,7 +3573,10 @@ class Conf {
         return $rowset;
     }
 
-    function fetch_paper($options, Contact $user = null) {
+    /** @param int $pid
+     * @return ?PaperInfo */
+    function fetch_paper($pid, Contact $user = null, $options = []) {
+        $options["paperId"] = [$pid];
         $result = $this->paper_result($options, $user);
         $prow = PaperInfo::fetch($result, $user, $this);
         Dbl::free($result);

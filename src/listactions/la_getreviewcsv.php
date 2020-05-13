@@ -19,7 +19,7 @@ class GetReviewCSV_ListAction extends ListAction {
         }
         $errors = $items = $fields = $pids = [];
         $has_id = $has_ordinal = false;
-        foreach ($user->paper_set($ssel) as $prow) {
+        foreach ($ssel->paper_set($user) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
                 $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
                 continue;

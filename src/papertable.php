@@ -3013,12 +3013,12 @@ class PaperTable {
             && ($pid === null || (string) $pid !== $qreq->paperId)) {
             self::redirect_request($pid, $qreq, $user);
         }
-        $sel = ["paperId" => $pid, "topics" => true, "options" => true];
+        $options = ["topics" => true, "options" => true];
         if ($user->privChair
             || ($user->isPC && $user->conf->timePCReviewPreferences())) {
-            $sel["reviewerPreference"] = true;
+            $options["reviewerPreference"] = true;
         }
-        $prow = $user->conf->fetch_paper($sel, $user);
+        $prow = $user->conf->fetch_paper($pid, $user, $options);
         $whynot = $user->perm_view_paper($prow, false, $pid);
         if (!$whynot
             && !isset($qreq->paperId)

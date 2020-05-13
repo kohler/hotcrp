@@ -39,7 +39,7 @@ class GetRevpref_ListAction extends ListAction {
         $not_me = $user->contactId !== $Rev->contactId;
         $has_conflict = false;
         $texts = [];
-        foreach ($user->paper_set($ssel, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
+        foreach ($ssel->paper_set($user, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
             if ($not_me && !$user->allow_administer($prow))
                 continue;
             $item = ["paper" => $prow->paperId, "title" => $prow->title];

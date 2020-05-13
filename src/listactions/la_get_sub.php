@@ -54,7 +54,7 @@ class Get_ListAction extends ListAction {
 class GetCheckFormat_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $papers = [];
-        foreach ($user->paper_set($ssel) as $prow) {
+        foreach ($ssel->paper_set($user) as $prow) {
             if ($user->can_view_pdf($prow))
                 $papers[$prow->paperId] = $prow;
         }
@@ -149,7 +149,7 @@ class GetAbstract_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $texts = [];
         $lastpid = null;
-        foreach ($user->paper_set($ssel, ["topics" => 1]) as $prow) {
+        foreach ($ssel->paper_set($user, ["topics" => 1]) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
                 Conf::msg_error(whyNotText($whyNot));
             } else {
@@ -180,7 +180,7 @@ class GetAuthors_ListAction extends ListAction {
         $contact_map = self::contact_map($user->conf, $ssel);
         $texts = array();
         $want_contacttype = false;
-        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow) {
+        foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
             if (!$user->allow_view_authors($prow)) {
                 continue;
             }
@@ -224,7 +224,7 @@ class GetContacts_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $contact_map = GetAuthors_ListAction::contact_map($user->conf, $ssel);
         $texts = [];
-        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow) {
+        foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
             if ($user->allow_administer($prow)) {
                 foreach ($prow->contacts() as $cid => $c) {
                     $a = $contact_map[$cid];
@@ -248,7 +248,7 @@ class GetPcconflicts_ListAction extends ListAction {
         $pcm = $user->conf->pc_members();
         $texts = array();
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        foreach ($user->paper_set($ssel, ["allConflictType" => 1]) as $prow) {
+        foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
             if ($user->can_view_conflicts($prow)) {
                 $m = [];
                 foreach ($prow->conflicts() as $cid => $cflt) {
@@ -272,7 +272,7 @@ class GetPcconflicts_ListAction extends ListAction {
 class GetTopics_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $texts = array();
-        foreach ($user->paper_set($ssel, ["topics" => 1]) as $row) {
+        foreach ($ssel->paper_set($user, ["topics" => 1]) as $row) {
             if ($user->can_view_paper($row)) {
                 $out = array();
                 foreach ($row->topic_map() as $t) {

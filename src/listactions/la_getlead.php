@@ -13,8 +13,8 @@ class GetLead_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $key = $this->type . "ContactId";
         $can_view = "can_view_" . $this->type;
-        $texts = array();
-        foreach ($user->paper_set($ssel) as $row) {
+        $texts = [];
+        foreach ($ssel->paper_set($user) as $row) {
             if ($row->$key && $user->$can_view($row, true)) {
                 $name = $user->name_object_for($row->$key);
                 $texts[$row->paperId][] = [$row->paperId, $row->title, $name->firstName, $name->lastName, $name->email];

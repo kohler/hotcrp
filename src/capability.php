@@ -157,7 +157,7 @@ class CapabilityManager {
     }
 
     static function apply_old_author_view(Contact $user, $uf, $isadd) {
-        if (($prow = $user->conf->fetch_paper(["paperId" => $uf->match_data[1]]))
+        if (($prow = $user->conf->fetch_paper((int) $uf->match_data[1]))
             && ($uf->name === self::capability_text($prow, "a"))
             && !$user->conf->opt("disableCapabilities")) {
             $user->set_capability("@av{$prow->paperId}", $isadd ? true : null);

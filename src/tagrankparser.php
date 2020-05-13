@@ -107,7 +107,7 @@ class TagRankParser {
             }
         }
 
-        $pset = $this->user->paper_set(array_keys($pids), ["minimal" => true, "title" => true]);
+        $pset = $this->user->paper_set(["paperId" => array_keys($pids), "minimal" => true, "title" => true]);
 
         $landmarks = [];
         foreach ($settings as $a) {

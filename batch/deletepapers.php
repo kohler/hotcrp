@@ -23,7 +23,7 @@ $search = new PaperSearch($user, ["t" => "all", "q" => join(" ", $arg["_"])]);
 $pids = $search->paper_ids();
 if (($pids = $search->paper_ids())) {
     $ndeleted = false;
-    foreach ($user->paper_set($pids) as $prow) {
+    foreach ($user->paper_set(["paperId" => $pids]) as $prow) {
         $pid = "#{$prow->paperId}";
         if ($prow->title !== "")
             $pid .= " (" . UnicodeHelper::utf8_abbreviate($prow->title, 40) . ")";

@@ -60,7 +60,7 @@ function saveAssignments($qreq, $reviewer) {
 
     $confset = $Conf->conflict_types();
     $assignments = [];
-    foreach ($Me->paper_set($pids, ["reviewSignatures" => true]) as $row) {
+    foreach ($Me->paper_set(["paperId" => $pids, "reviewSignatures" => true]) as $row) {
         $name = "assrev" . $row->paperId . "u" . $rcid;
         if (!isset($qreq[$name])
             || ($assrev = cvtint($qreq[$name], null)) === null) {

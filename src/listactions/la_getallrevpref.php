@@ -10,7 +10,7 @@ class GetAllRevpref_ListAction extends ListAction {
         $texts = array();
         $pcm = $user->conf->pc_members();
         $has_conflict = $has_expertise = $has_topic_score = false;
-        foreach ($user->paper_set($ssel, ["allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]) as $prow) {
+        foreach ($ssel->paper_set($user, ["allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]) as $prow) {
             if (!$user->allow_administer($prow)) {
                 continue;
             }

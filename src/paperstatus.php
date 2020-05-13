@@ -184,7 +184,7 @@ class PaperStatus extends MessageSet {
 
     function paper_json($prow, $args = array()) {
         if (is_int($prow)) {
-            $prow = $this->conf->fetch_paper(["paperId" => $prow, "topics" => true, "options" => true], $this->user);
+            $prow = $this->conf->fetch_paper($prow, $this->user, ["topics" => true, "options" => true]);
         }
 
         $original_user = $user = $this->user;
@@ -1227,7 +1227,7 @@ class PaperStatus extends MessageSet {
         $this->clear();
         $this->paperId = $paperid ? : -1;
         if ($paperid) {
-            $this->prow = $this->conf->fetch_paper(["paperId" => $paperid, "topics" => true, "options" => true], $this->user);
+            $this->prow = $this->conf->fetch_paper($paperid, $this->user, ["topics" => true, "options" => true]);
         }
         if ($this->prow && $paperid !== $this->prow->paperId) {
             $this->error_at("pid", $this->_("Saving submission with different ID"));
@@ -1312,7 +1312,7 @@ class PaperStatus extends MessageSet {
                 continue;
             }
             if (!$prow) {
-                $prow = $ps->conf->paper_set(["paperId" => $ps->paperId, "options" => true], $ps->user)->get($ps->paperId);
+                $prow = $ps->conf->fetch_paper($ps->paperId, $ps->user, ["options" => true]);
             }
             if ($ps->user->can_edit_option($prow, $o)
                 && $o->test_required($prow)
@@ -1448,11 +1448,9 @@ class PaperStatus extends MessageSet {
         $this->conf->update_autosearch_tags($this->paperId);
 
         // update document inactivity
-        if ($this->_documents_changed) {
-            $pset = $this->conf->paper_set(["paperId" => $this->paperId, "options" => true]);
-            foreach ($pset as $prow) {
-                $prow->mark_inactive_documents();
-            }
+        if ($this->_documents_changed
+            && ($prow = $this->conf->fetch_paper($this->paperId, null, ["options" => true]))) {
+            $prow->mark_inactive_documents();
         }
 
         return true;

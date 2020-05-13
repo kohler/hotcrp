@@ -100,7 +100,7 @@ class GetReviewForm_ListAction extends GetReviewBase_ListAction {
         }
 
         $texts = $errors = [];
-        foreach ($user->paper_set($ssel) as $prow) {
+        foreach ($ssel->paper_set($user) as $prow) {
             $whyNot = $user->perm_review($prow, null);
             if ($whyNot
                 && !isset($whyNot["deadline"])
@@ -149,7 +149,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             Contact::update_rights();
         }
         $errors = $texts = $pids = [];
-        foreach ($user->paper_set($ssel) as $prow) {
+        foreach ($ssel->paper_set($user) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
                 $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
                 continue;

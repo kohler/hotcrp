@@ -168,7 +168,7 @@ class PaperEvents {
                 $need[$crow->paperId] = true;
         }
         if (!empty($need)) {
-            $this->prows->take_all($this->user->paper_set(array_keys($need), ["watch" => true]));
+            $this->prows->take_all($this->user->paper_set(["paperId" => array_keys($need), "watch" => true]));
         }
     }
 

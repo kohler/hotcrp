@@ -1882,7 +1882,7 @@ class Contact {
     function authored_papers() {
         $this->check_rights_version();
         if ($this->_authored_papers === null) {
-            $this->_authored_papers = $this->is_author() ? $this->conf->paper_set(["author" => true, "tags" => true], $this)->as_array() : [];
+            $this->_authored_papers = $this->is_author() ? $this->paper_set(["author" => true, "tags" => true])->as_array() : [];
         }
         return $this->_authored_papers;
     }
@@ -4302,27 +4302,11 @@ class Contact {
 
     // papers
 
-    /** @return PaperInfoSet|Iterable<PaperInfo> */
-    function paper_set($pids, $options = []) {
-        $ssel = null;
-        if (is_int($pids)) {
-            $options["paperId"] = $pids;
-        } else if (is_array($pids)
-                   && !is_associative_array($pids)
-                   && (!empty($pids) || $options !== null)) {
-            $options["paperId"] = $pids;
-        } else if (is_object($pids) && $pids instanceof SearchSelection) {
-            $ssel = $pids;
-            $options["paperId"] = $pids->selection();
-        } else {
-            assert($options === []);
-            $options = $pids;
-        }
-        $prows = $this->conf->paper_set($options, $this);
-        if ($ssel) {
-            $prows->sort_by([$ssel, "order_compare"]);
-        }
-        return $prows;
+    /** @param array{paperId?:int|list<int>} $options
+     * @return PaperInfoSet|Iterable<PaperInfo> */
+    function paper_set($options = []) {
+        assert(func_num_args() <= 1);
+        return $this->conf->paper_set($options, $this);
     }
 
     function hide_reviewer_identity_pids() {

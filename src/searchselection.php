@@ -72,6 +72,14 @@ class SearchSelection {
         return $this->selmap;
     }
 
+    /** @return PaperInfoSet */
+    function paper_set(Contact $user, $options = []) {
+        $options["paperId"] = $this->sel;
+        $pset = $user->paper_set($options);
+        $pset->sort_by([$this, "order_compare"]);
+        return $pset;
+    }
+
     /** @return bool */
     function is_selected($pid) {
         return (($this->selection_map())[$pid] ?? null) !== null;

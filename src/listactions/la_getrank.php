@@ -14,7 +14,7 @@ class GetRank_ListAction extends ListAction {
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
             $real = $null = "";
-            $pset = $user->paper_set($ssel, ["tags" => true]);
+            $pset = $ssel->paper_set($user, ["tags" => true]);
             $pset->sort_by(function ($p1, $p2) use ($tag) {
                 $tv1 = $p1->tag_value($tag);
                 $tv2 = $p2->tag_value($tag);

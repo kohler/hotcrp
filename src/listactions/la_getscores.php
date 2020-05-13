@@ -12,7 +12,7 @@ class GetScores_ListAction extends ListAction {
         // compose scores; NB chair is always forceShow
         $errors = $texts = $any_scores = array();
         $any_decision = $any_reviewer_identity = $any_ordinal = false;
-        foreach ($user->paper_set($ssel) as $row) {
+        foreach ($ssel->paper_set($user) as $row) {
             if (($whyNot = $user->perm_view_paper($row)))
                 $errors[] = "#$row->paperId: " . whyNotText($whyNot);
             else if (($whyNot = $user->perm_view_review($row, null)))
