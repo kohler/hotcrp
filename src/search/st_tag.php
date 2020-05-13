@@ -47,7 +47,7 @@ class Tag_SearchTerm extends SearchTerm {
         $value->add_check_tag($tagword, !$sword->kwdef->sorting);
 
         // report errors, combine
-        $term = (new Tag_SearchTerm($value))->negate_if($negated);
+        $term = new Tag_SearchTerm($value);
         if (!$negated && ($tagpat = $value->tag_patterns())) {
             $term->set_float("tags", $tagpat);
             if ($sword->kwdef->sorting) {
@@ -61,7 +61,7 @@ class Tag_SearchTerm extends SearchTerm {
         foreach ($value->error_texts() as $e) {
             $srch->warn($e);
         }
-        return $term;
+        return $term->negate_if($negated);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->tsm->test_empty()) {

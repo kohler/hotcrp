@@ -289,8 +289,26 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
 }
 
+/** @property ?string $pdfFormatStatus
+ * @property ?string $withdrawReason
+ * @property ?string $timeFinalSubmitted
+ * @property ?string $size
+ * @property ?string $mimetype
+ * @property ?string $blind
+ * @property ?string $sha1
+ * @property ?string $leadContactId
+ * @property ?string $shepherdContactId
+ *
+ * @property ?string $paperTags
+ * @property ?string $optionIds
+ * @property ?string $topicIds
+ * @property ?string $allConflictType
+ * @property ?string $reviewSignatures
+ * @property ?string $myReviewPermissions
+ * @property ?string $allReviewerPreference  */
 class PaperInfo {
     public $paperId;
+    /** @var Conf */
     public $conf;
     public $title;
     public $authorInformation;

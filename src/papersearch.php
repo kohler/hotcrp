@@ -1117,32 +1117,37 @@ class TextMatch_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column($this->field, "Paper.{$this->field}");
-        if ($this->trivial && !$this->authorish)
+        if ($this->trivial && !$this->authorish) {
             return "Paper.{$this->field}!=''";
-        else
+        } else {
             return "true";
+        }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $data = $row->{$this->field};
-        if ($this->authorish && !$srch->user->allow_view_authors($row))
+        if ($this->authorish && !$srch->user->allow_view_authors($row)) {
             $data = "";
-        if ($data === "")
+        }
+        if ($data === "") {
             return $this->trivial === false;
-        else if ($this->trivial !== null)
+        } else if ($this->trivial !== null) {
             return $this->trivial;
-        else
+        } else {
             return $row->field_match_pregexes($this->regex, $this->field);
+        }
     }
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
-        if (!$this->trivial || $this->field === "authorInformation")
+        if (!$this->trivial || $this->field === "authorInformation") {
             return null;
-        else
+        } else {
             return (object) ["type" => $this->field, "match" => $this->trivial];
+        }
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
-        if ($this->regex)
+        if ($this->regex) {
             $srch->regex[$this->type][] = $this->regex;
+        }
     }
 }
 

@@ -2,6 +2,20 @@
 // reviewinfo.php -- HotCRP class representing reviews
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+/** @property ?string $timeRequested
+ * @property ?string $timeRequestNotified
+ * @property ?string $reviewAuthorModified
+ * @property ?string $reviewNotified
+ * @property ?string $reviewAuthorNotified
+ * @property ?string $reviewEditVersion
+ * @property null|int|string $reviewWordCount
+ * @property ?string $reviewFormat
+ * @property ?string $data
+ * @property ?string $sfields
+ * @property ?string $tfields
+ * @property ?string $reviewViewScore
+ *
+ * @property ?string $allRatings */
 class ReviewInfo {
     /** @var Conf */
     public $conf;

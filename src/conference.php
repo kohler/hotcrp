@@ -1022,10 +1022,12 @@ class Conf {
         }
         return true;
     }
+    /** @param object $xt */
     function xt_allowed($xt, Contact $user = null) {
         return $xt && (!isset($xt->allow_if)
                        || $this->xt_check($xt->allow_if, $xt, $user));
     }
+    /** @param object $xt */
     static function xt_allow_list($xt) {
         if ($xt && isset($xt->allow_if)) {
             return is_array($xt->allow_if) ? $xt->allow_if : [$xt->allow_if];
@@ -1033,6 +1035,8 @@ class Conf {
             return [];
         }
     }
+    /** @param object $xt
+     * @param ?Contact $user */
     function xt_checkf($xt, $user) {
         if ($this->_xt_allow_callback !== null) {
             return call_user_func($this->_xt_allow_callback, $xt, $user);

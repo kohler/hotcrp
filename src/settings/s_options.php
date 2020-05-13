@@ -316,17 +316,19 @@ class Options_SettingParser extends SettingParser {
 
         // consider option ids
         $optids = array_map(function ($o) { return $o->id; }, $new_opts);
-        for ($i = 1; $sv->has_reqv("optid_$i"); ++$i)
+        for ($i = 1; $sv->has_reqv("optid_$i"); ++$i) {
             $optids[] = intval($sv->reqv("optid_$i"));
+        }
         $optids[] = 0;
         $this->req_optionid = max($optids) + 1;
 
         // convert request to JSON
         for ($i = 1; $sv->has_reqv("optid_$i"); ++$i) {
-            if ($sv->reqv("optfp_$i") === "deleted")
+            if ($sv->reqv("optfp_$i") === "deleted") {
                 unset($new_opts[cvtint($sv->reqv("optid_$i"))]);
-            else if (($o = $this->option_request_to_json($sv, $i)))
+            } else if (($o = $this->option_request_to_json($sv, $i))) {
                 $new_opts[$o->id] = $o;
+            }
         }
 
         if (!$sv->has_error()) {
@@ -339,15 +341,17 @@ class Options_SettingParser extends SettingParser {
 
     function unparse_json(SettingValues $sv, Si $si, $j) {
         $oj = [];
-        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $o)
+        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $o) {
             $oj[] = $o->unparse();
+        }
         $j->options = $oj;
     }
 
     function save(SettingValues $sv, Si $si) {
         $newj = [];
-        foreach ($this->stashed_options as $o)
+        foreach ($this->stashed_options as $o) {
             $newj[] = $o->unparse();
+        }
         $sv->save("next_optionid", null);
         $sv->save("options", empty($newj) ? null : json_encode_db($newj));
 
@@ -357,11 +361,13 @@ class Options_SettingParser extends SettingParser {
             if (!$newo
                 || ($newo->type !== $o->type
                     && !$newo->change_type($o, true, true)
-                    && !$o->change_type($newo, false, true)))
+                    && !$o->change_type($newo, false, true))) {
                 $deleted_ids[] = $o->id;
+            }
         }
-        if (!empty($deleted_ids))
+        if (!empty($deleted_ids)) {
             $sv->conf->qe("delete from PaperOption where optionId?a", $deleted_ids);
+        }
 
         // invalidate cached option list
         $sv->conf->invalidate_caches(["options" => true]);

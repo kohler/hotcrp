@@ -2,21 +2,31 @@
 // commentinfo.php -- HotCRP helper class for comments
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+/** @property ?string $reviewFirstName
+ * @property ?string $reviewLastName
+ * @property ?string $reviewEmail */
 class CommentInfo {
+    /** @var Conf */
     public $conf;
+    /** @var PaperInfo */
     public $prow;
+    /** @var int */
     public $commentId = 0;
+    /** @var int */
     public $paperId;
+    /** @var int */
     public $contactId;
     public $timeModified;
     public $timeNotified;
     public $timeDisplayed;
     public $comment;
+    /** @var int */
     public $commentType = COMMENTTYPE_REVIEWER;
     public $replyTo;
     public $ordinal;
     public $authorOrdinal;
     public $commentTags;
+    /** @var int */
     public $commentRound;
     public $commentFormat;
     public $commentOverflow;
@@ -49,6 +59,7 @@ class CommentInfo {
         }
         $this->commentId = (int) $this->commentId;
         $this->paperId = (int) $this->paperId;
+        $this->contactId = (int) $this->contactId;
         $this->commentType = (int) $this->commentType;
         $this->commentRound = (int) $this->commentRound;
     }
