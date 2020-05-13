@@ -244,14 +244,19 @@ class SearchTerm {
         }
         return $qr->finish();
     }
-    /** @return SearchTerm */
+    /** @return SearchTerm
+     * @deprecated */
     static function make_not(SearchTerm $term) {
+        return $term->negate();
+    }
+    /** @return SearchTerm */
+    function negate() {
         $qr = new Not_SearchTerm;
-        return $qr->append($term)->finish();
+        return $qr->append($this)->finish();
     }
     /** @return SearchTerm */
     function negate_if($negate) {
-        return $negate ? self::make_not($this) : $this;
+        return $negate ? $this->negate() : $this;
     }
     /** @return True_SearchTerm */
     static function make_float($float) {
@@ -1984,7 +1989,7 @@ class PaperSearch {
                 if (is_array($qe)) {
                     $qe = SearchTerm::make_op("or", $qe);
                 }
-                $qe = SearchTerm::make_not($qe);
+                $qe = $qe->negate();
             }
             if ($qe) {
                 return $qe;

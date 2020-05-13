@@ -106,11 +106,7 @@ class Revpref_SearchTerm extends SearchTerm {
             return new False_SearchTerm;
         }
 
-        $qz = new Revpref_SearchTerm($value);
-        if (strcasecmp($word, "none") == 0) {
-            $qz = SearchTerm::make_not($qz);
-        }
-        return $qz;
+        return (new Revpref_SearchTerm($value))->negate_if(strcasecmp($word, "none") === 0);
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
