@@ -1971,12 +1971,12 @@ class Contact {
             if ($this->conf->ext_subreviews > 1) {
                 if ($this->is_manager()) {
                     $search = new PaperSearch($this, "ext:pending-approval OR (has:proposal admin:me) HIGHLIGHT:pink ext:pending-approval:myreq HIGHLIGHT:green ext:pending-approval HIGHLIGHT:yellow (has:proposal admin:me)");
-                    $search->paper_ids(); // actually perform search
-                    if (!empty($search->highlightmap)) {
-                        $colors = array_unique(call_user_func_array("array_merge", array_values($search->highlightmap)));
-                        foreach (["green", "pink", "yellow"] as $i => $k)
+                    if (($hmap = $search->paper_highlights())) {
+                        $colors = array_unique(call_user_func_array("array_merge", array_values($hmap)));
+                        foreach (["green", "pink", "yellow"] as $i => $k) {
                             if (in_array($k, $colors))
                                 $this->_has_approvable |= 1 << $i;
+                        }
                     }
                 } else if ($this->is_requester()
                            && $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$this->contactId})")) {
@@ -1984,8 +1984,9 @@ class Contact {
                 }
             } else if ($this->is_manager()) {
                 $search = new PaperSearch($this, "has:proposal admin:me");
-                if ($search->paper_ids())
+                if ($search->paper_ids()) {
                     $this->_has_approvable = 4;
+                }
             }
         }
         $flag = $my_request_only ? 2 : 3;

@@ -2852,6 +2852,12 @@ class PaperSearch {
         }
     }
 
+    /** @return array<int,list<string>> */
+    function paper_highlights() {
+        $this->_prepare();
+        return $this->highlightmap ?? [];
+    }
+
     /** @return list<array{string,string}> */
     function view_list() {
         return $this->term()->get_float("view", []);
