@@ -23,6 +23,7 @@ class Author {
             $this->assign_string($x);
         }
     }
+    /** @return Author */
     static function make_tabbed($s) {
         $au = new Author;
         $w = explode("\t", $s);
@@ -32,6 +33,7 @@ class Author {
         $au->affiliation = isset($w[3]) ? $w[3] : "";
         return $au;
     }
+    /** @return Author */
     static function make_string($s) {
         $au = new Author;
         $au->assign_string($s);
@@ -62,6 +64,7 @@ class Author {
             list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
         }
     }
+    /** @return Author */
     static function make_string_guess($s) {
         $au = new Author;
         $au->assign_string_guess($s);
@@ -93,6 +96,9 @@ class Author {
             }
         }
     }
+    /** @param string $s
+     * @param int $paren
+     * @return int */
     static function skip_balanced_parens($s, $paren) {
         // assert($s[$paren] === "("); -- precondition
         for ($len = strlen($s), $depth = 1, ++$paren; $paren < $len; ++$paren) {
@@ -100,12 +106,14 @@ class Author {
                 ++$depth;
             } else if ($s[$paren] === ")") {
                 --$depth;
-                if ($depth === 0)
+                if ($depth === 0) {
                     break;
+                }
             }
         }
         return $paren;
     }
+    /** @return string */
     function name() {
         if ($this->_name !== null) {
             return $this->_name;
@@ -117,6 +125,7 @@ class Author {
             return $this->firstName;
         }
     }
+    /** @return string */
     function nameaff_html() {
         $n = htmlspecialchars($this->name());
         if ($n === "") {
@@ -127,6 +136,7 @@ class Author {
         }
         return ltrim($n);
     }
+    /** @return string */
     function nameaff_text() {
         $n = $this->name();
         if ($n === "") {
@@ -137,6 +147,7 @@ class Author {
         }
         return ltrim($n);
     }
+    /** @return string */
     function name_email_aff_text() {
         $n = $this->name();
         if ($n === "") {
@@ -149,6 +160,7 @@ class Author {
         }
         return ltrim($n);
     }
+    /** @return string */
     function abbrevname_text() {
         if ($this->lastName !== "") {
             $u = "";
@@ -165,9 +177,11 @@ class Author {
             return "???";
         }
     }
+    /** @return string */
     function abbrevname_html() {
         return htmlspecialchars($this->abbrevname_text());
     }
+    /** @return string */
     function deaccent($component) {
         if ($this->_deaccents === null) {
             $this->_deaccents = [

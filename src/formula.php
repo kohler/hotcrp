@@ -35,6 +35,7 @@ class FormulaCall {
 
 class Fexpr implements JsonSerializable {
     public $op = "";
+    /** @var list<Fexpr> */
     public $args = [];
     public $text;
     public $_format = false;
@@ -65,6 +66,7 @@ class Fexpr implements JsonSerializable {
     const FSEARCH = 12; // used in formulagraph.php
     const FTAGVALUE = 13;
 
+    /** @param list<Fexpr> $args */
     function __construct($op = null, $args = []) {
         if (is_string($op)) {
             $this->op = $op;
@@ -77,9 +79,12 @@ class Fexpr implements JsonSerializable {
             $this->pos2 = $op->pos1;
         }
     }
+    /** @param Fexpr $x */
     function add($x) {
         $this->args[] = $x;
     }
+    /** @param int $left
+     * @param int $right */
     function set_landmark($left, $right) {
         $this->pos1 = $left;
         $this->pos2 = $right;
@@ -96,6 +101,7 @@ class Fexpr implements JsonSerializable {
         return $this->_format === false;
     }
 
+    /** @param list<Fexpr> $args */
     static function common_format($args) {
         $commonf = false;
         foreach ($args as $a) {
@@ -175,6 +181,7 @@ class Fexpr implements JsonSerializable {
         return "null";
     }
 
+    /** @param ?Fexpr $other_expr */
     function compiled_comparator($cmp, Conf $conf, $other_expr = null) {
         if ($this->_format
             && $this->_format instanceof ReviewField

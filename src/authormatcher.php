@@ -162,16 +162,19 @@ class AuthorMatcher extends Author {
         return $this->highlight_pregexes_ ?? $this->general_pregexes_;
     }
 
+    /** @return AuthorMatcher */
     static function make_string_guess($x) {
         $m = new AuthorMatcher;
         $m->assign_string_guess($x);
         return $m;
     }
+    /** @return AuthorMatcher */
     static function make_affiliation($x) {
         $m = new AuthorMatcher;
         $m->affiliation = (string) $x;
         return $m;
     }
+    /** @return ?AuthorMatcher */
     static function make_collaborator_line($x) {
         if ($x !== "" && strcasecmp($x, "none") !== 0) {
             $m = new AuthorMatcher;
@@ -185,12 +188,14 @@ class AuthorMatcher extends Author {
 
     const MATCH_NAME = 1;
     const MATCH_AFFILIATION = 2;
+    /** @param string|Author $au
+     * @return int */
     function test($au, $prefer_name = false) {
         if ($this->general_pregexes_ === false) {
             $this->prepare();
         }
         if (!$this->general_pregexes_) {
-            return false;
+            return 0;
         }
         if (is_string($au)) {
             $au = Author::make_string_guess($au);
@@ -211,7 +216,7 @@ class AuthorMatcher extends Author {
             && $this->test_affiliation($au->deaccent(2))) {
             return self::MATCH_AFFILIATION;
         }
-        return false;
+        return 0;
     }
     static function highlight_all($au, $matchers) {
         $aff_suffix = null;

@@ -997,6 +997,7 @@ class PaperOption implements Abbreviator {
         return self::$display_rmap[$this->display];
     }
 
+    /** @return object */
     function unparse() {
         $j = (object) array("id" => (int) $this->id,
                             "name" => $this->name,
@@ -1055,9 +1056,11 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
+    /** @return null|false|PaperValue */
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         return false;
     }
+    /** @return null|false|PaperValue */
     function parse_json(PaperInfo $prow, $j) {
         return false;
     }
@@ -1065,6 +1068,7 @@ class PaperOption implements Abbreviator {
     const PARSE_STRING_TRIM = 2;
     const PARSE_STRING_SIMPLIFY = 4;
     const PARSE_STRING_CONVERT = 8;
+    /** @return null|PaperValue */
     function parse_json_string(PaperInfo $prow, $j, $flags = 0) {
         if (is_string($j)) {
             if ($flags & self::PARSE_STRING_CONVERT) {
