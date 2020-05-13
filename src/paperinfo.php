@@ -371,12 +371,18 @@ class PaperInfo {
     private $_conflict_array;
     /** @var bool */
     private $_conflict_array_email;
+    /** @var ?array<int,ReviewInfo> */
     private $_review_array;
+    /** @var int */
     private $_review_array_version = 0;
     private $_reviews_have = [];
+    /** @var ?list<ReviewInfo> */
     private $_full_review;
+    /** @var ?string */
     private $_full_review_key;
+    /** @var ?array<int,CommentInfo> */
     private $_comment_array;
+    /** @var ?array<int,CommentInfo> */
     private $_comment_skeleton_array;
     /** @var ?list<array{string,string}> */
     private $_potential_conflicts;
@@ -1842,11 +1848,9 @@ class PaperInfo {
     }
 
     private function ensure_full_review_name() {
-        if (($rrows = $this->_full_review)) {
-            foreach (is_array($rrows) ? $rrows : [$rrows] as $rrow) {
-                if (($u = $this->conf->cached_user_by_id($rrow->contactId))) {
-                    $rrow->assign_name($u);
-                }
+        foreach ($this->_full_review ?? [] as $rrow) {
+            if (($u = $this->conf->cached_user_by_id($rrow->contactId))) {
+                $rrow->assign_name($u);
             }
         }
     }
@@ -1857,12 +1861,13 @@ class PaperInfo {
             && !isset($this->_reviews_have["full"])) {
             $this->_full_review_key = "r$id";
             $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId=? and reviewId=?", $this->paperId, $id);
-            $this->_full_review = ReviewInfo::fetch($result, $this->conf);
+            $rrow = ReviewInfo::fetch($result, $this->conf);
+            $this->_full_review = $rrow ? [$rrow] : [];
             Dbl::free($result);
             $this->ensure_full_review_name();
         }
         if ($this->_full_review_key === "r$id") {
-            return $this->_full_review;
+            return $this->_full_review[0] ?? null;
         }
         $this->ensure_full_reviews();
         return $this->review_of_id($id);
@@ -1899,12 +1904,13 @@ class PaperInfo {
             && !isset($this->_reviews_have["full"])) {
             $this->_full_review_key = "o$ordinal";
             $result = $this->conf->qe("select PaperReview.*, " . $this->ratings_query() . " allRatings from PaperReview where paperId=? and reviewOrdinal=?", $this->paperId, $ordinal);
-            $this->_full_review = ReviewInfo::fetch($result, $this->conf);
+            $rrow = ReviewInfo::fetch($result, $this->conf);
+            $this->_full_review = $rrow ? [$rrow] : [];
             Dbl::free($result);
             $this->ensure_full_review_name();
         }
         if ($this->_full_review_key === "o$ordinal") {
-            return $this->_full_review;
+            return $this->_full_review[0] ?? null;
         }
         $this->ensure_full_reviews();
         return $this->review_of_ordinal($ordinal);
@@ -1964,6 +1970,7 @@ class PaperInfo {
         return $rrows;
     }
 
+    /** @return bool */
     function can_view_review_identity_of($cid, Contact $user) {
         if ($user->can_administer_for_track($this, Track::VIEWREVID)
             || $cid == $user->contactId) {
@@ -1977,6 +1984,7 @@ class PaperInfo {
         return false;
     }
 
+    /** @return bool */
     function may_have_viewable_scores($field, Contact $user) {
         $field = is_object($field) ? $field : $this->conf->review_field($field);
         return $user->can_view_review($this, null, $field->view_score)
@@ -2128,6 +2136,7 @@ class PaperInfo {
         }
     }
 
+    /** @return bool */
     function has_author_seen_any_review() {
         foreach ($this->reviews_by_id() as $rrow) {
             if ($rrow->reviewAuthorSeen) {
@@ -2250,6 +2259,7 @@ class PaperInfo {
         Dbl::free($result);
     }
 
+    /** @return array<int,CommentInfo> */
     function all_comments() {
         if ($this->_comment_array === null) {
             $this->load_comments();
@@ -2257,6 +2267,7 @@ class PaperInfo {
         return $this->_comment_array;
     }
 
+    /** @return array<int,CommentInfo> */
     function viewable_comments(Contact $user, $textless = false) {
         $crows = [];
         foreach ($this->all_comments() as $cid => $crow) {
@@ -2267,6 +2278,7 @@ class PaperInfo {
         return $crows;
     }
 
+    /** @return array<int,CommentInfo> */
     function all_comment_skeletons() {
         if ($this->_comment_skeleton_array === null) {
             if ($this->_comment_array !== null
@@ -2288,6 +2300,7 @@ class PaperInfo {
         return $this->_comment_skeleton_array;
     }
 
+    /** @return array<int,CommentInfo> */
     function viewable_comment_skeletons(Contact $user, $textless = false) {
         $crows = [];
         foreach ($this->all_comment_skeletons() as $cid => $crow) {
@@ -2298,6 +2311,7 @@ class PaperInfo {
         return $crows;
     }
 
+    /** @return bool */
     function has_commenter($contact) {
         $cid = self::contact_to_cid($contact);
         foreach ($this->all_comment_skeletons() as $crow) {
