@@ -13,6 +13,7 @@ class ZipDocument {
     private $headers;
     private $start_time;
 
+    /** @var list<DocumentInfo> */
     private $_docs;
     private $_files;
     private $_saveindex;
@@ -29,8 +30,7 @@ class ZipDocument {
     function clean() {
         $this->filestore = false;
         $this->_tmpdir = null;
-        $this->files = array();
-        $this->warnings = array();
+        $this->warnings = [];
         $this->headers = false;
         $this->start_time = time();
 
@@ -89,8 +89,9 @@ class ZipDocument {
     }
 
     private function _add($doc, $filename, $check_filename) {
-        if (is_string($doc))
+        if (is_string($doc)) {
             $doc = new DocumentInfo(["content" => $doc], $this->conf);
+        }
         assert($doc instanceof DocumentInfo);
 
         if ($filename == "" && $doc->filename != "") {
@@ -165,6 +166,7 @@ class ZipDocument {
         }
     }
 
+    /** @return DocumentInfo */
     private function _make_document($error_html = false) {
         if (!$error_html) {
             return new DocumentInfo(["filename" => $this->filename, "mimetype" => $this->mimetype, "content_file" => $this->filestore], $this->conf);
@@ -174,6 +176,7 @@ class ZipDocument {
         }
     }
 
+    /** @return DocumentInfo */
     function create() {
         global $Now;
 
@@ -235,6 +238,7 @@ class ZipDocument {
         }
     }
 
+    /** @return DocumentInfo */
     function download() {
         $doc = $this->create();
         if (!$doc->error) {

@@ -1327,7 +1327,7 @@ class PaperInfo {
     }
 
     /** @param int|Contact $contact
-     * @return array{int,?int,?int}> */
+     * @return array{int,?int,?int} */
     function preference($contact, $include_topic_score = false) {
         $cid = is_int($contact) ? $contact : $contact->contactId;
         if ($this->_prefs_cid === null

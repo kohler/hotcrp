@@ -21,6 +21,7 @@
  * @property ?string $reviewFirstName
  * @property ?string $reviewLastName
  * @property ?string $reviewEmail
+ * @property ?string $reviewLastLogin
  * @property ?string $contactTags
  * @property ?string $sorter */
 class ReviewInfo {

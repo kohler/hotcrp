@@ -428,7 +428,7 @@ class DocumentFileTreeDir implements JsonSerializable {
         return true;
     }
 
-    /** @param int $position
+    /** @param int $idx
      * @return int|false */
     function next_index($idx) {
         for ($tries = count($this->_di) >> 1; $tries > 0; --$tries) {

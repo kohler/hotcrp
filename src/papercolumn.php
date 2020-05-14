@@ -440,12 +440,12 @@ class Authors_PaperColumn extends PaperColumn {
                     && ($initial = Text::initial($first)) !== "") {
                     $name = $initial . substr($name, strlen($first));
                 }
-                $auy[] = $name;
+                $aus[] = $name;
                 if ($affmap[$i] !== null) {
-                    $out[] = join(", ", $auy);
+                    $out[] = join(", ", $aus);
                     $affout[] = Text::highlight($affmap[$i], $this->highlight, $didhl);
                     $any_affhl = $any_affhl || $didhl;
-                    $auy = [];
+                    $aus = [];
                 }
             }
             // $affout[0] === "" iff there are no nonempty affiliations

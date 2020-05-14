@@ -314,7 +314,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
     /** @param int|string $value
      * @param int $flags
      * @param ?string $real_format
-     * @return ?$string */
+     * @return ?string */
     function unparse_value($value, $flags = 0, $real_format = null) {
         if (is_object($value)) {
             $value = $value->{$this->id} ?? null;
@@ -2390,7 +2390,7 @@ class ReviewValues extends MessageSet {
         if (!empty($this->_mailer_preps)) {
             HotCRPMailer::send_combined_preparations($this->_mailer_preps);
         }
-        unset($this->_mailer_info, $this->_mailer_preps);
+        $this->_mailer_info = $this->_mailer_prefs = null;
 
         // record what happened
         $what = "#$prow->paperId";

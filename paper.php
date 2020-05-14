@@ -516,7 +516,7 @@ if ($paperTable->mode === "edit") {
                 || ($cid === null
                     && ($crow->commentType & COMMENTTYPE_RESPONSE) != 0
                     && $crow->commentRound === $preferred_resp_round))
-                $j = $crow->unparse_json($Me, true);
+                $j = $crow->unparse_json($Me);
         }
         if (!$j) {
             $j = (object) ["is_new" => true, "editable" => true];

@@ -2562,7 +2562,7 @@ class PaperTable {
                         $tclass .= " $color taghh";
                     }
                     return "<span class=\"nb\"><a class=\"{$tclass} track\" href=\"#{$cid}\">"
-                        . $cx[0]->unparse_commenter_html($this->user, null)
+                        . $cx[0]->unparse_commenter_html($this->user)
                         . "</a>"
                         . ($cx[1] > 1 ? " ({$cx[1]})" : "")
                         . $cx[2] . "</span>";

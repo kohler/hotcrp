@@ -13,6 +13,7 @@ class Get_ListAction extends ListAction {
         }
         usort($actions, "Conf::xt_position_compare");
         $last_group = null;
+        $sel_opt = [];
         foreach ($actions as $fj) {
             $as = strpos($fj->title, "/");
             if ($as === false) {

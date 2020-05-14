@@ -7,7 +7,6 @@ class Home_Partial {
     private $_in_reviews;
     private $_merit_field;
     private $_my_rinfo;
-    private $_pc_rinfo;
     private $_tokens_done;
 
     static function disabled_request(Contact $user, Qrequest $qreq) {

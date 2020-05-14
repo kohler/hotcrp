@@ -264,8 +264,8 @@ class UnicodeHelper {
         }
     }
 
-    /** @param string $str
-     * @param int $str */
+    /** @param string &$str
+     * @param int $len */
     static function utf8_line_break(&$str, $len) {
         if ($str === "") {
             return false;

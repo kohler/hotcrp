@@ -1214,7 +1214,7 @@ class Contact {
         }
     }
 
-    function save_cleanup($us) {
+    function save_cleanup(UserStatus $us) {
         self::set_sorter($this, $this->conf);
         $this->_disabled = null;
         if (isset($us->diffs["topics"])) {

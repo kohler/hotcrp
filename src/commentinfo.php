@@ -491,7 +491,7 @@ class CommentInfo {
             . "</a>";
         $idable = $contact->can_view_comment_identity($this->prow, $this);
         if ($idable || $contact->can_view_comment_time($this->prow, $this)) {
-            $time = $this->conf->unparse_time($this->timeModified, false);
+            $time = $this->conf->unparse_time($this->timeModified);
         } else {
             $time = $this->conf->unparse_time_obscure($this->conf->obscure_time($this->timeModified));
         }

@@ -326,7 +326,7 @@ class PaperStatus extends MessageSet {
                 continue;
             }
             $ov = $prow->force_option($o);
-            $oj = $o->value_unparse_json($ov, $this, $user);
+            $oj = $o->value_unparse_json($ov, $this);
             if ($oj !== null) {
                 $options[$this->export_ids ? $o->id : $o->json_key()] = $oj;
             }

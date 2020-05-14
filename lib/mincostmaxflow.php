@@ -512,7 +512,7 @@ class MinCostMaxFlow {
     // cost-scaling push-relabel
 
     /** @param MinCostMaxFlow_Edge $e
-     * @param MinCostMaxFlow_Node $v */
+     * @param MinCostMaxFlow_Node $src */
     private function cspushrelabel_push_from($e, $src) {
         $dst = $e->other($src);
         // push lookahead heuristic

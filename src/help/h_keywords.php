@@ -250,8 +250,8 @@ class Keywords_HelpTopic {
             $r = $farr[0][0];
             echo $hth->tgroup($hth->help_link("Formulas", "formulas"));
             echo $hth->search_trow("formula:all({$r->search_keyword()}={$r->typical_score()})",
-                "all reviews have $r->name_html score {$r->typical_score()}<br />",
-                "<span class=\"hint\">", $hth->help_link("Formulas", "formulas"), " can express complex numerical queries across review scores and preferences.</span>");
+                "all reviews have $r->name_html score {$r->typical_score()}<br />" .
+                "<span class=\"hint\">" . $hth->help_link("Formulas", "formulas") . " can express complex numerical queries across review scores and preferences.</span>");
             echo $hth->search_trow("f:all({$r->search_keyword()}={$r->typical_score()})", "“f” is shorthand for “formula”");
             echo $hth->search_trow("formula:var({$r->search_keyword()})>0.5", "variance in {$r->search_keyword()} is above 0.5");
             echo $hth->search_trow("formula:any({$r->search_keyword()}={$r->typical_score()} && pref<0)", "at least one reviewer had $r->name_html score {$r->typical_score()} and review preference &lt; 0");

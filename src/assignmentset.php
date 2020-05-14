@@ -162,7 +162,7 @@ class AssignmentState {
         $st->items[$k] = new AssignmentItem($x);
     }
 
-    /** @param array{pid?:int}
+    /** @param array{pid?:int} $q
      * @return list<int> */
     private function pid_keys($q) {
         if (isset($q["pid"])) {

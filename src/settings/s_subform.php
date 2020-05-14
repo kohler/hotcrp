@@ -32,12 +32,13 @@ class BanalSettings {
         echo "</div></div>\n";
     }
     static private function cf_status(CheckFormat $cf) {
-        if ($cf->failed)
+        if ($cf->failed) {
             return "failed";
-        else if ($cf->has_error())
+        } else if ($cf->has_error()) {
             return "error";
-        else
+        } else {
             return $cf->has_problem() ? "warning" : "ok";
+        }
     }
     static private function check_banal($sv) {
         global $ConfSitePATH;
@@ -46,7 +47,7 @@ class BanalSettings {
         $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14");
         $s1 = self::cf_status($cf);
         $e1 = join(",", array_intersect($cf->problem_fields(), $interesting_keys)) ? : "none";
-        $e1_papersize = $cf->has_problem("papersize");
+        $e1_papersize = $cf->has_problem_at("papersize");
         $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15");
         $s2 = self::cf_status($cf);
         $e2 = join(",", array_intersect($cf->problem_fields(), $interesting_keys)) ? : "none";
@@ -54,14 +55,17 @@ class BanalSettings {
         if ($s1 !== "ok" || $e1 !== "none" || $s2 !== "error" || $e2 !== $want_e2) {
             $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected ok none error $want_e2)</td></tr>"
                 . "<tr><td class=\"nw\">Exit status:&nbsp;</td><td>" . htmlspecialchars((string) $cf->banal_status) . "</td></tr>";
-            if (trim($cf->banal_stdout))
+            if (trim($cf->banal_stdout)) {
                 $errors .= "<tr><td>Stdout:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stdout) . "</pre></td></tr>";
-            if (trim($cf->banal_stderr))
+            }
+            if (trim($cf->banal_stderr)) {
                 $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
+            }
             $errors .= "<tr><td>Check:&nbsp;</td><td>" . join("<br />\n", $cf->message_texts()) . "</td></tr>";
             $sv->warning_at(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldupbutton(0, "Checker output") . $errors . "</table></div></div>");
-            if (($s1 == "warning" || $s1 == "error") && $e1_papersize)
+            if (($s1 == "warning" || $s1 == "error") && $e1_papersize) {
                 $sv->warning_at(null, "(Try setting <code>\$Opt[\"banalZoom\"]</code> to 1.)");
+            }
         }
     }
     static function parse($suffix, $sv, $check) {

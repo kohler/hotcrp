@@ -440,7 +440,7 @@ class Dbl {
         } else if ($result === false || $result === true) {
             $result = Dbl_Result::make($dblink);
         } else if ($result === null) {
-            $result = Dbl_Result::make_empty($dblink);
+            $result = Dbl_Result::make_empty();
         }
         if (self::$check_warnings
             && !($flags & self::F_ALLOWERROR)

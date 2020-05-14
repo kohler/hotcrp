@@ -125,10 +125,6 @@ if ($getaction == "nameemail" && isset($papersel) && $Viewer->isPC) {
              ->add($people));
 }
 
-function urlencode_matches($m) {
-    return urlencode($m[0]);
-}
-
 if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
     $users = [];
     $result = $Conf->qe_raw("select ContactInfo.* from ContactInfo where " . paperselPredicate($papersel));

@@ -40,7 +40,7 @@ $config = [
 
     // Only emit critical issues to start with
     // (0 is low severity, 5 is normal severity, 10 is critical)
-    "minimum_severity" => 10,
+    "minimum_severity" => 5,
 
     // A list of directories that should be parsed for class and
     // method information. After excluding the directories
@@ -102,6 +102,11 @@ $config = [
         "prow" => '?PaperInfo',
         "paperTable" => 'PaperTable',
         "Admin" => '\Contact' // test
+    ],
+
+    "suppress_issue_types" => [
+        "PhanUnusedPublicMethodParameter",
+        "PhanParamReqAfterOpt"
     ]
 ];
 

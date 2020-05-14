@@ -518,9 +518,9 @@ function whyNotText($whyNot, $text_only = false) {
         } else if ($start <= 0 || $start == $end) {
             $ms[] = $conf->_c("etime", "Action not available.", $open_dname, $paperId);
         } else if ($start > 0 && $Now < $start) {
-            $ms[] = $conf->_c("etime", "Action not available until %3\$s.", $open_dname, $paperId, $conf->unparse_time($start, "span"));
+            $ms[] = $conf->_c("etime", "Action not available until %3\$s.", $open_dname, $paperId, $conf->unparse_time($start));
         } else if ($end > 0 && $Now > $end) {
-            $ms[] = $conf->_c("etime", "Deadline passed.", $dname, $paperId, $conf->unparse_time($end, "span"));
+            $ms[] = $conf->_c("etime", "Deadline passed.", $dname, $paperId, $conf->unparse_time($end));
         } else {
             $ms[] = $conf->_c("etime", "Action not available.", $dname, $paperId);
         }

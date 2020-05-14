@@ -271,13 +271,13 @@ class PaperOptionList {
 
     function populate_abbrev_matcher(AbbreviationMatcher $am) {
         $cb = [$this, "get"];
-        $am->add_lazy("paper", $cb, [DTYPE_SUBMISSION], Conf::FSRCH_OPTION, 1);
-        $am->add_lazy("submission", $cb, [DTYPE_SUBMISSION], Conf::FSRCH_OPTION, 1);
-        $am->add_lazy("final", $cb, [DTYPE_FINAL], Conf::FSRCH_OPTION, 1);
+        $am->add_lazy("paper", $cb, [DTYPE_SUBMISSION], Conf::FSRCH_OPTION);
+        $am->add_lazy("submission", $cb, [DTYPE_SUBMISSION], Conf::FSRCH_OPTION);
+        $am->add_lazy("final", $cb, [DTYPE_FINAL], Conf::FSRCH_OPTION);
         foreach ($this->option_json_list() as $id => $oj) {
             if (!($oj->nonpaper ?? false)) {
                 $am->add_lazy($oj->name, $cb, [$id], Conf::FSRCH_OPTION);
-                $am->add_lazy("opt{$id}", $cb, [$id], Conf::FSRCH_OPTION, 1);
+                $am->add_lazy("opt{$id}", $cb, [$id], Conf::FSRCH_OPTION);
             }
         }
     }

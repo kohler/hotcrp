@@ -3,9 +3,11 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class UserStatus extends MessageSet {
+    /** @var Conf */
     public $conf;
-    public $user;
+    /** @var Contact */
     public $viewer;
+    public $user;
     public $self;
     public $no_notify = null;
     private $no_deprivilege_self = false;
@@ -702,7 +704,7 @@ class UserStatus extends MessageSet {
 
         // prepare contact update
         assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
-        $cu = new Contact_Update(false);
+        $cu = new Contact_Update;
 
         // check whether this user is changing themselves
         $changing_other = false;
@@ -885,7 +887,7 @@ class UserStatus extends MessageSet {
         }
 
         // Clean up
-        $user->save_cleanup($cu, $this);
+        $user->save_cleanup($this);
         if ($this->viewer->contactId == $user->contactId) {
             $user->mark_activity();
         }

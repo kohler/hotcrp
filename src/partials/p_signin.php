@@ -31,7 +31,7 @@ class Signin_Partial {
     static function signin_request(Contact $user, Qrequest $qreq, $gx) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
-            $info["ok"] = false;
+            $info = ["ok" => false];
             foreach ($gx->members("signin/request") as $gj) {
                 $info = call_user_func($gj->signin_callback, $user, $qreq, $info, $gj);
             }
@@ -42,7 +42,7 @@ class Signin_Partial {
             if (!$user->is_empty() && strcasecmp($qreq->email, $user->email) === 0) {
                 Navigation::redirect();
             } else if (!$qreq->start) {
-                $info["ok"] = true;
+                $info = ["ok" => true];
                 foreach ($gx->members("signin/request") as $gj) {
                     $info = call_user_func($gj->signin_callback, $user, $qreq, $info, $gj);
                 }
