@@ -62,7 +62,6 @@ class ContactList {
     private $_rating_data;
     /** @var array<int,true> */
     private $_limit_cids;
-    private $_cfltpids = null;
 
     function __construct(Contact $user, $sortable = true, $qreq = null) {
         global $contactListFields;
@@ -776,21 +775,6 @@ class ContactList {
                 "<b>Select people</b> (or <a class=\"ui js-select-all\" href=\"\">select all {$this->count}</a>), then&nbsp; ",
                 $lllgroups)
             . "</tfoot>\n";
-    }
-
-    private function _conflict_pids() {
-        if ($this->_cfltpids === null) {
-            $this->_cfltpids = $this->user->hide_reviewer_identity_pids();
-        }
-        return $this->_cfltpids;
-    }
-
-    private function _pid_restriction() {
-        if (($cfltpids = $this->_conflict_pids())) {
-            return " and paperId not in (" . join(",", $cfltpids) . ")";
-        } else {
-            return "";
-        }
     }
 
     function _rows() {
