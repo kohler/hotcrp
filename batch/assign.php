@@ -38,8 +38,7 @@ if ($assignset->has_error()) {
 } else if ($assignset->is_empty()) {
     fwrite(STDERR, "$filename: Assignment makes no changes.\n");
 } else if (isset($arg["d"]) || isset($arg["dry-run"])) {
-    $acsv = $assignset->unparse_csv();
-    fwrite(STDOUT, $acsv->unparse());
+    fwrite(STDOUT, $assignset->make_acsv()->unparse());
 } else {
     $assignset->execute();
     $pids = $assignset->assigned_pids();

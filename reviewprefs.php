@@ -209,7 +209,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
         $assignset->echo_unparse_display();
 
         echo '<div class="g"></div>', $actions,
-            Ht::hidden("file", $assignset->unparse_csv()->unparse()),
+            Ht::hidden("file", $assignset->make_acsv()->unparse()),
             Ht::hidden("filename", $filename),
             '</form>', "\n";
         $Conf->footer();

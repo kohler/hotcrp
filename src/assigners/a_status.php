@@ -129,20 +129,19 @@ class Status_Assigner extends Assigner {
             . '<ins>' . $this->status_html(false) . '</ins>';
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        $x = [];
         if (($this->item->pre("_submitted") === 0) !== ($this->item["_submitted"] === 0)) {
-            $x[] = ["pid" => $this->pid, "action" => $this->item["_submitted"] === 0 ? "unsubmit" : "submit"];
+            $acsv->add(["pid" => $this->pid, "action" => $this->item["_submitted"] === 0 ? "unsubmit" : "submit"]);
         }
         if ($this->item->pre("_withdrawn") === 0 && $this->item["_withdrawn"] !== 0) {
-            $x[] = ["pid" => $this->pid, "action" => "revive"];
+            $acsv->add(["pid" => $this->pid, "action" => "revive"]);
         } else if ($this->item->pre("_withdrawn") !== 0 && $this->item["_withdrawn"] === 0) {
-            $y = ["pid" => $this->pid, "action" => "withdraw"];
+            $x = ["pid" => $this->pid, "action" => "withdraw"];
             if ((string) $this->item["_withdraw_reason"] !== "") {
-                $y["withdraw_reason"] = $this->item["_withdraw_reason"];
+                $x["withdraw_reason"] = $this->item["_withdraw_reason"];
             }
-            $x[] = $y;
+            $acsv->add($x);
         }
-        return $x;
+        return null;
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["Paper"] = "write";

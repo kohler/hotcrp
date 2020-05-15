@@ -653,18 +653,34 @@ class AssignmentCountSet {
 }
 
 class AssignmentCsv {
-    public $header = [];
-    public $rows = [];
+    /** @var array<string,true> */
+    private $fields = [];
+    /** @var list<array<string,int|string>> */
+    private $rows = [];
+    /** @param array<string,int|string> $row */
     function add($row) {
         foreach ($row as $k => $v) {
             if ($v !== null)
-                $this->header[$k] = true;
+                $this->fields[$k] = true;
         }
         $this->rows[] = $row;
     }
+    /** @return int */
+    function count() {
+        return count($this->rows);
+    }
+    /** @param int $i
+     * @return ?array<string,int|string> */
+    function row($i) {
+        return $this->rows[$i] ?? null;
+    }
+    /** @return CsvGenerator */
+    function unparse_into(CsvGenerator $csvg) {
+        return $csvg->select(array_keys($this->fields))->add($this->rows);
+    }
+    /** @return string */
     function unparse() {
-        $csvg = new CsvGenerator;
-        return $csvg->select($this->header)->add($this->rows)->unparse();
+        return $this->unparse_into(new CsvGenerator)->unparse();
     }
 }
 
@@ -794,6 +810,7 @@ class Assigner {
     function unparse_display(AssignmentSet $aset) {
         return "";
     }
+    /** @return ?array<string,int|string> */
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         return null;
     }
@@ -1753,21 +1770,21 @@ class AssignmentSet {
         }
     }
 
-    function unparse_csv() {
+    /** @return AssignmentCsv */
+    function make_acsv() {
         $acsv = new AssignmentCsv;
         foreach ($this->assigners as $assigner) {
             if (($x = $assigner->unparse_csv($this, $acsv))) {
-                if (isset($x[0])) {
-                    foreach ($x as $elt) {
-                        $acsv->add($elt);
-                    }
-                } else {
-                    $acsv->add($x);
-                }
+                assert(!isset($x[0]));
+                $acsv->add($x);
             }
         }
-        $acsv->header = array_keys($acsv->header);
         return $acsv;
+    }
+    /** @return AssignmentCsv
+     * @deprecated */
+    function unparse_csv() {
+        return $this->make_acsv();
     }
 
     /** @return ?PaperInfo */
