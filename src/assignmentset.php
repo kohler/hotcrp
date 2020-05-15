@@ -105,8 +105,10 @@ class AssignmentState {
     private $pid_attempts = [];
     /** @var ?PaperInfo */
     private $placeholder_prow;
-    /** @var array<string,object> */
+    /** @var list<object> */
     public $finishers = [];
+    /** @var array<string,object> */
+    public $finisher_map = [];
     public $paper_exact_match = true;
     private $msgs = [];
     private $first_nonexact_error;
@@ -667,6 +669,7 @@ class AssignmentCsv {
 }
 
 class AssignmentParser {
+    /** @var string $type */
     public $type;
     function __construct($type) {
         $this->type = $type;

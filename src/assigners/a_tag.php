@@ -220,8 +220,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $ltag = strtolower($tag);
         $index = cvtnum($m[3] ? $m[4] : null, null);
         // NB ignore $index on second & subsequent nexttag assignments
-        if (!($fin = $state->finishers["seqtag $ltag"] ?? null)) {
-            $fin = $state->finishers["seqtag $ltag"] =
+        if (!($fin = $state->finisher_map["seqtag $ltag"] ?? null)) {
+            $fin = $state->finishers[] = $state->finisher_map["seqtag $ltag"] =
                 new NextTagAssigner($state, $tag, $index, $this->isnext === self::NEXTSEQ);
         }
         unset($fin->pidindex[$pid]);
