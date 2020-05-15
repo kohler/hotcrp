@@ -80,7 +80,7 @@ class Follow_Assigner extends Assigner {
     private $watch;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
-        $this->watch = $item->get(false, "_watch");
+        $this->watch = $item->post("_watch");
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
         return new Follow_Assigner($item, $state);
@@ -108,7 +108,7 @@ class Follow_Assigner extends Assigner {
         return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        $ctype = $this->item->get(false, "_watch");
+        $ctype = $this->item->post("_watch");
         if ($ctype & Contact::WATCH_REVIEW_EXPLICIT) {
             $ctype = $ctype & Contact::WATCH_REVIEW ? "yes" : "no";
         } else {

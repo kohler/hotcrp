@@ -132,11 +132,11 @@ class Conflict_Assigner extends Assigner {
     private $ctype;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
-        $this->ctype = $item->get(false, "_ctype");
+        $this->ctype = $item->post("_ctype");
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
         if ($item->deleted()
-            && $item->get(true, "_ctype") >= CONFLICT_CONTACTAUTHOR) {
+            && $item->pre("_ctype") >= CONFLICT_CONTACTAUTHOR) {
             $ncontacts = 0;
             foreach ($state->query(["type" => "conflict", "pid" => $item["pid"]]) as $m) {
                 if ($m["_ctype"] >= CONFLICT_CONTACTAUTHOR)

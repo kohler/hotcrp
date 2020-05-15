@@ -220,7 +220,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $ltag = strtolower($tag);
         $index = cvtnum($m[3] ? $m[4] : null, null);
         // NB ignore $index on second & subsequent nexttag assignments
-        if (!($fin = get($state->finishers, "seqtag $ltag"))) {
+        if (!($fin = $state->finishers["seqtag $ltag"] ?? null)) {
             $fin = $state->finishers["seqtag $ltag"] =
                 new NextTagAssigner($state, $tag, $index, $this->isnext === self::NEXTSEQ);
         }
@@ -324,7 +324,7 @@ class Tag_Assigner extends Assigner {
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
         $this->tag = $item["_tag"];
-        $this->index = $item->get(false, "_index");
+        $this->index = $item->post("_index");
         if ($this->index == 0 && $item["_vote"]) {
             $this->index = null;
         }
@@ -334,9 +334,9 @@ class Tag_Assigner extends Assigner {
         // check permissions
         if (!$item["_vote"] && !$item["_override"]) {
             $whyNot = $state->user->perm_change_tag($prow, $item["ltag"],
-                $item->get(true, "_index"), $item->get(false, "_index"));
+                $item->pre("_index"), $item->post("_index"));
             if ($whyNot) {
-                if (get($whyNot, "otherTwiddleTag")) {
+                if ($whyNot["otherTwiddleTag"] ?? null) {
                     return null;
                 }
                 throw new Exception(whyNotText($whyNot));

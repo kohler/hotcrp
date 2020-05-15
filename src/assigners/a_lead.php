@@ -105,7 +105,7 @@ class Lead_Assigner extends Assigner {
     function unparse_display(AssignmentSet $aset) {
         $t = [];
         if ($this->item->existed())
-            $t[] = '<del>' . $aset->user->reviewer_html_for($this->item->get(true, "_cid")) . " " . $this->icon() . '</del>';
+            $t[] = '<del>' . $aset->user->reviewer_html_for($this->item->pre("_cid")) . " " . $this->icon() . '</del>';
         if (!$this->item->deleted())
             $t[] = '<ins>' . $aset->user->reviewer_html_for($this->contact) . " " . $this->icon() . '</ins>';
         return join(" ", $t);
@@ -128,7 +128,7 @@ class Lead_Assigner extends Assigner {
         if ($k === "lead" || $k === "shepherd") {
             $deltarev->$k = true;
             if ($this->item->existed()) {
-                $ct = $deltarev->ensure($this->item->get(true, "_cid"));
+                $ct = $deltarev->ensure($this->item->pre("_cid"));
                 ++$ct->ass;
                 --$ct->$k;
             }
@@ -143,13 +143,14 @@ class Lead_Assigner extends Assigner {
         $locks["Paper"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        $new_cid = $this->item->get(false, "_cid") ? : 0;
-        $old_cid = $this->item->get(true, "_cid") ? : 0;
+        $old_cid = $this->item->pre("_cid") ? : 0;
+        $new_cid = $this->item->post("_cid") ? : 0;
         $aset->stage_qe("update Paper set {$this->type}ContactId=? where paperId=? and {$this->type}ContactId=?", $new_cid, $this->pid, $old_cid);
-        if ($new_cid)
+        if ($new_cid) {
             $aset->user->log_activity_for($new_cid, "Set {$this->description}", $this->pid);
-        else
+        } else {
             $aset->user->log_activity("Clear {$this->description}", $this->pid);
+        }
         if ($this->type === "lead" || $this->type === "shepherd") {
             $aset->cleanup_callback("lead", function ($aset, $vals) {
                 $aset->conf->update_paperlead_setting(min($vals));

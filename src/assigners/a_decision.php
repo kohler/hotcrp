@@ -93,17 +93,19 @@ class Decision_Assigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $t = [];
-        if ($this->item->existed())
-            $t[] = '<del>' . self::decision_html($aset->conf, $this->item->get(true, "_decision")) . '</del>';
+        if ($this->item->existed()) {
+            $t[] = '<del>' . self::decision_html($aset->conf, $this->item->pre("_decision")) . '</del>';
+        }
         $t[] = '<ins>' . self::decision_html($aset->conf, $this->item["_decision"]) . '</ins>';
         return join(" ", $t);
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $x = ["pid" => $this->pid, "action" => "decision"];
-        if ($this->item->deleted())
+        if ($this->item->deleted()) {
             $x["decision"] = "none";
-        else
+        } else {
             $x["decision"] = $aset->conf->decision_name($this->item["_decision"]);
+        }
         return $x;
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
@@ -116,9 +118,10 @@ class Decision_Assigner extends Assigner {
         global $Now;
         $dec = $this->item->deleted() ? 0 : $this->item["_decision"];
         $aset->stage_qe("update Paper set outcome=? where paperId=?", $dec, $this->pid);
-        if ($dec > 0 || $this->item->get(true, "_decision") > 0)
+        if ($dec > 0 || $this->item->pre("_decision") > 0) {
             $aset->cleanup_callback("paperacc", function ($aset, $vals) {
                 $aset->conf->update_paperacc_setting(min($vals));
             }, $dec > 0 && $this->item["_decyes"] ? 1 : 0);
+        }
     }
 }

@@ -170,17 +170,17 @@ class Review_Assigner extends Assigner {
     static public $prefinfo = null;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
-        $this->rtype = $item->get(false, "_rtype");
-        $this->unsubmit = $item->get(true, "_rnondraft") && !$item->get(false, "_rnondraft");
+        $this->rtype = $item->post("_rtype");
+        $this->unsubmit = $item->pre("_rnondraft") && !$item->post("_rnondraft");
         if (!$item->existed()
             && $this->rtype == REVIEW_EXTERNAL
             && !$this->contact->is_anonymous_user()
-            && ($notify = get($state->defaults, "extrev_notify"))) {
+            && ($notify = $state->defaults["extrev_notify"] ?? null)) {
             $this->notify = $notify;
         }
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
-        if (!$item->get(true, "_rtype") && $item->get(false, "_rtype")) {
+        if (!$item->pre("_rtype") && $item->post("_rtype")) {
             Conflict_Assigner::check_unconflicted($item, $state);
         }
         return new Review_Assigner($item, $state);
@@ -216,20 +216,20 @@ class Review_Assigner extends Assigner {
             $t = '<del>' . $t . '</del>';
         }
         if ($this->item->differs("_rtype") || $this->item->differs("_rsubmitted")) {
-            if ($this->item->get(true, "_rtype")) {
+            if ($this->item->pre("_rtype")) {
                 $t .= ' <del>' . $this->icon(true) . '</del>';
             }
-            if ($this->item->get(false, "_rtype")) {
+            if ($this->item->post("_rtype")) {
                 $t .= ' <ins>' . $this->icon(false) . '</ins>';
             }
         } else if ($this->item["_rtype"]) {
             $t .= ' ' . $this->icon(false);
         }
         if ($this->item->differs("_round")) {
-            if (($round = $this->item->get(true, "_round"))) {
+            if (($round = $this->item->pre("_round"))) {
                 $t .= ' <del><span class="revround" title="Review round">' . htmlspecialchars($round) . '</span></del>';
             }
-            if (($round = $this->item->get(false, "_round"))) {
+            if (($round = $this->item->post("_round"))) {
                 $t .= ' <ins><span class="revround" title="Review round">' . htmlspecialchars($round) . '</span></ins>';
             }
         } else if (($round = $this->item["_round"])) {
@@ -263,7 +263,7 @@ class Review_Assigner extends Assigner {
             $deltarev->rev = true;
             $ct = $deltarev->ensure($this->cid);
             ++$ct->ass;
-            $oldtype = $this->item->get(true, "_rtype") ? : 0;
+            $oldtype = $this->item->pre("_rtype") ? : 0;
             $ct->rev += ($this->rtype != 0 ? 1 : 0) - ($oldtype != 0 ? 1 : 0);
             $ct->meta += ($this->rtype == REVIEW_META ? 1 : 0) - ($oldtype == REVIEW_META ? 1 : 0);
             $ct->pri += ($this->rtype == REVIEW_PRIMARY ? 1 : 0) - ($oldtype == REVIEW_PRIMARY ? 1 : 0);
@@ -275,7 +275,7 @@ class Review_Assigner extends Assigner {
     }
     function execute(AssignmentSet $aset) {
         $extra = ["no_autosearch" => true];
-        $round = $this->item->get(false, "_round");
+        $round = $this->item->post("_round");
         if ($round !== null && $this->rtype) {
             $extra["round_number"] = (int) $aset->conf->round_number($round, true);
         }

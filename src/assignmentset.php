@@ -42,13 +42,10 @@ class AssignmentItem implements ArrayAccess {
     function modified() {
         return $this->after !== null;
     }
-    /** @param bool|string $before
-     * @param ?string $offset  */
-    function get($before, $offset = null) {
-        if ($offset === null) {
-            return $this->offsetGet($before);
-        }
-        if ($before || $this->after === null) {
+    /** @param bool $pre
+     * @param string $offset */
+    function get($pre, $offset) {
+        if ($pre || $this->after === null) {
             $x = $this->before;
         } else {
             $x = $this->after;
@@ -56,13 +53,18 @@ class AssignmentItem implements ArrayAccess {
         return $x ? $x[$offset] ?? null : null;
     }
     /** @param string $offset */
-    function get_before($offset) {
-        return $this->get(true, $offset);
+    function pre($offset) {
+        return $this->before ? $this->before[$offset] ?? null : null;
+    }
+    /** @param string $offset */
+    function post($offset) {
+        $x = $this->after ?? $this->before;
+        return $x ? $x[$offset] ?? null : null;
     }
     /** @param string $offset
      * @return bool */
     function differs($offset) {
-        return $this->get(true, $offset) !== $this->get(false, $offset);
+        return $this->pre($offset) !== $this->post($offset);
     }
     function realize(AssignmentState $astate) {
         return call_user_func($astate->realizer($this->offsetGet("type")), $this, $astate);
@@ -103,6 +105,7 @@ class AssignmentState {
     private $pid_attempts = [];
     /** @var ?PaperInfo */
     private $placeholder_prow;
+    /** @var array<string,object> */
     public $finishers = [];
     public $paper_exact_match = true;
     private $msgs = [];
@@ -590,7 +593,9 @@ class AssignmentCount {
 }
 
 class AssignmentCountSet {
+    /** @var Conf */
     public $conf;
+    /** @var array<int,AssignmentCount> */
     public $bypc = [];
     public $rev = false;
     public $lead = false;
@@ -602,7 +607,8 @@ class AssignmentCountSet {
     function get($offset) {
         return $this->bypc[$offset] ?? new AssignmentCount;
     }
-    /** @return AssignmentCount */
+    /** @param int $offset
+     * @return AssignmentCount */
     function ensure($offset) {
         if (!isset($this->bypc[$offset])) {
             $this->bypc[$offset] = new AssignmentCount;
