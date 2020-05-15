@@ -3303,6 +3303,18 @@ class Conf {
     // Paper search
     //
 
+    function query_ratings() {
+        if ($this->setting("rev_ratings") != REV_RATINGS_NONE) {
+            return "(select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId)";
+        } else {
+            return "''";
+        }
+    }
+
+    function query_all_reviewer_preference() {
+        return "group_concat(contactId,' ',preference,' ',coalesce(expertise,'.'))";
+    }
+
     /** @param ?list<int> $paperset
      * @param list<int>|mysqli_result|Dbl_Result $arg
      * @return list<int> */
@@ -3320,10 +3332,6 @@ class Conf {
         } else {
             return array_values(array_intersect($paperset, $ids));
         }
-    }
-
-    function query_all_reviewer_preference() {
-        return "group_concat(contactId,' ',preference,' ',coalesce(expertise,'.'))";
     }
 
     /** @param array{paperId?:list<int>} $options
