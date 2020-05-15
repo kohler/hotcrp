@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class ContactList {
-
     const FIELD_SELECTOR = 1000;
     const FIELD_SELECTOR_ON = 1001;
 
@@ -47,17 +46,20 @@ class ContactList {
 
         $this->conf = $user->conf;
         $this->user = $user;
-        if (!$qreq || !($qreq instanceof Qrequest))
+        if (!$qreq || !($qreq instanceof Qrequest)) {
             $qreq = new Qrequest("GET", $qreq);
+        }
         $this->qreq = $qreq;
 
         $s = ($sortable ? (string) $this->qreq->sort : "");
         $x = (strlen($s) ? $s[strlen($s)-1] : "");
         $this->reverseSort = ($x == "R");
-        if ($x == "R" || $x == "N")
+        if ($x == "R" || $x == "N") {
             $s = substr($s, 0, strlen($s) - 1);
-        if ($s !== "")
+        }
+        if ($s !== "") {
             $this->sortField = $s;
+        }
         $this->sortable = $sortable;
 
         $this->tagger = new Tagger($this->user);
@@ -118,7 +120,7 @@ class ContactList {
 
     function _sortAffiliation($a, $b) {
         $x = strcasecmp($a->affiliation, $b->affiliation);
-        return $x ? $x : $this->_sortBase($a, $b);
+        return $x ? : $this->_sortBase($a, $b);
     }
 
     function _sortLastVisit($a, $b) {
@@ -594,7 +596,7 @@ class ContactList {
                 from ReviewRating
                 join PaperReview on (PaperReview.paperId=ReviewRating.paperId and PaperReview.reviewId=ReviewRating.reviewId)";
             $jwhere = [];
-            if (($badratings = PaperSearch::unusableRatings($this->user)))
+            if (($badratings = PaperSearch::unusable_ratings($this->user)))
                 $jwhere[] = "ReviewRating.reviewId not in (" . join(",", $badratings) . ")";
             if (($cfltpids = $this->_conflict_pids()))
                 $jwhere[] = "ReviewRating.paperId not in (" . join(",", $cfltpids) . ")";

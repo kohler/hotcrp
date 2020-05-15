@@ -3437,9 +3437,9 @@ class Conf {
 
         // review signatures
         if (($options["reviewSignatures"] ?? false)
-            || ($options["scores"] ?? false)
+            || ($options["scores"] ?? null)
             || ($options["reviewWordCounts"] ?? false)) {
-            $cols[] = "(select " . ReviewInfo::review_signature_sql($this, $options["scores"] ?? false) . " from PaperReview r where r.paperId=Paper.paperId) reviewSignatures";
+            $cols[] = "(select " . ReviewInfo::review_signature_sql($this, $options["scores"] ?? null) . " from PaperReview r where r.paperId=Paper.paperId) reviewSignatures";
             if ($options["reviewWordCounts"] ?? false) {
                 $cols[] = "(select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId) reviewWordCountSignature";
             }

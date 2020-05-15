@@ -24,7 +24,7 @@
  * @property ?string $reviewLastLogin
  * @property ?string $contactTags
  * @property ?string $sorter */
-class ReviewInfo {
+class ReviewInfo implements JsonSerializable {
     /** @var Conf */
     public $conf;
     /** @var int */
@@ -174,7 +174,7 @@ class ReviewInfo {
     }
     static function review_signature_sql(Conf $conf, $scores = null) {
         $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit, ' ', r.reviewViewScore";
-        foreach ($scores ? : [] as $fid) {
+        foreach ($scores ?? [] as $fid) {
             if (($f = $conf->review_field($fid)) && $f->main_storage)
                 $t .= ", ' " . $f->short_id . "=', " . $f->id;
         }
@@ -462,5 +462,15 @@ class ReviewInfo {
             $this->_data->acceptor->at = 0;
             $this->_save_data();
         }
+    }
+
+    function jsonSerialize() {
+        $j = ["confid" => $this->conf->dbname];
+        foreach (get_object_vars($this) as $k => $v) {
+            if ($k !== "conf" && $k !== "_data") {
+                $j[$k] = $v;
+            }
+        }
+        return $j;
     }
 }

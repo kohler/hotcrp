@@ -3489,7 +3489,7 @@ class Contact {
             return true;
         }
         // Do not show rating counts if rater identity is unambiguous.
-        // See also PaperSearch::_clauseTermSetRating.
+        // See also PaperSearch::unusable_ratings.
         $nsubraters = 0;
         foreach ($prow->reviews_by_id() as $rrow) {
             if ($rrow->reviewNeedsSubmit == 0

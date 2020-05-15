@@ -2484,15 +2484,17 @@ class PaperSearch {
     // The query may be liberal (returning more papers than actually match);
     // QUERY EVALUATION makes it precise.
 
-    static function unusableRatings(Contact $user) {
-        if ($user->privChair || $user->conf->setting("pc_seeallrev"))
-            return array();
-        $noratings = array();
+    static function unusable_ratings(Contact $user) {
+        if ($user->privChair || $user->conf->setting("pc_seeallrev")) {
+            return [];
+        }
+        $noratings = [];
         $rateset = $user->conf->setting("rev_rating");
-        if ($rateset == REV_RATINGS_PC)
+        if ($rateset == REV_RATINGS_PC) {
             $npr_constraint = "reviewType>" . REVIEW_EXTERNAL;
-        else
+        } else {
             $npr_constraint = "true";
+        }
         // This query supposedly returns those reviewIds whose ratings
         // are not visible to the current querier
         $result = $user->conf->qe("select MPR.reviewId

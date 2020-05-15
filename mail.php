@@ -124,12 +124,15 @@ if (isset($Qreq->loadtmpl)) {
     $template = (array) $Conf->mail_template($t);
     if (((!isset($template["title"]) || $template["title"] === false)
          && !isset($template["allow_template"]))
-        || (isset($template["allow_template"]) && $template["allow_template"] === false))
+        || (isset($template["allow_template"]) && $template["allow_template"] === false)) {
         $template = (array) $Conf->mail_template("generic");
-    if (!isset($Qreq->to) || $Qreq->loadtmpl != -1)
+    }
+    if (!isset($Qreq->to) || $Qreq->loadtmpl != -1) {
         $Qreq->to = get($template, "default_recipients", "s");
-    if (isset($template["default_search_type"]))
+    }
+    if (isset($template["default_search_type"])) {
         $Qreq->t = $template["default_search_type"];
+    }
     $Qreq->subject = $null_mailer->expand($template["subject"]);
     $Qreq->emailBody = $null_mailer->expand($template["body"]);
 }
@@ -618,10 +621,12 @@ foreach (array_keys($Conf->mail_template_map()) as $tname) {
         $tmpl[] = $template;
 }
 usort($tmpl, "Conf::xt_position_compare");
-foreach ($tmpl as $t)
+foreach ($tmpl as $t) {
     $tmploptions[$t->name] = $t->title;
-if (!isset($Qreq->template) || !isset($tmploptions[$Qreq->template]))
+}
+if (!isset($Qreq->template) || !isset($tmploptions[$Qreq->template])) {
     $Qreq->template = "generic";
+}
 echo Ht::select("template", $tmploptions, $Qreq->template),
     " &nbsp;",
     Ht::submit("loadtmpl", "Load", ["id" => "loadtmpl"]),
