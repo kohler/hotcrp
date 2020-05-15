@@ -17,7 +17,7 @@ class PaperValue implements JsonSerializable {
     private $_values;
     /** @var list<?string> */
     private $_data;
-    /** @var list<?DocumentInfo> */
+    /** @var ?list<DocumentInfo> */
     private $_documents;
     /** @var ?MessageSet */
     private $_ms;
@@ -106,7 +106,7 @@ class PaperValue implements JsonSerializable {
     function value_array() {
         return $this->_values;
     }
-    /** @return list<string> */
+    /** @return list<?string> */
     function data_array() {
         if ($this->_data === null) {
             $this->load_value_data();
@@ -199,10 +199,10 @@ class PaperOptionList {
     /** @var Conf */
     private $conf;
     private $_jlist;
-    /** @var array<int,PaperOption> */
+    /** @var array<int,?PaperOption> */
     private $_omap = [];
     private $_ijlist;
-    /** @var array<int,PaperOption> */
+    /** @var array<int,?PaperOption> */
     private $_imap = [];
     private $_olist;
     private $_olist_nonfinal;
@@ -1367,11 +1367,14 @@ class DocumentPaperOption extends PaperOption {
 
     function mimetypes() {
         if ($this->type === "pdf" || $this->id <= 0) {
-            return [Mimetype::lookup(".pdf")];
+            return [Mimetype::checked_lookup(".pdf")];
         } else if ($this->type === "slides") {
-            return [Mimetype::lookup(".pdf"), Mimetype::lookup(".ppt"), Mimetype::lookup(".pptx")];
+            return [Mimetype::checked_lookup(".pdf"),
+                    Mimetype::checked_lookup(".ppt"),
+                    Mimetype::checked_lookup(".pptx")];
         } else if ($this->type === "video") {
-            return [Mimetype::lookup(".mp4"), Mimetype::lookup(".avi")];
+            return [Mimetype::checked_lookup(".mp4"),
+                    Mimetype::checked_lookup(".avi")];
         } else {
             return null;
         }
@@ -1388,7 +1391,12 @@ class DocumentPaperOption extends PaperOption {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
     }
     function value_dids(PaperValue $ov) {
-        return $ov->value > 1 ? [$ov->value] : [];
+        if ($ov->value > 1) {
+            /** @phan-suppress-next-line ParamTypeMismatchReturn */
+            return [$ov->value];
+        } else {
+            return [];
+        }
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         if ($ov->value === null
@@ -1597,7 +1605,7 @@ class NumericPaperOption extends PaperOption {
 
     function render(FieldRender $fr, PaperValue $ov) {
         if ($ov->value !== null) {
-            $fr->set_text($ov->value);
+            $fr->set_text((string) $ov->value);
         }
     }
 }

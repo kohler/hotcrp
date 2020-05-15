@@ -23,9 +23,11 @@ class FieldRender {
     const CTEXT = 0;
     const CPAGE = 3;
 
+    /** @param int $context */
     function __construct($context) {
         $this->context = $context;
     }
+    /** @param ?int $context */
     function clear($context = null) {
         if ($context !== null) {
             $this->context = $context;

@@ -31,9 +31,10 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         $indexes = $indexesf ? $indexesf($row, $pl->user) : [null];
         $formulaf = $this->formula_function;
         $vs = [];
-        foreach ($indexes as $i)
+        foreach ($indexes as $i) {
             if (($v = $formulaf($row, $i, $pl->user)) !== null)
                 $vs[$i] = $v;
+        }
         return $vs;
     }
     function header(PaperList $pl, $is_text) {

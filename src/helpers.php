@@ -387,6 +387,7 @@ function tabLength($text, $all) {
     return $len;
 }
 
+/** @param string $varname */
 function ini_get_bytes($varname, $value = null) {
     $val = trim($value !== null ? $value : ini_get($varname));
     $last = strlen($val) ? strtolower($val[strlen($val) - 1]) : ".";

@@ -73,7 +73,7 @@ class ResponseRound {
 
 class Conf {
     /** @var ?mysqli */
-    public $dblink = null;
+    public $dblink;
 
     /** @var array<string,int> */
     public $settings;
@@ -787,18 +787,23 @@ class Conf {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_ERROR);
     }
 
+    /** @return list<list<?string>> */
     function fetch_rows(/* $qstr, ... */) {
         return Dbl::fetch_rows(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
     }
+    /** @return ?list<?string> */
     function fetch_first_row(/* $qstr, ... */) {
         return Dbl::fetch_first_row(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
     }
+    /** @return ?object */
     function fetch_first_object(/* $qstr, ... */) {
         return Dbl::fetch_first_object(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
     }
+    /** @return ?string */
     function fetch_value(/* $qstr, ... */) {
         return Dbl::fetch_value(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
     }
+    /** @return ?int */
     function fetch_ivalue(/* $qstr, ... */) {
         return Dbl::fetch_ivalue(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
     }
@@ -1359,6 +1364,15 @@ class Conf {
     function find_review_field($text) {
         return $this->abbrev_matcher()->find1($text, self::FSRCH_REVIEW);
     }
+    /** @param string $text
+     * @return ReviewField */
+    function checked_review_field($fid) {
+        if (($f = $this->review_form()->field($fid))) {
+            return $f;
+        } else {
+            throw new Exception("Unknown review field “{$fid}”");
+        }
+    }
 
 
     /** @return TagMap */
@@ -1844,7 +1858,7 @@ class Conf {
             && !$this->opt("disableNonPC");
     }
 
-    /** @return Contact */
+    /** @return ?object */
     function default_site_contact() {
         $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
         return Dbl::fetch_first_object($result);
@@ -2165,7 +2179,7 @@ class Conf {
 
     // contactdb
 
-    /** @return ?mysqli */
+    /** @return ?\mysqli */
     function contactdb() {
         if ($this->_cdb === false) {
             $this->_cdb = null;
@@ -2233,14 +2247,14 @@ class Conf {
         if ($this->setting("no_papersub", 0) > 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe("delete from Settings where name='no_papersub'");
             $this->qe("insert into Settings (name, value) select 'no_papersub', 1 from dual where exists (select * from Paper where timeSubmitted>0) = 0");
-            $this->settings["no_papersub"] = $this->fetch_ivalue("select value from Settings where name='no_papersub'");
+            $this->settings["no_papersub"] = (int) $this->fetch_ivalue("select value from Settings where name='no_papersub'");
         }
     }
 
     function update_paperacc_setting($adding) {
         if ($this->setting("paperacc", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'paperacc', exists (select * from Paper where outcome>0 and timeSubmitted>0) on duplicate key update value=values(value)");
-            $this->settings["paperacc"] = $this->fetch_ivalue("select value from Settings where name='paperacc'");
+            $this->settings["paperacc"] = (int) $this->fetch_ivalue("select value from Settings where name='paperacc'");
         }
     }
 
@@ -2249,28 +2263,28 @@ class Conf {
             $adding = 0;
         if ($this->setting("rev_tokens", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'rev_tokens', exists (select * from PaperReview where reviewToken!=0) on duplicate key update value=values(value)");
-            $this->settings["rev_tokens"] = $this->fetch_ivalue("select value from Settings where name='rev_tokens'");
+            $this->settings["rev_tokens"] = (int) $this->fetch_ivalue("select value from Settings where name='rev_tokens'");
         }
     }
 
     function update_paperlead_setting($adding) {
         if ($this->setting("paperlead", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'paperlead', exists (select * from Paper where leadContactId>0 or shepherdContactId>0) on duplicate key update value=values(value)");
-            $this->settings["paperlead"] = $this->fetch_ivalue("select value from Settings where name='paperlead'");
+            $this->settings["paperlead"] = (int) $this->fetch_ivalue("select value from Settings where name='paperlead'");
         }
     }
 
     function update_papermanager_setting($adding) {
         if ($this->setting("papermanager", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'papermanager', exists (select * from Paper where managerContactId>0) on duplicate key update value=values(value)");
-            $this->settings["papermanager"] = $this->fetch_ivalue("select value from Settings where name='papermanager'");
+            $this->settings["papermanager"] = (int) $this->fetch_ivalue("select value from Settings where name='papermanager'");
         }
     }
 
     function update_metareviews_setting($adding) {
         if ($this->setting("metareviews", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'metareviews', exists (select * from PaperReview where reviewType=" . REVIEW_META . ") on duplicate key update value=values(value)");
-            $this->settings["metareviews"] = $this->fetch_ivalue("select value from Settings where name='metareviews'");
+            $this->settings["metareviews"] = (int) $this->fetch_ivalue("select value from Settings where name='metareviews'");
         }
     }
 

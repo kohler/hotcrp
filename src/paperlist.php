@@ -400,7 +400,7 @@ class PaperList {
             return $x < 0 ? -1 : 1;
         }
         foreach ($this->sorters as $s) {
-            if (($s->thenval === null || $s->thenval === $a->_then_sort_info)
+            if (($s->thenval === -1 || $s->thenval === $a->_then_sort_info)
                 && ($x = $s->field->compare($a, $b, $s))) {
                 return ($x < 0) === $s->reverse ? 1 : -1;
             }
@@ -515,7 +515,7 @@ class PaperList {
     function sortdef($always = false) {
         if (!empty($this->sorters)
             && $this->sorters[0]->type
-            && $this->sorters[0]->thenval === null
+            && $this->sorters[0]->thenval === -1
             && ($always || (string) $this->qreq->sort != "")
             && ($this->sorters[0]->type != "id" || $this->sorters[0]->reverse)) {
             if (($fdef = $this->find_column($this->sorters[0]->type))) {
@@ -1166,7 +1166,7 @@ class PaperList {
 
         $sort_class = "pl_sort";
         if ($s0
-            && $s0->thenval === null
+            && $s0->thenval === -1
             && $sort_name === $s0->field->sort_name($this, $s0)) {
             $sort_class = "pl_sort pl_sorting" . ($s0->reverse ? "_rev" : "_fwd");
             $sort_url .= $s0->reverse ? "" : urlencode(" reverse");
@@ -1824,22 +1824,20 @@ class PaperList {
         // get column list, check sort
         $this->_prepare();
         $field_list = $this->_columns($fields, false, true);
-        if (empty($field_list)) {
-            return null;
-        }
-
         $data = [];
-        foreach ($this->rowset() as $row) {
-            $this->_row_setup($row);
-            $p = ["id" => $row->paperId];
-            foreach ($field_list as $fdef) {
-                if ($fdef->viewable()
-                    && !$fdef->content_empty($this, $row)
-                    && ($text = $fdef->text($this, $row)) !== "") {
-                    $p[$fdef->name] = $text;
+        if (!empty($field_list)) {
+            foreach ($this->rowset() as $row) {
+                $this->_row_setup($row);
+                $p = ["id" => $row->paperId];
+                foreach ($field_list as $fdef) {
+                    if ($fdef->viewable()
+                        && !$fdef->content_empty($this, $row)
+                        && ($text = $fdef->text($this, $row)) !== "") {
+                        $p[$fdef->name] = $text;
+                    }
                 }
+                $data[$row->paperId] = (object) $p;
             }
-            $data[$row->paperId] = (object) $p;
         }
         return $data;
     }

@@ -725,11 +725,6 @@ class TagMap implements IteratorAggregate {
         }
     }
 
-    /** @deprecated */
-    function sort($tags) {
-        return is_array($tags) ? $this->sort_array($tags) : $this->sort_string($tags);
-    }
-
     /** @param list<string> $tags
      * @return list<string> */
     function sort_array($tags) {
@@ -739,10 +734,10 @@ class TagMap implements IteratorAggregate {
         return $tags;
     }
 
-    /** @param ?string $tags
-     * @return ?string */
+    /** @param string $tags
+     * @return string */
     function sort_string($tags) {
-        if ($tags !== null && $tags !== "") {
+        if ($tags !== "") {
             // XXX remove assert_tag_string
             self::assert_tag_string($tags);
             $tags = join(" ", $this->sort_array(explode(" ", $tags)));

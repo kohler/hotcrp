@@ -44,6 +44,7 @@ class SearchSplitter {
     public $pos;
     /** @var array{int, int} */
     public $strspan;
+    /** @param string $str */
     function __construct($str) {
         $this->str = $str;
         $this->utf8q = strpos($str, chr(0xE2)) !== false;
@@ -192,11 +193,14 @@ class SearchOperator {
 class SearchScope {
     /** @var SearchOperator */
     public $op;
-    /** @var SearchTerm */
+    /** @var ?SearchTerm */
     public $leftqe;
     /** @var array{int,int} */
     public $strspan;
 
+    /** @param SearchOperator $op
+     * @param ?SearchTerm $leftqe
+     * @param array{int,int} $strspan */
     function __construct($op, $leftqe, $strspan) {
         $this->op = $op;
         $this->leftqe = $leftqe;
@@ -210,6 +214,8 @@ class CanonicalizeScope {
     /** @var list<string> */
     public $qe;
 
+    /** @param SearchOperator $op
+     * @param list<string> $qe */
     function __construct($op, $qe) {
         $this->op = $op;
         $this->qe = $qe;
@@ -222,6 +228,7 @@ class SearchTerm {
     /** @var array<string,mixed> */
     public $float = [];
 
+    /** @param string $type */
     function __construct($type) {
         $this->type = $type;
     }
@@ -364,7 +371,7 @@ class SearchTerm {
             $srch->contradictions[$x] = true;
         }
     }
-    /** @param ?int $thenval
+    /** @param int $thenval
      * @return ?ListSorter */
     function default_sorter($top, $thenval, PaperSearch $srch) {
         return null;
@@ -2253,21 +2260,24 @@ class PaperSearch {
 
     /** @param ?SearchTerm $curqe
      * @param list<SearchScope> &$stack
-     * @return SearchTerm */
+     * @return ?SearchTerm */
     static private function _pop_expression_stack($curqe, &$stack) {
         $x = array_pop($stack);
-        if (!$curqe) {
+        if ($curqe) {
+            if ($x->leftqe) {
+                $curqe = SearchTerm::make_op($x->op, [$x->leftqe, $curqe]);
+            } else if ($x->op->op !== "+" && $x->op->op !== "(") {
+                $curqe = SearchTerm::make_op($x->op, [$curqe]);
+            }
+            $curqe->apply_strspan($x->strspan);
+            return $curqe;
+        } else {
             return $x->leftqe;
         }
-        if ($x->leftqe) {
-            $curqe = SearchTerm::make_op($x->op, [$x->leftqe, $curqe]);
-        } else if ($x->op->op !== "+" && $x->op->op !== "(") {
-            $curqe = SearchTerm::make_op($x->op, [$curqe]);
-        }
-        $curqe->apply_strspan($x->strspan);
-        return $curqe;
     }
 
+    /** @param string $str
+     * @return ?SearchTerm */
     private function _search_expression($str) {
         $stack = array();
         '@phan-var list<SearchScope> $stack';
@@ -2631,7 +2641,7 @@ class PaperSearch {
                 $this->_qe = new Limit_SearchTerm($this->conf, "r");
             } else {
                 // parse and clean the query
-                $this->_qe = $this->_search_expression($this->q) ? : new True_SearchTerm;
+                $this->_qe = $this->_search_expression($this->q) ?? new True_SearchTerm;
             }
             //Conf::msg_debugt(json_encode($this->_qe->debug_json()));
 
@@ -2807,10 +2817,10 @@ class PaperSearch {
         }
 
         // sort information
-        $this->_add_sorters($qe, null);
+        $this->_add_sorters($qe, -1);
         if ($thqe) {
             for ($i = 0; $i < $thqe->nthen; ++$i) {
-                $this->_add_sorters($thqe->child[$i], $this->thenmap ? $i : null);
+                $this->_add_sorters($thqe->child[$i], $this->thenmap ? $i : -1);
             }
         }
 
@@ -3268,16 +3278,19 @@ class PaperSearch {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
         if ($this->user->isPC && (!$category || $category === "ss")) {
-            foreach ($this->conf->saved_searches() as $k => $v)
+            foreach ($this->conf->saved_searches() as $k => $v) {
                 $res[] = "ss:" . $k;
+            }
         }
 
         array_push($res, "has:submission", "has:abstract");
-        if ($this->user->isPC && $this->conf->has_any_manager())
+        if ($this->user->isPC && $this->conf->has_any_manager()) {
             $res[] = "has:admin";
+        }
         if ($this->conf->has_any_lead_or_shepherd()
-            && $this->user->can_view_lead(null))
+            && $this->user->can_view_lead(null)) {
             $res[] = "has:lead";
+        }
         if ($this->user->can_view_some_decision()) {
             $res[] = "has:decision";
             if (!$category || $category === "dec") {
@@ -3288,50 +3301,65 @@ class PaperSearch {
                     }
                 }
             }
-            if ($this->conf->setting("final_open"))
+            if ($this->conf->setting("final_open")) {
                 $res[] = "has:final";
+            }
         }
         if ($this->conf->has_any_lead_or_shepherd()
-            && $this->user->can_view_shepherd(null))
+            && $this->user->can_view_shepherd(null)) {
             $res[] = "has:shepherd";
-        if ($this->user->is_reviewer())
+        }
+        if ($this->user->is_reviewer()) {
             array_push($res, "has:review", "has:creview", "has:ireview", "has:preview", "has:primary", "has:secondary", "has:external", "has:comment", "has:aucomment");
-        else if ($this->user->can_view_some_review())
+        } else if ($this->user->can_view_some_review()) {
             array_push($res, "has:review", "has:comment");
+        }
         if ($this->user->isPC
             && $this->conf->ext_subreviews > 1
-            && $this->user->is_requester())
+            && $this->user->is_requester()) {
             array_push($res, "has:pending-approval");
-        if ($this->user->is_manager())
-            array_push($res, "has:proposal");
-        foreach ($this->conf->resp_rounds() as $rrd) {
-            if (!in_array("has:response", $res, true))
-                $res[] = "has:response";
-            if ($rrd->number)
-                $res[] = "has:{$rrd->name}response";
         }
-        if ($this->user->can_view_some_draft_response())
-            foreach ($this->conf->resp_rounds() as $rrd) {
-                if (!in_array("has:draftresponse", $res, true))
-                    $res[] = "has:draftresponse";
-                if ($rrd->number)
-                    $res[] = "has:draft{$rrd->name}response";
+        if ($this->user->is_manager()) {
+            array_push($res, "has:proposal");
+        }
+        foreach ($this->conf->resp_rounds() as $rrd) {
+            if (!in_array("has:response", $res, true)) {
+                $res[] = "has:response";
             }
+            if ($rrd->number) {
+                $res[] = "has:{$rrd->name}response";
+            }
+        }
+        if ($this->user->can_view_some_draft_response()) {
+            foreach ($this->conf->resp_rounds() as $rrd) {
+                if (!in_array("has:draftresponse", $res, true)) {
+                    $res[] = "has:draftresponse";
+                }
+                if ($rrd->number) {
+                    $res[] = "has:draft{$rrd->name}response";
+                }
+            }
+        }
         if ($this->user->can_view_tags()) {
             array_push($res, "has:color", "has:style");
-            if ($this->conf->tags()->has_badges)
+            if ($this->conf->tags()->has_badges) {
                 $res[] = "has:badge";
+            }
         }
-        foreach ($this->user->user_option_list() as $o)
-            if ($this->user->can_view_some_option($o))
+        foreach ($this->user->user_option_list() as $o) {
+            if ($this->user->can_view_some_option($o)) {
                 $o->add_search_completion($res);
+            }
+        }
         if ($this->user->is_reviewer() && $this->conf->has_rounds()
             && (!$category || $category === "round")) {
             $res[] = array("pri" => -1, "nosort" => true, "i" => ["round:any", "round:none"]);
             $rlist = array();
-            foreach ($this->conf->round_list() as $rnum => $round)
-                if ($rnum && $round !== ";")
+            foreach ($this->conf->round_list() as $rnum => $round) {
+                if ($rnum && $round !== ";") {
                     $rlist[$rnum] = $round;
+                }
+            }
             $res = array_merge($res, self::simple_search_completion("round:", $rlist));
         }
         if ($this->conf->has_topics() && (!$category || $category === "topic")) {
@@ -3351,8 +3379,9 @@ class PaperSearch {
             $res[] = array("pri" => -1, "nosort" => true, "i" => array("style:any", "style:none", "color:any", "color:none"));
             foreach ($this->conf->tags()->canonical_colors() as $t) {
                 $res[] = "style:$t";
-                if ($this->conf->tags()->is_known_style($t, TagMap::STYLE_BG))
+                if ($this->conf->tags()->is_known_style($t, TagMap::STYLE_BG)) {
                     $res[] = "color:$t";
+                }
             }
         }
         if (!$category || $category === "show" || $category === "hide") {
@@ -3372,17 +3401,20 @@ class PaperSearch {
             }
             foreach ($this->conf->paper_column_factories() as $fxj) {
                 if (!$this->conf->xt_allowed($fxj, $this->user)
-                    || !Conf::xt_enabled($fxj))
+                    || !Conf::xt_enabled($fxj)) {
                     continue;
+                }
                 if (isset($fxj->completion_callback)) {
                     Conf::xt_resolve_require($fxj);
                     foreach (call_user_func($fxj->completion_callback, $this->user, $fxj) as $c)
                         $cats[$c] = true;
-                } else if (isset($fxj->completion) && is_string($fxj->completion))
+                } else if (isset($fxj->completion) && is_string($fxj->completion)) {
                     $cats[$fxj->completion] = true;
+                }
             }
-            foreach (array_keys($cats) as $cat)
+            foreach (array_keys($cats) as $cat) {
                 array_push($res, "show:$cat", "hide:$cat");
+            }
             array_push($res, "show:compact", "show:statistics", "show:rownumbers");
         }
 

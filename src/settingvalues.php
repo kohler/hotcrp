@@ -654,11 +654,11 @@ class SettingValues extends MessageSet {
 
     /** @return Si */
     function si($name) {
-        $si = Si::get($this->conf, $name);
-        if (!$si) {
-            error_log(caller_landmark(2) . ": setting $name: missing information");
+        if (($si = Si::get($this->conf, $name))) {
+            return $si;
+        } else {
+            throw new Exception(caller_landmark(2) . ": Unknown setting “{$name}”");
         }
-        return $si;
     }
 
     function oldv($name, $default_value = null) {

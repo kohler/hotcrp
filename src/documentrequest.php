@@ -5,7 +5,7 @@
 class DocumentRequest implements JsonSerializable {
     /** @var int */
     public $paperId;
-    /** @var PaperInfo */
+    /** @var ?PaperInfo */
     public $prow;
     public $dtype;
     /** @var ?PaperOption */
@@ -160,7 +160,7 @@ class DocumentRequest implements JsonSerializable {
                     if (($filter = FileFilter::find_by_name($conf, $filtername))) {
                         $this->filters[] = $filter;
                     } else {
-                        throw new Exception("Document filter “{$filter}” not found.");
+                        throw new Exception("Document filter “{$filtername}” not found.");
                     }
                 }
             }

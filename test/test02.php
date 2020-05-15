@@ -193,8 +193,9 @@ function random_paper_ids() {
     $p = null;
     for ($i = 0; $i < $n; ++$i) {
         $p1 = mt_rand(1, $p === null ? 100 : 150);
-        if ($p1 > 100)
-            $p1 = max(1, $p + (int) round(($p1 - 125) / 8));
+        if ($p1 > 100) {
+            $p1 = max(1, (int) $p + (int) round(($p1 - 125) / 8));
+        }
         $p2 = 20 - (int) sqrt(mt_rand(0, 399));
         if (mt_rand(1, 4) === 1) {
             for ($p = $p1; $p >= 1 && $p > $p1 - $p2; --$p)
@@ -498,10 +499,10 @@ $ns = new NavigationState(["SERVER_PORT" => 80, "SCRIPT_FILENAME" => __FILE__,
 xassert_eqq($ns->php_suffix, ".xxx");
 
 // other helpers
-xassert_eqq(ini_get_bytes(null, "1"), 1);
-xassert_eqq(ini_get_bytes(null, "1 M"), 1 * (1 << 20));
-xassert_eqq(ini_get_bytes(null, "1.2k"), 1229);
-xassert_eqq(ini_get_bytes(null, "20G"), 20 * (1 << 30));
+xassert_eqq(ini_get_bytes("", "1"), 1);
+xassert_eqq(ini_get_bytes("", "1 M"), 1 * (1 << 20));
+xassert_eqq(ini_get_bytes("", "1.2k"), 1229);
+xassert_eqq(ini_get_bytes("", "20G"), 20 * (1 << 30));
 
 // name splitting
 xassert_eqq(get(Text::split_name("Bob Kennedy"), 0), "Bob");

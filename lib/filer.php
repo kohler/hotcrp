@@ -103,6 +103,7 @@ class Filer {
     static public $no_touch;
 
     // download
+    /** @param string $filename */
     static function download_file($filename, $no_accel = false) {
         global $zlib_output_compression;
         // if docstoreAccelRedirect, output X-Accel-Redirect header
@@ -128,6 +129,7 @@ class Filer {
         // read file directly to output
         readfile($filename);
     }
+    /** @param DocumentInfo|list<DocumentInfo> $doc */
     static function multidownload($doc, $downloadname = null, $opts = null) {
         global $Now, $zlib_output_compression;
         if (is_array($doc) && count($doc) == 1) {

@@ -47,7 +47,7 @@ class Dbl_Result {
 }
 
 class Dbl_MultiResult {
-    /** @var mysqli */
+    /** @var \mysqli */
     private $dblink;
     private $flags;
     private $qstr;
@@ -130,6 +130,8 @@ class Dbl {
         return preg_replace('{\A(\w+://[^/:]*:)[^\@/]+([\@/])}', '$1PASSWORD$2', $dsn);
     }
 
+    /** @param string $dsn
+     * @return array{?\mysqli,?string} */
     static function connect_dsn($dsn, $noconnect = false) {
         global $Opt;
 
@@ -175,18 +177,18 @@ class Dbl {
             $dblink = new mysqli($dbhost, $dbuser, $dbpass);
         }
 
-        if ($dblink && !mysqli_connect_errno() && $dblink->select_db($dbname)) {
+        if (!mysqli_connect_errno() && $dblink->select_db($dbname)) {
             // We send binary strings to MySQL, so we don't want warnings
             // about non-UTF-8 data
             $dblink->set_charset("binary");
             // The necessity of the following line is explosively terrible
             // (the default is 1024/!?))(U#*@$%&!U
             $dblink->query("set group_concat_max_len=4294967295");
-        } else if ($dblink) {
+            return [$dblink, $dbname];
+        } else {
             $dblink->close();
-            $dblink = null;
+            return [null, $dbname];
         }
-        return [$dblink, $dbname];
     }
 
     static function set_default_dblink($dblink) {

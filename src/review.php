@@ -819,7 +819,7 @@ class ReviewForm implements JsonSerializable {
             if (isset($rrow->reviewAuthorModified)) {
                 return (int) $rrow->reviewAuthorModified;
             } else {
-                $ran = (int) $rrow->reviewAuthorNotified;
+                $ran = (int) ($rrow->reviewAuthorNotified ?? 0);
                 $rm = (int) $rrow->reviewModified;
                 if (!$ran || $rm - $ran <= self::NOTIFICATION_DELAY) {
                     return $rm;
@@ -2004,6 +2004,7 @@ class ReviewValues extends MessageSet {
     }
 
     function review_watch_callback($prow, $minic) {
+        assert(isset($this->_mailer_info["rrow"]));
         $rrow = $this->_mailer_info["rrow"];
         if ($minic->can_view_review($prow, $rrow, $this->_mailer_diff_view_score)
             && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $this->_mailer_info))

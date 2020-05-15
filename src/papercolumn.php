@@ -759,8 +759,10 @@ class TagList_PaperColumn extends PaperColumn {
 }
 
 class ScoreGraph_PaperColumn extends PaperColumn {
+    /** @var Contact */
     protected $contact;
     protected $not_me;
+    /** @var ReviewField */
     protected $format_field;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
@@ -782,8 +784,9 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             $pl->qopts["reviewSignatures"] = true;
         }
     }
+    /** @return array<int,int> */
     function score_values(PaperList $pl, PaperInfo $row) {
-        return null;
+        throw new Exception("score_values not defined");
     }
     protected function set_sort_fields(PaperList $pl, PaperInfo $row, ListSorter $sorter) {
         $k = $sorter->uid;
@@ -825,12 +828,12 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         if ($this->not_me && !$row->can_view_review_identity_of($cid, $pl->user)) {
             $cid = 0;
         }
-        return $this->format_field->unparse_graph($values, 1, get($values, $cid));
+        return $this->format_field->unparse_graph($values, 1, $values[$cid] ?? null);
     }
     function text(PaperList $pl, PaperInfo $row) {
         $values = array_map([$this->format_field, "unparse_value"],
-            $this->score_values($pl, $row));
-        return join(" ", $values);
+                            $this->score_values($pl, $row));
+        return join(" ", array_values($values));
     }
 }
 
@@ -839,7 +842,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
-        $this->format_field = $conf->review_field($cj->review_field_id);
+        $this->format_field = $conf->checked_review_field($cj->review_field_id);
         $this->score = $this->format_field->id;
     }
     function prepare(PaperList $pl, $visible) {
@@ -853,6 +856,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         parent::prepare($pl, $visible);
         return true;
     }
+    /** return array<int,int> */
     function score_values(PaperList $pl, PaperInfo $row) {
         $fid = $this->format_field->id;
         $row->ensure_review_score($this->format_field);

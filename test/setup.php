@@ -6,7 +6,7 @@ global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 define("HOTCRP_OPTIONS", "$ConfSitePATH/test/options.php");
 define("HOTCRP_TESTHARNESS", true);
-ini_set("error_log", null);
+ini_set("error_log", "");
 ini_set("log_errors", "0");
 ini_set("display_errors", "stderr");
 require_once("$ConfSitePATH/src/init.php");
@@ -157,7 +157,7 @@ function setup_assignments($assignments, Contact $user) {
         $assignments = join("\n", $assignments);
     }
     $assignset = new AssignmentSet($user, true);
-    $assignset->parse($assignments, null, null);
+    $assignset->parse($assignments, "", null);
     if (!$assignset->execute()) {
         die_hard("* failed to run assignments:\n" . join("\n", $assignset->message_texts(true)) . "\n");
     }

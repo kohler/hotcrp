@@ -20,29 +20,49 @@ class PaperContactInfo {
     const RS_PROXIED = 3;         // review proxied (e.g., lead)
     const RS_SUBMITTED = 4;       // review submitted
 
+    /** @var ?bool */
     public $rights_forced = null;
-    public $forced_rights_link = null;
+    /** @var ?PaperContactInfo */
+    private $forced_rights_link = null;
 
     // set by Contact::rights()
+    /** @var bool */
     public $allow_administer;
+    /** @var bool */
     public $can_administer;
+    /** @var bool */
     public $primary_administrator;
+    /** @var bool */
     public $allow_pc_broad;
+    /** @var bool */
     public $allow_pc;
+    /** @var bool */
     public $potential_reviewer;
+    /** @var bool */
     public $allow_review;
+    /** @var bool */
     public $act_author;
+    /** @var bool */
     public $allow_author;
+    /** @var int */
     public $view_conflict_type;
+    /** @var bool */
     public $act_author_view;
+    /** @var bool */
     public $allow_author_view;
+    /** @var bool */
     public $can_view_decision;
+    /** @var int */
     public $view_authors_state;
 
     // cached by PaperInfo methods
+    /** @var ?list<ReviewInfo> */
     public $vsreviews_array;
+    /** @var ?int */
     public $vsreviews_version;
+    /** @var ?string */
     public $viewable_tags;
+    /** @var ?string */
     public $searchable_tags;
 
     static function make_empty(PaperInfo $prow, $user) {
@@ -375,7 +395,7 @@ class PaperInfo {
     private $_option_values;
     /** @var ?array<int,list<?string>> */
     private $_option_data;
-    /** @var array<int,PaperValue> */
+    /** @var ?array<int,PaperValue> */
     private $_option_array;
     /** @var array<int,PaperValue> */
     private $_new_option_array;
@@ -1279,7 +1299,7 @@ class PaperInfo {
 
     function invalidate_conflicts() {
         unset($this->allConflictType);
-        $this->_conflict_array = $this->_conflict_array_email = null;
+        $this->_conflict_array = null;
     }
 
 
@@ -1438,12 +1458,14 @@ class PaperInfo {
         $paper_opts = $this->conf->paper_opts;
         $option_array = [];
         foreach ($this->_option_values as $oid => $ovalues) {
-            if (($o = $paper_opts->get($oid)))
+            if (($o = $paper_opts->get($oid))) {
                 $option_array[$oid] = PaperValue::make_multi($this, $o, $ovalues, get($this->_option_data, $oid));
+            }
         }
         foreach ($paper_opts->include_empty_option_list() as $oid => $o) {
-            if (!isset($option_array[$oid]))
+            if (!isset($option_array[$oid])) {
                 $option_array[$oid] = PaperValue::make_force($this, $o);
+            }
         }
         return $option_array;
     }
@@ -1455,7 +1477,8 @@ class PaperInfo {
         return $this->_option_array;
     }
 
-    /** @return array{list<int>,list<?string>} */
+    /** @param int $id
+     * @return array{list<int>,list<?string>} */
     function option_value_data($id) {
         if ($this->_option_data === null) {
             $this->load_options(false, true);
@@ -1464,7 +1487,8 @@ class PaperInfo {
                 $this->_option_data[$id] ?? []];
     }
 
-    /** @return ?PaperValue */
+    /** @param int|PaperOption $o
+     * @return ?PaperValue */
     function option($o) {
         $id = is_object($o) ? $o->id : $o;
         return ($this->options())[$id] ?? null;
@@ -1991,9 +2015,9 @@ class PaperInfo {
         return false;
     }
 
-    /** @return bool */
+    /** @param ReviewField $field
+     * @return bool */
     function may_have_viewable_scores($field, Contact $user) {
-        $field = is_object($field) ? $field : $this->conf->review_field($field);
         return $user->can_view_review($this, null, $field->view_score)
             || $this->review_type($user);
     }
@@ -2453,7 +2477,7 @@ class PaperInfo {
 
         // save my current contact info map -- we are replacing it with another
         // map that lacks review token information and so forth
-        $cimap = $this->replace_contact_info_map(null);
+        $cimap = $this->replace_contact_info_map([]);
 
         foreach ($watchers as $minic) {
             $this->load_my_contact_info($minic, $minic);
@@ -2490,7 +2514,7 @@ class PaperInfo {
 
         // save my current contact info map -- we are replacing it with another
         // map that lacks review token information and so forth
-        $cimap = $this->replace_contact_info_map(null);
+        $cimap = $this->replace_contact_info_map([]);
 
         foreach ($watchers as $minic) {
             $this->load_my_contact_info($minic, $minic);

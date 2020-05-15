@@ -4,14 +4,14 @@
 
 class ListSorter {
     public $type;
-    /** @var bool */
+    /** @var ?bool */
     public $reverse = false;
     public $score;
     public $anno;
     /** @var bool */
     public $empty = false;
     /** @var int */
-    public $thenval;
+    public $thenval = -1;
     public $field;
     public $uid;
     public $pl;
@@ -22,7 +22,8 @@ class ListSorter {
         $this->type = $type;
     }
 
-    /** @return ListSorter */
+    /** @param bool $truly_empty
+     * @return ListSorter */
     static function make_empty($truly_empty) {
         $l = new ListSorter(null);
         $l->reverse = null;

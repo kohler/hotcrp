@@ -3,11 +3,15 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
+    /** @var Conf */
     public $conf;
+    /** @var array<int,string> */
     private $_topic_map = [];
+    /** @var array<int,int> */
     private $_order = [];
     private $_topic_groups;
     private $_topic_html;
+    /** @var ?AbbreviationMatcher */
     private $_topic_abbrev_matcher;
 
 
@@ -105,6 +109,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         });
     }
 
+    /** @return AbbreviationMatcher */
     function abbrev_matcher() {
         if ($this->_topic_abbrev_matcher === null) {
             $this->_topic_abbrev_matcher = new AbbreviationMatcher;

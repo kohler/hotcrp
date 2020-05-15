@@ -104,6 +104,15 @@ class Mimetype {
         return self::$tmap[$type] ?? null;
     }
 
+    /** @param string $type
+     * @return Mimetype */
+    static function checked_lookup($type) {
+        if (($m = self::lookup($type))) {
+            return $m;
+        } else {
+            throw new Exception("Unknown mimetype “{$type}”");
+        }
+    }
 
     /** @param string|Mimetype $type */
     static function type($type) {

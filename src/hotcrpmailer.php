@@ -501,7 +501,7 @@ class HotCRPMailer extends Mailer {
                 group by ContactInfo.contactId");
 
         // must set the current conflict type in $row for each contact
-        $contact_info_map = $row->replace_contact_info_map(null);
+        $contact_info_map = $row->replace_contact_info_map([]);
 
         $preps = $contacts = [];
         $rest["prow"] = $row;

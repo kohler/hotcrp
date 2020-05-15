@@ -34,13 +34,20 @@ class CapabilityManager {
     private $conf;
     /** @var bool */
     private $cdb;
-    /** @var mysqli */
+    /** @var \mysqli */
     private $dblink;
 
     function __construct(Conf $conf, $cdb) {
         $this->conf = $conf;
-        $this->cdb = $cdb && $conf->contactdb();
-        $this->dblink = $this->cdb ? $conf->contactdb() : $conf->dblink;
+        if ($cdb && ($db = $conf->contactdb()) !== null) {
+            $this->dblink = $db;
+            $this->cdb = true;
+        } else if ($conf->dblink !== null) {
+            $this->dblink = $conf->dblink;
+            $this->cdb = false;
+        } else {
+            throw new Exception("No database connection");
+        }
     }
 
     private function prefix() {

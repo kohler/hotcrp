@@ -3,6 +3,7 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class Conflict {
+    /** @var Conf */
     private $conf;
     private $_desc;
     private $_tmap;
@@ -55,6 +56,9 @@ class Conflict {
     function basic_conflict_types() {
         return array_keys(self::$desc_map);
     }
+    /** @param string $text
+     * @param int $default_yes
+     * @return int|false */
     function parse_assignment($text, $default_yes) {
         // Returns a conflict type; never is_author
         if (is_bool($text)) {
@@ -83,6 +87,7 @@ class Conflict {
             return false;
         }
     }
+    /** @return int|false */
     function parse_json($j) {
         if (is_bool($j)) {
             return $j ? self::GENERAL : 0;

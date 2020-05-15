@@ -96,7 +96,7 @@ class PaperEvents {
         }
     }
 
-    /** @return PaperEvent */
+    /** @return ?PaperEvent */
     private function next_review() {
         while (true) {
             if (empty($this->rrows) && $this->rposition !== false) {
