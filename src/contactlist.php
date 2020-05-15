@@ -848,8 +848,8 @@ class ContactList {
         }
 
         // run query
-        $rows = $this->_rows($this->qopt);
-        if (!$rows || count($rows) == 0) {
+        $rows = $this->_rows();
+        if (empty($rows)) {
             return "No matching people";
         }
 

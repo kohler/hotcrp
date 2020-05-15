@@ -569,14 +569,17 @@ class CsvGenerator {
     }
 
 
+    /** @return bool */
     function is_empty() {
         return empty($this->lines);
     }
 
+    /** @return bool */
     function is_csv() {
         return $this->type == self::TYPE_COMMA;
     }
 
+    /** @return string */
     function extension() {
         return $this->type == self::TYPE_COMMA ? ".csv" : ".txt";
     }
@@ -611,6 +614,8 @@ class CsvGenerator {
         return $selected;
     }
 
+    /** @param string $text
+     * @return $this */
     function add_string($text) {
         if ($this->lines_length >= 10000000 && $this->stream !== false) {
             $this->_flush_stream();
@@ -621,7 +626,7 @@ class CsvGenerator {
     }
 
     private function _flush_stream() {
-        global $Conf, $Now;
+        global $Now;
         if ($this->stream === null) {
             $this->stream = false;
             if (($dir = Filer::docstore_tmpdir() ?? tempdir())) {
@@ -642,6 +647,8 @@ class CsvGenerator {
         }
     }
 
+    /** @param string $text
+     * @return $this */
     function add_comment($text) {
         preg_match_all('/([^\r\n]*)(?:\r\n?|\n|\z)/', $text, $m);
         if ($m[1][count($m[1]) - 1] === "") {
@@ -653,6 +660,7 @@ class CsvGenerator {
         return $this;
     }
 
+    /** @return $this */
     function add($row) {
         if (is_string($row)) {
             error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
@@ -709,6 +717,8 @@ class CsvGenerator {
         return $this;
     }
 
+    /** @param int $flags
+     * @return $this */
     function sort($flags = SORT_REGULAR) {
         assert(!($this->flags & self::FLAG_FLUSHED));
         sort($this->lines, $flags);
@@ -716,6 +726,7 @@ class CsvGenerator {
     }
 
 
+    /** @return string */
     function unparse() {
         assert($this->stream_length === 0);
         return $this->headerline . join("", $this->lines);
@@ -741,6 +752,7 @@ class CsvGenerator {
         header("X-Content-Type-Options: nosniff");
     }
 
+    /** @return int */
     function flush($stream = null) {
         $n = 0;
         if ($stream === null) {
