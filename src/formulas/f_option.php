@@ -16,14 +16,20 @@ class Option_Fexpr extends Fexpr {
         $ovar = "\$opt" . ($id < 0 ? "m" . -$id : $id);
         if ($state->check_gvar($ovar)) {
             $state->queryOptions["options"] = true;
-            $state->gstmt[] = "if (\$contact->can_view_option(\$prow, $id)) {";
-            $state->gstmt[] = "  $ovar = \$prow->option($id);";
             if ($this->option->type === "checkbox") {
-                $state->gstmt[] = "  $ovar = !!($ovar && {$ovar}->value);";
+                $state->gstmt[] = "{$ovar}_ov = \$prow->force_option($id);";
             } else {
-                $state->gstmt[] = "  $ovar = $ovar ? {$ovar}->value : null;";
+                $state->gstmt[] = "{$ovar}_ov = \$prow->option($id);";
             }
-            $state->gstmt[] = "} else\n    $ovar = null;";
+            $state->gstmt[] = "if ({$ovar}_ov !== null && \$contact->can_view_option(\$prow, {$ovar}_ov->option)) {";
+            if ($this->option->type === "checkbox") {
+                $state->gstmt[] = "  $ovar = !!{$ovar}_ov->value;";
+            } else {
+                $state->gstmt[] = "  $ovar = {$ovar}_ov->value;";
+            }
+            $state->gstmt[] = "} else {";
+            $state->gstmt[] = "  $ovar = null;";
+            $state->gstmt[] = "}";
         }
         return $ovar;
     }

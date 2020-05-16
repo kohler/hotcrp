@@ -1697,7 +1697,7 @@ class Formula implements Abbreviator, JsonSerializable {
     }
 
     private function _parse_option($pos1, $pos2, $text) {
-        $os = Option_SearchTerm::analyze($this->conf, $text, true);
+        $os = Option_SearchTerm::analyze($this->conf, $text);
         foreach ($os->warnings as $w) {
             $this->lerror($pos1, $pos2, $w);
         }
@@ -1724,7 +1724,9 @@ class Formula implements Abbreviator, JsonSerializable {
             }
             $e = $e ? new Or_Fexpr($e, $ex) : $ex;
         }
-        if ($e && $os->negated) {
+        if (!$e) {
+            $e = Constant_Fexpr::cnull();
+        } else if ($os->negated) {
             $e = new Not_Fexpr($e);
         }
         return $e;

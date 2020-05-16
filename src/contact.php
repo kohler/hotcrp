@@ -2904,11 +2904,8 @@ class Contact {
                         && ($this->can_view_some_authors() || $this->conf->setting("tracker")))));
     }
 
+    /** @param PaperOption $opt */
     function view_option_state(PaperInfo $prow, $opt) {
-        if (!is_object($opt)
-            && !($opt = $this->conf->paper_opts->get($opt))) {
-            return 0;
-        }
         if (!$this->can_view_paper($prow, $opt->has_document())
             || ($opt->final
                 && ($prow->outcome <= 0
@@ -2981,11 +2978,10 @@ class Contact {
         }
     }
 
+    /** @param PaperOption $opt */
     function perm_view_option(PaperInfo $prow, $opt) {
         if ($this->can_view_option($prow, $opt)) {
             return null;
-        } else if (!is_object($opt) && !($opt = $this->conf->paper_opts->get($opt))) {
-            return $prow->make_whynot();
         } else if (($whyNot = $this->perm_view_paper($prow, $opt->has_document()))) {
             return $whyNot;
         }
