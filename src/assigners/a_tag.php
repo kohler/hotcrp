@@ -365,12 +365,12 @@ class Tag_Assigner extends Assigner {
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $t = $this->tag;
         if ($this->index === null) {
-            return ["pid" => $this->pid, "action" => "cleartag", "tag" => $t];
+            $acsv->add(["pid" => $this->pid, "action" => "cleartag", "tag" => $t]);
         } else {
             if ($this->index) {
                 $t .= "#{$this->index}";
             }
-            return ["pid" => $this->pid, "action" => "tag", "tag" => $t];
+            $acsv->add(["pid" => $this->pid, "action" => "tag", "tag" => $t]);
         }
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {

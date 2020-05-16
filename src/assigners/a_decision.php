@@ -106,7 +106,7 @@ class Decision_Assigner extends Assigner {
         } else {
             $x["decision"] = $aset->conf->decision_name($this->item["_decision"]);
         }
-        return $x;
+        $acsv->add($x);
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
         $aset->show_column("status");

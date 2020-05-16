@@ -256,7 +256,6 @@ class Review_Assigner extends Assigner {
             $acsv->add(["action" => "unsubmitreview", "pid" => $this->pid,
                         "email" => $this->contact->email, "name" => $this->contact->name()]);
         }
-        return null;
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
         $aset->show_column("reviewers");

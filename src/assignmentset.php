@@ -810,9 +810,8 @@ class Assigner {
     function unparse_display(AssignmentSet $aset) {
         return "";
     }
-    /** @return ?array<string,int|string> */
+    /** @return void */
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        return null;
     }
     function account(AssignmentSet $aset, AssignmentCountSet $delta) {
     }
@@ -1774,10 +1773,7 @@ class AssignmentSet {
     function make_acsv() {
         $acsv = new AssignmentCsv;
         foreach ($this->assigners as $assigner) {
-            if (($x = $assigner->unparse_csv($this, $acsv))) {
-                assert(!isset($x[0]));
-                $acsv->add($x);
-            }
+            $assigner->unparse_csv($this, $acsv);
         }
         return $acsv;
     }

@@ -156,9 +156,11 @@ class Preference_Assigner extends Assigner {
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $p = $this->preference_data(false);
         $pref = $p ? unparse_preference($p[0], $p[1]) : "none";
-        return ["pid" => $this->pid, "action" => "preference",
-                "email" => $this->contact->email, "name" => $this->contact->name(),
-                "preference" => $pref];
+        $acsv->add([
+            "pid" => $this->pid, "action" => "preference",
+            "email" => $this->contact->email, "name" => $this->contact->name(),
+            "preference" => $pref
+        ]);
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperReviewPreference"] = "write";

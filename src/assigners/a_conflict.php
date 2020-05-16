@@ -209,7 +209,6 @@ class Conflict_Assigner extends Assigner {
                 "name" => $this->contact->name()
             ]);
         }
-        return null;
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
         $aset->show_column("pcconflicts");

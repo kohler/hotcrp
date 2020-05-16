@@ -114,11 +114,11 @@ class Follow_Assigner extends Assigner {
         } else {
             $ctype = "default";
         }
-        return [
+        $acsv->add([
             "pid" => $this->pid, "action" => "follow",
             "email" => $this->contact->email, "name" => $this->contact->name(),
             "following" => $ctype
-        ];
+        ]);
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperWatch"] = "write";

@@ -118,7 +118,7 @@ class Lead_Assigner extends Assigner {
             $x["email"] = $this->contact->email;
             $x["name"] = $this->contact->name();
         }
-        return $x;
+        $acsv->add($x);
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
         $aset->show_column($this->description);
