@@ -578,6 +578,10 @@ class PaperInfo {
         return $old_cimap;
     }
 
+    function invalidate_contact_info() {
+        $this->replace_contact_info_map([]);
+    }
+
     function load_my_contact_info($contact, $object) {
         $ci = PaperContactInfo::make_my($this, $contact, $object);
         $this->_contact_info[$ci->contactId] = $ci;

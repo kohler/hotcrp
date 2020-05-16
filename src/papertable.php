@@ -1646,8 +1646,8 @@ class PaperTable {
                 $js["class"] = "uic js-range-click conflict-entry";
                 $checked = Conflict::is_conflicted($ct);
                 echo '<span class="checkc">',
-                    Ht::checkbox("pcc$id", $checked ? $ct : Conflict::GENERAL,
-                                 $checked, $js),
+                    Ht::hidden("has_pcc$id", 1),
+                    Ht::checkbox("pcc$id", $checked ? $ct : Conflict::GENERAL, $checked, $js),
                     '</span>';
             }
 

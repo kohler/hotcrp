@@ -339,8 +339,9 @@ class PaperStatus extends MessageSet {
             $confset = $this->conf->conflict_types();
             $pcconflicts = array();
             foreach ($prow->pc_conflicts(true) as $id => $cflt) {
-                if (($ctname = $confset->unparse_json($cflt->conflictType)))
-                    $pcconflicts[$cflt->email] = $ctname;
+                if (($ct = Conflict::nonauthor_part($cflt->conflictType))) {
+                    $pcconflicts[$cflt->email] = $confset->unparse_json($ct);
+                }
             }
             if (!empty($pcconflicts)) {
                 $pj->pc_conflicts = (object) $pcconflicts;

@@ -7,34 +7,26 @@ class Conflict {
     private $conf;
     /** @var bool */
     private $_desc;
-    /** @var ?array<int,string> */
-    private $_tmap;
+    /** @var array<int,string> */
+    private $_tmap = [];
 
     const GENERAL = 2;
-    const PINNED = 8;
-    const PLACEHOLDER = 1000;
 
     static private $desc_map = [2 => "Recent collaborator",
-                                3 => "Advisor/advisee",
-                                4 => "Institutional",
-                                5 => "Personal",
-                                6 => "Other"];
-    static private $json_map = [0 => false,
-                                1 => true,
-                                2 => "collaborator",
-                                3 => "advisor",
-                                4 => "institution",
-                                5 => "personal",
-                                6 => "other",
-                                7 => true,
-                                8 => "pinned",
-                                CONFLICT_AUTHOR => "author",
-                                CONFLICT_CONTACTAUTHOR => "author"];
+                                4 => "Advisor/advisee",
+                                6 => "Institutional",
+                                8 => "Personal",
+                                10 => "Other"];
+    static private $json_map = [2 => "collaborator",
+                                4 => "advisor",
+                                6 => "institutional",
+                                8 => "personal",
+                                10 => "other"];
 
     /** @param int $ct
      * @return bool */
     static function is_conflicted($ct) {
-        return $ct > 0;
+        return $ct > CONFLICT_MAXUNCONFLICTED;
     }
     /** @param int $ct
      * @return bool */
@@ -44,20 +36,18 @@ class Conflict {
     /** @param int $ct
      * @return bool */
     static function is_pinned($ct) {
-        return $ct >= self::PINNED;
+        return ($ct & 1) !== 0;
     }
     /** @param int $ct
      * @param bool $pinned
      * @return int */
     static function set_pinned($ct, $pinned) {
-        if (self::is_author($ct) || (self::is_pinned($ct) === !!$pinned)) {
-            return $ct;
-        } else {
-            return $pinned ? self::PINNED : self::GENERAL;
-        }
+        return $pinned ? $ct | 1 : $ct & ~1;
     }
-    static function strip($ct) {
-        return $ct >= CONFLICT_AUTHOR ? $ct & 96 : $ct;
+    /** @param int $ct
+     * @return int */
+    static function nonauthor_part($ct) {
+        return $ct & 31;
     }
 
     function __construct(Conf $conf) {
@@ -71,32 +61,59 @@ class Conflict {
     }
 
     /** @param string $text
-     * @param int $default_yes
+     * @param int $old
      * @return int|false */
-    function parse_assignment($text, $default_yes) {
-        // Returns a conflict type; never is_author
-        if (is_bool($text)) {
-            return $text ? $default_yes : 0;
-        }
-        $text = strtolower(trim($text));
-        if ($text === "none") {
+    function parse_assignment($text, $old) {
+        // Returns a conflict type
+        if ($text === true) {
+            return $old > CONFLICT_MAXUNCONFLICTED ? $old : Conflict::GENERAL;
+        } else if ($text === false) {
             return 0;
-        } else if (($b = friendly_boolean($text)) !== null) {
-            return $b ? $default_yes : 0;
-        } else if ($text === "conflict") {
-            return $default_yes;
-        } else if ($text === "collab" || $text === "collaborator" || $text === "recent collaborator") {
-            return self::GENERAL /* 2 */;
-        } else if ($text === "advisor" || $text === "student" || $text === "advisor/student" || $text === "advisee") {
-            return 3;
-        } else if ($text === "institution" || $text === "institutional") {
-            return 4;
-        } else if ($text === "personal") {
-            return 5;
-        } else if ($text === "other") {
-            return 6;
-        } else if ($text === "confirmed" || $text === "chair-confirmed" || $text === "pinned") {
-            return self::PINNED;
+        }
+        $pinned = null;
+        $ct = null;
+        $au = 0;
+        foreach (explode(" ", strtolower($text)) as $w) {
+            $thisct = null;
+            if ($w === "pin" || $w === "pinned") {
+                $pinned = true;
+            } else if ($w === "unpin" || $w === "unpinned") {
+                $pinned = false;
+            } else if ($w === "none" || $w === "unconflicted" || $w === "noconflict" || $w === "n" || $w === "no") {
+                $thisct = 0;
+            } else if ($w === "conflict" || $w === "conflicted" || $w === "y" || $w === "yes") {
+                $thisct = $old > CONFLICT_MAXUNCONFLICTED ? $old : Conflict::GENERAL;
+            } else if ($w === "author") {
+                $au |= CONFLICT_AUTHOR;
+            } else if ($w === "contact") {
+                $au |= CONFLICT_CONTACTAUTHOR;
+            } else if ($w === "collab" || $w === "collaborator") {
+                $thisct = 2;
+            } else if ($w === "student" || $w === "advisor" || $w === "advisee") {
+                $thisct = 4;
+            } else if ($w === "institution" || $w === "institutional") {
+                $thisct = 6;
+            } else if ($w === "personal") {
+                $thisct = 8;
+            } else if ($w === "other") {
+                $thisct = 10;
+            } else if (ctype_digit($w)) {
+                $thisct = (int) $w;
+            } else if ($w !== "") {
+                return false;
+            }
+            if ($thisct !== null) {
+                if ($ct !== null && $ct !== $thisct) {
+                    return false;
+                }
+                $ct = $thisct;
+            }
+        }
+        if (($au !== 0 || is_bool($pinned)) && $ct === null) {
+            $ct = $old;
+        }
+        if ($ct !== null) {
+            return self::set_pinned($au | $ct, $pinned ?? (($ct & 1) !== 0));
         } else {
             return false;
         }
@@ -106,37 +123,34 @@ class Conflict {
     function parse_json($j) {
         if (is_bool($j)) {
             return $j ? self::GENERAL : 0;
-        } else if (is_int($j) && isset(self::$json_map[$j])) {
+        } else if (is_int($j)) {
             return $j;
         } else if (is_string($j)) {
-            return $this->parse_assignment($j, self::GENERAL);
+            return $this->parse_assignment($j, 0);
         } else {
             return false;
         }
     }
 
-    private function tmap() {
-        if ($this->_tmap === null) {
-            $this->_tmap = [];
-            foreach ([0 => "No conflict",
-                      1 => "Conflict",
-                      self::PINNED => "Pinned conflict",
-                      CONFLICT_AUTHOR => "Author",
-                      CONFLICT_CONTACTAUTHOR => "Contact"] as $n => $t) {
-                $this->_tmap[$n] = $this->conf->_c("conflict_type", $t);
-            }
-            foreach (self::$desc_map as $n => $t) {
-                $this->_tmap[$n] = $this->conf->_c("conflict_type", $t);
-            }
-        }
-        return $this->_tmap;
-    }
-
-    /** @param int $ct
-     * @return string */
+    /** @param int $ct */
     function unparse_text($ct) {
-        $tm = $this->tmap();
-        return $tm[self::strip($ct)] ?? $tm[1];
+        if (!isset($this->_tmap[$ct])) {
+            if ($ct <= CONFLICT_MAXUNCONFLICTED) {
+                $t = "No conflict";
+            } else if ($ct >= CONFLICT_CONTACTAUTHOR) {
+                $t = "Contact";
+            } else if ($ct >= CONFLICT_AUTHOR) {
+                $t = "Author";
+            } else if ($ct === (self::GENERAL | 1)) {
+                $t = "Pinned conflict";
+            } else if ($this->_desc && isset(self::$desc_map[$ct & ~1])) {
+                $t = self::$desc_map[$ct & ~1];
+            } else {
+                $t = "Conflict";
+            }
+            $this->_tmap[$ct] = $this->conf->_c("conflict_type", $t);
+        }
+        return $this->_tmap[$ct];
     }
 
     /** @param int $ct
@@ -148,8 +162,10 @@ class Conflict {
     /** @param int $ct
      * @return string */
     function unparse_csv($ct) {
-        if ($ct <= 0 || $ct === self::PINNED || !$this->_desc) {
-            return $ct <= 0 ? "N" : "Y";
+        if ($ct <= CONFLICT_MAXUNCONFLICTED) {
+            return "N";
+        } else if (!$this->_desc) {
+            return "Y";
         } else {
             return $this->unparse_text($ct);
         }
@@ -158,15 +174,37 @@ class Conflict {
     /** @param int $ct
      * return bool|string */
     function unparse_json($ct) {
-        return self::$json_map[self::strip($ct)];
+        if ($ct <= 0) {
+            return false;
+        } else if (!$this->_desc && $ct === self::GENERAL) {
+            return true;
+        }
+        $w = [];
+        if ($ct & 1) {
+            $w[] = "pinned";
+        }
+        if (isset(self::$json_map[$ct & 30])) {
+            $w[] = self::$json_map[$ct & 30];
+        } else if ($ct & 30) {
+            $w[] = (string) ($ct & 30);
+        } else if ($ct & 1) {
+            $w[] = "unconflicted";
+        }
+        if ($ct & CONFLICT_AUTHOR) {
+            $w[] = "author";
+        }
+        if ($ct & CONFLICT_CONTACTAUTHOR) {
+            $w[] = "contact";
+        }
+        return join(" ", $w);
     }
 
     /** @param int $ct
      * @return string */
     function unparse_assignment($ct) {
-        $j = self::$json_map[self::strip($ct)] ?? null;
+        $j = $this->unparse_json($ct);
         if (is_bool($j)) {
-            return $j ? "yes" : "none";
+            return $j ? "conflict" : "no";
         } else {
             return $j;
         }

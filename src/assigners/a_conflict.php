@@ -35,48 +35,27 @@ class Conflict_AssignmentParser extends AssignmentParser {
             return true;
         }
     }
-    function make_conflict_type($req, AssignmentState $state) {
+    /** @return ?CountMatcher */
+    private function _matcher($req, Conf $conf) {
         if ($this->remove) {
-            $s = $this->iscontact ? ">=" . CONFLICT_CONTACTAUTHOR : ">" . CONFLICT_MAXUNCONFLICTED;
-            return [new CountMatcher($s), 0, false];
-        } else if ($this->iscontact) {
-            return [null, CONFLICT_CONTACTAUTHOR, false];
+            $min = $this->iscontact ? CONFLICT_CONTACTAUTHOR : CONFLICT_MAXUNCONFLICTED + 1;
+            return new CountMatcher(">=$min");
+        } else if (!$this->iscontact
+                   && ($pos = strpos((string) $req["conflict"], ":")) !== false) {
+            $x = strtolower(substr($req["conflict"], 0, $pos));
+            if (in_array($x, ["", "any", "all", "y", "yes", "conflict", "conflicted"])) {
+                return new CountMatcher(">" . CONFLICT_MAXUNCONFLICTED);
+            } else if (($ct = $conf->conflict_types()->parse_assignment($x, 0)) !== false) {
+                return new CountMatcher("=" . $ct);
+            } else {
+                return null;
+            }
         } else {
-            $cts = strtolower(trim((string) $req["conflict"]));
-            $cm = null;
-            $error = false;
-            $confset = $state->conf->conflict_types();
-            if (($colon = strpos($cts, ":")) !== false) {
-                $octs = trim(substr($cts, 0, $colon));
-                if ($octs === "" || $octs === "any" || $octs === "all") {
-                    $cm = new CountMatcher(">" . CONFLICT_MAXUNCONFLICTED);
-                } else if (($ct = $confset->parse_assignment($octs, Conflict::PLACEHOLDER)) !== false) {
-                    $cm = new CountMatcher("=" . $ct);
-                } else {
-                    $error = true;
-                }
-                $cts = trim(substr($cts, $colon + 1));
-                if ($cts === "") {
-                    $cts = "none";
-                }
-            }
-            if ($cts === "") {
-                $ct = Conflict::PLACEHOLDER;
-            } else if (($ct = $confset->parse_assignment($cts, Conflict::PLACEHOLDER)) === false) {
-                $ct = Conflict::PLACEHOLDER;
-                $error = true;
-            }
-            return [$cm, $ct, $error];
+            return null;
         }
-    }
-    function conflict_type($req, AssignmentState $state) {
-        if (!isset($req["_conflict_type"]) || !is_array($req["_conflict_type"])) {
-            $req["_conflict_type"] = $this->make_conflict_type($req, $state);
-        }
-        return $req["_conflict_type"];
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
-        list($matcher, $ct, $error) = $this->conflict_type($req, $state);
+        $matcher = $this->_matcher($req, $state->conf);
         if ($matcher && !$matcher->test(0)) {
             $m = $state->query(["type" => "conflict", "pid" => $prow->paperId]);
             $cids = array_map(function ($x) { return $x["cid"]; }, $m);
@@ -90,33 +69,40 @@ class Conflict_AssignmentParser extends AssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $res = $state->remove(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId]);
-        $admin = $state->user->can_administer($prow);
-        list($matcher, $ct, $error) = $this->conflict_type($req, $state);
-        if ($error) {
-            return "Bad conflict type.";
-        }
-        if (!$this->remove
-            && !$this->iscontact
-            && $ct !== Conflict::PLACEHOLDER
-            && !$admin) {
-            $ct = Conflict::set_pinned($ct, false);
-        }
         $old_ct = empty($res) ? 0 : $res[0]["_ctype"];
+        $admin = $state->user->can_administer($prow);
+        if ($this->remove) {
+            $ct = 0;
+        } else if ($this->iscontact) {
+            $ct = CONFLICT_CONTACTAUTHOR;
+        } else {
+            $text = (string) $req["conflict"];
+            if (($colon = strpos($text, ":")) !== false) {
+                $text = substr($text, $colon + 1);
+            }
+            $old_ct_na = Conflict::nonauthor_part($old_ct);
+            if ($text === "") {
+                if ($old_ct_na <= CONFLICT_MAXUNCONFLICTED) {
+                    $ct = Conflict::set_pinned(Conflict::GENERAL, $admin);
+                } else {
+                    $ct = $old_ct_na;
+                }
+            } else {
+                $ct = $state->conf->conflict_types()->parse_assignment($text, $old_ct_na);
+            }
+            if ($ct === false || Conflict::is_author($ct)) {
+                return "Bad conflict type “{$text}”.";
+            }
+            if (!$admin) {
+                $ct = Conflict::set_pinned($ct, false);
+            }
+        }
         $mask = $this->iscontact ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR - 1;
+        $matcher = $this->_matcher($req, $state->conf);
         if (($matcher && !$matcher->test($old_ct & $mask))
             || (!$this->iscontact && Conflict::is_pinned($old_ct) && !$admin)) {
             $new_ct = $old_ct;
-        } else if ($this->iscontact) {
-            assert($ct === 0 || $ct === CONFLICT_CONTACTAUTHOR);
-            $new_ct = ($old_ct & ~$mask) | $ct;
         } else {
-            if ($ct === Conflict::PLACEHOLDER) {
-                if (Conflict::is_conflicted($old_ct & $mask)) {
-                    $ct = $old_ct & $mask;
-                } else {
-                    $ct = Conflict::set_pinned(Conflict::GENERAL, $admin);
-                }
-            }
             $new_ct = ($old_ct & ~$mask) | $ct;
         }
         if ($new_ct !== 0) {
