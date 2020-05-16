@@ -450,6 +450,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
     }
 
     function normalize_option_value($fval) {
+        assert($this->has_options);
         if ($this->parse_option_value($fval)) {
             return $this->option_letter ? $fval : (int) $fval;
         } else {
@@ -457,19 +458,39 @@ class ReviewField implements Abbreviator, JsonSerializable {
         }
     }
 
-    function unparse_web_control($subtype, $fval, $rval) {
+    /** @param int $num
+     * @param int $fv
+     * @param int $reqv */
+    private function echo_option($num, $fv, $reqv) {
+        $opt = ["id" => "{$this->id}_{$num}"];
+        if ($fv !== $reqv) {
+            $opt["data-default-checked"] = $reqv === $num;
+        }
+        echo '<label class="checki', ($num ? "" : " g"), '"><span class="checkc">',
+            Ht::radio($this->id, $num, $fv === $num, $opt), '</span>';
+        if ($num) {
+            echo $this->unparse_value($num, self::VALUE_REV_NUM),
+                ' ', htmlspecialchars($this->options[$num]);
+        } else {
+            echo 'No entry';
+        }
+        echo '</label>';
+    }
+
+    function echo_web_edit(ReviewForm $rf, $fv, $reqv) {
         if ($this->has_options) {
-            $opt = ["id" => "{$this->id}_{$subtype}"];
-            if ($fval !== $rval) {
-                $opt["data-default-checked"] = $rval === $subtype;
+            foreach ($this->options as $num => $text) {
+                $this->echo_option($num, $fv, $reqv);
             }
-            return Ht::radio($this->id, $subtype, $fval === $subtype, $opt);
+            if ($this->allow_empty) {
+                $this->echo_option(0, $fv, $reqv);
+            }
         } else {
             $opt = ["class" => "reviewtext need-autogrow", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
-            if ($fval !== $rval) {
-                $opt["data-default-value"] = (string) $rval;
+            if ($fv !== $reqv) {
+                $opt["data-default-value"] = (string) $reqv;
             }
-            return Ht::textarea($this->id, (string) $fval, $opt);
+            echo Ht::textarea($this->id, (string) $fv, $opt);
         }
     }
 }
@@ -680,6 +701,7 @@ class ReviewForm implements JsonSerializable {
                 $fval = $rvalues->req[$fid];
             }
             if ($f->has_options) {
+                $fval = $f->normalize_option_value($fval);
                 $rval = $f->normalize_option_value($rval);
             }
 
@@ -713,26 +735,10 @@ class ReviewForm implements JsonSerializable {
             }
 
             echo '<div class="revev">';
-            if ($f->has_options) {
-                // Keys to $f->options are string if option_letter, else int.
-                // Need to match exactly.
-                $fval = $f->normalize_option_value($fval);
-                $rval = $f->normalize_option_value($rval);
-                foreach ($f->options as $num => $what) {
-                    echo '<label class="checki"><span class="checkc">',
-                        $f->unparse_web_control($num, $fval, $rval),
-                        '</span>', $f->unparse_value($num, ReviewField::VALUE_REV_NUM),
-                        ' ', htmlspecialchars($what), '</label>';
-                }
-                if ($f->allow_empty) {
-                    echo '<label class="checki g"><span class="checkc">',
-                        $f->unparse_web_control(0, $fval, $rval),
-                        '</span>No entry</label>';
-                }
-            } else {
-                echo $format_description, $f->unparse_web_control(null, $fval, $rval);
+            if (!$f->has_options) {
+                echo $format_description;
             }
-
+            $f->echo_web_edit($this, $fval, $rval);
             echo "</div></div>\n";
         }
         echo "</div>\n";
