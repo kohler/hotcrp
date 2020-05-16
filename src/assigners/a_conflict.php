@@ -37,7 +37,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
     }
     function make_conflict_type($req, AssignmentState $state) {
         if ($this->remove) {
-            $s = $this->iscontact ? "=" . CONFLICT_CONTACTAUTHOR : "!=0";
+            $s = $this->iscontact ? ">=" . CONFLICT_CONTACTAUTHOR : ">" . CONFLICT_MAXUNCONFLICTED;
             return [new CountMatcher($s), 0, false];
         } else if ($this->iscontact) {
             return [null, CONFLICT_CONTACTAUTHOR, false];
@@ -49,7 +49,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             if (($colon = strpos($cts, ":")) !== false) {
                 $octs = trim(substr($cts, 0, $colon));
                 if ($octs === "" || $octs === "any" || $octs === "all") {
-                    $cm = new CountMatcher("!=0");
+                    $cm = new CountMatcher(">" . CONFLICT_MAXUNCONFLICTED);
                 } else if (($ct = $confset->parse_assignment($octs, Conflict::PLACEHOLDER)) !== false) {
                     $cm = new CountMatcher("=" . $ct);
                 } else {
@@ -92,9 +92,6 @@ class Conflict_AssignmentParser extends AssignmentParser {
         $res = $state->remove(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId]);
         $admin = $state->user->can_administer($prow);
         list($matcher, $ct, $error) = $this->conflict_type($req, $state);
-        assert($this->iscontact
-               ? $ct === 0 || $ct === CONFLICT_CONTACTAUTHOR
-               : $ct === Conflict::PLACEHOLDER || $ct < CONFLICT_AUTHOR);
         if ($error) {
             return "Bad conflict type.";
         }
@@ -105,24 +102,25 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $ct = Conflict::set_pinned($ct, false);
         }
         $old_ct = empty($res) ? 0 : $res[0]["_ctype"];
-        if ((!$this->iscontact
-             && Conflict::is_pinned($old_ct)
-             && (Conflict::is_author($old_ct)
-                 || (!$admin && !Conflict::is_pinned($ct))))
-            || ($this->iscontact
-                && $ct === 0
-                && !Conflict::is_author($old_ct))
-            || ($ct === Conflict::PLACEHOLDER
-                && Conflict::is_conflicted($old_ct))
-            || ($matcher
-                && !$matcher->test($old_ct))) {
-            $ct = $old_ct;
+        $mask = $this->iscontact ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR - 1;
+        if (($matcher && !$matcher->test($old_ct & $mask))
+            || (!$this->iscontact && Conflict::is_pinned($old_ct) && !$admin)) {
+            $new_ct = $old_ct;
+        } else if ($this->iscontact) {
+            assert($ct === 0 || $ct === CONFLICT_CONTACTAUTHOR);
+            $new_ct = ($old_ct & ~$mask) | $ct;
+        } else {
+            if ($ct === Conflict::PLACEHOLDER) {
+                if (Conflict::is_conflicted($old_ct & $mask)) {
+                    $ct = $old_ct & $mask;
+                } else {
+                    $ct = $admin ? Conflict::PINNED : Conflict::GENERAL;
+                }
+            }
+            $new_ct = ($old_ct & ~$mask) | $ct;
         }
-        if ($ct === Conflict::PLACEHOLDER) {
-            $ct = $admin ? Conflict::PINNED : Conflict::GENERAL;
-        }
-        if ($ct !== 0) {
-            $state->add(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId, "_ctype" => $ct]);
+        if ($new_ct !== 0) {
+            $state->add(["type" => "conflict", "pid" => $prow->paperId, "cid" => $contact->contactId, "_ctype" => $new_ct]);
         }
         return true;
     }
@@ -132,11 +130,13 @@ class Conflict_Assigner extends Assigner {
     private $ctype;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
-        $this->ctype = $item->post("_ctype");
+        $this->ctype = $item->post("_ctype") ?? 0;
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
-        if ($item->deleted()
-            && $item->pre("_ctype") >= CONFLICT_CONTACTAUTHOR) {
+        // cannot change CONFLICT_AUTHOR through assignment
+        assert(!((($item->pre("ctype") ?? 0) ^ ($item->post("ctype") ?? 0)) & CONFLICT_AUTHOR));
+        if ($item->pre("_ctype") >= CONFLICT_CONTACTAUTHOR
+            && $item->post("_ctype") < CONFLICT_CONTACTAUTHOR) {
             $ncontacts = 0;
             foreach ($state->query(["type" => "conflict", "pid" => $item["pid"]]) as $m) {
                 if ($m["_ctype"] >= CONFLICT_CONTACTAUTHOR)
@@ -170,7 +170,7 @@ class Conflict_Assigner extends Assigner {
         return "conflict";
     }
     private function icon($before) {
-        $ctype = $this->item->get($before, "_ctype");
+        $ctype = $this->item->get($before, "_ctype") ?? 0;
         if (Conflict::is_author($ctype)) {
             return review_type_icon(-2);
         } else if (Conflict::is_conflicted($ctype)) {
@@ -191,13 +191,25 @@ class Conflict_Assigner extends Assigner {
         return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        return [
-            "pid" => $this->pid,
-            "action" => "conflict",
-            "email" => $this->contact->email,
-            "name" => $this->contact->name(),
-            "conflict" => $aset->conf->conflict_types()->unparse_assignment($this->ctype)
-        ];
+        $old_ct = $this->item->pre("_ctype") ?? 0;
+        if (($old_ct ^ $this->ctype) & (CONFLICT_AUTHOR - 1)) {
+            $acsv->add([
+                "pid" => $this->pid,
+                "action" => "conflict",
+                "email" => $this->contact->email,
+                "name" => $this->contact->name(),
+                "conflict" => $aset->conf->conflict_types()->unparse_assignment($this->ctype & (CONFLICT_AUTHOR - 1))
+            ]);
+        }
+        if (($old_ct ^ $this->ctype) & CONFLICT_CONTACTAUTHOR) {
+            $acsv->add([
+                "pid" => $this->pid,
+                "action" => $this->ctype & CONFLICT_CONTACTAUTHOR ? "clearcontact" : "contact",
+                "email" => $this->contact->email,
+                "name" => $this->contact->name()
+            ]);
+        }
+        return null;
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
         $aset->show_column("pcconflicts");

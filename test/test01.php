@@ -866,6 +866,26 @@ xassert_assign_fail($user_sclin, "paper,action,user\n3,clearconflict,rguerin@ibm
 $paper3 = $Conf->fetch_paper(3, $user_chair);
 xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
 
+xassert(!$paper3->has_author($user_rguerin));
+xassert($paper3->has_conflict($user_rguerin));
+xassert_assign($user_sclin, "paper,action,user\n3,contact,rguerin@ibm.com");
+$paper3 = $Conf->fetch_paper(3, $user_chair);
+xassert($paper3->has_author($user_rguerin));
+xassert($paper3->has_conflict($user_rguerin));
+xassert_assign($user_sclin, "paper,action,user\n3,clearcontact,rguerin@ibm.com");
+$paper3 = $Conf->fetch_paper(3, $user_chair);
+xassert(!$paper3->has_author($user_rguerin));
+xassert($paper3->has_conflict($user_rguerin));
+xassert_assign($user_sclin, "paper,action,user\n3,contact,rguerin@ibm.com");
+xassert_assign($user_chair, "paper,action,user\n3,clearconflict,rguerin@ibm.com");
+$paper3 = $Conf->fetch_paper(3, $user_chair);
+xassert($paper3->has_author($user_rguerin));
+xassert($paper3->has_conflict($user_rguerin));
+xassert_assign($user_sclin, "paper,action,user\n3,clearcontact,rguerin@ibm.com");
+$paper3 = $Conf->fetch_paper(3, $user_chair);
+xassert(!$paper3->has_author($user_rguerin));
+xassert(!$paper3->has_conflict($user_rguerin));
+
 xassert_assign($user_chair, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n3,clearconflict,sclin@leland.stanford.edu\n3,clearcontact,mgbaker@cs.stanford.edu\n");
 $paper3 = $Conf->fetch_paper(3, $user_chair);
 xassert_eqq(sorted_conflicts($paper3, true), "sclin@leland.stanford.edu");
