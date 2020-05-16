@@ -5,7 +5,9 @@
 class Conflict {
     /** @var Conf */
     private $conf;
+    /** @var bool */
     private $_desc;
+    /** @var ?array<int,string> */
     private $_tmap;
 
     const GENERAL = 2;
@@ -29,15 +31,24 @@ class Conflict {
                                 CONFLICT_AUTHOR => "author",
                                 CONFLICT_CONTACTAUTHOR => "author"];
 
+    /** @param int $ct
+     * @return bool */
     static function is_conflicted($ct) {
         return $ct > 0;
     }
+    /** @param int $ct
+     * @return bool */
     static function is_author($ct) {
         return $ct >= CONFLICT_AUTHOR;
     }
+    /** @param int $ct
+     * @return bool */
     static function is_pinned($ct) {
         return $ct >= self::PINNED;
     }
+    /** @param int $ct
+     * @param bool $pinned
+     * @return int */
     static function set_pinned($ct, $pinned) {
         if (self::is_author($ct) || (self::is_pinned($ct) === !!$pinned)) {
             return $ct;
@@ -51,11 +62,14 @@ class Conflict {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->_desc = $conf->setting("sub_pcconfdesc");
+        $this->_desc = !!$conf->setting("sub_pcconfdesc");
     }
+
+    /** @return list<int> */
     function basic_conflict_types() {
         return array_keys(self::$desc_map);
     }
+
     /** @param string $text
      * @param int $default_yes
      * @return int|false */
@@ -87,6 +101,7 @@ class Conflict {
             return false;
         }
     }
+
     /** @return int|false */
     function parse_json($j) {
         if (is_bool($j)) {
@@ -116,13 +131,22 @@ class Conflict {
         }
         return $this->_tmap;
     }
+
+    /** @param int $ct
+     * @return string */
     function unparse_text($ct) {
         $tm = $this->tmap();
         return $tm[self::strip($ct)] ?? $tm[1];
     }
+
+    /** @param int $ct
+     * @return string */
     function unparse_html($ct) {
         return htmlspecialchars($this->unparse_text($ct));
     }
+
+    /** @param int $ct
+     * @return string */
     function unparse_csv($ct) {
         if ($ct <= 0 || $ct === self::PINNED || !$this->_desc) {
             return $ct <= 0 ? "N" : "Y";
@@ -130,9 +154,15 @@ class Conflict {
             return $this->unparse_text($ct);
         }
     }
+
+    /** @param int $ct
+     * return bool|string */
     function unparse_json($ct) {
         return self::$json_map[self::strip($ct)];
     }
+
+    /** @param int $ct
+     * @return string */
     function unparse_assignment($ct) {
         $j = self::$json_map[self::strip($ct)] ?? null;
         if (is_bool($j)) {

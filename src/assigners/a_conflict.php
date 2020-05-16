@@ -114,7 +114,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
                 if (Conflict::is_conflicted($old_ct & $mask)) {
                     $ct = $old_ct & $mask;
                 } else {
-                    $ct = $admin ? Conflict::PINNED : Conflict::GENERAL;
+                    $ct = Conflict::set_pinned(Conflict::GENERAL, $admin);
                 }
             }
             $new_ct = ($old_ct & ~$mask) | $ct;

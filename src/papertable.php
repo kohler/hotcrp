@@ -1576,7 +1576,8 @@ class PaperTable {
             $extra = ["class" => "pcconf-selector"];
             if ($this->admin) {
                 $ctypes["xsep"] = null;
-                $ctypes[Conflict::PINNED] = $confset->unparse_text(Conflict::PINNED);
+                $ct = Conflict::set_pinned(Conflict::GENERAL, true);
+                $ctypes[$ct] = $confset->unparse_text($ct);
             }
             $author_ctype = $confset->unparse_html(CONFLICT_AUTHOR);
         } else {

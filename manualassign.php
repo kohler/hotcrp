@@ -75,7 +75,7 @@ function saveAssignments($qreq, $reviewer) {
         }
 
         if ($assrev < 0) {
-            $newct = Conflict::is_conflicted($ct) ? $ct : Conflict::PINNED;
+            $newct = Conflict::is_conflicted($ct) ? $ct : Conflict::set_pinned(Conflict::GENERAL, true);
         } else {
             $newct = Conflict::is_conflicted($ct) ? 0 : $ct;
         }
