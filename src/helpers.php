@@ -199,7 +199,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         $row = $result->fetch_row();
         Dbl::free($result);
         $paperText = htmlspecialchars($row ? $row[0] : $id);
-        $urlrest["u"] = urlencode($id);
+        $urlrest["u"] = urlencode((string) $id);
     } else {
         $paperText = "#$id";
         $urlrest["p"] = $id;

@@ -1675,8 +1675,14 @@ class SearchQueryInfo {
 }
 
 class PaperSearch {
+    /** @var Conf
+     * @phan-readonly */
     public $conf;
+    /** @var Contact
+     * @phan-readonly */
     public $user;
+    /** @var int
+     * @phan-readonly */
     public $cid;
 
     /** @var Contact|null|false */
@@ -1688,6 +1694,7 @@ class PaperSearch {
     public $warnings = array();
     private $_quiet_count = 0;
 
+    /** @var string */
     public $q;
     private $_qt;
     private $_qt_fields;
@@ -1697,7 +1704,9 @@ class PaperSearch {
 
     public $regex = [];
     public $contradictions = [];
+    /** @var ?array<string,TextPregexes> */
     private $_match_preg;
+    /** @var ?string */
     private $_match_preg_query;
 
     private $contact_match = array();
@@ -1713,8 +1722,10 @@ class PaperSearch {
     public $is_order_anno = false;
     /** @var ?array<int,list<string>> */
     public $highlightmap;
+    /** @var list<ListSorter> */
     private $_sorters = [];
     private $_default_sort; // XXX should be used more often
+    /** @var ?list<string> */
     private $_highlight_tags;
 
     /** @var list<int> */
@@ -1747,8 +1758,9 @@ class PaperSearch {
 
     // NB: `$options` can come from an unsanitized user request.
     function __construct(Contact $user, $options) {
-        if (is_string($options))
+        if (is_string($options)) {
             $options = array("q" => $options);
+        }
 
         // contact facts
         $this->conf = $user->conf;
@@ -2635,6 +2647,7 @@ class PaperSearch {
         }
     }
 
+    /** @return SearchTerm */
     function term() {
         if ($this->_qe === null) {
             if ($this->q === "re:me") {
@@ -2875,6 +2888,7 @@ class PaperSearch {
         return $this->term()->get_float("view", []);
     }
 
+    /** @return list<ListSorter> */
     function sorter_list() {
         $this->_prepare();
         return $this->_sorters;
@@ -2892,6 +2906,7 @@ class PaperSearch {
         }
     }
 
+    /** @return bool */
     function test(PaperInfo $prow) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $qe = $this->term();
@@ -2901,6 +2916,8 @@ class PaperSearch {
         return $x;
     }
 
+    /** @param PaperInfoSet|Iterable<PaperInfo> $prows
+     * @return list<PaperInfo> */
     function filter($prows) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $qe = $this->term();
@@ -2915,6 +2932,7 @@ class PaperSearch {
         return $results;
     }
 
+    /** @return bool */
     function test_review(PaperInfo $prow, ReviewInfo $rrow) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $qe = $this->term();
@@ -2925,6 +2943,7 @@ class PaperSearch {
         return $x;
     }
 
+    /** @return array<string,mixed>|false */
     function simple_search_options() {
         $limit = $xlimit = $this->limit();
         if ($this->q === "re:me"
@@ -2993,6 +3012,7 @@ class PaperSearch {
         return $queryOptions;
     }
 
+    /** @return string|false */
     function alternate_query() {
         if ($this->q !== ""
             && $this->q[0] !== "#"
@@ -3007,6 +3027,7 @@ class PaperSearch {
         return false;
     }
 
+    /** @return string */
     function url_site_relative_raw($q = null) {
         $url = $this->_urlbase;
         if ($q === null) {
@@ -3037,6 +3058,7 @@ class PaperSearch {
         }
     }
 
+    /** @return string */
     function description($listname) {
         if ($listname)
             $lx = $this->conf->_($listname);
@@ -3058,29 +3080,34 @@ class PaperSearch {
         }
     }
 
+    /** @param ?string $sort
+     * @return string */
     function listid($sort = null) {
         $rest = [];
         if ($this->_reviewer_user
             && $this->_reviewer_user->contactId !== $this->cid) {
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
         }
-        if ((string) $sort !== "") {
+        if ($sort !== null && $sort !== "") {
             $rest[] = "sort=" . urlencode($sort);
         }
         return "p/" . $this->_named_limit . "/" . urlencode($this->q)
             . ($rest ? "/" . join("&", $rest) : "");
     }
 
+    /** @param string $listid
+     * @return ?array<string,string> */
     static function unparse_listid($listid) {
-        if (preg_match('{\Ap/([^/]+)/([^/]*)(?:|/([^/]*))\z}', $listid, $m)) {
+        if (preg_match('/\Ap\/([^\/]+)\/([^\/]*)(?:|\/([^\/]*))\z/', $listid, $m)) {
             $args = ["t" => $m[1], "q" => urldecode($m[2])];
             if (isset($m[3]) && $m[3] !== "") {
                 foreach (explode("&", $m[3]) as $arg) {
-                    if (str_starts_with($arg, "sort="))
+                    if (str_starts_with($arg, "sort=")) {
                         $args["sort"] = urldecode(substr($arg, 5));
-                    else
+                    } else {
                         // XXX `reviewer`
                         error_log(caller_landmark() . ": listid includes $arg");
+                    }
                 }
             }
             return $args;
@@ -3089,6 +3116,10 @@ class PaperSearch {
         }
     }
 
+    /** @param list<int> $ids
+     * @param ?string $listname
+     * @param ?string $sort
+     * @return SessionList */
     function create_session_list_object($ids, $listname, $sort = null) {
         $sort = $sort !== null ? $sort : $this->_default_sort;
         $l = new SessionList($this->listid($sort), $ids,
@@ -3099,53 +3130,61 @@ class PaperSearch {
         return $l;
     }
 
+    /** @return SessionList */
     function session_list_object() {
         return $this->create_session_list_object($this->sorted_paper_ids(), null);
     }
 
+    /** @return list<string> */
     function highlight_tags() {
         if ($this->_highlight_tags === null) {
             $this->_prepare();
-            $this->_highlight_tags = $this->term()->float["tags"] ?? [];
+            $ht = $this->term()->float["tags"] ?? [];
             foreach ($this->_sorters as $s) {
                 if ($s->type[0] === "#")
-                    $this->_highlight_tags[] = substr($s->type, 1);
+                    $ht[] = substr($s->type, 1);
             }
-            $this->_highlight_tags = array_values(array_unique($this->_highlight_tags));
+            $this->_highlight_tags = array_values(array_unique($ht));
         }
         return $this->_highlight_tags;
     }
 
 
+    /** @param string $q */
     function set_field_highlighter_query($q) {
         $ps = new PaperSearch($this->user, ["q" => $q]);
         $this->_match_preg = $ps->field_highlighters();
         $this->_match_preg_query = $q;
     }
 
+    /** @return array<string,TextPregexes> */
     function field_highlighters() {
         if ($this->_match_preg === null) {
             $this->_match_preg = [];
             $this->term();
             if (!empty($this->regex)) {
                 foreach (TextMatch_SearchTerm::$map as $k => $v) {
-                    if (isset($this->regex[$k]) && !empty($this->regex[$k]))
-                        $this->_match_preg[$v] = Text::merge_pregexes($this->regex[$k]);
+                    if (isset($this->regex[$k])
+                        && ($preg = Text::merge_pregexes($this->regex[$k])))
+                        $this->_match_preg[$v] = $preg;
                 }
             }
         }
         return $this->_match_preg;
     }
 
+    /** @return string */
     function field_highlighter($field) {
         return ($this->field_highlighters())[$field] ?? "";
     }
 
 
+    /** @return string */
     static function search_type_description(Conf $conf, $t) {
         return $conf->_c("search_type", self::$search_type_names[$t] ?? "Submissions");
     }
 
+    /** @return string */
     static function canonical_search_type($reqtype) {
         if ($reqtype === 0 || $reqtype === "0") {
             return "";
@@ -3164,6 +3203,8 @@ class PaperSearch {
         }
     }
 
+    /** @param ?string $reqtype
+     * @return array<string,string> */
     static function search_types(Contact $user, $reqtype = null) {
         $ts = [];
         if ($reqtype === "viewable") {
@@ -3215,6 +3256,7 @@ class PaperSearch {
         return self::expand_search_types($user->conf, $ts);
     }
 
+    /** @return array<string,string> */
     static function manager_search_types(Contact $user) {
         if ($user->privChair) {
             if ($user->conf->has_any_manager()) {
@@ -3229,6 +3271,8 @@ class PaperSearch {
         return self::expand_search_types($user->conf, $ts);
     }
 
+    /** @param list<string> $ts
+     * @return array<string,string> */
     static private function expand_search_types(Conf $conf, $ts) {
         $topt = [];
         foreach ($ts as $t) {
@@ -3239,21 +3283,27 @@ class PaperSearch {
 
     static function searchTypeSelector($tOpt, $type, $extra = []) {
         if (count($tOpt) > 1) {
-            $sel_opt = array();
+            $sel_opt = [];
             foreach ($tOpt as $k => $v) {
-                if (count($sel_opt) && $k === "a")
+                if (count($sel_opt)
+                    && $k === "a") {
                     $sel_opt["xxxa"] = null;
-                if (count($sel_opt) > 2 && ($k === "lead" || $k === "r") && !isset($sel_opt["xxxa"]))
+                } else if (count($sel_opt) > 2
+                           && ($k === "lead" || $k === "r")
+                           && !isset($sel_opt["xxxa"])) {
                     $sel_opt["xxxb"] = null;
+                }
                 $sel_opt[$k] = $v;
             }
-            if (!isset($extra["aria-label"]))
+            if (!isset($extra["aria-label"])) {
                 $extra["aria-label"] = "Search collection";
+            }
             return Ht::select("t", $sel_opt, $type, $extra);
-        } else if (isset($extra["id"]))
+        } else if (isset($extra["id"])) {
             return '<span id="' . htmlspecialchars($extra["id"]) . '">' . current($tOpt) . '</span>';
-        else
+        } else {
             return current($tOpt);
+        }
     }
 
     private static function simple_search_completion($prefix, $map, $flags = 0) {
@@ -3273,6 +3323,7 @@ class PaperSearch {
         return $x;
     }
 
+    /** @return list<string> */
     function search_completion($category = "") {
         $res = [];
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);

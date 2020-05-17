@@ -4107,9 +4107,10 @@ class Contact {
     function aucollab_general_pregexes() {
         if ($this->_aucollab_general_pregexes === null) {
             $l = [];
-            foreach ($this->aucollab_matchers() as $matcher)
+            foreach ($this->aucollab_matchers() as $matcher) {
                 if (($r = $matcher->general_pregexes()))
                     $l[] = $r;
+            }
             $this->_aucollab_general_pregexes = Text::merge_pregexes($l);
         }
         return $this->_aucollab_general_pregexes;

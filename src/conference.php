@@ -88,7 +88,9 @@ class Conf {
 
     public $short_name;
     public $long_name;
+    /** @var ?int */
     public $default_format;
+    /** @var string */
     public $download_prefix;
     public $au_seerev;
     public $tag_au_seerev;
@@ -4055,8 +4057,9 @@ class Conf {
             $my_deadlines = $Me->my_deadlines($this->paper);
             Ht::stash_script("hotcrp_deadlines.init(" . json_encode_browser($my_deadlines) . ")");
         }
-        if ($this->default_format)
+        if ($this->default_format) {
             Ht::stash_script("render_text.set_default_format(" . $this->default_format . ")");
+        }
 
         echo '<div id="top">';
 

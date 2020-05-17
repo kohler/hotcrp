@@ -3,16 +3,26 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperTable {
+    /** @var Conf */
     public $conf;
+    /** @var PaperInfo */
     public $prow;
+    /** @var Contact */
     public $user;
+    /** @var list<ReviewInfo> */
     private $all_rrows = [];
+    /** @var list<ReviewInfo> */
     private $viewable_rrows = [];
+    /** @return array<int,CommentInfo> */
     private $crows;
+    /** @return array<int,CommentInfo> */
     private $mycrows;
     private $can_view_reviews = false;
+    /** @var ?ReviewInfo */
     public $rrow;
+    /** @var ?ReviewInfo */
     public $editrrow;
+    /** @var string */
     public $mode;
     private $prefer_approvable = false;
     private $allreviewslink;
@@ -36,7 +46,8 @@ class PaperTable {
     private $allow_admin;
     private $admin;
 
-    private $cf = null;
+    /** @var ?CheckFormat */
+    private $cf;
     private $quit = false;
 
     function __construct(PaperInfo $prow = null, Qrequest $qreq, $mode = null) {

@@ -415,7 +415,8 @@ class Text {
         return $reg;
     }
 
-    /** @param list<TextPregexes> $regex */
+    /** @param list<TextPregexes> $regex
+     * @return TextPregexes|false */
     static function merge_pregexes($regex) {
         if (empty($regex)) {
             return false;

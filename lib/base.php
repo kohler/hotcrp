@@ -5,8 +5,28 @@
 
 // type helpers
 
+/** @param mixed $x */
 function is_number($x) {
     return is_int($x) || is_float($x);
+}
+
+/** @param mixed $x */
+function is_associative_array($x) {
+    // this method is suprisingly fast
+    return is_array($x) && array_values($x) !== $x;
+}
+
+/** @param mixed $x */
+function is_int_list($x) {
+    if (is_array($x) && !is_associative_array($x)) {
+        foreach ($x as $i) {
+            if (!is_int($i))
+                return false;
+        }
+        return true;
+    } else {
+        return false;
+    }
 }
 
 
@@ -387,12 +407,6 @@ function make_qreq() : Qrequest {
     }
 
     return $qreq;
-}
-
-/** @param mixed $a */
-function is_associative_array($a) {
-    // this method is suprisingly fast
-    return is_array($a) && array_values($a) !== $a;
 }
 
 /** @param mixed $a */

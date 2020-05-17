@@ -3,10 +3,15 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class SessionList {
+    /** @var string */
     public $listid;
+    /** @var list<int> */
     public $ids;
+    /** @var ?string */
     public $description;
+    /** @var ?string */
     public $url;
+    /** @var ?string */
     public $urlbase;
     public $highlight;
     public $digest;
@@ -21,6 +26,8 @@ class SessionList {
         $this->description = $description;
         $this->urlbase = $urlbase;
     }
+
+    /** @return string|false */
     function list_type() {
         $pos = strpos($this->listid, "/");
         return $pos > 0 ? substr($this->listid, 0, $pos) : false;
@@ -105,19 +112,22 @@ class SessionList {
         return $a;
     }
 
-    /** @param list<string> $a */
+    /** @param list<string> $a
+     * @return bool */
     static private function encoding_ends_numerically($a) {
         $w = $a[count($a) - 1];
         return is_int($w) || ctype_digit($w[strlen($w) - 1]);
     }
 
-    /** @param list<string> $a */
+    /** @param list<string> $a
+     * @return bool */
     static private function encoding_ends_with_r($a) {
         $w = $a[count($a) - 1];
         return !is_int($w) && $w[0] === "r";
     }
 
-    /** @param list<int> $ids */
+    /** @param list<int> $ids
+     * @return string */
     static function encode_ids($ids) {
         if (empty($ids)) {
             return "";
@@ -207,13 +217,15 @@ class SessionList {
             return null;
         }
     }
+
+    /** @return ?string */
     function full_site_relative_url() {
         $args = Conf::$hoturl_defaults ? : [];
         if ($this->url) {
             $url = $this->url;
         } else if ($this->urlbase) {
             $url = $this->urlbase;
-            if (preg_match(',\Ap/[^/]*/([^/]*)(?:|/([^/]*))\z,', $this->listid, $m)) {
+            if (preg_match('/\Ap\/[^\/]*\/([^\/]*)(?:|\/([^\/]*))\z/', $this->listid, $m)) {
                 if ($m[1] !== "" || str_starts_with($url, "search")) {
                     $url .= (strpos($url, "?") ? "&" : "?") . "q=" . $m[1];
                 }
@@ -233,6 +245,8 @@ class SessionList {
         }
         return $url;
     }
+
+    /** @return string */
     function info_string() {
         $j = [];
         if ($this->ids !== null) {
@@ -246,6 +260,8 @@ class SessionList {
         return json_encode_browser($j);
     }
 
+    /** @param 'p'|'u' $type
+     * @return ?SessionList */
     static function load_cookie($type) {
         $found = null;
         foreach ($_COOKIE as $k => $v) {
@@ -262,12 +278,14 @@ class SessionList {
             return null;
         }
     }
+
     function set_cookie() {
         global $Conf, $Now;
         $t = round(microtime(true) * 1000);
         $Conf->set_cookie("hotlist-info-" . $t, $this->info_string(), $Now + 20);
     }
 
+    /** @param int $id */
     function set_current_id($id) {
         if ($this->curid !== $id) {
             $this->curid = $this->previd = $this->nextid = null;
@@ -275,6 +293,8 @@ class SessionList {
         $this->id_position = $this->ids ? array_search($id, $this->ids) : false;
         return $this->id_position !== false;
     }
+
+    /** @param int $delta */
     function neighbor_id($delta) {
         if ($this->id_position !== false) {
             $pos = $this->id_position + $delta;

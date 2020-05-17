@@ -76,7 +76,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
     ];
     // Hard-code the database's `view_score` values as of January 2016
     static private $view_score_upgrade_map = [
-        "-2" => "secret", "-1" => "admin", "0" => "pc", "1" => "au"
+        -2 => "secret", -1 => "admin", 0 => "pc", 1 => "au"
     ];
     static private $view_score_rmap = [
         VIEWSCORE_ADMINONLY => "secret", VIEWSCORE_REVIEWERONLY => "admin",
