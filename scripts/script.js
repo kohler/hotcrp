@@ -8619,17 +8619,18 @@ function set_list_order(info, tbody) {
     return info.replace(/"ids":"[-0-9'a-zA-Z]+"/, '"ids":"' + l.join("'") + '"');
 }
 function handle_list(e, href) {
-    var $hl, sitehref, m;
+    var hl, sitehref, m;
     if (href
         && href.substring(0, siteurl.length) === siteurl
         && is_listable((sitehref = href.substring(siteurl.length)))
-        && ($hl = $(e).closest(".has-hotlist")).length) {
-        var info = $hl.attr("data-hotlist");
-        if ($hl.is("table.pltable")
-            && $hl[0].hasAttribute("data-reordered")
+        && (hl = e.closest(".has-hotlist"))) {
+        var info = hl.getAttribute("data-hotlist");
+        if (hl.tagName === "TABLE"
+            && hasClass(hl, "pltable")
+            && hl.hasAttribute("data-reordered")
             && document.getElementById("footer"))
             // Existence of `#footer` checks that the table is fully loaded
-            info = set_list_order(info, $hl[0].tBodies[0]);
+            info = set_list_order(info, hl.tBodies[0]);
         m = /^[^\/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);
         set_cookie(info, m ? +m[1] : null);
     }

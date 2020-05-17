@@ -162,7 +162,7 @@ if ($Qreq->u === "me" || $Qreq->u === "self") {
             if ($cs->user_ids()) {
                 $Acct = $Conf->user_by_id(($cs->user_ids())[0]);
                 $list = new SessionList("u/all/" . urlencode($Qreq->search), $cs->user_ids(), "“" . htmlspecialchars($Qreq->u) . "”", $Conf->hoturl_site_relative_raw("users", ["t" => "all"]));
-                $list->set_cookie();
+                $list->set_cookie($Me);
                 $Qreq->u = $Acct->email;
             } else {
                 Conf::msg_error("No user matches “" . htmlspecialchars($Qreq->u) . "”.");
@@ -511,7 +511,7 @@ if ($Qreq->t && $Qreq->t !== $profile_topic && $Qreq->method() === "GET") {
 
 // set session list
 if (!$newProfile
-    && ($list = SessionList::load_cookie("u"))
+    && ($list = SessionList::load_cookie($Me, "u"))
     && $list->set_current_id($Acct->contactId)) {
     $Conf->set_active_list($list);
 }

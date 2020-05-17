@@ -211,7 +211,7 @@ class PaperTable {
             return null;
         }
 
-        if (($list = SessionList::load_cookie("p"))
+        if (($list = SessionList::load_cookie($this->user, "p"))
             && ($list->set_current_id($prow->paperId) || $list->digest)) {
             return $list;
         }
@@ -2993,7 +2993,7 @@ class PaperTable {
             $list = $search->session_list_object();
             // DISABLED: check if the paper is in the current list
             unset($qreq->ls);
-            $list->set_cookie();
+            $list->set_cookie($user);
             return $ps[0];
         } else {
             return null;

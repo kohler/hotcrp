@@ -295,7 +295,7 @@ class MeetingTracker {
             || $args[0] === ""
             || !ctype_alnum($args[0])
             || !$qreq["hotlist-info"]
-            || !($xlist = SessionList::decode_info_string($qreq["hotlist-info"]))
+            || !($xlist = SessionList::decode_info_string($user, $qreq["hotlist-info"], "p"))
             || !str_starts_with($xlist->listid, "p/")) {
             return json_exit(400, "Parameter error.");
         }
@@ -473,7 +473,7 @@ class MeetingTracker {
 
             $xlist = $admin_perm = null;
             if ($qreq["tr{$i}-listinfo"]) {
-                $xlist = SessionList::decode_info_string($qreq["tr{$i}-listinfo"]);
+                $xlist = SessionList::decode_info_string($user, $qreq["tr{$i}-listinfo"], "p");
                 if ($xlist
                     && $user->conf->check_track_admin_sensitivity()) {
                     $admin_perm = self::compute_xlist_admin_perm($user->conf, $xlist->ids);
