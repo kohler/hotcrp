@@ -128,7 +128,7 @@ class SearchSelection {
 
     /** @return string */
     function sql_predicate() {
-        return sql_in_numeric_set($this->sel);
+        return sql_in_int_list($this->sel);
     }
 
     /** @return string */

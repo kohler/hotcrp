@@ -85,7 +85,7 @@ if (!isset($Qreq->t)) {
 
 // paper selection and download actions
 function paperselPredicate($papersel) {
-    return "ContactInfo.contactId" . sql_in_numeric_set($papersel);
+    return "ContactInfo.contactId" . sql_in_int_list($papersel);
 }
 
 $Qreq->allow_a("pap");

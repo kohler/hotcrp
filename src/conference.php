@@ -3483,7 +3483,7 @@ class Conf {
 
         // conditions
         if ($paperset !== null) {
-            $where[] = "Paper.paperId" . sql_in_numeric_set($paperset);
+            $where[] = "Paper.paperId" . sql_in_int_list($paperset);
         }
         if ($options["finalized"] ?? false) {
             $where[] = "timeSubmitted>0";

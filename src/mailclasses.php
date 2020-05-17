@@ -265,7 +265,7 @@ class MailRecipients {
             && !($this->selflags[$this->type] & self::F_ANYPC)) {
             if ($this->conf->check_any_admin_tracks($this->contact)) {
                 $ps = new PaperSearch($this->contact, ["q" => "", "t" => "admin"]);
-                $where[] = "Paper.paperId" . sql_in_numeric_set($ps->paper_ids());
+                $where[] = "Paper.paperId" . sql_in_int_list($ps->paper_ids());
             } else {
                 $where[] = "Paper.managerContactId=" . $this->contact->contactId;
             }

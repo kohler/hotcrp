@@ -1558,7 +1558,7 @@ class ContactCountMatcher extends CountMatcher {
         if ($this->_contacts === null) {
             return "true";
         } else {
-            return $fieldname . sql_in_numeric_set($this->_contacts);
+            return $fieldname . sql_in_int_list($this->_contacts);
         }
     }
     function test_contact($cid) {

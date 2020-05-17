@@ -863,17 +863,14 @@ function sqlq_for_like($value) {
     return preg_replace("/(?=[%_\\\\'\"\\x00\\n\\r\\x1a])/", "\\", $value);
 }
 
-function sql_in_numeric_set($set) {
+/** @param list<int> $set
+ * @return string */
+function sql_in_int_list($set) {
     if (empty($set)) {
-        return "=-1";
+        return " is null";
     } else if (count($set) == 1) {
         return "=" . $set[0];
     } else {
         return " in (" . join(", ", $set) . ")";
     }
-}
-
-function sql_not_in_numeric_set($set) {
-    $sql = sql_in_numeric_set($set);
-    return ($sql[0] === "=" ? "!" : " not") . $sql;
 }
