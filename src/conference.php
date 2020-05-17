@@ -3331,32 +3331,11 @@ class Conf {
         return "group_concat(contactId,' ',preference,' ',coalesce(expertise,'.'))";
     }
 
-    /** @param ?list<int> $paperset
-     * @param list<int>|mysqli_result|Dbl_Result $arg
-     * @return list<int> */
-    static private function _merge_paperset($paperset, $arg) {
-        if (is_object($arg)) {
-            $ids = [];
-            while (($row = $arg->fetch_row())) {
-                $ids[] = (int) $row[0];
-            }
-        } else {
-            $ids = $arg;
-        }
-        if ($paperset === null) {
-            return $ids;
-        } else {
-            return array_values(array_intersect($paperset, $ids));
-        }
-    }
-
     /** @param array{paperId?:list<int>} $options
      * @return mysqli_result|Dbl_Result */
     function paper_result($options, Contact $user = null) {
         // Options:
-        //   "paperId" => $pid  Only paperId $pid (if array, any of those)
-        //   "reviewId" => $rid Only paper reviewed by $rid
-        //   "commentId" => $c  Only paper where comment is $c
+        //   "paperId" => $pids Only papers in list<int> $pids
         //   "finalized"        Only submitted papers
         //   "unsub"            Only unsubmitted papers
         //   "accepted"         Only accepted papers
@@ -3384,38 +3363,22 @@ class Conf {
         // paper selection
         $paperset = null;
         '@phan-var ?list<int> $paperset';
-        assert(!isset($options["paperId"]) || is_array($options["paperId"]));
-        assert(!isset($options["reviewId"]));
-        assert(!isset($options["commentId"]));
         if (isset($options["paperId"])) {
-            if (is_array($options["paperId"])) {
-                // XXX this is the only valid expected signature
-                $paperset = self::_merge_paperset($paperset, $options["paperId"]);
-            } else if (is_int($options["paperId"]) || is_string($options["paperId"])) {
-                $paperset = self::_merge_paperset($paperset, [cvtint($options["paperId"])]);
-            } else {
-                $paperset = self::_merge_paperset($paperset, $options["paperId"]->selection());
+            if (!is_int_list($options["paperId"])) {
+                throw new Exception("paperId argument should be list<int> in Conf::paper_result");
             }
+            $paperset = $options["paperId"];
         }
-        if (isset($options["reviewId"])) {
-            if (is_numeric($options["reviewId"])) {
-                $paperset = self::_merge_paperset($paperset, $this->qe("select paperId from PaperReview where reviewId=?", $options["reviewId"]));
-            } else if (preg_match('/^(\d+)([A-Z][A-Z]?)$/i', $options["reviewId"], $m)) {
-                $paperset = self::_merge_paperset($paperset, $this->qe("select paperId from PaperReview where paperId=? and reviewOrdinal=?", $m[1], parseReviewOrdinal($m[2])));
-            } else {
-                $paperset = [];
-            }
-        }
-        if (isset($options["commentId"])) {
-            $paperset = self::_merge_paperset($paperset, $this->qe("select paperId from PaperComment where commentId?a", mkarray($options["commentId"])));
+        if (isset($options["reviewId"]) || isset($options["commentId"])) {
+            throw new Exception("unexpected reviewId/commentId argument to Conf::paper_result");
         }
 
         // prepare query: basic tables
         // * Every table in `$joins` can have at most one row per paperId,
         //   except for `PaperReview`.
-        $where = array();
+        $where = [];
 
-        $joins = array("Paper");
+        $joins = ["Paper"];
 
         if ($options["minimal"] ?? false) {
             $cols = ["Paper.paperId, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.outcome, Paper.leadContactId"];
