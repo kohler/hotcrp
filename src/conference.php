@@ -3393,15 +3393,12 @@ class Conf {
         }
 
         if ($user) {
-            $aujoinwhere = null;
-            if (($options["author"] ?? false)
-                && ($aujoinwhere = $user->act_author_view_sql("PaperConflict", true))) {
-                $where[] = $aujoinwhere;
-            }
-            if (($options["author"] ?? false) && !$aujoinwhere) {
-                $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
-            } else {
+            if (!($options["author"] ?? false)) {
                 $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)";
+            } else if (($aujoinwhere = $user->act_author_view_sql("PaperConflict", true))) {
+                $where[] = $aujoinwhere;
+            } else {
+                $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
             }
             $cols[] = "PaperConflict.conflictType";
         } else if ($options["author"] ?? false) {
@@ -3447,12 +3444,13 @@ class Conf {
             $cols[] = "(select group_concat(topicId) from PaperTopic where PaperTopic.paperId=Paper.paperId) topicIds";
         }
 
-        if (($options["options"] ?? false)
-            && (isset($this->settingTexts["options"]) || isset($this->opt["fixedOptions"]))
-            && $this->paper_opts->count_option_list()) {
-            $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
-        } else if ($options["options"] ?? false) {
-            $cols[] = "'' as optionIds";
+        if ($options["options"] ?? false) {
+            if ((isset($this->settingTexts["options"]) || isset($this->opt["fixedOptions"]))
+                && $this->paper_opts->count_option_list()) {
+                $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
+            } else {
+                $cols[] = "'' as optionIds";
+            }
         }
 
         if (($options["tags"] ?? false)
