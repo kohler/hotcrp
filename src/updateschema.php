@@ -373,7 +373,12 @@ function update_schema_selector_options($conf) {
 }
 
 function update_schema_missing_review_ordinals($conf) {
-    $pids = Dbl::fetch_first_columns($conf->dblink, "select distinct paperId from PaperReview where reviewSubmitted>0 and reviewAuthorModified>0 and reviewOrdinal=0");
+    $pids = [];
+    $result = $conf->qe("select distinct paperId from PaperReview where reviewSubmitted>0 and reviewAuthorModified>0 and reviewOrdinal=0");
+    while (($row = $result->fetch_row())) {
+        $pids[] = (int) $row[0];
+    }
+    Dbl::free($result);
     if (empty($pids)) {
         return true;
     }
@@ -423,7 +428,12 @@ function update_schema_clean_options_json($conf) {
 }
 
 function update_schema_set_review_time_displayed($conf) {
-    $pids = Dbl::fetch_first_columns($conf->dblink, "select distinct paperId from PaperReview where (reviewSubmitted is not null or reviewOrdinal!=0) and timeDisplayed=0");
+    $pids = [];
+    $result = $conf->qe("select distinct paperId from PaperReview where (reviewSubmitted is not null or reviewOrdinal!=0) and timeDisplayed=0");
+    while (($row = $result->fetch_row())) {
+        $pids[] = (int) $row[0];
+    }
+    Dbl::free($result);
     if (empty($pids)) {
         return true;
     }

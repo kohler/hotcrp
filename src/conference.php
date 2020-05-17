@@ -3357,6 +3357,7 @@ class Conf {
         $contactId = $user ? $user->contactId : 0;
         if (is_int($options)
             || (is_array($options) && !empty($options) && !is_associative_array($options))) {
+            error_log("bad \$options to Conf::paper_result"); // XXX
             $options = ["paperId" => $options];
         }
 
