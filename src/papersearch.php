@@ -96,7 +96,7 @@ class SearchSplitter {
         $this->strspan = [$this->pos, $this->pos + strlen($prefix)];
         $next = substr($this->str, strlen($prefix));
         if ($this->utf8q) {
-            $next = preg_replace('{\A\s+}u', "", $next);
+            $next = preg_replace('/\A\s+/u', "", $next);
         } else {
             $next = ltrim($next);
         }
@@ -3040,29 +3040,11 @@ class PaperSearch {
         return $url;
     }
 
-    private function _tag_description() {
-        if ($this->q === "") {
-            return false;
-        } else if (strlen($this->q) <= 24) {
-            return htmlspecialchars($this->q);
-        } else if (!preg_match('/\A(#|-#|tag:|-tag:|notag:|order:|rorder:)(.*)\z/', $this->q, $m)) {
-            return false;
-        }
-        $tagger = new Tagger($this->user);
-        if (!$tagger->check($m[2])) {
-            return false;
-        } else if ($m[1] === "-tag:") {
-            return "no" . substr($this->q, 1);
-        } else {
-            return $this->q;
-        }
-    }
-
     /** @return string */
     function description($listname) {
-        if ($listname)
+        if ($listname) {
             $lx = $this->conf->_($listname);
-        else {
+        } else {
             $limit = $this->limit();
             if ($this->q === "re:me" && ($limit === "s" || $limit === "act")) {
                 $limit = "r";
@@ -3073,8 +3055,13 @@ class PaperSearch {
             || ($this->q === "re:me" && $this->limit() === "s")
             || ($this->q === "re:me" && $this->limit() === "act")) {
             return $lx;
-        } else if (($td = $this->_tag_description())) {
-            return "$td in $lx";
+        } else if (str_starts_with($this->q, "au:")
+                   && strlen($this->q) <= 36
+                   && $this->term() instanceof Author_SearchTerm) {
+            return "$lx by " . htmlspecialchars(ltrim(substr($this->q, 3)));
+        } else if (strlen($this->q) <= 24
+                   || $this->term() instanceof Tag_SearchTerm) {
+            return htmlspecialchars($this->q) . " in $lx";
         } else {
             return "$lx search";
         }
