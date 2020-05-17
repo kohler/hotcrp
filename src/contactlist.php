@@ -21,6 +21,7 @@ class ContactList {
     const FIELD_SHEPHERDS = 14;
     const FIELD_TAGS = 15;
     const FIELD_COLLABORATORS = 16;
+    const FIELD_ACCEPTED_PAPERS = 17;
     const FIELD_SCORE = 50;
 
     public static $folds = array("topics", "aff", "tags", "collab");
@@ -46,6 +47,8 @@ class ContactList {
     private $_rowset;
     /** @var array<int,list<int>> */
     private $_au_data;
+    /** @var array<int,list<int>> */
+    private $_auacc_data;
     /** @var array<int,list<int>> */
     private $_re_data;
     /** @var array<int,list<array{int,int,int,int}>> */
@@ -114,7 +117,8 @@ class ContactList {
             }
             $this->qopt["revratings"] = $this->qopt["reviews"] = true;
         }
-        if ($fieldId == self::FIELD_PAPERS) {
+        if ($fieldId == self::FIELD_PAPERS
+            || $fieldId == self::FIELD_ACCEPTED_PAPERS) {
             $this->qopt["papers"] = true;
         }
         if ($fieldId == self::FIELD_REVIEW_PAPERS) {
@@ -215,11 +219,15 @@ class ContactList {
         return $this->_sortBase($a, $b);
     }
 
-    function _sortPapers($a, $b) {
+    function _sort_papers($a, $b) {
         return $this->_sort_paper_list($a, $b, $this->_au_data);
     }
 
-    function _sortReviewPapers($a, $b) {
+    function _sort_accepted_papers($a, $b) {
+        return $this->_sort_paper_list($a, $b, $this->_auacc_data);
+    }
+
+    function _sort_reviewed_papers($a, $b) {
         return $this->_sort_paper_list($a, $b, $this->_re_data);
     }
 
@@ -258,10 +266,13 @@ class ContactList {
             usort($rows, array($this, "_sortReviewRatings"));
             break;
         case self::FIELD_PAPERS:
-            usort($rows, array($this, "_sortPapers"));
+            usort($rows, [$this, "_sort_papers"]);
+            break;
+        case self::FIELD_ACCEPTED_PAPERS:
+            usort($rows, [$this, "_sort_accepted_papers"]);
             break;
         case self::FIELD_REVIEW_PAPERS:
-            usort($rows, array($this, "_sortReviewPapers"));
+            usort($rows, [$this, "_sort_reviewed_papers"]);
             break;
         default:
             if (($f = $this->conf->review_field($this->sortField))) {
@@ -317,6 +328,8 @@ class ContactList {
             return "";
         case self::FIELD_PAPERS:
             return "Submissions";
+        case self::FIELD_ACCEPTED_PAPERS:
+            return "Accepted submissions";
         case self::FIELD_REVIEW_PAPERS:
             return "Assigned submissions";
         case self::FIELD_TAGS:
@@ -416,11 +429,17 @@ class ContactList {
         }
 
         if (isset($this->qopt["papers"])) {
-            $this->_au_data = [];
+            $this->_au_data = $this->_auacc_data = [];
             foreach ($prows as $prow) {
                 if ($this->user->can_view_authors($prow)) {
                     foreach ($prow->contacts() as $cflt) {
                         $this->_au_data[$cflt->contactId][] = $prow->paperId;
+                    }
+                    if ($prow->outcome > 0
+                        && $this->user->can_view_decision($prow)) {
+                        foreach ($prow->contacts() as $cflt) {
+                            $this->_auacc_data[$cflt->contactId][] = $prow->paperId;
+                        }
                     }
                 }
             }
@@ -636,6 +655,18 @@ class ContactList {
             } else {
                 return "";
             }
+        case self::FIELD_ACCEPTED_PAPERS:
+            if (($pids = $this->_auacc_data[$row->contactId] ?? null)) {
+                $t = [];
+                foreach ($pids as $p) {
+                    $t[] = '<a href="' . $this->conf->hoturl("paper", "p=$p") . '">' . $p . '</a>';
+                }
+                return '<div class="has-hotlist" data-hotlist="'
+                    . htmlspecialchars("p/acc/" . urlencode("au:" . $row->email))
+                    . '">' . join(", ", $t) . '</div>';
+            } else {
+                return "";
+            }
         case self::FIELD_REVIEW_PAPERS:
             $t = [];
             if (($reords = $this->_reord_data[$row->contactId] ?? null)) {
@@ -729,11 +760,12 @@ class ContactList {
             return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
           case "au":
           case "aurej":
-          case "auacc":
           case "auuns":
-            return array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_COLLABORATORS);
+            return [$listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_COLLABORATORS];
+          case "auacc":
+            return [$listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_ACCEPTED_PAPERS, self::FIELD_COLLABORATORS];
           case "all":
-            return array("all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_COLLABORATORS);
+            return ["all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_COLLABORATORS];
           default:
             return null;
         }
@@ -1071,6 +1103,7 @@ $contactListFields = array(
         ContactList::FIELD_REVIEWS => array('revstat', 1, 1),
         ContactList::FIELD_REVIEW_RATINGS => array('revstat', 1, 1),
         ContactList::FIELD_PAPERS => array('papers', 1, 1),
+        ContactList::FIELD_ACCEPTED_PAPERS => array('papers', 1, 1),
         ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1),
         ContactList::FIELD_SCORE => array('uscores', 1, 1),
         ContactList::FIELD_LEADS => array('revstat', 1, 1),
