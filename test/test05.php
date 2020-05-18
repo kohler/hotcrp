@@ -243,6 +243,7 @@ xassert(!$newpaper->option(1));
 xassert(!!$newpaper->option(2));
 xassert(count($newpaper->option(2)->documents()) == 1);
 xassert_eqq($newpaper->option(2)->document(0)->text_hash(), "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
+xassert($newpaper->has_author($user_estrin));
 
 // some erroneous saves concerning required fields
 $qreq = new Qrequest("POST", ["ready" => 1, "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
@@ -431,7 +432,11 @@ xassert_eqq($nprow1->topic_list(), [1, 5]);
 function pc_conflict_keys($prow) {
     return array_keys($prow->pc_conflicts());
 }
+function pc_conflict_types($prow) {
+    return array_map(function ($cflt) { return $cflt->conflictType; }, $prow->pc_conflicts());
+}
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId]);
+xassert_eqq(pc_conflict_types($nprow1), [$user_estrin->contactId => CONFLICT_CONTACTAUTHOR]);
 
 $ps->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => false
