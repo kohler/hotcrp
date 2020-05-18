@@ -1268,7 +1268,7 @@ class Contact {
 
     private function save_authored_papers($aupapers) {
         if (!empty($aupapers) && $this->contactId) {
-            $this->conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")", array_map(function ($pid) {
+            $this->conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=(conflictType|" . CONFLICT_AUTHOR . ")", array_map(function ($pid) {
                 return [$pid, $this->contactId, CONFLICT_AUTHOR];
             }, $aupapers));
         }

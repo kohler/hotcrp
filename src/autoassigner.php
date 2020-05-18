@@ -135,7 +135,7 @@ class Autoassigner {
             $q = "select paperId, contactId from PaperReview where reviewType=" . $reviewtype;
             $action = "noreview";
         } else if ($reviewtype === "conflict") {
-            $q = "select paperId, contactId from PaperConflict where conflictType>0 and conflictType<" . CONFLICT_AUTHOR;
+            $q = "select paperId, contactId from PaperConflict where conflictType>" . CONFLICT_MAXUNCONFLICTED . " and conflictType<" . CONFLICT_AUTHOR;
             $action = "noconflict";
         } else if ($reviewtype === "lead" || $reviewtype === "shepherd") {
             $q = "select paperId, {$reviewtype}ContactId from Paper where {$reviewtype}ContactId!=0";
