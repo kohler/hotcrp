@@ -31,7 +31,7 @@ class PaperSaver {
     }
 
     static function replace_contacts($pj, $qreq) {
-        $pj->contacts = array();
+        $pj->contacts = [];
         for ($i = 1; isset($qreq["contact_email_{$i}"]); ++$i) {
             if ($qreq["contact_active_{$i}"]) {
                 $pj->contacts[] = (object) ["email" => $qreq["contact_email_{$i}"], "index" => $i];
@@ -70,7 +70,7 @@ class Default_PaperSaver extends PaperSaver {
                 return strcasecmp($c->email, $user->email) === 0;
             });
             if (!$has_me) {
-                $pj->contacts[] = $user;
+                $pj->contacts[] = Text::analyze_name($user);
             }
         }
         if ($action === "updatecontacts") {
