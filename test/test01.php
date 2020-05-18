@@ -906,7 +906,18 @@ xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@lel
 
 xassert_assign_fail($user_chair, "paper,action,user\n3,clearcontact,sclin@leland.stanford.edu\n");
 xassert_assign($user_chair, "paper,action,user\n3,clearcontact,sclin@leland.stanford.edu\n3,contact,mgbaker@cs.stanford.edu\n");
+// though no longer a contact, sclin is still a listed author, so
+// has a conflict that way
 $paper3 = $Conf->fetch_paper(3, $user_chair);
+xassert_eqq($paper3->conflict_type($user_sclin), CONFLICT_AUTHOR);
+xassert_eqq(sorted_conflicts($paper3, true), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
+xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
+
+// change author list => remove conflict
+$ps = new PaperStatus($Conf);
+xassert($ps->save_paper_json(json_decode('{"id":3,"authors":[{"name":"Nick McKeown", "email": "nickm@ee.stanford.edu", "affiliation": "Stanford University"}]}')));
+$paper3->load_conflicts(false);
+xassert_eqq($paper3->conflict_type($user_sclin), 0);
 xassert_eqq(sorted_conflicts($paper3, true), "mgbaker@cs.stanford.edu");
 xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu");
 

@@ -12,6 +12,7 @@ $Conf->save_setting("sub_sub", $Now + 100);
 $Conf->save_setting("opt.contentHashMethod", 1, "sha1");
 
 // load users
+$user_chair = $Conf->user_by_email("chair@_.com");
 $user_estrin = $Conf->user_by_email("estrin@usc.edu"); // pc
 $user_varghese = $Conf->user_by_email("varghese@ccrc.wustl.edu"); // pc red
 $user_sally = $Conf->user_by_email("floyd@ee.lbl.gov"); // pc red blue
@@ -485,8 +486,30 @@ xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese-
 xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 xassert_eqq($nprow1->conflict_type($user_varghese), 4);
 
+// non-chair cannot pin conflicts
 $ps->save_paper_json((object) [
+    "id" => $npid1, "pc_conflicts" => [$user_varghese->email => "pinned collaborator"]
+]);
+xassert(!$ps->has_problem()); // XXX should have problem
+$nprow1->invalidate_conflicts();
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
+xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($user_varghese), 2);
+
+// chair can pin conflicts
+$psc = new PaperStatus($Conf, $user_chair);
+$psc->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => [$user_varghese->email => "pinned advisor"]
+]);
+xassert(!$psc->has_problem());
+$nprow1->invalidate_conflicts();
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
+xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($user_varghese), 5);
+
+// non-chair cannot change pinned conflicts
+$ps->save_paper_json((object) [
+    "id" => $npid1, "pc_conflicts" => [$user_varghese->email => "pinned collaborator"]
 ]);
 xassert(!$ps->has_problem()); // XXX should have problem
 $nprow1->invalidate_conflicts();
