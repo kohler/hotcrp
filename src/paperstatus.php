@@ -34,19 +34,20 @@ class PaperStatus extends MessageSet {
     /** @var ?CheckFormat */
     private $_cf;
 
-    /** @var array<string,true> */
+    /** @var associative-array<string,true> */
     public $diffs;
     /** @var PaperInfo */
     private $_nnprow;
     private $_paper_upd;
     private $_paper_overflow_upd;
     public $_topic_ins; // set by Topics_PaperOption
-    /** @var array<int,PaperValue> */
+    /** @var associative-array<int,PaperValue> */
     private $_field_values;
     private $_option_delid;
     private $_option_ins;
-    /** @var array<string|int,array{int,int,int}> */
+    /** @var associative-array<string,array{int,int,int}> */
     private $_conflict_values;
+    /** @var ?list<array{int,int,int}> */
     private $_conflict_ins;
     private $_created_contacts;
     private $_paper_submitted;
@@ -81,7 +82,8 @@ class PaperStatus extends MessageSet {
         $this->_paper_upd = $this->_paper_overflow_upd = [];
         $this->_topic_ins = null;
         $this->_field_values = $this->_option_delid = $this->_option_ins = [];
-        $this->_conflict_values = $this->_conflict_ins = null;
+        $this->_conflict_values = [];
+        $this->_conflict_ins = null;
         $this->_paper_submitted = $this->_documents_changed = false;
         $this->_joindocs = [];
     }
@@ -1043,7 +1045,6 @@ class PaperStatus extends MessageSet {
 
     private function check_conflicts($pj) {
         // old conflicts
-        $this->_conflict_values = [];
         foreach ($this->prow ? $this->prow->conflicts(true) : [] as $cflt) {
             $this->apply_conflict_value($cflt->email, $cflt->conflictType, 0, 0);
         }

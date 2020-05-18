@@ -940,9 +940,9 @@ class AssignmentSet {
     private $unparse_search = false;
     private $unparse_columns = [];
     private $assignment_type;
-    /** @var array<string,array{callable}> */
-    private $cleanup_callbacks;
-    private $cleanup_notify_tracker;
+    /** @var array<string,array{callable,mixed}> */
+    private $cleanup_callbacks = [];
+    private $cleanup_notify_tracker = [];
     private $qe_stager;
 
     function __construct(Contact $user, $overrides = null) {
@@ -1824,8 +1824,6 @@ class AssignmentSet {
             $tables[] = "$t $type";
         }
         $this->conf->qe("lock tables " . join(", ", $tables));
-        $this->cleanup_callbacks = $this->cleanup_notify_tracker = [];
-        $this->qe_stager = null;
 
         foreach ($this->assigners as $assigner) {
             $assigner->execute($this);

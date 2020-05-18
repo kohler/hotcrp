@@ -1278,7 +1278,7 @@ class PaperInfo {
     }
 
     /** @param bool $email
-     * @return array<int,PaperInfo_Conflict> */
+     * @return associative-array<int,PaperInfo_Conflict> */
     function conflicts($email = false) {
         if ($this->_conflict_array === null
             || ($email && !$this->_conflict_array_email)) {
@@ -1288,12 +1288,12 @@ class PaperInfo {
     }
 
     /** @param bool $email
-     * @return array<int,PaperInfo_Conflict> */
+     * @return associative-array<int,PaperInfo_Conflict> */
     function pc_conflicts($email = false) {
         return array_intersect_key($this->conflicts($email), $this->conf->pc_members());
     }
 
-    /** @return array<int,int> */
+    /** @return associative-array<int,int> */
     function conflict_types() {
         $ct = [];
         foreach ($this->conflicts() as $cflt) {
@@ -1308,6 +1308,7 @@ class PaperInfo {
     }
 
 
+    /** @return associative-array<int,PaperInfo_Conflict> */
     function contacts($email = false) {
         $c = array();
         foreach ($this->conflicts($email) as $id => $cflt) {
@@ -1317,6 +1318,7 @@ class PaperInfo {
         return $c;
     }
 
+    /** @return list<object> */
     function named_contacts() {
         $vals = Dbl::fetch_objects($this->conf->qe("select ContactInfo.contactId, conflictType, email, firstName, lastName, affiliation, contactTags from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId and conflictType>=" . CONFLICT_AUTHOR));
         foreach ($vals as $v) {
