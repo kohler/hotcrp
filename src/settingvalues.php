@@ -896,14 +896,12 @@ class SettingValues extends MessageSet {
         }
 
         echo '<div id="', $name, '" class="', $this->control_class($name, "form-g settings-radio");
-        if ($fold !== false && $fold !== true) {
-            echo ' has-fold fold', in_array($x, $fold) ? "o" : "c";
-        }
         if ($rest && isset($rest["group_class"])) {
             echo ' ', $rest["group_class"];
         }
-        if ($fold !== false && $fold !== true) {
-            echo '" data-fold-values="', join(" ", $fold);
+        if (is_array($fold)) {
+            echo ' has-fold fold', in_array($x, $fold) ? "o" : "c",
+                '" data-fold-values="', join(" ", $fold);
         }
         echo '">';
         if ($heading) {

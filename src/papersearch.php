@@ -1729,7 +1729,7 @@ class PaperSearch {
     private $_highlight_tags;
 
     /** @var list<int> */
-    private $_matches; // list of ints
+    private $_matches;
 
     static private $_sort_keywords = ["by" => "by", "up" => "up", "down" => "down",
                 "rev" => "down", "reverse" => "down", "reversed" => "down", "score" => ""];
@@ -2863,7 +2863,7 @@ class PaperSearch {
     /** @return list<int> */
     function paper_ids() {
         $this->_prepare();
-        return $this->_matches ? : [];
+        return $this->_matches;
     }
 
     /** @return list<int> */
@@ -2901,9 +2901,7 @@ class PaperSearch {
                 $m[] = $pid;
             }
         }
-        if ($this->_matches !== false) {
-            $this->_matches = $m;
-        }
+        $this->_matches = $m;
     }
 
     /** @return bool */

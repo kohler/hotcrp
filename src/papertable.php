@@ -2609,7 +2609,7 @@ class PaperTable {
 
         // edit review
         if ($this->mode === "re"
-            || ($this->mode === "assign" && $t !== "")
+            || ($this->mode === "assign" && !empty($t))
             || !$prow) {
             /* no link */;
         } else if ($myrr && $editrrow != $myrr) {

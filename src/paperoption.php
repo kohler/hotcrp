@@ -198,9 +198,11 @@ class PaperValue implements JsonSerializable {
 class PaperOptionList {
     /** @var Conf */
     private $conf;
+    /** @var array<int,object> */
     private $_jlist;
     /** @var array<int,?PaperOption> */
     private $_omap = [];
+    /** @var array<int,object> */
     private $_ijlist;
     /** @var array<int,?PaperOption> */
     private $_imap = [];
@@ -208,6 +210,7 @@ class PaperOptionList {
     private $_olist_nonfinal;
     private $_olist_include_empty;
     private $_nonpaper_am;
+    private $_accumulator;
     private $_adding_fixed;
 
     const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","form_position":1001,"type":"document"}';
@@ -284,20 +287,20 @@ class PaperOptionList {
 
     function _add_intrinsic_json($oj, $k, $landmark) {
         assert(is_int($oj->id) && $oj->id <= 0);
-        $this->_ijlist[(string) $oj->id][] = $oj;
+        $this->_accumulator[(string) $oj->id][] = $oj;
         return true;
     }
 
     private function intrinsic_json_list() {
         if ($this->_ijlist === null) {
-            $this->_ijlist = [];
+            $this->_accumulator = $this->_ijlist = [];
             expand_json_includes_callback(["etc/intrinsicoptions.json", self::DTYPE_SUBMISSION_JSON, self::DTYPE_FINAL_JSON, $this->conf->opt("intrinsicOptions"), $this->conf->setting_json("ioptions")], [$this, "_add_intrinsic_json"]);
-            $nijlist = [];
-            foreach ($this->_ijlist as $id => $x) {
-                if (($ij = $this->conf->xt_search_name($this->_ijlist, $id, null)))
-                    $nijlist[$ij->id] = $ij;
+            /** @phan-suppress-next-line PhanEmptyForeach */
+            foreach ($this->_accumulator as $id => $x) {
+                if (($ij = $this->conf->xt_search_name($this->_accumulator, $id, null)))
+                    $this->_ijlist[$ij->id] = $ij;
             }
-            $this->_ijlist = $nijlist;
+            $this->_accumulator = null;
         }
         return $this->_ijlist;
     }

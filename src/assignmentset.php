@@ -1872,6 +1872,8 @@ class AssignmentSet {
         call_user_func($this->qe_stager, $query, $args);
     }
 
+    /** @param string $name
+     * @param callable $func */
     function cleanup_callback($name, $func, $arg = null) {
         if (!isset($this->cleanup_callbacks[$name])) {
             $this->cleanup_callbacks[$name] = [$func, null];

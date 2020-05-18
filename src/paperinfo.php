@@ -387,6 +387,7 @@ class PaperInfo {
     private $_author_array;
     private $_collaborator_array;
     private $_prefs_array;
+    /** @var ?array{int,?array{int,?int}} */
     private $_prefs_cid;
     private $_desirability;
     private $_topics_array;

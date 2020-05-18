@@ -34,6 +34,7 @@ class PaperStatus extends MessageSet {
     /** @var ?CheckFormat */
     private $_cf;
 
+    /** @var array<string,true> */
     public $diffs;
     /** @var PaperInfo */
     private $_nnprow;

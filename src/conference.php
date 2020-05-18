@@ -4917,11 +4917,13 @@ class Conf {
     function mail_template_map() {
         if ($this->_mail_template_map === null) {
             $this->_mail_template_map = [];
-            if ($this->opt("mailtemplate_include")) { // backwards compatibility
+            if ($this->opt("mailtemplate_include")) { // XXX backwards compatibility
                 global $ConfSitePATH, $mailTemplates;
                 $mailTemplates = [];
                 read_included_options($this->opt["mailtemplate_include"]);
+                '@phan-var-force array<string,mixed> $mailTemplates';
                 foreach ($mailTemplates as $name => $template) {
+                    error_log("Warning: Adding obsolete mail template for $name");
                     $template["name"] = $name;
                     $this->_add_mail_template_json((object) $template);
                 }
