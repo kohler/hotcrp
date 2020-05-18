@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class TagSearchMatcher {
+    /** @var Contact */
     public $user;
     private $_re;
     private $_include_twiddles = false;

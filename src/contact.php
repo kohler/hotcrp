@@ -350,10 +350,10 @@ class Contact {
     }
 
     static function make_sorter($c, $args) {
-        if ($args === false && isset($c->unaccentedName)) {
-            return trim("$c->unaccentedName $c->email");
-        }
         if (is_bool($args) || $args === null) {
+            if ($args === false && isset($c->unaccentedName)) {
+                return trim("$c->unaccentedName $c->email");
+            }
             $args = $args ? ["lastName", "firstName", "email"] : ["firstName", "lastName", "email"];
         }
         $s = [];

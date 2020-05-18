@@ -13,9 +13,9 @@ class PaperTable {
     private $all_rrows = [];
     /** @var list<ReviewInfo> */
     private $viewable_rrows = [];
-    /** @return array<int,CommentInfo> */
+    /** @var array<int,CommentInfo> */
     private $crows;
-    /** @return array<int,CommentInfo> */
+    /** @var array<int,CommentInfo> */
     private $mycrows;
     private $can_view_reviews = false;
     /** @var ?ReviewInfo */

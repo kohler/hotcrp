@@ -63,10 +63,10 @@ class AuthorMatcher extends Author {
                     continue;
                 }
                 $weak = $aw && isset($aw->weak) && $aw->weak;
-                if ($wstrong !== false && !$weak) {
+                $wweak[] = $w;
+                if (!$weak) {
                     $wstrong[] = $w;
                 }
-                $wweak[] = $w;
                 if ($aw && isset($aw->alternate)) {
                     $any_strong_alternate = $any_strong_alternate || !$weak;
                     if (is_array($aw->alternate)) {
@@ -85,8 +85,6 @@ class AuthorMatcher extends Author {
             }
 
             $directs = $wweak;
-            if (empty($wstrong))
-                $wstrong = false;
 
             foreach ($alts as $alt) {
                 if (is_object($alt)) {
@@ -99,7 +97,7 @@ class AuthorMatcher extends Author {
                 $have_strong = false;
                 foreach (explode(" ", $alt) as $altw) {
                     if ($altw !== "") {
-                        if ($wstrong !== false) {
+                        if (!empty($wstrong)) {
                             $aw = get($wordinfo, $altw);
                             if (!$aw || !isset($aw->weak) || !$aw->weak) {
                                 $wstrong[] = $altw;
@@ -110,7 +108,7 @@ class AuthorMatcher extends Author {
                     }
                 }
                 if ($any_strong_alternate && !$have_strong) {
-                    $wstrong = false;
+                    $wstrong = [];
                 }
             }
 

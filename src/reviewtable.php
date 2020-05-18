@@ -11,6 +11,10 @@ function _review_table_actas($user, $rr) {
 }
 
 // reviewer information
+/** @param Contact $user
+ * @param list<ReviewInfo> $rrows
+ * @param ?ReviewInfo $rrow
+ * @param string $mode */
 function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
     $conf = $prow->conf;
     $subrev = [];

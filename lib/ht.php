@@ -346,13 +346,15 @@ class Ht {
         return $t . $extra_text . "</div>\n";
     }
 
+    /** @param string|list<string> $html */
     static function pre($html) {
         if (is_array($html)) {
-            $text = join("\n", $html);
+            $html = join("\n", $html);
         }
         return "<pre>" . $html . "</pre>";
     }
 
+    /** @param string|list<string> $text */
     static function pre_text($text) {
         if (is_array($text)
             && array_keys($text) === range(0, count($text) - 1)) {

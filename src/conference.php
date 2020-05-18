@@ -1366,7 +1366,7 @@ class Conf {
     function find_review_field($text) {
         return $this->abbrev_matcher()->find1($text, self::FSRCH_REVIEW);
     }
-    /** @param string $text
+    /** @param string $fid
      * @return ReviewField */
     function checked_review_field($fid) {
         if (($f = $this->review_form()->field($fid))) {

@@ -1676,13 +1676,13 @@ class SearchQueryInfo {
 
 class PaperSearch {
     /** @var Conf
-     * @phan-readonly */
+     * @phan-read-only */
     public $conf;
     /** @var Contact
-     * @phan-readonly */
+     * @phan-read-only */
     public $user;
     /** @var int
-     * @phan-readonly */
+     * @phan-read-only */
     public $cid;
 
     /** @var Contact|null|false */

@@ -940,6 +940,7 @@ class AssignmentSet {
     private $unparse_search = false;
     private $unparse_columns = [];
     private $assignment_type;
+    /** @var array<string,array{callable}> */
     private $cleanup_callbacks;
     private $cleanup_notify_tracker;
     private $qe_stager;

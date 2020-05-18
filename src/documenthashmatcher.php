@@ -3,17 +3,26 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class DocumentHashMatcher {
+    /** @var string */
     public $algo_preg = "(?:sha1|sha256)";
+    /** @var string */
     public $algo_pfx_preg = "(?:|sha2-)";
+    /** @var string */
     public $fixed_hash = "";
+    /** @var string */
     public $hash_preg = "(?:[0-9a-f]{40}|[0-9a-f]{64})";
+    /** @var bool */
     public $has_hash_preg = false;
+    /** @var ?string */
     public $extension = null;
+    /** @var string */
     public $extension_preg = ".*";
 
+    /** @param ?string $match */
     function __construct($match = null) {
-        if ((string) $match === "")
+        if ($match === null || $match === "") {
             return;
+        }
         $dot = strpos($match, ".");
         if ($dot !== false) {
             $this->set_extension(substr($match, $dot));
@@ -43,18 +52,22 @@ class DocumentHashMatcher {
             $this->has_hash_preg = true;
         }
     }
+    /** @param ?string $extension */
     function set_extension($extension) {
-        if ((string) $extension !== ""
-            && !str_starts_with($extension, "."))
-            $extension = "." . $extension;
-        if ($extension) {
-            $this->extension = $extension;
+        if ($extension !== null && $extension !== "") {
+            if (str_starts_with($extension, ".")) {
+                $this->extension = $extension;
+            } else {
+                $this->extension = "." . $extension;
+            }
             $this->extension_preg = preg_quote($this->extension);
         } else {
             $this->extension = null;
             $this->extension_preg = ".*";
         }
     }
+    /** @param string $entrypat
+     * @return string */
     function make_preg($entrypat) {
         $preg = "";
         $entrypat = preg_quote($entrypat);
@@ -90,8 +103,9 @@ class DocumentHashMatcher {
                     $fwidth = intval($fwidth);
                     $l = min(strlen($this->fixed_hash), $fwidth);
                     $preg .= substr($this->fixed_hash, 0, $l);
-                    if ($l < $fwidth)
+                    if ($l < $fwidth) {
                         $preg .= "[0-9a-f]{" . ($fwidth - $l) . "}";
+                    }
                 }
             }
         }

@@ -153,28 +153,29 @@ class CsvParser {
         //   when there’s no ambiguity (“paper ID” -> “paper_ID”).
         if (is_array($header)) {
             $hmap = $lchmap = [];
+            $has_lchmap = true;
             foreach ($header as $i => $s) {
                 $s = (string) $s;
                 if ($s !== ""
                     && (!ctype_digit($s)
                         || ($s[0] === "0" && $s !== "0")
                         || (int) $s > count($header))) {
-                    if ($lchmap !== false) {
+                    if ($has_lchmap) {
                         $lcs = strtolower($s);
                         if (!isset($lchmap[$lcs])) {
                             $lchmap[$lcs] = $lchmap[$s] = $i;
                         } else {
-                            $lchmap = false;
+                            $has_lchmap = false;
                         }
                     }
                     $hmap[$s] = $i;
                 }
                 $hmap[$i] = $i;
-                if ($lchmap !== false) {
+                if ($has_lchmap) {
                     $lchmap[$i] = $i;
                 }
             }
-            if ($lchmap) {
+            if ($has_lchmap) {
                 $hmap = $lchmap;
             }
             $this->hmap = $hmap;

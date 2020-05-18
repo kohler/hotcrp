@@ -9,6 +9,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
     const DEBUG = 0;
 
+    /** @var Conf */
+    private $conf;
     public $pages = 0;
     private $body_pages;
     public $metadata_updates = [];
@@ -16,10 +18,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
     public $banal_stdout;
     public $banal_stderr;
     public $banal_status;
+    /** @var int */
     public $allow_run = self::RUN_YES;
+    /** @var int */
     public $need_run = 0;
+    /** @var bool */
     public $possible_run = false;
-    private $conf = null;
     private $checkers = [];
     static private $banal_args;
     static public $runcount = 0;
@@ -50,11 +54,13 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function run_banal($filename) {
-        if (($pdftohtml = $this->conf->opt("pdftohtml")))
+        if (($pdftohtml = $this->conf->opt("pdftohtml"))) {
             putenv("PHP_PDFTOHTML=" . $pdftohtml);
+        }
         $banal_run = "perl src/banal -json ";
-        if (self::$banal_args)
+        if (self::$banal_args) {
             $banal_run .= self::$banal_args . " ";
+        }
         $pipes = null;
         $tstart = microtime(true);
         $banal_proc = proc_open($banal_run . escapeshellarg($filename),
@@ -68,17 +74,19 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $this->banal_status = proc_close($banal_proc);
         ++self::$runcount;
         $banal_time = microtime(true) - $tstart;
-        if (self::DEBUG && $banal_time > 0.1)
+        if (self::DEBUG && $banal_time > 0.1) {
             error_log(sprintf("%.6f: %s", $banal_time, $banal_run . escapeshellarg($filename)));
+        }
         return json_decode($this->banal_stdout);
     }
 
     protected function body_error_status($error_pages) {
         if ($this->body_pages >= 0.5 * $this->pages
-            && $error_pages >= 0.16 * $this->body_pages)
+            && $error_pages >= 0.16 * $this->body_pages) {
             return self::ERROR;
-        else
+        } else {
             return self::WARNING;
+        }
     }
 
     static function banal_page_is_body($pg) {
@@ -89,12 +97,13 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     static function page_message($px) {
-        if (empty($px))
+        if (empty($px)) {
             return "";
-        else if (count($px) <= 20)
+        } else if (count($px) <= 20) {
             return " (" . pluralx($px, "page") . " " . numrangejoin($px) . ")";
-        else
+        } else {
             return " (including pages " . numrangejoin(array_slice($px, 0, 20)) . ")";
+        }
     }
 
     private function check_banal_json($bj, $spec) {
@@ -397,11 +406,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     private function checker($chk) {
-        if ($chk === "banal" || $chk === "CheckFormat")
+        if ($chk === "banal" || $chk === "CheckFormat") {
             return $this;
-        else {
-            if (!isset($this->checkers[$chk]))
+        } else {
+            if (!isset($this->checkers[$chk])) {
                 $this->checkers[$chk] = new $chk;
+            }
             return $this->checkers[$chk];
         }
     }
