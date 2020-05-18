@@ -2437,13 +2437,16 @@ class PaperTable {
             echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav">';
         }
         $viewable_tags = $this->prow->viewable_tags($this->user);
-        $k = "pslcard-home";
+        echo '<h4 class="pslcard-home">';
         if ($viewable_tags || $this->user->can_view_tags($this->prow)) {
-            $k .= ' has-tag-classes taghh';
-            if (($color = $this->prow->conf->tags()->color_classes($viewable_tags)))
-                $k .= ' ' . $color;
+            $color = $this->prow->conf->tags()->color_classes($viewable_tags);
+            echo '<span class="pslcard-home-tag has-tag-classes taghh',
+                ($color ? " $color" : ""), '">';
+            $close = '</span>';
+        } else {
+            $close = '';
         }
-        echo '<h4 class="', $k, '"><a href="#top" class="qq"><span class="header-site-name">',
+        echo '<a href="#top" class="qq"><span class="header-site-name">',
             htmlspecialchars($this->conf->short_name), '</span> ';
         if ($this->prow->paperId <= 0) {
             echo "new submission";
@@ -2454,7 +2457,7 @@ class PaperTable {
         } else {
             echo "#" . unparseReviewOrdinal($this->editrrow);
         }
-        echo '</a></h4><ul class="pslcard"></ul></nav></div>';
+        echo '</a>', $close, '</h4><ul class="pslcard"></ul></nav></div>';
         echo '<div class="pcard papcard"><div class="',
             ($this->editable ? "pedcard" : "papcard"), '-body">';
 

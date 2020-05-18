@@ -2690,12 +2690,12 @@ a.badge:active {
 	overflow-wrap: break-word;
 	color: #d41743;
 }
-.pslcard-home.tagbg {
+.pslcard-home-tag.tagbg {
 	margin-top: -2px;
 	margin-left: -4px;
 	margin-right: -4px;
 	padding: 2px 4px;
-	color: inherit;
+	color: #5b0b1c;
 }
 .pslitem {
 	text-overflow: ellipsis;
