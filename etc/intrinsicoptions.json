@@ -40,8 +40,10 @@
         "callback": "+Topics_PaperOption"
     },
     {
-        "name": "pcconf", "json_key": "pcconf", "id": -1006,
-        "form_position": 5001, "type": "intrinsic"
+        "name": "pcconf", "json_key": "pc_conflicts", "id": -1006,
+        "form_position": 5001, "display_position": false,
+        "type": "intrinsic2", "require": "src/intrinsicvalue.php",
+        "callback": "+PCConflicts_PaperOption"
     },
     {
         "name": "collaborators", "json_key": "collaborators", "id": -1007,

@@ -558,30 +558,6 @@ class PaperStatus extends MessageSet {
         $pj->options = (object) $new_options;
     }
 
-    private function normalize_pc_conflicts($pj) {
-        $confset = $this->conf->conflict_types();
-        $conflicts = $pj->pc_conflicts;
-        $pj->pc_conflicts = (object) array();
-        $is_array = is_array($conflicts) && !is_associative_array($conflicts);
-        foreach ((array) $conflicts as $email => $ct) {
-            if ($is_array) {
-                list($email, $ct) = array($ct, true);
-            }
-            if (!($pccid = $this->conf->pc_member_by_email($email))) {
-                $pj->bad_pc_conflicts->$email = true;
-            } else if (!is_bool($ct) && !is_int($ct) && !is_string($ct)) {
-                $this->format_error_at("pc_conflicts", $ct);
-            } else {
-                $ctn = $confset->parse_json($ct);
-                if ($ctn === false) {
-                    $pj->bad_pc_conflicts->$email = $ct;
-                    $ctn = Conflict::GENERAL;
-                }
-                $pj->pc_conflicts->$email = $ctn;
-            }
-        }
-    }
-
     private function valid_contact($email) {
         global $Me;
         if ($email) {
@@ -673,17 +649,10 @@ class PaperStatus extends MessageSet {
             }
         }
 
-        // PC conflicts
-        $pj->bad_pc_conflicts = (object) array();
-        if (isset($pj->pc_conflicts)) {
-            if (is_object($pj->pc_conflicts) || is_array($pj->pc_conflicts)) {
-                $this->normalize_pc_conflicts($pj);
-            } else if ($pj->pc_conflicts === false) {
-                $pj->pc_conflicts = (object) [];
-            } else {
-                $this->format_error_at("pc_conflicts", $pj->pc_conflicts);
-                unset($pj->pc_conflicts);
-            }
+        // load previous conflicts
+        // old conflicts
+        foreach ($this->prow ? $this->prow->conflicts(true) : [] as $cflt) {
+            $this->_conflict_values[strtolower($cflt->email)] = [$cflt->conflictType, 0, 0];
         }
 
         // verify emails on authors marked as contacts
@@ -1017,20 +986,15 @@ class PaperStatus extends MessageSet {
     }
 
     /** @param string $email
-     * @param ?int $old
      * @param int $mask
      * @param int $new */
-    private function apply_conflict_value($email, $old, $mask, $new) {
+    function update_conflict_value($email, $mask, $new) {
         $lemail = strtolower($email);
         assert(($new & $mask) === $new);
-        assert($old === null || !isset($this->_conflict_values[$lemail]));
         if (!isset($this->_conflict_values[$lemail])) {
             $this->_conflict_values[$lemail] = [0, 0, 0];
         }
         $cv = &$this->_conflict_values[$lemail];
-        if ($old !== null) {
-            $cv[0] = $old;
-        }
         if ($mask
             && ($mask !== ((CONFLICT_AUTHOR - 1) & ~1)
                 || ((($cv[0] & ~$cv[1]) | $cv[2]) & 1) === 0)) {
@@ -1046,28 +1010,6 @@ class PaperStatus extends MessageSet {
     }
 
     private function check_conflicts($pj) {
-        // old conflicts
-        foreach ($this->prow ? $this->prow->conflicts(true) : [] as $cflt) {
-            $this->apply_conflict_value($cflt->email, $cflt->conflictType, 0, 0);
-        }
-
-        // new PC conflicts
-        if (isset($pj->pc_conflicts)) {
-            if ($this->prow ? $this->user->can_administer($this->prow) : $this->user->privChair) {
-                $mask = CONFLICT_AUTHOR - 1;
-            } else {
-                $mask = (CONFLICT_AUTHOR - 1) & ~1;
-            }
-            foreach ($this->_conflict_values as $lemail => $cv) {
-                if (self::new_conflict_value($cv) & (CONFLICT_AUTHOR - 1)) {
-                    $this->apply_conflict_value($lemail, null, $mask, 0);
-                }
-            }
-            foreach ((array) $pj->pc_conflicts as $email => $ct) {
-                $this->apply_conflict_value($email, null, $mask, $ct & $mask);
-            }
-        }
-
         // new authors
         if (isset($pj->authors)) {
             foreach ($this->_conflict_values as &$cv) {
@@ -1077,9 +1019,9 @@ class PaperStatus extends MessageSet {
             unset($cv);
             foreach ($pj->authors as $aux) {
                 if (isset($aux->email)) {
-                    $this->apply_conflict_value($aux->email, null, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
+                    $this->update_conflict_value($aux->email, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
                     if (isset($aux->contact)) {
-                        $this->apply_conflict_value($aux->email, null, CONFLICT_CONTACTAUTHOR, $aux->contact ? CONFLICT_CONTACTAUTHOR : 0);
+                        $this->update_conflict_value($aux->email, CONFLICT_CONTACTAUTHOR, $aux->contact ? CONFLICT_CONTACTAUTHOR : 0);
                     }
                 }
             }
@@ -1095,7 +1037,7 @@ class PaperStatus extends MessageSet {
             }
             unset($cv);
             foreach ($pj->contacts as $aux) {
-                $this->apply_conflict_value($aux->email, null, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+                $this->update_conflict_value($aux->email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
             }
         }
 
@@ -1278,6 +1220,7 @@ class PaperStatus extends MessageSet {
         self::check_authors($this, $pj);
         self::check_one_option($opts->get(PaperOption::COLLABORATORSID), $this, $pj->collaborators ?? null);
         self::check_one_option($opts->get(PaperOption::ANONYMITYID), $this, $pj->nonblind ?? null);
+        self::check_one_option($opts->get(PaperOption::PCCONFID), $this, $pj->pc_conflicts ?? null);
         $this->check_conflicts($pj);
         self::check_one_pdf($opts->get(DTYPE_SUBMISSION), $this, $pj);
         self::check_one_pdf($opts->get(DTYPE_FINAL), $this, $pj);

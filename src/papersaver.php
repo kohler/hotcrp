@@ -171,19 +171,6 @@ class Default_PaperSaver extends PaperSaver {
         if (!count(get_object_vars($pj->options))) {
             unset($pj->options);
         }
-
-        // PC conflicts
-        if ($user->conf->setting("sub_pcconf")
-            && ($action !== "final" || $admin)
-            && $qreq->has_pcconf) {
-            $pj->pc_conflicts = (object) array();
-            foreach ($user->conf->pc_members() as $pcid => $pc) {
-                if (($ctype = (int) $qreq["pcc$pcid"])) {
-                    $email = $pc->email;
-                    $pj->pc_conflicts->$email = $user->conf->conflict_types()->unparse_json($ctype);
-                }
-            }
-        }
     }
 }
 

@@ -1563,27 +1563,29 @@ class PaperTable {
         echo Ht::hidden("has_{$o->formid}", 1);
     }
 
-    /** @param PaperOption $option */
-    function echo_editable_pc_conflicts($option) {
+    /** @param PaperOption $option
+     * @param PaperValue $ov
+     * @param PaperValue $reqov */
+    function echo_editable_pc_conflicts($option, $ov, $reqov) {
         if (!$this->conf->setting("sub_pcconf")) {
             return;
-        }
-        if ($this->editable === "f" && !$this->admin) {
+        } else if ($this->editable === "f" && !$this->admin) {
             foreach ($this->prow->pc_conflicts() as $cflt) {
                 echo Ht::hidden("pcc" . $cflt->contactId, $cflt->conflictType);
             }
             return;
         }
+
         $pcm = $this->conf->full_pc_members();
         if (empty($pcm)) {
             return;
         }
 
         $selectors = $this->conf->setting("sub_pcconfsel");
-
+        $confset = $this->conf->conflict_types();
+        $ctypes = [];
         if ($selectors) {
-            $confset = $this->conf->conflict_types();
-            $ctypes = [0 => $confset->unparse_text(0)];
+            $ctypes[0] = $confset->unparse_text(0);
             foreach ($confset->basic_conflict_types() as $ct) {
                 $ctypes[$ct] = $confset->unparse_text($ct);
             }
@@ -1594,18 +1596,26 @@ class PaperTable {
                 $ctypes[$ct] = $confset->unparse_text($ct);
             }
             $author_ctype = $confset->unparse_html(CONFLICT_AUTHOR);
-        } else {
-            $ctypes = []; // typechecker
         }
 
-        $this->echo_editable_papt("pcconf", $this->edit_title_html($option), ["id" => "pcconf"]);
+        $ctmaps = [[], []];
+        foreach ([$ov, $reqov] as $num => $value) {
+            $vs = $value->value_array();
+            $ds = $value->data_array();
+            for ($i = 0; $i !== count($vs); ++$i) {
+                $ctmaps[$num][$vs[$i]] = (int) $ds[$i];
+            }
+        }
+
+        $this->echo_editable_papt("pc_conflicts", $this->edit_title_html($option), ["id" => "pc_conflicts"]);
         $this->echo_field_hint($option);
-        echo Ht::hidden("has_pcconf", 1),
+        echo Ht::hidden("has_pc_conflicts", 1),
             '<div class="papev"><ul class="pc-ctable">';
+
         foreach ($pcm as $id => $p) {
-            $ct = $pct = $this->prow->conflict_type($p);
+            $ct = $pct = $ctmaps[0][$p->contactId] ?? 0;
             if ($this->useRequest) {
-                $ct = (int) $this->qreq["pcc$id"];
+                $ct = $ctmaps[1][$p->contactId] ?? 0;
             }
             $pcconfmatch = false;
             '@phan-var false|array{string,list<string>} $pcconfmatch';
@@ -1647,12 +1657,16 @@ class PaperTable {
                 } else {
                     echo '<span class="checkc">', Ht::checkbox(null, 1, Conflict::is_conflicted($pct), ["disabled" => true]), '</span>';
                 }
-                echo Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry"]);
+                echo Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry", "disabled" => true]);
             } else if ($selectors) {
+                $xctypes = $ctypes;
+                if (!isset($xctypes[$ct])) {
+                    $xctypes[$ct] = $confset->unparse_text($ct);
+                }
                 $js["class"] = "conflict-entry";
                 $js["data-default-value"] = $pct;
                 echo '<span class="pcconf-editselector">',
-                    Ht::select("pcc$id", $ctypes, $ct, $js),
+                    Ht::select("pcc$id", $xctypes, $ct, $js),
                     '</span>';
             } else {
                 $js["data-default-checked"] = Conflict::is_conflicted($pct);
@@ -1691,7 +1705,7 @@ class PaperTable {
         }
         $this->_papstripBegin();
         $option = $this->conf->paper_opts->get(PaperOption::PCCONFID);
-        echo $this->papt("pcconf", $option->title_html(), ["type" => "ps"]),
+        echo $this->papt("pc_conflicts", $option->title_html(), ["type" => "ps"]),
             '<div class="psv"><ul class="x namelist-columns">', join("", $pcconf), "</ul></div></div>\n";
     }
 

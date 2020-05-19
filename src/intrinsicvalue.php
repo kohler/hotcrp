@@ -291,6 +291,137 @@ class Topics_PaperOption extends PaperOption {
     }
 }
 
+class PCConflicts_PaperOption extends PaperOption {
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
+        $this->set_exists_if(!!$this->conf->setting("has_topics"));
+    }
+    /** @return array<int,int> */
+    private function paper_value_map(PaperInfo $prow) {
+        return array_intersect_key($prow->conflict_types(), $prow->conf->pc_members());
+    }
+    /** @return array<int,?string> */
+    private function value_map(PaperValue $ov) {
+        return array_combine($ov->value_array(), $ov->data_array());
+    }
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+        $pcm = $this->conf->pc_members();
+        $confset = $this->conf->conflict_types();
+        $pcc = [];
+        foreach ($this->value_map($ov) as $k => $v) {
+            if (($pc = $pcm[$k] ?? null) && (int) $v !== 0) {
+                $pcc[$pc->email] = $confset->unparse_json((int) $v);
+            }
+        }
+        return $pcc;
+    }
+    function value_load_intrinsic(PaperValue $ov) {
+        $vm = $this->paper_value_map($ov->prow);
+        /** @phan-suppress-next-line PhanTypeMismatchArgument */
+        $ov->set_value_data(array_keys($vm), array_values($vm));
+    }
+    function value_check(PaperValue $ov, Contact $user) {
+        if ($this->conf->setting("sub_pcconf")
+            && ($ov->prow->outcome <= 0 || !$user->can_view_decision($ov->prow))) {
+            $vm = $this->value_map($ov);
+            $pcs = [];
+            foreach ($this->conf->full_pc_members() as $p) {
+                if (($vm[$p->contactId] ?? 0) === 0 /* not MAXUNCONFLICTED */
+                    && $ov->prow->potential_conflict($p)) {
+                    $n = Text::name_html($p);
+                    $pcs[] = Ht::link($n, "#pcc{$p->contactId}", ["class" => "uu"]);
+                }
+            }
+            if (!empty($pcs)) {
+                $ov->warning($this->conf->_("You may have missed conflicts of interest with %s. Please verify that all conflicts are correctly marked.", commajoin($pcs, "and")) . $this->conf->_(" Hover over “possible conflict” labels for more information."));
+            }
+        }
+    }
+    function value_save(PaperValue $ov, PaperStatus $ps) {
+        $pcm = $this->conf->pc_members();
+        if ($ov->prow->paperId > 0
+            ? $ps->user->can_administer($ov->prow)
+            : $ps->user->privChair) {
+            $mask = CONFLICT_AUTHOR - 1;
+        } else {
+            $mask = (CONFLICT_AUTHOR - 1) & ~1;
+        }
+        foreach ($this->value_map($ov) as $k => $v) {
+            $ps->update_conflict_value($pcm[$k]->email, $mask, ((int) $v) & $mask);
+        }
+        return true;
+    }
+    private function update_value_map(&$vm, $k, $v) {
+        $vm[$k] = (($vm[$k] ?? 0) & ~(CONFLICT_AUTHOR - 1)) | $v;
+    }
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        $vm = $this->paper_value_map($prow);
+        foreach ($prow->conf->pc_members() as $cid => $pc) {
+            if (isset($qreq["has_pcc$cid"]) || isset($qreq["pcc$cid"])) {
+                $ct = $qreq["pcc$cid"] ?? "0";
+                if (ctype_digit($ct) && $ct >= 0 && $ct <= 127) {
+                    $this->update_value_map($vm, $cid, (int) $ct);
+                }
+            }
+        }
+        /** @phan-suppress-next-line PhanTypeMismatchArgument */
+        return PaperValue::make_multi($prow, $this, array_keys($vm), array_values($vm));
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        $ja = [];
+        if (is_object($j) || is_associative_array($j)) {
+            foreach ((array) $j as $k => $v) {
+                $ja[strtolower($k)] = $v;
+            }
+        } else if (is_array($j)) {
+            foreach ($j as $x) {
+                if (is_string($x)) {
+                    $ja[strtolower($x)] = true;
+                } else {
+                    return PaperValue::make_estop($prow, $this, "Format error.");
+                }
+            }
+        } else {
+            return PaperValue::make_estop($prow, $this, "Format error.");
+        }
+
+        $vm = $this->paper_value_map($prow);
+        foreach ($vm as $k => &$v) {
+            $v &= ~(CONFLICT_AUTHOR - 1);
+        }
+        unset($v);
+
+        $confset = $prow->conf->conflict_types();
+        $pv = new PaperValue($prow, $this);
+        foreach ($ja as $email => $v) {
+            if (is_string($email)
+                && (is_bool($v) || is_int($v) || is_string($v))) {
+                $pc = $prow->conf->pc_member_by_email($email);
+                if (!$pc) {
+                    $pv->msg("“{$email}” is not a PC member’s email.", MessageSet::WARNING);
+                }
+                $ct = $confset->parse_json($v);
+                if ($ct === false) {
+                    $pv->msg("“{$v}” does not describe a conflict type.", MessageSet::WARNING);
+                    $ct = Conflict::GENERAL;
+                }
+                if ($pc) {
+                    $this->update_value_map($vm, $pc->contactId, $ct);
+                }
+            } else {
+                return PaperValue::make_estop($prow, $this, "Format error.");
+            }
+        }
+        /** @phan-suppress-next-line PhanTypeMismatchArgument */
+        $pv->set_value_data(array_keys($vm), array_values($vm));
+        return $pv;
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        $pt->echo_editable_pc_conflicts($this, $ov, $reqov);
+    }
+    // XXX no render because paper strip
+}
+
 class IntrinsicValue {
     static function assign_intrinsic(PaperValue $ov) {
         if ($ov->id === DTYPE_SUBMISSION) {
@@ -338,30 +469,12 @@ class IntrinsicValue {
                 $ov->warning("Please enter a name and optional email address for every author.");
             }
         }
-        if ($o->id === PaperOption::PCCONFID
-            && $o->conf->setting("sub_pcconf")
-            && ($ov->prow->outcome <= 0 || !$user->can_view_decision($ov->prow))) {
-            assert(isset($ov->anno["intrinsic"]));
-            $pcs = [];
-            foreach ($o->conf->full_pc_members() as $p) {
-                if (!$ov->prow->has_conflict($p)
-                    && $ov->prow->potential_conflict($p)) {
-                    $n = Text::name_html($p);
-                    $pcs[] = Ht::link($n, "#pcc{$p->contactId}", ["class" => "uu"]);
-                }
-            }
-            if (!empty($pcs)) {
-                $ov->warning($o->conf->_("You may have missed conflicts of interest with %s. Please verify that all conflicts are correctly marked.", commajoin($pcs, "and")) . $o->conf->_(" Hover over “possible conflict” labels for more information."));
-            }
-        }
     }
     static function echo_web_edit($o, PaperTable $pt, $ov, $reqov) {
         if ($o->id === PaperOption::AUTHORSID) {
             $pt->echo_editable_authors($o);
         } else if ($o->id === PaperOption::CONTACTSID) {
             $pt->echo_editable_contact_author($o);
-        } else if ($o->id === PaperOption::PCCONFID) {
-            $pt->echo_editable_pc_conflicts($o);
         }
     }
 }

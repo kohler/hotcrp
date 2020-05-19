@@ -44,7 +44,7 @@
     ["field", "contacts", "Contact", ["$1=1"]],
     ["field", "topics", "Topics"],
     ["field", "topics", "Topic", ["$1=1"]],
-    ["field", "pcconf", "PC conflicts"],
+    ["field", "pc_conflicts", "PC conflicts"],
     ["field", "collaborators", "Collaborators"],
     ["field", "collaborators", "Other conflicts", ["setting.sub_pcconf"]],
 
@@ -59,7 +59,7 @@
     ["field_description/edit", "contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in."],
     ["field_description/edit", "nonblind", "Check this to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"],
     ["field_description/edit", "topics", "Select any topics that apply to your submission."],
-    ["field_description/edit", "pcconf", "Select the PC members who have conflicts of interest with this submission. %conflictdef%"],
+    ["field_description/edit", "pc_conflicts", "Select the PC members who have conflicts of interest with this submission. %conflictdef%"],
     ["field_description/edit", "collaborators", "<p>List other people and institutions with which the authors have conflicts of interest. We use this information when assigning external reviews.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>"],
     ["field_description/edit", "collaborators", "<p>List people and institutions with which the authors have conflicts of interest. %conflictdef% Be sure to include conflicted PC members. We use this information when assigning PC and external reviews.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>", ["!setting.sub_pcconf"]],
 
