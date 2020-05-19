@@ -792,7 +792,7 @@ class PaperStatus extends MessageSet {
     }
 
     static function check_authors(PaperStatus $ps, $pj) {
-        $authors = get($pj, "authors");
+        $authors = $pj->authors ?? null;
         $max_authors = $ps->conf->opt("maxAuthors");
         if ((is_array($authors) && empty($authors))
             || ($authors === null && (!$ps->prow || !$ps->prow->author_list()))) {
@@ -930,12 +930,14 @@ class PaperStatus extends MessageSet {
     }
 
     static function check_one_option(PaperOption $opt, PaperStatus $ps, $oj) {
-        $ov = $oj;
-        if ($ov !== null && !($ov instanceof PaperValue)) {
+        if ($oj === null) {
+            $ov = null;
+        } else if ($oj instanceof PaperValue) {
+            $ov = $oj;
+        } else {
             $ov = $opt->parse_json($ps->_nnprow, $oj);
         }
         if ($ov !== null) {
-            assert($ov instanceof PaperValue);
             if (!$ov->has_error()) {
                 $opt->value_store($ov, $ps);
             }

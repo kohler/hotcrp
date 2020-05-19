@@ -147,6 +147,7 @@ class LogRow {
 }
 
 class LogRowGenerator {
+    /** @var Conf */
     private $conf;
     private $wheres;
     private $page_size;

@@ -2290,21 +2290,28 @@ class Conf {
         }
     }
 
+    /** @param null|int|list<int>|PaperInfo $paper */
     function update_autosearch_tags($paper = null) {
         if ((!$this->setting("tag_autosearch") && !$this->opt("definedTags"))
             || !$this->tags()->has_autosearch
-            || $this->_updating_autosearch_tags)
+            || $this->_updating_autosearch_tags) {
             return;
+        }
         $csv = ["paper,tag"];
-        if (!$paper) {
+        if ($paper === null) {
             foreach ($this->tags()->filter("autosearch") as $dt) {
                 $csv[] = CsvGenerator::quote("#{$dt->tag}") . "," . CsvGenerator::quote("{$dt->tag}#clear");
                 $csv[] = CsvGenerator::quote($dt->autosearch) . "," . CsvGenerator::quote($dt->tag);
             }
-        } else {
-            if (is_object($paper))
-                $paper = $paper->paperId;
-            $rowset = $this->paper_set(["paperId" => $paper]);
+        } else if (!empty($paper)) {
+            if (is_int($paper)) {
+                $pids = [$paper];
+            } else if (is_object($paper)) {
+                $pids = [$paper->paperId];
+            } else {
+                $pids = $paper;
+            }
+            $rowset = $this->paper_set(["paperId" => $pids]);
             foreach ($this->tags()->filter("autosearch") as $dt) {
                 $search = new PaperSearch($this->site_contact(), ["q" => $dt->autosearch, "t" => "all"]);
                 foreach ($rowset as $prow) {

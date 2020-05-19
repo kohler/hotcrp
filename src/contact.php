@@ -4415,6 +4415,9 @@ class Contact {
         return $t;
     }
 
+    /** @param int $pid
+     * @param int $reviewer_cid
+     * @param int $type */
     function assign_review($pid, $reviewer_cid, $type, $extra = []) {
         global $Now;
         $result = $this->conf->qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy, reviewSubmitted from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);

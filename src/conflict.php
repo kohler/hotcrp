@@ -52,7 +52,7 @@ class Conflict {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->_desc = !!$conf->setting("sub_pcconfdesc");
+        $this->_desc = !!$conf->setting("sub_pcconfsel");
     }
 
     /** @return list<int> */

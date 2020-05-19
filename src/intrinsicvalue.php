@@ -168,7 +168,7 @@ class Nonblind_PaperOption extends PaperOption {
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $pt->echo_editable_anonymity($this, $reqov);
+        $pt->echo_editable_anonymity($this, $ov, $reqov);
     }
 }
 
