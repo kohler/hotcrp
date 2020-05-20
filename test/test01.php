@@ -1268,6 +1268,15 @@ xassert(!$blank1->can_view_paper($paper16));
 xassert(!$blank2->can_view_paper($paper19));
 xassert(!$blank2->can_view_paper($paper16));
 
+// author view capabilities and "author" paper_set
+$pset = $blank1->paper_set(["author" => true]);
+xassert_array_eqq($pset->paper_ids(), [19]);
+$pset = $user_mogul->paper_set(["author" => true]);
+xassert_array_eqq($pset->paper_ids(), [16]);
+$user_mogul->set_capability("@av12", true);
+$pset = $user_mogul->paper_set(["author" => true]);
+xassert_array_eqq($pset->paper_ids(), [12, 16]);
+
 // search canonicalization
 xassert_eqq(PaperSearch::canonical_query("(a b) OR (c d)", "", "", "", $Conf),
             "(a b) OR (c d)");
