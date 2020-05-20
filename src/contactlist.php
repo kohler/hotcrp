@@ -825,7 +825,7 @@ class ContactList {
             $mainwhere[] = "roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0";
         }
         if ($this->_limit_cids !== null) {
-            $mainwhere[] = "contactId in (" . join(",", array_keys($this->_limit_cids)) . ")";
+            $mainwhere[] = "contactId" . sql_in_int_list(array_keys($this->_limit_cids));
         }
 
         // make query
