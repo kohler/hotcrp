@@ -3401,12 +3401,15 @@ class Conf {
         }
 
         if ($user) {
-            if (!($options["author"] ?? false)) {
-                $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)";
-            } else if (($aujoinwhere = $user->act_author_view_sql("PaperConflict", true))) {
+            $aujoinwhere = null;
+            if (($options["author"] ?? false)
+                && ($aujoinwhere = $user->act_author_view_sql("PaperConflict", true))) {
                 $where[] = $aujoinwhere;
-            } else {
+            }
+            if (($options["author"] ?? false) && !$aujoinwhere) {
                 $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
+            } else {
+                $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)";
             }
             $cols[] = "PaperConflict.conflictType";
         } else if ($options["author"] ?? false) {
