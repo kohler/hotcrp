@@ -103,7 +103,7 @@ class SessionList {
             } else if ($ch >= "I" && $ch <= "P") {
                 $n = ord($ch) - 72;
                 $skip = 2;
-            } else if (strspn($ch, "s[],0123456789") !== 1) {
+            } else if (strspn($ch, "s[],0123456789'") !== 1) {
                 error_log("bad SessionList decode_ids contains $ch"); // XXX delete this
                 return false;
             }
@@ -147,7 +147,7 @@ class SessionList {
         // z: next range is backwards
         // A-H: like a-h + i
         // I-P: like a-h + j
-        // [s\[\],]: ignored
+        // [s\[\],']: ignored
         $n = count($ids);
         $a = [(string) $ids[0]];
         '@phan-var list<string> $a';
