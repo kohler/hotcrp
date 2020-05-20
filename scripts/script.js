@@ -8006,7 +8006,7 @@ edit_conditions.pc_conflict = function (ec, form) {
     var n = 0, elt;
     for (var i = 0; i !== ec.cids.length; ++i)
         if ((elt = form["pcc" + ec.cids[i]])
-            && (elt.type === "checkbox" ? elt.checked : +elt.value > 0)) {
+            && (elt.type === "checkbox" ? elt.checked : +elt.value > 1)) {
             ++n;
             if (ec.compar === "!=" && ec.value === 0)
                 return true;
