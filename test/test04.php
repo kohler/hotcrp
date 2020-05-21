@@ -34,7 +34,7 @@ if (!$Conf->contactdb()) {
     exit(1);
 }
 
-$user_chair = $Conf->user_by_email("chair@_.com");
+$user_chair = $Conf->checked_user_by_email("chair@_.com");
 $marina = "marina@poema.ru";
 
 user($marina)->change_password("rosdevitch");
@@ -195,7 +195,7 @@ $ps->save_paper_json((object) [
                   $user_floyd->email, $user_van->email, $anna]
 ]);
 
-$paper1 = $Conf->fetch_paper(1, $user_chair);
+$paper1 = $user_chair->checked_paper_by_id(1);
 $user_anna = user($anna);
 xassert(!!$user_anna);
 xassert($user_anna->act_author_view($paper1));
@@ -223,7 +223,7 @@ xassert_eqq($user_anne1->tag_value("b"), 3.0);
 xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
 xassert_eqq($user_anne1->data("data_test"), 139);
 xassert_eqq($user_anne1->email, "anne1@_.com");
-$paper1 = $Conf->fetch_paper(1);
+$paper1 = $Conf->checked_paper_by_id(1);
 xassert($paper1->has_conflict($user_anne1));
 
 // creation interactions
@@ -260,7 +260,7 @@ $u = $Conf->user_by_email("betty5@_.com");
 xassert(!$u);
 $u = $Conf->contactdb_user_by_email("betty5@_.com");
 $u->activate_database_account();
-$u = $Conf->user_by_email("betty5@_.com");
+$u = $Conf->checked_user_by_email("betty5@_.com");
 xassert($u->has_account_here());
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Davis");
@@ -274,7 +274,7 @@ xassert_eqq($u->contactdb_user()->lastName, "Alaettinoğlu");
 
 // contactdb_update
 Dbl::qe($Conf->dblink, "insert into ContactInfo set email='betty6@_.com', password='Fart', firstName='Betty', lastName='Knowles'");
-$u = $Conf->user_by_email("betty6@_.com");
+$u = $Conf->checked_user_by_email("betty6@_.com");
 xassert(!!$u);
 xassert(!$u->contactdb_user());
 $u->contactdb_update();

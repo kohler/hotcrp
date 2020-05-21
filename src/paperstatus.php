@@ -187,7 +187,7 @@ class PaperStatus extends MessageSet {
 
     function paper_json($prow, $args = array()) {
         if (is_int($prow)) {
-            $prow = $this->conf->fetch_paper($prow, $this->user, ["topics" => true, "options" => true]);
+            $prow = $this->conf->paper_by_id($prow, $this->user, ["topics" => true, "options" => true]);
         }
 
         $original_user = $user = $this->user;
@@ -1166,7 +1166,7 @@ class PaperStatus extends MessageSet {
             $cfltf(null);
         }
         if ($this->_created_contacts !== null) {
-            $rest = ["prow" => $this->conf->fetch_paper($this->paperId)];
+            $rest = ["prow" => $this->conf->paper_by_id($this->paperId)];
             if ($this->user->can_administer($rest["prow"])
                 && !$rest["prow"]->has_author($this->user)) {
                 $rest["adminupdate"] = true;
@@ -1199,7 +1199,7 @@ class PaperStatus extends MessageSet {
         $this->clear();
         $this->paperId = $paperid ? : -1;
         if ($paperid) {
-            $this->prow = $this->conf->fetch_paper($paperid, $this->user, ["topics" => true, "options" => true]);
+            $this->prow = $this->conf->paper_by_id($paperid, $this->user, ["topics" => true, "options" => true]);
         }
         if ($this->prow && $paperid !== $this->prow->paperId) {
             $this->error_at("pid", $this->_("Saving submission with different ID"));
@@ -1285,7 +1285,7 @@ class PaperStatus extends MessageSet {
                 continue;
             }
             if (!$prow) {
-                $prow = $ps->conf->fetch_paper($ps->paperId, $ps->user, ["options" => true]);
+                $prow = $ps->conf->paper_by_id($ps->paperId, $ps->user, ["options" => true]);
             }
             if ($ps->user->can_edit_option($prow, $o)
                 && $o->test_required($prow)
@@ -1422,7 +1422,7 @@ class PaperStatus extends MessageSet {
 
         // update document inactivity
         if ($this->_documents_changed
-            && ($prow = $this->conf->fetch_paper($this->paperId, null, ["options" => true]))) {
+            && ($prow = $this->conf->paper_by_id($this->paperId, null, ["options" => true]))) {
             $prow->mark_inactive_documents();
         }
 

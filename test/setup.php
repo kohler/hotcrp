@@ -505,17 +505,11 @@ function call_api($fn, $user, $qreq, $prow) {
     return $result;
 }
 
-/** @param ?Contact $user */
-function fetch_paper($pid, $user = null) {
-    global $Conf;
-    return $Conf->fetch_paper($pid, $user);
-}
-
 /** @param int|PaperInfo $prow
  * @param Contact $user */
 function fetch_review($prow, $user) {
     if (is_int($prow)) {
-        $prow = fetch_paper($prow, $user);
+        $prow = $user->conf->checked_paper_by_id($prow, $user);
     }
     return $prow->fresh_review_of_user($user);
 }
@@ -524,7 +518,7 @@ function fetch_review($prow, $user) {
 function save_review($paper, $user, $revreq, $rrow = null) {
     global $Conf;
     $pid = is_object($paper) ? $paper->paperId : $paper;
-    $prow = fetch_paper($pid, $user);
+    $prow = $user->conf->paper_by_id($pid, $user);
     $rf = $Conf->review_form();
     $tf = new ReviewValues($rf);
     $tf->parse_web(new Qrequest("POST", $revreq), false);

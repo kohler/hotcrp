@@ -1948,6 +1948,15 @@ class Conf {
         return $acct;
     }
 
+    /** @return Contact */
+    function checked_user_by_email($email) {
+        $acct = $this->user_by_email($email);
+        if (!$acct) {
+            throw new Exception("Contact::checked_user_by_email($email) failed");
+        }
+        return $acct;
+    }
+
     /** @return false|int */
     function user_id_by_email($email) {
         $result = $this->qe("select contactId from ContactInfo where email=?", trim($email));
@@ -3571,7 +3580,7 @@ class Conf {
 
     /** @param int $pid
      * @return ?PaperInfo */
-    function fetch_paper($pid, Contact $user = null, $options = []) {
+    function paper_by_id($pid, Contact $user = null, $options = []) {
         $options["paperId"] = [$pid];
         $result = $this->paper_result($options, $user);
         $prow = PaperInfo::fetch($result, $user, $this);
@@ -3579,11 +3588,29 @@ class Conf {
         return $prow;
     }
 
+    /** @param int $pid
+     * @return PaperInfo */
+    function checked_paper_by_id($pid, Contact $user = null, $options = []) {
+        $prow = $this->paper_by_id($pid, $user, $options);
+        if (!$prow) {
+            throw new Exception("Conf::checked_paper_by_id($pid) failed");
+        }
+        return $prow;
+    }
+
+    /** @deprecated
+     * @param int $pid
+     * @return ?PaperInfo */
+    function fetch_paper($pid, Contact $user = null, $options = []) {
+        return $this->paper_by_id($pid, $user, $options);
+    }
+
+    /** @return ?PaperInfo */
     function set_paper_request(Qrequest $qreq, Contact $user) {
         $this->paper = $prow = null;
         if ($qreq->p) {
             if (ctype_digit($qreq->p)) {
-                $prow = $this->fetch_paper(intval($qreq->p), $user);
+                $prow = $this->paper_by_id(intval($qreq->p), $user);
             }
             if (($whynot = $user->perm_view_paper($prow, false, $qreq->p))) {
                 $qreq->set_annex("paper_whynot", $whynot);

@@ -2972,6 +2972,9 @@ class PaperTable {
             && !array_diff($qreq->keys(), ["p", "paperId", "m", "mode", "forceShow", "go", "actas", "t", "q", "r", "reviewId"]);
     }
 
+    /** @param Qrequest $qreq
+     * @param Contact $user
+     * @return ?int */
     static private function lookup_pid($qreq, $user) {
         // if a number, don't search
         $pid = isset($qreq->paperId) ? $qreq->paperId : $qreq->q;
@@ -3020,6 +3023,7 @@ class PaperTable {
         }
     }
 
+    /** @param ?int $pid */
     static function redirect_request($pid, Qrequest $qreq, Contact $user) {
         if ($pid !== null) {
             $qreq->paperId = $pid;
@@ -3050,7 +3054,7 @@ class PaperTable {
             || ($user->isPC && $user->conf->timePCReviewPreferences())) {
             $options["reviewerPreference"] = true;
         }
-        $prow = $user->conf->fetch_paper($pid, $user, $options);
+        $prow = $user->paper_by_id($pid, $options);
         $whynot = $user->perm_view_paper($prow, false, $pid);
         if (!$whynot
             && !isset($qreq->paperId)

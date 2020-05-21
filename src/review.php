@@ -1838,7 +1838,7 @@ class ReviewValues extends MessageSet {
                 $this->rmsg("paperNumber", "This review form doesn’t report which paper number it is for.  Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
                 return false;
             }
-            $prow = $this->conf->fetch_paper($this->paperId, $user);
+            $prow = $user->paper_by_id($this->paperId);
             if (($whynot = $user->perm_view_paper($prow, false, $this->paperId))) {
                 $this->rmsg("paperNumber", whyNotText($whynot), self::ERROR);
                 return false;

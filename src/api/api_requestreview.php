@@ -230,7 +230,7 @@ class RequestReview_API {
         if (!$prow
             && ctype_digit($qreq->p)
             && strcasecmp($email, $user->email) === 0) {
-            $xprow = $user->conf->fetch_paper(intval($qreq->p), $user);
+            $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
             if ($xprow && $xprow->review_refusals_of_user($user)) {
                 $prow = $xprow;
             }
@@ -312,7 +312,7 @@ class RequestReview_API {
                 $requser = $user->conf->user_by_id($rrow->requestedBy);
             }
             if ($requser) {
-                $reqprow = $user->conf->fetch_paper($prow->paperId, $requser);
+                $reqprow = $user->conf->paper_by_id($prow->paperId, $requser);
                 HotCRPMailer::send_to($requser, "@refusereviewrequest", [
                     "prow" => $reqprow,
                     "reviewer_contact" => $rrow, "reason" => $reason
@@ -416,7 +416,7 @@ class RequestReview_API {
         if (!$prow
             && ctype_digit($qreq->p)
             && strcasecmp($email, $user->email) === 0) {
-            $xprow = $user->conf->fetch_paper(intval($qreq->p), $user);
+            $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
             if ($xprow && $xprow->review_refusals_of_user($user)) {
                 $prow = $xprow;
             }

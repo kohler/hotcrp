@@ -194,7 +194,7 @@ class DocumentRequest implements JsonSerializable {
         if ($this->paperId < 0) {
             $this->prow = new PaperInfo(["paperId" => -2], null, $user->conf);
         } else {
-            $this->prow = $user->conf->fetch_paper($this->paperId, $user);
+            $this->prow = $user->conf->paper_by_id($this->paperId, $user);
         }
     }
 

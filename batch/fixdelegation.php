@@ -29,7 +29,7 @@ function fix_one_delegation() {
     $pid = (int) $row[0];
     $req_cid = (int) $row[1];
     $req_email = $row[2];
-    $prow = $Conf->fetch_paper($pid);
+    $prow = $Conf->paper_by_id($pid);
     fwrite(STDERR, "Problem: #$pid review by $req_email\n");
     fwrite(STDERR, "  reviewNeedsSubmit $row[5], " . plural($row[3] ? : 0, "delegate") . ", " . plural($row[4] ? : 0, "submitted delegate") . "\n");
 

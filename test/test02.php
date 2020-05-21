@@ -76,7 +76,8 @@ xassert_eqq(Dbl::compare_and_swap(Dbl::$default_dblink,
 xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 3);
 
 // DocumentInfo::update_metadata test
-$paper1 = $Conf->fetch_paper(1, $Conf->user_by_email("chair@_.com"));
+$user_chair = $Conf->checked_user_by_email("chair@_.com");
+$paper1 = $user_chair->checked_paper_by_id(1);
 $doc = $paper1->document(DTYPE_SUBMISSION);
 xassert(!!$doc);
 xassert_eqq($doc->metadata(), null);

@@ -4380,6 +4380,18 @@ class Contact {
         return $this->conf->paper_set($options, $this);
     }
 
+    /** @param int $pid
+     * @return ?PaperInfo */
+    function paper_by_id($pid, $options = []) {
+        return $this->conf->paper_by_id($pid, $this, $options);
+    }
+
+    /** @param int $pid
+     * @return PaperInfo */
+    function checked_paper_by_id($pid, $options = []) {
+        return $this->conf->checked_paper_by_id($pid, $this, $options);
+    }
+
     /** @return array{string,string} */
     function paper_status_info(PaperInfo $row) {
         if ($row->timeWithdrawn > 0) {

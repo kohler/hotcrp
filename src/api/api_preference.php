@@ -13,7 +13,7 @@ class Preference_API {
         if (!$prow) {
             $whynot = $qreq->annex("paper_whynot");
             if (!isset($whynot["withdrawn"])
-                || !($prow = $user->conf->fetch_paper(intval($qreq->p), $user)))
+                || !($prow = $user->conf->paper_by_id(intval($qreq->p), $user)))
                 return Conf::paper_error_json_result($whynot);
         }
         if (!$u->can_enter_preference($prow))
