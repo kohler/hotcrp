@@ -780,7 +780,7 @@ class TagMap implements IteratorAggregate {
 
     static function make(Conf $conf) {
         $map = new TagMap($conf);
-        $ct = $conf->setting_data("tag_chair", "");
+        $ct = $conf->setting_data("tag_chair") ?? "";
         foreach (TagInfo::split_unpack($ct) as $ti) {
             $t = $map->add($ti[0]);
             $t->chair = $t->readonly = true;
@@ -789,17 +789,17 @@ class TagMap implements IteratorAggregate {
             $t = $map->add(TagInfo::base($tn));
             $t->chair = $t->readonly = $t->track = true;
         }
-        $ct = $conf->setting_data("tag_hidden", "");
+        $ct = $conf->setting_data("tag_hidden") ?? "";
         foreach (TagInfo::split_unpack($ct) as $ti) {
             $map->add($ti[0])->hidden = $map->has_hidden = true;
         }
-        $ct = $conf->setting_data("tag_sitewide", "");
+        $ct = $conf->setting_data("tag_sitewide") ?? "";
         foreach (TagInfo::split_unpack($ct) as $ti) {
             $map->add($ti[0])->sitewide = $map->has_sitewide = true;
         }
         $ppu = $conf->setting("tag_vote_private_peruser")
             || $conf->opt("secretPC");
-        $vt = $conf->setting_data("tag_vote", "");
+        $vt = $conf->setting_data("tag_vote") ?? "";
         foreach (TagInfo::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
             $t->vote = ($ti[1] ? : 1);
@@ -809,7 +809,7 @@ class TagMap implements IteratorAggregate {
                 $t->public_peruser = $map->has_public_peruser = true;
             }
         }
-        $vt = $conf->setting_data("tag_approval", "");
+        $vt = $conf->setting_data("tag_approval") ?? "";
         foreach (TagInfo::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
             $t->approval = $map->has_approval = true;
@@ -818,7 +818,7 @@ class TagMap implements IteratorAggregate {
                 $t->public_peruser = $map->has_public_peruser = true;
             }
         }
-        $rt = $conf->setting_data("tag_rank", "");
+        $rt = $conf->setting_data("tag_rank") ?? "";
         foreach (TagInfo::split_unpack($rt) as $ti) {
             $t = $map->add($ti[0]);
             $t->rank = $map->has_rank = true;
@@ -826,7 +826,7 @@ class TagMap implements IteratorAggregate {
                 $t->public_peruser = $map->has_public_peruser = true;
             }
         }
-        $ct = $conf->setting_data("tag_color", "");
+        $ct = $conf->setting_data("tag_color") ?? "";
         if ($ct !== "") {
             foreach (explode(" ", $ct) as $k) {
                 if ($k !== "" && ($p = strpos($k, "=")) !== false
@@ -836,7 +836,7 @@ class TagMap implements IteratorAggregate {
                 }
             }
         }
-        $bt = $conf->setting_data("tag_badge", "");
+        $bt = $conf->setting_data("tag_badge") ?? "";
         if ($bt !== "") {
             foreach (explode(" ", $bt) as $k) {
                 if ($k !== "" && ($p = strpos($k, "=")) !== false) {
@@ -845,7 +845,7 @@ class TagMap implements IteratorAggregate {
                 }
             }
         }
-        $bt = $conf->setting_data("tag_emoji", "");
+        $bt = $conf->setting_data("tag_emoji") ?? "";
         if ($bt !== "") {
             foreach (explode(" ", $bt) as $k) {
                 if ($k !== "" && ($p = strpos($k, "=")) !== false) {
@@ -854,7 +854,7 @@ class TagMap implements IteratorAggregate {
                 }
             }
         }
-        $tx = $conf->setting_data("tag_autosearch", "");
+        $tx = $conf->setting_data("tag_autosearch") ?? "";
         if ($tx !== "") {
             foreach (json_decode($tx) ? : [] as $tag => $search) {
                 $map->add($tag)->autosearch = $search->q;

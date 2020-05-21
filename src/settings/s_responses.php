@@ -4,7 +4,7 @@
 
 class Responses_SettingParser extends SettingParser {
     static function resp_round_names(Conf $conf) {
-        return explode(" ", $conf->setting_data("resp_rounds", "1"));
+        return explode(" ", $conf->setting_data("resp_rounds") ?? "1");
     }
 
     static function render_name_property(SettingValues $sv, $i) {

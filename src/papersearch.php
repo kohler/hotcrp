@@ -2089,7 +2089,7 @@ class PaperSearch {
         if (isset($recursion[$word])) {
             return false;
         }
-        $t = $this->conf->setting_data("ss:" . $word, "");
+        $t = $this->conf->setting_data("ss:" . $word) ?? "";
         $search = json_decode($t);
         if ($search && is_object($search) && isset($search->q)) {
             return $search->q;

@@ -679,9 +679,9 @@ class SettingValues extends MessageSet {
                 $val = (int) $val;
             }
         } else if ($si->storage_type & Si::SI_DATA) {
-            $val = $this->conf->setting_data($si->storage(), $default_value);
+            $val = $this->conf->setting_data($si->storage()) ?? $default_value;
         } else if ($si->storage_type & Si::SI_VALUE) {
-            $val = $this->conf->setting($si->storage(), $default_value);
+            $val = $this->conf->setting($si->storage()) ?? $default_value;
         } else {
             error_log("setting $si->name: don't know how to get value");
             $val = $default_value;
@@ -804,7 +804,7 @@ class SettingValues extends MessageSet {
         if ($si->storage_type & Si::SI_SLICE) {
             if (!isset($this->savedv[$s])) {
                 if (!array_key_exists($s, $this->savedv)) {
-                    $this->savedv[$s] = [$this->conf->setting($s, 0), $this->conf->setting_data($s, null)];
+                    $this->savedv[$s] = [$this->conf->setting($s) ?? 0, $this->conf->setting_data($s)];
                 } else {
                     $this->savedv[$s] = [0, null];
                 }

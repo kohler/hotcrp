@@ -1707,7 +1707,7 @@ class Conf {
             }
         }
         if ($add && !self::round_name_error($rname)) {
-            $rtext = $this->setting_data("tag_rounds", "");
+            $rtext = $this->setting_data("tag_rounds") ?? "";
             $rtext = ($rtext ? "$rtext$rname " : " $rname ");
             $this->__save_setting("tag_rounds", 1, $rtext);
             $this->crosscheck_round_settings();

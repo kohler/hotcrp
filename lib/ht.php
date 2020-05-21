@@ -34,6 +34,8 @@ class Ht {
                                        "spellcheck" => self::ATTR_BOOLTEXT,
                                        "type" => self::ATTR_SKIP);
 
+    /** @param ?array<string,mixed> $js
+     * @return string */
     static function extra($js) {
         $x = "";
         if ($js) {
@@ -56,18 +58,24 @@ class Ht {
         return $x;
     }
 
+    /** @param ?string $nonce */
     static function set_script_nonce($nonce) {
-        if ((string) $nonce === "") {
+        if ($nonce === null || $nonce === "") {
             self::$_script_open = '<script';
         } else {
             self::$_script_open = '<script nonce="' . htmlspecialchars($nonce) . '"';
         }
     }
 
+    /** @param string $script
+     * @return string */
     static function script($script) {
         return self::$_script_open . '>' . $script . '</script>';
     }
 
+    /** @param string $src
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function script_file($src, $js = null) {
         if ($js
             && ($js["crossorigin"] ?? false)
@@ -77,11 +85,16 @@ class Ht {
         return self::$_script_open . ' src="' . htmlspecialchars($src) . '"' . self::extra($js) . '></script>';
     }
 
+    /** @param string $src
+     * @return string */
     static function stylesheet_file($src) {
         return "<link rel=\"stylesheet\" type=\"text/css\" href=\""
             . htmlspecialchars($src) . "\" />";
     }
 
+    /** @param string $action
+     * @param array<string,mixed> $extra
+     * @return string */
     static function form($action, $extra = []) {
         if (is_array($action)) {
             $extra = $action;
@@ -121,12 +134,19 @@ class Ht {
         return $x . ' accept-charset="UTF-8"' . self::extra($extra) . $suffix;
     }
 
+    /** @param string $name
+     * @param string|int $value
+     * @param ?array<string,mixed> $extra
+     * @return string */
     static function hidden($name, $value = "", $extra = null) {
         return '<input type="hidden" name="' . htmlspecialchars($name)
             . '" value="' . htmlspecialchars($value) . '"'
             . self::extra($extra) . ' />';
     }
 
+    /** @param string $name
+     * @param array $opt
+     * @return string */
     static function select($name, $opt, $selected = null, $js = null) {
         if (is_array($selected) && $js === null) {
             list($js, $selected) = array($selected, null);
@@ -203,6 +223,11 @@ class Ht {
         return $t . '>' . $x . $optgroup . "</select></span>";
     }
 
+    /** @param string $name
+     * @param string|int $value
+     * @param bool $checked
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function checkbox($name, $value = 1, $checked = false, $js = null) {
         if (is_array($value)) {
             $js = $value;
@@ -229,11 +254,20 @@ class Ht {
         return $t . self::extra($js) . " />";
     }
 
+    /** @param string $name
+     * @param string|int $value
+     * @param bool $checked
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function radio($name, $value = 1, $checked = false, $js = null) {
         $t = self::checkbox($name, $value, $checked, $js);
         return '<input type="radio"' . substr($t, 22);
     }
 
+    /** @param string $html
+     * @param ?string $id
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function label($html, $id = null, $js = null) {
         if ($js && isset($js["for"])) {
             $id = $js["for"];
@@ -245,10 +279,13 @@ class Ht {
             . self::extra($js) . '>' . $html . "</label>";
     }
 
+    /** @param string $html
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function button($html, $js = null) {
         if ($js === null && is_array($html)) {
             $js = $html;
-            $html = null;
+            $html = "";
         } else if ($js === null) {
             $js = array();
         }
@@ -259,6 +296,10 @@ class Ht {
         return "<button type=\"$type\"" . self::extra($js) . ">" . $html . "</button>";
     }
 
+    /** @param string $name
+     * @param null|string|array<string,mixed> $html
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function submit($name, $html = null, $js = null) {
         if ($js === null && is_array($html)) {
             $js = $html;
@@ -269,12 +310,16 @@ class Ht {
         $js["type"] = "submit";
         if ($html === null) {
             $html = $name;
-        } else if ((string) $name !== "") {
+        } else if ($name !== null && $name !== "") {
             $js["name"] = $name;
         }
         return self::button($html, $js);
     }
 
+    /** @param string $name
+     * @param null|string|int $value
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function hidden_default_submit($name, $value = null, $js = null) {
         if ($js === null && is_array($value)) {
             $js = $value;
@@ -296,22 +341,34 @@ class Ht {
         }
     }
 
+    /** @param string $name
+     * @param string $value
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function entry($name, $value, $js = null) {
-        $js = $js ? : array();
+        $js = $js ?? [];
         self::apply_placeholder($value, $js);
         $type = $js["type"] ?? "text";
         return '<input type="' . $type . '" name="' . $name . '" value="'
             . htmlspecialchars($value) . '"' . self::extra($js) . ' />';
     }
 
+    /** @param string $name
+     * @param string $value
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function password($name, $value, $js = null) {
-        $js = $js ? $js : array();
+        $js = $js ?? [];
         $js["type"] = "password";
         return self::entry($name, $value, $js);
     }
 
+    /** @param string $name
+     * @param string $value
+     * @param ?array<string,mixed> $js
+     * @return string */
     static function textarea($name, $value, $js = null) {
-        $js = $js ? $js : array();
+        $js = $js ?? [];
         self::apply_placeholder($value, $js);
         return '<textarea name="' . $name . '"' . self::extra($js)
             . '>' . htmlspecialchars($value) . '</textarea>';

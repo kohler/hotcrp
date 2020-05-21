@@ -156,8 +156,8 @@ class Dbl {
         }
 
         $dbsock = $Opt["dbSocket"] ?? null;
-        if ($dbsock && $dbport === null) {
-            $dbport = (int) ini_get("mysqli.default_port");
+        if ($dbport === null) {
+            $dbport = $dbsock ? (int) ini_get("mysqli.default_port") : 0;
         }
         if ($dbpass === null) {
             $dbpass = ini_get("mysqli.default_pw");

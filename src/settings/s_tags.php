@@ -37,7 +37,7 @@ class Tags_SettingRenderer {
         $sv->echo_entry_group("tag_vote", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)");
     }
     static function render_tag_rank(SettingValues $sv) {
-        $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
+        $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank") ?? "");
         $sv->echo_entry_group("tag_rank", null, null, 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)');
     }
     static function render(SettingValues $sv) {
@@ -63,7 +63,7 @@ class Tags_SettingRenderer {
         if ($sv->conf->opt("tagNoSettingsColors")) {
             $skip_colors = preg_split('/[\s|]+/', $sv->conf->opt("tagNoSettingsColors"));
         }
-        $tag_color_data = $sv->conf->setting_data("tag_color", "");
+        $tag_color_data = $sv->conf->setting_data("tag_color") ?? "";
         $tag_colors_rows = array();
         foreach ($sv->conf->tags()->canonical_colors() as $k) {
             if (in_array($k, $skip_colors)) {

@@ -300,7 +300,7 @@ if ($reviewer) {
         echo '<div class="entryi"><label></label><div class="entry">';
     }
     echo '<label class="d-inline-block checki"><span class="checkc">',
-        Ht::checkbox("autosave", false, true, ["id" => "assrevimmediate", "class" => "ignore-diff uich js-assignment-autosave"]),
+        Ht::checkbox("autosave", "", true, ["id" => "assrevimmediate", "class" => "ignore-diff uich js-assignment-autosave"]),
         '</span>Automatically save assignments</label></div></div>';
     $show_data = show_ass_elements($pl);
     if (!empty($show_data)) {

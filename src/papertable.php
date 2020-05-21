@@ -2368,7 +2368,7 @@ class PaperTable {
         global $Conf, $Now;
         $data = $Conf->_i("clickthrough_$ctype");
         $buttons = [Ht::submit("Agree", ["class" => "btnbig btn-success ui js-clickthrough"])];
-        echo Ht::form(["class" => "ui"]), '<div>', $data,
+        echo Ht::form("", ["class" => "ui"]), '<div>', $data,
             Ht::hidden("clickthrough_type", $ctype),
             Ht::hidden("clickthrough_id", sha1($data)),
             Ht::hidden("clickthrough_time", $Now),

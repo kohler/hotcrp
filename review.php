@@ -286,8 +286,9 @@ if (isset($Qreq->accept)
             Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
                 where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0",
                 $Now, $prow->paperId, $rrow->reviewId);
-            if ($Me->is_signed_in())
+            if ($Me->is_signed_in()) {
                 $rrow->delete_acceptor();
+            }
             $Me->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} accepted", $prow);
         }
         $Conf->confirmMsg("Thank you for confirming your intention to finish this review. You can download the paper and review form below.");

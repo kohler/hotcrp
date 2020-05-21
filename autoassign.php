@@ -57,7 +57,7 @@ if (!isset($Qreq->pctyp)
 // bad pairs
 // load defaults from last autoassignment or save entry to default
 if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POST") {
-    $x = preg_split('/\s+/', $Conf->setting_data("autoassign_badpairs", ""), null, PREG_SPLIT_NO_EMPTY);
+    $x = preg_split('/\s+/', $Conf->setting_data("autoassign_badpairs") ?? "", null, PREG_SPLIT_NO_EMPTY);
     $pcm = $Conf->pc_members();
     $bpnum = 1;
     for ($i = 0; $i < count($x) - 1; $i += 2) {
