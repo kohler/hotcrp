@@ -294,7 +294,6 @@ class Topics_PaperOption extends PaperOption {
 class PCConflicts_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->set_exists_if(!!$this->conf->setting("has_topics"));
     }
     /** @return array<int,int> */
     private function paper_value_map(PaperInfo $prow) {
