@@ -28,11 +28,10 @@ $user_pdruschel = $Conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
 $user_nobody = new Contact;
 
 // users are different
-xassert($user_chair && $user_estrin && $user_kohler && $user_marina && $user_van && $user_nobody);
-xassert($user_chair->contactId && $user_estrin->contactId && $user_kohler->contactId && $user_marina->contactId && $user_van->contactId && !$user_nobody->contactId);
 xassert($user_chair->contactId != $user_estrin->contactId);
 
 // check permissions on paper
+/** @param PaperInfo $paper1 */
 function check_paper1($paper1) {
     global $user_chair, $user_estrin, $user_kohler, $user_marina, $user_van, $user_nobody;
     xassert_neqq($paper1, null);

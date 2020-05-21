@@ -41,7 +41,7 @@ class GetDocument_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $downloads = $errors = [];
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $opt = $user->conf->option_by_id($this->dt);
+        $opt = $user->conf->checked_option_by_id($this->dt);
         foreach ($ssel->paper_set($user) as $row) {
             if (($whyNot = $user->perm_view_option($row, $opt))) {
                 $errors[] = self::error_document($opt, $row, whyNotText($whyNot));

@@ -62,7 +62,7 @@ class PaperTable {
 
         $this->canUploadFinal = $this->user->allow_edit_final_paper($this->prow);
 
-        if (!$this->prow->paperId) {
+        if (!$prow || !$this->prow->paperId) {
             $this->mode = "edit";
             return;
         }
@@ -3049,12 +3049,16 @@ class PaperTable {
             && ($pid === null || (string) $pid !== $qreq->paperId)) {
             self::redirect_request($pid, $qreq, $user);
         }
-        $options = ["topics" => true, "options" => true];
-        if ($user->privChair
-            || ($user->isPC && $user->conf->timePCReviewPreferences())) {
-            $options["reviewerPreference"] = true;
+        if ($pid !== null) {
+            $options = ["topics" => true, "options" => true];
+            if ($user->privChair
+                || ($user->isPC && $user->conf->timePCReviewPreferences())) {
+                $options["reviewerPreference"] = true;
+            }
+            $prow = $user->paper_by_id($pid, $options);
+        } else {
+            $prow = null;
         }
-        $prow = $user->paper_by_id($pid, $options);
         $whynot = $user->perm_view_paper($prow, false, $pid);
         if (!$whynot
             && !isset($qreq->paperId)

@@ -473,6 +473,7 @@ class PaperInfo {
         return $prow;
     }
 
+    /** @return PaperInfo */
     static function make_new(Contact $user) {
         assert($user->contactId === $user->contactXid);
         $prow = new PaperInfo(null, null, $user->conf);

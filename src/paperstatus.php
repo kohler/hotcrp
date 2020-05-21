@@ -1215,16 +1215,16 @@ class PaperStatus extends MessageSet {
 
         // save parts and track diffs
         $conf = $this->conf;
-        self::check_one_option($conf->option_by_id(PaperOption::TITLEID), $this, $pj->title ?? null);
-        self::check_one_option($conf->option_by_id(PaperOption::ABSTRACTID), $this, $pj->abstract ?? null);
+        self::check_one_option($conf->checked_option_by_id(PaperOption::TITLEID), $this, $pj->title ?? null);
+        self::check_one_option($conf->checked_option_by_id(PaperOption::ABSTRACTID), $this, $pj->abstract ?? null);
         self::check_authors($this, $pj);
-        self::check_one_option($conf->option_by_id(PaperOption::COLLABORATORSID), $this, $pj->collaborators ?? null);
-        self::check_one_option($conf->option_by_id(PaperOption::ANONYMITYID), $this, $pj->nonblind ?? null);
-        self::check_one_option($conf->option_by_id(PaperOption::PCCONFID), $this, $pj->pc_conflicts ?? null);
+        self::check_one_option($conf->checked_option_by_id(PaperOption::COLLABORATORSID), $this, $pj->collaborators ?? null);
+        self::check_one_option($conf->checked_option_by_id(PaperOption::ANONYMITYID), $this, $pj->nonblind ?? null);
+        self::check_one_option($conf->checked_option_by_id(PaperOption::PCCONFID), $this, $pj->pc_conflicts ?? null);
         $this->check_conflicts($pj);
-        self::check_one_pdf($conf->option_by_id(DTYPE_SUBMISSION), $this, $pj);
-        self::check_one_pdf($conf->option_by_id(DTYPE_FINAL), $this, $pj);
-        self::check_one_option($conf->option_by_id(PaperOption::TOPICSID), $this, $pj->topics ?? null);
+        self::check_one_pdf($conf->checked_option_by_id(DTYPE_SUBMISSION), $this, $pj);
+        self::check_one_pdf($conf->checked_option_by_id(DTYPE_FINAL), $this, $pj);
+        self::check_one_option($conf->checked_option_by_id(PaperOption::TOPICSID), $this, $pj->topics ?? null);
         self::check_options($this, $pj);
         self::check_status($this, $pj);
         self::check_final_status($this, $pj);
