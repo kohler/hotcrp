@@ -5,8 +5,9 @@
 require_once("src/initweb.php");
 require_once("src/papertable.php");
 require_once("src/reviewtable.php");
-if (!$Me->email)
+if (!$Me->email) {
     $Me->escape();
+}
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 // ensure site contact exists before locking tables
 $Conf->site_contact();
@@ -17,25 +18,25 @@ function assign_show_header() {
     PaperTable::do_header($paperTable, "assign", "assign", $Qreq);
 }
 
-function assign_error($msg) {
-    assign_show_header();
-    $msg && Conf::msg_error($msg);
-    Conf::$g->footer();
-    exit;
-}
-
 
 // grab paper row
+/** @return PaperInfo */
 function assign_load() {
-    global $prow, $Conf, $Me, $Qreq;
-    if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
-        assign_error(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
-    }
-    if (($whynot = $Me->perm_request_review($prow, null, false))) {
+    global $Conf, $Me, $Qreq;
+    $prow = PaperTable::fetch_paper_request($Qreq, $Me);
+    if ($prow === null) {
+        assign_show_header();
+        Conf::msg_error(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
+        $Conf->footer();
+        exit;
+    } else if (($whynot = $Me->perm_request_review($prow, null, false))) {
         error_go($prow->hoturl(), whyNotText($whynot));
+        exit;
+    } else {
+        return $prow;
     }
 }
-assign_load();
+$prow = assign_load();
 
 
 // change PC assignments
