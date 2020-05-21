@@ -517,7 +517,7 @@ class DocumentInfo implements JsonSerializable {
 
         // validate
         if (!$this->filterType) {
-            $opt = $this->conf->paper_opts->get($this->documentType);
+            $opt = $this->conf->option_by_id($this->documentType);
             if ($opt && !$opt->validate_document($this)) {
                 return false;
             }
@@ -858,7 +858,7 @@ class DocumentInfo implements JsonSerializable {
             }
             return $fn . "/" . ($this->unique_filename ? : $this->filename);
         } else {
-            $o = $this->conf->paper_opts->get($this->documentType);
+            $o = $this->conf->option_by_id($this->documentType);
             if ($o && $o->nonpaper && $this->paperId < 0) {
                 $fn .= $o->dtype_name();
                 $oabbr = "";
@@ -966,7 +966,7 @@ class DocumentInfo implements JsonSerializable {
 
         if ($this->documentType == DTYPE_FINAL
             || ($this->documentType > 0
-                && ($o = $this->conf->paper_opts->get($this->documentType))
+                && ($o = $this->conf->option_by_id($this->documentType))
                 && $o->final))
             $suffix = "f";
         if ($this->documentType == DTYPE_FINAL && ($flags & self::L_FINALTITLE))
@@ -1133,7 +1133,7 @@ class DocumentInfo implements JsonSerializable {
         }
         if ($any_nonauthor) {
             foreach ($byn as $dtype => $pidm) {
-                $opt = $user->conf->paper_opts->get($dtype);
+                $opt = $user->conf->option_by_id($dtype);
                 $name = $opt ? $opt->json_key() : "opt" . $dtype;
                 if (!empty($pidm)) {
                     $user->log_activity("Download $name", array_keys($pidm));

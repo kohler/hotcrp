@@ -1068,7 +1068,7 @@ class PaperTable {
             && ($this->editable
                 || $this->mode !== "edit"
                 || $this->prow->timeSubmitted <= 0)) {
-            $contacts_option = $this->conf->paper_opts->get(PaperOption::CONTACTSID);
+            $contacts_option = $this->conf->option_by_id(PaperOption::CONTACTSID);
             $fr->value .= '<div class="pg fx9' . ($vas > 1 ? "" : " fx8") . '">'
                 . $this->papt("authorInformation", $contacts_option->title_html(count($contacts)))
                 . '<div class="pavb">'
@@ -1493,7 +1493,7 @@ class PaperTable {
             $fold = 0;
         }
 
-        $option = $this->conf->paper_opts->get(PaperOption::COLLABORATORSID);
+        $option = $this->conf->option_by_id(PaperOption::COLLABORATORSID);
         $this->_papstripBegin("pscollab", $fold, ["data-fold-storage" => "p.collab", "class" => "need-fold-storage"]);
         echo $this->papt("collaborators", $option->title_html(),
                          ["type" => "ps", "fold" => "pscollab", "folded" => $fold]),
@@ -1704,7 +1704,7 @@ class PaperTable {
             $pcconf[] = '<li class="odname">None</li>';
         }
         $this->_papstripBegin();
-        $option = $this->conf->paper_opts->get(PaperOption::PCCONFID);
+        $option = $this->conf->option_by_id(PaperOption::PCCONFID);
         echo $this->papt("pc_conflicts", $option->title_html(), ["type" => "ps"]),
             '<div class="psv"><ul class="x namelist-columns">', join("", $pcconf), "</ul></div></div>\n";
     }
@@ -2503,7 +2503,7 @@ class PaperTable {
                     echo $m, "<hr class=\"g\">\n";
                 }
                 $this->_echo_editable_form();
-                $option = $this->conf->paper_opts->get(-1003);
+                $option = $this->conf->option_by_id(PaperOption::CONTACTSID);
                 $this->echo_editable_contact_author($option);
                 $this->echo_actions();
                 echo "</form>";

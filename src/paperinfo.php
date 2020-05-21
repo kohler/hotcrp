@@ -1465,7 +1465,7 @@ class PaperInfo {
         $paper_opts = $this->conf->paper_opts;
         $option_array = [];
         foreach ($this->_option_values as $oid => $ovalues) {
-            if (($o = $paper_opts->get($oid))) {
+            if (($o = $paper_opts->option_by_id($oid))) {
                 $option_array[$oid] = PaperValue::make_multi($this, $o, $ovalues, get($this->_option_data, $oid));
             }
         }
@@ -1508,7 +1508,7 @@ class PaperInfo {
             return ($this->options())[$o->id] ?? PaperValue::make_force($this, $o);
         } else {
             $ov = ($this->options())[$o] ?? null;
-            if (!$ov && ($o = $this->conf->paper_opts->get($o))) {
+            if (!$ov && ($o = $this->conf->option_by_id($o))) {
                 $ov = PaperValue::make_force($this, $o);
             }
             return $ov;
@@ -1546,7 +1546,9 @@ class PaperInfo {
         return "paperId, paperStorageId, timestamp, mimetype, sha1, documentType, filename, infoJson, size, filterType, originalStorageId, inactive";
     }
 
-    /** @return ?DocumentInfo */
+    /** @param int $dtype
+     * @param int $did
+     * @return ?DocumentInfo */
     function document($dtype, $did = 0, $full = false) {
         if ($did <= 0) {
             if ($dtype == DTYPE_SUBMISSION) {

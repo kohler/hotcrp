@@ -862,7 +862,7 @@ class Conf {
     /** @return FormatSpec */
     function format_spec($dtype) {
         if (!isset($this->_formatspec_cache[$dtype])) {
-            $o = $this->paper_opts->get($dtype);
+            $o = $this->option_by_id($dtype);
             $spec = $o ? $o->format_spec() : null;
             $this->_formatspec_cache[$dtype] = $spec ? : new FormatSpec;
         }
@@ -1156,6 +1156,19 @@ class Conf {
                 expand_json_includes_callback($olist, [$this, "_add_emoji_code"]);
         }
         return $this->_emoji_codes->emoji;
+    }
+
+
+    /** @param int $id
+     * @return ?PaperOption */
+    function option_by_id($id) {
+        return $this->paper_opts->option_by_id($id);
+    }
+
+    /** @param int $id
+     * @return PaperOption */
+    function checked_option_by_id($id) {
+        return $this->paper_opts->checked_option_by_id($id);
     }
 
 
@@ -3309,7 +3322,7 @@ class Conf {
         }
         $downloadname = false;
         if (count($docs) > 1) {
-            $o = $this->paper_opts->get($docs[0]->documentType);
+            $o = $this->option_by_id($docs[0]->documentType);
             $name = $o->dtype_name();
             if ($docs[0]->documentType <= 0)
                 $name = pluralize($name);

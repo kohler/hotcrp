@@ -365,13 +365,13 @@ class PaperStatus extends MessageSet {
         $o = $conf->paper_opts->find($f);
         if (!$o) {
             if ($f === "title") {
-                $o = $conf->paper_opts->get(PaperOption::TITLEID);
+                $o = $conf->option_by_id(PaperOption::TITLEID);
             } else if ($f === "abstract") {
-                $o = $conf->paper_opts->get(PaperOption::ABSTRACTID);
+                $o = $conf->option_by_id(PaperOption::ABSTRACTID);
             } else if ($f === "collaborators") {
-                $o = $conf->paper_opts->get(PaperOption::COLLABORATORSID);
+                $o = $conf->option_by_id(PaperOption::COLLABORATORSID);
             } else if (str_starts_with($f, "au")) {
-                $o = $conf->paper_opts->get(PaperOption::AUTHORSID);
+                $o = $conf->option_by_id(PaperOption::AUTHORSID);
             }
         }
         return $o ? htmlspecialchars($o->edit_title()) : false;
@@ -921,7 +921,7 @@ class PaperStatus extends MessageSet {
         }
         if (isset($pj->options)) {
             foreach ($pj->options as $oid => $oj) {
-                $o = $ps->conf->paper_opts->get($oid);
+                $o = $ps->conf->option_by_id($oid);
                 self::check_one_option($o, $ps, $oj);
             }
         }
@@ -1214,17 +1214,17 @@ class PaperStatus extends MessageSet {
         }
 
         // save parts and track diffs
-        $opts = $this->conf->paper_opts;
-        self::check_one_option($opts->get(PaperOption::TITLEID), $this, $pj->title ?? null);
-        self::check_one_option($opts->get(PaperOption::ABSTRACTID), $this, $pj->abstract ?? null);
+        $conf = $this->conf;
+        self::check_one_option($conf->option_by_id(PaperOption::TITLEID), $this, $pj->title ?? null);
+        self::check_one_option($conf->option_by_id(PaperOption::ABSTRACTID), $this, $pj->abstract ?? null);
         self::check_authors($this, $pj);
-        self::check_one_option($opts->get(PaperOption::COLLABORATORSID), $this, $pj->collaborators ?? null);
-        self::check_one_option($opts->get(PaperOption::ANONYMITYID), $this, $pj->nonblind ?? null);
-        self::check_one_option($opts->get(PaperOption::PCCONFID), $this, $pj->pc_conflicts ?? null);
+        self::check_one_option($conf->option_by_id(PaperOption::COLLABORATORSID), $this, $pj->collaborators ?? null);
+        self::check_one_option($conf->option_by_id(PaperOption::ANONYMITYID), $this, $pj->nonblind ?? null);
+        self::check_one_option($conf->option_by_id(PaperOption::PCCONFID), $this, $pj->pc_conflicts ?? null);
         $this->check_conflicts($pj);
-        self::check_one_pdf($opts->get(DTYPE_SUBMISSION), $this, $pj);
-        self::check_one_pdf($opts->get(DTYPE_FINAL), $this, $pj);
-        self::check_one_option($opts->get(PaperOption::TOPICSID), $this, $pj->topics ?? null);
+        self::check_one_pdf($conf->option_by_id(DTYPE_SUBMISSION), $this, $pj);
+        self::check_one_pdf($conf->option_by_id(DTYPE_FINAL), $this, $pj);
+        self::check_one_option($conf->option_by_id(PaperOption::TOPICSID), $this, $pj->topics ?? null);
         self::check_options($this, $pj);
         self::check_status($this, $pj);
         self::check_final_status($this, $pj);

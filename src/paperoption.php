@@ -321,10 +321,8 @@ class PaperOptionList {
     }
 
     /** @param int $id
-     * @param bool $force
      * @return ?PaperOption */
-    function get($id, $force = false) {
-        assert(!$force); // XXX
+    function option_by_id($id) {
         if ($id <= 0) {
             if (!array_key_exists($id, $this->_imap)) {
                 $this->populate_intrinsic($id);
@@ -343,10 +341,27 @@ class PaperOptionList {
         return $this->_omap[$id];
     }
 
+    /** @deprecated
+     *  @return ?PaperOption */
+    function get($id) {
+        return $this->option_by_id($id);
+    }
+
+    /** @param int $id
+     * @return PaperOption */
+    function checked_option_by_id($id) {
+        $o = $this->option_by_id($id);
+        if (!$o) {
+            throw new Exception("PaperOptionList::checked_option_by_id($id) failed");
+        }
+        return $o;
+    }
+
+
     /** @param int $id
      * @return PaperOption */
     function get_force($id) {
-        $o = $this->get($id);
+        $o = $this->option_by_id($id);
         if (!$o) {
             $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, (object) ["id" => $id]);
         }
@@ -359,7 +374,7 @@ class PaperOptionList {
             $this->_olist = [];
             foreach ($this->option_json_list() as $id => $oj) {
                 if (!($oj->nonpaper ?? false)
-                    && ($o = $this->get($id))) {
+                    && ($o = $this->option_by_id($id))) {
                     assert(!$o->nonpaper);
                     $this->_olist[$id] = $o;
                 }
@@ -383,7 +398,7 @@ class PaperOptionList {
             foreach ($this->option_json_list() as $id => $oj) {
                 if (!($oj->nonpaper ?? false)
                     && !($oj->final ?? false)
-                    && ($o = $this->get($id))) {
+                    && ($o = $this->option_by_id($id))) {
                     assert(!$o->nonpaper && !$o->final);
                     $this->_olist_nonfinal[$id] = $o;
                 }
@@ -397,7 +412,7 @@ class PaperOptionList {
     function full_option_list() {
         $list = [];
         foreach ($this->option_json_list() as $id => $oj) {
-            if (($o = $this->get($id)))
+            if (($o = $this->option_by_id($id)))
                 $list[$id] = $o;
         }
         uasort($list, "PaperOption::compare");
@@ -414,7 +429,7 @@ class PaperOptionList {
             foreach ($this->option_json_list() as $id => $oj) {
                 if (($oj->include_empty ?? false)
                     && !($oj->nonpaper ?? false)
-                    && ($o = $this->get($id))) {
+                    && ($o = $this->option_by_id($id))) {
                     $this->_olist_include_empty[$id] = $o;
                 }
             }
@@ -426,7 +441,7 @@ class PaperOptionList {
     private function _get_field($id, $oj, $nonfinal) {
         if (!($oj->nonpaper ?? false)
             && !($nonfinal && ($oj->final ?? false))) {
-            return $this->get($id);
+            return $this->option_by_id($id);
         } else {
             return null;
         }
@@ -482,17 +497,17 @@ class PaperOptionList {
         if ($iname === (string) DTYPE_SUBMISSION
             || $iname === "paper"
             || $iname === "submission") {
-            return [DTYPE_SUBMISSION => $this->get(DTYPE_SUBMISSION)];
+            return [DTYPE_SUBMISSION => $this->option_by_id(DTYPE_SUBMISSION)];
         } else if ($iname === (string) DTYPE_FINAL
                    || $iname === "final") {
-            return [DTYPE_FINAL => $this->get(DTYPE_FINAL)];
+            return [DTYPE_FINAL => $this->option_by_id(DTYPE_FINAL)];
         } else if ($iname === "" || $iname === "none") {
             return [];
         } else if ($iname === "any") {
             return $this->option_list();
         } else if (substr($iname, 0, 3) === "opt"
                    && ctype_digit(substr($iname, 3))) {
-            $o = $this->get((int) substr($iname, 3));
+            $o = $this->option_by_id((int) substr($iname, 3));
             return $o ? [$o->id => $o] : [];
         } else {
             if (substr($iname, 0, 4) === "opt-") {
@@ -522,7 +537,7 @@ class PaperOptionList {
             $this->_nonpaper_am = new AbbreviationMatcher;
             foreach ($this->option_json_list() as $id => $oj) {
                 if (($oj->nonpaper ?? false)
-                    && ($o = $this->get($id))) {
+                    && ($o = $this->option_by_id($id))) {
                     assert($o->nonpaper);
                     $this->_nonpaper_am->add($o->name, $o);
                     $this->_nonpaper_am->add($o->formid, $o);
