@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperValue implements JsonSerializable {
-    /** @var ?PaperInfo */
+    /** @var PaperInfo */
     public $prow;
     /** @var int */
     public $id;
@@ -22,7 +22,7 @@ class PaperValue implements JsonSerializable {
     /** @var ?MessageSet */
     private $_ms;
 
-    /** @param ?PaperInfo $prow */
+    /** @param PaperInfo $prow */
     function __construct($prow, PaperOption $o) { // XXX should be private
         $this->prow = $prow;
         $this->id = $o->id;
@@ -30,7 +30,7 @@ class PaperValue implements JsonSerializable {
         $this->_values = [];
         $this->_data = [];
     }
-    /** @param ?PaperInfo $prow
+    /** @param PaperInfo $prow
      * @param ?int $value
      * @param ?string $data
      * @return PaperValue */

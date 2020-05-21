@@ -135,6 +135,7 @@ class PaperApi {
         }
     }
 
+    /** @return Contact */
     static function get_user(Contact $user, Qrequest $qreq) {
         $u = $user;
         if (isset($qreq->u) || isset($qreq->reviewer)) {
@@ -152,6 +153,7 @@ class PaperApi {
             if (!$u) {
                 error_log("PaperApi::get_user: rejecting user {$x}, requested by {$user->email}");
                 json_exit(403, $user->isPC ? "No such user." : "Permission error.");
+                exit;
             }
         }
         return $u;

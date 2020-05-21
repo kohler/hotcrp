@@ -112,8 +112,10 @@ class PaperStatus extends MessageSet {
         return call_user_func_array([$this->conf->ims(), "x"], func_get_args());
     }
 
+    /** @param int $dtype
+     * @param int|DocumentInfo $docid */
     function document_to_json($dtype, $docid, $field = false) {
-        if (!is_object($docid)) {
+        if (is_int($docid)) {
             $doc = $this->prow ? $this->prow->document($dtype, $docid) : null;
         } else {
             $doc = $docid;

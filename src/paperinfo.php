@@ -285,6 +285,18 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return array_keys($this->by_pid);
     }
     /** @return ?PaperInfo */
+    function paper_by_id($pid) {
+        return $this->by_pid[$pid] ?? null;
+    }
+    /** @return PaperInfo */
+    function checked_paper_by_id($pid) {
+        $prow = $this->by_pid[$pid] ?? null;
+        if (!$prow) {
+            throw new Exception("PaperInfoSet::checked_paper_by_id($pid) failure");
+        }
+        return $prow;
+    }
+    /** @return ?PaperInfo */
     function get($pid) {
         return $this->by_pid[$pid] ?? null;
     }
@@ -1008,7 +1020,8 @@ class PaperInfo {
         if (!property_exists($this, "paperTags")) {
             $this->load_tags();
         }
-        return $this->paperTags !== ""
+        return $this->paperTags !== null
+            && $this->paperTags !== ""
             && stripos($this->paperTags, " $tag#") !== false;
     }
 
@@ -1017,9 +1030,11 @@ class PaperInfo {
         if (!property_exists($this, "paperTags")) {
             $this->load_tags();
         }
-        foreach ($tags as $tag) {
-            if (stripos($this->paperTags, " $tag#") !== false)
-                return true;
+        if ($this->paperTags !== null && $this->paperTags !== "") {
+            foreach ($tags as $tag) {
+                if (stripos($this->paperTags, " $tag#") !== false)
+                    return true;
+            }
         }
         return false;
     }
@@ -1035,7 +1050,8 @@ class PaperInfo {
         if (!property_exists($this, "paperTags")) {
             $this->load_tags();
         }
-        if ($this->paperTags !== ""
+        if ($this->paperTags !== null
+            && $this->paperTags !== ""
             && ($pos = stripos($this->paperTags, " $tag#")) !== false) {
             return (float) substr($this->paperTags, $pos + strlen($tag) + 2);
         } else {
@@ -1043,17 +1059,17 @@ class PaperInfo {
         }
     }
 
-    /** @return ?string */
+    /** @return string */
     function all_tags_text() {
         if (!property_exists($this, "paperTags")) {
             $this->load_tags();
         }
-        return $this->paperTags;
+        return $this->paperTags ?? "";
     }
 
     /** @return string */
     function searchable_tags(Contact $user) {
-        if (!$user->isPC || (string) $this->all_tags_text() === "") {
+        if (!$user->isPC || $this->all_tags_text() === "") {
             return "";
         }
         $rights = $user->__rights($this);
@@ -1073,7 +1089,7 @@ class PaperInfo {
     /** @return string */
     function viewable_tags(Contact $user) {
         // see also Contact::can_view_tag()
-        if (!$user->isPC || (string) $this->all_tags_text() === "") {
+        if (!$user->isPC || $this->all_tags_text() === "") {
             return "";
         }
         $rights = $user->__rights($this);
@@ -1509,8 +1525,8 @@ class PaperInfo {
             return ($this->options())[$o->id] ?? PaperValue::make_force($this, $o);
         } else {
             $ov = ($this->options())[$o] ?? null;
-            if (!$ov && ($o = $this->conf->option_by_id($o))) {
-                $ov = PaperValue::make_force($this, $o);
+            if (!$ov && ($oforce = $this->conf->option_by_id($o))) {
+                $ov = PaperValue::make_force($this, $oforce);
             }
             return $ov;
         }
@@ -1702,7 +1718,8 @@ class PaperInfo {
             && $this->_review_array === null
             && !$always) {
             $this->_review_array = $this->_reviews_have = [];
-            if ((string) $this->reviewSignatures !== "") {
+            if ($this->reviewSignatures !== null
+                && $this->reviewSignatures !== "") {
                 foreach (explode(",", $this->reviewSignatures) as $rs) {
                     $rrow = ReviewInfo::make_signature($this, $rs);
                     $this->_review_array[$rrow->reviewId] = $rrow;
@@ -1914,7 +1931,8 @@ class PaperInfo {
         return $this->review_of_id($id);
     }
 
-    /** @return list<ReviewInfo> */
+    /** @param int|Contact $contact
+     * @return list<ReviewInfo> */
     function full_reviews_of_user($contact) {
         $cid = self::contact_to_cid($contact);
         if ($this->_full_review_key === null
@@ -2159,9 +2177,10 @@ class PaperInfo {
     function ensure_review_word_counts() {
         if (!isset($this->_reviews_have["reviewWordCount"])) {
             $this->_reviews_have["reviewWordCount"] = true;
-            if (!property_exists($this, "reviewWordCountSignature"))
+            if (!property_exists($this, "reviewWordCountSignature")) {
                 $this->load_review_fields("reviewWordCount", true);
-            $x = explode(",", $this->reviewWordCountSignature);
+            }
+            $x = explode(",", $this->reviewWordCountSignature ?? "");
             $bad_ids = [];
 
             foreach ($this->reviews_by_id_order() as $i => $rrow) {
@@ -2293,7 +2312,7 @@ class PaperInfo {
             . " where paperId?a order by paperId, commentId", $row_set->paper_ids());
         $comments = [];
         while (($c = CommentInfo::fetch($result, null, $this->conf))) {
-            $prow = $row_set->get($c->paperId);
+            $prow = $row_set->checked_paper_by_id($c->paperId);
             $c->set_prow($prow);
             $prow->_comment_array[$c->commentId] = $c;
         }
@@ -2328,7 +2347,7 @@ class PaperInfo {
             }
             $this->_comment_skeleton_array = [];
             preg_match_all('/(\d+);(\d+);(\d+);(\d+);([^|]*)/',
-                           $this->commentSkeletonInfo, $ms, PREG_SET_ORDER);
+                           $this->commentSkeletonInfo ?? "", $ms, PREG_SET_ORDER);
             foreach ($ms as $m) {
                 $c = new CommentInfo([
                         "commentId" => $m[1], "contactId" => $m[2],
