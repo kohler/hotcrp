@@ -173,7 +173,7 @@ class LogRowGenerator {
         $this->wheres = $wheres;
         $this->page_size = $page_size;
         $this->set_filter(null);
-        $this->users = $conf->pc_members_and_admins();
+        $this->users = $conf->pc_users();
         $this->need_users = [];
     }
 

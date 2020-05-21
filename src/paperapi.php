@@ -186,7 +186,7 @@ class PaperApi {
         $result = [];
         if ($user->can_view_pc()) {
             $pcmap = $user->conf->pc_completion_map();
-            foreach ($user->conf->pc_members_and_admins() as $pc) {
+            foreach ($user->conf->pc_users() as $pc) {
                 if (!$pc->is_disabled()
                     && (!$prow || $pc->can_view_new_comment_ignore_conflict($prow))) {
                     $primary = true;

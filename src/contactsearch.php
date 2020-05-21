@@ -75,7 +75,7 @@ class ContactSearch {
                        && (strcasecmp($this->text, "any") === 0
                            || strcasecmp($this->text, "all") === 0)
                            || $this->text === "*") {
-                return array_keys($this->conf->pc_members_and_admins());
+                return array_keys($this->conf->pc_users());
             } else if (strcasecmp($this->text, "chair") === 0
                        || strcasecmp($this->text, "admin") === 0) {
                 $flags = Contact::ROLE_CHAIR;
@@ -241,7 +241,7 @@ class ContactSearch {
         global $Me;
         if ($this->contacts === null) {
             $this->contacts = [];
-            $pcm = $this->conf->pc_members_and_admins();
+            $pcm = $this->conf->pc_users();
             foreach ($this->ids as $cid) {
                 if ($this->cset && ($p = $this->cset[$cid] ?? null)) {
                     $this->contacts[] = $p;
