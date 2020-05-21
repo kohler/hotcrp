@@ -57,8 +57,7 @@ class Default_PaperSaver extends PaperSaver {
         $admin = $prow ? $user->can_administer($prow) : $user->privChair;
 
         // Contacts
-        if ($qreq->setcontacts
-            || $qreq->has_contacts
+        if ($qreq->has_contacts
             || $action === "updatecontacts") {
             PaperSaver::replace_contacts($pj, $qreq);
         }
