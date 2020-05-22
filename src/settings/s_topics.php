@@ -64,7 +64,7 @@ class Topics_SettingParser extends SettingParser {
 
     private function check_topic($t) {
         $t = simplify_whitespace($t);
-        if ($t === "" || !ctype_digit($t)) {
+        if (!preg_match('/\A(?:\d+\z|[-+,;:]|–|—)/', $t)) {
             return $t;
         } else {
             return false;
@@ -76,7 +76,7 @@ class Topics_SettingParser extends SettingParser {
             foreach (explode("\n", $sv->reqv("topnew")) as $x) {
                 $t = $this->check_topic($x);
                 if ($t === false) {
-                    $sv->error_at("topnew", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
+                    $sv->error_at("topnew", "Topic name “" . htmlspecialchars(trim($x)) . "” is reserved. Please choose another name.");
                 } else if ($t !== "") {
                     $this->new_topics[] = [$t]; // NB array of arrays
                 }
@@ -87,7 +87,9 @@ class Topics_SettingParser extends SettingParser {
             if (($x = $sv->reqv("top$tid")) !== null) {
                 $t = $this->check_topic($x);
                 if ($t === false) {
-                    $sv->error_at("top$tid", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
+                    if ($this->check_topic($tname)) {
+                        $sv->error_at("top$tid", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
+                    }
                 } else if ($t === "") {
                     $this->deleted_topics[] = $tid;
                 } else if ($tname !== $t) {
