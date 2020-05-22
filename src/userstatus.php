@@ -320,6 +320,7 @@ class UserStatus extends MessageSet {
         return $t1;
     }
 
+    /** @param ?Contact $old_user */
     private function normalize($cj, $old_user) {
         // Errors prevent saving
 
@@ -345,9 +346,9 @@ class UserStatus extends MessageSet {
         }
 
         // Email
-        if (!get($cj, "email") && $old_user) {
+        if (!($cj->email ?? false) && $old_user) {
             $cj->email = $old_user->email;
-        } else if (!get($cj, "email")) {
+        } else if (!($cj->email ?? false)) {
             $this->error_at("email", "Email is required.");
         } else if (!$this->has_problem_at("email")
                    && !validate_email($cj->email)
@@ -356,19 +357,19 @@ class UserStatus extends MessageSet {
         }
 
         // ID
-        if (get($cj, "id") === "new") {
-            if (get($cj, "email") && $this->conf->user_id_by_email($cj->email)) {
+        if (($cj->id ?? false) === "new") {
+            if (($cj->email ?? false) && $this->conf->user_id_by_email($cj->email)) {
                 $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use.");
                 $this->error_at("email_inuse", false);
             }
         } else {
-            if (!get($cj, "id") && $old_user && $old_user->contactId) {
+            if (!($cj->id ?? false) && $old_user && $old_user->contactId) {
                 $cj->id = $old_user->contactId;
             }
-            if (get($cj, "id") && !is_int($cj->id)) {
+            if (($cj->id ?? false) && !is_int($cj->id)) {
                 $this->error_at("id", "Format error [id]");
             }
-            if ($old_user && get($cj, "email")
+            if ($old_user && ($cj->email ?? false)
                 && strtolower($old_user->email) !== strtolower($cj->email)
                 && $this->conf->user_id_by_email($cj->email)) {
                 $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
@@ -525,16 +526,16 @@ class UserStatus extends MessageSet {
                 }
             }
             // process removals, then additions
-            foreach ($this->make_tags_array(get($cj, "remove_tags"), "remove_tags") as $t) {
+            foreach ($this->make_tags_array($cj->remove_tags ?? null, "remove_tags") as $t) {
                 list($tag, $index) = TagInfo::unpack($t);
                 if ($index !== false) {
-                    $ti = get($old_tags, strtolower($tag));
+                    $ti = $old_tags[strtolower($tag)] ?? null;
                     if (!$ti || $ti[1] != $index)
                         continue;
                 }
                 unset($old_tags[strtolower($tag)]);
             }
-            foreach ($this->make_tags_array(get($cj, "add_tags"), "add_tags") as $t) {
+            foreach ($this->make_tags_array($cj->add_tags ?? null, "add_tags") as $t) {
                 list($tag, $index) = TagInfo::unpack($t);
                 $old_tags[strtolower($tag)] = [$tag, $index];
             }
@@ -568,7 +569,7 @@ class UserStatus extends MessageSet {
                 } else if (is_numeric($v)) {
                     $v = (int) $v;
                 } else {
-                    $this->error_at("topics", "Topic interest format error");
+                    $this->error_at("topics", "Format error [topic interest]");
                     continue;
                 }
                 $topics[$k] = $v;
@@ -631,14 +632,14 @@ class UserStatus extends MessageSet {
 
         // obtain old users in this conference and contactdb
         // - load by id if only id is set
-        if (!$old_user && is_int(get($cj, "id")) && $cj->id) {
+        if (!$old_user && is_int($cj->id ?? null) && $cj->id) {
             $old_user = $this->conf->user_by_id($cj->id);
         }
 
         // - obtain email
         if ($old_user && $old_user->has_email()) {
             $old_email = $old_user->email;
-        } else if (is_string(get($cj, "email")) && $cj->email !== "") {
+        } else if (is_string($cj->email ?? null) && $cj->email !== "") {
             $old_email = $cj->email;
         } else {
             $old_email = null;
@@ -665,7 +666,7 @@ class UserStatus extends MessageSet {
         $user = $old_user ? : $old_cdb_user;
 
         // normalize and check for errors
-        if (!get($cj, "id")) {
+        if (!($cj->id ?? false)) {
             $cj->id = $old_user ? $old_user->contactId : "new";
         }
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
@@ -756,10 +757,10 @@ class UserStatus extends MessageSet {
 
         // Data
         $old_datastr = $user->data_str();
-        $data = get($cj, "data", (object) array());
+        $data = $cj->data ?? (object) [];
         foreach (["address", "city", "state", "zip"] as $k) {
             if (isset($cj->$k)
-                && (!$this->no_update_profile || (string) get($data, $k) === "")
+                && (!$this->no_update_profile || ($data->$k ?? "") === "")
                 && ($x = $cj->$k)) {
                 while (is_array($x) && $x[count($x) - 1] === "") {
                     array_pop($x);
@@ -838,7 +839,7 @@ class UserStatus extends MessageSet {
                 if ($v) {
                     $tv[] = [$user->contactId, $k, $v];
                 }
-                if ($v !== get($ti, $k, 0)) {
+                if ($v !== ($ti[$k] ?? 0)) {
                     $diff = true;
                 }
             }
@@ -1107,7 +1108,7 @@ class UserStatus extends MessageSet {
             $entry, "</div>";
     }
 
-    static function pcrole_text($cj) {
+    static function pc_role_text($cj) {
         if (isset($cj->roles)) {
             if (isset($cj->roles->chair) && $cj->roles->chair) {
                 return "chair";
@@ -1115,7 +1116,7 @@ class UserStatus extends MessageSet {
                 return "pc";
             }
         }
-        return "no";
+        return "none";
     }
 
     function global_profile_difference($cj, $key) {
@@ -1244,10 +1245,10 @@ class UserStatus extends MessageSet {
         }
         echo '<h3 class="form-h">Roles</h3>', "\n",
           "<table class=\"w-text\"><tr><td class=\"nw\">\n";
-        $pcrole = self::pcrole_text($reqj);
-        $cpcrole = self::pcrole_text($cj);
+        $pcrole = self::pc_role_text($reqj);
+        $cpcrole = self::pc_role_text($cj);
         foreach (["chair" => "PC chair", "pc" => "PC member",
-                  "no" => "Not on the PC"] as $k => $v) {
+                  "none" => "Not on the PC"] as $k => $v) {
             echo '<label class="checki"><span class="checkc">',
                 Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role", "data-default-checked" => $cpcrole === $k]),
                 '</span>', $v, "</label>\n";
