@@ -526,8 +526,14 @@ function save_review($paper, $user, $revreq, $rrow = null) {
     return fetch_review($prow, $user);
 }
 
-/** @return ?Contact */
+/** @return Contact */
 function user($email) {
+    global $Conf;
+    return $Conf->checked_user_by_email($email);
+}
+
+/** @return ?Contact */
+function maybe_user($email) {
     global $Conf;
     return $Conf->user_by_email($email);
 }

@@ -105,7 +105,7 @@ xassert_eqq(password($marina, true), ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng5
 $result = Dbl::qe($Conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
 assert(!!$result);
 Dbl::free($result);
-xassert(!user("te@_.com"));
+xassert(!maybe_user("te@_.com"));
 $u = $Conf->contactdb_user_by_email("te@_.com");
 xassert(!!$u);
 xassert_eqq($u->firstName, "Te");
@@ -127,7 +127,7 @@ $result = Dbl::qe($Conf->contactdb(), "insert into ContactInfo set firstName='',
 xassert(!!$result);
 Dbl::free($result);
 $te->change_email("te2@_.com");
-$te = user("te@_.com");
+$te = maybe_user("te@_.com");
 $te2 = user("te2@_.com");
 xassert(!$te);
 xassert(!!$te2);
@@ -175,13 +175,13 @@ xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
 
 // create a user in cdb: create, then delete from local db
 $anna = "akhmatova@poema.ru";
-xassert(!user($anna));
+xassert(!maybe_user($anna));
 $acct = $us->save((object) ["email" => $anna, "first" => "Anna", "last" => "Akhmatova"]);
 xassert(!!$acct);
 Dbl::qe("delete from ContactInfo where email=?", $anna);
 Dbl::qe($Conf->contactdb(), "update ContactInfo set passwordUseTime=1 where email=?", $anna);
 save_password($anna, "aquablouse", true);
-xassert(!user($anna));
+xassert(!maybe_user($anna));
 MailChecker::check0();
 
 $user_estrin = user("estrin@usc.edu");
@@ -213,7 +213,7 @@ xassert($user_anne1 && $user_anne2);
 $merger = new MergeContacts($user_anne2, $user_anne1);
 xassert($merger->run());
 $user_anne1 = user("anne1@_.com");
-$user_anne2 = user("anne2@_.com");
+$user_anne2 = maybe_user("anne2@_.com");
 xassert($user_anne1 && !$user_anne2);
 xassert_eqq($user_anne1->firstName, "Anne");
 xassert_eqq($user_anne1->lastName, "Dudfield");
