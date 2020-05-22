@@ -226,6 +226,31 @@ xassert_eqq($user_anne1->email, "anne1@_.com");
 $paper1 = $Conf->checked_paper_by_id(1);
 xassert($paper1->has_conflict($user_anne1));
 
+// different forms of profile saving
+$us->save((object) ["email" => "anne1@_.com", "roles" => "pc"]);
+$user_anne1 = user("anne1@_.com");
+xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
+
+$us->save((object) ["email" => "anne1@_.com", "roles" => ["pc", "sysadmin"]]);
+$user_anne1 = user("anne1@_.com");
+xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
+
+$us->save((object) ["email" => "anne1@_.com", "roles" => "chair, sysadmin"]);
+$user_anne1 = user("anne1@_.com");
+xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_CHAIR | Contact::ROLE_ADMIN);
+
+$us->save((object) ["email" => "anne1@_.com", "roles" => "-chair"]);
+$user_anne1 = user("anne1@_.com");
+xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
+
+$us->save((object) ["email" => "anne1@_.com", "roles" => "-sysadmin"]);
+$user_anne1 = user("anne1@_.com");
+xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
+
+$us->save((object) ["email" => "anne1@_.com", "roles" => "+chair"]);
+$user_anne1 = user("anne1@_.com");
+xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_CHAIR);
+
 // creation interactions
 Dbl::qe($Conf->dblink, "insert into ContactInfo (email, password) values ('betty2@_.com','')");
 Dbl::qe($Conf->contactdb(), "insert into ContactInfo (email, password, firstName, lastName) values ('betty3@_.com','','Betty','Shabazz'), ('betty4@_.com','','Betty','Kelly'),('betty5@_.com','','Betty','Davis'),

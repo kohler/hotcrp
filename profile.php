@@ -544,7 +544,7 @@ if (!$useRequest
     && $Me->privChair
     && $Acct->is_empty()
     && ($Qreq->role === "chair" || $Qreq->role === "pc")) {
-    $userj->roles = (object) [$Qreq->role => true];
+    $userj->roles = [$Qreq->role];
 }
 
 // set warnings about user json
@@ -676,10 +676,9 @@ if ($newProfile === 2) {
     }
 
     echo '<div id="foldaccount" class="';
-    if (isset($formcj->roles)
-        && (isset($formcj->roles->pc) || isset($formcj->roles->chair))) {
+    if (isset($formcj->roles) && in_array("pc", $formcj->roles)) {
         echo "fold1o fold2o";
-    } else if (isset($formcj->roles) && isset($formcj->roles->sysadmin)) {
+    } else if (isset($formcj->roles) && in_array("sysadmin", $formcj->roles)) {
         echo "fold1c fold2o";
     } else {
         echo "fold1c fold2c";

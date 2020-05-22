@@ -162,15 +162,15 @@ class UserStatus extends MessageSet {
 
     static function unparse_roles_json($roles) {
         if ($roles) {
-            $rj = (object) array();
+            $rj = [];
             if ($roles & Contact::ROLE_CHAIR) {
-                $rj->chair = $rj->pc = true;
+                $rj[] = "chair";
             }
-            if ($roles & Contact::ROLE_PC) {
-                $rj->pc = true;
+            if ($roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR)) {
+                $rj[] = "pc";
             }
             if ($roles & Contact::ROLE_ADMIN) {
-                $rj->sysadmin = true;
+                $rj[] = "sysadmin";
             }
             return $rj;
         } else {
@@ -482,31 +482,6 @@ class UserStatus extends MessageSet {
             }
         }
 
-        // Roles
-        if (isset($cj->roles) && $cj->roles !== "") {
-            $cj->roles = $this->make_keyed_object($cj->roles, "roles", true);
-            $cj->bad_roles = array();
-            foreach ((array) $cj->roles as $k => $v) {
-                if ($v && !in_array($k, ["pc", "chair", "sysadmin", "no", "none"])) {
-                    $cj->bad_roles[] = $k;
-                }
-            }
-            if ($old_user
-                && (($this->no_deprivilege_self
-                     && $this->viewer
-                     && $this->viewer->conf === $this->conf
-                     && $this->viewer->contactId == $old_user->contactId)
-                    || $old_user->data("locked"))
-                && self::parse_roles_json($cj->roles) < $old_user->roles) {
-                unset($cj->roles);
-                if ($old_user->data("locked")) {
-                    $this->warning_at("roles", "Ignoring request to drop privileges for locked account.");
-                } else {
-                    $this->warning_at("roles", "Ignoring request to drop your privileges.");
-                }
-            }
-        }
-
         // Tags
         if (isset($cj->tags)) {
             $cj->tags = $this->make_tags_array($cj->tags, "tags");
@@ -578,34 +553,110 @@ class UserStatus extends MessageSet {
         }
     }
 
+    /** @param int $old_roles */
+    private function parse_roles($j, $old_roles) {
+        if (is_object($j) || is_associative_array($j)) {
+            $reset_roles = true;
+            $ij = [];
+            foreach ((array) $j as $k => $v) {
+                if ($v === true) {
+                    $ij[] = $k;
+                } else if ($v !== false && $v !== null) {
+                    $this->error_at("roles", "Format error [roles]");
+                    return $old_roles;
+                }
+            }
+        } else if (is_string($j)) {
+            $reset_roles = null;
+            $ij = preg_split('/[\s,]+/', $j);
+        } else if (is_array($j)) {
+            $reset_roles = null;
+            $ij = $j;
+        } else {
+            if ($j !== null) {
+                $this->error_at("roles", "Format error [roles]");
+            }
+            return $old_roles;
+        }
+
+        $add_roles = $remove_roles = 0;
+        foreach ($ij as $v) {
+            if (!is_string($v)) {
+                $this->error_at("roles", "Format error [roles]");
+                return $old_roles;
+            } else if ($v !== "") {
+                $action = null;
+                if (preg_match('/\A(\+|-|–|—|−)\s*(.*)\z/', $v, $m)) {
+                    $action = $m[1] === "+";
+                    $v = $m[2];
+                }
+                if ($v === "") {
+                    $this->error_at("roles", "Format error [roles]");
+                    return $old_roles;
+                } else if (is_bool($action) && strcasecmp($v, "none") === 0) {
+                    $this->error_at("roles", "Format error near “none” [roles]");
+                    return $old_roles;
+                } else if (is_bool($reset_roles) && is_bool($action) === $reset_roles) {
+                    $this->warning_at("roles", "Expected “" . ($reset_roles ? "" : "+") . htmlspecialchar($v) . "” in roles");
+                } else if ($reset_roles === null) {
+                    $reset_roles = $action === null;
+                }
+                $role = 0;
+                if (strcasecmp($v, "pc") === 0) {
+                    $role = Contact::ROLE_PC;
+                } else if (strcasecmp($v, "chair") === 0) {
+                    $role = Contact::ROLE_CHAIR;
+                } else if (strcasecmp($v, "sysadmin") === 0) {
+                    $role = Contact::ROLE_ADMIN;
+                } else if (strcasecmp($v, "none") !== 0) {
+                    $this->warning_at("roles", "Unknown role “" . htmlspecialchars($v) . "”");
+                }
+                if ($action !== false) {
+                    $add_roles |= $role;
+                } else {
+                    $remove_roles |= $role;
+                    $add_roles &= ~$role;
+                }
+            }
+        }
+
+        $roles = ($reset_roles ? 0 : ($old_roles & ~$remove_roles)) | $add_roles;
+        if ($roles & Contact::ROLE_CHAIR) {
+            $roles |= Contact::ROLE_PC;
+        }
+        return $roles;
+    }
+
+    /** @param int $roles
+     * @param Contact $old_user */
+    private function check_role_change($roles, $old_user) {
+        if ((($this->no_deprivilege_self
+              && $this->viewer
+              && $this->viewer->conf === $this->conf
+              && $this->viewer->contactId == $old_user->contactId)
+             || $old_user->data("locked"))
+            && $roles < $old_user->roles) {
+            if ($old_user->data("locked")) {
+                $this->warning_at("roles", "Ignoring request to drop privileges for locked account.");
+            } else {
+                $this->warning_at("roles", "Ignoring request to drop your privileges.");
+            }
+            $roles = $old_user->roles;
+        }
+        return $roles;
+    }
+
     function check_invariants($cj) {
         if (isset($cj->bad_follow) && !empty($cj->bad_follow)) {
             $this->warning_at("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
-        }
-        if (isset($cj->bad_roles) && !empty($cj->bad_roles)) {
-            $this->warning_at("roles", "Unknown roles ignored (" . htmlspecialchars(commajoin($cj->bad_roles)) . ").");
         }
         if (isset($cj->bad_topics) && !empty($cj->bad_topics)) {
             $this->warning_at("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($cj->bad_topics)) . ").");
         }
     }
 
-    static private function parse_roles_json($j) {
-        $roles = 0;
-        if (isset($j->pc) && $j->pc) {
-            $roles |= Contact::ROLE_PC;
-        }
-        if (isset($j->chair) && $j->chair) {
-            $roles |= Contact::ROLE_CHAIR | Contact::ROLE_PC;
-        }
-        if (isset($j->sysadmin) && $j->sysadmin) {
-            $roles |= Contact::ROLE_ADMIN;
-        }
-        return $roles;
-    }
-
     static function check_pc_tag($base) {
-        return !preg_match('{\A(?:any|all|none|pc|chair|admin)\z}i', $base);
+        return !preg_match('/\A(?:any|all|none|pc|chair|admin|sysadmin)\z/i', $base);
     }
 
     private function maybe_assign($user, $cj, $cu, $fields, $userval = true) {
@@ -674,15 +725,17 @@ class UserStatus extends MessageSet {
             return false;
         }
         $this->normalize($cj, $user);
+        $roles = $old_roles = $old_user ? $old_user->roles : 0;
+        if (isset($cj->roles)) {
+            $roles = $this->parse_roles($cj->roles, $roles);
+            if ($old_user) {
+                $roles = $this->check_role_change($roles, $old_user);
+            }
+        }
         if ($this->has_error_since($msgcount)) {
             return false;
         }
         // At this point, we will save a user.
-
-        $roles = $old_user ? $old_user->roles : 0;
-        if (isset($cj->roles)) {
-            $roles = self::parse_roles_json($cj->roles);
-        }
 
         // create user
         $this->check_invariants($cj);
@@ -691,12 +744,10 @@ class UserStatus extends MessageSet {
         }
         $actor = $this->viewer->is_site_contact ? null : $this->viewer;
         if ($old_user) {
-            $old_roles = $user->roles;
             $old_disabled = $user->disabled ? 1 : 0;
         } else {
             $user = Contact::create($this->conf, $actor, $cj, Contact::SAVE_ROLES, $roles);
             $cj->email = $user->email; // adopt contactdb’s spelling of email
-            $old_roles = 0;
             $old_disabled = 1;
         }
         if (!$user) {
@@ -939,16 +990,19 @@ class UserStatus extends MessageSet {
 
         // PC components
         if (isset($qreq->pctype) && $us->viewer->privChair) {
-            $cj->roles = (object) array();
+            $cj->roles = [];
             $pctype = $qreq->pctype;
             if ($pctype === "chair") {
-                $cj->roles->chair = $cj->roles->pc = true;
-            }
-            if ($pctype === "pc") {
-                $cj->roles->pc = true;
+                $cj->roles[] = "chair";
+                $cj->roles[] = "pc";
+            } else if ($pctype === "pc") {
+                $cj->roles[] = "pc";
             }
             if ($qreq->ass) {
-                $cj->roles->sysadmin = true;
+                $cj->roles[] = "sysadmin";
+            }
+            if (empty($cj->roles)) {
+                $cj->roles[] = "none";
             }
         }
 
@@ -1110,9 +1164,10 @@ class UserStatus extends MessageSet {
 
     static function pc_role_text($cj) {
         if (isset($cj->roles)) {
-            if (isset($cj->roles->chair) && $cj->roles->chair) {
+            assert(is_array($cj->roles) && !is_associative_array($cj->roles));
+            if (in_array("chair", $cj->roles)) {
                 return "chair";
-            } else if (isset($cj->roles->pc) && $cj->roles->pc) {
+            } else if (in_array("pc", $cj->roles)) {
                 return "pc";
             }
         }
@@ -1256,8 +1311,8 @@ class UserStatus extends MessageSet {
         Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
 
         echo "</td><td><span class=\"sep\"></span></td><td>";
-        $is_ass = isset($reqj->roles) && get($reqj->roles, "sysadmin");
-        $cis_ass = isset($cj->roles) && get($cj->roles, "sysadmin");
+        $is_ass = isset($reqj->roles) && in_array("sysadmin", $reqj->roles);
+        $cis_ass = isset($cj->roles) && in_array("sysadmin", $cj->roles);
         echo '<div class="checki"><label><span class="checkc">',
             Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "js-role"]),
             '</span>Sysadmin</label>',
