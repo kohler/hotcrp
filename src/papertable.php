@@ -1719,7 +1719,7 @@ class PaperTable {
         }
         $value = $this->prow->$field;
 
-        $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector need-paper-select-api"] : "");
+        $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector js-unfold-focus need-paper-select-api"] : "");
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv">';
         if (!$value) {
@@ -1741,7 +1741,7 @@ class PaperTable {
                 $selopt .= " extrev";
             }
             echo '<form class="ui-submit uin fx">',
-                Ht::select($type, [], 0, ["class" => "psc-select want-focus w-99", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value]),
+                Ht::select($type, [], 0, ["class" => "w-99 want-focus", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value]),
                 '</form>';
         }
 
@@ -1777,7 +1777,7 @@ class PaperTable {
         $tx = $tagger->unparse_link($viewable);
         $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
 
-        $this->_papstripBegin("tags", true, $is_editable ? ["class" => "need-tag-form"] : []);
+        $this->_papstripBegin("tags", true, $is_editable ? ["class" => "need-tag-form js-unfold-focus"] : []);
 
         if ($is_editable) {
             echo Ht::form($this->prow->hoturl(), ["data-pid" => $this->prow->paperId, "data-no-tag-report" => $unfolded ? 1 : null]);
@@ -1839,7 +1839,7 @@ class PaperTable {
     }
 
     function papstripOutcomeSelector() {
-        $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api"]);
+        $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api js-unfold-focus"]);
         echo $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
             '<div class="psv"><form class="ui-submit uin fx">';
         if (isset($this->qreq->forceShow)) {
@@ -1847,7 +1847,7 @@ class PaperTable {
         }
         echo Ht::select("decision", $this->conf->decision_map(),
                         (string) $this->prow->outcome,
-                        ["class" => "want-focus w-99"]),
+                        ["class" => "w-99 want-focus"]),
             '</form><p class="fn odname js-psedit-result">',
             htmlspecialchars($this->conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";
@@ -1855,7 +1855,7 @@ class PaperTable {
 
     function papstripReviewPreference() {
         $this->_papstripBegin("revpref");
-        echo $this->papt("revpref", "Review preference", array("type" => "ps")),
+        echo $this->papt("revpref", "Review preference", ["type" => "ps"]),
             "<div class=\"psv\"><form class=\"ui\">";
         $rp = unparse_preference($this->prow);
         $rp = ($rp == "0" ? "" : $rp);
@@ -1866,7 +1866,7 @@ class PaperTable {
     }
 
     private function papstrip_tag_entry($id) {
-        $this->_papstripBegin($id, !!$id, ["class" => "pste"]);
+        $this->_papstripBegin($id, !!$id, ["class" => "pste js-unfold-focus"]);
     }
 
     private function papstrip_tag_float($tag, $kind, $type) {

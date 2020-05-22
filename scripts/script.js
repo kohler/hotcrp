@@ -2788,8 +2788,9 @@ function fold(elt, dofold, foldnum) {
 
     // find element
     if (elt && ($.isArray(elt) || elt.jquery)) {
-        for (i = 0; i < elt.length; i++)
+        for (i = 0; i < elt.length; i++) {
             fold(elt[i], dofold, foldnum);
+        }
         return false;
     } else if (typeof elt == "string") {
         elt = $$("fold" + elt) || $$(elt);
@@ -2812,11 +2813,6 @@ function fold(elt, dofold, foldnum) {
             elt.className = elt.className.replace(opentxt, closetxt);
         } else {
             elt.className = elt.className.replace(closetxt, opentxt);
-        }
-        var focused = document.activeElement;
-        if ((!focused || !hasClass(focused, "keep-focus"))
-            && (isopen || !focus_within(elt))) {
-            refocus_within(elt);
         }
 
         // check for session
@@ -2915,8 +2911,11 @@ function foldup(event, opts) {
 }
 
 handle_ui.on("js-foldup", foldup);
-$(document).on("fold unfold", ".js-fold-focus", function (event, opts) {
-    focus_within(this, (opts.f ? ".fn" : ".fx") + (opts.n || "") + " *");
+$(document).on("unfold", ".js-unfold-focus", function (event, opts) {
+    focus_within(this, ".fx" + (opts.n || "") + " *");
+});
+$(document).on("fold", ".js-fold-focus", function (event, opts) {
+    focus_within(this, ".fn" + (opts.n || "") + " *");
 });
 $(function () {
     $(".uich.js-foldup").each(function () { foldup.call(this, null); });

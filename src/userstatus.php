@@ -1249,7 +1249,7 @@ class UserStatus extends MessageSet {
         foreach (["chair" => "PC chair", "pc" => "PC member",
                   "no" => "Not on the PC"] as $k => $v) {
             echo '<label class="checki"><span class="checkc">',
-                Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role keep-focus", "data-default-checked" => $cpcrole === $k]),
+                Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role", "data-default-checked" => $cpcrole === $k]),
                 '</span>', $v, "</label>\n";
         }
         Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
@@ -1258,7 +1258,7 @@ class UserStatus extends MessageSet {
         $is_ass = isset($reqj->roles) && get($reqj->roles, "sysadmin");
         $cis_ass = isset($cj->roles) && get($cj->roles, "sysadmin");
         echo '<div class="checki"><label><span class="checkc">',
-            Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "js-role keep-focus"]),
+            Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "js-role"]),
             '</span>Sysadmin</label>',
             '<p class="f-h">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</p></div></td></tr></table>', "\n";
     }
