@@ -29,9 +29,6 @@ require_once("$ConfSitePATH/src/init.php");
 
 function save_contact(UserStatus $ustatus, $key, $cj, $arg) {
     global $status;
-    if (!isset($cj->id) && !isset($arg["m"])) {
-        $cj->id = "new";
-    }
     if (!isset($cj->email)
         && is_string($key)
         && validate_email($key)) {
