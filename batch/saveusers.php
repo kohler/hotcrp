@@ -36,7 +36,11 @@ function save_contact(UserStatus $ustatus, $key, $cj, $arg) {
     }
     $acct = $ustatus->save($cj);
     if ($acct) {
-        fwrite(STDOUT, "Saved account {$acct->email}.\n");
+        if (empty($ustatus->diffs)) {
+            fwrite(STDOUT, "{$acct->email}: No changes.\n");
+        } else {
+            fwrite(STDOUT, "{$acct->email}: Saved " . join(", ", array_keys($ustatus->diffs)) . ".\n");
+        }
     } else {
         foreach ($ustatus->error_texts() as $msg) {
             fwrite(STDERR, $msg . "\n");
