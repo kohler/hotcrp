@@ -2,22 +2,25 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/lib/getopt.php");
 
-$arg = getopt_rest($argv, "hn:me:", array("help", "name:", "no-email", "no-notify", "modify", "expression:", "expr:"));
-if (isset($arg["h"]) || isset($arg["help"])
+$arg = getopt_rest($argv, "hn:me:u:r:", ["help", "name:", "no-email", "no-notify", "modify", "expression:", "expr:", "user:", "roles:", "uname:"]);
+foreach (["modify" => "m", "expr" => "e", "expression" => "e",
+          "user" => "u", "roles" => "r", "help" => "h"] as $long => $short) {
+    if (isset($arg[$long]) && !isset($arg[$short]))
+        $arg[$short] = $arg[$long];
+}
+if (isset($arg["h"])
     || count($arg["_"]) > 1
-    || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
+    || (!empty($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")
+    || (!empty($arg["_"]) && isset($arg["u"]))
+    || ((isset($arg["r"]) || isset($arg["uname"])) && !isset($arg["u"]))) {
     $status = isset($arg["h"]) || isset($arg["help"]) ? 0 : 1;
     fwrite($status ? STDERR : STDOUT,
-           "Usage: php batch/addusers.php [-n CONFID] [--modify] [--no-notify] [JSONFILE | CSVFILE | -e JSON]\n");
+           "Usage: php batch/addusers.php [OPTION]... [JSONFILE | CSVFILE | -e JSON]
+Or:    php batch/addusers.php [OPTION]... -u EMAIL [--roles ROLES]
+                              [--uname NAME]
+
+Options: -n CONFID, --modify, --no-notify\n");
     exit($status);
-}
-if (isset($arg["modify"])) {
-    $arg["m"] = false;
-}
-if (isset($arg["expr"])) {
-    $arg["e"] = $arg["expr"];
-} else if (isset($arg["expression"])) {
-    $arg["e"] = $arg["expression"];
 }
 
 require_once("$ConfSitePATH/src/init.php");
@@ -50,6 +53,8 @@ $file = count($arg["_"]) ? $arg["_"][0] : "-";
 if (isset($arg["e"])) {
     $content = $arg["e"];
     $file = "<expr>";
+} else if (isset($arg["u"])) {
+    $content = null;
 } else if ($file === "-") {
     $content = stream_get_contents(STDIN);
     $file = "<stdin>";
@@ -64,7 +69,18 @@ if ($content === false) {
 $no_notify = isset($arg["no-email"]) || isset($arg["no-notify"]);
 $ustatus = new UserStatus($Conf->site_contact(), ["no_notify" => $no_notify]);
 $status = 0;
-if (!preg_match(',\A\s*[\[\{],i', $content)) {
+if (isset($arg["u"])) {
+    $cj = (object) ["email" => $arg["u"]];
+    if (isset($arg["r"])) {
+        $cj->roles = $arg["r"];
+    }
+    if (isset($arg["uname"])) {
+        $cj->name = $arg["uname"];
+    }
+    $ustatus->set_user(new Contact(null, $Conf));
+    $ustatus->clear_messages();
+    save_contact($ustatus, null, $cj, $arg);
+} else if (!preg_match('/\A\s*[\[\{]/i', $content)) {
     $csv = new CsvParser(cleannl(convert_to_utf8($content)));
     $csv->set_comment_chars("#%");
     $line = $csv->next_array();
