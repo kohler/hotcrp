@@ -253,8 +253,9 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
                 return $user_status->error_at("email", $msg);
             }
         } else if ($Conf->external_login()) {
-            if ($cj->email === "")
+            if ($cj->email === "") {
                 return $user_status->error_at("email", "Not a valid username.");
+            }
         } else if ($cj->email === "") {
             return $user_status->error_at("email", "You must supply an email address.");
         } else if (!validate_email($cj->email)) {

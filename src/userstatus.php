@@ -7,13 +7,18 @@ class UserStatus extends MessageSet {
     public $conf;
     /** @var Contact */
     public $viewer;
+    /** @var Contact */
     public $user;
+    /** @var ?bool */
     public $self;
-    public $no_notify = null;
+    private $no_notify = null;
     private $no_deprivilege_self = false;
     private $no_update_profile = false;
+    private $no_create = false;
+    private $no_modify = false;
     public $unknown_topics = null;
     public $diffs;
+    /** @var ?GroupedExtensions */
     private $_gxt;
     private $_req_security;
     private $_req_need_security;
@@ -40,7 +45,8 @@ class UserStatus extends MessageSet {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         parent::__construct();
-        foreach (["no_notify", "no_deprivilege_self", "no_update_profile"] as $k) {
+        foreach (["no_notify", "no_deprivilege_self", "no_update_profile",
+                  "no_create", "no_modify"] as $k) {
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
         }
@@ -288,7 +294,7 @@ class UserStatus extends MessageSet {
             $cj_user = null;
         }
         $cj_name = Text::analyze_name($cj);
-        foreach (array("firstName", "lastName", "email") as $i => $k) {
+        foreach (["firstName", "lastName", "email"] as $i => $k) {
             if ($cj_name->$k !== "" && $cj_name->$k !== false) {
                 $cj->$k = $cj_name->$k;
             } else if ($cj_user && $cj_user[$i]) {
@@ -346,10 +352,12 @@ class UserStatus extends MessageSet {
         }
 
         // Email
-        if (!($cj->email ?? false) && $old_user) {
-            $cj->email = $old_user->email;
-        } else if (!($cj->email ?? false)) {
-            $this->error_at("email", "Email is required.");
+        if (!isset($cj->email)) {
+            if ($old_user) {
+                $cj->email = $old_user->email;
+            } else {
+                $this->error_at("email", "Email is required.");
+            }
         } else if (!$this->has_problem_at("email")
                    && !validate_email($cj->email)
                    && (!$old_user || $old_user->email !== $cj->email)) {
@@ -357,23 +365,18 @@ class UserStatus extends MessageSet {
         }
 
         // ID
-        if (($cj->id ?? false) === "new") {
-            if (($cj->email ?? false) && $this->conf->user_id_by_email($cj->email)) {
-                $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use.");
-                $this->error_at("email_inuse", false);
-            }
-        } else {
-            if (!($cj->id ?? false) && $old_user && $old_user->contactId) {
-                $cj->id = $old_user->contactId;
-            }
-            if (($cj->id ?? false) && !is_int($cj->id)) {
-                $this->error_at("id", "Format error [id]");
-            }
-            if ($old_user && ($cj->email ?? false)
-                && strtolower($old_user->email) !== strtolower($cj->email)
-                && $this->conf->user_id_by_email($cj->email)) {
-                $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
-            }
+        if (!isset($cj->id)
+            && $old_user
+            && $old_user->contactId) {
+            $cj->id = $old_user->contactId;
+        }
+        if (isset($cj->id)
+            && $cj->id !== "new"
+            && $old_user
+            && ($cj->email ?? false)
+            && strtolower($old_user->email) !== strtolower($cj->email)
+            && $this->conf->user_id_by_email($cj->email)) {
+            $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         }
 
         // Contactdb information
@@ -597,7 +600,7 @@ class UserStatus extends MessageSet {
                     $this->error_at("roles", "Format error near “none” [roles]");
                     return $old_roles;
                 } else if (is_bool($reset_roles) && is_bool($action) === $reset_roles) {
-                    $this->warning_at("roles", "Expected “" . ($reset_roles ? "" : "+") . htmlspecialchar($v) . "” in roles");
+                    $this->warning_at("roles", "Expected “" . ($reset_roles ? "" : "+") . htmlspecialchars($v) . "” in roles");
                 } else if ($reset_roles === null) {
                     $reset_roles = $action === null;
                 }
@@ -673,17 +676,32 @@ class UserStatus extends MessageSet {
     }
 
 
+    /** @param object $cj
+     * @param ?Contact $old_user */
     function save($cj, $old_user = null) {
         global $Now;
         assert(is_object($cj));
+        assert(!$old_user || (!$this->no_create && !$this->no_modify));
         $msgcount = $this->message_count();
 
         // normalize name, including email
         self::normalize_name($cj);
 
+        // check id and email
+        if (isset($cj->id)
+            && $cj->id !== "new"
+            && (!is_int($cj->id) || $cj->id <= 0)) {
+            $this->error_at("id", "Format error [id]");
+            return false;
+        } else if (isset($cj->id)
+                   && (!is_string($cj->email) || $cj->email === "")) {
+            $this->error_at("email", "Format error [email]");
+            return false;
+        }
+
         // obtain old users in this conference and contactdb
         // - load by id if only id is set
-        if (!$old_user && is_int($cj->id ?? null) && $cj->id) {
+        if (!$old_user && isset($cj->id) && is_int($cj->id)) {
             $old_user = $this->conf->user_by_id($cj->id);
         }
 
@@ -714,10 +732,27 @@ class UserStatus extends MessageSet {
             }
         }
 
+        // - check no_create and no_modify
+        if ($this->no_create && !$old_user) {
+            if (isset($cj->id) && $cj->id !== "new") {
+                $this->error_at("id", "Refusing to create user with ID {$cj->id}.");
+            } else {
+                $this->error_at("email", "Refusing to create user with email " . htmlspecialchars($cj->email) . ".");
+            }
+            return false;
+        } else if (($this->no_modify || ($cj->id ?? null) === "new") && $old_user) {
+            if (isset($cj->id) && $cj->id !== "new") {
+                $this->error_at("id", "Refusing to modify existing user with ID {$cj->id}.");
+            } else {
+                $this->error_at("email", "Refusing to modify existing user with email " . htmlspecialchars($cj->email) . ".");
+            }
+            return false;
+        }
+
         $user = $old_user ? : $old_cdb_user;
 
         // normalize and check for errors
-        if (!($cj->id ?? false)) {
+        if (!isset($cj->id)) {
             $cj->id = $old_user ? $old_user->contactId : "new";
         }
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {

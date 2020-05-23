@@ -2,8 +2,9 @@
 $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/lib/getopt.php");
 
-$arg = getopt_rest($argv, "hn:me:u:r:", ["help", "name:", "no-email", "no-notify", "modify", "expression:", "expr:", "user:", "roles:", "uname:"]);
-foreach (["modify" => "m", "expr" => "e", "expression" => "e",
+$arg = getopt_rest($argv, "hn:e:u:r:", ["help", "name:", "no-email", "no-notify", "modify-only", "create-only", "no-modify", "no-create", "expression:", "expr:", "user:", "roles:", "uname:"]);
+foreach (["expr" => "e", "expression" => "e", "no-email" => "no-notify",
+          "no-create" => "modify-only", "no-modify" => "create-only",
           "user" => "u", "roles" => "r", "help" => "h"] as $long => $short) {
     if (isset($arg[$long]) && !isset($arg[$short]))
         $arg[$short] = $arg[$long];
@@ -12,14 +13,15 @@ if (isset($arg["h"])
     || count($arg["_"]) > 1
     || (!empty($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")
     || (!empty($arg["_"]) && isset($arg["u"]))
-    || ((isset($arg["r"]) || isset($arg["uname"])) && !isset($arg["u"]))) {
+    || ((isset($arg["r"]) || isset($arg["uname"])) && !isset($arg["u"]))
+    || (isset($arg["create-only"]) && isset($arg["modify-only"]))) {
     $status = isset($arg["h"]) || isset($arg["help"]) ? 0 : 1;
     fwrite($status ? STDERR : STDOUT,
            "Usage: php batch/addusers.php [OPTION]... [JSONFILE | CSVFILE | -e JSON]
 Or:    php batch/addusers.php [OPTION]... -u EMAIL [--roles ROLES]
                               [--uname NAME]
 
-Options: -n CONFID, --modify, --no-notify\n");
+Options: -n CONFID, --no-modify, --no-create, --no-notify\n");
     exit($status);
 }
 
@@ -41,7 +43,7 @@ function save_contact(UserStatus $ustatus, $key, $cj, $arg) {
     } else {
         foreach ($ustatus->error_texts() as $msg) {
             fwrite(STDERR, $msg . "\n");
-            if (!isset($arg["m"]) && $ustatus->has_error_at("email_inuse")) {
+            if (isset($arg["create-only"]) && $ustatus->has_error_at("email_inuse")) {
                 fwrite(STDERR, "(Use --modify to modify existing users.)\n");
             }
         }
@@ -66,8 +68,11 @@ if ($content === false) {
     exit(1);
 }
 
-$no_notify = isset($arg["no-email"]) || isset($arg["no-notify"]);
-$ustatus = new UserStatus($Conf->site_contact(), ["no_notify" => $no_notify]);
+$ustatus = new UserStatus($Conf->site_contact(), [
+    "no_notify" => isset($arg["no-notify"]),
+    "no_create" => isset($arg["modify-only"]),
+    "no_modify" => isset($arg["create-only"])
+]);
 $status = 0;
 if (isset($arg["u"])) {
     $cj = (object) ["email" => $arg["u"]];

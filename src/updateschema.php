@@ -54,8 +54,8 @@ function update_schema_create_options($conf) {
     if (Dbl::is_error($result)) {
         return false;
     }
-    $opsj = (object) array();
-    $byabbr = array();
+    $opsj = [];
+    $byabbr = [];
     while (($row = $result->fetch_object())) {
         // backward compatibility with old schema versions
         if (!isset($row->optionValues)) {
@@ -138,10 +138,10 @@ function update_schema_create_options($conf) {
         }
 
         $oid = $opj->id;
-        $opsj->$oid = $opj;
+        $opsj[(string) $oid] = $opj;
     }
 
-    $conf->save_setting("options", 1, $opsj);
+    $conf->save_setting("options", 1, (object) $opsj);
     return true;
 }
 
