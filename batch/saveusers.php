@@ -17,8 +17,8 @@ if (isset($arg["h"])
     || (isset($arg["create-only"]) && isset($arg["modify-only"]))) {
     $status = isset($arg["h"]) || isset($arg["help"]) ? 0 : 1;
     fwrite($status ? STDERR : STDOUT,
-           "Usage: php batch/addusers.php [OPTION]... [JSONFILE | CSVFILE | -e JSON]
-Or:    php batch/addusers.php [OPTION]... -u EMAIL [--roles ROLES]
+           "Usage: php batch/saveusers.php [OPTION]... [JSONFILE | CSVFILE | -e JSON]
+Or:    php batch/saveusers.php [OPTION]... -u EMAIL [--roles ROLES]
                               [--uname NAME]
 
 Options: -n CONFID, --no-modify, --no-create, --no-notify\n");

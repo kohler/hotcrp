@@ -76,7 +76,6 @@ settings.php
 users.php
 
 batch/.htaccess
-batch/addusers.php
 batch/assign.php
 batch/checkinvariants.php
 batch/deletepapers.php
@@ -86,6 +85,7 @@ batch/s3test.php
 batch/s3transfer.php
 batch/s3verifyall.php
 batch/savepapers.php
+batch/saveusers.php
 batch/search.php
 batch/updatecontactdb.php
 
