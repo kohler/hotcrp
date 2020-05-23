@@ -143,7 +143,7 @@ xassert(!!$te2_cdb);
 xassert_eqq($te2_cdb->email, "te2@_.com");
 xassert_eqq($te2_cdb->affiliation, "Brandeis University or something");
 // site contact updates keep old value in cdb
-xassert_eqq($te2_cdb->firstName, "Te 1");
+xassert_eqq($te2_cdb->firstName, "");
 xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
 
 // changes by the chair don't affect the cdb
@@ -159,7 +159,7 @@ xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
 xassert_eqq($te2->affiliation, "String");
 $te2_cdb = $te2->contactdb_user();
 xassert(!!$te2_cdb);
-xassert_eqq($te2_cdb->firstName, "Te 1");
+xassert_eqq($te2_cdb->firstName, "");
 xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
 xassert_eqq($te2_cdb->affiliation, "String");
 

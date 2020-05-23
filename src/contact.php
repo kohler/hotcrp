@@ -611,6 +611,10 @@ class Contact {
             Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=? and roles=0", $cdbur->contactDbId, $cdbur->confid);
         }
     }
+
+    /** @param ?list<string> $update_keys
+     * @param bool $only_update_empty
+     * @return int|false */
     function contactdb_update($update_keys = null, $only_update_empty = false) {
         if (!($cdb = $this->conf->contactdb())
             || !$this->has_account_here()
@@ -621,12 +625,21 @@ class Contact {
         $cdbur = $this->conf->contactdb_user_by_email($this->email);
         $cdbux = $cdbur ? : new Contact(null, $this->conf);
         $upd = [];
-        foreach (["firstName", "lastName", "affiliation", "country", "collaborators",
-                  "birthday", "gender"] as $k) {
-            if ($this->$k !== null
-                && $this->$k !== ""
-                && (!$only_update_empty || $cdbux->$k === null || $cdbux->$k === "")
-                && (!$cdbur || in_array($k, $update_keys ? : [])))
+        // update cdb names only if BOTH cdb names are empty
+        if (!$only_update_empty || (($cdbux->firstName ?? "") === ""
+                                    && ($cdbux->lastName ?? "") === "")) {
+            foreach (["firstName", "lastName"] as $k) {
+                if (($this->$k ?? "") !== ""
+                    && (!$cdbur || in_array($k, $update_keys ?? []))) {
+                    $upd[$k] = $this->$k;
+                }
+            }
+        }
+        // update other cdb fields if empty
+        foreach (["affiliation", "country", "collaborators", "birthday", "gender"] as $k) {
+            if (($this->$k ?? "") !== ""
+                && (!$only_update_empty || ($cdbux->$k ?? "") === "")
+                && (!$cdbur || in_array($k, $update_keys ?? [])))
                 $upd[$k] = $this->$k;
         }
         if (!$cdbur) {
