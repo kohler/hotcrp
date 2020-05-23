@@ -8,7 +8,7 @@ class Option_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
-        $this->opt = $conf->paper_opts->get($cj->option_id);
+        $this->opt = $conf->checked_option_by_id($cj->option_id);
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_some_option($this->opt))
