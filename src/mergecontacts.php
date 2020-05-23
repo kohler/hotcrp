@@ -3,10 +3,15 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class MergeContacts extends MessageSet {
+    /** @var Conf */
     private $conf;
+    /** @var Contact */
     public $oldu;
+    /** @var Contact */
     public $newu;
 
+    /** @param Contact $oldu
+     * @param Contact $newu */
     function __construct($oldu, $newu) {
         assert($oldu->conf === $newu->conf);
         assert($oldu->contactId || $newu->contactId);

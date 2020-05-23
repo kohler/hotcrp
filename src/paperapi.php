@@ -159,6 +159,7 @@ class PaperApi {
         return $u;
     }
 
+    /** @param ?PaperInfo $prow */
     static function get_reviewer(Contact $user, $qreq, $prow) {
         $u = self::get_user($user, $qreq);
         if ($u->contactId !== $user->contactId
@@ -169,6 +170,7 @@ class PaperApi {
         return $u;
     }
 
+    /** @param ?PaperInfo $prow */
     static function follow_api(Contact $user, $qreq, $prow) {
         $reviewer = self::get_reviewer($user, $qreq, $prow);
         $following = friendly_boolean($qreq->following);
@@ -182,6 +184,7 @@ class PaperApi {
         return ["ok" => true, "following" => $following];
     }
 
+    /** @param ?PaperInfo $prow */
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
         $result = [];
         if ($user->can_view_pc()) {
@@ -277,6 +280,7 @@ class PaperApi {
         return $jr;
     }
 
+    /** @param PaperInfo $prow */
     static function reviewround_api(Contact $user, $qreq, $prow) {
         if (!$qreq->r
             || ($rrow = $prow->full_review_of_textual_id($qreq->r)) === false) {

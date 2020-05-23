@@ -682,6 +682,8 @@ class AuthorMatcher extends Author {
         return $line;
     }
 
+    /** @param string $s
+     * @return string */
     static function trim_collaborators($s) {
         return preg_replace('{\s*#.*$|\ANone\z}im', "", $s);
     }

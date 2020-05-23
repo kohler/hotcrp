@@ -2,6 +2,7 @@
 // helpers.php -- HotCRP non-class helper functions
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+/** @return array */
 function mkarray($value) {
     if (is_array($value)) {
         return $value;
@@ -13,6 +14,8 @@ function mkarray($value) {
 
 // string helpers
 
+/** @param null|int|string $value
+ * @return int */
 function cvtint($value, $default = -1) {
     $v = trim((string) $value);
     if (is_numeric($v)) {
@@ -23,6 +26,8 @@ function cvtint($value, $default = -1) {
     return $default;
 }
 
+/** @param null|int|float|string $value
+ * @return int|float */
 function cvtnum($value, $default = -1) {
     $v = trim((string) $value);
     if (is_numeric($v)) {

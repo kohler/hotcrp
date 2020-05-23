@@ -3,8 +3,11 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class ReviewDiffInfo {
+    /** @var Conf */
     public $conf;
+    /** @var PaperInfo */
     public $prow;
+    /** @var ?ReviewInfo */
     public $rrow;
     private $fields = [];
     private $newv = [];

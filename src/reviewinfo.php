@@ -211,6 +211,7 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
+    /** @return bool */
     function is_subreview() {
         return $this->reviewType == REVIEW_EXTERNAL
             && !$this->reviewSubmitted
@@ -218,6 +219,7 @@ class ReviewInfo implements JsonSerializable {
             && ($this->timeApprovalRequested < 0 || $this->conf->ext_subreviews);
     }
 
+    /** @return bool */
     function needs_approval() {
         return $this->reviewType == REVIEW_EXTERNAL
             && !$this->reviewSubmitted
@@ -225,10 +227,12 @@ class ReviewInfo implements JsonSerializable {
             && $this->conf->ext_subreviews > 1;
     }
 
+    /** @return string */
     function round_name() {
         return $this->reviewRound ? $this->conf->round_name($this->reviewRound) : "";
     }
 
+    /** @return string */
     function type_icon() {
         if ($this->is_subreview()) {
             $title = "Subreview";
@@ -251,6 +255,7 @@ class ReviewInfo implements JsonSerializable {
             . '</span></span>';
     }
 
+    /** @return string */
     function status_description() {
         if ($this->reviewSubmitted) {
             return "complete";
@@ -273,6 +278,7 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
+    /** @return string */
     function unparse_ordinal() {
         return unparseReviewOrdinal($this);
     }
@@ -311,6 +317,7 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
+    /** @return bool */
     function field_match_pregexes($reg, $field) {
         $data = $this->$field;
         $field_deaccent = $field . "_deaccent";
@@ -335,6 +342,7 @@ class ReviewInfo implements JsonSerializable {
         }
         return empty($data) ? null : json_encode_db($data);
     }
+
     function unparse_tfields() {
         global $Conf;
         $data = [];
@@ -367,6 +375,7 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
+    /** @return array<int,int> */
     function ratings() {
         $ratings = [];
         if ((string) $this->allRatings !== "") {
@@ -378,6 +387,8 @@ class ReviewInfo implements JsonSerializable {
         return $ratings;
     }
 
+    /** @param int|Contact $user
+     * @return ?int */
     function rating_of_user($user) {
         $cid = is_object($user) ? $user->contactId : $user;
         $str = ",$cid ";

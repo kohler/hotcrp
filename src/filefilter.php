@@ -16,14 +16,20 @@ class FileFilter {
         }
     }
 
+    /** @param string $name
+     * @return ?FileFilter */
     static function find_by_name(Conf $conf, $name) {
         self::load($conf);
         return $conf->_file_filters[$name] ?? null;
     }
+    /** @return array<string,FileFilter> */
     static function all_by_name(Conf $conf) {
         self::load($conf);
         return $conf->_file_filters;
     }
+    /** @param DocumentInfo $doc
+     * @param string $name
+     * @return DocumentInfo */
     static function apply_named($doc, PaperInfo $prow, $name) {
         if (($filter = self::find_by_name($prow->conf, $name))
             && ($xdoc = $filter->apply($doc, $prow))) {
@@ -33,6 +39,8 @@ class FileFilter {
         }
     }
 
+    /** @param DocumentInfo $doc
+     * @return ?DocumentInfo */
     function find_filtered($doc) {
         if ($this->id) {
             $result = $doc->conf->qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
@@ -58,6 +66,7 @@ class FileFilter {
 }
 
 class FileFilterJsonExpander {
+    /** @var Conf */
     private $conf;
     function __construct(Conf $conf) {
         $this->conf = $conf;

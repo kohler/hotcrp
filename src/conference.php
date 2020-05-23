@@ -86,7 +86,9 @@ class Conf {
     public $dbname;
     public $dsn = null;
 
+    /** @var string */
     public $short_name;
+    /** @var string */
     public $long_name;
     /** @var ?int */
     public $default_format;
@@ -127,7 +129,9 @@ class Conf {
     private $_decision_matcher;
     /** @var ?array<int,array{string,string}> */
     private $_decision_status_info;
+    /** @var ?TopicSet */
     private $_topic_set;
+    /** @var ?Conflict */
     private $_conflict_types;
     /** @var ?array<int,Contact> */
     private $_pc_members_cache;
@@ -157,8 +161,9 @@ class Conf {
     private $_defined_formulas = null;
     private $_emoji_codes = null;
     private $_s3_document = false;
-    private $_ims = null;
-    private $_format_info = null;
+    /** @var ?IntlMsgSet */
+    private $_ims;
+    private $_format_info;
     private $_updating_autosearch_tags = false;
     private $_cdb = false;
 

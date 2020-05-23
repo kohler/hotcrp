@@ -3,7 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class ReviewTimes {
+    /** @var Conf */
     private $conf;
+    /** @var Contact */
     private $user;
     private $r;
     private $dl;

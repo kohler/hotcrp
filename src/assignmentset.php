@@ -275,7 +275,8 @@ class AssignmentState {
     function paper_ids() {
         return array_keys($this->prows);
     }
-    /** @return ?PaperInfo */
+    /** @param int $pid
+     * @return ?PaperInfo */
     function prow($pid) {
         $p = $this->prows[$pid] ?? null;
         if (!$p && !isset($this->pid_attempts[$pid])) {
@@ -291,6 +292,7 @@ class AssignmentState {
     function prows() {
         return $this->prows;
     }
+    /** @param int|list<int> $pids */
     function fetch_prows($pids, $initial_load = false) {
         $pids = is_array($pids) ? $pids : array($pids);
         $fetch_pids = array();

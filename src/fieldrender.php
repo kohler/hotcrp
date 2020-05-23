@@ -3,7 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class FieldRender {
+    /** @var ?PaperTable */
     public $table;
+    /** @var int */
     public $context;
     public $title;
     /** @var ?string */
