@@ -261,22 +261,30 @@ class AbbreviationClass {
     }
 }
 
+/** @template T */
 class AbbreviationMatcher {
-    /** @var list<array{string,?string,mixed,int,?string,?array}> */
+    /** @var list<array{string,?string,T,int,?string,?list}> */
     private $data = [];
+    /** @var int */
     private $nanal = 0;
+    /** @var array<string,list<int>> */
     private $matches = [];
     private $abbreviators = [];
     private $prio = [];
 
-    /** @param string $name */
+    /** @param T $template */
+    function __construct($template = null) {
+    }
+
+    /** @param string $name
+     * @param T $data */
     function add($name, $data, int $tflags = 0) {
         $this->data[] = [$name, null, $data, $tflags];
         $this->matches = [];
     }
     /** @param string $name
-     * @param callable $callback
-     * @param array $args */
+     * @param callable(...):T $callback
+     * @param list $args */
     function add_lazy($name, $callback, $args, int $tflags = 0) {
         $this->data[] = [$name, null, $this, $tflags, $callback, $args];
         $this->matches = [];
@@ -308,6 +316,8 @@ class AbbreviationMatcher {
         }
     }
 
+    /** @param int $i
+     * @return T */
     private function _resolve($i) {
         $d =& $this->data[$i];
         if ($d[2] === $this) {
@@ -393,6 +403,8 @@ class AbbreviationMatcher {
         $this->matches[$pattern] = $matches;
     }
 
+    /** @param string $pattern
+     * @return list<T> */
     function find_all($pattern, $tflags = 0) {
         if (!array_key_exists($pattern, $this->matches)) {
             $this->_find_all($pattern);
@@ -419,15 +431,12 @@ class AbbreviationMatcher {
         return $results;
     }
 
+    /** @param string $pattern
+     * @param int $tflags
+     * @return ?T */
     function find1($pattern, $tflags = 0) {
         $a = $this->find_all($pattern, $tflags);
-        if (empty($a)) {
-            return false;
-        } else if (count($a) == 1) {
-            return $a[0];
-        } else {
-            return null;
-        }
+        return count($a) === 1 ? $a[0] : null;
     }
 
 

@@ -125,7 +125,7 @@ class Conf {
     private $_track_sensitivity = 0;
     /** @var ?array<int,string> */
     private $_decisions;
-    /** @var ?AbbreviationMatcher */
+    /** @var ?AbbreviationMatcher<int> */
     private $_decision_matcher;
     /** @var ?array<int,array{string,string}> */
     private $_decision_status_info;
@@ -152,12 +152,13 @@ class Conf {
     private $_site_contact;
     /** @var ?ReviewForm */
     private $_review_form_cache;
-    /** @var ?AbbreviationMatcher */
+    /** @var ?AbbreviationMatcher<PaperOption|ReviewField|Formula> */
     private $_abbrev_matcher;
     private $_date_format_initialized = false;
     private $_formatspec_cache = [];
     /** @var ?non-empty-string */
     private $_docstore;
+    /** @var array<int,Formula> */
     private $_defined_formulas = null;
     private $_emoji_codes = null;
     private $_s3_document = false;
@@ -732,15 +733,20 @@ class Conf {
     }
 
 
+    /** @param string $name
+     * @return mixed */
     function opt($name, $defval = null) {
         return $this->opt[$name] ?? $defval;
     }
 
+    /** @param string $name
+     * @param mixed $value */
     function set_opt($name, $value) {
         global $Opt;
         $Opt[$name] = $this->opt[$name] = $value;
     }
 
+    /** @return int */
     function opt_timestamp() {
         if ($this->_opt_timestamp === null) {
             $this->_opt_timestamp = 1;
@@ -1187,6 +1193,7 @@ class Conf {
     }
 
 
+    /** @return array<int,Formula> */
     function named_formulas() {
         if ($this->_defined_formulas === null) {
             $this->_defined_formulas = [];
@@ -1204,15 +1211,18 @@ class Conf {
         return $this->_defined_formulas;
     }
 
+    /** @param array<int,Formula> $formula_map */
     function replace_named_formulas($formula_map) {
         $this->_defined_formulas = $formula_map;
         $this->_abbrev_matcher = null;
     }
 
+    /** @return ?Formula */
     function find_named_formula($text) {
         return $this->abbrev_matcher()->find1($text, self::FSRCH_FORMULA);
     }
 
+    /** @return array<int,Formula> */
     function viewable_named_formulas(Contact $user) {
         return array_filter($this->named_formulas(), function ($f) use ($user) {
             return $user->can_view_formula($f);
@@ -1263,7 +1273,7 @@ class Conf {
         }
     }
 
-    /** @return AbbreviationMatcher */
+    /** @return AbbreviationMatcher<int> */
     function decision_matcher() {
         if ($this->_decision_matcher === null) {
             $this->_decision_matcher = new AbbreviationMatcher;
@@ -1277,6 +1287,8 @@ class Conf {
         return $this->_decision_matcher;
     }
 
+    /** @param string $dname
+     * @return list<int> */
     function find_all_decisions($dname) {
         return $this->decision_matcher()->find_all($dname);
     }
@@ -1316,7 +1328,7 @@ class Conf {
         return $this->_topic_set;
     }
 
-    /** @return AbbreviationMatcher */
+    /** @return AbbreviationMatcher<int> */
     function topic_abbrev_matcher() {
         return $this->topic_set()->abbrev_matcher();
     }
@@ -1340,7 +1352,7 @@ class Conf {
     const FSRCH_REVIEW = 2;
     const FSRCH_FORMULA = 4;
 
-    /** @return AbbreviationMatcher */
+    /** @return AbbreviationMatcher<PaperOption|ReviewField|Formula> */
     function abbrev_matcher() {
         if (!$this->_abbrev_matcher) {
             $this->_abbrev_matcher = new AbbreviationMatcher;
@@ -1359,6 +1371,7 @@ class Conf {
         return $this->_abbrev_matcher;
     }
 
+    /** @return list<PaperOption|ReviewField|Formula> */
     function find_all_fields($text, $tflags = 0) {
         return $this->abbrev_matcher()->find_all($text, $tflags);
     }
@@ -3351,6 +3364,9 @@ class Conf {
         }
     }
 
+    /** @param string $basename
+     * @param int $flags
+     * @return CsvGenerator */
     function make_csvg($basename, $flags = 0) {
         $csv = new CsvGenerator($flags);
         $csv->set_filename($this->download_prefix . $basename . $csv->extension());
@@ -3758,6 +3774,7 @@ class Conf {
         $this->msg("Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.", "merror");
     }
 
+    /** @return int */
     function initial_msg_count() {
         if (!isset($this->_initial_msg_count)
             && session_id() !== "")  {
@@ -4038,6 +4055,7 @@ class Conf {
         }
     }
 
+    /** @return bool */
     function has_interesting_deadline($my_deadlines) {
         global $Now;
         if ($my_deadlines->sub->open ?? false) {
@@ -4328,6 +4346,7 @@ class Conf {
         }
     }
 
+    /** @return array<string,mixed> */
     function hotcrp_pc_json(Contact $viewer) {
         $hpcj = $list = $otherj = [];
         foreach ($this->pc_members() as $pcm) {
@@ -4441,7 +4460,7 @@ class Conf {
     /** @param null|int|Contact $user
      * @param null|int|Contact $dest_user
      * @param string $text
-     * @param null|int|PaperInfo|list<PaperInfo|int> $pids */
+     * @param null|int|PaperInfo|list<int|PaperInfo> $pids */
     function log_for($user, $dest_user, $text, $pids = null) {
         if (is_object($pids)) {
             $pids = [$pids->paperId];
@@ -5114,6 +5133,7 @@ class Conf {
 
     // pages
 
+    /** @return GroupedExtensions */
     function page_partials(Contact $viewer) {
         if (!$this->_page_partials || $this->_page_partials->viewer() !== $viewer) {
             $this->_page_partials = new GroupedExtensions($viewer, ["etc/pagepartials.json"], $this->opt("pagePartials"));

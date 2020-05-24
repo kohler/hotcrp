@@ -11,7 +11,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_order = [];
     private $_topic_groups;
     private $_topic_html;
-    /** @var ?AbbreviationMatcher */
+    /** @var ?AbbreviationMatcher<int> */
     private $_topic_abbrev_matcher;
 
 
@@ -49,9 +49,11 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         }
     }
 
+    /** @return int */
     function count() {
         return count($this->_topic_map);
     }
+    /** @return array<int,string> */
     function as_array() {
         return $this->_topic_map;
     }
@@ -64,6 +66,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     function offsetGet($offset) {
         return $this->_topic_map[$offset];
     }
+    /** @return ?string */
     function get($tid) {
         return $this->_topic_map[$tid] ?? null;
     }
@@ -109,7 +112,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         });
     }
 
-    /** @return AbbreviationMatcher */
+    /** @return AbbreviationMatcher<int> */
     function abbrev_matcher() {
         if ($this->_topic_abbrev_matcher === null) {
             $this->_topic_abbrev_matcher = new AbbreviationMatcher;
@@ -125,6 +128,9 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->_topic_abbrev_matcher;
     }
 
+    /** @param 'long'|'medium'|'short' $lenclass
+     * @param string $tname
+     * @return 'long'|'medium'|'short' */
     static function max_topici_lenclass($lenclass, $tname) {
         if ($lenclass === "long"
             || (strlen($tname) > 50
@@ -139,6 +145,8 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         }
     }
 
+    /** @param int $tid
+     * @return string|false */
     function subtopic_name($tid) {
         $n = $this->_topic_map[$tid] ?? null;
         if ($n && ($colon = (int) strpos($n, ":")) !== 0) {
@@ -148,6 +156,8 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         }
     }
 
+    /** @param int $tid
+     * @return string */
     function unparse_name_html($tid) {
         if ($this->_topic_html === null) {
             $this->_topic_html = [];
@@ -170,6 +180,9 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->_topic_html[$tid];
     }
 
+    /** @param list<int> $tlist
+     * @param ?array<int,int> $interests
+     * @return string */
     function unparse_list_html($tlist, $interests = null) {
         $out = [];
         foreach ($tlist as $tid) {

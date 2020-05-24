@@ -72,6 +72,7 @@ class CsvParser {
     private $lines;
     /** @var int */
     private $lpos = 0;
+    /** @var int */
     private $type;
     private $typefn;
     /** @var false|list<string> */
@@ -491,6 +492,7 @@ class CsvGenerator {
     private $lines_length = 0;
     private $stream;
     private $stream_filename;
+    /** @var int */
     private $stream_length = 0;
     private $selection;
     private $selection_is_names = false;
@@ -539,6 +541,9 @@ class CsvGenerator {
         }
     }
 
+    /** @param list<string>|array<string,string> $selection
+     * @param null|false|true|list<string> $header
+     * @return $this */
     function select($selection, $header = null) {
         assert($this->lines_length === 0 && !($this->flags & self::FLAG_FLUSHED));
         if ($header === false || $header === []) {
@@ -575,12 +580,18 @@ class CsvGenerator {
         return $this;
     }
 
+    /** @param string $filename
+     * @return $this */
     function set_filename($filename) {
         $this->filename = $filename;
+        return $this;
     }
 
+    /** @param bool $inline
+     * @return $this */
     function set_inline($inline) {
         $this->inline = $inline;
+        return $this;
     }
 
 
@@ -737,19 +748,15 @@ class CsvGenerator {
         if (is_string($row)) {
             error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))); // XXX
             $this->add_string($row);
-            return $this;
-        } else if (empty($row)) {
-            return $this;
-        }
-        reset($row);
-        if (is_array(current($row)) || is_object(current($row))) {
-            error_log("unexpected CsvGenerator::add(list<array|object>: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))); // XXX
-            foreach ($row as $x) {
+        } else if (!empty($row)) {
+            reset($row);
+            if (is_array(current($row)) || is_object(current($row))) {
+                error_log("unexpected CsvGenerator::add(list<array|object>: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))); // XXX
                 /** @phan-suppress-next-line PhanTypeMismatchArgument */
-                $this->add_row($x);
+                $this->append($row);
+            } else {
+                $this->add_row($row);
             }
-        } else {
-            $this->add_row($row);
         }
         return $this;
     }

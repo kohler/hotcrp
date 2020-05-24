@@ -209,6 +209,7 @@ class PaperOptionList {
     private $_olist;
     private $_olist_nonfinal;
     private $_olist_include_empty;
+    /** @var AbbreviationMatcher<PaperOption> */
     private $_nonpaper_am;
     private $_accumulator;
     private $_adding_fixed;
@@ -529,7 +530,7 @@ class PaperOptionList {
         return count($omap) == 1 ? current($omap) : null;
     }
 
-    /** @return AbbreviationMatcher */
+    /** @return AbbreviationMatcher<PaperOption> */
     function nonpaper_abbrev_matcher() {
         // Nonpaper options aren't stored in the main abbrevmatcher; put them
         // in their own.
