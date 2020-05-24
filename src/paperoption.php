@@ -523,11 +523,10 @@ class PaperOptionList {
     }
 
     /** @return ?PaperOption */
-    function find($name, $nonpaper = false) {
-        assert(!$nonpaper);
+    function find($name) {
         $omap = $this->find_all($name);
         reset($omap);
-        return count($omap) == 1 ? current($omap) : null;
+        return count($omap) === 1 ? current($omap) : null;
     }
 
     /** @return AbbreviationMatcher<PaperOption> */
