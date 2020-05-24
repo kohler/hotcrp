@@ -53,18 +53,22 @@ class GetScores_ListAction extends ListAction {
 
         if (!empty($texts)) {
             $header = ["paper", "title"];
-            if ($any_decision)
+            if ($any_decision) {
                 $header[] = "decision";
-            if ($any_ordinal)
+            }
+            if ($any_ordinal) {
                 $header[] = "review";
-            if ($any_reviewer_identity)
+            }
+            if ($any_reviewer_identity) {
                 array_push($header, "reviewername", "email");
+            }
             return $user->conf->make_csvg("scores")
                 ->select(array_merge($header, array_keys($any_scores)))
-                ->add($texts);
+                ->append($texts);
         } else {
-            if (empty($errors))
+            if (empty($errors)) {
                 $errors[] = "No papers selected.";
+            }
             Conf::msg_error(join("<br>", $errors));
         }
     }

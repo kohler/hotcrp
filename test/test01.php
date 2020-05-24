@@ -685,7 +685,7 @@ function get_pcassignment_csv() {
     global $user_chair;
     list($header, $texts) = ListAction::pcassignments_csv_data($user_chair, range(1, 30));
     $csvg = new CsvGenerator;
-    return $csvg->select($header)->add($texts)->unparse();
+    return $csvg->select($header)->append($texts)->unparse();
 }
 $old_pcassignments = get_pcassignment_csv();
 xassert_assign($user_chair, $old_pcassignments);

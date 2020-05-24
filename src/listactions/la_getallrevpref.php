@@ -43,6 +43,6 @@ class GetAllRevpref_ListAction extends ListAction {
         if ($has_conflict) {
             $headers[] = "conflict";
         }
-        return $user->conf->make_csvg("allprefs")->select($headers)->add($texts);
+        return $user->conf->make_csvg("allprefs")->select($headers)->append($texts);
     }
 }

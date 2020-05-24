@@ -109,6 +109,7 @@ class CsvParser {
         $this->used = gmp_init("0");
     }
 
+    /** @param int $type */
     private function set_type($type) {
         $this->type = $type;
         if ($this->type === self::TYPE_COMMA) {
@@ -124,6 +125,7 @@ class CsvParser {
         }
     }
 
+    /** @param string $s */
     function set_comment_chars($s) {
         $this->comment_chars = $s;
     }
@@ -132,6 +134,7 @@ class CsvParser {
         $this->comment_function = $f;
     }
 
+    /** @return false|list<string> */
     function header() {
         return $this->header;
     }
@@ -477,9 +480,13 @@ class CsvGenerator {
     const FLAG_HEADERS = 256;
     const FLAG_FLUSHED = 512;
 
+    /** @var int */
     private $type;
+    /** @var int */
     private $flags;
+    /** @var string */
     private $headerline = "";
+    /** @var list<string> */
     private $lines = [];
     private $lines_length = 0;
     private $stream;
@@ -492,10 +499,14 @@ class CsvGenerator {
     private $inline;
     private $filename;
 
+    /** @param string $text
+     * @return string */
     static function always_quote($text) {
         return '"' . str_replace('"', '""', $text) . '"';
     }
 
+    /** @param string $text
+     * @return string */
     static function quote($text, $quote_empty = false) {
         if ($text === "") {
             return $quote_empty ? '""' : $text;
@@ -506,6 +517,8 @@ class CsvGenerator {
         }
     }
 
+    /** @param list<string> $array
+     * @return string */
     static function quote_join($array, $quote_empty = false) {
         $x = [];
         foreach ($array as $t) {
@@ -515,6 +528,7 @@ class CsvGenerator {
     }
 
 
+    /** @param int $flags */
     function __construct($flags = self::TYPE_COMMA) {
         $this->type = $flags & self::FLAG_TYPE;
         $this->flags = $flags & 255;
@@ -530,21 +544,21 @@ class CsvGenerator {
         if ($header === false || $header === []) {
             $this->selection = $selection;
         } else if ($header === true) {
-            $this->add($selection);
+            $this->add_row($selection);
             $this->selection = $selection;
         } else if ($header !== null) {
             assert(is_array($selection) && !is_associative_array($selection)
                    && is_array($header) && !is_associative_array($header)
                    && count($selection) === count($header));
-            $this->add($header);
+            $this->add_row($header);
             $this->selection = $selection;
         } else if (is_associative_array($selection)) {
             assert($header === null);
-            $this->add(array_values($selection));
+            $this->add_row(array_values($selection));
             $this->selection = array_keys($selection);
         } else {
             assert($header === null);
-            $this->add($selection);
+            $this->add_row($selection);
             $this->selection = $selection;
         }
         $this->selection_is_names = true;
@@ -661,21 +675,10 @@ class CsvGenerator {
         return $this;
     }
 
-    /** @return $this */
-    function add($row) {
-        if (is_string($row)) {
-            error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            $this->add_string($row);
-            return $this;
-        } else if (empty($row)) {
-            return $this;
-        }
-        reset($row);
-        if (is_array(current($row)) || is_object(current($row))) {
-            foreach ($row as $x) {
-                $this->add($x);
-            }
-        } else {
+    /** @param list<string|int>|array<string,string|int> $row
+     * @return $this */
+    function add_row($row) {
+        if (!empty($row)) {
             $is_array = is_array($row);
             if (!$is_array) {
                 $row = (array) $row;
@@ -714,6 +717,39 @@ class CsvGenerator {
                 $this->add_comment($cmt);
                 $this->add_string($this->lf);
             }
+        }
+        return $this;
+    }
+
+    /** @param list<list<string>>|list<array<string,string>> $rows
+     * @return $this */
+    function append($rows) {
+        foreach ($rows as $row) {
+            $this->add_row($row);
+        }
+        return $this;
+    }
+
+    /** @param list<int|string>|array<string,int|string> $row
+     * @return $this
+     * @deprecated */
+    function add($row) {
+        if (is_string($row)) {
+            error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))); // XXX
+            $this->add_string($row);
+            return $this;
+        } else if (empty($row)) {
+            return $this;
+        }
+        reset($row);
+        if (is_array(current($row)) || is_object(current($row))) {
+            error_log("unexpected CsvGenerator::add(list<array|object>: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))); // XXX
+            foreach ($row as $x) {
+                /** @phan-suppress-next-line PhanTypeMismatchArgument */
+                $this->add_row($x);
+            }
+        } else {
+            $this->add_row($row);
         }
         return $this;
     }

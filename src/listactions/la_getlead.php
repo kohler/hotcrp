@@ -22,6 +22,6 @@ class GetLead_ListAction extends ListAction {
         }
         return $user->conf->make_csvg($this->type . "s")
             ->select(["paper", "title", "first", "last", "{$this->type}email"])
-            ->add($texts);
+            ->append($texts);
     }
 }

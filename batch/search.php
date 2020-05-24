@@ -54,13 +54,13 @@ if (!empty($body)) {
         if ($sitename) {
             array_unshift($header, "sitename", "siteclass");
         }
-        $csv->add($header);
+        $csv->add_row($header);
     }
     foreach ($body as $row) {
         if ($sitename) {
             array_unshift($row, $siteid, $siteclass);
         }
-        $csv->add($row);
+        $csv->add_row($row);
     }
     fwrite(STDOUT, $csv->unparse());
 }

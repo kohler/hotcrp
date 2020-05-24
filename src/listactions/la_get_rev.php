@@ -8,7 +8,7 @@ class GetPcassignments_ListAction extends ListAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         list($header, $items) = ListAction::pcassignments_csv_data($user, $ssel->selection());
-        return $user->conf->make_csvg("pcassignments")->select($header)->add($items);
+        return $user->conf->make_csvg("pcassignments")->select($header)->append($items);
     }
 }
 

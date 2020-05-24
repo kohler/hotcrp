@@ -213,7 +213,7 @@ class GetAuthors_ListAction extends ListAction {
         if ($want_contacttype) {
             $header[] = "iscontact";
         }
-        return $user->conf->make_csvg("authors")->select($header)->add($texts);
+        return $user->conf->make_csvg("authors")->select($header)->append($texts);
     }
 }
 
@@ -236,7 +236,7 @@ class GetContacts_ListAction extends ListAction {
         }
         return $user->conf->make_csvg("contacts")
             ->select(["paper", "title", "first", "last", "email", "affiliation"])
-            ->add($texts);
+            ->append($texts);
     }
 }
 
@@ -266,7 +266,7 @@ class GetPcconflicts_ListAction extends ListAction {
         $user->set_overrides($old_overrides);
         return $user->conf->make_csvg("pcconflicts")
             ->select(["paper", "title", "first", "last", "email", "conflicttype"])
-            ->add($texts);
+            ->append($texts);
     }
 }
 
@@ -287,7 +287,7 @@ class GetTopics_ListAction extends ListAction {
         }
         return $user->conf->make_csvg("topics")
             ->select(["paper", "title", "topic"])
-            ->add($texts);
+            ->append($texts);
     }
 }
 
@@ -299,6 +299,6 @@ class GetCSV_ListAction extends ListAction {
         $pl->set_view("sel", false);
         list($header, $data) = $pl->text_csv();
         return $user->conf->make_csvg("data", CsvGenerator::FLAG_ITEM_COMMENTS)
-            ->select($header)->add($data);
+            ->select($header)->append($data);
     }
 }

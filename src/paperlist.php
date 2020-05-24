@@ -1842,6 +1842,7 @@ class PaperList {
         return $data;
     }
 
+    /** @return array<string,string> */
     private function _row_text_csv_data(PaperInfo $row, $fieldDef) {
         $csv = [];
         foreach ($fieldDef as $fdef) {
@@ -1865,6 +1866,7 @@ class PaperList {
         return $grouppos;
     }
 
+    /** @return array{array<string,string>,list<array<string,string>>} */
     function text_csv($options = []) {
         // get column list, check sort
         $this->_prepare();

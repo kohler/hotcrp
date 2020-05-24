@@ -546,12 +546,12 @@ if ($Qreq->download) {
             foreach ($xusers as $u1) {
                 foreach ($xdest_users as $u2) {
                     foreach ($pids as $p) {
-                        $csvg->add([$date, $u1, $u2, $via, $p, $action]);
+                        $csvg->add_row([$date, $u1, $u2, $via, $p, $action]);
                     }
                 }
             }
         } else {
-            $csvg->add([
+            $csvg->add_row([
                 $date, join(" ", $xusers), join(" ", $xdest_users),
                 $via, join(" ", $pids), $action
             ]);

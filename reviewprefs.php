@@ -90,7 +90,7 @@ function savePreferences($Qreq, $reset_p) {
                 $k = substr($k, 0, -strlen($suffix));
             }
             if (($p = cvtint(substr($k, 7))) > 0) {
-                $csvg->add([$p, $reviewer->email, $v]);
+                $csvg->add_row([$p, $reviewer->email, $v]);
             }
         }
     }

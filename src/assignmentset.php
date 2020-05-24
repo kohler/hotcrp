@@ -678,7 +678,7 @@ class AssignmentCsv {
     }
     /** @return CsvGenerator */
     function unparse_into(CsvGenerator $csvg) {
-        return $csvg->select(array_keys($this->fields))->add($this->rows);
+        return $csvg->select(array_keys($this->fields))->append($this->rows);
     }
     /** @return string */
     function unparse() {

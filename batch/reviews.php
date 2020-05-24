@@ -65,7 +65,7 @@ function add_row($x) {
         $output[] = true;
     }
     if ($narrow) {
-        $csv->add($x);
+        $csv->add_row($x);
     } else {
         $output[] = $x;
     }
@@ -146,7 +146,7 @@ if (!empty($output) && !$narrow) {
     }
     $csv->select($header, !isset($arg["no-header"]));
     foreach ($output as $orow) {
-        $csv->add($orow);
+        $csv->add_row($orow);
     }
 }
 

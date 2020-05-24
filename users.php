@@ -122,7 +122,7 @@ if ($getaction == "nameemail" && isset($papersel) && $Viewer->isPC) {
     }
     csv_exit($Conf->make_csvg("users")
              ->select(["first", "last", "email", "affiliation"])
-             ->add($people));
+             ->append($people));
 }
 
 if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
@@ -217,7 +217,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
             $selection[] = $k;
         }
     }
-    csv_exit($Conf->make_csvg("pcinfo")->select($selection, $header)->add($people));
+    csv_exit($Conf->make_csvg("pcinfo")->select($selection, $header)->append($people));
 }
 
 
